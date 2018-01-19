@@ -24,7 +24,6 @@ from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import ndb
 
-from codereview import buildbucket
 from codereview import models
 
 
@@ -63,82 +62,3 @@ def to_dict(self):
 
 # Monkey-patch ndb.Model to make it easier to JSON-serialize it.
 ndb.Model.to_dict = to_dict
-
-
-class TryserverBuilders(ndb.Model):
-  MASTERS = [
-    'client.gyp',
-    'client.skia',
-    'client.skia.android',
-    'client.skia.compile',
-    'client.skia.fyi',
-    'tryserver.blink',
-    'tryserver.chromium.android',
-    'tryserver.chromium.mac',
-    'tryserver.chromium.linux',
-    'tryserver.chromium.win',
-    'tryserver.client.mojo',
-    'tryserver.client.syzygy',
-    'tryserver.libyuv',
-    'tryserver.v8',
-    'tryserver.webrtc',
-  ]
-
-  MEMCACHE_KEY = 'default_builders'
-  MEMCACHE_TRYSERVERS_KEY = 'tryservers'
-  MEMCACHE_TIME = 3600 * 24
-
-  # Dictionary mapping tryserver names like tryserver.chromium to a list
-  # of builders.
-  json_contents = ndb.TextProperty(default='{}')
-
-  @classmethod
-  def get_instance(cls):
-    return cls.get_or_insert('one instance')
-
-  @classmethod
-  def get_builders(cls):
-    data = memcache.get(cls.MEMCACHE_KEY)
-    if data is not None:
-      return data
-
-    data = json.loads(cls.get_instance().json_contents)
-    memcache.add(cls.MEMCACHE_KEY, data, cls.MEMCACHE_TIME)
-    return data
-
-  @classmethod
-  def get_curated_tryservers(cls):
-    """Returns an array of sorted tryservers to ease client consumption.
-
-    The structure of the array is:
-    [
-      { tryserver: buildbucket_bucket_name,
-        builders: [
-          { builder: builder_name1, category: category_name1 },
-          { builder: builder_name2, category: category_name2 },
-          ...
-        ]
-      },
-      ...
-    ]
-    """
-    tryserver_json = memcache.get(cls.MEMCACHE_TRYSERVERS_KEY)
-    if tryserver_json is not None:
-      return tryserver_json
-    tryserver_dict = json.loads(cls.get_instance().json_contents)
-    return cls._prepare_and_cache_curated_tryservers(tryserver_dict)
-
-  @classmethod
-  def _prepare_and_cache_curated_tryservers(cls, tryserver_dict):
-    tryserver_json = []
-    for tryserver in sorted(tryserver_dict):
-      categories = tryserver_dict[tryserver]
-      builders_arr = []
-      for category in sorted(categories):
-        builders = categories[category]
-        for builder in sorted(builders):
-          builders_arr.append({'builder': builder, 'category': category})
-      tryserver_json.append({'tryserver': tryserver, 'builders': builders_arr})
-
-    memcache.add(cls.MEMCACHE_TRYSERVERS_KEY, tryserver_json, cls.MEMCACHE_TIME)
-    return tryserver_json

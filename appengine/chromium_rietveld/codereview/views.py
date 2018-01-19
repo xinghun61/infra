@@ -61,7 +61,6 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client import xsrfutil
 
 from codereview import auth_utils
-from codereview import buildbucket
 from codereview import engine
 from codereview import library
 from codereview import models
@@ -193,13 +192,6 @@ class SettingsForm(forms.Form):
   display_generated_msgs = forms.BooleanField(
       required=False,
       help_text='Display generated messages by default.')
-
-  display_exp_tryjob_results = forms.BooleanField(
-      widget=forms.Select(choices=[
-          (False, 'Never'),
-          (True, 'On issues that have experimental results')]),
-      required=False,
-      label='Display experimental tryjob results')
 
   send_from_email_addr = forms.BooleanField(
       required=False,
@@ -980,45 +972,14 @@ def show(request):
   src_url = _map_base_url(issue.base)
 
   display_generated_msgs = False
-  display_exp_tryjob_results = False
   if request.user:
     account = models.Account.current_user_account
     display_generated_msgs = account.display_generated_msgs
-    display_exp_tryjob_results = account.display_exp_tryjob_results
-
-  # Generate the set of possible parents for every builder name, if a
-  # builder could have 2 different parents, then append the parent name to
-  # the builder to differentiate them.
-  builds_to_parents = {}
-  has_exp_jobs = False
-  try_job_loading_error = False
-  try_job_results = []
-  try:
-    try_job_results = _get_patchset_try_job_results(last_patchset)
-    for try_job in try_job_results:
-      if try_job.parent_name:
-        builds_to_parents.setdefault(try_job.builder,
-                                     set()).add(try_job.parent_name)
-      if try_job.category == 'cq_experimental':
-        has_exp_jobs = True
-
-    if display_exp_tryjob_results and not has_exp_jobs:
-      display_exp_tryjob_results = False
-
-    for try_job in try_job_results:
-      if try_job.parent_name and len(builds_to_parents[try_job.builder]) > 1:
-        try_job.builder = try_job.parent_name + ':' + try_job.builder
-  except Exception:
-    # Do not crash, but degrade.
-    logging.exception('Error while loading try job results')
-    try_job_loading_error = True
 
   landed_days_ago = issue.get_time_since_landed()
   landed_days_ago = landed_days_ago.days if landed_days_ago else 'unknown'
 
   return respond(request, 'issue.html', {
-    'default_builders':
-      models_chromium.TryserverBuilders.get_builders(),
     'first_patch': first_patch,
     'has_draft_message': has_draft_message,
     'is_editor': request.issue.edit_allowed,
@@ -1029,106 +990,25 @@ def show(request):
     'last_user_message_index': last_user_message_index,
     'num_patchsets': num_patchsets,
     'patchsets': patchsets,
-    'try_job_results': try_job_results,
-    'try_job_loading_error': try_job_loading_error,
     'src_url': src_url,
     'display_generated_msgs': display_generated_msgs,
-    'display_exp_tryjob_results': display_exp_tryjob_results,
     'offer_cq': request.issue.is_cq_available,
     'landed_days_ago': landed_days_ago,
   })
-
-
-def _get_patchset_try_job_results(patchset, swallow_exceptions=True):
-  """Returns a list of try job results for the |patchset|.
-
-  Combines try job results stored in datastore and in buildbucket. Deduplicates
-  builds that have same buildbucket build id.
-  """
-  issue = patchset.issue_key.get()
-  # Fetch try job results from NDB and Buildbucket in parallel.
-  buildbucket_results_future = (
-      buildbucket.get_try_job_results_for_patchset_async(
-          issue.project, patchset.issue_key.id(), patchset.key.id()))
-  local_try_job_results = patchset.try_job_results
-
-  try_job_results = []
-  buildbucket_build_ids = set()
-  try:
-    for result in buildbucket_results_future.get_result():
-      try_job_results.append(result)
-      buildbucket_build_ids.add(result.build_id)
-  except net.AuthError:
-    logging.exception('Could not load buildbucket builds')
-    if not swallow_exceptions:
-      raise
-
-  def try_get_build_id(try_job_result):
-    if not try_job_result.build_properties:
-      return None
-    try:
-      props = json.loads(try_job_result.build_properties)
-    except ValueError:
-      return None
-    if not isinstance(props, dict):
-      return None
-
-    def get_subdict(d, key):
-      v = d.get(key, {})
-      if isinstance(v, basestring):
-        v = json.loads(v)
-      if not isinstance(v, dict):
-        logging.error(
-            'Could not parse buildbucket build property. Properties: %r', props)
-        return {}
-      return v
-
-    bb_info = get_subdict(props, 'buildbucket')
-    return (
-        get_subdict(bb_info, 'build').get('id') or
-        bb_info.get('build_id'))
-
-  for result in local_try_job_results:
-    build_id = try_get_build_id(result)
-    if build_id is None or build_id not in buildbucket_build_ids:
-      try_job_results.append(result)
-
-  return try_job_results
 
 
 @deco.patchset_required
 @deco.require_methods('GET')
 def patchset(request):
   """/patchset/<key> - Returns patchset information."""
-  display_exp_tryjob_results = False
-  if request.user:
-    account = models.Account.current_user_account
-    display_exp_tryjob_results = account.display_exp_tryjob_results
   patchsets = request.issue.get_patchset_info(
     request.user, request.patchset.key.id())
-  for ps in patchsets:
-    if ps.key.id() == request.patchset.key.id():
-      patchset = ps
-
-  try_job_results = _get_patchset_try_job_results(patchset)
-  if display_exp_tryjob_results:
-    has_exp_jobs = False
-    for try_job in try_job_results:
-      if try_job.category == 'cq_experimental':
-        has_exp_jobs = True
-        break
-    if not has_exp_jobs:
-      logging.debug('no experiments')
-      display_exp_tryjob_results = False
-  logging.debug('tryjobs: %s' % try_job_results)
 
   return respond(request, 'patchset.html',
                  {'issue': request.issue,
                   'patchset': request.patchset,
-                  'try_job_results': try_job_results,
                   'patchsets': patchsets,
                   'is_editor': request.issue.edit_allowed,
-                  'display_exp_tryjob_results': display_exp_tryjob_results,
                   })
 
 
@@ -1387,8 +1267,7 @@ def _issue_as_dict(issue, messages, request=None):
   return values
 
 
-def _patchset_as_dict(
-    patchset, comments, try_jobs, request, swallow_exceptions=True):
+def _patchset_as_dict(patchset, comments, request):
   """Converts a patchset into a dict."""
   issue = patchset.issue_key.get()
   values = {
@@ -1405,11 +1284,6 @@ def _patchset_as_dict(
     'dependent_patchsets': patchset.dependent_patchsets,
     'files': {},
   }
-  if try_jobs:
-    try_job_results = _get_patchset_try_job_results(
-        patchset, swallow_exceptions=swallow_exceptions)
-    values['try_job_results'] = [t.to_dict() for t in try_job_results]
-
   all_no_base_file_keys_future = models.Content.query(
       models.Content.file_too_large == True,
       ancestor=patchset.key).fetch_async(10000, keys_only=True, batch_size=1000)
@@ -1478,13 +1352,6 @@ def api_issue(request):
   values = _issue_as_dict(request.issue, messages, request)
   return values
 
-# pylint: disable=W0613
-@deco.access_control_allow_origin_star
-@deco.json_response
-@deco.require_methods('GET')
-def api_tryservers(request):
-  """/api/tryservers - Gets tryservers as a JSON-encoded dictionary."""
-  return models_chromium.TryserverBuilders.get_curated_tryservers()
 
 @deco.access_control_allow_origin_star
 @deco.patchset_required
@@ -1495,31 +1362,13 @@ def api_patchset(request):
   dictionary.
   """
   comments = request.GET.get('comments', 'false').lower() == 'true'
-  try_jobs = request.GET.get('try_jobs', 'true').lower() == 'true'
-  values = _patchset_as_dict(
-      request.patchset, comments, try_jobs, request, swallow_exceptions=False)
+  values = _patchset_as_dict(request.patchset, comments, request)
 
   # Add the current datetime as seen by AppEngine (it should always be UTC).
-  # This makes it possible to reliably compare try job timestamps (also based
-  # on AppEngine time) and the current time, e.g. to determine how old the job
-  # is.
   assert 'current_datetime' not in values
   values['current_datetime'] = str(datetime.datetime.now())
 
   return values
-
-@deco.access_control_allow_origin_star
-@deco.patchset_required
-@deco.json_response
-@deco.require_methods('GET')
-def api_patchset_try_job_results(request):
-  """/api/<issue>/<patchset>/try_job_results - Gets a patchset's try job
-  results as a JSON-encoded list of dictionaries.
-  """
-  try_job_results = _get_patchset_try_job_results(
-      request.patchset, swallow_exceptions=False)
-  return [r.to_dict() for r in try_job_results]
-
 
 def _get_context_for_user(request):
   """Returns the context setting for a user.
@@ -2161,8 +2010,6 @@ def settings(request):
         'add_plus_role': account.add_plus_role,
         'display_generated_msgs':
             account.display_generated_msgs,
-        'display_exp_tryjob_results':
-            account.display_exp_tryjob_results,
         'send_from_email_addr': account.send_from_email_addr,
         })
     return respond(request, 'settings.html', {'form': form})
@@ -2178,8 +2025,6 @@ def settings(request):
     account.add_plus_role = form.cleaned_data.get('add_plus_role')
     account.display_generated_msgs = form.cleaned_data.get(
         'display_generated_msgs')
-    account.display_exp_tryjob_results = form.cleaned_data.get(
-        'display_exp_tryjob_results')
     account.send_from_email_addr = form.cleaned_data.get('send_from_email_addr')
 
     account.fresh = False
@@ -2207,7 +2052,6 @@ def api_settings(_request):
     'notify_by_chat': account.notify_by_chat,
     'add_plus_role': account.add_plus_role,
     'display_generated_msgs': account.display_generated_msgs,
-    'display_exp_tryjob_results': account.display_exp_tryjob_results,
     'send_from_email_addr': account.send_from_email_addr,
     }
 

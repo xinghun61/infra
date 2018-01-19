@@ -465,46 +465,6 @@ function M_toggleSectionForPS(issue, patchset) {
 }
 
 /**
- * Show or hide older try bot results.
- * @param {String} id The id of the div elements that holds all the try job
- *     a elements.
- * @param makeVisible If true, makes older try bots visible.
- */
-function M_showTryJobResult(id, makeVisible) {
-  // This set keeps track of the first occurance of each try job result for
-  // a given builder.  The try job results are ordered reverse chronologically,
-  // so we visit them from newest to oldest.
-  var firstBuilderSet = {};
-  var oldBuildersExist = false;
-  jQuery('a', document.getElementById(id)).each(function(i) {
-    var self = jQuery(this);
-    var builder = self.text();
-    if (self.attr('category') != 'cq_experimental')
-    {
-      if (self.attr('status') == 'try-pending') {
-        // Try pending jobs are always visible.
-        self.css('display', 'inline');
-      } else if (builder in firstBuilderSet) {
-        // This is not the first time we see this builder, so toggle its
-        // visibility.
-        self.css('display', makeVisible ? 'inline' : 'none');
-        oldBuildersExist = true;
-      } else {
-        // The first time we see a builder, its always visible.  Remember the
-        // builder name.
-        self.css('display', 'inline');
-        firstBuilderSet[builder] = true;
-      }
-    }
-  });
-
-  jQuery('#' + id + '-morelink')
-    .css('display', !oldBuildersExist || makeVisible ? 'none' : '');
-  jQuery('#' + id + '-lesslink')
-    .css('display', oldBuildersExist && makeVisible ? '' : 'none');
-}
-
-/**
  * Toggle the visibility of the "Quick LGTM" link on the changelist page.
  * @param {String} id The id of the target element
  */
@@ -1688,34 +1648,11 @@ function M_changelistKeyDown(evt) {
     } else if (key == 'U') {
       // back to dashboard
       document.location.href = base_url;
-    } else if (key == 'Esc') {
-      M_closePendingTrybots();
     } else {
       return true;
     }
     return false;
   });
-}
-
-/**
- * A mouse down handler for the change list page.  Dismissed the try bot
- * popup if visible.
- * @param {Event} evt The event object that triggered this handler.
- * @return false if the event was handled.
- */
-function M_changelistMouseDown(evt) {
-  var trybotPopup = document.getElementById('trybot-popup');
-  if (trybotPopup && trybotPopup.style.display != 'none') {
-    var target = M_getEventTarget(evt);
-    while(target) {
-      if (target == trybotPopup)
-        return true;
-      target = target.parentNode;
-    }
-    trybotPopup.style.display = 'none';
-    return false;
-  }
-  return true;
 }
 
 /**

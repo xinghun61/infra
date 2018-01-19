@@ -28,7 +28,7 @@ function PatchSet(issue, id, sequence)
     Object.preventExtensions(this);
 }
 
-PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true&try_jobs=false";
+PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true";
 PatchSet.PATCHSET_URL = "/{1}/#ps{2}";
 
 PatchSet.prototype.getPatchsetUrl = function()

@@ -5,7 +5,6 @@ found in the LICENSE file. -->
 <link rel="import" href="../common/cr-action.html">
 <link rel="import" href="../common/cr-toolbar.html">
 <link rel="import" href="cr-issue-patchfile.html">
-<link rel="import" href="cr-try-results.html">
 <link rel="import" href="../diff/cr-diff-controls.html">
 
 <polymer-element name="cr-issue-patchset" attributes="patchset mode">
@@ -46,19 +45,6 @@ found in the LICENSE file. -->
                 </template>
             </div>
         </template>
-        <template if="{{ patchset.files.length && ((patchset.mostRecent && !patchset.issue.commit) || (!patchset.mostRecent && (!tryJobResults || tryJobResults.length))) }}">
-            <div id="try-job-results">
-                <h2>
-                    Try job results
-                    <template if="{{ !tryJobResults }}">
-                        <img src="../images/dots16.gif" class="spinner">
-                    </template>
-                </h2>
-                <template if="{{ tryJobResults.length }}">
-                    <cr-try-results results="{{ tryJobResults }}"></cr-try-results>
-                </template>
-            </div>
-        </template>
         <template if="{{ patchset.dependsOnPatchset }}">
             <div id="depends-on-patchset">
                 <h2>
@@ -91,24 +77,6 @@ found in the LICENSE file. -->
         Polymer({
             created: function() {
                 this.patchset = null;
-                this.tryJobResults = null;
-                this.failedBuilders = null;
-            },
-            patchsetChanged: function(oldValue, newValue) {
-                var self = this;
-                var list = new TryJobResultList(this.patchset);
-                list.loadResults().then(function(results) {
-                    self.tryJobResults = results;
-                    self.failedBuilders = [];
-                    for (var tryJobResultSet of self.tryJobResults) {
-                        // Group 5 comes from the mapping in TryJobResult.GROUPS.
-                        if (tryJobResultSet.results[tryJobResultSet.results.length - 1].resultGroup == 5)
-                            self.failedBuilders.push(tryJobResultSet.builder);
-                    }
-                }).catch(function(e) {
-                    // TODO(esprehn): Show an error.
-                    console.log(e);
-                });
             },
             getPatchsetUrl: function(patchset) {
                 return patchset.getPatchsetUrl();

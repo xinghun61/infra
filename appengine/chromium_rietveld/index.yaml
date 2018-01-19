@@ -459,20 +459,3 @@ indexes:
   properties:
   - name: created
     direction: desc
-
-- kind: TryJobResult
-  properties:
-  - name: result
-  - name: master
-  - name: timestamp
-
-- kind: TryJobResult
-  properties:
-  - name: result
-  - name: timestamp
-
-- kind: TryJobResult
-  properties:
-  - name: result
-  - name: timestamp
-    direction: desc

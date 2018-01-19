@@ -179,11 +179,9 @@ var lastMsgID = {{messages|length}};
 <script language="JavaScript" type="text/javascript">
   <!--
     document.onkeydown = M_changelistKeyDown;
-    document.onmousedown = M_changelistMouseDown;
     var dashboardState = new M_DashboardState(window, 'patch', 'M_CLPatchMarker');
     var issueId = {{issue.key.id}};
     M_toggleIssueOverviewByAnchor();
-    M_showTryJobResult('tryjobdiv-{{last_patchset.key.id}}', false);
   // -->
 </script>
 

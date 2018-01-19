@@ -46,18 +46,6 @@ header .ui-actions {
     overflow-x: auto;
 }
 
-.choose-trybots {
-    margin: 0 5px 0.5em 16px;
-}
-
-.retry-failed-try-jobs, .trigger-dry-run {
-    margin: 0 0 .5em 5px;
-}
-
-#try-job-results h2 {
-    margin: 0.5em 16px 0.5em 16px;
-}
-
 .view-depends-on-patchset {
     margin: 0 5px 0.5em 16px;
 }

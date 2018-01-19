@@ -69,9 +69,7 @@ urlpatterns = patterns(
     (r'^(\d+)/description$', 'description'),
     (r'^(\d+)/fields', 'fields'),
     (r'^api/(\d+)/?$', 'api_issue'),
-    (r'^api/tryservers/?$', 'api_tryservers'),
     (r'^api/(\d+)/(\d+)/?$', 'api_patchset'),
-    (r'^api/(\d+)/(\d+)/try_job_results/?$', 'api_patchset_try_job_results'),
     (r'^tarball/(\d+)/(\d+)$', 'tarball'),
     (r'^account_delete$', 'account_delete'),
     (r'^user_popup/(.+)$', 'user_popup'),
@@ -93,5 +91,4 @@ urlpatterns = patterns(
 urlpatterns += patterns(
     'codereview.views_chromium',
     (r'^(\d+)/binary/(\d+)/(\d+)/(\d+)$', 'download_binary'),
-    (r'^get_pending_try_patchsets$', 'get_pending_try_patchsets'),
     )

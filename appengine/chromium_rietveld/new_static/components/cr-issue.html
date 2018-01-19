@@ -14,7 +14,6 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-issue-meta.html">
 <link rel="import" href="cr-issue-patchsets.html">
 <link rel="import" href="cr-issue-subject.html">
-<link rel="import" href="cr-try-results.html">
 
 <polymer-element name="cr-issue" attributes="issue" on-butterbar-update="{{ updateButterbar }}">
     <template>
@@ -30,18 +29,6 @@ found in the LICENSE file. -->
             <cr-issue-meta issue="{{ issue }}"></cr-issue-meta>
 
             <div class="issue-content">
-                <template if="{{ issue.commit }}">
-                    <h2>
-                        Commit status
-                        <template if="{{ !tryJobResults }}">
-                            <img src="../images/dots16.gif" class="spinner">
-                        </template>
-                    </h2>
-                    <template if="{{ tryJobResults }}">
-                        <cr-try-results results="{{ tryJobResults }}"></cr-try-results>
-                    </template>
-                </template>
-
                 <div class="issue-description">
                     <cr-linkified-text text="{{ issue.description }}" pre></cr-linkified-text>
                 </div>
@@ -86,27 +73,7 @@ found in the LICENSE file. -->
         Polymer({
             created: function() {
                 this.issue = null;
-                this.tryJobResults = null;
                 this.butterbarMessage = "";
-            },
-            issueChanged: function(oldValue, newValue) {
-                this.loadCommitTryJobs();
-            },
-            loadCommitTryJobs: function() {
-                var self = this;
-                this.tryJobResults = null;
-                if (!this.issue.commit)
-                    return;
-                var patchset = this.issue.patchsets.last();
-                if (!patchset)
-                    return;
-                var list = new TryJobResultList(patchset);
-                list.loadResults().then(function(results) {
-                    self.tryJobResults = results;
-                }).catch(function(e) {
-                    // TODO(esprehn): Show an error.
-                    console.log(e);
-                });
             },
             updateButterbar: function(event) {
                 this.butterbarMessage = event.detail.message;

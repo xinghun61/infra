@@ -13,7 +13,6 @@ function UserSettings()
     this.notifyByChat = false;
     this.deprecatedUi = false;
     this.sendFromEmailAddress = true;
-    this.displayExperimentalTryjobs = false;
     Object.preventExtensions(this);
 }
 
@@ -28,7 +27,6 @@ UserSettings.FIELD_NAME_MAP = {
     "tab_spaces": "tabSpaces",
     "context": "context",
     "send_from_email_address": "sendFromEmailAddress",
-    "display_exp_tryjob_results": "displayExperimentalTryjobs",
 };
 
 UserSettings.prototype.loadDetails = function()
@@ -49,7 +47,6 @@ UserSettings.prototype.parseData = function(data)
     this.notifyByChat = data.notify_by_chat;
     this.deprecatedUi = data.deprecated_ui;
     this.sendFromEmailAddress = data.send_from_email_addr;
-    this.displayExperimentalTryjobs = data.display_exp_tryjob_results;
 };
 
 UserSettings.prototype.save = function()
@@ -64,7 +61,6 @@ UserSettings.prototype.save = function()
         tab_spaces: this.tabSpaces,
         context: this.context,
         send_from_email_addr: this.sendFromEmailAddress,
-        display_exp_tryjob_results: this.displayExperimentalTryjobs,
     }, {
         sendXsrfToken: true,
     }).then(function(xhr) {

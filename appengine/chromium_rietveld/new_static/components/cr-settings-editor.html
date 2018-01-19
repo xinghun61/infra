@@ -30,13 +30,6 @@ found in the LICENSE file. -->
                 </div>
             </div>
             <div class="form-row">
-                <label class="form-label" for="displayExperimentalTryjobs">Display experimental tryjob results</label>
-                <div class="form-field">
-                    <input type="checkbox" id="displayExperimentalTryjobs" checked="{{ settings.displayExperimentalTryjobs }}" class="{{ {invalid: errors.displayExperimentalTryjobs} | tokenList }}">
-                    <div class="form-error">{{ errors.displayExperimentalTryjobs }}</div>
-                </div>
-            </div>
-            <div class="form-row">
                 <label class="form-label" for="sendFromEmailAddress">Send replies from my email address</label>
                 <div class="form-field">
                     <input type="checkbox" id="sendFromEmailAddress" checked="{{ settings.sendFromEmailAddress }}" class="{{ {invalid: errors.sendFromEmailAddress} | tokenList }}">
