@@ -22,6 +22,7 @@ _EXTENSION_TO_CTYPE_TABLE = {
     'svg': 'image/svg+xml',
     'pdf': 'application/pdf',
     'ogv': 'video/ogg',
+    'mov': 'video/quicktime',
     'mp4': 'video/mp4',
     'mpg': 'video/mp4',
     'mpeg': 'video/mp4',

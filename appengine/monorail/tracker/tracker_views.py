@@ -399,6 +399,7 @@ VIEWABLE_IMAGE_TYPES = [
     ]
 VIEWABLE_VIDEO_TYPES = [
     'video/ogg', 'video/mp4', 'video/mpg', 'video/mpeg', 'video/webm',
+    'video/quicktime',
     ]
 MAX_PREVIEW_FILESIZE = 15 * 1024 * 1024  # 15 MB
 
