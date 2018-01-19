@@ -181,8 +181,7 @@ def RunSteps(api):
       api.trigger({'buildername': 'publish_tarball', 'version': version})
     return
 
-  # TODO(phajdan.jr): remove str conversion once crbug/709103 is fixed.
-  version = str(api.properties['version'])
+  version = api.properties['version']
 
   ls_result = api.gsutil(['ls', 'gs://chromium-browser-official/'],
                          stdout=api.raw_io.output()).stdout
@@ -203,6 +202,11 @@ def RunSteps(api):
       'touch chrome/test/data/webui/i18n_process_css_test.html',
       ['touch', api.path['checkout'].join(
           'chrome', 'test', 'data', 'webui', 'i18n_process_css_test.html')])
+
+  api.step('dowload clang sources', [
+      api.path['checkout'].join('tools', 'clang', 'scripts', 'update.py'),
+      '--force-local-build', '--without-android', '--use-system-cmake',
+      '--if-needed', '--gcc-toolchain=/usr', '--skip-build'])
 
   node_modules_sha_path = api.path['checkout'].join(
       'third_party', 'node', 'node_modules.tar.gz.sha1')

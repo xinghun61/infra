@@ -200,6 +200,18 @@
   },
   {
     "cmd": [
+      "[START_DIR]/src/tools/clang/scripts/update.py",
+      "--force-local-build",
+      "--without-android",
+      "--use-system-cmake",
+      "--if-needed",
+      "--gcc-toolchain=/usr",
+      "--skip-build"
+    ],
+    "name": "dowload clang sources"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "RECIPE_PACKAGE_REPO[depot_tools]/download_from_google_storage.py",
