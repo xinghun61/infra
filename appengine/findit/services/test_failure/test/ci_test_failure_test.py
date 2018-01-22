@@ -5,8 +5,6 @@
 import json
 import mock
 import os
-import urllib
-import zlib
 
 from common.findit_http_client import FinditHttpClient
 from model.wf_step import WfStep
@@ -28,7 +26,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     with self.mock_urlfetch() as urlfetch:
       self.mocked_urlfetch = urlfetch
 
-  def _GetSwarmingData(self, data_type, file_name=None, build_number=None):
+  def _GetSwarmingData(self, data_type, file_name=None):
     file_name_map = {
         'build': 'sample_swarming_build_tasks.json',
         'step': 'sample_swarming_build_abctest_tasks.json'
@@ -38,64 +36,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         os.path.dirname(__file__), os.pardir, os.pardir, 'test', 'data',
         file_name)
     with open(swarming_tasks_file, 'r') as f:
-      if build_number:
-        return json.dumps(json.loads(f.read())[str(build_number)])
-      if data_type == 'isolated':
-        return zlib.compress(f.read())
       return f.read()
-
-  def _MockUrlFetchWithSwarmingData(self, master_name, builder_name,
-                                    build_number, step_name):
-    url = ('https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/'
-           'list?tags=%s&tags=%s&tags=%s&tags=%s') % (
-               urllib.quote('master:%s' % master_name),
-               urllib.quote('buildername:%s' % builder_name),
-               urllib.quote('buildnumber:%d' % build_number),
-               urllib.quote('stepname:%s' % step_name))
-
-    response = self._GetSwarmingData('step', build_number=build_number)
-
-    cursor_swarming_data = {
-        'cursor': None,
-        'items': [],
-        'state': 'all',
-        'limit': 100,
-        'sort': 'created_ts'
-    }
-    cursor_url = ('%s&cursor=thisisacursor') % url
-
-    self.mocked_urlfetch.register_handler(url, response)
-    self.mocked_urlfetch.register_handler(cursor_url,
-                                          json.dumps(cursor_swarming_data))
-
-  def _MockUrlfetchWithIsolatedData(self,
-                                    isolated_data=None,
-                                    file_url=None,
-                                    file_name=None,
-                                    build_number=None):
-    if isolated_data:  # Mocks POST requests to isolated server.
-      url = '%s/_ah/api/isolateservice/v1/retrieve' % (
-          isolated_data['isolatedserver'])
-      post_data = {
-          'digest': isolated_data['digest'],
-          'namespace': isolated_data['namespace']
-      }
-      file_name = isolated_data['digest']
-      if build_number:  # pragma: no branch
-        file_name = isolated_data['digest'][:-4]
-      content = self._GetSwarmingData('isolated', file_name, build_number)
-
-    elif file_url and file_name:  # pragma: no branch.
-      # Mocks GET requests to isolated server.
-      url = file_url
-      post_data = None
-      content = self._GetSwarmingData('isolated', file_name)
-
-    self.mocked_urlfetch.register_handler(
-        url,
-        content,
-        data=(json.dumps(post_data, sort_keys=True, separators=(',', ':'))
-              if post_data else None))
 
   def testInitiateTestLevelFirstFailureAndSaveLog(self):
     json_data = json.loads(
@@ -258,7 +199,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, failure_info)
     self.assertEqual({}, failure_info.failed_steps.ToSerializable())
 
-  def testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self):
+  @mock.patch.object(ci_test_failure, '_GetSameStepFromBuild')
+  def testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self, mock_steps):
     master_name = 'm'
     builder_name = 'b'
     build_number = 224
@@ -282,40 +224,30 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         }
     }
     failed_step = TestFailedStep.FromSerializable(failed_step)
-    step = WfStep.Create(master_name, builder_name, 223, step_name)
-    step.isolated = True
-    step.log_data = 'log'
-    step.put()
+    step_223 = WfStep.Create(master_name, builder_name, 223, step_name)
+    step_223.isolated = True
+    step_223.log_data = 'log'
+    step_223.put()
 
-    for n in xrange(222, 220, -1):
-      # Mock retrieving data from swarming server for a single step.
-      self._MockUrlFetchWithSwarmingData(master_name, builder_name, n,
-                                         'abc_test')
+    step_222 = WfStep.Create(master_name, builder_name, 222, step_name)
+    step_222.isolated = True
+    log_data_222 = {
+        'Unittest2.Subtest1': 'test_failure_log',
+        'Unittest3.Subtest2': 'test_failure_log'
+    }
+    step_222.log_data = json.dumps(log_data_222)
+    step_222.put()
 
-      # Mock retrieving hash to output.json from isolated server.
-      isolated_data = {
-          'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': {
-              'namespace': 'default-gzip'
-          },
-          'digest': 'isolatedhashabctest-%d' % n
-      }
-      self._MockUrlfetchWithIsolatedData(isolated_data, build_number=n)
-      # Mock retrieving url to output.json from isolated server.
-      file_hash_data = {
-          'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': {
-              'namespace': 'default-gzip'
-          },
-          'digest': 'abctestoutputjsonhash-%d' % n
-      }
-      self._MockUrlfetchWithIsolatedData(file_hash_data, build_number=n)
+    step_221 = WfStep.Create(master_name, builder_name, 221, step_name)
+    step_221.isolated = True
+    log_data_221 = {
+        'Unittest3.Subtest1': 'test_failure_log',
+        'Unittest3.Subtest2': 'test_failure_log'
+    }
+    step_221.log_data = json.dumps(log_data_221)
+    step_221.put()
 
-      # Mock downloading output.json from isolated server.
-      self._MockUrlfetchWithIsolatedData(
-          None, ('https://isolateserver.storage.googleapis.com/default-gzip/'
-                 'm_b_%d_abc_test' % n),
-          '%s_%s_%d_%s.json' % (master_name, builder_name, n, 'abc_test'))
+    mock_steps.side_effect = [step_223, step_222, step_221]
 
     ci_test_failure._UpdateFirstFailureOnTestLevel(
         master_name, builder_name, build_number, step_name, failed_step,
@@ -483,7 +415,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             None))
 
   @mock.patch.object(swarming_util, 'GetIsolatedDataForStep', return_value=None)
-  def testGetSameStepFromBuild(self, _):
+  def testGetSameStepFromBuildNotIsolated(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 121
@@ -492,19 +424,57 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         ci_test_failure._GetSameStepFromBuild(master_name, builder_name,
                                               build_number, step_name, None))
 
-  @mock.patch.object(swarming_util, 'GetIsolatedDataForStep', return_value=[])
   @mock.patch.object(
       swarming_util,
       'RetrieveShardedTestResultsFromIsolatedServer',
-      return_value={'per_iteration_data': 'invalid'})
-  def testGetSameStepFromBuildReslutLogInvalid(self, *_):
+      return_value={
+          'per_iteration_data': 'invalid'
+      })
+  @mock.patch.object(swarming_util, 'GetIsolatedDataForStep')
+  def testGetSameStepFromBuildReslutLogInvalid(self, mock_isolated_data, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 121
     step_name = 'atest'
+
+    mock_isolated_data.return_value = [{
+        'isolatedserver': 'https://isolateserver.appspot.com',
+        'namespace': {
+            'namespace': 'default-gzip'
+        },
+        'digest': 'isolatedhashabctest'
+    }]
     self.assertIsNone(
         ci_test_failure._GetSameStepFromBuild(master_name, builder_name,
                                               build_number, step_name, None))
+
+  @mock.patch.object(swarming_util, 'GetIsolatedDataForStep')
+  @mock.patch.object(swarming_util,
+                     'RetrieveShardedTestResultsFromIsolatedServer')
+  def testGetSameStepFromBuild(self, mock_step_log, mock_isolated_data):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 222
+    step_name = 'abc_test'
+
+    mock_isolated_data.return_value = [{
+        'isolatedserver': 'https://isolateserver.appspot.com',
+        'namespace': {
+            'namespace': 'default-gzip'
+        },
+        'digest': 'isolatedhashabctest'
+    }]
+
+    mock_step_log.return_value = json.loads(
+        self._GetSwarmingData('isolated-plain',
+                              '%s_%s_%d_%s.json' % (master_name, builder_name,
+                                                    build_number, step_name)))
+
+    step = ci_test_failure._GetSameStepFromBuild(master_name, builder_name,
+                                                 build_number, step_name, None)
+
+    self.assertIsNotNone(step)
+    self.assertTrue(step.isolated)
 
   def testStepNotHaveFirstTimeFailure(self):
     build_number = 1

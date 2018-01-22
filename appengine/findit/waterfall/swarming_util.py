@@ -344,7 +344,9 @@ def GetIsolatedDataForStep(master_name,
   """
   step_isolated_data = []
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {'stepname': step_name})
+                                     http_client, {
+                                         'stepname': step_name
+                                     })
   if not data:
     return step_isolated_data
 
@@ -381,7 +383,9 @@ def GetIsolatedShaForStep(master_name, builder_name, build_number, step_name,
         configuration.
   """
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {'stepname': step_name})
+                                     http_client, {
+                                         'stepname': step_name
+                                     })
   if not data:
     logging.error('Failed to get swarming task data for %s/%s/%s/%s',
                   master_name, builder_name, build_number, step_name)
@@ -477,7 +481,6 @@ def _DownloadTestResults(isolated_data, http_client):
       data_for_output_json, http_client)
   if error:
     return None, error
-
   # GET Request to get output.json file.
   return _ProcessRetrievedContent(output_json_content, http_client), None
 
@@ -628,8 +631,9 @@ def GetSwarmingBotCounts(dimensions, http_client):
       k: int(content_data.get(k, 0))
       for k in ('busy', 'count', 'dead', 'quarantined')
   }
-  bot_counts['available'] = (bot_counts['count'] - bot_counts['busy'] -
-                             bot_counts['dead'] - bot_counts['quarantined'])
+  bot_counts['available'] = (
+      bot_counts['count'] - bot_counts['busy'] - bot_counts['dead'] -
+      bot_counts['quarantined'])
 
   return bot_counts
 
