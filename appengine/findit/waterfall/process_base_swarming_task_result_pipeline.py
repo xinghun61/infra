@@ -93,7 +93,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           params={'callback_params': json.dumps(callback_params)},
           name=name)
       task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
-    except taskqueue.TombstonedTaskError:
+    except (taskqueue.TombstonedTaskError, taskqueue.TaskAlreadyExistsError):
       assert name
       logging.warning('A task named %s has already been added to the taskqueue',
                       name)
