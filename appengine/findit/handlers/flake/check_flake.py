@@ -82,7 +82,12 @@ def _GetSuspectInfo(suspect_urlsafe_key):
           'url': str,
       }
   """
-  suspect = ndb.Key(urlsafe=suspect_urlsafe_key).get()
+  suspect_key = ndb.Key(urlsafe=suspect_urlsafe_key)
+  # TODO(crbug.com/799308): Remove this hack when bug is fixed.
+  assert suspect_key.pairs()[0]
+  assert suspect_key.pairs()[0][0]  # Name of the model.
+  assert suspect_key.pairs()[0][1]  # Id of the model.
+  suspect = ndb.Key(suspect_key.pairs()[0][0], suspect_key.pairs()[0][1]).get()
   assert suspect
 
   return {

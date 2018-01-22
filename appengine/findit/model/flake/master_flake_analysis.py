@@ -505,9 +505,11 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # The confidence in the suspected CL to have introduced the flakiness.
   confidence_in_culprit = ndb.FloatProperty(indexed=False)
 
+  # TODO(crbug.com/799308): Use KeyProperty instead.
   # The urlsafe key to a FlakeCulprit associated with the try job results.
   culprit_urlsafe_key = ndb.StringProperty(indexed=False)
 
+  # TODO(crbug.com/799308): Use KeyProperty instead.
   # A list of url-safe keys to FlakeCulprits identified by heuristic analysis.
   suspect_urlsafe_keys = ndb.StringProperty(repeated=True)
 

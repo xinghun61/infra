@@ -94,9 +94,15 @@ class ListFlakes(BaseHandler):
       data['end_date'] = end_date
 
     for master_flake_analysis in analyses:
-      culprit = (ndb.Key(
-          urlsafe=master_flake_analysis.culprit_urlsafe_key).get()
-                 if master_flake_analysis.culprit_urlsafe_key else None)
+      culprit = None
+      if master_flake_analysis.culprit_urlsafe_key:
+        culprit_key = ndb.Key(urlsafe=master_flake_analysis.culprit_urlsafe_key)
+        # TODO(crbug.com/799308): Remove this hack when bug is fixed.
+        assert culprit_key.pairs()[0]
+        assert culprit_key.pairs()[0][0]  # Name of the model.
+        assert culprit_key.pairs()[0][1]  # Id of the model.
+        culprit = ndb.Key(culprit_key.pairs()[0][1],
+                          culprit_key.pairs()[0][1]).get()
 
       data['master_flake_analyses'].append({
           'build_analysis_status':
