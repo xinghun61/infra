@@ -65,10 +65,6 @@ type cookRun struct {
 
 	systemAuth *AuthContext // used by kitchen itself for logdog, bigquery, git
 	recipeAuth *AuthContext // used by the recipe
-
-	// testRun is set to true during testing to instruct Kitchen not to try and
-	// send monitoring events.
-	testRun bool
 }
 
 // kitchenProperties defines the structure of "$kitchen" build property.
@@ -380,9 +376,6 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 
 // run runs the cook subcommmand and returns cook result.
 func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *build.BuildRunResult {
-	mon := Monitoring{}
-	mon.beginExecution(ctx)
-
 	fail := func(err error) *build.BuildRunResult {
 		return &build.BuildRunResult{InfraFailure: infraFailure(err)}
 	}
@@ -475,15 +468,6 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 
 	// Run the recipe.
 	result := c.ensureAndRunRecipe(ctx, env)
-
-	// Send our "build completed" monitoring event. If this fails, we will log
-	// the failure, but it is non-fatal.
-	mon.endExecution(ctx, result)
-	if !c.testRun {
-		if err := mon.SendBuildCompletedReport(ctx, c.systemAuth); err != nil {
-			log.Errorf(ctx, "Failed to send 'build completed' monitoring report: %s", err)
-		}
-	}
 
 	bootstrapSuccess = result.InfraFailure == nil
 	return result
