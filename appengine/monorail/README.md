@@ -7,12 +7,9 @@ If you wish to file a bug against Monorail itself, please do so in our
 [self-hosting tracker](https://bugs.chromium.org/p/monorail/issues/entry).
 We also discuss development of Monorail at `infra-dev@chromium.org`.
 
-
 # Getting started with Monorail development
 
 Here's how to run Monorail locally for development on any unix system (not under google3):
-
-
 
 1.  You need to [get the Chrome Infra depot_tools commands](https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up) to check out the source code and all its related dependencies and to be able to send changes for review.
 1.  Check out the Monorail source code
@@ -56,15 +53,11 @@ Here's how to run Monorail locally for development on any unix system (not under
 
 Here's how to run unit tests from the command-line:
 
-
-
 1.  `cd infra`
 1.  `./test.py test appengine/monorail`
 1.  Or, in the monorail directory, use `'make test'`
 
 Here's how to deploy a new version to an instance that has already been set up:
-
-
 
 1.  You need the master and replica databases set up on the Developer API console
 1.  Make sure that the app ID is correct in app.yaml.
@@ -82,8 +75,6 @@ Here's how to deploy a new version to an instance that has already been set up:
 1.  If you updated the prod schema, disconnect from the prod master DB so that command prompt is not left open in a terminal window.
 
 Here's an outline of what would be needed to set up a new Monorail instance:
-
-
 
 1.  Create new GAE apps for production and staging.
 1.  Configure GCP billing.
@@ -104,10 +95,7 @@ Here's an outline of what would be needed to set up a new Monorail instance:
 1.  Monorail does not not access any internal APIs, so no whitelisting is required.
 1.  For projects on code.google.com, coordinate with that team to set flags to do per-issue redirects from old project to new site.  As each project is imported, set it's moved-to field.
 
-
 ## Troubleshooting
-
-
 
 *   **<code>TypeError: connect() got an unexpected keyword argument 'charset'</code></strong>
 This error occurs when dev_appserver cannot find the MySQLdb library.  Try installing it via <code>sudo apt-get install python-mysqldb</code>.
@@ -115,3 +103,15 @@ This error occurs when dev_appserver cannot find the MySQLdb library.  Try insta
 This occurs when your mysql server is not running.  Check if it is running with ps aux | grep mysqld.  Start it up with <code>/etc/init.d/mysqld start </code>on linux, or just <code>mysqld</code>.
 *   dev_appserver says <strong><code>OSError: [Errno 24] Too many open files </code></strong>and then lists out all source files
 dev_appserver wants to reload source files that you have changed in the editor, however that feature does not seem to work well with multiple GAE modules and instances running in different processes.  The workaround is to control-C or <strong><code>kill</code></strong> the dev_appserver processes and restart them.
+
+## Supported browsers
+
+Monorail supports all versions of the following browsers released within the last 6 months:
+
+- Chrome (all platforms)
+- Edge
+- Firefox
+- Safari
+
+File browser compatability bugs
+[here](https://bugs.chromium.org/p/monorail/issues/entry?labels=Type-Defect,Priority-Medium,BrowserCompat).
