@@ -79,6 +79,7 @@ class AclTest(testing.AppengineTestCase):
 
     is_admin.return_value = True
     self.assertEqual(get_role('a'), Acl.WRITER)
+    self.assertEqual(get_role('non.existing'), None)
 
   @mock.patch('components.auth.is_admin', autospec=True)
   @mock.patch('components.auth.is_group_member', autospec=True)
@@ -104,6 +105,7 @@ class AclTest(testing.AppengineTestCase):
 
     is_admin.return_value = True
     self.assertTrue(has_any_of_roles('a', [Acl.WRITER]))
+    self.assertFalse(has_any_of_roles('non-existing', [Acl.WRITER]))
 
   @mock.patch('components.auth.is_admin', autospec=True)
   @mock.patch('components.auth.is_group_member', autospec=True)

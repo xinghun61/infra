@@ -695,7 +695,7 @@ class ApiTests(object):
     req = {
       'bucket': 'non-existent',
     }
-    self.call_api('get_bucket', req, status=404)
+    self.call_api('get_bucket', req, status=403)
 
   def test_get_bucket_with_auth_error(self):
     req = {

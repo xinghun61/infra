@@ -138,22 +138,24 @@ def get_role_async(bucket):
   """Returns the roles available for the current identity in |bucket|."""
   errors.validate_bucket_name(bucket)
 
+  _, bucket_cfg = yield config.get_bucket_async(bucket)
+  if not bucket_cfg:
+    raise ndb.Return(None)
+
   if auth.is_admin():
     raise ndb.Return(project_config_pb2.Acl.WRITER)
 
-  _, bucket_cfg = yield config.get_bucket_async(bucket)
   identity_str = auth.get_current_identity().to_bytes()
   # Roles are just numbers, and the higher the number goes the more permissions
   # the identity has. We exploit this here to get the single maximally
   # permissive role for the current identity.
   role = None
-  if bucket_cfg:
-    for rule in bucket_cfg.acls:
-      if rule.role <= role:
-        continue
-      if (rule.identity == identity_str or
-          (rule.group and auth.is_group_member(rule.group))):
-        role = rule.role
+  for rule in bucket_cfg.acls:
+    if rule.role <= role:
+      continue
+    if (rule.identity == identity_str or
+        (rule.group and auth.is_group_member(rule.group))):
+      role = rule.role
   raise ndb.Return(role)
 
 
@@ -165,19 +167,21 @@ def has_any_of_roles_async(bucket, roles):
   roles = set(roles)
   assert roles.issubset(project_config_pb2.Acl.Role.values())
 
+  _, bucket_cfg = yield config.get_bucket_async(bucket)
+  if not bucket_cfg:
+    raise ndb.Return(False)
+
   if auth.is_admin():
     raise ndb.Return(True)
 
-  _, bucket_cfg = yield config.get_bucket_async(bucket)
   identity_str = auth.get_current_identity().to_bytes()
-  if bucket_cfg:
-    for rule in bucket_cfg.acls:
-      if rule.role not in roles:
-        continue
-      if rule.identity == identity_str:
-        raise ndb.Return(True)
-      if rule.group and auth.is_group_member(rule.group):
-        raise ndb.Return(True)
+  for rule in bucket_cfg.acls:
+    if rule.role not in roles:
+      continue
+    if rule.identity == identity_str:
+      raise ndb.Return(True)
+    if rule.group and auth.is_group_member(rule.group):
+      raise ndb.Return(True)
   raise ndb.Return(False)
 
 

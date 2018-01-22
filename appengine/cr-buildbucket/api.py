@@ -644,8 +644,6 @@ class BuildBucketApi(remote.Service):
     if not acl.can_access_bucket(request.bucket):
       raise acl.current_identity_cannot('access bucket %s', request.bucket)
     bucket = config.Bucket.get_by_id(request.bucket)
-    if not bucket:
-      raise endpoints.NotFoundException('bucket %s not found' % request.bucket)
     return BucketMessage(
         name=request.bucket,
         project_id=bucket.project_id,
