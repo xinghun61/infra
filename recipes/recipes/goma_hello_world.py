@@ -84,7 +84,7 @@ def RunSteps(api):
     build_exit_status = e.retcode
     raise e
   finally:
-    api.goma.stop(ninja_log_exit_status=build_exit_status)
+    api.goma.stop(build_exit_status=build_exit_status)
 
   api.step('run', [out])
 
