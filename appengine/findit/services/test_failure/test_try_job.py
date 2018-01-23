@@ -89,7 +89,7 @@ def _GetStepsAndTests(failed_steps):
     return failed_steps_and_tests
 
   for step_name, step in failed_steps.iteritems():
-    for test_name in step.get('tests', [None]):
+    for test_name in (step.get('tests') or [None]):
       failed_steps_and_tests.append([step_name, test_name])
 
   return sorted(failed_steps_and_tests)
