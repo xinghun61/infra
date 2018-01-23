@@ -1,0 +1,102 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cp",
+      "gs://chromium-browser-official/chromium-65.0.3318.0.tar.xz",
+      "[START_DIR]/build_dir/chromium-65.0.3318.0.tar.xz"
+    ],
+    "infra_step": true,
+    "name": "gsutil download_url"
+  },
+  {
+    "cmd": [
+      "tar",
+      "-xJf",
+      "[START_DIR]/build_dir/chromium-65.0.3318.0.tar.xz",
+      "-C",
+      "[START_DIR]/build_dir"
+    ],
+    "name": "Extract tarball."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-65.0.3318.0/build/linux/sysroot_scripts/install-sysroot.py",
+      "--arch=amd64"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "name": "Download sysroot."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-65.0.3318.0/tools/clang/scripts/update.py",
+      "--if-needed",
+      "--without-android"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "name": "Download clang."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-65.0.3318.0/tools/gn/bootstrap/bootstrap.py",
+      "--gn-gen-args=is_debug=false enable_nacl=false"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "name": "Bootstrap gn."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/depot_tools/download_from_google_storage.py",
+      "--no_resume",
+      "--extract",
+      "--no_auth",
+      "--bucket",
+      "chromium-nodejs/8.9.1",
+      "-s",
+      "third_party/node/linux/node-linux-x64.tar.gz.sha1"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "name": "Download nodejs."
+  },
+  {
+    "cmd": [
+      "ninja",
+      "-C",
+      "out/Release",
+      "chrome/installer/linux"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "name": "Build chrome."
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/build_dir"
+    ],
+    "infra_step": true,
+    "name": "Cleaning build dir."
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
