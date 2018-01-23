@@ -1144,7 +1144,7 @@ def _call_api_async(
         impersonate=impersonated_identity,
         tags=delegation_tags,
     )
-  url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
+  url = 'https://%s/api/swarming/v1/%s' % (hostname, path)
   res = yield net.json_request_async(
       url,
       method=method,
