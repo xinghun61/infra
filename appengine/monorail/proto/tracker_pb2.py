@@ -8,6 +8,21 @@
 from protorpc import messages
 
 
+class ApprovalStatusDef(messages.Message):
+  """Definition of one approval status."""
+  status = messages.StringField(1, required=True)
+  is_strict = messages.BooleanField(3, default=False)
+
+
+class Approval(messages.Message):
+  """Holds all the current metadata about an approval."""
+  issue_id = messages.IntegerField(1, required=True)
+  field_id = messages.IntegerField(2, required=True)
+  status_id = messages.IntegerField(3)
+  setter_id = messages.IntegerField(4)
+  approver_ids = messages.IntegerField(5, repeated=True)
+
+
 class FieldValue(messages.Message):
   """Holds a single custom field value in an issue.
 
