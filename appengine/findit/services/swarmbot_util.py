@@ -15,8 +15,8 @@ from waterfall import swarming_util
 from waterfall.flake import flake_constants
 
 # Swarming URL templates.
-BOT_LIST_URL = 'https://%s/_ah/api/swarming/v1/bots/list%s'
-BOT_COUNT_URL = 'https://%s/_ah/api/swarming/v1/bots/count%s'
+BOT_LIST_URL = 'https://%s/api/swarming/v1/bots/list%s'
+BOT_COUNT_URL = 'https://%s/api/swarming/v1/bots/count%s'
 
 
 def GetCacheName(master, builder, suffix=""):

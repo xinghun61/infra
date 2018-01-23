@@ -66,11 +66,11 @@ NO_OUTPUT_JSON = 320
 UNKNOWN = 1000
 
 # Swarming URL templates.
-BOT_LIST_URL = 'https://%s/_ah/api/swarming/v1/bots/list%s'
-BOT_COUNT_URL = 'https://%s/_ah/api/swarming/v1/bots/count%s'
-NEW_TASK_URL = 'https://%s/_ah/api/swarming/v1/tasks/new'
-TASK_ID_URL = 'https://%s/_ah/api/swarming/v1/task/%s/request'
-TASK_RESULT_URL = 'https://%s/_ah/api/swarming/v1/task/%s/result'
+BOT_LIST_URL = 'https://%s/api/swarming/v1/bots/list%s'
+BOT_COUNT_URL = 'https://%s/api/swarming/v1/bots/count%s'
+NEW_TASK_URL = 'https://%s/api/swarming/v1/tasks/new'
+TASK_ID_URL = 'https://%s/api/swarming/v1/task/%s/request'
+TASK_RESULT_URL = 'https://%s/api/swarming/v1/task/%s/result'
 
 DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS = 5
 DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS = 0.1
@@ -250,7 +250,7 @@ def ListSwarmingTasksDataByTags(master_name,
       ...
     }, ...])
   """
-  base_url = ('https://%s/_ah/api/swarming/v1/tasks/'
+  base_url = ('https://%s/api/swarming/v1/tasks/'
               'list?tags=%s&tags=%s&tags=%s') % (
                   waterfall_config.GetSwarmingSettings().get('server_host'),
                   urllib.quote('master:%s' % master_name),
@@ -418,7 +418,7 @@ def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
           'namespace': isolated_data['namespace']
       }
   }
-  url = '%s/_ah/api/isolateservice/v1/retrieve' % (
+  url = '%s/api/isolateservice/v1/retrieve' % (
       isolated_data['isolatedserver'])
 
   return SendRequestToServer(url, http_client, post_data)
@@ -577,7 +577,7 @@ def DimensionsToQueryString(dimensions):
   else:
     dimension_list = dimensions
   dimension_qs = '&dimensions='.join(dimension_list)
-  # Url looks like 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/bots
+  # Url looks like 'https://chromium-swarm.appspot.com/api/swarming/v1/bots
   # /count?dimensions=os:Windows-7-SP1&dimensions=cpu:x86-64'
   return '?dimensions=%s' % dimension_qs
 

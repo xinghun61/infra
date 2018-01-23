@@ -57,7 +57,7 @@ class SwarmingHttpClient(RetryHttpClient):
     if builder_name == 'download_failed':
       return
 
-    url = ('https://%s/_ah/api/swarming/v1/tasks/'
+    url = ('https://%s/api/swarming/v1/tasks/'
            'list?tags=%s&tags=%s&tags=%s') % (
                FinditConfig().Get().swarming_settings.get('server_host'),
                urllib.quote('master:%s' % master_name),
@@ -80,7 +80,7 @@ class SwarmingHttpClient(RetryHttpClient):
     self.get_responses[cursor_url] = json.dumps(cursor_swarming_data)
 
   def _SetResponseForGetRequestSwarmingResult(self, task_id):
-    url = ('https://%s/_ah/api/swarming/v1/task/%s/result') % (
+    url = ('https://%s/api/swarming/v1/task/%s/result') % (
         FinditConfig().Get().swarming_settings.get('server_host'), task_id)
 
     response = self._GetData('task')
@@ -176,8 +176,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         'pubsub_userdata': None,
     }
     task_id = '1'
-    url = ('https://chromium-swarm.appspot.com/'
-           '_ah/api/swarming/v1/task/%s/request' % task_id)
+    url = ('https://chromium-swarm.appspot.com/api/swarming/v1/task/%s/request'
+        % task_id)
     self.logged_http_client.SetResponse('get', url,
                                         json.dumps(task_request_json), 200)
 
@@ -215,7 +215,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     request.inputs_ref = {'isolated': 'i'}
     request.io_timeout_secs = 3
 
-    url = 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
+    url = 'https://chromium-swarm.appspot.com/api/swarming/v1/tasks/new'
     self.logged_http_client.SetResponse('post', url,
                                         json.dumps({
                                             'task_id': '1'
