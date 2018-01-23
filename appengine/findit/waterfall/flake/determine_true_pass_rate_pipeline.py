@@ -83,17 +83,16 @@ def _GetSwarmingTaskErrorCode(analysis, flake_swarming_task,
   return None
 
 
-def _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis):
+def _UpdateAnalysisWithSwarmingTaskError(analysis):
   # Report the last flake swarming task's error that it encountered.
-  logging.error('Error in Swarming task %s', flake_swarming_task)
-
-  error = flake_swarming_task.error or {
+  error = {
       'error': 'Swarming task failed',
       'message': 'The last swarming task did not complete as expected'
   }
-
   analysis.Update(
       status=analysis_status.ERROR, error=error, end_time=time_util.GetUTCNow())
+
+  # Send error to monitoring.
   duration = analysis.end_time - analysis.start_time
   monitoring.analysis_durations.add(duration.total_seconds(), {
       'type': 'flake',
@@ -122,15 +121,12 @@ def _GetTimeoutForTask(analysis, timeout_per_test, iterations_for_task):
                  flake_constants.DEFAULT_TIMEOUT_PER_SWARMING_TASK_SECONDS))
 
 
-def _CalculateRunParametersForSwarmingTask(analysis, build_number,
-                                           swarming_error_code):
+def _CalculateRunParametersForSwarmingTask(analysis, build_number):
   """Calculates and returns the iterations and timeout for swarming tasks
 
   Args:
     analysis (MasterFlakeAnalysis): The analysis in progress.
     build_number (int): The current build number being analyzed.
-    swarming_error_code (int): The error code of the previously-run swarming
-        task at this build number. Can be None if no error was encountered.
 
   Returns:
       ((int) iterations, (int) timeout) Tuple containing the iterations to run
@@ -144,7 +140,7 @@ def _CalculateRunParametersForSwarmingTask(analysis, build_number,
   time_for_task_seconds = _GetTimeoutForTask(analysis, timeout_per_test,
                                              iterations_for_task)
 
-  if swarming_error_code == swarming_util.TIMED_OUT:
+  if analysis.swarming_task_attempts_for_build > 0:
     # If the previous run timed out, run a smaller, fixed number of
     # iterations so the next attempt is more likely to finish.
     # TODO(crbug.com/772509): Task results may still be salvaged even in case
@@ -225,14 +221,6 @@ class DetermineTruePassRatePipeline(BasePipeline):
           'Max iterations reached for build number %d' % build_number)
       return
 
-    flake_swarming_task = FlakeSwarmingTask.Get(
-        analysis.master_name, analysis.builder_name, build_number,
-        analysis.step_name, analysis.test_name)
-
-    # Only get the error code if looking at tasks this pipeline has executed.
-    swarming_error_code = _GetSwarmingTaskErrorCode(
-        analysis, flake_swarming_task, previous_pass_rate)
-
     # If there are too many swarming tasks that fail for a certain build_number
     # bail out completely.
     max_swarming_retries_per_build = (analysis.algorithm_parameters.get(
@@ -240,16 +228,18 @@ class DetermineTruePassRatePipeline(BasePipeline):
         flake_constants.MAX_SWARMING_TASK_RETRIES_PER_BUILD))
     if (analysis.swarming_task_attempts_for_build >=
         max_swarming_retries_per_build):
-      assert flake_swarming_task
-      _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis)
+      _UpdateAnalysisWithSwarmingTaskError(analysis)
+
+      # Still update the bug.
       update_flake_bug_pipeline = UpdateFlakeBugPipeline(analysis_urlsafe_key)
       update_flake_bug_pipeline.target = appengine_util.GetTargetNameForModule(
           constants.WATERFALL_BACKEND)
       update_flake_bug_pipeline.start(queue_name=self.queue_name or
                                       constants.DEFAULT_QUEUE)
-      analysis.LogError('Swarming task %s ended in error after %d attempts.' %
-                        (flake_swarming_task,
-                         analysis.swarming_task_attempts_for_build))
+      analysis.LogError('Swarming task ended in error after %d attempts.' %
+                        analysis.swarming_task_attempts_for_build)
+
+      # Finally, abort the pipeline.
       raise pipeline.Abort()
 
     analysis.LogInfo(
@@ -269,7 +259,7 @@ class DetermineTruePassRatePipeline(BasePipeline):
 
     (iterations_for_task,
      time_for_task_seconds) = _CalculateRunParametersForSwarmingTask(
-         analysis, build_number, swarming_error_code)
+         analysis, build_number)
 
     analysis.LogInfo('Running %d iterations with a %d second timeout' %
                      (iterations_for_task, time_for_task_seconds))

@@ -10,6 +10,7 @@ from monorail_api import IssueTrackerAPI
 
 from gae_libs.pipeline_wrapper import BasePipeline
 
+from libs import analysis_status
 from services.flake_failure import issue_tracking_service
 from common import monitoring
 
@@ -75,7 +76,7 @@ def _LogBugNotUpdated(reason):
 
 
 def _ShouldUpdateBugForAnalysis(analysis):
-  if analysis.error:
+  if analysis.status == analysis_status.ERROR:
     _LogBugNotUpdated('error in analysis: %s' % analysis.error.get('message'))
     monitoring.flake_analyses.increment({
         'result': 'culprit-not-identified',

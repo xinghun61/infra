@@ -155,8 +155,12 @@ class UpdateFlakeAnalysisDataPointsPipeline(BasePipeline):
     assert flake_swarming_task
 
     if flake_swarming_task.status == analysis_status.ERROR:
-      flake_analysis.LogWarning(
-          'Swarming task failed, will not update data points')
+      flake_analysis.swarming_task_attempts_for_build += 1
+      flake_analysis.put()
+      flake_analysis.LogInfo(
+          'Swarming task failed, will not update data points.'
+          ' Analysis has %d errors' %
+          flake_analysis.swarming_task_attempts_for_build)
       return
 
     logging.info(
