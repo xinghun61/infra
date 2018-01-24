@@ -96,33 +96,45 @@ CTF_CAN_FILE_BUGS_FOR_TESTS = (
     'https://goo.gl/QJKXV4.')
 STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
-KNOWN_TROOPER_FLAKE_NAMES = [
-    'analyze', 'bot_update', 'compile (with patch)', 'compile',
-    'device_status_check', 'gclient (with patch)', 'Patch',
-    'process_dumps', 'provision_devices', 'update_scripts', 'taskkill',
-    'commit-git-patch']
+
+# Step flakes are excluded if they are not in this whitelist.
+# Additional rules for non-trivial cases are in the CreateFlakyRun.post method.
+KNOWN_INFRA_STEPS_NAMES = [
+    # Intentionally ignore "analyze" as below, because flakes are quite rare
+    # and most likely caused by some breakage in the tree, see
+    # http://crbug.com/725802 for more details.
+    'bot_update',
+    'commit-git-patch',
+    'compile (with patch)', 'compile',
+    'device_status_check',
+    'ensure_goma',
+    'extract build',
+    'find isolated tests',
+    'gclient (with patch)', 'gclient',
+    'gclient runhooks (with patch)', 'gclient runhooks',
+    'isolate tests',
+    'LogDog Bootstrap',
+    'LUCI Migration',
+    'Patch',
+    'preprocess_for_goma', 'postprocess_for_goma',
+    'process_dumps',
+    'provision_devices',
+    'setup_build',
+    'taskkill',
+    'update_scripts',
+]
 
 # Flakes in these steps are always ignored:
-#  - steps: always red when any other step is red (duplicates failure)
-#  - presubmit: typically red due to missing OWNERs LGTM, not a flake
-#  - recipe failure reason: always red when build fails (not a failure)
-#  - test results: always red when another step is red (not a failure)
-#  - Uncaught Exception: summary step referring to an exception in another
-#    step (duplicates failure)
-#  - Failure reason: similar to 'recipe failure reason'
-#  - analyze: because flakes are quite rare and most likely caused by some
-#    breakage in the tree, see http://crbug.com/725802 for more details.
-# There are additional rules for non-trivial cases in the FlakyRun.post method.
 IGNORED_STEPS = ['steps', 'presubmit', 'recipe failure reason', 'test results',
                  'Uncaught Exception', 'Failure reason', 'analyze']
 
 
-def is_trooper_flake(flake_name):
-  return flake_name in KNOWN_TROOPER_FLAKE_NAMES
+def is_infra_step_flake(flake_name):
+  return flake_name in KNOWN_INFRA_STEPS_NAMES
 
 
 def get_queue_details(flake_name):
-  if is_trooper_flake(flake_name):
+  if is_infra_step_flake(flake_name):
     return 'Trooper Bug Queue', 'Infra-Troopers'
   else:
     return 'Sheriff Bug Queue', 'Sheriff-Chromium'
@@ -375,7 +387,7 @@ class ProcessIssue(webapp2.RequestHandler):
   def _create_issue(self, api, flake, new_flakes, now):
     _, qlabel = get_queue_details(flake.name)
     labels = ['Type-Bug', 'Pri-1', 'Via-TryFlakes', qlabel]
-    if is_trooper_flake(flake.name):
+    if is_infra_step_flake(flake.name):
       other_queue_msg = TROOPER_QUEUE_MSG
     else:
       other_queue_msg = SHERIFF_QUEUE_MSG
@@ -791,6 +803,8 @@ class CreateFlakyRun(webapp2.RequestHandler):
         continue
       flakes, is_step = self.get_flakes(
           master, patchset_builder_runs.builder, failure_run.buildnumber, step)
+      if is_step and not is_infra_step_flake(step_name):
+        continue  # Ignore flakes of non-infra steps.
       for flake in flakes:
         flake_occurrence = FlakeOccurrence(name=step_name, failure=flake)
         flaky_run.flakes.append(flake_occurrence)

@@ -66,7 +66,10 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
     # Simple case.
     {'results': [2], 'name': 'foo1', 'text': ['bar1']},
 
-    # Invalid test results.
+    # Infra step.
+    {'results': [2], 'name': 'update_scripts', 'text': ['bar1']},
+
+    # Ignore test steps with invalid test results.
     {'results': [2], 'name': 'foo2', 'text': ['TEST RESULTS WERE INVALID']},
 
     # Ignore non-success non-failure results (7 is TRY_PENDING).
@@ -108,9 +111,7 @@ TEST_BUILDBOT_JSON_REPLY = json.dumps({
 EXPECTED_FLAKES = set([
     ('foo1', 'test2.a'),
     ('foo1', 'test2.d'),
-    ('foo2', 'foo2'),
-    ('foo8 xx (with patch)', 'foo8 (with patch)'),
-    ('Patch failure', 'Patch'),
+    ('update_scripts', 'update_scripts'),
 ])
 
 
@@ -987,10 +988,10 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
         mock.Mock(status_code=200, content=TEST_BUILDBOT_JSON_REPLY),
         # JSON results for step "foo1".
         mock.Mock(status_code=200, content=TEST_TEST_RESULTS_REPLY),
-        # JSON results for step "Patch failure".
+        # JSON results for step "Patch failure". Should not report as flake.
         mock.Mock(status_code=404),
         # For step "foo8 xx (with patch)", something failed while parsing JSON,
-        # step text ("bar13") should be reported as flake.
+        # step text ("bar13") should not be reported as flake.
         Exception(),
     ])
 
@@ -1001,7 +1002,7 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
 
     # We also create one Flake to test that it is correctly updated. Other Flake
     # entities will be created automatically.
-    Flake(id='foo2', name='foo2', occurrences=[],
+    Flake(id='update_scripts', name='update_scripts', occurrences=[],
           last_time_seen=datetime.datetime.min).put()
 
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
@@ -1030,6 +1031,10 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
         'buildnumber=100'),
       mock.call(
         'https://test-results.appspot.com/testfile?builder=test-builder&'
+        'name=full_results.json&master=test.master&testtype=update_scripts&'
+        'buildnumber=100'),
+      mock.call(
+        'https://test-results.appspot.com/testfile?builder=test-builder&'
         'name=full_results.json&master=test.master&testtype=Patch&'
         'buildnumber=100'),
       mock.call(
@@ -1054,7 +1059,7 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     for flake in flakes:
       self.assertEqual(flake.occurrences, [flaky_run.key])
 
-  def test_records_step_as_a_flake_when_too_many_tests_fail(self):
+  def test_not_record_step_as_a_flake_when_too_many_tests_fail(self):
     now = datetime.datetime.utcnow()
     br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
     urlfetch_mock = mock.Mock(side_effect = [
@@ -1081,11 +1086,7 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
                           'success_run_key': br_s.urlsafe()})
 
     flaky_runs = FlakyRun.query().fetch(100)
-    self.assertEqual(len(flaky_runs), 1)
-    flaky_run = flaky_runs[0]
-    self.assertEqual(len(flaky_run.flakes), 1)
-    self.assertEqual(flaky_run.flakes[0].name, 'test-step')
-    self.assertEqual(flaky_run.flakes[0].failure, 'test-step')
+    self.assertEqual(len(flaky_runs), 0)
 
   def test_returns_500_for_all_fetch_failures(self):
     now = datetime.datetime.utcnow()
@@ -1118,7 +1119,7 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     urlfetch_mock = self._create_urlfetch_mock()
 
     # We store one flake with invalid is_step value to make sure it is updated.
-    Flake(id='foo2', name='foo2', is_step=False,
+    Flake(id='update_scripts', name='update_scripts', is_step=False,
           last_time_seen=datetime.datetime.min).put()
 
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
@@ -1128,9 +1129,10 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
 
     self.assertFalse(Flake.get_by_id('test2.a').is_step)
     self.assertFalse(Flake.get_by_id('test2.d').is_step)
-    self.assertTrue(Flake.get_by_id('foo2').is_step)
-    self.assertTrue(Flake.get_by_id('foo8 (with patch)').is_step)
-    self.assertTrue(Flake.get_by_id('Patch').is_step)
+    self.assertTrue(Flake.get_by_id('update_scripts').is_step)
+    self.assertIsNone(Flake.get_by_id('foo2'))
+    self.assertIsNone(Flake.get_by_id('foo8 (with patch)'))
+    self.assertIsNone(Flake.get_by_id('Patch'))
 
   def test_does_not_create_empty_flaky_runs(self):
     now = datetime.datetime.utcnow()
