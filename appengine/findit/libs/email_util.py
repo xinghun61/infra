@@ -7,6 +7,9 @@ def ObscureEmails(emails, domains):
   """Obscures the given emails that are in the given domains."""
   obscured_emails = []
   for email in emails:
+    if not email:
+      obscured_emails.append(email)
+      continue
     parts = email.split('@', 2)
     if len(parts) < 2 or parts[1] in domains:
       # For any whitelisted App Engine service account, keep it as is.

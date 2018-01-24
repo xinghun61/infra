@@ -12,11 +12,13 @@ class EmailUtilTest(unittest.TestCase):
   def testObscureEmails(self):
     emails = [
         'id', 'test@google.com',
-        'chromium-try-flakes@appspot.gserviceaccount.com'
+        'chromium-try-flakes@appspot.gserviceaccount.com',
+        '', None
     ]
     domains = 'google.com'
     expected_emails = [
         'xx', 'xxxx@google.com',
-        'chromium-try-flakes@appspot.gserviceaccount.com'
+        'chromium-try-flakes@appspot.gserviceaccount.com',
+        '', None
     ]
     self.assertEqual(expected_emails, email_util.ObscureEmails(emails, domains))
