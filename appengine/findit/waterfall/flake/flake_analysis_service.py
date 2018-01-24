@@ -229,8 +229,21 @@ def ScheduleAnalysisForFlake(request,
   trigger_action = 'manual' if manually_triggered else 'auto'
   flake_source = 'cq' if request.on_cq else 'waterfall'
 
+  # crbug.com/804912: temporarily bail out for android and fuchsia.
+  build_steps = []
   for build_step in request.build_steps:
     step_mapper.FindMatchingWaterfallStep(build_step, request.name)
+    if build_step.has_matching_waterfall_step and (
+        'android' in build_step.wf_master_name.lower() or
+        'android' in build_step.wf_builder_name.lower() or
+        'fuchsia' in build_step.wf_builder_name.lower()):
+      continue
+    build_steps.append(build_step)
+  request.build_steps = build_steps
+  if not request.build_steps:
+    logging.info('Flake %s on android/fuchsia temporarily unsupported.',
+                 request.name)
+    return None
 
   version_number, build_step = _CheckForNewAnalysis(request, rerun)
   if version_number and build_step:
