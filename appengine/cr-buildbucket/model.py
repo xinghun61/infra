@@ -176,6 +176,7 @@ class Build(ndb.Model):
 
   swarming_hostname = ndb.StringProperty()
   swarming_task_id = ndb.StringProperty()
+  service_account = ndb.StringProperty()
 
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""

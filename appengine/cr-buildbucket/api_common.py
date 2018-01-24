@@ -37,6 +37,7 @@ class BuildMessage(messages.Message):
   canary = messages.BooleanField(22)
   project = messages.StringField(23)
   experimental = messages.BooleanField(24)
+  service_account = messages.StringField(25)
 
 
 def datetime_to_timestamp_safe(value):
@@ -75,6 +76,7 @@ def build_to_message(build, include_lease_key=False):
       canary=build.canary,
       project=build.project,
       experimental=build.experimental,
+      service_account=build.service_account,
       # when changing this function, make sure build_to_dict would still work
   )
   if build.lease_expiration_date is not None:

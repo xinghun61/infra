@@ -36,12 +36,27 @@ class ApiCommonTests(testing.AppengineTestCase):
     msg = api_common.build_to_message(self.test_build)
     self.assertEqual(msg.lease_expiration_ts, yesterday_timestamp)
 
-  def test_build_to_dict(self):
+  def test_build_to_dict_empty(self):
+    expected = {
+      'bucket': 'chromium',
+      'created_ts': '1483228800000000',
+      'id': '1',
+      'parameters_json': json.dumps({'buildername': 'linux_rel'}),
+      'result_details_json': 'null',
+      'status': 'SCHEDULED',
+      'tags': [],
+      'utcnow_ts': '1483228800000000',
+      'canary_preference': 'AUTO',
+    }
+    self.assertEqual(expected, api_common.build_to_dict(self.test_build))
+
+  def test_build_to_dict_full(self):
     self.test_build.start_time = datetime.datetime(2017, 1, 2)
     self.test_build.complete_time = datetime.datetime(2017, 1, 2)
     self.test_build.status = model.BuildStatus.COMPLETED
     self.test_build.result = model.BuildResult.SUCCESS
     self.test_build.result_details = {'result': 'nice'}
+    self.test_build.service_account = 'robot@example.com'
     expected = {
       'bucket': 'chromium',
       'completed_ts': '1483315200000000',
@@ -55,5 +70,6 @@ class ApiCommonTests(testing.AppengineTestCase):
       'tags': [],
       'utcnow_ts': '1483228800000000',
       'canary_preference': 'AUTO',
+      'service_account': 'robot@example.com',
     }
     self.assertEqual(expected, api_common.build_to_dict(self.test_build))

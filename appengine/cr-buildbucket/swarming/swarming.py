@@ -710,6 +710,8 @@ def create_task_async(build):
   for d in task_req.get('properties', {}).get('dimensions', []):
     build.tags.append('swarming_dimension:%s:%s' % (d['key'], d['value']))
 
+  build.service_account = task_req.get('service_account')
+
   # Mark the build as leased.
   assert 'expiration_secs' in task_def, task_def
   # task_def['expiration_secs'] is max time for the task to be pending

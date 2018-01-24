@@ -399,7 +399,8 @@ class SwarmingTest(BaseTest):
           'recipe_name:recipe',
           'recipe_repository:https://example.com/repo',
           'recipe_revision:HEAD',
-        ]
+        ],
+        'service_account': 'robot@example.com',
       }
     }
 
@@ -522,6 +523,8 @@ class SwarmingTest(BaseTest):
         build.url,
         ('https://milo.example.com'
          '/p/chromium/builders/luci.chromium.try/linux_chromium_rel_ng/1'))
+
+    self.assertEqual(build.service_account, 'robot@example.com')
 
     # Test delegation token params.
     self.assertEqual(auth.delegate_async.mock_calls, [mock.call(
