@@ -24,6 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   serialized_pb=_b('\n\x0c\x61\x63\x63\x65ss.proto\x12\x06\x61\x63\x63\x65ss\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xc3\x04\n\x13\x44\x65scriptionResponse\x12\x42\n\tresources\x18\x01 \x03(\x0b\x32/.access.DescriptionResponse.ResourceDescription\x1a\xe7\x03\n\x13ResourceDescription\x12\x0c\n\x04kind\x18\x01 \x01(\t\x12\x0f\n\x07\x63omment\x18\x02 \x01(\t\x12M\n\x07\x61\x63tions\x18\x03 \x03(\x0b\x32<.access.DescriptionResponse.ResourceDescription.ActionsEntry\x12I\n\x05roles\x18\x04 \x03(\x0b\x32:.access.DescriptionResponse.ResourceDescription.RolesEntry\x1a\x19\n\x06\x41\x63tion\x12\x0f\n\x07\x63omment\x18\x01 \x01(\t\x1a\x30\n\x04Role\x12\x17\n\x0f\x61llowed_actions\x18\x01 \x03(\t\x12\x0f\n\x07\x63omment\x18\x02 \x01(\t\x1a\x66\n\x0c\x41\x63tionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x45\n\x05value\x18\x02 \x01(\x0b\x32\x36.access.DescriptionResponse.ResourceDescription.Action:\x02\x38\x01\x1a\x62\n\nRolesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x43\n\x05value\x18\x02 \x01(\x0b\x32\x34.access.DescriptionResponse.ResourceDescription.Role:\x02\x38\x01\"F\n\x17PermittedActionsRequest\x12\x15\n\rresource_kind\x18\x01 \x01(\t\x12\x14\n\x0cresource_ids\x18\x02 \x03(\t\"\xa4\x02\n\x18PermittedActionsResponse\x12\x42\n\tpermitted\x18\x01 \x03(\x0b\x32/.access.PermittedActionsResponse.PermittedEntry\x12\x34\n\x11validity_duration\x18\x02 \x01(\x0b\x32\x19.google.protobuf.Duration\x1a&\n\x13ResourcePermissions\x12\x0f\n\x07\x61\x63tions\x18\x01 \x03(\t\x1a\x66\n\x0ePermittedEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x43\n\x05value\x18\x02 \x01(\x0b\x32\x34.access.PermittedActionsResponse.ResourcePermissions:\x02\x38\x01\x32\xa7\x01\n\x06\x41\x63\x63\x65ss\x12W\n\x10PermittedActions\x12\x1f.access.PermittedActionsRequest\x1a .access.PermittedActionsResponse\"\x00\x12\x44\n\x0b\x44\x65scription\x12\x16.google.protobuf.Empty\x1a\x1b.access.DescriptionResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_duration__pb2.DESCRIPTOR,google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,])
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
 
@@ -411,7 +412,6 @@ _PERMITTEDACTIONSRESPONSE.fields_by_name['validity_duration'].message_type = goo
 DESCRIPTOR.message_types_by_name['DescriptionResponse'] = _DESCRIPTIONRESPONSE
 DESCRIPTOR.message_types_by_name['PermittedActionsRequest'] = _PERMITTEDACTIONSREQUEST
 DESCRIPTOR.message_types_by_name['PermittedActionsResponse'] = _PERMITTEDACTIONSRESPONSE
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 DescriptionResponse = _reflection.GeneratedProtocolMessageType('DescriptionResponse', (_message.Message,), dict(
 
