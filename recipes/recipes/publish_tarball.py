@@ -238,6 +238,12 @@ def RunSteps(api):
         'chromium-%s.tar.xz' % version,
         'chromium-%s.tar.xz' % version)
 
+    # Trigger a tarball build now that the full tarball has been uploaded.
+    api.trigger({
+        'builder_name': 'Build From Tarball',
+        'properties': {'version': version},
+    })
+
     # Export test data.
     export_tarball(
         api,

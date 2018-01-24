@@ -304,6 +304,21 @@
     "name": "rmtree temp dir"
   },
   {
+    "cmd": [],
+    "name": "trigger",
+    "trigger_specs": [
+      {
+        "builder_name": "Build From Tarball",
+        "properties": {
+          "version": "38.0.2125.122"
+        }
+      }
+    ],
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Build From Tarball@@@"
+    ]
+  },
+  {
     "cmd": [
       "python",
       "-u",
