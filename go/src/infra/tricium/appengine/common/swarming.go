@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	swarmingBasePath      = "/_ah/api/swarming/v1/"
+	swarmingBasePath      = "/api/swarming/v1/"
 	swarmingDevServerURL  = "https://chromium-swarm-dev.appspot.com"
 	swarmingProdServerURL = "https://chromium-swarm.appspot.com"
 )
