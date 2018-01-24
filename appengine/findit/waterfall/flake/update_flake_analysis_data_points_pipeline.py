@@ -71,9 +71,10 @@ def _UpdateAnalysisDataPointsWithSwarmingTask(flake_swarming_task,
          flake_swarming_task.started_time).total_seconds())
 
     existing_data_point.task_ids.append(flake_swarming_task.task_id)
-    existing_data_point.pass_rate = (old_pass_rate * old_iterations +
-                                     incoming_pass_rate * incoming_iterations
-                                    ) / (old_iterations + incoming_iterations)
+    existing_data_point.pass_rate = (
+        old_pass_rate * old_iterations +
+        incoming_pass_rate * incoming_iterations) / (
+            old_iterations + incoming_iterations)
     existing_data_point.iterations = old_iterations * incoming_iterations
     existing_data_point.elapsed_seconds = (
         old_elapsed_seconds + incoming_elapsed_seconds)
@@ -83,8 +84,8 @@ def _UpdateAnalysisDataPointsWithSwarmingTask(flake_swarming_task,
     build_number = flake_swarming_task.build_number
 
     # Include git information about each build that was run.
-    build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                         build_number)
+    _, build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                            build_number)
 
     if not build_info:
       raise pipeline.Retry('Failed to get build info for %s/%s/%s' %
@@ -94,8 +95,8 @@ def _UpdateAnalysisDataPointsWithSwarmingTask(flake_swarming_task,
     git_hash = build_info.chromium_revision
 
     if build_number > 0:
-      previous_build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                                    build_number - 1)
+      _, previous_build_info = build_util.GetBuildInfo(
+          master_name, builder_name, build_number - 1)
       if not previous_build_info:
         raise pipeline.Retry('Failed to get build info for %s/%s/%s' %
                              (master_name, builder_name, build_number - 1))

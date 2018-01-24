@@ -246,8 +246,8 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
 
           start_revision = blamed_cls[start_commit_position]
           remaining_suspected_commit_positions = suspected_commit_positions[1:]
-          build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                               triggering_build_number)
+          _, build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                  triggering_build_number)
           parent_mastername = build_info.parent_mastername or master_name
           parent_buildername = build_info.parent_buildername or builder_name
           cache_name = swarmbot_util.GetCacheName(

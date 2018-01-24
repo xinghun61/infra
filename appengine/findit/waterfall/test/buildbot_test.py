@@ -34,7 +34,7 @@ class BuildBotTest(unittest.TestCase):
     self.stdout_stream = 'stdout_stream'
     self.step_metadata_stream = 'step_metadata_stream'
 
-  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=None)
+  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=(404, None))
   def testFailToGetRecentCompletedBuilds(self, _):
     self.assertEqual([], buildbot.GetRecentCompletedBuilds('m', 'b', _))
 
@@ -73,7 +73,7 @@ class BuildBotTest(unittest.TestCase):
 
     data = {'data': base64.b64encode(compressed_file.getvalue())}
     compressed_file.close()
-    mock_fn.return_value = json.dumps(data)
+    mock_fn.return_value = (200, json.dumps(data))
     self.assertEqual([34, 33, 32],
                      buildbot.GetRecentCompletedBuilds('m', 'b',
                                                        RetryHttpClient()))
@@ -186,12 +186,12 @@ class BuildBotTest(unittest.TestCase):
     build_number = 1
 
     response = {'data': base64.b64encode('response')}
-    mock_fn.return_value = json.dumps(response)
+    mock_fn.return_value = (200, json.dumps(response))
 
-    self.assertEqual('response',
-                     buildbot.GetBuildDataFromMilo(master_name, builder_name,
-                                                   build_number,
-                                                   self.http_client))
+    self.assertEqual(
+        (200, 'response'),
+        buildbot.GetBuildDataFromMilo(master_name, builder_name, build_number,
+                                      self.http_client))
 
   def testGetBuildProperty(self):
     properties = [
@@ -419,7 +419,9 @@ class BuildBotTest(unittest.TestCase):
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetBuildInfo(self, mock_fn):
+    mock_fn.return_value = (200, 'data')
     with mock.patch.object(buildbot, 'ParseBuildUrl') as mock_parse:
       mock_parse.return_value = ('m', 'b', 1)
-      buildbot.GetBuildInfo('fake_url', 'fake_http_client')
+      build_info = buildbot.GetBuildInfo('fake_url', 'fake_http_client')
       self.assertIn('buildbot', mock_fn.call_args[0][1])
+      self.assertEqual('data', build_info)

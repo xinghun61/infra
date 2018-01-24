@@ -127,8 +127,8 @@ def _GetMasterJsonData(http_client,
       'name': master_name,
       'exclude_deprecated': True,
   }
-  response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_MASTER, req,
-                                            http_client)
+  _, response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_MASTER, req,
+                                               http_client)
 
   return _ProcessMiloData(response_json, master_name, builder_name,
                           build_number)
@@ -265,10 +265,10 @@ def GetBuildDataFromMilo(master_name, builder_name, build_number, http_client):
       'buildNum': build_number,
       'exclude_deprecated': True,
   }
-  response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_BUILD, data,
-                                            http_client)
-  return _ProcessMiloData(response_json, master_name, builder_name,
-                          str(build_number))
+  status_code, response_json = rpc_util.DownloadJsonData(
+      _MILO_ENDPOINT_BUILD, data, http_client)
+  return status_code, _ProcessMiloData(response_json, master_name, builder_name,
+                                       str(build_number))
 
 
 def GetStepResult(step_data_json):
@@ -400,5 +400,6 @@ def GetBuildInfo(build, http_client):
           'buildNumber': build_number
       }
   }
-  return rpc_util.DownloadJsonData(_MILO_BUILDINFO_ENDPOINT, request,
-                                   http_client)
+  _, build_info = rpc_util.DownloadJsonData(_MILO_BUILDINFO_ENDPOINT, request,
+                                            http_client)
+  return build_info

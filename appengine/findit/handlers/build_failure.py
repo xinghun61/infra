@@ -321,8 +321,8 @@ def _PrepareTryJobDataForCompileFailure(analysis):
   try_job_data['url'] = result.get('url')
   try_job_data['completed'] = try_job.completed
   try_job_data['failed'] = try_job.failed
-  try_job_data['culprit'] = result.get('culprit',
-                                       {}).get(constants.COMPILE_STEP_NAME)
+  try_job_data['culprit'] = result.get('culprit', {}).get(
+      constants.COMPILE_STEP_NAME)
 
   return try_job_data
 
@@ -360,8 +360,8 @@ def _GetAllSuspectedCLsAndCheckStatus(master_name, builder_name, build_number,
     if build:
       cl['status'] = build['status']
       cl['confidence'] = '%d%%' % (
-          suspected_cl_util.GetSuspectedCLConfidenceScore(confidences, build)
-          or 0)
+          suspected_cl_util.GetSuspectedCLConfidenceScore(confidences, build) or
+          0)
 
   return suspected_cls
 
@@ -504,7 +504,8 @@ class BuildFailure(BaseHandler):
       # Only allow admin to force a re-run and set the build_completed.
       force = is_admin and self.request.get('force') == '1'
 
-      build = build_util.GetBuildInfo(master_name, builder_name, build_number)
+      _, build = build_util.GetBuildInfo(master_name, builder_name,
+                                         build_number)
       if not build:
         return BaseHandler.CreateError(
             'Can\'t get information about build "%s/%s/%s".' %

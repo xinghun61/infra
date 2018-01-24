@@ -24,7 +24,7 @@ from waterfall.test import wf_testcase
 def _MockedGetBuildInfo(master_name, builder_name, build_number):
   build = BuildInfo(master_name, builder_name, build_number)
   build.commit_position = (build_number + 1) * 10
-  return build
+  return 200, build
 
 
 class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
@@ -123,8 +123,9 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         4: _CommitPositionRange(41, 50),
     }
 
-    builds_to_commits = (regression_range_analysis_pipeline.
-                         _BuildNumbersToCommitPositionsDict(data_points))
+    builds_to_commits = (
+        regression_range_analysis_pipeline._BuildNumbersToCommitPositionsDict(
+            data_points))
 
     for build_number in builds_to_commits.iterkeys():
       self.assertEqual(expected_dict[build_number].ToDict(),
@@ -164,13 +165,15 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       regression_range_analysis_pipeline,
       '_BuildNumbersToCommitPositionsDict',
-      return_value={3: _CommitPositionRange(21, 30)})
+      return_value={
+          3: _CommitPositionRange(21, 30)
+      })
   @mock.patch.object(
       regression_range_analysis_pipeline,
       '_GetBoundedRangeForCommitPosition',
       return_value=(3, 3))
   @mock.patch.object(
-      build_util, 'GetBuildInfo', return_value=BuildInfo('m', 'b', 3))
+      build_util, 'GetBuildInfo', return_value=(200, BuildInfo('m', 'b', 3)))
   def testGetEarliestBuildNumberExactMatch(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     self.assertEqual(
@@ -183,7 +186,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
       '_GetBoundedRangeForCommitPosition',
       return_value=(None, None))
   @mock.patch.object(
-      build_util, 'GetBuildInfo', return_value=BuildInfo('m', 'b', 123))
+      build_util, 'GetBuildInfo', return_value=(200, BuildInfo('m', 'b', 123)))
   @mock.patch.object(
       build_util,
       'GetBoundingBuilds',
@@ -245,9 +248,11 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       build_util,
       'GetWaterfallBuildStepLog',
-      return_value={'dimensions': {
-          'os': 'OS'
-      }})
+      return_value={
+          'dimensions': {
+              'os': 'OS'
+          }
+      })
   def testRegressionRangeAnalysisPipeline(self, _):
     input_lower_bound = 900
     input_upper_bound = 1000
@@ -297,9 +302,11 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       build_util,
       'GetWaterfallBuildStepLog',
-      return_value={'dimensions': {
-          'os': 'OS'
-      }})
+      return_value={
+          'dimensions': {
+              'os': 'OS'
+          }
+      })
   def testRegressionRangeAnalysisPipelineCantStartIfStillRunning(self, _):
     input_lower_bound = 900
     input_upper_bound = 1000
@@ -350,9 +357,11 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       build_util,
       'GetWaterfallBuildStepLog',
-      return_value={'dimensions': {
-          'os': 'OS'
-      }})
+      return_value={
+          'dimensions': {
+              'os': 'OS'
+          }
+      })
   def testRegressionRangeAnalysisPipelineEndToEnd(self, _):
     input_lower_bound = 1400
     input_upper_bound = 1450

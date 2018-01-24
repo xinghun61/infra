@@ -43,7 +43,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     with open(file_name, 'r') as f:
       return f.read()
 
-  @mock.patch.object(ci_failure, '_ExtractBuildInfo', return_value=None)
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(500, None))
   def testFailedToExtractBuildInfo(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -62,8 +62,9 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
                                    analysis_status.RUNNING)
 
     failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
-    failure_info = ci_failure.CheckForFirstKnownFailure(
-        master_name, builder_name, build_number, failure_info)
+    with self.assertRaises(Exception):
+      failure_info = ci_failure.CheckForFirstKnownFailure(
+          master_name, builder_name, build_number, failure_info)
 
     self.assertEqual(failed_steps, failure_info.failed_steps)
 
@@ -85,7 +86,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
                                    analysis_status.RUNNING)
 
     # Setup build data for builds:
-    mock_fn.side_effect = [self._GetBuildData(master_name, builder_name, 123)]
+    mock_fn.side_effect = [(200,
+                            self._GetBuildData(master_name, builder_name, 123))]
 
     expected_failed_steps = {
         'a': {
@@ -141,10 +143,10 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
                                    analysis_status.RUNNING)
 
     # Setup build data for builds:
-    mock_fn.side_effect = [
-        self._GetBuildData(master_name, builder_name, 1),
-        self._GetBuildData(master_name, builder_name, 0)
-    ]
+    mock_fn.side_effect = [(200, self._GetBuildData(
+        master_name, builder_name, 1)), (200,
+                                         self._GetBuildData(
+                                             master_name, builder_name, 0))]
 
     expected_failed_steps = {
         'a_tests': {
@@ -222,7 +224,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     build.completed = False
     build.put()
 
-    mock_fn.side_effect = [self._GetBuildData(master_name, builder_name, 121)]
+    mock_fn.side_effect = [(200,
+                            self._GetBuildData(master_name, builder_name, 121))]
 
     expected_failed_steps = {
         'net_unittests': {
@@ -265,6 +268,87 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
+  def testCheckForFirstKnownFailureHitBuildNumberGap(self, mock_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    failed_steps = {
+        'net_unittests': {
+            'current_failure': 123,
+            'first_failure': 123
+        },
+        'unit_tests': {
+            'current_failure': 123,
+            'first_failure': 123
+        }
+    }
+    builds = {
+        123: {
+            'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
+            'blame_list': ['64c72819e898e952103b63eabc12772f9640af07']
+        }
+    }
+    failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
+    builds = FailureInfoBuilds.FromSerializable(builds)
+
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.RUNNING)
+
+    # Setup build data for builds:
+    # 122: mock a gap.
+    build = WfBuild.Create(master_name, builder_name, 122)
+    build.data = {}
+    build.completed = False
+    build.put()
+    # 121: mock a build in datastore to ensure it is updated.
+    build = WfBuild.Create(master_name, builder_name, 121)
+    build.data = 'Blow up if used!'
+    build.last_crawled_time = self._TimeBeforeNowBySeconds(7200)
+    build.completed = False
+    build.put()
+
+    mock_fn.side_effect = [(404, None), (200,
+                                         self._GetBuildData(
+                                             master_name, builder_name, 121))]
+
+    expected_failed_steps = {
+        'net_unittests': {
+            'last_pass': 121,
+            'current_failure': 123,
+            'first_failure': 123
+        },
+        'unit_tests': {
+            'last_pass': 121,
+            'current_failure': 123,
+            'first_failure': 123
+        }
+    }
+
+    expected_builds = {
+        123: {
+            'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
+            'blame_list': ['64c72819e898e952103b63eabc12772f9640af07']
+        },
+        121: {
+            'chromium_revision':
+                '5934404dc5392ab3ae2c82b52b366889fb858d91',
+            'blame_list': [
+                '2fe8767f011a20ed8079d3aba7008acd95842f79',
+                'c0ed134137c98c2935bf32e85f74d4e94c2b980d',
+                '63820a74b4b5a3e6707ab89f92343e7fae7104f0'
+            ]
+        }
+    }
+
+    failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
+    ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
+                                         build_number, failure_info)
+
+    self.assertEqual(expected_failed_steps,
+                     failure_info.failed_steps.ToSerializable())
+    self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
+
+  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testGetBuildFailureInfo(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -273,8 +357,9 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.PENDING)
 
-    mock_fn.return_value = self._GetBuildData(master_name, builder_name,
-                                              build_number)
+    mock_fn.return_value = (200,
+                            self._GetBuildData(master_name, builder_name,
+                                               build_number))
 
     failure_info, should_proceed = ci_failure.GetBuildFailureInfo(
         master_name, builder_name, build_number)
@@ -305,8 +390,23 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_failure_info, failure_info)
     self.assertTrue(should_proceed)
 
-  @mock.patch.object(ci_failure, '_ExtractBuildInfo', return_value=None)
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(500, None))
   def testGetBuildFailureInfoFailedGetBuildInfo(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.PENDING)
+
+    failure_info, should_proceed = ci_failure.GetBuildFailureInfo(
+        master_name, builder_name, build_number)
+
+    self.assertEqual({}, failure_info)
+    self.assertFalse(should_proceed)
+
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(404, None))
+  def testGetBuildFailureInfo404(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -329,8 +429,9 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.PENDING)
 
-    mock_fn.return_value = self._GetBuildData(master_name, builder_name,
-                                              build_number)
+    mock_fn.return_value = (200,
+                            self._GetBuildData(master_name, builder_name,
+                                               build_number))
 
     failure_info, should_proceed = ci_failure.GetBuildFailureInfo(
         master_name, builder_name, build_number)
@@ -351,17 +452,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_failure_info, failure_info)
     self.assertFalse(should_proceed)
 
-  @mock.patch.object(build_util, 'DownloadBuildData', return_value=None)
-  def testExtractBuildInfo(self, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 121
-
-    with self.assertRaises(Exception):
-      ci_failure._ExtractBuildInfo(master_name, builder_name, build_number)
-
   @mock.patch.object(
-      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
+      buildbot, 'GetBuildDataFromMilo', return_value=(200, '{"data": "data"}'))
   @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
   @mock.patch.object(buildbot, 'GetBuildResult')
@@ -370,7 +462,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(ci_failure.AnyNewBuildSucceeded('m', 'b', 123))
 
   @mock.patch.object(
-      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
+      buildbot, 'GetBuildDataFromMilo', return_value=(200, '{"data": "data"}'))
   @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
   @mock.patch.object(buildbot, 'GetBuildResult')

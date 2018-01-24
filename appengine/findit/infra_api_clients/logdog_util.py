@@ -57,7 +57,7 @@ def _GetLogForPath(host, project, path, http_client, retry_delay=5):
     # Exponential backoff starts at 1.5 seconds, reaches 96 seconds for the 7th
     # retry, for an accumulated total of 190.5 seconds of waiting time.
     # Should be enough for our purposes.
-    response_json = rpc_util.DownloadJsonData(
+    _, response_json = rpc_util.DownloadJsonData(
         _LOGDOG_GET_ENDPOINT % host, data, http_client, max_retries=7)
     if response_json is None:
       # If response is None, it means after 7 retries, Findit still failed to
@@ -104,7 +104,7 @@ def _GetAnnotationsProtoForPath(host, project, path, http_client):
 
   data = {'project': project, 'path': path}
 
-  response_json = rpc_util.DownloadJsonData(
+  _, response_json = rpc_util.DownloadJsonData(
       _LOGDOG_TAIL_ENDPOINT % host, data, http_client, max_retries=7)
   if not response_json:
     return None

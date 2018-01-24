@@ -17,14 +17,14 @@ class RpcUtilTest(unittest.TestCase):
   def testDownloadJsonData(self, mock_fn_1, mock_fn_2):
     mocked_response_json = {'a': 'a'}
     mocked_response = json.dumps(mocked_response_json)
-    mock_fn_1.return_value = mocked_response
+    mock_fn_1.return_value = 200, mocked_response
     mock_fn_2.return_value = mocked_response_json
 
     url = 'url'
     data = {'data': 'data'}
     http_client = RetryHttpClient()
 
-    response_json = rpc_util.DownloadJsonData(url, data, http_client)
+    _, response_json = rpc_util.DownloadJsonData(url, data, http_client)
 
     self.assertEqual(response_json, mocked_response_json)
     mock_fn_1.assert_called_once_with(url, data, http_client)
@@ -36,7 +36,8 @@ class RpcUtilTest(unittest.TestCase):
 
     url = 'url'
     data = {'data': 'data'}
-    self.assertIsNone(rpc_util.DownloadData(url, data, mocked_http_client))
+    self.assertEqual((404, None),
+                     rpc_util.DownloadData(url, data, mocked_http_client))
     mocked_http_client.assert_has_calls(
         mock.call.Post(
             'url',
@@ -53,7 +54,7 @@ class RpcUtilTest(unittest.TestCase):
 
     url = 'url'
     data = {'data': 'data'}
-    self.assertEqual(response,
+    self.assertEqual((200, response),
                      rpc_util.DownloadData(url, data, mocked_http_client))
 
   def testGetResultJsonNoPrefix(self):

@@ -24,9 +24,12 @@ class MockBuild(object):
     self.response = response
 
 
-MOCK_BUILDS = [(None, MockBuild({
-    'tags': ['swarming_tag:log_location:logdog://host/project/path']
-}))]
+MOCK_BUILDS = [(None,
+                MockBuild({
+                    'tags': [
+                        'swarming_tag:log_location:logdog://host/project/path'
+                    ]
+                }))]
 
 
 def _MockedGetBuildInfo(master_name, builder_name, build_number):
@@ -98,14 +101,14 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       buildbot,
       'GetBuildDataFromMilo',
-      return_value='Test get build data from build master')
+      return_value=(200, 'Test get build data from build master'))
   def testGetBuildDataFromMilo(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
 
-    build = build_util.DownloadBuildData(master_name, builder_name,
-                                         build_number)
+    _, build = build_util.DownloadBuildData(master_name, builder_name,
+                                            build_number)
 
     expected_build_data = 'Test get build data from build master'
 
@@ -114,7 +117,7 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       buildbot,
       'GetBuildDataFromMilo',
-      return_value='Test get build data from milo')
+      return_value=(200, 'Test get build data from milo'))
   def testDownloadBuildDataSourceFromBM(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -129,7 +132,7 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       buildbot,
       'GetBuildDataFromMilo',
-      return_value='Test get build data from milo updated')
+      return_value=(200, 'Test get build data from milo updated'))
   def testDownloadBuildDataSourceFromBMUpateBuildData(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -181,9 +184,22 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
         'properties': [['got_revision', 'a_git_hash'],
                        ['got_revision_cp', 'refs/heads/master@{#12345}']],
     })
-    mocked_fn.return_value = build
+    mocked_fn.return_value = (200, build)
 
-    build_info = build_util.GetBuildInfo('m', 'b', 123)
+    _, build_info = build_util.GetBuildInfo('m', 'b', 123)
+    self.assertEqual(build_info.chromium_revision, 'a_git_hash')
+
+  @mock.patch.object(build_util, 'DownloadBuildData')
+  def testGetBuildInfoNoUpdate(self, mocked_fn):
+    build = WfBuild.Create('m', 'b', 123)
+    build.completed = True
+    build.data = json.dumps({
+        'properties': [['got_revision', 'a_git_hash'],
+                       ['got_revision_cp', 'refs/heads/master@{#12345}']],
+    })
+    mocked_fn.return_value = (200, build)
+
+    _, build_info = build_util.GetBuildInfo('m', 'b', 123)
     self.assertEqual(build_info.chromium_revision, 'a_git_hash')
 
   @mock.patch.object(build_util, 'DownloadBuildData')
@@ -193,10 +209,11 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     build = WfBuild.Create(master_name, builder_name, build_number)
     build.data = {}
-    mocked_fn.return_value = build
+    mocked_fn.return_value = (404, build)
 
-    self.assertIsNone(
-        build_util.GetBuildInfo(master_name, builder_name, build_number))
+    self.assertEquals((404, None),
+                      build_util.GetBuildInfo(master_name, builder_name,
+                                              build_number))
 
   def testGetFailureTypeUnknown(self):
     build_info = BuildInfo('m', 'b', 123)
@@ -385,3 +402,38 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
                      build_util.GetTryJobStepLog(self.buildbucket_id,
                                                  self.step_name, None,
                                                  'step_metadata'))
+
+  def _PreviousBuilds(self, master_name, builder_name, build_number):
+    builds = []
+    for build in build_util.IteratePreviousBuildsFrom(master_name, builder_name,
+                                                      build_number, 20):
+      builds.append(build)
+    return builds
+
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testIteratePreviousBuildsFrom(self, mock_info):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+
+    mock_info.side_effect = [(200,
+                              _MockedGetBuildInfo(master_name, builder_name,
+                                                  123)), (404, None)]
+
+    self.assertEqual(1,
+                     len(
+                         self._PreviousBuilds(master_name, builder_name,
+                                              build_number)))
+
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testIteratePreviousBuildsFromFailed(self, mock_info):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+
+    mock_info.side_effect = [(500, None)]
+
+    with self.assertRaises(Exception):
+      self.assertEqual([],
+                       self._PreviousBuilds(master_name, builder_name,
+                                            build_number))

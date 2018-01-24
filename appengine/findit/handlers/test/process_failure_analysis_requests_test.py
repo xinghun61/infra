@@ -25,7 +25,9 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
   def _MockGetBuildInfo(self, build_info):
 
     def MockedGetBuildInfo(*_):
-      return build_info
+      if build_info:
+        return 200, build_info
+      return 404, build_info
 
     self.mock(build_util, 'GetBuildInfo', MockedGetBuildInfo)
 
@@ -96,7 +98,8 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
         params=json.dumps({
             'builds': builds
         }),
-        headers={'X-AppEngine-QueueName': 'task_queue'},)
+        headers={'X-AppEngine-QueueName': 'task_queue'},
+    )
     self.assertEquals(200, response.status_int)
     self.assertEqual(1, len(requests))
     self.assertTrue(requests[0][1]['build_completed'])

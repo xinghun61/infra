@@ -87,8 +87,9 @@ def _GetBoundedRangeForCommitPosition(commit_position,
   # Check if the requested commit position is before the earliest known build
   # number's earliest commit.
   earliest_build_number = build_numbers[-1]
-  earliest_commit_position = (builds_to_commit_positions[earliest_build_number]
-                              .earliest_commit_position)
+  earliest_commit_position = (
+      builds_to_commit_positions[earliest_build_number]
+      .earliest_commit_position)
   if commit_position < earliest_commit_position:
     return None, earliest_build_number
 
@@ -122,7 +123,8 @@ def _GetBoundedRangeForCommitPosition(commit_position,
 
 def _GetBoundedRangeFromBuild(commit_position, master_name, builder_name,
                               build_number):
-  build_info = build_util.GetBuildInfo(master_name, builder_name, build_number)
+  _, build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                          build_number)
   if build_info.commit_position == commit_position:
     return build_number, build_number
   elif build_info.commit_position > commit_position:

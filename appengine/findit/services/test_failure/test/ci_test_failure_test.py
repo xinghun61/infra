@@ -251,7 +251,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
 
     ci_test_failure._UpdateFirstFailureOnTestLevel(
         master_name, builder_name, build_number, step_name, failed_step,
-        FinditHttpClient())
+        [224, 223, 222, 221, 220], FinditHttpClient())
 
     expected_failed_step = {
         'current_failure': 224,
@@ -298,9 +298,10 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     step.log_data = 'flaky'
     step.put()
 
-    ci_test_failure._UpdateFirstFailureOnTestLevel(
-        master_name, builder_name, build_number, step_name, failed_step,
-        FinditHttpClient())
+    ci_test_failure._UpdateFirstFailureOnTestLevel(master_name, builder_name,
+                                                   build_number, step_name,
+                                                   failed_step, [223, 222, 221],
+                                                   FinditHttpClient())
 
     expected_failed_step = {
         'current_failure': 223,

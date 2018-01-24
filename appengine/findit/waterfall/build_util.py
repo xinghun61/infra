@@ -15,7 +15,6 @@ from model.wf_build import WfBuild
 from waterfall import buildbot
 from waterfall import swarming_util
 
-HTTP_CLIENT_LOGGING_ERRORS = FinditHttpClient()
 HTTP_CLIENT_NO_404_ERROR = FinditHttpClient(no_error_logging_statuses=[404])
 
 
@@ -31,15 +30,16 @@ def DownloadBuildData(master_name, builder_name, build_number):
   if not build:
     build = WfBuild.Create(master_name, builder_name, build_number)
 
+  status_code = None
   # Cache the data to avoid pulling from master again.
   if _BuildDataNeedUpdating(build):
     # Retrieve build data from milo.
-    build.data = buildbot.GetBuildDataFromMilo(
-        master_name, builder_name, build_number, HTTP_CLIENT_LOGGING_ERRORS)
+    status_code, build.data = buildbot.GetBuildDataFromMilo(
+        master_name, builder_name, build_number, HTTP_CLIENT_NO_404_ERROR)
     build.last_crawled_time = time_util.GetUTCNow()
     build.put()
 
-  return build
+  return status_code, build
 
 
 def GetBuildInfo(master_name, builder_name, build_number):
@@ -53,17 +53,24 @@ def GetBuildInfo(master_name, builder_name, build_number):
   Returns:
     Build information as an instance of BuildInfo.
   """
-  build = DownloadBuildData(master_name, builder_name, build_number)
-
+  status_code, build = DownloadBuildData(master_name, builder_name,
+                                         build_number)
   if not build.data:
-    return None
+    return status_code, None
+  build_info = buildbot.ExtractBuildInfo(master_name, builder_name,
+                                         build_number, build.data)
 
-  return buildbot.ExtractBuildInfo(master_name, builder_name, build_number,
-                                   build.data)
+  if not build.completed:
+    build.start_time = build_info.build_start_time
+    build.completed = build_info.completed
+    build.result = build_info.result
+    build.put()
+
+  return status_code, build_info
 
 
 def GetBuildEndTime(master_name, builder_name, build_number):
-  build = DownloadBuildData(master_name, builder_name, build_number)
+  _, build = DownloadBuildData(master_name, builder_name, build_number)
   build_info = buildbot.ExtractBuildInfo(master_name, builder_name,
                                          build_number, build.data)
   return build_info.build_end_time
@@ -226,7 +233,9 @@ def FindValidBuildNumberForStepNearby(master_name,
     if exclude_list and build in exclude_list:
       continue
     swarming_task_items = swarming_util.ListSwarmingTasksDataByTags(
-        master_name, builder_name, build, http_client, {'stepname': step_name})
+        master_name, builder_name, build, http_client, {
+            'stepname': step_name
+        })
     if swarming_task_items:
       return build
 
@@ -283,3 +292,23 @@ def GetWaterfallBuildStepLog(master_name,
                                       full_step_name, log_type, http_client)
 
   return _ReturnStepLog(data, log_type)
+
+
+# TODO(crbug/804617): Modify this function to use new LUCI API when it's ready.
+def IteratePreviousBuildsFrom(master_name, builder_name, build_number,
+                              entry_limit):
+
+  n = build_number - 1
+  entry_number = 0
+  while n >= 0 and entry_number <= entry_limit:  # pragma: no branch.
+    status_code, build_info = GetBuildInfo(master_name, builder_name, n)
+    n -= 1
+    if build_info:
+      entry_number += 1
+      yield build_info
+    elif status_code == 404:
+      continue
+    else:
+      # 404 means we hit a gap. Otherwise there is something wrong.
+      raise Exception('Failed to download build data for build %s/%s/%d',
+                      master_name, builder_name, n)

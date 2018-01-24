@@ -82,23 +82,23 @@ class LogDogUtilTest(unittest.TestCase):
                      logdog_util._ProcessStringForLogDog(builder_name))
 
   @mock.patch.object(
-      rpc_util, 'DownloadJsonData', return_value=_SAMPLE_GET_RESPONSE)
+      rpc_util, 'DownloadJsonData', return_value=(200, _SAMPLE_GET_RESPONSE))
   def testGetStepMetadataFromLogDog(self, _):
     step_metadata = logdog_util._GetLogForPath('host', 'project', 'path',
                                                self.http_client)
     self.assertEqual(
         json.loads(step_metadata), wf_testcase.SAMPLE_STEP_METADATA)
 
-  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=None)
+  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=(404, None))
   def testGetStepMetadataFromLogDogNoResponse(self, _):
     step_metadata = logdog_util._GetLogForPath('host', 'project', 'path',
                                                self.http_client)
     self.assertIsNone(step_metadata)
 
   @mock.patch.object(
-      rpc_util, 'DownloadJsonData', return_value=json.dumps({
+      rpc_util, 'DownloadJsonData', return_value=(200, json.dumps({
           'a': 'a'
-      }))
+      })))
   @mock.patch.object(logging, 'error')
   def testGetStepMetadataFromLogDogNoJson(self, mock_logging, _):
     step_metadata = logdog_util._GetLogForPath(
@@ -109,9 +109,10 @@ class LogDogUtilTest(unittest.TestCase):
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetStepMetadataFromLogDogRetry(self, mock_rpc):
-    mal_formatted_response = json.dumps({'a': 'a'})
+    mal_formatted_response = (200, json.dumps({'a': 'a'}))
     mock_rpc.side_effect = [
-        mal_formatted_response, mal_formatted_response, _SAMPLE_GET_RESPONSE
+        mal_formatted_response, mal_formatted_response, (200,
+                                                         _SAMPLE_GET_RESPONSE)
     ]
     step_metadata = logdog_util._GetLogForPath(
         'host', 'project', 'path', self.http_client, retry_delay=0)
@@ -147,21 +148,21 @@ class LogDogUtilTest(unittest.TestCase):
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetAnnotationsProto(self, mock_fn):
-    mock_fn.return_value = self._GenerateTailRes()
+    mock_fn.return_value = (200, self._GenerateTailRes())
     step = logdog_util._GetAnnotationsProtoForPath('host', 'project', 'path',
                                                    self.http_client)
     self.assertIsNotNone(step)
 
-  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=None)
+  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=(500, None))
   def testGetAnnotationsProtoNoResponse(self, _):
     step = logdog_util._GetAnnotationsProtoForPath('host', 'project', 'path',
                                                    self.http_client)
     self.assertIsNone(step)
 
   @mock.patch.object(
-      rpc_util, 'DownloadJsonData', return_value=json.dumps({
+      rpc_util, 'DownloadJsonData', return_value=(200, json.dumps({
           'a': 'a'
-      }))
+      })))
   def testGetAnnotationsProtoNoLogs(self, _):
     step = logdog_util._GetAnnotationsProtoForPath('host', 'project', 'path',
                                                    self.http_client)
@@ -170,7 +171,7 @@ class LogDogUtilTest(unittest.TestCase):
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetAnnotationsProtoNoAnnotationsB64(self, mock_fn):
     data = {'logs': [{'data': 'data'}]}
-    mock_fn.return_value = json.dumps(data)
+    mock_fn.return_value = (200, json.dumps(data))
     step = logdog_util._GetAnnotationsProtoForPath('host', 'project', 'path',
                                                    self.http_client)
     self.assertIsNone(step)
@@ -178,7 +179,7 @@ class LogDogUtilTest(unittest.TestCase):
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetAnnotationsProtoNoB64decodable(self, mock_fn):
     data = {'logs': [{'datagram': {'data': 'data'}}]}
-    mock_fn.return_value = json.dumps(data)
+    mock_fn.return_value = (200, json.dumps(data))
     step = logdog_util._GetAnnotationsProtoForPath('host', 'project', 'path',
                                                    self.http_client)
     self.assertIsNone(step)
@@ -228,14 +229,14 @@ class LogDogUtilTest(unittest.TestCase):
   @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild')
   def testGetStepLogForBuild(self, mock_location, mock_log, mock_data):
     mock_location.return_value = 'host', 'project', 'path'
-    mock_data.return_value = self._GenerateTailRes()
+    mock_data.return_value = (200, self._GenerateTailRes())
     logdog_util.GetStepLogForBuild({}, 'step', 'stdout', self.http_client)
     mock_log.assert_called()
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   @mock.patch.object(logdog_util, '_GetLog')
   def testGetStepLogLegacy(self, mock_log, mock_data):
-    mock_data.return_value = self._GenerateTailRes()
+    mock_data.return_value = (200, self._GenerateTailRes())
     logdog_util.GetStepLogLegacy(self.master_name, self.builder_name,
                                  self.build_number, 'step', 'stdout',
                                  self.http_client)

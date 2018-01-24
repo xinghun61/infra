@@ -70,8 +70,8 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
                                         step_name, failed_step, http_client):
   """Downloads test results and initiates first failure info at test level."""
   list_isolated_data = failed_step.list_isolated_data
-  list_isolated_data = (list_isolated_data.ToSerializable()
-                        if list_isolated_data else [])
+  list_isolated_data = (
+      list_isolated_data.ToSerializable() if list_isolated_data else [])
   result_log = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
       list_isolated_data, http_client)
 
@@ -143,15 +143,18 @@ def _UpdateFirstFailureInfoForStep(current_build_number, failed_step):
 
 def _UpdateFirstFailureOnTestLevel(master_name, builder_name,
                                    current_build_number, step_name, failed_step,
-                                   http_client):
+                                   build_numbers, http_client):
   """Iterates backwards through builds to get first failure at test level."""
   farthest_first_failure = failed_step.first_failure
   if failed_step.last_pass:
     farthest_first_failure = failed_step.last_pass + 1
 
   unfinished_tests = failed_step.tests.keys()
-  for build_number in range(current_build_number - 1,
-                            max(farthest_first_failure - 1, 0), -1):
+  for build_number in build_numbers:
+    if build_number == current_build_number:
+      continue
+    if build_number < farthest_first_failure:
+      break
     # Checks back until farthest_first_failure or build 1, don't use build 0
     # since there might be some abnormalities in build 0.
     step = _GetSameStepFromBuild(master_name, builder_name, build_number,
@@ -266,7 +269,8 @@ def CheckFirstKnownFailureForSwarmingTests(master_name, builder_name,
     if result:  # pragma: no branch
       # Iterates backwards to get a more precise failed_steps info.
       _UpdateFirstFailureOnTestLevel(master_name, builder_name, build_number,
-                                     step_name, failed_step, http_client)
+                                     step_name, failed_step,
+                                     failure_info.builds.keys(), http_client)
 
   _UpdateFailureInfoBuilds(failed_steps, failure_info.builds)
 

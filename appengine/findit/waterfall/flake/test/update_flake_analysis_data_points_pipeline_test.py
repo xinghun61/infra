@@ -89,7 +89,8 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     build_info_123.commit_position = commit_position
     build_info_123.chromium_revision = chromium_revision
 
-    mocked_build_info.side_effect = [build_info_123, build_info_122]
+    mocked_build_info.side_effect = [(200, build_info_123), (200,
+                                                             build_info_122)]
     mocked_commits.return_value = blame_list
 
     (update_flake_analysis_data_points_pipeline.
@@ -153,7 +154,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     build_info.chromium_revision = chromium_revision
     build_info.blame_list = blame_list
 
-    mocked_build_info.return_value = build_info
+    mocked_build_info.return_value = (200, build_info)
 
     (update_flake_analysis_data_points_pipeline.
      _UpdateAnalysisDataPointsWithSwarmingTask(task, analysis))
@@ -206,7 +207,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     build_info.chromium_revision = chromium_revision
     build_info.blame_list = blame_list
 
-    mocked_build_info.return_value = build_info
+    mocked_build_info.return_value = (200, build_info)
 
     (update_flake_analysis_data_points_pipeline.
      _UpdateAnalysisDataPointsWithSwarmingTask(task, analysis))
@@ -222,7 +223,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(blame_list, data_point.blame_list)
     self.assertEqual(120, data_point.elapsed_seconds)
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(404, None))
   def testCreateDataPointNoBuildInfo(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -287,7 +288,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     build_info.chromium_revision = chromium_revision
     build_info.blame_list = blame_list
 
-    mocked_build_info.side_effect = [build_info, None]
+    mocked_build_info.side_effect = [(200, build_info), (404, None)]
 
     with self.assertRaises(pipeline.Retry):
       (update_flake_analysis_data_points_pipeline.

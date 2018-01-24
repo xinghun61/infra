@@ -367,7 +367,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mocked_update_culprit.assert_called_once()
     mocked_update_analysis.assert_called_once()
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=MockInfo())
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(200, MockInfo()))
   @mock.patch.object(
       initialize_flake_try_job_pipeline, '_ShouldRunTryJobs', return_value=True)
   def testInitializeFlakeTryJobPipelineRunTryJobs(self, *_):
@@ -391,7 +391,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), [], 997, 'r997', 995, 1000, None,
             _DEFAULT_CACHE_NAME, None, False
         ],
-        expected_kwargs={'retries': 0})
+        expected_kwargs={
+            'retries': 0
+        })
     self.MockPipeline(
         SendNotificationForFlakeCulpritPipeline,
         '',
@@ -430,7 +432,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), [], 997, 'r997', 995, 1000, None,
             _DEFAULT_CACHE_NAME, None, False
         ],
-        expected_kwargs={'retries': 0})
+        expected_kwargs={
+            'retries': 0
+        })
     self.MockPipeline(
         SendNotificationForFlakeCulpritPipeline,
         '',
@@ -445,7 +449,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       initialize_flake_try_job_pipeline, '_ShouldRunTryJobs', return_value=True)
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=MockInfo())
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(200, MockInfo()))
   def testInitializeFlakeTryJobPipelineRunTryJobsWithHeuristicResults(self, *_):
     suspected_ranges = [('r996', 'r997')]
     expected_remaining_commits = [997]
@@ -469,7 +473,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), expected_remaining_commits, 996, 'r996',
             995, 1000, None, _DEFAULT_CACHE_NAME, None, False
         ],
-        expected_kwargs={'retries': 0})
+        expected_kwargs={
+            'retries': 0
+        })
     self.MockPipeline(
         SendNotificationForFlakeCulpritPipeline,
         '',

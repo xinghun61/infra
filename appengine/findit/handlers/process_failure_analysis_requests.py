@@ -21,8 +21,9 @@ def _TriggerNewAnalysesOnDemand(builds):
     # TODO(stgao): make alerts-dispatcher send information of whether a build
     # is completed.
 
-    build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                         build_number)
+    _, build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                            build_number)
+
     if not build_info:
       logging.error('Failed to retrieve build data for %s/%s/%s, steps=%s',
                     master_name, builder_name, build_number, repr(failed_steps))

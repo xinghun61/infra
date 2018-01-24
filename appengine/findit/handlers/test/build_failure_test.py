@@ -230,7 +230,9 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                    re.MULTILINE | re.DOTALL),
         self.test_app.get,
         '/failure',
-        params={'url': build_url})
+        params={
+            'url': build_url
+        })
 
   def testAnalysisNotFound(self):
     master_name = 'm'
@@ -310,8 +312,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                    re.MULTILINE | re.DOTALL),
         self.test_app.post,
         '/failure',
-        params={'url': build_url,
-                'xsrf_token': 'abc'})
+        params={
+            'url': build_url,
+            'xsrf_token': 'abc'
+        })
 
   @mock.patch('gae_libs.token.ValidateAuthToken')
   def testCorpUserCanViewAnalysisOfFailureOnUnsupportedMaster(
@@ -336,7 +340,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(0, len(self.taskqueue_stub.get_filtered_tasks()))
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(404, None))
   @mock.patch('gae_libs.token.ValidateAuthToken')
   def testCannotGetBuildInfo(self, mocked_ValidateAuthToken, _):
     mocked_ValidateAuthToken.side_effect = [(True, False)]
@@ -355,8 +359,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                    re.MULTILINE | re.DOTALL),
         self.test_app.post,
         '/failure',
-        params={'url': build_url,
-                'xsrf_token': 'abc'})
+        params={
+            'url': build_url,
+            'xsrf_token': 'abc'
+        })
 
   @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
@@ -369,7 +375,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     build_info = BuildInfo(master_name, builder_name, build_number)
     build_info.completed = False
-    mock_fn.return_value = build_info
+    mock_fn.return_value = (200, build_info)
 
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
@@ -381,9 +387,11 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                     build_number), re.MULTILINE | re.DOTALL),
         self.test_app.post,
         '/failure',
-        params={'url': build_url,
-                'force': '1',
-                'xsrf_token': 'abc'})
+        params={
+            'url': build_url,
+            'force': '1',
+            'xsrf_token': 'abc'
+        })
 
   @mock.patch.object(
       ci_failure,
@@ -405,7 +413,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     build_info = BuildInfo(master_name, builder_name, build_number)
     build_info.completed = False
-    mock_fn.return_value = build_info
+    mock_fn.return_value = (200, build_info)
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
@@ -429,7 +437,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     build_info = BuildInfo(master_name, builder_name, build_number)
     build_info.completed = False
-    mock_fn.return_value = build_info
+    mock_fn.return_value = (200, build_info)
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=False)
 
@@ -734,7 +742,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                             'hints': {
                                 ('modified f98.cc[123, 456] '
                                  '(and it was in log)'):
-                                     4,
+                                    4,
                             },
                         }]
                     },
@@ -777,7 +785,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                             'hints': {
                                 ('modified f98.cc[123, 456] '
                                  '(and it was in log)'):
-                                     4,
+                                    4,
                             },
                         }]
                     },
@@ -837,8 +845,9 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                         'try_job_key':
                             'm/b/120',
                         'status':
-                            result_status.NO_TRY_JOB_REASON_MAP[analysis_status.
-                                                                PENDING],
+                            result_status.NO_TRY_JOB_REASON_MAP[
+                                analysis_status.PENDING
+                            ],
                         'task_id':
                             'task2',
                         'task_url':
@@ -1126,8 +1135,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     build_url = buildbot.CreateBuildUrl('m', 'b', 123)
     response = self.test_app.get(
-        '/failure', params={'url': build_url,
-                            'format': 'json'})
+        '/failure', params={
+            'url': build_url,
+            'format': 'json'
+        })
 
     self.assertEquals(200, response.status_int)
     self.assertEqual(expected_try_job_result, response.json_body['try_job'])

@@ -19,26 +19,6 @@ _MAX_BUILDS_TO_CHECK = 20
 _SUPPORTED_FAILURE_TYPE = [failure_type.COMPILE, failure_type.TEST]
 
 
-def _ExtractBuildInfo(master_name, builder_name, build_number):
-  """Returns a BuildInfo instance for the specified build."""
-  build = build_util.DownloadBuildData(master_name, builder_name, build_number)
-
-  if build is None or not build.data:
-    raise Exception('Failed to download build data for build %s/%s/%d',
-                    master_name, builder_name, build_number)
-
-  build_info = buildbot.ExtractBuildInfo(master_name, builder_name,
-                                         build_number, build.data)
-
-  if not build.completed:
-    build.start_time = build_info.build_start_time
-    build.completed = build_info.completed
-    build.result = build_info.result
-    build.put()
-
-  return build_info
-
-
 def _GetBlameListAndRevisionForBuild(build_info):
   """Gets blame list and chromium revision info for a build.
 
@@ -101,13 +81,9 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
   failed_steps = failure_info.failed_steps
   failure_info.builds = _UpdateStringTypedBuildKeyToInt(failure_info.builds)
   # Look back for first known failures.
-  earliest_build_number = max(0, build_number - 1 - _MAX_BUILDS_TO_CHECK)
-  for n in range(build_number - 1, earliest_build_number - 1, -1):
+  for build_info in build_util.IteratePreviousBuildsFrom(
+      master_name, builder_name, build_number, _MAX_BUILDS_TO_CHECK):
     # Extraction should stop when we reach to the first build.
-    build_info = _ExtractBuildInfo(master_name, builder_name, n)
-    if not build_info:
-      # Failed to extract the build information, bail out.
-      return failure_info
 
     failure_info.builds[build_info.build_number] = (
         FailureInfoBuild.FromSerializable(
@@ -156,9 +132,18 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
   Returns:
     A dict of failure info and a flag for should start analysis.
   """
-  build_info = _ExtractBuildInfo(master_name, builder_name, build_number)
+  status_code, build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                    build_number)
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   assert analysis
+
+  # TODO(crbug/804617): Remove this when new LUCI API is ready.
+  if status_code == 404:
+    # Hits a build number gap. Should skip the analysis.
+    analysis.status = analysis_status.SKIPPED
+    analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
+    analysis.put()
+    return {}, False
 
   if not build_info:
     logging.error('Failed to extract build info for build %s/%s/%d',
@@ -169,8 +154,8 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
     return {}, False
 
   build_failure_type = build_util.GetFailureType(build_info)
-  failed = (build_info.result != buildbot.SUCCESS and
-            bool(build_info.failed_steps))
+  failed = (
+      build_info.result != buildbot.SUCCESS and bool(build_info.failed_steps))
 
   failure_info = {
       'failed': failed,
@@ -201,8 +186,8 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
 
   analysis.not_passed_steps = build_info.not_passed_steps
   analysis.build_failure_type = build_failure_type
-  analysis.build_start_time = (analysis.build_start_time or
-                               build_info.build_start_time)
+  analysis.build_start_time = (
+      analysis.build_start_time or build_info.build_start_time)
   analysis.put()
 
   return failure_info, True
@@ -215,8 +200,8 @@ def AnyNewBuildSucceeded(master_name, builder_name, build_number):
   for newer_build_number in xrange(build_number + 1,
                                    latest_build_numbers[0] + 1):
     # Checks all builds after current build.
-    newer_build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                               newer_build_number)
+    _, newer_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                  newer_build_number)
     if newer_build_info and newer_build_info.result in [
         buildbot.SUCCESS, buildbot.WARNINGS
     ]:
