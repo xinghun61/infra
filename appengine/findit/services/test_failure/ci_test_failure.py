@@ -151,10 +151,9 @@ def _UpdateFirstFailureOnTestLevel(master_name, builder_name,
 
   unfinished_tests = failed_step.tests.keys()
   for build_number in build_numbers:
-    if build_number == current_build_number:
+    if (build_number >= current_build_number or
+        build_number < farthest_first_failure):
       continue
-    if build_number < farthest_first_failure:
-      break
     # Checks back until farthest_first_failure or build 1, don't use build 0
     # since there might be some abnormalities in build 0.
     step = _GetSameStepFromBuild(master_name, builder_name, build_number,

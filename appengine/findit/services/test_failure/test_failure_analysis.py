@@ -127,8 +127,11 @@ def AnalyzeTestFailure(failure_info, change_logs, deps_info, failure_signals):
 
     if step_analysis_result['supported']:
       step_failure_signal = FailureSignal.FromDict(failure_signals[step_name])
-      for build_number in range(start_build_number, failed_build_number + 1):
-        for revision in builds[build_number].blame_list:
+      for build_number, build in builds.iteritems():
+        if (build_number > failed_build_number or
+            build_number < start_build_number):
+          continue
+        for revision in build.blame_list:
           if is_test_level:
             # Checks files at test level.
             for test_analysis_result in step_analysis_result['tests']:

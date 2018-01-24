@@ -44,6 +44,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             98: {
                 'blame_list': ['r98_1'],
             },
+            97: {}
         }
     }
     change_logs = {

@@ -32,8 +32,12 @@ def _Analyze(start_build_number,
              cl_failure_map,
              use_ninja_output=False):
 
-  for build_number in range(start_build_number, failed_build_number + 1):
-    for revision in builds[build_number].blame_list:
+  for build_number, build in builds.iteritems():
+    if (build_number > failed_build_number or
+        build_number < start_build_number):
+      continue
+
+    for revision in build.blame_list:
       new_suspected_cl_dict, max_score = build_failure_analysis.AnalyzeOneCL(
           build_number, failure_signal, change_logs[revision], deps_info,
           use_ninja_output)
