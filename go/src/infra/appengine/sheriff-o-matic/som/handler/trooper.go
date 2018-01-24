@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	swarmingBasePath = "https://chromium-swarm.appspot.com/_ah/api/swarming/v1/"
+	swarmingBasePath = "https://chromium-swarm.appspot.com/api/swarming/v1/"
 )
 
 // TrooperAlert ... Extended alert struct type for use in the trooper tab.
