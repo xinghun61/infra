@@ -98,7 +98,7 @@ CREATE TABLE FieldDef (
 
   field_name VARCHAR(80) BINARY NOT NULL,
   -- TODO(jrobbins): more types
-  field_type ENUM ('enum_type', 'int_type', 'str_type', 'user_type', 'date_type', 'url_type') NOT NULL,
+  field_type ENUM ('enum_type', 'int_type', 'str_type', 'user_type', 'date_type', 'url_type', 'approval_type') NOT NULL,
   applicable_type VARCHAR(80),   -- No value means: offered for all issue types
   applicable_predicate TEXT,   -- No value means: TRUE
   is_required BOOLEAN,  -- true means required if applicable
@@ -756,6 +756,7 @@ CREATE TABLE HotlistStar (
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
 
+
 CREATE TABLE HotlistVisitHistory (
   hotlist_id INT UNSIGNED NOT NULL,
   user_id INT UNSIGNED NOT NULL,
@@ -764,4 +765,51 @@ CREATE TABLE HotlistVisitHistory (
   PRIMARY KEY (user_id, hotlist_id),
   FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE ApprovalStatusDef (
+  id INT NOT NULL AUTO_INCREMENT,
+  field_id INT NOT NULL,
+  status VARCHAR(80) BINARY NOT NULL,
+  docstring TEXT,
+
+  PRIMARY KEY (id),
+  UNIQUE KEY (field_id, status),
+  FOREIGN KEY (field_id) REFERENCES FieldDef(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Issue2ApprovalValue (
+  issue_id INT NOT NULL,
+  issue_shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
+  field_id INT NOT NULL,
+  status_id INT NOT NULL,
+  setter_id INT UNSIGNED,
+  set_on INT,
+
+  PRIMARY KEY (issue_id, field_id),
+  INDEX (field_id, issue_shard, status_id),
+  INDEX (field_id, issue_shard, setter_id),
+  INDEX (field_id, issue_shard, set_on),
+
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (field_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (status_id) REFERENCES ApprovalStatusDef(id),
+  FOREIGN KEY (setter_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Approval2Approvers (
+  field_id INT NOT NULL,
+  approver_id INT UNSIGNED NOT NULL,
+  issue_id INT,
+  issue_shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
+
+  PRIMARY KEY (issue_id, field_id, approver_id),
+  INDEX (approver_id, field_id, issue_shard),
+
+  FOREIGN KEY (field_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (approver_id) REFERENCES User(user_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id)
 ) ENGINE=INNODB;

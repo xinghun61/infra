@@ -297,6 +297,7 @@ class FieldTypes(messages.Enum):
   DATE_TYPE = 5
   BOOL_TYPE = 6
   URL_TYPE = 7
+  APPROVAL_TYPE = 8
   # TODO(jrobbins): more types, see tracker.sql for all TODOs.
 
 
