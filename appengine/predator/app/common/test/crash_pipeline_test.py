@@ -83,8 +83,9 @@ class CrashAnalysisPipelineTest(AppengineTestCase):
         # TODO(wrengr): fix that.
         regression_range = ['VERSION_0', 'VERSION_1'],
         algorithm = 'ALGORITHM',
+        success = True,
     )
-    mock_find_culprit.return_value = True, dummy_culprit
+    mock_find_culprit.return_value = dummy_culprit
     pipeline = crash_pipeline.CrashAnalysisPipeline(CrashClient.FRACAS,
                                                     crash_identifiers)
     pipeline.start()

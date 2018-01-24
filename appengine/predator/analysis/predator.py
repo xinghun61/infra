@@ -59,17 +59,19 @@ class Predator(object): # pragma: no cover
     try:
       suspected_project, suspected_components, suspected_cls = (
           self._FindCulprit(report))
-      return True, Culprit(project=suspected_project,
-                           components=suspected_components,
-                           suspected_cls=suspected_cls,
-                           regression_range=report.regression_range,
-                           algorithm='core_algorithm')
+      return Culprit(project=suspected_project,
+                     components=suspected_components,
+                     suspected_cls=suspected_cls,
+                     regression_range=report.regression_range,
+                     algorithm='core_algorithm',
+                     success=True)
     except Exception as error:
       log_util.Log(self._log, error.__class__.__name__,
                    traceback.format_exc(), LogLevel.ERROR)
 
-    return False, Culprit(project='',
-                          components=[],
-                          suspected_cls=[],
-                          regression_range=report.regression_range,
-                          algorithm='core_algorithm')
+    return Culprit(project='',
+                   components=[],
+                   suspected_cls=[],
+                   regression_range=report.regression_range,
+                   algorithm='core_algorithm',
+                   success=False)

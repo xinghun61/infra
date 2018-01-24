@@ -7,7 +7,7 @@ from collections import namedtuple
 
 class Culprit(namedtuple('Culprit',
     ['project', 'components', 'suspected_cls',
-     'regression_range', 'algorithm'])):
+     'regression_range', 'algorithm', 'success'])):
   """The result of successfully identifying the culprit of a crash report.
 
   That is, this is what ``Predator.FindCultprit`` returns. It encapsulates
@@ -19,18 +19,10 @@ class Culprit(namedtuple('Culprit',
     suspected_cls (list of Suspects): the suspected suspected_cls.
     regression_range (tuple): a pair of the last-good and first-bad versions.
     algorithm (str): What algorithm was used to produce this object.
-    log (dict): Provide information to explain the results, the log is
-      usually warning or error log to explain why we didn't find valid
-      results.for example, if the crash doesn't have regression range,
-      the log will explain that there is no suspected cl due to lack of
-      regression_range.
+    success (bool): If we successfully ran the analysis process to get the
+      culprit.
   """
   __slots__ = ()
-
-  def __new__(cls, project, components, suspected_cls, regression_range,
-              algorithm):
-    return super(cls, Culprit).__new__(cls, project, components, suspected_cls,
-                                       regression_range, algorithm)
 
   @property
   def fields(self):
@@ -123,6 +115,7 @@ class Culprit(namedtuple('Culprit',
       'found_project': bool(self.project),
       'found_components': bool(self.components),
       'solution': self.algorithm,
+      'success': self.success,
     }
 
     return result, tags

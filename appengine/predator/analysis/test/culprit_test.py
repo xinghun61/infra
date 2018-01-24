@@ -9,23 +9,26 @@ from analysis.culprit import Culprit
 class CulpritTest(AnalysisTestCase):
 
   def testFieldsProperty(self):
-    culprit = Culprit('', ['Blink>DOM'], [], None, 'core_algorithm')
-    self.assertEqual(culprit.fields, ('project', 'components', 'suspected_cls',
-                                      'regression_range', 'algorithm'))
+    culprit = Culprit('', ['Blink>DOM'], [], None, 'core_algorithm', True)
+    self.assertEqual(culprit.fields,
+                     ('project', 'components', 'suspected_cls',
+                      'regression_range', 'algorithm', 'success'))
+
   def testToDictsDroppingEmptyFields(self):
-    culprit = Culprit('', [], [], [], 'core_algorithm')
+    culprit = Culprit('', [], [], [], 'core_algorithm', True)
     self.assertTupleEqual(culprit.ToDicts(),
                           ({'found': False},
                            {'found_suspects': False,
                             'found_project': False,
                             'found_components': False,
                             'has_regression_range': False,
-                            'solution': 'core_algorithm'}))
+                            'solution': 'core_algorithm',
+                            'success': True}))
 
   def testToDicts(self):
     cl = self.GetDummyChangeLog()
     culprit = Culprit('proj', ['comp'], [cl], ['50.0.1234.1', '50.0.1234.2'],
-                      'core_algorithm')
+                      'core_algorithm', True)
     self.assertTupleEqual(culprit.ToDicts(),
                           ({'found': True,
                             'regression_range': ['50.0.1234.1', '50.0.1234.2'],
@@ -36,4 +39,5 @@ class CulpritTest(AnalysisTestCase):
                             'found_project': True,
                             'found_components': True,
                             'has_regression_range': True,
-                            'solution': 'core_algorithm'}))
+                            'solution': 'core_algorithm',
+                            'success': True}))
