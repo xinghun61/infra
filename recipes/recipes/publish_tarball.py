@@ -203,10 +203,11 @@ def RunSteps(api):
       ['touch', api.path['checkout'].join(
           'chrome', 'test', 'data', 'webui', 'i18n_process_css_test.html')])
 
-  api.step('dowload clang sources', [
-      api.path['checkout'].join('tools', 'clang', 'scripts', 'update.py'),
-      '--force-local-build', '--without-android', '--use-system-cmake',
-      '--if-needed', '--gcc-toolchain=/usr', '--skip-build'])
+  if int(version.split('.')[0]) >= 65:
+    api.step('download clang sources', [
+        api.path['checkout'].join('tools', 'clang', 'scripts', 'update.py'),
+        '--force-local-build', '--without-android', '--use-system-cmake',
+        '--if-needed', '--gcc-toolchain=/usr', '--skip-build'])
 
   node_modules_sha_path = api.path['checkout'].join(
       'third_party', 'node', 'node_modules.tar.gz.sha1')
@@ -257,7 +258,7 @@ def RunSteps(api):
 def GenTests(api):
   yield (
     api.test('basic') +
-    api.properties.generic(version='38.0.2125.122') +
+    api.properties.generic(version='66.0.3329.0') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
     api.path.exists(api.path['checkout'].join(
@@ -266,10 +267,10 @@ def GenTests(api):
 
   yield (
     api.test('dupe') +
-    api.properties.generic(version='38.0.2125.122') +
+    api.properties.generic(version='66.0.3329.0') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output(
-        'chromium-38.0.2125.122.tar.xz'))
+        'chromium-66.0.3329.0.tar.xz'))
   )
 
   yield (
