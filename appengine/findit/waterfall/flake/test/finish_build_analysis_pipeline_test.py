@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 import copy
+from datetime import datetime
 import mock
 
 from dto.test_location import TestLocation
@@ -22,8 +22,8 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import heuristic_analysis
 
 from waterfall.flake import confidence
-from waterfall.flake import flake_constants
 from waterfall.flake import finish_build_analysis_pipeline
+from waterfall.flake import flake_constants
 from waterfall.flake.finish_build_analysis_pipeline import (
     FinishBuildAnalysisPipeline)
 from waterfall.flake.initialize_flake_try_job_pipeline import (
@@ -163,5 +163,19 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     self.assertEqual([suspected_revision],
+                     finish_build_analysis_pipeline._IdentifySuspectedRevisions(
+                         analysis, None))
+
+  @mock.patch.object(heuristic_analysis, 'GetTestLocation', return_value=None)
+  def testIdentifysuspectedRangesNoTestLocation(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=123, git_hash='r1000', blame_list=['r1'])
+    ]
+    analysis.suspected_flake_build_number = 123
+    analysis.Save()
+
+    self.assertEqual([],
                      finish_build_analysis_pipeline._IdentifySuspectedRevisions(
                          analysis, None))

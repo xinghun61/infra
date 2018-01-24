@@ -135,6 +135,11 @@ def _IdentifySuspectedRevisions(analysis, http_client):
   test_location = heuristic_analysis.GetTestLocation(
       suspected_data_point.GetSwarmingTaskId(), analysis.test_name, http_client)
 
+  if not test_location:
+    analysis.LogWarning('Failed to get test location. Heuristic results will '
+                        ' not be available.')
+    return []
+
   normalized_file_path = extractor_util.NormalizeFilePath(test_location.file)
 
   git_repo = CachedGitilesRepository(
