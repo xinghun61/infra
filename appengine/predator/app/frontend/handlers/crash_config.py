@@ -52,7 +52,7 @@ def _ValidateChromeCrashConfig(chrome_crash_config):
       chrome crash clients - Cracas and Fracas.
   {
     'analysis_result_pubsub_topic': (
-        'projects/google.com:findit-for-me/topics/result-for-cracas'),
+        'projects/app_id/topics/result-for-cracas'),
     'signature_blacklist_markers': ['black sig1', 'black sig2'],
     'supported_platform_list_by_channel': {
       'canary': [
@@ -103,8 +103,8 @@ def _ValidateClusterfuzzConfig(clusterfuzz_config):
     chrome_crash_config (dict): A dictionary that provides configuration of
       chrome crash clients - Cracas and Fracas.
       {
-        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
-        'try_bot_topic': 'projects/project-name/topics/name',
+        'analysis_result_pubsub_topic': 'projects/app_id/topics/name',
+        'try_bot_topic': 'projects/app_id/topics/name',
         'signature_blacklist_markers': [],
         'blacklist_crash_type': ['out-of-memory'],
         'top_n': 7
@@ -151,7 +151,7 @@ def _ValidateUMASamplingProfilerConfig(uma_profiler_config):
       the UMA Sampling Profiler client. E.g.:
       {
         'analysis_result_pubsub_topic': (
-            'projects/google.com:findit-for-me/topics/'
+            'projects/app_id/topics/'
             'result-for-uma-sampling-profiler'),
         'signature_blacklist_markers': ['black sig1', 'black sig2'],
       }
