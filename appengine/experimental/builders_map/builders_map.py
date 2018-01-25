@@ -2,6 +2,7 @@ import collections
 from google.appengine.ext import db
 import json
 import logging
+import urllib
 import urllib2
 import webapp2
 
@@ -33,8 +34,39 @@ class BuildersMap(webapp2.RequestHandler):
           builder_to_masters[builder_name].append(master_name)
       except urllib2.HTTPError:
         logging.exception('Failed to fetch builders for %s', master_name)
-    b_map = Map(content = json.dumps(builder_to_masters),
-                key_name = 'builder_to_master')
+
+    builders = {}
+    for builder, masters in builder_to_masters.iteritems():
+      for master in masters:
+        bucket = 'master.' + master
+
+        # If this builder is ready for LUCI, use the corresponding LUCI bucket
+        # instead.
+        luci_migration_url = (
+            'https://luci-migration.appspot.com'
+            '/masters/%s/builders/%s?format=json' % (
+                urllib.quote(master), urllib.quote(builder)))
+        try:
+          builder_info = json.load(urllib2.urlopen(luci_migration_url))
+          if builder_info['luci_is_prod']:
+            bucket = builder_info['bucket']
+        except urllib2.HTTPError as ex:
+          if ex.code == 404:
+            # This builder is not being tracked by LUCI
+            pass
+          else:
+            logging.exception(
+                'Failed to fetch LUCI migration state of %s/%s',
+                master, builder)
+            # Retry the entire task.
+            raise
+
+        builders.setdefault(
+            builder, {}).setdefault('buckets', []).append(bucket)
+
+
+    # TODO: rename datastore key to reflect reality.
+    b_map = Map(content=json.dumps(builders), key_name='builder_to_master')
     b_map.put()
 
 
