@@ -217,11 +217,6 @@ func updateBuilder(c *router.Context, builder *storage.Builder) error {
 	switch v := c.Request.FormValue(luciIsProdFormValueName); v {
 	case "":
 	case "on":
-		if builder.SchedulingType == config.SchedulingType_TRYJOBS {
-			body := fmt.Sprintf("cannot set %q on builder %q", luciIsProdFormValueName, &builder.ID)
-			http.Error(c.Writer, body, http.StatusBadRequest)
-			return nil
-		}
 		luciIsProd = true
 	default:
 		msg := fmt.Sprintf("invalid %s %q", luciIsProdFormValueName, v)
