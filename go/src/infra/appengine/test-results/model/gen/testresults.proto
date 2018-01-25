@@ -81,8 +81,8 @@ enum ResultType {
   // these entries. This should never show up as an "actual" result.
   NEEDS_MANUAL_REBASELINE = 14;
 
-	// UNKNOWN is an unrecognized or unknown test result type.
-	UNKNOWN = 15;
+  // UNKNOWN is an unrecognized or unknown test result type.
+  UNKNOWN = 15;
 }
 
 // TestResults encapsulates the results of a run of a set of tests.
@@ -185,8 +185,8 @@ message TestRun {
   // not match the reference, respectively (only used in layout tests).
   string reftest_type = 12;
 
-	// Name is the name of the test or test suite.
-	string name = 13;
+  // Name is the name of the test or test suite.
+  string name = 13;
 }
 
 // TestResultEvent is suitable for representing a row in a BigQuery table. Note
@@ -224,15 +224,18 @@ message TestResultEvent {
   string build_id = 8;
 
   // BuildbotInfo identifies where the test run ran.
-	BuildbotInfo buildbot_info = 9;
+  BuildbotInfo buildbot_info = 9;
+
+  // ChromuimRevision is the revision of the current Chromium checkout, if relevant, e.g. “356123”.
+  string chromium_revision = 10;
 }
 
 // BuildbotInfo identifies a buildbot build.
 message BuildbotInfo {
   // MasterName is the master name.
-	string master_name = 1;
+  string master_name = 1;
   // BuilderName is the builder name.
-	string builder_name = 2;
+  string builder_name = 2;
   // BuildNumber is the build number.
-	int64 build_number = 3;
+  int64 build_number = 3;
 }

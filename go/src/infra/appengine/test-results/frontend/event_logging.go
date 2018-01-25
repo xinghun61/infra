@@ -89,6 +89,10 @@ func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadPar
 			Run:         testRun,
 		}
 
+		if f.ChromiumRev != nil {
+			evt.ChromiumRevision = *f.ChromiumRev
+		}
+
 		tres = append(tres, evt)
 	}
 
