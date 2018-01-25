@@ -1173,7 +1173,8 @@ class IssueService(object):
 
     raise exceptions.NoSuchAttachmentException()
 
-  def GetComments(self, _cnxn, where=None, order_by=None, **kwargs):
+  def GetComments(
+      self, _cnxn, where=None, order_by=None, content_only=False, **kwargs):
     # This is a very limited subset of what the real GetComments() can do.
     cid = kwargs.get('id')
 
@@ -1434,7 +1435,7 @@ class IssueService(object):
       issue.project_id = move_to
     return []
 
-  def GetCommentsForIssues(self, _cnxn, issue_ids):
+  def GetCommentsForIssues(self, _cnxn, issue_ids, content_only=False):
     comments_dict = {}
     for issue_id in issue_ids:
       comments_dict[issue_id] = self.comments_by_iid[issue_id]

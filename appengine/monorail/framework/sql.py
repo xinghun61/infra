@@ -60,6 +60,11 @@ def MakeConnection(instance, database):
   return cnxn
 
 
+def RandomShardID():
+  """Return a random shard ID to load balance across replicas."""
+  return random.randint(0, settings.num_logical_shards - 1)
+
+
 class MonorailConnection(object):
   """Create and manage connections to the SQL servers.
 
@@ -130,8 +135,8 @@ class MonorailConnection(object):
     start_time = time.time()
     cursor = sql_cnxn.cursor()
     cursor.execute('SET NAMES utf8mb4')
-    logging.info('made cursor in %d ms',
-                 int((time.time() - start_time) * 1000))
+    logging.info('made cursor on %r in %d ms',
+                 sql_cnxn, int((time.time() - start_time) * 1000))
     if stmt_str.startswith('INSERT') or stmt_str.startswith('REPLACE'):
       cursor.executemany(stmt_str, stmt_args)
     else:

@@ -482,3 +482,8 @@ class FunctionsTest(unittest.TestCase):
     self.assertEqual(
         [12, 1, 'hi', [0, 'yo']],
         sql._BoolsToInts([12, True, 'hi', [False, 'yo']]))
+
+  def testRandomShardID(self):
+    """A random shard ID must always be a valid shard ID."""
+    shard_id = sql.RandomShardID()
+    self.assertTrue(0 <= shard_id < settings.num_logical_shards)

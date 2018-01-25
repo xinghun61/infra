@@ -1185,18 +1185,20 @@ class IssueServiceTest(unittest.TestCase):
     cids = [issue_id + 1000 for issue_id in issue_ids]
     self.services.issue.comment_tbl.Select(
         self.cnxn, cols=issue_svc.COMMENT_COLS,
-        where=None, issue_id=issue_ids, order_by=[('created', [])]).AndReturn([
+        where=None, issue_id=issue_ids, order_by=[('created', [])],
+        shard_id=mox.IsA(int)).AndReturn([
             (issue_id + 1000, issue_id, self.now, 789, 111L,
              None, False, False, issue_id + 5000)
             for issue_id in issue_ids])
     self.services.issue.commentcontent_tbl.Select(
         self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,
-        id=[issue_id + 5000 for issue_id in issue_ids]).AndReturn([
+        id=[issue_id + 5000 for issue_id in issue_ids],
+        shard_id=mox.IsA(int)).AndReturn([
         (issue_id + 5000, 'content', None) for issue_id in issue_ids])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
-        comment_id=cids).AndReturn([])
+        comment_id=cids, shard_id=mox.IsA(int)).AndReturn([])
     attachment_rows = []
     if issue_ids:
       attachment_rows = [
@@ -1205,7 +1207,7 @@ class IssueServiceTest(unittest.TestCase):
 
     self.services.issue.attachment_tbl.Select(
         self.cnxn, cols=issue_svc.ATTACHMENT_COLS,
-        comment_id=cids).AndReturn(attachment_rows)
+        comment_id=cids, shard_id=mox.IsA(int)).AndReturn(attachment_rows)
 
   def testGetComments_Empty(self):
     self.SetUpGetComments([])
@@ -1230,20 +1232,21 @@ class IssueServiceTest(unittest.TestCase):
     commentcontent_id = comment_id * 10
     self.services.issue.comment_tbl.Select(
         self.cnxn, cols=issue_svc.COMMENT_COLS,
-        where=None, id=comment_id, order_by=[('created', [])]).AndReturn([
+        where=None, id=comment_id, order_by=[('created', [])],
+        shard_id=mox.IsA(int)).AndReturn([
             (comment_id, int(comment_id / 100), self.now, 789, 111L,
              None, False, True, commentcontent_id)])
     self.services.issue.commentcontent_tbl.Select(
         self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,
-        id=[commentcontent_id]).AndReturn([
+        id=[commentcontent_id], shard_id=mox.IsA(int)).AndReturn([
             (commentcontent_id, 'content', None)])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
-        comment_id=[comment_id]).AndReturn([])
+        comment_id=[comment_id], shard_id=mox.IsA(int)).AndReturn([])
     self.services.issue.attachment_tbl.Select(
         self.cnxn, cols=issue_svc.ATTACHMENT_COLS,
-        comment_id=[comment_id]).AndReturn([])
+        comment_id=[comment_id], shard_id=mox.IsA(int)).AndReturn([])
 
   def testGetComment_Found(self):
     self.SetUpGetComment_Found(7890101)
@@ -1256,16 +1259,18 @@ class IssueServiceTest(unittest.TestCase):
     # Assumes one comment per issue.
     self.services.issue.comment_tbl.Select(
         self.cnxn, cols=issue_svc.COMMENT_COLS,
-        where=None, id=comment_id, order_by=[('created', [])]).AndReturn([])
+        where=None, id=comment_id, order_by=[('created', [])],
+        shard_id=mox.IsA(int)).AndReturn([])
     self.services.issue.commentcontent_tbl.Select(
         self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,
-        id=[]).AndReturn([])
+        id=[], shard_id=mox.IsA(int)).AndReturn([])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
-        comment_id=[]).AndReturn([])
+        comment_id=[], shard_id=mox.IsA(int)).AndReturn([])
     self.services.issue.attachment_tbl.Select(
-        self.cnxn, cols=issue_svc.ATTACHMENT_COLS, comment_id=[]).AndReturn([])
+        self.cnxn, cols=issue_svc.ATTACHMENT_COLS, comment_id=[],
+        shard_id=mox.IsA(int)).AndReturn([])
 
   def testGetComment_Missing(self):
     self.SetUpGetComment_Missing(7890101)

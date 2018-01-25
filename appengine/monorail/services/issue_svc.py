@@ -72,6 +72,8 @@ ISSUE2NOTIFY_COLS = ['issue_id', 'email']
 ISSUE2FIELDVALUE_COLS = [
     'issue_id', 'field_id', 'int_value', 'str_value', 'user_id', 'date_value',
     'url_value', 'derived']
+# Explicitly specify column 'Comment.id' to allow joins on other tables that
+# have an 'id' column.
 COMMENT_COLS = [
     'Comment.id', 'issue_id', 'created', 'Comment.project_id', 'commenter_id',
     'deleted_by', 'Comment.is_spam', 'is_description',
@@ -1899,22 +1901,26 @@ class IssueService(object):
 
   # TODO(jrobbins): make this a private method and expose just the interface
   # needed by activities.py.
-  def GetComments(self, cnxn, where=None, order_by=None, **kwargs):
+  def GetComments(
+      self, cnxn, where=None, order_by=None, content_only=False, **kwargs):
     """Retrieve comments from SQL."""
-    # Explicitly specify column Comment.id to allow joins on other tables that
-    # have an id column.
+    shard_id = sql.RandomShardID()
     order_by = order_by or [('created', [])]
     comment_rows = self.comment_tbl.Select(
         cnxn, cols=COMMENT_COLS, where=where,
-        order_by=order_by, **kwargs)
+        order_by=order_by, shard_id=shard_id, **kwargs)
     cids = [row[0] for row in comment_rows]
     commentcontent_ids = [row[-1] for row in comment_rows]
     content_rows = self.commentcontent_tbl.Select(
-        cnxn, cols=COMMENTCONTENT_COLS, id=commentcontent_ids)
-    amendment_rows = self.issueupdate_tbl.Select(
-        cnxn, cols=ISSUEUPDATE_COLS, comment_id=cids)
-    attachment_rows = self.attachment_tbl.Select(
-        cnxn, cols=ATTACHMENT_COLS, comment_id=cids)
+        cnxn, cols=COMMENTCONTENT_COLS, id=commentcontent_ids,
+        shard_id=shard_id)
+    amendment_rows = []
+    attachment_rows = []
+    if not content_only:
+      amendment_rows = self.issueupdate_tbl.Select(
+          cnxn, cols=ISSUEUPDATE_COLS, comment_id=cids, shard_id=shard_id)
+      attachment_rows = self.attachment_tbl.Select(
+          cnxn, cols=ATTACHMENT_COLS, comment_id=cids, shard_id=shard_id)
 
     comments = self._DeserializeComments(
         comment_rows, content_rows, amendment_rows, attachment_rows)
@@ -1957,17 +1963,20 @@ class IssueService(object):
       A list of the IssueComment protocol buffers for the description
       and comments on this issue.
     """
+    shard_id = sql.RandomShardID()
     order_by = [('created ASC', [])]
     comment_rows = self.comment_tbl.Select(
-        cnxn, cols=COMMENT_COLS, order_by=order_by, id=comment_ids)
+        cnxn, cols=COMMENT_COLS, order_by=order_by, id=comment_ids,
+        shard_id=shard_id)
     comment_ids = [row[0] for row in comment_rows]
     commentcontent_ids = [row[-1] for row in comment_rows]
     content_rows = self.commentcontent_tbl.Select(
-        cnxn, cols=COMMENTCONTENT_COLS, id=commentcontent_ids)
+        cnxn, cols=COMMENTCONTENT_COLS, id=commentcontent_ids,
+        shard_id=shard_id)
     amendment_rows = self.issueupdate_tbl.Select(
-        cnxn, cols=ISSUEUPDATE_COLS, comment_id=comment_ids)
+        cnxn, cols=ISSUEUPDATE_COLS, comment_id=comment_ids, shard_id=shard_id)
     attachment_rows = self.attachment_tbl.Select(
-        cnxn, cols=ATTACHMENT_COLS, comment_id=comment_ids)
+        cnxn, cols=ATTACHMENT_COLS, comment_id=comment_ids, shard_id=shard_id)
 
     comments = self._DeserializeComments(
         comment_rows, content_rows, amendment_rows, attachment_rows)
@@ -1979,26 +1988,31 @@ class IssueService(object):
 
   def GetAbbrCommentsForIssue(self, cnxn, issue_id):
     """Get all abbreviated comments for the specified issue."""
+    shard_id = sql.RandomShardID()
     order_by = [('created ASC', [])]
     comment_rows = self.comment_tbl.Select(
-        cnxn, cols=ABBR_COMMENT_COLS, issue_id=[issue_id], order_by=order_by)
+        cnxn, cols=ABBR_COMMENT_COLS, issue_id=[issue_id], order_by=order_by,
+        shard_id=shard_id)
 
     return comment_rows
 
   # TODO(jrobbins): remove this method because it is too slow when an issue
   # has a huge number of comments.
-  def GetCommentsForIssues(self, cnxn, issue_ids):
+  def GetCommentsForIssues(self, cnxn, issue_ids, content_only=False):
     """Return all IssueComment PBs for each issue ID in the given list.
 
     Args:
       cnxn: connection to SQL database.
       issue_ids: list of integer global issue IDs.
+      content_only: optional boolean, set true for faster loading of
+          comment content without attachments and amendments.
 
     Returns:
       Dict {issue_id: [IssueComment, ...]} with IssueComment protocol
       buffers for the description and comments on each issue.
     """
-    comments = self.GetComments(cnxn, issue_id=issue_ids)
+    comments = self.GetComments(
+        cnxn, issue_id=issue_ids, content_only=content_only)
 
     comments_dict = collections.defaultdict(list)
     for comment in comments:
