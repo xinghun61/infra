@@ -5,7 +5,10 @@
 
 """Unit tests for the fieldcreate servlet."""
 
+import mox
 import unittest
+
+from third_party import ezt
 
 from framework import permissions
 from proto import tracker_pb2
@@ -28,6 +31,12 @@ class FieldCreateTest(unittest.TestCase):
     self.project = self.services.project.TestAddProject('proj')
     self.mr = testing_helpers.MakeMonorailRequest(
         project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
+
+    self.mox = mox.Mox()
+
+  def tearDown(self):
+    self.mox.UnsetStubs()
+    self.mox.ResetAll()
 
   def testAssertBasePermission(self):
     # Anon users can never do it
@@ -89,6 +98,41 @@ class FieldCreateTest(unittest.TestCase):
     self.assertEqual('Defect', fd.applicable_type)
     self.assertEqual('', fd.applicable_predicate)
     self.assertEqual([], fd.admin_ids)
+
+  def testProcessFormData_RejectApprover(self):
+    post_data = fake.PostData(
+        name=['approvalField'],
+        field_type=['approval_type'],
+        approver_names=['doesnotexist@chromium.org'],
+        admin_names=[''])
+
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        self.mr, initial_field_name=post_data.get('name'),
+        initial_type=post_data.get('field_type'),
+        initial_field_docstring=post_data.get('docstring', ''),
+        initial_applicable_type=post_data.get('applical_type', ''),
+        initial_applicable_predicate='',
+        initial_needs_member=ezt.boolean('needs_member' in post_data),
+        initial_needs_perm=post_data.get('needs_perm', '').strip(),
+        initial_importance=post_data.get('importance'),
+        initial_is_multivalued=ezt.boolean('is_multivalued' in post_data),
+        initial_grants_perm=post_data.get('grants_perm', '').strip(),
+        initial_notify_on=0,
+        initial_date_action= post_data.get('date_action'),
+        initial_choices=post_data.get('choices', ''),
+        initial_lenient_statuses=post_data.get('lenient_statuses', ''),
+        initial_strict_stauses=post_data.get('strict_statuses', ''),
+        initial_approvers=post_data.get('approver_names', ''),
+        initial_survey=post_data.get('survey', ''),
+        initial_admins=post_data.get('admin_names')
+    )
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual(
+        'One or more approvers not found.', self.mr.errors.approvers)
+    self.assertIsNone(url)
 
 
 class CheckFieldNameJSONTest(unittest.TestCase):

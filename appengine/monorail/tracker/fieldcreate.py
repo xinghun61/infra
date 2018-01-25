@@ -19,6 +19,7 @@ from framework import urls
 from tracker import field_helpers
 from tracker import tracker_constants
 from tracker import tracker_helpers
+from services import user_svc
 
 
 class FieldCreate(servlet.Servlet):
@@ -67,6 +68,11 @@ class FieldCreate(servlet.Servlet):
         'initial_notify_on': 0,
         'initial_date_action': 'no_action',
         'well_known_issue_types': well_known_issue_types,
+        'initial_lenient_statuses': 'ReviewRequested\n'
+        'InProgress = Someone has started reviwing this approval',
+        'initial_strict_statuses': 'Approved',
+        'initial_approvers': '',
+        'initial_survey': '',
         }
 
   def ProcessFormData(self, mr, post_data):
@@ -102,6 +108,15 @@ class FieldCreate(servlet.Servlet):
     admin_ids, admin_str = tracker_helpers.ParseAdminUsers(
         mr.cnxn, post_data['admin_names'], self.services.user)
 
+    if parsed.approvers_str:
+      try:
+        approver_ids_dict = self.services.user.LookupUserIDs(
+            mr.cnxn, re.split('[,;\s]+', parsed.approvers_str))
+        logging.info(approver_ids_dict)
+        _approver_ids = list(set(approver_ids_dict.values()))
+      except user_svc.NoSuchUserException:
+        mr.errors.approvers = 'One or more approvers not found.'
+
     if mr.errors.AnyErrors():
       self.PleaseCorrect(
           mr, initial_field_name=parsed.field_name,
@@ -117,17 +132,24 @@ class FieldCreate(servlet.Servlet):
           initial_notify_on=parsed.notify_on,
           initial_date_action=parsed.date_action_str,
           initial_choices=parsed.choices_text,
-          initial_admins=admin_str)
+          initial_lenient_statuses=parsed.lenient_statuses_text,
+          initial_strict_stauses=parsed.strict_statuses_text,
+          initial_approvers=parsed.approvers_str,
+          initial_survey=parsed.survey,
+          initial_admins=admin_str,
+      )
       return
 
     print 'parsed is %r' % (parsed,)
-    self.services.config.CreateFieldDef(
-        mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
-        parsed.applicable_type, parsed.applicable_predicate,
-        parsed.is_required, parsed.is_niche, parsed.is_multivalued,
-        parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
-        parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
-        parsed.date_action_str, parsed.field_docstring, admin_ids)
+    # TODO(jojwang): monorail:3241, remove this and process approval_types
+    if parsed.field_type_str != 'approval_type':
+      self.services.config.CreateFieldDef(
+          mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
+          parsed.applicable_type, parsed.applicable_predicate,
+          parsed.is_required, parsed.is_niche, parsed.is_multivalued,
+          parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
+          parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
+          parsed.date_action_str, parsed.field_docstring, admin_ids)
     if parsed.field_type_str == 'enum_type':
       self.services.config.UpdateConfig(
           mr.cnxn, mr.project, well_known_labels=parsed.revised_labels)

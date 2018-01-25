@@ -38,6 +38,9 @@
         <option value="user_type" [is initial_type "user_type"]selected="selected"[end]>User</option>
         <option value="date_type" [is initial_type "date_type"]selected="selected"[end]>Date</option>
         <option value="url_type" [is initial_type "url_type"]selected="selected"[end]>URL</option>
+        [if-any dev_mode]
+        <option value="approval_type" [is initial_type "approval_type"]selected="selected"[end]>Approval</option>
+        [end]
       </select>
     </td>
   </tr>
@@ -67,7 +70,7 @@
     </td>
   </tr>
 
-  <tr>
+  <tr id="multi_row">
     <th>Multivalued:</th>
     <td>
       <input type="checkbox" name="is_multivalued" class="acob"
@@ -147,6 +150,43 @@
     </td>
   </tr>
 
+  <tr id="approval_row" style="display:none">
+    <th>Lenient States:</th>
+    <td>
+      Approval states that anyone involved in the issue can change the status to and from.
+      <textarea name="lenient_statuses" rows="10" cols="75" style="tab-size:12"
+          >[initial_lenient_statuses]</textarea>
+    </td>
+  </tr>
+
+  <tr id="approval_row2" style="display:none">
+    <th>Strict States:</th>
+    <td>
+      Approval states that only listed approvers can change the status to and from.
+      <textarea name="scrict_statuses" rows="10" cols="75" style="tab-size:12"
+          >[initial_strict_statuses]</textarea>
+    </td>
+  </tr>
+
+  <tr id="approval_row3" style="display:none">
+    <th>Approvers:</th>
+    <td>
+      <input id="approvers" name="approver_names" size="75" value="[initial_approvers]"
+          autocomplete="off">
+      <span class="fielderror" style="margin-left:1em">
+        [if-any errors.approvers][errors.approvers][end]
+      </span>
+    </td>
+  </tr>
+
+  <tr id="approval_row4" style="display:none">
+    <th>Survey:</th>
+    <td>
+      Any information feature owners need to provide for the approval team should be requested here.
+      <textarea name="survey" rows="4" cols="75">[initial_survey]</textarea>
+    </td>
+  </tr>
+
   <tr>
     <th>Admins:</th>
     <td>
@@ -221,6 +261,14 @@ runOnLoad(function() {
 
     var date_row_display = (new_type == 'date_type') ? '' : 'none';
     document.getElementById('date_row').style.display = date_row_display;
+
+    let approval_row_display = (new_type == 'approval_type') ? '' : 'none';
+    document.getElementById(
+        'multi_row').style.display = (new_type == 'approval_type') ? 'none' : '';
+    document.getElementById('approval_row').style.display = approval_row_display;
+    document.getElementById('approval_row2').style.display = approval_row_display;
+    document.getElementById('approval_row3').style.display = approval_row_display;
+    document.getElementById('approval_row4').style.display = approval_row_display;
   }
 
   var type_select = document.getElementById('field_type');

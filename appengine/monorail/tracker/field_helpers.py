@@ -29,7 +29,9 @@ ParsedFieldDef = collections.namedtuple(
     'field_name, field_type_str, min_value, max_value, regex, '
     'needs_member, needs_perm, grants_perm, notify_on, is_required, '
     'is_niche, importance, is_multivalued, field_docstring, choices_text, '
-    'applicable_type, applicable_predicate, revised_labels, date_action_str')
+    'applicable_type, applicable_predicate, revised_labels, date_action_str, '
+    'lenient_statuses_text, lenient_statuses, strict_statuses_text, '
+    'strict_statuses, approvers_str, survey')
 
 
 def ParseFieldDefRequest(post_data, config):
@@ -67,13 +69,26 @@ def ParseFieldDefRequest(post_data, config):
   revised_labels = _ParseChoicesIntoWellKnownLabels(
       choices_text, field_name, config)
   date_action_str = post_data.get('date_action')
+  lenient_statuses_text = post_data.get('lenient_statuses', '')
+  lenient_statuses = _ParseApprovalStatusStrings(lenient_statuses_text)
+  strict_statuses_text = post_data.get('strict_statuses', '')
+  strict_statuses = _ParseApprovalStatusStrings(strict_statuses_text)
+  approvers_str = post_data.get('approver_names', '')
+  survey = post_data.get('survey', '')
 
   return ParsedFieldDef(
       field_name, field_type_str, min_value, max_value, regex,
       needs_member, needs_perm, grants_perm, notify_on, is_required, is_niche,
       importance, is_multivalued, field_docstring, choices_text,
-      applicable_type, applicable_predicate, revised_labels, date_action_str)
+      applicable_type, applicable_predicate, revised_labels, date_action_str,
+      lenient_statuses_text, lenient_statuses, strict_statuses_text,
+      strict_statuses, approvers_str, survey)
 
+def _ParseApprovalStatusStrings(status_text):
+  matches = framework_constants.IDENTIFIER_DOCSTRING_RE.findall(status_text)
+  statuses = [(status, status_docstring.strip())
+              for status, status_docstring in matches]
+  return statuses
 
 def _ParseChoicesIntoWellKnownLabels(choices_text, field_name, config):
   """Parse a field's possible choices and integrate them into the config.
