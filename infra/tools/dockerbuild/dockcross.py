@@ -318,8 +318,8 @@ class Image(collections.namedtuple('_Image', (
     else:
       # Build arguments to run natively.
       if cmd[0] == 'python':
-        # Use current Python interpreter if requested.
-        cmd[0] = sys.executable
+        # Use system-native Python interpreter if requested.
+        cmd[0] = self.system.native_python
 
     args += cmd
     return self.system.run(args, cwd=cwd, **kwargs)

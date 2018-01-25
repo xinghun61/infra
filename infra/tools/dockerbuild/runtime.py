@@ -7,6 +7,7 @@ import contextlib
 import logging
 import multiprocessing
 import os
+import sys
 import subprocess
 import tempfile
 
@@ -40,7 +41,9 @@ class System(object):
       self.returncode = returncode
       self.output = output
 
-  def __init__(self, tools, dirs, leak, upload_sources, force_source_download):
+  def __init__(self, native_python, tools, dirs, leak, upload_sources,
+               force_source_download):
+    self._native_python = native_python
     self._tools = tools
     self._dirs = dirs
     self._repo = source.Repository(self, dirs.repo, upload=upload_sources,
@@ -51,8 +54,9 @@ class System(object):
     self._dockcross_images = {}
 
   @classmethod
-  def initialize(cls, root, leak=False, upload_sources=False,
-                 force_source_download=False):
+  def initialize(cls, root, native_python=None, leak=False,
+                 upload_sources=False, force_source_download=False):
+    native_python = native_python or sys.executable
     tools = cls._Tools(
         gcloud=cls._find_tool('gcloud'),
         cipd=cls._find_tool('cipd'),
@@ -70,7 +74,12 @@ class System(object):
         pkg=util.ensure_directory(root, 'packages'),
         cipd_cache=util.ensure_directory(root, 'cipd_cache'),
     )
-    return cls(tools, dirs, leak, upload_sources, force_source_download)
+    return cls(native_python, tools, dirs, leak, upload_sources,
+               force_source_download)
+
+  @property
+  def native_python(self):
+    return self._native_python
 
   @classmethod
   def _find_tool(cls, name):

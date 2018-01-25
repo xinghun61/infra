@@ -85,7 +85,10 @@ UniversalSpec = collections.namedtuple('UniversalSpec', (
 
 
 _Spec = collections.namedtuple('_Spec', (
-    'name', 'version', 'universal'))
+    'name', 'version', 'universal',
+    # default is true if this Spec should be built by default (i.e., when a
+    # user doesn't manually specify Specs to build).
+    'default'))
 class Spec(_Spec):
 
   @property
@@ -263,24 +266,32 @@ class Builder(object):
       util.LOGGER.info('Package is already built: %s', pkg_path)
       return pkg_path
 
-    # Rebuild the wheel, if necessary.
-    wheel_path = wheel.path(system)
-    if rebuild or not os.path.isfile(wheel_path):
-      self._build_fn(system, wheel)
-    else:
-      util.LOGGER.info('Wheel is already built: %s', wheel_path)
+    # Rebuild the wheel, if necessary. Get their ".whl" file paths.
+    built_wheels = self.build_wheel(wheel, system, rebuild=rebuild)
+    wheel_paths = [w.path(system) for w in built_wheels]
 
-    # Create a CIPD package for the wheel.
-    util.LOGGER.info('Creating CIPD package: %r => %r', wheel_path, pkg_path)
+    # Create a CIPD package for the wheel. Give the wheel a universal filename
+    # within the CIPD package.
+    #
+    # See "A Note on Universiality" at the top.
+    util.LOGGER.info('Creating CIPD package: %r => %r', wheel_paths, pkg_path)
     with system.temp_subdir('cipd_%s_%s' % wheel.spec.tuple) as tdir:
-      # Give the wheel a universal filename within the CIPD package.
-      #
-      # See "A Note on Universiality" at the top.
-      universal_wheel_path = os.path.join(tdir, wheel.universal_filename())
-      shutil.copy(wheel_path, universal_wheel_path)
+      for w in built_wheels:
+        universal_wheel_path = os.path.join(tdir, w.universal_filename())
+        shutil.copy(w.path(system), universal_wheel_path)
       system.cipd.create_package(wheel.cipd_package(), tdir, pkg_path)
 
     return pkg_path
+
+  def build_wheel(self, wheel, system, rebuild=False):
+    built_wheels = [wheel]
+    wheel_path = wheel.path(system)
+    if rebuild or not os.path.isfile(wheel_path):
+      # The build_fn may return an alternate list of wheels.
+      built_wheels = self._build_fn(system, wheel) or built_wheels
+    else:
+      util.LOGGER.info('Wheel is already built: %s', wheel_path)
+    return built_wheels
 
 
 def check_run(system, dx, work_root, cmd, cwd=None):
@@ -300,7 +311,7 @@ def check_run(system, dx, work_root, cmd, cwd=None):
     """
   if dx is None:
     if cmd[0] == 'python':
-      cmd[0] = sys.executable
+      cmd[0] = system.native_python
     return system.check_run(cmd, cwd=cwd or work_root)
   return dx.check_run(work_root, cmd, cwd=cwd)
 
@@ -538,7 +549,7 @@ def BuildWheel(name, version, **kwargs):
   Returns (Builder): A configured Builder for the specified wheel.
   """
   pypi_src = source.pypi_sdist(name, version)
-  spec = Spec(name=name, version=pypi_src.version, universal=None)
+  spec = Spec(name=name, version=pypi_src.version, universal=None, default=True)
 
   packaged = set(kwargs.pop('packaged', (p.name for p in platform.PACKAGED)))
 
@@ -548,6 +559,30 @@ def BuildWheel(name, version, **kwargs):
     return _build_source(system, wheel, pypi_src)
 
   return Builder(spec, build_fn, **kwargs)
+
+
+def Bundle(name, version, wheels, only_plat=None, default=True):
+  """Builds a wheel consisting of multiple other wheels.
+
+  Bundles can be useful when a user always wants a common set of packages.
+
+  Args:
+    name (str): The name of the bundle wheel.
+    version (str): The bundle wheel version.
+    wheels (iterable): A set of embedded wheel rules to add to the bundle.
+    only_plat: (See Builder's "only_plat" argument.)
+  """
+  spec = Spec(name=name, version=version, universal=None, default=default)
+
+  def build_fn(system, wheel):
+    sub_wheels = []
+    for w in wheels:
+      sub_wheel = w.wheel(system, wheel.plat)
+      util.LOGGER.info('Building sub-wheel: %s', sub_wheel)
+      sub_wheels += w.build_wheel(sub_wheel, system)
+    return sub_wheels
+
+  return Builder(spec, build_fn, only_plat=only_plat)
 
 
 def BuildCryptographyWheel(name, crypt_src, openssl_src, packaged=None,
@@ -567,7 +602,8 @@ def BuildCryptographyWheel(name, crypt_src, openssl_src, packaged=None,
 
   Returns (Builder): A configured Builder for the specified wheel.
   """
-  spec = Spec(name=name, version=crypt_src.version, universal=None)
+  spec = Spec(name=name, version=crypt_src.version, universal=None,
+              default=True)
 
   def build_fn(system, wheel):
     if wheel.plat.name in (packaged or ()):
@@ -595,7 +631,7 @@ def BuildOpenCVWheel(name, version, numpy_version, packaged=None,
 
   Returns (Builder): A configured Builder for the specified wheel.
   """
-  spec = Spec(name=name, version=version, universal=None)
+  spec = Spec(name=name, version=version, universal=None, default=True)
 
   def build_fn(system, wheel):
     if wheel.plat.name in (packaged or ()):
@@ -622,6 +658,7 @@ def Packaged(name, version, only_plat, **kwargs):
       name=name,
       version=version,
       universal=None,
+      default=True,
   )
 
   def build_fn(system, wheel):
@@ -641,7 +678,8 @@ def InfraPure(name):
   spec = Spec(
       name=name,
       version=None,
-      universal=UniversalSpec(pyversions=['py2'])
+      universal=UniversalSpec(pyversions=['py2']),
+      default=True,
   )
 
   def _local_path(system):
@@ -677,6 +715,7 @@ def Universal(name, version, pyversions=None, **kwargs):
       universal=UniversalSpec(
         pyversions=pyversions,
       ),
+      default=True,
   )
 
   return Builder(spec, _build_package, **kwargs)
@@ -708,6 +747,7 @@ def UniversalSource(name, pypi_version, pyversions=None, pypi_name=None,
       universal=UniversalSpec(
         pyversions=pyversions,
       ),
+      default=True,
   )
 
   def build_fn(system, wheel):
@@ -858,6 +898,73 @@ SPECS = {s.spec.tag: s for s in (
       only_plat=['manylinux-x64', 'mac-x64'],
   ),
 
+  # List cultivated from "pyobjc-2.5.1"'s "setup.py" as a superset of available
+  # packages.
+  #
+  # - This must be built on Mac 10.9 or lower due to a version string
+  #   parsing error in "setup.py" that rates "10.10" as a lower version than
+  #   "10.9".
+  # - The package requires that "setuptools==1" package be installed. Since
+  #   "run.py" doesn't support this version, the user must create their own
+  #   VirtualEnv, manually install "setuptools==1", and then use the
+  #   "--native-python" Dockerbuild flag to build using that Python.
+  Bundle('pyobjc', '2.5.1', (
+    [BuildWheel(name, '2.5.1', packaged=[]) for name in ['pyobjc-core'] +
+      ['pyobjc-framework-%s' % (v,) for v in [
+        'Accounts', 'AddressBook', 'AppleScriptKit', 'AppleScriptObjC',
+        'Automator', 'CFNetwork', 'CalendarStore', 'Cocoa', 'Collaboration',
+        'CoreData', 'CoreLocation', 'CoreText', 'DictionaryServices',
+        'EventKit', 'ExceptionHandling', 'FSEvents', 'InputMethodKit',
+        'InstallerPlugins', 'InstantMessage', 'LatentSemanticMapping',
+        'LaunchServices', 'Message', 'PreferencePanes', 'PubSub', 'QTKit',
+        'Quartz', 'ScreenSaver', 'ScriptingBridge', 'SearchKit',
+        'ServerNotification', 'ServiceManagement', 'Social', 'SyncServices',
+        'SystemConfiguration', 'WebKit',
+      ]]
+    ]),
+    only_plat=['mac-x64'],
+    # Because this requires a specialized environment, we will not include it in
+    # the default wheel list.
+    default=False,
+  ),
+
+  # List cultivated from "pyobjc-4.1"'s "setup.py" as a superset of available
+  # packages.
+  #
+  # This package is designed to be built on 10.12, and had to omit the following
+  # framework packages, which require 10.13 to build:
+  # - CoreML
+  # - CoreSpotlight
+  # - ExternalAccessory
+  # - Vision
+  Bundle('pyobjc', '4.1', (
+    [BuildWheel(name, '4.1', packaged=[]) for name in ['pyobjc-core'] +
+      ['pyobjc-framework-%s' % (v,) for v in [
+        'AVFoundation', 'AVKit', 'Accounts', 'AddressBook', 'AppleScriptKit',
+        'AppleScriptObjC', 'ApplicationServices', 'Automator', 'CFNetwork',
+        'CalendarStore', 'CloudKit', 'Cocoa', 'Collaboration', 'ColorSync',
+        'Contacts', 'ContactsUI', 'CoreBluetooth', 'CoreData', 'CoreLocation',
+        'CoreServices', 'CoreText', 'CoreWLAN', 'CryptoTokenKit',
+        'DictionaryServices', 'DiskArbitration', 'EventKit',
+        'ExceptionHandling', 'FSEvents', 'FinderSync', 'GameCenter',
+        'GameController', 'GameKit', 'GameplayKit', 'IMServicePlugIn',
+        'IOSurface', 'ImageCaptureCore', 'InputMethodKit', 'InstallerPlugins',
+        'InstantMessage', 'Intents', 'InterfaceBuilderKit',
+        'LatentSemanticMapping', 'LaunchServices', 'LocalAuthentication',
+        'MapKit', 'MediaAccessibility', 'MediaLibrary', 'MediaPlayer',
+        'Message', 'ModelIO', 'MultipeerConnectivity', 'NetFS',
+        'NetworkExtension', 'NotificationCenter', 'OpenDirectory', 'Photos',
+        'PhotosUI', 'PreferencePanes', 'PubSub', 'QTKit', 'Quartz',
+        'SafariServices', 'SceneKit', 'ScreenSaver', 'ScriptingBridge',
+        'SearchKit', 'Security', 'SecurityFoundation', 'SecurityInterface',
+        'ServerNotification', 'ServiceManagement', 'Social', 'SpriteKit',
+        'StoreKit', 'SyncServices', 'SystemConfiguration', 'WebKit',
+        'XgridFoundation', 'iTunesLibrary', 'libdispatch',
+      ]]
+    ]),
+    only_plat=['mac-x64'],
+  ),
+
   Universal('appdirs', '1.4.3'),
   UniversalSource('apache-beam', '2.0.0'),
   UniversalSource('Appium_Python_Client', '0.24',
@@ -925,3 +1032,5 @@ SPECS = {s.spec.tag: s for s in (
   InfraPure('infra_libs'),
 )}
 SPEC_NAMES = sorted(SPECS.keys())
+DEFAULT_SPEC_NAMES = sorted([s.spec.tag for s in SPECS.itervalues()
+                             if s.spec.default])

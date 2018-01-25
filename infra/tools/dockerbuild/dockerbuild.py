@@ -23,7 +23,8 @@ from . import wheel
 def _filter_platform_specs(selected_platforms, selected_specs):
   filtered_platforms = [platform.ALL[p] for p in (
       platform.NAMES if not selected_platforms else selected_platforms)]
-  filtered_specs = wheel.SPEC_NAMES if not selected_specs else selected_specs
+  filtered_specs = (wheel.DEFAULT_SPEC_NAMES if not selected_specs
+                    else selected_specs)
   return filtered_platforms, filtered_specs
 
 
@@ -156,6 +157,9 @@ def add_argparse_options(parser):
       help='Root directory for checkouts and builds.')
   parser.add_argument('--leak', action='store_true',
       help='Leak temporary files instead of deleting them.')
+  parser.add_argument('--native-python', action='store', default=sys.executable,
+      help='Path to the Python interpreter to use for native invocations. '
+           'If empty, use the current interpreter.')
 
   group = parser.add_argument_group('sources')
   group.add_argument('--upload-sources', action='store_true',
@@ -236,6 +240,7 @@ def run(args):
   system = runtime.System.initialize(
       args.root,
       leak=args.leak,
+      native_python=args.native_python,
       upload_sources=args.upload_sources,
       force_source_download=args.force_source_download)
 
