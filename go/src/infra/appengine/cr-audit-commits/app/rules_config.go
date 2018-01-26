@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/common/api/gitiles"
+	"go.chromium.org/luci/common/proto/git"
 )
 
 // RepoConfig represents the hard-coded config for a monitored repo and a
@@ -93,7 +93,7 @@ var RuleMap = map[string]*RepoConfig{
 // Note that the methods in this interface are not rules, but tests that can
 // decide whether the rules in the set apply to a given commit.
 type RuleSet interface {
-	MatchesCommit(gitiles.Commit) bool
+	MatchesCommit(*git.Commit) bool
 	MatchesRelevantCommit(*RelevantCommit) bool
 }
 
@@ -107,8 +107,8 @@ type AccountRules struct {
 
 // MatchesCommit determines whether the AccountRules set it's bound to, applies
 // to the given commit.
-func (ar AccountRules) MatchesCommit(c gitiles.Commit) bool {
-	return c.Committer.Email == ar.Account || c.Author.Email == ar.Account
+func (ar AccountRules) MatchesCommit(c *git.Commit) bool {
+	return c.GetCommitter().GetEmail() == ar.Account || c.GetAuthor().GetEmail() == ar.Account
 }
 
 // MatchesRelevantCommit determines whether the AccountRules set it's bound to,

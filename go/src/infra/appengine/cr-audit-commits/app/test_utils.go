@@ -15,24 +15,10 @@ import (
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gerrit"
-	"go.chromium.org/luci/common/api/gitiles"
 
 	buildbot "infra/monitoring/messages"
 	mr "infra/monorail"
 )
-
-type mockGitilesClient struct {
-	r []gitiles.Commit
-	e error
-}
-
-func (c mockGitilesClient) LogForward(ctx context.Context, baseURL, rev, branch string, opts ...gitiles.LogOption) ([]gitiles.Commit, error) {
-	return c.r, c.e
-}
-
-func (c mockGitilesClient) Log(ctx context.Context, baseURL, treeish string, opts ...gitiles.LogOption) ([]gitiles.Commit, error) {
-	return c.r, c.e
-}
 
 type mockGerritClient struct {
 	q  map[string][]*gerrit.Change

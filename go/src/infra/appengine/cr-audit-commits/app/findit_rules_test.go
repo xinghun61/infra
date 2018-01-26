@@ -7,16 +7,19 @@ package crauditcommits
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gerrit"
-	"go.chromium.org/luci/common/api/gitiles"
+	"go.chromium.org/luci/common/proto/git"
+	gitilespb "go.chromium.org/luci/common/proto/gitiles"
 
 	buildbot "infra/monitoring/messages"
 )
@@ -28,9 +31,6 @@ func TestFinditRules(t *testing.T) {
 	Convey("Findit rules work", t, func() {
 		ctx := memory.Use(context.Background())
 		datastore.GetTestable(ctx).CatchupIndexes()
-		// Mock gerrit query, details (inner map)
-		// Mock gitiles log
-		// Create relevantCommit
 		rs := &RepoState{
 			RepoURL: "https://a.googlesource.com/a.git/+/master",
 		}
@@ -80,70 +80,96 @@ func TestFinditRules(t *testing.T) {
 		testClients.gerrit = &mockGerritClient{q: q, pr: pr}
 
 		Convey("Culprit age Pass", func() {
-			// Inject gitiles log response
-			r := []gitiles.Commit{
-				{
-					Commit: "badc0de",
-					Committer: gitiles.User{
-						Time: mustGitilesTime("Fri Aug 25 07:00:00 2017"),
+			// Inject gitiles response.
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
+			}
+			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+				Project:  "a",
+				Treeish:  "badc0de",
+				PageSize: 1,
+			}).Return(&gitilespb.LogResponse{
+				Log: []*git.Commit{
+					{
+						Id: "badc0de",
+						Committer: &git.Commit_User{
+							Time: mustGitilesTime("Fri Aug 25 07:00:00 2017"),
+						},
 					},
 				},
-			}
-			testClients.gitiles = &mockGitilesClient{r: r}
-			// Run rule
+			}, nil)
 			rr := CulpritAge(ctx, ap, rc, testClients)
-			// Check result code
+			// Check result code.
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
 		})
 		Convey("Culprit age Fail", func() {
-			// Inject gitiles log response
-			r := []gitiles.Commit{
-				{
-					Commit: "badc0de",
-					Committer: gitiles.User{
-						Time: mustGitilesTime("Fri Aug 18 07:00:00 2017"),
+			// Inject gitiles response.
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
+			}
+			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+				Project:  "a",
+				Treeish:  "badc0de",
+				PageSize: 1,
+			}).Return(&gitilespb.LogResponse{
+				Log: []*git.Commit{
+					{
+						Id: "badc0de",
+						Committer: &git.Commit_User{
+							Time: mustGitilesTime("Fri Aug 18 07:00:00 2017"),
+						},
 					},
 				},
-			}
-			testClients.gitiles = &mockGitilesClient{r: r}
-			// Run rule
+			}, nil)
+			// Run rule.
 			rr := CulpritAge(ctx, ap, rc, testClients)
-			// Check result code
+			// Check result code.
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 
 		})
 		Convey("Only commits own change Pass", func() {
-			// Run rule
+			// Run rule.
 			rr := OnlyCommitsOwnChange(ctx, ap, rc, testClients)
-			// Check result code
+			// Check result code.
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
 		})
 		Convey("Only commits own change Pass (someone else commits)", func() {
 			rc.CommitterAccount = "bad-dude@creepy.domain"
-			// Run rule
+			// Run rule.
 			rr := OnlyCommitsOwnChange(ctx, ap, rc, testClients)
-			// Check result code
+			// Check result code.
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
 		})
 		Convey("Only commits own change Fail", func() {
 			rc.AuthorAccount = "bad-dude@creepy.domain"
-			// Run rule
+			// Run rule.
 			rr := OnlyCommitsOwnChange(ctx, ap, rc, testClients)
-			// Check result code
+			// Check result code.
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 
 		})
 		Convey("Culprit age Error", func() {
-			// Inject gitiles error
-			testClients.gitiles = &mockGitilesClient{e: errors.New("Some error")}
-			// Run rule
+			// Inject gitiles error.
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
+			}
+			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+				Project:  "a",
+				Treeish:  "badc0de",
+				PageSize: 1,
+			}).Return(nil, errors.New("Some error"))
+
+			// Run rule.
 			rr := func() {
 				CulpritAge(ctx, ap, rc, testClients)
 			}
-			// Check result code
+			// Check result code.
 			So(rr, ShouldPanic)
 		})
 		Convey("Auto-reverts per day Pass", func() {

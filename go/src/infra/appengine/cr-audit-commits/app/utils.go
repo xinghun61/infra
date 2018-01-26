@@ -17,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/logging"
+	gitilespb "go.chromium.org/luci/common/proto/gitiles"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 
@@ -41,23 +42,8 @@ type gerritClientInterface interface {
 	IsChangePureRevert(context.Context, string) (bool, error)
 }
 
-type gitilesClientInterface interface {
-	LogForward(context.Context, string, string, string, ...gitiles.LogOption) ([]gitiles.Commit, error)
-	Log(context.Context, string, string, ...gitiles.LogOption) ([]gitiles.Commit, error)
-}
-
 type miloClientInterface interface {
 	GetBuildInfo(context.Context, string) (*buildbot.Build, error)
-}
-
-// getGitilesClient creates a new gitiles client bound to a new http client
-// that is bound to an authenticated transport.
-func getGitilesClient(ctx context.Context) (*gitiles.Client, error) {
-	httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope, emailScope)
-	if err != nil {
-		return nil, err
-	}
-	return &gitiles.Client{Client: httpClient}, nil
 }
 
 // TODO(robertocn): move this into a dedicated file for authentication, and
@@ -214,27 +200,51 @@ type Clients struct {
 
 	// Instead of actual clients, use interfaces so that tests
 	// can inject mock clients as needed.
-	gerrit  gerritClientInterface
-	gitiles gitilesClientInterface
-	milo    miloClientInterface
+	gerrit gerritClientInterface
+	milo   miloClientInterface
+
+	httpClient *http.Client
 
 	// This is already an interface so we use it as exported.
-	monorail monorail.MonorailClient
+	monorail       monorail.MonorailClient
+	gitilesFactory GitilesClientFactory
 }
 
-// ConnectAll creates the clients so the rules can use them.
+// GitilesClientFactory is function type for generating new gitiles clients,
+// both the production client factory and any mock factories are expected to
+// implement it.
+type GitilesClientFactory func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error)
+
+// ProdGitilesClientFactory is a GitilesClientFactory used to create production
+// gitiles REST clients.
+func ProdGitilesClientFactory(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+	gc, err := gitiles.NewRESTClient(httpClient, host, true)
+	if err != nil {
+		return nil, err
+	}
+	return gc, nil
+}
+
+// NewGitilesClient uses a factory set in the Clients object and its httpClient
+// to create a new gitiles client.
+func (c *Clients) NewGitilesClient(host string) (gitilespb.GitilesClient, error) {
+	gc, err := c.gitilesFactory(host, c.httpClient)
+	if err != nil {
+		return nil, err
+	}
+	return gc, nil
+}
+
+// ConnectAll creates the clients so the rules can use them, also sets
+// necessary values in the context for the clients to talk to production.
 func (c *Clients) ConnectAll(ctx context.Context, cfg *RepoConfig) error {
 	var err error
-	c.gitiles, err = getGitilesClient(ctx)
+	c.httpClient, err = getAuthenticatedHTTPClient(ctx, gerritScope, emailScope)
 	if err != nil {
 		return err
 	}
 
-	httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope, emailScope)
-	if err != nil {
-		return err
-	}
-	c.gerrit, err = gerrit.NewClient(httpClient, cfg.GerritURL)
+	c.gerrit, err = gerrit.NewClient(c.httpClient, cfg.GerritURL)
 	if err != nil {
 		return err
 	}
@@ -244,7 +254,8 @@ func (c *Clients) ConnectAll(ctx context.Context, cfg *RepoConfig) error {
 		return err
 	}
 
-	c.monorail = monorail.NewEndpointsClient(httpClient, cfg.MonorailAPIURL)
+	c.monorail = monorail.NewEndpointsClient(c.httpClient, cfg.MonorailAPIURL)
+	c.gitilesFactory = ProdGitilesClientFactory
 	return nil
 }
 

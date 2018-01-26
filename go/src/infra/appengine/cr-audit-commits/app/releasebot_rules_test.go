@@ -5,15 +5,18 @@
 package crauditcommits
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
 	"golang.org/x/net/context"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/common/api/gitiles"
+	"go.chromium.org/luci/common/proto/git"
+	gitilespb "go.chromium.org/luci/common/proto/gitiles"
 )
 
 func TestReleaseBotRules(t *testing.T) {
@@ -47,19 +50,29 @@ func TestReleaseBotRules(t *testing.T) {
 
 		Convey("Only modifies version", func() {
 			// Inject gitiles log response
-			r := []gitiles.Commit{
-				{
-					Commit: "b07c0de",
-					TreeDiff: []gitiles.TreeDiff{
-						{
-							Type:    "modify",
-							OldPath: "chrome/VERSION",
-							NewPath: "chrome/VERSION",
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
+			}
+			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+				Project:  "a",
+				Treeish:  "b07c0de",
+				PageSize: 1,
+				TreeDiff: true,
+			}).Return(&gitilespb.LogResponse{
+				Log: []*git.Commit{
+					{
+						Id: "b07c0de",
+						TreeDiff: []*git.Commit_TreeDiff{
+							{
+								Type:    git.Commit_TreeDiff_MODIFY,
+								OldPath: "chrome/VERSION",
+								NewPath: "chrome/VERSION",
+							},
 						},
 					},
 				},
-			}
-			testClients.gitiles = &mockGitilesClient{r: r}
+			}, nil)
 			// Run rule
 			rr := OnlyModifiesVersionFile(ctx, ap, rc, testClients)
 			// Check result code
@@ -68,42 +81,63 @@ func TestReleaseBotRules(t *testing.T) {
 		})
 		Convey("Introduces unexpected changes", func() {
 			Convey("Modifies other file", func() {
-				r := []gitiles.Commit{
-					{
-						Commit: "b07c0de",
-						TreeDiff: []gitiles.TreeDiff{
-							{
-								Type:    "modify",
-								OldPath: "chrome/VERSION",
-								NewPath: "chrome/VERSION",
-							},
-							{
-								Type:    "add",
-								NewPath: "other/path",
+				// Inject gitiles log response
+				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+					return gitilesMockClient, nil
+				}
+				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+					Project:  "a",
+					Treeish:  "b07c0de",
+					PageSize: 1,
+					TreeDiff: true,
+				}).Return(&gitilespb.LogResponse{
+					Log: []*git.Commit{
+						{
+							Id: "b07c0de",
+							TreeDiff: []*git.Commit_TreeDiff{
+								{
+									Type:    git.Commit_TreeDiff_MODIFY,
+									OldPath: "chrome/VERSION",
+									NewPath: "chrome/VERSION",
+								},
+								{
+									Type:    git.Commit_TreeDiff_ADD,
+									NewPath: "other/path",
+								},
 							},
 						},
 					},
-				}
-				testClients.gitiles = &mockGitilesClient{r: r}
+				}, nil)
 				// Run rule
 				rr := OnlyModifiesVersionFile(ctx, ap, rc, testClients)
 				// Check result code
 				So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			})
 			Convey("Renames VERSION", func() {
-				r := []gitiles.Commit{
-					{
-						Commit: "b07c0de",
-						TreeDiff: []gitiles.TreeDiff{
-							{
-								Type:    "rename",
-								OldPath: "chrome/VERSION",
-								NewPath: "chrome/VERSION.bak",
+				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+					return gitilesMockClient, nil
+				}
+				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+					Project:  "a",
+					Treeish:  "b07c0de",
+					PageSize: 1,
+					TreeDiff: true,
+				}).Return(&gitilespb.LogResponse{
+					Log: []*git.Commit{
+						{
+							Id: "b07c0de",
+							TreeDiff: []*git.Commit_TreeDiff{
+								{
+									Type:    git.Commit_TreeDiff_RENAME,
+									OldPath: "chrome/VERSION",
+									NewPath: "chrome/VERSION.bak",
+								},
 							},
 						},
 					},
-				}
-				testClients.gitiles = &mockGitilesClient{r: r}
+				}, nil)
 				// Run rule
 				rr := OnlyModifiesVersionFile(ctx, ap, rc, testClients)
 				// Check result code

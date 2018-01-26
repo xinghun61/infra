@@ -9,22 +9,37 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
+	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/ptypes"
+	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/common/api/gitiles"
+	"go.chromium.org/luci/common/proto/git"
+	gitilespb "go.chromium.org/luci/common/proto/gitiles"
 	"go.chromium.org/luci/server/router"
 )
 
-func mustGitilesTime(v string) gitiles.Time {
-	var gt gitiles.Time
-	if err := gt.UnmarshalJSON([]byte(fmt.Sprintf(`"%s"`, v))); err != nil {
-		panic(fmt.Errorf("could not parse time %q: %v", v, err))
+func mustGitilesTime(v string) *google_protobuf.Timestamp {
+	var t time.Time
+	t, err := time.Parse(time.ANSIC, v)
+	if err != nil {
+		t, err = time.Parse(time.ANSIC+" -0700", v)
 	}
-	return gt
+	if err != nil {
+		panic(fmt.Errorf("could not parse time %q: %v", v, err))
+
+	}
+	r, err := ptypes.TimestampProto(t)
+	if err != nil {
+		panic(fmt.Errorf("could not convert time %s to google_protobuf.Timestamp: %v", t, err))
+
+	}
+	return r
 }
 
 func TestCommitScanner(t *testing.T) {
@@ -65,7 +80,16 @@ func TestCommitScanner(t *testing.T) {
 				}},
 			}
 			Convey("No revisions", func() {
-				testClients.gitiles = mockGitilesClient{}
+				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+					return gitilesMockClient, nil
+				}
+				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+					Project:  "new",
+					Treeish:  "master",
+					Ancestor: "000000",
+					PageSize: 6000,
+				}).Return(&gitilespb.LogResponse{}, nil)
 				resp, err := client.Get(srv.URL + scannerPath + "?repo=new-repo")
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)
@@ -75,9 +99,18 @@ func TestCommitScanner(t *testing.T) {
 				So(rs.LastKnownCommit, ShouldEqual, "000000")
 			})
 			Convey("No interesting revisions", func() {
-				testClients.gitiles = mockGitilesClient{
-					r: []gitiles.Commit{{Commit: "abcdef000123123"}},
+				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+					return gitilesMockClient, nil
 				}
+				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+					Project:  "new",
+					Treeish:  "master",
+					Ancestor: "000000",
+					PageSize: 6000,
+				}).Return(&gitilespb.LogResponse{
+					Log: []*git.Commit{{Id: "abcdef000123123"}},
+				}, nil)
 				resp, err := client.Get(srv.URL + scannerPath + "?repo=new-repo")
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)
@@ -87,33 +120,42 @@ func TestCommitScanner(t *testing.T) {
 				So(rs.LastKnownCommit, ShouldEqual, "abcdef000123123")
 			})
 			Convey("Interesting revisions", func() {
-				testClients.gitiles = mockGitilesClient{
-					r: []gitiles.Commit{
-						{
-							Commit: "006a006a",
-							Author: gitiles.User{
-								Email: "new@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-							Committer: gitiles.User{
-								Email: "new@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-						},
-						{
-							Commit: "c001c0de",
-							Author: gitiles.User{
-								Email: "new@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-							Committer: gitiles.User{
-								Email: "new@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-						},
-						{Commit: "deadbeef"},
-					},
+				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+					return gitilesMockClient, nil
 				}
+				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+					Project:  "new",
+					Treeish:  "master",
+					Ancestor: "000000",
+					PageSize: 6000,
+				}).Return(&gitilespb.LogResponse{
+					Log: []*git.Commit{
+						{Id: "deadbeef"},
+						{
+							Id: "c001c0de",
+							Author: &git.Commit_User{
+								Email: "new@test.com",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
+							},
+							Committer: &git.Commit_User{
+								Email: "new@test.com",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
+							},
+						},
+						{
+							Id: "006a006a",
+							Author: &git.Commit_User{
+								Email: "new@test.com",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
+							},
+							Committer: &git.Commit_User{
+								Email: "new@test.com",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
+							},
+						},
+					},
+				}, nil)
 				resp, err := client.Get(srv.URL + scannerPath + "?repo=new-repo")
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)
@@ -151,9 +193,18 @@ func TestCommitScanner(t *testing.T) {
 			})
 
 			Convey("No interesting revisions", func() {
-				testClients.gitiles = mockGitilesClient{
-					r: []gitiles.Commit{{Commit: "abcdef000123123"}},
+				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+					return gitilesMockClient, nil
 				}
+				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+					Project:  "old",
+					Treeish:  "master",
+					Ancestor: "123456",
+					PageSize: 6000,
+				}).Return(&gitilespb.LogResponse{
+					Log: []*git.Commit{{Id: "abcdef000123123"}},
+				}, nil)
 				resp, err := client.Get(srv.URL + scannerPath + "?repo=old-repo")
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)
@@ -164,22 +215,31 @@ func TestCommitScanner(t *testing.T) {
 				So(rs.LastRelevantCommit, ShouldEqual, "999999")
 			})
 			Convey("Interesting revisions", func() {
-				testClients.gitiles = mockGitilesClient{
-					r: []gitiles.Commit{
+				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+					return gitilesMockClient, nil
+				}
+				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+					Project:  "old",
+					Treeish:  "master",
+					Ancestor: "123456",
+					PageSize: 6000,
+				}).Return(&gitilespb.LogResponse{
+					Log: []*git.Commit{
+						{Id: "deadbeef"},
 						{
-							Commit: "c001c0de",
-							Author: gitiles.User{
+							Id: "c001c0de",
+							Author: &git.Commit_User{
 								Email: "old@test.com",
 								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
 							},
-							Committer: gitiles.User{
+							Committer: &git.Commit_User{
 								Email: "old@test.com",
 								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
 							},
 						},
-						{Commit: "deadbeef"},
 					},
-				}
+				}, nil)
 				resp, err := client.Get(srv.URL + scannerPath + "?repo=old-repo")
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)

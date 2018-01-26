@@ -6,11 +6,12 @@ package crauditcommits
 
 import (
 	"fmt"
-	"strings"
 
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/api/gitiles"
+	"go.chromium.org/luci/common/proto/git"
+	gitilespb "go.chromium.org/luci/common/proto/gitiles"
 )
 
 // OnlyModifiesVersionFile is a RuleFunc that verifies that the only filed
@@ -31,13 +32,26 @@ func OnlyModifiesVersionFile(ctx context.Context, ap *AuditParams, rc *RelevantC
 }
 
 func onlyModifies(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, fn string) (bool, error) {
-	c, err := cs.gitiles.Log(ctx, ap.RepoCfg.BaseRepoURL, rc.CommitHash, gitiles.Limit(1), gitiles.WithTreeDiff)
+	host, project, err := gitiles.ParseRepoURL(ap.RepoCfg.BaseRepoURL)
 	if err != nil {
 		return false, err
 	}
-	if len(c) != 1 {
+	gc, err := cs.NewGitilesClient(host)
+	if err != nil {
+		return false, err
+	}
+	resp, err := gc.Log(ctx, &gitilespb.LogRequest{
+		Project:  project,
+		Treeish:  rc.CommitHash,
+		PageSize: 1,
+		TreeDiff: true,
+	})
+	if err != nil {
+		return false, err
+	}
+	if len(resp.Log) != 1 {
 		return false, fmt.Errorf("Could not find commit %s through gitiles", rc.CommitHash)
 	}
-	td := c[0].TreeDiff
-	return len(td) == 1 && strings.ToLower(td[0].Type) == "modify" && td[0].OldPath == fn && td[0].NewPath == fn, nil
+	td := resp.Log[0].TreeDiff
+	return len(td) == 1 && td[0].Type == git.Commit_TreeDiff_MODIFY && td[0].OldPath == fn && td[0].NewPath == fn, nil
 }

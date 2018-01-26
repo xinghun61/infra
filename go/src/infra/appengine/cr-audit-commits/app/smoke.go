@@ -12,6 +12,7 @@ import (
 
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
+	gitilespb "go.chromium.org/luci/common/proto/gitiles"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 
@@ -65,13 +66,20 @@ var (
 	gitilesCheck = SmokeTestCheck{
 		Name: "Check gitiles connectivity",
 		Check: func(ctx context.Context) error {
-			g, err := getGitilesClient(ctx)
+			httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope, emailScope)
 			if err != nil {
 				return err
 			}
-			base := "https://chromium.googlesource.com/chromium/src.git"
-			branch := "master"
-			_, err = g.Log(ctx, base, branch, gitiles.Limit(1))
+			g, err := gitiles.NewRESTClient(httpClient, "chromium.googlesource.com", true)
+			if err != nil {
+				return err
+			}
+			req := gitilespb.LogRequest{
+				Project:  "chromium/src",
+				Treeish:  "master",
+				PageSize: 1,
+			}
+			_, err = g.Log(ctx, &req)
 			if err != nil {
 				return err
 			}
