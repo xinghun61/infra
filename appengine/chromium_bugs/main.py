@@ -230,7 +230,6 @@ class MainHandler(webapp2.RequestHandler):
         'windows': 'win',
         'linux': 'linux',
         'ios': 'ios',
-        'chromeframe': 'cf',
         'chromeos': 'cros',
         # Android cannot be guessed.
         }.get(name.lower(), name.lower())
