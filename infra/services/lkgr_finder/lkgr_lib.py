@@ -396,11 +396,16 @@ def FindLKGRCandidate(build_history, revisions, revkey, status_gen=None):
     revcmp: A comparator to sort revisions/commits
     status_gen: An instance of StatusGenerator to output status information
   """
+  def lowercase_key(item_pair):
+    return item_pair[0].lower()
+
   lkgr = None
   builders = []
-  for master, master_history in build_history.iteritems():
+  for master, master_history in sorted(build_history.items(),
+                                       key=lowercase_key):
     status_gen.master_cb(master)
-    for builder, builder_history in master_history.iteritems():
+    for builder, builder_history in sorted(master_history.items(),
+                                           key=lowercase_key):
       status_gen.builder_cb(builder)
       gen = reversed(builder_history)
       prev = []
