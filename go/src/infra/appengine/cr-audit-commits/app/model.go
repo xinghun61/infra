@@ -62,6 +62,8 @@ func (as AuditStatus) ToShortString() string {
 		return "violation"
 	case auditFailed:
 		return "failed"
+	case auditScheduled:
+		return "pending"
 	default:
 		return fmt.Sprintf("unknown:%d", int(as))
 	}

@@ -13,6 +13,7 @@ import (
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/tsmon/distribution"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
 	"go.chromium.org/luci/common/tsmon/types"
@@ -62,6 +63,17 @@ var (
 		"cr_audit_commits/audited",
 		"Commits that have been audited by the audit app",
 		&types.MetricMetadata{Units: "Commit"},
+		field.String("result"),
+		field.String("repo"),
+	)
+
+	// PerCommitAuditDuration keeps track of how long it takes to run all
+	// the rules for a given commit.
+	PerCommitAuditDuration = metric.NewCumulativeDistribution(
+		"cr_audit_commits/per_commit_audit_duration",
+		"Time it takes to apply all rules to a single commit",
+		&types.MetricMetadata{Units: types.Milliseconds},
+		distribution.DefaultBucketer,
 		field.String("result"),
 		field.String("repo"),
 	)
@@ -136,7 +148,7 @@ func CommitAuditor(rc *router.Context) {
 	}
 
 	logging.Infof(ctx, "Starting %d workers", nWorkers)
-	startAuditWorkers(ctx, ap, wp, nWorkers)
+	startAuditWorkers(ctx, ap, wp, nWorkers, repo)
 	// Send audit jobs to workers.
 	ds.Run(ctx, cq, func(rc *RelevantCommit) {
 		logging.Infof(ctx, "Sending %s to worker pool", rc.CommitHash)
@@ -209,18 +221,18 @@ func CommitAuditor(rc *router.Context) {
 }
 
 // Initialize the channels and spawn the goroutines.
-func startAuditWorkers(ctx context.Context, ap AuditParams, wp *workerParams, nWorkers int) {
+func startAuditWorkers(ctx context.Context, ap AuditParams, wp *workerParams, nWorkers int, repo string) {
 	wp.jobs = make(chan *RelevantCommit, nWorkers*CommitsPerWorker)
 	wp.audited = make(chan *RelevantCommit, nWorkers*CommitsPerWorker)
 	wp.workerFinished = make(chan bool, nWorkers)
 	wp.finishedCleanly = make(chan bool, nWorkers)
 	for i := 0; i < nWorkers; i++ {
-		go audit(ctx, i, ap, wp)
+		go audit(ctx, i, ap, wp, repo)
 	}
 }
 
 // This is the main goroutine for each auditing goroutine.
-func audit(ctx context.Context, n int, ap AuditParams, wp *workerParams) {
+func audit(ctx context.Context, n int, ap AuditParams, wp *workerParams, repo string) {
 	defer func() { wp.workerFinished <- true }()
 	for job := range wp.jobs {
 		select {
@@ -228,7 +240,9 @@ func audit(ctx context.Context, n int, ap AuditParams, wp *workerParams) {
 			return
 		default:
 			logging.Infof(ctx, "Worker %d about to run job %s", n, job.CommitHash)
+			start := time.Now()
 			runRules(ctx, job, ap, wp)
+			PerCommitAuditDuration.Add(ctx, time.Now().Sub(start).Seconds()*1000.0, job.Status.ToShortString(), repo)
 		}
 	}
 	logging.Infof(ctx, "Worker %d sees no more jobs in the channel", n)
