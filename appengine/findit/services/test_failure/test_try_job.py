@@ -377,7 +377,7 @@ def FindCulpritForEachTestFailure(result):
 def UpdateCulpritMapWithCulpritInfo(culprit_map, culprits):
   """Fills in commit_position and review url for each failed rev in map."""
   for step_culprit in culprit_map.values():
-    for test_culprit in step_culprit.get('tests', {}).values():
+    for test_culprit in (step_culprit.get('tests') or {}).values():
       test_revision = test_culprit['revision']
       test_culprit.update(culprits[test_revision])
 

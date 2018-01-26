@@ -87,7 +87,7 @@ def _GetSuspectedCLsWithFailures(heuristic_result):
   for failure in heuristic_result['failures']:
     if failure.get('tests'):
       for test in failure['tests']:
-        for suspected_cl in test.get('suspected_cls', []):
+        for suspected_cl in test.get('suspected_cls') or []:
           suspected_cls_with_failures.append([
               gtest.RemovePlatformFromStepName(failure['step_name']),
               suspected_cl['revision'], test['test_name']
@@ -243,7 +243,7 @@ def GetSuspectsFromHeuristicResult(heuristic_result):
     return []
 
   suspected_revisions = set()
-  for failure in heuristic_result.get('failures', []):
+  for failure in heuristic_result.get('failures') or []:
     for cl in failure['suspected_cls']:
       suspected_revisions.add(cl['revision'])
   return list(suspected_revisions)
@@ -632,8 +632,10 @@ def GetOrCreateTryJobData(try_job_type, try_job_id, urlsafe_try_job_key):
 
   if not try_job_data:
     logging.warning('%(kind)s entity does not exist for id %(id)s: creating it',
-                    {'kind': try_job_kind,
-                     'id': try_job_id})
+                    {
+                        'kind': try_job_kind,
+                        'id': try_job_id
+                    })
     try_job_data = try_job_kind.Create(try_job_id)
     try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
 
@@ -690,8 +692,9 @@ def OnTryJobCompleted(params, try_job_data, build, error):
 
   # We want to retry 404s due to logdog's propagation delay (inherent to
   # pubsub) of up to 3 minutes.
-  http_client = FinditHttpClient(interceptor=HttpClientMetricsInterceptor(
-      no_retry_codes=[200, 302, 401, 403, 409, 501]))
+  http_client = FinditHttpClient(
+      interceptor=HttpClientMetricsInterceptor(
+          no_retry_codes=[200, 302, 401, 403, 409, 501]))
 
   try:
     report = build_util.GetTryJobStepLog(try_job_id, 'report', http_client,
@@ -741,8 +744,9 @@ def OnTryJobRunning(params, try_job_data, build, error):
 
 
 def GetCurrentWaterfallTryJobID(urlsafe_try_job_key, runner_id):
-  try_job = (ndb.Key(urlsafe=urlsafe_try_job_key).get()
-             if urlsafe_try_job_key else None)
+  try_job = (
+      ndb.Key(urlsafe=urlsafe_try_job_key).get()
+      if urlsafe_try_job_key else None)
   if not try_job or not try_job.try_job_ids:
     return None
 

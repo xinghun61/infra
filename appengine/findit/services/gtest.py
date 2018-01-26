@@ -180,4 +180,4 @@ def DoesTestExist(gtest_result, test_name):
   Returns:
     True if the test exists according to gtest_result, False otherwise.
   """
-  return test_name in gtest_result.get('all_tests', [])
+  return test_name in (gtest_result.get('all_tests') or [])

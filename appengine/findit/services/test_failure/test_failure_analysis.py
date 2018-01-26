@@ -110,8 +110,9 @@ def AnalyzeTestFailure(failure_info, change_logs, deps_info, failure_signals):
     failed_build_number = step_failure_info.current_failure
     start_build_number = (
         build_failure_analysis.GetLowerBoundForAnalysis(step_failure_info))
-    step_analysis_result = (build_failure_analysis.InitializeStepLevelResult(
-        step_name, step_failure_info, master_name))
+    step_analysis_result = (
+        build_failure_analysis.InitializeStepLevelResult(
+            step_name, step_failure_info, master_name))
 
     if is_test_level:
       step_analysis_result['tests'] = []
@@ -137,7 +138,7 @@ def AnalyzeTestFailure(failure_info, change_logs, deps_info, failure_signals):
             for test_analysis_result in step_analysis_result['tests']:
               test_name = test_analysis_result['test_name']
               test_signal = FailureSignal.FromDict(
-                  failure_signals[step_name]['tests'].get(test_name, {}))
+                  failure_signals[step_name]['tests'].get(test_name) or {})
 
               _AnalyzeTestFailureOnOneBuild(build_number, step_name, test_name,
                                             test_signal, change_logs[revision],
@@ -235,11 +236,11 @@ def UpdateAnalysisResultWithFlakeInfo(analysis_result, flaky_failures):
   try jobs, updates WfAnalysis.
   """
   all_flaked = True
-  for failure in analysis_result.get('failures', {}):
+  for failure in analysis_result.get('failures') or {}:
     step_name = failure.get('step_name')
     if step_name in flaky_failures:
       failure['flaky'] = True
-      for test in failure.get('tests', []):
+      for test in failure.get('tests') or []:
         if test.get('test_name') in flaky_failures[step_name]:
           test['flaky'] = True
         else:

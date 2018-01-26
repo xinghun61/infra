@@ -38,7 +38,7 @@ def _GetOutputNodes(signals):
     return []
 
   # Compile failures with no output nodes will be considered unique.
-  return signals['compile'].get('failed_output_nodes', [])
+  return signals['compile'].get('failed_output_nodes') or []
 
 
 def _GetMatchingCompileFailureGroups(output_nodes):
@@ -75,7 +75,7 @@ def _IsCompileFailureUniqueAcrossPlatforms(
 def _NeedANewCompileTryJob(master_name, builder_name, build_number,
                            failure_info):
 
-  compile_failure = failure_info['failed_steps'].get('compile', {})
+  compile_failure = failure_info['failed_steps'].get('compile') or {}
   if compile_failure:
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.failure_result_map['compile'] = build_util.CreateBuildId(
@@ -153,7 +153,7 @@ def _GetFailedTargetsFromSignals(signals, master_name, builder_name):
 
   strict_regex = waterfall_config.EnableStrictRegexForCompileLinkFailures(
       master_name, builder_name)
-  for source_target in signals['compile'].get('failed_targets', []):
+  for source_target in signals['compile'].get('failed_targets') or []:
     # For link failures, we pass the executable targets directly to try-job, and
     # there is no 'source' for link failures.
     # For compile failures, only pass the object files as the compile targets
@@ -228,8 +228,9 @@ def CompileFailureIsFlaky(result):
     return False
 
   try_job_result = result.report.result
-  sub_ranges = (result.report.metadata.get('sub_ranges', [])
-                if result.report.metadata else [])
+  sub_ranges = (
+      result.report.metadata.get('sub_ranges') or []
+      if result.report.metadata else [])
 
   if (not try_job_result or  # There is some issue with try job, cannot decide.
       not sub_ranges or  # Missing range information.

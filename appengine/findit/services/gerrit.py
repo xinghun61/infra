@@ -63,8 +63,8 @@ def _UpdateCulprit(repo_name,
   culprit.revert_status = revert_status or culprit.revert_status
   culprit.revert_cl = revert_cl or culprit.revert_cl
   culprit.skip_revert_reason = skip_revert_reason or culprit.skip_revert_reason
-  culprit.revert_submission_status = (revert_submission_status or
-                                      culprit.revert_submission_status)
+  culprit.revert_submission_status = (
+      revert_submission_status or culprit.revert_submission_status)
 
   if culprit.revert_status != status.RUNNING:
     # Only stores revert_pipeline_id when the revert is ongoing.
@@ -116,8 +116,9 @@ def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
       'summary': 'Auto Revert failed on %s' % revision,
       'comment': 'Detail is %s' % culprit_link
   })
-  auto_revert_bug_link = ('https://bugs.chromium.org/p/chromium/issues/entry?%s'
-                         ) % (auto_revert_bug_query)
+  auto_revert_bug_link = (
+      'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
+          auto_revert_bug_query)
 
   new_reviewers = rotations.current_sheriffs()
 
@@ -345,9 +346,8 @@ def RevertCulprit(pipeline_input):
   # If Findit cannot commit the revert, add sheriffs as reviewers and ask them
   # to 'LGTM' and commit the revert.
   if not waterfall_config.GetActionSettings().get('auto_commit_revert_compile'):
-    success = _AddReviewers(revision,
-                            culprit.key.urlsafe(), codereview, revert_change_id,
-                            False)
+    success = _AddReviewers(revision, culprit.key.urlsafe(), codereview,
+                            revert_change_id, False)
     if not success:  # pragma: no cover
       _UpdateCulprit(repo_name, revision, status.ERROR)
       logging.error('Failed to add reviewers for revert of'
@@ -504,8 +504,8 @@ def CommitRevert(pipeline_input, pipeline_id):
   committed = codereview.SubmitRevert(revert_change_id)
 
   if committed:
-    _AddReviewers(revision,
-                  culprit.key.urlsafe(), codereview, revert_change_id, True)
+    _AddReviewers(revision, culprit.key.urlsafe(), codereview, revert_change_id,
+                  True)
     _UpdateCulprit(
         repo_name, revision, revert_submission_status=status.COMPLETED)
     monitoring.culprit_found.increment({
@@ -513,8 +513,8 @@ def CommitRevert(pipeline_input, pipeline_id):
         'action_taken': 'revert_committed'
     })
   else:
-    _AddReviewers(revision,
-                  culprit.key.urlsafe(), codereview, revert_change_id, False)
+    _AddReviewers(revision, culprit.key.urlsafe(), codereview, revert_change_id,
+                  False)
     _UpdateCulprit(repo_name, revision, revert_submission_status=status.ERROR)
     monitoring.culprit_found.increment({
         'type': 'compile',
@@ -580,8 +580,8 @@ def SendNotificationForCulprit(pipeline_input):
 
   action_settings = waterfall_config.GetActionSettings()
   # Set some impossible default values to prevent notification by default.
-  build_num_threshold = action_settings.get('cr_notification_build_threshold',
-                                            100000)
+  build_num_threshold = action_settings.get(
+      'cr_notification_build_threshold', 100000)
   if not _ShouldSendNotification(repo_name, revision, force_notify,
                                  revert_status, build_num_threshold):
     return False

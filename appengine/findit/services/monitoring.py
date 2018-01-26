@@ -31,7 +31,7 @@ def OnActionOnTestCulprits():
 def OnTryJobError(try_job_type, error_dict, master_name, builder_name):
   monitoring.try_job_errors.increment({
       'type': try_job_type,
-      'error': error_dict.get('message', 'unknown'),
+      'error': error_dict.get('message') or 'unknown',
       'master_name': master_name,
       'builder_name': builder_name
   })
