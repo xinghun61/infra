@@ -30,3 +30,15 @@ wrong_components = gae_ts_mon.GaugeMetric(
     'Predator per day. Contains fields describing which client this wrong cl '
     'comes from, can be clusterfuzz or cracas.',
     [gae_ts_mon.StringField('client_id')])
+
+
+clusterfuzz_reports = gae_ts_mon.CounterMetric(
+    'predator/clusterfuzz_reports',
+    'Metric counting the number of clusterfuzz crash reports that Predator '
+    'has processed. Contains fields that describe the crash',
+    [gae_ts_mon.BooleanField('found_suspects'),
+     gae_ts_mon.BooleanField('has_regression_range'),
+     gae_ts_mon.StringField('crash_type'),
+     gae_ts_mon.BooleanField('security'),
+     gae_ts_mon.StringField('platform'),
+     gae_ts_mon.StringField('job_type')])

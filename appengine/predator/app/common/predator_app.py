@@ -13,6 +13,7 @@ from analysis.component import Component
 from analysis.component_classifier import ComponentClassifier
 from analysis.project import Project
 from analysis.project_classifier import ProjectClassifier
+from common import monitoring
 from gae_libs import appengine_util
 from gae_libs import pubsub_util
 from libs import analysis_status
@@ -270,3 +271,12 @@ class PredatorApp(object):
   def FindCulprit(self, analysis):
     """Given a CrashAnalysis report, returns a ``Culprit``."""
     return self._Predator().FindCulprit(analysis.ToCrashReport())
+
+  def UpdateMetrics(self, analysis):
+    monitoring.reports_processed.increment({
+        'found_suspects': analysis.found_suspects,
+        'found_components': analysis.found_components,
+        'has_regression_range': analysis.has_regression_range,
+        'client_id': analysis.client_id,
+        'success': not analysis.failed,
+    })

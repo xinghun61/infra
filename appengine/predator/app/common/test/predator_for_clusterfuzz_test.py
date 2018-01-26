@@ -393,3 +393,28 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
     self.assertTrue(mock_to_crash_report.called)
     self.assertTrue(mock_disable_features.called)
     self.assertTrue(mock_find_culprit.called)
+
+  @mock.patch('common.monitoring.reports_processed')
+  @mock.patch('common.monitoring.clusterfuzz_reports')
+  def testUpdateMetrics(self, mock_clusterfuzz_reports, mock_reports_processed):
+    """Tests ``UpdateMetrics``."""
+    analysis = self._client.CreateAnalysis({'signature': 'sig'})
+    analysis.status = analysis_status.COMPLETED
+    analysis.found_suspects = True
+    analysis.has_regression_range = True
+    analysis.crash_type = 'CHECK failure'
+    analysis.signature = 'signature1\nsignature2\n'
+    analysis.security_flag = True
+    analysis.platform = 'win'
+    analysis.job_type = 'asan_win'
+
+    self._client.UpdateMetrics(analysis)
+    self.assertTrue(mock_reports_processed.increment.called)
+    mock_clusterfuzz_reports.increment.assert_called_with({
+        'found_suspects': True,
+        'has_regression_range': True,
+        'crash_type': 'CHECK failure',
+        'crash_state': 'signature1\nsignature2\n',
+        'security': True,
+        'platform': 'win',
+        'job_type': 'asan_win'})

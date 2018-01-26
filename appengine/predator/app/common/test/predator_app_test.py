@@ -297,3 +297,21 @@ class PredatorTest(AppengineTestCase):
     predator.FindCulprit(analysis)
     self.assertTrue(mock_to_crash_report.called)
     self.assertTrue(mock_find_culprit.called)
+
+  @mock.patch('common.monitoring.reports_processed')
+  def testUpdateMetrics(self, mock_reports_processed):
+    """Tests ``UpdateMetrics``."""
+    predator = self.GetMockPredatorApp()
+    analysis = predator.CreateAnalysis({'signature': 'sig'})
+    analysis.status = analysis_status.COMPLETED
+    analysis.found_suspects = True
+    analysis.found_components = True
+    analysis.has_regression_range = True
+
+    predator.UpdateMetrics(analysis)
+    mock_reports_processed.increment.assert_called_with({
+        'found_suspects': True,
+        'found_components': True,
+        'has_regression_range': True,
+        'client_id': 'mock_client',
+        'success': True})

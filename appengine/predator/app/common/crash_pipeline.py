@@ -15,7 +15,6 @@ from analysis.type_enums import LogLevel
 from common import predator_for_chromecrash
 from common import predator_for_clusterfuzz
 from common import predator_for_uma_sampling_profiler
-from common import monitoring
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
 from common.model.cracas_crash_analysis import CracasCrashAnalysis
 from common.model.crash_analysis import CrashAnalysis
@@ -174,14 +173,6 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     culprit = self._predator.FindCulprit(analysis)
     result, tags = culprit.ToDicts()
 
-    monitoring.reports_processed.increment({
-        'found_suspects': tags['found_suspects'],
-        'found_components': tags['found_components'],
-        'has_regression_range': tags['has_regression_range'],
-        'client_id': self.client_id,
-        'success': tags['success'],
-    })
-
     analysis.status = (analysis_status.COMPLETED if tags['success'] else
                        analysis_status.ERROR)
     analysis.completed_time = time_util.GetUTCNow()
@@ -195,6 +186,7 @@ class CrashAnalysisPipeline(CrashBasePipeline):
         setattr(analysis, tag_name, tag_value)
 
     analysis.put()
+    self._predator.UpdateMetrics(analysis)
 
     logging.info('Found %s analysis result for %s: \n%s', self.client_id,
                  repr(self._crash_identifiers),

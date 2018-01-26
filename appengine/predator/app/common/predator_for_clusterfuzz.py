@@ -29,6 +29,7 @@ from analysis.linear.weight import MetaWeight
 from analysis.linear.weight import Weight
 from analysis.predator import Predator
 from analysis.type_enums import CrashClient
+from common import monitoring
 from common.predator_app import PredatorApp
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
 from gae_libs import pubsub_util
@@ -191,3 +192,16 @@ class PredatorForClusterfuzz(PredatorApp):
     """Given a crash_identifiers, returns a ``Culprit``."""
     self.RedefineClassifierIfLargeRegressionRange(analysis)
     return self._predator.FindCulprit(analysis.ToCrashReport())
+
+  def UpdateMetrics(self, analysis):
+    super(PredatorForClusterfuzz, self).UpdateMetrics(analysis)
+    monitoring.clusterfuzz_reports.increment({
+        'found_suspects': analysis.found_suspects,
+        'has_regression_range': analysis.has_regression_range,
+        'crash_type': analysis.crash_type,
+        'crash_state': analysis.signature,
+        'security': analysis.security_flag,
+        'platform': analysis.platform,
+        'job_type': analysis.job_type,
+    })
+
