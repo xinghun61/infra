@@ -106,12 +106,7 @@ dev_appserver wants to reload source files that you have changed in the editor, 
 
 ## Supported browsers
 
-Monorail supports all versions of the following browsers released within the last 6 months:
+Monorail supports all browsers defined in the [Chrome Ops guidelines](https://chromium.googlesource.com/infra/infra/+/master/doc/front_end.md).
 
-- Chrome (all platforms)
-- Edge
-- Firefox
-- Safari
-
-File browser compatability bugs
+File a browser compatability bug
 [here](https://bugs.chromium.org/p/monorail/issues/entry?labels=Type-Defect,Priority-Medium,BrowserCompat).

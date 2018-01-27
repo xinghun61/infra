@@ -9,7 +9,7 @@ Most of the documentation relates to
 * [Using the infra.git repository](usage.md)
 * [Deployment of infra.git services](deployment.md)
 
-## Contributer's Guides
+## Contributor's Guides
 
 * [Contributing to infra.git](contributing.md)
 * [Creating AppEngine
@@ -19,6 +19,7 @@ Most of the documentation relates to
 * [Logging](../infra_libs/logs/README.md)
 * [Flags](flags.md)
 * [Buildbot master authentication to Cloud Endpoints](master_auth.md)
+* [Front-end development](front_end.md)
 
 TBD:
 
