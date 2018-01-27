@@ -204,7 +204,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 					return nil
 				}
 				g := &GerritChangeToRunID{
-					ID:    gerritMappingID(request.GerritHost, request.GerritProject, request.GerritChange),
+					ID:    gerritMappingID(request.GerritHost, request.GerritProject, request.GerritChange, request.GerritRevision),
 					RunID: request.ID,
 				}
 				if err := ds.Put(c, g); err != nil {

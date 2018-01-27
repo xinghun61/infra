@@ -88,7 +88,7 @@ func TestProgress(t *testing.T) {
 		change := fmt.Sprintf("%s~master~%s", project, changeIDFooter)
 		revision := "refs/changes/97/97/1"
 		g := &GerritChangeToRunID{
-			ID:    gerritMappingID(host, project, change),
+			ID:    gerritMappingID(host, project, change, revision),
 			RunID: runID,
 		}
 		So(ds.Put(ctx, g), ShouldBeNil)

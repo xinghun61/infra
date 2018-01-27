@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-// GerritChangeToRunID maps a Gerrit change ID to a run ID.
+// GerritChangeToRunID maps a Gerrit change revision to a run ID.
 //
 // Each change ID is mapped to the latest run ID for that change ID.
 // This should typically correspond to the latest patch set for the change.
@@ -20,6 +20,6 @@ type GerritChangeToRunID struct {
 	RunID int64
 }
 
-func gerritMappingID(host, project, changeID string) string {
-	return fmt.Sprintf("%s##%s##%s", host, project, changeID)
+func gerritMappingID(host, project, changeID, revision string) string {
+	return fmt.Sprintf("%s##%s##%s##%s", host, project, changeID, revision)
 }

@@ -65,7 +65,7 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 		}
 		// Look up the run ID with the provided Gerrit change details.
 		g := &GerritChangeToRunID{
-			ID: gerritMappingID(gd.Host, gd.Project, gd.Change),
+			ID: gerritMappingID(gd.Host, gd.Project, gd.Change, gd.Revision),
 		}
 		if err := ds.Get(c, g); err != nil {
 			logging.WithError(err).Errorf(c, "failed to get GerritChangeToRunID entity: %v", err)
