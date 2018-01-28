@@ -18,18 +18,14 @@ def IsWhitelistedClientId(client_id):
   return client_id in constants.WHITELISTED_CLIENT_IDS
 
 
-def CanServiceAccountTriggerNewAnalysis(account_email):
-  """Returns True if the given service account could trigger a new analysis."""
+def CanTriggerNewAnalysis(user_email, is_admin):
+  """Returns True if the given email account could trigger a new analysis."""
   if not appengine_util.IsStaging():
     whitelisted_app_accounts = constants.WHITELISTED_APP_ACCOUNTS
   else:
     whitelisted_app_accounts = constants.WHITELISTED_STAGING_APP_ACCOUNTS
-  return account_email in whitelisted_app_accounts
-
-
-def CanTriggerNewAnalysis(user_email, is_admin):
-  """Returns True if the given email account could trigger a new analysis."""
-  return IsPrivilegedUser(user_email, is_admin)
+  return IsPrivilegedUser(user_email,
+                          is_admin) or (user_email in whitelisted_app_accounts)
 
 
 def ValidateOauthUserForNewAnalysis():
@@ -50,14 +46,14 @@ def ValidateOauthUserForNewAnalysis():
 
   # For Google service accounts, no need to whitelist client ids for them,
   # since email address uniquely identifies credentials used.
-  if user_email.endswith('@appspot.gserviceaccount.com'):
-    if not CanServiceAccountTriggerNewAnalysis(user_email):
-      raise exceptions.UnauthorizedException('Unknown account %s.' % user_email)
-    return user_email, False
-
-  client_id = auth_util.GetOauthClientId()
-  if not IsWhitelistedClientId(client_id):
-    raise exceptions.UnauthorizedException('Unknown client id %s.' % client_id)
+  # At some point someone might want to use Findit API from a GCE project
+  # (*@developer.gserviceaccount.com accounts) or from some script that use
+  # service account keys (*@*.iam.gserviceaccount.com accounts).
+  if not user_email.endswith('@appspot.gserviceaccount.com'):
+    client_id = auth_util.GetOauthClientId()
+    if not IsWhitelistedClientId(client_id):
+      raise exceptions.UnauthorizedException(
+          'Unknown client id %s.' % client_id)
 
   is_admin = auth_util.IsCurrentOauthUserAdmin()
   if not CanTriggerNewAnalysis(user_email, is_admin):

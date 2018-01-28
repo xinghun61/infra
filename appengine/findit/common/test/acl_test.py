@@ -13,6 +13,7 @@ from common import exceptions
 
 
 class AclTest(unittest.TestCase):
+
   def testAdminIsPrivilegedUser(self):
     self.assertTrue(acl.IsPrivilegedUser('test@chromium.org', True))
 
@@ -37,80 +38,71 @@ class AclTest(unittest.TestCase):
   @mock.patch.object(acl.appengine_util, 'IsStaging', return_value=False)
   def testWhitelistedAppAccountCanTriggerNewAnalysis(self, _):
     for email in constants.WHITELISTED_APP_ACCOUNTS:
-      self.assertTrue(acl.CanServiceAccountTriggerNewAnalysis(email))
+      self.assertTrue(acl.CanTriggerNewAnalysis(email, False))
 
   @mock.patch.object(acl.appengine_util, 'IsStaging', return_value=True)
   def testWhitelistedStagingAppAccountCanTriggerNewAnalysis(self, _):
     for email in constants.WHITELISTED_STAGING_APP_ACCOUNTS:
-      self.assertTrue(acl.CanServiceAccountTriggerNewAnalysis(email))
+      self.assertTrue(acl.CanTriggerNewAnalysis(email, False))
 
   def testUnkownUserCanNotTriggerNewAnalysis(self):
     self.assertFalse(acl.CanTriggerNewAnalysis('test@gmail.com', False))
 
+  @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=True)
   @mock.patch.object(
-      acl, 'CanServiceAccountTriggerNewAnalysis', return_value=True)
-  @mock.patch.object(
-      acl.auth_util, 'GetOauthUserEmail',
+      acl.auth_util,
+      'GetOauthUserEmail',
       return_value='email@appspot.gserviceaccount.com')
+  @mock.patch.object(
+      acl.auth_util, 'IsCurrentOauthUserAdmin', return_value=False)
   def testValidateOauthUserForAuthorizedServiceAccount(self, *_):
     user_email, is_admin = acl.ValidateOauthUserForNewAnalysis()
     self.assertEqual('email@appspot.gserviceaccount.com', user_email)
     self.assertFalse(is_admin)
 
+  @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=False)
   @mock.patch.object(
-      acl, 'CanServiceAccountTriggerNewAnalysis', return_value=False)
-  @mock.patch.object(
-      acl.auth_util, 'GetOauthUserEmail',
+      acl.auth_util,
+      'GetOauthUserEmail',
       return_value='email@appspot.gserviceaccount.com')
+  @mock.patch.object(
+      acl.auth_util, 'IsCurrentOauthUserAdmin', return_value=False)
   def testValidateOauthUserForUnauthorizedServiceAccount(self, *_):
     with self.assertRaises(exceptions.UnauthorizedException):
       acl.ValidateOauthUserForNewAnalysis()
 
-  @mock.patch.object(
-      acl, 'CanTriggerNewAnalysis', return_value=True)
-  @mock.patch.object(
-      acl, 'IsWhitelistedClientId', return_value=False)
-  @mock.patch.object(
-      acl.auth_util, 'GetOauthClientId', return_value='id')
+  @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=True)
+  @mock.patch.object(acl, 'IsWhitelistedClientId', return_value=False)
+  @mock.patch.object(acl.auth_util, 'GetOauthClientId', return_value='id')
   @mock.patch.object(
       acl.auth_util, 'IsCurrentOauthUserAdmin', return_value=True)
-  @mock.patch.object(
-      acl.auth_util, 'GetOauthUserEmail', return_value='email')
+  @mock.patch.object(acl.auth_util, 'GetOauthUserEmail', return_value='email')
   def testValidateOauthUserForUnauthorizedClientId(self, *_):
     with self.assertRaises(exceptions.UnauthorizedException):
       acl.ValidateOauthUserForNewAnalysis()
 
-  @mock.patch.object(
-      acl, 'CanTriggerNewAnalysis', return_value=True)
-  @mock.patch.object(
-      acl, 'IsWhitelistedClientId', return_value=True)
-  @mock.patch.object(
-      acl.auth_util, 'GetOauthClientId', return_value='id')
+  @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=True)
+  @mock.patch.object(acl, 'IsWhitelistedClientId', return_value=True)
+  @mock.patch.object(acl.auth_util, 'GetOauthClientId', return_value='id')
   @mock.patch.object(
       acl.auth_util, 'IsCurrentOauthUserAdmin', return_value=True)
-  @mock.patch.object(
-      acl.auth_util, 'GetOauthUserEmail', return_value='email')
+  @mock.patch.object(acl.auth_util, 'GetOauthUserEmail', return_value='email')
   def testValidateOauthUserForAuthorizedUser(self, *_):
     user_email, is_admin = acl.ValidateOauthUserForNewAnalysis()
     self.assertEqual('email', user_email)
     self.assertTrue(is_admin)
 
-  @mock.patch.object(
-      acl, 'CanTriggerNewAnalysis', return_value=False)
-  @mock.patch.object(
-      acl, 'IsWhitelistedClientId', return_value=True)
-  @mock.patch.object(
-      acl.auth_util, 'GetOauthClientId', return_value='id')
+  @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=False)
+  @mock.patch.object(acl, 'IsWhitelistedClientId', return_value=True)
+  @mock.patch.object(acl.auth_util, 'GetOauthClientId', return_value='id')
   @mock.patch.object(
       acl.auth_util, 'IsCurrentOauthUserAdmin', return_value=False)
-  @mock.patch.object(
-      acl.auth_util, 'GetOauthUserEmail', return_value='email')
+  @mock.patch.object(acl.auth_util, 'GetOauthUserEmail', return_value='email')
   def testValidateOauthUserForUnauthorizedUser(self, *_):
     with self.assertRaises(exceptions.UnauthorizedException):
       acl.ValidateOauthUserForNewAnalysis()
 
-  @mock.patch.object(
-      acl.auth_util, 'GetOauthUserEmail', return_value=None)
+  @mock.patch.object(acl.auth_util, 'GetOauthUserEmail', return_value=None)
   def testValidateOauthUserForUnknownUserEmail(self, *_):
     with self.assertRaises(exceptions.UnauthorizedException):
       acl.ValidateOauthUserForNewAnalysis()
