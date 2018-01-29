@@ -6,6 +6,60 @@ import urllib
 import urllib2
 import webapp2
 
+MASTER_NAMES = [
+  'chromium',
+  'chromium.android',
+  'chromium.chrome',
+  'chromium.chromedriver',
+  'chromium.chromiumos',
+  'chromium.fyi',
+  'chromium.gatekeeper',
+  'chromium.goma',
+  'chromium.gpu',
+  'chromium.gpu.fyi',
+  'chromium.infra',
+  'chromium.infra.cron',
+  'chromium.linux',
+  'chromium.lkgr',
+  'chromium.mac',
+  'chromium.memory',
+  'chromium.perf',
+  'chromium.swarm',
+  'chromium.tools.build',
+  'chromium.webkit',
+  'chromium.webrtc',
+  'chromium.webrtc.fyi',
+  'chromium.win',
+  'chromiumos',
+  'client.dart',
+  'client.dart.fyi',
+  'client.drmemory',
+  'client.dynamorio',
+  'client.libyuv',
+  'client.mojo',
+  'client.nacl',
+  'client.nacl.ports',
+  'client.nacl.sdk',
+  'client.nacl.toolchain',
+  'client.skia',
+  'client.syzygy',
+  'client.v8',
+  'client.v8.branches',
+  'client.v8.fyi',
+  'client.webrtc',
+  'client.webrtc.fyi',
+  'tryserver.blink',
+  'tryserver.chromium.android',
+  'tryserver.chromium.linux',
+  'tryserver.chromium.mac',
+  'tryserver.chromium.perf',
+  'tryserver.chromium.win',
+  'tryserver.libyuv',
+  'tryserver.nacl',
+  'tryserver.v8',
+  'tryserver.webrtc',
+]
+
 
 class Map(db.Model):
   content = db.TextProperty()
@@ -17,14 +71,11 @@ class MainPage(webapp2.RequestHandler):
     if entity:
       self.response.write(entity.content)
 
+
 class BuildersMap(webapp2.RequestHandler):
   def get(self):
-    MASTERS_URL = ('http://chrome-build-extract.appspot.com/get_masters?json=1')
-    master_names = json.load(urllib2.urlopen(MASTERS_URL))['masters']
-
     builder_to_masters = collections.defaultdict(list)
-
-    for master_name in master_names:
+    for master_name in MASTER_NAMES:
       logging.info('Fetching builders for %s', master_name)
       url_pattern = 'https://chrome-build-extract.appspot.com/get_master/%s'
       master_url = url_pattern % master_name
