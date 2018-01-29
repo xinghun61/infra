@@ -199,7 +199,6 @@ class PredatorForClusterfuzz(PredatorApp):
         'found_suspects': analysis.found_suspects,
         'has_regression_range': analysis.has_regression_range,
         'crash_type': analysis.crash_type,
-        'crash_state': analysis.signature,
         'security': analysis.security_flag,
         'platform': analysis.platform,
         'job_type': analysis.job_type,

@@ -414,7 +414,6 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
         'found_suspects': True,
         'has_regression_range': True,
         'crash_type': 'CHECK failure',
-        'crash_state': 'signature1\nsignature2\n',
         'security': True,
         'platform': 'win',
         'job_type': 'asan_win'})
