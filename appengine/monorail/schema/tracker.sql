@@ -767,6 +767,10 @@ CREATE TABLE HotlistVisitHistory (
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
 
+CREATE TABLE ComponentIssueClosedIndex (
+  closed_index INT NOT NULL,
+  PRIMARY KEY (closed_index),
+) ENGINE=INNODB;
 
 CREATE TABLE ApprovalStatusDef (
   id INT NOT NULL AUTO_INCREMENT,

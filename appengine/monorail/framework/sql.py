@@ -671,6 +671,8 @@ COLUMN_RE_LIST = [
     _MakeRE(r'COUNT\({tab_col}\)'),
     _MakeRE(r'MAX\({tab_col}\)'),
     _MakeRE(r'MIN\({tab_col}\)'),
+    _MakeRE(r'GROUP_CONCAT\((DISTINCT )?{tab_col}( ORDER BY {tab_col})?' \
+                        r'( SEPARATOR \'.*\')?\)'),
     ]
 JOIN_RE_LIST = [
     TABLE_RE,
@@ -762,7 +764,7 @@ WHERE_COND_RE_LIST = [
 # Note: We never use ';' for multiple statements, '@' for SQL variables, or
 # any quoted strings in stmt_str (quotes are put in my MySQLdb for args).
 STMT_STR_RE = re.compile(
-    r'\A(SELECT|UPDATE|DELETE|INSERT|REPLACE) [-+=!<>%*.,()\w\s]+\Z',
+    r'\A(SELECT|UPDATE|DELETE|INSERT|REPLACE) [\'-+=!<>%*.,()\w\s]+\Z',
     re.MULTILINE)
 
 

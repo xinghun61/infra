@@ -1131,6 +1131,16 @@ ALTER TABLE Issue2FieldValue ADD INDEX (field_id, url_value);
 
 ALTER TABLE Template2FieldValue ADD COLUMN url_value VARCHAR(1024);
 
+
+================================================================
+2018-01-22: Add table to keep track of the latest timestamp that issues with
+their component data were collected and uploaded to GCS.
+
+CREATE TABLE ComponentIssueClosedIndex (
+  closed_index INT NOT NULL,
+  PRIMARY KEY (closed_index),
+) ENGINE=INNODB;
+
 ================================================================
 2018-01-22: Add approval tables and approval_type to FieldDef.
 

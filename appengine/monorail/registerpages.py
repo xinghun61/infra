@@ -28,6 +28,8 @@ from features import rerankhotlist
 from features import updatehotlistitems
 from features import savedqueries
 from features import spammodel
+from features import spamtraining
+from features import componentexport
 from features import stars
 
 from framework import artifactcollision
@@ -98,8 +100,6 @@ from tracker import issuereindex
 from tracker import issuererank
 from tracker import issuetips
 from tracker import spam
-
-from features import spamtraining
 
 from api import api_service
 
@@ -214,6 +214,10 @@ class ServletRegistry(object):
         urls.DATE_ACTION_CRON: dateaction.DateActionCron,
         urls.SPAM_TRAINING_CRON: spamtraining.TrainSpamModelCron,
         urls.ISSUE_DATE_ACTION_TASK: dateaction.IssueDateActionTask,
+        urls.COMPONENT_DATA_EXPORT_CRON:
+          componentexport.ComponentTrainingDataExport,
+        urls.COMPONENT_DATA_EXPORT_TASK:
+          componentexport.ComponentTrainingDataExportTask
         })
 
     self._SetupProjectServlets({

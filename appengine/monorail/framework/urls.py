@@ -63,6 +63,7 @@ OUTBOUND_EMAIL_TASK = '/_task/outboundEmail'
 SPAM_DATA_EXPORT_TASK = '/_task/spamDataExport'
 BAN_SPAMMER_TASK = '/_task/banSpammer'
 ISSUE_DATE_ACTION_TASK = '/_task/issueDateAction'
+COMPONENT_DATA_EXPORT_TASK = '/_task/componentDataExportTask'
 
 # URLs of cron job request handlers.  Called from GAE via cron.yaml.
 REINDEX_QUEUE_CRON = '/_cron/reindexQueue'
@@ -73,6 +74,7 @@ LOAD_API_CLIENT_CONFIGS_CRON = '/_cron/loadApiClientConfigs'
 TRIM_VISITED_PAGES_CRON = '/_cron/trimVisitedPages'
 DATE_ACTION_CRON = '/_cron/dateAction'
 SPAM_TRAINING_CRON = '/_cron/spamTraining'
+COMPONENT_DATA_EXPORT_CRON = '/_cron/componentDataExport'
 
 # URLs of handlers needed for GAE instance management.
 WARMUP = '/_ah/warmup'
