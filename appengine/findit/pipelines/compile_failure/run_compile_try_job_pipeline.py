@@ -39,7 +39,7 @@ class RunCompileTryJobPipeline(AsynchronousPipeline):
 
   def OnFinalized(self, run_try_job_params):
     try:
-      try_job_id = try_job_service.GetCurrentWaterfallTryJobID(
+      try_job_id = try_job_service.GetCurrentTryJobID(
           run_try_job_params.urlsafe_try_job_key, self.pipeline_id)
       if try_job_id:
         taskqueue.Queue(

@@ -5,12 +5,13 @@
     * pipeline inputs and outputs
     * Parameters for service functions."""
 
-from libs.structured_object import StructuredObject, TypedDict, TypedList
+from libs.structured_object import StructuredObject
+from libs.structured_object import TypedDict
+from libs.structured_object import TypedList
 
 
 class BuildKey(StructuredObject):
   """Key to a build, an analysis or a try job."""
-
   # Use basestring to make the attribute to accept value of both type
   # str and unicode.
   master_name = basestring
@@ -114,6 +115,8 @@ class CompileTryJobReport(TryJobReport):
 
 class TryJobResult(StructuredObject):
   """Object represents a try job results saved in wf_try_job entity."""
+  # TODO(crbug.com/796646): Convert url to
+  # master/builder/build_number/buildbucket_build_id record.
   url = basestring
   try_job_id = basestring
   culprit = dict

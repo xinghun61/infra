@@ -121,8 +121,7 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_compile_result, compile_result)
 
   @mock.patch.object(taskqueue, 'Queue')
-  @mock.patch.object(
-      try_job_service, 'GetCurrentWaterfallTryJobID', return_value='3')
+  @mock.patch.object(try_job_service, 'GetCurrentTryJobID', return_value='3')
   @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   @mock.patch.object(compile_try_job, 'ScheduleCompileTryJob', return_value='3')
   @mock.patch.object(try_job_service, 'OnTryJobCompleted')

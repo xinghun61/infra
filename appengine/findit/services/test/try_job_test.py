@@ -226,8 +226,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                      analysis_2.failure_group_key)
 
   def testGetMatchingFailureGroups(self):
-    self.assertEqual(
-        [], try_job_service.GetMatchingFailureGroups(failure_type.UNKNOWN))
+    self.assertEqual([],
+                     try_job_service.GetMatchingFailureGroups(
+                         failure_type.UNKNOWN))
 
   @mock.patch.object(try_job_service, '_BlameListsIntersection')
   def testGetMatchingGroup(self, mock_fn):
@@ -281,19 +282,17 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
   def testGetSuspectsFromHeuristicResult(self):
     heuristic_result = {
-        'failures': [
-            {
-                'step_name': 'compile',
-                'suspected_cls': [
-                    {
-                        'revision': 'r1',
-                    },
-                    {
-                        'revision': 'r2',
-                    },
-                ],
-            },
-        ]
+        'failures': [{
+            'step_name': 'compile',
+            'suspected_cls': [
+                {
+                    'revision': 'r1',
+                },
+                {
+                    'revision': 'r2',
+                },
+            ],
+        },]
     }
     expected_suspected_revisions = ['r1', 'r2']
     self.assertEqual(
@@ -819,8 +818,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
             })
     }
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False), (None,
-                                                                        None))
+        try_job_service._GetError(build_response, None, False, False),
+        (None, None))
     self.assertEqual(
         try_job_service._GetError({}, None, False, False), (None, None))
 
@@ -1352,7 +1351,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         'Failed to load result report for tryjob/%s due to exception %s.' %
         (try_job_id, TypeError().message))
 
-  def testGetCurrentWaterfallTryJobID(self):
+  def testGetCurrentTryJobID(self):
     try_job = WfTryJob.Create('m', 'b', '54321')
     try_job.try_job_ids = ['1', '2', '3', '4']
     try_job.put()
@@ -1365,20 +1364,19 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     try_job_data.runner_id = 'pipeline_id3'
     try_job_data.put()
     self.assertEqual('2',
-                     try_job_service.GetCurrentWaterfallTryJobID(
-                         try_job.key.urlsafe(), 'pipeline_id'))
+                     try_job_service.GetCurrentTryJobID(try_job.key.urlsafe(),
+                                                        'pipeline_id'))
 
-  def testGetCurrentWaterfallTryJobIDNoTryJob(self):
-    self.assertIsNone(
-        try_job_service.GetCurrentWaterfallTryJobID(None, 'pipeline_id'))
+  def testGetCurrentTryJobIDNoTryJob(self):
+    self.assertIsNone(try_job_service.GetCurrentTryJobID(None, 'pipeline_id'))
 
-  def testGetCurrentWaterfallTryJobIDNoTryJobData(self):
+  def testGetCurrentTryJobIDNoTryJobData(self):
     try_job = WfTryJob.Create('m', 'b', '54321')
     try_job.try_job_ids = ['1', '2', '3']
     try_job.put()
     self.assertIsNone(
-        try_job_service.GetCurrentWaterfallTryJobID(try_job.key.urlsafe(),
-                                                    'pipeline_id'))
+        try_job_service.GetCurrentTryJobID(try_job.key.urlsafe(),
+                                           'pipeline_id'))
 
   def testGetCulpritsWithoutNoBlameAccountsCLS(self):
     culprit_info_1 = {

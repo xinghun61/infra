@@ -239,11 +239,23 @@ def GetBuildProperties(master_name,
 
 
 @ndb.transactional
-def CreateTryJobData(build_id, try_job_key, urlsafe_analysis_key):
+def CreateTryJobData(build_id, try_job_key, urlsafe_analysis_key, runner_id):
+  """Creates a FlakeTryJobData entity.
+
+  Args:
+    build_id (str): The try job id that is to be used as the key to this entity.
+    try_job_key (str): The urlsafe key to the FlakeTryJob entity corresponding
+        to this FlakeTryJobData entity.
+    urlsafe_analysis_key (str): The key to the flake analysis requesting the
+        try job.
+    runner_id (str): The id of the pipeline that handles the callback of this
+        try job's completion.
+  """
   try_job_data = FlakeTryJobData.Create(build_id)
   try_job_data.created_time = time_util.GetUTCNow()
   try_job_data.try_job_key = try_job_key
   try_job_data.analysis_key = ndb.Key(urlsafe=urlsafe_analysis_key)
+  try_job_data.runner_id = runner_id
   try_job_data.put()
 
 
@@ -257,7 +269,22 @@ def UpdateTryJob(master_name, builder_name, canonical_step_name, test_name,
   return try_job
 
 
-def ScheduleFlakeTryJob(parameters, pipeline_id):
+@ndb.transactional
+def GetTryJob(master_name, builder_name, step_name, test_name, revision):
+  """Ensures a FlakeTryJob exists for the configuration and returns it."""
+  # TODO(crbug.com/796431): Replace FlakeTryJob with a new try job entity
+  # independent of test_name.
+  try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                            revision)
+  if not try_job:
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
+    try_job.put()
+
+  return try_job
+
+
+def ScheduleFlakeTryJob(parameters, runner_id):
   """Schedules a flake try job to compile and isolate."""
   analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
   assert analysis
@@ -284,7 +311,7 @@ def ScheduleFlakeTryJob(parameters, pipeline_id):
       master_name, builder_name, tryserver_mastername, tryserver_buildername,
       properties, {},
       failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
-      parameters.flake_cache_name, parameters.dimensions, pipeline_id)
+      parameters.flake_cache_name, parameters.dimensions, runner_id)
 
   if error:
     raise exceptions.RetryException(error.message, error.reason)
@@ -294,6 +321,7 @@ def ScheduleFlakeTryJob(parameters, pipeline_id):
 
   # Create a corresponding FlakeTryJobData entity to capture as much metadata as
   # early as possible.
-  CreateTryJobData(build_id, try_job.key, parameters.analysis_urlsafe_key)
+  CreateTryJobData(build_id, try_job.key, parameters.analysis_urlsafe_key,
+                   runner_id)
 
   return build_id

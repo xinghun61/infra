@@ -743,22 +743,27 @@ def OnTryJobRunning(params, try_job_data, build, error):
   return None
 
 
-def GetCurrentWaterfallTryJobID(urlsafe_try_job_key, runner_id):
+def GetCurrentTryJobID(urlsafe_try_job_key, runner_id):
   try_job = (
       ndb.Key(urlsafe=urlsafe_try_job_key).get()
       if urlsafe_try_job_key else None)
+
   if not try_job or not try_job.try_job_ids:
     return None
 
   try_job_ids = try_job.try_job_ids
   for i in xrange(len(try_job_ids) - 1, -1, -1):
     try_job_id = try_job_ids[i]
-    try_job_data = WfTryJobData.Get(try_job_id)
+    try_job_data = (
+        WfTryJobData.Get(try_job_id)
+        if isinstance(try_job, WfTryJob) else FlakeTryJobData.Get(try_job_id))
+
     if not try_job_data:
       continue
 
     if try_job_data.runner_id == runner_id:
       return try_job_id
+
   return None
 
 

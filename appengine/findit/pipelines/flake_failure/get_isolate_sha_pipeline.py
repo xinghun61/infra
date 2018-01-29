@@ -3,13 +3,17 @@
 # found in the LICENSE file.
 
 from google.appengine.ext import ndb
+
 from common.findit_http_client import FinditHttpClient
+from dto.list_of_basestring import ListOfBasestring
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import SynchronousPipeline
 from libs.structured_object import StructuredObject
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
+    RunFlakeTryJobParameters)
+from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
-from services.parameters import RunFlakeTryJobParameters
+from services.flake_failure import flake_try_job
 from waterfall import build_util
 from waterfall import swarming_util
 
@@ -67,6 +71,7 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
 
     master_name = analysis.master_name
     builder_name = analysis.builder_name
+    test_name = analysis.test_name
     step_name = analysis.step_name
     commit_position = parameters.commit_position
 
@@ -87,10 +92,13 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
       yield GetIsolateShaForBuildPipeline(get_build_sha_parameters)
     else:
       # The requested commit position needs to be compiled.
+      try_job = flake_try_job.GetTryJob(master_name, builder_name, step_name,
+                                        test_name, parameters.revision)
       run_flake_try_job_parameters = self.CreateInputObjectInstance(
           RunFlakeTryJobParameters,
           analysis_urlsafe_key=parameters.analysis_urlsafe_key,
           revision=parameters.revision,
           flake_cache_name=None,
-          dimensions=[])
+          dimensions=ListOfBasestring(),
+          urlsafe_try_job_key=try_job.key.urlsafe())
       yield RunFlakeTryJobPipeline(run_flake_try_job_parameters)

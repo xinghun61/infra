@@ -53,8 +53,8 @@ class ScheduleFlakeTryJobPipeline(BasePipeline):
     build_id, error = try_job_service.TriggerTryJob(
         master_name, builder_name, tryserver_mastername, tryserver_buildername,
         properties, {},
-        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
-        cache_name, dimensions, self.pipeline_id)
+        failure_type.GetDescriptionForFailureType(
+            failure_type.FLAKY_TEST), cache_name, dimensions, self.pipeline_id)
 
     if error:  # pragma: no cover
       raise pipeline.Retry('Error "%s" occurred. Reason: "%s"' % (error.message,
@@ -66,6 +66,7 @@ class ScheduleFlakeTryJobPipeline(BasePipeline):
 
     # Create a corresponding Flake entity to capture as much metadata as early
     # as possible.
-    flake_try_job.CreateTryJobData(build_id, try_job.key, urlsafe_analysis_key)
+    flake_try_job.CreateTryJobData(build_id, try_job.key, urlsafe_analysis_key,
+                                   self.pipeline_id)
 
     return build_id

@@ -5,6 +5,8 @@ from datetime import datetime
 import mock
 
 from common import exceptions
+from dto.list_of_basestring import ListOfBasestring
+from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.testcase import TestCase
 
 from model.flake.flake_try_job import FlakeTryJob
@@ -12,9 +14,10 @@ from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
+from pipelines.flake_failure.run_flake_try_job_pipeline import (
+    RunFlakeTryJobParameters)
 from services import try_job as try_job_service
 from services.flake_failure import flake_try_job
-from services.parameters import RunFlakeTryJobParameters
 
 from waterfall import swarming_util
 from waterfall import waterfall_config
@@ -342,8 +345,9 @@ class FlakeTryJobServiceTest(TestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's1', 't1')
     analysis.put()
     build_id = 'build_id'
+    pipeline_id = 'pipeline_id'
     flake_try_job.CreateTryJobData(build_id, try_job.key,
-                                   analysis.key.urlsafe())
+                                   analysis.key.urlsafe(), pipeline_id)
     try_job_data = FlakeTryJobData.Get(build_id)
     self.assertIsNotNone(try_job_data)
 
@@ -365,7 +369,7 @@ class FlakeTryJobServiceTest(TestCase):
     step_name = 's'
     test_name = 't'
     revision = 'r1000'
-    build_id = 'id'
+    expected_try_job_id = 'id'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -375,16 +379,19 @@ class FlakeTryJobServiceTest(TestCase):
                                  test_name, revision)
     try_job.put()
 
-    parameters = RunFlakeTryJobParameters(
+    parameters = CreateInputObjectInstance(
+        RunFlakeTryJobParameters,
         analysis_urlsafe_key=analysis.key.urlsafe(),
         revision=revision,
         flake_cache_name=None,
-        dimensions=[])
+        dimensions=ListOfBasestring(),
+        urlsafe_try_job_key=try_job.key.urlsafe())
+
     try_job_id = flake_try_job.ScheduleFlakeTryJob(parameters, 'pipeline')
 
     try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
                               revision)
-    try_job_data = FlakeTryJobData.Get(build_id)
+    try_job_data = FlakeTryJobData.Get(expected_try_job_id)
 
     expected_try_job_id = 'id'
     self.assertEqual(expected_try_job_id, try_job_id)
@@ -408,7 +415,7 @@ class FlakeTryJobServiceTest(TestCase):
       try_job_service,
       'TriggerTryJob',
       return_value=(None, MockedError('message', 'reason')))
-  def testScheduleTestTryJobRaise(self, *_):
+  def testScheduleFlakeTryJobRaise(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -428,7 +435,33 @@ class FlakeTryJobServiceTest(TestCase):
         analysis_urlsafe_key=analysis.key.urlsafe(),
         revision=revision,
         flake_cache_name=None,
-        dimensions=[])
+        dimensions=ListOfBasestring())
 
     with self.assertRaises(exceptions.RetryException):
       flake_try_job.ScheduleFlakeTryJob(parameters, 'pipeline')
+
+  def testGetTryJobExistingTryJob(self):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+    test_name = 't'
+    revision = 'r1000'
+
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
+    try_job.put()
+
+    retrieved_try_job = flake_try_job.GetTryJob(master_name, builder_name,
+                                                step_name, test_name, revision)
+    self.assertEqual(retrieved_try_job, try_job)
+
+  def testGetTryJobNewTryJob(self):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+    test_name = 't'
+    revision = 'r1000'
+
+    self.assertIsNotNone(
+        flake_try_job.GetTryJob(master_name, builder_name, step_name, test_name,
+                                revision))

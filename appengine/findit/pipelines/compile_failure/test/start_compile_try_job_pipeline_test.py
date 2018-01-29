@@ -122,8 +122,7 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.start()
     self.execute_queued_tasks()
 
-  @mock.patch.object(
-      try_job_service, 'GetCurrentWaterfallTryJobID', return_value=None)
+  @mock.patch.object(try_job_service, 'GetCurrentTryJobID', return_value=None)
   @mock.patch.object(compile_try_job, 'GetParametersToScheduleCompileTryJob')
   @mock.patch.object(compile_try_job, 'NeedANewCompileTryJob')
   def testCompileTryJobNoTryJobResult(self, mock_fn, mock_parameter, _):
