@@ -97,8 +97,11 @@ class PermissionTest(testing.AppengineTestCase):
     self._VerifyUnauthorizedAccess('test@chromium.org', True)
 
     # Task queues and Cron jobs have access.
-    for headers in [{'X-AppEngine-QueueName': 'task_queue'},
-                   {'X-AppEngine-Cron': 'cron_job'}]:
+    for headers in [{
+        'X-AppEngine-QueueName': 'task_queue'
+    }, {
+        'X-AppEngine-Cron': 'cron_job'
+    }]:
       self._VerifyAuthorizedAccess(None, False, headers)
 
   def testUnknownPermissionLevel(self):
@@ -351,8 +354,21 @@ class InternalExceptionTest(testing.AppengineTestCase):
           ('/exception', InternalExceptionHandler),
       ], debug=True)
 
-  def testInternalException(self):
+  @mock.patch('logging.exception')
+  def testNormalInternalException(self, mocked_log_exception):
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('.*500 Internal Server Error.*An internal error occurred.*',
                    re.MULTILINE | re.DOTALL), self.test_app.get, '/exception')
+    mocked_log_exception.assert_called_once()
+
+  @mock.patch('logging.exception')
+  def testSecurityScanInternalException(self, mocked_log_exception):
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*500 Internal Server Error.*An internal error occurred.*',
+                   re.MULTILINE | re.DOTALL),
+        self.test_app.get,
+        '/exception',
+        headers={'user-agent': '...GoogleSecurityScanner...'})
+    mocked_log_exception.assert_not_called()

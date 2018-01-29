@@ -188,7 +188,9 @@ class BaseHandler(webapp2.RequestHandler):
         return_code = result.get('return_code', 200)
         cache_expiry = result.get('cache_expiry', None)
     except Exception as e:
-      logging.exception(e)
+      user_agent = self.request.headers.get('user-agent')
+      if not (user_agent and 'GoogleSecurityScanner' in user_agent):
+        logging.exception(e)
 
       template = 'error.html'
       data = {'error_message': 'An internal error occurred.'}
