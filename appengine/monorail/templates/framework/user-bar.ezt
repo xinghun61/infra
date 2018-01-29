@@ -4,11 +4,6 @@
       <b><a href="#">[logged_in_user.email]</a></b>
       <small>&#9660;</small>
     </span>
-    [# TODO(jrobbins): Remove these links since they are in the account menu.]
-    | <a href="[logged_in_user.profile_url]"
-         title="Profile, Updates, Settings, and Hotlists"
-         ><u>Profile</u></a>
-    | <a href="[logout_url]"><u>Sign out</u></a>
   [else]
     <a href="[login_url]"><u>Sign in</u></a>
   [end]
