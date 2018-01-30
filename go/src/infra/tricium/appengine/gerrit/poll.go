@@ -357,7 +357,7 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 				Host:     gerritDetails.Host,
 				Project:  gerritDetails.Project,
 				Change:   c.ID,
-				Revision: c.CurrentRevision,
+				Revision: c.Revisions[c.CurrentRevision].Ref,
 			},
 		}
 		b, err := proto.Marshal(req)
