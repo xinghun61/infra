@@ -27,6 +27,14 @@ def RunSteps(api):
               str(build_dir)])
     src_dir = build_dir.join('chromium-' + version)
     with api.context(cwd=src_dir):
+      llvm_bin_dir = src_dir.join('third_party', 'llvm-build',
+                                  'Release+Asserts', 'bin')
+      gn_bootstrap_env = {
+          'CC': llvm_bin_dir.join('clang'),
+          'CXX': llvm_bin_dir.join('clang++'),
+          'LD': llvm_bin_dir.join('lld'),
+          'AR': llvm_bin_dir.join('llvm-ar'),
+      }
       gn_args = [
           'is_debug=false',
           'enable_nacl=false',
@@ -38,10 +46,11 @@ def RunSteps(api):
                  api.path.join(src_dir, 'tools', 'clang', 'scripts',
                                'update.py'),
                  ['--if-needed', '--without-android'])
-      api.python('Bootstrap gn.',
-                 api.path.join(src_dir, 'tools', 'gn', 'bootstrap',
-                               'bootstrap.py'),
-                 ['--gn-gen-args=%s' % ' '.join(gn_args)])
+      with api.context(env=gn_bootstrap_env):
+        api.python('Bootstrap gn.',
+                   api.path.join(src_dir, 'tools', 'gn', 'bootstrap',
+                                 'bootstrap.py'),
+                   ['--gn-gen-args=%s' % ' '.join(gn_args)])
       api.python('Download nodejs.',
                  api.path.join(src_dir, 'third_party', 'depot_tools',
                                'download_from_google_storage.py'),
@@ -59,4 +68,3 @@ def RunSteps(api):
 def GenTests(api):
   yield (api.test('basic') + api.properties.generic(version='65.0.3318.0') +
          api.platform('linux', 64))
-
