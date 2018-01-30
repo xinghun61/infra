@@ -182,10 +182,13 @@ class SpamService(object):
     for issue_id in counts:
       # If the flag counts changed enough to toggle the is_spam bit, need to
       # record a new verdict and update the Issue.
-      if ((flagged_spam and counts[issue_id] >= settings.spam_flag_thresh or
-          not flagged_spam and counts[issue_id] < settings.spam_flag_thresh) and
-          (previous_verdicts[issue_id] != REASON_MANUAL if issue_id in
-           previous_verdicts else True)):
+
+      # No number of user spam flags can overturn an admin's verdict.
+      if previous_verdicts.get(issue_id) == REASON_MANUAL:
+        continue
+
+      # If enough spam flags come in, mark the issue as spam.
+      if (flagged_spam and counts[issue_id] >= settings.spam_flag_thresh):
         verdict_updates.append(issue_id)
 
     if len(verdict_updates) == 0:

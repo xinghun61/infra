@@ -130,6 +130,9 @@ class SpamServiceTest(unittest.TestCase):
     self.assertEqual(True, issue.is_spam)
 
   def testUnflagIssue_underThresh(self):
+    """A non-member un-flagging an issue as spam should not be able
+    to overturn the verdict to ham. This is different from previous
+    behavior. See https://crbug.com/monorail/2232 for details."""
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, reporter_id=111L, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
@@ -143,19 +146,16 @@ class SpamServiceTest(unittest.TestCase):
     self.mock_verdict_tbl.Select(
         self.cnxn, cols=['issue_id', 'reason', 'MAX(created)'],
         group_by=['issue_id'], issue_id=[78901]).AndReturn([])
-    self.mock_verdict_tbl.InsertRows(
-        self.cnxn, ['issue_id', 'is_spam', 'reason', 'project_id'],
-        [(78901, False, 'threshold', 789)], ignore=True)
 
     self.mox.ReplayAll()
     self.spam_service.FlagIssues(
         self.cnxn, self.issue_service, [issue], 111L, False)
     self.mox.VerifyAll()
 
-    self.assertIn(issue, self.issue_service.updated_issues)
-    self.assertEqual(False, issue.is_spam)
+    self.assertNotIn(issue, self.issue_service.updated_issues)
+    self.assertEqual(True, issue.is_spam)
 
-  def testUnflagIssue_underThreshNoManualOerride(self):
+  def testUnflagIssue_underThreshNoManualOverride(self):
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, reporter_id=111L, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
