@@ -87,8 +87,9 @@ class InboundEmailTest(unittest.TestCase):
     self.assertIsNone(ret)
 
   def testProcessMail_IssueUnidentified(self):
-    self.mox.StubOutWithMock(emailfmt, 'IdentifyProjectAndVerb')
-    emailfmt.IdentifyProjectAndVerb(self.project_addr).AndReturn(('proj', None))
+    self.mox.StubOutWithMock(emailfmt, 'IdentifyProjectVerbAndLabel')
+    emailfmt.IdentifyProjectVerbAndLabel(self.project_addr).AndReturn(('proj',
+        None, None))
 
     self.mox.StubOutWithMock(emailfmt, 'IdentifyIssue')
     emailfmt.IdentifyIssue('proj', mox.IgnoreArg()).AndReturn((None))

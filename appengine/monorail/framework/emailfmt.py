@@ -244,7 +244,7 @@ def ValidateReferencesHeader(message_ref, project, from_addr, subject):
 
 PROJECT_EMAIL_RE = re.compile(
     r'(?P<project>[-a-z0-9]+)'
-    r'(\+(?P<verb>[a-z0-9]+))?'
+    r'(\+(?P<verb>[a-z0-9]+)(\+(?P<label>[a-z0-9-]+))?)?'
     r'@(?P<domain>[-a-z0-9.]+)')
 
 ISSUE_CHANGE_SUBJECT_RE = re.compile(
@@ -288,19 +288,21 @@ def IdentifyIssue(project_name, subject):
   return local_id
 
 
-def IdentifyProjectAndVerb(project_addr):
+def IdentifyProjectVerbAndLabel(project_addr):
     # Ignore any inbound email sent to a "no_reply@" address.
     if project_addr.startswith('no_reply@'):
-      return None, None
+      return None, None, None
 
     project_name = None
     verb = None
+    label = None
     m = PROJECT_EMAIL_RE.match(project_addr.lower())
     if m:
       project_name = m.group('project')
       verb = m.group('verb')
+      label = m.group('label')
 
-    return project_name, verb
+    return project_name, verb, label
 
 
 def _MatchSubject(subject):

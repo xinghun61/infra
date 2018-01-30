@@ -111,7 +111,12 @@ class InboundEmail(webapp2.RequestHandler):
     if not emailfmt.IsProjectAddressOnToLine(project_addr, to_addrs):
       return None
 
-    project_name, verb = emailfmt.IdentifyProjectAndVerb(project_addr)
+    project_name, verb, label = emailfmt.IdentifyProjectVerbAndLabel(
+        project_addr)
+
+    labels = None
+    if label:
+        labels = [label]
 
     is_alert = bool(verb and verb.lower() == 'alert')
     error_addr = from_addr
@@ -180,7 +185,7 @@ class InboundEmail(webapp2.RequestHandler):
     # If the email is an alert, switch to the alert handling path.
     if is_alert:
         self.ProcessAlert(cnxn, project, project_addr, from_addr, author_addr,
-            author_id, subject, body, incident_id)
+            author_id, subject, body, incident_id, labels=labels)
         return None
 
     # This email is a response to an email about a comment.
@@ -192,7 +197,7 @@ class InboundEmail(webapp2.RequestHandler):
 
   def ProcessAlert(
       self, cnxn, project, project_addr, from_addr, author_addr,
-      author_id, subject, body, incident_id, owner_email=None):
+      author_id, subject, body, incident_id, owner_email=None, labels=None):
     """Examine an an alert issue email and create an issue based on the email.
 
     Args:
@@ -228,7 +233,10 @@ class InboundEmail(webapp2.RequestHandler):
     cc_ids = []
     status = 'Available'
 
-    labels = ['Infra-Troopers-Alerts', 'Restrict-View-Google', 'Pri-2']
+    if not labels:
+        labels = ['Infra-Troopers-Alerts']
+
+    labels += ['Restrict-View-Google', 'Pri-2']
     field_values = []
     components = ['Infra']
 

@@ -117,13 +117,15 @@ class EmailFmtTest(unittest.TestCase):
 
   def CheckIdentifiedValues(
       self, project_addr, subject, expected_project_name, expected_local_id,
-      expected_verb=None):
+      expected_verb=None, expected_label=None):
     """Testing helper function to check 3 results against expected values."""
-    project_name, verb = emailfmt.IdentifyProjectAndVerb(project_addr)
+    project_name, verb, label = emailfmt.IdentifyProjectVerbAndLabel(
+        project_addr)
     local_id = emailfmt.IdentifyIssue(project_name, subject)
     self.assertEqual(expected_project_name, project_name)
     self.assertEqual(expected_local_id, local_id)
     self.assertEqual(expected_verb, verb)
+    self.assertEqual(expected_label, label)
 
   def testIdentifyProjectAndIssues_Normal(self):
     """Parse normal issue notification subject lines."""
