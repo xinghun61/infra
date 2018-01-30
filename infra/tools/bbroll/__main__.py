@@ -365,11 +365,11 @@ def roll_canary(args):
   print
   # TODO(nodir): replace builder URLs with a monitoring link.
   print(
-      'check builds in https://luci-milo-dev.appspot.com/buildbucket/'
-      'luci.infra.continuous/infra-continuous-win-64')
+      'check builds in https://luci-milo-dev.appspot.com/p/chromium/builders/'
+      'luci.infra.ci/infra-continuous-win-64')
   print(
-      'check builds in https://luci-milo-dev.appspot.com/buildbucket/'
-      'luci.infra.continuous/infra-continuous-trusty-64')
+      'check builds in https://luci-milo-dev.appspot.com/p/chromium/builders/'
+      'luci.infra.ci/infra-continuous-trusty-64')
 
   message = 'does %s at TOT look good? [N/y]: ' % (pin.name,)
   if raw_input(message).lower() != 'y':
