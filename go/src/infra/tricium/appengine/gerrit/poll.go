@@ -314,6 +314,7 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 	for _, c := range changes {
 		if checkWhitelist {
 			if len(gerritDetails.WhitelistedGroup) == 0 {
+				logging.Errorf(ctx, "No whitelisted groups, not enqueuing tasks")
 				continue
 			}
 			whitelisted, ok := owners[c.Owner.Email]
