@@ -257,6 +257,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
         field_id=field_ids).AndReturn(self.fielddef2admin_rows)
     self.config_service.componentdef_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENTDEF_COLS, project_id=project_ids,
+        is_deleted=False,
         order_by=[('LOWER(path)', [])]).AndReturn(self.componentdef_rows)
     component_ids = [cd_row[0] for cd_row in self.componentdef_rows]
     self.config_service.component2admin_tbl.Select(
@@ -648,6 +649,7 @@ class ConfigServiceTest(unittest.TestCase):
         field_id=[]).AndReturn([])
     self.config_service.componentdef_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENTDEF_COLS,
+        is_deleted=False,
         project_id=project_ids, order_by=[('LOWER(path)', [])]).AndReturn([])
     self.config_service.component2admin_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENT2ADMIN_COLS,
@@ -1038,19 +1040,13 @@ class ConfigServiceTest(unittest.TestCase):
         deprecated=True, admin_ids=[], cc_ids=[], label_ids=[])
     self.mox.VerifyAll()
 
-  def SetUpDeleteComponentDef(self, component_id):
-    self.config_service.component2cc_tbl.Delete(
-        self.cnxn, component_id=component_id, commit=False)
-    self.config_service.component2admin_tbl.Delete(
-        self.cnxn, component_id=component_id, commit=False)
-    self.config_service.component2label_tbl.Delete(
-        self.cnxn, component_id=component_id, commit=False)
-    self.config_service.componentdef_tbl.Delete(
-        self.cnxn, id=component_id, commit=False)
+  def SetUpSoftDeleteComponentDef(self, component_id):
+    self.config_service.componentdef_tbl.Update(
+        self.cnxn, {'is_deleted': True}, commit=False, id=component_id)
     self.cnxn.Commit()
 
-  def testDeleteComponentDef(self):
-    self.SetUpDeleteComponentDef(1)
+  def testSoftDeleteComponentDef(self):
+    self.SetUpSoftDeleteComponentDef(1)
 
     self.mox.ReplayAll()
     self.config_service.DeleteComponentDef(self.cnxn, 789, 1)

@@ -1190,3 +1190,11 @@ CREATE TABLE Approval2Approvers (
   FOREIGN KEY (approver_id) REFERENCES User(user_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id)
 ) ENGINE=INNODB;
+
+================================================================
+2018-01-29: Add is_deleted column to ComponentDef table and remove
+uniqueness constraint for component names in a project.
+
+ALTER TABLE ComponentDef ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
+ALTER TABLE ComponentDef ADD INDEX project_id2 (project_id, path);
+ALTER TABLE ComponentDef DROP INDEX project_id;

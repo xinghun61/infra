@@ -446,7 +446,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
         cnxn, cols=FIELDDEF2ADMIN_COLS, field_id=field_ids)
     componentdef_rows = self.config_service.componentdef_tbl.Select(
         cnxn, cols=COMPONENTDEF_COLS, project_id=project_ids,
-        order_by=[('LOWER(path)', [])])
+        is_deleted=False, order_by=[('LOWER(path)', [])])
     component_ids = [cd_row[0] for cd_row in componentdef_rows]
     component2admin_rows = self.config_service.component2admin_tbl.Select(
         cnxn, cols=COMPONENT2ADMIN_COLS, component_id=component_ids)
@@ -1416,13 +1416,9 @@ class ConfigService(object):
 
   def DeleteComponentDef(self, cnxn, project_id, component_id):
     """Delete the specified component definition."""
-    self.component2cc_tbl.Delete(
-        cnxn, component_id=component_id, commit=False)
-    self.component2admin_tbl.Delete(
-        cnxn, component_id=component_id, commit=False)
-    self.component2label_tbl.Delete(
-        cnxn, component_id=component_id, commit=False)
-    self.componentdef_tbl.Delete(cnxn, id=component_id, commit=False)
+    self.componentdef_tbl.Update(
+        cnxn, {'is_deleted': True}, id=component_id, commit=False)
+
     cnxn.Commit()
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
     self.InvalidateMemcacheForEntireProject(project_id)

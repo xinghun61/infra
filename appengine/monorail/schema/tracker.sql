@@ -35,12 +35,13 @@ CREATE TABLE ComponentDef (
   creator_id INT UNSIGNED,
   modified INT,
   modifier_id INT UNSIGNED,
+  is_deleted BOOLEAN DEFAULT FALSE,
 
   PRIMARY KEY (id),
-  UNIQUE KEY (project_id, path),
   FOREIGN KEY (project_id) REFERENCES Project(project_id),
   FOREIGN KEY (creator_id) REFERENCES User(user_id),
-  FOREIGN KEY (modifier_id) REFERENCES User(user_id)
+  FOREIGN KEY (modifier_id) REFERENCES User(user_id),
+  INDEX project_id2 (project_id, path)
 ) ENGINE=INNODB;
 
 
