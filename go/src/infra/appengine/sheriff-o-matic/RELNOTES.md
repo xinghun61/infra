@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2018-01-31
+
+- 2 commits, 2 bugs affected since 715ed81 (2018-01-16T23:57:49Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - maruel@chromium.org
+
+## Changes in this release
+
+- [[som] Increase client RPC timeouts to 1 minute](https://chromium-review.googlesource.com/895412) (seanmccullough@chromium.org)
+- [sheriff-o-matic: update Swarming API calls to go through webapp2 adaptor](https://chromium-review.googlesource.com/882682) (maruel@chromium.org)
+
+
+## Bugs updated, by author
+- maruel@chromium.org:
+  -  [https://crbug.com/805076](https://crbug.com/805076)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/806700](https://crbug.com/806700)
+
 # Release Notes sheriff-o-matic 2018-01-16
 
 - 2 commits, 2 bugs affected since 6dcee01 (2018-01-09T22:17:27Z)
