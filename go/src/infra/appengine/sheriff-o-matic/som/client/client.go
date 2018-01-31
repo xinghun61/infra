@@ -474,6 +474,9 @@ func getAsSelfOAuthClient(c context.Context) (*http.Client, error) {
 	// Note: "https://www.googleapis.com/auth/userinfo.email" is the default
 	// scope used by GetRPCTransport(AsSelf). Use auth.WithScopes(...) option to
 	// override.
+	c, cancel := context.WithTimeout(c, 1*time.Minute)
+	defer cancel()
+
 	t, err := auth.GetRPCTransport(c, auth.AsSelf)
 	if err != nil {
 		return nil, err

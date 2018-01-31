@@ -252,12 +252,6 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 		if expected != nil || actual != nil {
 			ue := unexpected(expected, actual)
 
-			// is_unexpected is optional accordding the format doc, but in practice
-			// we rarely see it set. Don't depend on it, but do log it for later
-			// reference.
-			if res.Unexpected != nil {
-				logging.Infof(ctx, "%v, is_unexpected: %+v", ue, *res.Unexpected)
-			}
 			hasPass := false
 			// If there was a pass at all, count it.
 			for _, r := range actual {
@@ -267,7 +261,6 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 			}
 
 			if len(ue) > 0 && !hasPass {
-				logging.Infof(ctx, "%s's unexpected results: %v. %v vs %v", testName, ue, actual, expected)
 				failedTests = append(failedTests, testName)
 			}
 		}
