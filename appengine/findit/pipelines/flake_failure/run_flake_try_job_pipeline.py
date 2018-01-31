@@ -93,8 +93,6 @@ class RunFlakeTryJobPipeline(AsynchronousPipeline):
       self.last_params = try_job_service.InitializeParams(
           try_job_id, try_job_type, urlsafe_try_job_key)
 
-      print 'last_params are %s'
-
       # TODO(crbug.com/789218): Add callback_url and callback_target to request
       # of scheduling try job.
       callback_url = self.get_callback_url(

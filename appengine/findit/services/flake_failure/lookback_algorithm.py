@@ -4,6 +4,7 @@
 
 import math
 
+from services.flake_failure import pass_rate_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -71,7 +72,7 @@ def _DetermineNextCommitPosition(data_points):
     pass_rate = current_data_point.pass_rate
     commit_position = current_data_point.commit_position
 
-    if _TestDoesNotExist(pass_rate):
+    if pass_rate_util.TestDoesNotExist(pass_rate):
       if flakes_in_a_row > 0:
         # The test doesn't exist. It is likely the newly-added test is flaky
         # to begin with. Bisect the range between the nonexistent point and
@@ -232,14 +233,6 @@ def _ShouldRunBisect(data_points, use_bisect):
   return lower_bound is not None and upper_bound is not None
 
 
-def _TestDoesNotExist(pass_rate):
-  """Determines whether a pass_rate represents a nonexistent test."""
-  return (pass_rate >=
-          (flake_constants.PASS_RATE_TEST_NOT_FOUND - flake_constants.EPSILON)
-          and pass_rate <=
-          (flake_constants.PASS_RATE_TEST_NOT_FOUND + flake_constants.EPSILON))
-
-
 def BisectPoint(lower_bound, upper_bound):
   """Returns a bisection of two positive input numbers.
 
@@ -313,5 +306,6 @@ def IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
         greater than upper_flake_threshold.
   """
   assert upper_flake_threshold > lower_flake_threshold
-  return (pass_rate < lower_flake_threshold + flake_constants.EPSILON or
+  return (pass_rate_util.TestDoesNotExist(pass_rate) or
+          pass_rate < lower_flake_threshold + flake_constants.EPSILON or
           pass_rate > upper_flake_threshold - flake_constants.EPSILON)

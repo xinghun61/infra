@@ -10,9 +10,7 @@ BASE_COUNT_DOWN_SECONDS = 2 * 60
 CHROMIUM_GIT_REPOSITORY_URL = (
     'https://chromium.googlesource.com/chromium/src.git')
 
-# Percent that when sampling we consider that the pass rate has converged.
-# This means that if pass_rate_a - pass_rate_b < this that the test has
-# reached its pass rate.
+# Percent to consider when sampling that a pass rate has converged.
 CONVERGENCE_PERCENT = .05  # 5 percent.
 
 # Sample size to find out the average test length.
@@ -44,6 +42,10 @@ DEFAULT_MAX_BUILD_NUMBERS = 500
 
 # Maximum number of times to rerun at a certain build number.
 DEFAULT_MAX_ITERATIONS_TO_RERUN = 400
+
+# Maximum number of times a swarming task can be retried for the same data
+# point.
+DEFAULT_MAX_SWARMING_TASK_RETRIES_PER_DATA_POINT = 3
 
 # Default minimum confidence score to run try jobs.
 DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6

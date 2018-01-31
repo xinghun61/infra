@@ -64,6 +64,10 @@ class DataPoint(ndb.Model):
   # The total seconds that these iterations took to compute.
   elapsed_seconds = ndb.IntegerProperty(indexed=False, default=0)
 
+  # The number of times a swarming task had an error while generating this
+  # data point.
+  failed_swarming_task_attempts = ndb.IntegerProperty(indexed=False, default=0)
+
   @staticmethod
   def Create(build_number=None,
              pass_rate=None,
@@ -76,7 +80,8 @@ class DataPoint(ndb.Model):
              try_job_url=None,
              has_valid_artifact=True,
              iterations=None,
-             elapsed_seconds=0):
+             elapsed_seconds=0,
+             failed_swarming_task_attempts=0):
     data_point = DataPoint()
     data_point.build_number = build_number
     data_point.pass_rate = pass_rate
@@ -91,6 +96,7 @@ class DataPoint(ndb.Model):
     data_point.has_valid_artifact = has_valid_artifact
     data_point.iterations = iterations
     data_point.elapsed_seconds = elapsed_seconds
+    data_point.failed_swarming_task_attempts = failed_swarming_task_attempts
     return data_point
 
   def GetSwarmingTaskId(self):
