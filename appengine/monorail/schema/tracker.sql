@@ -784,7 +784,6 @@ CREATE TABLE ApprovalStatusDef (
   FOREIGN KEY (field_id) REFERENCES FieldDef(id)
 ) ENGINE=INNODB;
 
-
 CREATE TABLE Issue2ApprovalValue (
   issue_id INT NOT NULL,
   issue_shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
@@ -817,4 +816,54 @@ CREATE TABLE Approval2Approvers (
   FOREIGN KEY (field_id) REFERENCES FieldDef(id),
   FOREIGN KEY (approver_id) REFERENCES User(user_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id)
+) ENGINE=INNODB;
+
+CREATE TABLE IssueSnapshot (
+  id INT NOT NULL AUTO_INCREMENT,
+  issue_id INT NOT NULL,
+  shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
+  project_id SMALLINT UNSIGNED NOT NULL,
+  local_id INT NOT NULL,
+  reporter_id INT UNSIGNED NOT NULL,
+  owner_id INT UNSIGNED,
+  status_id INT NOT NULL,
+  period_start INT NOT NULL,
+  period_end INT NOT NULL,
+  is_open BOOLEAN DEFAULT TRUE,
+  -- TODO(jeffcarp): Add Hotlist information
+
+  PRIMARY KEY (id),
+  FOREIGN KEY (project_id) REFERENCES Project(project_id),
+  FOREIGN KEY (reporter_id) REFERENCES User(user_id),
+  FOREIGN KEY (owner_id) REFERENCES User(user_id),
+  FOREIGN KEY (status_id) REFERENCES StatusDef(id),
+  INDEX (shard, project_id, period_start, period_end),
+  UNIQUE KEY (issue_id, period_start, period_end)
+) ENGINE=INNODB;
+
+CREATE TABLE IssueSnapshot2Component (
+  issuesnapshot_id INT NOT NULL,
+  component_id INT NOT NULL,
+
+  PRIMARY KEY (issuesnapshot_id, component_id),
+  FOREIGN KEY (issuesnapshot_id) REFERENCES IssueSnapshot(id),
+  FOREIGN KEY (component_id) REFERENCES ComponentDef(id)
+) ENGINE=INNODB;
+
+CREATE TABLE IssueSnapshot2Label(
+  issuesnapshot_id INT NOT NULL,
+  label_id INT NOT NULL,
+
+  PRIMARY KEY (issuesnapshot_id, label_id),
+  FOREIGN KEY (issuesnapshot_id) REFERENCES IssueSnapshot(id),
+  FOREIGN KEY (label_id) REFERENCES LabelDef(id)
+) ENGINE=INNODB;
+
+CREATE TABLE IssueSnapshot2Cc(
+  issuesnapshot_id INT NOT NULL,
+  cc_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (issuesnapshot_id, cc_id),
+  FOREIGN KEY (issuesnapshot_id) REFERENCES IssueSnapshot(id),
+  FOREIGN KEY (cc_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
