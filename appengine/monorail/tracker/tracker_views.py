@@ -753,6 +753,11 @@ class FieldDefView(template_helpers.PBProxy):
       self.admins = [user_views.get(admin_id)
                      for admin_id in field_def.admin_ids]
 
+    if field_def.approval_id:
+      self.is_approval_sub_field = ezt.boolean(True)
+    else:
+      self.is_approval_sub_field = ezt.boolean(False)
+
 
 class IssueTemplateView(template_helpers.PBProxy):
   """Wrapper class to make it easier to display an issue template via EZT."""

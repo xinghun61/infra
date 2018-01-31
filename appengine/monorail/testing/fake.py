@@ -974,7 +974,8 @@ class ConfigService(object):
       self, cnxn, project_id, field_name, field_type_str, applic_type,
       applic_pred, is_required, is_niche, is_multivalued,
       min_value, max_value, regex, needs_member, needs_perm,
-      grants_perm, notify_on, date_action_str, docstring, admin_ids):
+      grants_perm, notify_on, date_action_str, docstring, admin_ids,
+      approval_id=None):
     config = self.GetProjectConfig(cnxn, project_id)
     field_type = tracker_pb2.FieldTypes(field_type_str)
     field_id = self.next_field_id
@@ -983,9 +984,10 @@ class ConfigService(object):
         field_id, project_id, field_name, field_type, applic_type, applic_pred,
         is_required, is_niche, is_multivalued, min_value, max_value, regex,
         needs_member, needs_perm, grants_perm, notify_on, date_action_str,
-        docstring, False)
+        docstring, False, approval_id=approval_id)
     config.field_defs.append(fd)
     self.StoreConfig(cnxn, config)
+    return field_id
 
   def SoftDeleteFieldDef(self, cnxn, project_id, field_id):
     config = self.GetProjectConfig(cnxn, project_id)

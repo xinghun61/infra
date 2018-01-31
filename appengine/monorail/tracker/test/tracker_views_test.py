@@ -5,6 +5,7 @@
 
 """Unittest for issue tracker views."""
 
+import logging
 import unittest
 
 import mox
@@ -503,7 +504,23 @@ class ConvertLabelsToFieldValuesTest(unittest.TestCase):
 
 
 class FieldDefViewTest(unittest.TestCase):
-  pass  # TODO(jrobbins): write tests
+
+  def testIsApprovalSubField(self):
+    config = _MakeConfig()
+    fielddef = tracker_bizobj.MakeFieldDef(
+        2, 789, 'AffectedUsers', tracker_pb2.FieldTypes.INT_TYPE, None,
+        None, True, True, False, 3, 99, None, False, None, None,
+        None, 'no_action', 'descriptive docstring', False, 1)
+    view = tracker_views.FieldDefView(fielddef, config)
+    self.assertEqual('descriptive docstring', view.docstring_short)
+    self.assertEqual('INT_TYPE', view.type_name)
+    self.assertEqual([], view.choices)
+    self.assertEqual('required', view.importance)
+    self.assertEqual(3, view.min_value)
+    self.assertEqual(99, view.max_value)
+    self.assertEqual('no_action', view.date_action_str)
+    self.assertEqual(view.approval_id, 1)
+    self.assertEqual(view.is_approval_sub_field, ezt.boolean(True))
 
 
 class IssueTemplateViewTest(unittest.TestCase):

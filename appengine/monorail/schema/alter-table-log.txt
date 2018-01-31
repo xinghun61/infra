@@ -1249,3 +1249,8 @@ CREATE TABLE IssueSnapshot2Cc(
   FOREIGN KEY (issuesnapshot_id) REFERENCES IssueSnapshot(id),
   FOREIGN KEY (cc_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
+
+===============================================================
+2018-01-29: Add approval_id column to FieldDef table
+
+ALTER TABLE FieldDef ADD COLUMN approval_id INT;

@@ -124,6 +124,7 @@ CREATE TABLE FieldDef (
   -- TODO(jrobbins): deprecated boolean?
   docstring TEXT,
   is_deleted BOOLEAN,  -- If true, reap this field def after all values reaped.
+  approval_id INT,
 
   PRIMARY KEY (id),
   UNIQUE KEY (project_id, field_name),

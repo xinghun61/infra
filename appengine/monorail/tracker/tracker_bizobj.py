@@ -155,7 +155,7 @@ def MakeFieldDef(
     field_id, project_id, field_name, field_type_int, applic_type, applic_pred,
     is_required, is_niche, is_multivalued, min_value, max_value, regex,
     needs_member, needs_perm, grants_perm, notify_on, date_action, docstring,
-    is_deleted):
+    is_deleted, approval_id=None):
   """Make a FieldDef PB for the given FieldDef table row tuple."""
   if isinstance(date_action, basestring):
     date_action = date_action.upper()
@@ -177,6 +177,8 @@ def MakeFieldDef(
     fd.regex = regex
   if needs_perm is not None:
     fd.needs_perm = needs_perm
+  if approval_id is not None:
+    fd.approval_id = approval_id
   return fd
 
 
