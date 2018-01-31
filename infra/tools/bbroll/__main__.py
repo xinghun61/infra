@@ -297,7 +297,7 @@ def roll_prod(_args):
       'canary was committed %s' %
       git('log', '-1', '--format=%cr', CANARY_TEMPLATE_FILENAME))
   print(
-      'check builds in https://luci-milo.appspot.com/buildbucket/'
+      'check builds in https://ci.chromium.org/p/chromium/builders/'
       'luci.chromium.try/linux_chromium_rel_ng')
   print('check https://goto.google.com/buildbucket-canary-health')
   if raw_input('does canary look good? [N/y]: ').lower() != 'y':
