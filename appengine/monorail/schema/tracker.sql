@@ -771,7 +771,7 @@ CREATE TABLE HotlistVisitHistory (
 
 CREATE TABLE ComponentIssueClosedIndex (
   closed_index INT NOT NULL,
-  PRIMARY KEY (closed_index),
+  PRIMARY KEY (closed_index)
 ) ENGINE=INNODB;
 
 CREATE TABLE ApprovalStatusDef (
