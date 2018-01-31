@@ -344,7 +344,7 @@ class IssueCommentView(template_helpers.PBProxy):
         comment_pb.timestamp, recent_format=timestr.MONTH_DAY_YEAR_FMT,
         old_format=timestr.MONTH_DAY_YEAR_FMT)
     self.text_runs = _ParseTextRuns(comment_pb.content)
-    if autolink:
+    if autolink and not comment_pb.deleted_by:
       self.text_runs = autolink.MarkupAutolinks(
           mr, self.text_runs, all_referenced_artifacts)
 

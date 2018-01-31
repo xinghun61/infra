@@ -34,7 +34,7 @@ class AutolinkTest(unittest.TestCase):
 
     def MakeMailtoLink(_mr, match, comp_ref_artifacts):
       email = match.group(0)
-      if email in comp_ref_artifacts:
+      if comp_ref_artifacts and email in comp_ref_artifacts:
         return [template_helpers.TextRun(
             tag='a', href='mailto:%s' % email, content=email)]
       else:
@@ -88,7 +88,7 @@ class AutolinkTest(unittest.TestCase):
     all_ref_artifacts = self.aa.GetAllReferencedArtifacts(
         None, self.comments, max_total_length=10)
 
-    self.assertEqual(autolink._SKIP_AUTOLINKING, all_ref_artifacts)
+    self.assertEqual(autolink._SKIP_LOOKUPS, all_ref_artifacts)
 
   def testMarkupAutolinks(self):
     all_ref_artifacts = self.aa.GetAllReferencedArtifacts(None, self.comments)
@@ -143,12 +143,16 @@ class AutolinkTest(unittest.TestCase):
     self.assertEqual('example.org', result[4].href)
 
   def testMarkupAutolinks_TooBig(self):
+    """If the issue has too much text, we just do regex-based autolinking."""
     all_ref_artifacts = self.aa.GetAllReferencedArtifacts(
         None, self.comments, max_total_length=10)
     result = self.aa.MarkupAutolinks(
         None, [template_helpers.TextRun(self.comment1)], all_ref_artifacts)
-    self.assertEqual(1, len(result))
-    self.assertEqual(self.comment1, result[0].content)
+    self.assertEqual(5, len(result))
+    self.assertEqual('Feel free to contact me at ', result[0].content)
+    # The test autolink handlers in this file do not link email addresses.
+    self.assertEqual('a AT other.com', result[1].content)
+    self.assertIsNone(result[1].href)
 
 class EmailAutolinkTest(unittest.TestCase):
 

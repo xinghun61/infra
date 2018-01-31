@@ -231,7 +231,8 @@ class IssuePeek(servlet.Servlet):
 
     with mr.profiler.Phase('autolinker object lookup'):
       all_ref_artifacts = self.services.autolink.GetAllReferencedArtifacts(
-          mr, [c.content for c in descriptions + comments])
+          mr, [c.content for c in descriptions + comments
+               if not c.deleted_by])
 
     with mr.profiler.Phase('making comment views'):
       reporter_auth = authdata.AuthData.FromUserID(

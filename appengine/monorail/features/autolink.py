@@ -42,10 +42,10 @@ from tracker import tracker_helpers
 
 
 # If the total length of all comments is too large, we don't autolink.
-_MAX_TOTAL_LENGTH = 50 * 1024  # 50KB
+_MAX_TOTAL_LENGTH = 150 * 1024  # 150KB
 # Special all_referenced_artifacts value used to indicate that the
-# text content is too big to autolink quickly.
-_SKIP_AUTOLINKING = 'skip autolinking'
+# text content is too big to lookup all referenced artifacts quickly.
+_SKIP_LOOKUPS = 'skip lookups'
 
 _CLOSING_TAG_RE = re.compile('</[a-z0-9]+>$', re.IGNORECASE)
 
@@ -74,7 +74,7 @@ def LinkifyEmail(_mr, autolink_regex_match, component_ref_artifacts):
   Args:
     _mr: unused information parsed from the HTTP request.
     autolink_regex_match: regex match for the textual reference.
-    component_ref_artifacts: unused result of call to GetReferencedUsers.
+    component_ref_artifacts: result of call to GetReferencedUsers.
 
   Returns:
     A list of TextRuns with tag=a linking to the user profile page of
@@ -85,7 +85,7 @@ def LinkifyEmail(_mr, autolink_regex_match, component_ref_artifacts):
   if not validate.IsValidEmail(email):
     return [template_helpers.TextRun(email)]
 
-  if email in component_ref_artifacts:
+  if component_ref_artifacts and email in component_ref_artifacts:
     href = '/u/%s' % email
   else:
     href = 'mailto:' + email
@@ -384,7 +384,9 @@ def _ReplaceIssueRef(
     hyperlink.  Otherwise, we the run will have the original plain
     text.
   """
-  open_dict, closed_dict = component_ref_artifacts
+  open_dict, closed_dict = {}, {}
+  if component_ref_artifacts:
+    open_dict, closed_dict = component_ref_artifacts
   original = autolink_regex_match.group(0)
   logging.info('called ReplaceIssueRef on %r', original)
   result_runs = []
@@ -482,11 +484,11 @@ class Autolink(object):
     Returns:
       Opaque object that can be pased to MarkupAutolinks.  It's
       structure happens to be {component_name: artifact_list, ...},
-      or the special value _SKIP_AUTOLINKING.
+      or the special value _SKIP_LOOKUPS.
     """
     total_len = sum(len(comment_text) for comment_text in comment_text_list)
     if total_len > max_total_length:
-      return _SKIP_AUTOLINKING
+      return _SKIP_LOOKUPS
 
     all_referenced_artifacts = {}
     for comp, (lookup, match_to_refs, re_dict) in self.registry.iteritems():
@@ -515,13 +517,13 @@ class Autolink(object):
       List of text runs for the entire user comment, some of which may have
       attribures that cause them to render as links in render-rich-text.ezt.
     """
-    if all_referenced_artifacts == _SKIP_AUTOLINKING:
-      return text_runs
-
     items = self.registry.items()
     items.sort()  # Process components in determinate alphabetical order.
     for component, (_lookup, _match_ref, re_subst_dict) in items:
-      component_ref_artifacts = all_referenced_artifacts[component]
+      if all_referenced_artifacts == _SKIP_LOOKUPS:
+        component_ref_artifacts = None
+      else:
+        component_ref_artifacts = all_referenced_artifacts[component]
       for regex, subst_fun in re_subst_dict.iteritems():
         text_runs = self._ApplySubstFunctionToRuns(
             text_runs, regex, subst_fun, mr, component_ref_artifacts)
