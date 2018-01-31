@@ -95,6 +95,21 @@ Here's an outline of what would be needed to set up a new Monorail instance:
 1.  Monorail does not not access any internal APIs, so no whitelisting is required.
 1.  For projects on code.google.com, coordinate with that team to set flags to do per-issue redirects from old project to new site.  As each project is imported, set it's moved-to field.
 
+## Testing
+
+To run all Python unit tests, use:
+
+```
+make test
+```
+
+For quick debugging, if you need to run just one test you can do the following. For instance for the test
+`IssueServiceTest.testUpdateIssues_Normal` in `services/test/issue_svc_test.py`:
+
+```
+../../test.py test appengine/monorail:services.test.issue_svc_test.IssueServiceTest.testUpdateIssues_Normal --no-coverage
+```
+
 ## Troubleshooting
 
 *   **<code>TypeError: connect() got an unexpected keyword argument 'charset'</code></strong>

@@ -19,7 +19,7 @@ these goals:
   * Closely aligned with the chrome development process and dedicated to the
     future needs of the chrome team.
 * Scaleable by design:
-  * Designed from the start to handle chrome's future issue tracking needs.
+  * Designed from the start to handle Chrome's future issue tracking needs.
   * Efficient implementation of queries like issue ID and date ranges.
   * Improved security and spam defenses.
 * Ease of transition:
