@@ -54,6 +54,7 @@ type gerritServer struct {
 
 type reviewInput struct {
 	Message       string                          `json:"message,omitempty"`
+	Notify        string                          `json:"notify,omitempty"`
 	RobotComments map[string][]*robotCommentInput `json:"robot_comments,omitempty"`
 }
 
@@ -118,7 +119,7 @@ func (gerritServer) QueryChanges(c context.Context, host, project string, lastTi
 }
 
 func (g gerritServer) PostReviewMessage(c context.Context, host, change, revision, message string) error {
-	return g.setReview(c, host, change, revision, &reviewInput{Message: message})
+	return g.setReview(c, host, change, revision, &reviewInput{Message: message, Notify: "NONE"})
 }
 
 func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
@@ -134,7 +135,7 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 		}
 		robos[comment.Path] = append(robos[comment.Path], createRobotComment(runID, comment))
 	}
-	return g.setReview(ctx, host, change, revision, &reviewInput{RobotComments: robos})
+	return g.setReview(ctx, host, change, revision, &reviewInput{RobotComments: robos, Notify: "NONE"})
 }
 
 // createRobotComment creates a Gerrit robot comment from a Tricium comment.
