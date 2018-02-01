@@ -1,14 +1,16 @@
 The files here are used to build a docker image suitable for sandboxing a USB
-device into its own execution environment, in which a swarming bot is running.
-More information is at [go/one-device-swarming](http://go/one-device-swarming)
+or network device into its own execution environment, in which a swarming bot is
+running. More information is at
+[go/one-device-swarming](http://go/one-device-swarming)
 
 
 The docker image
 --------------------------
-The `build.sh` script will create a local image named `android_docker` tagged
-with the date and time of creation. The image itself is simply an Ubuntu
-flavor (xenial as of writing this) with a number of packages and utilities
-installed, mainly via chromium's [install_build_deps.sh](https://chromium.googlesource.com/chromium/src/+/master/build/install-build-deps.sh).
+The `build.sh` script will create two local images named `android_docker`
+and `cros_docker` tagged with the date and time of creation. The image itself is
+simply an Ubuntu flavor (xenial as of writing this) with a number of packages
+and utilities installed, mainly via chromium's
+[install_build_deps.sh](https://chromium.googlesource.com/chromium/src/+/master/build/install-build-deps.sh).
 When launched as a container, this image is configured to run the
 [start_swarm_bot.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/android_devices/start_swarm_bot.sh)
 script here which fetches and runs the bot code of the swarming server pointed
@@ -18,10 +20,10 @@ developer workstation is unsupported.
 ### Automatic image building
 Everyday at 8am PST, a builder on the internal.infra.cron waterfall builds a
 fresh version of the image. This [builder](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/android-docker-image-builder)
-essentially runs `./build.sh` and uploads the resultant image to a docker
+essentially runs `./build.sh` and uploads the resultant images to a docker
 [container registry](https://docs.docker.com/registry/). The registry, hosted
 by gcloud, is located at
-[chromium-container-registry](https://console.cloud.google.com/gcr/images/chromium-container-registry/GLOBAL/android_docker).
+[chromium-container-registry](https://console.cloud.google.com/gcr/images/chromium-container-registry/GLOBAL/).
 
 ### Bumping src-rev for install-build-deps.sh
 Many of the packages and dependencies needed to build and test chromium are

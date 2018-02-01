@@ -9,6 +9,7 @@ RUN /usr/bin/apt-get -y install wget
 RUN /usr/bin/apt-get -y install curl
 RUN /usr/bin/apt-get -y install usbutils
 RUN /usr/bin/apt-get -y install lsb-release
+RUN /usr/bin/apt-get -y install sshpass
 RUN /usr/bin/apt-get -y install sudo
 RUN /usr/bin/apt-get -y install lsof
 RUN /usr/bin/apt-get -y install udev
