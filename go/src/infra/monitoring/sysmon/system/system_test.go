@@ -20,10 +20,7 @@ func TestMetrics(t *testing.T) {
 
 	Convey("Uptime", t, func() {
 		So(updateUptimeMetrics(c), ShouldBeNil)
-
-		v, err := uptime.Get(c)
-		So(err, ShouldBeNil)
-		So(v, ShouldBeGreaterThan, 0)
+		So(uptime.Get(c), ShouldBeGreaterThan, 0)
 	})
 
 	Convey("CPU", t, func() {
@@ -33,18 +30,15 @@ func TestMetrics(t *testing.T) {
 		const aBitLessThanZero = -0.001
 		const oneHundredAndABit = 100.001
 
-		v, err := cpuTime.Get(c, "user")
-		So(err, ShouldBeNil)
+		v := cpuTime.Get(c, "user")
 		So(v, ShouldBeGreaterThanOrEqualTo, aBitLessThanZero)
 		So(v, ShouldBeLessThanOrEqualTo, oneHundredAndABit)
 
-		v, err = cpuTime.Get(c, "system")
-		So(err, ShouldBeNil)
+		v = cpuTime.Get(c, "system")
 		So(v, ShouldBeGreaterThanOrEqualTo, aBitLessThanZero)
 		So(v, ShouldBeLessThanOrEqualTo, oneHundredAndABit)
 
-		v, err = cpuTime.Get(c, "idle")
-		So(err, ShouldBeNil)
+		v = cpuTime.Get(c, "idle")
 		So(v, ShouldBeGreaterThanOrEqualTo, aBitLessThanZero)
 		So(v, ShouldBeLessThanOrEqualTo, oneHundredAndABit)
 	})
@@ -58,32 +52,20 @@ func TestMetrics(t *testing.T) {
 			path = `C:\`
 		}
 
-		free, err := diskFree.Get(c, path)
-		So(err, ShouldBeNil)
-
-		total, err := diskTotal.Get(c, path)
-		So(err, ShouldBeNil)
-
+		free := diskFree.Get(c, path)
+		total := diskTotal.Get(c, path)
 		So(free, ShouldBeLessThanOrEqualTo, total)
 
-		iFree, err := inodesFree.Get(c, path)
-		So(err, ShouldBeNil)
-
-		iTotal, err := inodesTotal.Get(c, path)
-		So(err, ShouldBeNil)
-
+		iFree := inodesFree.Get(c, path)
+		iTotal := inodesTotal.Get(c, path)
 		So(iFree, ShouldBeLessThanOrEqualTo, iTotal)
 	})
 
 	Convey("Memory", t, func() {
 		So(updateMemoryMetrics(c), ShouldBeNil)
 
-		free, err := memFree.Get(c)
-		So(err, ShouldBeNil)
-
-		total, err := memTotal.Get(c)
-		So(err, ShouldBeNil)
-
+		free := memFree.Get(c)
+		total := memTotal.Get(c)
 		So(free, ShouldBeLessThanOrEqualTo, total)
 	})
 
@@ -98,56 +80,31 @@ func TestMetrics(t *testing.T) {
 			iface = "en0"
 		}
 
-		_, err := netUp.Get(c, iface)
-		So(err, ShouldBeNil)
-
-		_, err = netDown.Get(c, iface)
-		So(err, ShouldBeNil)
+		netUp.Get(c, iface)
+		netDown.Get(c, iface)
 	})
 
 	Convey("Process", t, func() {
 		So(updateProcessMetrics(c), ShouldBeNil)
-
-		v, err := procCount.Get(c)
-		So(err, ShouldBeNil)
-		So(v, ShouldBeGreaterThan, 0)
+		So(procCount.Get(c), ShouldBeGreaterThan, 0)
 
 		if runtime.GOOS != "windows" {
-			load, err := loadAverage.Get(c, 1)
-			So(err, ShouldBeNil)
-			So(load, ShouldBeGreaterThan, 0)
-
-			load, err = loadAverage.Get(c, 5)
-			So(err, ShouldBeNil)
-			So(load, ShouldBeGreaterThan, 0)
-
-			load, err = loadAverage.Get(c, 15)
-			So(err, ShouldBeNil)
-			So(load, ShouldBeGreaterThan, 0)
+			So(loadAverage.Get(c, 1), ShouldBeGreaterThan, 0)
+			So(loadAverage.Get(c, 5), ShouldBeGreaterThan, 0)
+			So(loadAverage.Get(c, 15), ShouldBeGreaterThan, 0)
 		}
 	})
 
 	Convey("Unix time", t, func() {
 		So(updateUnixTimeMetrics(c), ShouldBeNil)
-
-		v, err := unixTime.Get(c)
-		So(err, ShouldBeNil)
-		So(v, ShouldBeGreaterThan, int64(1257894000000))
+		So(unixTime.Get(c), ShouldBeGreaterThan, int64(1257894000000))
 	})
 
 	Convey("OS information", t, func() {
 		So(updateOSInfoMetrics(c), ShouldBeNil)
 
-		v, err := osName.Get(c, "")
-		So(err, ShouldBeNil)
-		So(v, ShouldNotEqual, "")
-
-		v, err = osVersion.Get(c, "")
-		So(err, ShouldBeNil)
-		So(v, ShouldNotEqual, "")
-
-		v, err = osArch.Get(c)
-		So(err, ShouldBeNil)
-		So(v, ShouldNotEqual, "")
+		So(osName.Get(c, ""), ShouldNotEqual, "")
+		So(osVersion.Get(c, ""), ShouldNotEqual, "")
+		So(osArch.Get(c), ShouldNotEqual, "")
 	})
 }

@@ -93,44 +93,15 @@ func TestMetrics(t *testing.T) {
 
 		updateFromFile(c, file)
 
-		f, err := cpuTemp.Get(c, "02eccd9208ead9ab")
-		So(err, ShouldBeNil)
-		So(f, ShouldEqual, 23)
-
-		f, err = battTemp.Get(c, "02eccd9208ead9ab")
-		So(err, ShouldBeNil)
-		So(f, ShouldEqual, 24.8)
-
-		f, err = battCharge.Get(c, "02eccd9208ead9ab")
-		So(err, ShouldBeNil)
-		So(f, ShouldEqual, 100)
-
-		s, err := devOS.Get(c, "02eccd9208ead9ab")
-		So(err, ShouldBeNil)
-		So(s, ShouldEqual, "KTU84P")
-
-		s, err = devStatus.Get(c, "02eccd9208ead9ab", "123456789")
-		So(err, ShouldBeNil)
-		So(s, ShouldEqual, "good")
-
-		s, err = devType.Get(c, "02eccd9208ead9ab")
-		So(err, ShouldBeNil)
-		So(s, ShouldEqual, "hammerhead")
-
-		f, err = devUptime.Get(c, "02eccd9208ead9ab")
-		So(err, ShouldBeNil)
-		So(f, ShouldEqual, 1159.48)
-
-		i, err := memFree.Get(c, "02eccd9208ead9ab")
-		So(err, ShouldBeNil)
-		So(i, ShouldEqual, 1279052)
-
-		i, err = memTotal.Get(c, "02eccd9208ead9ab")
-		So(err, ShouldBeNil)
-		So(i, ShouldEqual, 1899548)
-
-		i, err = procCount.Get(c, "02eccd9208ead9ab")
-		So(err, ShouldBeNil)
-		So(i, ShouldEqual, 179)
+		So(cpuTemp.Get(c, "02eccd9208ead9ab"), ShouldEqual, 23)
+		So(battTemp.Get(c, "02eccd9208ead9ab"), ShouldEqual, 24.8)
+		So(battCharge.Get(c, "02eccd9208ead9ab"), ShouldEqual, 100)
+		So(devOS.Get(c, "02eccd9208ead9ab"), ShouldEqual, "KTU84P")
+		So(devStatus.Get(c, "02eccd9208ead9ab", "123456789"), ShouldEqual, "good")
+		So(devType.Get(c, "02eccd9208ead9ab"), ShouldEqual, "hammerhead")
+		So(devUptime.Get(c, "02eccd9208ead9ab"), ShouldEqual, 1159.48)
+		So(memFree.Get(c, "02eccd9208ead9ab"), ShouldEqual, 1279052)
+		So(memTotal.Get(c, "02eccd9208ead9ab"), ShouldEqual, 1899548)
+		So(procCount.Get(c, "02eccd9208ead9ab"), ShouldEqual, 179)
 	})
 }

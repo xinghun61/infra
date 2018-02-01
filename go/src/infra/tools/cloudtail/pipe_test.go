@@ -138,9 +138,7 @@ func TestPipeReader(t *testing.T) {
 			So(entries[0].TextPayload, ShouldEqual, "first line")
 			So(entries[1].TextPayload, ShouldEqual, "second line")
 
-			droppedCount, err := droppedCounter.Get(ctx, "baz", "foo", "bar")
-			So(err, ShouldBeNil)
-			So(droppedCount, ShouldEqual, 1)
+			So(droppedCounter.Get(ctx, "baz", "foo", "bar"), ShouldEqual, 1)
 		})
 	})
 }

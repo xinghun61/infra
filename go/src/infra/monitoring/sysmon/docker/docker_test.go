@@ -64,29 +64,12 @@ func TestMetrics(t *testing.T) {
 		err := updateContainerMetrics(c, container, containerInfo, containerStatsJSON)
 		So(err, ShouldBeNil)
 
-		s, err := statusMetric.Get(c, "container_name", "hostname123")
-		So(err, ShouldBeNil)
-		So(s, ShouldEqual, "running")
-
-		f, err := uptimeMetric.Get(c, "container_name")
-		So(err, ShouldBeNil)
-		So(f, ShouldEqual, 10)
-
-		i, err := memUsedMetric.Get(c, "container_name")
-		So(err, ShouldBeNil)
-		So(i, ShouldEqual, 1111)
-
-		i, err = memTotalMetric.Get(c, "container_name")
-		So(err, ShouldBeNil)
-		So(i, ShouldEqual, 9999)
-
-		i, err = netUpMetric.Get(c, "container_name")
-		So(err, ShouldBeNil)
-		So(i, ShouldEqual, 123)
-
-		i, err = netDownMetric.Get(c, "container_name")
-		So(err, ShouldBeNil)
-		So(i, ShouldEqual, 987)
+		So(statusMetric.Get(c, "container_name", "hostname123"), ShouldEqual, "running")
+		So(uptimeMetric.Get(c, "container_name"), ShouldEqual, 10)
+		So(memUsedMetric.Get(c, "container_name"), ShouldEqual, 1111)
+		So(memTotalMetric.Get(c, "container_name"), ShouldEqual, 9999)
+		So(netUpMetric.Get(c, "container_name"), ShouldEqual, 123)
+		So(netDownMetric.Get(c, "container_name"), ShouldEqual, 987)
 	})
 
 	Convey("Test Broken JSON", t, func() {
