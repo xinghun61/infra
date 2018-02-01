@@ -9,6 +9,14 @@ DEPOT_TOOLS_DIR=/b/depot_tools
 DEPOT_TOOLS_URL="https://chromium.googlesource.com/chromium/tools/depot_tools.git"
 DEPOT_TOOLS_REV="da3a29e13e816459234b0b08ed1059300bae46dd"
 
+if [ -z "$CROS_SSH_ID_FILE_PATH" ] ; then
+  echo "Must specify path to ssh keys via CROS_SSH_ID_FILE_PATH env var"
+  exit 1
+else
+  # Pass an empty password via "-N ''".
+  su -c "/usr/bin/ssh-keygen -f $CROS_SSH_ID_FILE_PATH -N '' -t ed25519" chrome-bot
+fi
+
 # Some chromium tests need depot tools.
 mkdir -p $DEPOT_TOOLS_DIR
 chown chrome-bot:chrome-bot $DEPOT_TOOLS_DIR
