@@ -893,16 +893,21 @@ def _sync_build_in_memory(
 
   if build.status == old_status:  # pragma: no cover
     return False
-
+  build.status_changed_time = now
   logging.info(
       'Build %s status: %s -> %s', build.key.id(), old_status, build.status)
-  build.status_changed_time = now
+
+  def ts(key):
+    v = (task_result or {}).get(key)
+    return _parse_ts(v) if v else None
+
   if build.status == model.BuildStatus.STARTED:
-    build.start_time = now
+    build.start_time = ts('started_ts') or now
   elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
     logging.info('Build %s result: %s', build.key.id(), build.result)
     build.clear_lease()
-    build.complete_time = now
+    build.start_time = ts('started_ts') or build.start_time
+    build.complete_time = ts('completed_ts') or ts('abandoned_ts') or now
     build.result_details = {
       'swarming': {
         'task_result': task_result,
@@ -1184,3 +1189,8 @@ def _extend_unique(target, items):
   for x in items:
     if x not in target:  # pragma: no branch
       target.append(x)
+
+
+def _parse_ts(ts):
+  """Parses Swarming API's timestamp, which is RFC3339."""
+  return datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')

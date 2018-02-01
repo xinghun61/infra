@@ -282,7 +282,6 @@ class SwarmingTest(BaseTest):
       {'key': 'pool', 'value': 'Chrome'},
     ]))
 
-
   def test_is_migrating_builder_prod_async_no_master_name(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
@@ -991,6 +990,7 @@ class SwarmingTest(BaseTest):
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
+        'complete_time': utils.utcnow(),
       },
       {
         'task_result': {
@@ -1001,29 +1001,41 @@ class SwarmingTest(BaseTest):
       {
         'task_result': {
           'state': 'RUNNING',
+          'started_ts': '2018-01-29T21:15:02.649750',
         },
         'status': model.BuildStatus.STARTED,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
       },
       {
         'task_result': {
           'state': 'COMPLETED',
+          'started_ts': '2018-01-29T21:15:02.649750',
+          'completed_ts': '2018-01-30T00:15:18.162860',
         },
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.SUCCESS,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
       },
       {
         'task_result': {
           'state': 'COMPLETED',
           'failure': True,
+          'started_ts': '2018-01-29T21:15:02.649750',
+          'completed_ts': '2018-01-30T00:15:18.162860',
         },
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.BUILD_FAILURE,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
       },
       {
         'task_result': {
           'state': 'COMPLETED',
           'failure': True,
+          'started_ts': '2018-01-29T21:15:02.649750',
+          'completed_ts': '2018-01-30T00:15:18.162860',
         },
         'build_run_result': {
           'infra_failure': {
@@ -1034,58 +1046,80 @@ class SwarmingTest(BaseTest):
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
       },
       {
         'task_result': {
           'state': 'COMPLETED',
           'failure': True,
+          'started_ts': '2018-01-29T21:15:02.649750',
+          'completed_ts': '2018-01-30T00:15:18.162860',
         },
         'build_run_result_side_effect': swarming.BuildResultFileCorruptedError,
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
       },
       {
         'task_result': {
           'state': 'COMPLETED',
           'failure': True,
-          'internal_failure': True
+          'internal_failure': True,
+          'started_ts': '2018-01-29T21:15:02.649750',
+          'completed_ts': '2018-01-30T00:15:18.162860',
         },
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
       },
       {
         'task_result': {
           'state': 'BOT_DIED',
+          'started_ts': '2018-01-29T21:15:02.649750',
+          'abandoned_ts': '2018-01-30T00:15:18.162860',
         },
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
       },
       {
         'task_result': {
           'state': 'TIMED_OUT',
+          'started_ts': '2018-01-29T21:15:02.649750',
+          'completed_ts': '2018-01-30T00:15:18.162860',
         },
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
       },
       {
         'task_result': {
           'state': 'EXPIRED',
+          'abandoned_ts': '2018-01-30T00:15:18.162860',
         },
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.CANCELED,
         'cancelation_reason': model.CancelationReason.TIMEOUT,
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
       },
       {
         'task_result': {
           'state': 'CANCELED',
+          'abandoned_ts': '2018-01-30T00:15:18.162860',
         },
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.CANCELED,
         'cancelation_reason': model.CancelationReason.CANCELED_EXPLICITLY,
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
       },
     ]
 
@@ -1101,8 +1135,8 @@ class SwarmingTest(BaseTest):
       self.assertEqual(build.result, case.get('result'))
       self.assertEqual(build.failure_reason, case.get('failure_reason'))
       self.assertEqual(build.cancelation_reason, case.get('cancelation_reason'))
-      if build.status == model.BuildStatus.STARTED:
-        self.assertEqual(build.start_time, self.now)
+      self.assertEqual(build.start_time, case.get('start_time'))
+      self.assertEqual(build.complete_time, case.get('complete_time'))
 
   @mock.patch('swarming.isolate.fetch_async')
   def test_load_build_run_result_async(self, fetch_isolate_async):
