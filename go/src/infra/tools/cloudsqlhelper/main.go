@@ -149,7 +149,7 @@ func migrateDownCmd(ctx context.Context, opts Options, conf *DBConfig, socket st
 
 func migrateToCmd(ctx context.Context, opts Options, conf *DBConfig, socket string) error {
 	return WithMigrate(ctx, opts.MigrationsPath, conf, socket, func(m *migrate.Migrate) error {
-		if len(opts.Args[0]) != 1 {
+		if len(opts.Args) != 1 {
 			return fmt.Errorf("expecting one positional argument with version identifier")
 		}
 
@@ -181,7 +181,7 @@ func showVersionCmd(ctx context.Context, opts Options, conf *DBConfig, socket st
 
 func forceVersionCmd(ctx context.Context, opts Options, conf *DBConfig, socket string) error {
 	return WithMigrate(ctx, opts.MigrationsPath, conf, socket, func(m *migrate.Migrate) error {
-		if len(opts.Args[0]) != 1 {
+		if len(opts.Args) != 1 {
 			return fmt.Errorf("expecting one positional argument with version identifier")
 		}
 
