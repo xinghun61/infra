@@ -145,3 +145,14 @@ class CrashUtilTest(AnalysisTestCase):
                             [FrameInfo(frame2, 0)])
     }
     self.assertDictEqual(matches, expected_matches)
+
+  def testFilterStackFrameFunction(self):
+    """Tests ``FilterStackFrameFunction`` strips part correctly."""
+    a = 'function::(anonymous namespace)::abc'
+    self.assertEqual(crash_util.FilterStackFrameFunction(a), 'function::abc')
+
+    b = 'abc(dcew(wqn{ew}io)eqs)::penc(senc)'
+    self.assertEqual(crash_util.FilterStackFrameFunction(b), 'abc')
+
+    c = 'no_parenthese'
+    self.assertEqual(crash_util.FilterStackFrameFunction(c), c)

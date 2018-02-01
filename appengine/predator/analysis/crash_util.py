@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from collections import defaultdict
+import re
 
 from analysis.crash_match import CrashMatch
 from analysis.crash_match import FrameInfo
@@ -126,3 +127,29 @@ def MatchSuspectWithFrameInfos(suspect, grouped_frame_infos, match_func):
                               touched_files=matched_touched_files[crashed],
                               frame_infos=grouped_frame_infos[crashed])
           for crashed in matched_touched_files}
+
+
+def FilterStackFrameFunction(function):
+  """Filter stack frame."""
+  # Filter out anonymous namespaces.
+  anonymous_namespaces = [
+      'non-virtual thunk to ',
+      '(anonymous namespace)::',
+      '`anonymous namespace\'::',
+  ]
+  for ns in anonymous_namespaces:
+    function = function.replace(ns, '')
+
+  # Rsplit around '!'. Some functions are like this:
+  # chrome.dll!other_stuff, strip the ``chrome.dll!`` in the front.
+  function = function.split('!')[-1]
+
+  # Lsplit around '(', '['.
+  m = re.match(r'(.*?)[\(\[].*', function)
+  if m and len(m.group(1)):
+    return m.group(1).strip()
+
+  # Lsplit around ' '.
+  function = function.strip().split(' ')[0]
+
+  return function

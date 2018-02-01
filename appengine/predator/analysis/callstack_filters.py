@@ -5,6 +5,7 @@
 import os
 import re
 
+from analysis import crash_util
 from analysis.stacktrace import CallStack
 from analysis.type_enums import LanguageType
 
@@ -257,7 +258,8 @@ class FilterFramesBeforeAndInBetweenSignatureParts(CallStackFilter):
       return stack_buffer
 
     def MatchSignaturePartWithFrame(signature_part, frame):
-      return (signature_part in frame.function or
+      return (signature_part.lower() ==
+              crash_util.FilterStackFrameFunction(frame.function).lower() or
               signature_part.lower() ==
               os.path.basename(frame.file_path).lower())
 
