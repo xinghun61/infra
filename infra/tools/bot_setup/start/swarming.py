@@ -20,7 +20,9 @@ def is_staging(hostname):
 
 
 def is_internal(hostname):
-  return hostname.startswith('swarm-cros-')
+  return (
+      hostname.startswith('swarm-cros-') or
+      re.match(r'^swarm[0-9]+-c7$', hostname))
 
 
 def start(hostname, root_dir):
