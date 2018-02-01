@@ -812,6 +812,9 @@ function ac_updateCompletionList(show) {
       clist.id = 'ac-list';
       clist.style.position = 'absolute';
       clist.style.display = 'none';
+      // with 'listbox' and 'option' roles, screenreader narrates total
+      // number of options eg. 'New = issue has not .... 1 of 9'
+      clist.setAttribute('role', 'listbox');
       document.body.appendChild(clist);
     }
 
@@ -845,6 +848,7 @@ function ac_updateCompletionList(show) {
           rowEl.className = 'selected';
         }
         rowEl.setAttribute('data-index', i);
+        rowEl.setAttribute('role', 'option');
         rowEl.addEventListener('mousedown', function(event) {
           event.preventDefault();
         });
