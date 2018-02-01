@@ -1,25 +1,17 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-import base64
-import datetime
-import logging
 
 from google.appengine.ext import ndb
 
-from dto.test_location import TestLocation
-
 from common.findit_http_client import FinditHttpClient
-
+from dto.test_location import TestLocation
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
-
 from libs.structured_object import StructuredObject
-
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
-
+from services import test_results
 from services.flake_failure import issue_tracking_service
-
 from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake import triggering_sources
@@ -74,13 +66,15 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
 
     tasks = swarming_util.ListSwarmingTasksDataByTags(
         analysis.master_name, analysis.builder_name, most_recent_build_number,
-        FinditHttpClient(), {'stepname': analysis.step_name})
+        FinditHttpClient(), {
+            'stepname': analysis.step_name
+        })
     if not tasks:
       analysis.LogInfo('Bug not filed because no recent runs found.')
       return
 
     task = tasks[0]
-    if not swarming_util.IsTestEnabled(analysis.test_name, task['task_id']):
+    if not test_results.IsTestEnabled(analysis.test_name, task['task_id']):
       analysis.LogInfo('Bug not filed because test was fixed or disabled.')
       return
 

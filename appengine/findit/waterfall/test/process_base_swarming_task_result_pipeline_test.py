@@ -179,8 +179,9 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
             self.pipeline, None, ()))
 
   def testCheckTestsRunStatuses(self):
-    tests_statuses = (ProcessSwarmingTaskResultPipeline()
-                      ._CheckTestsRunStatuses(_SAMPLE_FAILURE_LOG))
+    tests_statuses = (
+        ProcessSwarmingTaskResultPipeline()
+        ._CheckTestsRunStatuses(_SAMPLE_FAILURE_LOG))
     self.assertEqual(_EXPECTED_TESTS_STATUS, tests_statuses)
 
   def testMonitorSwarmingTaskTimeOut(self):
@@ -363,9 +364,10 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                  self.step_name)
 
     self.assertEqual(analysis_status.ERROR, task.status)
-    self.assertEqual(task.error,
-                     {'code': swarming_util.BOT_DIED,
-                      'message': 'BOT_DIED'})
+    self.assertEqual(task.error, {
+        'code': swarming_util.BOT_DIED,
+        'message': 'BOT_DIED'
+    })
 
   @mock.patch.object(
       swarming_util,
@@ -518,13 +520,15 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
       swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(_SAMPLE_FAILURE_LOG, None))
-  @mock.patch.object(gtest, 'CheckGtestOutputIsValid', return_value=None)
-  def testProcessSwarmingTaskResultPipelineIdempotency(self, *_):
+  @mock.patch.object(gtest, 'GtestResults')
+  def testProcessSwarmingTaskResultPipelineIdempotency(self, mock_gtest, _):
     # End to end test.
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
                                  self.build_number, self.step_name)
     task.task_id = 'task_id1'
     task.put()
+
+    mock_gtest.CheckGtestOutputIsValid.return_value = None
 
     pipeline = ProcessSwarmingTaskResultPipeline()
     pipeline.start_test()

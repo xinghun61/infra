@@ -14,8 +14,8 @@ import logging
 from model.wf_step import WfStep
 from services import extract_signal
 from services import gtest
+from services import test_results
 from waterfall import extractors
-from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 
@@ -35,22 +35,25 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       continue
 
     # 1. Tries to get stored failure log from step.
-    step = (WfStep.Get(master_name, builder_name, build_number, step_name) or
-            WfStep.Create(master_name, builder_name, build_number, step_name))
+    step = (
+        WfStep.Get(master_name, builder_name, build_number, step_name) or
+        WfStep.Create(master_name, builder_name, build_number, step_name))
     if step.log_data:
       failure_log = step.log_data
     else:
       json_formatted_log = True
       # 2. Gets gtest results.
       list_isolated_data = failed_steps[step_name].list_isolated_data
-      list_isolated_data = (list_isolated_data.ToSerializable()
-                            if list_isolated_data else [])
-      gtest_result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-          list_isolated_data, http_client)
-      if gtest_result:
-        failure_log = gtest.GetConsistentTestFailureLog(gtest_result)
+      list_isolated_data = (
+          list_isolated_data.ToSerializable() if list_isolated_data else [])
+      merged_test_results = (
+          test_results.RetrieveShardedTestResultsFromIsolatedServer(
+          list_isolated_data, http_client))
+      if merged_test_results:
+        failure_log = gtest.GtestResults().GetConsistentTestFailureLog(
+            merged_test_results)
 
-      if not gtest_result or failure_log in [
+      if not merged_test_results or failure_log in [
           gtest.INVALID_FAILURE_LOG, gtest.WRONG_FORMAT_LOG
       ]:
         # 3. Gets stdout log.
@@ -76,8 +79,9 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
 
     if step.isolated:
       try:
-        json_failure_log = (json.loads(failure_log)
-                            if failure_log != gtest.FLAKY_FAILURE_LOG else {})
+        json_failure_log = (
+            json.loads(failure_log)
+            if failure_log != gtest.FLAKY_FAILURE_LOG else {})
       except ValueError:
         json_failure_log = {}
         logging.warning('failure_log %s is not valid JSON.' % failure_log)

@@ -14,7 +14,8 @@ from model.wf_step import WfStep
 from services.parameters import FailedTest
 from services.parameters import FailedTests
 from services.parameters import IsolatedDataList
-from services import gtest
+from services.gtest import GtestResults
+from services import test_results
 from waterfall import swarming_util
 
 _NON_FAILURE_STATUSES = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
@@ -37,13 +38,15 @@ def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
         # Treats it as success since the status cannot be determined.
         is_reliable_failure = False
 
+      # TODO (crbug/806002): Hide all gtest related logic behind test_results.
+      gtest_results = GtestResults()
       if is_reliable_failure:
         if failed_step:
           # Adds the test to failed_step.
           failed_test_info = {
               'current_failure': failed_step.current_failure,
               'first_failure': failed_step.current_failure,
-              'base_test_name': gtest.RemoveAllPrefixes(test_name),
+              'base_test_name': gtest_results.RemoveAllPrefixes(test_name),
           }
           failed_step.tests[test_name] = FailedTest.FromSerializable(
               failed_test_info)
@@ -53,7 +56,7 @@ def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
         # Stores the output to the step's log_data later.
         failed_test_log[test_name] = ''
         for test in iteration[test_name]:
-          failed_test_log[test_name] = gtest.ConcatenateTestLog(
+          failed_test_log[test_name] = gtest_results.ConcatenateTestLog(
               failed_test_log[test_name], test.get('output_snippet_base64', ''))
 
   step.log_data = json.dumps(failed_test_log) if failed_test_log else 'flaky'
@@ -72,8 +75,8 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
   list_isolated_data = failed_step.list_isolated_data
   list_isolated_data = (
       list_isolated_data.ToSerializable() if list_isolated_data else [])
-  result_log = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-      list_isolated_data, http_client)
+  result_log = test_results.RetrieveShardedTestResultsFromIsolatedServer(
+      step_name, list_isolated_data, http_client)
 
   if (not result_log or not result_log.get('per_iteration_data') or
       result_log['per_iteration_data'] == 'invalid'):
@@ -100,7 +103,7 @@ def _GetSameStepFromBuild(master_name, builder_name, build_number, step_name,
   if not step_isolated_data:
     return None
 
-  result_log = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
+  result_log = test_results.RetrieveShardedTestResultsFromIsolatedServer(
       step_isolated_data, http_client)
 
   if (not result_log or not result_log.get('per_iteration_data') or

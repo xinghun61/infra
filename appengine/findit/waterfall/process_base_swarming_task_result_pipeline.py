@@ -15,7 +15,7 @@ from common.findit_http_client import FinditHttpClient
 from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
-from services import gtest
+from services.gtest import GtestResults
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
@@ -151,12 +151,13 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
     def check_task_completion():
       if task_completed and data is not None:
-        task.created_time = (task.created_time or
-                             self._ConvertDateTime(data.get('created_ts')))
-        task.started_time = (task.started_time or
-                             self._ConvertDateTime(data.get('started_ts')))
-        task.completed_time = (task.completed_time or
-                               self._ConvertDateTime(data.get('completed_ts')))
+        task.created_time = (
+            task.created_time or self._ConvertDateTime(data.get('created_ts')))
+        task.started_time = (
+            task.started_time or self._ConvertDateTime(data.get('started_ts')))
+        task.completed_time = (
+            task.completed_time or
+            self._ConvertDateTime(data.get('completed_ts')))
         task.put()
         pipeline_result = self._GetPipelineResult(step_name,
                                                   step_name_no_platform, task)
@@ -212,8 +213,9 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
     task_state = data['state']
 
-    step_name_no_platform = (step_name_no_platform or swarming_util.GetTagValue(
-        data.get('tags', {}), 'ref_name'))
+    step_name_no_platform = (
+        step_name_no_platform or
+        swarming_util.GetTagValue(data.get('tags', {}), 'ref_name'))
 
     if task_state not in swarming_util.STATES_RUNNING:
       task_completed = True
@@ -243,7 +245,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
               'message': 'No swarming task failure log'
           }
 
-        error = error or gtest.CheckGtestOutputIsValid(output_json)
+        error = error or GtestResults().CheckGtestOutputIsValid(output_json)
 
         if error:
           task.status = analysis_status.ERROR

@@ -42,7 +42,7 @@ from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_try_job_data import WfTryJobData
-from services import gtest
+from services.gtest import GtestResults
 from services import monitoring
 from services import swarmbot_util
 from waterfall import buildbot
@@ -84,18 +84,19 @@ def _GetSuspectedCLsWithFailures(heuristic_result):
 
   # Iterates through the failures, tests, and suspected_cls, appending suspected
   # CLs and failures to the list.
+  gtest_results = GtestResults()
   for failure in heuristic_result['failures']:
     if failure.get('tests'):
       for test in failure['tests']:
         for suspected_cl in test.get('suspected_cls') or []:
           suspected_cls_with_failures.append([
-              gtest.RemovePlatformFromStepName(failure['step_name']),
+              gtest_results.RemovePlatformFromStepName(failure['step_name']),
               suspected_cl['revision'], test['test_name']
           ])
     else:
       for suspected_cl in failure['suspected_cls']:
         suspected_cls_with_failures.append([
-            gtest.RemovePlatformFromStepName(failure['step_name']),
+            gtest_results.RemovePlatformFromStepName(failure['step_name']),
             suspected_cl['revision'], None
         ])
 

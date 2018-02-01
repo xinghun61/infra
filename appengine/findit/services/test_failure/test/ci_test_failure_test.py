@@ -8,6 +8,7 @@ import os
 
 from common.findit_http_client import FinditHttpClient
 from model.wf_step import WfStep
+from services import test_results
 from services.parameters import TestFailureInfo
 from services.parameters import TestFailedStep
 from services.parameters import TestFailedSteps
@@ -117,7 +118,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
   @mock.patch.object(ci_test_failure, 'UpdateSwarmingSteps', return_value=True)
-  @mock.patch.object(ci_test_failure, 'swarming_util')
+  @mock.patch.object(ci_test_failure, 'test_results')
   def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(
       self, mock_module, _):
     master_name = 'm'
@@ -394,7 +395,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_builds, builds.ToSerializable())
 
   @mock.patch.object(
-      swarming_util,
+      test_results,
       'RetrieveShardedTestResultsFromIsolatedServer',
       return_value=None)
   def testStartTestLevelCheckForFirstFailure(self, _):
@@ -426,7 +427,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
                                               build_number, step_name, None))
 
   @mock.patch.object(
-      swarming_util,
+      test_results,
       'RetrieveShardedTestResultsFromIsolatedServer',
       return_value={
           'per_iteration_data': 'invalid'
@@ -450,7 +451,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
                                               build_number, step_name, None))
 
   @mock.patch.object(swarming_util, 'GetIsolatedDataForStep')
-  @mock.patch.object(swarming_util,
+  @mock.patch.object(test_results,
                      'RetrieveShardedTestResultsFromIsolatedServer')
   def testGetSameStepFromBuild(self, mock_step_log, mock_isolated_data):
     master_name = 'm'

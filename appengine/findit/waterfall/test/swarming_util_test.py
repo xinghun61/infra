@@ -5,7 +5,6 @@
 import collections
 from datetime import datetime
 import json
-import logging
 import mock
 import os
 import urllib
@@ -16,8 +15,6 @@ from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 
 from common.findit_http_client import FinditHttpClient
-from common.waterfall import buildbucket_client
-from infra_api_clients import logdog_util
 from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
 from waterfall import swarming_util
@@ -177,7 +174,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     }
     task_id = '1'
     url = ('https://chromium-swarm.appspot.com/api/swarming/v1/task/%s/request'
-        % task_id)
+           % task_id)
     self.logged_http_client.SetResponse('get', url,
                                         json.dumps(task_request_json), 200)
 
@@ -216,10 +213,9 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     request.io_timeout_secs = 3
 
     url = 'https://chromium-swarm.appspot.com/api/swarming/v1/tasks/new'
-    self.logged_http_client.SetResponse('post', url,
-                                        json.dumps({
-                                            'task_id': '1'
-                                        }), 200)
+    self.logged_http_client.SetResponse('post', url, json.dumps({
+        'task_id': '1'
+    }), 200)
 
     expected_task_request_json = {
         'expiration_secs': 72000,
@@ -416,8 +412,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.http_client._SetResponseForGetRequestIsolated(
         'https://%s/default-gzip/shard1' % isolated_storage_url, 'shard1')
 
-    result, error = swarming_util._DownloadTestResults(isolated_data,
-                                                       self.http_client)
+    result, error = swarming_util.DownloadTestResults(isolated_data,
+                                                      self.http_client)
 
     expected_result = json.loads(
         zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
@@ -434,8 +430,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
             waterfall_config.GetSwarmingSettings().get('isolated_server')
     }
 
-    result, error = swarming_util._DownloadTestResults(isolated_data,
-                                                       self.http_client)
+    result, error = swarming_util.DownloadTestResults(isolated_data,
+                                                      self.http_client)
 
     self.assertIsNone(result)
     self.assertIsNotNone(error)
@@ -451,8 +447,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     self.http_client._SetResponseForPostRequest('not found')
-    result, error = swarming_util._DownloadTestResults(isolated_data,
-                                                       self.http_client)
+    result, error = swarming_util.DownloadTestResults(isolated_data,
+                                                      self.http_client)
 
     self.assertIsNone(result)
     self.assertIsNone(error)
@@ -467,8 +463,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
             waterfall_config.GetSwarmingSettings().get('isolated_server')
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
-    result, error = swarming_util._DownloadTestResults(isolated_data,
-                                                       self.http_client)
+    result, error = swarming_util.DownloadTestResults(isolated_data,
+                                                      self.http_client)
 
     self.assertIsNone(result)
     self.assertIsNotNone(error)
@@ -484,8 +480,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
-    result, error = swarming_util._DownloadTestResults(isolated_data,
-                                                       self.http_client)
+    result, error = swarming_util.DownloadTestResults(isolated_data,
+                                                      self.http_client)
 
     self.assertIsNone(result)
     self.assertIsNone(error)
@@ -511,95 +507,10 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     mock_send.side_effect = [(zlib.compress(json.dumps(send_content1)), None),
                              (zlib.compress(json.dumps(send_content2)), None)]
 
-    result, _ = swarming_util._DownloadTestResults(isolated_data,
-                                                   self.http_client)
+    result, _ = swarming_util.DownloadTestResults(isolated_data,
+                                                  self.http_client)
 
     self.assertEqual(send_content2, result)
-
-  def testRetrieveShardedTestResultsFromIsolatedServer(self):
-    isolated_data = [{
-        'digest':
-            'shard1_isolated',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }, {
-        'digest':
-            'shard2_isolated',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }, {
-        'digest':
-            'shard3_isolated',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }]
-    isolated_storage_url = waterfall_config.GetSwarmingSettings().get(
-        'isolated_storage_url')
-    self.http_client._SetResponseForPostRequest('shard1_isolated')
-    self.http_client._SetResponseForPostRequest('shard1_url')
-    self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard1' % isolated_storage_url, 'shard1')
-    self.http_client._SetResponseForPostRequest('shard2_isolated')
-    self.http_client._SetResponseForPostRequest('shard2_url')
-    self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard2' % isolated_storage_url, 'shard2')
-    self.http_client._SetResponseForPostRequest('shard3_isolated')
-    self.http_client._SetResponseForPostRequest('shard3_url')
-    self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard3' % isolated_storage_url, 'shard3')
-
-    result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-        isolated_data, self.http_client)
-    expected_results_file = os.path.join(
-        os.path.dirname(__file__), 'data', 'expected_collect_results')
-    with open(expected_results_file, 'r') as f:
-      expected_result = json.loads(f.read())
-
-    self.assertEqual(expected_result, result)
-
-  def testRetrieveShardedTestResultsFromIsolatedServerSingleShard(self):
-    isolated_data = [{
-        'digest':
-            'shard1_isolated',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }]
-    self.http_client._SetResponseForPostRequest('shard1_isolated')
-    self.http_client._SetResponseForPostRequest('shard1_url')
-    self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard1' %
-        waterfall_config.GetSwarmingSettings().get('isolated_storage_url'),
-        'shard1')
-
-    result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-        isolated_data, self.http_client)
-
-    expected_result = json.loads(
-        zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
-    self.assertEqual(expected_result, result)
-
-  def testRetrieveShardedTestResultsFromIsolatedServerFailed(self):
-    isolated_data = [{
-        'digest':
-            'shard1_isolated',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }]
-
-    result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
-        isolated_data, self.http_client)
-
-    self.assertIsNone(result)
 
   def testGetSwarmingTaskResultById(self):
     task_id = '2944afa502297110'
@@ -825,8 +736,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
         # Use Ordered dict to preserve the order of the dimensions.
         swarming_util.DimensionsToQueryString(
-            collections.OrderedDict([('bot_id', 'slave1'), ('cpu', 'x86_64'), (
-                'os', 'Mac')])))
+            collections.OrderedDict([('bot_id', 'slave1'), ('cpu', 'x86_64'),
+                                     ('os', 'Mac')])))
     self.assertEqual(
         '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
         swarming_util.DimensionsToQueryString(
@@ -885,24 +796,3 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(swarming_util.BotsAvailableForTask(None))
     self.assertTrue(swarming_util.BotsAvailableForTask(step_metadata))
-
-  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
-  def testIsTestEnabledWhenDisabled(self, isolate_fn):
-    test_name = 'test'
-    isolate_fn.return_value = {
-        'all_tests': ['a_test', 'test'],
-        'disabled_tests': [test_name]
-    }
-    self.assertFalse(swarming_util.IsTestEnabled(test_name, 1))
-
-  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
-  def testIsTestEnabledWhenNotInAllTests(self, isolate_fn):
-    test_name = 'test'
-    isolate_fn.return_value = {'all_tests': [], 'disabled_tests': [test_name]}
-    self.assertFalse(swarming_util.IsTestEnabled(test_name, 1))
-
-  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
-  def testIsTestEnabledWhenEnabled(self, isolate_fn):
-    test_name = 'test'
-    isolate_fn.return_value = {'all_tests': ['test'], 'disabled_tests': []}
-    self.assertTrue(swarming_util.IsTestEnabled(test_name, 1))

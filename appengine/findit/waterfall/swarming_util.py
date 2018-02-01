@@ -4,7 +4,6 @@
 
 import base64
 from datetime import timedelta
-import hashlib
 import json
 import logging
 import random
@@ -19,15 +18,9 @@ from google.appengine.api.urlfetch_errors import ConnectionClosedError
 
 from common.findit_http_client import FinditHttpClient
 from common import monitoring
-from common.waterfall import buildbucket_client
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http import auth_util
-from infra_api_clients import logdog_util
 from libs import time_util
-from model.wf_try_bot_cache import WfTryBot
-from model.wf_try_bot_cache import WfTryBotCache
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
 # Swarming task states.
@@ -312,7 +305,7 @@ def GetSwarmingTaskResultById(task_id, http_client):
 def GetSwarmingTaskFailureLog(outputs_ref, http_client):
   """Downloads failure log from isolated server."""
   isolated_data = GenerateIsolatedData(outputs_ref)
-  return _DownloadTestResults(isolated_data, http_client)
+  return DownloadTestResults(isolated_data, http_client)
 
 
 def GetTagValue(tags, tag_name):
@@ -418,8 +411,7 @@ def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
           'namespace': isolated_data['namespace']
       }
   }
-  url = '%s/api/isolateservice/v1/retrieve' % (
-      isolated_data['isolatedserver'])
+  url = '%s/api/isolateservice/v1/retrieve' % (isolated_data['isolatedserver'])
 
   return SendRequestToServer(url, http_client, post_data)
 
@@ -447,7 +439,7 @@ def _ProcessRetrievedContent(output_json_content, http_client):
     return None
 
 
-def _DownloadTestResults(isolated_data, http_client):
+def DownloadTestResults(isolated_data, http_client):
   """Downloads the output.json file and returns the json object.
 
   The basic steps to get test results are:
@@ -483,74 +475,6 @@ def _DownloadTestResults(isolated_data, http_client):
     return None, error
   # GET Request to get output.json file.
   return _ProcessRetrievedContent(output_json_content, http_client), None
-
-
-def _MergeListsOfDicts(merged, shard):
-  output = []
-  for i in xrange(max(len(merged), len(shard))):
-    merged_dict = merged[i] if i < len(merged) else {}
-    shard_dict = shard[i] if i < len(shard) else {}
-    output_dict = merged_dict.copy()
-    output_dict.update(shard_dict)
-    output.append(output_dict)
-  return output
-
-
-def _MergeSwarmingTestShards(shard_results):
-  """Merges the shards into one.
-
-  Args:
-    shard_results (list): A list of dicts with individual shard results.
-
-  Returns:
-    A dict with the following form:
-    {
-      'all_tests':[
-        'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/0',
-        'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/1',
-        'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/10',
-        ...
-      ]
-      'per_iteration_data':[
-        {
-          'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/109': [
-            {
-              'elapsed_time_ms': 4719,
-              'losless_snippet': true,
-              'output_snippet': '[ RUN      ] run outputs\\n',
-              'output_snippet_base64': 'WyBSVU4gICAgICBdIEFsbEZvcm1zL0Zvcm1T'
-              'status': 'SUCCESS'
-            }
-          ],
-        },
-        ...
-      ]
-    }
-  """
-  merged_results = {'all_tests': set(), 'per_iteration_data': []}
-  for shard_result in shard_results:
-    merged_results['all_tests'].update(shard_result.get('all_tests', []))
-    merged_results['per_iteration_data'] = _MergeListsOfDicts(
-        merged_results['per_iteration_data'],
-        shard_result.get('per_iteration_data', []))
-  merged_results['all_tests'] = sorted(merged_results['all_tests'])
-  return merged_results
-
-
-def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
-                                                 http_client):
-  """Gets test results from isolated server and merge the results."""
-  shard_results = []
-  for isolated_data in list_isolated_data:
-    output_json, _ = _DownloadTestResults(isolated_data, http_client)
-    if not output_json:
-      # TODO(lijeffrey): Report/handle error returned from _DownloadTestResults.
-      return None
-    shard_results.append(output_json)
-
-  if len(list_isolated_data) == 1:
-    return shard_results[0]
-  return _MergeSwarmingTestShards(shard_results)
 
 
 def GetIsolatedOutputForTask(task_id, http_client):
@@ -673,16 +597,3 @@ def GetETAToStartAnalysis(manually_triggered):
 
   # Convert back to UTC.
   return time_util.ConvertPSTToUTC(eta)
-
-
-def IsTestEnabled(test_name, task_id):
-  """Returns True if the test is enabled, False otherwise."""
-  # Get the isolated outputs from the test that was just run.
-  isolate_output = GetIsolatedOutputForTask(task_id, FinditHttpClient())
-  isolate_output = isolate_output if isolate_output else {}
-  all_tests = isolate_output.get('all_tests', [])
-  disabled_tests = isolate_output.get('disabled_tests', [])
-
-  # Check if the analysis' test is disabled in the current build.
-  # If the disabled tests array is empty, we assume the test is enabled.
-  return test_name in all_tests and test_name not in disabled_tests

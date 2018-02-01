@@ -5,23 +5,19 @@ import copy
 import mock
 
 from dto.test_location import TestLocation
-
 from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.pipelines import pipeline_handlers
-
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-
 from pipelines.flake_failure import create_bug_for_flake_pipeline
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
-
+from services import test_results
 from services.flake_failure import issue_tracking_service
-
 from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
@@ -33,7 +29,7 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class CreateBugForFlakePipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=True)
+  @mock.patch.object(test_results, 'IsTestEnabled', return_value=True)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
   @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
   @mock.patch.object(
@@ -85,7 +81,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(should_file_fn.called)
 
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
-  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=False)
+  @mock.patch.object(test_results, 'IsTestEnabled', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
   @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
@@ -124,7 +120,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
 
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
   @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
-  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=False)
+  @mock.patch.object(test_results, 'IsTestEnabled', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
   def testCreateBugForFlakePipelineIfTestDisabled(
@@ -161,7 +157,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(should_file_fn.called)
     self.assertTrue(test_enabled_fn.called)
 
-  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=True)
+  @mock.patch.object(test_results, 'IsTestEnabled', return_value=True)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
@@ -244,7 +240,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(should_file_fn.called)
     self.assertFalse(analysis.has_attempted_filing)
 
-  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=True)
+  @mock.patch.object(test_results, 'IsTestEnabled', return_value=True)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
