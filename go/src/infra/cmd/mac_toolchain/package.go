@@ -37,6 +37,8 @@ var defaultExcludePrefixes = []string{
 // Chrome on Mac OS.
 var macExcludePrefixes = []string{
 	"Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/CoreSimulator",
+	// For Xcode 8.
+	"Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs",
 }
 
 // Packages is the set of CIPD package definitions. The key is a convenience

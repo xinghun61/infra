@@ -25,6 +25,10 @@ const DefaultCipdPackagePrefix = "infra_internal/ios/xcode"
 // AcceptedLicensesFile keeps record of the accepted Xcode licenses.
 const AcceptedLicensesFile = "/Library/Preferences/com.apple.dt.Xcode.plist"
 
+// PackageInstallerOnBots is a special script for securely installing packages
+// on bots.
+const PackageInstallerOnBots = "/usr/local/bin/xcode_install_wrapper.py"
+
 // KindType is the type for enum values for the -kind argument.
 type KindType string
 
@@ -99,7 +103,16 @@ func (c *installRun) Run(a subcommands.Application, args []string, env subcomman
 	logging.Infof(ctx, "About to install Xcode %s in %s for %s", c.xcodeVersion, c.outputDir, c.kind.String())
 
 	c.cipdPackagePrefix = normalizeCipdPrefix(c.cipdPackagePrefix)
-	if err := installXcode(ctx, c.xcodeVersion, c.outputDir, AcceptedLicensesFile, c.cipdPackagePrefix, c.kind, c.serviceAccountJSON); err != nil {
+	installArgs := InstallArgs{
+		xcodeVersion:           c.xcodeVersion,
+		xcodeAppPath:           c.outputDir,
+		acceptedLicensesFile:   AcceptedLicensesFile,
+		cipdPackagePrefix:      c.cipdPackagePrefix,
+		kind:                   c.kind,
+		serviceAccountJSON:     c.serviceAccountJSON,
+		packageInstallerOnBots: PackageInstallerOnBots,
+	}
+	if err := installXcode(ctx, installArgs); err != nil {
 		errors.Log(ctx, err)
 		return 1
 	}

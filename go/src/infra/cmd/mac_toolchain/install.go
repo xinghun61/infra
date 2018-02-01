@@ -75,7 +75,7 @@ func needToAcceptLicense(ctx context.Context, xcodeAppPath, acceptedLicensesFile
 }
 
 func getXcodePath(ctx context.Context) string {
-	path, err := RunOutput(ctx, "sudo", "/usr/bin/xcode-select", "-p")
+	path, err := RunOutput(ctx, "/usr/bin/xcode-select", "-p")
 	if err != nil {
 		return ""
 	}
@@ -98,7 +98,35 @@ func acceptLicense(ctx context.Context, xcodeAppPath string) error {
 	return nil
 }
 
-func finalizeInstall(ctx context.Context, xcodeAppPath string) error {
+func finalizeInstallLegacy(ctx context.Context, xcodeAppPath, packageInstallerOnBots string) error {
+	packages := []string{
+		"MobileDevice.pkg",
+		"MobileDeviceDevelopment.pkg",
+		"XcodeSystemResources.pkg",
+	}
+	packageDir := filepath.Join(xcodeAppPath, "Contents", "Resources", "Packages")
+	installCmd := func(pkgPath string) []string {
+		return []string{packageInstallerOnBots, "--package-path", pkgPath}
+	}
+	if _, err := os.Stat(packageInstallerOnBots); os.IsNotExist(err) {
+		installCmd = func(pkgPath string) []string {
+			return []string{"installer", "-package", pkgPath, "-target", "/"}
+		}
+	}
+	for _, p := range packages {
+		pkgPath := filepath.Join(packageDir, p)
+		err := RunCommand(ctx, "sudo", installCmd(pkgPath)...)
+		if err != nil {
+			return errors.Annotate(err, "failed to install Xcode package %s", pkgPath).Err()
+		}
+	}
+	return nil
+}
+
+func finalizeInstall(ctx context.Context, xcodeAppPath, xcodeVersion, packageInstallerOnBots string) error {
+	if xcodeVersion <= "8E3004b" {
+		return finalizeInstallLegacy(ctx, xcodeAppPath, packageInstallerOnBots)
+	}
 	err := RunCommand(ctx, "sudo", "/usr/bin/xcodebuild", "-runFirstLaunch")
 	if err != nil {
 		return errors.Annotate(err, "failed to install Xcode packages").Err()
@@ -106,27 +134,36 @@ func finalizeInstall(ctx context.Context, xcodeAppPath string) error {
 	return nil
 }
 
-func installXcode(ctx context.Context,
-	xcodeVersion, xcodeAppPath, acceptedLicensesFile, cipdPackagePrefix string,
-	kind KindType, serviceAccountJSON string) error {
-	if err := os.MkdirAll(xcodeAppPath, 0700); err != nil {
-		return errors.Annotate(err, "failed to create a folder %s", xcodeAppPath).Err()
+// InstallArgs are the parameters for installXcode() to keep them manageable.
+type InstallArgs struct {
+	xcodeVersion           string
+	xcodeAppPath           string
+	acceptedLicensesFile   string
+	cipdPackagePrefix      string
+	kind                   KindType
+	serviceAccountJSON     string
+	packageInstallerOnBots string
+}
+
+func installXcode(ctx context.Context, args InstallArgs) error {
+	if err := os.MkdirAll(args.xcodeAppPath, 0700); err != nil {
+		return errors.Annotate(err, "failed to create a folder %s", args.xcodeAppPath).Err()
 	}
-	if err := installPackages(ctx, xcodeVersion, xcodeAppPath, cipdPackagePrefix, kind, serviceAccountJSON); err != nil {
+	if err := installPackages(ctx, args.xcodeVersion, args.xcodeAppPath, args.cipdPackagePrefix, args.kind, args.serviceAccountJSON); err != nil {
 		return err
 	}
-	if needToAcceptLicense(ctx, xcodeAppPath, acceptedLicensesFile) {
+	if needToAcceptLicense(ctx, args.xcodeAppPath, args.acceptedLicensesFile) {
 		oldPath := getXcodePath(ctx)
 		if oldPath != "" {
 			defer setXcodePath(ctx, oldPath)
 		}
-		if err := setXcodePath(ctx, xcodeAppPath); err != nil {
+		if err := setXcodePath(ctx, args.xcodeAppPath); err != nil {
 			return err
 		}
-		if err := acceptLicense(ctx, xcodeAppPath); err != nil {
+		if err := acceptLicense(ctx, args.xcodeAppPath); err != nil {
 			return err
 		}
-		if err := finalizeInstall(ctx, xcodeAppPath); err != nil {
+		if err := finalizeInstall(ctx, args.xcodeAppPath, args.xcodeVersion, args.packageInstallerOnBots); err != nil {
 			return err
 		}
 	}
