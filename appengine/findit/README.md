@@ -70,3 +70,28 @@ To make the new version the default:
   different analysis units from the service layer.
 We are refactoring [waterfall/](waterfall/) into services/ and pipelines/ to
 separate analysis logic from pipeline flow.
+
+# BQ Event Tables
+Contact wylieb@ with any questions about this.
+
+To get bqchemaupdater installed run
+```shell
+  cd infra/go
+  eval `./env.py`
+  ./deps.py update
+  ./deps.py install
+```
+This should install it in your path.
+
+In the event that you need to create a table, run a command like this:
+```shell
+bqschemaupdater -message-dir <absolute findit dir>/model/proto/
+                -table "findit-for-me.events.test"
+                -message findit.TestAnalysisCompletionEvent
+                -dry-run
+```
+From findit/ this command may be out of date. Refer to bqschemaupdater --help.
+
+WARNING: Consult with chrome-findit@ before running any commands that may
+affect production data. Once you're confident that the command does what you
+want, remove the -dry-run argument.

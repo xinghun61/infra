@@ -20,8 +20,6 @@ enum AnalysisAction {
 
   // A revert was created and submitted.
   REVERT_SUBMITTED = 4;
-
-
 }
 
 
@@ -33,20 +31,23 @@ enum AnalysisOutcome {
   // Findit couldn't reproduce the failure.
   NOT_REPRODUCIBLE = 1;
 
-  // Findit could reproduce the results, but no suspect or culprit was found.
+  // Findit could reproduce the results.
   REPRODUCIBLE = 2;
 
-  // Findit could reproduce the results, a suspect was identified but no culprit was found.
-  SUSPECT = 3;
+  // Findit could reproduce the results, and a regression range was found.
+  REGRESSION_IDENTIFIED = 3;
+
+  // Findit could reproduce the results and suspects were identified.
+  SUSPECT = 4;
 
   // Findit could reproduce the results and a culprit was found.
-  CULPRIT = 4;
+  CULPRIT = 5;
 }
 
 // Culprit/suspect responsible for the failure or flake.
 message Culprit {
   // Host of the project.
-  string host  = 1;
+  string host = 1;
 
   // Project the culprit contributed to.
   string project = 2;
@@ -68,4 +69,37 @@ message AnalysisTimestamp {
 
   // Time (on Findit server) when the analysis was completed.
   google.protobuf.Timestamp completed = 2;
+}
+
+// Base information required for an analysis.
+message Analysis {
+  // Name of the master (doesn't include master. prefix).
+  string master_name = 1;
+
+  // Name of the builder.
+  string builder_name = 2;
+
+  // Name of the step as shown on Milo UI.
+  string step_name = 3;
+
+  // Build number which Findit started the analysis at.
+  int32 detected_build_number = 4;
+
+  // Build number which broke the test.
+  int32 culprit_build_number = 5;
+
+  // Suspects.
+  repeated Culprit suspects = 6;
+
+  // Culprit responsible.
+  Culprit culprit = 7;
+
+  // Timestamp for the analysis.
+  AnalysisTimestamp timestamp = 8;
+
+  // The outcomes of this analysis.
+  repeated AnalysisOutcome outcomes = 9;
+
+  // The actions taken by Findit.
+  repeated AnalysisAction actions = 10;
 }

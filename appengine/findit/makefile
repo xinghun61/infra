@@ -6,6 +6,8 @@ INFRAPYTHON := "../../ENV/bin/python"
 GAE_PY := "gae.py"
 APPID := "findit-for-me"
 STAGING_APPID := "findit-for-me-staging"
+# Should come with infra repository, if this step fails run
+# ...$ gclient sync
 PROTOC := "../../cipd/protoc"
 MODULES := default waterfall-frontend waterfall-backend
 LOCAL_VERSION := `$(INFRAPYTHON) $(GAE_PY) version`
@@ -83,7 +85,7 @@ migrate:
 
 
 ##### Development ###
-run: proto
+run:
 	$(INFRAPYTHON) $(GAE_PY) devserver
 
 YAPF := $(shell command -v yapf 2> /dev/null)
@@ -95,13 +97,13 @@ endif
 
 proto:
 	@$(PROTOC) --proto_path=model/proto/ \
-		--python_out=model/proto/ \
+		--python_out=model/proto/gen \
 		model/proto/*.proto
 
 
 
 ##### Unit tests ###
-test: proto
+test:
 	@mkdir -p $(TMPDIR)/coverage
 	$(INFRAPYTHON) ../../test.py test appengine/findit \
 	  --html-report $(TMPDIR)/coverage
