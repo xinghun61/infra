@@ -16,7 +16,6 @@ from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
 class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
-
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
@@ -34,11 +33,15 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
   @mock.patch.object(
+      issue_tracking_service,
+      'BugAlreadyExistsForCustomField',
+      return_value=False)
+  @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
-  def testShouldFileBugForAnalysis(self, test_exists_fn, label_exists_fn,
-                                   id_exists_fn, sufficient_confidence_fn,
-                                   previous_attempt_fn, feature_enabled_fn,
-                                   under_limit_fn):
+  def testShouldFileBugForAnalysis(
+      self, test_exists_fn, field_exists_fn, label_exists_fn, id_exists_fn,
+      sufficient_confidence_fn, previous_attempt_fn, feature_enabled_fn,
+      under_limit_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -56,6 +59,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(previous_attempt_fn.called)
     self.assertTrue(feature_enabled_fn.called)
     self.assertTrue(under_limit_fn.called)
+    self.assertTrue(field_exists_fn.called)
     self.assertTrue(test_exists_fn.called)
 
   @mock.patch.object(
@@ -77,7 +81,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       'IsBugFilingEnabledForAnalysis',
       return_value=False)
   def testShouldFileBugForAnalysisWhenFeatureDisabled(self, feature_enabled_fn,
-                                                      *_):
+      *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -274,9 +278,51 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      'BugAlreadyExistsForCustomField',
+      return_value=True)
+  def testShouldFileBugForAnalysisWhenBugExistsForCustomField(
+      self, custom_field_exists, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.confidence_in_culprit = 0.5
+    analysis.Save()
+
+    self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
+    self.assertTrue(custom_field_exists.called)
+
+  @mock.patch.object(
+      issue_tracking_service,
+      'IsBugFilingEnabledForAnalysis',
+      return_value=True)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      '_HasSufficientConfidenceInCulprit',
+      return_value=True)
+  @mock.patch.object(
+      issue_tracking_service, '_HasPreviousAttempt', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(
+      issue_tracking_service,
+      'BugAlreadyExistsForCustomField',
+      return_value=False)
+  @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForTest', return_value=True)
   def testShouldFileBugForAnalysisWhenBugExistsForTest(self, test_exists_Fn,
-                                                       *_):
+      *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -398,12 +444,57 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(('label:test',), args)
     mock_api.reset_mock()
 
+  @mock.patch.object(issue_tracking_service, 'GetExistingBugForCustomizedField')
+  def testBugAlreadyExistsForCustomField(self, mock_get_fn):
+    mock_get_fn.return_value = None
+    self.assertEqual(False,
+                     issue_tracking_service.BugAlreadyExistsForCustomField('f'))
+    self.assertTrue(mock_get_fn.called)
+    mock_get_fn.reset_mock()
+
+    mock_get_fn.return_value = 1234
+    self.assertEqual(True,
+                     issue_tracking_service.BugAlreadyExistsForCustomField('f'))
+    self.assertTrue(mock_get_fn.called)
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
+  @mock.patch.object(issue_tracking_service, 'TraverseMergedIssues')
+  @mock.patch('services.flake_failure.issue_tracking_service.IssueTrackerAPI')
+  def testGetExistingBugForCustomizedField(self, mock_api, mock_traverse_issues,
+      _):
+    with self.assertRaises(AssertionError):
+      issue_tracking_service.GetExistingBugForCustomizedField(None)
+
+    mock_api.return_value.getIssues.return_value = None
+    self.assertEqual(
+        None, issue_tracking_service.GetExistingBugForCustomizedField('test'))
+    self.assertTrue(mock_api.return_value.getIssues.called)
+    args, _ = mock_api.return_value.getIssues.call_args
+    self.assertEqual(('Flaky-Test=test is:open',), args)
+    mock_api.reset_mock()
+
+    mock_issue = mock.MagicMock()
+    mock_issue.open = True
+    mock_issue.updated = datetime.datetime(2017, 1, 1)
+    mock_issue.summary = 'test is flaky'
+    mock_issue.id = 1234
+    mock_api.return_value.getIssues.return_value = [mock_issue]
+    mock_traverse_issues.return_value = mock_issue
+    self.assertEqual(
+        mock_issue.id,
+        issue_tracking_service.GetExistingBugForCustomizedField('test'))
+    self.assertTrue(mock_api.return_value.getIssues.called)
+    args, _ = mock_api.return_value.getIssues.call_args
+    self.assertEqual(('Flaky-Test=test is:open',), args)
+    mock_api.reset_mock()
+
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
   @mock.patch('services.flake_failure.issue_tracking_service.IssueTrackerAPI')
   def testBugAlreadyExistsForTest(self, mock_api, _):
     with self.assertRaises(AssertionError):
-      issue_tracking_service.BugAlreadyExistsForLabel(None)
+      issue_tracking_service.BugAlreadyExistsForTest(None)
 
     mock_api.return_value.getIssues.return_value = None
     self.assertFalse(issue_tracking_service.BugAlreadyExistsForTest('test'))
@@ -469,54 +560,54 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     issue_tracker = mock.Mock()
     expected_issue = Issue({'id': 345})
     issue_tracker.getIssue.side_effect = [
-        Issue({
-            'id': 123,
-            'mergedInto': {
-                'issueId': 234
-            }
-        }),
-        Issue({
-            'id': 234,
-            'mergedInto': {
-                'issueId': 345
-            }
-        }),
-        expected_issue,
+      Issue({
+        'id': 123,
+        'mergedInto': {
+          'issueId': 234
+        }
+      }),
+      Issue({
+        'id': 234,
+        'mergedInto': {
+          'issueId': 345
+        }
+      }),
+      expected_issue,
     ]
 
     issue = issue_tracking_service.TraverseMergedIssues(123, issue_tracker)
     self.assertEqual(expected_issue, issue)
     issue_tracker.assert_has_calls([
-        mock.call.getIssue(123),
-        mock.call.getIssue(234),
-        mock.call.getIssue(345)
+      mock.call.getIssue(123),
+      mock.call.getIssue(234),
+      mock.call.getIssue(345)
     ])
 
   def testTraverseMergedIssuesWithMergeInACircle(self):
     issue_tracker = mock.Mock()
     expected_issue = Issue({'id': 123})
     issue_tracker.getIssue.side_effect = [
-        Issue({
-            'id': 123,
-            'mergedInto': {
-                'issueId': 234
-            }
-        }),
-        Issue({
-            'id': 234,
-            'mergedInto': {
-                'issueId': 123
-            }
-        }),
-        expected_issue,
+      Issue({
+        'id': 123,
+        'mergedInto': {
+          'issueId': 234
+        }
+      }),
+      Issue({
+        'id': 234,
+        'mergedInto': {
+          'issueId': 123
+        }
+      }),
+      expected_issue,
     ]
 
     issue = issue_tracking_service.TraverseMergedIssues(123, issue_tracker)
     self.assertEqual(expected_issue, issue)
     issue_tracker.assert_has_calls([
-        mock.call.getIssue(123),
-        mock.call.getIssue(234),
-        mock.call.getIssue(123)
+      mock.call.getIssue(123),
+      mock.call.getIssue(234),
+      mock.call.getIssue(123)
     ])
 
   def testHasPreviousAttempt(self):

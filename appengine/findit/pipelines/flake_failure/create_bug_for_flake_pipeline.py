@@ -16,7 +16,7 @@ from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake import triggering_sources
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
-    AnalyzeFlakeForBuildNumberPipeline)
+  AnalyzeFlakeForBuildNumberPipeline)
 from waterfall.flake.lookback_algorithm import IsFullyStable
 
 _SUBJECT_TEMPLATE = '{} is Flaky'
@@ -39,7 +39,6 @@ class CreateBugForFlakePipelineInputObject(StructuredObject):
 
 
 class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
-
   input_type = CreateBugForFlakePipelineInputObject
 
   def RunImpl(self, input_object):
@@ -56,6 +55,11 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
     assert analysis
 
     if not issue_tracking_service.ShouldFileBugForAnalysis(analysis):
+      existing_test_bug_id = (
+        issue_tracking_service.GetExistingBugForCustomizedField(
+            analysis.test_name))
+      if existing_test_bug_id and not analysis.bug_id:
+        analysis.Update(bug_id=existing_test_bug_id)
       return
 
     most_recent_build_number = build_util.GetLatestBuildNumber(
@@ -67,7 +71,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
     tasks = swarming_util.ListSwarmingTasksDataByTags(
         analysis.master_name, analysis.builder_name, most_recent_build_number,
         FinditHttpClient(), {
-            'stepname': analysis.step_name
+          'stepname': analysis.step_name
         })
     if not tasks:
       analysis.LogInfo('Bug not filed because no recent runs found.')
@@ -88,8 +92,6 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
           analysis_urlsafe_key=input_object.analysis_urlsafe_key,
           most_recent_build_number=most_recent_build_number)
       yield _CreateBugIfStillFlaky(next_input_object)
-
-    # TODO(crbug.com/780110): Use customized field for querying for duplicates.
 
 
 def _GenerateSubjectAndBodyForBug(analysis):

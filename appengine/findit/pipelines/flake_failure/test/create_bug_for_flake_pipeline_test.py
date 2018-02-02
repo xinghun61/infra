@@ -13,15 +13,15 @@ from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure import create_bug_for_flake_pipeline
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakePipeline)
+  CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakePipelineInputObject)
+  CreateBugForFlakePipelineInputObject)
 from services import test_results
 from services.flake_failure import issue_tracking_service
 from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
-    AnalyzeFlakeForBuildNumberPipeline)
+  AnalyzeFlakeForBuildNumberPipeline)
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -47,7 +47,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.data_points = [
-        DataPoint.Create(build_number=100, task_ids=['task_id'])
+      DataPoint.Create(build_number=100, task_ids=['task_id'])
     ]
     analysis.suspected_flake_build_number = 100
     analysis.Save()
@@ -86,7 +86,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
   @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
   def testCreateBugForFlakePipelineWhenNoTasksReturned(self, list_swarming_fn,
-                                                       *_):
+      *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -99,7 +99,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.data_points = [
-        DataPoint.Create(build_number=100, task_ids=['task_id'])
+      DataPoint.Create(build_number=100, task_ids=['task_id'])
     ]
     analysis.suspected_flake_build_number = 100
     analysis.Save()
@@ -137,7 +137,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.data_points = [
-        DataPoint.Create(build_number=100, task_ids=['task_id'])
+      DataPoint.Create(build_number=100, task_ids=['task_id'])
     ]
     analysis.suspected_flake_build_number = 100
     analysis.Save()
@@ -181,8 +181,8 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.data_points = [
-        DataPoint.Create(build_number=200, pass_rate=.5),
-        DataPoint.Create(build_number=100, pass_rate=.5, task_ids=['task_id'])
+      DataPoint.Create(build_number=200, pass_rate=.5),
+      DataPoint.Create(build_number=100, pass_rate=.5, task_ids=['task_id'])
     ]
     analysis.suspected_flake_build_number = 100
     analysis.confidence_in_culprit = 1.0
@@ -211,9 +211,13 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(analysis.has_attempted_filing)
 
   @mock.patch.object(
+      issue_tracking_service,
+      'GetExistingBugForCustomizedField',
+      return_value=None)
+  @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=False)
   def testCreateBugForFlakePipelineWhenShouldFileReturnsFalse(
-      self, should_file_fn):
+      self, should_file_fn, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -240,6 +244,42 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(should_file_fn.called)
     self.assertFalse(analysis.has_attempted_filing)
 
+  @mock.patch.object(
+      issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      'GetExistingBugForCustomizedField',
+      return_value=1234)
+  def testCreateBugForFlakePipelineWhenShouldFileReturnsFalseWithExistingBug(
+      self, existing_bug_id_fn, should_file_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    # Create a flake analysis with no bug.
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    # Create a flake analysis request with no bug.
+    request = FlakeAnalysisRequest.Create(test_name, False, None)
+    request.Save()
+
+    create_bug_input = CreateInputObjectInstance(
+        CreateBugForFlakePipelineInputObject,
+        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        test_location=TestLocation(file='/foo/bar', line=1))
+    pipeline_job = CreateBugForFlakePipeline(create_bug_input)
+    pipeline_job.start()
+    self.execute_queued_tasks()
+
+    self.assertTrue(should_file_fn.called)
+    self.assertFalse(analysis.has_attempted_filing)
+    self.assertEqual(1234, analysis.bug_id)
+    self.assertTrue(existing_bug_id_fn.called)
+
   @mock.patch.object(test_results, 'IsTestEnabled', return_value=True)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
   @mock.patch.object(
@@ -256,7 +296,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.data_points = [
-        DataPoint.Create(build_number=100, pass_rate=.5, task_ids=['task_id'])
+      DataPoint.Create(build_number=100, pass_rate=.5, task_ids=['task_id'])
     ]
     analysis.suspected_flake_build_number = 100
     analysis.Save()
@@ -424,11 +464,11 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.data_points = [
-        DataPoint.Create(
-            build_number=200,
-            pass_rate=.5,
-            git_hash='hash',
-            previous_build_git_hash='prev_hash')
+      DataPoint.Create(
+          build_number=200,
+          pass_rate=.5,
+          git_hash='hash',
+          previous_build_git_hash='prev_hash')
     ]
     analysis.suspected_flake_build_number = 200
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()

@@ -10,6 +10,7 @@ import logging
 from google.appengine.api import app_identity
 from gae_libs import appengine_util
 from libs import time_util
+from monorail_api import CustomizedField
 from monorail_api import IssueTrackerAPI
 from monorail_api import Issue
 
@@ -17,6 +18,7 @@ from model.flake import master_flake_analysis
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
+_BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE = 'Flaky-Test={} is:open'
 _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE = 'summary:{} is:open'
 
 
@@ -65,9 +67,9 @@ def ShouldFileBugForAnalysis(analysis):
     return False
 
   if not _HasSufficientConfidenceInCulprit(analysis):
-    analysis.LogInfo(
-        'Analysis has confidence=%d which isn\'t high enough to file a bug.' %
-        analysis.confidence_in_culprit)
+    analysis.LogInfo('''Analysis has confidence {:.2%}
+        which isn\'t high enough to file a bug.'''.format(
+        analysis.confidence_in_culprit))
     return False
 
   if not UnderDailyLimit(analysis):
@@ -76,11 +78,18 @@ def ShouldFileBugForAnalysis(analysis):
 
   # Check if there's already a bug attached to this issue.
   if BugAlreadyExistsForId(analysis.bug_id):
-    analysis.LogInfo('Bug with id %d already exists.' % analysis.bug_id)
+    analysis.LogInfo('Bug with id {} already exists.'.format(analysis.bug_id))
     return False
 
+  # TODO (crbug.com/808199): Turn off label checking when CTF is offline.
   if BugAlreadyExistsForLabel(analysis.test_name):
-    analysis.LogInfo('Bug already exists for label %s' % analysis.test_name)
+    analysis.LogInfo('Bug already exists for label {}'.format(
+        analysis.test_name))
+    return False
+
+  if BugAlreadyExistsForCustomField(analysis.test_name):
+    analysis.LogInfo('Bug already exists for custom field {}'.format(
+        analysis.test_name))
     return False
 
   if BugAlreadyExistsForTest(analysis.test_name):
@@ -145,6 +154,27 @@ def BugAlreadyExistsForLabel(test_name):
   return False
 
 
+def GetExistingBugForCustomizedField(test_name):
+  """Returns the bug id of an existing bug for this test."""
+  assert test_name
+  query = _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE.format(test_name)
+
+  issue_tracker_api = IssueTrackerAPI(
+      'chromium', use_staging=appengine_util.IsStaging())
+  issues = issue_tracker_api.getIssues(query)
+
+  # If there are issues, find the root one, and return the id of it.
+  if issues and issues[0]:
+    return issues[0].id
+  else:
+    return None
+
+
+def BugAlreadyExistsForCustomField(test_name):
+  """Returns True if the bug with the given custom field exists on monorail."""
+  return GetExistingBugForCustomizedField(test_name) is not None
+
+
 def BugAlreadyExistsForTest(test_name):
   """Search for test_name issues that are about flakiness.
 
@@ -164,13 +194,7 @@ def BugAlreadyExistsForTest(test_name):
   if not issues:
     return False
 
-  for issue in issues:
-    if issue.open and ('flake' in issue.summary or 'flaky' in issue.summary):
-      logging.info('A bug for test %s already exists for flakiness. Bug id %s',
-                   test_name, issue.id)
-      return True
-
-  return False
+  return True
 
 
 def GetPriorityLabelForConfidence(confidence):
@@ -196,20 +220,21 @@ def CreateBugForTest(test_name, subject, description, priority='Pri-2'):
   assert description
 
   issue = Issue({
-      'status':
-          'Available',
-      'summary':
-          subject,
-      'description':
-          description,
-      'projectId':
-          'chromium',
-      'labels': [
-          test_name, 'Test-Findit-Analyzed', 'Sheriff-Chromium', priority
-      ],
-      'state':
-          'open',
-      'components': ['Tests>Flaky']
+    'status':
+      'Available',
+    'summary':
+      subject,
+    'description':
+      description,
+    'projectId':
+      'chromium',
+    'labels': [
+      'Test-Findit-Analyzed', 'Sheriff-Chromium', priority, 'Type-Bug'
+    ],
+    'state':
+      'open',
+    'components': ['Tests>Flaky'],
+    'fieldValues': [CustomizedField('Flaky-Test', test_name)]
   })
 
   issue_tracker_api = IssueTrackerAPI(
