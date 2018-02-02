@@ -459,6 +459,14 @@ class URLAutolinkTest(unittest.TestCase):
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
 
+    # Link surrounded by multiple delimiters.
+    result = self.DoLinkify('(e.g. <%s>)' % test)
+    self.assertEqual(test, result[0].href)
+    self.assertEqual(test, result[0].content)
+    result = self.DoLinkify('(e.g. <%s>),' % test)
+    self.assertEqual(test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
   def testLinkify_ContextOnBadLink(self):
     """Test that surrounding text retained in cases where we don't link url."""
     test = 'http://bad=example'
