@@ -153,7 +153,7 @@ add_build_cycle_duration = _adder(  # pragma: no branch
 
 # requires the argument to have non-None start_time and complete_time.
 add_build_run_duration = _adder(  # pragma: no branch
-    gae_ts_mon.NonCumulativeDistributionMetric(
+    gae_ts_mon.CumulativeDistributionMetric(
         'buildbucket/builds/run_durations',
         'Duration between build start and completion',
         _BUILD_DURATION_FIELDS,
@@ -164,7 +164,7 @@ add_build_run_duration = _adder(  # pragma: no branch
 
 # requires the argument to have non-None create_time and start_time.
 add_build_scheduling_duration = _adder(  # pragma: no branch
-    gae_ts_mon.NonCumulativeDistributionMetric(
+    gae_ts_mon.CumulativeDistributionMetric(
         'buildbucket/builds/scheduling_durations',
         'Duration between build creation and start',
         _BUILD_DURATION_FIELDS,
