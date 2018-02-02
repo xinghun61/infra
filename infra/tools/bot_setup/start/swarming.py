@@ -61,5 +61,11 @@ def start(hostname, root_dir):
   with open(zip_file, 'wb') as f:
     f.write(r.content)
 
+  # Use system python on Linux instead of the one with infra_python virtual
+  # environment. We don't want this environment leaking into the Swarming.
+  python = sys.executable
+  if sys.platform.startswith('linux'):
+    python = '/usr/bin/python'
+
   os.environ['SWARMING_EXTERNAL_BOT_SETUP'] = '1'
-  os.execv(sys.executable, [sys.executable, zip_file])
+  os.execv(python, [python, zip_file])
