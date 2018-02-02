@@ -14,7 +14,6 @@ from model.wf_step import WfStep
 from services.parameters import FailedTest
 from services.parameters import FailedTests
 from services.parameters import IsolatedDataList
-from services.gtest import GtestResults
 from services import test_results
 from waterfall import swarming_util
 
@@ -23,41 +22,24 @@ _NON_FAILURE_STATUSES = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
 
 def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
   """Parses the json data and saves all the reliable failures to the step."""
-  failed_test_log = {}
+
+  failed_test_log, reliable_failed_tests = (
+      test_results.GetFailedTestsInformation(json_data))
   if failed_step:
     failed_step.tests = failed_step.tests or FailedTests.FromSerializable({})
 
-  for iteration in json_data.get('per_iteration_data'):
-    for test_name in iteration.keys():
-      is_reliable_failure = True
+    for test_name, base_test_name in reliable_failed_tests.iteritems():
+      # Adds the test to failed_step.
+      failed_test_info = {
+          'current_failure': failed_step.current_failure,
+          'first_failure': failed_step.current_failure,
+          'base_test_name': base_test_name,
+      }
+      failed_step.tests[test_name] = FailedTest.FromSerializable(
+          failed_test_info)
 
-      if (any(test['status'] in _NON_FAILURE_STATUSES
-              for test in iteration[test_name])):
-        # Ignore the test if any of the attempts didn't fail.
-        # If a test is skipped, that means it was not run at all.
-        # Treats it as success since the status cannot be determined.
-        is_reliable_failure = False
-
-      # TODO (crbug/806002): Hide all gtest related logic behind test_results.
-      gtest_results = GtestResults()
-      if is_reliable_failure:
-        if failed_step:
-          # Adds the test to failed_step.
-          failed_test_info = {
-              'current_failure': failed_step.current_failure,
-              'first_failure': failed_step.current_failure,
-              'base_test_name': gtest_results.RemoveAllPrefixes(test_name),
-          }
-          failed_step.tests[test_name] = FailedTest.FromSerializable(
-              failed_test_info)
-
-          if failed_step.last_pass:
-            failed_step.tests[test_name].last_pass = failed_step.last_pass
-        # Stores the output to the step's log_data later.
-        failed_test_log[test_name] = ''
-        for test in iteration[test_name]:
-          failed_test_log[test_name] = gtest_results.ConcatenateTestLog(
-              failed_test_log[test_name], test.get('output_snippet_base64', ''))
+      if failed_step.last_pass:
+        failed_step.tests[test_name].last_pass = failed_step.last_pass
 
   step.log_data = json.dumps(failed_test_log) if failed_test_log else 'flaky'
   step.put()
@@ -76,10 +58,9 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
   list_isolated_data = (
       list_isolated_data.ToSerializable() if list_isolated_data else [])
   result_log = test_results.RetrieveShardedTestResultsFromIsolatedServer(
-      step_name, list_isolated_data, http_client)
+      list_isolated_data, http_client)
 
-  if (not result_log or not result_log.get('per_iteration_data') or
-      result_log['per_iteration_data'] == 'invalid'):
+  if not test_results.IsTestResultsValid(result_log):
     return False
 
   step = WfStep.Get(master_name, builder_name, build_number, step_name)
@@ -106,8 +87,7 @@ def _GetSameStepFromBuild(master_name, builder_name, build_number, step_name,
   result_log = test_results.RetrieveShardedTestResultsFromIsolatedServer(
       step_isolated_data, http_client)
 
-  if (not result_log or not result_log.get('per_iteration_data') or
-      result_log['per_iteration_data'] == 'invalid'):
+  if not test_results.IsTestResultsValid(result_log):
     return None
 
   step = WfStep.Create(master_name, builder_name, build_number, step_name)

@@ -13,7 +13,7 @@ from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
-from services import gtest
+from services import test_results
 from waterfall import swarming_util
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
@@ -520,15 +520,13 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
       swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(_SAMPLE_FAILURE_LOG, None))
-  @mock.patch.object(gtest, 'GtestResults')
-  def testProcessSwarmingTaskResultPipelineIdempotency(self, mock_gtest, _):
+  @mock.patch.object(test_results, 'IsTestResultsValid', return_value=True)
+  def testProcessSwarmingTaskResultPipelineIdempotency(self, *_):
     # End to end test.
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
                                  self.build_number, self.step_name)
     task.task_id = 'task_id1'
     task.put()
-
-    mock_gtest.CheckGtestOutputIsValid.return_value = None
 
     pipeline = ProcessSwarmingTaskResultPipeline()
     pipeline.start_test()

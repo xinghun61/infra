@@ -13,7 +13,7 @@ import logging
 
 from model.wf_step import WfStep
 from services import extract_signal
-from services import gtest
+from services import test_results_constants
 from services import test_results
 from waterfall import extractors
 from waterfall import waterfall_config
@@ -42,19 +42,20 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       failure_log = step.log_data
     else:
       json_formatted_log = True
-      # 2. Gets gtest results.
+      # 2. Gets test results.
       list_isolated_data = failed_steps[step_name].list_isolated_data
       list_isolated_data = (
           list_isolated_data.ToSerializable() if list_isolated_data else [])
       merged_test_results = (
           test_results.RetrieveShardedTestResultsFromIsolatedServer(
-          list_isolated_data, http_client))
+              list_isolated_data, http_client))
       if merged_test_results:
-        failure_log = gtest.GtestResults().GetConsistentTestFailureLog(
+        failure_log = test_results.GetConsistentTestFailureLog(
             merged_test_results)
 
       if not merged_test_results or failure_log in [
-          gtest.INVALID_FAILURE_LOG, gtest.WRONG_FORMAT_LOG
+          test_results_constants.INVALID_FAILURE_LOG,
+          test_results_constants.WRONG_FORMAT_LOG
       ]:
         # 3. Gets stdout log.
         json_formatted_log = False
@@ -81,7 +82,7 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       try:
         json_failure_log = (
             json.loads(failure_log)
-            if failure_log != gtest.FLAKY_FAILURE_LOG else {})
+            if failure_log != test_results_constants.FLAKY_FAILURE_LOG else {})
       except ValueError:
         json_failure_log = {}
         logging.warning('failure_log %s is not valid JSON.' % failure_log)

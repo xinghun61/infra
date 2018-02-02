@@ -5,8 +5,11 @@
 
 from common.findit_http_client import FinditHttpClient
 from services import gtest
+from services import test_results_constants
 from services.gtest import GtestResults
 from waterfall import swarming_util
+
+_STEP_NAME_SEPARATOR = ' on '
 
 
 # Currently Findit only supports gtest results, later when Findit starts to
@@ -50,10 +53,62 @@ def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
   if len(list_isolated_data) == 1:
     return shard_results[0]
 
-  #TODO(crbug/806002): support other type of tests.
+  # TODO(crbug/806002): support other type of tests.
   test_result_object = _GetTestResultObject(shard_results[0])
   return (test_result_object.GetMergedTestResults(shard_results)
           if test_result_object else {
               'all_tests': [],
               'per_iteration_data': []
           })
+
+
+def IsTestResultsValid(test_results_log):
+  """Checks if the test result can be used for analysis."""
+  return _GetTestResultObject(test_results_log) is not None
+
+
+def GetFailedTestsInformation(test_results_log):
+  """arses the json data to get all the reliable failures' information."""
+  test_result_object = _GetTestResultObject(test_results_log)
+  return test_result_object.GetFailedTestsInformation(
+      test_results_log) if test_result_object else ({}, {})
+
+
+def GetConsistentTestFailureLog(test_results_log):
+  """Analyzes the archived test json results and extract reliable failures."""
+  test_result_object = _GetTestResultObject(test_results_log)
+  return (test_result_object.GetConsistentTestFailureLog(test_results_log)
+          if test_result_object else test_results_constants.WRONG_FORMAT_LOG)
+
+
+def IsTestResultUseful(test_results_log):
+  """Checks if the log contains useful information."""
+  test_result_object = _GetTestResultObject(test_results_log)
+  return test_result_object.IsTestResultUseful(
+      test_results_log) if test_result_object else False
+
+
+def GetTestsRunStatuses(test_results_log):
+  """Parses test results and gets accumulated test run statuses."""
+  test_result_object = _GetTestResultObject(test_results_log)
+  return test_result_object.GetTestsRunStatuses(
+      test_results_log) if test_result_object else {}
+
+
+def DoesTestExist(test_results_log, test_name):
+  """Checks if the test exists in log."""
+  test_result_object = _GetTestResultObject(test_results_log)
+  return test_result_object.DoesTestExist(
+      test_results_log, test_name) if test_result_object else False
+
+
+def RemoveSuffixFromStepName(step_name):
+  """Returns step name without suffix.
+
+  Args:
+    step_name: Raw step name. Example: 'net_unittests on Windows-10'.
+
+  Returns:
+    Step name without platform or the string ' on '. Example: 'net_unittests'.
+  """
+  return step_name.split(_STEP_NAME_SEPARATOR)[0]

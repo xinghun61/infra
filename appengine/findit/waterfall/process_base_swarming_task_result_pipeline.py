@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from collections import defaultdict
 import datetime
 import json
 import logging
@@ -15,7 +14,8 @@ from common.findit_http_client import FinditHttpClient
 from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
-from services.gtest import GtestResults
+from services import test_results_constants
+from services import test_results
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
@@ -46,19 +46,9 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
     Returns:
       tests_statuses (dict): A dict of different statuses for each test.
-
-    Currently for each test, we are saving number of total runs,
-    number of succeeded runs and number of failed runs.
     """
-    tests_statuses = defaultdict(lambda: defaultdict(int))
-    if output_json:
-      for iteration in output_json.get('per_iteration_data'):
-        for test_name, tests in iteration.iteritems():
-          tests_statuses[test_name]['total_run'] += len(tests)
-          for test in tests:
-            tests_statuses[test_name][test['status']] += 1
 
-    return tests_statuses
+    return test_results.GetTestsRunStatuses(output_json)
 
   def _GetSwarmingTask(self):
     # Get the appropriate kind of Swarming Task (Wf or Flake).
@@ -67,8 +57,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         '_GetSwarmingTask should be implemented in the child class')
 
   def _GetArgs(self):
-    # Return list of arguments to call _CheckTestsRunStatuses with - output_json
-    # Should be overwritten by subclass.
+    # Return list of arguments to allow subclass implemented methods have
+    # their own special parameters.
     raise NotImplementedError(
         '_GetArgs should be implemented in the child class')
 
@@ -245,7 +235,12 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
               'message': 'No swarming task failure log'
           }
 
-        error = error or GtestResults().CheckGtestOutputIsValid(output_json)
+        if not test_results.IsTestResultsValid(output_json):
+          error = error or {
+              'code': test_results_constants.UNRECOGNIZABLE,
+              'message': 'Test results format is unrecognized, '
+                         'cannot find a parser.'
+          }
 
         if error:
           task.status = analysis_status.ERROR

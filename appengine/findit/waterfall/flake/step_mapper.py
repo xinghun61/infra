@@ -5,6 +5,7 @@
 import logging
 
 from common.findit_http_client import FinditHttpClient
+from services import test_results
 from waterfall import buildbot
 from waterfall import build_util
 from waterfall import swarming_util
@@ -66,9 +67,10 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
 
   # 4. Check whether there is matching step.
   tasks = swarming_util.ListSwarmingTasksDataByTags(
-      wf_master_name, wf_builder_name, builds[0], http_client,
-      {'name': name,
-       'os': os_name})
+      wf_master_name, wf_builder_name, builds[0], http_client, {
+          'name': name,
+          'os': os_name
+      })
   if tasks:  # One matching buildbot is found.
     wf_step_name = swarming_util.GetTagValue(tasks[0].get('tags', []),
                                              'stepname')
@@ -132,8 +134,5 @@ def FindMatchingWaterfallStep(build_step, test_name):
     if output:
       # Guess from the format.
       build_step.supported = (
-          isinstance(output, dict) and
-          isinstance(output.get('all_tests'), list) and
-          test_name in output.get('all_tests', []) and
-          isinstance(output.get('per_iteration_data'), list) and
-          all(isinstance(i, dict) for i in output.get('per_iteration_data')))
+          test_results.IsTestResultsValid(output) and
+          test_name in output.get('all_tests', []))

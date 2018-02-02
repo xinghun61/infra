@@ -4,11 +4,44 @@
 
 import base64
 import json
+import mock
 import os
 
 from services import gtest
+from services import test_results_constants
 from services.gtest import GtestResults
 from waterfall.test import wf_testcase
+
+_SAMPLE_TEST_RESULTS = {
+    'all_tests': [
+        'Unittest1.Subtest1', 'Unittest1.Subtest2', 'Unittest2.PRE_Subtest1',
+        'Unittest2.Subtest2'
+    ],
+    'per_iteration_data': [{
+        'Unittest1.Subtest1': [{
+            'status': 'SUCCESS',
+            'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+        }],
+        'Unittest1.Subtest2': [{
+            'status': 'FAILURE',
+            'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDog'
+        }, {
+            'status': 'FAILURE',
+            'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDog'
+        }],
+        'Unittest2.PRE_Subtest1': [{
+            'status': 'FAILURE',
+            'output_snippet_base64': 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+        }, {
+            'status': 'FAILURE',
+            'output_snippet_base64': 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+        }],
+        'Unittest2.Subtest2': [{
+            'status': 'SUCCESS',
+            'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+        }]
+    }]
+}
 
 
 class GtestTest(wf_testcase.WaterfallTestCase):
@@ -82,56 +115,7 @@ class GtestTest(wf_testcase.WaterfallTestCase):
 
     failed_test_log = self.gtest_results.GetConsistentTestFailureLog(
         json.loads(step_log))
-    self.assertEqual(gtest.FLAKY_FAILURE_LOG, failed_test_log)
-
-  def testGetConsistentTestFailureLogWrongFormat(self):
-    step_log = {
-        'tests': {
-            'svg': {
-                'text': {
-                    'test1': {
-                        'expected': 'PASS',
-                        'actual': 'PASS'
-                    }
-                }
-            }
-        }
-    }
-
-    failed_test_log = self.gtest_results.GetConsistentTestFailureLog(step_log)
-    self.assertEqual(gtest.WRONG_FORMAT_LOG, failed_test_log)
-
-  def testRemovePlatformFromStepName(self):
-    self.assertEqual(
-        'a_tests',
-        self.gtest_results.RemovePlatformFromStepName('a_tests on Platform'))
-    self.assertEqual('a_tests',
-                     self.gtest_results.RemovePlatformFromStepName(
-                         'a_tests on Other-Platform'))
-    self.assertEqual('a_tests',
-                     self.gtest_results.RemovePlatformFromStepName('a_tests'))
-
-  def testCheckGtestOutputIsValidNoPerIterationData(self):
-    gtest_result = {'blabla': 'blabla'}
-    expected_error = {
-        'code': gtest.RESULTS_INVALID,
-        'message': 'per_iteration_data is empty or missing',
-    }
-    self.assertEqual(expected_error,
-                     self.gtest_results.CheckGtestOutputIsValid(gtest_result))
-
-  def testCheckGtestOutputIsValidNoTests(self):
-    gtest_result = {'per_iteration_data': [{}]}
-    expected_error = {
-        'code': gtest.RESULTS_INVALID,
-        'message': 'all_tests is empty or missing'
-    }
-    self.assertEqual(expected_error,
-                     self.gtest_results.CheckGtestOutputIsValid(gtest_result))
-
-  def testCheckGtestOutputIsValidNoError(self):
-    gtest_result = {'per_iteration_data': [{}, {}], 'all_tests': ['t']}
-    self.assertIsNone(self.gtest_results.CheckGtestOutputIsValid(gtest_result))
+    self.assertEqual(test_results_constants.FLAKY_FAILURE_LOG, failed_test_log)
 
   def testDoesTestExist(self):
     existing_test_name = 'test'
@@ -205,8 +189,12 @@ class GtestTest(wf_testcase.WaterfallTestCase):
             }]
         }]
     }
+
     self.assertEqual(expected_result,
                      self.gtest_results.GetMergedTestResults(shard_results))
+
+  def testIsTestResultsInExpectedFormat(self):
+    self.assertEqual({}, self.gtest_results.GetTestsRunStatuses(None))
 
   def testIsTestResultsInExpectedFormatMatch(self):
     log = {
@@ -228,3 +216,56 @@ class GtestTest(wf_testcase.WaterfallTestCase):
 
   def testIsTestResultsInExpectedFormatNotMatch(self):
     self.assertFalse(gtest.IsTestResultsInExpectedFormat('log'))
+
+  def testGetFailedTestsInformation(self):
+    test_results = _SAMPLE_TEST_RESULTS
+
+    side_effect = [
+        'YS9iL3UxczIuY2M6MTIzNDog', 'YS9iL3UxczIuY2M6MTIzNDog',
+        'RVJST1I6eF90ZXN0LmNjOjEyMz', 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+    ]
+
+    expected_log = {
+        'Unittest1.Subtest2': 'YS9iL3UxczIuY2M6MTIzNDog',
+        'Unittest2.PRE_Subtest1': 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+    }
+    expected_tests = {
+        'Unittest1.Subtest2': 'Unittest1.Subtest2',
+        'Unittest2.PRE_Subtest1': 'Unittest2.Subtest1'
+    }
+    with mock.patch.object(
+        self.gtest_results, 'ConcatenateTestLog', side_effect=side_effect):
+      log, tests = self.gtest_results.GetFailedTestsInformation(test_results)
+      self.assertEqual(expected_log, log)
+      self.assertEqual(expected_tests, tests)
+
+  def testIsTestResultUseful(self):
+    test_results_log = _SAMPLE_TEST_RESULTS
+    self.assertTrue(self.gtest_results.IsTestResultUseful(test_results_log))
+
+  def testTaskHasNoUsefulResult(self):
+    test_results_log = {'per_iteration_data': [{}]}
+    self.assertFalse(self.gtest_results.IsTestResultUseful(test_results_log))
+
+  def testGetTestsRunStatuses(self):
+    expected_statuses = {
+        'Unittest1.Subtest1': {
+            'SUCCESS': 1,
+            'total_run': 1
+        },
+        'Unittest1.Subtest2': {
+            'FAILURE': 2,
+            'total_run': 2
+        },
+        'Unittest2.PRE_Subtest1': {
+            'FAILURE': 2,
+            'total_run': 2
+        },
+        'Unittest2.Subtest2': {
+            'SUCCESS': 1,
+            'total_run': 1
+        }
+    }
+    self.assertEqual(
+        expected_statuses,
+        self.gtest_results.GetTestsRunStatuses(_SAMPLE_TEST_RESULTS))

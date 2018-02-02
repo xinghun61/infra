@@ -6,6 +6,7 @@ import mock
 
 from services import gtest
 from services import test_results
+from services.gtest import GtestResults
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
@@ -13,13 +14,11 @@ from waterfall.test import wf_testcase
 
 class TestResultsTest(wf_testcase.WaterfallTestCase):
 
-  @mock.patch.object(
-      gtest, 'IsTestResultsInExpectedFormat', return_value=False)
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=False)
   def testGetTestResultObjectNoMatch(self, _):
     self.assertIsNone(test_results._GetTestResultObject('log'))
 
-  @mock.patch.object(
-      gtest, 'IsTestResultsInExpectedFormat', return_value=True)
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
   def testIsTestEnabled(self, isolate_fn, _):
     test_name = 'test'
@@ -31,8 +30,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
                      test_results.RetrieveShardedTestResultsFromIsolatedServer(
                          [], None))
 
-  @mock.patch.object(
-      gtest, 'IsTestResultsInExpectedFormat', return_value=True)
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
   @mock.patch.object(swarming_util, 'DownloadTestResults')
   def testRetrieveShardedTestResultsFromIsolatedServer(self, mock_data, _):
     isolated_data = [{
@@ -90,8 +88,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_result, result)
 
-  @mock.patch.object(
-      gtest, 'IsTestResultsInExpectedFormat', return_value=True)
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
   @mock.patch.object(swarming_util, 'DownloadTestResults')
   def testRetrieveShardedTestResultsFromIsolatedServerOneShard(
       self, mock_data, _):
@@ -111,8 +108,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(data, result)
 
-  @mock.patch.object(
-      gtest, 'IsTestResultsInExpectedFormat', return_value=True)
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
   @mock.patch.object(swarming_util, 'DownloadTestResults')
   def testRetrieveShardedTestResultsFromIsolatedServerFailed(
       self, mock_data, _):
@@ -130,3 +126,40 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
         isolated_data, None)
 
     self.assertIsNone(result)
+
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
+  def testIsTestResultsValid(self, _):
+    self.assertTrue(test_results.IsTestResultsValid('test_results_log'))
+
+  def testGetFailedTestsInformation(self):
+    self.assertEqual(({}, {}), test_results.GetFailedTestsInformation({}))
+
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
+  @mock.patch.object(
+      GtestResults, 'GetConsistentTestFailureLog', return_value='log')
+  def testGetConsistentTestFailureLog(self, *_):
+    self.assertEqual('log', test_results.GetConsistentTestFailureLog('log'))
+
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
+  @mock.patch.object(GtestResults, 'IsTestResultUseful', return_value=True)
+  def testIsTestResultUseful(self, *_):
+    self.assertTrue(test_results.IsTestResultUseful('log'))
+
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
+  @mock.patch.object(GtestResults, 'GetTestsRunStatuses', return_value={})
+  def testGetTestsRunStatuses(self, *_):
+    self.assertEqual({}, test_results.GetTestsRunStatuses(None))
+
+  @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
+  @mock.patch.object(GtestResults, 'DoesTestExist', return_value=True)
+  def testDoesTestExist(self, *_):
+    self.assertTrue(test_results.DoesTestExist('log', 't'))
+
+  def testRemoveSuffixFromStepName(self):
+    self.assertEqual(
+        'a_tests', test_results.RemoveSuffixFromStepName('a_tests on Platform'))
+    self.assertEqual(
+        'a_tests',
+        test_results.RemoveSuffixFromStepName('a_tests on Other-Platform'))
+    self.assertEqual('a_tests',
+                     test_results.RemoveSuffixFromStepName('a_tests'))

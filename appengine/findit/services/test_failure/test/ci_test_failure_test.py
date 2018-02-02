@@ -174,6 +174,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             self._GetSwarmingData('isolated-plain',
                                   'm_b_223_abc_test_flaky.json')))
 
+    mock_module.GetFailedTestsInformation.return_value = ({}, {})
+
     ci_test_failure.CheckFirstKnownFailureForSwarmingTests(
         master_name, builder_name, build_number, failure_info)
 

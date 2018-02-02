@@ -10,13 +10,12 @@ It provides functions to:
 """
 
 import base64
+from collections import defaultdict
 import cStringIO
 
+from services import test_results_constants
+
 _PRE_TEST_PREFIX = 'PRE_'
-_STEP_NAME_SEPARATOR = ' on '
-INVALID_FAILURE_LOG = 'invalid'
-FLAKY_FAILURE_LOG = 'flaky'
-WRONG_FORMAT_LOG = 'not_in_gtest_result_format'
 
 # Invalid gtest result error codes.
 # TODO(crbug.com/785463): Use enum for error codes.
@@ -109,7 +108,7 @@ class GtestResults(object):
       return base64.b64encode(str1 + str2)
 
   def GetConsistentTestFailureLog(self, gtest_result):
-    """Analyze the archived gtest json results and extract reliable failures.
+    """Analyzes the archived gtest json results and extract reliable failures.
 
     Args:
       gtest_result (dict): A JSON file for failed step log.
@@ -122,10 +121,6 @@ class GtestResults(object):
       If we find out that all the test failures in this step are flaky, we will
       return 'flaky' as result.
     """
-
-    if not gtest_result.get('per_iteration_data'):
-      return WRONG_FORMAT_LOG
-
     sio = cStringIO.StringIO()
     for iteration in gtest_result['per_iteration_data']:
       for test_name in iteration.keys():
@@ -145,61 +140,9 @@ class GtestResults(object):
     sio.close()
 
     if not failed_test_log:
-      return FLAKY_FAILURE_LOG
+      return test_results_constants.FLAKY_FAILURE_LOG
 
     return failed_test_log
-
-  def RemovePlatformFromStepName(self, step_name):
-    """Returns step name without platform.
-
-    Args:
-      step_name: Raw step name. Example: 'net_unittests on Windows-10'.
-
-    Returns:
-      Step name without platform or the string ' on '. Example: 'net_unittests'.
-    """
-    return step_name.split(_STEP_NAME_SEPARATOR)[0]
-
-  def CheckGtestOutputIsValid(self, gtest_result):
-    """Determines if the output of a gtest result is usable.
-
-      1. per_iteration_data must exist and be non-empty.
-      2. all_tests must exist and be non-empty.
-
-      This function should check to ensure gtest_result contains all necessary
-      information in order to determine a test's pass rate, or return an error
-      indicating the data in gtest_result is unusable.
-
-    Args:
-      gtest_result (dict): The gtest's output, at a minimum expected to contain:
-          {
-              'per_iteration_data': [(dict)],
-              'all_tests': [(str)],
-              ...
-          }
-
-    Returns:
-      (dict): None if no error, or a dict in the format:
-          {
-              'code': (int),
-              'message': (str),
-          }
-    """
-    error = {
-        'code': RESULTS_INVALID,
-    }
-    # The failure log must contain the field 'per_iteration_data' containing
-    # each test iteration's outcome.
-    if not gtest_result.get('per_iteration_data'):
-      error['message'] = 'per_iteration_data is empty or missing'
-      return error
-
-    # The failure log must contain the field 'all_tests'.
-    if not gtest_result.get('all_tests'):
-      error['message'] = 'all_tests is empty or missing'
-      return error
-
-    return None
 
   def DoesTestExist(self, gtest_result, test_name):
     """Determines whether test_name is in gtest_result's 'all_tests' field.
@@ -278,3 +221,53 @@ class GtestResults(object):
           shard_result.get('per_iteration_data', []))
     merged_results['all_tests'] = sorted(merged_results['all_tests'])
     return merged_results
+
+  def GetFailedTestsInformation(self, test_results_log):
+    """Parses the json data to get all the reliable failures' information."""
+    failed_test_log = {}
+    reliable_failed_tests = {}
+
+    for iteration in (test_results_log.get('per_iteration_data') or []):
+      for test_name in iteration.keys():
+
+        if (any(test['status'] in _NON_FAILURE_STATUSES
+                for test in iteration[test_name])):
+          # Ignore the test if any of the attempts didn't fail.
+          # If a test is skipped, that means it was not run at all.
+          # Treats it as success since the status cannot be determined.
+          continue
+
+        # Stores the output to the step's log_data later.
+        failed_test_log[test_name] = ''
+        for test in iteration[test_name]:
+          failed_test_log[test_name] = self.ConcatenateTestLog(
+              failed_test_log[test_name], test.get('output_snippet_base64', ''))
+        reliable_failed_tests[test_name] = self.RemoveAllPrefixes(test_name)
+
+    return failed_test_log, reliable_failed_tests
+
+  def IsTestResultUseful(self, test_results_log):
+    """Checks if the log contains useful information."""
+    # If this task doesn't have result, per_iteration_data will look like
+    # [{}, {}, ...]
+    return test_results_log and any(
+        test_results_log.get('per_iteration_data') or [])
+
+  def GetTestsRunStatuses(self, test_results_log):
+    """Parses test results and gets accumulated test run statuses.
+
+      Args:
+      test_results_log (dict): A dict of all test results in the task.
+
+    Returns:
+      tests_statuses (dict): A dict of different statuses for each test.
+    """
+    tests_statuses = defaultdict(lambda: defaultdict(int))
+    if test_results_log:
+      for iteration in test_results_log.get('per_iteration_data'):
+        for test_name, tests in iteration.iteritems():
+          tests_statuses[test_name]['total_run'] += len(tests)
+          for test in tests:
+            tests_statuses[test_name][test['status']] += 1
+
+    return tests_statuses

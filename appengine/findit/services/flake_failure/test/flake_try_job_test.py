@@ -8,17 +8,15 @@ from common import exceptions
 from dto.list_of_basestring import ListOfBasestring
 from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.testcase import TestCase
-
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
+from services import test_results
 from services import try_job as try_job_service
 from services.flake_failure import flake_try_job
-
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
@@ -188,8 +186,10 @@ class FlakeTryJobServiceTest(TestCase):
             }
         }, 'wrong_tests'))
 
+  @mock.patch.object(
+      test_results, 'IsTestResultUseful', side_effect=[False, True])
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
-  def testGetSwarmingTaskIdForTryJob(self, mock_fn):
+  def testGetSwarmingTaskIdForTryJob(self, mock_fn, _):
     output_json_1 = {'per_iteration_data': [{}, {}]}
     output_json_2 = {'per_iteration_data': [{'Test.One': 'log for Test.One'}]}
     mock_fn.side_effect = [output_json_1, output_json_2]
