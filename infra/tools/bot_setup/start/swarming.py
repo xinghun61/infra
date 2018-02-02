@@ -25,6 +25,15 @@ def is_internal(hostname):
       re.match(r'^swarm[0-9]+-c7$', hostname))
 
 
+def get_access_token():
+  r = requests.get(
+      url='http://169.254.169.254/computeMetadata/v1/instance'
+          '/service-accounts/default/token',
+      headers={'Metadata-Flavor': 'Google'})
+  r.raise_for_status()
+  return r.json()['access_token']
+
+
 def start(hostname, root_dir):
   host_url = 'https://chromium-swarm.appspot.com'
   if is_staging(hostname):
@@ -44,7 +53,10 @@ def start(hostname, root_dir):
 
   # 'stream=True' was known to have issues with GAE. Bot code is not large, it's
   # fine to download it in memory.
-  r = requests.get('%s/bot_code' % host_url, stream=False)
+  r = requests.get(
+      url='%s/bot_code' % host_url,
+      headers={'Authorization': 'Bearer %s' % get_access_token()},
+      stream=False)
   r.raise_for_status()
   with open(zip_file, 'wb') as f:
     f.write(r.content)
