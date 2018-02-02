@@ -142,9 +142,10 @@ def _UpdateFirstFailureOnTestLevel(master_name, builder_name,
     step = _GetSameStepFromBuild(master_name, builder_name, build_number,
                                  step_name, http_client)
 
-    if not step or not step.log_data:  # pragma: no cover
-      raise Exception('Failed to get swarming test results for build %s/%s/%d.',
-                      master_name, builder_name, build_number)
+    if not step or not step.log_data:
+      raise Exception(
+          'Failed to get swarming test results for build %s/%s/%d.' %
+          (master_name, builder_name, build_number))
 
     if step.log_data.lower() == 'flaky':
       failed_test_log = {}

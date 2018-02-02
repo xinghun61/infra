@@ -35,7 +35,7 @@ MOCK_BUILDS = [(None,
 def _MockedGetBuildInfo(master_name, builder_name, build_number):
   build = BuildInfo(master_name, builder_name, build_number)
   build.commit_position = (build_number + 1) * 10
-  return build
+  return 200, build
 
 
 class BuildUtilTest(wf_testcase.WaterfallTestCase):

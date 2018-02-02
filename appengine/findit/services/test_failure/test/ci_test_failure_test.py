@@ -322,6 +322,29 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
+  def testUpdateFirstFailureOnTestLevelFailedToGetStep(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    step_name = 'abc_test'
+    failed_step_serializable = {
+        'current_failure': 223,
+        'first_failure': 221,
+        'tests': {
+            'Unittest2.Subtest1': {
+                'current_failure': 223,
+                'first_failure': 223,
+                'last_pass': 221,
+                'base_test_name': 'Unittest2.Subtest1'
+            }
+        }
+    }
+    failed_step = TestFailedStep.FromSerializable(failed_step_serializable)
+    with self.assertRaises(Exception):
+      ci_test_failure._UpdateFirstFailureOnTestLevel(
+          master_name, builder_name, build_number, step_name, failed_step,
+          [223, 222, 221], FinditHttpClient())
+
   def testUpdateFailureInfoBuildsUpdateBuilds(self):
     failed_steps = {
         'compile': {

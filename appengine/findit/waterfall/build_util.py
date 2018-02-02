@@ -140,7 +140,7 @@ def GetBoundingBuilds(master_name, builder_name, lower_bound_build_number,
         and decide what to do accordingly.
   """
   lower_bound_build_number = lower_bound_build_number or 0
-  earliest_build_info = GetBuildInfo(master_name, builder_name,
+  _, earliest_build_info = GetBuildInfo(master_name, builder_name,
                                      lower_bound_build_number)
   assert earliest_build_info
   assert earliest_build_info.commit_position is not None
@@ -155,7 +155,7 @@ def GetBoundingBuilds(master_name, builder_name, lower_bound_build_number,
     logging.error('Failed to detect latest build number')
     return None, None
 
-  latest_build_info = GetBuildInfo(master_name, builder_name,
+  _, latest_build_info = GetBuildInfo(master_name, builder_name,
                                    upper_bound_build_number)
   assert latest_build_info
   assert latest_build_info.commit_position is not None
@@ -170,13 +170,13 @@ def GetBoundingBuilds(master_name, builder_name, lower_bound_build_number,
 
   while upper_bound - lower_bound > 1:
     candidate_build_number = (upper_bound - lower_bound) / 2 + lower_bound
-    candidate_build = GetBuildInfo(master_name, builder_name,
+    _, candidate_build = GetBuildInfo(master_name, builder_name,
                                    candidate_build_number)
     assert candidate_build
 
     if candidate_build.commit_position == requested_commit_position:
       # Exact match.
-      lower_bound_build = GetBuildInfo(master_name, builder_name,
+      _, lower_bound_build = GetBuildInfo(master_name, builder_name,
                                        candidate_build_number - 1)
       assert lower_bound_build
       return lower_bound_build, candidate_build
@@ -188,8 +188,8 @@ def GetBoundingBuilds(master_name, builder_name, lower_bound_build_number,
       # Go right.
       lower_bound = candidate_build_number
 
-  lower_bound_build = GetBuildInfo(master_name, builder_name, lower_bound)
-  upper_bound_build = GetBuildInfo(master_name, builder_name, upper_bound)
+  _, lower_bound_build = GetBuildInfo(master_name, builder_name, lower_bound)
+  _, upper_bound_build = GetBuildInfo(master_name, builder_name, upper_bound)
   assert lower_bound_build
   assert upper_bound_build
 
@@ -310,5 +310,5 @@ def IteratePreviousBuildsFrom(master_name, builder_name, build_number,
       continue
     else:
       # 404 means we hit a gap. Otherwise there is something wrong.
-      raise Exception('Failed to download build data for build %s/%s/%d',
-                      master_name, builder_name, n)
+      raise Exception('Failed to download build data for build %s/%s/%d' %
+                      (master_name, builder_name, n))
