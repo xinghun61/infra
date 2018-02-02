@@ -7,6 +7,7 @@
 import os
 import re
 import sys
+import time
 
 import requests
 
@@ -35,6 +36,9 @@ def get_access_token():
 
 
 def start(hostname, root_dir):
+  while 'docker' in hostname:
+    time.sleep(300)  # docker bots are initialized via puppet
+
   host_url = 'https://chromium-swarm.appspot.com'
   if is_staging(hostname):
     host_url = 'https://chromium-swarm-dev.appspot.com'
