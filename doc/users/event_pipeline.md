@@ -210,7 +210,11 @@ alerting for builder failures.
 
 # Step 3: Analyze/Track/Graph Events
 
-TODO
+## Joining tables from other projects
+
+To execute a query which joins a table from a different cloud project, ensure
+the querying project's service account has BigQuery read permissions in the
+other project.
 
 # Limits
 
