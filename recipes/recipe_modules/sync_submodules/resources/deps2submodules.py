@@ -124,20 +124,46 @@ def CollateCurrentDeps(deps_content, prefix_path="."):
   # Non-OS-specific DEPS always override OS-specific deps. This is an interim
   # hack until there is a better way to handle OS-specific DEPS.
   for (deps_os, val) in deps_content['deps_os'].iteritems():
-    for (dep, url) in val.iteritems():
-      fix_dep_name = _AddPrefixToDepname(dep, prefix_path)
-      # If DEP has conditional then we need to extract URL from dict.
-      if isinstance(url, dict):
-        url = url['url']
-      submod_data = submods.setdefault(fix_dep_name, [[]] + spliturl(url))
+    for (path, dep) in val.iteritems():
+      dep_name = _AddPrefixToDepname(path, prefix_path)
+      url, filtered = _ExtractUrlAndExclusionFlag(dep)
+      if filtered:
+        continue
+      submod_data = submods.setdefault(dep_name, [[]] + spliturl(url))
       submod_data[0].append(deps_os)
-  for (dep, url) in deps_content['deps'].iteritems():
-    fix_dep_name = _AddPrefixToDepname(dep, prefix_path)
-    # If DEP has conditional then we need to extract URL from dict.
-    if isinstance(url, dict):
-      url = url['url']
-    submods[fix_dep_name] = [['all']] + spliturl(url)
+  for (path, dep) in deps_content['deps'].iteritems():
+    dep_name = _AddPrefixToDepname(path, prefix_path)
+    url, filtered = _ExtractUrlAndExclusionFlag(dep)
+    if filtered:
+      continue
+    submods[dep_name] = [['all']] + spliturl(url)
   return submods
+
+
+def _ExtractUrlAndExclusionFlag(dep):
+  """Computes the URL and (possibly implied) exclusion flag from a DEPS entry.
+
+  Args:
+    dep: the value from one entry in a `deps` or `deps_os` dict entry of a DEPS
+        file.  It may be either a string or a dict.
+
+  Returns:
+    A tuple (url, filtered), where `url` is a string, and `filtered` is boolean.
+  """
+  # The dep is either simply an URL, or a dictionary containing a URL
+  # (plus possibly a 'condition' flag).  The submodule should be excluded
+  # (filtered out) if a condition is present that says so.
+  if isinstance(dep, dict):
+    url = dep['url']
+    condition = dep.get('condition', '')
+    # TODO(crbug/808599): replace this error-prone hack with something more
+    # sensible/robust.  Due to rollback of crrev/c/899672, agable@ explains
+    # that an expedient solution such as this is needed.
+    filtered = condition.find('checkout_google_internal') >= 0
+  else:
+    url = dep
+    filtered = False
+  return (url, filtered)
 
 
 def CollateDeps(deps_file, enable_recurse_deps):
