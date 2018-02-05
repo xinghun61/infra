@@ -2,9 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from model.flake.flake_swarming_task import FlakeSwarmingTask
+from datetime import timedelta
+import random
 
+from common.findit_http_client import FinditHttpClient
+from libs import time_util
+from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.flake import flake_constants
+
+DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS = 5
+DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS = 0.1
 
 
 class NormalizedDataPoint(object):
@@ -78,8 +86,9 @@ def CalculateNumberOfIterationsToRunWithinTimeout(analysis, timeout_per_test):
   Returns:
     (int) Number of iterations to perform in one swarming task.
   """
-  timeout_per_test = (timeout_per_test if timeout_per_test else
-                      flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
+  timeout_per_test = (
+      timeout_per_test
+      if timeout_per_test else flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
   timeout_per_swarming_task = analysis.algorithm_parameters.get(
       'swarming_rerun',
       {}).get('timeout_per_swarming_task_seconds',
@@ -127,3 +136,65 @@ def EstimateSwarmingIterationTimeout(analysis, build_number):
       analysis.algorithm_parameters.get(
           'swarming_task_cushion', flake_constants.
           SWARMING_TASK_CUSHION_MULTIPLIER) * time_per_iteration)
+
+
+def GetETAToStartAnalysis(manually_triggered):
+  """Returns an ETA as of a UTC datetime.datetime to start the analysis.
+
+  If not urgent, Swarming tasks should be run off PST peak hours from 11am to
+  6pm on workdays.
+
+  Args:
+    manually_triggered (bool): True if the analysis is from manual request, like
+        by a Chromium sheriff.
+
+  Returns:
+    The ETA as of a UTC datetime.datetime to start the analysis.
+  """
+  if manually_triggered:
+    # If the analysis is manually triggered, run it right away.
+    return time_util.GetUTCNow()
+
+  now_at_pst = time_util.GetPSTNow()
+  if now_at_pst.weekday() >= 5:  # PST Saturday or Sunday.
+    return time_util.GetUTCNow()
+
+  if now_at_pst.hour < 11 or now_at_pst.hour >= 18:  # Before 11am or after 6pm.
+    return time_util.GetUTCNow()
+
+  # Set ETA time to 6pm, and also with a random latency within 30 minutes to
+  # avoid sudden burst traffic to Swarming.
+  diff = timedelta(
+      hours=18 - now_at_pst.hour,
+      minutes=-now_at_pst.minute,
+      seconds=-now_at_pst.second + random.randint(0, 30 * 60),
+      microseconds=-now_at_pst.microsecond)
+  eta = now_at_pst + diff
+
+  # Convert back to UTC.
+  return time_util.ConvertPSTToUTC(eta)
+
+
+def BotsAvailableForTask(step_metadata):
+  """Check if there are available bots for a swarming task's dimensions."""
+  if not step_metadata:
+    return False
+
+  minimum_number_of_available_bots = (
+      waterfall_config.GetSwarmingSettings().get(
+          'minimum_number_of_available_bots',
+          DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS))
+  minimum_percentage_of_available_bots = (
+      waterfall_config.GetSwarmingSettings().get(
+          'minimum_percentage_of_available_bots',
+          DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS))
+  dimensions = step_metadata.get('dimensions')
+  bot_counts = swarming_util.GetSwarmingBotCounts(dimensions,
+                                                  FinditHttpClient())
+
+  total_count = bot_counts.get('count') or -1
+  available_count = bot_counts.get('available', 0)
+  available_rate = float(available_count) / total_count
+
+  return (available_count > minimum_number_of_available_bots and
+          available_rate > minimum_percentage_of_available_bots)

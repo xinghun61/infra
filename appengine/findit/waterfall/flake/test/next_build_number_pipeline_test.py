@@ -7,12 +7,10 @@ import mock
 from common import constants
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
-
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-
-from waterfall import swarming_util
+from waterfall.flake import flake_analysis_util
 from waterfall.flake import lookback_algorithm
 from waterfall.flake import next_build_number_pipeline
 from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
@@ -23,7 +21,8 @@ from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 class NextBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
+  @mock.patch.object(
+      flake_analysis_util, 'BotsAvailableForTask', return_value=True)
   def testNextBuildPipelineForNewRecursionFirstFlake(self, _):
     master_name = 'm'
     builder_name = 'b'

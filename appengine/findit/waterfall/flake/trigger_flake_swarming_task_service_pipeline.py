@@ -9,7 +9,7 @@ from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from waterfall import build_util
-from waterfall import swarming_util
+from waterfall.flake import flake_analysis_util
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
 from waterfall.trigger_flake_swarming_task_pipeline import (
@@ -27,18 +27,20 @@ def ScheduleFlakeSwarmingTask(master_name, builder_name, build_number,
   pipeline_job.target = appengine_util.GetTargetNameForModule(
       constants.WATERFALL_BACKEND)
 
-  step_metadata = build_util.GetWaterfallBuildStepLog(
-      master_name, builder_name, build_number, step_name,
-      FinditHttpClient(), 'step_metadata')
+  step_metadata = build_util.GetWaterfallBuildStepLog(master_name, builder_name,
+                                                      build_number, step_name,
+                                                      FinditHttpClient(),
+                                                      'step_metadata')
 
-  if swarming_util.BotsAvailableForTask(step_metadata):
+  if flake_analysis_util.BotsAvailableForTask(step_metadata):
     # Sufficient bots are avialable, trigger the swarming task immediately.
     pipeline_job.start(queue_name=queue_name)
   else:
     # Not enough bots are available. Queue this task and start it off peak hours
     # when there are more resources available.
     pipeline_job.start(
-        queue_name=queue_name, eta=swarming_util.GetETAToStartAnalysis(False))
+        queue_name=queue_name,
+        eta=flake_analysis_util.GetETAToStartAnalysis(False))
 
 
 class TriggerFlakeSwarmingTaskServicePipeline(BasePipeline):

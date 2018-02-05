@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import collections
-from datetime import datetime
 import json
 import mock
 import os
@@ -690,22 +689,24 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
 
+  def testDimensionsToQueryString(self):
+    self.assertEqual(
+        swarming_util.DimensionsToQueryString({
+            'bot_id': 'slave1'
+        }), swarming_util.DimensionsToQueryString(['bot_id:slave1']))
+    self.assertEqual(
+        '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
+        # Use Ordered dict to preserve the order of the dimensions.
+        swarming_util.DimensionsToQueryString(
+            collections.OrderedDict([('bot_id', 'slave1'), ('cpu', 'x86_64'),
+                                     ('os', 'Mac')])))
+    self.assertEqual(
+        '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
+        swarming_util.DimensionsToQueryString(
+            ['bot_id:slave1', 'cpu:x86_64', 'os:Mac']))
+
   def testGetSwarmingBotCountsNodimentsions(self):
     self.assertEqual({}, swarming_util.GetSwarmingBotCounts(None, None))
-
-  @mock.patch.object(
-      swarming_util,
-      'SendRequestToServer',
-      return_value=(None, {
-          'code': 1,
-          'message': 'error'
-      }))
-  def testGetSwarmingBotCountsError(self, _):
-
-    dimensions = {'os': 'OS', 'cpu': 'cpu'}
-    self.assertEqual({},
-                     swarming_util.GetSwarmingBotCounts(dimensions,
-                                                        self.http_client))
 
   @mock.patch.object(swarming_util, 'SendRequestToServer')
   def testGetSwarmingBotCounts(self, mock_fn):
@@ -724,75 +725,16 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(expected_counts,
-                     swarming_util.GetSwarmingBotCounts(dimensions,
-                                                        self.http_client))
+                     swarming_util.GetSwarmingBotCounts(dimensions, None))
 
-  def testDimensionsToQueryString(self):
-    self.assertEqual(
-        swarming_util.DimensionsToQueryString({
-            'bot_id': 'slave1'
-        }), swarming_util.DimensionsToQueryString(['bot_id:slave1']))
-    self.assertEqual(
-        '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
-        # Use Ordered dict to preserve the order of the dimensions.
-        swarming_util.DimensionsToQueryString(
-            collections.OrderedDict([('bot_id', 'slave1'), ('cpu', 'x86_64'),
-                                     ('os', 'Mac')])))
-    self.assertEqual(
-        '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
-        swarming_util.DimensionsToQueryString(
-            ['bot_id:slave1', 'cpu:x86_64', 'os:Mac']))
+  @mock.patch.object(
+      swarming_util,
+      'SendRequestToServer',
+      return_value=(None, {
+          'code': 1,
+          'message': 'error'
+      }))
+  def testGetSwarmingBotCountsError(self, _):
 
-  def testGetETAToStartAnalysisWhenManuallyTriggered(self):
-    mocked_utcnow = datetime.utcnow()
-    self.MockUTCNow(mocked_utcnow)
-    self.assertEqual(mocked_utcnow, swarming_util.GetETAToStartAnalysis(True))
-
-  def testGetETAToStartAnalysisWhenTriggeredOnPSTWeekend(self):
-    # Sunday 1pm in PST, and Sunday 8pm in UTC.
-    mocked_pst_now = datetime(2016, 9, 04, 13, 0, 0, 0)
-    mocked_utc_now = datetime(2016, 9, 04, 20, 0, 0, 0)
-    self.MockUTCNow(mocked_utc_now)
-    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
-      timezone_func.side_effect = [mocked_pst_now, None]
-      self.assertEqual(mocked_utc_now,
-                       swarming_util.GetETAToStartAnalysis(False))
-
-  def testGetETAToStartAnalysisWhenTriggeredOffPeakHoursOnPSTWeekday(self):
-    # Tuesday 1am in PST, and Tuesday 8am in UTC.
-    mocked_pst_now = datetime(2016, 9, 20, 1, 0, 0, 0)
-    mocked_utc_now = datetime(2016, 9, 20, 8, 0, 0, 0)
-    self.MockUTCNow(mocked_utc_now)
-    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
-      timezone_func.side_effect = [mocked_pst_now, None]
-      self.assertEqual(mocked_utc_now,
-                       swarming_util.GetETAToStartAnalysis(False))
-
-  def testGetETAToStartAnalysisWhenTriggeredInPeakHoursOnPSTWeekday(self):
-    # Tuesday 12pm in PST, and Tuesday 8pm in UTC.
-    seconds_delay = 10
-    mocked_utc_now = datetime(2016, 9, 21, 20, 0, 0, 0)
-    mocked_pst_now = datetime(2016, 9, 21, 12, 0, 0, 0)
-    mocked_utc_eta = datetime(2016, 9, 22, 2, 0, seconds_delay)
-    self.MockUTCNow(mocked_utc_now)
-    with mock.patch('libs.time_util.GetPSTNow') as (
-        timezone_func), mock.patch('random.randint') as random_func:
-      timezone_func.side_effect = [mocked_pst_now, mocked_utc_eta]
-      random_func.side_effect = [seconds_delay, None]
-      self.assertEqual(mocked_utc_eta,
-                       swarming_util.GetETAToStartAnalysis(False))
-
-  @mock.patch.object(swarming_util, 'GetSwarmingBotCounts')
-  def testCheckBotsAvailability(self, mock_fn):
-    step_metadata = {'dimensions': {'os': 'OS'}}
-
-    mock_fn.return_value = {
-        'count': 20,
-        'dead': 1,
-        'quarantined': 0,
-        'busy': 5,
-        'available': 14
-    }
-
-    self.assertFalse(swarming_util.BotsAvailableForTask(None))
-    self.assertTrue(swarming_util.BotsAvailableForTask(step_metadata))
+    dimensions = {'os': 'OS', 'cpu': 'cpu'}
+    self.assertEqual({}, swarming_util.GetSwarmingBotCounts(dimensions, None))

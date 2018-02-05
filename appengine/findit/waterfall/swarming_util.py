@@ -3,23 +3,17 @@
 # found in the LICENSE file.
 
 import base64
-from datetime import timedelta
 import json
 import logging
-import random
 import time
 import urllib
-from urlparse import urlparse
 import zlib
 
 from google.appengine.api.urlfetch_errors import DeadlineExceededError
 from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 
-from common.findit_http_client import FinditHttpClient
-from common import monitoring
 from gae_libs.http import auth_util
-from libs import time_util
 from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
@@ -59,14 +53,10 @@ NO_OUTPUT_JSON = 320
 UNKNOWN = 1000
 
 # Swarming URL templates.
-BOT_LIST_URL = 'https://%s/api/swarming/v1/bots/list%s'
 BOT_COUNT_URL = 'https://%s/api/swarming/v1/bots/count%s'
 NEW_TASK_URL = 'https://%s/api/swarming/v1/tasks/new'
 TASK_ID_URL = 'https://%s/api/swarming/v1/task/%s/request'
 TASK_RESULT_URL = 'https://%s/api/swarming/v1/task/%s/result'
-
-DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS = 5
-DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS = 0.1
 
 
 def SwarmingHost():
@@ -83,15 +73,6 @@ def _GetBackoffSeconds(retry_backoff, tries, maximum_retry_interval):
       between retries.
   """
   return min(retry_backoff * (2**(tries - 1)), maximum_retry_interval)
-
-
-def _OnConnectionFailed(url, exception_type):
-  host = urlparse(url).hostname
-  assert host
-  monitoring.outgoing_http_errors.increment({
-      'host': host,
-      'exception': exception_type
-  })
 
 
 def SendRequestToServer(url, http_client, post_data=None):
@@ -130,6 +111,7 @@ def SendRequestToServer(url, http_client, post_data=None):
     headers['Content-Type'] = 'application/json; charset=UTF-8'
     headers['Content-Length'] = len(post_data)
 
+  # TODO (crbug/809085): handle connection errors in a separate function.
   while True:
     try:
       if post_data:
@@ -150,19 +132,15 @@ def SendRequestToServer(url, http_client, post_data=None):
         }
     except ConnectionClosedError as e:
       error = {'code': URLFETCH_CONNECTION_CLOSED_ERROR, 'message': e.message}
-      _OnConnectionFailed(url, 'ConnectionClosedError')
     except DeadlineExceededError as e:
       error = {'code': URLFETCH_DEADLINE_EXCEEDED_ERROR, 'message': e.message}
-      _OnConnectionFailed(url, 'DeadlineExceededError')
     except DownloadError as e:
       error = {'code': URLFETCH_DOWNLOAD_ERROR, 'message': e.message}
-      _OnConnectionFailed(url, 'DownloadError')
     except Exception as e:  # pragma: no cover
       logging.error(
           'An unknown exception occurred that need to be monitored: %s',
           e.message)
       error = {'code': UNKNOWN, 'message': e.message}
-      _OnConnectionFailed(url, 'Unknown Exception')
 
     if should_retry and time.time() < deadline:  # pragma: no cover
       # Wait, then retry if applicable.
@@ -506,30 +484,6 @@ def DimensionsToQueryString(dimensions):
   return '?dimensions=%s' % dimension_qs
 
 
-def BotsAvailableForTask(step_metadata):
-  """Check if there are available bots for a swarming task's dimensions."""
-  if not step_metadata:
-    return False
-
-  minimum_number_of_available_bots = (
-      waterfall_config.GetSwarmingSettings().get(
-          'minimum_number_of_available_bots',
-          DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS))
-  minimum_percentage_of_available_bots = (
-      waterfall_config.GetSwarmingSettings().get(
-          'minimum_percentage_of_available_bots',
-          DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS))
-  dimensions = step_metadata.get('dimensions')
-  bot_counts = GetSwarmingBotCounts(dimensions, FinditHttpClient())
-
-  total_count = bot_counts.get('count') or -1
-  available_count = bot_counts.get('available', 0)
-  available_rate = float(available_count) / total_count
-
-  return (available_count > minimum_number_of_available_bots and
-          available_rate > minimum_percentage_of_available_bots)
-
-
 def GetSwarmingBotCounts(dimensions, http_client):
   """Gets number of swarming bots for certain dimensions.
 
@@ -560,40 +514,3 @@ def GetSwarmingBotCounts(dimensions, http_client):
       bot_counts['quarantined'])
 
   return bot_counts
-
-
-def GetETAToStartAnalysis(manually_triggered):
-  """Returns an ETA as of a UTC datetime.datetime to start the analysis.
-
-  If not urgent, Swarming tasks should be run off PST peak hours from 11am to
-  6pm on workdays.
-
-  Args:
-    manually_triggered (bool): True if the analysis is from manual request, like
-        by a Chromium sheriff.
-
-  Returns:
-    The ETA as of a UTC datetime.datetime to start the analysis.
-  """
-  if manually_triggered:
-    # If the analysis is manually triggered, run it right away.
-    return time_util.GetUTCNow()
-
-  now_at_pst = time_util.GetPSTNow()
-  if now_at_pst.weekday() >= 5:  # PST Saturday or Sunday.
-    return time_util.GetUTCNow()
-
-  if now_at_pst.hour < 11 or now_at_pst.hour >= 18:  # Before 11am or after 6pm.
-    return time_util.GetUTCNow()
-
-  # Set ETA time to 6pm, and also with a random latency within 30 minutes to
-  # avoid sudden burst traffic to Swarming.
-  diff = timedelta(
-      hours=18 - now_at_pst.hour,
-      minutes=-now_at_pst.minute,
-      seconds=-now_at_pst.second + random.randint(0, 30 * 60),
-      microseconds=-now_at_pst.microsecond)
-  eta = now_at_pst + diff
-
-  # Convert back to UTC.
-  return time_util.ConvertPSTToUTC(eta)

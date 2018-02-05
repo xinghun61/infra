@@ -2,15 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 import copy
+from datetime import datetime
+import mock
 
 from model.flake.master_flake_analysis import DataPoint
-from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-
+from waterfall import swarming_util
 from waterfall.flake import flake_analysis_util
-from waterfall.flake import flake_constants
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
@@ -140,3 +139,58 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
             analysis, timeout_per_test), 1)
+
+  def testGetETAToStartAnalysisWhenManuallyTriggered(self):
+    mocked_utcnow = datetime.utcnow()
+    self.MockUTCNow(mocked_utcnow)
+    self.assertEqual(mocked_utcnow,
+                     flake_analysis_util.GetETAToStartAnalysis(True))
+
+  def testGetETAToStartAnalysisWhenTriggeredOnPSTWeekend(self):
+    # Sunday 1pm in PST, and Sunday 8pm in UTC.
+    mocked_pst_now = datetime(2016, 9, 04, 13, 0, 0, 0)
+    mocked_utc_now = datetime(2016, 9, 04, 20, 0, 0, 0)
+    self.MockUTCNow(mocked_utc_now)
+    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
+      timezone_func.side_effect = [mocked_pst_now, None]
+      self.assertEqual(mocked_utc_now,
+                       flake_analysis_util.GetETAToStartAnalysis(False))
+
+  def testGetETAToStartAnalysisWhenTriggeredOffPeakHoursOnPSTWeekday(self):
+    # Tuesday 1am in PST, and Tuesday 8am in UTC.
+    mocked_pst_now = datetime(2016, 9, 20, 1, 0, 0, 0)
+    mocked_utc_now = datetime(2016, 9, 20, 8, 0, 0, 0)
+    self.MockUTCNow(mocked_utc_now)
+    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
+      timezone_func.side_effect = [mocked_pst_now, None]
+      self.assertEqual(mocked_utc_now,
+                       flake_analysis_util.GetETAToStartAnalysis(False))
+
+  def testGetETAToStartAnalysisWhenTriggeredInPeakHoursOnPSTWeekday(self):
+    # Tuesday 12pm in PST, and Tuesday 8pm in UTC.
+    seconds_delay = 10
+    mocked_utc_now = datetime(2016, 9, 21, 20, 0, 0, 0)
+    mocked_pst_now = datetime(2016, 9, 21, 12, 0, 0, 0)
+    mocked_utc_eta = datetime(2016, 9, 22, 2, 0, seconds_delay)
+    self.MockUTCNow(mocked_utc_now)
+    with mock.patch('libs.time_util.GetPSTNow') as (
+        timezone_func), mock.patch('random.randint') as random_func:
+      timezone_func.side_effect = [mocked_pst_now, mocked_utc_eta]
+      random_func.side_effect = [seconds_delay, None]
+      self.assertEqual(mocked_utc_eta,
+                       flake_analysis_util.GetETAToStartAnalysis(False))
+
+  @mock.patch.object(swarming_util, 'GetSwarmingBotCounts')
+  def testCheckBotsAvailability(self, mock_fn):
+    step_metadata = {'dimensions': {'os': 'OS'}}
+
+    mock_fn.return_value = {
+        'count': 20,
+        'dead': 1,
+        'quarantined': 0,
+        'busy': 5,
+        'available': 14
+    }
+
+    self.assertFalse(flake_analysis_util.BotsAvailableForTask(None))
+    self.assertTrue(flake_analysis_util.BotsAvailableForTask(step_metadata))

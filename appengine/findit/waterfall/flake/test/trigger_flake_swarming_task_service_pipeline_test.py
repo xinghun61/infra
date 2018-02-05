@@ -10,7 +10,7 @@ from common import constants
 from gae_libs.pipelines import pipeline_handlers
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from waterfall import build_util
-from waterfall import swarming_util
+from waterfall.flake import flake_analysis_util
 from waterfall.flake import trigger_flake_swarming_task_service_pipeline
 from waterfall.flake.trigger_flake_swarming_task_service_pipeline import (
     TriggerFlakeSwarmingTaskServicePipeline)
@@ -28,7 +28,8 @@ class TriggerFlakeSwarmingTaskServicePipelineTest(
 
   @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=True)
   @mock.patch.object(build_util, 'GetWaterfallBuildStepLog', return_value={})
-  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
+  @mock.patch.object(
+      flake_analysis_util, 'BotsAvailableForTask', return_value=True)
   def testScheduleFlakeSwarmingTaskBotsAvailable(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -52,9 +53,12 @@ class TriggerFlakeSwarmingTaskServicePipelineTest(
 
   @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=True)
   @mock.patch.object(build_util, 'GetWaterfallBuildStepLog', return_value={})
-  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=False)
   @mock.patch.object(
-      swarming_util, 'GetETAToStartAnalysis', return_value=datetime(2017, 7, 5))
+      flake_analysis_util, 'BotsAvailableForTask', return_value=False)
+  @mock.patch.object(
+      flake_analysis_util,
+      'GetETAToStartAnalysis',
+      return_value=datetime(2017, 7, 5))
   def testScheduleFlakeSwarmingTaskOffPeakHours(self, *_):
     master_name = 'm'
     builder_name = 'b'

@@ -12,8 +12,8 @@ from libs import analysis_status
 from libs import time_util
 from pipelines.delay_pipeline import DelayPipeline
 from waterfall import build_util
-from waterfall import swarming_util
 from waterfall import waterfall_config
+from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
 from waterfall.flake.determine_true_pass_rate_pipeline import (
     DetermineTruePassRatePipeline)
@@ -40,11 +40,11 @@ def _CanStartAnalysis(step_metadata, retries, force):
            after retries. (case: retries > flake_constants.MAX_RETRY_TIMES)
         3. If there is available bot before/during the N retires, start the
            analysis right away.
-           (case: swarming_util.BotsAvailableForTask(step_metadata))
+           (case: flake_analysis_util.BotsAvailableForTask(step_metadata))
   """
   if force or retries > flake_constants.MAX_RETRY_TIMES:
     return True
-  return swarming_util.BotsAvailableForTask(step_metadata)
+  return flake_analysis_util.BotsAvailableForTask(step_metadata)
 
 
 def _ShouldContinueAnalysis(build_number):
@@ -57,7 +57,7 @@ def _GetDelaySeconds(analysis, retries, manually_triggered):
   if retries > flake_constants.MAX_RETRY_TIMES:
     analysis.LogInfo('Retries exceed max count, RecursiveFlakePipeline will '
                      'try off peak PST hours')
-    delay_delta = swarming_util.GetETAToStartAnalysis(
+    delay_delta = flake_analysis_util.GetETAToStartAnalysis(
         manually_triggered) - time_util.GetUTCNow()
     return int(delay_delta.total_seconds())
   else:
@@ -262,12 +262,14 @@ class RecursiveFlakePipeline(BasePipeline):
         if not valid_build_number:
           error_msg = (
               'Failed to find a valid build number around {}, '
-              'please add a link to this analysis at crbug.com/798923.'.
-              format(preferred_run_build_number))
+              'please add a link to this analysis at crbug.com/798923.'.format(
+                  preferred_run_build_number))
           analysis.Update(
               status=analysis_status.ERROR,
-              error={'error': error_msg,
-                     'message': error_msg})
+              error={
+                  'error': error_msg,
+                  'message': error_msg
+              })
           analysis.LogError(error_msg)
           raise pipeline.Abort(error_msg)
 
