@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -48,7 +49,14 @@ var (
 	alertCount = metric.NewInt("sheriff_o_matic/analyzer/alert_count",
 		"Number of alerts generated.",
 		nil,
-		field.String("tree"))
+		field.String("tree"),
+		field.String("category")) // "consistent", "new" etc
+
+	alertGroupCount = metric.NewInt("sheriff_o_matic/analyzer/alert_group_count",
+		"Number of alert groups active.",
+		nil,
+		field.String("tree"),
+		field.String("category")) // "consistent", "new" etc
 )
 
 var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg string) {
@@ -120,6 +128,8 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 	a.Gatekeeper = gkRules
 
 	alerts := []messages.Alert{}
+	groupByCat := map[string]map[string]int{}
+
 	for _, treeCfg := range treeCfgs {
 		logging.Debugf(c, "Getting compressed master json for %d masters", len(treeCfg.Masters))
 
@@ -158,14 +168,36 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 			return nil, anyErr
 		}
 
-		err := mergeAlertsByReason(c, alerts)
+		groupsByCategory, err := mergeAlertsByReason(c, alerts)
 		if err != nil {
 			logging.Errorf(c, "error merging alerts by reason: %v", err)
 			return nil, err
 		}
+		for cat, groups := range groupsByCategory {
+			if _, ok := groupByCat[cat]; !ok {
+				groupByCat[cat] = map[string]int{}
+			}
+			for gID := range groups {
+				groupByCat[cat][gID]++
+			}
+		}
 	}
 
-	alertCount.Set(c, int64(len(alerts)), tree)
+	// Update raw alert counts by category monitoring metrics.
+	alertCountByCategory := map[string]int{}
+	for _, a := range alerts {
+		cat := alertCategory(&a)
+		alertCountByCategory[cat]++
+	}
+
+	for cat, count := range alertCountByCategory {
+		alertCount.Set(c, int64(count), tree, cat)
+	}
+
+	// Update alert groups counts by category monitoring metrics.
+	for cat, groups := range groupByCat {
+		alertGroupCount.Set(c, int64(len(groups)), tree, cat)
+	}
 
 	// Attach test result histories to test failure alerts.
 	for _, alert := range alerts {
@@ -189,6 +221,16 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 	}
 
 	return alertsSummary, nil
+}
+
+func alertCategory(a *messages.Alert) string {
+	cat := "other"
+	if a.Severity == messages.NewFailure {
+		cat = "new"
+	} else if a.Severity == messages.ReliableFailure {
+		cat = "consistent"
+	}
+	return cat
 }
 
 func attachTestResults(c context.Context, alert *messages.Alert) error {
@@ -272,10 +314,14 @@ func attachTestResults(c context.Context, alert *messages.Alert) error {
 	return nil
 }
 
+// groupCounts maps alert category to a map of group IDs to counts of alerts
+// in that category and group.
+type groupCounts map[string]map[string]int
+
 // mergeAlertsByReason merges alerts for step failures occurring across multiple builders into
 // one alert with multiple builders indicated.
 // FIXME: Move the regression range logic into package regrange
-func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) error {
+func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) (groupCounts, error) {
 	byReason := map[string][]messages.Alert{}
 	for _, alert := range alerts {
 		bf, ok := alert.Extension.(messages.BuildFailure)
@@ -295,7 +341,11 @@ func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) error {
 
 	sort.Strings(sortedReasons)
 
-	return parallel.WorkPool(groupingPoolSize, func(workC chan<- func() error) {
+	// Maps alert category to map of groupID to count of alerts in group.
+	groupIDs := groupCounts{}
+	var mux sync.Mutex
+
+	err := parallel.WorkPool(groupingPoolSize, func(workC chan<- func() error) {
 		for _, reason := range sortedReasons {
 			stepAlerts := byReason[reason]
 			if len(stepAlerts) == 1 {
@@ -326,6 +376,22 @@ func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) error {
 					if err != nil && err != datastore.ErrNoSuchEntity {
 						logging.Warningf(ctx, "got err while getting annotation from key %s: %s. Ignoring", alr.Key, err)
 					}
+
+					cat := alertCategory(&alr)
+
+					// Count ungrouped alerts as their own groups.
+					gID := groupTitle
+					if ann != nil {
+						gID = ann.GroupID
+					}
+
+					mux.Lock()
+					if _, ok := groupIDs[cat]; !ok {
+						groupIDs[cat] = map[string]int{}
+					}
+					groupIDs[cat][gID]++
+					mux.Unlock()
+
 					// If we didn't find an annotation, then the default group ID will be present.
 					// We only want the case where the user explicitly sets the group to something.
 					// Ungrouping an alert sets the group ID to "".
@@ -338,12 +404,13 @@ func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) error {
 					if err := datastore.Put(ctx, ann); err != nil {
 						return fmt.Errorf("got err while put: %s", err)
 					}
-
 				}
 				return nil
 			}
 		}
 	})
+
+	return groupIDs, err
 }
 
 func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {

@@ -498,8 +498,9 @@ func TestMergeAlertsByReason(t *testing.T) {
 			ctx := newTestContext()
 			test := test
 			Convey(test.name, func() {
-				err := mergeAlertsByReason(ctx, test.in)
+				groups, err := mergeAlertsByReason(ctx, test.in)
 				So(err, ShouldResemble, test.wantErr)
+				So(groups, ShouldNotBeNil)
 
 				allAnns := []model.Annotation{}
 				q := datastore.NewQuery("Annotation")
