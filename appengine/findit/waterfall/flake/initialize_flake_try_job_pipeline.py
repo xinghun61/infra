@@ -108,8 +108,6 @@ def _ShouldRunTryJobs(analysis, user_specified_range):
   4. Never run try jobs if the stable build before the suspect isn't a full 100%
      passing or failing.
   5. Always run try jobs if heuristic analysis suggests a culprit.
-  6. Never run try jobs if there is insufficient confidence in the suspected
-     build.
 
   Args:
     analysis (MasterFlakeAnalysis): The main analysis being run.
@@ -147,11 +145,6 @@ def _ShouldRunTryJobs(analysis, user_specified_range):
     # Analyses with heuristic results are highly-suspect. Run try jobs to check.
     analysis.LogInfo('Running try jobs with heuristic-guidance')
     return True
-
-  if not _HasSufficientConfidenceToRunTryJobs(analysis):
-    analysis.LogInfo(
-        'Skipping try jobs due to insufficient confidence in suspected build')
-    return False
 
   analysis.LogInfo('All checks for running try jobs passed')
   return True

@@ -235,24 +235,6 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       initialize_flake_try_job_pipeline,
       '_HasSufficientConfidenceToRunTryJobs',
-      return_value=False)
-  @mock.patch.object(
-      initialize_flake_try_job_pipeline,
-      '_HasHeuristicResults',
-      return_value=False)
-  def testShouldRunTryJobsPreviousDataPointInsufficientConfidence(self, *_):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.suspected_flake_build_number = 100
-    self.assertFalse(
-        initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, False))
-
-  @mock.patch.object(
-      initialize_flake_try_job_pipeline,
-      '_DataPointBeforeSuspectIsFullyStable',
-      return_value=True)
-  @mock.patch.object(
-      initialize_flake_try_job_pipeline,
-      '_HasSufficientConfidenceToRunTryJobs',
       return_value=True)
   def testShouldRunTryJobsPreviousDataPointSufficientConfidence(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
