@@ -34,7 +34,7 @@ PROPERTIES = {
             'tested with upstream patch')),
 
   # To generate an auth token for running locally, run
-  #   infra/cipd/authutil token
+  #   infra/cipd/luci-auth token
   'auth_token': Property(default=None),
   'service_account': Property(
       default=None, kind=str,

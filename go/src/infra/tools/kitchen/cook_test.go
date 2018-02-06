@@ -15,8 +15,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/common/auth/authtest"
-	"go.chromium.org/luci/common/auth/localauth"
+	"go.chromium.org/luci/auth/integration/authtest"
+	"go.chromium.org/luci/auth/integration/localauth"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/common/system/environ"

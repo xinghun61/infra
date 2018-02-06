@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	"go.chromium.org/luci/common/auth/authtest"
-	"go.chromium.org/luci/common/auth/localauth"
+	"go.chromium.org/luci/auth/integration/authtest"
+	"go.chromium.org/luci/auth/integration/localauth"
 	"go.chromium.org/luci/common/system/environ"
 	"go.chromium.org/luci/lucictx"
 

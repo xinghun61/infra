@@ -12,9 +12,9 @@ import (
 
 	"github.com/maruel/subcommands"
 
-	"go.chromium.org/luci/client/authcli"
+	"go.chromium.org/luci/auth"
+	"go.chromium.org/luci/auth/client/authcli"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
-	"go.chromium.org/luci/common/auth"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"

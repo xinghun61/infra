@@ -36,7 +36,7 @@ PROPERTIES = {
   'projects': recipe_api.Property(default=PROJECTS),
 
   # To generate an auth token for running locally, run
-  #   infra/go/bin/authutil login
+  #   infra/go/bin/luci-auth login
   'auth_token': recipe_api.Property(default=None),
   'service_account': recipe_api.Property(
       default=None, kind=str,

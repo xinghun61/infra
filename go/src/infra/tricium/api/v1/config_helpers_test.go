@@ -11,7 +11,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/impl/memory"
-	"go.chromium.org/luci/common/auth/identity"
+	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/common/logging/memlogger"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"

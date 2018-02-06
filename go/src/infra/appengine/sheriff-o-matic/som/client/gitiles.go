@@ -12,7 +12,7 @@ import (
 	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/appengine/gaeauth/client"
-	"go.chromium.org/luci/common/auth"
+	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/common/logging"
 )
 

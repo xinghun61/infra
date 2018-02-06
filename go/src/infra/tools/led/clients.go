@@ -10,8 +10,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/auth"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
-	"go.chromium.org/luci/common/auth"
 )
 
 func newSwarmClient(ctx context.Context, authOpts auth.Options, swarmingHost string) (*auth.Authenticator, *http.Client, *swarming.Service, error) {

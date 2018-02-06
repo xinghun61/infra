@@ -1,4 +1,4 @@
-package: infra/tools/authutil/${platform}
+package: infra/tools/luci-auth/${platform}
 description: auth is CLI for authentication.
 builders:
   - infra-continuous-mac-10.9-64
@@ -8,8 +8,8 @@ builders:
   - infra-continuous-win-64
 supports_cross_compilation: true
 go_packages:
-  - go.chromium.org/luci/client/cmd/authutil
+  - go.chromium.org/luci/auth/client/cmd/luci-auth
 root: ../../go/bin
 data:
-  - file: authutil${exe_suffix}
-  - version_file: .versions/authutil${exe_suffix}.cipd_version
+  - file: luci-auth${exe_suffix}
+  - version_file: .versions/luci-auth${exe_suffix}.cipd_version

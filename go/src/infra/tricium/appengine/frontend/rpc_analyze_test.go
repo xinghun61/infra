@@ -11,7 +11,7 @@ import (
 	tq "go.chromium.org/gae/service/taskqueue"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"go.chromium.org/luci/common/auth/identity"
+	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
 

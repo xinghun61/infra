@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Test authutil.cipd package by running 'authutil help'."""
+"""Test luci-auth cipd package by running 'luci-auth help'."""
 
 import subprocess
 import sys
@@ -14,8 +14,8 @@ EXE_SUFFIX = '.exe' if sys.platform == 'win32' else ''
 
 
 def main():
-  authutil = os.path.join(os.getcwd(), 'authutil' + EXE_SUFFIX)
-  return subprocess.call([authutil, 'help'], executable=authutil)
+  luci_auth = os.path.join(os.getcwd(), 'luci-auth' + EXE_SUFFIX)
+  return subprocess.call([luci_auth, 'help'], executable=luci_auth)
 
 
 if __name__ == '__main__':
