@@ -34,6 +34,9 @@ type BuilderMigration struct {
 	Status       MigrationStatus
 	Correctness  float64 // 1 means correct. <1 means incorrect
 	Speed        float64 // 1 means as fast. <1 means slower. >1 means faster.
+	// 1 means no builds are infra failing only on LUCI; <1 means there are builds
+	// infra failing only on LUCI.
+	InfraHealth float64
 }
 
 // MigrationStatus describes a status of a builder migration at the highest

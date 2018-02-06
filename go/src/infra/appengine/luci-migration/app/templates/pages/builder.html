@@ -124,6 +124,9 @@ limitations under the License. */}}
       <div>
         LUCI Speed: {{$b.Builder.Migration.Speed | percent}}%
       </div>
+      <div>
+        LUCI Health: {{$b.Builder.Migration.InfraHealth | percent}}%
+      </div>
 
       <h3>Why?</h3>
       <div>{{$b.Details}}</div>

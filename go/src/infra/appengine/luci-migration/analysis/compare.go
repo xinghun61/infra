@@ -27,6 +27,10 @@ const (
 	// highSpeed is the target speed. If speed is high or more, the builder is
 	// WAI.
 	highSpeed = 0.9
+	// targetHealth is the desired percentage of non-LUCI-only-infra-failing groups (out of total
+	// groups). Missing the target is still WAI if the builder is correct and fast enough, but not if
+	// the builder is correct but not above highSpeed.
+	targetHealth = 0.8
 )
 
 // This file is the heart of this package.
@@ -45,6 +49,10 @@ type diff struct {
 	ConsistentGroups []*group
 	FalseFailures    []*group
 	FalseSuccesses   []*group
+
+	MatchingInfraFailures     []*group
+	LUCIOnlyInfraFailures     []*group
+	BuildbotOnlyInfraFailures []*group
 
 	AvgTimeDeltaGroups int
 	AvgTimeDelta       time.Duration // Average overhead of LUCI across patchsets.
@@ -79,6 +87,18 @@ func compare(groups []*group, minCorrectnessGroups int, currentStatus storage.Mi
 			}
 		}
 
+		// Check for Infra Failures. Dedup all of a group's failures into one instance of failing group.
+		luciInfraFailed := g.LUCI.countInfraFailures() > 0
+		bbInfraFailed := g.Buildbot.countInfraFailures() > 0
+		switch {
+		case luciInfraFailed && bbInfraFailed:
+			comp.MatchingInfraFailures = append(comp.MatchingInfraFailures, g)
+		case luciInfraFailed:
+			comp.LUCIOnlyInfraFailures = append(comp.LUCIOnlyInfraFailures, g)
+		case bbInfraFailed:
+			comp.BuildbotOnlyInfraFailures = append(comp.BuildbotOnlyInfraFailures, g)
+		}
+
 		if ld, bd := g.LUCI.avgRunDuration(), g.Buildbot.avgRunDuration(); ld > 0 && bd > 0 {
 			comp.AvgTimeDelta += ld - bd
 			comp.AvgTimeDeltaGroups++
@@ -110,6 +130,8 @@ func compare(groups []*group, minCorrectnessGroups int, currentStatus storage.Mi
 	luciSpeed := 1.0 / (avgBuildbotTimeSecs + comp.AvgTimeDelta.Seconds())
 	comp.Speed = luciSpeed / buildbotSpeed
 
+	comp.InfraHealth = 1.0 - float64(len(comp.LUCIOnlyInfraFailures))/float64(comp.TotalGroups)
+
 	switch {
 	case comp.Correctness < 1.0:
 		comp.Status = storage.StatusLUCINotWAI
@@ -117,6 +139,9 @@ func compare(groups []*group, minCorrectnessGroups int, currentStatus storage.Mi
 	case comp.Speed < lowSpeed:
 		comp.Status = storage.StatusLUCINotWAI
 		comp.StatusReason = "Too slow; want at least 90% speed"
+	case comp.InfraHealth < targetHealth:
+		comp.Status = storage.StatusLUCINotWAI
+		comp.StatusReason = "Too many new infra failures"
 	case comp.Speed >= highSpeed:
 		comp.Status = storage.StatusLUCIWAI
 		comp.StatusReason = "Correct and fast enough"

@@ -89,6 +89,17 @@ func (s groupSide) success() bool {
 	return false
 }
 
+// countInfraFailures returns number of builds that Infra Failed.
+func (s groupSide) countInfraFailures() int {
+	errors := 0
+	for _, b := range s {
+		if b.Status == buildbucket.StatusError {
+			errors++
+		}
+	}
+	return errors
+}
+
 // trustworthy returns true if s can be used for correctness analysis.
 func (s groupSide) trustworthy() bool {
 	if s.success() {
@@ -106,5 +117,6 @@ func (s groupSide) trustworthy() bool {
 			}
 		}
 	}
+
 	return false
 }

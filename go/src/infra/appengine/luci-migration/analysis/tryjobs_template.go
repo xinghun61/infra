@@ -99,6 +99,13 @@ at {{.MostRecentlyCompleted | timeString }}.
     than Buildbot, according to build run durations.
   {{end}}
   </li>
+  <li>
+    <strong>Infra Health</strong>:
+    analyzed {{.TotalGroups}} build groups:
+    {{len .LUCIOnlyInfraFailures}} failed on LUCI only,
+    {{len .BuildbotOnlyInfraFailures}} failed on Buildbot only,
+    {{len .MatchingInfraFailures}} failed on both
+  </li>
   <li>Considered builds at most {{.MinBuildAge | durationString}} old</li>
 </ul>
 
@@ -112,6 +119,13 @@ None.
 <h3>False successes on LUCI</h3>
 {{if .FalseSuccesses}}
 {{template "groups" .FalseSuccesses}}
+{{else}}
+None.
+{{end}}
+
+<h3>Infra failures only on LUCI</h3>
+{{if .LUCIOnlyInfraFailures}}
+{{template "groups" .LUCIOnlyInfraFailures}}
 {{else}}
 None.
 {{end}}

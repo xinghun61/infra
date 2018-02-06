@@ -28,6 +28,7 @@ import (
 
 const success = buildbucket.StatusSuccess
 const failure = buildbucket.StatusFailure
+const infraFailure = buildbucket.StatusError
 
 func TestCompare(t *testing.T) {
 	t.Parallel()
@@ -189,6 +190,141 @@ func TestCompare(t *testing.T) {
 			So(comp.Status, ShouldEqual, storage.StatusLUCINotWAI)
 			So(comp.AvgTimeDelta, ShouldAlmostEqual, 50*time.Minute)
 			So(comp.Speed, ShouldBeLessThan, lowSpeed)
+		})
+
+		Convey("LUCI has high percentage of builds newly infra failed though fast enough", func() {
+			comp := compareAndRender(
+				&group{
+					Key:      mkKey(1),
+					Buildbot: side(100*time.Minute, infraFailure, infraFailure, infraFailure, success),
+					LUCI:     side(90*time.Minute, success),
+				},
+				&group{
+					Key:      mkKey(2),
+					Buildbot: side(100*time.Minute, failure, failure, failure),
+					LUCI:     side(90*time.Minute, failure, failure, failure),
+				},
+				&group{
+					Key:      mkKey(3),
+					Buildbot: side(100*time.Minute, success),
+					LUCI:     side(90*time.Minute, infraFailure, success),
+				},
+				&group{
+					Key:      mkKey(4),
+					Buildbot: side(100*time.Minute, infraFailure, failure),
+					LUCI:     side(90*time.Minute, infraFailure, failure),
+				},
+				&group{
+					Key:      mkKey(5),
+					Buildbot: side(100*time.Minute, success),
+					LUCI:     side(90*time.Minute, infraFailure, infraFailure, success),
+				},
+			)
+			So(comp.Status, ShouldEqual, storage.StatusLUCINotWAI)
+			So(comp.StatusReason, ShouldEqual, "Too many new infra failures")
+			So(comp.InfraHealth, ShouldBeLessThan, targetHealth)
+		})
+
+		Convey("LUCI has high percentage of builds newly infra failed and not fast enough", func() {
+			currentStatus = storage.StatusLUCIWAI
+			comp := compareAndRender(
+				&group{
+					Key:      mkKey(1),
+					Buildbot: side(100*time.Minute, infraFailure, infraFailure, infraFailure, success),
+					LUCI:     side(120*time.Minute, success),
+				},
+				&group{
+					Key:      mkKey(2),
+					Buildbot: side(100*time.Minute, failure, failure, failure),
+					LUCI:     side(120*time.Minute, failure, failure, failure),
+				},
+				&group{
+					Key:      mkKey(3),
+					Buildbot: side(100*time.Minute, success),
+					LUCI:     side(120*time.Minute, infraFailure, success),
+				},
+				&group{
+					Key:      mkKey(4),
+					Buildbot: side(100*time.Minute, infraFailure, failure),
+					LUCI:     side(120*time.Minute, infraFailure, failure),
+				},
+				&group{
+					Key:      mkKey(5),
+					Buildbot: side(100*time.Minute, success),
+					LUCI:     side(120*time.Minute, infraFailure, infraFailure, success),
+				},
+			)
+			So(comp.Status, ShouldEqual, storage.StatusLUCINotWAI)
+			So(comp.StatusReason, ShouldEqual, "Too many new infra failures")
+			So(comp.InfraHealth, ShouldBeLessThan, targetHealth)
+		})
+
+		Convey("LUCI has newly infra failed builds, but not too many", func() {
+			comp := compareAndRender(
+				&group{
+					Key:      mkKey(1),
+					Buildbot: side(100*time.Minute, infraFailure, infraFailure, infraFailure, success),
+					LUCI:     side(90*time.Minute, success),
+				},
+				&group{
+					Key:      mkKey(2),
+					Buildbot: side(100*time.Minute, failure, failure, failure),
+					LUCI:     side(90*time.Minute, failure, failure, failure),
+				},
+				&group{
+					Key:      mkKey(3),
+					Buildbot: side(100*time.Minute, success),
+					LUCI:     side(90*time.Minute, success),
+				},
+				&group{
+					Key:      mkKey(4),
+					Buildbot: side(100*time.Minute, infraFailure, failure),
+					LUCI:     side(90*time.Minute, infraFailure, failure),
+				},
+				&group{
+					Key:      mkKey(5),
+					Buildbot: side(100*time.Minute, success),
+					LUCI:     side(90*time.Minute, infraFailure, infraFailure, success),
+				},
+			)
+			So(comp.Status, ShouldEqual, storage.StatusLUCIWAI)
+			So(comp.StatusReason, ShouldEqual, "Correct and fast enough")
+			So(comp.AvgTimeDelta, ShouldAlmostEqual, -10*time.Minute) // 10 min faster
+			So(comp.Speed, ShouldBeGreaterThanOrEqualTo, highSpeed)
+		})
+
+		Convey("LUCI has no newly infra failed builds", func() {
+			comp := compareAndRender(
+				&group{
+					Key:      mkKey(1),
+					Buildbot: side(100*time.Minute, infraFailure, infraFailure, infraFailure, success),
+					LUCI:     side(90*time.Minute, success),
+				},
+				&group{
+					Key:      mkKey(2),
+					Buildbot: side(100*time.Minute, failure, failure, failure),
+					LUCI:     side(90*time.Minute, failure, failure, failure),
+				},
+				&group{
+					Key:      mkKey(3),
+					Buildbot: side(100*time.Minute, success),
+					LUCI:     side(90*time.Minute, success),
+				},
+				&group{
+					Key:      mkKey(4),
+					Buildbot: side(100*time.Minute, infraFailure, failure),
+					LUCI:     side(90*time.Minute, failure, failure),
+				},
+				&group{
+					Key:      mkKey(5),
+					Buildbot: side(100*time.Minute, success),
+					LUCI:     side(90*time.Minute, success, success),
+				},
+			)
+			So(comp.Status, ShouldEqual, storage.StatusLUCIWAI)
+			So(comp.StatusReason, ShouldEqual, "Correct and fast enough")
+			So(comp.AvgTimeDelta, ShouldAlmostEqual, -10*time.Minute) // 10 min faster
+			So(comp.Speed, ShouldBeGreaterThanOrEqualTo, highSpeed)
 		})
 	})
 }

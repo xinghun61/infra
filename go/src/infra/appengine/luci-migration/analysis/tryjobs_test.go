@@ -171,6 +171,7 @@ func TestAnalyze(t *testing.T) {
 			mig := analyze()
 			So(mig.Status, ShouldEqual, storage.StatusLUCIWAI)
 			So(mig.Correctness, ShouldAlmostEqual, 1.0)
+			So(mig.InfraHealth, ShouldAlmostEqual, 1.0)
 		})
 
 		Convey("fetch", func() {
