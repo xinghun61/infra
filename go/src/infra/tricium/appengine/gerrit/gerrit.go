@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.chromium.org/luci/common/logging"
@@ -182,7 +183,7 @@ func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offse
 	v.Add("o", "CURRENT_FILES")
 	v.Add("o", "DETAILED_ACCOUNTS")
 	v.Add("q", fmt.Sprintf("project:%s after:\"%s\"", project, ts))
-	return fmt.Sprintf("%s/a/changes/?%s", host, v.Encode())
+	return fmt.Sprintf("%s/a/changes/?%s", hostWithProtocol(host), v.Encode())
 }
 
 func (gerritServer) setReview(c context.Context, host, change, revision string, r *reviewInput) error {
@@ -191,7 +192,7 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 		return fmt.Errorf("failed to marshal ReviewInput: %v", err)
 	}
 	logging.Debugf(c, "[gerrit] JSON body: %s", data)
-	url := fmt.Sprintf("%s/a/changes/%s/revisions/%s/review", host, change, patchSetNumber(revision))
+	url := fmt.Sprintf("%s/a/changes/%s/revisions/%s/review", hostWithProtocol(host), change, patchSetNumber(revision))
 	logging.Infof(c, "Using Gerrit Set Review URL: %s", url)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
@@ -228,6 +229,22 @@ func patchSetNumber(revision string) string {
 		return ""
 	}
 	return matches[1]
+}
+
+// Returns the provided host with the https protocol prefix added.
+//
+// If the provided host has a http:// prefix, it is updated.
+//
+// TODO(qyearsley): Remove this function when there is no occurrence of hosts
+// with protocols in the Tricium configs.
+func hostWithProtocol(host string) string {
+	// If host already has the right protocol, return.
+	if strings.HasPrefix(host, "https://") {
+		return host
+	}
+	// If wrong protocol, strip.
+	host = strings.TrimPrefix(host, "http://")
+	return fmt.Sprintf("https://%s", host)
 }
 
 // mockRestAPI mocks the GerritAPI interface for testing.
