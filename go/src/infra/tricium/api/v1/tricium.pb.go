@@ -110,7 +110,12 @@ type AnalyzeRequest struct {
 	// Name of the project hosting the paths listed in the request. The name
 	// should map to the project name as it is connected to Tricium.
 	Project string `protobuf:"bytes,1,opt,name=project" json:"project,omitempty"`
-	GitRef  string `protobuf:"bytes,2,opt,name=git_ref,json=gitRef" json:"git_ref,omitempty"`
+	// Git ref in the git repo for the project. Note that if gerrit_details
+	// is given, then this will also be present as the Revision. For patch
+	// number 7 of CL 12345, this will look like "refs/changes/45/12345/7".
+	// Regardless of whether gerrit_details is given, this ref will be used when
+	// checking out files.
+	GitRef string `protobuf:"bytes,2,opt,name=git_ref,json=gitRef" json:"git_ref,omitempty"`
 	// Paths to analyze in the project. Listed from the root of the Git
 	// repository.
 	// TODO(emso): document path separators or add listing of path segments.

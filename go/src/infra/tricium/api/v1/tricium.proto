@@ -49,6 +49,11 @@ message AnalyzeRequest {
   // should map to the project name as it is connected to Tricium.
   string project = 1;
 
+  // Git ref in the git repo for the project. Note that if gerrit_details
+  // is given, then this will also be present as the Revision. For patch
+  // number 7 of CL 12345, this will look like "refs/changes/45/12345/7".
+  // Regardless of whether gerrit_details is given, this ref will be used when
+  // checking out files.
   string git_ref = 2;
 
   // Paths to analyze in the project. Listed from the root of the Git
