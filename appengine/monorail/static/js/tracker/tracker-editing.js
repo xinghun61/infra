@@ -1752,21 +1752,26 @@ function renderFilterRulesListSection(section_id, heading, value_why_list) {
  * as the user edits an issue.
  */
 function TKR_presubmit() {
-  if (document.forms.create_issue_form) {
-    var inputs = document.querySelectorAll('#create_issue_form input:not([type="file"]), #create_issue_form textarea');
-  } else if (document.forms.issue_update_form) {
-    var inputs = document.querySelectorAll('#issue_update_form input:not([type="file"]), #issue_update_form textarea');
-  } else {
+  var issue_form = document.forms.create_issue_form || document.forms.issue_update_form;
+  if (!issue_form) {
     return;
   }
 
+  var inputs = issue_form.querySelectorAll('input:not([type="file"]), textarea, select');
   if (!inputs) {
     return;
   }
 
   var args = [];
   for (var key in inputs) {
-    args.push([inputs[key].name, inputs[key].value]);
+    if (!inputs.hasOwnProperty(key)) {
+      continue;
+    }
+    var input = inputs[key];
+    if (input.type === 'checkbox' && !input.checked) {
+      continue;
+    }
+    args.push([input.name, input.value]);
   }
 
   CS_doPost('presubmit.do', onPresubmitResponse, args);
