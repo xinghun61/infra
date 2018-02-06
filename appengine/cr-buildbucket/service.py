@@ -1392,14 +1392,11 @@ def cancel(build_id, result_details=None):
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
     build.complete_time = now
     build.clear_lease()
-    _fut_results(build.put_async(), events.on_build_completing_async(build))
+    futs = [build.put_async(), events.on_build_completing_async(build)]
     if build.swarming_hostname and build.swarming_task_id is not None:
-      deferred.defer(
-          swarming.cancel_task,
-          None,
-          build.swarming_hostname,
-          build.swarming_task_id,
-          _transactional=True)
+      futs.append(swarming.cancel_task_transactionally_async(
+          build.swarming_hostname, build.swarming_task_id))
+    _fut_results(*futs)
     return True, build
 
   updated, build = txn()

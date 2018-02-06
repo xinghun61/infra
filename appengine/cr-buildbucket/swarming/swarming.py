@@ -42,6 +42,7 @@ from components import net
 from components import utils
 from components.config import validation
 from google.appengine.api import app_identity
+from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 import webapp2
 
@@ -759,15 +760,38 @@ def _generate_build_url(milo_hostname, build, build_number):
       (milo_hostname, build.project, build.key.id()))
 
 
+@ndb.tasklet
 def cancel_task_async(hostname, task_id):
-  """Cancels a swarming task."""
-  return _call_api_async(
+  """Cancels a swarming task.
+
+  Noop if the task started running.
+  """
+  res = yield _call_api_async(
       None, hostname, 'task/%s/cancel' % task_id, method='POST')
+
+  if res.get('ok'):
+    logging.info('response: %r', res)
+  else:
+    logging.warning('response: %r', res)
 
 
 def cancel_task(hostname, task_id):
-  """Sync version of cancel_task_async."""
-  return cancel_task_async(hostname, task_id).get_result()
+  """Sync version of cancel_task_async.
+
+  Noop if the task started running.
+  """
+  cancel_task_async(hostname, task_id).get_result()
+
+
+def cancel_task_transactionally_async(hostname, task_id):  # pragma: no cover
+  """Transactionally schedules a push task to cancel a swarming task.
+
+  Swarming task cancelation is noop if the task started running.
+  """
+  url = ('/internal/task/buildbucket/cancel_swarming_task/%s/%s' %
+         (hostname, task_id))
+  task = taskqueue.Task(url=url)
+  return task.add_async(queue_name='backend-default', transactional=True)
 
 
 ################################################################################

@@ -968,18 +968,25 @@ class SwarmingTest(BaseTest):
         'luci.chromium.try/linux_chromium_rel_ng', 1)
 
   def test_cancel_task(self):
-    self.json_response = {}
+    self.json_response = {'ok': True}
     swarming.cancel_task('chromium-swarm.appspot.com', 'deadbeef')
     net.json_request_async.assert_called_with(
-      ('https://chromium-swarm.appspot.com/'
-       'api/swarming/v1/task/deadbeef/cancel'),
-      method='POST',
-      scopes=net.EMAIL_SCOPE,
-      delegation_token=None,
-      payload=None,
-      deadline=None,
-      max_attempts=None,
+        ('https://chromium-swarm.appspot.com/'
+        'api/swarming/v1/task/deadbeef/cancel'),
+        method='POST',
+        scopes=net.EMAIL_SCOPE,
+        delegation_token=None,
+        payload=None,
+        deadline=None,
+        max_attempts=None,
     )
+
+  def test_cancel_running_task(self):
+    self.json_response = {
+      'was_running': True,
+      'ok': False,
+    }
+    swarming.cancel_task('swarming.example.com', 'deadbeef')
 
   @mock.patch('swarming.swarming._load_build_run_result_async', autospec=True)
   def test_sync(self, load_build_run_result_async):

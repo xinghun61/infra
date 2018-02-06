@@ -25,6 +25,7 @@ import config
 import events
 import model
 import service
+import swarming
 
 
 README_MD = (
@@ -326,6 +327,14 @@ class BuildHandler(webapp2.RequestHandler):  # pragma: no cover
     return self.redirect(api_path)
 
 
+class TaskCancelSwarmingTask(webapp2.RequestHandler):  # pragma: no cover
+  """Cancels a swarming task."""
+
+  @decorators.require_taskqueue('backend-default')
+  def post(self, host, task_id):
+    swarming.cancel_task(host, task_id)
+
+
 def get_frontend_routes():  # pragma: no cover
   routes = [
     webapp2.Route(r'/', MainHandler),
@@ -352,6 +361,9 @@ def get_backend_routes():
     webapp2.Route(
         r'/internal/task/buildbucket/backfill-tag-index/<rest>',
         TaskBackfillTagIndex),
+    webapp2.Route(
+        r'/internal/task/buildbucket/cancel_swarming_task/<host>/<task_id>',
+        TaskCancelSwarmingTask),
   ]
 
 
