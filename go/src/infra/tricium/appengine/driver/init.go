@@ -2,7 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package driver implements the Tricium driver.
+// Package driver implements HTTP handlers to the driver module.
+//
+// The job of the workflow driver is to drive the execution of a Tricium
+// workflow, by executing the worker pointed to in the request, collecting
+// results and then request execution of successors, while sending progress
+// updates to the tracker.
 package driver
 
 import (

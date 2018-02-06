@@ -64,7 +64,7 @@ import (
 type AnalyzeRequest struct {
 	// LUCI datastore ID field with generated value.
 	ID int64 `gae:"$id"`
-	// Time when the corresponding request was received, time recorded in the reporter.
+	// Time when the corresponding request was received.
 	Received time.Time
 	// The Tricium project of the request.
 	// This is the project name listed in the Tricium service config.
@@ -83,7 +83,8 @@ type AnalyzeRequest struct {
 	GerritChange  string `gae:",noindex"`
 	// Note that Gerrit revision is another name for Gerrit patch set.
 	GerritRevision string `gae:",noindex"`
-	// Disabled Gerrit reporting means that no progress or result messages are sent to Gerrit.
+	// Disabled Gerrit reporting means that no progress or result messages
+	// are sent to Gerrit.
 	GerritReportingDisabled bool `gae:",noindex"`
 }
 
@@ -250,24 +251,28 @@ type Comment struct {
 	Category string
 	// Platforms this comment applies to.
 	//
-	// This is a int64 bit map using the tricium.Platform_Name number values for platforms.
+	// This is a int64 bit map using the tricium.Platform_Name number
+	// values for platforms.
 	Platforms int64
 }
 
 // CommentSelection tracks selection of comments.
 //
-// When an analyzer has several workers running the analyzer using different configurations
-// the resulting comments are merged to avoid duplication of results for users.
+// When an analyzer has several workers running the analyzer using different
+// configurations the resulting comments are merged to avoid duplication of
+// results for users.
 //
 // Mutable entity.
 // LUCI datastore ID (=1) and parent (=key to Comment entity) fields.
 type CommentSelection struct {
 	ID     int64   `gae:"$id"`
 	Parent *ds.Key `gae:"$parent"`
-	// Whether this comments was included in the overall result of the enclosing request.
+	// Whether this comments was included in the overall result of the
+	// enclosing request.
 	//
-	// All comments are included by default, but comments may need to be merged
-	// in the case when comments for a category are produced for multiple platforms.
+	// All comments are included by default, but comments may need to be
+	// merged in the case when comments for a category are produced for
+	// multiple platforms.
 	Included bool
 }
 
@@ -290,7 +295,8 @@ type CommentFeedback struct {
 
 const workerSeparator = "_"
 
-// ExtractFunctionPlatform extracts the analyzer and platform name from a worker name.
+// ExtractFunctionPlatform extracts the analyzer and platform name from a
+// worker name.
 //
 // The worker name must be on the form 'FunctionName_PLATFORM'.
 func ExtractFunctionPlatform(workerName string) (string, string, error) {

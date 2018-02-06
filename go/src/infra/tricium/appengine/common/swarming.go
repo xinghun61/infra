@@ -30,8 +30,9 @@ const (
 type SwarmingAPI interface {
 	// Trigger triggers a swarming task.
 	//
-	// The provided worker isolate is used for the task.
-	// At completion, the swarming service will publish a message, including the provided user data, to the worker completion pubsub topic.
+	// The provided worker isolate is used for the task. At completion,
+	// the swarming service will publish a message, including the provided
+	// user data, to the worker completion pubsub topic.
 	Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error)
 
 	// Collect collects results for a swarming task with the provided ID.
@@ -51,10 +52,11 @@ type swarmingServer struct {
 // Trigger implements the SwarmingAPI.
 func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error) {
 	pubsubTopic := topic(c)
-	// Prepare task dimentions.
+	// Prepare task dimensions.
 	dims := []*swarming.SwarmingRpcsStringPair{}
 	for _, d := range worker.Dimensions {
-		// Extracting dimension key and value. Note that ':' may appear in the value but not the key.
+		// Extracting dimension key and value.
+		// Note that ':' may appear in the value but not the key.
 		dim := strings.SplitN(d, ":", 2)
 		if len(dim) != 2 {
 			return "", fmt.Errorf("failed to split dimension: %q", d)

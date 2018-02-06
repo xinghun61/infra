@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package common implements common functionality for the Tricium service modules.
 package common
 
 import (
@@ -35,10 +34,11 @@ const (
 //
 // The interface is tuned to the needs of Tricium and Tricium data.
 type IsolateAPI interface {
-	// IsolateGitFileDetails isolates Git file details based on the corresponding Tricium data type definition.
+	// IsolateGitFileDetails isolates Git file details based on the
+	// corresponding Tricium data type definition.
 	//
-	// The Git file details data type should be isolated with the following path tricium/data/git_file_details.json
-	// and the following data format:
+	// The Git file details data type should be isolated with the following
+	// path tricium/data/git_file_details.json and the following data format:
 	// {
 	//   platforms: 0 -- for ANY platform
 	//   repository: gitRepo
@@ -56,17 +56,19 @@ type IsolateAPI interface {
 	// The command of the worker is used as the command of the worker isolate.
 	IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, isolatedInput string) (string, error)
 
-	// LayerIsolates creates isolates files from the provided isolates input and output.
+	// LayerIsolates creates isolates files from the provided isolates
+	// input and output.
 	//
-	// Layered isolates are used to communicate data from one worker to its successor workers.
-	// The content of the isolates output is copied and the provided isolated input is
-	// added as an include.
+	// Layered isolates are used to communicate data from one worker to its
+	// successor workers. The content of the isolates output is copied and
+	// the provided isolated input is added as an include.
 	LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error)
 
-	// FetchIsolatedResult fetches isolated Tricium result output as a JSON string.
+	// FetchIsolatedResult fetches isolated Tricium result output as a JSON
+	// string.
 	//
-	// The output is assumed to be on the form of a Tricium result and located in
-	// tricium/data/results.json in the isolated output.
+	// The output is assumed to be on the form of a Tricium result and
+	// located in tricium/data/results.json in the isolated output.
 	FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error)
 }
 
@@ -309,12 +311,12 @@ func (mockIsolator) IsolateWorker(c context.Context, serverURL string, worker *a
 
 // LayerIsolates is a mock function for MockIsolator.
 //
-// For any testing actually using the return values, create a new mock.
+// For any testing that actually uses the return values, create a new mock.
 func (mockIsolator) LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error) {
 	return "mockmockmock", nil
 }
 
-// FetchIsolatedResults is mock function for MockIsolator.
+// FetchIsolatedResults is a mock function for MockIsolator.
 //
 // For any testing using the return value, create a new mock.
 func (mockIsolator) FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error) {

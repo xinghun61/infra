@@ -100,8 +100,8 @@ func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) erro
 
 // analyzeWithAuth wraps 'analyze' in an auth check.
 //
-// This wrapper is used by the Analyze RPC call and the unwrapped method is used
-// by requests coming in via the internal analyze queue.
+// This wrapper is used by the Analyze RPC call and the unwrapped method is
+// used by requests coming in via the internal analyze queue.
 func analyzeWithAuth(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, codes.Code, error) {
 	pc, err := cp.GetProjectConfig(c, req.Project)
 	if err != nil {
@@ -169,8 +169,9 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		GitRef:  request.GitRef,
 	}
 
-	// This is a cross-group transaction because first AnalyzeRequest is stored to get the ID,
-	// and then AnalyzeRequestResult is stored, with the previously added AnalyzeRequest entity as parent.
+	// This is a cross-group transaction because first AnalyzeRequest is
+	// stored to get the ID, and then AnalyzeRequestResult is stored, with
+	// the previously added AnalyzeRequest entity as parent.
 	err = ds.RunInTransaction(c, func(c context.Context) (err error) {
 		// Add request entity to get ID.
 		if err := ds.Put(c, request); err != nil {

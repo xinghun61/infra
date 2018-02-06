@@ -55,7 +55,8 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 
 func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, isolator common.IsolateAPI,
 	swarming common.SwarmingAPI, pubsub common.PubSubAPI) error {
-	// Guard checking if there is already a stored workflow for the run ID in the request, if so stop here.
+	// Guard checking if there is already a stored workflow for the run ID
+	// in the request, if so stop here.
 	w := &config.Workflow{ID: req.RunId}
 	if err := ds.Get(c, w); err != ds.ErrNoSuchEntity {
 		logging.Infof(c, "[launcher] Launch request for launched workflow, run ID: %s", req.RunId)
@@ -76,7 +77,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	if err != nil {
 		return fmt.Errorf("failed to generate workflow config for project %s: %v", req.Project, err)
 	}
-	// Setup pubsub for worker completion notification.
+	// Set up pubsub for worker completion notification.
 	err = pubsub.Setup(c)
 	if err != nil {
 		return fmt.Errorf("failed to setup pubsub for workflow: %v", err)
@@ -107,8 +108,9 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 		return fmt.Errorf("failed to isolate git file details: %v", err)
 	}
 	logging.Infof(c, "[launcher] Isolated git file details, hash: %q", inputHash)
-	// TODO(emso): select dev/prod swarming/isolate serve based on devserver and dev/prod tricium instance.
-	// Prepare trigger requests for root workers.
+	// TODO(emso): select dev/prod swarming/isolate serve based on
+	// devserver and dev/prod tricium instance. Prepare trigger requests
+	// for root workers.
 	wTasks := []*tq.Task{}
 	for _, worker := range wf.RootWorkers() {
 		b, err := proto.Marshal(&admin.TriggerRequest{
@@ -128,7 +130,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 		if err := ds.Put(c, wfConfig); err != nil {
 			return fmt.Errorf("failed to store workflow: %v", err)
 		}
-		// Running the below two operations in parallel.
+		// Run the below two operations in parallel.
 		done := make(chan error)
 		defer func() {
 			if err2 := <-done; err2 != nil {
@@ -136,13 +138,15 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 			}
 		}()
 		go func() {
-			// Mark workflow as launched. Processing of this request needs the stored workflow config.
+			// Mark workflow as launched. Processing of this
+			// request needs the stored workflow config.
 			if err := tq.Add(c, common.TrackerQueue, wfTask); err != nil {
 				done <- fmt.Errorf("failed to enqueue workflow launched track request: %v", err)
 			}
 			done <- nil
 		}()
-		// Trigger root workers. Processing of this request needs the stored workflow config.
+		// Trigger root workers. Processing of this request needs the
+		// stored workflow config.
 		if err := tq.Add(c, common.DriverQueue, wTasks...); err != nil {
 			return fmt.Errorf("failed to enqueue trigger request(s) for root worker(s): %v", err)
 		}

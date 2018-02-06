@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package driver implements HTTP handlers to the driver module.
 package driver
 
 import (
@@ -183,10 +182,11 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 		}
 	} else {
 		logging.Infof(c, "[driver] Skipping processing of pubsub message, task ID: %s", taskID)
-		// Message has already been processed, return and ack the pubsub message with no futher action.
+		// Message has already been processed, return and ack the
+		// pubsub message with no further action.
 		return nil
 	}
-	// Enqueue collect request
+	// Enqueue collect request.
 	b, err := proto.Marshal(&admin.CollectRequest{
 		RunId:             tr.RunId,
 		IsolatedInputHash: tr.IsolatedInputHash,
@@ -205,12 +205,13 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 	return nil
 }
 
-// decodePubsubMessage decodes the provided PubSub message to a TriggerRequest and a task ID.
+// decodePubsubMessage decodes the provided PubSub message to a TriggerRequest
+// and a task ID.
 //
-// The pubsub message published to the worker completion topic from Swarming should
-// include a serialized proto TriggerRequest that has been base64 encoded and included
-// as userdata in the Swarming trigger request. In addition, Swarming adds the task ID of the
-// completed task.
+// The pubsub message published to the worker completion topic from Swarming
+// should include a serialized proto TriggerRequest that has been base64
+// encoded and included as userdata in the Swarming trigger request. In
+// addition, Swarming adds the task ID of the completed task.
 func decodePubsubMessage(c context.Context, msg *pubsub.PubsubMessage) (*admin.TriggerRequest, string, error) {
 	data, err := base64.StdEncoding.DecodeString(msg.Data)
 	if err != nil {

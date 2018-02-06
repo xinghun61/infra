@@ -64,13 +64,15 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 // mergeFunctions merges the provided service and project function configs.
 //
 // In merging, the following override rules are applied:
-// - existence of project path_filters fully replace any service path_filters.
-// - project impl for platform fully replace service impl for the same platform
-// - project owner, component
+// - existence of project path_filters fully replaces any service path_filters.
+// - project impl for platform fully replaces service impl for the same platform
+//   project owner or component.
+//
 // Errors:
-//  - change of data dependency in service config not allowed
+//  - change of data dependency in service config is not allowed
 func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.Function) (*tricium.Function, error) {
-	// TODO(emso): extract nil checks an similar out of this function and let if focus on only merging
+	// TODO(emso): extract nil checks an similar out of this function and
+	// let if focus on only merging.
 	if sa == nil && pa == nil {
 		return nil, fmt.Errorf("unknown function %s", function)
 	}
@@ -110,8 +112,10 @@ func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.
 			res.Needs = pa.Needs
 			res.Provides = pa.Provides
 		}
-		// Add service deps to project entry for validation check. These deps are used to check validity of impls and when
-		// there are service deps they are inherited by the project entry.
+		// Add service deps to project entry for validation check.
+		// These deps are used to check validity of impls and when
+		// there are service deps they are inherited by the project
+		// entry.
 		if sa != nil {
 			pa.Needs = sa.Needs
 			pa.Provides = sa.Provides
@@ -139,7 +143,8 @@ func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.
 	return res, nil
 }
 
-// mergeConfigDefs merges the service function config defs with the project function config defs.
+// mergeConfigDefs merges the service function config defs with the project
+// function config defs.
 //
 // The project config defs can override service config defs with the same name.
 func mergeConfigDefs(scd []*tricium.ConfigDef, pcd []*tricium.ConfigDef) []*tricium.ConfigDef {
@@ -157,10 +162,12 @@ func mergeConfigDefs(scd []*tricium.ConfigDef, pcd []*tricium.ConfigDef) []*tric
 	return res
 }
 
-// mergeImpls merges the service function implementations with the project function implementations.
+// mergeImpls merges the service function implementations with the project
+// function implementations.
 //
-// All provided impl entries are assumed to be valid.
-// The project implementations can override the service implementations for the same platform.
+// All provided impl entries are assumed to be valid. The project
+// implementations can override the service implementations for the same
+// platform.
 func mergeImpls(sci []*tricium.Impl, pci []*tricium.Impl) []*tricium.Impl {
 	impls := map[tricium.Platform_Name]*tricium.Impl{}
 	for _, i := range sci {

@@ -152,7 +152,8 @@ func hostname() string {
 // topic returns the pubsub topic to use for worker completion notification.
 //
 // On the dev server, the Tricium dev instance is used and the topic is amended
-// with a hostname suffix. For app engine instances, the app ID is used when composing the topic.
+// with a hostname suffix. For app engine instances, the app ID is used when
+// composing the topic.
 func topic(c context.Context) string {
 	if appengine.IsDevAppServer() {
 		return fmt.Sprintf(topicFormat, TriciumDevServer, "-"+hostname())

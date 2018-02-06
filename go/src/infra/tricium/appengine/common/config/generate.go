@@ -14,10 +14,12 @@ import (
 	"infra/tricium/api/v1"
 )
 
-// Generate generates a Tricium workflow based on the provided configs and paths to analyze.
+// Generate generates a Tricium workflow based on the provided configs and
+// paths to analyze.
 //
-// The workflow will be computed from the validated and merged config for the project in question,
-// and filtered to only include workers relevant to the files to be analyzed.
+// The workflow will be computed from the validated and merged config for the
+// project in question, and filtered to only include workers relevant to the
+// files to be analyzed.
 func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, paths []string) (*admin.Workflow, error) {
 	vpc, err := Validate(sc, pc)
 	if err != nil {
@@ -59,12 +61,13 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, paths []stri
 	}, nil
 }
 
-// resolveSuccessorWorkers computes successor workers based on data dependencies.
+// resolveSuccessorWorkers computes successor workers based on data
+// dependencies.
 //
-// The resulting list of successors are added to the Next fields of the provided workers.
-// Platform-specific data types add an additional platform check to make successors of
-// workers providing a platform-specific type only include successors running on that
-// platform.
+// The resulting list of successors are added to the Next fields of the
+// provided workers. Platform-specific data types add an additional platform
+// check to make successors of workers providing a platform-specific type only
+// include successors running on that platform.
 //
 // The resulting workflow is sanity checked and returns an error on failure.
 func resolveSuccessorWorkers(sc *tricium.ServiceConfig, workers []*admin.Worker) error {
@@ -92,7 +95,8 @@ func resolveSuccessorWorkers(sc *tricium.ServiceConfig, workers []*admin.Worker)
 // checkWorkflowSanity checks if the workflow is a tree.
 //
 // A sane workflow has one path to each worker and includes all workers.
-// Multiple paths could mean multiple predecessors to a worker, or could be a circularity.
+// Multiple paths could mean multiple predecessors to a worker, or could be a
+// circularity.
 func checkWorkflowSanity(workers []*admin.Worker) error {
 	var roots []*admin.Worker
 	m := map[string]*admin.Worker{}
@@ -136,12 +140,14 @@ func checkWorkerDeps(w *admin.Worker, m map[string]*admin.Worker, visited map[st
 	return nil
 }
 
-// includeFunction checks if the provided function should be included based on the provided paths.
+// includeFunction checks if the provided function should be included based on
+// the provided paths.
 //
-// The paths are checked against the path filters included for the function. If there are no
-// path filters, or no paths, then the function is included without further checking.
-// With both paths and path filters, there needs to be at least one path match for the function to
-// be included.
+// The paths are checked against the path filters included for the function. If
+// there are no path filters, or no paths, then the function is included
+// without further checking. With both paths and path filters, there needs to
+// be at least one path match for the function to be included.
+//
 // Note that path filters are only provided for analyzers.
 func includeFunction(f *tricium.Function, paths []string) (bool, error) {
 	if f.Type == tricium.Function_ISOLATOR || len(paths) == 0 || f.PathFilters == nil || len(f.PathFilters) == 0 {
@@ -161,13 +167,15 @@ func includeFunction(f *tricium.Function, paths []string) (bool, error) {
 	return false, nil
 }
 
-// createWorker creates a worker from the provided function, selection and service config.
+// createWorker creates a worker from the provided function, selection and
+// service config.
 //
 // The provided function is assumed to be verified.
 func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Function) (*admin.Worker, error) {
 	i := tricium.LookupImplForPlatform(f, s.Platform) // if verified, there should be an impl.
 	p := tricium.LookupPlatform(sc, s.Platform)       // if verified, the platform should be known.
-	// TODO(emso): Consider composing worker names using a character not allowed in function/platform names, e.g., '/'.
+	// TODO(emso): Consider composing worker names using a character not
+	// allowed in function/platform names, e.g., '/'.
 	w := &admin.Worker{
 		Name:                fmt.Sprintf("%s_%s", s.Function, s.Platform),
 		Needs:               f.Needs,

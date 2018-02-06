@@ -2,7 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package launcher implements the Tricium launcher.
+// Package launcher implements HTTP handlers for the launcher module.
+//
+// The job of the workflow launcher is to bootstrap the execution of a workflow
+// for an analysis request. This includes adding entries to the driver queue
+// for the root workers of the workflow.
 package launcher
 
 import (

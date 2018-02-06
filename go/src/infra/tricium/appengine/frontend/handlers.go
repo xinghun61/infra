@@ -48,7 +48,8 @@ func resultsHandler(ctx *router.Context) {
 
 // requests returns list of workflow runs for projects readable to the current user.
 func requests(c context.Context, cp config.ProviderAPI) ([]*track.AnalyzeRequest, error) {
-	// TODO(emso): This only lists the last 20 requests, when the UI is ready improve to list more.
+	// TODO(emso): This only lists the last 20 requests, when the UI is
+	// ready improve to list more.
 	var requests []*track.AnalyzeRequest
 	q := ds.NewQuery("AnalyzeRequest").Order("-Received").Limit(20)
 	if err := ds.GetAll(c, q, &requests); err != nil {
@@ -80,8 +81,8 @@ func requests(c context.Context, cp config.ProviderAPI) ([]*track.AnalyzeRequest
 
 func analyzeFormHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
-	// TODO(emso): With a switch to Polymer this handler can be replaced with a direct
-	// call to the pRPC server via Javascript fetch.
+	// TODO(emso): With a switch to Polymer this handler can be replaced
+	// with a direct call to the pRPC server via Javascript fetch.
 	sr, err := parseRequestForm(r)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "Failed to parse analyze request")
@@ -93,9 +94,10 @@ func analyzeFormHandler(ctx *router.Context) {
 		GitRef:  sr.GitRef,
 		Paths:   sr.Paths,
 	})
-	// TODO(emso): Sort out the returned error code to distinguish retriable errors
-	// from fatal errors. For instance, grpc.Code(err) equal to codes.InvalidArgument is fatal, while
-	// codes.Internal is not.
+	// TODO(emso): Sort out the returned error code to distinguish
+	// retriable errors from fatal errors. For instance, grpc.Code(err)
+	// equal to codes.InvalidArgument is fatal, while codes.Internal is
+	// not.
 	if err != nil {
 		logging.WithError(err).Errorf(c, "Failed to call Tricium.Analyze RPC")
 		w.WriteHeader(http.StatusInternalServerError)

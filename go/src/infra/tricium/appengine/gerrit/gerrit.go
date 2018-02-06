@@ -30,14 +30,17 @@ const (
 
 // API specifies the Gerrit REST API tuned to the needs of Tricium.
 type API interface {
-	// QueryChanges sends one query for changes to Gerrit using the provided poll data and offset.
+	// QueryChanges sends one query for changes to Gerrit using the
+	// provided poll data and offset.
 	//
-	// The poll data is assumed to correspond to the last seen change before this poll. Within one
-	// poll, the offset is used to handle consecutive calls to this function.
-	// A list of changes is returned in the same order as they were returned by Gerrit.
-	// The result tuple includes a boolean value to indicate of the result was truncated and
-	// more queries should be sent to get the full list of changes. For new queries within the same
-	// poll, this function should be called again with an increased offset.
+	// The poll data is assumed to correspond to the last seen change
+	// before this poll. Within one poll, the offset is used to handle
+	// consecutive calls to this function. A list of changes is returned
+	// in the same order as they were returned by Gerrit. The result tuple
+	// includes a boolean value to indicate if the result was truncated and
+	// more queries should be sent to get the full list of changes. For new
+	// queries within the same poll, this function should be called again
+	// with an increased offset.
 	QueryChanges(c context.Context, host, project string, lastTimestamp time.Time, offset int) ([]gr.ChangeInfo, bool, error)
 	// PostReviewMessage posts a review message to a change.
 	PostReviewMessage(c context.Context, host, change, revision, message string) error
@@ -139,8 +142,8 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 
 // createRobotComment creates a Gerrit robot comment from a Tricium comment.
 //
-// Checks for presence of position info to distinguish file comments,
-// line comments, and comments with character ranges.
+// Checks for presence of position info to distinguish file comments, line
+// comments, and comments with character ranges.
 func createRobotComment(runID int64, comment tricium.Data_Comment) *robotCommentInput {
 	roco := &robotCommentInput{
 		Message:    comment.Message,
@@ -164,11 +167,12 @@ func createRobotComment(runID int64, comment tricium.Data_Comment) *robotComment
 	return roco
 }
 
-// composeChangesQueryURL composes the URL used to query Gerrit for updated changes.
+// composeChangesQueryURL composes the URL used to query Gerrit for updated
+// changes.
 //
-// The provided GerritProject object provides Gerrit host, project, and timestamp of last poll.
-// The offset is used to handle paging and should be incremented during a poll to get
-// all results.
+// The provided GerritProject object provides Gerrit host, project, and
+// timestamp of last poll. The offset is used to handle paging and should be
+// incremented during a poll to get all results.
 func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offset int) string {
 	ts := lastTimestamp.Format(timeStampLayout)
 	v := url.Values{}

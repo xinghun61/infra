@@ -28,7 +28,8 @@ import (
 	"infra/tricium/appengine/common/config"
 )
 
-// The timestamp format used by Gerrit (using the reference date). All timestamps are in UTC.
+// The timestamp format used by Gerrit (using the reference date).
+// All timestamps are in UTC.
 const timeStampLayout = "2006-01-02 15:04:05.000000000"
 
 // Project tracks the last poll of a Gerrit project.
@@ -66,11 +67,12 @@ func (c byUpdatedTime) Less(i, j int) bool { return c[i].Updated.Time().Before(c
 // Change queries are done on a per project basis for project with configured
 // Gerrit details.
 //
-// This function will be called periodically by a cron job, but may also be invoked
-// directly. That is, it may run concurrently and two parallel runs may query Gerrit
-// using the same last poll. This scenario would lead to duplicate tasks in the
-// service queue. This is OK because the service queue handler will check for exisiting
-// active runs for a change before moving tasks further along the pipeline.
+// This function will be called periodically by a cron job, but may also be
+// invoked directly. That is, it may run concurrently and two parallel runs may
+// query Gerrit using the same last poll. This scenario would lead to duplicate
+// tasks in the service queue. This is OK because the service queue handler
+// will check for existing active runs for a change before moving tasks further
+// along the pipeline.
 func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 	sc, err := cp.GetServiceConfig(c)
 	if err != nil {
@@ -91,11 +93,11 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 
 // pollProject polls for changes for one Gerrit project.
 //
-// Each poll to a Gerrit host and project is logged with a timestamp and
-// last seen revisions (within the same second).
-// The timestamp of the most recent change in the last poll is used in the next poll,
-// (as the value of 'after' in the query string). If no previous poll has been logged,
-// then a time corresponding to zero is used (time.Time{}).
+// Each poll to a Gerrit host and project is logged with a timestamp and last
+// seen revisions (within the same second). The timestamp of the most recent
+// change in the last poll is used in the next poll, as the value of 'after'
+// in the query string. If no previous poll has been logged, then a time
+// corresponding to zero is used (time.Time{}).
 func pollProject(c context.Context, triciumProject string, gerritDetails *tricium.GerritDetails, gerrit API) error {
 	// Get last poll data for the given host/project.
 	p := &Project{ID: gerritProjectID(gerritDetails.Host, gerritDetails.Project)}
@@ -126,15 +128,16 @@ func pollProject(c context.Context, triciumProject string, gerritDetails *triciu
 
 	logging.Infof(c, "Last poll: %+v", p)
 
-	// TODO(emso): Add a limit for how many entries that will be processed in a poll.
-	// If, for instance, the service is restarted after some down time all changes since the
-	// last poll before the service went down will be processed. To many changes to process could
-	// cause the transaction to fail due to the number of entries touched. A failed transaction
-	// will cause the same poll pointer to be used at the next poll, and the same problem will
-	// happen again.
+	// TODO(emso): Add a limit for how many entries that will be processed
+	// in a poll. If, for instance, the service is restarted after some
+	// down time, all changes since the last poll before the service went
+	// down will be processed. Too many changes to process could cause the
+	// transaction to fail due to the number of entries touched. A failed
+	// transaction will cause the same poll pointer to be used at the next
+	// poll, and the same problem will happen again.
 
-	// Query for changes updated since last poll.
-	// Account for the fact that results may be truncated and we may need to send several
+	// Query for changes updated since last poll. Account for the fact
+	// that results may be truncated and we may need to send several
 	// queries to get the full list of changes.
 	var changes []gr.ChangeInfo
 	// Use this counter to skip already seen changes when more than one page
@@ -161,10 +164,10 @@ func pollProject(c context.Context, triciumProject string, gerritDetails *triciu
 	}
 
 	// Make sure changes are sorted (most recent change first).
-	// This is used to move the poll pointer forward and avoid polling
-	// for the same changes more than once. There may still be an overlap
-	// but the tracking of change state should be update between polls
-	// (and is also guarded by a transaction).
+	// This is used to move the poll pointer forward and avoid polling for
+	// the same changes more than once. There may still be an overlap but
+	// the tracking of change state should be update between polls (and is
+	// also guarded by a transaction).
 	sort.Sort(sort.Reverse(byUpdatedTime(changes)))
 
 	// Extract updates.
@@ -176,7 +179,7 @@ func pollProject(c context.Context, triciumProject string, gerritDetails *triciu
 	// Store updated tracking data.
 	if err := ds.RunInTransaction(c, func(c context.Context) error {
 		ops := []func() error{
-			// Update exisiting changes and add new ones.
+			// Update existing changes and add new ones.
 			func() error {
 				if len(uchanges) == 0 {
 					return nil
@@ -226,9 +229,9 @@ func pollProject(c context.Context, triciumProject string, gerritDetails *triciu
 
 // extractUpdates extracts change updates.
 //
-// Compares stored tracking of changes and those found in the poll.
-// Returns the change diff list to convert to Analyze requests, the list of tracked changes to update, and then
-// the list of tracked changes to remove.
+// Compares stored tracking of changes and those found in the poll. Returns
+// the change diff list to convert to Analyze requests, the list of tracked
+// changes to update, and then the list of tracked changes to remove.
 func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]gr.ChangeInfo, []*Change, []*Change, error) {
 	var diff []gr.ChangeInfo
 	var uchanges []*Change
@@ -258,8 +261,8 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 			t[change.ID] = *change
 		}
 	}
-	// TODO(emso): consider depending on the order provided by datastore, that is, depend
-	// on keys and values being in the same order from Get.
+	// TODO(emso): Consider depending on the order provided by datastore.
+	// That is, depend on keys and values being in the same order from Get.
 	logging.Debugf(c, "Found the following tracked changes: %v", t)
 	// Compare polled changes to tracked changes, update tracking and add to the
 	// diff list when there is an updated revision change.
@@ -279,9 +282,9 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 		// For tracked and merged/abandoned, stop tracking (clean up).
 		case change.Status == "MERGED" || change.Status == "ABANDONED":
 			logging.Debugf(c, "Found tracked %s change (%s); removing.", change.Status, change.ID)
-			// Note that we are only adding keys for entries already present in the
-			// datastore to the delete list. That is, we should not get any NoSuchEntity
-			// errors.
+			// Note that we are only adding keys for entries
+			// already present in the datastore to the delete list.
+			// That is, we should not get any NoSuchEntity errors.
 			dchanges = append(dchanges, &tc)
 		// For tracked and unseen revision, update tracking and add to diff list.
 		case tc.LastRevision != change.CurrentRevision:
@@ -322,7 +325,9 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 				ident, err := identity.MakeIdentity("user:" + c.Owner.Email)
 				if err != nil {
 					logging.Errorf(ctx, "Failed to create identity for %s, err: %v", c.Owner.Email, err)
-					// If we fail to create the identity for a user, skip this user for the rest of this poll.
+					// If we fail to create the identity
+					// for a user, skip this user for the
+					// rest of this poll.
 					owners[c.Owner.Email] = false
 					continue
 				}

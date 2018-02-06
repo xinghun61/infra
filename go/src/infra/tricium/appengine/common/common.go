@@ -29,19 +29,19 @@ const (
 	// TriciumProdServer is the App ID of the Tricium prod server.
 	TriciumProdServer = "tricium-prod"
 
-	// AnalyzeQueue specifies the name of the analyze task queue.
+	// AnalyzeQueue is the name of the analyze task queue.
 	AnalyzeQueue = "analyze-queue"
 
-	// LauncherQueue specifies the name of the launcher task queue.
+	// LauncherQueue is the name of the launcher task queue.
 	LauncherQueue = "launcher-queue"
 
-	// DriverQueue specifies the name of the driver task queue.
+	// DriverQueue is the name of the driver task queue.
 	DriverQueue = "driver-queue"
 
-	// TrackerQueue specifies the name of the tracker task queue.
+	// TrackerQueue is the name of the tracker task queue.
 	TrackerQueue = "tracker-queue"
 
-	// GerritReporterQueue specifies the name of the Gerrit reporter task queue.
+	// GerritReporterQueue is the name of the Gerrit reporter task queue.
 	GerritReporterQueue = "gerrit-reporter-queue"
 )
 
@@ -80,7 +80,7 @@ func MiddlewareForInternal() router.MiddlewareChain {
 // checks by examining auth.CurrentIdentity(ctx) (it can be identity.Anonymous).
 func MiddlewareForUI() router.MiddlewareChain {
 	// Configure auth system to use cookies and actually attempt to do the
-	// authentication. Finally, configure templating system.
+	// authentication. Finally, configure template system.
 	return MiddlewareBase().Extend(
 		auth.Authenticate(server.CookieAuth),
 		templates.WithTemplates(prepareTemplates()),
