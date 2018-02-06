@@ -1012,6 +1012,7 @@ class SwarmingTest(BaseTest):
           'started_ts': '2018-01-29T21:15:02.649750',
           'completed_ts': '2018-01-30T00:15:18.162860',
         },
+        'build_run_result': {},
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.SUCCESS,
         'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
@@ -1024,6 +1025,7 @@ class SwarmingTest(BaseTest):
           'started_ts': '2018-01-29T21:15:02.649750',
           'completed_ts': '2018-01-30T00:15:18.162860',
         },
+        'build_run_result': {},
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.BUILD_FAILURE,
@@ -1043,6 +1045,20 @@ class SwarmingTest(BaseTest):
             'text': 'it is not good',
           },
         },
+        'status': model.BuildStatus.COMPLETED,
+        'result': model.BuildResult.FAILURE,
+        'failure_reason': model.FailureReason.INFRA_FAILURE,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },
+      {
+        'task_result': {
+          'state': 'COMPLETED',
+          'failure': True,
+          'started_ts': '2018-01-29T21:15:02.649750',
+          'completed_ts': '2018-01-30T00:15:18.162860',
+        },
+        'build_run_result': None,
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
@@ -1294,6 +1310,12 @@ class SubNotifyTest(BaseTest):
     super(SubNotifyTest, self).setUp()
     self.handler = swarming.SubNotify(response=webapp2.Response())
 
+    self.patch(
+        'swarming.swarming._load_build_run_result_async',
+        autospec=True,
+        return_value=future(({}, False)),
+    )
+
   def test_unpack_msg(self):
     self.assertEqual(
       self.handler.unpack_msg({
@@ -1536,6 +1558,12 @@ class CronUpdateTest(BaseTest):
     )
     self.build.put()
     self.now += datetime.timedelta(minutes=5)
+
+    self.patch(
+        'swarming.swarming._load_build_run_result_async',
+        autospec=True,
+        return_value=future(({}, False)),
+    )
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_sync_build_async(self, load_task_result_async):
