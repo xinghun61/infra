@@ -741,14 +741,19 @@
       // there's no possible CL causing this failure. Right now we're going to
       // just fail, but we should probably signal this to the user more
       // explicitly in the future.
+      let badRegRange = element._mergeRegressionRange(toS([1, 2]), toS([3, 4]));
       assert.equal(
-          element._mergeRegressionRange(toS([1, 2]), toS([3, 4])),
-          undefined);
+          badRegRange.error,
+          "Invalid regression range");
+
+      badRegRange = element._mergeRegressionRange(toS([3, 4]), toS([1, 2]));
       assert.equal(
-          element._mergeRegressionRange(toS([3, 4]), toS([1, 2])),
-          undefined);
+          badRegRange.error,
+          "Invalid regression range");
+
+      badRegRange = element._mergeRegressionRange(toS([3, 4]), undefined);
       assert.equal(
-          element._mergeRegressionRange(toS([3, 4]), undefined),
+          badRegRange,
           undefined);
 
       assert.deepEqual(
