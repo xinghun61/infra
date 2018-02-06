@@ -1,3 +1,31 @@
+# Release Notes sheriff-o-matic 2018-02-06
+
+- 5 commits, 3 bugs affected since 3ad142a (2018-01-31T17:46:25Z)
+- 3 Authors:
+  - iannucci@chromium.org
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [SoM: Add autosuggested labels back.](https://chromium-review.googlesource.com/905231) (zhangtiff@google.com)
+- [SoM: Update ChOpsUI version.](https://chromium-review.googlesource.com/905582) (zhangtiff@google.com)
+- [Roll luci-go.](https://chromium-review.googlesource.com/905064) (iannucci@chromium.org)
+- [[som] Add monitoring metrics for alert *groups*](https://chromium-review.googlesource.com/896166) (seanmccullough@chromium.org)
+- [[som] Update RELNOTES.md](https://chromium-review.googlesource.com/894901) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- iannucci@chromium.org:
+  -  [https://crbug.com/809645](https://crbug.com/809645)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/807344](https://crbug.com/807344)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/809064](https://crbug.com/809064)
+
+
 # Release Notes sheriff-o-matic 2018-01-31
 
 - 2 commits, 2 bugs affected since 715ed81 (2018-01-16T23:57:49Z)
