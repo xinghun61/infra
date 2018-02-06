@@ -158,6 +158,8 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 		u.StepName = v[0]
 	}
 
+	u.BuildID = r.FormValue("build_id")
+
 	if _, ok := r.MultipartForm.File["file"]; !ok {
 		logging.Errorf(c, "withParsedUploadForm: missing file")
 		http.Error(w, "missing file", http.StatusBadRequest)
