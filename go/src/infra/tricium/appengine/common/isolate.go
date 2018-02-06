@@ -67,7 +67,7 @@ type IsolateAPI interface {
 	//
 	// The output is assumed to be on the form of a Tricium result and located in
 	// tricium/data/results.json in the isolated output.
-	FetchIsolatedResults(c context.Context, serverURL, solatedOutput string) (string, error)
+	FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error)
 }
 
 // IsolateServer implements the IsolateAPI interface.
@@ -282,7 +282,7 @@ type buffer struct {
 
 func (f *buffer) Seek(a int64, b int) (int64, error) {
 	if a != 0 || b != 0 {
-		return 0, errors.New("opps")
+		return 0, errors.New("non-zero value given to buffer.Seek")
 	}
 	f.Reset()
 	return 0, nil
