@@ -780,16 +780,22 @@ def _load_task_result_async(hostname, task_id):  # pragma: no cover
 
 @ndb.tasklet
 def _load_build_run_result_async(task_result):
-  """Fetches BUILD_RUN_RESULT_FILENAME from swarming task output."""
+  """Fetches BUILD_RUN_RESULT_FILENAME from swarming task output.
+
+  Logs errors.
+
+  Returns (build_run_result dict, corrupted bool).
+  """
   outputs_ref = task_result.get('outputs_ref')
   if not outputs_ref:
-    raise ndb.Return(None)
+    raise ndb.Return(None, False)
 
   server_prefix = 'https://'
   if not outputs_ref['isolatedserver'].startswith(server_prefix):
-    raise BuildResultFileCorruptedError(
-        'Bad isolatedserver %r read from task %s' %
-        (outputs_ref['isolatedserver'], task_result['id']))
+    logging.error(
+        'Bad isolatedserver %r read from task %s',
+        outputs_ref['isolatedserver'], task_result['id'])
+    raise ndb.Return(None, True)
 
   hostname = outputs_ref['isolatedserver'][len(server_prefix):]
 
@@ -798,22 +804,24 @@ def _load_build_run_result_async(task_result):
     try:
       raw = yield isolate.fetch_async(loc)
       raise ndb.Return(json.loads(raw))
-    except ValueError as ex:
-      raise BuildResultFileCorruptedError(
-          'could not load %s: %s' % (isolated_loc.human_url, ex))
+    except ValueError:
+      logging.exception('could not load %s', isolated_loc.human_url)
+      raise ndb.Return(None)
 
   isolated_loc = isolate.Location(
       hostname, outputs_ref['namespace'], outputs_ref['isolated'])
   isolated = yield fetch_json_async(isolated_loc)
+  if isolated is None:
+    raise ndb.Return(None, True)
 
   # Assume the isolated file format
   result_entry = isolated['files'].get(BUILD_RUN_RESULT_FILENAME)
   if not result_entry:
-    raise ndb.Return(None)
+    raise ndb.Return(None, False)
 
   result_loc = isolated_loc._replace(digest=result_entry['h'])
   build_result = yield fetch_json_async(result_loc)
-  raise ndb.Return(build_result)
+  raise ndb.Return(build_result, build_result is None)
 
 
 def _sync_build_in_memory(
@@ -946,18 +954,13 @@ def _extract_properties(annotation_step):
 
 
 @ndb.tasklet
-def _sync_build_async(build_id, task_result, build_run_result):
-  """Syncs Build entity in the datastore with the swarming task.
-
-  Tries to load |build_run_result| from isolate if it is None.
-  """
+def _sync_build_async(build_id, task_result):
+  """Syncs Build entity in the datastore with the swarming task."""
+  build_run_result = None
   build_run_result_corrupted = False
-  if not build_run_result and task_result:
-    try:
-      build_run_result = yield _load_build_run_result_async(task_result)
-    except BuildResultFileCorruptedError:
-      logging.exception('build_run_result is corrupted')
-      build_run_result_corrupted = True
+  if task_result:
+    build_run_result, build_run_result_corrupted = yield (
+        _load_build_run_result_async(task_result))
 
   @ndb.transactional_tasklet
   def txn_async():
@@ -1066,7 +1069,7 @@ class SubNotify(webapp2.RequestHandler):
 
     # Update build.
     result = _load_task_result_async(hostname, task_id).get_result()
-    _sync_build_async(build_id, result, None).get_result()
+    _sync_build_async(build_id, result).get_result()
 
   def stop(self, msg, *args, **kwargs):
     """Logs error and stops request processing.
@@ -1107,7 +1110,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
       logging.error(
           'Task %s/%s referenced by build %s is not found',
           build.swarming_hostname, build.swarming_task_id, build.key.id())
-    yield _sync_build_async(build.key.id(), result, None)
+    yield _sync_build_async(build.key.id(), result)
 
   @decorators.require_cronjob
   def get(self):  # pragma: no cover

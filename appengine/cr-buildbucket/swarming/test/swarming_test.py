@@ -983,7 +983,7 @@ class SwarmingTest(BaseTest):
 
   @mock.patch('swarming.swarming._load_build_run_result_async', autospec=True)
   def test_sync(self, load_build_run_result_async):
-    load_build_run_result_async.return_value = future(None)
+    load_build_run_result_async.return_value = future((None, False))
     cases = [
       {
         'task_result': None,
@@ -1056,7 +1056,7 @@ class SwarmingTest(BaseTest):
           'started_ts': '2018-01-29T21:15:02.649750',
           'completed_ts': '2018-01-30T00:15:18.162860',
         },
-        'build_run_result_side_effect': swarming.BuildResultFileCorruptedError,
+        'build_run_result_corrupted': True,
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
@@ -1126,10 +1126,11 @@ class SwarmingTest(BaseTest):
     for case in cases:
       build = mkBuild(canary=False)
       build.put()
-      load_build_run_result_async.side_effect = case.get(
-          'build_run_result_side_effect')
-      swarming._sync_build_async(
-          1, case['task_result'], case.get('build_run_result')).get_result()
+      load_build_run_result_async.return_value = future((
+          case.get('build_run_result'),
+          case.get('build_run_result_corrupted', False),
+      ))
+      swarming._sync_build_async(1, case['task_result']).get_result()
       build = build.key.get()
       self.assertEqual(build.status, case['status'])
       self.assertEqual(build.result, case.get('result'))
@@ -1140,7 +1141,10 @@ class SwarmingTest(BaseTest):
 
   @mock.patch('swarming.isolate.fetch_async')
   def test_load_build_run_result_async(self, fetch_isolate_async):
-    self.assertIsNone(swarming._load_build_run_result_async({}).get_result())
+    self.assertEqual(
+        swarming._load_build_run_result_async({}).get_result(),
+        (None, False),
+    )
 
     expected = {
       'infra_failure': {
@@ -1157,7 +1161,7 @@ class SwarmingTest(BaseTest):
       # build-run-result.json
       future(json.dumps(expected)),
     ]
-    actual = swarming._load_build_run_result_async({
+    actual, corrupted = swarming._load_build_run_result_async({
       'id': 'taskid',
       'outputs_ref': {
         'isolatedserver': 'https://isolate.example.com',
@@ -1165,6 +1169,7 @@ class SwarmingTest(BaseTest):
         'isolated': 'badcoffee',
       }
     }).get_result()
+    self.assertFalse(corrupted)
     self.assertEqual(expected, actual)
     fetch_isolate_async.assert_any_call(isolate.Location(
         'isolate.example.com', 'default-gzip', 'badcoffee',
@@ -1181,7 +1186,7 @@ class SwarmingTest(BaseTest):
         'soemthing_else.txt': {'h': 'deadbeef'},
       },
     }))
-    actual = swarming._load_build_run_result_async({
+    actual, corrupted = swarming._load_build_run_result_async({
       'id': 'taskid',
       'outputs_ref': {
         'isolatedserver': 'https://isolate.example.com',
@@ -1189,11 +1194,11 @@ class SwarmingTest(BaseTest):
         'isolated': 'badcoffee',
       }
     }).get_result()
+    self.assertFalse(corrupted)
     self.assertIsNone(actual)
 
   def test_load_build_run_result_async_non_https_server(self):
-    with self.assertRaises(swarming.BuildResultFileCorruptedError):
-      swarming._load_build_run_result_async({
+    run_result, corrupted = swarming._load_build_run_result_async({
         'id': 'taskid',
         'outputs_ref': {
           'isolatedserver': 'http://isolate.example.com',
@@ -1201,12 +1206,13 @@ class SwarmingTest(BaseTest):
           'isolated': 'badcoffee',
         }
       }).get_result()
+    self.assertTrue(corrupted)
+    self.assertIsNone(run_result)
 
   @mock.patch('swarming.isolate.fetch_async')
   def test_load_build_run_result_invalid_json(self, fetch_isolate_async):
     fetch_isolate_async.return_value = future('{"incomplete_json')
-    with self.assertRaises(swarming.BuildResultFileCorruptedError):
-      swarming._load_build_run_result_async({
+    run_result, corrupted = swarming._load_build_run_result_async({
         'id': 'taskid',
         'outputs_ref': {
           'isolatedserver': 'https://isolate.example.com',
@@ -1214,6 +1220,8 @@ class SwarmingTest(BaseTest):
           'isolated': 'badcoffee',
         }
       }).get_result()
+    self.assertTrue(corrupted)
+    self.assertIsNone(run_result)
 
   @mock.patch('swarming.isolate.fetch_async')
   def test_load_build_run_result_async_isolate_error(self, fetch_isolate_async):
