@@ -1505,11 +1505,22 @@ def delete_many_builds(bucket, status, tags=None, created_by=None):
 
 
 def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
+
   @ndb.transactional_tasklet
-  def del_if_unchanged(key):
+  def txn(key):
     build = yield key.get_async()
-    if build and build.status == status:  # pragma: no branch
-      yield key.delete_async()
+    if not build or build.status != status:  # pragma: no cover
+      raise ndb.Return(False)
+    futs = [key.delete_async()]
+    if build.swarming_hostname and build.swarming_task_id:
+      futs.append(swarming.cancel_task_transactionally_async(
+          build.swarming_hostname, build.swarming_task_id))
+    yield futs
+    raise ndb.Return(True)
+
+  @ndb.tasklet
+  def del_if_unchanged(key):
+    if (yield txn(key)):  # pragma: no branch
       logging.debug('Deleted %s', key.id())
 
   assert status in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED)

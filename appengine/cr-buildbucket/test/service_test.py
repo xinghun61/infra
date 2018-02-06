@@ -1690,6 +1690,19 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       service.delete_many_builds(
           self.test_build.bucket, model.BuildStatus.COMPLETED)
 
+  @mock.patch(
+      'swarming.cancel_task_transactionally_async', autospec=True)
+  def test_delete_many_swarmbucket_builds(self, cancel_task_async):
+    cancel_task_async.return_value = future(None)
+    self.test_build.swarming_hostname = 'swarming.example.com'
+    self.test_build.swarming_task_id = 'deadbeef'
+    self.test_build.put()
+
+    service._task_delete_many_builds(
+        self.test_build.bucket, model.BuildStatus.SCHEDULED)
+
+    cancel_task_async.assert_called_with('swarming.example.com', 'deadbeef')
+
   ###########################  LONGEST_PENDING_TIME ############################
 
   def test_pause_bucket(self):
