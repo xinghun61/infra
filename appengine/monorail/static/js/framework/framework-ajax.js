@@ -35,18 +35,22 @@ function debounce(func, opt_threshold_ms) {
 
 /**
  * Builds a POST string from a parameter dictionary.
- * @param {Object} args parameters to encode.
- * @param {boolean} opt_includeToken whether to include an XSRF token.
- *   If unspecified, defaults to true. Requires the user to be logged in.
+ * @param {Array|Object} args: parameters to encode. Either an object
+ *   mapping names to values or an Array of doubles containing [key, value].
+ * @param {string} opt_token: an optional XSRF token. If not supplied,
+ *   defaults to CS_env.token.
  * @return {string} encoded POST data.
  */
 function CS_postData(args, opt_token) {
   var params = [];
-  if (args instanceof FormData) {
-    for (var entry of args.entries()) {
-      // We never use XHR to post files.
-      if (!(entry[1] instanceof File)) {
-        params.push(entry[0] + "=" + encodeURIComponent(String(entry[1])));
+
+  if (args instanceof Array) {
+    for (var key in args) {
+      var inputValue = args[key];
+      var name = inputValue[0];
+      var value = inputValue[1];
+      if (value !== undefined) {
+        params.push(name + "=" + encodeURIComponent(String(value)));
       }
     }
   } else {
@@ -54,6 +58,7 @@ function CS_postData(args, opt_token) {
       params.push(key + "=" + encodeURIComponent(String(args[key])));
     }
   }
+
   if (opt_token) {
     params.push('token=' + encodeURIComponent(opt_token));
   } else if (opt_token !== false) {
