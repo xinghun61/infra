@@ -26,18 +26,6 @@ from waterfall.test import wf_testcase
 
 
 class EventReportingTest(wf_testcase.WaterfallTestCase):
-  @mock.patch.object(bigquery_helper, 'ReportEventsToBigquery')
-  @mock.patch.object(event_reporting, 'CreateTestFlakeAnalysisCompletionEvent')
-  def testReportTestFlakeAnalysisCompletionEvent(self, mock_create_proto_fn,
-      bq_helper_fn):
-    proto = TestAnalysisCompletionEvent()
-    mock_create_proto_fn.return_value = proto
-
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-
-    event_reporting.ReportTestFlakeAnalysisCompletionEvent(analysis)
-    self.assertTrue(mock_create_proto_fn.called)
-    self.assertTrue(bq_helper_fn.called)
 
   @mock.patch.object(bigquery_helper, 'ReportEventsToBigquery')
   @mock.patch.object(event_reporting,
@@ -53,6 +41,110 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(mock_create_proto_fn.called)
     self.assertTrue(bq_helper_fn.called)
 
+    args, _ = bq_helper_fn.call_args
+    self.assertEqual(args[0], [(proto, analysis.key.urlsafe())])
+
+  @mock.patch.object(bigquery_helper, 'ReportEventsToBigquery')
+  @mock.patch.object(event_reporting,
+                     'CreateTestFailureAnalysisCompletionEvent')
+  def testReportTestFailureAnalysisCompletionEvent(self, mock_create_proto_fn,
+                                                   bq_helper_fn):
+    proto = TestAnalysisCompletionEvent()
+    proto.test_name = 'foobar'
+    mock_create_proto_fn.return_value = [proto]
+
+    analysis = WfAnalysis.Create('m', 'b', 0)
+
+    event_reporting.ReportTestFailureAnalysisCompletionEvent(analysis)
+    self.assertTrue(mock_create_proto_fn.called)
+    self.assertTrue(bq_helper_fn.called)
+
+    args, _ = bq_helper_fn.call_args
+    self.assertEqual(args[0], [(proto, analysis.key.urlsafe() + 'foobar')])
+
+  @mock.patch.object(bigquery_helper, 'ReportEventsToBigquery')
+  @mock.patch.object(event_reporting,
+                     'CreateTestFailureAnalysisCompletionEvent')
+  def testReportTestFailureAnalysisCompletionEventWithNoEvents(
+      self, mock_create_proto_fn, bq_helper_fn):
+    mock_create_proto_fn.return_value = []
+
+    analysis = WfAnalysis.Create('m', 'b', 0)
+
+    event_reporting.ReportTestFailureAnalysisCompletionEvent(analysis)
+    self.assertTrue(mock_create_proto_fn.called)
+    self.assertFalse(bq_helper_fn.called)
+
+  @mock.patch.object(bigquery_helper, 'ReportEventsToBigquery')
+  @mock.patch.object(event_reporting, 'CreateTestFlakeAnalysisCompletionEvent')
+  def testReportTestFlakeAnalysisCompletionEvent(self, mock_create_proto_fn,
+                                                 bq_helper_fn):
+    proto = TestAnalysisCompletionEvent()
+    mock_create_proto_fn.return_value = proto
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+
+    event_reporting.ReportTestFlakeAnalysisCompletionEvent(analysis)
+    self.assertTrue(mock_create_proto_fn.called)
+    self.assertTrue(bq_helper_fn.called)
+
+    args, _ = bq_helper_fn.call_args
+    self.assertEqual(args[0], [(proto, analysis.key.urlsafe())])
+
+  def testExtractSuspectsForWfAnalysisWithFailures(self):
+    repo_name = 'chromium'
+    revision = 'revision'
+    commit_position = 2
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.suspected_cls = [{
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
+    }, {
+        'repo_name': repo_name,
+        'revision': revision + 'bad',
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT,
+        'failures': ['hello']
+    }]
+    analysis.put()
+
+    event = TestAnalysisCompletionEvent()
+    event_reporting._ExtractSuspectsForWfAnalysis(analysis, event)
+
+    self.assertEqual(len(event.analysis_info.suspects), 1)
+    self.assertEqual(event.analysis_info.suspects[0].revision, revision)
+
+  def testExtractSuspectsForWfAnalysisWithTopScore(self):
+    repo_name = 'chromium'
+    revision = 'revision'
+    commit_position = 2
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.suspected_cls = [{
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
+    }, {
+        'repo_name': repo_name,
+        'revision': revision + 'bad',
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT,
+        'top_score': None
+    }]
+    analysis.put()
+
+    event = TestAnalysisCompletionEvent()
+    event_reporting._ExtractSuspectsForWfAnalysis(analysis, event)
+
+    self.assertEqual(len(event.analysis_info.suspects), 1)
+    self.assertEqual(event.analysis_info.suspects[0].revision, revision)
+
   def testCreateTestFlakeAnalysisCompletionEventWithNoSuspectedBuild(self):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
@@ -64,9 +156,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
                                           test)
     analysis.data_points = [
-      DataPoint.Create(),
-      DataPoint.Create(),
-      DataPoint.Create()
+        DataPoint.Create(),
+        DataPoint.Create(),
+        DataPoint.Create()
     ]
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
@@ -115,9 +207,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
                                           test)
     analysis.data_points = [
-      DataPoint.Create(),
-      DataPoint.Create(),
-      DataPoint.Create()
+        DataPoint.Create(),
+        DataPoint.Create(),
+        DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
     analysis.start_time = datetime.datetime(2017, 1, 1)
@@ -127,9 +219,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     culprit.put()
     analysis.confidence_in_culprit = 1.0
     analysis.suspect_urlsafe_keys = [
-      suspect_1.key.urlsafe(),
-      suspect_2.key.urlsafe(),
-      suspect_3.key.urlsafe()
+        suspect_1.key.urlsafe(),
+        suspect_2.key.urlsafe(),
+        suspect_3.key.urlsafe()
     ]
     analysis.put()
 
@@ -164,7 +256,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
     self.assertEqual(event.analysis_info.outcomes, [
-      findit_pb2.CULPRIT, findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED
+        findit_pb2.CULPRIT, findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED
     ])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.CL_COMMENTED])
     self.assertTrue(event.flake)
@@ -194,9 +286,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
                                           test)
     analysis.data_points = [
-      DataPoint.Create(),
-      DataPoint.Create(),
-      DataPoint.Create()
+        DataPoint.Create(),
+        DataPoint.Create(),
+        DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
     analysis.start_time = datetime.datetime(2017, 1, 1)
@@ -205,9 +297,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     culprit.put()
     analysis.confidence_in_culprit = 1.0
     analysis.suspect_urlsafe_keys = [
-      suspect_1.key.urlsafe(),
-      suspect_2.key.urlsafe(),
-      suspect_3.key.urlsafe()
+        suspect_1.key.urlsafe(),
+        suspect_2.key.urlsafe(),
+        suspect_3.key.urlsafe()
     ]
     analysis.bug_id = 1
     analysis.has_attempted_filing = True
@@ -243,7 +335,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
     self.assertEqual(event.analysis_info.outcomes, [
-      findit_pb2.CULPRIT, findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED
+        findit_pb2.CULPRIT, findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED
     ])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.BUG_CREATED])
 
@@ -272,9 +364,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
                                           test)
     analysis.data_points = [
-      DataPoint.Create(),
-      DataPoint.Create(),
-      DataPoint.Create()
+        DataPoint.Create(),
+        DataPoint.Create(),
+        DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
     analysis.start_time = datetime.datetime(2017, 1, 1)
@@ -284,9 +376,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.confidence_in_culprit = 1.0
     analysis.confidence_in_suspected_build = 1.0
     analysis.suspect_urlsafe_keys = [
-      suspect_1.key.urlsafe(),
-      suspect_2.key.urlsafe(),
-      suspect_3.key.urlsafe()
+        suspect_1.key.urlsafe(),
+        suspect_2.key.urlsafe(),
+        suspect_3.key.urlsafe()
     ]
     analysis.bug_id = 1
     analysis.bug_reported_by = triggering_sources.FINDIT_API
@@ -322,7 +414,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
     self.assertEqual(event.analysis_info.outcomes, [
-      findit_pb2.CULPRIT, findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED
+        findit_pb2.CULPRIT, findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED
     ])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.BUG_COMMENTED])
 
@@ -349,18 +441,18 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
                                           test)
     analysis.data_points = [
-      DataPoint.Create(),
-      DataPoint.Create(),
-      DataPoint.Create()
+        DataPoint.Create(),
+        DataPoint.Create(),
+        DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.confidence_in_culprit = 1.0
     analysis.suspect_urlsafe_keys = [
-      suspect_1.key.urlsafe(),
-      suspect_2.key.urlsafe(),
-      suspect_3.key.urlsafe()
+        suspect_1.key.urlsafe(),
+        suspect_2.key.urlsafe(),
+        suspect_3.key.urlsafe()
     ]
     analysis.put()
 
@@ -503,34 +595,34 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     suspected_build_number = 1
 
     failure_info = {
-      'failed_steps': {
-        'compile': {
-          'current_failure': 2,
-          'first_failure': suspected_build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 2,
+                'first_failure': suspected_build_number,
+            }
         }
-      }
     }
     signals_json = {
-      'compile': {
-        'files': {
-          'a/b/c.cc': [307],
-          'a/b/d.cc': [123],
-        },
-        'keywords': {},
-        'failed_output_nodes': [
-          'obj/a/b/test.c.o',
-          'obj/a/b/test.d.o',
-        ],
-        'failed_edges': [{
-          'rule': 'CXX',
-          'output_nodes': ['obj/a/b/test.c.o'],
-          'dependencies': ["a/b/c.cc", "new/c.cc"]
-        }, {
-          'rule': 'LINK',
-          'output_nodes': ['obj/a/b/test.d.o'],
-          'dependencies': []
-        }]
-      }
+        'compile': {
+            'files': {
+                'a/b/c.cc': [307],
+                'a/b/d.cc': [123],
+            },
+            'keywords': {},
+            'failed_output_nodes': [
+                'obj/a/b/test.c.o',
+                'obj/a/b/test.d.o',
+            ],
+            'failed_edges': [{
+                'rule': 'CXX',
+                'output_nodes': ['obj/a/b/test.c.o'],
+                'dependencies': ["a/b/c.cc", "new/c.cc"]
+            }, {
+                'rule': 'LINK',
+                'output_nodes': ['obj/a/b/test.d.o'],
+                'dependencies': []
+            }]
+        }
     }
     repo_name = 'chromium'
     revision = 'rev1'
@@ -538,15 +630,15 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create(master, builder, suspected_build_number)
     try_job.compile_results = [{
-      "culprit": {
-        "compile": {
-          "url": "https://chromium-review.googlesource.com/q/asdf",
-          "author": "fdsa@chromium.com",
-          "commit_position": commit_position,
-          "revision": revision,
-          "repo_name": repo_name
+        "culprit": {
+            "compile": {
+                "url": "https://chromium-review.googlesource.com/q/asdf",
+                "author": "fdsa@chromium.com",
+                "commit_position": commit_position,
+                "revision": revision,
+                "repo_name": repo_name
+            }
         }
-      }
     }]
     try_job.put()
 
@@ -560,20 +652,19 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.failure_info = failure_info
     analysis.signals = signals_json
     analysis.suspected_cls = [{
-      'repo_name': repo_name,
-      'revision': revision,
-      'commit_position': commit_position,
-      'url': 'https://codereview.chromium.org/123',
-      'status': suspected_cl_status.CORRECT
-    },
-      {
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
+    }, {
         'repo_name': repo_name,
         'revision': revision,
         'commit_position': commit_position,
         'url': 'https://codereview.chromium.org/123',
         'status': suspected_cl_status.CORRECT,
         'top_score': None
-      }]
+    }]
     analysis.put()
 
     event = event_reporting.CreateCompileFailureAnalysisCompletionEvent(
@@ -619,26 +710,26 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     suspected_build_number = 1
 
     signals_json = {
-      'compile': {
-        'files': {
-          'a/b/c.cc': [307],
-          'a/b/d.cc': [123],
-        },
-        'keywords': {},
-        'failed_output_nodes': [
-          'obj/a/b/test.c.o',
-          'obj/a/b/test.d.o',
-        ],
-        'failed_edges': [{
-          'rule': 'CXX',
-          'output_nodes': ['obj/a/b/test.c.o'],
-          'dependencies': ["a/b/c.cc", "new/c.cc"]
-        }, {
-          'rule': 'LINK',
-          'output_nodes': ['obj/a/b/test.d.o'],
-          'dependencies': []
-        }]
-      }
+        'compile': {
+            'files': {
+                'a/b/c.cc': [307],
+                'a/b/d.cc': [123],
+            },
+            'keywords': {},
+            'failed_output_nodes': [
+                'obj/a/b/test.c.o',
+                'obj/a/b/test.d.o',
+            ],
+            'failed_edges': [{
+                'rule': 'CXX',
+                'output_nodes': ['obj/a/b/test.c.o'],
+                'dependencies': ["a/b/c.cc", "new/c.cc"]
+            }, {
+                'rule': 'LINK',
+                'output_nodes': ['obj/a/b/test.d.o'],
+                'dependencies': []
+            }]
+        }
     }
     repo_name = 'chromium'
     revision = 'rev1'
@@ -646,15 +737,15 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create(master, builder, suspected_build_number)
     try_job.compile_results = [{
-      "culprit": {
-        "compile": {
-          "url": "https://chromium-review.googlesource.com/q/asdf",
-          "author": "fdsa@chromium.com",
-          "commit_position": commit_position,
-          "revision": revision,
-          "repo_name": repo_name
+        "culprit": {
+            "compile": {
+                "url": "https://chromium-review.googlesource.com/q/asdf",
+                "author": "fdsa@chromium.com",
+                "commit_position": commit_position,
+                "revision": revision,
+                "repo_name": repo_name
+            }
         }
-      }
     }]
     try_job.put()
 
@@ -668,11 +759,11 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.failure_info = {}
     analysis.signals = signals_json
     analysis.suspected_cls = [{
-      'repo_name': repo_name,
-      'revision': revision,
-      'commit_position': commit_position,
-      'url': 'https://codereview.chromium.org/123',
-      'status': suspected_cl_status.CORRECT
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
     }]
     analysis.put()
 
@@ -714,34 +805,34 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     suspected_build_number = 1
 
     failure_info = {
-      'failed_steps': {
-        'compile': {
-          'current_failure': 2,
-          'first_failure': suspected_build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 2,
+                'first_failure': suspected_build_number,
+            }
         }
-      }
     }
     signals_json = {
-      'compile': {
-        'files': {
-          'a/b/c.cc': [307],
-          'a/b/d.cc': [123],
-        },
-        'keywords': {},
-        'failed_output_nodes': [
-          'obj/a/b/test.c.o',
-          'obj/a/b/test.d.o',
-        ],
-        'failed_edges': [{
-          'rule': 'CXX',
-          'output_nodes': ['obj/a/b/test.c.o'],
-          'dependencies': ["a/b/c.cc", "new/c.cc"]
-        }, {
-          'rule': 'LINK',
-          'output_nodes': ['obj/a/b/test.d.o'],
-          'dependencies': []
-        }]
-      }
+        'compile': {
+            'files': {
+                'a/b/c.cc': [307],
+                'a/b/d.cc': [123],
+            },
+            'keywords': {},
+            'failed_output_nodes': [
+                'obj/a/b/test.c.o',
+                'obj/a/b/test.d.o',
+            ],
+            'failed_edges': [{
+                'rule': 'CXX',
+                'output_nodes': ['obj/a/b/test.c.o'],
+                'dependencies': ["a/b/c.cc", "new/c.cc"]
+            }, {
+                'rule': 'LINK',
+                'output_nodes': ['obj/a/b/test.d.o'],
+                'dependencies': []
+            }]
+        }
     }
     repo_name = 'chromium'
     revision = 'rev1'
@@ -761,11 +852,11 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.failure_info = failure_info
     analysis.signals = signals_json
     analysis.suspected_cls = [{
-      'repo_name': repo_name,
-      'revision': revision,
-      'commit_position': commit_position,
-      'url': 'https://codereview.chromium.org/123',
-      'status': suspected_cl_status.CORRECT
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
     }]
     analysis.put()
 
@@ -805,34 +896,34 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     step = 'compile'
 
     failure_info = {
-      'failed_steps': {
-        'compile': {
-          'current_failure': 2,
-          'first_failure': build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 2,
+                'first_failure': build_number,
+            }
         }
-      }
     }
     signals_json = {
-      'compile': {
-        'files': {
-          'a/b/c.cc': [307],
-          'a/b/d.cc': [123],
-        },
-        'keywords': {},
-        'failed_output_nodes': [
-          'obj/a/b/test.c.o',
-          'obj/a/b/test.d.o',
-        ],
-        'failed_edges': [{
-          'rule': 'CXX',
-          'output_nodes': ['obj/a/b/test.c.o'],
-          'dependencies': ["a/b/c.cc", "new/c.cc"]
-        }, {
-          'rule': 'LINK',
-          'output_nodes': ['obj/a/b/test.d.o'],
-          'dependencies': []
-        }]
-      }
+        'compile': {
+            'files': {
+                'a/b/c.cc': [307],
+                'a/b/d.cc': [123],
+            },
+            'keywords': {},
+            'failed_output_nodes': [
+                'obj/a/b/test.c.o',
+                'obj/a/b/test.d.o',
+            ],
+            'failed_edges': [{
+                'rule': 'CXX',
+                'output_nodes': ['obj/a/b/test.c.o'],
+                'dependencies': ["a/b/c.cc", "new/c.cc"]
+            }, {
+                'rule': 'LINK',
+                'output_nodes': ['obj/a/b/test.d.o'],
+                'dependencies': []
+            }]
+        }
     }
     repo_name = 'chromium'
     revision = 'rev1'
@@ -886,34 +977,34 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     step = 'compile'
 
     failure_info = {
-      'failed_steps': {
-        'compile': {
-          'current_failure': 2,
-          'first_failure': build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 2,
+                'first_failure': build_number,
+            }
         }
-      }
     }
     signals_json = {
-      'compile': {
-        'files': {
-          'a/b/c.cc': [307],
-          'a/b/d.cc': [123],
-        },
-        'keywords': {},
-        'failed_output_nodes': [
-          'obj/a/b/test.c.o',
-          'obj/a/b/test.d.o',
-        ],
-        'failed_edges': [{
-          'rule': 'CXX',
-          'output_nodes': ['obj/a/b/test.c.o'],
-          'dependencies': ["a/b/c.cc", "new/c.cc"]
-        }, {
-          'rule': 'LINK',
-          'output_nodes': ['obj/a/b/test.d.o'],
-          'dependencies': []
-        }]
-      }
+        'compile': {
+            'files': {
+                'a/b/c.cc': [307],
+                'a/b/d.cc': [123],
+            },
+            'keywords': {},
+            'failed_output_nodes': [
+                'obj/a/b/test.c.o',
+                'obj/a/b/test.d.o',
+            ],
+            'failed_edges': [{
+                'rule': 'CXX',
+                'output_nodes': ['obj/a/b/test.c.o'],
+                'dependencies': ["a/b/c.cc", "new/c.cc"]
+            }, {
+                'rule': 'LINK',
+                'output_nodes': ['obj/a/b/test.d.o'],
+                'dependencies': []
+            }]
+        }
     }
     repo_name = 'chromium'
     revision = 'rev1'
@@ -921,15 +1012,15 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create(master, builder, build_number)
     try_job.compile_results = [{
-      "culprit": {
-        "compile": {
-          "url": "https://chromium-review.googlesource.com/q/asdf",
-          "author": "fdsa@chromium.com",
-          "commit_position": commit_position,
-          "revision": revision,
-          "repo_name": repo_name
+        "culprit": {
+            "compile": {
+                "url": "https://chromium-review.googlesource.com/q/asdf",
+                "author": "fdsa@chromium.com",
+                "commit_position": commit_position,
+                "revision": revision,
+                "repo_name": repo_name
+            }
         }
-      }
     }]
     try_job.put()
 
@@ -943,11 +1034,11 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.failure_info = failure_info
     analysis.signals = signals_json
     analysis.suspected_cls = [{
-      'repo_name': repo_name,
-      'revision': revision,
-      'commit_position': commit_position,
-      'url': 'https://codereview.chromium.org/123',
-      'status': suspected_cl_status.CORRECT
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
     }]
     analysis.put()
 
@@ -991,34 +1082,34 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     step = 'compile'
 
     failure_info = {
-      'failed_steps': {
-        'compile': {
-          'current_failure': 2,
-          'first_failure': build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 2,
+                'first_failure': build_number,
+            }
         }
-      }
     }
     signals_json = {
-      'compile': {
-        'files': {
-          'a/b/c.cc': [307],
-          'a/b/d.cc': [123],
-        },
-        'keywords': {},
-        'failed_output_nodes': [
-          'obj/a/b/test.c.o',
-          'obj/a/b/test.d.o',
-        ],
-        'failed_edges': [{
-          'rule': 'CXX',
-          'output_nodes': ['obj/a/b/test.c.o'],
-          'dependencies': ["a/b/c.cc", "new/c.cc"]
-        }, {
-          'rule': 'LINK',
-          'output_nodes': ['obj/a/b/test.d.o'],
-          'dependencies': []
-        }]
-      }
+        'compile': {
+            'files': {
+                'a/b/c.cc': [307],
+                'a/b/d.cc': [123],
+            },
+            'keywords': {},
+            'failed_output_nodes': [
+                'obj/a/b/test.c.o',
+                'obj/a/b/test.d.o',
+            ],
+            'failed_edges': [{
+                'rule': 'CXX',
+                'output_nodes': ['obj/a/b/test.c.o'],
+                'dependencies': ["a/b/c.cc", "new/c.cc"]
+            }, {
+                'rule': 'LINK',
+                'output_nodes': ['obj/a/b/test.d.o'],
+                'dependencies': []
+            }]
+        }
     }
     repo_name = 'chromium'
     revision = 'rev1'
@@ -1026,15 +1117,15 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create(master, builder, build_number)
     try_job.compile_results = [{
-      "culprit": {
-        "compile": {
-          "url": "https://chromium-review.googlesource.com/q/asdf",
-          "author": "fdsa@chromium.com",
-          "commit_position": commit_position,
-          "revision": revision,
-          "repo_name": repo_name
+        "culprit": {
+            "compile": {
+                "url": "https://chromium-review.googlesource.com/q/asdf",
+                "author": "fdsa@chromium.com",
+                "commit_position": commit_position,
+                "revision": revision,
+                "repo_name": repo_name
+            }
         }
-      }
     }]
     try_job.put()
 
@@ -1048,11 +1139,11 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.failure_info = failure_info
     analysis.signals = signals_json
     analysis.suspected_cls = [{
-      'repo_name': repo_name,
-      'revision': revision,
-      'commit_position': commit_position,
-      'url': 'https://codereview.chromium.org/123',
-      'status': suspected_cl_status.CORRECT
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
     }]
     analysis.put()
 
@@ -1096,12 +1187,12 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     step = 'compile'
 
     failure_info = {
-      'failed_steps': {
-        'compile': {
-          'current_failure': 2,
-          'first_failure': build_number,
+        'failed_steps': {
+            'compile': {
+                'current_failure': 2,
+                'first_failure': build_number,
+            }
         }
-      }
     }
     repo_name = 'chromium'
     revision = 'rev1'
@@ -1109,15 +1200,15 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create(master, builder, build_number)
     try_job.compile_results = [{
-      "culprit": {
-        "compile": {
-          "url": "https://chromium-review.googlesource.com",
-          "author": "fdsa@chromium.com",
-          "commit_position": commit_position,
-          "revision": revision,
-          "repo_name": repo_name
+        "culprit": {
+            "compile": {
+                "url": "https://chromium-review.googlesource.com",
+                "author": "fdsa@chromium.com",
+                "commit_position": commit_position,
+                "revision": revision,
+                "repo_name": repo_name
+            }
         }
-      }
     }]
     try_job.put()
 
@@ -1130,11 +1221,11 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.failure_info = failure_info
     analysis.suspected_cls = [{
-      'repo_name': repo_name,
-      'revision': revision,
-      'commit_position': commit_position,
-      'url': 'https://codereview.chromium.org/123',
-      'status': suspected_cl_status.CORRECT
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
     }]
     analysis.put()
 
@@ -1170,3 +1261,474 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.actions, [findit_pb2.CL_COMMENTED])
 
     self.assertEqual(event.failed_build_rules, [])
+
+  def testCreateTestFailureAnalysisCompletionEvent(self):
+    master = 'm'
+    builder = 'b'
+    build_number = 10
+    step = 'step'
+    test = 'test'
+
+    suspected_build_number = 1
+
+    failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 2,
+        'chromium_revision': None,
+        'builds': {
+            2: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            step: {
+                'current_failure': 2,
+                'first_failure': suspected_build_number,
+                'last_pass': 0,
+                'tests': {
+                    test: {
+                        'current_failure': 2,
+                        'first_failure': suspected_build_number,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    }
+                }
+            }
+        }
+    }
+    repo_name = 'chromium'
+    revision = 'rev1'
+    commit_position = 1
+
+    try_job = WfTryJob.Create(master, builder, suspected_build_number)
+    try_job.test_results = [{
+        'culprit': {
+            step: {
+                'tests': {
+                    test: {
+                        'repo_name': repo_name,
+                        'revision': revision,
+                        'commit_position': commit_position,
+                        'url': 'https://codereview.chromium.org/123',
+                        'status': suspected_cl_status.CORRECT
+                    }
+                }
+            }
+        }
+    }]
+    try_job.put()
+
+    culprit_cl = WfSuspectedCL.Create(repo_name, revision, commit_position)
+    culprit_cl.revert_submission_status = analysis_status.COMPLETED
+    culprit_cl.put()
+
+    analysis = WfAnalysis.Create(master, builder, build_number)
+    analysis.start_time = datetime.datetime(2017, 1, 1)
+    analysis.end_time = datetime.datetime(2017, 1, 2)
+    analysis.failure_info = failure_info
+    analysis.suspected_cls = [{
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
+    }]
+    analysis.failure_result_map = {
+        step: {
+            test: "{}/{}/{}".format(master, builder, suspected_build_number),
+            'test2': 'm/b/124'
+        },
+        'step2': {
+            'test3': 'm/b/123'
+        }
+    }
+    analysis.put()
+
+    event = event_reporting.CreateTestFailureAnalysisCompletionEvent(analysis)[
+        0]
+    self.assertEqual(event.analysis_info.master_name, master)
+    self.assertEqual(event.analysis_info.builder_name, builder)
+    self.assertEqual(event.analysis_info.step_name, step)
+
+    start = timestamp_pb2.Timestamp()
+    start.FromDatetime(analysis.start_time)
+    self.assertEqual(event.analysis_info.timestamp.started, start)
+
+    complete = timestamp_pb2.Timestamp()
+    complete.FromDatetime(analysis.end_time)
+    self.assertEqual(event.analysis_info.timestamp.completed, complete)
+
+    self.assertEqual(event.analysis_info.detected_build_number, build_number)
+    self.assertEqual(event.analysis_info.culprit_build_number,
+                     suspected_build_number)
+
+    self.assertEqual(
+        str(event.analysis_info.suspects),
+        '[host: "codereview.chromium.org"\nproject: "chromium"\nref: '
+        '"refs/heads/master"\nrevision: "rev1"\n]')
+    self.assertEqual(
+        str(event.analysis_info.culprit),
+        'host: "codereview.chromium.org"\nproject: "chromium"\nref: '
+        '"refs/heads/master"\nrevision: "rev1"\n')
+
+    self.assertEqual(event.analysis_info.outcomes,
+                     [findit_pb2.CULPRIT, findit_pb2.SUSPECT])
+    self.assertEqual(event.analysis_info.actions, [findit_pb2.REVERT_SUBMITTED])
+
+  def testCreateTestFailureAnalysisCompletionEventNoCulprit(self):
+    master = 'm'
+    builder = 'b'
+    build_number = 10
+    step = 'step'
+    test = 'test'
+
+    suspected_build_number = 1
+
+    failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 2,
+        'chromium_revision': None,
+        'builds': {
+            2: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            step: {
+                'current_failure': 2,
+                'first_failure': suspected_build_number,
+                'last_pass': 0,
+                'tests': {
+                    test: {
+                        'current_failure': 2,
+                        'first_failure': suspected_build_number,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    }
+                }
+            }
+        }
+    }
+    repo_name = 'chromium'
+    revision = 'rev1'
+    commit_position = 1
+
+    try_job = WfTryJob.Create(master, builder, suspected_build_number)
+    try_job.put()
+
+    culprit_cl = WfSuspectedCL.Create(repo_name, revision, commit_position)
+    culprit_cl.revert_submission_status = analysis_status.COMPLETED
+    culprit_cl.put()
+
+    analysis = WfAnalysis.Create(master, builder, build_number)
+    analysis.start_time = datetime.datetime(2017, 1, 1)
+    analysis.end_time = datetime.datetime(2017, 1, 2)
+    analysis.failure_info = failure_info
+    analysis.suspected_cls = [{
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
+    }]
+    analysis.failure_result_map = {
+        step: {
+            test: "{}/{}/{}".format(master, builder, suspected_build_number),
+            'test2': 'm/b/124'
+        },
+        'step2': {
+            'test3': 'm/b/123'
+        }
+    }
+    analysis.put()
+
+    event = event_reporting.CreateTestFailureAnalysisCompletionEvent(analysis)[
+        0]
+    self.assertEqual(event.analysis_info.master_name, master)
+    self.assertEqual(event.analysis_info.builder_name, builder)
+    self.assertEqual(event.analysis_info.step_name, step)
+
+    start = timestamp_pb2.Timestamp()
+    start.FromDatetime(analysis.start_time)
+    self.assertEqual(event.analysis_info.timestamp.started, start)
+
+    complete = timestamp_pb2.Timestamp()
+    complete.FromDatetime(analysis.end_time)
+    self.assertEqual(event.analysis_info.timestamp.completed, complete)
+
+    self.assertEqual(event.analysis_info.detected_build_number, build_number)
+    self.assertEqual(event.analysis_info.culprit_build_number,
+                     suspected_build_number)
+
+    self.assertEqual(
+        str(event.analysis_info.suspects),
+        '[host: "codereview.chromium.org"\nproject: "chromium"\nref: '
+        '"refs/heads/master"\nrevision: "rev1"\n]')
+
+    self.assertEqual(event.analysis_info.outcomes, [findit_pb2.SUSPECT])
+    self.assertEqual(event.analysis_info.actions, [])
+
+  def testCreateTestFailureAnalysisCompletionEventCulpritInSuspects(self):
+    master = 'm'
+    builder = 'b'
+    build_number = 10
+    step = 'step'
+    test = 'test'
+
+    suspected_build_number = 1
+
+    failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 2,
+        'chromium_revision': None,
+        'builds': {
+            2: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            step: {
+                'current_failure': 2,
+                'first_failure': suspected_build_number,
+                'last_pass': 0,
+                'tests': {
+                    test: {
+                        'current_failure': 2,
+                        'first_failure': suspected_build_number,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    }
+                }
+            }
+        }
+    }
+    repo_name = 'chromium'
+    revision = 'rev1'
+    commit_position = 1
+
+    try_job = WfTryJob.Create(master, builder, suspected_build_number)
+    try_job.test_results = [{
+        'culprit': {
+            step: {
+                'tests': {
+                    test: {
+                        'repo_name': repo_name,
+                        'revision': revision,
+                        'commit_position': commit_position,
+                        'url': 'https://codereview.chromium.org/123',
+                        'status': suspected_cl_status.CORRECT
+                    }
+                }
+            }
+        }
+    }]
+    try_job.put()
+
+    culprit_cl = WfSuspectedCL.Create(repo_name, revision, commit_position)
+    culprit_cl.revert_submission_status = analysis_status.COMPLETED
+    culprit_cl.put()
+
+    analysis = WfAnalysis.Create(master, builder, build_number)
+    analysis.start_time = datetime.datetime(2017, 1, 1)
+    analysis.end_time = datetime.datetime(2017, 1, 2)
+    analysis.failure_info = failure_info
+    analysis.suspected_cls = [{
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT
+    }, {
+        'repo_name': repo_name,
+        'revision': revision,
+        'commit_position': commit_position,
+        'url': 'https://codereview.chromium.org/123',
+        'status': suspected_cl_status.CORRECT,
+        'failures': ['failure']
+    }]
+    analysis.failure_result_map = {
+        step: {
+            test: "{}/{}/{}".format(master, builder, suspected_build_number),
+            'test2': 'm/b/124'
+        },
+        'step2': {
+            'test3': 'm/b/123'
+        }
+    }
+    analysis.put()
+
+    event = event_reporting.CreateTestFailureAnalysisCompletionEvent(analysis)[
+        0]
+    self.assertEqual(event.analysis_info.master_name, master)
+    self.assertEqual(event.analysis_info.builder_name, builder)
+    self.assertEqual(event.analysis_info.step_name, step)
+
+    start = timestamp_pb2.Timestamp()
+    start.FromDatetime(analysis.start_time)
+    self.assertEqual(event.analysis_info.timestamp.started, start)
+
+    complete = timestamp_pb2.Timestamp()
+    complete.FromDatetime(analysis.end_time)
+    self.assertEqual(event.analysis_info.timestamp.completed, complete)
+
+    self.assertEqual(event.analysis_info.detected_build_number, build_number)
+    self.assertEqual(event.analysis_info.culprit_build_number,
+                     suspected_build_number)
+
+    self.assertEqual(
+        str(event.analysis_info.suspects),
+        '[host: "codereview.chromium.org"\nproject: "chromium"\nref: '
+        '"refs/heads/master"\nrevision: "rev1"\n]')
+    self.assertEqual(
+        str(event.analysis_info.culprit),
+        'host: "codereview.chromium.org"\nproject: "chromium"\nref: '
+        '"refs/heads/master"\nrevision: "rev1"\n')
+
+    self.assertEqual(event.analysis_info.outcomes,
+                     [findit_pb2.CULPRIT, findit_pb2.SUSPECT])
+    self.assertEqual(event.analysis_info.actions, [findit_pb2.REVERT_SUBMITTED])
+
+  def testCreateTestFailureAnalysisCompletionEventNoStep(self):
+    master = 'm'
+    builder = 'b'
+    build_number = 10
+    step = 'step'
+    test = 'test'
+
+    suspected_build_number = 1
+    failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 2,
+        'chromium_revision': None,
+        'builds': {
+            2: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            step: {
+                'current_failure': 2,
+                'first_failure': suspected_build_number,
+                'last_pass': 0,
+                'tests': {
+                    test: {
+                        'current_failure': 2,
+                        'first_failure': suspected_build_number,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    },
+                }
+            },
+            'step2': {
+                'current_failure': 2,
+                'first_failure': suspected_build_number,
+                'last_pass': 0,
+                'tests': {}
+            }
+        }
+    }
+
+    analysis = WfAnalysis.Create(master, builder, build_number)
+    analysis.start_time = datetime.datetime(2017, 1, 1)
+    analysis.end_time = datetime.datetime(2017, 1, 2)
+    analysis.failure_info = failure_info
+    analysis.failure_result_map = {
+        step: {
+            test: "{}/{}/{}".format(master, builder, suspected_build_number),
+            'test2': 'm/b/124'
+        },
+        'step2': {
+            'test3': 'm/b/123'
+        }
+    }
+    analysis.put()
+
+    events = event_reporting.CreateTestFailureAnalysisCompletionEvent(analysis)
+    self.assertEqual(1, len(events))
+
+  def testCreateTestFailureAnalysisCompletionEventNoFailureResultMap(self):
+    master = 'm'
+    builder = 'b'
+    build_number = 10
+    step = 'step'
+    test = 'test'
+
+    failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 2,
+        'chromium_revision': None,
+        'builds': {
+            2: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            step: {
+                'current_failure': 2,
+                'first_failure': 2,
+                'last_pass': 0,
+                'tests': {
+                    test: {
+                        'current_failure': 2,
+                        'first_failure': 1,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    },
+                    'test2': {
+                        'current_failure': 2,
+                        'first_failure': 2,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    },
+                    'test3': {
+                        'current_failure': 2,
+                        'first_failure': 1,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    },
+                }
+            },
+            'step2': {
+                'current_failure': 2,
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    test: {
+                        'current_failure': 2,
+                        'first_failure': 1,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    },
+                }
+            }
+        }
+    }
+
+    analysis = WfAnalysis.Create(master, builder, build_number)
+    analysis.start_time = datetime.datetime(2017, 1, 1)
+    analysis.end_time = datetime.datetime(2017, 1, 2)
+    analysis.failure_info = failure_info
+    analysis.failure_result_map = {
+        step: {
+            test: "{}/{}/{}".format(master, builder, '1'),
+        },
+    }
+    analysis.put()
+
+    events = event_reporting.CreateTestFailureAnalysisCompletionEvent(analysis)
+    self.assertEqual(1, len(events))
