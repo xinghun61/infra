@@ -56,8 +56,6 @@ var _showRight;
 var _showBelow;
 var _highlightRow;
 var _highlightRowCallback;
-var _floatMetadata;
-var _floatVertically;
 var _allColumnNames;
 
 var _setFieldIDs;

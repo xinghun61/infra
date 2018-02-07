@@ -112,8 +112,6 @@ _closeSubmenus = TKR_closeSubmenus;
 _showRight = TKR_showRight;
 _showBelow = TKR_showBelow;
 _highlightRow = TKR_highlightRow;
-_floatMetadata = TKR_floatMetadata;
-_floatVertically = TKR_floatVertically;
 
 _setFieldIDs = TKR_setFieldIDs;
 _selectTemplate = TKR_selectTemplate;

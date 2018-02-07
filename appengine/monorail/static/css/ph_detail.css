@@ -43,8 +43,11 @@ pre.prettyprint {
     white-space: nowrap;
 }
 
+#meta-float {
+    position: sticky;
+    top: 0;
+}
 #meta-float th { white-space: nowrap; }
-.sticky-top { position: sticky; top: 0; }
 .labelediting input { margin: 0 3px 4px 0; }
 .labelediting input { color: #060; }
 .collapse .ifExpand { display: none }

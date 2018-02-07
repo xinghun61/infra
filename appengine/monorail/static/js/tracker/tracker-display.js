@@ -325,66 +325,6 @@ function TKR_highlightRow(el) {
 
 
 /**
- * Floats the metadata section on the LHS of issue/source detail pages.
- * It assumes that the metadata <div> has id 'meta-float' and its outer
- * container 'meta-container'.
- */
-function TKR_floatMetadata() {
-  var el = $('meta-float');
-
-  if (window.CSS && window.CSS.supports &&
-      window.CSS.supports('position', 'sticky')) {
-    el.classList.add('sticky-top');
-  } else {
-    var container = $('issuemeta');
-    window.addEventListener('scroll', function() {
-      TKR_floatVertically(el, container);
-    }, false);
-  }
-}
-
-/**
- * Floats the given element vertically within the provided container as user
- * scrolls up or down the page. It adjusts the width and padding of the parent
- * element since it sets the 'position' style of the target element to 'fixed'.
- * @param {Element} el The HTML element to float.
- * @param {Element} container The container HTML element.
- */
-function TKR_floatVertically(el, container) {
-  var elBounds = nodeBounds(el);
-  var containerBounds = nodeBounds(container);
-  var scrollTop = GetScrollTop(window);
-
-  if (!el.style.width) {
-    el.style.width = elBounds.w + 'px';
-  }
-
-  if ((scrollTop > containerBounds.y) &&
-      (scrollTop - containerBounds.y + elBounds.h <=
-       container.style.top + containerBounds.h) &&
-      (GetWindowHeight(window) > elBounds.h)) {
-    if (el.style.position != 'fixed') {
-      el.style.position = 'fixed';
-      el.style.top = '0px';
-      if (BR_IsIE()) {
-        el.parentNode.style.paddingRight = elBounds.w + 2 + 'px';
-	el.parentNode.style.paddingTop = '';
-      } else {
-        el.parentNode.style.minWidth = elBounds.w + 'px';
-	el.parentNode.style.height = elBounds.h + 'px';
-      }
-    }
-    el.style.left = (4 - GetScrollLeft(window)) + 'px';
-  } else if (el.style.position != 'relative') {
-    el.style.position = 'relative';
-    el.style.left = '0';
-    if (BR_IsIE()) {
-      el.parentNode.style.paddingRight = '';
-    }
-  }
-}
-
-/**
  * XMLHTTP object used to remember display preferences on the server.
  */
 var TKR_prefsXmlHttp = undefined;

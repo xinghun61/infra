@@ -275,8 +275,6 @@ runOnLoad(function() {
     return false;
   }
 
-  _floatMetadata();
-
   if ($("star"))
     $("star").addEventListener("click", function (event) {
        _TKR_toggleStar($("star"), "[projectname]", [issue.local_id], null, null, "[set_star_token]");
