@@ -39,7 +39,9 @@ class TrainSpamModelCron(webapp2.RequestHandler):
             '--gcs-bucket',
             'monorail-prod.appspot.com',
             '--gcs-prefix',
-            'spam_training_data'
+            'spam_training_data',
+            '--trainer-type',
+            'spam'
         ],
         'region': 'us-central1',
         'jobDir': 'gs://%s-mlengine/%s' % (app_id, job_id),

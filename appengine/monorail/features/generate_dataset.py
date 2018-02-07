@@ -15,7 +15,7 @@ import settings
 from framework import sql
 from framework import servlet
 
-ISSUE_LIMIT = 5000
+ISSUE_LIMIT = 7000
 ISSUES_PER_RUN = 50
 COMPONENT_PREDICTOR_PROJECT = 16
 
@@ -34,7 +34,7 @@ def build_component_dataset(issue, csv_file):
   logging.info('Downloading the dataset from database.')
 
   issue_table = sql.SQLTableManager('Issue')
-  component_table = sql.SQLTableManager('Issue2Component')
+  issue_component_table = sql.SQLTableManager('Issue2Component')
   closed_index_table = sql.SQLTableManager('ComponentIssueClosedIndex')
 
   close = closed_index_table.SelectValue(con, col='closed_index')
@@ -67,10 +67,16 @@ def build_component_dataset(issue, csv_file):
 
     shard_id = random.randint(0, settings.num_logical_shards - 1)
 
-    components = component_table.Select(con,
+    components = issue_component_table.Select(con,
                                         cols=['issue_id',
                                               'GROUP_CONCAT(component_id '
                                               + 'SEPARATOR \',\')'],
+                                        joins=[('ComponentDef ON '
+                                                'ComponentDef.id = '
+                                                'Issue2Component.component_id',
+                                                [])],
+                                        where=[('(deprecated = %s OR deprecated'
+                                                ' IS NULL)', [False])],
                                         group_by=['issue_id'],
                                         shard_id=shard_id,
                                         issue_id=issue_list)

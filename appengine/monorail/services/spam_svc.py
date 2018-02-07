@@ -16,7 +16,7 @@ from collections import defaultdict
 from features import filterrules_helpers
 from framework import sql
 from infra_libs import ts_mon
-from services import spam_helpers
+from services import ml_helpers
 
 from apiclient.discovery import build
 from oauth2client.client import GoogleCredentials
@@ -346,8 +346,9 @@ class SpamService(object):
     Returns a JSON dict of classifier prediction results from
     the ML Engine API.
     """
-    instance = spam_helpers.GenerateFeaturesRaw(issue.summary,
-      firstComment.content, settings.spam_feature_hashes)
+    instance = ml_helpers.GenerateFeaturesRaw(
+        [issue.summary, firstComment.content],
+        settings.spam_feature_hashes)
     return self._classify(instance, reporter, is_project_member)
 
   def ClassifyComment(self, comment_content, commenter, is_project_member=True):
@@ -360,8 +361,9 @@ class SpamService(object):
     Returns a JSON dict of classifier prediction results from
     the ML Engine API.
     """
-    instance = spam_helpers.GenerateFeaturesRaw('', comment_content,
-      settings.spam_feature_hashes)
+    instance = ml_helpers.GenerateFeaturesRaw(
+        ['', comment_content],
+        settings.spam_feature_hashes)
     return self._classify(instance, commenter, is_project_member)
 
 

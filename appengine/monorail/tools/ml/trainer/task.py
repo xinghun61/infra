@@ -1,4 +1,4 @@
-# Copyright 2017 The Chromium Authors. All rights reserved.
+# Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is govered by a BSD-style
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
@@ -23,7 +23,7 @@ from google.cloud.storage import blob, bucket, client
 
 import trainer.dataset
 import trainer.model
-import trainer.spam_helpers
+import trainer.ml_helpers
 
 
 def generate_experiment_fn(**experiment_args):
@@ -44,26 +44,35 @@ def generate_experiment_fn(**experiment_args):
     if hparams.train_file:
 
       with open(hparams.train_file) as f:
-        training_data, _ = trainer.spam_helpers.from_file(f)
+        if hparams.trainer_type == 'spam':
+          training_data = trainer.ml_helpers.spam_from_file(f)
+        else:
+          training_data = trainer.ml_helpers.component_from_file(f)
     else:
       training_data = trainer.dataset.fetch_training_data(hparams.gcs_bucket,
-        hparams.gcs_prefix)
+        hparams.gcs_prefix, hparams.trainer_type)
 
     tf.logging.info('Training data received. Len: %d' % len(training_data))
 
-    X, y = trainer.spam_helpers.transform_csv_to_features(training_data)
+    if hparams.trainer_type == 'spam':
+      X, y = trainer.ml_helpers.transform_spam_csv_to_features(
+          training_data)
+    else:
+      X, y = trainer.ml_helpers.transform_component_csv_to_features(
+          training_data)
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
       random_state=42)
 
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
-      x=trainer.model.feature_list_to_dict(X_train),
+      x=trainer.model.feature_list_to_dict(X_train, hparams.trainer_type),
       y=np.array(y_train),
       num_epochs=hparams.num_epochs,
       batch_size=hparams.train_batch_size,
       shuffle=True
     )
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-      x=trainer.model.feature_list_to_dict(X_test),
+      x=trainer.model.feature_list_to_dict(X_test, hparams.trainer_type),
       y=np.array(y_test),
       num_epochs=None,
       batch_size=hparams.eval_batch_size,
@@ -71,7 +80,9 @@ def generate_experiment_fn(**experiment_args):
     )
 
     return tf.contrib.learn.Experiment(
-      trainer.model.build_estimator(config=config),
+      trainer.model.build_estimator(config=config,
+                                    trainer_type=hparams.trainer_type,
+                                    class_count=len(set(y))),
       train_input_fn=train_input_fn,
       eval_input_fn=eval_input_fn,
       **experiment_args
@@ -108,6 +119,7 @@ def store_eval(job_dir, results):
   else:
     tf.logging.error('Could not find bucket "%s" to output evalution to.'
                      % job_dir)
+
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -196,10 +208,10 @@ if __name__ == '__main__':
     type=int
   )
   parser.add_argument(
-    '--export-format',
-    help='The input format of the exported SavedModel binary',
-    choices=['JSON'],
-    default='JSON'
+    '--trainer-type',
+    help='Which trainer to use (spam or component)',
+    choices=['spam', 'component'],
+    required=True
   )
 
   args = parser.parse_args()
@@ -221,10 +233,10 @@ if __name__ == '__main__':
       train_steps=args.train_steps,
       eval_steps=args.eval_steps,
       export_strategies=[saved_model_export_utils.make_export_strategy(
-        trainer.model.SERVING_FUNCTIONS[args.export_format],
+        trainer.model.SERVING_FUNCTIONS['JSON-' + args.trainer_type],
         exports_to_keep=1,
         default_output_alternative_key=None,
-      )]
+      )],
     ),
     run_config=run_config.RunConfig(model_dir=args.job_dir),
     hparams=hparam.HParams(**args.__dict__)
@@ -232,4 +244,5 @@ if __name__ == '__main__':
 
   # Store a json blob in GCS with the results of training job (AUC of
   # precision/recall, etc).
-  store_eval(args.job_dir, eval_results)
+  if args.trainer_type == 'spam':
+    store_eval(args.job_dir, eval_results)

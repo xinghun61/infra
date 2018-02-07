@@ -114,9 +114,9 @@ banned_user_domains = []
 
 # Location of GCS spam classification staging trainer. Whenever the training
 # code is changed, this should be updated to point to the new package.
-trainer_staging = ('gs://monorail-staging-mlengine/spam_trainer_1513384515/'
-                   'packages/55b1e3baaad0eaf0fc559a6cea5c8021065346016fd80b'
-                   '4471deee1acec60258/trainer-0.1.tar.gz')
+trainer_staging = ('gs://monorail-staging-mlengine/spam_trainer_1517870972/'
+                   'packages/befc9b29d9beb7e89d509bd1e9866183c138e3a32317cc'
+                   'e253342ac9f8e7c375/trainer-0.1.tar.gz')
 
 # Location of GCS spam classification prod trainer. Whenever the training
 # code is changed, this should be updated to point to the new package.

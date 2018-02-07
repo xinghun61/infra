@@ -23,7 +23,7 @@ import sys
 import googleapiclient
 
 from google.cloud.storage import client, bucket, blob
-import spam_helpers
+import ml_helpers
 from apiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
@@ -43,7 +43,7 @@ def Predict(args):
   with open(args.content) as f:
     content = f.read()
 
-  instance = spam_helpers.GenerateFeaturesRaw(summary, content,
+  instance = ml_helpers.GenerateFeaturesRaw([summary, content],
     SPAM_FEATURE_HASHES)
 
   project_ID = 'projects/%s' % args.project
@@ -68,7 +68,7 @@ def LocalPredict(_):
 
   summary = raw_input('Summary: ')
   description = raw_input('Description: ')
-  instance = spam_helpers.GenerateFeaturesRaw(summary, description,
+  instance = ml_helpers.GenerateFeaturesRaw([summary, description],
     SPAM_FEATURE_HASHES)
 
   with open('/tmp/instances.json', 'w') as f:
