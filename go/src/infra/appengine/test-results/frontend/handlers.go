@@ -75,10 +75,11 @@ func init() {
 	r.GET("/data/test_flakiness/list", frontendMW, testFlakinessListHandler)
 	r.GET("/data/test_flakiness/groups", frontendMW, testFlakinessGroupsHandler)
 	r.GET("/data/test_flakiness/data", frontendMW, testFlakinessDataHandler)
+	// Endpoint that returns layout results unzipped from an archive in google storage.
+	r.GET("/data/layout_results/:builder/:buildnum/*filepath", frontendMW, getZipHandler)
 
 	// Internal cron handlers.
-	r.GET(
-		"/internal/cron/delete_old_results", cronMW, deleteOldResultsHandler)
+	r.GET("/internal/cron/delete_old_results", cronMW, deleteOldResultsHandler)
 
 	http.DefaultServeMux.Handle("/", r)
 }
