@@ -61,6 +61,11 @@ func main() {
 	ctx = gologger.StdConfig.Use(ctx)
 	logging.SetLevel(ctx, logging.Debug)
 
+	if *chromedriverBin == "" {
+		logging.Errorf(ctx, "chromedriver flag must be set")
+		os.Exit(-1)
+	}
+
 	// The chromedriver lib won't let us force it to pick a random port, or
 	// use a port reservation server. So make maxPortAttempts to pick one at
 	// random from the range [portMin, portMin+portRange).  This is

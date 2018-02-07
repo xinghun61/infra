@@ -3,7 +3,6 @@
 <base href="/">
 <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
 <script src="/bower_components/web-component-tester/browser.js"></script>
-<script src="/wct-monkeypatch.js"></script>
 <style>
   body {
     font-family: sans-serif;
@@ -39,11 +38,15 @@
     testFiles.push(`/test/${file}?dom=shadow`);
    });
 
-
+  // BEGIN WCT MONKEYPATCH
+  //
   // The following two functions are sort of a hack to work around WCT's
   // current lack of event listening hooks for things like "test finished" and
   // "suite finished". They exist in order to report test results back to
   // the go app that spawned the chromedriver that runs these tests.
+  // See https://github.com/Polymer/web-component-tester/issues/271 for
+  // more context.
+  // TODO(seanmccullough): Serve this code from wct.go instead of inlining.
   let end = function() {
     let passes = WCT._reporter.stats.passes;
     let failures = WCT._reporter.stats.failures;
@@ -90,6 +93,7 @@
       WCT._reporter.on('end', end);
     });
   }
+  // END WCT MONKEYPATCH
 
   WCT.loadSuites(testFiles);
 </script>
