@@ -64,14 +64,16 @@ class AttachmentPage(servlet.Servlet):
       webapp2.abort(404, 'attachment data not found')
 
     bucket_name = app_identity.get_default_gcs_bucket_name()
-    object_path = '/' + bucket_name + attachment.gcs_object_id
+
+    gcs_object_id = attachment.gcs_object_id
+
+    logging.info('attachment id %d is %s', mr.aid, gcs_object_id)
 
     if mr.thumb:
-      url = gcs_helpers.SignUrl(object_path + '-thumbnail')
-      self.redirect(url, abort=True)
+      gcs_object_id = gcs_object_id + '-thumbnail'
 
     # By default GCS will return images and attachments displayable inline.
-    url = gcs_helpers.SignUrl(object_path)
+    url = gcs_helpers.SignUrl(bucket_name, gcs_object_id)
     if not mr.inline:
       filename = attachment.filename
       if not FILE_RE.match(filename):

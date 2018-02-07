@@ -330,14 +330,14 @@ class LogoViewTest(unittest.TestCase):
     logo_file_name = 'logo.png'
     project_pb = project_pb2.MakeProject(
         'testProject', logo_gcs_id=logo_gcs_id, logo_file_name=logo_file_name)
-    object_path = '/' + bucket_name + logo_gcs_id
 
     self.mox.StubOutWithMock(app_identity, 'get_default_gcs_bucket_name')
     app_identity.get_default_gcs_bucket_name().AndReturn(bucket_name)
 
     self.mox.StubOutWithMock(gcs_helpers, 'SignUrl')
-    gcs_helpers.SignUrl(object_path + '-thumbnail').AndReturn('signed/url')
-    gcs_helpers.SignUrl(object_path).AndReturn('signed/url')
+    gcs_helpers.SignUrl(bucket_name,
+        logo_gcs_id + '-thumbnail').AndReturn('signed/url')
+    gcs_helpers.SignUrl(bucket_name, logo_gcs_id).AndReturn('signed/url')
 
     self.mox.ReplayAll()
 

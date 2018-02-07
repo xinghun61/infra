@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 
 from google.appengine.api import app_identity
 from google.appengine.api import images
+from google.appengine.api import urlfetch
 from third_party import cloudstorage
 
 from framework import filecontent
@@ -94,29 +95,28 @@ def StoreLogoInGCS(file_name, content, project_id):
       thumb_height=LOGO_THUMB_HEIGHT)
 
 
-def SignUrl(gcs_filename):
-  expiration_dt = _Now() + ATTACHMENT_TTL
-  expiration = int(time.mktime(expiration_dt.timetuple()))
-  signature_string = '\n'.join([
-      'GET',
-      '',  # Optional MD5, which we don't have.
-      '',  # Optional content-type, which only applies to uploads.
-      str(expiration),
-      gcs_filename]).encode('utf-8')
-
+def SignUrl(bucket, object_id):
   try:
-    signature_bytes = app_identity.sign_blob(signature_string)[1]
-    query_params = {'GoogleAccessId': app_identity.get_service_account_name(),
-                    'Expires': str(expiration),
-                    'Signature': base64.b64encode(signature_bytes)}
-
-    result = 'https://storage.googleapis.com{resource}?{querystring}'
+    result = ('https://www.googleapis.com/storage/v1/b/'
+        '{bucket}/o/{object_id}?access_token={token}&alt=media')
 
     if IS_DEV_APPSERVER:
       result = '/_ah/gcs{resource}?{querystring}'
 
-    return result.format(
-          resource=gcs_filename, querystring=urllib.urlencode(query_params))
+    scopes = ['https://www.googleapis.com/auth/devstorage.read_only']
+
+    if object_id[0] == '/':
+      object_id = object_id[1:]
+
+    url = result.format(
+          bucket=bucket,
+          object_id=urllib.quote_plus(object_id),
+          token=app_identity.get_access_token(scopes)[0])
+
+    resp = urlfetch.fetch(url, follow_redirects=False)
+
+    redir = resp.headers["Location"]
+    return redir
 
   except Exception as e:
     logging.exception(e)

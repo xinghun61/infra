@@ -415,14 +415,15 @@ class LogoView(template_helpers.PBProxy):
       self.viewurl = ''
       return
 
-    object_path = ('/' + app_identity.get_default_gcs_bucket_name() +
-                   project_pb.logo_gcs_id)
+    bucket_name = app_identity.get_default_gcs_bucket_name()
+    gcs_object = project_pb.logo_gcs_id
     self.filename = project_pb.logo_file_name
     self.mimetype = filecontent.GuessContentTypeFromFilename(self.filename)
 
-    self.thumbnail_url = gcs_helpers.SignUrl(object_path + '-thumbnail')
+    self.thumbnail_url = gcs_helpers.SignUrl(bucket_name,
+        gcs_object + '-thumbnail')
     self.viewurl = (
-        gcs_helpers.SignUrl(object_path) + '&' + urllib.urlencode(
+        gcs_helpers.SignUrl(bucket_name, gcs_object) + '&' + urllib.urlencode(
             {'response-content-displacement':
                 ('attachment; filename=%s' % self.filename)}))
 
