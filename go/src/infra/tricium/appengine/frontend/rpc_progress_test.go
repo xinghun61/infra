@@ -6,6 +6,7 @@ package frontend
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	ds "go.chromium.org/gae/service/datastore"
@@ -93,18 +94,51 @@ func TestProgress(t *testing.T) {
 		}
 		So(ds.Put(ctx, g), ShouldBeNil)
 
-		Convey("Progress request", func() {
+		Convey("Progress request handler", func() {
 			ctx = auth.WithState(ctx, &authtest.FakeState{
 				Identity: identity.Identity(okACLUser),
 			})
-			state, progress, _, err := progress(ctx, runID)
+			request := &tricium.ProgressRequest{
+				Consumer: tricium.Consumer_GERRIT,
+				GerritDetails: &tricium.GerritConsumerDetails{
+					Host:     host,
+					Project:  project,
+					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+					Revision: revision,
+				},
+			}
+			response, err := server.Progress(ctx, request)
 			So(err, ShouldBeNil)
-			So(state, ShouldEqual, tricium.State_SUCCESS)
-			So(len(progress), ShouldEqual, 1)
-			So(progress[0].Name, ShouldEqual, functionName)
-			So(progress[0].Platform, ShouldEqual, platform)
-			So(progress[0].NumComments, ShouldEqual, 1)
-			So(progress[0].State, ShouldEqual, tricium.State_SUCCESS)
+			So(response, ShouldResemble, &tricium.ProgressResponse{
+				RunId: strconv.FormatInt(runID, 10),
+				State: tricium.State_SUCCESS,
+				FunctionProgress: []*tricium.FunctionProgress{
+					{
+						Name:        "Hello",
+						Platform:    tricium.Platform_UBUNTU,
+						State:       tricium.State_SUCCESS,
+						NumComments: 1,
+					},
+				},
+			})
+		})
+
+		Convey("Progress request handler with Gerrit patch not found", func() {
+			ctx = auth.WithState(ctx, &authtest.FakeState{
+				Identity: identity.Identity(okACLUser),
+			})
+			request := &tricium.ProgressRequest{
+				Consumer: tricium.Consumer_GERRIT,
+				GerritDetails: &tricium.GerritConsumerDetails{
+					Host:     host,
+					Project:  project,
+					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+					Revision: "refs/changes/97/97/2",
+				},
+			}
+			response, err := server.Progress(ctx, request)
+			So(response, ShouldBeNil)
+			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Validate request with valid run ID", func() {
@@ -143,6 +177,21 @@ func TestProgress(t *testing.T) {
 			id, err := validateProgressRequest(ctx, request)
 			So(id, ShouldEqual, runID)
 			So(err, ShouldBeNil)
+		})
+
+		Convey("Validate request with valid Gerrit details but no stored run", func() {
+			request := &tricium.ProgressRequest{
+				Consumer: tricium.Consumer_GERRIT,
+				GerritDetails: &tricium.GerritConsumerDetails{
+					Host:     host,
+					Project:  project,
+					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+					Revision: "refs/changes/97/97/2",
+				},
+			}
+			id, err := validateProgressRequest(ctx, request)
+			So(id, ShouldEqual, 0)
+			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Validate request with missing Gerrit details", func() {
