@@ -38,14 +38,41 @@ def RunSteps(api):
       gn_args = [
           'is_debug=false',
           'enable_nacl=false',
+          'use_goma=true',
+          'is_official_build=true',
+      ]
+      unbundle_libs = [
+          # 'ffmpeg',  # https://crbug.com/731766
+          # 'flac',  # TODO(thomasanderson): Add libflac-dev to the sysroots.
+          'fontconfig',
+          'freetype',
+          # 'harfbuzz-ng',  # TODO(thomasanderson): Update to the debian sid
+                            # sysroot.
+          # 'icu',  # TODO(thomasanderson): Add libicu-dev to the sysroots.
+          # 'libdrm',  # TODO(thomasanderson): Update to the debian sid sysroot.
+          # 'libjpeg',  # TODO(thomasanderson): Add libjpeg62-turbo-dev to the
+                        # sysroots.
+          # 'libpng',  # https://crbug.com/752403#c10
+          # 'libvpx',  # TODO(thomasanderson): Add libvpx-dev to the sysroots.
+          # 'libwebp',  # TODO(thomasanderson): Add libwebp-dev to the sysroots.
+          # 'libxml',  # https://crbug.com/736026
+          # 'libxslt', # TODO(thomasanderson): Add libxslt1-dev to the sysroots.
+          # 'opus',  # TODO(thomasanderson): Add libopus-dev to the sysroots.
+          # 're2',  # TODO(thomasanderson): Add libre2-dev to the sysroots.
+          # 'snappy',  # TODO(thomasanderson): Add libsnappy-dev to the
+                       # sysroots.
+          'yasm',
+          # 'zlib',  # TODO(thomasanderson): Update to the debian sid sysroot.
       ]
       api.python('Download sysroot.',
                  api.path.join(src_dir, 'build', 'linux', 'sysroot_scripts',
                                'install-sysroot.py'), ['--arch=amd64'])
-      api.python('Download clang.',
+      api.python('Build clang.',
                  api.path.join(src_dir, 'tools', 'clang', 'scripts',
-                               'update.py'),
-                 ['--if-needed', '--without-android'])
+                               'update.py'), [
+                                   '--force-local-build', '--if-needed',
+                                   '--without-android', '--skip-checkout'
+                               ])
       with api.context(env=gn_bootstrap_env):
         api.python('Bootstrap gn.',
                    api.path.join(src_dir, 'tools', 'gn', 'bootstrap',
@@ -59,8 +86,13 @@ def RunSteps(api):
                      'chromium-nodejs/8.9.1', '-s',
                      'third_party/node/linux/node-linux-x64.tar.gz.sha1'
                  ])
-      api.step('Build chrome.',
-               ['ninja', '-C', 'out/Release', 'chrome/installer/linux'])
+      api.python('Unbundle libraries.',
+                 api.path.join(src_dir, 'build', 'linux', 'unbundle',
+                               'replace_gn_files.py'),
+                 ['--system-libraries'] + unbundle_libs)
+      api.step('Build chrome.', [
+          'ninja', '-C', 'out/Release', '-j', '50', 'chrome/installer/linux'
+      ])
   finally:
     api.file.rmtree('Cleaning build dir.', build_dir)
 

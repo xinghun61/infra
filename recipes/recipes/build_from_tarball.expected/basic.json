@@ -39,18 +39,20 @@
       "python",
       "-u",
       "[START_DIR]/build_dir/chromium-65.0.3318.0/tools/clang/scripts/update.py",
+      "--force-local-build",
       "--if-needed",
-      "--without-android"
+      "--without-android",
+      "--skip-checkout"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
-    "name": "Download clang."
+    "name": "Build clang."
   },
   {
     "cmd": [
       "python",
       "-u",
       "[START_DIR]/build_dir/chromium-65.0.3318.0/tools/gn/bootstrap/bootstrap.py",
-      "--gn-gen-args=is_debug=false enable_nacl=false"
+      "--gn-gen-args=is_debug=false enable_nacl=false use_goma=true is_official_build=true"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
     "env": {
@@ -79,9 +81,24 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/build_dir/chromium-65.0.3318.0/build/linux/unbundle/replace_gn_files.py",
+      "--system-libraries",
+      "fontconfig",
+      "freetype",
+      "yasm"
+    ],
+    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "name": "Unbundle libraries."
+  },
+  {
+    "cmd": [
       "ninja",
       "-C",
       "out/Release",
+      "-j",
+      "50",
       "chrome/installer/linux"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
