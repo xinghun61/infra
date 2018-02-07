@@ -94,7 +94,6 @@ def SendRequestToServer(url, http_client, post_data=None):
     content (dict), error (dict): The content from the server and the last error
     encountered trying to retrieve it.
   """
-  headers = {'Authorization': 'Bearer ' + auth_util.GetAuthToken()}
   swarming_settings = waterfall_config.GetSwarmingSettings()
   should_retry = swarming_settings.get('should_retry_server')
   timeout_seconds = (
@@ -106,6 +105,7 @@ def SendRequestToServer(url, http_client, post_data=None):
   tries = 1
   error = None
 
+  headers = {}
   if post_data:
     post_data = json.dumps(post_data, sort_keys=True, separators=(',', ':'))
     headers['Content-Type'] = 'application/json; charset=UTF-8'
@@ -315,9 +315,7 @@ def GetIsolatedDataForStep(master_name,
   """
   step_isolated_data = []
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {
-                                         'stepname': step_name
-                                     })
+                                     http_client, {'stepname': step_name})
   if not data:
     return step_isolated_data
 
@@ -354,9 +352,7 @@ def GetIsolatedShaForStep(master_name, builder_name, build_number, step_name,
         configuration.
   """
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {
-                                         'stepname': step_name
-                                     })
+                                     http_client, {'stepname': step_name})
   if not data:
     logging.error('Failed to get swarming task data for %s/%s/%s/%s',
                   master_name, builder_name, build_number, step_name)
@@ -389,7 +385,7 @@ def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
           'namespace': isolated_data['namespace']
       }
   }
-  url = '%s/api/isolateservice/v1/retrieve' % (isolated_data['isolatedserver'])
+  url = '%s/api/isolateservice/v1/retrieve' % isolated_data['isolatedserver']
 
   return SendRequestToServer(url, http_client, post_data)
 
@@ -509,8 +505,7 @@ def GetSwarmingBotCounts(dimensions, http_client):
       k: int(content_data.get(k, 0))
       for k in ('busy', 'count', 'dead', 'quarantined')
   }
-  bot_counts['available'] = (
-      bot_counts['count'] - bot_counts['busy'] - bot_counts['dead'] -
-      bot_counts['quarantined'])
+  bot_counts['available'] = (bot_counts['count'] - bot_counts['busy'] -
+                             bot_counts['dead'] - bot_counts['quarantined'])
 
   return bot_counts

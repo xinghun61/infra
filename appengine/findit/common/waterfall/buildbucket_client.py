@@ -39,10 +39,10 @@ def _GetBucketName(master_name):
 
 
 class TryJob(
-    collections.namedtuple(
-        'TryJobNamedTuple',
-        ('master_name', 'builder_name', 'revision', 'properties', 'tags',
-         'additional_build_parameters', 'cache_name', 'dimensions'))):
+    collections.namedtuple('TryJobNamedTuple',
+                           ('master_name', 'builder_name', 'revision',
+                            'properties', 'tags', 'additional_build_parameters',
+                            'cache_name', 'dimensions'))):
   """Represents a try-job to be triggered through Buildbucket.
 
   Tag for "user_agent" should not be set, as it will be added automatically.
@@ -166,8 +166,7 @@ def _ConvertFuturesToResults(json_results):
 
 def _GetHeaders():
   return {
-      'Authorization': 'Bearer ' + auth_util.GetAuthToken(),
-      'Content-Type': 'application/json; charset=UTF-8'
+      'Content-Type': 'application/json; charset=UTF-8',
   }
 
 

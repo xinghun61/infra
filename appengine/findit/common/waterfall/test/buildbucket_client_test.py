@@ -67,11 +67,11 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def testTryJobToSwarmbucketRequest(self):
-    try_job = buildbucket_client.TryJob(
-        'luci.c', 'b', 'r', {'a': '1'}, ['a'],
-        {'tests': {
+    try_job = buildbucket_client.TryJob('luci.c', 'b', 'r', {'a': '1'}, ['a'], {
+        'tests': {
             'a_tests': ['Test.One', 'Test.Two'],
-        }}, 'builder_abc123')
+        }
+    }, 'builder_abc123')
     expceted_parameters = {
         'builder_name':
             'b',
@@ -108,12 +108,12 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def testTryJobToSwarmbucketRequestWithOverrides(self):
-    try_job = buildbucket_client.TryJob(
-        'luci.c', 'b', 'r', {'a': '1',
-                             'recipe': 'b'}, ['a'],
-        {'tests': {
-            'a_tests': ['Test.One', 'Test.Two'],
-        }}, 'builder_abc123', ['os:Linux'])
+    try_job = buildbucket_client.TryJob('luci.c', 'b', 'r', {
+        'a': '1',
+        'recipe': 'b'
+    }, ['a'], {'tests': {
+        'a_tests': ['Test.One', 'Test.Two'],
+    }}, 'builder_abc123', ['os:Linux'])
     expceted_parameters = {
         'builder_name':
             'b',
@@ -195,10 +195,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     parameters = json.loads(request_json['parameters_json'])
     self.assertEqual(expceted_parameters, parameters)
 
-  @mock.patch.object(
-      buildbucket_client.auth_util, 'GetAuthToken', return_value='token')
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testTriggerTryJobsSuccess(self, mocked_fetch, _):
+  def testTriggerTryJobsSuccess(self, mocked_fetch):
     response = {
         'build': {
             'id': '1',
@@ -218,10 +216,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('url', build.url)
     self.assertEqual('SCHEDULED', build.status)
 
-  @mock.patch.object(
-      buildbucket_client.auth_util, 'GetAuthToken', return_value='token')
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testTriggerTryJobsFailure(self, mocked_fetch, _):
+  def testTriggerTryJobsFailure(self, mocked_fetch):
     response = {
         'error': {
             'reason': 'error',
@@ -239,10 +235,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('message', error.message)
     self.assertIsNone(build)
 
-  @mock.patch.object(
-      buildbucket_client.auth_util, 'GetAuthToken', return_value='token')
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testTriggerTryJobsRequestFailure(self, mocked_fetch, _):
+  def testTriggerTryJobsRequestFailure(self, mocked_fetch):
     response = 'Not Found'
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [], {})
     mocked_fetch.return_value = _Result(
@@ -255,10 +249,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('Not Found', error.message)
     self.assertIsNone(build)
 
-  @mock.patch.object(
-      buildbucket_client.auth_util, 'GetAuthToken', return_value='token')
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testGetTryJobsSuccess(self, mocked_fetch, _):
+  def testGetTryJobsSuccess(self, mocked_fetch):
     response = {'build': {'id': '1', 'url': 'url', 'status': 'STARTED'}}
     mocked_fetch.return_value = _Result(
         status_code=200, content=json.dumps(response), headers={})
@@ -271,10 +263,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('url', build.url)
     self.assertEqual('STARTED', build.status)
 
-  @mock.patch.object(
-      buildbucket_client.auth_util, 'GetAuthToken', return_value='token')
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testGetTryJobsFailure(self, mocked_fetch, _):
+  def testGetTryJobsFailure(self, mocked_fetch):
     response = {
         'error': {
             'reason': 'BUILD_NOT_FOUND',
@@ -291,10 +281,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('message', error.message)
     self.assertIsNone(build)
 
-  @mock.patch.object(
-      buildbucket_client.auth_util, 'GetAuthToken', return_value='token')
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testGetTryJobsRequestFailure(self, mocked_fetch, _):
+  def testGetTryJobsRequestFailure(self, mocked_fetch):
     response = 'Not Found'
     mocked_fetch.return_value = _Result(
         status_code=404, content=response, headers={})
@@ -306,30 +294,24 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('Not Found', error.message)
     self.assertIsNone(build)
 
-  @mock.patch.object(
-      buildbucket_client.auth_util, 'GetAuthToken', return_value='token')
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testSearchBuildsSuccess(self, mocked_fetch, _):
+  def testSearchBuildsSuccess(self, mocked_fetch):
     tags = [('tag', 'builder:Linux Test')]
     response = {'builds': [{'status': 'COMPLETED'}]}
     mocked_fetch.return_value = _Result(
         status_code=200, content=json.dumps(response), headers={})
     self.assertEqual(response, buildbucket_client.SearchBuilds(tags))
 
-  @mock.patch.object(
-      buildbucket_client.auth_util, 'GetAuthToken', return_value='token')
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testSearchBuildsFailed(self, mocked_fetch, _):
+  def testSearchBuildsFailed(self, mocked_fetch):
     tags = [('tag', 'builder:Linux Test')]
     response = 'Not Found'
     mocked_fetch.return_value = _Result(
         status_code=404, content=response, headers={})
     self.assertIsNone(buildbucket_client.SearchBuilds(tags))
 
-  @mock.patch.object(
-      buildbucket_client.auth_util, 'GetAuthToken', return_value='token')
   @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testSearchBuildsResponseNotJsonSerializable(self, mocked_fetch, _):
+  def testSearchBuildsResponseNotJsonSerializable(self, mocked_fetch):
     tags = [('tag', 'builder:Linux Test')]
     response = 'Not json serializable.'
     mocked_fetch.return_value = _Result(

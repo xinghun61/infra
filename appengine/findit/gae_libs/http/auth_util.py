@@ -14,10 +14,12 @@ from libs.http.interceptor import LoggingInterceptor
 
 _EMAIL_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
 _HOST_REGEX_TO_SCOPES = [
-    (
-        re.compile(r'^.*\.googlesource\.com$'),  # Gerrit.
-        'https://www.googleapis.com/auth/gerritcodereview'),
+    (re.compile(r'^.*\.googlesource\.com$'),
+     'https://www.googleapis.com/auth/gerritcodereview'),  # Gerrit.
+    (re.compile(r'^chromium\-swarm\.appspot\.com$'), _EMAIL_SCOPE),  # Swarming.
     (re.compile(r'^codereview\.chromium\.org$'), _EMAIL_SCOPE),  # Rietveld.
+    (re.compile(r'^cr\-buildbucket\.appspot\.com$'),
+     _EMAIL_SCOPE),  # Buildbucket.
 ]
 
 

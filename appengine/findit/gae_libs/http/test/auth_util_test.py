@@ -39,6 +39,12 @@ class AuthUtilTest(unittest.TestCase):
     self.assertEqual({
         'Authorization': 'Bearer abc'
     }, authenticator.GetHttpHeadersFor('https://codereview.chromium.org/api'))
+    self.assertEqual({
+        'Authorization': 'Bearer abc'
+    }, authenticator.GetHttpHeadersFor('https://chromium-swarm.appspot.com/p'))
+    self.assertEqual({
+        'Authorization': 'Bearer abc'
+    }, authenticator.GetHttpHeadersFor('https://cr-buildbucket.appspot.com/p'))
 
   @mock.patch.object(
       auth_util.users,
