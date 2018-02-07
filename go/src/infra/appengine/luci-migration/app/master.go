@@ -15,8 +15,10 @@
 package app
 
 import (
+	"encoding/json"
 	"net/http"
 	"sort"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -56,6 +58,14 @@ func handleMasterPage(c *router.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if strings.ToLower(c.Request.FormValue("format")) == "json" {
+		c.Writer.Header().Add("Content-Type", "application/json")
+		return json.NewEncoder(c.Writer).Encode(map[string]interface{}{
+			"bucket": viewModel.LuciBucket,
+		})
+	}
+
 	templates.MustRender(c.Context, c.Writer, "pages/master.html", templates.Args{"Model": viewModel})
 	return nil
 }
