@@ -52,7 +52,7 @@ func getZipFile(c context.Context, builder, buildNum, filepath string) ([]byte, 
 	gsPath := gs.Path(fmt.Sprintf("gs://chromium-layout-test-archives/%s/%s/layout-test-results.zip", builder, buildNum))
 	logging.Debugf(c, "Getting google storage path %s", gsPath)
 
-	transport, err := auth.GetRPCTransport(c, auth.AsUser, auth.WithScopes(gs.ReadOnlyScopes...))
+	transport, err := auth.GetRPCTransport(c, auth.NoAuth)
 	if err != nil {
 		return nil, err
 	}
