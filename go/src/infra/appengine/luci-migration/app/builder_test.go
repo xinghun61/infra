@@ -142,6 +142,7 @@ func TestBuilder(t *testing.T) {
 			values := url.Values{}
 			values.Set("action", "update")
 			values.Set(experimentPercentageFormValueName, "10")
+			values.Set(reasonFormValueName, "reasons")
 			rc := &router.Context{
 				Context: c,
 				Params: httprouter.Params{
@@ -176,12 +177,31 @@ func TestBuilder(t *testing.T) {
 				err = datastore.Get(c, builder)
 				So(err, ShouldBeNil)
 				So(builder.ExperimentPercentage, ShouldEqual, 10)
+				datastore.GetTestable(c).CatchupIndexes()
+
+				var changes []*storage.BuilderChange
+				err := datastore.GetAll(c, datastore.NewQuery(storage.BuilderChangeKind), &changes)
+				So(err, ShouldBeNil)
+				So(changes, ShouldResemble, []*storage.BuilderChange{
+					{
+						Builder: datastore.KeyForObj(c, builder),
+						Who:     "user:user@example.com",
+						Why:     "reasons",
+						When:    clock.Now(c),
+						Details: "Experiment percentage: 0 => 10",
+					},
+				})
 			})
 			Convey("set experiment percentage: access denied", func() {
 				err = handleBuilderPagePost(rc)
 				So(err, ShouldBeNil)
 				res := rec.Result()
 				So(res.StatusCode, ShouldEqual, http.StatusForbidden)
+
+				var changes []*storage.BuilderChange
+				err := datastore.GetAll(c, datastore.NewQuery(storage.BuilderChangeKind), &changes)
+				So(err, ShouldBeNil)
+				So(changes, ShouldHaveLength, 0)
 			})
 			Convey("set experiment percentage: not a try builder", func() {
 				rc.Context = auth.WithState(rc.Context, &authtest.FakeState{

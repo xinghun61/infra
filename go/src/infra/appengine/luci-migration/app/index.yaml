@@ -5,3 +5,10 @@ indexes:
   properties:
   - name: SchedulingType
   - name: Migration.Status
+
+# Display builder change log.
+- kind: BuilderChange
+  ancestor: yes
+  properties:
+  - name: When
+    direction: desc

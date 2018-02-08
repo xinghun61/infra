@@ -254,6 +254,7 @@ func init() {
 	r.GET("/masters/:master/", mwMasterRoute, errHandler(handleMasterPage))
 	r.GET("/masters/:master/builders/:builder/", mwMasterRoute, errHandler(handleBuilderPage))
 	r.POST("/masters/:master/builders/:builder/", mwMasterRoute.Extend(xsrf.WithTokenCheck), errHandler(handleBuilderPagePost))
+	r.GET("/masters/:master/builders/:builder/changes", mwMasterRoute, errHandler(handleBuilderUpdatesPage))
 
 	http.DefaultServeMux.Handle("/", r)
 }

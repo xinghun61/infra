@@ -42,6 +42,7 @@ import (
 const (
 	experimentPercentageFormValueName = "experimentPercentage"
 	luciIsProdFormValueName           = "luciIsProd"
+	reasonFormValueName               = "reason"
 	changeBuilderSettingsGroup        = "luci-migration-writers"
 )
 
@@ -197,6 +198,13 @@ func analyzeBuilder(c *router.Context, builder *storage.Builder) error {
 }
 
 func updateBuilder(c *router.Context, builder *storage.Builder) error {
+	now := clock.Now(c.Context)
+	reason := c.Request.FormValue(reasonFormValueName)
+	if reason == "" {
+		http.Error(c.Writer, "update reason is required", http.StatusBadRequest)
+		return nil
+	}
+
 	percentage := -1
 	if v := c.Request.FormValue(experimentPercentageFormValueName); v != "" {
 		if builder.SchedulingType != config.SchedulingType_TRYJOBS {
@@ -224,23 +232,46 @@ func updateBuilder(c *router.Context, builder *storage.Builder) error {
 		return nil
 	}
 
+	skippedUpdate := false
 	err := datastore.RunInTransaction(c.Context, func(c context.Context) error {
 		if err := datastore.Get(c, builder); err != nil {
 			return err
 		}
-		builder.LUCIIsProd = luciIsProd
-		if percentage != -1 {
+		var changes []string
+
+		if builder.LUCIIsProd != luciIsProd {
+			changes = append(changes, fmt.Sprintf("LUCI is prod: %v => %v", builder.LUCIIsProd, luciIsProd))
+			builder.LUCIIsProd = luciIsProd
+		}
+
+		if percentage != -1 && builder.ExperimentPercentage != percentage {
+			changes = append(changes, fmt.Sprintf("Experiment percentage: %v => %v", builder.ExperimentPercentage, percentage))
 			builder.ExperimentPercentage = percentage
 		}
-		return datastore.Put(c, builder)
+
+		if len(changes) == 0 {
+			skippedUpdate = true
+			return nil
+		}
+
+		change := &storage.BuilderChange{
+			Builder: datastore.KeyForObj(c, builder),
+			Who:     auth.CurrentIdentity(c),
+			When:    now,
+			Why:     reason,
+			Details: strings.Join(changes, "\n"),
+		}
+		return datastore.Put(c, builder, change)
 	}, nil)
 	if err != nil {
 		return err
 	}
-	logging.Infof(
-		c.Context,
-		"updated experiment percentage/prod of %q to %d%%/%t by %q",
-		&builder.ID, percentage, luciIsProd, auth.CurrentIdentity(c.Context))
+	if !skippedUpdate {
+		logging.Infof(
+			c.Context,
+			"updated experiment percentage/prod of %q to %d%%/%t by %q because %q",
+			&builder.ID, percentage, luciIsProd, auth.CurrentIdentity(c.Context), reason)
+	}
 	http.Redirect(c.Writer, c.Request, c.Request.URL.String(), http.StatusFound)
 	return nil
 }

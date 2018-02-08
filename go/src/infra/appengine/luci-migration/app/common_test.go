@@ -20,6 +20,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock/testclock"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
@@ -35,5 +36,6 @@ func testContext() context.Context {
 	c = testsecrets.Use(c)
 	c = templates.Use(c, prepareTemplates())
 	c, _ = testclock.UseTime(c, time.Date(2016, time.February, 3, 4, 5, 6, 0, time.UTC))
+	datastore.GetTestable(c).AutoIndex(true)
 	return c
 }

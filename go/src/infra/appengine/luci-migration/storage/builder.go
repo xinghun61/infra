@@ -22,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/common/errors"
 
 	"infra/appengine/luci-migration/config"
@@ -62,6 +63,20 @@ type Builder struct {
 	LUCIIsProd bool
 
 	Expando datastore.PropertyMap `gae:",extra"` // future or deprecated fields
+}
+
+// BuilderChangeKind is the kind of BuilderChange entities.
+const BuilderChangeKind = "BuilderChange"
+
+// BuilderChange stores a single update of a Builder entity.
+// It is a child of Builder entity.
+type BuilderChange struct {
+	Builder *datastore.Key `gae:"$parent"`
+
+	Who     identity.Identity
+	When    time.Time
+	Why     string
+	Details string
 }
 
 // Notification contains info about a notification sent about a status change.
