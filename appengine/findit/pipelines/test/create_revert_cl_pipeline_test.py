@@ -20,7 +20,7 @@ from services.parameters import CreateRevertCLParameters
 from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
-from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
+from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.test import wf_testcase
 
 _CODEREVIEW = Rietveld('codereview.chromium.org')

@@ -8,7 +8,7 @@ from common import constants
 from gae_libs.pipelines import pipeline_handlers
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
-from services import ci_failure
+from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from services import gerrit
 from services.compile_failure import compile_culprit_action
 from services.parameters import BuildKey
@@ -20,12 +20,11 @@ from services.parameters import ListOfCLKeys
 from services.parameters import SendNotificationToIrcParameters
 from services.parameters import SendNotificationForCulpritParameters
 from services.parameters import SubmitRevertCLParameters
-from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
-from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
+from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from waterfall.test import wf_testcase
 
 

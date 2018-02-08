@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from gae_libs.pipelines import GeneratorPipeline
+from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from services.compile_failure import compile_culprit_action
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
@@ -10,12 +11,11 @@ from services.parameters import SendNotificationToIrcParameters
 from services.parameters import SendNotificationForCulpritParameters
 from services.parameters import SubmitRevertCLParameters
 from waterfall import build_util
-from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
-from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
+from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 
 
 class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):

@@ -17,7 +17,7 @@ from services import gerrit
 from services.parameters import CLKey
 from services.parameters import SubmitRevertCLParameters
 from waterfall import suspected_cl_util
-from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
+from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from waterfall.test import wf_testcase
 
 _CODEREVIEW = Gerrit('chromium-review.googlesource.com')
