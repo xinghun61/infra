@@ -309,10 +309,14 @@ def _ValidateConfig(name, d, spec):
 #  }
 _CONFIG_SPEC = {  # yapf: disable
     'action_settings': (dict, True, {
-        'auto_commit_daily_threshold': int,
+        'auto_commit_revert_daily_threshold_compile': int,
         'auto_commit_revert_compile': bool,
         'auto_create_revert_compile': bool,
-        'auto_revert_daily_threshold': int,
+        'auto_create_revert_daily_threshold_compile': int,
+        'auto_commit_revert_daily_threshold_test': int,
+        'auto_commit_revert_test': bool,
+        'auto_create_revert_test': bool,
+        'auto_create_revert_daily_threshold_test': int,
         'cr_notification_build_threshold': int,
         'cr_notification_latency_limit_minutes': int,
         'cr_notification_should_notify_flake_culprit': bool,

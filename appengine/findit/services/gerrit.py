@@ -40,8 +40,8 @@ CULPRIT_IS_A_REVERT = 'Culprit is a revert.'
 AUTO_REVERT_OFF = 'Author of the culprit revision has turned off auto-revert.'
 REVERTED_BY_SHERIFF = 'Culprit has been reverted by a sheriff or the CL owner.'
 
-_DEFAULT_AUTO_REVERT_DAILY_THRESHOLD = 10
-_DEFAULT_AUTO_COMMIT_DAILY_THRESHOLD = 4
+DEFAULT_AUTO_CREATE_REVERT_DAILY_THRESHOLD_COMPILE = 10
+DEFAULT_AUTO_COMMIT_REVERT_DAILY_THRESHOLD_COMPILE = 4
 _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24
 
 _MANUAL_LINK = 'https://goo.gl/NPQkv6'
@@ -214,11 +214,13 @@ def ShouldRevert(pipeline_input, pipeline_id):
     # Either revert is done, skipped or handled by another pipeline.
     return False
 
-  auto_revert_daily_threshold = action_settings.get(
-      'auto_revert_daily_threshold', _DEFAULT_AUTO_REVERT_DAILY_THRESHOLD)
+  auto_create_revert_daily_threshold_compile = action_settings.get(
+      'auto_create_revert_daily_threshold_compile',
+      DEFAULT_AUTO_CREATE_REVERT_DAILY_THRESHOLD_COMPILE)
   # Auto revert has exceeded daily limit.
   if _GetDailyNumberOfRevertedCulprits(
-      auto_revert_daily_threshold) >= auto_revert_daily_threshold:
+      auto_create_revert_daily_threshold_compile
+  ) >= auto_create_revert_daily_threshold_compile:
     logging.info('Auto reverts on %s has met daily limit.',
                  time_util.FormatDatetime(time_util.GetUTCNow()))
     return False
@@ -424,10 +426,11 @@ def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
   if not _CanCommitRevert(repo_name, revision, pipeline_id):
     return False
 
-  auto_commit_daily_threshold = action_settings.get(
-      'auto_commit_daily_threshold', _DEFAULT_AUTO_COMMIT_DAILY_THRESHOLD)
-  if _GetDailyNumberOfCommits(
-      auto_commit_daily_threshold) >= auto_commit_daily_threshold:
+  auto_commit_revert_daily_threshold_compile = action_settings.get(
+      'auto_commit_revert_daily_threshold_compile',
+      DEFAULT_AUTO_COMMIT_REVERT_DAILY_THRESHOLD_COMPILE)
+  if _GetDailyNumberOfCommits(auto_commit_revert_daily_threshold_compile
+                             ) >= auto_commit_revert_daily_threshold_compile:
     logging.info('Auto commits on %s has met daily limit.',
                  time_util.FormatDatetime(time_util.GetUTCNow()))
     return False
@@ -580,8 +583,8 @@ def SendNotificationForCulprit(pipeline_input):
 
   action_settings = waterfall_config.GetActionSettings()
   # Set some impossible default values to prevent notification by default.
-  build_num_threshold = action_settings.get(
-      'cr_notification_build_threshold', 100000)
+  build_num_threshold = action_settings.get('cr_notification_build_threshold',
+                                            100000)
   if not _ShouldSendNotification(repo_name, revision, force_notify,
                                  revert_status, build_num_threshold):
     return False
