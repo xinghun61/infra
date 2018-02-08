@@ -106,13 +106,13 @@ func (s groupSide) trustworthy() bool {
 		return true
 	}
 
-	// If there are no successful builds and fewer than 3 trustworthy failures,
+	// If there are no successful builds and fewer than 2 trustworthy failures,
 	// consider this result too vulnerable to flakes.
 	failures := 0
 	for _, b := range s {
 		if b.Status == buildbucket.StatusFailure {
 			failures++
-			if failures >= 3 {
+			if failures >= 2 {
 				return true
 			}
 		}

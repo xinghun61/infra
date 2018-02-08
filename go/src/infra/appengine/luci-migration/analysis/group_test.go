@@ -44,13 +44,16 @@ func TestGroup(t *testing.T) {
 		Convey("success", func() {
 			So(side(time.Hour, success).success(), ShouldBeTrue)
 			So(side(time.Hour, failure, success).trustworthy(), ShouldBeTrue)
-			So(side(time.Hour, failure, failure).trustworthy(), ShouldBeFalse)
+			So(side(time.Hour, failure, failure).trustworthy(), ShouldBeTrue)
+			So(side(time.Hour, infraFailure, failure, failure).trustworthy(), ShouldBeTrue)
+			So(side(time.Hour, failure, infraFailure).trustworthy(), ShouldBeFalse)
 		})
 		Convey("trustworthy", func() {
 			So(side(time.Hour, success).trustworthy(), ShouldBeTrue)
 			So(side(time.Hour, failure, success).trustworthy(), ShouldBeTrue)
 			So(side(time.Hour, failure, failure, failure).trustworthy(), ShouldBeTrue)
-			So(side(time.Hour, failure, failure).trustworthy(), ShouldBeFalse)
+			So(side(time.Hour, failure, failure).trustworthy(), ShouldBeTrue)
+			So(side(time.Hour, failure, infraFailure).trustworthy(), ShouldBeFalse)
 		})
 		Convey("avgRunDuration", func() {
 			var s groupSide

@@ -48,7 +48,7 @@ func TestCompare(t *testing.T) {
 				&group{
 					Key:      mkKey(1),
 					Buildbot: side(time.Hour, failure, success),
-					LUCI:     side(time.Hour, failure, failure),
+					LUCI:     side(time.Hour, failure, infraFailure),
 				},
 			)
 			So(comp.Status, ShouldEqual, storage.StatusInsufficientData)
