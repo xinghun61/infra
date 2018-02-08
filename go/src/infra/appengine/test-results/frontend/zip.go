@@ -44,6 +44,7 @@ func getZipHandler(ctx *router.Context) {
 	}
 
 	w.WriteHeader(200)
+	w.Header().Set("Content-Type", http.DetectContentType(contents))
 	w.Write(contents)
 }
 
