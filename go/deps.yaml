@@ -25,6 +25,12 @@ import:
 - package: github.com/kr/pretty
   version: master
   repo: https://chromium.googlesource.com/external/github.com/kr/pretty.git
+- package: github.com/lann/builder
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/lann/builder.git
+- package: github.com/lann/ps
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/lann/ps.git
 - package: github.com/luci/gkvlite
   version: master
   repo: https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
@@ -47,6 +53,9 @@ import:
 - package: github.com/maruel/ut
   version: master
   repo: https://chromium.googlesource.com/external/github.com/maruel/ut.git
+- package: github.com/Masterminds/squirrel
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/Masterminds/squirrel.git
 - package: github.com/danjacques/gofslock
   version: master
   repo: https://chromium.googlesource.com/external/github.com/danjacques/gofslock.git
@@ -120,7 +129,7 @@ import:
   - user
   - cmd/aedeploy
 - package: cloud.google.com/go
-  version: master
+  version: 977ff9734558eb9c014a8201d777baad2baa38d6  # next commit requires go.opencensus.io/plugin/grpc which fails on Windows
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
