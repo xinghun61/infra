@@ -1,7 +1,7 @@
 [
   {
     "cmd": [
-      "authutil",
+      "luci-auth",
       "token",
       "-service-account-json",
       "/creds/service_accounts/service-account-recipe-roller.json",
