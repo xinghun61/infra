@@ -11,8 +11,6 @@ infra/tools/protoc/mac-amd64    protobuf_version:v3.2.0
 # Node.js deployment.
 infra/nodejs/nodejs/mac-amd64   node_version:6.10.3
 
-infra/tools/authutil/mac-amd64  git_revision:5cf65fdf804a9b3f3023f79d5b3cab2a88ccd09e
-
 # LogDog tool.
 infra/tools/luci/logdog/logdog/mac-amd64  git_revision:5cf65fdf804a9b3f3023f79d5b3cab2a88ccd09e
 
