@@ -45,7 +45,7 @@ class DepApi(util.ModuleShim):
 
     cipddir = workdir.join('_cipd')
     self.m.cipd.ensure(cipddir, {
-      'infra/go/${platform}': 'version:1.9.1',
+      'infra/go/${platform}': 'version:1.9.4',
     })
 
     goenv = {

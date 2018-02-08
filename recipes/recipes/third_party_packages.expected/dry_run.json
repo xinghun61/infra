@@ -3737,7 +3737,7 @@
       "-root",
       "[START_DIR]/dep/_cipd",
       "-ensure-file",
-      "infra/go/${platform} version:1.9.1",
+      "infra/go/${platform} version:1.9.4",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -3747,7 +3747,7 @@
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.9.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.9.4---\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/go/${platform}\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
