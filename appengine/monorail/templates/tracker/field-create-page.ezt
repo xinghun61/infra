@@ -78,6 +78,22 @@
     </td>
   </tr>
 
+  [if-any approvals]
+  <tr id="subfield_row">
+    <th>Parent Approval:</th>
+    <td>
+      <select name="parent_approval">
+        <option value="" [is initial_parent_approval ""]selected[end]>Not an approval's subfield</option>
+        [for approvals]
+          <option value="[approvals.field_name]"
+                  [is initial_parent_approval approvals.field_name]selected[end]
+                  >[approvals.field_name]</option>
+        [end]
+      </select>
+    </td>
+  </tr>
+  [end]
+
   <tr id="choices_row" style="display:none">
     <th>Choices:</th>
     <td>
@@ -151,24 +167,6 @@
   </tr>
 
   <tr id="approval_row" style="display:none">
-    <th>Lenient States:</th>
-    <td>
-      Approval states that anyone involved in the issue can change the status to and from.
-      <textarea name="lenient_statuses" rows="10" cols="75" style="tab-size:12"
-          >[initial_lenient_statuses]</textarea>
-    </td>
-  </tr>
-
-  <tr id="approval_row2" style="display:none">
-    <th>Strict States:</th>
-    <td>
-      Approval states that only listed approvers can change the status to and from.
-      <textarea name="scrict_statuses" rows="10" cols="75" style="tab-size:12"
-          >[initial_strict_statuses]</textarea>
-    </td>
-  </tr>
-
-  <tr id="approval_row3" style="display:none">
     <th>Approvers:</th>
     <td>
       <input id="approvers" name="approver_names" size="75" value="[initial_approvers]"
@@ -179,7 +177,7 @@
     </td>
   </tr>
 
-  <tr id="approval_row4" style="display:none">
+  <tr id="approval_row2" style="display:none">
     <th>Survey:</th>
     <td>
       Any information feature owners need to provide for the approval team should be requested here.
@@ -265,10 +263,12 @@ runOnLoad(function() {
     let approval_row_display = (new_type == 'approval_type') ? '' : 'none';
     document.getElementById(
         'multi_row').style.display = (new_type == 'approval_type') ? 'none' : '';
+    let subfield_row = document.getElementById('subfield_row');
+    if (subfield_row) {
+       subfield_row.style.display = (new_type == 'approval_type') ? 'none' : '';
+    }
     document.getElementById('approval_row').style.display = approval_row_display;
     document.getElementById('approval_row2').style.display = approval_row_display;
-    document.getElementById('approval_row3').style.display = approval_row_display;
-    document.getElementById('approval_row4').style.display = approval_row_display;
   }
 
   var type_select = document.getElementById('field_type');

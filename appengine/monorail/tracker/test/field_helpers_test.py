@@ -51,8 +51,6 @@ class FieldHelpersTest(unittest.TestCase):
         (label_def.label, label_def.label_docstring, False)
         for label_def in self.config.well_known_labels]
     self.assertEqual(unchanged_labels, parsed.revised_labels)
-    self.assertEqual([], parsed.lenient_statuses)
-    self.assertEqual([], parsed.strict_statuses)
     self.assertEqual('', parsed.approvers_str)
     self.assertEqual('', parsed.survey)
 
@@ -72,8 +70,6 @@ class FieldHelpersTest(unittest.TestCase):
         docstring=['It is just some field'],
         choices=['Hot = Lots of activity\nCold = Not much activity'],
         applicable_type=['Defect'],
-        lenient_statuses=['Ready = Ready for review'],
-        strict_statuses=['Started\nApproved = This is approved'],
         approver_names=['approver@chromium.org'],
         survey=['Are there UX changes?']
     )
@@ -102,9 +98,6 @@ class FieldHelpersTest(unittest.TestCase):
         ('somefield-Hot', 'Lots of activity', False),
         ('somefield-Cold', 'Not much activity', False)]
     self.assertEqual(unchanged_labels + new_labels, parsed.revised_labels)
-    self.assertEqual([('Ready', 'Ready for review')], parsed.lenient_statuses)
-    self.assertEqual([('Started', ''), ('Approved', 'This is approved')],
-                     parsed.strict_statuses)
     self.assertEqual('approver@chromium.org', parsed.approvers_str)
     self.assertEqual('Are there UX changes?', parsed.survey)
 

@@ -512,6 +512,7 @@ class FieldDefViewTest(unittest.TestCase):
         None, True, True, False, 3, 99, None, False, None, None,
         None, 'no_action', 'descriptive docstring', False, 1)
     view = tracker_views.FieldDefView(fielddef, config)
+    self.assertEqual('AffectedUsers', view.field_name)
     self.assertEqual('descriptive docstring', view.docstring_short)
     self.assertEqual('INT_TYPE', view.type_name)
     self.assertEqual([], view.choices)

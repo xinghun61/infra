@@ -57,6 +57,7 @@ class FieldCreate(servlet.Servlet):
         'initial_field_docstring': '',
         'initial_importance': 'normal',
         'initial_is_multivalued': ezt.boolean(False),
+        'initial_parent_approval': '',
         'initial_choices': '',
         'initial_admins': '',
         'initial_type': 'enum_type',
@@ -68,11 +69,9 @@ class FieldCreate(servlet.Servlet):
         'initial_notify_on': 0,
         'initial_date_action': 'no_action',
         'well_known_issue_types': well_known_issue_types,
-        'initial_lenient_statuses': 'ReviewRequested\n'
-        'InProgress = Someone has started reviwing this approval',
-        'initial_strict_statuses': 'Approved',
         'initial_approvers': '',
         'initial_survey': '',
+        'approvals': [], # TODO(jojwang): monorail:3241, retrieve approvals
         }
 
   def ProcessFormData(self, mr, post_data):
@@ -124,6 +123,8 @@ class FieldCreate(servlet.Servlet):
       self.PleaseCorrect(
           mr, initial_field_name=parsed.field_name,
           initial_type=parsed.field_type_str,
+          # TODO(jojwang): monorail:3241, parse initial_parent_approval
+          initial_parent_approval='',
           initial_field_docstring=parsed.field_docstring,
           initial_applicable_type=parsed.applicable_type,
           initial_applicable_predicate=parsed.applicable_predicate,
@@ -135,8 +136,6 @@ class FieldCreate(servlet.Servlet):
           initial_notify_on=parsed.notify_on,
           initial_date_action=parsed.date_action_str,
           initial_choices=parsed.choices_text,
-          initial_lenient_statuses=parsed.lenient_statuses_text,
-          initial_strict_stauses=parsed.strict_statuses_text,
           initial_approvers=parsed.approvers_str,
           initial_survey=parsed.survey,
           initial_admins=admin_str,

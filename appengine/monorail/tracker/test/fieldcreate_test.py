@@ -121,9 +121,8 @@ class FieldCreateTest(unittest.TestCase):
         initial_notify_on=0,
         initial_date_action= post_data.get('date_action'),
         initial_choices=post_data.get('choices', ''),
-        initial_lenient_statuses=post_data.get('lenient_statuses', ''),
-        initial_strict_stauses=post_data.get('strict_statuses', ''),
         initial_approvers=post_data.get('approver_names', ''),
+        initial_parent_approval=post_data.get('parent_approval', ''),
         initial_survey=post_data.get('survey', ''),
         initial_admins=post_data.get('admin_names')
     )
