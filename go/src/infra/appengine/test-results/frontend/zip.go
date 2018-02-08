@@ -47,6 +47,9 @@ func getZipHandler(ctx *router.Context) {
 	w.Write(contents)
 }
 
+const megabyte = 1 << 20
+const chunkSize = megabyte * 31
+
 // getZipFile retrieves a file from a layout test archive for a build number from a builder.
 func getZipFile(c context.Context, builder, buildNum, filepath string) ([]byte, error) {
 	gsPath := gs.Path(fmt.Sprintf("gs://chromium-layout-test-archives/%s/%s/layout-test-results.zip", builder, buildNum))
@@ -62,14 +65,24 @@ func getZipFile(c context.Context, builder, buildNum, filepath string) ([]byte, 
 		return nil, err
 	}
 
-	cloudReader, err := cl.NewReader(gsPath, 0, -1)
-	if err != nil {
-		return nil, err
-	}
+	var offset int64
+	allBytes := []byte{}
+	for {
+		logging.Debugf(c, "reading cloud storage with offset %d", offset)
+		cloudReader, err := cl.NewReader(gsPath, offset, chunkSize)
+		if err != nil {
+			return nil, err
+		}
 
-	allBytes, err := ioutil.ReadAll(cloudReader)
-	if err != nil {
-		return nil, err
+		readBytes, err := ioutil.ReadAll(cloudReader)
+		if err != nil {
+			return nil, err
+		}
+		allBytes = append(allBytes, readBytes...)
+		offset += int64(len(readBytes))
+		if len(readBytes) < chunkSize {
+			break
+		}
 	}
 
 	bytesReader := bytes.NewReader(allBytes)
