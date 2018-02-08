@@ -43,8 +43,9 @@ func getZipHandler(ctx *router.Context) {
 		return
 	}
 
-	w.WriteHeader(200)
+	// The order of these statements matters. See net/http docs for more info.
 	w.Header().Set("Content-Type", http.DetectContentType(contents))
+	w.WriteHeader(200)
 	w.Write(contents)
 }
 
