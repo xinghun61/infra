@@ -75,3 +75,7 @@ class ParseUtilTest(testing.AppengineTestCase):
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('a/src/upper/b/c.h', deps),
         ('src/Upper', 'b/c.h', 'https://repo'))
+
+    self.assertEqual(
+        parse_util.GetDepPathAndNormalizedFilePath('../../a/src/c.h', deps),
+        ('src', 'c.h', 'https://repo'))

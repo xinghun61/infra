@@ -51,6 +51,11 @@ def GetCrashedLineRange(line_range_str):
   return range(line_number, line_number + range_length + 1)
 
 
+def RemovePrefix(string, prefix):
+  """Removes prefix from a string."""
+  return string[len(prefix):] if string.startswith(prefix) else string
+
+
 def GetDepPathAndNormalizedFilePath(path, deps, is_java=False,
                                     root_path=None,
                                     root_repo_url=None):
@@ -71,6 +76,12 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False,
   # Default the root repo to chromium if None provided.
   root_path = root_path or CHROMIUM_ROOT_PATH
   root_repo_url = root_repo_url or CHROMIUM_REPO_URL
+
+  # According to crbug.com/810426, a breakage from something in build,
+  # that caused paths relative to out/*asan directory. So strip the ../../ in
+  # the front of file path.
+  path = RemovePrefix(path, '../../')
+
   # First normalize the path by retrieving the normalized path.
   normalized_path = os.path.normpath(path).replace('\\', '/')
 
