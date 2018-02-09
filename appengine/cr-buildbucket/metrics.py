@@ -142,7 +142,7 @@ _BUILD_DURATION_FIELDS = _build_fields(
 
 # requires the argument to have non-None create_time and complete_time.
 add_build_cycle_duration = _adder(  # pragma: no branch
-    gae_ts_mon.NonCumulativeDistributionMetric(
+    gae_ts_mon.CumulativeDistributionMetric(
         'buildbucket/builds/cycle_durations',
         'Duration between build creation and completion',
         _BUILD_DURATION_FIELDS,
