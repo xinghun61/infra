@@ -32,7 +32,6 @@ def _BotUpdateTryJob(bot_id, platform):
   return buildbucket_client.TryJob(
       _TARGET_MASTER,
       builder_name,
-      None,  # revision.
       {'recipe': _BOT_UPDATE_RECIPE},  # properties.
       [],  # tags.
       None,  # additional_build_parameters.

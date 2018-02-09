@@ -14,7 +14,6 @@ from common.findit_http_client import FinditHttpClient
 from common.waterfall.pubsub_callback import MakeTryJobPubsubCallback
 
 # TODO: save these settings in datastore and create a role account.
-_ROLE_EMAIL = 'IF_BREAK_CONTACT_stgao@chromium.org'
 _BUILDBUCKET_HOST = 'cr-buildbucket.appspot.com'
 _BUILDBUCKET_PUT_GET_ENDPOINT = (
     'https://{hostname}/api/buildbucket/v1/builds'.format(
@@ -39,10 +38,19 @@ def _GetBucketName(master_name):
 
 
 class TryJob(
-    collections.namedtuple('TryJobNamedTuple',
-                           ('master_name', 'builder_name', 'revision',
-                            'properties', 'tags', 'additional_build_parameters',
-                            'cache_name', 'dimensions'))):
+    collections.namedtuple(
+        'TryJobNamedTuple',
+        (
+            'master_name',  # Tryserver master name as the build bucket name.
+            'builder_name',  # Tryserver builder name of the try-job.
+            'properties',  # Build properties for the try-job.
+            'tags',  # Tags to flag the try-job for searching or monitoring.
+            # Additional build parameters that do not fit into build properties,
+            # e.g. it is more than 1024 chars for a buildbot build property.
+            'additional_build_parameters',
+            'cache_name',  # The name of the cache in the Swarmingbot.
+            'dimensions'  # The dimensions used to match a Swarmingbot.
+        ))):
   """Represents a try-job to be triggered through Buildbucket.
 
   Tag for "user_agent" should not be set, as it will be added automatically.
@@ -74,15 +82,6 @@ class TryJob(
     if self.additional_build_parameters:
       parameters_json['additional_build_parameters'] = (
           self.additional_build_parameters)
-    if self.revision:
-      parameters_json['changes'] = [
-          {
-              'author': {
-                  'email': _ROLE_EMAIL,
-              },
-              'revision': self.revision,
-          },
-      ]
 
     tags = self.tags[:]
     tags.append('user_agent:findit')
@@ -145,8 +144,7 @@ def _ConvertFuturesToResults(json_results):
   """Converts the given futures to results.
 
   Args:
-    json_results (dict): a map from a key (either build id or revision) to a
-    response for the put or get request to Buildbucket.
+    json_results (list): a list of dict each representing a Buildbucket Build.
 
   Returns:
     A list of tuple (error, build) in the same order as the given results.
