@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2018-02-09
+
+- 4 commits, 3 bugs affected since 57f45c5 (2018-02-06T23:44:05Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Increase RPC deadlines](https://chromium-review.googlesource.com/912350) (seanmccullough@chromium.org)
+- [[som] rm unused code](https://chromium-review.googlesource.com/912228) (seanmccullough@chromium.org)
+- [[som, wct.go] Adjustments for running frontend/Make's wct target.](https://chromium-review.googlesource.com/905506) (seanmccullough@chromium.org)
+- [[som] Fix some FE unit tests.](https://chromium-review.googlesource.com/905743) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/413053](https://crbug.com/413053)
+  -  [https://crbug.com/810362](https://crbug.com/810362)
+  -  [https://crbug.com/810823](https://crbug.com/810823)
+
 # Release Notes sheriff-o-matic 2018-02-06
 
 - 5 commits, 3 bugs affected since 3ad142a (2018-01-31T17:46:25Z)
