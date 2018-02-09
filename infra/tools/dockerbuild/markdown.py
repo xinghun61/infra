@@ -88,7 +88,7 @@ template=Build%20Infrastructure)
     ))
 
     for (name, version), (whl, plats) in sorted(self._packages.items()):
-      package = whl.cipd_package(templated=True)
+      package = whl.cipd_package(self._git_revision, templated=True)
 
       # Build an itelic list of supported platforms.
       supported = ''

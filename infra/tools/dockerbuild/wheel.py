@@ -97,7 +97,7 @@ class Spec(_Spec):
 
   @property
   def tag(self):
-    return '%s-%s' % (self.name, self.version)
+    return '%s-%s' % (self.name, self.version) if self.version else self.name
 
   def to_universal(self):
     return self._replace(universal=UniversalSpec(pyversions=None))
@@ -161,7 +161,7 @@ class Wheel(_Wheel):
   def path(self, system):
     return os.path.join(system.wheel_dir, self.filename)
 
-  def cipd_package(self, templated=False):
+  def cipd_package(self, git_revision, templated=False):
     base_path = ['infra', 'python', 'wheels']
     if self.spec.universal:
       base_path += ['%s-%s' % (self.spec.name, self.pyversion_str)]
@@ -178,6 +178,7 @@ class Wheel(_Wheel):
       version_tag += BINARY_VERSION_SUFFIX
     tags = [
         version_tag,
+        'git_revision:%s' % (git_revision,)
     ]
     return cipd.Package(
       name=('/'.join(p.replace('.', '_') for p in base_path)).lower(),
@@ -279,7 +280,12 @@ class Builder(object):
       for w in built_wheels:
         universal_wheel_path = os.path.join(tdir, w.universal_filename())
         shutil.copy(w.path(system), universal_wheel_path)
-      system.cipd.create_package(wheel.cipd_package(), tdir, pkg_path)
+      _, git_revision = system.check_run(
+          ['git', 'rev-parse', 'HEAD'],
+          cwd=system.root,
+      )
+      system.cipd.create_package(wheel.cipd_package(git_revision),
+                                 tdir, pkg_path)
 
     return pkg_path
 
@@ -686,9 +692,14 @@ def InfraPure(name):
     return os.path.join(os.path.dirname(system.root), 'packages', name)
 
   def version_fn(system):
-    dir_path = os.path.dirname(_local_path(system))
-    _, revision = system.check_run(['git', '-C', dir_path, 'rev-parse', 'HEAD'])
-    return revision.strip()
+    pkg_path = os.path.join(os.path.dirname(system.root), 'packages', name)
+    _, version = check_run(
+        system,
+        None,
+        '.',
+        ['python', os.path.join(pkg_path, 'setup.py') , '--version']
+    )
+    return version
 
   def build_fn(system, wheel):
     path = _local_path(system)
