@@ -7,6 +7,12 @@ from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
 
+def ArePassRatesEqual(pass_rate_1, pass_rate_2):
+  assert pass_rate_1 is not None
+  assert pass_rate_2 is not None
+  return abs(pass_rate_1 - pass_rate_2) <= flake_constants.EPSILON
+
+
 def HasPassRateConverged(overall_pass_rate,
                          total_iterations,
                          partial_pass_rate,
@@ -71,6 +77,24 @@ def HasSufficientInformationForConvergence(
   return (MinimumIterationsReached(total_iterations) and
           HasPassRateConverged(overall_pass_rate, total_iterations,
                                partial_pass_rate, partial_iterations))
+
+
+def IsFullyStable(pass_rate):
+  """Determines whether a pass rate is fully stable.
+
+      Fully stable data points have pass rates that are either -1 (nonexistent)
+      test, 0%, or 100%.
+
+  Args:
+    pass_rate (float): A data point's pass rate.
+
+  Returns:
+    Boolean whether the pass rate is fully stable, which disallows tolerances
+        in the analysis' lower/upper flake thresholds.
+  """
+  assert pass_rate is not None
+  return (TestDoesNotExist(pass_rate) or pass_rate <= flake_constants.EPSILON or
+          abs(pass_rate - 1.0) <= flake_constants.EPSILON)
 
 
 def MinimumIterationsReached(iterations):

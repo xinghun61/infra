@@ -21,6 +21,60 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
         flake_constants.DEFAULT_MAX_SWARMING_TASK_RETRIES_PER_DATA_POINT,
         data_point_util.GetMaximumSwarmingTaskRetriesPerDataPoint())
 
+  def testHasSeriesOfFullyStablePointsPrecedingCommitPosition(self):
+    self.assertFalse(  # Not enough data points.
+        data_point_util.HasSeriesOfFullyStablePointsPrecedingCommitPosition(
+            [], 100, 1))
+    self.assertFalse(  # Not enough data points in a row.
+        data_point_util.HasSeriesOfFullyStablePointsPrecedingCommitPosition([
+            DataPoint.Create(pass_rate=1.0, commit_position=10),
+            DataPoint.Create(pass_rate=1.0, commit_position=11),
+            DataPoint.Create(pass_rate=0.4, commit_position=12),
+        ], 12, 3))
+    self.assertFalse(  # Not all data points fully stable.
+        data_point_util.HasSeriesOfFullyStablePointsPrecedingCommitPosition([
+            DataPoint.Create(pass_rate=1.0, commit_position=10),
+            DataPoint.Create(pass_rate=0.99, commit_position=11),
+            DataPoint.Create(pass_rate=1.0, commit_position=12),
+            DataPoint.Create(pass_rate=0.4, commit_position=13),
+        ], 13, 3))
+    self.assertFalse(  # Preceding data points must be of the same stable type.
+        data_point_util.HasSeriesOfFullyStablePointsPrecedingCommitPosition([
+            DataPoint.Create(pass_rate=1.0, commit_position=10),
+            DataPoint.Create(pass_rate=0.0, commit_position=11),
+            DataPoint.Create(pass_rate=1.0, commit_position=12),
+            DataPoint.Create(pass_rate=0.4, commit_position=13),
+        ], 13, 3))
+    self.assertTrue(  # All stable passing.
+        data_point_util.HasSeriesOfFullyStablePointsPrecedingCommitPosition([
+            DataPoint.Create(pass_rate=1.0, commit_position=10),
+            DataPoint.Create(pass_rate=1.0, commit_position=11),
+            DataPoint.Create(pass_rate=1.0, commit_position=12),
+            DataPoint.Create(pass_rate=0.4, commit_position=13),
+        ], 13, 3))
+    self.assertTrue(  # All stable failing.
+        data_point_util.HasSeriesOfFullyStablePointsPrecedingCommitPosition([
+            DataPoint.Create(pass_rate=0.0, commit_position=10),
+            DataPoint.Create(pass_rate=0.0, commit_position=11),
+            DataPoint.Create(pass_rate=0.0, commit_position=12),
+            DataPoint.Create(pass_rate=0.4, commit_position=13),
+        ], 13, 3))
+    self.assertTrue(  # Stable failing, stable passing, stable failing.
+        data_point_util.HasSeriesOfFullyStablePointsPrecedingCommitPosition([
+            DataPoint.Create(pass_rate=0.0, commit_position=10),
+            DataPoint.Create(pass_rate=1.0, commit_position=11),
+            DataPoint.Create(pass_rate=0.0, commit_position=12),
+            DataPoint.Create(pass_rate=0.0, commit_position=13),
+            DataPoint.Create(pass_rate=0.0, commit_position=14),
+            DataPoint.Create(pass_rate=0.0, commit_position=15),
+        ], 15, 3))
+    self.assertTrue(
+        data_point_util.HasSeriesOfFullyStablePointsPrecedingCommitPosition([
+            DataPoint.Create(pass_rate=0.0, commit_position=10),
+            DataPoint.Create(pass_rate=0.0, commit_position=11),
+            DataPoint.Create(pass_rate=0.0, commit_position=12),
+        ], 13, 3))
+
   @mock.patch.object(
       data_point_util,
       'GetMaximumSwarmingTaskRetriesPerDataPoint',

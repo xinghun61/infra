@@ -11,6 +11,11 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class PassRateUtilTest(WaterfallTestCase):
 
+  def testArePassRatesEqual(self):
+    self.assertTrue(pass_rate_util.ArePassRatesEqual(0.1, 0.1))
+    self.assertTrue(pass_rate_util.ArePassRatesEqual(-1, -1))
+    self.assertFalse(pass_rate_util.ArePassRatesEqual(1.0, 0.0))
+
   def testHasPassRateConverged(self):
     self.assertFalse(
         pass_rate_util.HasPassRateConverged(0, None, 0.5, 50, margin=0.01))
@@ -28,6 +33,13 @@ class PassRateUtilTest(WaterfallTestCase):
     self.assertTrue(
         pass_rate_util.HasSufficientInformationForConvergence(
             0.5, 100, 0.5, 30))
+
+  def testIsFullyStable(self):
+    self.assertTrue(pass_rate_util.IsFullyStable(-1))
+    self.assertTrue(pass_rate_util.IsFullyStable(0.0))
+    self.assertTrue(pass_rate_util.IsFullyStable(1.0))
+    self.assertFalse(pass_rate_util.IsFullyStable(0.01))
+    self.assertFalse(pass_rate_util.IsFullyStable(0.99))
 
   def testMinimumIterationsReached(self):
     self.assertTrue(
