@@ -474,7 +474,7 @@ func getAsSelfOAuthClient(c context.Context) (*http.Client, error) {
 	// Note: "https://www.googleapis.com/auth/userinfo.email" is the default
 	// scope used by GetRPCTransport(AsSelf). Use auth.WithScopes(...) option to
 	// override.
-	c, cancel := context.WithTimeout(c, 1*time.Minute)
+	c, cancel := context.WithTimeout(c, 10*time.Minute)
 	defer cancel()
 
 	t, err := auth.GetRPCTransport(c, auth.AsSelf)
@@ -518,10 +518,13 @@ func WithProdClients(ctx context.Context) context.Context {
 		panic("No OAuth client in context")
 	}
 
+	opts := prpc.DefaultOptions()
+	opts.PerRPCTimeout = 10 * time.Minute
+
 	miloPRPCClient := &prpc.Client{
 		C:       client,
 		Host:    "luci-milo.appspot.com",
-		Options: prpc.DefaultOptions(),
+		Options: opts,
 	}
 	miloBuildbot := milo.NewBuildbotPRPCClient(miloPRPCClient)
 	miloBuildInfo := milo.NewBuildInfoPRPCClient(miloPRPCClient)
