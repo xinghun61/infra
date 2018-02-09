@@ -158,7 +158,7 @@ func (m *Function) GetImpls() []*Impl {
 
 // Definition of a function configuration.
 //
-// An analyzer may expose flags as configuration options, e.g., ClangTidy
+// An analyzer may expose flags as configuration options, e.g. ClangTidy
 // is configured with a 'checks' flag.
 type ConfigDef struct {
 	// Name of configuration option.
@@ -479,8 +479,8 @@ func (m *Cmd) GetArgs() []string {
 type CipdPackage struct {
 	// CIPD package name.
 	PackageName string `protobuf:"bytes,1,opt,name=package_name,json=packageName" json:"package_name,omitempty"`
-	// Path to directory, relative to the working directory, where to install
-	// package. Cannot be empty or start with a slash.
+	// Relative path from the working directory where the package shall be
+	// installed. Cannot be empty or start with a slash.
 	Path string `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
 	// Package version.
 	Version string `protobuf:"bytes,3,opt,name=version" json:"version,omitempty"`

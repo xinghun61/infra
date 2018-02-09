@@ -10,8 +10,9 @@ package tricium;
 message Platform {
   // Enum names of supported platforms.
   //
-  // Note that all platforms may be used to specify data
-  // dependencies but only some may be used as runtime platforms.
+  // Note that all platforms may be used to specify data dependencies but only
+  // some may be used as runtime platforms.
+  //
   // The number of a platform corresponds to one bit in the platforms field of
   // Tricium data entries.
   enum Name {
@@ -50,7 +51,7 @@ message Platform {
   message Details {
     Name name = 1;
 
-    // Swarming dimensions of the form “key:value”, with keys and values mapping
+    // Swarming dimensions of the form "key:value", with keys and values mapping
     // to valid swarming keys/values.
     repeated string dimensions = 2;
 
@@ -62,7 +63,7 @@ message Platform {
     // This field is used when validating configurations and only platforms
     // with this field set to true may be configured as the runtime platform
     // of an implementation. All platform values may be used to express
-    // data-dependencies between functions.
+    // data dependencies between functions.
     bool has_runtime = 3;
   }
 }

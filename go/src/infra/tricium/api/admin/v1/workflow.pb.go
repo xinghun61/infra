@@ -62,8 +62,8 @@ func (m *Workflow) GetIsolateServer() string {
 // A Tricium worker includes the details needed to execute a function on a
 // specific platform as swarming task.
 type Worker struct {
-	// Name of worker is a mangled name from the function name and the platform
-	// for which results are provided for, e.g, ‘GitFileIsolator_LINUX’.
+	// Name of worker is combination of the function and platform name
+	// for which results are provided, e.g "GitFileIsolator_LINUX".
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 	// Includes data dependencies for runtime type checking.
 	// Platform-specific details are provided when required by the corresponding
@@ -79,14 +79,14 @@ type Worker struct {
 	// Swarming dimensions for execution of the worker. These should be on the
 	// form "key:value", using keys and values known to the swarming service.
 	Dimensions []string `protobuf:"bytes,8,rep,name=dimensions" json:"dimensions,omitempty"`
-	// List of cipd packages needed on the swarming task use to execute the
+	// List of cipd packages needed for the swarming task used to execute the
 	// worker.
 	CipdPackages []*tricium2.CipdPackage `protobuf:"bytes,9,rep,name=cipd_packages,json=cipdPackages" json:"cipd_packages,omitempty"`
-	// Command use to execute the worker.
+	// Command used to execute the worker.
 	Cmd *tricium2.Cmd `protobuf:"bytes,10,opt,name=cmd" json:"cmd,omitempty"`
-	// Deadline for execution of the worker in minutes.  Note that this time
+	// Deadline for execution of the worker in minutes. Note that this time
 	// should include the overhead of triggering the corresponding swarming task
-	// and to collect result from it.
+	// collecting result from it.
 	Deadline int32 `protobuf:"varint,11,opt,name=deadline" json:"deadline,omitempty"`
 }
 

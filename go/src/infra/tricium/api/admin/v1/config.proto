@@ -1,6 +1,6 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.  Use of this source
-// code is governed by a BSD-style license that can be found in the LICENSE
-// file.
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 syntax = "proto3";
 
@@ -13,7 +13,8 @@ service Config {
   // Validates a Tricium config.
   //
   // The config to validate is specified in the request.
-  // TODO(emso): Make this RPC public to let users validate configs when they want or via luci-config.
+  // TODO(emso): Make this RPC public to let users validate configs when they
+  // want, or via luci-config.
   rpc Validate(ValidateRequest) returns (ValidateResponse);
 
   // Generates a workflow config from a Tricium config.
@@ -26,9 +27,9 @@ message ValidateRequest {
   // The project configuration to validate.
   tricium.ProjectConfig project_config = 1;
 
-  // The service config to use.
+  // The service config to use (optional).
   //
-  // This field is optional. If not provided the default service config will be used.
+  // If not provided, the default service config will be used.
   tricium.ServiceConfig service_config = 2;
 }
 
@@ -36,8 +37,8 @@ message ValidateRequest {
 message ValidateResponse {
   // The config used for validation.
   //
-  // This is the resulting config after flattening and merging of the
-  // provided project and service config.
+  // This is the resulting config after flattening and merging the provided
+  // project and service config.
   tricium.ProjectConfig validated_config = 1;
 }
 

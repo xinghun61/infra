@@ -77,7 +77,7 @@ message Function {
 
 // Definition of a function configuration.
 //
-// An analyzer may expose flags as configuration options, e.g., ClangTidy
+// An analyzer may expose flags as configuration options, e.g. ClangTidy
 // is configured with a 'checks' flag.
 message ConfigDef {
   // Name of configuration option.
@@ -172,8 +172,8 @@ message CipdPackage {
   // CIPD package name.
   string package_name = 1;
 
-  // Path to directory, relative to the working directory, where to install
-  // package. Cannot be empty or start with a slash.
+  // Relative path from the working directory where the package shall be
+  // installed. Cannot be empty or start with a slash.
   string path = 2;
 
   // Package version.

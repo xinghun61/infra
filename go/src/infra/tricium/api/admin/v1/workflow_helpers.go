@@ -20,7 +20,7 @@ func (wf *Workflow) GetNext(cw string) []string {
 	return nil
 }
 
-// GetWithDescendants returns the provided worker and its decendant workers.
+// GetWithDescendants returns the provided worker and its descendant workers.
 func (wf *Workflow) GetWithDescendants(cw string) []string {
 	workers := []string{cw}
 	for _, n := range wf.GetNext(cw) {

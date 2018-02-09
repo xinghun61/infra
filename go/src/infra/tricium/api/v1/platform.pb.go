@@ -14,8 +14,9 @@ var _ = math.Inf
 
 // Enum names of supported platforms.
 //
-// Note that all platforms may be used to specify data
-// dependencies but only some may be used as runtime platforms.
+// Note that all platforms may be used to specify data dependencies but only
+// some may be used as runtime platforms.
+//
 // The number of a platform corresponds to one bit in the platforms field of
 // Tricium data entries.
 type Platform_Name int32
@@ -82,7 +83,7 @@ func (*Platform) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0}
 // Links platform enum name to Swarming dimensions.
 type Platform_Details struct {
 	Name Platform_Name `protobuf:"varint,1,opt,name=name,enum=tricium.Platform_Name" json:"name,omitempty"`
-	// Swarming dimensions of the form “key:value”, with keys and values mapping
+	// Swarming dimensions of the form "key:value", with keys and values mapping
 	// to valid swarming keys/values.
 	Dimensions []string `protobuf:"bytes,2,rep,name=dimensions" json:"dimensions,omitempty"`
 	// Whether this platform can be used as a runtime platform.
@@ -93,7 +94,7 @@ type Platform_Details struct {
 	// This field is used when validating configurations and only platforms
 	// with this field set to true may be configured as the runtime platform
 	// of an implementation. All platform values may be used to express
-	// data-dependencies between functions.
+	// data dependencies between functions.
 	HasRuntime bool `protobuf:"varint,3,opt,name=has_runtime,json=hasRuntime" json:"has_runtime,omitempty"`
 }
 

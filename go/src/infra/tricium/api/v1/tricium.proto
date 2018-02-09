@@ -248,15 +248,15 @@ message FeedbackResponse {
   // only merged comments are ever returned from the Tricium service.
   int32 comments = 1;
 
-  // Number of collected ‘not useful’ reports.
+  // Number of collected 'not useful' reports.
   int32 not_useful_reports = 2;
 
-  // List of URLs to ‘not useful’ bug reports.
+  // List of URLs to 'not useful' bug reports.
   repeated string issues = 3;
 }
 
 message ReportNotUsefulRequest {
-  // ID of comment as returned by the Results end point.
+  // ID of comment as returned by the Results endpoint.
   string comment_id = 1;
 
   // More feedback information.
@@ -273,24 +273,24 @@ message ReportNotUsefulResponse {
 }
 
 enum State {
-  // Pending is for when an analysis request has been received but the corresponding
-  // workflow, function, or workers are not running yet.
+  // Pending is for when an analysis request has been received but the
+  // corresponding workflow, function, or workers are not running yet.
   PENDING = 0;
 
-  // Running is for when the workflow, function, or workers of a request have been launched
-  // but have not finished.
+  // Running is for when the workflow, function, or workers of a request have
+  // been launched, but have not finished.
   RUNNING = 1;
 
   // Success is for a workflow, function, or worker that successfully completed.
   //
-  // Success of workflows and functions, is aggregated from underlying functions and workers,
-  // where full success means success is aggregated.
+  // Success of workflows and functions is aggregated from underlying
+  // functions and workers, where full success means success is aggregated.
   SUCCESS = 2;
 
   // Failure is for a workflow, function, or worker that completed with failure.
   //
-  // Failure of workflows and functions, is aggregated from underlying functions and workers,
-  // where any occurrence of failure means failure is aggregated.
+  // Failure of workflows and functions is aggregated from underlying functions
+  // and workers, where any occurrence of failure means failure is aggregated.
   FAILURE = 3;
 
   // Canceled is for user canceled workflows, functions, and workers.
@@ -303,7 +303,8 @@ enum State {
 
   // Aborted is for workers aborted due to a failing worker dependency.
   //
-  // For instance, the worker providing the data needed by a worker may have failed.
+  // For instance, the worker providing the data needed by a worker may have
+  // failed.
   ABORTED = 6;
 }
 
@@ -313,13 +314,12 @@ enum Consumer {
   // This is the default value used when no consumer is configured for a project.
   NONE = 0;
 
-  // A Gerrit consumer means the Tricium service polls Gerrit for changes and reports
-  // progress updates and results to Gerrit.
+  // A Gerrit consumer means the Tricium service reports progress updates and
+  // results to Gerrit.
   //
-  // Gerrit details need to be configured for a project before the Gerrit consumer
-  // option is enabled.
-  //
-  // Gerrit consumer details must be provided with this option.
+  // Gerrit details need to be configured for a project before the Gerrit
+  // consumer option is enabled. Gerrit consumer details must be provided with
+  // the request if the consumer type is Gerrit.
   GERRIT = 1;
 }
 
@@ -341,9 +341,9 @@ message GerritConsumerDetails {
 
   // Gerrit change ID.
   //
-  // This value should be a fully qualified ID on the form "<project>~<branch>~<Change-Id>",
-  // where <Change-Id> is a SHA and not a lecacy change ID number.
-  // Note that refs/heads can be omitted from the branch.
+  // This value should be of the form "<project>~<branch>~<Change-Id>", where
+  // <Change-Id> is a Change-Id footer string, and not a legacy change ID
+  // number. Note that "refs/heads/" can be omitted from the branch.
   //
   // Example: "myProject~master~I8473b95934b5732ac55d26311a706c9c2bde9940"
   //

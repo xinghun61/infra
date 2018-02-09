@@ -430,7 +430,7 @@ type Acl struct {
 	// identity, not both.
 	Group string `protobuf:"bytes,2,opt,name=group" json:"group,omitempty"`
 	// Identity, as defined by the auth service. Can be either an email address
-	// or an indentity string, for instance, "anonymous:anonymous" for anonymous
+	// or an identity string, for instance, "anonymous:anonymous" for anonymous
 	// users. Specify either group or identity, not both.
 	Identity string `protobuf:"bytes,3,opt,name=identity" json:"identity,omitempty"`
 }

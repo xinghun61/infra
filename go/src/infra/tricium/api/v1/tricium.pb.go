@@ -22,21 +22,21 @@ var _ = math.Inf
 type State int32
 
 const (
-	// Pending is for when an analysis request has been received but the corresponding
-	// workflow, function, or workers are not running yet.
+	// Pending is for when an analysis request has been received but the
+	// corresponding workflow, function, or workers are not running yet.
 	State_PENDING State = 0
-	// Running is for when the workflow, function, or workers of a request have been launched
-	// but have not finished.
+	// Running is for when the workflow, function, or workers of a request have
+	// been launched, but have not finished.
 	State_RUNNING State = 1
 	// Success is for a workflow, function, or worker that successfully completed.
 	//
-	// Success of workflows and functions, is aggregated from underlying functions and workers,
-	// where full success means success is aggregated.
+	// Success of workflows and functions is aggregated from underlying
+	// functions and workers, where full success means success is aggregated.
 	State_SUCCESS State = 2
 	// Failure is for a workflow, function, or worker that completed with failure.
 	//
-	// Failure of workflows and functions, is aggregated from underlying functions and workers,
-	// where any occurrence of failure means failure is aggregated.
+	// Failure of workflows and functions is aggregated from underlying functions
+	// and workers, where any occurrence of failure means failure is aggregated.
 	State_FAILURE State = 3
 	// Canceled is for user canceled workflows, functions, and workers.
 	// NB! Not supported yet.
@@ -46,7 +46,8 @@ const (
 	State_TIMED_OUT State = 5
 	// Aborted is for workers aborted due to a failing worker dependency.
 	//
-	// For instance, the worker providing the data needed by a worker may have failed.
+	// For instance, the worker providing the data needed by a worker may have
+	// failed.
 	State_ABORTED State = 6
 )
 
@@ -81,13 +82,12 @@ const (
 	//
 	// This is the default value used when no consumer is configured for a project.
 	Consumer_NONE Consumer = 0
-	// A Gerrit consumer means the Tricium service polls Gerrit for changes and reports
-	// progress updates and results to Gerrit.
+	// A Gerrit consumer means the Tricium service reports progress updates and
+	// results to Gerrit.
 	//
-	// Gerrit details need to be configured for a project before the Gerrit consumer
-	// option is enabled.
-	//
-	// Gerrit consumer details must be provided with this option.
+	// Gerrit details need to be configured for a project before the Gerrit
+	// consumer option is enabled. Gerrit consumer details must be provided with
+	// the request if the consumer type is Gerrit.
 	Consumer_GERRIT Consumer = 1
 )
 
@@ -575,9 +575,9 @@ type FeedbackResponse struct {
 	// comments were merged, only merged comments are returned in this count. Note that
 	// only merged comments are ever returned from the Tricium service.
 	Comments int32 `protobuf:"varint,1,opt,name=comments" json:"comments,omitempty"`
-	// Number of collected ‘not useful’ reports.
+	// Number of collected 'not useful' reports.
 	NotUsefulReports int32 `protobuf:"varint,2,opt,name=not_useful_reports,json=notUsefulReports" json:"not_useful_reports,omitempty"`
-	// List of URLs to ‘not useful’ bug reports.
+	// List of URLs to 'not useful' bug reports.
 	Issues []string `protobuf:"bytes,3,rep,name=issues" json:"issues,omitempty"`
 }
 
@@ -608,7 +608,7 @@ func (m *FeedbackResponse) GetIssues() []string {
 }
 
 type ReportNotUsefulRequest struct {
-	// ID of comment as returned by the Results end point.
+	// ID of comment as returned by the Results endpoint.
 	CommentId string `protobuf:"bytes,1,opt,name=comment_id,json=commentId" json:"comment_id,omitempty"`
 	// More feedback information.
 	//
@@ -670,9 +670,9 @@ type GerritConsumerDetails struct {
 	Project string `protobuf:"bytes,2,opt,name=project" json:"project,omitempty"`
 	// Gerrit change ID.
 	//
-	// This value should be a fully qualified ID on the form "<project>~<branch>~<Change-Id>",
-	// where <Change-Id> is a SHA and not a lecacy change ID number.
-	// Note that refs/heads can be omitted from the branch.
+	// This value should be of the form "<project>~<branch>~<Change-Id>", where
+	// <Change-Id> is a Change-Id footer string, and not a legacy change ID
+	// number. Note that "refs/heads/" can be omitted from the branch.
 	//
 	// Example: "myProject~master~I8473b95934b5732ac55d26311a706c9c2bde9940"
 	//

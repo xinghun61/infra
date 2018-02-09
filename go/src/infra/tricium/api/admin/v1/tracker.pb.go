@@ -52,8 +52,8 @@ func (*WorkflowLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescr
 // WorkerLaunchedRequest specifies details needed to mark a worker as launched.
 // This includes details useful for the tracking UI.
 //
-// This message should be sent by the Driver after a swarming task for a worker
-// has been triggered.
+// This message should be sent by the Driver after a swarming task for the
+// worker has been triggered.
 type WorkerLaunchedRequest struct {
 	RunId             int64  `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
 	Worker            string `protobuf:"bytes,2,opt,name=worker" json:"worker,omitempty"`
@@ -106,7 +106,7 @@ func (*WorkerLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescrip
 // This includes details useful for the tracking UI.
 //
 // This message should be sent by the Driver after results from the swarming
-// task for a worker has been collected.
+// task for a worker have been collected.
 type WorkerDoneRequest struct {
 	RunId              int64             `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
 	Worker             string            `protobuf:"bytes,2,opt,name=worker" json:"worker,omitempty"`
@@ -183,7 +183,7 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for Tracker service
 
 type TrackerClient interface {
-	// WorkflowLaunched marks the workflow as launched for a specificed run.
+	// WorkflowLaunched marks the workflow as launched for a specified run.
 	WorkflowLaunched(ctx context.Context, in *WorkflowLaunchedRequest, opts ...grpc.CallOption) (*WorkflowLaunchedResponse, error)
 	// WorkerLaunched marks the specified worker as launched.
 	WorkerLaunched(ctx context.Context, in *WorkerLaunchedRequest, opts ...grpc.CallOption) (*WorkerLaunchedResponse, error)
@@ -263,7 +263,7 @@ func (c *trackerClient) WorkerDone(ctx context.Context, in *WorkerDoneRequest, o
 // Server API for Tracker service
 
 type TrackerServer interface {
-	// WorkflowLaunched marks the workflow as launched for a specificed run.
+	// WorkflowLaunched marks the workflow as launched for a specified run.
 	WorkflowLaunched(context.Context, *WorkflowLaunchedRequest) (*WorkflowLaunchedResponse, error)
 	// WorkerLaunched marks the specified worker as launched.
 	WorkerLaunched(context.Context, *WorkerLaunchedRequest) (*WorkerLaunchedResponse, error)

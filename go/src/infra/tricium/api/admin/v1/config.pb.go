@@ -66,9 +66,9 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 type ValidateRequest struct {
 	// The project configuration to validate.
 	ProjectConfig *tricium3.ProjectConfig `protobuf:"bytes,1,opt,name=project_config,json=projectConfig" json:"project_config,omitempty"`
-	// The service config to use.
+	// The service config to use (optional).
 	//
-	// This field is optional. If not provided the default service config will be used.
+	// If not provided, the default service config will be used.
 	ServiceConfig *tricium3.ServiceConfig `protobuf:"bytes,2,opt,name=service_config,json=serviceConfig" json:"service_config,omitempty"`
 }
 
@@ -95,8 +95,8 @@ func (m *ValidateRequest) GetServiceConfig() *tricium3.ServiceConfig {
 type ValidateResponse struct {
 	// The config used for validation.
 	//
-	// This is the resulting config after flattening and merging of the
-	// provided project and service config.
+	// This is the resulting config after flattening and merging the provided
+	// project and service config.
 	ValidatedConfig *tricium3.ProjectConfig `protobuf:"bytes,1,opt,name=validated_config,json=validatedConfig" json:"validated_config,omitempty"`
 }
 
@@ -180,7 +180,8 @@ type ConfigClient interface {
 	// Validates a Tricium config.
 	//
 	// The config to validate is specified in the request.
-	// TODO(emso): Make this RPC public to let users validate configs when they want or via luci-config.
+	// TODO(emso): Make this RPC public to let users validate configs when they
+	// want, or via luci-config.
 	Validate(ctx context.Context, in *ValidateRequest, opts ...grpc.CallOption) (*ValidateResponse, error)
 	// Generates a workflow config from a Tricium config.
 	//
@@ -245,7 +246,8 @@ type ConfigServer interface {
 	// Validates a Tricium config.
 	//
 	// The config to validate is specified in the request.
-	// TODO(emso): Make this RPC public to let users validate configs when they want or via luci-config.
+	// TODO(emso): Make this RPC public to let users validate configs when they
+	// want, or via luci-config.
 	Validate(context.Context, *ValidateRequest) (*ValidateResponse, error)
 	// Generates a workflow config from a Tricium config.
 	//
