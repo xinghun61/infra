@@ -101,7 +101,7 @@ class ListFlakes(BaseHandler):
         assert culprit_key.pairs()[0]
         assert culprit_key.pairs()[0][0]  # Name of the model.
         assert culprit_key.pairs()[0][1]  # Id of the model.
-        culprit = ndb.Key(culprit_key.pairs()[0][1],
+        culprit = ndb.Key(culprit_key.pairs()[0][0],
                           culprit_key.pairs()[0][1]).get()
 
       data['master_flake_analyses'].append({
