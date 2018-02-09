@@ -8,19 +8,17 @@ import mock
 
 from dto.test_location import TestLocation
 
+from gae_libs import pipelines
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipelines import pipeline_handlers
-
 from libs import analysis_status
 from libs import time_util
 from libs.gitiles.blame import Blame
-
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-
+from pipelines import report_event_pipeline
 from services.flake_failure import heuristic_analysis
-
 from waterfall.flake import confidence
 from waterfall.flake import finish_build_analysis_pipeline
 from waterfall.flake import flake_constants
@@ -90,6 +88,13 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
 
+    report_event_input = pipelines.CreateInputObjectInstance(
+        report_event_pipeline.ReportEventInput,
+        analysis_urlsafe_key=analysis.key.urlsafe())
+    self.MockGeneratorPipeline(
+        report_event_pipeline.ReportAnalysisEventPipeline, report_event_input,
+        None)
+
     pipeline = FinishBuildAnalysisPipeline(analysis.key.urlsafe(), lower_bound,
                                            upper_bound, iterations, False)
     pipeline.start()
@@ -144,7 +149,9 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.start_time = datetime(2017, 6, 26, 23)
     analysis.last_attempted_swarming_task_id = '12345'
     finish_build_analysis_pipeline._UpdateAnalysisResults(
-        analysis, None, analysis_status.ERROR, {'error': 'error'})
+        analysis, None, analysis_status.ERROR, {
+            'error': 'error'
+        })
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertEqual(datetime(2017, 6, 27), analysis.end_time)
 
@@ -170,8 +177,7 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
   def testIdentifysuspectedRangesNoTestLocation(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(
-            build_number=123, git_hash='r1000', blame_list=['r1'])
+        DataPoint.Create(build_number=123, git_hash='r1000', blame_list=['r1'])
     ]
     analysis.suspected_flake_build_number = 123
     analysis.Save()

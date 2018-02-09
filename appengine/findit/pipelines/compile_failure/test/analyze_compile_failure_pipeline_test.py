@@ -6,9 +6,11 @@ import logging
 import mock
 
 from common import constants
+from gae_libs import pipelines
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
+from pipelines import report_event_pipeline
 from pipelines.compile_failure import analyze_compile_failure_pipeline
 from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailurePipeline)
@@ -61,6 +63,14 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
             False
         ],
         expected_kwargs={})
+
+    report_event_input = pipelines.CreateInputObjectInstance(
+        report_event_pipeline.ReportEventInput,
+        analysis_urlsafe_key=WfAnalysis.Get(master_name, builder_name,
+                                            build_number).key.urlsafe())
+    self.MockGeneratorPipeline(
+        report_event_pipeline.ReportAnalysisEventPipeline, report_event_input,
+        None)
 
     root_pipeline = AnalyzeCompileFailurePipeline(
         master_name, builder_name, build_number, current_failure_info, False,

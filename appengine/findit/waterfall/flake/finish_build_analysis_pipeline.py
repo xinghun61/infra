@@ -9,6 +9,7 @@ from google.appengine.ext import ndb
 from common.findit_http_client import FinditHttpClient
 
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
 
@@ -18,7 +19,7 @@ from libs import time_util
 from common import monitoring
 
 from model import result_status
-
+from pipelines import report_event_pipeline
 from services.flake_failure import heuristic_analysis
 
 from waterfall import extractor_util
@@ -61,9 +62,9 @@ def _UpdateAnalysisResults(analysis,
 
   analysis.try_job_status = analysis.try_job_status or analysis_status.SKIPPED
 
-  analysis.result_status = (result_status.NOT_FOUND_UNTRIAGED
-                            if suspected_build is None else
-                            result_status.FOUND_UNTRIAGED)
+  analysis.result_status = (
+      result_status.NOT_FOUND_UNTRIAGED
+      if suspected_build is None else result_status.FOUND_UNTRIAGED)
 
   if error:
     analysis.end_time = time_util.GetUTCNow()
@@ -210,7 +211,8 @@ class FinishBuildAnalysisPipeline(BasePipeline):
         http_client, analysis_urlsafe_key, suspected_revisions)
 
     suspected_ranges = heuristic_analysis.GenerateSuspectedRanges(
-        suspected_revisions, analysis.GetDataPointOfSuspectedBuild().blame_list)
+        suspected_revisions,
+        analysis.GetDataPointOfSuspectedBuild().blame_list)
 
     analysis.LogInfo('Identified suspected ranges %s from revisions %r' %
                      (suspected_ranges, suspected_revisions))
@@ -222,3 +224,9 @@ class FinishBuildAnalysisPipeline(BasePipeline):
 
       # Update the bug associated with the analysis with results of findings.
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
+
+      # Report event to BQ.
+      yield report_event_pipeline.ReportAnalysisEventPipeline(
+          pipelines.CreateInputObjectInstance(
+              report_event_pipeline.ReportEventInput,
+              analysis_urlsafe_key=analysis.key.urlsafe()))

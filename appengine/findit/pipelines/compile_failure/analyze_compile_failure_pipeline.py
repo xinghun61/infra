@@ -6,10 +6,12 @@ import logging
 
 from common import constants
 from gae_libs import appengine_util
+from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from libs import time_util
 from model.wf_analysis import WfAnalysis
+from pipelines import report_event_pipeline
 from pipelines.compile_failure.heuristic_analysis_for_compile_pipeline import (
     HeuristicAnalysisForCompilePipeline)
 from pipelines.compile_failure.start_compile_try_job_pipeline import (
@@ -115,5 +117,13 @@ class AnalyzeCompileFailurePipeline(BasePipeline):
 
     # Try job approach.
     # Checks if first time failures happen and starts a try job if yes.
-    yield StartCompileTryJobPipeline(master_name, builder_name, build_number,
-                                     heuristic_result, build_completed, force)
+    with pipelines.pipeline.InOrder():
+      yield StartCompileTryJobPipeline(master_name, builder_name, build_number,
+                                       heuristic_result, build_completed, force)
+      # Report event to BQ.
+      report_event_input = pipelines.CreateInputObjectInstance(
+          report_event_pipeline.ReportEventInput,
+          analysis_urlsafe_key=WfAnalysis.Get(master_name, builder_name,
+                                              build_number).key.urlsafe())
+      yield report_event_pipeline.ReportAnalysisEventPipeline(
+          report_event_input)

@@ -5,11 +5,13 @@
 import mock
 
 from common import constants
+from gae_libs import pipelines
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
+from pipelines import report_event_pipeline
 from pipelines.test_failure import analyze_test_failure_pipeline
 from pipelines.test_failure.analyze_test_failure_pipeline import (
     AnalyzeTestFailurePipeline)
@@ -36,6 +38,10 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.put()
+
     current_failure_info = {}
 
     self._SetupAnalysis(master_name, builder_name, build_number)
@@ -75,6 +81,13 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         None,
         expected_args=[master_name, builder_name, build_number],
         expected_kwargs={})
+
+    report_event_input = pipelines.CreateInputObjectInstance(
+        report_event_pipeline.ReportEventInput,
+        analysis_urlsafe_key=analysis.key.urlsafe())
+    self.MockGeneratorPipeline(
+        report_event_pipeline.ReportAnalysisEventPipeline, report_event_input,
+        None)
 
     root_pipeline = AnalyzeTestFailurePipeline(
         master_name, builder_name, build_number, current_failure_info, False,
