@@ -774,49 +774,14 @@ CREATE TABLE ComponentIssueClosedIndex (
   PRIMARY KEY (closed_index)
 ) ENGINE=INNODB;
 
-CREATE TABLE ApprovalStatusDef (
-  id INT NOT NULL AUTO_INCREMENT,
-  field_id INT NOT NULL,
-  status VARCHAR(80) BINARY NOT NULL,
-  docstring TEXT,
-
-  PRIMARY KEY (id),
-  UNIQUE KEY (field_id, status),
-  FOREIGN KEY (field_id) REFERENCES FieldDef(id)
-) ENGINE=INNODB;
-
-CREATE TABLE Issue2ApprovalValue (
-  issue_id INT NOT NULL,
-  issue_shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
-  field_id INT NOT NULL,
-  status_id INT NOT NULL,
-  setter_id INT UNSIGNED,
-  set_on INT,
-
-  PRIMARY KEY (issue_id, field_id),
-  INDEX (field_id, issue_shard, status_id),
-  INDEX (field_id, issue_shard, setter_id),
-  INDEX (field_id, issue_shard, set_on),
-
-  FOREIGN KEY (issue_id) REFERENCES Issue(id),
-  FOREIGN KEY (field_id) REFERENCES FieldDef(id),
-  FOREIGN KEY (status_id) REFERENCES ApprovalStatusDef(id),
-  FOREIGN KEY (setter_id) REFERENCES User(user_id)
-) ENGINE=INNODB;
-
-
-CREATE TABLE Approval2Approvers (
-  field_id INT NOT NULL,
+CREATE TABLE ApprovalDef2Approver (
+  approval_id INT NOT NULL,
   approver_id INT UNSIGNED NOT NULL,
-  issue_id INT,
-  issue_shard SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
 
-  PRIMARY KEY (issue_id, field_id, approver_id),
-  INDEX (approver_id, field_id, issue_shard),
+  PRIMARY KEY (approval_id, approver_id),
 
-  FOREIGN KEY (field_id) REFERENCES FieldDef(id),
-  FOREIGN KEY (approver_id) REFERENCES User(user_id),
-  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (approver_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
 
 CREATE TABLE IssueSnapshot (
