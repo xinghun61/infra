@@ -227,6 +227,24 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertEqual(99, data_point.GetCommitPosition('r2'))
     self.assertEqual(100, data_point.GetCommitPosition('r3'))
 
+  def testGetErrorExistingError(self):
+    error = {'title': 'title', 'description': 'description'}
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.error = error
+    analysis.Save()
+
+    self.assertEqual(error, analysis.GetError())
+
+  def testGetErrorGenericError(self):
+    expected_error = {
+        'title': 'Flake analysis encountered an unknown error',
+        'description': 'unknown'
+    }
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    self.assertEqual(expected_error, analysis.GetError())
+
   def testGetRevisionAtCommitPosition(self):
     data_point = DataPoint()
     data_point.blame_list = ['r1', 'r2', 'r3']
@@ -297,6 +315,24 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertEqual(analysis.data_points,
                      analysis.GetDataPointsWithinCommitPositionRange(
                          IntRange(lower=None, upper=None)))
+
+  def testInitializeRunning(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+    analysis.InitializeRunning()
+
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+
+  def testInitializeRunningAlreadyRunning(self):
+    start_time = datetime(2018, 1, 1)
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.status = analysis_status.RUNNING
+    analysis.start_time = start_time
+    analysis.Save()
+    analysis.InitializeRunning()
+
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+    self.assertEqual(start_time, analysis.start_time)
 
   def testUpdateSuspectedBuildIDExistingSuspectedBuild(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

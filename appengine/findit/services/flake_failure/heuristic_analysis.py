@@ -6,47 +6,9 @@ import logging
 
 from google.appengine.ext import ndb
 
-from dto.test_location import TestLocation
-
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-
 from model.flake.flake_culprit import FlakeCulprit
-
-from waterfall import swarming_util
 from waterfall.flake import flake_constants
-
-
-def GetTestLocation(task_id, test_name, http_client):
-  """Gets the filepath and line number of a test from swarming.
-
-  Args:
-    task_id (str): The swarming task id to query.
-    test_name (str): The name of the test whose location to return.
-
-  Returns:
-    (TestLocation): The file path and line number of the test, or None
-        if the test location was not be retrieved.
-
-  """
-  task_output = swarming_util.GetIsolatedOutputForTask(task_id, http_client)
-
-  if not task_output:
-    logging.error('No isolated output returned for %s', task_id)
-    return None
-
-  test_locations = task_output.get('test_locations')
-
-  if not test_locations:
-    logging.error('test_locations not found for task %s', task_id)
-    return None
-
-  test_location = test_locations.get(test_name)
-
-  if not test_location:
-    logging.error('test_location not found for %s', test_name)
-    return None
-
-  return TestLocation.FromSerializable(test_location)
 
 
 def GenerateSuspectedRanges(suspected_revisions, revision_range):
@@ -162,8 +124,9 @@ def SaveFlakeCulpritsForSuspectedRevisions(http_client,
 
   for revision in suspected_revisions:
     commit_position = suspected_build_point.GetCommitPosition(revision)
-    suspect = (FlakeCulprit.Get(repo_name, revision) or
-               FlakeCulprit.Create(repo_name, revision, commit_position))
+    suspect = (
+        FlakeCulprit.Get(repo_name, revision) or
+        FlakeCulprit.Create(repo_name, revision, commit_position))
 
     if suspect.url is None:
       git_repo = CachedGitilesRepository(

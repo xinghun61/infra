@@ -17,7 +17,7 @@ class NextCommitPositionInput(StructuredObject):
   analysis_urlsafe_key = basestring
 
   # The upper and lower bound commit positions not to exceed.
-  int_range = IntRange
+  commit_position_range = IntRange
 
 
 class NextCommitPositionOutput(StructuredObject):
@@ -44,8 +44,8 @@ class NextCommitPositionPipeline(SynchronousPipeline):
 
     master_name = analysis.master_name
     builder_name = analysis.builder_name
-    specified_lower_bound = parameters.int_range.lower
-    specified_upper_bound = parameters.int_range.upper
+    specified_lower_bound = parameters.commit_position_range.lower
+    specified_upper_bound = parameters.commit_position_range.upper
 
     data_points = analysis.GetDataPointsWithinCommitPositionRange(
         IntRange(lower=specified_lower_bound, upper=specified_upper_bound))

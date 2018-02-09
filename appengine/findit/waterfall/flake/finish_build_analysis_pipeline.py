@@ -5,23 +5,18 @@
 import logging
 
 from google.appengine.ext import ndb
-
 from common.findit_http_client import FinditHttpClient
-
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-
 from libs import analysis_status
 from libs import time_util
-
 from common import monitoring
-
 from model import result_status
 from pipelines import report_event_pipeline
+from services import swarmed_test_util
 from services.flake_failure import heuristic_analysis
-
 from waterfall import extractor_util
 from waterfall.flake import confidence
 from waterfall.flake import flake_analysis_util
@@ -133,8 +128,8 @@ def _IdentifySuspectedRevisions(analysis, http_client):
   suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
   assert suspected_data_point
 
-  test_location = heuristic_analysis.GetTestLocation(
-      suspected_data_point.GetSwarmingTaskId(), analysis.test_name, http_client)
+  test_location = swarmed_test_util.GetTestLocation(
+      suspected_data_point.GetSwarmingTaskId(), analysis.test_name)
 
   if not test_location:
     analysis.LogWarning('Failed to get test location. Heuristic results will '

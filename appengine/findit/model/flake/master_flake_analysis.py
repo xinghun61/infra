@@ -8,9 +8,11 @@ import math
 
 from google.appengine.ext import ndb
 
+from dto.flake_analysis_error import FlakeAnalysisError
 from dto.int_range import IntRange
 from gae_libs.model.versioned_model import VersionedModel
 from libs import analysis_status
+from libs import time_util
 from model import result_status
 from model import triage_status
 from model.base_analysis import BaseAnalysis
@@ -209,6 +211,12 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
         MasterFlakeAnalysis._CreateAnalysisId(
             master_name, builder_name, build_number, step_name, test_name))
 
+  def GetError(self):
+    """Returns an analysis' error or a generic one."""
+    return self.error or FlakeAnalysisError(
+        title='Flake analysis encountered an unknown error',
+        description='unknown').ToSerializable()
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
   def GetVersion(cls,
@@ -403,6 +411,12 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
     return next((data_point for data_point in self.data_points
                  if data_point.build_number == build_number), None)
+
+  def InitializeRunning(self):
+    """Sets up necessary information for an analysis when it begins."""
+    if self.status != analysis_status.RUNNING:
+      self.Update(
+          start_time=time_util.GetUTCNow(), status=analysis_status.RUNNING)
 
   def UpdateSuspectedBuildID(self, lower_bound_build, upper_bound_build):
     """Sets the suspected build ID if appropriate.

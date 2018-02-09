@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(crbug.com/810912): Refacor into services.
+
 from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
@@ -16,7 +18,7 @@ from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake import triggering_sources
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
-  AnalyzeFlakeForBuildNumberPipeline)
+    AnalyzeFlakeForBuildNumberPipeline)
 from waterfall.flake.lookback_algorithm import IsFullyStable
 
 _SUBJECT_TEMPLATE = '{} is Flaky'
@@ -56,8 +58,8 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
 
     if not issue_tracking_service.ShouldFileBugForAnalysis(analysis):
       existing_test_bug_id = (
-        issue_tracking_service.GetExistingBugForCustomizedField(
-            analysis.test_name))
+          issue_tracking_service.GetExistingBugForCustomizedField(
+              analysis.test_name))
       if existing_test_bug_id and not analysis.bug_id:
         analysis.Update(bug_id=existing_test_bug_id)
       return
@@ -71,7 +73,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
     tasks = swarming_util.ListSwarmingTasksDataByTags(
         analysis.master_name, analysis.builder_name, most_recent_build_number,
         FinditHttpClient(), {
-          'stepname': analysis.step_name
+            'stepname': analysis.step_name
         })
     if not tasks:
       analysis.LogInfo('Bug not filed because no recent runs found.')

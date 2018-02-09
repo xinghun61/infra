@@ -7,22 +7,15 @@ import mock
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
-
 from dto.test_location import TestLocation
-
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles.change_log import ChangeLog
-
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-
 from services.flake_failure import heuristic_analysis
-
-from waterfall import swarming_util
 from waterfall.test import wf_testcase
 
 
@@ -73,8 +66,8 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
         [], heuristic_analysis.ListCommitPositionsFromSuspectedRanges({}, []))
     self.assertEqual(  # Blame list not available.
         [],
-        heuristic_analysis.ListCommitPositionsFromSuspectedRanges({}, [('r1',
-                                                                        'r2')]))
+        heuristic_analysis.ListCommitPositionsFromSuspectedRanges(
+            {}, [('r1', 'r2')]))
     self.assertEqual(  # Blame list available. This should be the expected case.
         [1, 2],
         heuristic_analysis.ListCommitPositionsFromSuspectedRanges({
@@ -208,40 +201,3 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, test_name)
 
     self.assertIn(suspect.key.urlsafe(), analysis.suspect_urlsafe_keys)
-
-  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask', return_value={})
-  def testGetTestLocationNoTestLocations(self, _):
-    self.assertIsNone(heuristic_analysis.GetTestLocation(None, 'task', 'test'))
-
-  @mock.patch.object(
-      swarming_util,
-      'GetIsolatedOutputForTask',
-      return_value={'test_locations': {}})
-  def testGetTestLocationNoTestLocation(self, _):
-    self.assertIsNone(heuristic_analysis.GetTestLocation(None, 'task', 'test'))
-
-  @mock.patch.object(
-      swarming_util,
-      'GetIsolatedOutputForTask',
-      return_value={'test_locations': {
-          'test': {}
-      }})
-  def testGetTestLocationTestLocationIncomplete(self, _):
-    self.assertIsNone(heuristic_analysis.GetTestLocation(None, 'task', 'test'))
-
-  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
-  def testGetTestLocation(self, mock_get_isolated_output):
-    test_name = 'test'
-    expected_test_location = {
-        'line': 123,
-        'file': '/path/to/test_file.cc',
-    }
-    mock_get_isolated_output.return_value = {
-        'test_locations': {
-            test_name: expected_test_location,
-        }
-    }
-
-    self.assertEqual(
-        TestLocation.FromSerializable(expected_test_location),
-        heuristic_analysis.GetTestLocation('task', test_name, None))

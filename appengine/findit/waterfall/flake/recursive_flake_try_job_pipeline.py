@@ -24,8 +24,8 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
 from gae_libs import pipelines
+from services import swarmed_test_util
 from services.flake_failure import flake_try_job
-from services.flake_failure import heuristic_analysis
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
@@ -558,9 +558,9 @@ class NextCommitPositionPipeline(BasePipeline):
           'result': 'completed',
       })
 
-      test_location = heuristic_analysis.GetTestLocation(
+      test_location = swarmed_test_util.GetTestLocation(
           suspected_build_data_point.GetSwarmingTaskId(),
-          flake_analysis.test_name, _HTTP_CLIENT)
+          flake_analysis.test_name)
 
       input_obj = pipelines.CreateInputObjectInstance(
           CreateBugForFlakePipelineInputObject,

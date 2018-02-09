@@ -43,7 +43,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
 
     next_commit_position_input = NextCommitPositionInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
-        int_range=IntRange(lower=None, upper=start_commit_position))
+        commit_position_range=IntRange(lower=None, upper=start_commit_position))
 
     pipeline_job = NextCommitPositionPipeline(next_commit_position_input)
     pipeline_job.start()
@@ -74,7 +74,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
 
     next_commit_position_input = NextCommitPositionInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
-        int_range=IntRange(lower=None, upper=start_commit_position))
+        commit_position_range=IntRange(lower=None, upper=start_commit_position))
 
     pipeline_job = NextCommitPositionPipeline(next_commit_position_input)
     pipeline_job.start()
@@ -108,7 +108,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
 
     next_commit_position_input = NextCommitPositionInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
-        int_range=IntRange(lower=None, upper=start_commit_position))
+        commit_position_range=IntRange(lower=None, upper=start_commit_position))
 
     pipeline_job = NextCommitPositionPipeline(next_commit_position_input)
     pipeline_job.start()
@@ -156,7 +156,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
 
     next_commit_position_input = NextCommitPositionInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
-        int_range=IntRange(lower=None, upper=start_commit_position))
+        commit_position_range=IntRange(lower=None, upper=start_commit_position))
 
     pipeline_job = NextCommitPositionPipeline(next_commit_position_input)
     pipeline_job.start()

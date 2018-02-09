@@ -14,6 +14,9 @@ from waterfall.flake import flake_constants
 DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS = 5
 DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS = 0.1
 
+# TODO(crbug.com/809885): Merge with
+# services/flake_failure/flake_analysis_util.py.
+
 
 class NormalizedDataPoint(object):
   """Class to encapsulate a generalized data-point.

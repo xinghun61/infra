@@ -18,6 +18,7 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines import report_event_pipeline
+from services import swarmed_test_util
 from services.flake_failure import heuristic_analysis
 from waterfall.flake import confidence
 from waterfall.flake import finish_build_analysis_pipeline
@@ -155,7 +156,7 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertEqual(datetime(2017, 6, 27), analysis.end_time)
 
-  @mock.patch.object(heuristic_analysis, 'GetTestLocation')
+  @mock.patch.object(swarmed_test_util, 'GetTestLocation')
   @mock.patch.object(CachedGitilesRepository, 'GetBlame')
   def testIdentifySuspectedRanges(self, mock_blame, mock_test_location):
     mock_blame.return_value = [Blame('r1000', 'a/b.cc')]
@@ -173,7 +174,7 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
                      finish_build_analysis_pipeline._IdentifySuspectedRevisions(
                          analysis, None))
 
-  @mock.patch.object(heuristic_analysis, 'GetTestLocation', return_value=None)
+  @mock.patch.object(swarmed_test_util, 'GetTestLocation', return_value=None)
   def testIdentifysuspectedRangesNoTestLocation(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [

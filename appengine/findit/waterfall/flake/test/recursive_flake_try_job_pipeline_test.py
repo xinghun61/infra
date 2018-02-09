@@ -10,32 +10,24 @@ from google.appengine.ext import ndb
 
 from common import constants
 from common.waterfall import failure_type
-
 from dto.test_location import TestLocation
-
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.pipelines import pipeline_handlers
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-
 from libs import analysis_status
 from libs.gitiles.change_log import ChangeLog
-
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
-
 from services import swarmbot_util
+from services import swarmed_test_util
 from services.flake_failure import flake_try_job
-from services.flake_failure import heuristic_analysis
-
-from waterfall import swarming_util
 from waterfall.flake import confidence
 from waterfall.flake import flake_constants
 from waterfall.flake import recursive_flake_try_job_pipeline
@@ -390,13 +382,15 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             start_commit_position, start_revision, lower_bound_commit_position,
             upper_bound_commit_position, None, _DEFAULT_CACHE_NAME, None, False
         ],
-        expected_kwargs={'retries': 0})
+        expected_kwargs={
+            'retries': 0
+        })
 
     pipeline_job = NextCommitPositionPipeline(
-        analysis.key.urlsafe(),
-        try_job.key.urlsafe(), remaining_suggested_commits,
-        start_commit_position, lower_bound_commit_position,
-        upper_bound_commit_position, None, _DEFAULT_CACHE_NAME, None, False)
+        analysis.key.urlsafe(), try_job.key.urlsafe(),
+        remaining_suggested_commits, start_commit_position,
+        lower_bound_commit_position, upper_bound_commit_position, None,
+        _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -452,18 +446,19 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             previous_suspected_commit, 'r93', 90, 100, None,
             _DEFAULT_CACHE_NAME, None, False
         ],
-        expected_kwargs={'retries': 0})
+        expected_kwargs={
+            'retries': 0
+        })
 
     pipeline_job = NextCommitPositionPipeline(
-        analysis.key.urlsafe(),
-        try_job.key.urlsafe(), remaining_suggested_commits,
-        previous_suspected_commit, 90, 100, None, _DEFAULT_CACHE_NAME, None,
-        False)
+        analysis.key.urlsafe(), try_job.key.urlsafe(),
+        remaining_suggested_commits, previous_suspected_commit, 90, 100, None,
+        _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  @mock.patch.object(heuristic_analysis, 'GetTestLocation')
+  @mock.patch.object(swarmed_test_util, 'GetTestLocation')
   def testNextCommitPositionPipelineCompleted(self, mock_test_location,
                                               mock_change_log):
     master_name = 'm'
@@ -539,10 +534,11 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.MockGeneratorPipeline(CreateBugForFlakePipeline, input_obj, None)
 
-    pipeline_job = NextCommitPositionPipeline(
-        analysis.key.urlsafe(),
-        try_job.key.urlsafe(), remaining_suggested_commits, commit_position, 90,
-        100, None, _DEFAULT_CACHE_NAME, None, False)
+    pipeline_job = NextCommitPositionPipeline(analysis.key.urlsafe(),
+                                              try_job.key.urlsafe(),
+                                              remaining_suggested_commits,
+                                              commit_position, 90, 100, None,
+                                              _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -551,7 +547,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(95, culprit.commit_position)
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  @mock.patch.object(heuristic_analysis, 'GetTestLocation')
+  @mock.patch.object(swarmed_test_util, 'GetTestLocation')
   def testNextCommitPositionNewlyAddedFlakyTest(self, mocked_test_location,
                                                 mock_change_log):
     master_name = 'm'
@@ -619,10 +615,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockGeneratorPipeline(CreateBugForFlakePipeline, input_obj, None)
 
     pipeline_job = NextCommitPositionPipeline(
-        analysis.key.urlsafe(),
-        try_job.key.urlsafe(), remaining_suggested_commits,
-        most_recently_run_commit_position, 98, 100, None, _DEFAULT_CACHE_NAME,
-        None, False)
+        analysis.key.urlsafe(), try_job.key.urlsafe(),
+        remaining_suggested_commits, most_recently_run_commit_position, 98, 100,
+        None, _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -670,10 +665,10 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={})
 
     pipeline_job = NextCommitPositionPipeline(
-        analysis.key.urlsafe(),
-        try_job.key.urlsafe(), remaining_suggested_commits,
-        most_recently_run_commit_position, lower_bound_commit_position,
-        upper_bound_commit_position, None, _DEFAULT_CACHE_NAME, None, False)
+        analysis.key.urlsafe(), try_job.key.urlsafe(),
+        remaining_suggested_commits, most_recently_run_commit_position,
+        lower_bound_commit_position, upper_bound_commit_position, None,
+        _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
