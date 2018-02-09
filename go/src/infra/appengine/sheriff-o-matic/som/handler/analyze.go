@@ -556,3 +556,11 @@ func alertEventType(t messages.AlertType) gen.SOMAlertsEvent_Alert_AlertType {
 	}
 	panic("unknown alert type: " + string(t))
 }
+
+// isTestFaillure returns true/false based on whether the given Alert is for BuildFailure.
+func isTestFailure(alert messages.Alert) bool {
+	if bf, ok := alert.Extension.(messages.BuildFailure); ok && bf.Reason.Kind() == "test" {
+		return true
+	}
+	return false
+}
