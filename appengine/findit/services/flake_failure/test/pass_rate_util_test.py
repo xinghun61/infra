@@ -4,6 +4,9 @@
 
 import mock
 
+from dto.swarming_task_error import SwarmingTaskError
+from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
+    RunFlakeSwarmingTaskOutput)
 from services.flake_failure import pass_rate_util
 from waterfall.flake import flake_constants
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -15,6 +18,45 @@ class PassRateUtilTest(WaterfallTestCase):
     self.assertTrue(pass_rate_util.ArePassRatesEqual(0.1, 0.1))
     self.assertTrue(pass_rate_util.ArePassRatesEqual(-1, -1))
     self.assertFalse(pass_rate_util.ArePassRatesEqual(1.0, 0.0))
+
+  def testCalculateNewPassRate(self):
+    self.assertEqual(0.75, pass_rate_util.CalculateNewPassRate(
+        1.0, 10, 0.5, 10))
+
+  def testGetPassRateNonexistentTest(self):
+    swarming_task_output = RunFlakeSwarmingTaskOutput(
+        error=None,
+        iterations=0,
+        pass_count=0,
+        started_time=None,
+        completed_time=None,
+        has_valid_artifact=True,
+        task_id='task_id')
+    self.assertEqual(flake_constants.PASS_RATE_TEST_NOT_FOUND,
+                     pass_rate_util.GetPassRate(swarming_task_output))
+
+  def testGetPassRateTaskError(self):
+    swarming_task_output = RunFlakeSwarmingTaskOutput(
+        error=SwarmingTaskError(code=1, message='error'),
+        iterations=None,
+        pass_count=None,
+        started_time=None,
+        completed_time=None,
+        has_valid_artifact=True,
+        task_id='task_id')
+
+    self.assertIsNone(pass_rate_util.GetPassRate(swarming_task_output))
+
+  def testGetPassRate(self):
+    swarming_task_output = RunFlakeSwarmingTaskOutput(
+        error=None,
+        iterations=10,
+        pass_count=4,
+        started_time=None,
+        completed_time=None,
+        has_valid_artifact=True,
+        task_id='task_id')
+    self.assertEqual(0.4, pass_rate_util.GetPassRate(swarming_task_output))
 
   def testHasPassRateConverged(self):
     self.assertFalse(

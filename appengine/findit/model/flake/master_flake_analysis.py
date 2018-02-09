@@ -21,6 +21,8 @@ from waterfall.build_info import BuildInfo
 
 
 class DataPoint(ndb.Model):
+  # TODO(crbug.com/809218): Deprecate fields that refer to 'build.'
+
   # The build number corresponding to this data point. Only relevant for
   # analysis at the build level.
   build_number = ndb.IntegerProperty(indexed=False)

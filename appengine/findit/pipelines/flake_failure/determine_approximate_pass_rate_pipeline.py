@@ -4,7 +4,6 @@
 
 from google.appengine.ext import ndb
 
-from dto.swarming_task_error import SwarmingTaskError
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
@@ -14,30 +13,13 @@ from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskOutput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskPipeline)
+from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsInput)
+from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsPipeline)
 from services.flake_failure import data_point_util
 from services.flake_failure import pass_rate_util
 from services.flake_failure import run_swarming_util
-
-
-class UpdateFlakeAnalysisDataPointsInput(StructuredObject):
-  # The urlsafe-key to the analysis to update.
-  analysis_urlsafe_key = basestring
-
-  # The data point with matching commit position to update.
-  commit_position = int
-
-  # The results of the flake swarming task to update data points with.
-  swarming_task_output = RunFlakeSwarmingTaskOutput
-
-
-class UpdateFlakeAnalysisDataPointsPipeline(GeneratorPipeline):
-
-  input_type = UpdateFlakeAnalysisDataPointsInput
-
-  def RunImpl(self, parameters):  # pragma: no cover
-    # TODO(crbug.com/799574): Create services module for updating flake data
-    # points and call into it directly here.
-    pass
 
 
 class DetermineApproximatePassRateInput(StructuredObject):
@@ -52,6 +34,9 @@ class DetermineApproximatePassRateInput(StructuredObject):
 
   # The output of the last swarming task that was run.
   previous_swarming_task_output = RunFlakeSwarmingTaskOutput
+
+  # The revision corresponding to the commit position.
+  revision = basestring
 
 
 class DetermineApproximatePassRatePipeline(GeneratorPipeline):
@@ -153,6 +138,7 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
           UpdateFlakeAnalysisDataPointsInput,
           analysis_urlsafe_key=analysis_urlsafe_key,
           commit_position=commit_position,
+          revision=parameters.revision,
           swarming_task_output=swarming_task_output)
 
       yield UpdateFlakeAnalysisDataPointsPipeline(
@@ -163,7 +149,8 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
           analysis_urlsafe_key=analysis_urlsafe_key,
           commit_position=commit_position,
           isolate_sha=isolate_sha,
-          previous_swarming_task_output=swarming_task_output)
+          previous_swarming_task_output=swarming_task_output,
+          revision=parameters.revision)
 
       yield DetermineApproximatePassRatePipelineWrapper(
           determine_approximate_pass_rate_input)

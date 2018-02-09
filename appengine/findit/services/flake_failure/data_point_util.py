@@ -3,6 +3,9 @@
 # found in the LICENSE file.
 """Functions to assist in operations on DataPoint objects."""
 
+from google.appengine.ext import ndb
+
+from model.flake.master_flake_analysis import DataPoint
 from services.flake_failure import pass_rate_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
@@ -89,3 +92,95 @@ def UpdateFailedSwarmingTaskAttempts(data_point):
   assert data_point
   data_point.failed_swarming_task_attempts += 1
   data_point.put()
+
+
+@ndb.transactional
+def UpdateAnalysisDataPoints(analysis_urlsafe_key, commit_position, revision,
+                             swarming_task_output):
+  """Updates an analysis' data points with the output of a swarming taks.
+
+  Args:
+    analysis_urlsafe_key (str): The urlsafe key to the MasterFlakeAnalysis
+        whose data points are to be updated.
+    commit_position (int): The commit position to insert or update a data point.
+    revision (str): The corresponding revision to commit_position.
+    swarming_task_output (RunFlakeSwarmingTaskOutput): The returned object
+        of the last-completed flake swarming task to deterine flakiness at
+        commit_position.
+  """
+  analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
+  assert analysis
+
+  data_point = analysis.FindMatchingDataPointWithCommitPosition(commit_position)
+  error = swarming_task_output.error
+
+  if data_point:
+    # A data point has already been created. Data should be combined.
+    if error:
+      # The latest swarming task ran into an error.
+      # TODO(crbug.com/808947): A failed swarming task's partial data can
+      # sometimes still be salvaged.
+      data_point.failed_swarming_task_attempts += 1
+      if swarming_task_output.task_id:
+        # Capture the task ID if available for diagnostic information.
+        data_point.task_ids.append(swarming_task_output.task_id)
+      analysis.put()
+      return
+
+    # Ensure no undetected error.
+    assert swarming_task_output.iterations is not None
+    assert swarming_task_output.pass_count is not None
+    assert swarming_task_output.task_id
+
+    # The latest swarming task completed successfully. Incorporate the incoming
+    # data with the existing data point.
+    old_pass_rate = data_point.pass_rate
+    old_iterations = data_point.iterations
+    incoming_iterations = swarming_task_output.iterations
+    old_pass_rate = data_point.pass_rate
+    incoming_pass_rate = pass_rate_util.GetPassRate(swarming_task_output)
+
+    # Ensure the are no discrepancies between old and new pass rates about the
+    # test existing or not at the same commit position.
+    assert not (pass_rate_util.TestDoesNotExist(incoming_pass_rate) and
+                not pass_rate_util.TestDoesNotExist(old_pass_rate))
+
+    incoming_elapsed_seconds = swarming_task_output.GetElapsedSeconds()
+    assert incoming_elapsed_seconds is not None
+
+    data_point.task_ids.append(swarming_task_output.task_id)
+    data_point.pass_rate = pass_rate_util.CalculateNewPassRate(
+        old_pass_rate, old_iterations, incoming_pass_rate, incoming_iterations)
+    data_point.iterations += incoming_iterations
+    data_point.elapsed_seconds += incoming_elapsed_seconds
+  else:
+    # A new data point should always be created and appended, especially for
+    # diagnostics in case of failures. Note if no pass rate is ultimately able
+    # to be determined due to too many failed attempts, the UI should be
+    # responsible not to display a data point with a pass_rate of None.
+    if error:
+      # TODO(crbug.com/808947): A failed swarming task's partial data can
+      # sometimes still be salvaged.
+      elapsed_seconds = None
+      failed_swarming_task_attempts = 1
+      iterations = None
+      pass_rate = None
+    else:
+      elapsed_seconds = swarming_task_output.GetElapsedSeconds()
+      failed_swarming_task_attempts = 0
+      iterations = swarming_task_output.iterations
+      pass_rate = pass_rate_util.GetPassRate(swarming_task_output)
+
+    data_point = DataPoint.Create(
+        commit_position=commit_position,
+        elapsed_seconds=elapsed_seconds,
+        failed_swarming_task_attempts=failed_swarming_task_attempts,
+        has_valid_artifact=swarming_task_output.has_valid_artifact,
+        git_hash=revision,
+        iterations=iterations,
+        pass_rate=pass_rate,
+        task_ids=[swarming_task_output.task_id])
+
+    analysis.data_points.append(data_point)
+
+  analysis.put()

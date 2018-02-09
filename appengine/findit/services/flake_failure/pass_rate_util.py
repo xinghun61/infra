@@ -1,6 +1,7 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """Utility functions for processing a flaky test's pass rates."""
 
 from waterfall import waterfall_config
@@ -11,6 +12,45 @@ def ArePassRatesEqual(pass_rate_1, pass_rate_2):
   assert pass_rate_1 is not None
   assert pass_rate_2 is not None
   return abs(pass_rate_1 - pass_rate_2) <= flake_constants.EPSILON
+
+
+def CalculateNewPassRate(existing_pass_rate, existing_iterations,
+                         incoming_pass_rate, incoming_iterations):
+  """Incorporates a new pass rate into an exsting one.
+
+  Args:
+    existing_pass_rate (float): The pass rate to merge into.
+    exisitng_iterations (int): The number of iterations used to calculate the
+        existing pass rate.
+    incoming_pass_rate (float): The new pass rate to incorporate.
+    incoming_iterations (int): The number of iterations used to calculate the
+        incoming pass rate.
+
+  Returns:
+    (float): The new combined pass rate.
+  """
+  existing_pass_count = existing_pass_rate * existing_iterations
+  incoming_pass_count = incoming_pass_rate * incoming_iterations
+
+  return float(existing_pass_count + incoming_pass_count) / (
+      existing_iterations + incoming_iterations)
+
+
+def GetPassRate(swarming_task_output):
+  """Determines a pass rate based on a swarming task's output."""
+  assert swarming_task_output
+
+  if swarming_task_output.error:
+    # TODO(crbug.com/808947): A failed swarming task's partial data can
+    # sometimes still be salvaged.
+    return None
+
+  if swarming_task_output.iterations > 0:
+    return (float(swarming_task_output.pass_count) /
+            swarming_task_output.iterations)
+
+  # If there are no errors and no iterations ran, the test does not exist.
+  return flake_constants.PASS_RATE_TEST_NOT_FOUND
 
 
 def HasPassRateConverged(overall_pass_rate,

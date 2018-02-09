@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 
 from dto.swarming_task_error import SwarmingTaskError
@@ -42,12 +43,16 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     iterations = 30
     isolate_sha = 'sha1'
     timeout_seconds = 3600
+    revision = 'r1000'
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
         isolate_sha=isolate_sha,
-        previous_swarming_task_output=None)
+        previous_swarming_task_output=None,
+        revision=revision)
 
     flake_swarming_task_input = RunFlakeSwarmingTaskInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -57,18 +62,26 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         timeout_seconds=timeout_seconds)
 
     flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
-        error=None, pass_count=incoming_pass_count, iterations=iterations)
+        error=None,
+        pass_count=incoming_pass_count,
+        iterations=iterations,
+        completed_time=completed_time,
+        started_time=started_time,
+        has_valid_artifact=True,
+        task_id='task_id')
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
+        revision=revision,
         swarming_task_output=flake_swarming_task_output)
 
     recursive_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
         isolate_sha=isolate_sha,
-        previous_swarming_task_output=flake_swarming_task_output)
+        previous_swarming_task_output=flake_swarming_task_output,
+        revision=revision)
 
     self.MockAsynchronousPipeline(RunFlakeSwarmingTaskPipeline,
                                   flake_swarming_task_input,
@@ -93,6 +106,11 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     iterations = 30
     incoming_pass_rate = float(incoming_pass_count / iterations)
     isolate_sha = 'sha1'
+    revision = 'r1000'
+    task_id = 'task_id'
+    has_valid_artifact = True
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
@@ -102,15 +120,20 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     analysis.Save()
 
     flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+        completed_time=completed_time,
         error=SwarmingTaskError(code=1, message='error'),
+        has_valid_artifact=has_valid_artifact,
         pass_count=incoming_pass_count,
-        iterations=iterations)
+        iterations=iterations,
+        started_time=started_time,
+        task_id=task_id)
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
         isolate_sha=isolate_sha,
-        previous_swarming_task_output=flake_swarming_task_output)
+        previous_swarming_task_output=flake_swarming_task_output,
+        revision=revision)
 
     pipeline_job = DetermineApproximatePassRatePipeline(
         determine_approximate_pass_rate_input)
@@ -130,6 +153,11 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     iterations = 30
     incoming_pass_rate = float(incoming_pass_count / iterations)
     isolate_sha = 'sha1'
+    revision = 'r1000'
+    task_id = 'task_id'
+    has_valid_artifact = True
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
@@ -139,13 +167,20 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     analysis.Save()
 
     flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
-        error=None, pass_count=incoming_pass_count, iterations=iterations)
+        error=None,
+        pass_count=incoming_pass_count,
+        iterations=iterations,
+        started_time=started_time,
+        completed_time=completed_time,
+        has_valid_artifact=has_valid_artifact,
+        task_id=task_id)
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
         isolate_sha=isolate_sha,
-        previous_swarming_task_output=flake_swarming_task_output)
+        previous_swarming_task_output=flake_swarming_task_output,
+        revision=revision)
 
     pipeline_job = DetermineApproximatePassRatePipeline(
         determine_approximate_pass_rate_input)
@@ -163,6 +198,11 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     iterations = 0
     incoming_pass_rate = flake_constants.PASS_RATE_TEST_NOT_FOUND
     isolate_sha = 'sha1'
+    revision = 'r1000'
+    task_id = 'task_id'
+    has_valid_artifact = True
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
@@ -172,13 +212,20 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     analysis.Save()
 
     flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
-        error=None, pass_count=incoming_pass_count, iterations=iterations)
+        error=None,
+        pass_count=incoming_pass_count,
+        iterations=iterations,
+        task_id=task_id,
+        started_time=started_time,
+        completed_time=completed_time,
+        has_valid_artifact=has_valid_artifact)
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
         isolate_sha=isolate_sha,
-        previous_swarming_task_output=flake_swarming_task_output)
+        previous_swarming_task_output=flake_swarming_task_output,
+        revision=revision)
 
     pipeline_job = DetermineApproximatePassRatePipeline(
         determine_approximate_pass_rate_input)
@@ -200,6 +247,9 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     iterations = 30
     incoming_pass_rate = 0.5
     isolate_sha = 'sha1'
+    revision = 'r1000'
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
@@ -209,13 +259,20 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     analysis.Save()
 
     flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
-        error=None, pass_count=incoming_pass_count, iterations=iterations)
+        error=None,
+        pass_count=incoming_pass_count,
+        iterations=iterations,
+        started_time=started_time,
+        completed_time=completed_time,
+        has_valid_artifact=True,
+        task_id='task_id')
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
         isolate_sha=isolate_sha,
-        previous_swarming_task_output=flake_swarming_task_output)
+        previous_swarming_task_output=flake_swarming_task_output,
+        revision=revision)
 
     pipeline_job = DetermineApproximatePassRatePipeline(
         determine_approximate_pass_rate_input)
@@ -227,12 +284,14 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     analysis.Save()
     commit_position = 1000
     isolate_sha = 'sha1'
+    revision = 'r1000'
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
         isolate_sha=isolate_sha,
-        previous_swarming_task_output=None)
+        previous_swarming_task_output=None,
+        revision=revision)
 
     self.MockGeneratorPipeline(DetermineApproximatePassRatePipeline,
                                determine_approximate_pass_rate_input, None)

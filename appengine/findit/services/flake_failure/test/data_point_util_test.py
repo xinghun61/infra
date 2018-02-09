@@ -2,9 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 
+from google.appengine.ext import ndb
+
+from dto.swarming_task_error import SwarmingTaskError
 from model.flake.master_flake_analysis import DataPoint
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
+    RunFlakeSwarmingTaskOutput)
 from services.flake_failure import data_point_util
 from waterfall.flake import flake_constants
 from waterfall.test import wf_testcase
@@ -95,3 +102,232 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     data_point = DataPoint.Create(failed_swarming_task_attempts=1)
     data_point_util.UpdateFailedSwarmingTaskAttempts(data_point)
     self.assertEqual(2, data_point.failed_swarming_task_attempts)
+
+  def testUpdateAnalysisDataPointsNewDataPointWithError(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    commit_position = 1000
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    error = SwarmingTaskError(code=1, message='message')
+    has_valid_artifact = True
+    iterations = None
+    pass_count = None
+    revision = 'r1000'
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    task_id = 'task_id'
+
+    swarming_task_output = RunFlakeSwarmingTaskOutput(
+        completed_time=completed_time,
+        error=error,
+        has_valid_artifact=has_valid_artifact,
+        iterations=iterations,
+        pass_count=pass_count,
+        started_time=started_time,
+        task_id=task_id)
+
+    data_point_util.UpdateAnalysisDataPoints(
+        analysis.key.urlsafe(), commit_position, revision, swarming_task_output)
+
+    analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
+    data_points = analysis.data_points
+    data_point = data_points[0]
+
+    self.assertEqual(1, len(data_points))
+    self.assertEqual(commit_position, data_point.commit_position)
+    self.assertEqual(revision, data_point.git_hash)
+    self.assertIsNone(data_point.pass_rate)
+    self.assertIsNone(data_point.elapsed_seconds)
+    self.assertTrue(data_point.has_valid_artifact)
+    self.assertEqual(1, data_point.failed_swarming_task_attempts)
+    self.assertEqual([task_id], data_point.task_ids)
+
+  def testUpdateAnalysisDataPointsNewDataPointNoError(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    commit_position = 1000
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    error = None
+    has_valid_artifact = True
+    iterations = 100
+    pass_count = 60
+    revision = 'r1000'
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    task_id = 'task_id'
+
+    swarming_task_output = RunFlakeSwarmingTaskOutput(
+        completed_time=completed_time,
+        error=error,
+        has_valid_artifact=has_valid_artifact,
+        iterations=iterations,
+        pass_count=pass_count,
+        started_time=started_time,
+        task_id=task_id)
+
+    data_point_util.UpdateAnalysisDataPoints(
+        analysis.key.urlsafe(), commit_position, revision, swarming_task_output)
+
+    analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
+    data_points = analysis.data_points
+    data_point = data_points[0]
+
+    self.assertEqual(1, len(data_points))
+    self.assertEqual(commit_position, data_point.commit_position)
+    self.assertEqual(revision, data_point.git_hash)
+    self.assertEqual(0.6, data_point.pass_rate)
+    self.assertEqual(3600, data_point.elapsed_seconds)
+    self.assertTrue(data_point.has_valid_artifact)
+    self.assertEqual(0, data_point.failed_swarming_task_attempts)
+    self.assertEqual([task_id], data_point.task_ids)
+
+  def testUpdateAnalysisDataPointsExistingDataPointWithError(self):
+    commit_position = 1000
+    revision = 'r1000'
+    iterations = 100
+    pass_count = 60
+    failed_swarming_task_attempts = 2
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    error = SwarmingTaskError(code=1, message='m')
+    has_valid_artifact = True
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    task_id = 'task_2'
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(
+            commit_position=commit_position,
+            git_hash=revision,
+            pass_rate=0.5,
+            iterations=iterations,
+            elapsed_seconds=1800,
+            failed_swarming_task_attempts=failed_swarming_task_attempts,
+            task_ids=['task_1'])
+    ]
+    analysis.Save()
+
+    swarming_task_output = RunFlakeSwarmingTaskOutput(
+        completed_time=completed_time,
+        error=error,
+        has_valid_artifact=has_valid_artifact,
+        iterations=iterations,
+        pass_count=pass_count,
+        started_time=started_time,
+        task_id=task_id)
+
+    data_point_util.UpdateAnalysisDataPoints(
+        analysis.key.urlsafe(), commit_position, revision, swarming_task_output)
+
+    analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
+    data_points = analysis.data_points
+    data_point = data_points[0]
+
+    self.assertEqual(1, len(data_points))
+    self.assertEqual(commit_position, data_point.commit_position)
+    self.assertEqual(revision, data_point.git_hash)
+    self.assertEqual(0.5, data_point.pass_rate)
+    self.assertEqual(1800, data_point.elapsed_seconds)
+    self.assertTrue(data_point.has_valid_artifact)
+    self.assertEqual(3, data_point.failed_swarming_task_attempts)
+    self.assertEqual(['task_1', 'task_2'], data_point.task_ids)
+
+  def testUpdateAnalysisDataPointsExistingDataPointWithErrorNoTaskId(self):
+    commit_position = 1000
+    revision = 'r1000'
+    iterations = 100
+    pass_count = 60
+    failed_swarming_task_attempts = 2
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    error = SwarmingTaskError(code=1, message='m')
+    has_valid_artifact = True
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    task_id = None
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(
+            commit_position=commit_position,
+            git_hash=revision,
+            pass_rate=0.5,
+            iterations=iterations,
+            elapsed_seconds=1800,
+            failed_swarming_task_attempts=failed_swarming_task_attempts,
+            task_ids=['task_1'])
+    ]
+    analysis.Save()
+
+    swarming_task_output = RunFlakeSwarmingTaskOutput(
+        completed_time=completed_time,
+        error=error,
+        has_valid_artifact=has_valid_artifact,
+        iterations=iterations,
+        pass_count=pass_count,
+        started_time=started_time,
+        task_id=task_id)
+
+    data_point_util.UpdateAnalysisDataPoints(
+        analysis.key.urlsafe(), commit_position, revision, swarming_task_output)
+
+    analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
+    data_points = analysis.data_points
+    data_point = data_points[0]
+
+    self.assertEqual(1, len(data_points))
+    self.assertEqual(commit_position, data_point.commit_position)
+    self.assertEqual(revision, data_point.git_hash)
+    self.assertEqual(0.5, data_point.pass_rate)
+    self.assertEqual(1800, data_point.elapsed_seconds)
+    self.assertTrue(data_point.has_valid_artifact)
+    self.assertEqual(3, data_point.failed_swarming_task_attempts)
+    self.assertEqual(['task_1'], data_point.task_ids)
+
+  def testUpdateAnalysisDataPointsExistingDataPointNoError(self):
+    commit_position = 1000
+    revision = 'r1000'
+    iterations = 100
+    pass_count = 60
+    failed_swarming_task_attempts = 2
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    error = None
+    has_valid_artifact = True
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    task_id = 'task_2'
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(
+            commit_position=commit_position,
+            git_hash=revision,
+            pass_rate=0.5,
+            iterations=iterations,
+            elapsed_seconds=1800,
+            failed_swarming_task_attempts=failed_swarming_task_attempts,
+            task_ids=['task_1'])
+    ]
+    analysis.Save()
+
+    swarming_task_output = RunFlakeSwarmingTaskOutput(
+        completed_time=completed_time,
+        error=error,
+        has_valid_artifact=has_valid_artifact,
+        iterations=iterations,
+        pass_count=pass_count,
+        started_time=started_time,
+        task_id=task_id)
+
+    data_point_util.UpdateAnalysisDataPoints(
+        analysis.key.urlsafe(), commit_position, revision, swarming_task_output)
+
+    analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
+    data_points = analysis.data_points
+    data_point = data_points[0]
+
+    self.assertEqual(1, len(data_points))
+    self.assertEqual(commit_position, data_point.commit_position)
+    self.assertEqual(revision, data_point.git_hash)
+    self.assertEqual(0.55, data_point.pass_rate)
+    self.assertEqual(5400, data_point.elapsed_seconds)
+    self.assertTrue(data_point.has_valid_artifact)
+    self.assertEqual(failed_swarming_task_attempts,
+                     data_point.failed_swarming_task_attempts)
+    self.assertEqual(['task_1', 'task_2'], data_point.task_ids)
