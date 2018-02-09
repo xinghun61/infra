@@ -3,6 +3,7 @@ package frontend
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"cloud.google.com/go/storage"
+	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/luci/common/gcloud/gs"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
@@ -17,6 +20,8 @@ import (
 )
 
 // getZipHandler handles a request to get a file from a zip archive.
+// This saves content etags in memcache, to save round trip time on fetching
+// zip files over the network, so that clients can cache the data.
 func getZipHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
@@ -30,6 +35,21 @@ func getZipHandler(ctx *router.Context) {
 		http.Redirect(w, r, newURL, http.StatusPermanentRedirect)
 		return
 	}
+	mkey := fmt.Sprintf("gs_etag%s/%s/%s", builder, buildNum, filepath)
+
+	// This content should never change; safe to cache for 1 day.
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+
+	// Check to see if the client has this cached on their side.
+	ifNoneMatch := r.Header.Get("If-None-Match")
+	itm := memcache.NewItem(c, mkey)
+	if ifNoneMatch != "" {
+		err := memcache.Get(c, itm)
+		if err == nil && r.Header.Get("If-None-Match") == string(itm.Value()) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+	}
 
 	contents, err := getZipFile(c, builder, buildNum, filepath)
 	if err != nil {
@@ -37,15 +57,24 @@ func getZipHandler(ctx *router.Context) {
 	}
 
 	if contents == nil {
-		contentPath := strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
-		w.WriteHeader(404)
-		w.Write([]byte(fmt.Sprintf("%s not found", contentPath)))
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("not found"))
 		return
+	}
+
+	h := sha256.New()
+	h.Write(contents)
+	itm.SetValue([]byte(fmt.Sprintf("%x", h.Sum(nil))))
+	err = memcache.Set(c, itm)
+	if err != nil {
+		logging.Warningf(c, "Error while setting memcache key for etag digest: %v", err)
+	} else {
+		w.Header().Set("ETag", string(itm.Value()))
 	}
 
 	// The order of these statements matters. See net/http docs for more info.
 	w.Header().Set("Content-Type", http.DetectContentType(contents))
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write(contents)
 }
 
@@ -53,33 +82,36 @@ const megabyte = 1 << 20
 const chunkSize = megabyte * 31
 
 // getZipFile retrieves a file from a layout test archive for a build number from a builder.
-func getZipFile(c context.Context, builder, buildNum, filepath string) ([]byte, error) {
+var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]byte, error) {
 	gsPath := gs.Path(fmt.Sprintf("gs://chromium-layout-test-archives/%s/%s/layout-test-results.zip", builder, buildNum))
 	logging.Debugf(c, "Getting google storage path %s", gsPath)
 
 	transport, err := auth.GetRPCTransport(c, auth.NoAuth)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("while creating transport: %v", err)
 	}
 
 	cl, err := gs.NewProdClient(c, transport)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("while creating client: %v", err)
 	}
 
 	var offset int64
 	allBytes := []byte{}
 	for {
-		logging.Debugf(c, "reading cloud storage with offset %d", offset)
 		cloudReader, err := cl.NewReader(gsPath, offset, chunkSize)
-		if err != nil {
-			return nil, err
+		if err != nil && err != storage.ErrObjectNotExist {
+			return nil, fmt.Errorf("while creating reader: %v", err)
+		}
+		if err == storage.ErrObjectNotExist {
+			return nil, nil
 		}
 
 		readBytes, err := ioutil.ReadAll(cloudReader)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("while reading bytes: %v", err)
 		}
+
 		allBytes = append(allBytes, readBytes...)
 		offset += int64(len(readBytes))
 		if len(readBytes) < chunkSize {
@@ -90,14 +122,14 @@ func getZipFile(c context.Context, builder, buildNum, filepath string) ([]byte, 
 	bytesReader := bytes.NewReader(allBytes)
 	zr, err := zip.NewReader(bytesReader, int64(len(allBytes)))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("while creating zip reader: %v", err)
 	}
 
 	for _, f := range zr.File {
 		if f.Name == filepath {
 			freader, err := f.Open()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("while opening zip file: %v", err)
 			}
 
 			return ioutil.ReadAll(freader)
