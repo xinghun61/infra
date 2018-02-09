@@ -35,6 +35,9 @@ _BUILD_FIELDS = {
   'status': _ATTR_STR_FIELD,
   'user_agent': _TAG_STR_FIELD,
 }
+_METRIC_PREFIX_PROD = 'buildbucket/builds/'
+_METRIC_PREFIX_EXPERIMENTAL = 'buildbucket/builds-experimental/'
+
 
 def _default_field_value(name):
   return _BUILD_FIELDS[name][2]()
@@ -77,57 +80,93 @@ def _build_fields(*names):
   return [_BUILD_FIELDS[n][1](n) for n in names]
 
 
-def _incrementer(metric):
-  """Returns a function that increments the metric.
+def _incrementer(metric_suffix, description, fields):
+  """Returns a function that increments a counter metric.
 
   Metric fields must conform _BUILD_FIELDS.
 
-  The returned function accepts a build, but ignores it if it is experimental.
+  The returned function accepts a build.
   """
-  fields_for = _fields_for_fn(metric.field_spec)
+
+  def mk_metric(metric_prefix):
+    return gae_ts_mon.CounterMetric(
+        metric_prefix + metric_suffix,
+        description,
+        fields)
+
+  metric_prod = mk_metric(_METRIC_PREFIX_PROD)
+  metric_exp = mk_metric(_METRIC_PREFIX_EXPERIMENTAL)
+  fields_for = _fields_for_fn(fields)
+
   def inc(build):  # pragma: no cover
-    if not build.experimental:
-      metric.increment(fields_for(build))
+    metric = metric_exp if build.experimental else metric_prod
+    metric.increment(fields_for(build))
+
   return inc
 
 
-def _adder(metric, value_fn):
-  """Returns a function that adds a build value to the distribution metric.
+def _adder(metric_suffix, description, fields, bucketer, units, value_fn):
+  """Returns a function that adds a build value to a cumulative distribution.
 
   Metric fields must conform _BUILD_FIELDS.
   value_fn accepts a build.
 
-  The returned function accepts a build, but ignores it if it is experimental.
+  The returned function accepts a build.
   """
-  fields_for = _fields_for_fn(metric.field_spec)
+
+  def mk_metric(metric_prefix):
+    return gae_ts_mon.CumulativeDistributionMetric(
+        metric_prefix + metric_suffix,
+        description,
+        fields,
+        bucketer=bucketer,
+        units=units)
+
+  metric_prod = mk_metric(_METRIC_PREFIX_PROD)
+  metric_exp = mk_metric(_METRIC_PREFIX_EXPERIMENTAL)
+  fields_for = _fields_for_fn(fields)
+
   def add(build):  # pragma: no cover
-    if not build.experimental:
-      metric.add(value_fn(build), fields_for(build))
+    metric = metric_exp if build.experimental else metric_prod
+    metric.add(value_fn(build), fields_for(build))
+
   return add
 
 
-inc_created_builds = _incrementer(gae_ts_mon.CounterMetric(
-    'buildbucket/builds/created',
+def _duration_adder(metric_suffix, description, value_fn):
+  return _adder(
+      metric_suffix,
+      description,
+      _build_fields(
+          'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
+          'canary'),
+      BUCKETER_48_HR,
+      gae_ts_mon.MetricsDataUnits.SECONDS,
+      value_fn)
+
+
+inc_created_builds = _incrementer(
+    'created',
     'Build creation',
-    _build_fields('bucket', 'builder', 'user_agent')))
-inc_started_builds = _incrementer(gae_ts_mon.CounterMetric(
-    'buildbucket/builds/started',
+    _build_fields('bucket', 'builder', 'user_agent'))
+inc_started_builds = _incrementer(
+    'started',
     'Build start',
-    _build_fields('bucket', 'builder', 'canary')))
-inc_completed_builds = _incrementer(gae_ts_mon.CounterMetric(
-    'buildbucket/builds/completed',
+    _build_fields('bucket', 'builder', 'canary'))
+inc_completed_builds = _incrementer(
+    'completed',
     'Build completion, including success, failure and cancellation',
     _build_fields(
         'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
-        'canary')))
-inc_lease_expirations = _incrementer(gae_ts_mon.CounterMetric(
-    'buildbucket/builds/lease_expired',
+        'canary'))
+inc_lease_expirations = _incrementer(
+    'lease_expired',
     'Build lease expirations',
-    _build_fields('bucket', 'builder', 'status')))
-inc_leases = _incrementer(gae_ts_mon.CounterMetric(
-    'buildbucket/builds/leases',
+    _build_fields('bucket', 'builder', 'status'))
+inc_leases = _incrementer(
+    'leases',
     'Successful build leases or lease extensions',
-    _build_fields('bucket', 'builder')))
+    _build_fields('bucket', 'builder'))
 
 
 inc_heartbeat_failures = gae_ts_mon.CounterMetric(
@@ -135,41 +174,24 @@ inc_heartbeat_failures = gae_ts_mon.CounterMetric(
     'Failures to extend a build lease', []).increment
 
 
-_BUILD_DURATION_FIELDS = _build_fields(
-    'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
-    'canary')
-
-
 # requires the argument to have non-None create_time and complete_time.
-add_build_cycle_duration = _adder(  # pragma: no branch
-    gae_ts_mon.CumulativeDistributionMetric(
-        'buildbucket/builds/cycle_durations',
-        'Duration between build creation and completion',
-        _BUILD_DURATION_FIELDS,
-        bucketer=BUCKETER_48_HR,
-        units=gae_ts_mon.MetricsDataUnits.SECONDS),
+add_build_cycle_duration = _duration_adder(  # pragma: no branch
+    'cycle_durations',
+    'Duration between build creation and completion',
     lambda b: (b.complete_time - b.create_time).total_seconds())
 
 
 # requires the argument to have non-None start_time and complete_time.
-add_build_run_duration = _adder(  # pragma: no branch
-    gae_ts_mon.CumulativeDistributionMetric(
-        'buildbucket/builds/run_durations',
-        'Duration between build start and completion',
-        _BUILD_DURATION_FIELDS,
-        bucketer=BUCKETER_48_HR,
-        units=gae_ts_mon.MetricsDataUnits.SECONDS),
+add_build_run_duration = _duration_adder(  # pragma: no branch
+    'run_durations',
+    'Duration between build start and completion',
     lambda b: (b.complete_time - b.start_time).total_seconds())
 
 
 # requires the argument to have non-None create_time and start_time.
-add_build_scheduling_duration = _adder(  # pragma: no branch
-    gae_ts_mon.CumulativeDistributionMetric(
-        'buildbucket/builds/scheduling_durations',
-        'Duration between build creation and start',
-        _BUILD_DURATION_FIELDS,
-        bucketer=BUCKETER_48_HR,
-        units=gae_ts_mon.MetricsDataUnits.SECONDS),
+add_build_scheduling_duration = _duration_adder(  # pragma: no branch
+    'scheduling_durations',
+    'Duration between build creation and start',
     lambda b: (b.start_time - b.create_time).total_seconds())
 
 
