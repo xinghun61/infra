@@ -1254,3 +1254,20 @@ CREATE TABLE IssueSnapshot2Cc(
 2018-01-29: Add approval_id column to FieldDef table
 
 ALTER TABLE FieldDef ADD COLUMN approval_id INT;
+
+===============================================================
+2018-02-08: Drop previous approval tables and add default approvers table
+
+DROP TABLE ApprovalStatusDef;
+DROP TABLE Approval2Approvers;
+DROP TABLE Issue2AprovalValue;
+
+CREATE TABLE ApprovalDef2Approver (
+  approval_id INT NOT NULL,
+  approver_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (approval_id, approver_id),
+
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (approver_id) REFERENCES User(user_id)
+) ENGINE=INNODB;

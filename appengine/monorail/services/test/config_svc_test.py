@@ -29,7 +29,7 @@ def MakeConfigService(cache_manager, my_mox):
       'template2component_tbl', 'template2fieldvalue_tbl',
       'projectissueconfig_tbl', 'statusdef_tbl', 'labeldef_tbl', 'fielddef_tbl',
       'fielddef2admin_tbl', 'componentdef_tbl', 'component2admin_tbl',
-      'component2cc_tbl', 'component2label_tbl']:
+      'component2cc_tbl', 'component2label_tbl', 'approvaldef2approver_tbl']:
     setattr(config_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
   return config_service
@@ -962,6 +962,25 @@ class ConfigServiceTest(unittest.TestCase):
     new_values['notify_on'] = 1
     self.config_service.UpdateFieldDef(
         self.cnxn, 789, 1, admin_ids=[], **new_values)
+    self.mox.VerifyAll()
+
+  ### Approval Fields
+
+  def SetUpUpdateDefaultApprovers(self, approval_id, new_rows):
+    self.config_service.approvaldef2approver_tbl.Delete(
+        self.cnxn, approval_id=approval_id, commit=False)
+    self.config_service.approvaldef2approver_tbl.InsertRows(
+        self.cnxn, config_svc.APPROVALDEF2APPROVER_COLS,
+        new_rows, commit=False)
+    self.cnxn.Commit()
+
+  def testUpdateDefaultApprovers(self):
+    new_approver_rows = [(1, 101), (1, 102)]
+    self.SetUpUpdateDefaultApprovers(1, new_approver_rows)
+
+    self.mox.ReplayAll()
+    self.config_service.UpdateDefaultApprovers(
+        self.cnxn, 789, 1, [101, 102])
     self.mox.VerifyAll()
 
   ### Component definitions

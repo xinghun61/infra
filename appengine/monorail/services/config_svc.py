@@ -41,6 +41,7 @@ COMPONENT2ADMIN_TABLE_NAME = 'Component2Admin'
 COMPONENT2CC_TABLE_NAME = 'Component2Cc'
 COMPONENT2LABEL_TABLE_NAME = 'Component2Label'
 STATUSDEF_TABLE_NAME = 'StatusDef'
+APPROVALDEF2APPROVER_TABLE_NAME = 'ApprovalDef2Approver'
 
 TEMPLATE_COLS = [
     'id', 'project_id', 'name', 'content', 'summary', 'summary_must_be_edited',
@@ -74,6 +75,7 @@ COMPONENTDEF_COLS = ['id', 'project_id', 'path', 'docstring', 'deprecated',
 COMPONENT2ADMIN_COLS = ['component_id', 'admin_id']
 COMPONENT2CC_COLS = ['component_id', 'cc_id']
 COMPONENT2LABEL_COLS = ['component_id', 'label_id']
+APPROVALDEF2APPROVER_COLS = ['approval_id', 'approver_id']
 
 NOTIFY_ON_ENUM = ['never', 'any_comment']
 DATE_ACTION_ENUM = ['no_action', 'ping_owner_only', 'ping_participants']
@@ -504,6 +506,8 @@ class ConfigService(object):
     self.component2admin_tbl = sql.SQLTableManager(COMPONENT2ADMIN_TABLE_NAME)
     self.component2cc_tbl = sql.SQLTableManager(COMPONENT2CC_TABLE_NAME)
     self.component2label_tbl = sql.SQLTableManager(COMPONENT2LABEL_TABLE_NAME)
+    self.approvaldef2approver_tbl = sql.SQLTableManager(
+        APPROVALDEF2APPROVER_TABLE_NAME)
 
     self.config_2lc = ConfigTwoLevelCache(cache_manager, self)
     self.label_row_2lc = LabelRowTwoLevelCache(cache_manager, self)
@@ -1291,6 +1295,25 @@ class ConfigService(object):
     cnxn.Commit()
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
     self.InvalidateMemcacheForEntireProject(project_id)
+
+  ### Approval Fields
+
+  def UpdateDefaultApprovers(
+      self, cnxn, _project_id, approval_id, approver_ids):
+    """Update the default approvers of an approval field def."""
+    self.approvaldef2approver_tbl.Delete(
+        cnxn, approval_id=approval_id, commit=False)
+
+    self.approvaldef2approver_tbl.InsertRows(
+        cnxn, APPROVALDEF2APPROVER_COLS,
+        [(approval_id, approver_id) for approver_id in approver_ids],
+        commit=False)
+
+    cnxn.Commit()
+    # TODO(jojwang): monorail:3241, check approval_id is a field_id
+    # of an existing approval.
+    # TODO(jojwang): monorail:3241, add approvals to config then
+    # InvalidateKeys for config
 
   ### Component definitions
 
