@@ -10,7 +10,7 @@ from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from services import gerrit
-from services.compile_failure import compile_culprit_action
+from services import culprit_action
 from services.parameters import BuildKey
 from services.parameters import CLKey
 from services.parameters import CreateRevertCLParameters
@@ -32,7 +32,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   @mock.patch.object(
-      compile_culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
+      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
   def testSendNotificationToConfirmRevert(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -82,7 +82,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      compile_culprit_action, 'ShouldTakeActionsOnCulprit', return_value=False)
+      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=False)
   @mock.patch.object(wrapper_pipeline, 'SendNotificationForCulpritPipeline')
   def testSendNotificationLatestBuildPassed(self, mocked_pipeline, _):
     master_name = 'm'

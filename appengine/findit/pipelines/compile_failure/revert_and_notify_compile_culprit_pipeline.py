@@ -4,7 +4,7 @@
 
 from gae_libs.pipelines import GeneratorPipeline
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
-from services.compile_failure import compile_culprit_action
+from services import culprit_action
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
 from services.parameters import SendNotificationToIrcParameters
@@ -24,7 +24,7 @@ class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):
   output_type = bool
 
   def RunImpl(self, pipeline_input):
-    if not compile_culprit_action.ShouldTakeActionsOnCulprit(pipeline_input):
+    if not culprit_action.ShouldTakeActionsOnCulprit(pipeline_input):
       return
 
     master_name, builder_name, build_number = (
