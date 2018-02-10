@@ -81,9 +81,29 @@ func getZipHandler(ctx *router.Context) {
 const megabyte = 1 << 20
 const chunkSize = megabyte * 31
 
+// knownPrefixes is a list of strings that we know will exist in the google storage bucket.
+// If the first path element in the filepath is not on this list, it's assumed to be a substep,
+// and the zip file in that subdirectory is used, instead of at the root of the build number bucket.
+var knownPrefixes = []string{
+	"layout-test-results",
+	"retry_summary.json",
+}
+
 // getZipFile retrieves a file from a layout test archive for a build number from a builder.
 var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]byte, error) {
-	gsPath := gs.Path(fmt.Sprintf("gs://chromium-layout-test-archives/%s/%s/layout-test-results.zip", builder, buildNum))
+	prefix := ""
+	found := false
+	for _, prefix := range knownPrefixes {
+		if strings.HasPrefix(filepath, prefix) {
+			found = true
+		}
+	}
+
+	if !found && strings.Contains(filepath, "/") {
+		prefix = strings.Split(filepath, "/")[0] + "/"
+		filepath = strings.Join(strings.Split(filepath, "/")[1:], "/")
+	}
+	gsPath := gs.Path(fmt.Sprintf("gs://chromium-layout-test-archives/%s/%s/%slayout-test-results.zip", builder, buildNum, prefix))
 	logging.Debugf(c, "Getting google storage path %s", gsPath)
 
 	transport, err := auth.GetRPCTransport(c, auth.NoAuth)
