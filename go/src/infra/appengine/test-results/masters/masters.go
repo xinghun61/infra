@@ -60,10 +60,6 @@ var Known = []*Master{
 		Identifier: "chromium.perf.fyi",
 	},
 	{
-		Name:       "ChromiumLUCISandbox",
-		Identifier: "chromium.sandbox",
-	},
-	{
 		Name:       "chromium.swarm",
 		Identifier: "chromium.swarm",
 	},
