@@ -1019,6 +1019,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('idna', '2.5'),
   Universal('ipaddress', '1.0.18', pyversions=['py2']),
   Universal('mock', '2.0.0'),
+  BuildWheel('oauth2client', '3.0.0'),
   Universal('oauth2client', '4.0.0'),
   Universal('packaging', '16.8'),
   Universal('pbr', '3.0.0'),
