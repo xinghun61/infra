@@ -65,11 +65,15 @@ def start(hostname, root_dir):
   with open(zip_file, 'wb') as f:
     f.write(r.content)
 
-  # Use system python on Linux instead of the one with infra_python virtual
-  # environment. We don't want this environment leaking into the Swarming.
+  # Use system python (or the depot_tools one on Windows) instead of the one
+  # with infra_python virtual environment. We don't want this environment
+  # leaking into the Swarming. Also it doesn't have win32 packages needed by
+  # Swarming (they are present in depot_tools python).
   python = sys.executable
   if sys.platform.startswith('linux'):
     python = '/usr/bin/python'
+  elif sys.platform.startswith('win'):
+    python = 'c:\\setup\\depot_tools\\python.bat'
 
   os.environ['SWARMING_EXTERNAL_BOT_SETUP'] = '1'
   os.execv(python, [python, zip_file])
