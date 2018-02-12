@@ -141,7 +141,7 @@ func TestBuilder(t *testing.T) {
 			path := "/masters/tryserver.chromium.linux/builders/linux_chromium_rel_ng"
 			values := url.Values{}
 			values.Set("action", "update")
-			values.Set(experimentPercentageFormValueName, "10")
+			values.Set(experimentLevelFormValueName, "1")
 			values.Set(reasonFormValueName, "reasons")
 			rc := &router.Context{
 				Context: c,

@@ -40,15 +40,16 @@ import (
 )
 
 const (
-	experimentPercentageFormValueName = "experimentPercentage"
-	luciIsProdFormValueName           = "luciIsProd"
-	reasonFormValueName               = "reason"
-	changeBuilderSettingsGroup        = "luci-migration-writers"
+	experimentLevelFormValueName = "experimentLevel"
+	luciIsProdFormValueName      = "luciIsProd"
+	reasonFormValueName          = "reason"
+	changeBuilderSettingsGroup   = "luci-migration-writers"
 )
 
 type builderViewModel struct {
-	Builder    *storage.Builder
-	LUCIBucket string
+	Builder         *storage.Builder
+	LUCIBucket      string
+	ExperimentLevel int // ExperimentalPercentage / 10
 
 	StatusKnown       bool
 	StatusClassSuffix string // Bootstrap label class suffix
@@ -148,6 +149,7 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 	model.StatusAge = clock.Now(c).Sub(model.Builder.Migration.AnalysisTime)
 	model.StatusOutdated = model.StatusAge > 24*time.Hour
 	model.TryBuilder = model.Builder.SchedulingType == config.SchedulingType_TRYJOBS
+	model.ExperimentLevel = model.Builder.ExperimentPercentage / 10
 	return model, nil
 }
 
@@ -206,19 +208,19 @@ func updateBuilder(c *router.Context, builder *storage.Builder) error {
 	}
 
 	percentage := -1
-	if v := c.Request.FormValue(experimentPercentageFormValueName); v != "" {
+	if v := c.Request.FormValue(experimentLevelFormValueName); v != "" {
 		if builder.SchedulingType != config.SchedulingType_TRYJOBS {
-			body := fmt.Sprintf("cannot set %q on builder %q", experimentPercentageFormValueName, &builder.ID)
+			body := fmt.Sprintf("cannot set %q on builder %q", experimentLevelFormValueName, &builder.ID)
 			http.Error(c.Writer, body, http.StatusBadRequest)
 			return nil
 		}
-		var err error
-		percentage, err = strconv.Atoi(v)
-		if err != nil || percentage < 0 || percentage > 100 {
-			msg := fmt.Sprintf("invalid %s %q", experimentPercentageFormValueName, v)
+		level, err := strconv.Atoi(v)
+		if err != nil || level < 0 || level > 10 {
+			msg := fmt.Sprintf("invalid %s %q", experimentLevelFormValueName, v)
 			http.Error(c.Writer, msg, http.StatusBadRequest)
 			return nil
 		}
+		percentage = level * 10
 	}
 
 	var luciIsProd bool
