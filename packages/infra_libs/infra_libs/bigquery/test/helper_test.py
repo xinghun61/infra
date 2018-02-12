@@ -8,8 +8,8 @@ from mock import patch
 
 from google.protobuf import timestamp_pb2
 
-from infra.libs.bigquery import helper
-from infra.libs.bigquery.test import testmessage_pb2
+from infra_libs.bigquery import helper
+from infra_libs.bigquery.test import testmessage_pb2
 
 
 class TestBigQueryHelper(unittest.TestCase):
