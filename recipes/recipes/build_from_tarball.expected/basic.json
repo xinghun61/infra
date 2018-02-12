@@ -156,7 +156,7 @@
       "python",
       "-u",
       "[START_DIR]/build_dir/chromium-65.0.3318.0/tools/gn/bootstrap/bootstrap.py",
-      "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true use_goma=true goma_dir=[CACHE]/goma_client"
+      "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true use_goma=true goma_dir=\"[CACHE]/goma_client\""
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
     "env": {

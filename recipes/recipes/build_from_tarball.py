@@ -44,7 +44,7 @@ def RunSteps(api):
           'enable_nacl=false',
           'is_official_build=true',
           'use_goma=true',
-          'goma_dir=' + str(api.goma.goma_dir),
+          'goma_dir="%s"' % api.goma.goma_dir,
       ]
       unbundle_libs = [
           # 'ffmpeg',  # https://crbug.com/731766
