@@ -36,6 +36,12 @@ _DOCKER_VOLUMES = {
         'bind': '/etc/chrome-infra/ts-mon.json',
         'mode': 'ro'
     },
+    # Needed to access mmutex locks shared with puppet running outside the
+    # container (see http://crbug.com/808060).
+    '/mmutex': {
+      'bind': '/mmutex',
+      'mode': 'rw',
+    },
 }
 
 _SWARMING_URL_ENV_VAR = 'SWARM_URL'
