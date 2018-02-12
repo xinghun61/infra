@@ -70,6 +70,8 @@ class FrontendSearchPipeline(object):
     self.services = services
     self.default_results_per_page = default_results_per_page
     self.grid_mode = (mr.mode == 'grid')
+    self.list_mode = (mr.mode == 'list')
+    self.chart_mode = (mr.mode == 'chart')
     self.grid_limited = False
     self.pagination = None
     self.num_skipped_at_start = 0

@@ -663,10 +663,13 @@ class Servlet(webapp2.RequestHandler):
         'colspec': None,
         'sortspec': mr.sort_spec,
 
+        # Options for issuelist display
         'grid_x_attr': grid_x_attr,
         'grid_y_attr': grid_y_attr,
         'grid_cell_mode': mr.cells,
         'grid_mode': None,
+        'list_mode': None,
+        'chart_mode': None,
 
         'issue_entry_url': issue_entry_url,
         'canned_queries': canned_query_views,

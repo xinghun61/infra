@@ -152,6 +152,8 @@ class IssueList(servlet.Servlet):
         'colspec': mr.col_spec,
         'page_perms': page_perms,
         'grid_mode': ezt.boolean(pipeline.grid_mode),
+        'list_mode': ezt.boolean(pipeline.list_mode),
+        'chart_mode': ezt.boolean(pipeline.chart_mode),
         'panel_id': mr.panel_id,
         'set_star_token': xsrf.GenerateToken(
             mr.auth.user_id, '/p/%s%s.do' % (

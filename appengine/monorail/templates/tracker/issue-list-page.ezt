@@ -16,7 +16,9 @@
 
  [if-any grid_mode]
   [include "issue-grid-controls-top.ezt"]
- [else]
+ [end]
+
+ [if-any list_mode]
   [include "issue-list-controls-top.ezt"]
  [end]
 
@@ -24,17 +26,27 @@
 
   <div id="cursorarea">
   <table cellspacing="0" cellpadding="2" border="0" class="results [if-any grid_mode][else]striped[end]" id="resultstable" width="100%">
+
    [if-any grid_mode]
     [include "issue-grid-body.ezt"]
-   [else]
+   [end]
+
+   [if-any list_mode]
     [include "issue-list-body.ezt"]
    [end]
+
+   [if-any chart_mode]
+    [include "issue-chart-body.ezt"]
+   [end]
+
   </table>
   </div>
 
   [if-any grid_mode]
     [include "issue-grid-controls-bottom.ezt"]
-  [else]
+  [end]
+
+  [if-any list_mode]
     [include "issue-list-controls-bottom.ezt"]
     [for panels][# There will always be exactly one panel]
       [include "issue-list-menus.ezt"]
