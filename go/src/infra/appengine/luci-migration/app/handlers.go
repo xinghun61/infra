@@ -219,7 +219,12 @@ func handleBuildbucketPubSub(c *router.Context) error {
 	if err := b.ParseMessage(&msg.Build); err != nil {
 		return err
 	}
-	return scheduling.HandleNotification(c.Context, &b, bb)
+
+	handler := &scheduling.Scheduler{
+		Buildbucket:             bb,
+		MaxHourlyRatePerBuilder: 5,
+	}
+	return handler.BuildCompleted(c.Context, &b)
 }
 
 func init() {

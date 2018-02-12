@@ -58,15 +58,16 @@ func TestScheduling(t *testing.T) {
 
 		// Mock buildbucket server.
 		putResponseCode := 0
-		var actualPutRequest *bbapi.ApiPutRequestMessage
+		var actualPutRequests []*bbapi.ApiPutRequestMessage
 		var searchResults []*bbapi.ApiCommonBuildMessage
 		bbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var res interface{}
 			switch r.URL.Path {
 			case "/builds":
-				actualPutRequest = &bbapi.ApiPutRequestMessage{}
-				err := json.NewDecoder(r.Body).Decode(actualPutRequest)
+				req := &bbapi.ApiPutRequestMessage{}
+				err := json.NewDecoder(r.Body).Decode(req)
 				testCtx.So(err, ShouldBeNil)
+				actualPutRequests = append(actualPutRequests, req)
 
 				if putResponseCode != 0 {
 					http.Error(w, "error", putResponseCode)
@@ -91,6 +92,11 @@ func TestScheduling(t *testing.T) {
 		bbService, err := bbapi.New(&http.Client{})
 		So(err, ShouldBeNil)
 		bbService.BasePath = bbServer.URL
+
+		h := &Scheduler{
+			MaxHourlyRatePerBuilder: 5,
+			Buildbucket:             bbService,
+		}
 
 		Convey("schedules buildbot builds on LUCI", func() {
 			Convey("shouldExperiment is deterministic", func() {
@@ -141,12 +147,12 @@ func TestScheduling(t *testing.T) {
 
 			Convey("retries buildbot builds on LUCI", func() {
 				putBuilder(100)
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
-				So(actualPutRequest, ShouldNotBeNil)
+				So(actualPutRequests, ShouldHaveLength, 1)
 
 				var actualParams interface{}
-				err = json.Unmarshal([]byte(actualPutRequest.ParametersJson), &actualParams)
+				err = json.Unmarshal([]byte(actualPutRequests[0].ParametersJson), &actualParams)
 				So(err, ShouldBeNil)
 				So(actualParams, ShouldResemble, map[string]interface{}{
 					"builder_name": "linux_chromium_rel_ng",
@@ -156,15 +162,18 @@ func TestScheduling(t *testing.T) {
 					},
 				})
 
-				So(actualPutRequest, ShouldResemble, &bbapi.ApiPutRequestMessage{
-					Bucket:            "luci.chromium.try",
-					ClientOperationId: "luci-migration-retry-54",
-					ParametersJson:    actualPutRequest.ParametersJson,
-					Tags: []string{
-						strpair.Format(buildbucket.TagBuildSet, buildSet.String()),
-						strpair.Format(attemptTagKey, "0"),
-						strpair.Format(buildbotBuildIDTagKey, "54"),
-						"user_agent:luci-migration",
+				So(actualPutRequests, ShouldHaveLength, 1)
+				So(actualPutRequests, ShouldResemble, []*bbapi.ApiPutRequestMessage{
+					{
+						Bucket:            "luci.chromium.try",
+						ClientOperationId: "luci-migration-retry-54",
+						ParametersJson:    actualPutRequests[0].ParametersJson,
+						Tags: []string{
+							strpair.Format(buildbucket.TagBuildSet, buildSet.String()),
+							strpair.Format(attemptTagKey, "0"),
+							strpair.Format(buildbotBuildIDTagKey, "54"),
+							"user_agent:luci-migration",
+						},
 					},
 				})
 			})
@@ -173,12 +182,12 @@ func TestScheduling(t *testing.T) {
 				// dry_run may be set by CQ only on presubmit builds.
 				b.Build.Output.Properties.(*OutputProperties).DryRun = "true"
 				putBuilder(100)
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
-				So(actualPutRequest, ShouldNotBeNil)
+				So(actualPutRequests, ShouldHaveLength, 1)
 
 				var actualParams interface{}
-				err = json.Unmarshal([]byte(actualPutRequest.ParametersJson), &actualParams)
+				err = json.Unmarshal([]byte(actualPutRequests[0].ParametersJson), &actualParams)
 				So(err, ShouldBeNil)
 				So(actualParams.(map[string]interface{})["properties"], ShouldResemble, map[string]interface{}{
 					"category": "cq_experimental",
@@ -189,9 +198,19 @@ func TestScheduling(t *testing.T) {
 
 			Convey("ignores builders with 0 percentage", func() {
 				putBuilder(0)
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
-				So(actualPutRequest, ShouldBeNil)
+				So(actualPutRequests, ShouldBeEmpty)
+			})
+
+			Convey("honors rate limit", func() {
+				putBuilder(100)
+				for i := 0; i < h.MaxHourlyRatePerBuilder*2; i++ {
+					err := h.BuildCompleted(c, b)
+					So(err, ShouldBeNil)
+					b.ID--
+				}
+				So(actualPutRequests, ShouldHaveLength, h.MaxHourlyRatePerBuilder)
 			})
 		})
 
@@ -211,18 +230,20 @@ func TestScheduling(t *testing.T) {
 						Tags:   luciMigrationBuildTags,
 					},
 				}
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
 
-				So(actualPutRequest, ShouldResemble, &bbapi.ApiPutRequestMessage{
-					Bucket:            "luci.test.x",
-					ClientOperationId: "luci-migration-retry-54",
-					ParametersJson:    b.ParametersJSON,
-					Tags: []string{
-						strpair.Format(buildbucket.TagBuildSet, buildSet.String()),
-						strpair.Format(attemptTagKey, "1"),
-						strpair.Format(buildbotBuildIDTagKey, "53"),
-						"user_agent:luci-migration",
+				So(actualPutRequests, ShouldResemble, []*bbapi.ApiPutRequestMessage{
+					{
+						Bucket:            "luci.test.x",
+						ClientOperationId: "luci-migration-retry-54",
+						ParametersJson:    b.ParametersJSON,
+						Tags: []string{
+							strpair.Format(buildbucket.TagBuildSet, buildSet.String()),
+							strpair.Format(attemptTagKey, "1"),
+							strpair.Format(buildbotBuildIDTagKey, "53"),
+							"user_agent:luci-migration",
+						},
 					},
 				})
 			})
@@ -241,11 +262,11 @@ func TestScheduling(t *testing.T) {
 						},
 					},
 				}
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
-				So(actualPutRequest, ShouldNotBeNil) // did retry
-				So(strpair.Format(buildbotBuildIDTagKey, "53"), ShouldBeIn, actualPutRequest.Tags)
-				So(strpair.Format(attemptTagKey, "1"), ShouldBeIn, actualPutRequest.Tags)
+				So(actualPutRequests, ShouldHaveLength, 1) // did retry
+				So(strpair.Format(buildbotBuildIDTagKey, "53"), ShouldBeIn, actualPutRequests[0].Tags)
+				So(strpair.Format(attemptTagKey, "1"), ShouldBeIn, actualPutRequests[0].Tags)
 			})
 
 			Convey("does not retry if there is a newer one", func() {
@@ -260,9 +281,9 @@ func TestScheduling(t *testing.T) {
 				searchResults = []*bbapi.ApiCommonBuildMessage{{
 					CreatedTs: buildbucket.FormatTimestamp(b.CreationTime) + 1, // 1 newer Build
 				}}
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
-				So(actualPutRequest, ShouldBeNil)
+				So(actualPutRequests, ShouldBeEmpty)
 			})
 
 			Convey("does not retry too many times", func() {
@@ -278,9 +299,9 @@ func TestScheduling(t *testing.T) {
 						},
 					},
 				}
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
-				So(actualPutRequest, ShouldBeNil) // did not retry
+				So(actualPutRequests, ShouldBeEmpty) // did not retry
 			})
 
 			Convey("does not retry unrecognized builds", func() {
@@ -292,9 +313,9 @@ func TestScheduling(t *testing.T) {
 						// no attempt tag
 					},
 				}
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
-				So(actualPutRequest, ShouldBeNil) // did not retry
+				So(actualPutRequests, ShouldBeEmpty) // did not retry
 			})
 
 			Convey("does not retry non-failed builds", func() {
@@ -306,9 +327,9 @@ func TestScheduling(t *testing.T) {
 						Tags:   luciMigrationBuildTags,
 					},
 				}
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
-				So(actualPutRequest, ShouldBeNil) // did not retry
+				So(actualPutRequests, ShouldBeEmpty) // did not retry
 			})
 
 			Convey("returns transient error on Buildbucket HTTP 500", func() {
@@ -321,7 +342,7 @@ func TestScheduling(t *testing.T) {
 					},
 				}
 				putResponseCode = 500
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldNotBeNil)
 				So(transient.Tag.In(err), ShouldBeTrue)
 			})
@@ -336,7 +357,7 @@ func TestScheduling(t *testing.T) {
 					},
 				}
 				putResponseCode = 403
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldNotBeNil)
 				So(transient.Tag.In(err), ShouldBeFalse)
 			})
@@ -351,7 +372,7 @@ func TestScheduling(t *testing.T) {
 					},
 				}
 				putResponseCode = 404
-				err := HandleNotification(c, b, bbService)
+				err := h.BuildCompleted(c, b)
 				So(err, ShouldNotBeNil)
 				So(transient.Tag.In(err), ShouldBeFalse)
 			})

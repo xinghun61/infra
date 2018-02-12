@@ -26,9 +26,11 @@ package scheduling
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -38,6 +40,7 @@ import (
 	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/luci/buildbucket"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
@@ -65,26 +68,35 @@ type OutputProperties struct {
 	DryRun      interface{} `json:"dry_run"`
 }
 
-// HandleNotification retries builds on LUCI.
-func HandleNotification(c context.Context, build *Build, bbService *bbapi.Service) error {
+// Scheduler schedules Buildbot builds on LUCI.
+type Scheduler struct {
+	// MaxHourlyRatePerBuilder is the maximum number of builds
+	// we can schedule on a LUCI builder.
+	MaxHourlyRatePerBuilder int
+	Buildbucket             *bbapi.Service
+}
+
+// BuildCompleted handles a build completion notification.
+func (h *Scheduler) BuildCompleted(c context.Context, build *Build) error {
 	switch {
 	case build.Status.Completed() && strings.HasPrefix(build.Bucket, "master."):
-		return handleCompletedBuildbotBuild(c, build, bbService)
+		return h.buildbotBuildCompleted(c, build)
 
 	case (build.Status == buildbucket.StatusFailure || build.Status == buildbucket.StatusError) &&
 		strings.HasPrefix(build.Bucket, "luci."):
 
 		// Note that result==FAILURE builds include infra-failed builds.
-		return handleFailedLUCIBuild(c, build, bbService)
+		return h.luciBuildFailed(c, build)
 
 	default:
 		return nil
 	}
 }
 
-// handleCompletedBuildbot schedules a Buildbot build on LUCI if the build
-// is for a builder that we track. Honors builder's experiment percentage.
-func handleCompletedBuildbotBuild(c context.Context, build *Build, bbService *bbapi.Service) error {
+// buildbotBuildCompleted schedules a Buildbot build on LUCI if the build
+// is for a builder that we track. Honors builder's experiment percentage and
+// build creation rate limit.
+func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) error {
 	// Is it a builder that we care about?
 	builder := &storage.Builder{ID: storage.BuilderID{
 		Master:  strings.TrimPrefix(build.Bucket, "master."),
@@ -140,11 +152,11 @@ func handleCompletedBuildbotBuild(c context.Context, build *Build, bbService *bb
 			c,
 			"scheduling Buildbot build %d on LUCI for builder %q and buildset %q",
 			build.ID, &builder.ID, build.Tags.Get(buildbucket.TagBuildSet))
-		return schedule(c, newBuild, bbService)
+		return h.maybeSchedule(c, builder.ID.Builder, newBuild)
 	})
 }
 
-func handleFailedLUCIBuild(c context.Context, build *Build, bbService *bbapi.Service) error {
+func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	attempt, attemptErr := strconv.Atoi(build.Tags.Get(attemptTagKey))
 	buildSet := build.Tags.Get(buildbucket.TagBuildSet)
 	buildbotBuildID := build.Tags.Get(buildbotBuildIDTagKey)
@@ -160,7 +172,7 @@ func handleFailedLUCIBuild(c context.Context, build *Build, bbService *bbapi.Ser
 
 	// Before retrying the build, see if there is a newer one already created.
 	// It may happen if a new Buildbot build completed.
-	req := bbService.Search()
+	req := h.Buildbucket.Search()
 	req.Context(c)
 	req.Bucket(build.Bucket)
 	req.CreationTsLow(buildbucket.FormatTimestamp(build.CreationTime) + 1)
@@ -189,7 +201,7 @@ func handleFailedLUCIBuild(c context.Context, build *Build, bbService *bbapi.Ser
 
 	return withLock(c, build.ID, func() error {
 		logging.Infof(c, "retrying LUCI build %d", build.ID)
-		return schedule(c, newBuild, bbService)
+		return h.maybeSchedule(c, build.Builder, newBuild)
 	})
 }
 
@@ -225,10 +237,30 @@ func withLock(c context.Context, buildID int64, f func() error) error {
 	return nil
 }
 
-// schedule creates a build and logs a successful result.
-func schedule(c context.Context, req *bbapi.ApiPutRequestMessage, service *bbapi.Service) error {
+// maybeSchedule creates a build and logs a successful result,
+// unless the app scheduled enough builds for this builder in the past hour.
+func (h *Scheduler) maybeSchedule(c context.Context, builder string, req *bbapi.ApiPutRequestMessage) error {
+	// Did we schedule enough builds in the past hour?
+	hour := clock.Now(c).Truncate(time.Hour).Unix()
+	countKey := fmt.Sprintf("created-count-%q-%q-%d", req.Bucket, builder, hour)
+	switch count, err := memcache.Increment(c, countKey, 1, 0); {
+	case err != nil:
+		return errors.Annotate(err, "failed to increment build created counter at %q", countKey).Tag(transient.Tag).Err()
+	case count > uint64(h.MaxHourlyRatePerBuilder):
+		logging.Warningf(
+			c,
+			"Not creating build: reached maximum created builds for builder %q:%q this hour",
+			req.Bucket, builder)
+		return nil
+	default:
+		logging.Infof(
+			c,
+			"created %d builds for builder %q:%q this hour",
+			count, req.Bucket, builder)
+	}
+
 	req.Tags = append(req.Tags, "user_agent:luci-migration")
-	res, err := service.Put(req).Context(c).Do()
+	res, err := h.Buildbucket.Put(req).Context(c).Do()
 	transientFailure := true
 	if err == nil && res.Error != nil {
 		err = errors.New(res.Error.Message)
