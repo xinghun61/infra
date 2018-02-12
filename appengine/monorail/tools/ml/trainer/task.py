@@ -151,13 +151,13 @@ if __name__ == '__main__':
     '--train-batch-size',
     help='Batch size for training steps',
     type=int,
-    default=40
+    default=128
   )
   parser.add_argument(
     '--eval-batch-size',
     help='Batch size for evaluation steps',
     type=int,
-    default=40
+    default=128
   )
 
   # Training arguments

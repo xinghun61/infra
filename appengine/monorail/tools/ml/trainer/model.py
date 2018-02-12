@@ -39,6 +39,12 @@ def build_estimator(config, trainer_type, class_count):
     config=config,
     feature_columns=(INPUT_COLUMNS[trainer_type]),
     hidden_units=[1024, 512, 256],
+    optimizer=tf.train.AdamOptimizer(learning_rate=0.001,
+      beta1=0.9,
+      beta2=0.999,
+      epsilon=1e-08,
+      use_locking=False,
+      name='Adam'),
     n_classes=class_count
   )
 
