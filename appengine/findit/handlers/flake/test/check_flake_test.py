@@ -1010,6 +1010,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.bug_id = 1
     analysis.root_pipeline_id = root_pipeline_id
     analysis.status = analysis_status.RUNNING
+    analysis.try_job_status = analysis_status.PENDING
     analysis.Save()
 
     original_key = analysis.key
@@ -1023,6 +1024,39 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
                 'format': 'json'})
     self.assertEqual(original_key, analysis.key)
     self.assertEqual(analysis_status.ERROR, analysis.status)
+    self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
+
+  @mock.patch.object(
+      check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  @mock.patch.object(RecursiveFlakePipeline, 'from_id', mock.MagicMock())
+  def testRequestCancelWhenAuthorizedCulpritRunning(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    root_pipeline_id = '1fdsalkj9o93290'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1
+    analysis.root_pipeline_id = root_pipeline_id
+    analysis.status = analysis_status.COMPLETED
+    analysis.try_job_status = analysis_status.RUNNING
+    analysis.Save()
+
+    original_key = analysis.key
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    self.test_app.post(
+        '/waterfall/flake',
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'})
+    self.assertEqual(original_key, analysis.key)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
+    self.assertEqual(analysis_status.ERROR, analysis.try_job_status)
 
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))

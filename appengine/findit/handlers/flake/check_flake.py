@@ -382,8 +382,19 @@ class CheckFlake(BaseHandler):
         'error': 'The pipeline was aborted manually.',
         'message': 'The pipeline was aborted manually.'
     }
+
+    # If culprit analysis is running, set the status to error.
+    if analysis.try_job_status == analysis_status.RUNNING:
+      try_job_status = analysis_status.ERROR
+    # if culprit analysis is pending, set it to skipped.
+    elif analysis.try_job_status == analysis_status.PENDING:
+      try_job_status = analysis_status.SKIPPED
+    else:
+      try_job_status = analysis.try_job_status
+
     analysis.Update(
         status=analysis_status.ERROR,
+        try_job_status=try_job_status,
         error=error,
         end_time=time_util.GetUTCNow())
 
