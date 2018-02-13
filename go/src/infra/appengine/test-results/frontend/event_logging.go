@@ -100,6 +100,10 @@ func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadPar
 }
 
 func testResultType(t string) (gen.ResultType, error) {
+	if t == "IMAGE+TEXT" {
+		return gen.ResultType_IMAGE_TEXT, nil
+	}
+
 	if ret, ok := gen.ResultType_value[t]; ok {
 		return gen.ResultType(ret), nil
 	}

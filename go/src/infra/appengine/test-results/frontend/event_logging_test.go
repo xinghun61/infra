@@ -32,6 +32,10 @@ func TestCreateEvent(t *testing.T) {
 					Actual:   []string{"PASS"},
 					Expected: []string{"PASS"},
 				},
+				"other/path": &model.FullTestLeaf{
+					Actual: []string{"IMAGE+TEXT"},
+					Expected: []string{"WONTFIX"},
+				},
 			},
 		}
 
@@ -54,6 +58,22 @@ func TestCreateEvent(t *testing.T) {
 					Actual:   []gen.ResultType{gen.ResultType_PASS},
 					Expected: []gen.ResultType{gen.ResultType_PASS},
 					Name:     "path",
+				},
+			},
+			{
+				Path:     "other/path",
+				TestType: p.TestType,
+				StepName: p.StepName,
+				BuildbotInfo: &gen.BuildbotInfo{
+					MasterName:  p.Master,
+					BuilderName: p.Builder,
+					BuildNumber: int64(f.BuildNumber),
+				},
+				StartTime: zeroTS,
+				Run: &gen.TestRun{
+					Actual:   []gen.ResultType{gen.ResultType_IMAGE_TEXT},
+					Expected: []gen.ResultType{gen.ResultType_WONTFIX},
+					Name:     "other/path",
 				},
 			},
 		}
