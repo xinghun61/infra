@@ -1,13 +1,7 @@
 package testexpectations
 
 import (
-	"bytes"
-	"encoding/base64"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"sort"
-	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -150,69 +144,4 @@ func TestParse(t *testing.T) {
 			So(stmt.String(), ShouldEqual, test.input)
 		}
 	})
-}
-
-func ExampleParser_Parse() {
-	var names []string
-	for name := range LayoutTestExpectations {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	for _, name := range names {
-		path := LayoutTestExpectations[name]
-		URL := fmt.Sprintf("https://chromium.googlesource.com/chromium/src/+/master/%s?format=TEXT", path)
-		resp, err := http.Get(URL)
-		if err != nil {
-			fmt.Printf("Error fetching: %s\n", err)
-			return
-		}
-		defer resp.Body.Close()
-
-		reader := base64.NewDecoder(base64.StdEncoding, resp.Body)
-		b, err := ioutil.ReadAll(reader)
-		if err != nil {
-			fmt.Printf("Error reading: %s\n", err)
-			return
-		}
-
-		lines := strings.Split(string(b), "\n")
-		stmts := []*ExpectationStatement{}
-		for n, line := range lines {
-			p := NewParser(bytes.NewBufferString(line))
-			stmt, err := p.Parse()
-			if err != nil {
-				fmt.Printf("Error parsing %s:%d %q: %s\n", name, n, line, err)
-				return
-			}
-			stmt.LineNumber = n
-			stmt.Original = line
-			stmts = append(stmts, stmt)
-		}
-
-		fmt.Printf("%s line count match? %t\n", name, len(stmts) == len(lines))
-
-		for _, s := range stmts {
-			r := s.String()
-			// TODO(seanmccullough): Track extra whitespace between test names and
-			// expectations in the original lines, or otherwise keep the original text
-			// if we haven't edited the semantics of the line. The len(...) comparison
-			// below is a brittle hack to test around this.
-
-			if s.Original != r && len(s.Original)-len(r) != 1 {
-				fmt.Printf("%s:%d differs:\n%q\n%q\n", path, s.LineNumber, s.Original, r)
-			}
-		}
-	}
-
-	// Output:
-	// ASANExpectations line count match? true
-	// LeakExpectations line count match? true
-	// MSANExpectations line count match? true
-	// NeverFixTests line count match? true
-	// SlowTests line count match? true
-	// SmokeTests line count match? true
-	// StaleTestExpectations line count match? true
-	// TestExpectations line count match? true
-	// W3CImportExpectations line count match? true
 }
