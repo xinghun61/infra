@@ -31,7 +31,7 @@
            [if-any arg1.url]
             <a href="[arg1.url]" target="_blank" style="margin-left:.7em">View</a>
            [end]
-           <a download="[arg1.filename]" href="[arg1.downloadurl]" style="margin-left:.7em" download>Download</a>
+           <a download="[arg1.filename]" href="[arg1.downloadurl]" style="margin-left:.7em">Download</a>
           [end]
          </td>
 
