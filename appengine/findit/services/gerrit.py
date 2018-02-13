@@ -19,8 +19,8 @@ import urllib
 from google.appengine.ext import ndb
 
 from common import constants
-from common import monitoring
 from common import rotations
+from common.waterfall import failure_type
 from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
 from libs import time_util
@@ -31,10 +31,12 @@ from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
+# Statuses for auto create a revert.
 CREATED_BY_FINDIT = 0
 CREATED_BY_SHERIFF = 1
 ERROR = 2
 SKIPPED = 3
+COMMITTED = 4
 
 CULPRIT_IS_A_REVERT = 'Culprit is a revert.'
 AUTO_REVERT_OFF = 'Author of the culprit revision has turned off auto-revert.'
@@ -160,74 +162,6 @@ def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
 
 
 ###################### Functions to create a revert. ######################
-
-
-@ndb.transactional
-def _CanRevert(repo_name, revision, pipeline_id):
-  """Checks if this pipeline can revert.
-
-  This pipeline can revert if:
-    No revert of this culprit is complete or skipped;
-    No other pipeline is doing the revert on the same culprit.
-  """
-  culprit = WfSuspectedCL.Get(repo_name, revision)
-  assert culprit
-  if ((culprit.revert_cl and culprit.revert_status == status.COMPLETED) or
-      culprit.revert_status == status.SKIPPED or
-      (culprit.revert_status == status.RUNNING and
-       culprit.revert_pipeline_id and
-       culprit.revert_pipeline_id != pipeline_id)):
-    # Revert of the culprit has been created or is being created by another
-    # analysis.
-    return False
-
-  # Update culprit to ensure only current analysis can revert the culprit.
-  culprit.revert_status = status.RUNNING
-  culprit.revert_pipeline_id = pipeline_id
-  culprit.put()
-  return True
-
-
-def _GetDailyNumberOfRevertedCulprits(limit):
-  earliest_time = time_util.GetUTCNow() - timedelta(days=1)
-  # TODO (chanli): improve the check for a rare case when two pipelines revert
-  # at the same time.
-  return WfSuspectedCL.query(
-      WfSuspectedCL.revert_created_time >= earliest_time).count(limit)
-
-
-def ShouldRevert(pipeline_input, pipeline_id):
-  """Checks if the culprit should be reverted.
-
-  The culprit should be reverted if:
-    1. Auto revert is turned on;
-    2. This pipeline can do the revert;
-    3. The number of reverts in past 24 hours is less than the daily limit.
-  """
-  action_settings = waterfall_config.GetActionSettings()
-  # Auto revert has been turned off.
-  if not bool(action_settings.get('auto_create_revert_compile')):
-    return False
-
-  if not _CanRevert(pipeline_input.cl_key.repo_name,
-                    pipeline_input.cl_key.revision, pipeline_id):
-    # Either revert is done, skipped or handled by another pipeline.
-    return False
-
-  auto_create_revert_daily_threshold_compile = action_settings.get(
-      'auto_create_revert_daily_threshold_compile',
-      DEFAULT_AUTO_CREATE_REVERT_DAILY_THRESHOLD_COMPILE)
-  # Auto revert has exceeded daily limit.
-  if _GetDailyNumberOfRevertedCulprits(
-      auto_create_revert_daily_threshold_compile
-  ) >= auto_create_revert_daily_threshold_compile:
-    logging.info('Auto reverts on %s has met daily limit.',
-                 time_util.FormatDatetime(time_util.GetUTCNow()))
-    return False
-
-  return True
-
-
 def _IsOwnerFindit(owner_email):
   return owner_email == constants.DEFAULT_SERVICE_ACCOUNT
 
@@ -347,7 +281,13 @@ def RevertCulprit(pipeline_input):
   # 3. Add reviewers.
   # If Findit cannot commit the revert, add sheriffs as reviewers and ask them
   # to 'LGTM' and commit the revert.
-  if not waterfall_config.GetActionSettings().get('auto_commit_revert_compile'):
+  build_failure_type = pipeline_input.failure_type
+  action_settings = waterfall_config.GetActionSettings()
+  can_commit_revert = (
+      action_settings.get('auto_commit_revert_compile')
+      if build_failure_type == failure_type.COMPILE else
+      action_settings.get('auto_commit_revert_test'))
+  if not can_commit_revert:
     success = _AddReviewers(revision, culprit.key.urlsafe(), codereview,
                             revert_change_id, False)
     if not success:  # pragma: no cover
@@ -362,79 +302,20 @@ def RevertCulprit(pipeline_input):
 ###################### Functions to commit a revert. ######################
 
 
-@ndb.transactional
-def _CanCommitRevert(repo_name, revision, pipeline_id):
-  """Checks if current pipeline should do the auto commit.
-
-  This pipeline should commit a revert of the culprit if:
-    1. There is a revert for the culprit;
-    2. The revert have copleted;
-    3. The revert should be auto commited;
-    4. No other pipeline is committing the revert;
-    5. No other pipeline is supposed to handle the auto commit.
-  """
-  culprit = WfSuspectedCL.Get(repo_name, revision)
-  assert culprit
-
-  if (not culprit.revert_cl or
-      culprit.revert_submission_status == status.COMPLETED or
-      culprit.revert_status != status.COMPLETED or
-      culprit.revert_submission_status == status.SKIPPED or
-      (culprit.revert_submission_status == status.RUNNING and
-       culprit.submit_revert_pipeline_id and
-       culprit.submit_revert_pipeline_id != pipeline_id)):
-    return False
-
-  # Update culprit to ensure only current analysis can commit the revert.
-  culprit.revert_submission_status = status.RUNNING
-  culprit.submit_revert_pipeline_id = pipeline_id
-  culprit.put()
-  return True
-
-
-def _GetDailyNumberOfCommits(limit):
-  earliest_time = time_util.GetUTCNow() - timedelta(days=1)
-  # TODO (chanli): improve the check for a rare case when two pipelines commit
-  # at the same time.
-  return WfSuspectedCL.query(
-      WfSuspectedCL.revert_committed_time >= earliest_time).count(limit)
-
-
 def _CulpritWasAutoCommitted(culprit_info):
   author_email = culprit_info['author']['email']
   return author_email in constants.NO_AUTO_COMMIT_REVERT_ACCOUNTS
 
 
-def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
-  """Checks if the revert should be auto committed.
+def _CanAutoCommitRevertByGerrit(repo_name, revision):
+  """Checks if the revert can be auto-committed by gerrit.
 
-  The revert should be committed if:
-    1. Auto revert and Auto commit is turned on;
-    2. The revert is created by Findit;
-    3. This pipeline can commit the revert;
-    4. The number of commits of reverts in past 24 hours is less than the
-      daily limit;
-    5. The revert is done in Gerrit;
-    6. The culprit is committed within threshold.
+  The revert should be auto-committed if:
+    1. The culprit was not auto committed.
+    2. The revert is done in Gerrit;
+    3. The culprit is committed within threshold.
   """
   action_settings = waterfall_config.GetActionSettings()
-  if (not revert_status == CREATED_BY_FINDIT or
-      not bool(action_settings.get('auto_commit_revert_compile')) or
-      not bool(action_settings.get('auto_create_revert_compile'))):
-    return False
-
-  if not _CanCommitRevert(repo_name, revision, pipeline_id):
-    return False
-
-  auto_commit_revert_daily_threshold_compile = action_settings.get(
-      'auto_commit_revert_daily_threshold_compile',
-      DEFAULT_AUTO_COMMIT_REVERT_DAILY_THRESHOLD_COMPILE)
-  if _GetDailyNumberOfCommits(auto_commit_revert_daily_threshold_compile
-                             ) >= auto_commit_revert_daily_threshold_compile:
-    logging.info('Auto commits on %s has met daily limit.',
-                 time_util.FormatDatetime(time_util.GetUTCNow()))
-    return False
-
   culprit_commit_limit_hours = action_settings.get(
       'culprit_commit_limit_hours', _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS)
 
@@ -472,30 +353,14 @@ def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
   return True
 
 
-def CommitRevert(pipeline_input, pipeline_id):
+def CommitRevert(pipeline_input):
   # Note that we don't know which was the final action taken by the pipeline
   # before this point. That is why this is where we increment the appropriate
   # metrics.
   repo_name = pipeline_input.cl_key.repo_name
   revision = pipeline_input.cl_key.revision
-  revert_status = pipeline_input.revert_status
-  if not _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
-    if revert_status == CREATED_BY_FINDIT:
-      monitoring.culprit_found.increment({
-          'type': 'compile',
-          'action_taken': 'revert_created'
-      })
-    elif revert_status == CREATED_BY_SHERIFF:
-      monitoring.culprit_found.increment({
-          'type': 'compile',
-          'action_taken': 'revert_confirmed'
-      })
-    else:
-      monitoring.culprit_found.increment({
-          'type': 'compile',
-          'action_taken': 'revert_status_error'
-      })
-    return False
+  if not _CanAutoCommitRevertByGerrit(repo_name, revision):
+    return SKIPPED
 
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
   culprit_host = culprit_info['review_server_host']
@@ -511,84 +376,15 @@ def CommitRevert(pipeline_input, pipeline_id):
                   True)
     _UpdateCulprit(
         repo_name, revision, revert_submission_status=status.COMPLETED)
-    monitoring.culprit_found.increment({
-        'type': 'compile',
-        'action_taken': 'revert_committed'
-    })
   else:
     _AddReviewers(revision, culprit.key.urlsafe(), codereview, revert_change_id,
                   False)
     _UpdateCulprit(repo_name, revision, revert_submission_status=status.ERROR)
-    monitoring.culprit_found.increment({
-        'type': 'compile',
-        'action_taken': 'commit_error'
-    })
-  return committed
+  return COMMITTED if committed else ERROR
 
 
 ###################### Functions to send notification. ######################
-@ndb.transactional
-def _ShouldSendNotification(repo_name, revision, force_notify, revert_status,
-                            build_num_threshold):
-  """Returns True if a notification for the culprit should be sent.
-
-  Send notification only when:
-    1. The culprit is not reverted.
-    2. It was not processed yet.
-    3. The culprit is for multiple failures in different builds to avoid false
-      positive due to flakiness.
-
-  Any new criteria for deciding when to notify should be implemented within this
-  function.
-
-  Args:
-    repo_name, revision (str): Uniquely identify the revision to notify about.
-    force_notify (bool): If we should skip the fail number threshold check.
-    revert_status (int): Status of revert if exists.
-    build_num_threshold (int): Threshold for the number of builds the culprit is
-      responsible for. A notification should be sent when number of builds
-      exceeds the threshold.
-
-  Returns:
-    A boolean indicating whether we should send the notification.
-
-  """
-  if revert_status == CREATED_BY_FINDIT:
-    # Already notified when revert, bail out.
-    return False
-
-  if revert_status == CREATED_BY_SHERIFF:
-    force_notify = True
-
-  # TODO (chanli): Add check for if confidence for the culprit is
-  # over threshold.
-  culprit = WfSuspectedCL.Get(repo_name, revision)
-  assert culprit
-
-  if culprit.cr_notification_processed:
-    return False
-
-  if force_notify or len(culprit.builds) >= build_num_threshold:
-    culprit.cr_notification_status = status.RUNNING
-    culprit.put()
-    return True
-  return False
-
-
-def SendNotificationForCulprit(pipeline_input):
-  repo_name = pipeline_input.cl_key.repo_name
-  revision = pipeline_input.cl_key.revision
-  force_notify = pipeline_input.force_notify
-  revert_status = pipeline_input.revert_status
-
-  action_settings = waterfall_config.GetActionSettings()
-  # Set some impossible default values to prevent notification by default.
-  build_num_threshold = action_settings.get('cr_notification_build_threshold',
-                                            100000)
-  if not _ShouldSendNotification(repo_name, revision, force_notify,
-                                 revert_status, build_num_threshold):
-    return False
-
+def SendNotificationForCulprit(repo_name, revision, revert_status):
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
   commit_position = culprit_info['commit_position']
   review_server_host = culprit_info['review_server_host']

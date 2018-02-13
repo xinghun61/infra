@@ -7,6 +7,7 @@ import mock
 import textwrap
 
 from common import rotations
+from common.waterfall import failure_type
 from infra_api_clients.codereview import codereview_util
 from infra_api_clients.codereview.cl_info import ClInfo
 from infra_api_clients.codereview.cl_info import Commit
@@ -14,13 +15,13 @@ from infra_api_clients.codereview.rietveld import Rietveld
 from libs import analysis_status as status
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
+from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
+from services import culprit_action
 from services import gerrit
 from services.parameters import CLKey
 from services.parameters import CreateRevertCLParameters
 from waterfall import buildbot
 from waterfall import suspected_cl_util
-from waterfall import waterfall_config
-from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.test import wf_testcase
 
 _CODEREVIEW = Rietveld('codereview.chromium.org')
@@ -73,7 +74,9 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        build_id=build_id,
+        failure_type=failure_type.COMPILE)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
 
@@ -91,14 +94,17 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
                                        buildbot.CreateBuildUrl('m', 'b', '123'))
     mock_revert.assert_called_with(reason, self.review_change_id, '20001')
 
-  @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
-  def testRevertTurnedOff(self, _):
+  @mock.patch.object(
+      culprit_action, '_CanCreateRevertForCulprit', return_value=False)
+  def testRevertSkipped(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
     build_id = 'm/b/123'
 
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        build_id=build_id,
+        failure_type=failure_type.COMPILE)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
 
@@ -114,7 +120,9 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        build_id=build_id,
+        failure_type=failure_type.COMPILE)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEquals(culprit.revert_status, status.ERROR)
@@ -127,7 +135,9 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        build_id=build_id,
+        failure_type=failure_type.COMPILE)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertIsNone(culprit.revert_status)
@@ -142,7 +152,9 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        build_id=build_id,
+        failure_type=failure_type.COMPILE)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     pipeline.start()
     pipeline.OnAbort(pipeline_input)

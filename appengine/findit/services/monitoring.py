@@ -20,11 +20,18 @@ def OnTryJobTriggered(try_job_type, master_name, builder_name):
   })
 
 
-def OnActionOnTestCulprits():
-  """Records when Findit sends notifications to culprits for a test failure."""
+def OnCulpritAction(failure_type, action):
+  """Records when Findit take action on a culprit.
+
+  Args:
+    failure_type (str): 'compile', 'test' or 'flake'.
+    action (str): revert_created, revert_committed, revert_confirmed,
+      revert_status_error, revert_commit_error, culprit_notified,
+      culprit_notified_error, irc_notified, irc_notified_error.
+  """
   monitoring.culprit_found.increment({
-      'type': 'test',
-      'action_taken': 'culprit_notified'
+      'type': failure_type,
+      'action_taken': action
   })
 
 

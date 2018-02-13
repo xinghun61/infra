@@ -5,13 +5,13 @@
 from gae_libs.pipelines import SynchronousPipeline
 from libs import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
-from services import gerrit
+from services import culprit_action
 from services.parameters import SubmitRevertCLParameters
 
 
 class SubmitRevertCLPipeline(SynchronousPipeline):
   input_type = SubmitRevertCLParameters
-  output_type = bool
+  output_type = int
 
   def OnAbort(self, pipeline_input):
     culprit = WfSuspectedCL.Get(pipeline_input.cl_key.repo_name,
@@ -26,4 +26,4 @@ class SubmitRevertCLPipeline(SynchronousPipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def RunImpl(self, pipeline_input):
-    return gerrit.CommitRevert(pipeline_input, self.pipeline_id)
+    return culprit_action.CommitRevert(pipeline_input, self.pipeline_id)

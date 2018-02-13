@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from gae_libs.pipelines import SynchronousPipeline
-from services import irc
+from services import culprit_action
 from services.parameters import SendNotificationToIrcParameters
 
 
@@ -12,4 +12,4 @@ class SendNotificationToIrcPipeline(SynchronousPipeline):
   output_type = bool
 
   def RunImpl(self, pipeline_input):
-    return irc.SendMessageToIrc(pipeline_input)
+    return culprit_action.SendMessageToIRC(pipeline_input)

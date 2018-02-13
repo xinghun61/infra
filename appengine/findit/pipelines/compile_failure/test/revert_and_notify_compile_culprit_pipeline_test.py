@@ -5,12 +5,14 @@
 import mock
 
 from common import constants
+from common.waterfall import failure_type
 from gae_libs.pipelines import pipeline_handlers
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
-from services import gerrit
 from services import culprit_action
+from services import gerrit
+from services.compile_failure import compile_culprit_action
 from services.parameters import BuildKey
 from services.parameters import CLKey
 from services.parameters import CreateRevertCLParameters
@@ -33,7 +35,11 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
-  def testSendNotificationToConfirmRevert(self, _):
+  @mock.patch.object(
+      compile_culprit_action, 'CanAutoCreateRevert', return_value=True)
+  @mock.patch.object(
+      compile_culprit_action, 'CanAutoCommitRevertByFindit', return_value=True)
+  def testSendNotificationToConfirmRevert(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -50,25 +56,127 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         CreateRevertCLPipeline,
         CreateRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
-            build_id=build_id), gerrit.CREATED_BY_FINDIT)
+            build_id=build_id,
+            failure_type=failure_type.COMPILE), gerrit.CREATED_BY_FINDIT)
     self.MockSynchronousPipeline(
         SubmitRevertCLPipeline,
         SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
-            revert_status=gerrit.CREATED_BY_FINDIT), True)
+            revert_status=gerrit.CREATED_BY_FINDIT,
+            failure_type=failure_type.COMPILE), gerrit.COMMITTED)
     self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
                                  SendNotificationToIrcParameters(
                                      cl_key=CLKey(
                                          repo_name=repo_name,
                                          revision=revision),
                                      revert_status=gerrit.CREATED_BY_FINDIT,
-                                     submitted=True), True)
+                                     commit_status=gerrit.COMMITTED,
+                                     failure_type=failure_type.COMPILE), True)
+    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
+                                 SendNotificationForCulpritParameters(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name,
+                                         revision=revision),
+                                     force_notify=True,
+                                     revert_status=gerrit.CREATED_BY_FINDIT,
+                                     failure_type=failure_type.COMPILE), True)
+
+    pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
+        CulpritActionParameters(
+            build_key=BuildKey(
+                master_name=master_name,
+                builder_name=builder_name,
+                build_number=build_number),
+            culprits=culprits,
+            heuristic_cls=heuristic_cls))
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+  @mock.patch.object(
+      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
+  @mock.patch.object(
+      compile_culprit_action, 'CanAutoCreateRevert', return_value=True)
+  @mock.patch.object(
+      compile_culprit_action, 'CanAutoCommitRevertByFindit', return_value=False)
+  def testCreatedRevertButNotSubmitted(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    build_id = 'm/b/124'
+    repo_name = 'chromium/test'
+    revision = 'r1'
+    cl_key = CLKey(repo_name=repo_name, revision=revision)
+    culprits = DictOfCLKeys()
+    culprits['r1'] = cl_key
+    heuristic_cls = ListOfCLKeys()
+    heuristic_cls.append(cl_key)
+
     self.MockSynchronousPipeline(
-        SendNotificationForCulpritPipeline,
-        SendNotificationForCulpritParameters(
+        CreateRevertCLPipeline,
+        CreateRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
-            force_notify=True,
-            revert_status=gerrit.CREATED_BY_FINDIT), True)
+            build_id=build_id,
+            failure_type=failure_type.COMPILE), gerrit.CREATED_BY_FINDIT)
+    self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
+                                 SendNotificationToIrcParameters(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name,
+                                         revision=revision),
+                                     revert_status=gerrit.CREATED_BY_FINDIT,
+                                     commit_status=gerrit.SKIPPED,
+                                     failure_type=failure_type.COMPILE), True)
+    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
+                                 SendNotificationForCulpritParameters(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name,
+                                         revision=revision),
+                                     force_notify=True,
+                                     revert_status=gerrit.CREATED_BY_FINDIT,
+                                     failure_type=failure_type.COMPILE), True)
+
+    pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
+        CulpritActionParameters(
+            build_key=BuildKey(
+                master_name=master_name,
+                builder_name=builder_name,
+                build_number=build_number),
+            culprits=culprits,
+            heuristic_cls=heuristic_cls))
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+  @mock.patch.object(
+      culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
+  @mock.patch.object(
+      compile_culprit_action, 'CanAutoCreateRevert', return_value=False)
+  def testNotAutoRevert(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    repo_name = 'chromium/test'
+    revision = 'r1'
+    cl_key = CLKey(repo_name=repo_name, revision=revision)
+    culprits = DictOfCLKeys()
+    culprits['r1'] = cl_key
+    heuristic_cls = ListOfCLKeys()
+    heuristic_cls.append(cl_key)
+
+    self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
+                                 SendNotificationToIrcParameters(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name,
+                                         revision=revision),
+                                     revert_status=gerrit.SKIPPED,
+                                     commit_status=gerrit.SKIPPED,
+                                     failure_type=failure_type.COMPILE), True)
+    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
+                                 SendNotificationForCulpritParameters(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name,
+                                         revision=revision),
+                                     force_notify=True,
+                                     revert_status=gerrit.SKIPPED,
+                                     failure_type=failure_type.COMPILE), True)
 
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
         CulpritActionParameters(

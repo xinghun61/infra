@@ -5,7 +5,7 @@
 from gae_libs.pipelines import SynchronousPipeline
 from libs import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
-from services import gerrit
+from services import culprit_action
 from services.parameters import CreateRevertCLParameters
 
 
@@ -26,6 +26,4 @@ class CreateRevertCLPipeline(SynchronousPipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def RunImpl(self, pipeline_input):
-    if gerrit.ShouldRevert(pipeline_input, self.pipeline_id):
-      return gerrit.RevertCulprit(pipeline_input)
-    return gerrit.SKIPPED
+    return culprit_action.RevertCulprit(pipeline_input, self.pipeline_id)

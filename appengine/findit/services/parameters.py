@@ -47,25 +47,29 @@ class CreateRevertCLParameters(StructuredObject):
   """Input for CreateRevertCLPipeline."""
   cl_key = CLKey
   build_id = basestring
+  failure_type = int
 
 
 class SubmitRevertCLParameters(StructuredObject):
   """Input for SubmitRevertCLPipeline."""
   cl_key = CLKey
   revert_status = int
+  failure_type = int
 
 
 class SendNotificationToIrcParameters(StructuredObject):
   """Input for SendNotificationToIrcPipeline."""
   cl_key = CLKey
   revert_status = int
-  submitted = bool
+  commit_status = int
+  failure_type = int
 
 
 class SendNotificationForCulpritParameters(StructuredObject):
   cl_key = CLKey
   force_notify = bool
   revert_status = int
+  failure_type = int
 
 
 class CulpritActionParameters(StructuredObject):

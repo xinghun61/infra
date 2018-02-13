@@ -2,9 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common.waterfall import failure_type
 from gae_libs.pipelines import GeneratorPipeline
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from services import culprit_action
+from services import gerrit
+from services.compile_failure import compile_culprit_action
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
 from services.parameters import SendNotificationToIrcParameters
@@ -31,27 +34,40 @@ class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):
         pipeline_input.build_key.GetParts())
     culprits = pipeline_input.culprits
     culprit = culprits.values()[0]
-    heuristic_cls = pipeline_input.heuristic_cls
-    force_notify = culprit in heuristic_cls
+    force_notify = culprit_action.ShouldForceNotify(culprit, pipeline_input)
     build_id = build_util.CreateBuildId(master_name, builder_name, build_number)
 
-    revert_status = yield CreateRevertCLPipeline(
-        CreateRevertCLParameters(cl_key=culprit, build_id=build_id))
+    build_failure_type = failure_type.COMPILE
+    revert_status = gerrit.SKIPPED
+    commit_status = gerrit.SKIPPED
+    if compile_culprit_action.CanAutoCreateRevert():
+      revert_status = yield CreateRevertCLPipeline(
+          CreateRevertCLParameters(
+              cl_key=culprit,
+              build_id=build_id,
+              failure_type=build_failure_type))
 
-    submit_revert_pipeline_input = self.CreateInputObjectInstance(
-        SubmitRevertCLParameters, cl_key=culprit, revert_status=revert_status)
-    submitted = yield SubmitRevertCLPipeline(submit_revert_pipeline_input)
+      if compile_culprit_action.CanAutoCommitRevertByFindit(revert_status):
+        submit_revert_pipeline_input = self.CreateInputObjectInstance(
+            SubmitRevertCLParameters,
+            cl_key=culprit,
+            revert_status=revert_status,
+            failure_type=build_failure_type)
+        commit_status = yield SubmitRevertCLPipeline(
+            submit_revert_pipeline_input)
 
-    send_notification_to_irc_input = self.CreateInputObjectInstance(
-        SendNotificationToIrcParameters,
-        cl_key=culprit,
-        revert_status=revert_status,
-        submitted=submitted)
-    yield SendNotificationToIrcPipeline(send_notification_to_irc_input)
+      send_notification_to_irc_input = self.CreateInputObjectInstance(
+          SendNotificationToIrcParameters,
+          cl_key=culprit,
+          revert_status=revert_status,
+          commit_status=commit_status,
+          failure_type=build_failure_type)
+      yield SendNotificationToIrcPipeline(send_notification_to_irc_input)
 
     send_notification_to_culprit_input = self.CreateInputObjectInstance(
         SendNotificationForCulpritParameters,
         cl_key=culprit,
         force_notify=force_notify,
-        revert_status=revert_status)
+        revert_status=revert_status,
+        failure_type=build_failure_type)
     yield SendNotificationForCulpritPipeline(send_notification_to_culprit_input)

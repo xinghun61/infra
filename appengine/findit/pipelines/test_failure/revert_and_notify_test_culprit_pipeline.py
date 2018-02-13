@@ -22,7 +22,7 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
     if not culprit_action.ShouldTakeActionsOnCulprit(pipeline_input):
       return
 
-    monitoring.OnActionOnTestCulprits()
+    monitoring.OnCulpritAction('test', 'culprit_notified')
 
     culprits = pipeline_input.culprits
     heuristic_cls = pipeline_input.heuristic_cls

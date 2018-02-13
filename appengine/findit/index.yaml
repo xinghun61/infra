@@ -49,6 +49,20 @@ indexes:
   - name: updated_time
     direction: desc
 
+- kind: WfSuspectedCL
+  properties:
+  - name: failure_type
+    direction: asc
+  - name: revert_created_time
+    direction: desc
+
+- kind: WfSuspectedCL
+  properties:
+  - name: failure_type
+    direction: asc
+  - name: revert_committed_time
+    direction: desc
+
 - kind: FlakeAnalysisRequest
   properties:
   - name: user_emails_obscured

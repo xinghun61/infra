@@ -5,6 +5,7 @@
 from datetime import datetime
 import mock
 
+from common.waterfall import failure_type
 from infra_api_clients.codereview import codereview_util
 from infra_api_clients.codereview.cl_info import ClInfo
 from infra_api_clients.codereview.cl_info import Commit
@@ -13,6 +14,7 @@ from libs import analysis_status as status
 from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
+from services import culprit_action
 from services import gerrit
 from services.parameters import CLKey
 from services.parameters import SubmitRevertCLParameters
@@ -76,11 +78,10 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=revert_status)
+        revert_status=revert_status,
+        failure_type=failure_type.COMPILE)
     pipeline = SubmitRevertCLPipeline(pipeline_input)
-    committed = pipeline.run(pipeline_input)
-
-    self.assertTrue(committed)
+    self.assertEqual(gerrit.COMMITTED, pipeline.run(pipeline_input))
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_submission_status, status.COMPLETED)
@@ -96,7 +97,8 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=revert_status)
+        revert_status=revert_status,
+        failure_type=failure_type.COMPILE)
     SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEquals(culprit.revert_submission_status, status.ERROR)
@@ -110,7 +112,8 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=revert_status)
+        revert_status=revert_status,
+        failure_type=failure_type.COMPILE)
     SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertIsNone(culprit.revert_submission_status)
@@ -125,7 +128,8 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=revert_status)
+        revert_status=revert_status,
+        failure_type=failure_type.COMPILE)
     pipeline = SubmitRevertCLPipeline(pipeline_input)
     pipeline.start_test()
     pipeline.OnAbort(pipeline_input)

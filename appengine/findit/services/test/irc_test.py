@@ -10,8 +10,6 @@ from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from services import irc
 from services import gerrit
-from services.parameters import CLKey
-from services.parameters import SendNotificationToIrcParameters
 from waterfall.test import wf_testcase
 
 
@@ -35,89 +33,39 @@ class MockedIRCClient(object):
 
 class IrcTest(wf_testcase.WaterfallTestCase):
 
-  @mock.patch.object(irc, 'IRCClient')
-  def testNoNeedToSendNotification(self, mocked_irc):
-    repo_name = 'chromium'
-    revision = 'rev'
-    revert_status = gerrit.CREATED_BY_SHERIFF
-    submitted = False
-    pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=revert_status,
-        submitted=submitted)
-    self.assertFalse(irc.SendMessageToIrc(pipeline_input))
-    mocked_irc.assert_not_called()
-
-  @mock.patch.object(irc, 'IRCClient')
-  def testSendNotificationNoCulprit(self, mocked_irc):
-    repo_name = 'chromium'
-    revision = 'rev'
-    revert_status = gerrit.CREATED_BY_FINDIT
-    submitted = False
-    pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=revert_status,
-        submitted=submitted)
-    self.assertFalse(irc.SendMessageToIrc(pipeline_input))
-
-    mocked_irc.assert_not_called()
-
-  @mock.patch.object(irc, 'IRCClient')
-  def testSendNotificationNoRevert(self, mocked_irc):
-    repo_name = 'chromium'
-    revision = 'rev'
-    revert_status = gerrit.CREATED_BY_FINDIT
-    submitted = False
-
-    WfSuspectedCL.Create(repo_name, revision, 1).put()
-
-    pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=revert_status,
-        submitted=submitted)
-    self.assertFalse(irc.SendMessageToIrc(pipeline_input))
-
-    mocked_irc.assert_not_called()
-
   def testSendNotification(self):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = gerrit.CREATED_BY_FINDIT
-    submitted = False
+    commit_position = 123
+    revert_cl_url = 'revert_url'
+    commit_status = gerrit.SKIPPED
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.revert_cl = RevertCL()
-    culprit.revert_cl.revert_cl_url = 'revert_url'
     culprit.put()
 
     self.mock(irc, 'IRCClient', MockedIRCClient)
-
-    pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=revert_status,
-        submitted=submitted)
-    self.assertTrue(irc.SendMessageToIrc(pipeline_input))
+    self.assertTrue(
+        irc.SendMessageToIrc(revert_cl_url, commit_position, revision,
+                             culprit.key.urlsafe(), commit_status))
 
   @mock.patch.object(irc, '_GenerateMessage', return_value='exception')
   @mock.patch.object(logging, 'error')
   def testSendNotificationException(self, mocked_logging, _):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = gerrit.CREATED_BY_FINDIT
-    submitted = False
+    commit_position = 123
+    revert_cl_url = 'revert_url'
+    commit_status = gerrit.SKIPPED
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.revert_cl = RevertCL()
-    culprit.revert_cl.revert_cl_url = 'revert_url'
     culprit.put()
 
     self.mock(irc, 'IRCClient', MockedIRCClient)
-
-    pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=revert_status,
-        submitted=submitted)
-    self.assertFalse(irc.SendMessageToIrc(pipeline_input))
+    self.assertFalse(
+        irc.SendMessageToIrc(revert_cl_url, commit_position, revision,
+                             culprit.key.urlsafe(), commit_status))
 
     expected_message = 'Sending message to IRC failed with An exception.'
     mocked_logging.assert_called_with(expected_message)
@@ -136,4 +84,4 @@ class IrcTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_message,
                      irc._GenerateMessage(revert_cl_url, commit_position, None,
-                                          culprit_key, False))
+                                          culprit_key, gerrit.ERROR))

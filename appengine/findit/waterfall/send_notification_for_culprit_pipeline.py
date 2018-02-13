@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from gae_libs.pipelines import SynchronousPipeline
-from services import gerrit
+from services import culprit_action
 from services.parameters import SendNotificationForCulpritParameters
 
 
@@ -12,4 +12,4 @@ class SendNotificationForCulpritPipeline(SynchronousPipeline):
   output_type = bool
 
   def RunImpl(self, pipeline_input):
-    return gerrit.SendNotificationForCulprit(pipeline_input)
+    return culprit_action.SendNotificationForCulprit(pipeline_input)

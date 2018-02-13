@@ -59,7 +59,8 @@ culprit_found = gae_ts_mon.CounterMetric(
         gae_ts_mon.StringField('type'),
         # Valid values:
         #   revert_created, revert_committed, revert_confirmed,
-        #   revert_status_error, commit_error, culprit_notified.
+        #   revert_status_error, revert_commit_error, culprit_notified,
+        #   culprit_notified_error, irc_notified, irc_notified_error.
         gae_ts_mon.StringField('action_taken')
     ])
 

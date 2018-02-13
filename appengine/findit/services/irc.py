@@ -11,7 +11,6 @@ import logging
 import textwrap
 
 from libs.irc_client import IRCClient
-from model.wf_suspected_cl import WfSuspectedCL
 from services import gerrit
 
 _IRC_HOST = 'irc.freenode.net'
@@ -21,8 +20,8 @@ _IRC_DISC = 'CulpritFinder'
 
 
 def _GenerateMessage(revert_cl_url, commit_position, revision, culprit_key,
-                     submitted):
-  action = 'submitted' if submitted else 'created'
+                     commit_status):
+  action = 'submitted' if commit_status == gerrit.COMMITTED else 'created'
   return textwrap.dedent("""
       Findit (https://goo.gl/kROfz5) has %s a revert (%s) for CL %s,
       because it was identified as the culprit for failures in the build
@@ -31,30 +30,11 @@ def _GenerateMessage(revert_cl_url, commit_position, revision, culprit_key,
       action, revert_cl_url, commit_position or revision, culprit_key)
 
 
-def SendMessageToIrc(pipeline_input):
-  repo_name = pipeline_input.cl_key.repo_name
-  revision = pipeline_input.cl_key.revision
-  revert_status = pipeline_input.revert_status
-  submitted = pipeline_input.submitted
+def SendMessageToIrc(revert_cl_url, commit_position, revision, culprit_key,
+                     commit_status):
 
-  if revert_status != gerrit.CREATED_BY_FINDIT:
-    # No need to send notification to irc if Findit doesn't create revert.
-    return False
-
-  culprit = WfSuspectedCL.Get(repo_name, revision)
-  if not culprit:
-    logging.error('Failed to send notification to irc about culprit %s, %s:'
-                  ' entity not found in datastore.' % (repo_name, revision))
-    return False
-
-  revert_cl_url = culprit.revert_cl_url
-  if not revert_cl_url:
-    logging.error('Failed to send notification to irc about culprit %s, %s:'
-                  ' revert CL url not found.' % (repo_name, revision))
-    return False
-
-  message = _GenerateMessage(revert_cl_url, culprit.commit_position, revision,
-                             culprit.key.urlsafe(), submitted)
+  message = _GenerateMessage(revert_cl_url, commit_position, revision,
+                             culprit_key, commit_status)
 
   try:
     with IRCClient(_IRC_HOST, _IRC_CHANNEL, _IRC_NICK, _IRC_DISC) as i:
