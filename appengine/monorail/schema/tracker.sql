@@ -777,11 +777,13 @@ CREATE TABLE ComponentIssueClosedIndex (
 CREATE TABLE ApprovalDef2Approver (
   approval_id INT NOT NULL,
   approver_id INT UNSIGNED NOT NULL,
+  project_id SMALLINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (approval_id, approver_id),
 
   FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
-  FOREIGN KEY (approver_id) REFERENCES User(user_id)
+  FOREIGN KEY (approver_id) REFERENCES User(user_id),
+  FOREIGN KEY (project_id) REFERENCES Project(project_id)
 ) ENGINE=INNODB;
 
 CREATE TABLE IssueSnapshot (

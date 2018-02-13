@@ -8,21 +8,6 @@
 from protorpc import messages
 
 
-class ApprovalStatusDef(messages.Message):
-  """Definition of one approval status."""
-  status = messages.StringField(1, required=True)
-  is_strict = messages.BooleanField(3, default=False)
-
-
-class Approval(messages.Message):
-  """Holds all the current metadata about an approval."""
-  issue_id = messages.IntegerField(1, required=True)
-  field_id = messages.IntegerField(2, required=True)
-  status_id = messages.IntegerField(3)
-  setter_id = messages.IntegerField(4)
-  approver_ids = messages.IntegerField(5, repeated=True)
-
-
 class FieldValue(messages.Message):
   """Holds a single custom field value in an issue.
 
@@ -389,6 +374,14 @@ class LabelDef(messages.Message):
   deprecated = messages.BooleanField(23, default=False)
 
 
+class ApprovalDef(messages.Message):
+  """Definition of an approval type field def."""
+  # Note: approval_id and is semantically required
+  approval_id = messages.IntegerField(1)
+  approver_ids = messages.IntegerField(4, repeated=True)
+  survey = messages.StringField(5)
+
+
 class TemplateDef(messages.Message):
   """Definition of one issue template."""
   template_id = messages.IntegerField(57)
@@ -432,6 +425,7 @@ class ProjectIssueConfig(messages.Message):
   label that begins with that prefix.  E.g., Priority should be
   exclusive so that no issue can be labeled with both Priority-High
   and Priority-Low.
+  Next available tag: 62
   """
 
   project_id = messages.IntegerField(60)
@@ -441,6 +435,8 @@ class ProjectIssueConfig(messages.Message):
 
   well_known_labels = messages.MessageField(LabelDef, 20, repeated=True)
   exclusive_label_prefixes = messages.StringField(2, repeated=True)
+
+  approval_defs = messages.MessageField(ApprovalDef, 61, repeated=True)
 
   field_defs = messages.MessageField(FieldDef, 5, repeated=True)
   component_defs = messages.MessageField(ComponentDef, 6, repeated=True)

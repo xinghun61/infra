@@ -1271,3 +1271,9 @@ CREATE TABLE ApprovalDef2Approver (
   FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
   FOREIGN KEY (approver_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
+
+==================================================================
+2018-02-09: Add project_id column to default approvers table
+
+ALTER TABLE ApprovalDef2Approver ADD project_id SMALLINT UNSIGNED NOT NULL;
+ALTER TABLE ApprovalDef2Approver ADD CONSTRAINT ApprovalDef2Approver_ibfk_3 FOREIGN KEY (project_id) REFERENCES Project(project_id);

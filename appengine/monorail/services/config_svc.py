@@ -75,7 +75,7 @@ COMPONENTDEF_COLS = ['id', 'project_id', 'path', 'docstring', 'deprecated',
 COMPONENT2ADMIN_COLS = ['component_id', 'admin_id']
 COMPONENT2CC_COLS = ['component_id', 'cc_id']
 COMPONENT2LABEL_COLS = ['component_id', 'label_id']
-APPROVALDEF2APPROVER_COLS = ['approval_id', 'approver_id']
+APPROVALDEF2APPROVER_COLS = ['approval_id', 'approver_id', 'project_id']
 
 NOTIFY_ON_ENUM = ['never', 'any_comment']
 DATE_ACTION_ENUM = ['no_action', 'ping_owner_only', 'ping_participants']
@@ -338,11 +338,12 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
       template2component_rows, template2admin_rows, template2fieldvalue_rows,
       statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
       componentdef_rows, component2admin_rows, component2cc_rows,
-      component2label_rows):
+      component2label_rows, approvaldef2approver_rows):
     """Convert the given row tuples into a dict of ProjectIssueConfig PBs."""
     result_dict = {}
     template_dict = {}
     fielddef_dict = {}
+    approvaldef_dict = {}
 
     for config_row in config_rows:
       config = self._UnpackProjectIssueConfig(config_row)
@@ -398,6 +399,17 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
             deprecated=bool(deprecated))
         result_dict[project_id].well_known_labels.append(wkl)
 
+    for approver_row in approvaldef2approver_rows:
+      approval_id, approver_id, project_id = approver_row
+      if project_id in result_dict:
+        approval_def = approvaldef_dict.get(approval_id)
+        if approval_def is None:
+          approval_def = tracker_pb2.ApprovalDef(
+              approval_id=approval_id)
+          result_dict[project_id].approval_defs.append(approval_def)
+          approvaldef_dict[approval_id] = approval_def
+        approval_def.approver_ids.append(approver_id)
+
     for fd_row in fielddef_rows:
       fd = self._UnpackFieldDef(fd_row)
       result_dict[fd.project_id].field_defs.append(fd)
@@ -420,6 +432,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     """On RAM and memcache miss, hit the database."""
     config_rows = self.config_service.projectissueconfig_tbl.Select(
         cnxn, cols=PROJECTISSUECONFIG_COLS, project_id=project_ids)
+
     template_rows = self.config_service.template_tbl.Select(
         cnxn, cols=TEMPLATE_COLS, project_id=project_ids,
         order_by=[('name', [])])
@@ -433,12 +446,19 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     template2fv_rows = self.config_service.template2fieldvalue_tbl.Select(
         cnxn, cols=TEMPLATE2FIELDVALUE_COLS, template_id=template_ids)
     logging.info('t2fv is %r', template2fv_rows)
+
     statusdef_rows = self.config_service.statusdef_tbl.Select(
         cnxn, cols=STATUSDEF_COLS, project_id=project_ids,
         where=[('rank IS NOT NULL', [])], order_by=[('rank', [])])
+
     labeldef_rows = self.config_service.labeldef_tbl.Select(
         cnxn, cols=LABELDEF_COLS, project_id=project_ids,
         where=[('rank IS NOT NULL', [])], order_by=[('rank', [])])
+
+    approver_rows = self.config_service.approvaldef2approver_tbl.Select(
+        cnxn, cols=APPROVALDEF2APPROVER_COLS, project_id=project_ids)
+    # TODO(jojwang): monorail:3241, Select approval survey rows
+
     # TODO(jrobbins): For now, sort by field name, but someday allow admins
     # to adjust the rank to group and order field definitions logically.
     fielddef_rows = self.config_service.fielddef_tbl.Select(
@@ -447,6 +467,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     field_ids = [row[0] for row in fielddef_rows]
     fielddef2admin_rows = self.config_service.fielddef2admin_tbl.Select(
         cnxn, cols=FIELDDEF2ADMIN_COLS, field_id=field_ids)
+
     componentdef_rows = self.config_service.componentdef_tbl.Select(
         cnxn, cols=COMPONENTDEF_COLS, project_id=project_ids,
         is_deleted=False, order_by=[('LOWER(path)', [])])
@@ -463,7 +484,8 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
         template2component_rows, template2admin_rows,
         template2fv_rows, statusdef_rows, labeldef_rows,
         fielddef_rows, fielddef2admin_rows, componentdef_rows,
-        component2admin_rows, component2cc_rows, component2label_rows)
+        component2admin_rows, component2cc_rows, component2label_rows,
+        approver_rows)
     return retrieved_dict
 
   def FetchItems(self, cnxn, keys):
@@ -892,6 +914,7 @@ class ConfigService(object):
     self._UpdateTemplates(cnxn, config)
     self._UpdateWellKnownLabels(cnxn, config)
     self._UpdateWellKnownStatuses(cnxn, config)
+    self._UpdateApprovals(cnxn, config)
     cnxn.Commit()
 
   def _UpdateTemplates(self, cnxn, config):
@@ -1035,12 +1058,39 @@ class ConfigService(object):
     self.status_row_2lc.InvalidateKeys(cnxn, [config.project_id])
     self.status_cache.Invalidate(cnxn, config.project_id)
 
+  def _UpdateApprovals(self, cnxn, config):
+    """Update the approvals part of a project's issue configuration.
+
+    Args:
+      cnxn: connection to SQL database.
+      config: ProjectIssueConfig PB to update in the DB.
+    """
+    ids_to_field_def = {fd.field_id: fd for fd in config.field_defs}
+    for approval_def in config.approval_defs:
+      try:
+        approval_fd = ids_to_field_def[approval_def.approval_id]
+        if approval_fd.field_type != tracker_pb2.FieldType.APPROVAL_VALUE:
+          return InvalidFieldTypeException()
+      except KeyError:
+        return NoSuchFieldDefException()
+
+      self.approvaldef2approver_tbl.Delete(
+          cnxn, approval_id=approval_def.approval_id, commit=False)
+
+      self.approvaldef2approver_tbl.InsertRows(
+          cnxn, APPROVALDEF2APPROVER_COLS,
+          [(approval_def.approval_id, approver_id) for
+           approver_id in approval_def.approver_ids],
+          commit=False)
+
+    # TODO(jojwang): monorail:3241, update approval2survey_tbl
+
   def UpdateConfig(
       self, cnxn, project, well_known_statuses=None,
       statuses_offer_merge=None, well_known_labels=None,
       excl_label_prefixes=None, templates=None,
       default_template_for_developers=None, default_template_for_users=None,
-      list_prefs=None, restrict_to_known=None):
+      list_prefs=None, restrict_to_known=None, approval_defs=None):
     """Update project's issue tracker configuration with the given info.
 
     Args:
@@ -1057,6 +1107,7 @@ class ConfigService(object):
       list_prefs: defaults for columns and sorting.
       restrict_to_known: optional bool to allow project owners
           to limit issue status and label values to only the well-known ones.
+      approval_defs: [(approval_id, approver_ids, survey), ..]
 
     Returns:
       The updated ProjectIssueConfig PB.
@@ -1075,6 +1126,9 @@ class ConfigService(object):
 
     if excl_label_prefixes is not None:
       project_config.exclusive_label_prefixes = excl_label_prefixes
+
+    if approval_defs is not None:
+      tracker_bizobj.SetConfigApprovals(project_config, approval_defs)
 
     if templates is not None:
       project_config.templates = templates
@@ -1296,25 +1350,6 @@ class ConfigService(object):
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
     self.InvalidateMemcacheForEntireProject(project_id)
 
-  ### Approval Fields
-
-  def UpdateDefaultApprovers(
-      self, cnxn, _project_id, approval_id, approver_ids):
-    """Update the default approvers of an approval field def."""
-    self.approvaldef2approver_tbl.Delete(
-        cnxn, approval_id=approval_id, commit=False)
-
-    self.approvaldef2approver_tbl.InsertRows(
-        cnxn, APPROVALDEF2APPROVER_COLS,
-        [(approval_id, approver_id) for approver_id in approver_ids],
-        commit=False)
-
-    cnxn.Commit()
-    # TODO(jojwang): monorail:3241, check approval_id is a field_id
-    # of an existing approval.
-    # TODO(jojwang): monorail:3241, add approvals to config then
-    # InvalidateKeys for config
-
   ### Component definitions
 
   def FindMatchingComponentIDsAnyProject(self, cnxn, path_list, exact=True):
@@ -1503,4 +1538,14 @@ class NoSuchComponentException(Error):
 
 class InvalidComponentNameException(Error):
   """The component name is invalid."""
+  pass
+
+
+class NoSuchFieldDefException(Error):
+  """No field def for specified project exists."""
+  pass
+
+
+class InvalidFieldTypeException(Error):
+  """Expected field type and actual field type do not match."""
   pass

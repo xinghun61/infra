@@ -113,7 +113,7 @@ class FieldCreate(servlet.Servlet):
           approver_ids_dict = self.services.user.LookupUserIDs(
               mr.cnxn, re.split('[,;\s]+', parsed.approvers_str))
           logging.info(approver_ids_dict)
-          approver_ids = list(set(approver_ids_dict.values()))
+          _approver_ids = list(set(approver_ids_dict.values()))
         except user_svc.NoSuchUserException:
           mr.errors.approvers = 'One or more approvers not found.'
       else:
@@ -143,16 +143,15 @@ class FieldCreate(servlet.Servlet):
       return
 
     print 'parsed is %r' % (parsed,)
-    field_id = self.services.config.CreateFieldDef(
-        mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
-        parsed.applicable_type, parsed.applicable_predicate,
-        parsed.is_required, parsed.is_niche, parsed.is_multivalued,
-        parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
-        parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
-        parsed.date_action_str, parsed.field_docstring, admin_ids)
-    if parsed.field_type_str == 'approval_type':
-      self.services.config.UpdateDefaultApprovers(
-          mr.cnxn, mr.project_id, field_id, approver_ids)
+    # TODO(jojwang): monorail:3241 handle saving approval_types
+    if parsed.field_type_str != 'approval_type':
+      self.services.config.CreateFieldDef(
+          mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
+          parsed.applicable_type, parsed.applicable_predicate,
+          parsed.is_required, parsed.is_niche, parsed.is_multivalued,
+          parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
+          parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
+          parsed.date_action_str, parsed.field_docstring, admin_ids)
     if parsed.field_type_str == 'enum_type':
       self.services.config.UpdateConfig(
           mr.cnxn, mr.project, well_known_labels=parsed.revised_labels)

@@ -364,6 +364,14 @@ def SetConfigLabels(project_config, well_known_labels):
         deprecated=deprecated))
 
 
+def SetConfigApprovals(project_config, approval_def_tuples):
+  """Internal method to set up approval defs of a ProjectissueConfig."""
+  project_config.approval_defs = []
+  for approval_id, approver_ids, survey in approval_def_tuples:
+    project_config.approval_defs.append(tracker_pb2.ApprovalDef(
+        approval_id=approval_id, approver_ids=approver_ids, survey=survey))
+
+
 def SetConfigTemplates(project_config, template_dict_list):
   """Internal method to set the templates of a ProjectIssueConfig."""
   templates = [ConvertDictToTemplate(template_dict)

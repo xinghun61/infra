@@ -187,6 +187,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
                            'Defect', '', False, False, False,
                            1, 99, None, '', '',
                            None, 'NEVER', 'no_action', 'doc', False, None)]
+    self.approvaldef2approver_rows = [(2, 101, 789), (2, 102, 789)]
     self.fielddef2admin_rows = []
     self.componentdef_rows = []
     self.component2admin_rows = []
@@ -199,7 +200,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
 
   def testDeserializeIssueConfigs_Empty(self):
     config_dict = self.config_2lc._DeserializeIssueConfigs(
-        [], [], [], [], [], [], [], [], [], [], [], [], [], [])
+        [], [], [], [], [], [], [], [], [], [], [], [], [], [], [])
     self.assertEqual({}, config_dict)
 
   def testDeserializeIssueConfigs_Normal(self):
@@ -209,7 +210,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
         self.template2fieldvalue_rows, self.statusdef_rows, self.labeldef_rows,
         self.fielddef_rows, self.fielddef2admin_rows, self.componentdef_rows,
         self.component2admin_rows, self.component2cc_rows,
-        self.component2label_rows)
+        self.component2label_rows, self.approvaldef2approver_rows)
     self.assertItemsEqual([789], config_dict.keys())
     config = config_dict[789]
     self.assertEqual(789, config.project_id)
@@ -219,11 +220,14 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual(len(self.statusdef_rows), len(config.well_known_statuses))
     self.assertEqual(len(self.fielddef_rows), len(config.field_defs))
     self.assertEqual(len(self.componentdef_rows), len(config.component_defs))
+    self.assertEqual(len(self.approvaldef2approver_rows),
+                     len(config.approval_defs[0].approver_ids))
 
   def SetUpFetchConfigs(self, project_ids):
     self.config_service.projectissueconfig_tbl.Select(
         self.cnxn, cols=config_svc.PROJECTISSUECONFIG_COLS,
         project_id=project_ids).AndReturn(self.config_rows)
+
     self.config_service.template_tbl.Select(
         self.cnxn, cols=config_svc.TEMPLATE_COLS, project_id=project_ids,
         order_by=[('name', [])]).AndReturn(self.template_rows)
@@ -240,14 +244,21 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.config_service.template2fieldvalue_tbl.Select(
         self.cnxn, cols=config_svc.TEMPLATE2FIELDVALUE_COLS,
         template_id=template_ids).AndReturn(self.template2fieldvalue_rows)
+
     self.config_service.statusdef_tbl.Select(
         self.cnxn, cols=config_svc.STATUSDEF_COLS, project_id=project_ids,
         where=[('rank IS NOT NULL', [])], order_by=[('rank', [])]).AndReturn(
             self.statusdef_rows)
+
     self.config_service.labeldef_tbl.Select(
         self.cnxn, cols=config_svc.LABELDEF_COLS, project_id=project_ids,
         where=[('rank IS NOT NULL', [])], order_by=[('rank', [])]).AndReturn(
             self.labeldef_rows)
+
+    self.config_service.approvaldef2approver_tbl.Select(
+        self.cnxn, cols=config_svc.APPROVALDEF2APPROVER_COLS,
+        project_id=project_ids).AndReturn(self.approvaldef2approver_rows)
+
     self.config_service.fielddef_tbl.Select(
         self.cnxn, cols=config_svc.FIELDDEF_COLS, project_id=project_ids,
         order_by=[('field_name', [])]).AndReturn(self.fielddef_rows)
@@ -255,6 +266,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.config_service.fielddef2admin_tbl.Select(
         self.cnxn, cols=config_svc.FIELDDEF2ADMIN_COLS,
         field_id=field_ids).AndReturn(self.fielddef2admin_rows)
+
     self.config_service.componentdef_tbl.Select(
         self.cnxn, cols=config_svc.COMPONENTDEF_COLS, project_id=project_ids,
         is_deleted=False,
@@ -641,6 +653,9 @@ class ConfigServiceTest(unittest.TestCase):
         self.cnxn, cols=config_svc.LABELDEF_COLS,
         project_id=project_ids, where=[('rank IS NOT NULL', [])],
         order_by=[('rank', [])]).AndReturn([])
+    self.config_service.approvaldef2approver_tbl.Select(
+        self.cnxn, cols=config_svc.APPROVALDEF2APPROVER_COLS,
+        project_id=project_ids).AndReturn([])
     self.config_service.fielddef_tbl.Select(
         self.cnxn, cols=config_svc.FIELDDEF_COLS,
         project_id=project_ids, order_by=[('field_name', [])]).AndReturn([])
@@ -962,25 +977,6 @@ class ConfigServiceTest(unittest.TestCase):
     new_values['notify_on'] = 1
     self.config_service.UpdateFieldDef(
         self.cnxn, 789, 1, admin_ids=[], **new_values)
-    self.mox.VerifyAll()
-
-  ### Approval Fields
-
-  def SetUpUpdateDefaultApprovers(self, approval_id, new_rows):
-    self.config_service.approvaldef2approver_tbl.Delete(
-        self.cnxn, approval_id=approval_id, commit=False)
-    self.config_service.approvaldef2approver_tbl.InsertRows(
-        self.cnxn, config_svc.APPROVALDEF2APPROVER_COLS,
-        new_rows, commit=False)
-    self.cnxn.Commit()
-
-  def testUpdateDefaultApprovers(self):
-    new_approver_rows = [(1, 101), (1, 102)]
-    self.SetUpUpdateDefaultApprovers(1, new_approver_rows)
-
-    self.mox.ReplayAll()
-    self.config_service.UpdateDefaultApprovers(
-        self.cnxn, 789, 1, [101, 102])
     self.mox.VerifyAll()
 
   ### Component definitions

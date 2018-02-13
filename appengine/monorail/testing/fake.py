@@ -931,7 +931,7 @@ class ConfigService(object):
       statuses_offer_merge=None, well_known_labels=None,
       excl_label_prefixes=None, templates=None,
       default_template_for_developers=None, default_template_for_users=None,
-      list_prefs=None, restrict_to_known=None):
+      list_prefs=None, restrict_to_known=None, approval_defs=None):
     project_id = project.project_id
     project_config = self.GetProjectConfig(cnxn, project_id, use_cache=False)
 
@@ -946,6 +946,9 @@ class ConfigService(object):
 
     if excl_label_prefixes is not None:
       project_config.exclusive_label_prefixes = excl_label_prefixes
+
+    if approval_defs is not None:
+      tracker_bizobj.SetConfigApprovals(project_config, approval_defs)
 
     if templates is not None:
       project_config.templates = templates
