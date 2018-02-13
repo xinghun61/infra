@@ -33,7 +33,7 @@ func TestCreateEvent(t *testing.T) {
 					Expected: []string{"PASS"},
 				},
 				"other/path": &model.FullTestLeaf{
-					Actual: []string{"IMAGE+TEXT"},
+					Actual:   []string{"IMAGE+TEXT"},
 					Expected: []string{"WONTFIX"},
 				},
 			},
@@ -77,9 +77,13 @@ func TestCreateEvent(t *testing.T) {
 				},
 			},
 		}
+
 		evts, err := createTestResultEvents(ctx, f, p)
 		So(err, ShouldBeNil)
-		So(evts, ShouldResemble, expected)
+		So(len(evts), ShouldEqual, 2)
+		for _, evt := range evts {
+			So(evt, ShouldBeIn, expected)
+		}
 	})
 
 }
