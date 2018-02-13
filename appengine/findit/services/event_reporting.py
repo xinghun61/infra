@@ -186,7 +186,7 @@ def CreateCompileFailureAnalysisCompletionEvent(analysis):
   _ExtractGeneralAnalysisInfo(analysis, event)
   event.analysis_info.step_name = 'compile'
 
-  if (analysis.failure_info.get('failed_steps') and
+  if (analysis.failure_info and analysis.failure_info.get('failed_steps') and
       analysis.failure_info['failed_steps'].get('compile') and
       analysis.failure_info['failed_steps']['compile'].get('first_failure')):
     event.analysis_info.culprit_build_number = (
@@ -292,6 +292,7 @@ def CreateTestFlakeAnalysisCompletionEvent(analysis):
   if analysis.suspected_flake_build_number:
     event.analysis_info.culprit_build_number = (
         analysis.suspected_flake_build_number)
+    event.regression_range_confidence = analysis.confidence_in_suspected_build
 
   culprit_key = analysis.culprit_urlsafe_key
   culprit = None

@@ -212,6 +212,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
+    analysis.confidence_in_suspected_build = .5
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
@@ -239,6 +240,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.timestamp.completed, complete)
 
     self.assertEqual(event.analysis_info.detected_build_number, build_number)
+    self.assertEqual(event.regression_range_confidence, .5)
     self.assertEqual(event.analysis_info.culprit_build_number,
                      suspected_build_number)
 
@@ -291,6 +293,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
+    analysis.confidence_in_suspected_build = .5
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
@@ -446,6 +449,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
+    analysis.confidence_in_suspected_build = .5
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.confidence_in_culprit = 1.0
@@ -499,6 +503,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     # Need two or more points for a valid regression range.
     analysis.data_points = [DataPoint.Create(), DataPoint.Create()]
     analysis.suspected_flake_build_number = 5
+    analysis.confidence_in_suspected_build = .5
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.put()

@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='test_analysis.proto',
   package='findit',
   syntax='proto3',
-  serialized_pb=_b('\n\x13test_analysis.proto\x12\x06\x66indit\x1a\x0c\x66indit.proto\"h\n\x1bTestAnalysisCompletionEvent\x12\'\n\ranalysis_info\x18\x01 \x01(\x0b\x32\x10.findit.Analysis\x12\x11\n\ttest_name\x18\n \x01(\t\x12\r\n\x05\x66lake\x18\x0b \x01(\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x13test_analysis.proto\x12\x06\x66indit\x1a\x0c\x66indit.proto\"\x8d\x01\n\x1bTestAnalysisCompletionEvent\x12\'\n\ranalysis_info\x18\x01 \x01(\x0b\x32\x10.findit.Analysis\x12\x11\n\ttest_name\x18\n \x01(\t\x12\r\n\x05\x66lake\x18\x0b \x01(\x08\x12#\n\x1bregression_range_confidence\x18\x0c \x01(\x02\x62\x06proto3')
   ,
   dependencies=[findit__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -56,6 +56,13 @@ _TESTANALYSISCOMPLETIONEVENT = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='regression_range_confidence', full_name='findit.TestAnalysisCompletionEvent.regression_range_confidence', index=3,
+      number=12, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -68,8 +75,8 @@ _TESTANALYSISCOMPLETIONEVENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=45,
-  serialized_end=149,
+  serialized_start=46,
+  serialized_end=187,
 )
 
 _TESTANALYSISCOMPLETIONEVENT.fields_by_name['analysis_info'].message_type = findit__pb2._ANALYSIS
