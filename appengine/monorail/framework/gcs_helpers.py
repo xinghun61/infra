@@ -18,6 +18,7 @@ from google.appengine.api import app_identity
 from google.appengine.api import images
 from google.appengine.api import urlfetch
 from third_party import cloudstorage
+from third_party.cloudstorage import errors
 
 from framework import filecontent
 
@@ -35,6 +36,7 @@ DEFAULT_THUMB_WIDTH = 250
 DEFAULT_THUMB_HEIGHT = 200
 LOGO_THUMB_WIDTH = 110
 LOGO_THUMB_HEIGHT = 30
+MAX_ATTACH_SIZE_TO_COPY = 10 * 1024 * 1024  # 10 MB
 
 
 def _Now():
@@ -122,3 +124,43 @@ def SignUrl(bucket, object_id):
     logging.exception(e)
     return '/missing-gcs-url'
 
+
+def MaybeCreateDownload(bucket_name, object_id, filename):
+  """If the obj is not huge, and no download version exists, create it."""
+  src = '/%s%s' % (bucket_name, object_id)
+  dst = '/%s%s-download' % (bucket_name, object_id)
+  cloudstorage.validate_file_path(src)
+  cloudstorage.validate_file_path(dst)
+  logging.info('Maybe create %r from %r', dst, src)
+
+  if IS_DEV_APPSERVER:
+    logging.info('dev environment never makes download copies.')
+    return False
+
+  # If "Download" object already exists, we are done.
+  try:
+    cloudstorage.stat(dst)
+    logging.info('Download version of attachment already exists')
+    return True
+  except errors.NotFoundError:
+    pass
+
+  # If "View" object is huge, give up.
+  src_stat = cloudstorage.stat(src)
+  if src_stat.st_size > MAX_ATTACH_SIZE_TO_COPY:
+    logging.info('Download version of attachment would be too big')
+    return False
+
+  with cloudstorage.open(src, 'r') as infile:
+    content = infile.read()
+  logging.info('opened GCS object and read %r bytes', len(content))
+  content_type = src_stat.content_type
+  options = {
+    'Content-Disposition': 'attachment; filename="%s"' % filename,
+    }
+  logging.info('Writing with options %r', options)
+  with cloudstorage.open(dst, 'w', content_type, options=options) as outfile:
+    outfile.write(content)
+  logging.info('done writing')
+
+  return True

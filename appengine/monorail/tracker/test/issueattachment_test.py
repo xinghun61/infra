@@ -13,6 +13,7 @@ from google.appengine.ext import testbed
 import mox
 import webapp2
 
+from framework import gcs_helpers
 from framework import permissions
 from framework import servlet
 from proto import tracker_pb2
@@ -61,6 +62,8 @@ class IssueattachmentTest(unittest.TestCase):
         self.attachment, self.comment.id, self.issue.issue_id)
 
   def tearDown(self):
+    self.mox.UnsetStubs()
+    self.mox.ResetAll()
     self.testbed.deactivate()
     cloudstorage.open = self._old_gcs_open
 
@@ -105,14 +108,40 @@ class IssueattachmentTest(unittest.TestCase):
         permissions.PermissionException,
         self.servlet.GatherPageData, mr)
 
-  def testGatherPageData_Download(self):
+  def testGatherPageData_Download_WithDisposition(self):
     aid = self.attachment.attachment_id
+    self.mox.StubOutWithMock(gcs_helpers, 'MaybeCreateDownload')
+    gcs_helpers.MaybeCreateDownload(
+        'app_default_bucket',
+        '/pid/attachments/hello.txt',
+        self.attachment.filename).AndReturn(True)
     self.mox.StubOutWithMock(self.servlet, 'redirect')
     _request, mr = testing_helpers.GetRequestObjects(
         project=self.project,
         path='/p/proj/issues/attachment?aid=%s' % aid,
         perms=permissions.READ_ONLY_PERMISSIONSET)  # includes VIEW
-    self.servlet.redirect(mox.StrContains(self.attachment.filename), abort=True)
+    self.servlet.redirect(
+      mox.And(mox.StrContains('googleusercontent.com'),
+              mox.StrContains('-download')), abort=True)
+    self.mox.ReplayAll()
+    self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+
+  def testGatherPageData_Download_WithoutDisposition(self):
+    aid = self.attachment.attachment_id
+    self.mox.StubOutWithMock(gcs_helpers, 'MaybeCreateDownload')
+    gcs_helpers.MaybeCreateDownload(
+        'app_default_bucket',
+        '/pid/attachments/hello.txt',
+        self.attachment.filename).AndReturn(False)
+    self.mox.StubOutWithMock(self.servlet, 'redirect')
+    _request, mr = testing_helpers.GetRequestObjects(
+        project=self.project,
+        path='/p/proj/issues/attachment?aid=%s' % aid,
+        perms=permissions.READ_ONLY_PERMISSIONSET)  # includes VIEW
+    self.servlet.redirect(
+      mox.And(mox.StrContains('googleusercontent.com'),
+              mox.Not(mox.StrContains('-download'))), abort=True)
     self.mox.ReplayAll()
     self.servlet.GatherPageData(mr)
     self.mox.VerifyAll()
@@ -120,6 +149,12 @@ class IssueattachmentTest(unittest.TestCase):
   def testGatherPageData_DownloadBadFilename(self):
     aid = self.attachment.attachment_id
     self.attachment.filename = '<script>alert("xsrf")</script>.txt';
+    safe_filename = 'attachment-%d.dat' % aid
+    self.mox.StubOutWithMock(gcs_helpers, 'MaybeCreateDownload')
+    gcs_helpers.MaybeCreateDownload(
+        'app_default_bucket',
+        '/pid/attachments/hello.txt',
+        safe_filename).AndReturn(True)
     self.mox.StubOutWithMock(self.servlet, 'redirect')
     _request, mr = testing_helpers.GetRequestObjects(
         project=self.project,
@@ -127,7 +162,7 @@ class IssueattachmentTest(unittest.TestCase):
         perms=permissions.READ_ONLY_PERMISSIONSET)  # includes VIEW
     self.servlet.redirect(mox.And(
         mox.Not(mox.StrContains(self.attachment.filename)),
-        mox.StrContains('attachment-%d.dat' % aid)), abort=True)
+        mox.StrContains('googleusercontent.com')), abort=True)
     self.mox.ReplayAll()
     self.servlet.GatherPageData(mr)
     self.mox.VerifyAll()

@@ -69,21 +69,21 @@ class AttachmentPage(servlet.Servlet):
 
     logging.info('attachment id %d is %s', mr.aid, gcs_object_id)
 
-    if mr.thumb:
-      gcs_object_id = gcs_object_id + '-thumbnail'
-
     # By default GCS will return images and attachments displayable inline.
-    url = gcs_helpers.SignUrl(bucket_name, gcs_object_id)
-    if not mr.inline:
+    if mr.thumb:
+      # Thumbnails are stored in a separate obj always displayed inline.
+      gcs_object_id = gcs_object_id + '-thumbnail'
+    elif not mr.inline:
+      # Downloads are stored in a separate obj with disposiiton set.
       filename = attachment.filename
       if not FILE_RE.match(filename):
-        print "bad file name: %s" % attachment.attachment_id
+        logging.info('bad file name: %s' % attachment.attachment_id)
         filename = 'attachment-%d.dat' % attachment.attachment_id
+      if gcs_helpers.MaybeCreateDownload(
+          bucket_name, gcs_object_id, filename):
+        gcs_object_id = gcs_object_id + '-download'
 
-      url = url + '&' + urllib.urlencode(
-            {'response-content-disposition':
-            ('attachment; filename=%s' % filename)})
-
+    url = gcs_helpers.SignUrl(bucket_name, gcs_object_id)
     self.redirect(url, abort=True)
 
 
