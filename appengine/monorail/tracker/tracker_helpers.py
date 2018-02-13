@@ -9,7 +9,9 @@ This module has functions that are reused in multiple servlets or
 other modules.
 """
 
+import base64
 import collections
+import hmac
 import logging
 import re
 import urllib
@@ -26,6 +28,7 @@ from framework import permissions
 from framework import sorting
 from framework import template_helpers
 from framework import urls
+from services import secrets_svc
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
@@ -745,6 +748,14 @@ def MergeCCsAndAddCommentMultipleIssues(
       index_now=False, comment=merge_comment)
 
   return merge_comment
+
+
+def SignAttachmentID(aid):
+  """One-way hash of attachment ID to make it harder for people to scan."""
+  digester = hmac.new(secrets_svc.GetXSRFKey())
+  digester.update(str(aid))
+
+  return base64.urlsafe_b64encode(digester.digest())
 
 
 def GetAttachmentIfAllowed(mr, services):

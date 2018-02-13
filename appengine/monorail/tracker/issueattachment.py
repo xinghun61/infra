@@ -50,6 +50,11 @@ class AttachmentPage(servlet.Servlet):
 
     Returns: dict of values used by EZT for rendering the page.
     """
+    # TODO(jrobbins): Uncomment this to enforce the check in
+    # the next deployment.
+    # if mr.signed_aid != tracker_helpers.SignAttachmentID(mr.aid):
+    #   webapp2.abort(400, 'Please reload the issue page')
+
     try:
       attachment, _issue = tracker_helpers.GetAttachmentIfAllowed(
           mr, self.services)

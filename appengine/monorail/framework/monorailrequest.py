@@ -369,6 +369,7 @@ class MonorailRequest(MonorailRequestBase):
     self.local_id_list = self.GetIntListParam('ids')
     self.seq = self.GetIntParam('seq')
     self.aid = self.GetIntParam('aid')
+    self.signed_aid = self.GetParam('signed_aid')
     self.specified_user_id = self.GetIntParam('u', default_value=0)
     self.specified_logged_in_user_id = self.GetIntParam(
         'logged_in_user_id', default_value=0)

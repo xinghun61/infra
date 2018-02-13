@@ -22,6 +22,7 @@ from services import service_manager
 from testing import fake
 from testing import testing_helpers
 from tracker import tracker_bizobj
+from tracker import tracker_helpers
 from tracker import tracker_views
 
 
@@ -267,6 +268,14 @@ class DanglingIssueRefViewTest(unittest.TestCase):
 
 class AttachmentViewTest(unittest.TestCase):
 
+  def setUp(self):
+    self.orig_sign_attachment_id = tracker_helpers.SignAttachmentID
+    tracker_helpers.SignAttachmentID = (
+        lambda aid: 'signed_%d' % aid)
+
+  def tearDown(self):
+    tracker_helpers.SignAttachmentID = self.orig_sign_attachment_id
+
   def MakeViewAndVerifyFields(
       self, size, name, mimetype, expected_size_str, expect_viewable):
     attach_pb = tracker_pb2.Attachment()
@@ -278,7 +287,7 @@ class AttachmentViewTest(unittest.TestCase):
     view = tracker_views.AttachmentView(attach_pb, 'proj')
     self.assertEqual('/images/paperclip.png', view.iconurl)
     self.assertEqual(expected_size_str, view.filesizestr)
-    dl = 'attachment?aid=12345'
+    dl = 'attachment?aid=12345&signed_aid=signed_12345'
     self.assertEqual(dl, view.downloadurl)
     if expect_viewable:
       self.assertEqual(dl + '&inline=1', view.url)

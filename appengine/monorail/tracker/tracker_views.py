@@ -440,7 +440,9 @@ class AttachmentView(template_helpers.PBProxy):
     """
     super(AttachmentView, self).__init__(attach_pb)
     self.filesizestr = template_helpers.BytesKbOrMb(attach_pb.filesize)
-    self.downloadurl = 'attachment?aid=%s' % attach_pb.attachment_id
+    self.downloadurl = 'attachment?aid=%s&signed_aid=%s' % (
+        attach_pb.attachment_id,
+        tracker_helpers.SignAttachmentID(attach_pb.attachment_id))
 
     self.url = None
     self.thumbnail_url = None
