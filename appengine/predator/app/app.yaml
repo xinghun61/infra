@@ -27,6 +27,12 @@ handlers:
   static_files: common/static/common.css
   upload: common/static/common.css
 
+# PubSub push endpoint.
+- url: /_ah/push-handlers/.*
+  script: frontend.main.frontend_app
+  secure: always
+  login: admin
+
 - url: /.*
   script: frontend.main.frontend_app
   secure: always
