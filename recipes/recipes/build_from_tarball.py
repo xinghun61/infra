@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 DEPS = [
-    'build/goma',
     'depot_tools/gsutil',
     'recipe_engine/context',
     'recipe_engine/file',
@@ -18,9 +17,6 @@ DEPS = [
 def RunSteps(api):
   build_dir = api.path['start_dir'].join('build_dir')
   try:
-    api.goma.ensure_goma(canary=True)
-    api.goma.start()
-
     version = api.properties['version']
     tar_filename = 'chromium-%s.tar.xz' % version
     tar_file = build_dir.join(tar_filename)
@@ -30,7 +26,7 @@ def RunSteps(api):
              ['tar', '-xJf', str(tar_file), '-C',
               str(build_dir)])
     src_dir = build_dir.join('chromium-' + version)
-    with api.context(cwd=src_dir, env={'GOMA_USE_LOCAL': 'false'}):
+    with api.context(cwd=src_dir):
       llvm_bin_dir = src_dir.join('third_party', 'llvm-build',
                                   'Release+Asserts', 'bin')
       gn_bootstrap_env = {
@@ -43,8 +39,6 @@ def RunSteps(api):
           'is_debug=false',
           'enable_nacl=false',
           'is_official_build=true',
-          'use_goma=true',
-          'goma_dir="%s"' % api.goma.goma_dir,
       ]
       unbundle_libs = [
           # 'ffmpeg',  # https://crbug.com/731766
@@ -96,7 +90,7 @@ def RunSteps(api):
                                'replace_gn_files.py'),
                  ['--system-libraries'] + unbundle_libs)
       api.step('Build chrome.', [
-          'ninja', '-C', 'out/Release', '-j', '50', 'chrome/installer/linux'
+          'ninja', '-C', 'out/Release', 'chrome/installer/linux'
       ])
   finally:
     api.file.rmtree('Cleaning build dir.', build_dir)

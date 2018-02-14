@@ -1,103 +1,5 @@
 [
   {
-    "cmd": [],
-    "name": "ensure_goma"
-  },
-  {
-    "cmd": [
-      "cipd",
-      "ensure",
-      "-root",
-      "[CACHE]/goma_client",
-      "-ensure-file",
-      "infra_internal/goma/client/linux-amd64 candidate",
-      "-json-output",
-      "/path/to/tmp/json",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-goma-client.json"
-    ],
-    "infra_step": true,
-    "name": "ensure_goma.ensure_installed",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-candidate-------\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra_internal/goma/client/linux-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "name": "preprocess_for_goma"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "ensure-directory",
-      "--mode",
-      "0777",
-      "[CACHE]/goma/TestBuilder"
-    ],
-    "infra_step": true,
-    "name": "preprocess_for_goma.goma cache directory",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[CACHE]/goma_client/goma_ctl.py",
-      "restart"
-    ],
-    "env": {
-      "GOMA_BACKEND_SOFT_STICKINESS": "false",
-      "GOMA_CACHE_DIR": "[CACHE]/goma/TestBuilder",
-      "GOMA_DEPS_CACHE_TABLE_THRESHOLD": "70000",
-      "GOMA_HERMETIC": "error",
-      "GOMA_SERVICE_ACCOUNT_JSON_FILE": "/creds/service_accounts/service-account-goma-client.json"
-    },
-    "infra_step": true,
-    "name": "preprocess_for_goma.start_goma",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LINK@cloudtail@https://console.cloud.google.com/logs/viewer?project=goma-logs&resource=gce_instance%2Finstance_id%2Ffakevm999-m9&timestamp=2012-05-14T12:53:21.500000@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_PACKAGE_REPO[build]/scripts/tools/runit.py",
-      "--show-path",
-      "--",
-      "python",
-      "RECIPE_MODULE[build::goma]/resources/cloudtail_utils.py",
-      "start",
-      "--cloudtail-path",
-      "cloudtail",
-      "--cloudtail-service-account-json",
-      "/creds/service_accounts/service-account-goma-cloudtail.json",
-      "--pid-file",
-      "[TMP_BASE]/cloudtail.pid"
-    ],
-    "infra_step": true,
-    "name": "preprocess_for_goma.start cloudtail",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
     "cmd": [
       "python",
       "-u",
@@ -130,9 +32,6 @@
       "--arch=amd64"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
-    "env": {
-      "GOMA_USE_LOCAL": "false"
-    },
     "name": "Download sysroot."
   },
   {
@@ -146,9 +45,6 @@
       "--skip-checkout"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
-    "env": {
-      "GOMA_USE_LOCAL": "false"
-    },
     "name": "Build clang."
   },
   {
@@ -156,14 +52,13 @@
       "python",
       "-u",
       "[START_DIR]/build_dir/chromium-65.0.3318.0/tools/gn/bootstrap/bootstrap.py",
-      "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true use_goma=true goma_dir=\"[CACHE]/goma_client\""
+      "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
     "env": {
       "AR": "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/llvm-build/Release+Asserts/bin/llvm-ar",
       "CC": "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/llvm-build/Release+Asserts/bin/clang",
       "CXX": "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/llvm-build/Release+Asserts/bin/clang++",
-      "GOMA_USE_LOCAL": "false",
       "LD": "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/llvm-build/Release+Asserts/bin/lld"
     },
     "name": "Bootstrap gn."
@@ -182,9 +77,6 @@
       "third_party/node/linux/node-linux-x64.tar.gz.sha1"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
-    "env": {
-      "GOMA_USE_LOCAL": "false"
-    },
     "name": "Download nodejs."
   },
   {
@@ -198,9 +90,6 @@
       "yasm"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
-    "env": {
-      "GOMA_USE_LOCAL": "false"
-    },
     "name": "Unbundle libraries."
   },
   {
@@ -208,14 +97,9 @@
       "ninja",
       "-C",
       "out/Release",
-      "-j",
-      "50",
       "chrome/installer/linux"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
-    "env": {
-      "GOMA_USE_LOCAL": "false"
-    },
     "name": "Build chrome."
   },
   {
