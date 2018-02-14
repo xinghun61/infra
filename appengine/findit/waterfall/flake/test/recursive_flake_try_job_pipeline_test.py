@@ -1063,10 +1063,10 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         0.6,
         recursive_flake_try_job_pipeline._GetSuspectedCommitConfidenceScore(
-            analysis, 123, analysis.data_points))
+            analysis, 123))
     self.assertIsNone(
         recursive_flake_try_job_pipeline._GetSuspectedCommitConfidenceScore(
-            analysis, None, []))
+            analysis, None))
 
   def testGetSuspectedCommitConfidenceScoreIntroducedNewFlakyTest(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
@@ -1079,7 +1079,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         1.0,
         recursive_flake_try_job_pipeline._GetSuspectedCommitConfidenceScore(
-            analysis, 123, analysis.data_points))
+            analysis, 123))
 
   def testGetNextCommitPositionAndRemainingSuspectsNoHeuristicResults(self):
     previously_run_commit_position = 1000

@@ -384,16 +384,13 @@ def _GetNormalizedTryJobDataPoints(analysis, lower_bound_commit_position,
   return _NormalizeDataPoints(data_points)
 
 
-def _GetSuspectedCommitConfidenceScore(analysis, suspected_commit_position,
-                                       data_points_within_range):
+def _GetSuspectedCommitConfidenceScore(analysis, suspected_commit_position):
   """Gets a confidence score for a suspected commit position.
 
   Args:
     analysis (MasterFlakeAnalysis): The analysis itself.
     suspected_build (int): The suspected build number that flakiness started in.
         Can be None if not identified.
-    data_points_within_range (list): A list of DataPoint() entities to calculate
-        stepinness and determine a confidence score.
 
   Returns:
     Float between 0 and 1 representing confidence in the suspected build number
@@ -409,7 +406,7 @@ def _GetSuspectedCommitConfidenceScore(analysis, suspected_commit_position,
       previous_point.pass_rate == flake_constants.PASS_RATE_TEST_NOT_FOUND):
     return 1.0
 
-  return confidence.SteppinessForCommitPosition(data_points_within_range,
+  return confidence.SteppinessForCommitPosition(analysis.data_points,
                                                 suspected_commit_position)
 
 
@@ -535,13 +532,8 @@ class NextCommitPositionPipeline(BasePipeline):
             upper_bound_run_point_number=upper_bound_commit_position))
 
     if suspected_commit_position is not None:  # Finished.
-      data_points_within_range = (
-          flake_analysis.GetDataPointsWithinCommitPositionRange(
-              IntRange(
-                  lower=lower_bound_commit_position,
-                  upper=upper_bound_commit_position)))
       confidence_score = _GetSuspectedCommitConfidenceScore(
-          flake_analysis, suspected_commit_position, data_points_within_range)
+          flake_analysis, suspected_commit_position)
       culprit_revision = suspected_build_data_point.GetRevisionAtCommitPosition(
           suspected_commit_position)
       culprit = UpdateCulprit(flake_analysis.key.urlsafe(), culprit_revision,
