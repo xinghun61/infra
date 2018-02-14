@@ -1,3 +1,18 @@
+# Release Notes sheriff-o-matic 2018-02-13
+
+- 1 commits, 1 bugs affected since 9cb5283 (2018-02-09T21:55:37Z)
+- 1 Authors:
+  - tandrii@chromium.org
+
+## Changes in this release
+
+- [SoM: remove chromium.sandbox master.](https://chromium-review.googlesource.com/912763) (tandrii@chromium.org)
+
+
+## Bugs updated, by author
+- tandrii@chromium.org:
+  -  [https://crbug.com/810606](https://crbug.com/810606)
+
 # Release Notes sheriff-o-matic 2018-02-09
 
 - 4 commits, 3 bugs affected since 57f45c5 (2018-02-06T23:44:05Z)
