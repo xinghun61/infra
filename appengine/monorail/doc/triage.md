@@ -7,7 +7,7 @@ issues reported by our users and take appropriate actions.
 ## Triage responsibilities
 
 When you have a monorail triage shift, look at each issue in the
-[untriaged queue](https://bugs.chromium.org/p/monorail/issues/list?can=2&q=-has%3Amilestone+-has%3Aowner)
+[untriaged queue](https://bugs.chromium.org/p/monorail/issues/list?can=2&q=-has%3Aqueue+-has%3Aowner)
 and do the following:
 
 * If it is an urgent issue that affects operation of the site, chat with jrobbins or
@@ -15,8 +15,8 @@ and do the following:
 * If the issue is spam or off-topic, ban the user or set the issue state to Invalid.
   To ban: click the user's email address and press "Ban as spammer."
 * If the issue clearly belongs in /p/chromium, move it there and then set status, pri, and type.
-* If the issue is valid and requires action, set status to Accepted and the milestone to one described below.
-* It if is not clear that this request should be acted on, leave the status as New and set the milestone to Later.
+* If the issue is valid and requires action, set status to Accepted and the Queue to one described below.
+* It if is not clear that this request should be acted on, leave the status as New and use Queue-Later.
   We will look at it again if multiple users star the issue.
 
 Also, take a look at the "Error reporting" section of the Google Cloud Console for our
@@ -30,11 +30,11 @@ If you have questions, feel free to chat with jrobbins or other members of the m
 
 * Try to look at incoming issues daily.
 * If you have limited time, scan for urgent issues first.
-* Try to have the queue empty on Monday mornings.
+* Try to have the triage queue empty on Monday mornings.
 * If you cannot take your shift, trade with another monorail team member, or chat with jrobbins.
 
 
-## Milestones
+## Queues
 
 * Afterglow
   * Problems with existing functionality that our users depend on.
@@ -45,7 +45,14 @@ If you have questions, feel free to chat with jrobbins or other members of the m
 * Goodies
   * Narrowly scoped enhancements requested by key customers.
   * Should not require major UI changes.
-* Midterm
-  * Changes to keep in mind for an upcoming UI redesign.
+* UIRefresh
+  * Changes to keep in mind for a future UI refresh.
 * Later
   * Suggestions that we would probably not act on unless there is demonstrated user demand.
+
+
+## Milestones
+
+Milestones are date-based goals for resolving issues that are based on our team's quarterly
+OKRs.  Team members should set Milestone-* labels on issues that relate to current OKRs.
+Other issues will not have a milestone.
