@@ -10,6 +10,9 @@ BASE_COUNT_DOWN_SECONDS = 2 * 60
 CHROMIUM_GIT_REPOSITORY_URL = (
     'https://chromium.googlesource.com/chromium/src.git')
 
+# The Chromium project name.
+CHROMIUM_PROJECT_NAME = 'chromium'
+
 # Percent to consider when sampling that a pass rate has converged.
 CONVERGENCE_PERCENT = .05  # 5 percent.
 
@@ -50,6 +53,9 @@ DEFAULT_MAX_SWARMING_TASK_RETRIES_PER_DATA_POINT = 3
 # Default minimum confidence score to run try jobs.
 DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
 
+# The minimum confidence required to create a bug.
+DEFAULT_MINIMUM_CONFIDENCE_TO_CREATE_BUG = 0.9
+
 # Default minimum confidence score to post notifications to code reviews.
 DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR = 0.7
 
@@ -84,9 +90,6 @@ MAX_SWARMING_TASK_RETRIES_PER_BUILD = 2
 # In order not to hog resources on the swarming server, set the timeout to a
 # non-configurable 3 hours.
 MAX_TIMEOUT_SECONDS = 3 * 60 * 60
-
-# The minimum confidence required to create a bug.
-MINIMUM_CONFIDENCE_TO_CREATE_BUG = 1.0
 
 # The minimum number of iterations to be run before convergance is considered.
 # All variables related to convergence aren't configurable right now since it

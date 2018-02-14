@@ -7,8 +7,10 @@ import datetime
 
 from monorail_api import Issue
 from waterfall.test import wf_testcase
+from libs import analysis_status
 from libs import time_util
-
+from model.flake.flake_culprit import FlakeCulprit
+from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import issue_tracking_service
 from waterfall.flake import flake_constants
@@ -16,17 +18,77 @@ from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
 class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
+
+  def testAddFinditLabelToIssue(self):
+    issue = mock.MagicMock()
+    issue.labels = []
+    issue_tracking_service.AddFinditLabelToIssue(issue)
+    self.assertEqual(['Test-Findit-Analyzed'], issue.labels)
+    issue_tracking_service.AddFinditLabelToIssue(issue)
+    self.assertEqual(['Test-Findit-Analyzed'], issue.labels)
+
+  def testGenerateCommentWithCulprit(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
+    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
+    culprit.put()
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.confidence_in_culprit = 0.6713
+    comment = issue_tracking_service.GenerateBugComment(analysis)
+    self.assertTrue('culprit r123 with confidence 67.1%' in comment, comment)
+
+  def testGenerateCommentForLongstandingFlake(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    comment = issue_tracking_service.GenerateBugComment(analysis)
+    self.assertTrue('longstanding' in comment, comment)
+
+  def testGetMinimumConfidenceToFileBugs(self):
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'minimum_confidence_to_create_bugs': 0.9
+    })
+    self.assertEqual(0.9,
+                     issue_tracking_service.GetMinimumConfidenceToFileBugs())
+
+  def testGetMinimumConfidenceToUpdateBugs(self):
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'minimum_confidence_to_update_cr': 0.8
+    })
+    self.assertEqual(0.8,
+                     issue_tracking_service.GetMinimumConfidenceToUpdateBugs())
+
+  def testIsBugFilingEnabled(self):
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'create_monorail_bug': False
+    })
+    self.assertFalse(issue_tracking_service.IsBugFilingEnabled())
+
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'create_monorail_bug': True
+    })
+    self.assertTrue(issue_tracking_service.IsBugFilingEnabled())
+
+  def testIsBugUpdatingEnabled(self):
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'update_monorail_bug': False
+    })
+    self.assertFalse(issue_tracking_service.IsBugUpdatingEnabled())
+
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'update_monorail_bug': True
+    })
+    self.assertTrue(issue_tracking_service.IsBugUpdatingEnabled())
+
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
-      issue_tracking_service,
-      'IsBugFilingEnabledForAnalysis',
-      return_value=True)
+      issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      '_HasSufficientConfidenceInCulprit',
+      'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
@@ -70,18 +132,16 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      '_HasSufficientConfidenceInCulprit',
+      'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service,
-      'IsBugFilingEnabledForAnalysis',
-      return_value=False)
+      issue_tracking_service, 'IsBugFilingEnabled', return_value=False)
   def testShouldFileBugForAnalysisWhenFeatureDisabled(self, feature_enabled_fn,
-      *_):
+                                                      *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -101,14 +161,12 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
-      issue_tracking_service,
-      'IsBugFilingEnabledForAnalysis',
-      return_value=True)
+      issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      '_HasSufficientConfidenceInCulprit',
+      'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
@@ -134,14 +192,12 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
-      issue_tracking_service,
-      'IsBugFilingEnabledForAnalysis',
-      return_value=True)
+      issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      '_HasSufficientConfidenceInCulprit',
+      'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
@@ -166,9 +222,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
-      issue_tracking_service,
-      'IsBugFilingEnabledForAnalysis',
-      return_value=True)
+      issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
@@ -177,7 +231,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      '_HasSufficientConfidenceInCulprit',
+      'HasSufficientConfidenceInCulprit',
       return_value=False)
   def testShouldFileBugForAnalysisWithoutSufficientConfidence(
       self, confidence_fn, *_):
@@ -200,16 +254,14 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
-      issue_tracking_service,
-      'IsBugFilingEnabledForAnalysis',
-      return_value=True)
+      issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      '_HasSufficientConfidenceInCulprit',
+      'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=True)
@@ -231,16 +283,14 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(
-      issue_tracking_service,
-      'IsBugFilingEnabledForAnalysis',
-      return_value=True)
+      issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      '_HasSufficientConfidenceInCulprit',
+      'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
@@ -262,16 +312,14 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(daily_limit_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service,
-      'IsBugFilingEnabledForAnalysis',
-      return_value=True)
+      issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      '_HasSufficientConfidenceInCulprit',
+      'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
@@ -300,16 +348,14 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(custom_field_exists.called)
 
   @mock.patch.object(
-      issue_tracking_service,
-      'IsBugFilingEnabledForAnalysis',
-      return_value=True)
+      issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
-      '_HasSufficientConfidenceInCulprit',
+      'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
@@ -322,7 +368,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForTest', return_value=True)
   def testShouldFileBugForAnalysisWhenBugExistsForTest(self, test_exists_Fn,
-      *_):
+                                                       *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -337,24 +383,104 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(test_exists_Fn.called)
 
-  def testIsBugFilingEnabledForAnalysis(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.Save()
-
-    self.assertTrue(
-        issue_tracking_service.IsBugFilingEnabledForAnalysis(analysis))
-
-    analysis.algorithm_parameters['create_monorail_bug'] = False
+  def testShouldUpdateBugForAnalysisConfiguredFalse(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.bug_id = 123
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.suspected_flake_build_number = 1
+    analysis.algorithm_parameters = {'update_monorail_bug': False}
     self.assertFalse(
-        issue_tracking_service.IsBugFilingEnabledForAnalysis(analysis))
+        issue_tracking_service.ShouldUpdateBugForAnalysis(analysis))
+
+  def testShouldUpdateBugForAnalysisNoBugId(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.confidence_in_culprit = 0.9
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'update_monorail_bug': True,
+        'minimum_confidence_score_to_update_cr': 0.6
+    })
+
+    self.assertFalse(
+        issue_tracking_service.ShouldUpdateBugForAnalysis(analysis))
+
+  def testShouldUpdateBugForAnalysisNoBugIdWithCulprit(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.culprit_urlsafe_key = 'c'
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.confidence_in_culprit = 0.9
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'update_monorail_bug': True,
+        'minimum_confidence_score_to_update_cr': 0.6
+    })
+
+    self.assertFalse(
+        issue_tracking_service.ShouldUpdateBugForAnalysis(analysis))
+
+  def testShouldUpdateBugForAnalysisInsufficientDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.data_points = [DataPoint()]
+    analysis.bug_id = 123
+    analysis.confidence_in_culprit = 0.9
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'update_monorail_bug': True,
+        'minimum_confidence_score_to_update_cr': 0.6
+    })
+
+    self.assertFalse(
+        issue_tracking_service.ShouldUpdateBugForAnalysis(analysis))
+
+  @mock.patch.object(
+      issue_tracking_service,
+      'HasSufficientConfidenceInCulprit',
+      return_value=False)
+  def testShouldUpdateBugForAnalysisInsufficientConfidence(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.bug_id = 123
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.confidence_in_culprit = 0.4
+    analysis.culprit_urlsafe_key = 'c'
+
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'update_monorail_bug': True,
+        'minimum_confidence_score_to_update_cr': 0.6
+    })
+
+    self.assertFalse(
+        issue_tracking_service.ShouldUpdateBugForAnalysis(analysis))
+
+  def testShouldUpdateBugForAnalysisConfiguredFalseWithCulprit(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.bug_id = 123
+    analysis.culprit_urlsafe_key = 'c'
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.confidence_in_culprit = 0.9
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'update_monorail_bug': False,
+        'minimum_confidence_score_to_update_cr': 0.6
+    })
+
+    self.assertFalse(
+        issue_tracking_service.ShouldUpdateBugForAnalysis(analysis))
+
+  def testShouldUpdateBugForAnalysis(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.bug_id = 123
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.confidence_in_culprit = 0.9
+    self.UpdateUnitTestConfigSettings('check_flake_settings', {
+        'update_monorail_bug': True,
+        'minimum_confidence_score_to_update_cr': 0.6
+    })
+
+    self.assertTrue(issue_tracking_service.ShouldUpdateBugForAnalysis(analysis))
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
@@ -462,7 +588,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(issue_tracking_service, 'TraverseMergedIssues')
   @mock.patch('services.flake_failure.issue_tracking_service.IssueTrackerAPI')
   def testGetExistingBugForCustomizedField(self, mock_api, mock_traverse_issues,
-      _):
+                                           _):
     with self.assertRaises(AssertionError):
       issue_tracking_service.GetExistingBugForCustomizedField(None)
 
@@ -560,54 +686,54 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     issue_tracker = mock.Mock()
     expected_issue = Issue({'id': 345})
     issue_tracker.getIssue.side_effect = [
-      Issue({
-        'id': 123,
-        'mergedInto': {
-          'issueId': 234
-        }
-      }),
-      Issue({
-        'id': 234,
-        'mergedInto': {
-          'issueId': 345
-        }
-      }),
-      expected_issue,
+        Issue({
+            'id': 123,
+            'mergedInto': {
+                'issueId': 234
+            }
+        }),
+        Issue({
+            'id': 234,
+            'mergedInto': {
+                'issueId': 345
+            }
+        }),
+        expected_issue,
     ]
 
     issue = issue_tracking_service.TraverseMergedIssues(123, issue_tracker)
     self.assertEqual(expected_issue, issue)
     issue_tracker.assert_has_calls([
-      mock.call.getIssue(123),
-      mock.call.getIssue(234),
-      mock.call.getIssue(345)
+        mock.call.getIssue(123),
+        mock.call.getIssue(234),
+        mock.call.getIssue(345)
     ])
 
   def testTraverseMergedIssuesWithMergeInACircle(self):
     issue_tracker = mock.Mock()
     expected_issue = Issue({'id': 123})
     issue_tracker.getIssue.side_effect = [
-      Issue({
-        'id': 123,
-        'mergedInto': {
-          'issueId': 234
-        }
-      }),
-      Issue({
-        'id': 234,
-        'mergedInto': {
-          'issueId': 123
-        }
-      }),
-      expected_issue,
+        Issue({
+            'id': 123,
+            'mergedInto': {
+                'issueId': 234
+            }
+        }),
+        Issue({
+            'id': 234,
+            'mergedInto': {
+                'issueId': 123
+            }
+        }),
+        expected_issue,
     ]
 
     issue = issue_tracking_service.TraverseMergedIssues(123, issue_tracker)
     self.assertEqual(expected_issue, issue)
     issue_tracker.assert_has_calls([
-      mock.call.getIssue(123),
-      mock.call.getIssue(234),
-      mock.call.getIssue(123)
+        mock.call.getIssue(123),
+        mock.call.getIssue(234),
+        mock.call.getIssue(123)
     ])
 
   def testHasPreviousAttempt(self):
@@ -638,22 +764,22 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     analysis.confidence_in_culprit = None
     analysis.Save()
     self.assertFalse(
-        issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))
+        issue_tracking_service.HasSufficientConfidenceInCulprit(analysis, 0.5))
 
     analysis.confidence_in_culprit = 1.0
     analysis.Save()
     self.assertTrue(
-        issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))
+        issue_tracking_service.HasSufficientConfidenceInCulprit(analysis, 1.0))
 
     analysis.confidence_in_culprit = .9
     analysis.put()
     self.assertTrue(
-        issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))
+        issue_tracking_service.HasSufficientConfidenceInCulprit(analysis, 0.9))
 
     analysis.confidence_in_culprit = .8
     analysis.put()
     self.assertFalse(
-        issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))
+        issue_tracking_service.HasSufficientConfidenceInCulprit(analysis, 0.9))
 
   @mock.patch.object(
       time_util,
