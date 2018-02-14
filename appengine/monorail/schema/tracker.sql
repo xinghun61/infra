@@ -795,8 +795,8 @@ CREATE TABLE IssueSnapshot (
   reporter_id INT UNSIGNED NOT NULL,
   owner_id INT UNSIGNED,
   status_id INT NOT NULL,
-  period_start INT NOT NULL,
-  period_end INT NOT NULL,
+  period_start INT UNSIGNED NOT NULL,
+  period_end INT UNSIGNED NOT NULL,
   is_open BOOLEAN DEFAULT TRUE,
   -- TODO(jeffcarp): Add Hotlist information
 

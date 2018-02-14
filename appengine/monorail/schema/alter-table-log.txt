@@ -1277,3 +1277,8 @@ CREATE TABLE ApprovalDef2Approver (
 
 ALTER TABLE ApprovalDef2Approver ADD project_id SMALLINT UNSIGNED NOT NULL;
 ALTER TABLE ApprovalDef2Approver ADD CONSTRAINT ApprovalDef2Approver_ibfk_3 FOREIGN KEY (project_id) REFERENCES Project(project_id);
+
+==================================================================
+2018-02-14: Expand IssueSnapshot time columns from INT to INT UNSIGNED
+ALTER TABLE IssueSnapshot MODIFY period_start INT UNSIGNED NOT NULL;
+ALTER TABLE IssueSnapshot MODIFY period_end INT UNSIGNED NOT NULL;
