@@ -161,7 +161,7 @@ class Wheel(_Wheel):
   def path(self, system):
     return os.path.join(system.wheel_dir, self.filename)
 
-  def cipd_package(self, git_revision, templated=False):
+  def cipd_package(self, git_revision=None, templated=False):
     base_path = ['infra', 'python', 'wheels']
     if self.spec.universal:
       base_path += ['%s-%s' % (self.spec.name, self.pyversion_str)]
@@ -176,10 +176,9 @@ class Wheel(_Wheel):
     version_tag = 'version:%s' % (self.spec.version,)
     if not self.spec.universal and BINARY_VERSION_SUFFIX:
       version_tag += BINARY_VERSION_SUFFIX
-    tags = [
-        version_tag,
-        'git_revision:%s' % (git_revision,)
-    ]
+    tags = [version_tag]
+    if git_revision is not None:
+      tags.append('git_revision:%s' % (git_revision,))
     return cipd.Package(
       name=('/'.join(p.replace('.', '_') for p in base_path)).lower(),
       tags=tuple(tags),
@@ -1019,8 +1018,9 @@ SPECS = {s.spec.tag: s for s in (
   Universal('idna', '2.5'),
   Universal('ipaddress', '1.0.18', pyversions=['py2']),
   Universal('mock', '2.0.0'),
-  BuildWheel('oauth2client', '3.0.0'),
+  UniversalSource('oauth2client', '3.0.0'),
   Universal('oauth2client', '4.0.0'),
+  Universal('oauth2client', '4.1.2'),
   Universal('packaging', '16.8'),
   Universal('pbr', '3.0.0'),
   Universal('protobuf', '3.2.0'),
