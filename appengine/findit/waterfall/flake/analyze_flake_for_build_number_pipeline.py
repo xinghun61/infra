@@ -1,11 +1,11 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 from google.appengine.ext import ndb
 
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import pipeline
 from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
     SaveLastAttemptedSwarmingTaskIdPipeline)
 from waterfall.flake.update_flake_analysis_data_points_pipeline import (
@@ -42,6 +42,7 @@ class AnalyzeFlakeForBuildNumberPipeline(BasePipeline):
           analysis.builder_name,
           build_number,
           analysis.step_name, [analysis.test_name],
+          None,
           iterations_to_rerun=iterations,
           hard_timeout_seconds=timeout,
           force=rerun)

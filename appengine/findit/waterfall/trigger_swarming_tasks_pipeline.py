@@ -82,4 +82,5 @@ class TriggerSwarmingTasksPipeline(BasePipeline):
           build_number,
           step_name,
           base_tests,
+          None,
           force=force)

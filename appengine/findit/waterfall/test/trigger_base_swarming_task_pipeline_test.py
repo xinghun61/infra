@@ -27,6 +27,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     step_name = 's'
     tests = ['a.b']
+    overridden_isolated_sha = None
 
     swarming_task = WfSwarmingTask.Create(master_name, builder_name,
                                           build_number, step_name)
@@ -36,7 +37,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = TriggerSwarmingTaskPipeline()
     task_id = pipeline.run(master_name, builder_name, build_number, step_name,
-                           tests)
+                           tests, overridden_isolated_sha)
     self.assertEqual('task_id', task_id)
 
   def testNeedSwarmingTaskWhenOneExistsButForceSpecified(self):
@@ -66,6 +67,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     step_name = 's'
     tests = ['a.b']
+    overridden_isolated_sha = None
 
     swarming_task = WfSwarmingTask.Create(master_name, builder_name,
                                           build_number, step_name)
@@ -84,7 +86,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = TriggerSwarmingTaskPipeline()
     task_id = pipeline.run(master_name, builder_name, build_number, step_name,
-                           tests)
+                           tests, overridden_isolated_sha)
     self.assertEqual('task_id', task_id)
 
   @mock.patch.object(
@@ -171,11 +173,12 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 234
     step_name = 'a_tests on platform'
     tests = ['a.b', 'a.c']
+    overridden_isolated_sha = None
 
     pipeline = TriggerSwarmingTaskPipeline()
     pipeline.start_test()
     new_task_id = pipeline.run(master_name, builder_name, build_number,
-                               step_name, tests)
+                               step_name, tests, overridden_isolated_sha)
 
     expected_new_request_json = {
         'expiration_secs':
@@ -193,12 +196,10 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                 'key': 'k',
                 'value': 'v'
             }],
-            'env': [
-                {
-                    'key': 'a',
-                    'value': '1'
-                },
-            ],
+            'env': [{
+                'key': 'a',
+                'value': '1'
+            },],
             'execution_timeout_secs':
                 3600,
             'extra_args': [
@@ -324,6 +325,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     step_name = 's'
     tests = ['a.b']
+    overridden_isolated_sha = None
 
     swarming_task = WfSwarmingTask.Create(master_name, builder_name,
                                           build_number, step_name)
@@ -333,7 +335,13 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = TriggerSwarmingTaskPipeline()
     task_id = pipeline.run(
-        master_name, builder_name, build_number, step_name, tests, force=True)
+        master_name,
+        builder_name,
+        build_number,
+        step_name,
+        tests,
+        overridden_isolated_sha,
+        force=True)
     self.assertNotEqual('task_id', task_id)
 
     swarming_task = WfSwarmingTask.Get(master_name, builder_name, build_number,
@@ -344,3 +352,151 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         waterfall_config.GetSwarmingSettings()['iterations_to_rerun'],
         swarming_task.parameters['iterations_to_rerun'])
+
+  @mock.patch.object(
+      pubsub_callback,
+      'GetSwarmingTopic',
+      return_value='projects/findit-for-me/topics/swarm')
+  @mock.patch.object(token, 'GenerateAuthToken', return_value='auth_token')
+  def testCreateNewSwarmingTaskRequestWithOverriddenIsolatedSha(self, *_):
+
+    def MockedGetSwarmingTaskName(*_):
+      return 'new_task_name'
+
+    self.mock(TriggerBaseSwarmingTaskPipeline, '_GetSwarmingTaskName',
+              MockedGetSwarmingTaskName)
+
+    ref_task_id = 'ref_task_id'
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 234
+    step_name = 'a_tests on platform'
+    tests = ['a.b', 'a.c']
+    iterations = 100
+    overridden_isolated_sha = 'overridden_sha'
+
+    ref_request = SwarmingTaskRequest.Deserialize({
+        'expiration_secs':
+            3600,
+        'name':
+            'ref_task_request',
+        'parent_task_id':
+            'pti',
+        'priority':
+            25,
+        'properties': {
+            'command':
+                'cmd',
+            'dimensions': [{
+                'key': 'k',
+                'value': 'v'
+            }],
+            'env': [
+                {
+                    'key': 'a',
+                    'value': '1'
+                },
+                {
+                    'key': 'GTEST_SHARD_INDEX',
+                    'value': '1'
+                },
+                {
+                    'key': 'GTEST_TOTAL_SHARDS',
+                    'value': '5'
+                },
+            ],
+            'execution_timeout_secs':
+                3600,
+            'extra_args': [
+                '--flag=value',
+                '--gtest_filter=d.f',
+                '--test-launcher-filter-file=path/to/filter/file',
+            ],
+            'grace_period_secs':
+                30,
+            'idempotent':
+                True,
+            'inputs_ref': {
+                'a': 1
+            },
+            'io_timeout_secs':
+                1200,
+        },
+        'tags': [
+            'master:%s' % master_name,
+            'buildername:%s' % builder_name, 'name:a_tests'
+        ],
+        'user':
+            'user',
+    })
+
+    pipeline = TriggerSwarmingTaskPipeline(master_name, builder_name,
+                                           build_number, step_name, tests,
+                                           overridden_isolated_sha)
+    new_request = pipeline._CreateNewSwarmingTaskRequest(
+        ref_task_id, ref_request, master_name, builder_name, build_number,
+        step_name, tests, iterations, overridden_isolated_sha)
+
+    expected_new_request_json = {
+        'expiration_secs':
+            3600,
+        'name':
+            'new_task_name',
+        'parent_task_id':
+            '',
+        'priority':
+            25,
+        'properties': {
+            'command':
+                'cmd',
+            'dimensions': [{
+                'key': 'k',
+                'value': 'v'
+            }],
+            'env': [{
+                'key': 'a',
+                'value': '1'
+            },],
+            'execution_timeout_secs':
+                3600,
+            'extra_args': [
+                '--flag=value',
+                '--gtest_filter=a.b:a.c',
+                '--gtest_repeat=%d' % iterations,
+                '--test-launcher-retry-limit=0',
+                '--gtest_also_run_disabled_tests',
+            ],
+            'grace_period_secs':
+                30,
+            'idempotent':
+                False,
+            'inputs_ref': {
+                'a': 1,
+                'isolated': overridden_isolated_sha
+            },
+            'io_timeout_secs':
+                1200,
+        },
+        'tags': [
+            'ref_master:%s' % master_name,
+            'ref_buildername:%s' % builder_name,
+            'ref_buildnumber:%s' % build_number,
+            'ref_stepname:%s' % step_name,
+            'override_task_id:%s' % ref_task_id,
+            'ref_name:a_tests',
+            'purpose:identify-flake',
+        ],
+        'user':
+            '',
+        'pubsub_auth_token':
+            'auth_token',
+        'pubsub_topic':
+            'projects/findit-for-me/topics/swarm',
+        'pubsub_userdata':
+            json.dumps({
+                'Message-Type': 'SwarmingTaskStatusChange',
+                'Notification-Id': pipeline.pipeline_id
+            }),
+    }
+
+    self.assertEqual(expected_new_request_json, new_request.Serialize())

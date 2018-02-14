@@ -10,9 +10,7 @@ from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-
 from waterfall.flake import flake_analysis_util
-
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
     AnalyzeFlakeForBuildNumberPipeline)
 from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
@@ -62,7 +60,8 @@ class AnalyzeFlakeForBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
         TriggerFlakeSwarmingTaskPipeline,
         task_id,
         expected_args=[
-            master_name, builder_name, build_number, step_name, [test_name]
+            master_name, builder_name, build_number, step_name, [test_name],
+            None
         ],
         expected_kwargs={
             'iterations_to_rerun': iterations,
@@ -128,7 +127,8 @@ class AnalyzeFlakeForBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
         TriggerFlakeSwarmingTaskPipeline,
         task_id,
         expected_args=[
-            master_name, builder_name, build_number, step_name, [test_name]
+            master_name, builder_name, build_number, step_name, [test_name],
+            None
         ],
         expected_kwargs={
             'iterations_to_rerun': iterations,

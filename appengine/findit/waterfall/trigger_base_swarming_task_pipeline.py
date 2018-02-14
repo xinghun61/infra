@@ -41,6 +41,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
                                     step_name,
                                     tests,
                                     iterations,
+                                    overridden_isolated_sha,
                                     hard_timeout_seconds=None):
     """Returns a SwarmingTaskRequest instance to run the given tests only."""
     # Make a copy of the referred request and drop or overwrite some fields.
@@ -51,6 +52,11 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
 
     if hard_timeout_seconds:
       new_request.execution_timeout_secs = hard_timeout_seconds
+
+    if overridden_isolated_sha:
+      # A swarming task is being triggered at a specific revision and not
+      # necessarily a build number.
+      new_request.inputs_ref['isolated'] = overridden_isolated_sha
 
     _pubsub_callback = MakeSwarmingPubsubCallback(self.pipeline_id)
     new_request.pubsub_topic = _pubsub_callback.get('topic')
@@ -116,8 +122,12 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     new_request.tags.append('ref_master:%s' % master_name)
     new_request.tags.append('ref_buildername:%s' % builder_name)
     new_request.tags.append('ref_buildnumber:%s' % build_number)
+
     new_request.tags.append('ref_stepname:%s' % step_name)
-    new_request.tags.append('ref_task_id:%s' % ref_task_id)
+
+    task_id_tag = ('override_task_id:%s'
+                   if overridden_isolated_sha else 'ref_task_id:%s')
+    new_request.tags.append(task_id_tag % ref_task_id)
     new_request.tags.append('ref_name:%s' % ref_name)
 
     # Add additional tags.
@@ -229,6 +239,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
           build_number,
           step_name,
           tests,
+          overridden_isolated_sha,
           iterations_to_rerun=None,
           hard_timeout_seconds=None,
           force=False):
@@ -240,6 +251,12 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
       build_number (str): The build number.
       step_name (str): The failed test step name.
       tests (list): A list of test cases, eg: ['suite1.test1', 'suite2.testw2']
+      overridden_isolated_sha (str): The isolated sha of the compiled binaries
+          of the step to run. This value should only be specified if overriding
+          the location of the compiled test binaries for the step, and should
+          otherwise be None to be carried over from a reference task of the
+          specified build number which has already pre-determined it's own
+          isolated sha.
       iterations_to_rerun (int): Number of iterations to run a test.
       hard_timeout_seconds (int): How many seconds the overall task has to run.
       force (bool): If this is a forced rerun from scratch. A rerun by an admin
@@ -259,8 +276,9 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
 
     # 0. Retrieve existing Swarming task ids for the given step.
     swarming_task_items = swarming_util.ListSwarmingTasksDataByTags(
-        master_name, builder_name, build_number, http_client,
-        {'stepname': step_name})
+        master_name, builder_name, build_number, http_client, {
+            'stepname': step_name
+        })
     if len(swarming_task_items) < 1:
       if self.GetBuildDataFromMilo(master_name, builder_name, build_number,
                                    http_client):
@@ -284,6 +302,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
         step_name,
         tests,
         iterations_to_rerun,
+        overridden_isolated_sha,
         hard_timeout_seconds=hard_timeout_seconds)
 
     # 3. Trigger a new Swarming task to re-run the failed tests.

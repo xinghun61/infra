@@ -21,11 +21,10 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     tests = ['t']
-    self.assertEqual((master_name, builder_name, build_number, step_name,
-                      tests[0]),
-                     TriggerFlakeSwarmingTaskPipeline()._GetArgs(
-                         master_name, builder_name, build_number, step_name,
-                         tests))
+    self.assertEqual(
+        (master_name, builder_name, build_number, step_name, tests[0]),
+        TriggerFlakeSwarmingTaskPipeline()._GetArgs(
+            master_name, builder_name, build_number, step_name, tests))
 
   def testGetSwarmingTask(self):
     master_name = 'm'
@@ -92,6 +91,7 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     iterations = 200
+    overridden_isolated_sha = None
 
     flake_pipeline = TriggerFlakeSwarmingTaskPipeline()
     flake_pipeline.start_test()
@@ -154,6 +154,7 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
         builder_name,
         build_number,
         step_name, [test_name],
+        overridden_isolated_sha,
         iterations_to_rerun=iterations,
         hard_timeout_seconds=None)
 
