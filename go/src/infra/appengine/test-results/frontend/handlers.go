@@ -26,14 +26,9 @@ import (
 )
 
 const (
-	monitoringQueueName = "monitoring"
 	deleteKeysQueueName = "delete-keys"
 
 	deleteKeysPath = "/internal/delete-keys"
-
-	// monitoringPath is the event_mon monitoring path. It should be kept in sync
-	// with the Python implementation.
-	monitoringPath = "/internal/monitoring/upload"
 )
 
 func init() {

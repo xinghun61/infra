@@ -322,39 +322,6 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	return datastore.Put(c, &tf)
 }
 
-func createTestResUploadTask(c context.Context, f *model.FullResult, p *UploadParams) {
-	payload, err := json.Marshal(struct {
-		Master      string       `json:"master"`
-		Builder     string       `json:"builder"`
-		BuildNumber model.Number `json:"build_number"`
-		TestType    string       `json:"test_type"`
-		StepName    string       `json:"step_name"`
-	}{
-		Master:      p.Master,
-		Builder:     p.Builder,
-		BuildNumber: f.BuildNumber,
-		TestType:    p.TestType,
-		StepName:    p.StepName,
-	})
-	if err != nil {
-		logging.WithError(err).Errorf(c, "taskqueue: %s", monitoringPath)
-		return
-	}
-
-	h := make(http.Header)
-	h.Set("Content-Type", "application/json")
-
-	logging.Debugf(c, "adding taskqueue task for [%s]", monitoringPath)
-	if err := taskqueue.Add(c, monitoringQueueName, &taskqueue.Task{
-		Path:    monitoringPath,
-		Payload: payload,
-		Header:  h,
-		Method:  "POST",
-	}); err != nil {
-		logging.WithError(err).Errorf(c, "Failed to add task queue task.")
-	}
-}
-
 // updateFullResults puts the supplied data as "full_results.json"
 // to the datastore, and updates corresponding "results.json" and
 // "results-small.json" files in the datastore.
@@ -419,7 +386,6 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		createTestResUploadTask(c, &f, p)
 		if !info.IsDevAppServer(c) {
 			logTestResultEvents(c, &f, p)
 		}

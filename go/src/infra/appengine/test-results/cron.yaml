@@ -2,9 +2,6 @@ cron:
   - description: tsmon house keeping
     url: /internal/cron/ts_mon/housekeeping
     schedule: every 1 minutes
-  - description: tsmon house keeping (python module)
-    url: /internal/cron/ts_mon/send
-    schedule: every 1 minutes
   - description: delete old test results
     url: /internal/cron/delete_old_results
     # TODO(sergiyb): Reduce to every 1 hour after initial cleanup of old data.
