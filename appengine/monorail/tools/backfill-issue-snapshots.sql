@@ -127,6 +127,8 @@ BEGIN
   DECLARE c_reporter_id INT UNSIGNED;
   DECLARE c_owner_id INT UNSIGNED;
   DECLARE c_issuesnapshot_id INT;
+  DECLARE total_counter INT UNSIGNED DEFAULT 0;
+  DECLARE write_counter INT UNSIGNED DEFAULT 0;
 
   DECLARE curs CURSOR FOR
     SELECT i.id, i.shard, i.project_id, i.local_id, i.status_id, i.opened,
@@ -159,15 +161,23 @@ BEGIN
     FETCH curs INTO c_issue_id, c_issue_shard, c_issue_project_id,
       c_issue_local_id, c_issue_status_id, c_issue_opened, c_issue_closed,
       c_issue_is_open, c_reporter_id, c_owner_id;
-    IF is_duplicate THEN
-      ITERATE issue_loop;
-    END IF;
     IF done THEN
+      SELECT 'Final chunk status',
+        c_issue_id AS 'Processing Issue ID:',
+        total_counter AS 'Issues fetched',
+        write_counter AS 'Snapshots written';
       LEAVE issue_loop;
     END IF;
 
     -- Indicate progress.
-    SELECT c_issue_id AS 'Processing Issue:';
+    IF (SELECT c_issue_id % 100 = 0) THEN
+      SELECT 'Chunk status',
+        c_issue_id AS 'Processing Issue ID:',
+        total_counter AS 'Issues fetched',
+        write_counter AS 'Snapshots written';
+    END IF;
+
+    SET total_counter = total_counter + 1;
 
     INSERT INTO IssueSnapshot
     (issue_id, shard, project_id, local_id, status_id, period_start,
@@ -177,8 +187,15 @@ BEGIN
     c_issue_local_id, c_issue_status_id, c_issue_opened,
     c_issue_closed, c_issue_is_open, c_reporter_id, c_owner_id);
 
+    IF is_duplicate THEN
+      ITERATE issue_loop;
+    END IF;
+
+    SET write_counter = write_counter + 1;
+
     SET c_issuesnapshot_id = LAST_INSERT_ID();
-    SELECT c_issuesnapshot_id AS 'IssueSnapshot ID:';
+    -- Add a tiny sleep here to reduce replication pressure on write.
+    SET @throwaway = (SELECT SLEEP(0.1));
 
     -- Backfill labels.
     CALL BackfillIssueSnapshotsLabels(c_issue_id, c_issuesnapshot_id);
