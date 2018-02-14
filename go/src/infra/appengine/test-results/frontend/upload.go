@@ -85,8 +85,6 @@ type UploadParams struct {
 	Builder          string
 	TestType         string
 	StepName         string
-	// TODO: Have test results uploaders add this from build properties.
-	BuildID string
 }
 
 type contextKey int
@@ -157,8 +155,6 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 		u.TestType = cleanTestType(v[0])
 		u.StepName = v[0]
 	}
-
-	u.BuildID = r.FormValue("build_id")
 
 	if _, ok := r.MultipartForm.File["file"]; !ok {
 		logging.Errorf(c, "withParsedUploadForm: missing file")

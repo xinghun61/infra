@@ -27,6 +27,7 @@ func TestCreateEvent(t *testing.T) {
 		f := &model.FullResult{
 			PathDelim:   proto.String("/"),
 			BuildNumber: 42,
+			BuildID:     12345,
 			Tests: model.FullTest{
 				"path": &model.FullTestLeaf{
 					Actual:   []string{"PASS"},
@@ -59,6 +60,7 @@ func TestCreateEvent(t *testing.T) {
 					Expected: []gen.ResultType{gen.ResultType_PASS},
 					Name:     "path",
 				},
+				BuildId: "12345",
 			},
 			{
 				Path:     "other/path",
@@ -75,6 +77,7 @@ func TestCreateEvent(t *testing.T) {
 					Expected: []gen.ResultType{gen.ResultType_WONTFIX},
 					Name:     "other/path",
 				},
+				BuildId: "12345",
 			},
 		}
 

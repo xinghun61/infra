@@ -79,14 +79,16 @@ func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadPar
 				BuilderName: p.Builder,
 				BuildNumber: int64(f.BuildNumber),
 			},
-			// TODO: plumb build_id all the way through the test results upload scripts.
-			BuildId:     p.BuildID,
 			Path:        name,
 			TestType:    p.TestType,
 			StepName:    p.StepName,
 			Interrupted: i,
 			StartTime:   startTime,
 			Run:         testRun,
+		}
+
+		if f.BuildID != 0 {
+			evt.BuildId = fmt.Sprintf("%d", f.BuildID)
 		}
 
 		if f.ChromiumRev != nil {
