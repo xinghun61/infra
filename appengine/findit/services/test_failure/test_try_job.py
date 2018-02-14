@@ -253,7 +253,6 @@ def GetParametersToScheduleTestTryJob(master_name,
   return RunTestTryJobParameters.FromSerializable(parameters)
 
 
-# TODO(chanli@): move this function to swarming task related module.
 def GetReliableTests(master_name, builder_name, build_number, failure_info):
   task_results = {}
   for step_name, step_failure in failure_info['failed_steps'].iteritems():
@@ -343,13 +342,10 @@ def _GetUpdatedSuspectedCLs(analysis, result, culprits):
 
 def _GetUpdatedAnalysisResult(analysis, flaky_failures):
   if not analysis or not analysis.result or not analysis.result.get('failures'):
-    return [], False
+    return {}, False
 
-  analysis_result = copy.deepcopy(analysis.result)
-  all_flaky = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
-      analysis_result, flaky_failures)
-
-  return analysis_result, all_flaky
+  return test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+      analysis.result, flaky_failures)
 
 
 def FindCulpritForEachTestFailure(result):
@@ -426,8 +422,11 @@ def UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,
       analysis, flaky_failures)
   updated_result_status = _GetResultAnalysisStatus(analysis, result, all_flaked)
   updated_suspected_cls = _GetUpdatedSuspectedCLs(analysis, result, culprits)
-  analysis.UpdateWithTryJobResult(updated_result_status, updated_suspected_cls,
-                                  updated_result)
+  analysis.UpdateWithNewFindings(
+      updated_result_status=updated_result_status,
+      updated_suspected_cls=updated_suspected_cls,
+      updated_result=updated_result,
+      flaky_tests=flaky_failures)
 
 
 def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits,

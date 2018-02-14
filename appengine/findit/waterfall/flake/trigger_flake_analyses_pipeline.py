@@ -9,7 +9,6 @@ from libs import time_util
 
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
-from model.wf_swarming_task import WfSwarmingTask
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
@@ -25,7 +24,7 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
     Args:
       master_name (str): The master name.
       builder_name (str): The builder name.
-      build_number (str): The build number.
+      build_number (int): The build number.
     """
 
     flake_settings = waterfall_config.GetCheckFlakeSettings()
@@ -33,20 +32,10 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
-    if not analysis or not analysis.failure_result_map:  # pragma: no cover
+    if not analysis or not analysis.flaky_tests:
       return
 
-    for step in analysis.failure_result_map.iterkeys():
-      task = WfSwarmingTask.Get(master_name, builder_name, build_number, step)
-
-      if not task:  # pragma: no cover
-        continue
-
-      flaky_tests = task.classified_tests.get('flaky_tests', [])
-
-      if not flaky_tests:  # pragma: no cover
-        continue
-
+    for step, flaky_tests in analysis.flaky_tests.iteritems():
       logging.info('%s/%s/%s/%s has %s flaky tests.', master_name, builder_name,
                    build_number, step, len(flaky_tests))
 
@@ -57,7 +46,7 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
         scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
             request, 'findit-for-me@appspot.gserviceaccount.com', False,
             triggering_sources.FINDIT_PIPELINE)
-        if scheduled:
+        if scheduled:  # pragma: no branch
           logging.info('A flake analysis has been triggered for %s/%s', step,
                        test_name)
           if throttled:

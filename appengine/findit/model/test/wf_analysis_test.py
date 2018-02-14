@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import json
 
 from common.waterfall import failure_type
 from gae_libs.testcase import TestCase
@@ -165,7 +166,7 @@ class WfAnalysisTest(TestCase):
     build_number = 1
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
-    analysis.UpdateWithTryJobResult(result_status.FOUND_CORRECT, None, None)
+    analysis.UpdateWithNewFindings(result_status.FOUND_CORRECT, None, None)
     self.assertEqual(analysis.result_status, result_status.FOUND_CORRECT)
 
   def testUpdateWfAnalysisWithTryJobResultNoUpdate(self):
@@ -177,5 +178,45 @@ class WfAnalysisTest(TestCase):
     analysis.suspected_cls = None
     analysis.result = None
     analysis.put()
-    analysis.UpdateWithTryJobResult(result_status.FOUND_CORRECT, None, None)
+    analysis.UpdateWithNewFindings(result_status.FOUND_CORRECT, None, None)
     self.assertEqual(analysis.result_status, result_status.FOUND_CORRECT)
+
+  def test_GetMergedFlakyTests(self):
+    master_name = 'm1'
+    builder_name = 'b'
+    build_number = 1
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.flaky_tests = {'s1': ['t1', 't2'], 's2': ['t1', 't2']}
+    analysis.put()
+    flaky_tests = {'s1': ['t2', 't3'], 's3': ['t1', 't2']}
+
+    expected_flaky_tests = {
+        's1': ['t1', 't2', 't3'],
+        's2': ['t1', 't2'],
+        's3': ['t1', 't2']
+    }
+    updated_flaky_tests = analysis._GetMergedFlakyTests(flaky_tests)
+    self.assertListEqual(expected_flaky_tests.keys(),
+                         updated_flaky_tests.keys())
+    for step, tests in expected_flaky_tests.iteritems():
+      self.assertItemsEqual(tests, updated_flaky_tests[step])
+
+  def testUpdateWithNewFindingsNoFlakyTests(self):
+    master_name = 'm1'
+    builder_name = 'b'
+    build_number = 1
+    sample_flaky_tests = {'s1': ['t1', 't2'], 's2': ['t1', 't2']}
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.flaky_tests = sample_flaky_tests
+    analysis.put()
+    self.assertEqual(sample_flaky_tests, analysis._GetMergedFlakyTests({}))
+
+  def testUpdateWithNewFindingsNoSavedFlakyTests(self):
+    master_name = 'm1'
+    builder_name = 'b'
+    build_number = 1
+    sample_flaky_tests = {'s1': ['t1', 't2'], 's2': ['t1', 't2']}
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.put()
+    self.assertEqual(sample_flaky_tests,
+                     analysis._GetMergedFlakyTests(sample_flaky_tests))

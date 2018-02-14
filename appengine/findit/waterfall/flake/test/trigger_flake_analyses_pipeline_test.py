@@ -20,7 +20,9 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       waterfall_config,
       'GetCheckFlakeSettings',
-      return_value={'throttle_flake_analyses': True})
+      return_value={
+          'throttle_flake_analyses': True
+      })
   def testTriggerFlakeAnalysesPipeline(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -29,29 +31,22 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 'Unittest1.Subtest1'
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {
-        step_name: {
-            test_name: '%s/%s/%s' % (master_name, builder_name, build_number)
-        }
-    }
+    analysis.flaky_tests = {step_name: [test_name]}
     analysis.put()
-
-    swarming_task = WfSwarmingTask.Create(master_name, builder_name,
-                                          build_number, step_name)
-    swarming_task.tests_statuses = {test_name: {'SUCCESS': 1}}
-    swarming_task.put()
 
     with mock.patch.object(
         flake_analysis_service,
-        'ScheduleAnalysisForFlake') as (mocked_ScheduleAnalysisForFlake):
+        'ScheduleAnalysisForFlake') as mocked_ScheduleAnalysisForFlake:
       pipeline = TriggerFlakeAnalysesPipeline()
       pipeline.run(master_name, builder_name, build_number)
-      mocked_ScheduleAnalysisForFlake.assert_called_once()
+      self.assertTrue(mocked_ScheduleAnalysisForFlake.called)
 
   @mock.patch.object(
       waterfall_config,
       'GetCheckFlakeSettings',
-      return_value={'throttle_flake_analyses': False})
+      return_value={
+          'throttle_flake_analyses': False
+      })
   def testTriggerFlakeAnalysesPipelineUnthrottled(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -60,52 +55,33 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 'Unittest1.Subtest1'
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {
-        step_name: {
-            test_name: '%s/%s/%s' % (master_name, builder_name, build_number)
-        }
-    }
+    analysis.flaky_tests = {step_name: [test_name]}
     analysis.put()
-
-    swarming_task = WfSwarmingTask.Create(master_name, builder_name,
-                                          build_number, step_name)
-    swarming_task.tests_statuses = {test_name: {'SUCCESS': 1}}
-    swarming_task.put()
 
     with mock.patch.object(
         flake_analysis_service,
-        'ScheduleAnalysisForFlake') as (mocked_ScheduleAnalysisForFlake):
+        'ScheduleAnalysisForFlake') as mocked_ScheduleAnalysisForFlake:
       pipeline = TriggerFlakeAnalysesPipeline()
       pipeline.run(master_name, builder_name, build_number)
-      mocked_ScheduleAnalysisForFlake.assert_called_once()
+      self.assertTrue(mocked_ScheduleAnalysisForFlake.called)
 
   @mock.patch.object(
       waterfall_config,
       'GetCheckFlakeSettings',
-      return_value={'throttle_flake_analyses': True})
+      return_value={
+          'throttle_flake_analyses': True
+      })
   def testTriggerFlakeAnalysesPipelineScheduledReturnsFalse(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 2
-    step_name = 'a_tests'
-    test_name = 'Unittest1.Subtest1'
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {
-        step_name: {
-            test_name: '%s/%s/%s' % (master_name, builder_name, build_number)
-        }
-    }
     analysis.put()
-
-    swarming_task = WfSwarmingTask.Create(master_name, builder_name,
-                                          build_number, step_name)
-    swarming_task.tests_statuses = {test_name: {'SUCCESS': 1}}
-    swarming_task.put()
 
     with mock.patch.object(
         flake_analysis_service, 'ScheduleAnalysisForFlake',
         return_value=False) as mocked_ScheduleAnalysisForFlake:
       pipeline = TriggerFlakeAnalysesPipeline()
       pipeline.run(master_name, builder_name, build_number)
-      mocked_ScheduleAnalysisForFlake.assert_called_once()
+      self.assertFalse(mocked_ScheduleAnalysisForFlake.called)

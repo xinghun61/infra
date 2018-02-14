@@ -313,8 +313,10 @@ def UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,
   updated_result_status = try_job_service.GetResultAnalysisStatus(
       analysis, result) if not flaky_compile else result_status.FLAKY
   updated_suspected_cls = _GetUpdatedSuspectedCLs(analysis, culprits)
-  analysis.UpdateWithTryJobResult(updated_result_status, updated_suspected_cls,
-                                  updated_result)
+  analysis.UpdateWithNewFindings(
+      updated_result_status=updated_result_status,
+      updated_suspected_cls=updated_suspected_cls,
+      updated_result=updated_result)
 
 
 def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits):

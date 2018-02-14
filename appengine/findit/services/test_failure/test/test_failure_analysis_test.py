@@ -206,13 +206,11 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r99_1': {
             'revision':
                 'r99_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_1.cc',
+                'new_path': 'a/b/f99_1.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -220,13 +218,11 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r99_2': {
             'revision':
                 'r99_2',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_2.cc',
-                    'new_path': 'a/b/f99_2.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_2.cc',
+                'new_path': 'a/b/f99_2.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -234,13 +230,11 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r98_1': {
             'revision':
                 'r98_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'y/z/f98.cc',
-                    'new_path': 'y/z/f98.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'y/z/f98.cc',
+                'new_path': 'y/z/f98.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -267,13 +261,11 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r96_1': {
             'revision':
                 'r96_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f96_1.cc',
-                    'new_path': 'a/b/f96_1.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f96_1.cc',
+                'new_path': 'a/b/f96_1.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -349,9 +341,10 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'top_score': 4
     }]
 
-    analysis_result, suspected_cls = (test_failure_analysis.AnalyzeTestFailure(
-        TestFailureInfo.FromSerializable(failure_info), change_logs, deps_info,
-        failure_signals_json))
+    analysis_result, suspected_cls = (
+        test_failure_analysis.AnalyzeTestFailure(
+            TestFailureInfo.FromSerializable(failure_info), change_logs,
+            deps_info, failure_signals_json))
 
     self.assertEqual(SAMPLE_HEURISTIC_RESULT, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
@@ -389,20 +382,19 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         }
     }
     expected_analysis_result = {
-        'failures': [
-            {
-                'step_name': 'unsupported_step1',
-                'supported': False,
-                'first_failure': 98,
-                'last_pass': None,
-                'suspected_cls': [],
-            },
-        ]
+        'failures': [{
+            'step_name': 'unsupported_step1',
+            'supported': False,
+            'first_failure': 98,
+            'last_pass': None,
+            'suspected_cls': [],
+        },]
     }
 
-    analysis_result, suspected_cls = (test_failure_analysis.AnalyzeTestFailure(
-        TestFailureInfo.FromSerializable(failure_info), change_logs, deps_info,
-        failure_signals_json))
+    analysis_result, suspected_cls = (
+        test_failure_analysis.AnalyzeTestFailure(
+            TestFailureInfo.FromSerializable(failure_info), change_logs,
+            deps_info, failure_signals_json))
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual([], suspected_cls)
 
@@ -500,8 +492,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'browser_tests on platform': ['TestSuite1.test1', 'TestSuite1.test2']
     }
 
-    all_flaked = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
-        analysis_result, flaky_failures)
+    updated_result, all_flaked = (
+        test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+            analysis_result, flaky_failures))
 
     expected_result = {
         'failures': [
@@ -544,7 +537,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertFalse(all_flaked)
-    self.assertEqual(expected_result, analysis_result)
+    self.assertEqual(expected_result, updated_result)
 
   def testUpdateAnalysisResultAllFlaky(self):
     analysis_result = {
@@ -569,8 +562,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'browser_tests on platform': ['TestSuite1.test1', 'TestSuite1.test2']
     }
 
-    all_flaked = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
-        analysis_result, flaky_failures)
+    updated_result, all_flaked = (
+        test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+            analysis_result, flaky_failures))
 
     expected_result = {
         'failures': [{
@@ -595,7 +589,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertTrue(all_flaked)
-    self.assertEqual(expected_result, analysis_result)
+    self.assertEqual(expected_result, updated_result)
 
   def testUpdateAnalysisResultOnlyStep(self):
     analysis_result = {'failures': [{'step_name': 'another_step1'}]}
@@ -604,7 +598,8 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'browser_tests on platform': ['TestSuite1.test1', 'TestSuite1.test2']
     }
 
-    all_flaked = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
-        analysis_result, flaky_failures)
+    _, all_flaked = (
+        test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+            analysis_result, flaky_failures))
 
     self.assertFalse(all_flaked)

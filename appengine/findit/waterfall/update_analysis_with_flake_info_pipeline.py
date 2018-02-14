@@ -32,11 +32,14 @@ def _UpdateAnalysisWithFlakeInfo(master_name, builder_name, build_number,
   if not analysis or not analysis.result:
     return False
 
-  all_flaked = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
-      analysis.result, flaky_tests)
-  if all_flaked:
-    analysis.result_status = result_status.FLAKY
-  analysis.put()
+  updated_result, all_flaked = (
+      test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+          analysis.result, flaky_tests))
+  updated_result_status = result_status.FLAKY if all_flaked else None
+  analysis.UpdateWithNewFindings(
+      updated_result_status=updated_result_status,
+      updated_result=updated_result,
+      flaky_tests=flaky_tests)
   return True
 
 

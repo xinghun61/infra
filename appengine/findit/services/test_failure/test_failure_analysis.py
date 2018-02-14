@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Provides a function to analyze test failures."""
 
+import copy
 from collections import defaultdict
 
 from common.findit_http_client import FinditHttpClient
@@ -236,7 +237,8 @@ def UpdateAnalysisResultWithFlakeInfo(analysis_result, flaky_failures):
   try jobs, updates WfAnalysis.
   """
   all_flaked = True
-  for failure in analysis_result.get('failures') or {}:
+  updated_result = copy.deepcopy(analysis_result)
+  for failure in updated_result.get('failures') or {}:
     step_name = failure.get('step_name')
     if step_name in flaky_failures:
       failure['flaky'] = True
@@ -251,4 +253,4 @@ def UpdateAnalysisResultWithFlakeInfo(analysis_result, flaky_failures):
       if not failure.get('flaky'):
         all_flaked = False
 
-  return all_flaked
+  return updated_result, all_flaked

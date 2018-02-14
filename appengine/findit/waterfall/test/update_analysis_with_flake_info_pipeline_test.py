@@ -74,8 +74,9 @@ class UpdateAnalysisWithFlakeInfoPipelineTest(wf_testcase.WaterfallTestCase):
   def testUpdateAnalysisWithFlakeInfoNoanalysis(self):
     self.assertFalse(
         update_analysis_with_flake_info_pipeline._UpdateAnalysisWithFlakeInfo(
-            self.master_name, self.builder_name, self.build_number,
-            {'a': ['b']}))
+            self.master_name, self.builder_name, self.build_number, {
+                'a': ['b']
+            }))
 
   def testUpdateAnalysisWithFlakeInfo(self):
     flaky_tests = {'a_test': ['test1'], 'b_test': ['test1']}
@@ -138,3 +139,4 @@ class UpdateAnalysisWithFlakeInfoPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Get(self.master_name, self.builder_name,
                               self.build_number)
     self.assertEqual(expected_result, analysis.result)
+    self.assertEqual(flaky_tests, analysis.flaky_tests)

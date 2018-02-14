@@ -25,8 +25,8 @@ class WfAnalysis(BaseBuildModel):
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover
-    analysis = WfAnalysis(key=WfAnalysis._CreateKey(master_name, builder_name,
-                                                    build_number))
+    analysis = WfAnalysis(
+        key=WfAnalysis._CreateKey(master_name, builder_name, build_number))
     analysis.failure_result_map = analysis.failure_result_map or {}
     return analysis
 
@@ -185,12 +185,35 @@ class WfAnalysis(BaseBuildModel):
   # Signals, result of ExtractSignalPipeline.
   signals = ndb.JsonProperty(indexed=False, compressed=True)
 
-  def UpdateWithTryJobResult(self, updated_result_status, updated_suspected_cls,
-                             updated_result):
-    if (self.result_status != updated_result_status or
-        self.suspected_cls != updated_suspected_cls or
-        self.result != updated_result):
-      self.result_status = updated_result_status
-      self.suspected_cls = updated_suspected_cls
-      self.result = updated_result
-      self.put()
+  # Will only be set for waterfall test failures when flaky tests are found.
+  # It is to save the tests, among all failed tests in the build, that are
+  # confirmed flaky by Findit's swarming rerun or try job.
+  flaky_tests = ndb.JsonProperty(indexed=False, compressed=True)
+
+  def _GetMergedFlakyTests(self, flaky_tests):
+    if not flaky_tests:
+      return self.flaky_tests
+    if not self.flaky_tests:
+      return flaky_tests
+
+    updated_flaky_tests = {}
+    for d in [self.flaky_tests, flaky_tests]:
+      for step, tests in d.iteritems():
+        tmp_tests = set(updated_flaky_tests.get(step, []))
+        tmp_tests.update(tests)
+        updated_flaky_tests[step] = list(tmp_tests)
+    return updated_flaky_tests
+
+  def UpdateWithNewFindings(self,
+                            updated_result_status=None,
+                            updated_suspected_cls=None,
+                            updated_result=None,
+                            flaky_tests=None):
+    """Updates analysis with findings from swarming rerun or try job."""
+    self.result_status = (
+        self.result_status
+        if updated_result_status is None else updated_result_status)
+    self.suspected_cls = updated_suspected_cls or self.suspected_cls
+    self.result = updated_result or self.result
+    self.flaky_tests = self._GetMergedFlakyTests(flaky_tests)
+    self.put()
