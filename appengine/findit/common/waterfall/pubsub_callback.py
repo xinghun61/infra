@@ -4,6 +4,7 @@
 
 import json
 
+from common.waterfall.buildbucket_client import PubSubCallback
 from gae_libs import token
 from waterfall import waterfall_config
 
@@ -22,18 +23,13 @@ def GetSwarmingTopic():
 
 def MakeTryJobPubsubCallback(notification_id):
   """Creates callback for buildbucket to notify us of status changes."""
-  user_data = json.dumps({
+  user_data = {
       'Message-Type': 'BuildbucketStatusChange',
       'Notification-Id': notification_id
-  })
-  return {
-      'topic':
-          GetTryJobTopic(),
-      'auth_token':
-          GetVerificationToken('try_job_pubsub', 'try_job', notification_id),
-      'user_data':
-          user_data
   }
+  return PubSubCallback(GetTryJobTopic(),
+                        GetVerificationToken('try_job_pubsub', 'try_job',
+                                             notification_id), user_data)
 
 
 def MakeSwarmingPubsubCallback(notification_id):

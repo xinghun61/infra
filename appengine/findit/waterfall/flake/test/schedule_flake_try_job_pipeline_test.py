@@ -7,6 +7,7 @@ import mock
 from google.appengine.ext import ndb
 
 from common.waterfall import buildbucket_client
+from gae_libs import token
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_build import WfBuild
@@ -27,8 +28,9 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock_select.stop()
     super(ScheduleFlakeTryJobPipelineTest, self).tearDown()
 
+  @mock.patch.object(token, 'GenerateAuthToken', return_value='auth_token')
   @mock.patch.object(try_job_service, 'buildbucket_client')
-  def testScheduleFlakeTryJob(self, mock_module):
+  def testScheduleFlakeTryJob(self, mock_module, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1

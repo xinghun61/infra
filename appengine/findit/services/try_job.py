@@ -29,6 +29,7 @@ from common.findit_http_client import FinditHttpClient
 from common.findit_http_client import HttpClientMetricsInterceptor
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
+from common.waterfall import pubsub_callback
 from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
@@ -307,7 +308,7 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
   # to values like `tryserver.chromium.linux` etc., these values should
   # eventually be derived from the target mastername, but in order to stabilize
   # the trybots during the migration to luci-lite, we instead use the names of
-  # the buildbot trybot masters. (As is the practice in other vitual trybot
+  # the buildbot trybot masters. (As is the practice in other virtual trybot
   # builders, see for example
   # https://chromium.googlesource.com/chromium/src.git/+/infra/config/cr-buildbucket.cfg#139
 
@@ -320,11 +321,11 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
 
   try_job = buildbucket_client.TryJob(
       tryserver_mastername, tryserver_buildername, None, properties, [],
-      additional_parameters, cache_name, dimensions)
+      additional_parameters, cache_name, dimensions,
+      pubsub_callback.MakeTryJobPubsubCallback(notification_id))
   # This is a no-op if the tryjob is not on swarmbucket.
   swarmbot_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
-  error, build = buildbucket_client.TriggerTryJobs([try_job],
-                                                   notification_id)[0]
+  error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
 
   monitoring.OnTryJobTriggered(try_job_type, master_name, builder_name)
 
@@ -632,10 +633,8 @@ def GetOrCreateTryJobData(try_job_type, try_job_id, urlsafe_try_job_key):
 
   if not try_job_data:
     logging.warning('%(kind)s entity does not exist for id %(id)s: creating it',
-                    {
-                        'kind': try_job_kind,
-                        'id': try_job_id
-                    })
+                    {'kind': try_job_kind,
+                     'id': try_job_id})
     try_job_data = try_job_kind.Create(try_job_id)
     try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
 
@@ -692,9 +691,8 @@ def OnTryJobCompleted(params, try_job_data, build, error):
 
   # We want to retry 404s due to logdog's propagation delay (inherent to
   # pubsub) of up to 3 minutes.
-  http_client = FinditHttpClient(
-      interceptor=HttpClientMetricsInterceptor(
-          no_retry_codes=[200, 302, 401, 403, 409, 501]))
+  http_client = FinditHttpClient(interceptor=HttpClientMetricsInterceptor(
+      no_retry_codes=[200, 302, 401, 403, 409, 501]))
 
   try:
     report = build_util.GetTryJobStepLog(try_job_id, 'report', http_client,
@@ -744,9 +742,8 @@ def OnTryJobRunning(params, try_job_data, build, error):
 
 
 def GetCurrentTryJobID(urlsafe_try_job_key, runner_id):
-  try_job = (
-      ndb.Key(urlsafe=urlsafe_try_job_key).get()
-      if urlsafe_try_job_key else None)
+  try_job = (ndb.Key(urlsafe=urlsafe_try_job_key).get()
+             if urlsafe_try_job_key else None)
 
   if not try_job or not try_job.try_job_ids:
     return None
@@ -754,9 +751,8 @@ def GetCurrentTryJobID(urlsafe_try_job_key, runner_id):
   try_job_ids = try_job.try_job_ids
   for i in xrange(len(try_job_ids) - 1, -1, -1):
     try_job_id = try_job_ids[i]
-    try_job_data = (
-        WfTryJobData.Get(try_job_id)
-        if isinstance(try_job, WfTryJob) else FlakeTryJobData.Get(try_job_id))
+    try_job_data = (WfTryJobData.Get(try_job_id) if isinstance(
+        try_job, WfTryJob) else FlakeTryJobData.Get(try_job_id))
 
     if not try_job_data:
       continue

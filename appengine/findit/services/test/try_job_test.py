@@ -226,9 +226,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                      analysis_2.failure_group_key)
 
   def testGetMatchingFailureGroups(self):
-    self.assertEqual([],
-                     try_job_service.GetMatchingFailureGroups(
-                         failure_type.UNKNOWN))
+    self.assertEqual(
+        [], try_job_service.GetMatchingFailureGroups(failure_type.UNKNOWN))
 
   @mock.patch.object(try_job_service, '_BlameListsIntersection')
   def testGetMatchingGroup(self, mock_fn):
@@ -500,14 +499,12 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
     build.put()
-    response = {
-        'build': {
-            'id': '1',
-            'url': 'url',
-            'status': 'SCHEDULED',
-        }
+    build_response = {
+        'id': '1',
+        'url': 'url',
+        'status': 'SCHEDULED',
     }
-    results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
+    results = [(None, buildbucket_client.BuildbucketBuild(build_response))]
     mock_module.TriggerTryJobs.return_value = results
 
     build_id, error = try_job_service.TriggerTryJob(
@@ -818,8 +815,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
             })
     }
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False),
-        (None, None))
+        try_job_service._GetError(build_response, None, False, False), (None,
+                                                                        None))
     self.assertEqual(
         try_job_service._GetError({}, None, False, False), (None, None))
 

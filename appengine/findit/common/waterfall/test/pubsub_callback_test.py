@@ -53,13 +53,15 @@ class PubsubCallbackTest(testing.AppengineTestCase):
         'auth_token':
             'token',
         'user_data':
-            json.dumps({
-                'Message-Type': 'BuildbucketStatusChange',
-                'Notification-Id': notification_id
-            })
+            json.dumps(
+                {
+                    'Message-Type': 'BuildbucketStatusChange',
+                    'Notification-Id': notification_id
+                },
+                sort_keys=True)
     }
-    self.assertEqual(expected_value,
-                     pubsub_callback.MakeTryJobPubsubCallback(notification_id))
+    callback_info = pubsub_callback.MakeTryJobPubsubCallback(notification_id)
+    self.assertDictEqual(expected_value, callback_info.ToRequestParameter())
 
   @mock.patch.object(
       pubsub_callback.token, 'GenerateAuthToken', return_value='token')

@@ -40,12 +40,7 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
     self.assertIn('builds', response.json_body)
     self.assertIn('errors', response.json_body)
 
-  @mock.patch.object(
-      pubsub_callback,
-      'GetTryJobTopic',
-      return_value='projects/findit-for-me/topics/jobs')
-  @mock.patch.object(token, 'GenerateAuthToken', return_value='auth_token')
-  def testBotUpdateTryJob(self, *_):
+  def testBotUpdateTryJob(self):
     request_linux = periodic_bot_update._BotUpdateTryJob('bot1', 'Linux')
     self.assertEqual({
         'parameters_json':
@@ -70,17 +65,6 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
             }),
         'bucket':
             'luci.chromium.findit',
-        'pubsub_callback': {
-            'topic':
-                'projects/findit-for-me/topics/jobs',
-            'auth_token':
-                'auth_token',
-            'user_data':
-                json.dumps({
-                    'Message-Type': 'BuildbucketStatusChange',
-                    'Notification-Id': ''
-                })
-        },
         'tags': ['user_agent:findit']
     }, request_linux.ToBuildbucketRequest())
 

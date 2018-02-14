@@ -11,7 +11,6 @@ import urllib
 from gae_libs.http import auth_util
 
 from common.findit_http_client import FinditHttpClient
-from common.waterfall.pubsub_callback import MakeTryJobPubsubCallback
 
 # TODO: save these settings in datastore and create a role account.
 _BUILDBUCKET_HOST = 'cr-buildbucket.appspot.com'
@@ -37,6 +36,24 @@ def _GetBucketName(master_name):
   return '%s%s' % (buildbot_prefix, master_name)
 
 
+class PubSubCallback(
+    collections.namedtuple(
+        'PubSubCallbackNamedTuple',
+        (
+            'topic',  # String. The pubsub topic to receive build status change.
+            'auth_token',  # String. Authentication token to get pushed back.
+            'user_data',  # jsonish dict. Any data to get pushed back.
+        ))):
+  """Represents the info for the PubSub callback."""
+
+  def ToRequestParameter(self):
+    return {
+        'topic': self.topic,
+        'auth_token': self.auth_token,
+        'user_data': json.dumps(self.user_data, sort_keys=True),
+    }
+
+
 class TryJob(
     collections.namedtuple(
         'TryJobNamedTuple',
@@ -48,13 +65,27 @@ class TryJob(
             # Additional build parameters that do not fit into build properties,
             # e.g. it is more than 1024 chars for a buildbot build property.
             'additional_build_parameters',
-            'cache_name',  # The name of the cache in the Swarmingbot.
-            'dimensions'  # The dimensions used to match a Swarmingbot.
+            'cache_name',  # Optional. Nme of the cache in the Swarmingbot.
+            'dimensions',  # Optional. Dimensions used to match a Swarmingbot.
+            'pubsub_callback',  # Optional. PubSub callback info.
         ))):
   """Represents a try-job to be triggered through Buildbucket.
 
   Tag for "user_agent" should not be set, as it will be added automatically.
   """
+
+  def __new__(cls,  # This is to make the last 3 tuple members optional.
+              master_name,
+              builder_name,
+              properties,
+              tags,
+              additional_build_parameters,
+              cache_name=None,
+              dimensions=None,
+              pubsub_callback=None):
+    return super(cls, TryJob).__new__(
+        cls, master_name, builder_name, properties, tags,
+        additional_build_parameters, cache_name, dimensions, pubsub_callback)
 
   def _AddSwarmbucketOverrides(self, parameters):
     assert self.cache_name
@@ -74,7 +105,7 @@ class TryJob(
       parameters['swarming']['override_builder_cfg']['dimensions'] = (
           self.dimensions)
 
-  def ToBuildbucketRequest(self, notification_id=''):
+  def ToBuildbucketRequest(self):
     parameters_json = {
         'builder_name': self.builder_name,
         'properties': self.properties,
@@ -89,21 +120,19 @@ class TryJob(
     if self.is_swarmbucket_build:
       self._AddSwarmbucketOverrides(parameters_json)
 
-    return {
+    request = {
         'bucket': _GetBucketName(self.master_name),
         'parameters_json': json.dumps(parameters_json),
         'tags': tags,
-        'pubsub_callback': MakeTryJobPubsubCallback(notification_id),
     }
+    if self.pubsub_callback:
+      request['pubsub_callback'] = self.pubsub_callback.ToRequestParameter()
+    return request
 
   @property
   def is_swarmbucket_build(self):
     bucket = _GetBucketName(self.master_name)
     return bucket.startswith(_LUCI_PREFIX)
-
-
-# Make the last two members optional.
-TryJob.__new__.__defaults__ = (None, None)
 
 
 class BuildbucketBuild(object):
@@ -168,13 +197,11 @@ def _GetHeaders():
   }
 
 
-def TriggerTryJobs(try_jobs, notification_id=''):
+def TriggerTryJobs(try_jobs):
   """Triggers try-job in a batch.
 
   Args:
     try_jobs (list): a list of TryJob instances.
-    notification_id (str): id of the pipeline that trigger the try job.
-      It could be empty if the try job is triggered by periodic_bot_update.
 
   Returns:
     A list of tuple (error, build) in the same order as the given try-jobs.
@@ -186,7 +213,7 @@ def TriggerTryJobs(try_jobs, notification_id=''):
   for try_job in try_jobs:
     status_code, content = FinditHttpClient().Put(
         _BUILDBUCKET_PUT_GET_ENDPOINT,
-        json.dumps(try_job.ToBuildbucketRequest(notification_id)),
+        json.dumps(try_job.ToBuildbucketRequest()),
         headers=_GetHeaders())
     if status_code == 200:  # pragma: no cover
       json_results.append(json.loads(content))
