@@ -130,7 +130,13 @@ BEGIN
 
   DECLARE curs CURSOR FOR
     SELECT i.id, i.shard, i.project_id, i.local_id, i.status_id, i.opened,
-      CASE sd.means_open WHEN true THEN 2147483647 ELSE i.closed END,
+      CASE sd.means_open WHEN true THEN (
+        -- If a snapshot for this Issue already exists, make the new snapshot's
+        -- period_end the period_start of the existing snapshot.
+        SELECT IFNULL((
+            SELECT period_start FROM IssueSnapshot WHERE issue_id = i.id LIMIT 1
+        ), 4294967295)
+      ) ELSE i.closed END,
       sd.means_open,
       i.reporter_id, i.owner_id
     FROM Issue i
