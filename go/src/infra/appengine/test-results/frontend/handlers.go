@@ -52,8 +52,6 @@ func init() {
 	// Endpoints used by end users.
 	r.GET("/", getMW, polymerHandler)
 	r.GET("/home", getMW, polymerHandler)
-	r.GET("/flakiness", getMW, polymerHandler)
-	r.GET("/flakiness/*path", getMW, polymerHandler)
 
 	// TODO(sergiyb): This endpoint may return JSON if supplied parameters select
 	// exactly one test file, but normally returns HTML. Consider separating JSON
@@ -72,9 +70,6 @@ func init() {
 
 	// Endpoints that return JSON and not expected to be used by humans.
 	r.GET("/data/builders", frontendMW, getBuildersHandler)
-	r.GET("/data/test_flakiness/list", frontendMW, testFlakinessListHandler)
-	r.GET("/data/test_flakiness/groups", frontendMW, testFlakinessGroupsHandler)
-	r.GET("/data/test_flakiness/data", frontendMW, testFlakinessDataHandler)
 	// Endpoint that returns layout results unzipped from an archive in google storage.
 	r.GET("/data/layout_results/:builder/:buildnum/*filepath", frontendMW, getZipHandler)
 

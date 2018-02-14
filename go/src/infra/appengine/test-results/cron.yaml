@@ -5,12 +5,6 @@ cron:
   - description: tsmon house keeping (python module)
     url: /internal/cron/ts_mon/send
     schedule: every 1 minutes
-  - description: refresh list of test flakiness groups
-    url: /data/test_flakiness/groups
-    schedule: every 1 hours
-  - description: refresh list of top flaky tests
-    url: /data/test_flakiness/list?groupKind=all&groupName=all
-    schedule: every 1 hours
   - description: delete old test results
     url: /internal/cron/delete_old_results
     # TODO(sergiyb): Reduce to every 1 hour after initial cleanup of old data.

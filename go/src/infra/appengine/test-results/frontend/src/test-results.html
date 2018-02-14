@@ -10,7 +10,6 @@
 <link rel="import" href="../bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="../bower_components/iron-selector/iron-selector.html">
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="tr-flakiness.html">
 <link rel="import" href="tr-home.html">
 
 <dom-module id="test-results">
@@ -104,7 +103,7 @@
     </style>
     <app-location
         route="{{route}}"
-        url-space-regex="^/(home|flakiness.*)?$">
+        url-space-regex="^/(home)?$">
     </app-location>
     <app-route
         route="{{route}}"
@@ -125,7 +124,6 @@
               class="drawer-list"
               role="navigation">
             <a name="home" href="/home">Home</a>
-            <a name="flakiness" href="/flakiness">Flakiness</a>
           </iron-selector>
         </div>
       </app-drawer>
@@ -140,7 +138,6 @@
       </app-header-layout>
       <iron-pages role="main" selected="[[page]]" attr-for-selected="name">
         <tr-home name="home"></tr-home>
-        <tr-flakiness name="flakiness" route="{{subroute}}"></tr-flakiness>
       </iron-pages>
     </app-drawer-layout>
   </template>
@@ -167,14 +164,7 @@
         },
         _routeChanged: function(route) {
           this.page = this.routeData.page || 'home';
-          switch (this.page) {
-            case 'flakiness':
-              this.displayName = 'Flakiness Detail';
-              break;
-            default:
-              this.displayName = 'Test Results Server';
-              break;
-          }
+          this.displayName = 'Test Results Server';
         },
       });
     })();
