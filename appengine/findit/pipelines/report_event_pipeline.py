@@ -37,20 +37,18 @@ class ReportAnalysisEventPipeline(pipelines.GeneratorPipeline):
           parameters.analysis_urlsafe_key)
       return
 
-    errors = 'No call was made.'.format(parameters.analysis_urlsafe_key)
-
+    success = False
     if type(analysis) is MasterFlakeAnalysis:
-      errors = event_reporting.ReportTestFlakeAnalysisCompletionEvent(analysis)
-
-    if type(analysis) is WfAnalysis:
+      success = event_reporting.ReportTestFlakeAnalysisCompletionEvent(analysis)
+    elif type(analysis) is WfAnalysis:
       if analysis.build_failure_type == failure_type.COMPILE:
-        errors = event_reporting.ReportCompileFailureAnalysisCompletionEvent(
+        success = event_reporting.ReportCompileFailureAnalysisCompletionEvent(
             analysis)
       elif analysis.build_failure_type == failure_type.TEST:
-        errors = event_reporting.ReportTestFailureAnalysisCompletionEvent(
+        success = event_reporting.ReportTestFailureAnalysisCompletionEvent(
             analysis)
 
-    if errors:
-      logging.warning('Error reporting analysis %s: \n%s',
-                      analysis.key.urlsafe(), errors)
+    if not success:
+      logging.error('Error reporting analysis %s', analysis.key.urlsafe())
+
     return
