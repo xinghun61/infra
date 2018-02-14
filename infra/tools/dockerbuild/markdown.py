@@ -23,15 +23,20 @@ It was generated from revision
 
 [TOC]
 
-## Wheel List
+# Wheel List
 
 This list represents the current set of configured `dockerbuild` wheels in
 [wheel.py](%(wheel_py_url)s).
 
 """
 
+  _WHEEL_NAME_TEMPLATE = """\
+## **%(name)s**
+
+"""
+
   _WHEEL_TEMPLATE = """\
-### **%(name)s** %(version)s
+### %(version)s
 
 ```protobuf
 wheel: <
@@ -39,13 +44,14 @@ wheel: <
   version: "%(package_tag)s"
 >
 ```
+
 %(supported)s
 
 """
 
   _FOOTER = """\
 
-## Contact
+# Contact
 
 If a wheel is needed, but is not in this list, please
 contact Chrome Operations:
@@ -90,22 +96,29 @@ template=Build%20Infrastructure)
         wheel_py_url=self.dockerbuild_url('wheel.py'),
     ))
 
-    for (name, version), (whl, plats) in sorted(self._packages.items()):
-      package = whl.cipd_package(self._git_revision, templated=True)
+    categorized_packages = {}
+    for (name, version), (whl, plats) in self._packages.iteritems():
+      categorized_packages.setdefault(name, {})[version] = (whl, plats)
 
-      # Build an itelic list of supported platforms.
-      supported = ''
-      if plats:
-        supported = '\n'.join([''] + [
-          '    * *%s*' % (plat_name,)
-          for plat_name in sorted(plat.name for plat in plats)])
-
-      fd.write(self._WHEEL_TEMPLATE % dict(
+    for name, versions in sorted(categorized_packages.items()):
+      fd.write(self._WHEEL_NAME_TEMPLATE % dict(
           name=name,
-          version=version,
-          supported=supported,
-          package_name=package.name,
-          package_tag=package.tags[0],
       ))
+
+      for version, (whl, plats) in sorted(versions.items()):
+        package = whl.cipd_package(self._git_revision, templated=True)
+
+        # Build an italic list of supported platforms.
+        plat_names = [plat.name for plat in plats] or ('universal',)
+        supported = '\n'.join([''] + [
+          '* *%s*' % (plat_name,)
+          for plat_name in plat_names])
+
+        fd.write(self._WHEEL_TEMPLATE % dict(
+            version=version,
+            supported=supported,
+            package_name=package.name,
+            package_tag=package.tags[0],
+        ))
 
     fd.write(self._FOOTER)
