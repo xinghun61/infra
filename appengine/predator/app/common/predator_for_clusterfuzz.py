@@ -51,7 +51,8 @@ class PredatorForClusterfuzz(PredatorApp):
             'TouchCrashedFile': Weight(1.),
         }),
         'TouchCrashedDirectory': Weight(1.),
-        'TouchCrashedComponent': Weight(1.)
+        'TouchCrashedComponent': Weight(1.),
+        'NumberOfTouchedFiles': Weight(0.5),
     })
 
     min_distance_feature = MinDistanceFeature(get_repository)
@@ -66,7 +67,8 @@ class PredatorForClusterfuzz(PredatorApp):
              'TouchCrashedDirectory']),
          TouchCrashedComponentFeature(
              self._component_classifier,
-             options=config.feature_options['TouchCrashedComponent'])])
+             options=config.feature_options['TouchCrashedComponent']),
+         NumberOfTouchedFilesFeature()])
 
     self._predator = Predator(ChangelistClassifier(get_repository,
                                                    meta_feature,
