@@ -1299,6 +1299,12 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
                         'first_failure': suspected_build_number,
                         'last_pass': 1,
                         'base_test_name': 'Unittest2.Subtest1'
+                    },
+                    'another_test': {
+                        'current_failure': 2,
+                        'first_failure': suspected_build_number,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
                     }
                 }
             }
@@ -1334,6 +1340,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.failure_info = failure_info
+    analysis.flaky_tests = {step: ['another_test']}
     analysis.suspected_cls = [{
         'repo_name': repo_name,
         'revision': revision,

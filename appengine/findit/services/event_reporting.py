@@ -233,6 +233,10 @@ def CreateTestFailureAnalysisCompletionEvent(analysis):
 
   for step in analysis.failure_info.get('failed_steps', {}):
     for test in analysis.failure_info['failed_steps'][step].get('tests') or {}:
+      if analysis.flaky_tests and test in analysis.flaky_tests.get(step, []):
+        # The test is flaky, should report it in flake analysis.
+        continue
+
       # If the failure result mapping isn't there, then bailout since it
       # contains required information.
       if (not analysis.failure_result_map or
