@@ -7,6 +7,7 @@
 
 import re
 import unittest
+import logging
 
 import mox
 
@@ -14,6 +15,7 @@ from google.appengine.api import memcache
 from google.appengine.ext import testbed
 
 from framework import sql
+from proto import tracker_pb2
 from services import config_svc
 from testing import fake
 from tracker import tracker_bizobj
@@ -842,6 +844,14 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.statusdef_tbl.InsertRows(
         self.cnxn, config_svc.STATUSDEF_COLS[1:], [], commit=False)
 
+  def SetUpUpdateApprovals_Default(self, approval_id, approver_rows):
+      self.config_service.approvaldef2approver_tbl.Delete(
+          self.cnxn, approval_id=approval_id, commit=False)
+
+      self.config_service.approvaldef2approver_tbl.InsertRows(
+          self.cnxn, config_svc.APPROVALDEF2APPROVER_COLS,
+          approver_rows, commit=False)
+
   def testStoreConfig(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.SetUpStoreConfig_Default(789)
@@ -884,6 +894,23 @@ class ConfigServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.config_service._UpdateWellKnownStatuses(self.cnxn, config)
+    self.mox.VerifyAll()
+
+  def testUpdateApprovals(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    approver_rows = [(123, 111L, 789), (123, 222L, 789)]
+    first_approval = tracker_bizobj.MakeFieldDef(
+        123, 789, 'FirstApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+        None, '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'the first one', False)
+    config.field_defs = [first_approval]
+    config.approval_defs = [
+        tracker_pb2.ApprovalDef(approval_id=123, approver_ids=[111L, 222L])
+    ]
+    self.SetUpUpdateApprovals_Default(123, approver_rows)
+
+    self.mox.ReplayAll()
+    self.config_service._UpdateApprovals(self.cnxn, config)
     self.mox.VerifyAll()
 
   def testUpdateConfig(self):
