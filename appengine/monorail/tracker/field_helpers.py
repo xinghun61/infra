@@ -78,6 +78,7 @@ def ParseFieldDefRequest(post_data, config):
       applicable_type, applicable_predicate, revised_labels, date_action_str,
       approvers_str, survey)
 
+
 def _ParseChoicesIntoWellKnownLabels(choices_text, field_name, config):
   """Parse a field's possible choices and integrate them into the config.
 
@@ -135,6 +136,14 @@ def ShiftEnumFieldsIntoLabels(
           for val in field_val_strs_remove[fd.field_id]
           if val and val != '--')
       del field_val_strs_remove[fd.field_id]
+
+
+def ReviseApprovals(approval_id, approver_ids, survey, config):
+  revised_approvals = [(
+      approval.approval_id, approval.approver_ids, approval.survey) for
+                       approval in config.approval_defs]
+  revised_approvals.append((approval_id, approver_ids, survey))
+  return revised_approvals
 
 
 def ParseOneFieldValue(cnxn, user_service, fd, val_str):

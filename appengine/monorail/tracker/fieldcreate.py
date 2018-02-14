@@ -112,8 +112,7 @@ class FieldCreate(servlet.Servlet):
         try:
           approver_ids_dict = self.services.user.LookupUserIDs(
               mr.cnxn, re.split('[,;\s]+', parsed.approvers_str))
-          logging.info(approver_ids_dict)
-          _approver_ids = list(set(approver_ids_dict.values()))
+          approver_ids = list(set(approver_ids_dict.values()))
         except user_svc.NoSuchUserException:
           mr.errors.approvers = 'One or more approvers not found.'
       else:
@@ -143,15 +142,18 @@ class FieldCreate(servlet.Servlet):
       return
 
     print 'parsed is %r' % (parsed,)
-    # TODO(jojwang): monorail:3241 handle saving approval_types
-    if parsed.field_type_str != 'approval_type':
-      self.services.config.CreateFieldDef(
-          mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
-          parsed.applicable_type, parsed.applicable_predicate,
-          parsed.is_required, parsed.is_niche, parsed.is_multivalued,
-          parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
-          parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
-          parsed.date_action_str, parsed.field_docstring, admin_ids)
+    field_id = self.services.config.CreateFieldDef(
+        mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
+        parsed.applicable_type, parsed.applicable_predicate,
+        parsed.is_required, parsed.is_niche, parsed.is_multivalued,
+        parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
+        parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
+        parsed.date_action_str, parsed.field_docstring, admin_ids)
+    if parsed.field_type_str == 'approval_type':
+      revised_approvals = field_helpers.ReviseApprovals(
+          field_id, approver_ids, parsed.survey, config)
+      self.services.config.UpdateConfig(
+          mr.cnxn, mr.project, approval_defs=revised_approvals)
     if parsed.field_type_str == 'enum_type':
       self.services.config.UpdateConfig(
           mr.cnxn, mr.project, well_known_labels=parsed.revised_labels)

@@ -1069,7 +1069,7 @@ class ConfigService(object):
     for approval_def in config.approval_defs:
       try:
         approval_fd = ids_to_field_def[approval_def.approval_id]
-        if approval_fd.field_type != tracker_pb2.FieldType.APPROVAL_VALUE:
+        if approval_fd.field_type != tracker_pb2.FieldTypes.APPROVAL_TYPE:
           return InvalidFieldTypeException()
       except KeyError:
         return NoSuchFieldDefException()
@@ -1079,7 +1079,7 @@ class ConfigService(object):
 
       self.approvaldef2approver_tbl.InsertRows(
           cnxn, APPROVALDEF2APPROVER_COLS,
-          [(approval_def.approval_id, approver_id) for
+          [(approval_def.approval_id, approver_id, config.project_id) for
            approver_id in approval_def.approver_ids],
           commit=False)
 
