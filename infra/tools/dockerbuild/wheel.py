@@ -975,6 +975,13 @@ SPECS = {s.spec.tag: s for s in (
     only_plat=['mac-x64'],
   ),
 
+  BuildWheel('PyYAML', '3.12',
+      packaged=[
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
+
   Universal('appdirs', '1.4.3'),
   UniversalSource('apache-beam', '2.0.0'),
   UniversalSource('Appium_Python_Client', '0.24',
@@ -1032,7 +1039,6 @@ SPECS = {s.spec.tag: s for s in (
   UniversalSource('pyftpdlib', '1.5.3'),
   Universal('pyopenssl', '17.2.0'),
   Universal('pyparsing', '2.2.0'),
-  Universal('PyYAML', '3.12'),
   Universal('requests', '2.13.0'),
   Universal('rsa', '3.4.2'),
   Universal('selenium', '3.4.1'),
