@@ -701,7 +701,7 @@ def _ConvertLabelsToFieldValues(labels, field_name_lower, label_docs):
 class FieldDefView(template_helpers.PBProxy):
   """Wrapper class to make it easier to display field definitions via EZT."""
 
-  def __init__(self, field_def, config, user_views=None):
+  def __init__(self, field_def, config, user_views=None, approval_def=None):
     super(FieldDefView, self).__init__(field_def)
 
     self.type_name = str(field_def.field_type)
@@ -710,6 +710,15 @@ class FieldDefView(template_helpers.PBProxy):
     if field_def.field_type == tracker_pb2.FieldTypes.ENUM_TYPE:
       self.choices = tracker_helpers.LabelsMaskedByFields(
           config, [field_def.field_name], trim_prefix=True)
+
+    if (approval_def and
+        field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE):
+      self.approvers = [user_views.get(approver_id) for
+                             approver_id in approval_def.approver_ids]
+      self.survey = approval_def.survey
+    else:
+      self.approvers = []
+      self.survey = None
 
     self.docstring_short = template_helpers.FitUnsafeText(
         field_def.docstring, 200)
@@ -758,6 +767,8 @@ class FieldDefView(template_helpers.PBProxy):
 
     if field_def.approval_id:
       self.is_approval_sub_field = ezt.boolean(True)
+      self.parent_approval_name = tracker_bizobj.FindFieldDefByID(
+          field_def.approval_id, config).field_name
     else:
       self.is_approval_sub_field = ezt.boolean(False)
 

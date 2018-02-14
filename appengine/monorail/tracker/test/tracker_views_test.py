@@ -514,13 +514,25 @@ class ConvertLabelsToFieldValuesTest(unittest.TestCase):
 
 class FieldDefViewTest(unittest.TestCase):
 
-  def testIsApprovalSubField(self):
-    config = _MakeConfig()
-    fielddef = tracker_bizobj.MakeFieldDef(
+  def setUp(self):
+    self.approval_fd = tracker_bizobj.MakeFieldDef(
+        1, 789, 'LaunchApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        None, True, True, False, 3, 99, None, False, None, None,
+        None, 'no_action', 'descriptive docstring', False, None)
+
+    self.approval_def = tracker_pb2.ApprovalDef(
+        approval_id=1, approver_ids=[111L], survey='question?')
+
+    self.field_def = tracker_bizobj.MakeFieldDef(
         2, 789, 'AffectedUsers', tracker_pb2.FieldTypes.INT_TYPE, None,
         None, True, True, False, 3, 99, None, False, None, None,
         None, 'no_action', 'descriptive docstring', False, 1)
-    view = tracker_views.FieldDefView(fielddef, config)
+
+  def testFieldDefView_Normal(self):
+    config = _MakeConfig()
+    config.field_defs.append(self.approval_fd)
+    config.approval_defs.append(self.approval_def)
+    view = tracker_views.FieldDefView(self.field_def, config)
     self.assertEqual('AffectedUsers', view.field_name)
     self.assertEqual('descriptive docstring', view.docstring_short)
     self.assertEqual('INT_TYPE', view.type_name)
@@ -531,6 +543,19 @@ class FieldDefViewTest(unittest.TestCase):
     self.assertEqual('no_action', view.date_action_str)
     self.assertEqual(view.approval_id, 1)
     self.assertEqual(view.is_approval_sub_field, ezt.boolean(True))
+    self.assertEqual(view.approvers, [])
+    self.assertEqual(view.survey, None)
+
+  def testFieldDefView_Approval(self):
+    config = _MakeConfig()
+    approver_view = framework_views.StuffUserView(
+        111L, 'shouldnotmatter@ch.org', False)
+    user_views = {111L: approver_view}
+    view = tracker_views.FieldDefView(
+        self.approval_fd, config,
+        user_views= user_views, approval_def=self.approval_def)
+    self.assertEqual(view.approvers, [approver_view])
+    self.assertEqual(view.survey, self.approval_def.survey)
 
 
 class IssueTemplateViewTest(unittest.TestCase):

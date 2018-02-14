@@ -127,6 +127,40 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(fd, tracker_bizobj.FindFieldDefByID(1, config))
     self.assertIsNone(tracker_bizobj.FindFieldDefByID(99, config))
 
+  def testFindApprovalDef_Empty(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    self.assertEqual(None, tracker_bizobj.FindApprovalDef(
+        'Nonexistent', config))
+
+  def testFindApprovalDef_Normal(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    approval_fd = tracker_pb2.FieldDef(field_id=1, field_name='UIApproval')
+    approval_def = tracker_pb2.ApprovalDef(
+        approval_id=1, approver_ids=[111L], survey='')
+    config.field_defs = [approval_fd]
+    config.approval_defs = [approval_def]
+    self.assertEqual(approval_def, tracker_bizobj.FindApprovalDef(
+        'UIApproval', config))
+
+  def testFindApprovalDef_NotApproval(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    field_def = tracker_pb2.FieldDef(field_id=1, field_name='DesignDoc')
+    config.field_defs = [field_def]
+    self.assertEqual(None, tracker_bizobj.FindApprovalDef('DesignDoc', config))
+
+  def testFindApprovalDefByID_Empty(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    self.assertEqual(None, tracker_bizobj.FindApprovalDefByID(1, config))
+
+  def testFindApprovalDefByID_Normal(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    approval_def = tracker_pb2.ApprovalDef(
+        approval_id=1, approver_ids=[111L, 222L], survey='')
+    config.approval_defs = [approval_def]
+    self.assertEqual(approval_def, tracker_bizobj.FindApprovalDefByID(
+        1, config))
+    self.assertEqual(None, tracker_bizobj.FindApprovalDefByID(99, config))
+
   def testGetGrantedPerms_Empty(self):
     config = tracker_pb2.ProjectIssueConfig()
     issue = tracker_pb2.Issue()

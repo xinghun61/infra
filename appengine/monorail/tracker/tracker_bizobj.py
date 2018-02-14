@@ -110,6 +110,24 @@ def FindFieldDefByID(field_id, config):
   return None
 
 
+def FindApprovalDef(approval_name, config):
+  """Find the specified approval, or return None."""
+  fd = FindFieldDef(approval_name, config)
+  if fd:
+    return FindApprovalDefByID(fd.field_id, config)
+
+  return None
+
+
+def FindApprovalDefByID(approval_id, config):
+  """Find the specified approval, or return None."""
+  for approval_def in config.approval_defs:
+    if approval_def.approval_id == approval_id:
+      return approval_def
+
+  return None
+
+
 def GetGrantedPerms(issue, effective_ids, config):
   """Return a set of permissions granted by user-valued fields in an issue."""
   granted_perms = set()

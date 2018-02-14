@@ -201,6 +201,15 @@
     </tr>
   [end]
 
+  [if-any field_def.is_approval_sub_field]
+    <tr>
+      <th>Parent Approval:</th>
+      <td>
+        [field_def.parent_approval_name]
+      </td>
+    </tr>
+  [end]
+
   <th>Admins:</th>
     <td>
       [if-any allow_edit]
