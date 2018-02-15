@@ -1200,8 +1200,8 @@ class IssueService(object):
       shard = issue.issue_id % settings.num_logical_shards
       status = tracker_bizobj.GetStatus(issue)
       status_id = self._config_service.LookupStatusID(
-          cnxn, issue.project_id, status)
-      owner_id = tracker_bizobj.GetOwnerId(issue)
+          cnxn, issue.project_id, status) or None
+      owner_id = tracker_bizobj.GetOwnerId(issue) or None
 
       issuesnapshot_rows = [(issue.issue_id, shard, issue.project_id,
         issue.local_id, issue.reporter_id, owner_id, status_id, right_now,
