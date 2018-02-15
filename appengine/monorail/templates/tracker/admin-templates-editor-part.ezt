@@ -56,18 +56,21 @@
        <span id="component_required_area">
         <input type="checkbox" id="component_required_checkbox" class="saveTemplate">
         <label for="component_required_checkbox">Require at least one component</label>
-       </span> 
+       </span>
     </td>
   </tr>
 
   [for fields]
     [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
-    <tr>
-      <th>[fields.field_name]:</th>
-      <td colspan="2">
-        [include "field-value-widgets.ezt" False "tmpl"]
-      </td>
-    <tr>
+    [# TODO(jojwang): monorail:3241, un-suppress showing approval types in templates]
+    [is fields.field_def.type_name "APPROVAL_TYPE"][else]
+      <tr>
+        <th>[fields.field_name]:</th>
+        <td colspan="2">
+          [include "field-value-widgets.ezt" False "tmpl"]
+        </td>
+      <tr>
+    [end]
   [end]
 
   <tr>

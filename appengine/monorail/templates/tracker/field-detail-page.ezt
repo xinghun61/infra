@@ -80,17 +80,37 @@
     </td>
   </tr>
 
-  <tr>
-    <th>Multivalued:</th>
-    <td>
-      [if-any allow_edit]
-        <input type="checkbox" name="is_multivalued" class="acob"
-               [if-any field_def.is_multivalued_bool]checked="checked"[end]>
-      [else]
-        [if-any field_def.is_multivalued_bool]Yes[else]No[end]
-      [end]
-    </td>
-  </tr>
+  [is field_def.type_name "APPROVAL_TYPE"]
+    <tr>
+      <th>Approvers:</th>
+      <td>
+        [if-any allow_edit]
+          <input id="approvers" name="approver_names" size="75" value="[initial_approvers]"
+            autocomplete="off">
+          <span class="fielderror" style="margin-left:1em">
+          [if-any errors.approvers][errors.approvers][end]
+          </span>
+        [else]
+          [for field_def.approvers]
+            <div>[include "../framework/user-link.ezt" field_def.approvers]</div>
+          [end]
+        [end]
+      </td>
+    </tr>
+    [# TODO(jojwang): monorail: 3241, show approval survey]
+  [else]
+    <tr>
+      <th>Multivalued:</th>
+      <td>
+        [if-any allow_edit]
+          <input type="checkbox" name="is_multivalued" class="acob"
+                 [if-any field_def.is_multivalued_bool]checked="checked"[end]>
+        [else]
+          [if-any field_def.is_multivalued_bool]Yes[else]No[end]
+        [end]
+      </td>
+    </tr>
+  [end]
 
   [# TODO(jrobbins): dynamically display validation info as field type is edited.]
   [is field_def.type_name "ENUM_TYPE"]

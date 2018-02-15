@@ -65,10 +65,18 @@ class FieldDetail(servlet.Servlet):
       Dict of values used by EZT for rendering the page.
     """
     config, field_def = self._GetFieldDef(mr)
-    user_views = framework_views.MakeAllUserViews(
-        mr.cnxn, self.services.user, field_def.admin_ids)
+    approval_def = None
+    if field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
+      approval_def = tracker_bizobj.FindApprovalDefByID(
+          field_def.field_id, config)
+      user_views = framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user, field_def.admin_ids,
+          approval_def.approver_ids)
+    else:
+      user_views = framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user, field_def.admin_ids)
     field_def_view = tracker_views.FieldDefView(
-        field_def, config, user_views=user_views)
+        field_def, config, user_views=user_views, approval_def=approval_def)
 
     well_known_issue_types = tracker_helpers.FilterIssueTypes(config)
 
@@ -77,6 +85,9 @@ class FieldDetail(servlet.Servlet):
 
     # Right now we do not allow renaming of enum fields.
     uneditable_name = field_def.field_type == tracker_pb2.FieldTypes.ENUM_TYPE
+
+    initial_approvers = ', '.join(sorted([
+      approver_view.email for approver_view in field_def_view.approvers]))
 
     initial_admins = ', '.join(sorted([
         uv.email for uv in field_def_view.admins]))
@@ -89,6 +100,7 @@ class FieldDetail(servlet.Servlet):
         'initial_admins': initial_admins,
         'initial_applicable_type': field_def.applicable_type,
         'initial_applicable_predicate': field_def.applicable_predicate,
+        'initial_approvers': initial_approvers,
         'well_known_issue_types': well_known_issue_types,
         }
 

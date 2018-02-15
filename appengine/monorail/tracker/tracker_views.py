@@ -599,13 +599,18 @@ class FieldValueView(object):
     if applicable is not None:
       self.applicable = ezt.boolean(applicable)
     else:
-      # A field is applicable to a given issue if it (a) applies to all issues,
-      # or (b) already has a value on this issue, or (c) says that it applies to
-      # issues with this type (or a prefix of it).
-      self.applicable = ezt.boolean(
-          not self.applicable_type or values or
-          any(type_label.startswith(self.applicable_type.lower())
-              for type_label in issue_types))
+      # TODO(jojwang): monorail:3241, remove special approval_type
+      # consideration when FE is ready to show approvals on the right pages
+      if fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
+        self.applicable = ezt.boolean(False)
+      else:
+        # A field is applicable to a given issue if it (a) applies to all,
+        # issues or (b) already has a value on this issue, or (c) says that
+        # it applies to issues with this type (or a prefix of it).
+        self.applicable = ezt.boolean(
+            not self.applicable_type or values or
+            any(type_label.startswith(self.applicable_type.lower())
+                for type_label in issue_types))
       # TODO(jrobbins): also evaluate applicable_predicate
 
     self.display = ezt.boolean(   # or fd.show_empty
