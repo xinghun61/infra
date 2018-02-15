@@ -10,6 +10,7 @@ from gae_libs.pipelines import pipeline_handlers
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
+from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from services import culprit_action
 from services import gerrit
 from services.compile_failure import compile_culprit_action
@@ -26,7 +27,6 @@ from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
-from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from waterfall.test import wf_testcase
 
 

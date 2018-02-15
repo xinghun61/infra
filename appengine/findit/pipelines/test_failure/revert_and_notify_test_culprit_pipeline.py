@@ -2,12 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common.waterfall import failure_type
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import CreateInputObjectInstance
+from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
+from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from services import culprit_action
-from services import monitoring
+from services import gerrit
+from services.test_failure import test_culprit_action
+from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
 from services.parameters import SendNotificationForCulpritParameters
+from services.parameters import SubmitRevertCLParameters
+from waterfall import build_util
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 
@@ -22,19 +29,37 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
     if not culprit_action.ShouldTakeActionsOnCulprit(pipeline_input):
       return
 
-    monitoring.OnCulpritAction('test', 'culprit_notified')
-
+    master_name, builder_name, build_number = (
+        pipeline_input.build_key.GetParts())
+    build_id = build_util.CreateBuildId(master_name, builder_name, build_number)
     culprits = pipeline_input.culprits
-    heuristic_cls = pipeline_input.heuristic_cls
-    # There is a try job result, checks if we can send notification.
+    build_failure_type = failure_type.TEST
+
     for culprit in culprits.itervalues():
+      revert_status = gerrit.SKIPPED
+      if test_culprit_action.CanAutoCreateRevert(culprit, pipeline_input):
+        revert_status = yield CreateRevertCLPipeline(
+            CreateRevertCLParameters(
+                cl_key=culprit,
+                build_id=build_id,
+                failure_type=build_failure_type))
+
+        if test_culprit_action.CanAutoCommitRevertByFindit(revert_status):
+          submit_revert_pipeline_input = self.CreateInputObjectInstance(
+              SubmitRevertCLParameters,
+              cl_key=culprit,
+              revert_status=revert_status,
+              failure_type=build_failure_type)
+          yield SubmitRevertCLPipeline(submit_revert_pipeline_input)
+
       # Checks if any of the culprits was also found by heuristic analysis,
       # if so send notification right away.
-      force_notify = culprit in heuristic_cls
       send_notification_to_culprit_input = CreateInputObjectInstance(
           SendNotificationForCulpritParameters,
           cl_key=culprit,
-          force_notify=force_notify,
-          revert_status=None)
+          force_notify=culprit_action.ShouldForceNotify(culprit,
+                                                        pipeline_input),
+          revert_status=revert_status,
+          failure_type=build_failure_type)
       yield SendNotificationForCulpritPipeline(
           send_notification_to_culprit_input)
