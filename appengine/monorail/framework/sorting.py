@@ -466,6 +466,7 @@ def _SortableFieldValues(art, fd_list, users_by_id):
 
 def _SortableLabelValues(art, col_name, well_known_value_indexes):
   """Return a list of ints and strings for labels relevant to one UI column."""
+  col_name_dash = col_name + '-'
   sortable_value_list = []
   for label in tracker_bizobj.GetLabels(art):
     idx_or_lex = well_known_value_indexes.get(label)
@@ -476,9 +477,10 @@ def _SortableLabelValues(art, col_name, well_known_value_indexes):
         # Skip an irrelevant OneWord label and remember to ignore it later.
         well_known_value_indexes[label] = IGNORABLE_INDICATOR
         continue
-      key, value = label.lower().split('-', 1)
-      if key == col_name:
+      label_lower = label.lower()
+      if label_lower.startswith(col_name_dash):
         # Label is a key-value label with an odd-ball value, remember it
+        value = label_lower[len(col_name_dash):]
         idx_or_lex = value
         well_known_value_indexes[label] = value
       else:

@@ -192,6 +192,16 @@ class SortingTest(unittest.TestCase):
     self.assertEqual([sorting.DescendingValue('zzz'), -1, 0],
                      neg_accessor(art))
 
+    # Case 4: Multi-part prefix.
+    well_known_values.extend(['X-Y-Header', 'X-Y-Footer'])
+    art.labels = ['X-Y-Footer', 'X-Y-Zone', 'X-Y-Header', 'X-Y-Area']
+    accessor = sorting._IndexOrLexicalList(well_known_values, [], 'x-y', {})
+    self.assertEqual([3, 4, 'area', 'zone'], accessor(art))
+    neg_accessor = MakeDescending(accessor)
+    self.assertEqual([sorting.DescendingValue('zone'),
+                      sorting.DescendingValue('area'), -4, -3],
+                     neg_accessor(art))
+
   def testComputeSortDirectives(self):
     config = tracker_pb2.ProjectIssueConfig()
     mr = testing_helpers.MakeMonorailRequest(
