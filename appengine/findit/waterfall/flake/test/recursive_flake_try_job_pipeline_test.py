@@ -656,6 +656,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.start_time = datetime(2016, 6, 26, 23)
+    analysis.data_points = [
+        DataPoint.Create(commit_position=most_recently_run_commit_position)
+    ]
     analysis.put()
 
     self.MockPipeline(

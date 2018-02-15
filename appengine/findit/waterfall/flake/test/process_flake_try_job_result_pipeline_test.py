@@ -134,7 +134,7 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
                                            try_job.key.urlsafe(),
                                            analysis.key.urlsafe())
 
-    self.assertEqual(expected_error, try_job.error)
+    self.assertEqual(expected_error, try_job_data.error)
     self.assertEqual([], analysis.data_points)
 
   @mock.patch.object(
@@ -176,7 +176,7 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
                                            try_job.key.urlsafe(),
                                            analysis.key.urlsafe())
 
-    self.assertEqual(expected_error, try_job.error)
+    self.assertEqual(expected_error, try_job_data.error)
     self.assertEqual([], analysis.data_points)
 
   def testProcessFlakeTryJobResultPipelineTryJobFailed(self):

@@ -6,6 +6,7 @@ from google.appengine.ext import ndb
 
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
+from model.flake.flake_try_job_data import FlakeTryJobData
 from services.flake_failure import flake_try_job
 
 
@@ -35,15 +36,18 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     assert try_job_id
 
     try_job_result = try_job.flake_results[-1]
+    try_job_data = FlakeTryJobData.Get(try_job_id)
+    assert try_job_data
 
     if not flake_try_job.IsTryJobResultAtRevisionValid(try_job_result,
                                                        revision):
       try_job.status = analysis_status.ERROR
-      try_job.error = {
+      try_job_data.error = {
           'message': 'Try job does not contain the necessary information',
           'reason': 'Try job does not contain the necessary information',
       }
       try_job.put()
+      try_job_data.put()
       return
 
     result = try_job_result['report']['result'][revision]
@@ -51,11 +55,12 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     if isinstance(result, basestring):
       # Result is a string 'infra failed'. Try job failed.
       try_job.status = analysis_status.ERROR
-      try_job.error = {
+      try_job_data.error = {
           'message': 'Try job failed due to infra error',
           'reason': 'Try job failed due to infra error',
       }
       try_job.put()
+      try_job_data.put()
       return
 
     step_name = flake_analysis.canonical_step_name
@@ -63,11 +68,12 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     if not flake_try_job.IsTryJobResultAtRevisionValidForStep(
         result, step_name):
       try_job.status = analysis_status.ERROR
-      try_job.error = {
+      try_job_data.error = {
           'message': 'Try job results are not valid',
           'reason': 'Try job results are not vaild',
       }
       try_job.put()
+      try_job_data.put()
       return
 
     try_job.status = analysis_status.COMPLETED

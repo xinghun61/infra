@@ -483,6 +483,8 @@ class NextCommitPositionPipeline(BasePipeline):
           flake analysis that triggered this pipeline.
       urlsafe_try_job_key (str): The url-safe key to the try job that was just
           run.
+      previously_run_commit_position (int): The commit position that was just
+          analyzed by RecursiveFlakeTryJobPipeline.
       remaining_suspected_commit_positions ([int]): A list of commit positions
           not yet analyzed but may aid in finding the culprit faster than
           bisecting.
@@ -498,6 +500,14 @@ class NextCommitPositionPipeline(BasePipeline):
     assert flake_analysis
     assert try_job
     assert try_job.try_job_ids
+
+    if not flake_analysis.FindMatchingDataPointWithCommitPosition(
+        previously_run_commit_position):
+      # In case the previous data point was not appended properly, prevent
+      # the analysis from running the same commit position again and hitting an
+      # infinite loop.
+      raise pipeline.Abort('Expected analysis to have a data point with %d' %
+                           previously_run_commit_position)
 
     try_job_id = try_job.try_job_ids[-1]
     try_job_data = FlakeTryJobData.Get(try_job_id)
