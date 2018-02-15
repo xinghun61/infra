@@ -1,6 +1,9 @@
 package frontend
 
 import (
+	"archive/zip"
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +13,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
+	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/luci/appengine/gaetesting"
+	"go.chromium.org/luci/common/gcloud/gs"
 	"go.chromium.org/luci/server/router"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -81,5 +86,71 @@ func TestGetZipHandler(t *testing.T) {
 		})
 
 		getZipFile = oldZipFile
+	})
+}
+
+func TestGetZipFile(t *testing.T) {
+	Convey("get zip file", t, func() {
+		c := gaetesting.TestingContext()
+
+		var zipErr error
+		fileContents := map[string]string{}
+		oldReadZip := readZipFile
+		readZipFile = func(c context.Context, gsPath gs.Path) (*zip.Reader, error) {
+			if zipErr != nil {
+				return nil, zipErr
+			}
+
+			buf := new(bytes.Buffer)
+			zw := zip.NewWriter(buf)
+			for fname, contents := range fileContents {
+				w, err := zw.Create(fname)
+				if err != nil {
+					panic(err)
+				}
+				_, err = w.Write([]byte(contents))
+				if err != nil {
+					panic(err)
+				}
+			}
+			err := zw.Close()
+			if err != nil {
+				panic(err)
+			}
+
+			zipRes, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+			if err != nil {
+				panic(err)
+			}
+			return zipRes, zipErr
+		}
+
+		Convey("404", func() {
+			res, err := getZipFile(c, "test_builder", "123", "file.txt")
+			So(err, ShouldBeNil)
+			So(res, ShouldBeNil)
+		})
+
+		itm := memcache.NewItem(c, "gs://chromium-layout-test-archives/test_builder/123/layout-test-results.zip|file.txt")
+		Convey("file found", func() {
+			fileContents["file.txt"] = "hi"
+			res, err := getZipFile(c, "test_builder", "123", "file.txt")
+			So(err, ShouldBeNil)
+			So(res, ShouldResemble, []byte("hi"))
+
+		})
+
+		Convey("memcache", func() {
+			itm.SetValue([]byte("hi"))
+			So(memcache.Set(c, itm), ShouldBeNil)
+			// Make sure that no network RPC happens
+			zipErr = fmt.Errorf("This should not show up")
+
+			res, err := getZipFile(c, "test_builder", "123", "file.txt")
+			So(err, ShouldBeNil)
+			So(res, ShouldResemble, []byte("hi"))
+		})
+
+		readZipFile = oldReadZip
 	})
 }

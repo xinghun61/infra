@@ -104,8 +104,49 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 		filepath = strings.Join(strings.Split(filepath, "/")[1:], "/")
 	}
 	gsPath := gs.Path(fmt.Sprintf("gs://chromium-layout-test-archives/%s/%s/%slayout-test-results.zip", builder, buildNum, prefix))
-	logging.Debugf(c, "Getting google storage path %s", gsPath)
 
+	itm := memcache.NewItem(c, fmt.Sprintf("%s|%s", gsPath, filepath))
+	err := memcache.Get(c, itm)
+	if err != memcache.ErrCacheMiss && err != nil {
+		return nil, err
+	}
+
+	logging.Debugf(c, "Getting google storage path %s", gsPath)
+	if err == memcache.ErrCacheMiss {
+		zr, err := readZipFile(c, gsPath)
+		if err != nil {
+			return nil, fmt.Errorf("while creating zip reader: %v", err)
+		}
+
+		for _, f := range zr.File {
+			if f.Name == filepath {
+				freader, err := f.Open()
+				if err != nil {
+					return nil, fmt.Errorf("while opening zip file: %v", err)
+				}
+
+				res, err := ioutil.ReadAll(freader)
+				if err != nil {
+					return nil, err
+				}
+				itm.SetValue(res)
+			}
+		}
+
+		logging.Debugf(c, "len %v limit %v", len(itm.Value()), megabyte/2)
+		if itm.Value() != nil && len(itm.Value()) < megabyte/2 {
+			logging.Debugf(c, "setting %s", itm.Key())
+			err := memcache.Set(c, itm)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return itm.Value(), nil
+}
+
+var readZipFile = func(c context.Context, gsPath gs.Path) (*zip.Reader, error) {
 	transport, err := auth.GetRPCTransport(c, auth.NoAuth)
 	if err != nil {
 		return nil, fmt.Errorf("while creating transport: %v", err)
@@ -144,17 +185,5 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 	if err != nil {
 		return nil, fmt.Errorf("while creating zip reader: %v", err)
 	}
-
-	for _, f := range zr.File {
-		if f.Name == filepath {
-			freader, err := f.Open()
-			if err != nil {
-				return nil, fmt.Errorf("while opening zip file: %v", err)
-			}
-
-			return ioutil.ReadAll(freader)
-		}
-	}
-
-	return nil, nil
+	return zr, nil
 }
