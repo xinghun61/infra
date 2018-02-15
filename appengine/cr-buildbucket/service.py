@@ -409,15 +409,12 @@ def add_many_async(build_request_list):
 
     For each pending request, create a Build entity, but don't put it.
     """
-    build_ids = set()
     now = utils.utcnow()
+    # Ensure that build id order is reverse of build request order
+    build_id = model.create_build_id(now)
     for i, r in pending_reqs():
-      while True:
-        build_id = model.create_build_id(now)
-        if build_id not in build_ids:  # pragma: no branch
-          break
-      build_ids.add(build_id)
       new_builds[i] = r.create_build(build_id, identity, now)
+      build_id -= 1  # build ids are decreasing
 
   @ndb.tasklet
   def create_swarming_tasks_async():

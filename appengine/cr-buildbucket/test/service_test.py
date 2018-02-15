@@ -406,7 +406,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNone(results[0][1])
     self.assertIsNotNone(results[1][0])
     self.assertIsNone(results[1][1])
-    results.sort(key=lambda (b, _): b.key.id())
+
+    self.assertEqual(
+        results, sorted(results, key=lambda (b, _): b.key.id(), reverse=True))
+    results.reverse()
 
     index = model.TagIndex.get_by_id('buildset:a')
     self.assertIsNotNone(index)
