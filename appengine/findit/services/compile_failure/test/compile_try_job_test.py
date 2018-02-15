@@ -716,12 +716,10 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
   def testUseObjectFilesAsFailedTargetIfStrictRegexUsed(self):
     signals = {
         'compile': {
-            'failed_targets': [
-                {
-                    'source': 'b.cc',
-                    'target': 'b.o'
-                },
-            ]
+            'failed_targets': [{
+                'source': 'b.cc',
+                'target': 'b.o'
+            },]
         }
     }
 
@@ -851,7 +849,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
   def testCompileFailureIsNotFlaky(self):
     try_job_result = {'rev': 'failed'}
     report = CompileTryJobReport(
-        culprit='rev', result=try_job_result, metadata={'sub_ranges': []})
+        culprit='rev', result=try_job_result, metadata={
+            'sub_ranges': []
+        })
     result = CompileTryJobResult(report=report)
 
     self.assertFalse(compile_try_job.CompileFailureIsFlaky(result))
@@ -955,7 +955,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
   def testUpdateWfAnalysisWithTryJobResultNoCulprit(self, mock_fn):
     compile_try_job.UpdateWfAnalysisWithTryJobResult('m', 'b', 1, None, None,
                                                      False)
-    mock_fn.assert_not_called()
+    self.assertFalse(mock_fn.called)
 
   @mock.patch.object(
       try_job_service,
@@ -1002,7 +1002,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(suspected_cl_util, 'UpdateSuspectedCL')
   def testUpdateSuspectedCLsNoCulprit(self, mock_fn):
     compile_try_job.UpdateSuspectedCLs('m', 'b', 1, None)
-    mock_fn.assert_not_called()
+    self.assertFalse(mock_fn.called)
 
   @mock.patch.object(suspected_cl_util, 'UpdateSuspectedCL')
   def testUpdateSuspectedCLs(self, mock_fn):
@@ -1170,9 +1170,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.master_name, master_name)
     self.assertEqual(try_job_data.builder_name, builder_name)
     self.assertEqual(try_job_data.build_number, build_number)
-    self.assertEqual(
-        try_job_data.try_job_type,
-        failure_type.GetDescriptionForFailureType(failure_type.COMPILE))
+    self.assertEqual(try_job_data.try_job_type,
+                     failure_type.GetDescriptionForFailureType(
+                         failure_type.COMPILE))
     self.assertFalse(try_job_data.has_compile_targets)
     self.assertTrue(try_job_data.has_heuristic_results)
 

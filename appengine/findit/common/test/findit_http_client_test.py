@@ -42,7 +42,7 @@ class HttpClientMetricsInterceptorTest(testing.AppengineTestCase):
         'host': 'test.com',
         'status_code': '200',
     })
-    mock_error_metric.increment.assert_not_called()
+    self.assertFalse(mock_error_metric.increment.called)
 
   @mock.patch.object(monitoring, 'outgoing_http_errors')
   @mock.patch.object(monitoring, 'outgoing_http_statuses')
@@ -55,4 +55,4 @@ class HttpClientMetricsInterceptorTest(testing.AppengineTestCase):
         'host': 'test.com',
         'exception': 'exceptions.NotImplementedError',
     })
-    mock_status_metric.increment.assert_not_called()
+    self.assertFalse(mock_status_metric.increment.called)

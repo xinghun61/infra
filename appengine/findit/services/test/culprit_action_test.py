@@ -174,7 +174,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
   def testMonitorRevertActionSkipped(self, mock_mo):
     culprit_action.MonitorRevertAction(failure_type.COMPILE, gerrit.SKIPPED,
                                        gerrit.SKIPPED)
-    mock_mo.assert_not_called()
+    self.assertFalse(mock_mo.called)
 
   @mock.patch.object(monitoring.culprit_found, 'increment')
   def testMonitorRevertActionError(self, mock_mo):
@@ -209,7 +209,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         commit_status=commit_status,
         failure_type=failure_type.COMPILE)
     self.assertFalse(culprit_action.SendMessageToIRC(pipeline_input))
-    mocked_irc.assert_not_called()
+    self.assertFalse(mocked_irc.called)
 
   @mock.patch.object(irc, 'SendMessageToIrc')
   def testSendNotificationNoCulprit(self, mocked_irc):
@@ -224,7 +224,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         failure_type=failure_type.COMPILE)
     self.assertFalse(culprit_action.SendMessageToIRC(pipeline_input))
 
-    mocked_irc.assert_not_called()
+    self.assertFalse(mocked_irc.called)
 
   @mock.patch.object(irc, 'SendMessageToIrc')
   def testSendNotificationNoRevert(self, mocked_irc):
@@ -242,7 +242,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         failure_type=failure_type.COMPILE)
     self.assertFalse(culprit_action.SendMessageToIRC(pipeline_input))
 
-    mocked_irc.assert_not_called()
+    self.assertFalse(mocked_irc.called)
 
   @mock.patch.object(irc, 'SendMessageToIrc', return_value=True)
   def testSendNotificationToIRC(self, _):

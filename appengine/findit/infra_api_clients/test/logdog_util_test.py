@@ -231,7 +231,7 @@ class LogDogUtilTest(unittest.TestCase):
     mock_location.return_value = 'host', 'project', 'path'
     mock_data.return_value = (200, self._GenerateTailRes())
     logdog_util.GetStepLogForBuild({}, 'step', 'stdout', self.http_client)
-    mock_log.assert_called()
+    self.assertTrue(mock_log.called)
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   @mock.patch.object(logdog_util, '_GetLog')
@@ -240,7 +240,7 @@ class LogDogUtilTest(unittest.TestCase):
     logdog_util.GetStepLogLegacy(self.master_name, self.builder_name,
                                  self.build_number, 'step', 'stdout',
                                  self.http_client)
-    mock_log.assert_called()
+    self.assertTrue(mock_log.called)
 
   def testGetLogNoAnnotations(self):
     self.assertIsNone(

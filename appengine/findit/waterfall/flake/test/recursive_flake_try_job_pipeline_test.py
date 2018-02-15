@@ -675,7 +675,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
-    mocked_pipeline.assert_not_called()
+    self.assertFalse(mocked_pipeline.called)
     self.assertEqual(error, analysis.error)
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')

@@ -226,8 +226,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                      analysis_2.failure_group_key)
 
   def testGetMatchingFailureGroups(self):
-    self.assertEqual(
-        [], try_job_service.GetMatchingFailureGroups(failure_type.UNKNOWN))
+    self.assertEqual([],
+                     try_job_service.GetMatchingFailureGroups(
+                         failure_type.UNKNOWN))
 
   @mock.patch.object(try_job_service, '_BlameListsIntersection')
   def testGetMatchingGroup(self, mock_fn):
@@ -772,12 +773,12 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
   def testRecordCacheStatsNotEnoughInfo(self, mock_fn, *_):
     try_job_service._RecordCacheStats(None, None)
-    mock_fn.assert_not_called()
+    self.assertFalse(mock_fn.called)
 
   @mock.patch.object(WfTryJobData, 'put')
   def testUpdateLastBuildbucketResponseNoBuild(self, mock_fn):
     try_job_service._UpdateLastBuildbucketResponse(None, None)
-    mock_fn.assert_not_called()
+    self.assertFalse(mock_fn.called)
 
   @mock.patch.object(WfTryJobData, 'put')
   def testUpdateLastBuildbucketResponse(self, _):
@@ -815,8 +816,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
             })
     }
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False), (None,
-                                                                        None))
+        try_job_service._GetError(build_response, None, False, False),
+        (None, None))
     self.assertEqual(
         try_job_service._GetError({}, None, False, False), (None, None))
 
@@ -1112,7 +1113,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   def testOnTryJobRunningNothingToUpdate(self, mock_fn):
     params = {'already_set_started': True, 'try_job_type': 1, 'try_job_id': '1'}
     try_job_service.OnTryJobRunning(params, None, None, None)
-    mock_fn.assert_not_called()
+    self.assertFalse(mock_fn.called)
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
@@ -1308,7 +1309,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('result',
                      try_job_service.OnTryJobCompleted(params, try_job_data,
                                                        build, None))
-    mock_fn.assert_not_called()
+    self.assertFalse(mock_fn.called)
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(

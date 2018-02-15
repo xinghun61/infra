@@ -133,7 +133,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
       analysis.put()
       pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
       self.assertFalse(pipeline.run(analysis.key.urlsafe()))
-    issue_tracker.assert_not_called()
+    self.assertFalse(issue_tracker.called)
 
   @mock.patch('google.appengine.api.app_identity.get_application_id',
               lambda: 'findit-for-me')
@@ -251,7 +251,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     dummy_issue = Issue({})
     pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
     self.assertFalse(pipeline.run(analysis.key.urlsafe()))
-    issue_tracker.assert_not_called()
+    self.assertFalse(issue_tracker.called)
 
   @mock.patch('google.appengine.api.app_identity.get_application_id',
               lambda: 'findit-for-me')

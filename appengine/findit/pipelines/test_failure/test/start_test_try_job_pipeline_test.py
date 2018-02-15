@@ -190,7 +190,7 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = StartTestTryJobPipeline()
     result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
     self.assertEqual(list(result), [])
-    mock_pipeline.assert_not_called()
+    self.assertFalse(mock_pipeline.called)
 
   @mock.patch.object(test_try_job, 'NeedANewTestTryJob')
   @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
@@ -206,7 +206,7 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = StartTestTryJobPipeline()
     result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
     self.assertEqual(list(result), [])
-    mock_pipeline.assert_not_called()
+    self.assertFalse(mock_pipeline.called)
 
   @mock.patch.object(test_try_job, 'NeedANewTestTryJob')
   @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
@@ -223,4 +223,4 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = StartTestTryJobPipeline()
     result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
     self.assertEqual(list(result), [])
-    mock_pipeline.assert_not_called()
+    self.assertFalse(mock_pipeline.called)

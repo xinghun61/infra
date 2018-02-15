@@ -473,19 +473,19 @@ class MasterFlakeAnalysisTest(TestCase):
   def testLogInfo(self, mocked_logging_info):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.LogInfo('message')
-    mocked_logging_info.assert_called()
+    self.assertTrue(mocked_logging_info.called)
 
   @mock.patch.object(logging, 'warning')
   def testLogWarning(self, mocked_logging_warning):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.LogWarning('message')
-    mocked_logging_warning.assert_called()
+    self.assertTrue(mocked_logging_warning.called)
 
   @mock.patch.object(logging, 'error')
   def testLogError(self, mocked_logging_error):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.LogError('message')
-    mocked_logging_error.assert_called()
+    self.assertTrue(mocked_logging_error.called)
 
   def testCanRunHeuristicAnalysisAlreadyRan(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

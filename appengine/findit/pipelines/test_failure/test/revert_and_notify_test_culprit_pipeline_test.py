@@ -96,7 +96,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             heuristic_cls=heuristic_cls))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
-    mocked_pipeline.assert_not_called()
+    self.assertFalse(mocked_pipeline.called)
 
   @mock.patch.object(
       culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)

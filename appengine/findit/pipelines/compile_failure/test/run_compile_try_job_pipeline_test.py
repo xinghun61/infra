@@ -313,7 +313,7 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline.start_test()
     try_job_pipeline.delay_callback(
         60, try_job_pipeline.last_params, name='name')
-    mocked_logging.assert_called()
+    self.assertTrue(mocked_logging.called)
 
   @mock.patch.object(compile_try_job, 'ScheduleCompileTryJob', return_value='1')
   @mock.patch.object(

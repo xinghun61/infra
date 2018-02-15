@@ -168,9 +168,11 @@ class PermissionTest(testing.AppengineTestCase):
   @mock.patch.object(
       PermissionLevelHandler,
       'HandleGet',
-      return_value={'data': {
-          'xsrf_token': 'abc'
-      }})
+      return_value={
+          'data': {
+              'xsrf_token': 'abc'
+          }
+      })
   @mock.patch('gae_libs.appengine_util.IsInProduction')
   def testNotOverwriteAddXsrfTokenWhenLogin(self, mocked_IsInProduction, _):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
@@ -370,5 +372,7 @@ class InternalExceptionTest(testing.AppengineTestCase):
                    re.MULTILINE | re.DOTALL),
         self.test_app.get,
         '/exception',
-        headers={'user-agent': '...GoogleSecurityScanner...'})
-    mocked_log_exception.assert_not_called()
+        headers={
+            'user-agent': '...GoogleSecurityScanner...'
+        })
+    self.assertFalse(mocked_log_exception.called)

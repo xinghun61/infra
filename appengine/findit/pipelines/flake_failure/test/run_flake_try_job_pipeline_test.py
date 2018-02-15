@@ -304,7 +304,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline.start_test()
     try_job_pipeline.DelayCallback(
         60, try_job_pipeline.last_params, name='name')
-    mocked_logging.assert_called()
+    self.assertTrue(mocked_logging.called)
 
   @mock.patch.object(flake_try_job, 'ScheduleFlakeTryJob')
   @mock.patch.object(try_job_service, 'OnGetTryJobError')
@@ -446,7 +446,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         try_job_pipeline.pipeline_id)
     try_job_pipeline.finalized()
 
-    mock_update.assert_called()
+    self.assertTrue(mock_update.called)
 
   @mock.patch.object(RunFlakeTryJobPipeline, '_TimedOut', return_value=True)
   @mock.patch.object(build_util, 'GetWaterfallBuildStepLog')

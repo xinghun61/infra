@@ -44,7 +44,7 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_input)
     pipeline.start()
     self.execute_queued_tasks()
-    mock_revert_pipeline.assert_not_called()
+    self.assertFalse(mock_revert_pipeline.called)
 
   @mock.patch.object(compile_try_job, 'IdentifyCompileTryJobCulprit')
   def testIdentifyCulpritForCompileTryJobSuccess(self, mock_fn):

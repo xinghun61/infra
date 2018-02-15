@@ -25,9 +25,12 @@ class MockBuild(object):
     self.response = response
 
 
-MOCK_BUILDS = [(None, MockBuild({
-    'tags': ['swarming_tag:log_location:logdog://host/project/path']
-}))]
+MOCK_BUILDS = [(None,
+                MockBuild({
+                    'tags': [
+                        'swarming_tag:log_location:logdog://host/project/path'
+                    ]
+                }))]
 
 ALL_BOTS = [{'bot_id': 'bot%d' % b} for b in range(10)]
 SOME_BOTS = [{'bot_id': 'bot%d' % b} for b in range(3)]
@@ -282,17 +285,17 @@ class SwarmbotUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('slave1',
                      swarmbot_util._GetBotWithFewestNamedCaches(bots)['bot_id'])
     # If there is a tie, the one with more free space is preferred.
-    self.assertEqual(
-        'slave3',
-        swarmbot_util._GetBotWithFewestNamedCaches(bots[1:])['bot_id'])
-    self.assertEqual(
-        'slave3',
-        swarmbot_util._GetBotWithFewestNamedCaches(bots[2:])['bot_id'])
+    self.assertEqual('slave3',
+                     swarmbot_util._GetBotWithFewestNamedCaches(
+                         bots[1:])['bot_id'])
+    self.assertEqual('slave3',
+                     swarmbot_util._GetBotWithFewestNamedCaches(
+                         bots[2:])['bot_id'])
     # If a bot does not have the caches dimension or the free space data, it is
     # only selected as a last resort.
-    self.assertEqual(
-        'slave4',
-        swarmbot_util._GetBotWithFewestNamedCaches(bots[3:])['bot_id'])
+    self.assertEqual('slave4',
+                     swarmbot_util._GetBotWithFewestNamedCaches(
+                         bots[3:])['bot_id'])
 
   @mock.patch('services.swarmbot_util._GetBotWithFewestNamedCaches',
               lambda x: x[0])
@@ -316,7 +319,7 @@ class SwarmbotUtilTest(wf_testcase.WaterfallTestCase):
     # Make sure that no bot was selected.
     self.assertEqual(2, len(tryjob.dimensions))
     # Make sure that an error was logged.
-    mock_error.assert_called()
+    self.assertTrue(mock_error.called)
 
   @mock.patch(
       'services.swarmbot_util.GetAllBotsWithCache', return_value=ALL_BOTS)

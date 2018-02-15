@@ -515,16 +515,14 @@ class FinditApiTest(testing.EndpointsTestCase):
             False,
         'first_known_failed_build_number':
             3,
-        'suspected_cls': [
-            {
-                'repo_name': 'chromium',
-                'revision': 'r3',
-                'commit_position': 3,
-                'analysis_approach': 'TRY_JOB',
-                'revert_cl_url': 'revert_cl_url',
-                'revert_committed': True
-            },
-        ],
+        'suspected_cls': [{
+            'repo_name': 'chromium',
+            'revision': 'r3',
+            'commit_position': 3,
+            'analysis_approach': 'TRY_JOB',
+            'revert_cl_url': 'revert_cl_url',
+            'revert_committed': True
+        },],
         'analysis_approach':
             'TRY_JOB',
         'is_flaky_test':
@@ -609,14 +607,12 @@ class FinditApiTest(testing.EndpointsTestCase):
             False,
         'first_known_failed_build_number':
             3,
-        'suspected_cls': [
-            {
-                'repo_name': 'chromium',
-                'revision': 'git_hash2',
-                'commit_position': 288,
-                'analysis_approach': 'HEURISTIC'
-            },
-        ],
+        'suspected_cls': [{
+            'repo_name': 'chromium',
+            'revision': 'git_hash2',
+            'commit_position': 288,
+            'analysis_approach': 'HEURISTIC'
+        },],
         'analysis_approach':
             'HEURISTIC',
         'is_flaky_test':
@@ -1137,14 +1133,12 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(1, len(self.taskqueue_requests))
 
     expected_payload_json = {
-        'builds': [
-            {
-                'master_name': master_name,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': [],
-            },
-        ]
+        'builds': [{
+            'master_name': master_name,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': [],
+        },]
     }
     self.assertEqual(expected_payload_json,
                      json.loads(self.taskqueue_requests[0].get('payload')))
@@ -1176,7 +1170,7 @@ class FinditApiTest(testing.EndpointsTestCase):
         self.call_api,
         'AnalyzeFlake',
         body=flake)
-    mocked_func.assert_not_called()
+    self.assertFalse(mocked_func.called)
 
   @mock.patch.object(
       findit_api, '_ValidateOauthUser', return_value=('email', False))
@@ -1324,4 +1318,4 @@ class FinditApiTest(testing.EndpointsTestCase):
         self.call_api,
         'AnalyzeBuildFailures',
         body=builds)
-    mocked_func.assert_not_called()
+    self.assertFalse(mocked_func.called)

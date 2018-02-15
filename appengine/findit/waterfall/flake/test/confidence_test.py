@@ -19,7 +19,7 @@ class ConfidenceTest(wf_testcase.WaterfallTestCase):
     ]
     self.assertRaises(AssertionError, confidence._Steppiness, data_points,
                       lambda x: x.build_number, 90)
-    mocked_steppiness.assert_not_called()
+    self.assertFalse(mocked_steppiness.called)
 
   @mock.patch.object(confidence.find_step, 'Steppiness')
   def testNotEnoughData(self, mocked_steppiness):
@@ -30,7 +30,7 @@ class ConfidenceTest(wf_testcase.WaterfallTestCase):
     steppiness = confidence._Steppiness(data_points, lambda x: x.build_number,
                                         100)
     self.assertEqual(0, steppiness)
-    mocked_steppiness.assert_not_called()
+    self.assertFalse(mocked_steppiness.called)
 
   @mock.patch.object(confidence.find_step, 'Steppiness')
   def testPaddingDataPoints(self, mocked_steppiness):

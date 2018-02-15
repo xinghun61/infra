@@ -381,10 +381,11 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
           triggering_source=triggering_source,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE,
           force=False)
-      mocked_GetVersion.assert_not_called()
+      self.assertFalse(mocked_GetVersion.called)
 
   @mock.patch.object(
-      flake_analysis_service, '_CheckForNewAnalysis',
+      flake_analysis_service,
+      '_CheckForNewAnalysis',
       side_effect=Exception('Should bail out on android and fuchsia'))
   def testBailoutForAndroidAndFuchsia(self, *_):
     step1 = BuildStep.Create('m.Android', 'b', 80, 's', datetime(2016, 10, 20))
@@ -405,4 +406,5 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
         side_effect=FindMatchingWaterfallStep):
       self.assertIsNone(
           flake_analysis_service.ScheduleAnalysisForFlake(
-            request, 'test@chromium.org', True, triggering_sources.FINDIT_API))
+              request, 'test@chromium.org', True,
+              triggering_sources.FINDIT_API))

@@ -567,7 +567,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = ProcessSwarmingTaskResultPipeline()
     pipeline.start_test()
     pipeline.delay_callback(60, pipeline.last_params, name='name')
-    mocked_logging.assert_called()
+    self.assertTrue(mocked_logging.called)
 
   @mock.patch.object(
       swarming_util,

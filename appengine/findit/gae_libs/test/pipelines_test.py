@@ -190,7 +190,9 @@ class PipelinesTest(TestCase):
 
   def testInputObjectConvertedToPipelineParametersOnlyOnce(self):
     args, kwargs = pipelines._ConvertInputObjectToPipelineParameters(
-        _SimpleInfo, [pipelines._ENCODED_PARAMETER_FLAG], {'param': 1})
+        _SimpleInfo, [pipelines._ENCODED_PARAMETER_FLAG], {
+            'param': 1
+        })
     self.assertListEqual([pipelines._ENCODED_PARAMETER_FLAG], args)
     self.assertDictEqual({'param': 1}, kwargs)
 
@@ -210,7 +212,9 @@ class PipelinesTest(TestCase):
 
   def testConvertPipelineParametersBackToInputObject(self):
     arg = pipelines._ConvertPipelineParametersToInputObject(
-        _SimpleInfo, [pipelines._ENCODED_PARAMETER_FLAG], {'param': 1})
+        _SimpleInfo, [pipelines._ENCODED_PARAMETER_FLAG], {
+            'param': 1
+        })
     self.assertTrue(isinstance(arg, _SimpleInfo))
     self.assertEqual(1, arg.param)
 
@@ -218,7 +222,9 @@ class PipelinesTest(TestCase):
     with self.assertRaises(AssertionError):
       pipelines._ConvertPipelineParametersToInputObject(dict, [{
           'param': 1
-      }], {'key': 'value'})
+      }], {
+          'key': 'value'
+      })
 
   def testNoConvertionIfPipelineParameterNotFromStructuredObject(self):
     arg = pipelines._ConvertPipelineParametersToInputObject(
@@ -350,4 +356,4 @@ class PipelinesTest(TestCase):
     self.execute_queued_tasks()
     p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
     p.complete()
-    warning_func.assert_called()
+    self.assertTrue(warning_func.called)

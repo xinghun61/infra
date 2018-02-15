@@ -140,7 +140,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     pipeline_job.start()
     self.execute_queued_tasks()
 
-    mocked_error_reporting.assert_called()
+    self.assertTrue(mocked_error_reporting.called)
 
   @mock.patch.object(
       data_point_util,

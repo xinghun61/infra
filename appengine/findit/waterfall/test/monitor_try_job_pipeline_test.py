@@ -433,7 +433,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     monitor_pipeline.start_test()
     monitor_pipeline.delay_callback(
         60, monitor_pipeline.last_params, name='name')
-    mocked_logging.assert_called()
+    self.assertTrue(mocked_logging.called)
 
   @mock.patch.object(
       try_job_service,

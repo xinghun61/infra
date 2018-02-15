@@ -61,7 +61,7 @@ class NotifyCulpritPipelineTest(WaterfallTestCase):
     pipeline_job.start()
     self.execute_queued_tasks()
 
-    mocked_notify.assert_not_called()
+    self.assertFalse(mocked_notify.called)
 
   @mock.patch.object(culprit_util, 'ShouldNotifyCulprit', return_value=True)
   @mock.patch.object(
@@ -84,4 +84,4 @@ class NotifyCulpritPipelineTest(WaterfallTestCase):
     pipeline_job.start()
     self.execute_queued_tasks()
 
-    mocked_notify.assert_called()
+    self.assertTrue(mocked_notify.called)

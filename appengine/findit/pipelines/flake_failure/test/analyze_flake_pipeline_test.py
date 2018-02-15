@@ -129,7 +129,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
 
     self.assertIsNotNone(analysis.culprit_urlsafe_key)
-    self.assertTrue(mocked_culprit.assert_called())
+    self.assertTrue(mocked_culprit.called)
     self.assertEqual(confidence_score, analysis.confidence_in_culprit)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
@@ -282,7 +282,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
     pipeline_job.OnAbort(analyze_flake_input)
 
-    mocked_error.assert_called()
+    self.assertTrue(mocked_error.called)
 
   def testRecursiveAnalyzeFlakePipeline(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

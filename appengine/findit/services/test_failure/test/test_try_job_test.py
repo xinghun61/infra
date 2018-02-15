@@ -1298,7 +1298,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(test_try_job, '_GetUpdatedAnalysisResult')
   def testUpdateWfAnalysisWithTryJobResultNoUpdate(self, mock_fn):
     test_try_job.UpdateWfAnalysisWithTryJobResult('m', 'n', 1, None, None, None)
-    mock_fn.assert_not_called()
+    self.assertFalse(mock_fn.called)
 
   @mock.patch.object(
       test_try_job, '_GetUpdatedAnalysisResult', return_value=({}, True))
@@ -1322,7 +1322,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(suspected_cl_util, 'UpdateSuspectedCL')
   def testUpdateSuspectedCLsNoCulprit(self, mock_fn):
     test_try_job.UpdateSuspectedCLs('m', 'b', 1, None, None)
-    mock_fn.assert_not_called()
+    self.assertFalse(mock_fn.called)
 
   @mock.patch.object(suspected_cl_util, 'UpdateSuspectedCL')
   def testUpdateSuspectedCLs(self, mock_fn):
