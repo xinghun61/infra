@@ -22,8 +22,8 @@ par_dir=$(dirname $0)
 for device in "android" "cros"; do
   image=$device"_docker"
   context_dir=$par_dir"/"$device
-  docker_file=$par_dir"/"Dockerfile
-  $DOCKER_BIN_PATH build -f - $cache -t ${image}:${date} ${context_dir} < $docker_file
+  docker_file=$context_dir"/"Dockerfile
+  $DOCKER_BIN_PATH build $cache -t ${image}:${date} ${context_dir} -f ${docker_file}
   $DOCKER_BIN_PATH tag ${image}:$date ${image}:latest
 done
 
