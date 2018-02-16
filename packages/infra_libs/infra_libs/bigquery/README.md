@@ -1,4 +1,4 @@
-`infra/libs/bigquery` provides some helper methods for working with BigQuery. It
+`infra_libs/bigquery` provides some helper methods for working with BigQuery. It
 is recommended you use this library over using the client API directly as it
 includes common logic for handling protobufs, formatting errors, safe guards,
 and handling edge cases.
@@ -21,7 +21,7 @@ bigquery_client = bigquery.client.Client(
 Send rows:
 
 ```
-from infra.libs import bigquery
+from infra_libs import bigquery
 
 # ExampleRow is a protobuf Message
 rows = [ExampleRow(example_field='1'), ExampleRow(example_field='2')]
@@ -40,7 +40,7 @@ Please see [BigQuery
 docs](https://cloud.google.com/bigquery/quotas#streaminginserts) for the most
 updated limits for streaming inserts. It is expected that the client is
 responsible for ensuring their usage will not exceed these limits through
-infra/libs/biquery usage. A note on maximum rows per request: send_rows()
+infra_libs/biquery usage. A note on maximum rows per request: send_rows()
 batches rows per request, ensuring that no more than 10,000 rows are sent per
 request, and allowing for custom batch size. BigQuery recommends using 500 as a
 practical limit (so we use this as a default), and experimenting with your
@@ -55,7 +55,7 @@ What form this takes depends on the application.
 
 # vPython
 
-infra/libs/bigquery is available via vPython as a CIPD package. To update the
+infra_libs/bigquery is available via vPython as a CIPD package. To update the
 available version, build and upload a new wheel with
 [dockerbuild](../../tools/dockerbuild/README#subcommand_wheel_build).
 
