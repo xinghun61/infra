@@ -111,11 +111,11 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 	itm := memcache.NewItem(c, fmt.Sprintf("%s|%s", gsPath, filepath))
 	err := memcache.Get(c, itm)
 	if err != memcache.ErrCacheMiss && err != nil {
-		return nil, err
+		logging.Warningf(c, "memcache.Get error for requested file %v: %v", itm.Key(), err)
 	}
 
 	logging.Debugf(c, "Getting google storage path %s", gsPath)
-	if err == memcache.ErrCacheMiss {
+	if err == memcache.ErrCacheMiss || len(itm.Value()) == 0 {
 		zr, err := readZipFile(c, gsPath)
 		if err != nil {
 			return nil, fmt.Errorf("while creating zip reader: %v", err)
@@ -147,9 +147,8 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 		logging.Debugf(c, "len %v limit %v", len(itm.Value()), megabyte/2)
 		if itm.Value() != nil && len(itm.Value()) < megabyte/2 {
 			logging.Debugf(c, "setting %s", itm.Key())
-			err := memcache.Set(c, itm)
-			if err != nil {
-				return nil, err
+			if err := memcache.Set(c, itm); err != nil {
+				logging.Warningf(c, "memcache.Set error for requested file %v: %v", itm.Key(), err)
 			}
 		}
 	}
