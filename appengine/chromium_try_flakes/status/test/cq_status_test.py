@@ -112,7 +112,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
               'builder': 'test-builder',
               'timestamp': '2015-10-30 17:30:12.123456',
             },
-            # Ignored because issue, patchset and buildnumber in
+            # Ignored because issue, patchset, mastername and buildnumber in
             # build_properties are missing.
             {
               'build_properties': {},
@@ -124,6 +124,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             # This is a valid success report.
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 101,
                 'patch_issue': 123456789,
                 'patch_set': 20001,
@@ -137,6 +138,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             # This is a second success, which should not generate more flakes.
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 102,
                 'patch_issue': 123456789,
                 'patch_set': 20001,
@@ -150,25 +152,27 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             # Two successes below should not result in a flaky run.
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 103,
                 'patch_issue': 100200300,
                 'patch_set': 1,
                 'attempt_start_ts': 1446221292000000,
               },
-              'master': 'tryserver.test',
-              'builder': 'test-builder',
+              'master': 'luci.tryserver.test',
+              'builder': 'luci-test-builder',
               'result': 0,  # SUCCESS
               'timestamp': '2015-10-30 17:30:12.123456',
             },
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 104,
                 'patch_issue': 100200300,
                 'patch_set': 1,
                 'attempt_start_ts': 1446221292000000,
               },
-              'master': 'tryserver.test',
-              'builder': 'test-builder',
+              'master': 'luci.tryserver.test',
+              'builder': 'luci-test-builder',
               'result': 0,  # SUCCESS
               'timestamp': '2015-10-30 17:30:12.123456',
             },
@@ -176,6 +180,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
           'JOB_FAILED': [
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 105,
                 'patch_issue': 987654321,
                 'patch_set': 20001,
@@ -188,6 +193,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             },
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 106,
                 'patch_issue': 123456789,
                 'patch_set': 20001,
@@ -201,6 +207,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             # Ignored as a duplicate of the previous one.
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 106,
                 'patch_issue': 123456789,
                 'patch_set': 20001,
@@ -214,6 +221,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             # Two failures below should not result in a flaky run.
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 107,
                 'patch_issue': 100300200,
                 'patch_set': 20001,
@@ -226,6 +234,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             },
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 # Build properties may be lists, but only first value is taken.
                 'buildnumber': [108, 300, 500],
                 'patch_issue': [100300200, -1, -2],
@@ -240,6 +249,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             # Ignored because buildnumber is missing.
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'patch_issue': 100300200,
                 'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
@@ -252,7 +262,21 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             # Ignored because buildnumber is not an integer.
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 'abc',
+                'patch_issue': 100300200,
+                'patch_set': 20001,
+                'attempt_start_ts': 1446221292000000,
+              },
+              'master': 'tryserver.test',
+              'builder': 'test-builder',
+              'result': 2,  # FAILURE
+              'timestamp': '2015-10-30 17:10:12.123456',
+            },
+            # Ignored because mastername is missing.
+            {
+              'build_properties': {
+                'buildnumber': 123,
                 'patch_issue': 100300200,
                 'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
@@ -277,6 +301,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
           'JOB_FAILED': [
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 109,
                 'patch_issue': 123456789,
                 'patch_set': 20001,
@@ -291,6 +316,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
           'JOB_SUCCEEDED': [
             {
               'build_properties': {
+                'mastername': 'tryserver.test',
                 'buildnumber': 110,
                 'patch_issue': 987654321,
                 'patch_set': 20001,

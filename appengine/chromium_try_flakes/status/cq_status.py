@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(
 
 import dateutil.parser
 import gae_ts_mon
+from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 from google.appengine.ext import deferred
@@ -245,7 +246,6 @@ def parse_cq_data(json_data):
 
     for job in itertools.chain.from_iterable(job_states.values()):
       try:
-        master = job['master']
         builder = job['builder']
         result = job['result']
         timestamp_tz = dateutil.parser.parse(
@@ -290,6 +290,13 @@ def parse_cq_data(json_data):
           logging.warning('no attempt_start_ts')
           continue
 
+        # For builds through Buildbucket, job['master'] is actually the bucket
+        # name. For buildbot-based builds, it just happens to be the same as the
+        # master name. For Luci-based builds, it is different from the master
+        # name, and the master name is set as a build property instead.
+        # https://chromium.googlesource.com/chromium/src/+/infra/config/cr-buildbucket.cfg#115
+        # So in either case, the "real" master name is in the build properties.
+        master = build_properties['mastername']
 
       except (ValueError, KeyError):
         logging.warning('Failed to parse build properties', exc_info=True)

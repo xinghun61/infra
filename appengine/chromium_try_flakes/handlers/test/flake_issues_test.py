@@ -2,12 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import datetime
 import httplib
 import json
 import mock
 import urllib2
 
+from google.appengine.api import urlfetch
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import ndb
 
@@ -62,49 +64,52 @@ TEST_TEST_RESULTS_REPLY = json.dumps({
 
 
 TEST_BUILDBOT_JSON_REPLY = json.dumps({
-  'steps': [
-    # Simple case.
-    {'results': [2], 'name': 'foo1', 'text': ['bar1']},
+  'data': base64.b64encode(json.dumps({
+    'steps': [
+      # Simple case.
+      {'results': [2], 'name': 'foo1', 'text': ['bar1']},
 
-    # Infra step.
-    {'results': [2], 'name': 'update_scripts', 'text': ['bar1']},
+      # Infra step.
+      {'results': [2], 'name': 'update_scripts', 'text': ['bar1']},
 
-    # Ignore test steps with invalid test results.
-    {'results': [2], 'name': 'foo2', 'text': ['TEST RESULTS WERE INVALID']},
+      # Ignore test steps with invalid test results.
+      {'results': [2], 'name': 'foo2', 'text': ['TEST RESULTS WERE INVALID']},
 
-    # Ignore non-success non-failure results (7 is TRY_PENDING).
-    {'results': [7], 'name': 'foo5', 'text': ['bar8']},
+      # Ignore non-success non-failure results (7 is TRY_PENDING).
+      {'results': [7], 'name': 'foo5', 'text': ['bar8']},
 
-    # Ignore steps that are failing without patch too (ToT is broken).
-    {'results': [2], 'name': 'foo6 (with patch)', 'text': ['bar9']},
-    {'results': [2], 'name': 'foo6 (without patch)', 'text': ['bar9']},
+      # Ignore steps that are failing without patch too (ToT is broken).
+      {'results': [2], 'name': 'foo6 (with patch)', 'text': ['bar9']},
+      {'results': [2], 'name': 'foo6 (without patch)', 'text': ['bar9']},
 
-    # Ignore steps that are duplicating error in another step.
-    {'results': [2], 'name': 'steps', 'text': ['bar10']},
-    {'results': [2], 'name': '[swarming] foo7', 'text': ['bar11']},
-    {'results': [2], 'name': 'presubmit', 'text': ['bar12']},
-    {'results': [2], 'name': 'recipe failure reason', 'text': ['bar12a']},
-    {'results': [2], 'name': 'test results', 'text': ['bar12b']},
-    {'results': [2], 'name': 'Uncaught Exception', 'text': ['bar12c']},
-    {'results': [2], 'name': 'bot_update', 'text': ['bot_update PATCH FAILED']},
-    {'results': [2], 'name': 'Failure reason', 'text': ['bar12d']},
+      # Ignore steps that are duplicating error in another step.
+      {'results': [2], 'name': 'steps', 'text': ['bar10']},
+      {'results': [2], 'name': '[swarming] foo7', 'text': ['bar11']},
+      {'results': [2], 'name': 'presubmit', 'text': ['bar12']},
+      {'results': [2], 'name': 'recipe failure reason', 'text': ['bar12a']},
+      {'results': [2], 'name': 'test results', 'text': ['bar12b']},
+      {'results': [2], 'name': 'Uncaught Exception', 'text': ['bar12c']},
+      {'results': [2], 'name': 'bot_update',
+       'text': ['bot_update PATCH FAILED']},
+      {'results': [2], 'name': 'Failure reason', 'text': ['bar12d']},
 
-    # Detect infra-failure for 'Patch failure', but igore normal error.
-    {'results': [4], 'name': 'Patch failure', 'text': ['Patch failure']},
-    {'results': [2], 'name': 'Patch failure', 'text': ['Patch failure']},
+      # Detect infra-failure for 'Patch failure', but igore normal error.
+      {'results': [4], 'name': 'Patch failure', 'text': ['Patch failure']},
+      {'results': [2], 'name': 'Patch failure', 'text': ['Patch failure']},
 
-    # Only count first step (with patch) and ignore summary step.
-    {'results': [2], 'name': 'foo8 xx (with patch)', 'text': ['bar13']},
-    {'results': [0], 'name': 'foo8 xx (without patch)', 'text': ['bar14']},
-    {'results': [2], 'name': 'foo8 xx (retry summary)', 'text': ['bar15']},
+      # Only count first step (with patch) and ignore summary step.
+      {'results': [2], 'name': 'foo8 xx (with patch)', 'text': ['bar13']},
+      {'results': [0], 'name': 'foo8 xx (without patch)', 'text': ['bar14']},
+      {'results': [2], 'name': 'foo8 xx (retry summary)', 'text': ['bar15']},
 
-    # Ignore steps that failed both with and without patch. Also check that
-    # adding suffixes doesn't break the detection algorithm. Also check that we
-    # work correctly with summary steps without any (suffix).
-    {'results': [2], 'name': 'foo9 xx (with patch) aa', 'text': ['bar16']},
-    {'results': [2], 'name': 'foo9 yy (without patch) bb', 'text': ['bar17']},
-    {'results': [0], 'name': 'foo9', 'text': ['bar18']},
-  ]
+      # Ignore steps that failed both with and without patch. Also check that
+      # adding suffixes doesn't break the detection algorithm. Also check that
+      # we work correctly with summary steps without any (suffix).
+      {'results': [2], 'name': 'foo9 xx (with patch) aa', 'text': ['bar16']},
+      {'results': [2], 'name': 'foo9 yy (without patch) bb', 'text': ['bar17']},
+      {'results': [0], 'name': 'foo9', 'text': ['bar18']},
+    ]
+  }))
 })
 
 # Expected flakes to be found: list of (step_name, test_name).
@@ -944,7 +949,9 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
         now - datetime.timedelta(hours=1), now, master='master.abc')
 
     urlfetch_mock = mock.Mock()
-    urlfetch_mock.return_value.content = '{"steps":[]}'
+    urlfetch_mock.return_value.status_code = 200
+    urlfetch_mock.return_value.content = json.dumps(
+        { 'data': base64.b64encode('{"steps":[]}') })
 
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
       self.test_app.post('/issues/create_flaky_run',
@@ -953,8 +960,21 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
 
     urlfetch_mock.assert_has_calls([
       # Verify that we've used correct URL to access buildbot JSON endpoint.
-      mock.call('https://chrome-build-extract.appspot.com/p/abc/builders/'
-                'test-builder/builds/100?json=1')
+      mock.call(
+          ('https://luci-milo.appspot.com/'
+           'prpc/milo.Buildbot/GetBuildbotBuildJSON'),
+          payload=json.dumps({
+              'master': 'abc',
+              'builder': 'test-builder',
+              'buildNum': 100
+          }),
+          method=urlfetch.POST,
+          headers={
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          validate_certificate=True,
+      )
     ])
 
   def test_handles_incorrect_parameters(self):
@@ -1022,8 +1042,20 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     urlfetch_mock.assert_has_calls([
       # Verify that we've used correct URL to access buildbot JSON endpoint.
       mock.call(
-        'https://chrome-build-extract.appspot.com/p/test.master/builders/'
-        'test-builder/builds/100?json=1'),
+          ('https://luci-milo.appspot.com/'
+           'prpc/milo.Buildbot/GetBuildbotBuildJSON'),
+          payload=json.dumps({
+              'master': 'test.master',
+              'builder': 'test-builder',
+              'buildNum': 100
+          }),
+          method=urlfetch.POST,
+          headers={
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          validate_certificate=True,
+      ),
       # Verify that we've used correct URLs to retrieve test-results GTest JSON.
       mock.call(
         'https://test-results.appspot.com/testfile?builder=test-builder&'
@@ -1064,11 +1096,16 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
     urlfetch_mock = mock.Mock(side_effect = [
       # Buildbot reply.
-      mock.Mock(status_code=200, content=json.dumps({
-        'steps': [
-          {'results': [2], 'name': 'test-step', 'text': ['']},
-        ]
-      })),
+      mock.Mock(
+        status_code=200,
+        content=json.dumps({
+          'data': base64.b64encode(json.dumps({
+            'steps': [
+              {'results': [2], 'name': 'test-step', 'text': ['']},
+            ]
+          }))
+        })
+      ),
       # Test-results reply.
       mock.Mock(status_code=200, content=json.dumps({
         'tests': {
@@ -1139,12 +1176,17 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
     urlfetch_mock = mock.Mock(side_effect = [
       # Buildbot reply.
-      mock.Mock(status_code=200, content=json.dumps({
-        'steps': [
-          {'results': [2], 'name': 'foo9 (with patch)', 'text': ['']},
-          {'results': [2], 'name': 'foo9 (without patch)', 'text': ['']},
-        ]
-      }))
+      mock.Mock(
+        status_code=200,
+        content=json.dumps({
+          'data': base64.b64encode(json.dumps({
+            'steps': [
+              {'results': [2], 'name': 'foo9 (with patch)', 'text': ['']},
+              {'results': [2], 'name': 'foo9 (without patch)', 'text': ['']},
+            ]
+          }))
+        })
+      )
     ])
 
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
