@@ -70,7 +70,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
     self.test_build = model.Build(
-        id=model.create_build_id(self.now),
+        id=model.create_build_ids(self.now, 1)[0],
         bucket='chromium',
         project=self.chromium_project_id,
         create_time=self.now,
@@ -108,7 +108,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     builds = []
     for _ in xrange(count):
       b = model.Build(
-          id=model.create_build_id(self.now),
+          id=model.create_build_ids(self.now, 1)[0],
           bucket=self.test_build.bucket,
           tags=tags,
           create_time=self.now)
@@ -779,7 +779,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     create_time = datetime.datetime(2011, 2, 4)
     old_build = model.Build(
-        id=model.create_build_id(create_time),
+        id=model.create_build_ids(create_time, 1)[0],
         bucket=self.test_build.bucket,
         tags=[self.INDEXED_TAG],
         created_by=auth.Identity.from_bytes('user:x@chromium.org'),

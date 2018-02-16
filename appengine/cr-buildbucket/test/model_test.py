@@ -26,13 +26,11 @@ class BuildTest(testing.AppengineTestCase):
 
   def test_create_build_id_generates_monotonically_decreasing_ids(self):
     now = datetime.datetime(2015, 2, 24)
-    last_id = None
+    ids = []
     for i in xrange(1000):
       now += datetime.timedelta(seconds=i)
-      new_id = model.create_build_id(now)
-      if last_id is not None:
-        self.assertLess(new_id, last_id)
-      last_id = new_id
+      ids.extend(model.create_build_ids(now, 5))
+    self.assertEqual(ids, sorted(ids, reverse=True))
 
   def test_build_id_range(self):
     time_low = datetime.datetime(2015, 1, 1)

@@ -266,14 +266,15 @@ def _id_time_segment(dtime):
   return (~now & ((1 << 43) - 1)) << 20
 
 
-def create_build_id(dtime):
-  """Returns a valid build id, as an integer and based on a datetime.
+def create_build_ids(dtime, count):
+  """Returns a range of valid build ids, as integers and based on a datetime.
 
   See model.Build's docstring, "Build key" section.
   """
   # Build ID bits: "0N{43}R{16}V{4}"
   # where N is now bits, R is random bits and V is version bits.
-  return int(_id_time_segment(dtime) | (random.getrandbits(16) << 4))
+  build_id = int(_id_time_segment(dtime) | (random.getrandbits(16) << 4))
+  return [build_id - i * (1<<4) for i in xrange(count)]
 
 
 def build_id_range(create_time_low, create_time_high):

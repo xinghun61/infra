@@ -411,10 +411,10 @@ def add_many_async(build_request_list):
     """
     now = utils.utcnow()
     # Ensure that build id order is reverse of build request order
-    build_id = model.create_build_id(now)
-    for i, r in pending_reqs():
+    reqs = list(pending_reqs())
+    build_ids = model.create_build_ids(now, len(reqs))
+    for (i, r), build_id in zip(reqs, build_ids):
       new_builds[i] = r.create_build(build_id, identity, now)
-      build_id -= 1  # build ids are decreasing
 
   @ndb.tasklet
   def create_swarming_tasks_async():
