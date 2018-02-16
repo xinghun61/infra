@@ -41,12 +41,8 @@ func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) 
 }
 
 func results(c context.Context, runID int64) (*tricium.Data_Results, bool, error) {
-	requestKey := ds.NewKey(c, "AnalyzeRequest", "", runID, nil)
-	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
-	// TODO(emso): Extract common GetCommentsForWorkflowRun function.
-	var comments []*track.Comment
-	q := ds.NewQuery("Comment").Ancestor(runKey)
-	if err := ds.GetAll(c, q, &comments); err != nil {
+	comments, err := track.FetchComments(c, runID)
+	if err != nil {
 		return nil, false, fmt.Errorf("failed to get comments: %v", err)
 	}
 	isMerged := false

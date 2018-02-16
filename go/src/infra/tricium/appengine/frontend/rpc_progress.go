@@ -94,7 +94,7 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 	if err := ds.Get(c, workflowRun); err != nil {
 		return tricium.State_PENDING, nil, codes.Internal, fmt.Errorf("failed to get WorkflowRun: %v", err)
 	}
-	functions, err := getFunctionRunsForWorkflowRun(c, workflowRun)
+	functions, err := track.FetchFunctionRuns(c, runID)
 	if err != nil {
 		return tricium.State_PENDING, nil, codes.Internal, fmt.Errorf("failed to get FunctionRun entities: %v", err)
 	}
@@ -131,22 +131,4 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 	}
 	progressRequestCount.Add(c, 1, request.Project, strconv.FormatInt(runID, 10))
 	return requestRes.State, res, codes.OK, nil
-}
-
-func getFunctionRunsForWorkflowRun(
-	c context.Context, run *track.WorkflowRun) ([]*track.FunctionRun, error) {
-	runKey := ds.KeyForObj(c, run)
-	request := &track.AnalyzeRequest{ID: runKey.Parent().IntID()}
-	if err := ds.Get(c, request); err != nil {
-		logging.Debugf(c, "AnalyzeRequest: %v", request)
-	}
-	var functions []*track.FunctionRun
-	for _, name := range run.Functions {
-		functions = append(functions, &track.FunctionRun{ID: name, Parent: runKey})
-	}
-	logging.Debugf(c, "Reading results for functions: %v, WorkflowRun: %v", functions, run)
-	if err := ds.Get(c, functions); err != nil {
-		return nil, fmt.Errorf("failed to get FunctionRun entities: %v", err)
-	}
-	return functions, nil
 }
