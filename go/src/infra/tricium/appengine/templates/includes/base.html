@@ -1,25 +1,18 @@
 {{define "base"}}
 <!DOCTYPE html>
 <title>Tricium</title>
-<head>
-  <link rel="stylesheet" type="text/css" href="/static/style.css"/>
-</head>
-<body>
-  <p class="header">Tricium</p>
-  <!--
-  <fieldset class="menu">
-    <a class="menu-item" href="/">Start</a>
-    <a class="menu-item" href="/results">Results</a>
-  </fieldset>
-  -->
-  <div>
-    {{template "body" .}}
-  </div>
-  <footer>
-    <hr>
-    <p class="version-footer">
-      <small>Tricium version: <span>{{.AppVersion}}</span></small>
-    </p>
-  </footer>
-</body>
+<link rel="stylesheet" type="text/css" href="/static/style.css"/>
+
+<link rel="import" href="/bower_components/chopsui/chops-header.html">
+
+<chops-header app-title="Tricium" logo-src="/bower_components/chopsui/img/logo.png"></chops-header>
+
+{{template "body" .}}
+
+<footer>
+  <hr>
+  <p class="version-footer">
+    <small>Tricium version: {{.AppVersion}}</small>
+  </p>
+</footer>
 {{end}}

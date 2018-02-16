@@ -33,6 +33,7 @@ func landingPageHandler(c *router.Context) {
 	})
 }
 
+// TODO(qyearsley): Remove this since front-end code is commented out.
 func resultsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 	r, err := requests(c, config.LuciConfigServer)
@@ -47,6 +48,9 @@ func resultsHandler(ctx *router.Context) {
 }
 
 // requests returns list of workflow runs for projects readable to the current user.
+//
+// TODO(qyearsley): Move this to common/track since it is useful in multiple
+// places, including in tests.
 func requests(c context.Context, cp config.ProviderAPI) ([]*track.AnalyzeRequest, error) {
 	// TODO(emso): This only lists the last 20 requests, when the UI is
 	// ready improve to list more.
