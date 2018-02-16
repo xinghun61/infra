@@ -78,6 +78,7 @@ def transform_component_csv_to_features(csv_training_data):
   y = []
 
   component_to_index = {}
+  index_to_component = {}
   component_index = 0
   for row in csv_training_data:
     component, content = row
@@ -85,12 +86,13 @@ def transform_component_csv_to_features(csv_training_data):
 
     if component not in component_to_index:
       component_to_index[component] = component_index
+      index_to_component[component_index] = component
       component_index += 1
 
     X.append(GenerateFeaturesRaw([str(content)], COMPONENT_FEATURE_HASHES))
     y.append(component_to_index[component])
 
-  return X, y
+  return X, y, index_to_component
 
 
 def spam_from_file(f):

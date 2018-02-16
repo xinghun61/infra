@@ -41,8 +41,9 @@ def generate_experiment_fn(**experiment_args):
     input functions.
   """
   def _experiment_fn(config, hparams):
-    if hparams.train_file:
+    index_to_component = {}
 
+    if hparams.train_file:
       with open(hparams.train_file) as f:
         if hparams.trainer_type == 'spam':
           training_data = trainer.ml_helpers.spam_from_file(f)
@@ -58,8 +59,8 @@ def generate_experiment_fn(**experiment_args):
       X, y = trainer.ml_helpers.transform_spam_csv_to_features(
           training_data)
     else:
-      X, y = trainer.ml_helpers.transform_component_csv_to_features(
-          training_data)
+      X, y, index_to_component = trainer.ml_helpers \
+          .transform_component_csv_to_features(training_data)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
       random_state=42)
@@ -79,6 +80,9 @@ def generate_experiment_fn(**experiment_args):
       shuffle=False # Don't shuffle evaluation data
     )
 
+    if hparams.trainer_type == 'component':
+      store_component_conversion(hparams.job_dir, index_to_component)
+
     return tf.contrib.learn.Experiment(
       trainer.model.build_estimator(config=config,
                                     trainer_type=hparams.trainer_type,
@@ -88,6 +92,35 @@ def generate_experiment_fn(**experiment_args):
       **experiment_args
     )
   return _experiment_fn
+
+
+def store_component_conversion(job_dir, data):
+
+  tf.logging.info('job_dir: %s' % job_dir)
+  job_info = re.search('gs://(monorail-.+)-mlengine/(component_trainer_\d+)',
+                       job_dir)
+
+  # Check if training is being done on GAE or locally.
+  if job_info:
+    project = job_info.group(1)
+    job_name = job_info.group(2)
+
+    client_obj = client.Client(project=project)
+    bucket_name = '%s-mlengine' % project
+    bucket_obj = bucket.Bucket(client_obj, bucket_name)
+
+    bucket_obj.blob = blob.Blob(job_name + '/component_index.json', bucket_obj)
+
+    bucket_obj.blob.upload_from_string(json.dumps(data),
+                                       content_type='application/json')
+
+  else:
+    paths = job_dir.split('/')
+    for y, _ in enumerate(range(1, len(paths)), 1):
+      if not os.path.exists("/".join(paths[:y+1])):
+        os.makedirs('/'.join(paths[:y+1]))
+    with open(job_dir + '/component_index.json', 'w') as f:
+      f.write(json.dumps(data))
 
 
 def store_eval(job_dir, results):
