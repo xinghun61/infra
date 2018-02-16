@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='infra_libs',
-    version='1.3.0',
+    version='1.2.0',
     description='Chrome Infra Libraries',
     long_description='Chrome Infra Libraries',
     classifiers=[
@@ -15,7 +15,7 @@ setup(
     packages=find_packages(exclude=['*.test']),
     install_requires=[
         'google-api-python-client',
-        'oauth2client==3.0.0',
+        'oauth2client',
         'protobuf',
         'requests',
     ],

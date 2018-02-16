@@ -78,17 +78,13 @@ def _main_wheel_build(args, system):
 
   platforms, specs = _filter_platform_specs(args.platform, wheels)
 
-  _, git_revision = system.check_run(
-      ['git', 'rev-parse', 'HEAD'],
-      cwd=system.root,
-  )
   for spec_name in specs:
     build = wheel.SPECS[spec_name]
 
     seen = set()
     for plat in platforms:
       w = build.wheel(system, plat)
-      package = w.cipd_package(git_revision)
+      package = w.cipd_package()
       if package in seen:
         continue
       seen.add(package)
