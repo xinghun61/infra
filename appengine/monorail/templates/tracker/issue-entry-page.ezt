@@ -82,7 +82,7 @@
       <tr [if-any page_perms.EditIssue page_perms.EditIssueStatus][else]style="display:none;"[end]><th width="10%"><label for="statusenter">Status:</label></th>
        <td class="inplace">
         <input type="text" id="statusenter" autocomplete="off" style="width:16em"
-               name="status" value="[initial_status]" aria-owns="ac-list" aria-activedescendant="ac-selected-row">
+               name="status" value="[initial_status]">
        </td>
       </tr>
       <tr [if-any page_perms.EditIssue page_perms.EditIssueOwner][else]style="display:none;"[end]><th width="10%"><label for="ownerenter">Owner:</label></th>

@@ -814,7 +814,7 @@ function ac_updateCompletionList(show) {
       clist.style.display = 'none';
       // with 'listbox' and 'option' roles, screenreader narrates total
       // number of options eg. 'New = issue has not .... 1 of 9'
-      clist.setAttribute('role', 'listbox');
+      clist.setAttribute('role', 'grid');
       document.body.appendChild(clist);
     }
 
@@ -827,10 +827,16 @@ function ac_updateCompletionList(show) {
     var tableEl = document.createElement('table');
     tableEl.setAttribute('cellpadding', 0);
     tableEl.setAttribute('cellspacing', 0);
+    tableEl.id = 'ac-table';
+    tableEl.setAttribute('role', 'listbox');
+    let tableBody = document.createElement('tbody');
+    tableEl.appendChild(tableBody);
+    tableBody.setAttribute('role', 'listbox');
+    tableBody.setAttribute('aria-activedescendant', 'ac-selected-row');
     for (var i = 0; i < Math.min(ac_max_options, ac_completions.length); ++i) {
       if (ac_completions[i].heading) {
         var rowEl = document.createElement('tr');
-        tableEl.appendChild(rowEl);
+        tableBody.appendChild(rowEl);
         var cellEl = document.createElement('th');
         rowEl.appendChild(cellEl);
         cellEl.setAttribute('colspan', 2);
@@ -842,7 +848,7 @@ function ac_updateCompletionList(show) {
         headerCount++;
       } else {
         var rowEl = document.createElement('tr');
-        tableEl.appendChild(rowEl);
+        tableBody.appendChild(rowEl);
         if (i == ac_selected) {
           rowEl.id = 'ac-selected-row';
           rowEl.className = 'selected';
@@ -899,6 +905,11 @@ function ac_updateCompletionList(show) {
     clist.style.display = '';
 
     window.setTimeout(ac_autoscroll, 100);
+
+    let input = document.getElementById('statusenter');
+    input.setAttribute('aria-owns', 'ac-table');
+    input.setAttribute('aria-haspopup', 'grid');
+    input.setAttribute('aria-activedescendant', 'ac-selected-row');
 
   } else {
     if (clist) {
