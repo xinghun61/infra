@@ -138,7 +138,6 @@ class test_set_metrics_file(unittest.TestCase):
     metrics = common.set_metrics_file(
       [os.path.join(DATA_DIR, 'one_json_line.txt')],
       ts_mon.GaugeMetric)
-    print metrics
     self.assertEqual(1, len(metrics))
     self.assertIsInstance(metrics[0], ts_mon.GaugeMetric)
 
@@ -196,7 +195,6 @@ class test_set_metrics(unittest.TestCase):
     self.assertEqual(1, len(metrics))
     self.assertIsInstance(metrics[0], ts_mon.CounterMetric)
     self.assertTrue(metrics[0].name.startswith("test/name"))
-    self.assertEquals(metrics[0]._start_time, 1234)
     for metric in metrics:
       metric.unregister()  # Cleanup
 
