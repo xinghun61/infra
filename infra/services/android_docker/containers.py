@@ -86,7 +86,8 @@ class AndroidDockerClient(containers.DockerClient):
     }
     return cmd
 
-  def create_container(self, container_desc, image_name, swarming_url, labels):
+  def create_container(self, container_desc, image_name, swarming_url, labels,
+                       additional_env=None):
     assert isinstance(container_desc, AndroidContainerDescriptor)
     super(AndroidDockerClient, self).create_container(
         container_desc, image_name, swarming_url, labels)

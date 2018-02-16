@@ -82,7 +82,7 @@ class ContainerDescriptorBase(object):
 
   def should_create_container(self):
     """Returns true if the container should be created for this descriptor."""
-    raise NotImplementedError()
+    return True
 
 
 class ContainerDescriptor(ContainerDescriptorBase):
@@ -108,9 +108,6 @@ class ContainerDescriptor(ContainerDescriptorBase):
 
   def log_started(self):
     logging.debug('Launched new container %s.', self._name)
-
-  def should_create_container(self):
-    return True
 
 
 class DockerClient(object):
@@ -222,7 +219,8 @@ class DockerClient(object):
   def set_num_configured_containers(self, num_configured_containers):
     self._num_configured_containers = num_configured_containers
 
-  def create_container(self, container_desc, image_name, swarming_url, labels):
+  def create_container(self, container_desc, image_name, swarming_url, labels,
+                       additional_env=None):
     container_workdir = '/b/%s' % container_desc.name
     pw = pwd.getpwnam('chrome-bot')
     uid, gid = pw.pw_uid, pw.pw_gid
@@ -233,11 +231,14 @@ class DockerClient(object):
       # TODO(bpastene): Remove this once existing workdirs everywhere have been
       # chown'ed.
       os.chown(container_workdir, uid, gid)
+    env = self._get_env(swarming_url)
+    if additional_env:
+      env.update(additional_env)
     new_container = self._client.containers.create(
         image=image_name,
         hostname=container_desc.hostname,
         volumes=self._get_volumes(container_workdir),
-        environment=self._get_env(swarming_url),
+        environment=env,
         name=container_desc.name,
         detach=True,  # Don't block until it exits.
         labels=labels,

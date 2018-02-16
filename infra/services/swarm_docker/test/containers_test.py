@@ -312,6 +312,27 @@ class TestDockerClient(unittest.TestCase):
     self.assertEquals(container.name, '1')
     mock_chown.assert_called_with(mock_mkdir.call_args[0][0], 1, 2)
 
+  @mock.patch('os.chown')
+  @mock.patch('os.mkdir')
+  @mock.patch('os.path.exists')
+  @mock.patch('pwd.getpwnam')
+  @mock.patch('docker.from_env')
+  def test_create_container_with_env(self, mock_from_env, mock_getpwnam,
+                                     mock_exists, mock_mkdir, mock_chown):
+    mock_getpwnam.return_value = collections.namedtuple(
+        'pwnam', 'pw_uid, pw_gid')(1,2)
+    mock_exists.return_value = False
+    running_containers = [FakeContainer('1'), FakeContainer('2')]
+    self.fake_client.containers = FakeContainerList(running_containers)
+    mock_from_env.return_value = self.fake_client
+    additional_env = {'SOME_ENV': 'SOME_VAL'}
+
+    container = containers.DockerClient().create_container(
+        containers.ContainerDescriptor('1'), 'image', 'swarm-url.com', {},
+        additional_env)
+    self.assertEquals(container.name, '1')
+    mock_chown.assert_called_with(mock_mkdir.call_args[0][0], 1, 2)
+
   def test_num_containers_is_set(self):
     client = containers.DockerClient()
     self.assertIsNone(client._get_env('').get('NUM_CONFIGURED_CONTAINERS'))
