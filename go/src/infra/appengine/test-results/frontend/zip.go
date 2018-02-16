@@ -217,7 +217,7 @@ func cacheFailedTests(c context.Context, zr *zip.Reader, gsPath string) error {
 // a string.Contains(test, test_artifact). To make this match, we need to strip
 // the file extension from the test.
 var knownTestArtifactExtensions = []string{
-	"html", "svg", "xml",
+	"html", "svg", "xml", "js",
 }
 
 // Gets a list of failed tests from a full results json file.
