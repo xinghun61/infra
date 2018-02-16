@@ -16,7 +16,7 @@ type FullResult struct {
 	Version        int            `json:"version"`
 	Builder        string         `json:"builder_name"`
 	BuildNumber    Number         `json:"build_number"`
-	BuildID        Number         `json:"build_id"`
+	BuildID        int            `json:"build_id"`
 	SecondsEpoch   float64        `json:"seconds_since_epoch"`
 	Tests          FullTest       `json:"tests"`
 	FailuresByType map[string]int `json:"num_failures_by_type"`
