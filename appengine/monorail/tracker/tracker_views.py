@@ -694,11 +694,8 @@ def _ConvertLabelsToFieldValues(labels, field_name_lower, label_docs):
   for idx, lab in enumerate(labels):
     if lab.lower().startswith(field_delim):
       val = lab[len(field_delim):]
-      # Use ellipsis in the display val if the val is too long.
-      val_short = template_helpers.FitUnsafeText(str(val), 20)
       values.append(template_helpers.EZTItem(
-          val=val, val_short=val_short, docstring=label_docs.get(lab, ''),
-          idx=idx))
+          val=val, docstring=label_docs.get(lab, ''), idx=idx))
 
   return values
 

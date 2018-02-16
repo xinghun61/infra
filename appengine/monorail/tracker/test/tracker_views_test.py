@@ -497,7 +497,6 @@ class ConvertLabelsToFieldValuesTest(unittest.TestCase):
         ['Pri-3', 'M-44', 'Security', 'OpSys-OSX'], 'opsys', {})
     self.assertEqual(1, len(result))
     self.assertEqual('OSX', result[0].val)
-    self.assertEqual('OSX', result[0].val_short)
     self.assertEqual('', result[0].docstring)
 
     result = tracker_views._ConvertLabelsToFieldValues(
@@ -505,10 +504,8 @@ class ConvertLabelsToFieldValuesTest(unittest.TestCase):
          'opsys', {'OpSys-All': 'Happens everywhere'})
     self.assertEqual(2, len(result))
     self.assertEqual('OSX', result[0].val)
-    self.assertEqual('OSX', result[0].val_short)
     self.assertEqual('', result[0].docstring)
     self.assertEqual('All', result[1].val)
-    self.assertEqual('All', result[1].val_short)
     self.assertEqual('Happens everywhere', result[1].docstring)
 
 
