@@ -4,10 +4,13 @@ import (
 	"archive/zip"
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"infra/appengine/test-results/model"
 
 	"golang.org/x/net/context"
 
@@ -118,6 +121,14 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 			return nil, fmt.Errorf("while creating zip reader: %v", err)
 		}
 
+		// If we're serving the results.html file, we expect users to want to look at
+		// the failed test artifacts. Cache these.
+		if strings.Contains(filepath, "results.html") {
+			if err := cacheFailedTests(c, zr, string(gsPath)); err != nil {
+				logging.Warningf(c, "while caching failed tests: %v", err)
+			}
+		}
+
 		for _, f := range zr.File {
 			if f.Name == filepath {
 				freader, err := f.Open()
@@ -144,6 +155,130 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 	}
 
 	return itm.Value(), nil
+}
+
+// cacheFailedTests caches the failed tests stored in the resulting zip file.
+// gsPath is used to construct the memcache keys as needed.
+func cacheFailedTests(c context.Context, zr *zip.Reader, gsPath string) error {
+	// First, read the results file to find a list of failed tests.
+	failedTests := []string{}
+	for _, f := range zr.File {
+		if f.Name == "layout-test-results/full_results.json" {
+			freader, err := f.Open()
+			if err != nil {
+				return err
+			}
+
+			fullResultsDat, err := ioutil.ReadAll(freader)
+			if err != nil {
+				return err
+			}
+			failedTests = getFailedTests(c, fullResultsDat)
+			break
+		}
+	}
+	if len(failedTests) == 0 {
+		return nil
+	}
+
+	logging.Debugf(c, "caching artifacts for %v failed tests", len(failedTests))
+	toPut := []memcache.Item{}
+	for _, f := range zr.File {
+		// I tried using goroutines to make this concurrent, but it seemed to be slower.
+		for _, test := range failedTests {
+			// Ignore retried results, results.html doesn't seem to fetch them
+			byPath := strings.Split(f.Name, "/")
+			if len(byPath) > 2 && strings.Contains(byPath[1], "retry") {
+				break
+			}
+			if strings.Contains(f.Name, test) {
+				newItm := memcache.NewItem(c, fmt.Sprintf("%s|%s", gsPath, f.Name))
+				freader, err := f.Open()
+				if err != nil {
+					logging.Warningf(c, "failed in result caching: %v", err)
+					continue
+				}
+
+				res, err := ioutil.ReadAll(freader)
+				if err != nil {
+					logging.Warningf(c, "failed in result caching: %v", err)
+					continue
+				}
+				newItm.SetValue(res)
+				toPut = append(toPut, newItm)
+			}
+		}
+	}
+	return memcache.Set(c, toPut...)
+}
+
+// Tests are named like url-format-any.html. Test artifacts are named like
+// url-format-any-diff.png. To check if a test artifact should be cached, we do
+// a string.Contains(test, test_artifact). To make this match, we need to strip
+// the file extension from the test.
+var knownTestArtifactExtensions = []string{
+	"html", "svg", "xml",
+}
+
+// Gets a list of failed tests from a full results json file.
+var getFailedTests = func(c context.Context, fullResultsBytes []byte) []string {
+	fr := model.FullResult{}
+	err := json.Unmarshal(fullResultsBytes, &fr)
+	if err != nil {
+		panic(err)
+	}
+	flattened := fr.Tests.Flatten("/")
+	names := []string{}
+
+	for name, test := range flattened {
+		if len(test.Actual) != len(test.Expected) {
+			continue
+		}
+		if test.Unexpected == nil || !*test.Unexpected {
+			continue
+		}
+		ue := unexpected(test.Expected, test.Actual)
+
+		hasPass := false
+		// If there was a pass at all, count it.
+		for _, r := range test.Actual {
+			if r == "PASS" {
+				hasPass = true
+			}
+		}
+
+		if len(ue) > 0 && !hasPass {
+			for _, suffix := range knownTestArtifactExtensions {
+				if strings.HasSuffix(name, "."+suffix) {
+					name = name[:len(name)-len("."+suffix)]
+				}
+			}
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// unexpected returns the set of expected xor actual.
+func unexpected(expected, actual []string) []string {
+	e, a := make(map[string]bool), make(map[string]bool)
+	for _, s := range expected {
+		e[s] = true
+	}
+	for _, s := range actual {
+		a[s] = true
+	}
+
+	ret := []string{}
+
+	// Any value in the expected set is a valid test result.
+	for k := range a {
+		if !e[k] {
+			ret = append(ret, k)
+		}
+	}
+
+	return ret
 }
 
 var readZipFile = func(c context.Context, gsPath gs.Path) (*zip.Reader, error) {

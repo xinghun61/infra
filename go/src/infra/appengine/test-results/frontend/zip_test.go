@@ -101,28 +101,7 @@ func TestGetZipFile(t *testing.T) {
 				return nil, zipErr
 			}
 
-			buf := new(bytes.Buffer)
-			zw := zip.NewWriter(buf)
-			for fname, contents := range fileContents {
-				w, err := zw.Create(fname)
-				if err != nil {
-					panic(err)
-				}
-				_, err = w.Write([]byte(contents))
-				if err != nil {
-					panic(err)
-				}
-			}
-			err := zw.Close()
-			if err != nil {
-				panic(err)
-			}
-
-			zipRes, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
-			if err != nil {
-				panic(err)
-			}
-			return zipRes, zipErr
+			return makeZip(fileContents), nil
 		}
 
 		Convey("404", func() {
@@ -137,7 +116,6 @@ func TestGetZipFile(t *testing.T) {
 			res, err := getZipFile(c, "test_builder", "123", "file.txt")
 			So(err, ShouldBeNil)
 			So(res, ShouldResemble, []byte("hi"))
-
 		})
 
 		Convey("memcache", func() {
@@ -153,4 +131,65 @@ func TestGetZipFile(t *testing.T) {
 
 		readZipFile = oldReadZip
 	})
+}
+
+// Makes a zip from a map of filename to contents. Doesn't validate input, panics on
+// any error.
+func makeZip(fileContents map[string]string) *zip.Reader {
+	buf := new(bytes.Buffer)
+	zw := zip.NewWriter(buf)
+	for fname, contents := range fileContents {
+		w, err := zw.Create(fname)
+		if err != nil {
+			panic(err)
+		}
+		_, err = w.Write([]byte(contents))
+		if err != nil {
+			panic(err)
+		}
+	}
+	err := zw.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	zipRes, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		panic(err)
+	}
+	return zipRes
+}
+
+func TestCacheFailedTests(t *testing.T) {
+	Convey("cache failed tests", t, func() {
+		c := gaetesting.TestingContext()
+		fileContents := map[string]string{}
+		oldGetFailed := getFailedTests
+
+		failedTests := []string{}
+		getFailedTests = func(c context.Context, b []byte) []string {
+			return failedTests
+		}
+
+		Convey("no-op", func() {
+			zr := makeZip(fileContents)
+			So(cacheFailedTests(c, zr, "gspath"), ShouldBeNil)
+		})
+
+		fileContents["layout-test-results/full_results.json"] = "ignored"
+		Convey("some failed tests", func() {
+			failedTests = []string{"failed_test"}
+			fileContents["failed_test"] = "test output"
+			zr := makeZip(fileContents)
+
+			So(cacheFailedTests(c, zr, "gspath"), ShouldBeNil)
+
+			itm, err := memcache.GetKey(c, "gspath|failed_test")
+			So(err, ShouldBeNil)
+			So(itm.Value(), ShouldResemble, []byte("test output"))
+		})
+
+		getFailedTests = oldGetFailed
+	})
+
 }
