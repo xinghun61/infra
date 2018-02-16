@@ -21,6 +21,7 @@ from services import service_manager
 from testing import fake
 from testing import testing_helpers
 from tracker import issueattachment
+from tracker import tracker_helpers
 
 from third_party import cloudstorage
 
@@ -60,19 +61,24 @@ class IssueattachmentTest(unittest.TestCase):
         mimetype='text/plain', gcs_object_id='/pid/attachments/hello.txt')
     services.issue.TestAddAttachment(
         self.attachment, self.comment.id, self.issue.issue_id)
+    self.orig_sign_attachment_id = tracker_helpers.SignAttachmentID
+    tracker_helpers.SignAttachmentID = (
+        lambda aid: 'signed_%d' % aid)
 
   def tearDown(self):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
     self.testbed.deactivate()
     cloudstorage.open = self._old_gcs_open
+    tracker_helpers.SignAttachmentID = self.orig_sign_attachment_id
 
   def testGatherPageData_NotFound(self):
     aid = 12345
+    path = '/p/proj/issues/attachment?aid=%s&signed_aid=signed_%d' % (
+        aid, aid)
     # But, no such attachment is in the database.
     _request, mr = testing_helpers.GetRequestObjects(
-        project=self.project,
-        path='/p/proj/issues/attachment?aid=%s' % aid,
+        project=self.project, path=path,
         perms=permissions.EMPTY_PERMISSIONSET)
     with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet.GatherPageData(mr)
@@ -82,17 +88,17 @@ class IssueattachmentTest(unittest.TestCase):
 
   def testGatherPageData_PermissionDenied(self):
     aid = self.attachment.attachment_id
+    path = '/p/proj/issues/attachment?aid=%s&signed_aid=signed_%d' % (
+        aid, aid)
     _request, mr = testing_helpers.GetRequestObjects(
-        project=self.project,
-        path='/p/proj/issues/attachment?aid=%s' % aid,
+        project=self.project, path=path,
         perms=permissions.EMPTY_PERMISSIONSET)  # not even VIEW
     self.assertRaises(
         permissions.PermissionException,
         self.servlet.GatherPageData, mr)
 
     _request, mr = testing_helpers.GetRequestObjects(
-        project=self.project,
-        path='/p/proj/issues/attachment?aid=%s' % aid,
+        project=self.project, path=path,
         perms=permissions.READ_ONLY_PERMISSIONSET)  # includes VIEW
 
     # issue is now deleted
@@ -116,9 +122,10 @@ class IssueattachmentTest(unittest.TestCase):
         '/pid/attachments/hello.txt',
         self.attachment.filename).AndReturn(True)
     self.mox.StubOutWithMock(self.servlet, 'redirect')
+    path = '/p/proj/issues/attachment?aid=%s&signed_aid=signed_%d' % (
+        aid, aid)
     _request, mr = testing_helpers.GetRequestObjects(
-        project=self.project,
-        path='/p/proj/issues/attachment?aid=%s' % aid,
+        project=self.project, path=path,
         perms=permissions.READ_ONLY_PERMISSIONSET)  # includes VIEW
     self.servlet.redirect(
       mox.And(mox.StrContains('googleusercontent.com'),
@@ -129,6 +136,8 @@ class IssueattachmentTest(unittest.TestCase):
 
   def testGatherPageData_Download_WithoutDisposition(self):
     aid = self.attachment.attachment_id
+    path = '/p/proj/issues/attachment?aid=%s&signed_aid=signed_%d' % (
+        aid, aid)
     self.mox.StubOutWithMock(gcs_helpers, 'MaybeCreateDownload')
     gcs_helpers.MaybeCreateDownload(
         'app_default_bucket',
@@ -136,8 +145,7 @@ class IssueattachmentTest(unittest.TestCase):
         self.attachment.filename).AndReturn(False)
     self.mox.StubOutWithMock(self.servlet, 'redirect')
     _request, mr = testing_helpers.GetRequestObjects(
-        project=self.project,
-        path='/p/proj/issues/attachment?aid=%s' % aid,
+        project=self.project, path=path,
         perms=permissions.READ_ONLY_PERMISSIONSET)  # includes VIEW
     self.servlet.redirect(
       mox.And(mox.StrContains('googleusercontent.com'),
@@ -148,6 +156,8 @@ class IssueattachmentTest(unittest.TestCase):
 
   def testGatherPageData_DownloadBadFilename(self):
     aid = self.attachment.attachment_id
+    path = '/p/proj/issues/attachment?aid=%s&signed_aid=signed_%d' % (
+        aid, aid)
     self.attachment.filename = '<script>alert("xsrf")</script>.txt';
     safe_filename = 'attachment-%d.dat' % aid
     self.mox.StubOutWithMock(gcs_helpers, 'MaybeCreateDownload')
@@ -158,7 +168,7 @@ class IssueattachmentTest(unittest.TestCase):
     self.mox.StubOutWithMock(self.servlet, 'redirect')
     _request, mr = testing_helpers.GetRequestObjects(
         project=self.project,
-        path='/p/proj/issues/attachment?aid=%s' % aid,
+        path=path,
         perms=permissions.READ_ONLY_PERMISSIONSET)  # includes VIEW
     self.servlet.redirect(mox.And(
         mox.Not(mox.StrContains(self.attachment.filename)),
