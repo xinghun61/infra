@@ -21,6 +21,7 @@ from third_party import cloudstorage
 from third_party.cloudstorage import errors
 
 from framework import filecontent
+from framework import framework_constants
 
 
 ATTACHMENT_TTL = timedelta(seconds=30)
@@ -54,12 +55,19 @@ def DeleteObjectFromGCS(object_id):
 
 def StoreObjectInGCS(
     content, mime_type, project_id, thumb_width=DEFAULT_THUMB_WIDTH,
-    thumb_height=DEFAULT_THUMB_HEIGHT):
+    thumb_height=DEFAULT_THUMB_HEIGHT, filename=None):
   bucket_name = app_identity.get_default_gcs_bucket_name()
   guid = uuid.uuid4()
   object_id = '/%s/attachments/%s' % (project_id, guid)
   object_path = '/' + bucket_name + object_id
-  with cloudstorage.open(object_path, 'w', mime_type) as f:
+  options = {}
+  if filename:
+    if not framework_constants.FILENAME_RE.match(filename):
+      logging.info('bad file name: %s' % filename)
+      filename = 'attachment.dat'
+    options['Content-Disposition'] = 'inline; filename="%s"' % filename
+  logging.info('Writing with options %r', options)
+  with cloudstorage.open(object_path, 'w', mime_type, options=options) as f:
     f.write(content)
 
   if mime_type in RESIZABLE_MIME_TYPES:

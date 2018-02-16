@@ -2233,7 +2233,8 @@ class IssueService(object):
 
     if attachments:
       for filename, body, mimetype in attachments:
-        gcs_object_id = gcs_helpers.StoreObjectInGCS(body, mimetype, project_id)
+        gcs_object_id = gcs_helpers.StoreObjectInGCS(
+            body, mimetype, project_id, filename=filename)
         attach = tracker_pb2.Attachment()
         # attachment id is determined later by the SQL DB.
         attach.filename = filename

@@ -163,3 +163,5 @@ PRETTIFY_FILENAME_CLASS_MAP = {
 }
 
 OAUTH_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
+
+FILENAME_RE = re.compile('^[-_.a-zA-Z0-9 #+()]+$')

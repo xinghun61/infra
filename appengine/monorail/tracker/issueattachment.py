@@ -23,6 +23,7 @@ from google.appengine.api import app_identity
 from google.appengine.api import images
 
 from framework import exceptions
+from framework import framework_constants
 from framework import framework_helpers
 from framework import gcs_helpers
 from framework import permissions
@@ -35,8 +36,6 @@ from tracker import tracker_views
 # This will likely appear blank or as a broken image icon in the browser.
 NO_PREVIEW_ICON = ''
 NO_PREVIEW_MIME_TYPE = 'image/png'
-
-FILE_RE = re.compile('^[-_.a-zA-Z0-9 #+()]+$')
 
 
 class AttachmentPage(servlet.Servlet):
@@ -79,7 +78,7 @@ class AttachmentPage(servlet.Servlet):
     elif not mr.inline:
       # Downloads are stored in a separate obj with disposiiton set.
       filename = attachment.filename
-      if not FILE_RE.match(filename):
+      if not framework_constants.FILENAME_RE.match(filename):
         logging.info('bad file name: %s' % attachment.attachment_id)
         filename = 'attachment-%d.dat' % attachment.attachment_id
       if gcs_helpers.MaybeCreateDownload(

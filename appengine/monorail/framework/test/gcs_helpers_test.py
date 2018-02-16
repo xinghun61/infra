@@ -62,7 +62,9 @@ class GcsHelpersTest(unittest.TestCase):
     uuid.uuid4().AndReturn(guid)
 
     self.mox.StubOutWithMock(cloudstorage, 'open')
-    cloudstorage.open(object_path, 'w', mime_type).AndReturn(fake.FakeFile())
+    cloudstorage.open(
+        object_path, 'w', mime_type, options={}
+        ).AndReturn(fake.FakeFile())
     cloudstorage.open(object_path + '-thumbnail', 'w', mime_type).AndReturn(
         fake.FakeFile())
 
@@ -94,13 +96,16 @@ class GcsHelpersTest(unittest.TestCase):
     uuid.uuid4().AndReturn(guid)
 
     self.mox.StubOutWithMock(cloudstorage, 'open')
-    cloudstorage.open(object_path, 'w', mime_type).AndReturn(fake.FakeFile())
+    options = {'Content-Disposition': 'inline; filename="file.ext"'}
+    cloudstorage.open(
+        object_path, 'w', mime_type, options=options
+        ).AndReturn(fake.FakeFile())
 
     self.mox.ReplayAll()
 
     ret_id = gcs_helpers.StoreObjectInGCS(
         content, mime_type, project_id, gcs_helpers.DEFAULT_THUMB_WIDTH,
-        gcs_helpers.DEFAULT_THUMB_HEIGHT)
+        gcs_helpers.DEFAULT_THUMB_HEIGHT, filename='file.ext')
     self.mox.VerifyAll()
     self.assertEquals(object_id, ret_id)
 
