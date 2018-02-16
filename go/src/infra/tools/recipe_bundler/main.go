@@ -64,6 +64,10 @@ in conjunction with the infra.git "recipe_bundler" recipe.
 		},
 
 		Commands: []*subcommands.Command{
+			bundleCmd(authDefaults),
+
+			{}, // spacer
+
 			subcommands.CmdHelp,
 			version.SubcommandVersion,
 
