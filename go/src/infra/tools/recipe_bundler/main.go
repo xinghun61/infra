@@ -12,13 +12,11 @@ import (
 
 	"github.com/maruel/subcommands"
 
-	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/cipd/version"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
-	"go.chromium.org/luci/hardcoded/chromeinfra"
 )
 
 func handleInterruption(ctx context.Context) context.Context {
@@ -41,8 +39,6 @@ func handleInterruption(ctx context.Context) context.Context {
 func main() {
 	mathrand.SeedRandomly()
 
-	authDefaults := chromeinfra.DefaultAuthOptions()
-
 	var application = cli.Application{
 		Name: "recipe_bundler",
 		Title: `"Recipe Bundler"
@@ -64,18 +60,12 @@ in conjunction with the infra.git "recipe_bundler" recipe.
 		},
 
 		Commands: []*subcommands.Command{
-			bundleCmd(authDefaults),
+			bundleCmd(),
 
 			{}, // spacer
 
 			subcommands.CmdHelp,
 			version.SubcommandVersion,
-
-			{}, // spacer
-
-			authcli.SubcommandLogin(authDefaults, "auth-login", false),
-			authcli.SubcommandLogout(authDefaults, "auth-logout", false),
-			authcli.SubcommandInfo(authDefaults, "auth-info", false),
 		},
 	}
 

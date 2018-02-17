@@ -32,8 +32,7 @@ func TestFlagParse(t *testing.T) {
 		for _, tc := range cases {
 			tc := tc
 			Convey(tc.name, func() {
-				_, err := tc.input.parseFlags()
-				So(err, ShouldErrLike, tc.expect)
+				So(tc.input.parseFlags(), ShouldErrLike, tc.expect)
 			})
 		}
 	})

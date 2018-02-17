@@ -13,19 +13,17 @@ import (
 	"strings"
 
 	"github.com/maruel/subcommands"
+	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/auth"
-	"go.chromium.org/luci/auth/client/authcli"
-	"go.chromium.org/luci/cipd/client/cipd"
 	cipd_common "go.chromium.org/luci/cipd/client/cipd/common"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag/stringmapflag"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/hardcoded/chromeinfra"
+	"go.chromium.org/luci/common/sync/parallel"
 )
 
-func bundleCmd(authOpts auth.Options) *subcommands.Command {
+func bundleCmd() *subcommands.Command {
 	return &subcommands.Command{
 		UsageLine: "bundle [options]",
 		ShortDesc: "Bundles recipe repos",
@@ -33,7 +31,7 @@ func bundleCmd(authOpts auth.Options) *subcommands.Command {
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdBundle{}
 			ret.logCfg.Level = logging.Info
-			ret.authFlags.Register(&ret.Flags, authOpts)
+			ret.logCfg.AddFlags(&ret.Flags)
 
 			ret.Flags.Var(&ret.reposInput, "r",
 				`(repeatable) A `+"`"+`repospec`+"`"+` to bundle (e.g. 'host.name/to/repo').
@@ -68,16 +66,21 @@ type fetchSpec struct {
 	ref      string
 }
 
+func (f fetchSpec) isPinned() bool {
+	return f.revision != "FETCH_HEAD"
+}
+
 type cmdBundle struct {
 	subcommands.CommandRunBase
 
-	logCfg    logging.Config
-	authFlags authcli.Flags
+	logCfg logging.Config
 
 	reposInput        stringmapflag.Value
 	localDest         string
 	workdir           string
 	packageNamePrefix string
+
+	env subcommands.Env
 
 	repos map[string]fetchSpec
 }
@@ -129,67 +132,125 @@ func parseRepoInput(input stringmapflag.Value) (ret map[string]fetchSpec, err er
 	return
 }
 
-func (c *cmdBundle) parseFlags() (opts auth.Options, err error) {
+func (c *cmdBundle) parseFlags() (err error) {
 	if len(c.reposInput) == 0 {
-		err = errors.New("no repos specified")
-		return
+		return errors.New("no repos specified")
 	}
 
 	c.repos, err = parseRepoInput(c.reposInput)
 	if err != nil {
-		err = errors.Annotate(err, "parsing repos").Err()
-		return
+		return errors.Annotate(err, "parsing repos").Err()
 	}
 
 	if c.localDest != "" {
 		c.localDest, err = filepath.Abs(c.localDest)
 		if err != nil {
-			err = errors.Annotate(err, "getting abspath of -local").Err()
-			return
+			return errors.Annotate(err, "getting abspath of -local").Err()
 		}
 		if err = os.MkdirAll(c.localDest, 0777); err != nil {
-			err = errors.Annotate(err, "ensuring -local directory").Err()
-			return
+			return errors.Annotate(err, "ensuring -local directory").Err()
 		}
 	}
 
 	if err = cipd_common.ValidatePackageName(c.packageNamePrefix); err != nil {
-		err = errors.Annotate(err, "validating -package-name-prefix").Err()
-		return
+		return errors.Annotate(err, "validating -package-name-prefix").Err()
 	}
 
-	return c.authFlags.Options()
+	if c.workdir, err = filepath.Abs(c.workdir); err != nil {
+		return errors.Annotate(err, "resolving workdir").Err()
+	}
+
+	return nil
 }
 
 func (c *cmdBundle) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
+	c.env = env
 
-	authOpts, err := c.parseFlags()
-	if err != nil {
+	if err := c.parseFlags(); err != nil {
 		logging.WithError(err).Errorf(ctx, "parsing flags")
 		return 1
 	}
-	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
-	authClient, err := authenticator.Client()
-	if err != nil {
-		logging.WithError(err).Errorf(ctx, "while getting authenticator")
+
+	if err := c.run(ctx); err != nil {
+		logging.WithError(err).Errorf(ctx, "failed")
 		return 1
 	}
-
-	cipdOpts := cipd.ClientOptions{
-		ServiceURL:          chromeinfra.CIPDServiceURL,
-		AuthenticatedClient: authClient,
-	}
-	cipdOpts.LoadFromEnv(func(key string) string {
-		logging.Warningf(ctx, "CHECK %s", key)
-		return env[key].Value
-	})
-	client, err := cipd.NewClient(cipdOpts)
-	if err != nil {
-		logging.WithError(err).Errorf(ctx, "while generating cipd client")
-		return 1
-	}
-
-	logging.Warningf(ctx, "I GOT: %s %v", c.repos, client)
 	return 0
+}
+
+var pathSquisher = strings.NewReplacer(
+	"/", "_",
+	"\\", "_",
+)
+
+func (c *cmdBundle) mkRepoDirs(repoName string) (repo gitRepo, bundledir string, err error) {
+	base := filepath.Join(c.workdir, pathSquisher.Replace(repoName))
+	repo = gitRepo(filepath.Join(base, "repo"))
+	bundledir = filepath.Join(base, "bndl")
+
+	if err = os.MkdirAll(string(repo), 0777); err != nil {
+		return
+	}
+
+	err = os.MkdirAll(bundledir, 0777)
+	return
+}
+
+type gitRepo string
+
+func (g gitRepo) git(ctx context.Context, args ...string) error {
+	logging.Debugf(ctx, "running: %q", args)
+	return nil
+}
+
+func (g gitRepo) hasCommit(ctx context.Context, commit string) bool {
+	return g.git(ctx, "cat-file", "-e", commit+"^{commit}") == nil
+}
+
+func (g gitRepo) currentRevision(ctx context.Context) (string, error) {
+	return "", nil
+}
+
+func (c *cmdBundle) run(ctx context.Context) error {
+	return parallel.FanOutIn(func(ch chan<- func() error) {
+		for repoName, fetch := range c.repos {
+			repoName, fetch := repoName, fetch
+			ch <- func() error {
+				repo, bundleDir, err := c.mkRepoDirs(repoName)
+				if err != nil {
+					return errors.Annotate(err, "making repo dirs").Err()
+				}
+				ctx := logging.SetFields(ctx, logging.Fields{
+					"repo":    repoName,
+					"workdir": filepath.Dir(bundleDir),
+				})
+
+				logging.Infof(ctx, "fetching: %v", fetch)
+				if err = repo.git(ctx, "init"); err != nil {
+					return err
+				}
+				if !fetch.isPinned() || !repo.hasCommit(ctx, fetch.revision) {
+					if err = repo.git(ctx, "fetch", "https://"+repoName, fetch.ref); err != nil {
+						return err
+					}
+				}
+				if err = repo.git(ctx, "checkout", fetch.revision); err != nil {
+					return err
+				}
+				if fetch.revision, err = repo.currentRevision(ctx); err != nil {
+					return err
+				}
+				logging.Infof(ctx, "got revision: %q", fetch.revision)
+
+				// TODO
+				// if ! local check cipd to see if this is done already
+				// recipe fetch
+				// recipe bundle
+				// build cipd package
+				// [upload cipd package]
+				return nil
+			}
+		}
+	})
 }
