@@ -62,13 +62,6 @@ class SomAnnotations extends Polymer.mixinBehaviors(
       _fileBugErrorMessage: String,
       _fileBugModel: Object,
       _fileBugCallback: Function,
-      _fileBugLabels: {
-        type: Array,
-        computed: '_computeFileBugLabels(tree)',
-        value: function() {
-          return [];
-        },
-      },
       _filedBug: {
         type: Boolean,
         value: false,
@@ -186,25 +179,6 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     this._fileBugCallback = callback;
     this._fileBugModel = alerts;
 
-    let bugSummary = 'Bug filed from Sheriff-o-Matic';
-    let trooperBug = false;
-
-    if (alerts) {
-      trooperBug = alerts.some((alert) => {
-        return this.isTrooperAlertType(alert.type);
-      });
-      if (alerts.length > 1) {
-        bugSummary = `${alerts[0].title} and ${alerts.length - 1} other alerts`;
-      } else if (alerts.length > 0) {
-        bugSummary = alerts[0].title;
-      }
-    }
-
-    let extras = '';
-    if (trooperBug) {
-      extras = '&template=Build%20Infrastructure';
-    }
-
     this._bugErrorMessage = '';
 
     let autosnoozeTime = parseInt(this.$.autosnoozeTime.value, 10);
@@ -217,22 +191,18 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     this._fileBugModel = alerts;
 
     let bugSummary = 'Bug filed from Sheriff-o-Matic';
-    let trooperBug = false;
 
     if (alerts) {
-      trooperBug = alerts.some((alert) => {
-        return this.isTrooperAlertType(alert.type);
-      });
       if (alerts.length > 1) {
         bugSummary = `${alerts[0].title} and ${alerts.length - 1} other alerts`;
-      } else if (alerts.length > 0) {
+      } else if (alerts.length) {
         bugSummary = alerts[0].title;
       }
     }
 
     this.$.fileBug.summary = bugSummary;
     this.$.fileBug.description = this._commentForBug(this._fileBugModel);
-    this.$.fileBug.labels = this._fileBugLabels;
+    this.$.fileBug.labels = this._computeFileBugLabels(this.tree, alerts);
 
     this.$.fileBug.open();
   }
@@ -426,16 +396,29 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     return DefaultSnoozeTimes['*'];
   }
 
-  _computeFileBugLabels(tree) {
+  _computeFileBugLabels(tree, alerts) {
     let labels = ['Filed-Via-SoM'];
     if (!tree) {
       return labels;
     }
+
+    // TODO(zhangtiff): Replace this with some way to mark internal trees and
+    // automatically add RVG labels to them.
     if (tree.name === 'android') {
       labels.push('Restrict-View-Google');
     }
     if (tree.bug_queue_label) {
       labels.push(tree.bug_queue_label);
+    }
+
+    if (alerts) {
+      let trooperBug = alerts.some((alert) => {
+        return this.isTrooperAlertType(alert.type);
+      });
+
+      if (trooperBug) {
+        labels.push('Infra-Troopers');
+      }
     }
     return labels;
   }
