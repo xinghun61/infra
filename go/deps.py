@@ -647,18 +647,6 @@ def install(workspace, force=False, update_out=None, skip_bundle=False):
     print 'Removing non-source code files...'
     purify_directory(os.path.join(workspace.vendor_root, 'src'), '')
 
-  # Prebuild all packages specified in deps.lock into *.a archives. It should
-  # speed up compilation of code that depends on them. Note that doing simple
-  # "go install ./src/..." won't work, because it will try to compiled ALL
-  # subpackages of vendored repos, not only ones we use. Since we don't use
-  # them, their dependencies weren't fetched into .vendor/*, and they won't
-  # compile.
-  print 'Rebuilding libraries...'
-  assert read_file(os.path.join(workspace.gobase, 'deps.lock')) == required
-  deps = [path for path in flatten_deps(parse_glide_lock(required))
-          if contains_subpackages(workspace, path)]
-  call(workspace, 'go', ['install', '-v'] + deps)
-
   # We will install only interesting subset of executables below. Nuke
   # everything else to avoid polluting PATH with unimportant stuff.
   remove_directory(os.path.join(workspace.vendor_root, 'bin'))

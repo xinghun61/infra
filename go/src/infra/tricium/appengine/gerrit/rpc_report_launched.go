@@ -41,7 +41,7 @@ func reportLaunched(c context.Context, req *admin.ReportLaunchedRequest, gerrit 
 	// repo for the project. This request is typically done by the Gerrit poller.
 	request := &track.AnalyzeRequest{ID: req.RunId}
 	if err := ds.Get(c, request); err != nil {
-		return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %s): %v", req.RunId, err)
+		return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %d): %v", req.RunId, err)
 	}
 	if request.GerritReportingDisabled {
 		logging.Infof(c, "Gerrit reporting disabled, not reporting launched (run ID: %s, project: %s)", req.RunId, request.Project)

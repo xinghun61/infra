@@ -42,7 +42,7 @@ func reportCompleted(c context.Context, req *admin.ReportCompletedRequest, gerri
 			// The Git repo and ref in the service request should correspond to the Gerrit
 			// repo for the project. This request is typically done by the Gerrit poller.
 			if err := ds.Get(c, request); err != nil {
-				return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %s): %v", req.RunId, err)
+				return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %d): %v", req.RunId, err)
 			}
 			return nil
 		},

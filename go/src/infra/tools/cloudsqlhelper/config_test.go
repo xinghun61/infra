@@ -89,7 +89,7 @@ func TestReadConfigHappyPath(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(cfg, expected) {
-		t.Errorf("%s != %s", cfg, expected)
+		t.Errorf("%v != %v", cfg, expected)
 	}
 }
 
