@@ -75,7 +75,7 @@ class GoApi(util.ModuleShim):
     resp.raise_on_error()
 
     assert resp.output and resp.output.startswith("go")
-    version = resp.output[2:]
+    version = resp.output[2:].strip()
 
     url = self._get_download_url(version, platform_name, platform_bits)
     self.m.step.active_result.presentation.links['go %r' % (version,)] = (
