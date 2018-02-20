@@ -28,4 +28,4 @@ class DelayPipeline(pipelines.AsynchronousPipeline):
       pass
 
   def CallbackImpl(self, seconds, _):
-    self.Complete(seconds)
+    return None, seconds

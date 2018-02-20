@@ -70,8 +70,13 @@ class TestCase(BaseTestCase, testing.AppengineTestCase):  # pragma: no cover.
 
     def Mocked_RunImpl(pipeline_class_instance, arg):
       self.assertEqual(expected_input, arg)
-      pipeline_class_instance.Complete(mocked_output)
+      pipeline_class_instance.get_callback_task().add()
 
+    def Mocked_CallbackImpl(_pipeline_class_instance, arg, _parameters):
+      self.assertEqual(expected_input, arg)
+      return None, mocked_output
+
+    self.mock(pipeline_class, 'CallbackImpl', Mocked_CallbackImpl)
     self.mock(pipeline_class, 'RunImpl', Mocked_RunImpl)
 
   def MockGeneratorPipeline(self, pipeline_class, expected_input,

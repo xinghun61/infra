@@ -57,7 +57,7 @@ class RunCompileTryJobPipeline(AsynchronousPipeline):
       if not try_job_id:
         logging.error('Failed to schedule a try job for %s/%s/%d.' %
                       run_try_job_params.build_key.GetParts())
-        self.Complete({})
+        self.complete({})  # TODO(stgao): remove this temporary hack.
         return
 
       try_job_type = failure_type.COMPILE
@@ -141,9 +141,7 @@ class RunCompileTryJobPipeline(AsynchronousPipeline):
     elif build.status == BuildbucketBuild.COMPLETED:
       result = try_job_service.OnTryJobCompleted(callback_params, try_job_data,
                                                  build, error)
-      result = CompileTryJobResult.FromSerializable(result)
-      self.Complete(result)
-      return
+      return None, CompileTryJobResult.FromSerializable(result)
     else:
       new_params = try_job_service.OnTryJobRunning(callback_params,
                                                    try_job_data, build, error)

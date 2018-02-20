@@ -105,7 +105,32 @@ class _AsynchronousPipelineWithWrongOutputType(pipelines.AsynchronousPipeline):
       pass
 
   def CallbackImpl(self, arg, parameters):
-    self.Complete(parameters)
+    return None, parameters
+
+
+class _AsynchronousPipelineNeedMoreCallback(pipelines.AsynchronousPipeline):
+  input_type = int
+  output_type = basestring
+
+  def RunImpl(self, _arg):
+    self.get_callback_task(params={}).add()
+    self.get_callback_task(params={'trigger': ''}).add()
+
+  def CallbackImpl(self, _arg, parameters):
+    if not parameters:
+      return
+    return None, 'result'
+
+
+class _AsynchronousPipelineCallbackError(pipelines.AsynchronousPipeline):
+  input_type = int
+  output_type = str
+
+  def RunImpl(self, _arg):
+    self.get_callback_task(params={}).add()
+
+  def CallbackImpl(self, _arg, _parameters):
+    return 'error message', None
 
 
 class _GeneratorPipelineSpawnAsynchronousPipelineWithWrongOutputType(
@@ -128,7 +153,7 @@ class _AsynchronousPipelineOutputAList(pipelines.AsynchronousPipeline):
       pass
 
   def CallbackImpl(self, arg, parameters):
-    self.Complete([int(parameters['a'])])
+    return None, [int(parameters['a'])]
 
 
 class _GeneratorPipelineUnwrapInput(pipelines.GeneratorPipeline):
@@ -357,3 +382,22 @@ class PipelinesTest(TestCase):
     p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
     p.complete()
     self.assertTrue(warning_func.called)
+    warning_func.assert_called()
+
+  def testAsynchronousPipelineNeedMoreCallback(self):
+    p = _AsynchronousPipelineNeedMoreCallback(1)
+    p.start()
+    self.execute_queued_tasks()
+    p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
+    self.assertFalse(p.was_aborted)
+    self.assertEqual('result', p.outputs.default.value)
+
+  @mock.patch('logging.error')
+  def testAsynchronousPipelineCallbackError(self, error_func):
+    p = _AsynchronousPipelineCallbackError(1)
+    p.start()
+    # In unittests, failed tasks are not retried but failed instead.
+    with self.assertRaises(Exception):
+      self.execute_queued_tasks()
+    error_func.assert_called_with('Callback failed with error: %s',
+                                  'error message')

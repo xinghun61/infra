@@ -88,7 +88,7 @@
 
     def CallbackImpl(self, info, parameters):
       ...  # Read results from Swarming/Isolate, and compute test pass rates.
-      self.Complete(...)
+      return None, {'test': 0.80}
 """
 
 import logging
@@ -136,9 +136,10 @@ def _ValidateType(parameter_type, parameter_name):
   """
   assert type(parameter_type) == types.TypeType, (
       '%s must be defined with a class or a type' % parameter_name)
-  assert any(issubclass(parameter_type, t) for t in _SUPPORTED_TYPES), (
-      '%s must be in supported types: %r.' % (parameter_name,
-                                              _SUPPORTED_TYPE_NAMES))
+  assert any(issubclass(parameter_type, t)
+             for t in _SUPPORTED_TYPES), ('%s must be in supported types: %r.' %
+                                          (parameter_name,
+                                           _SUPPORTED_TYPE_NAMES))
 
 
 def _ConvertInputObjectToPipelineParameters(input_type, args, kwargs):
@@ -295,10 +296,7 @@ class GeneratorPipeline(BasePipeline):
 
 
 class AsynchronousPipeline(BasePipeline):
-  """Base class for asynchronous pipelines waiting for external dependencies.
-
-  Subclass should use the function `Complete` to report the pipeline output.
-  """
+  """Base class for asynchronous pipelines waiting for external dependencies."""
   async = True
 
   def CallbackImpl(self, arg, parameters):
@@ -308,15 +306,15 @@ class AsynchronousPipeline(BasePipeline):
       arg (input_type): The input of the pipeline.
       parameters (dict): A mapping from names to string values of additional
           parameters.
+
+    Returns:
+      None, if external callback is still needed.
+      A tuple (error_message, None), if error occurred. The message is a string.
+        It will cause up to 5 retries of this callback with the same parameters.
+      A tuple (None, result), if the pipeline should be set to completed with
+        the given result. Result should match the defined output type.
     """
     raise NotImplementedError()
-
-  def Complete(self, result):
-    if result and not isinstance(result, self.output_type):
-      self.abort('Expected output of type %s, but got %s' %
-                 (self.output_type.__name__, type(result).__name__))
-      return
-    self.complete(_ConvertToPipelineOutput(result))
 
   def run(self, *args, **kwargs):
     self._LogStatusPath()
@@ -324,10 +322,25 @@ class AsynchronousPipeline(BasePipeline):
     result = self.RunImpl(arg)
     if result is not None:
       logging.warning('%s.RunImpl should return nothing, but got a %s',
-                      self.__class__.__name__,
-                      type(result).__name__)
+                      self.__class__.__name__, type(result).__name__)
 
   def callback(self, **additional_parameters):
     arg = _ConvertPipelineParametersToInputObject(self.input_type, self.args,
                                                   self.kwargs)
-    return self.CallbackImpl(arg, additional_parameters)
+    returned_value = self.CallbackImpl(arg, additional_parameters)
+    if returned_value is None:
+      return  # More external callback is needed.
+
+    error, result = returned_value
+    if error is not None:
+      # Signal Pipeline framework to retry the callback up to 5 times.
+      logging.error('Callback failed with error: %s', error)
+      return 500, 'plain/text', error
+
+    if result and not isinstance(result, self.output_type):
+      self.abort('Expected output of type %s, but got %s' %
+                 (self.output_type.__name__, type(result).__name__))
+      return
+
+    # Marks the pipeline as complete with the given result.
+    self.complete(_ConvertToPipelineOutput(result))

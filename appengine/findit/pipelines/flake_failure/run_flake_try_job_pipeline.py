@@ -82,7 +82,7 @@ class RunFlakeTryJobPipeline(AsynchronousPipeline):
       if not try_job_id:
         analysis.LogError('Failed to schedule a flake try job for %s' %
                           run_try_job_params.revision)
-        self.Complete({})
+        self.complete({})  # TODO(lijeffrey): remove this temporary hack.
         return
 
       try_job_type = failure_type.FLAKY_TEST
@@ -172,9 +172,7 @@ class RunFlakeTryJobPipeline(AsynchronousPipeline):
           'Try job completed for revision %s' % run_try_job_params.revision)
       result = try_job_service.OnTryJobCompleted(callback_params, try_job_data,
                                                  build, error)
-      result = FlakeTryJobResult.FromSerializable(result)
-      self.Complete(result)
-      return
+      return None, FlakeTryJobResult.FromSerializable(result)
 
     new_params = try_job_service.OnTryJobRunning(callback_params, try_job_data,
                                                  build, error)
