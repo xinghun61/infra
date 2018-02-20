@@ -20,7 +20,6 @@ from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from services import build_failure_analysis
 from services.parameters import TestFailedStep
-from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 from waterfall.test import wf_testcase
 
@@ -263,21 +262,15 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(15, justification['score'])
 
   def testCheckFilesAgainstUnrelatedCL(self):
-    failure_signal_json = {
-        'files': {
-            'src/a/b/f.cc': [],
-        }
-    }
+    failure_signal_json = {'files': {'src/a/b/f.cc': [],}}
     change_log_json = {
         'revision':
             'rev',
-        'touched_files': [
-            {
-                'change_type': ChangeType.ADD,
-                'old_path': '/dev/null',
-                'new_path': 'a/d/f1.cc'
-            },
-        ]
+        'touched_files': [{
+            'change_type': ChangeType.ADD,
+            'old_path': '/dev/null',
+            'new_path': 'a/d/f1.cc'
+        },]
     }
     deps_info = {}
 
@@ -331,7 +324,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     expected_hints = {
         ('rolled dependency third_party/dep with changes in '
          'https://url_dep/+log/6..8?pretty=fuller (and f.cc was in log)'):
-             1
+            1
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -382,7 +375,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         ('rolled dependency third_party/dep with changes in '
          'https://url_dep/+log/1..2?pretty=fuller '
          '(and f.cc(added) was in log)'):
-             5
+            5
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -430,7 +423,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         ('rolled dependency third_party/dep with changes in '
          'https://url_dep/+log/6..8?pretty=fuller '
          '(and f.cc[2, 7] was in log)'):
-             4
+            4
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -463,7 +456,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         ('rolled dependency third_party/dep with changes in '
          'https://url_dep/+log/8..10?pretty=fuller '
          '(and f.cc(deleted) was in log)'):
-             5
+            5
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -526,32 +519,24 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                                         line_numbers)
 
   def testCheckFilesAgainstDEPSRollWithUnrelatedLinesChanged(self):
-    failure_signal_json = {
-        'files': {
-            'src/third_party/dep1/f.cc': [123],
-        }
-    }
+    failure_signal_json = {'files': {'src/third_party/dep1/f.cc': [123],}}
     change_log_json = {
         'revision':
             'rev',
-        'touched_files': [
-            {
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'DEPS',
-                'new_path': 'DEPS'
-            },
-        ]
+        'touched_files': [{
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'DEPS',
+            'new_path': 'DEPS'
+        },]
     }
     deps_info = {
         'deps_rolls': {
-            'rev': [
-                {
-                    'path': 'src/third_party/dep1',
-                    'repo_url': 'https://url_dep1',
-                    'old_revision': '7',
-                    'new_revision': '9',
-                },
-            ]
+            'rev': [{
+                'path': 'src/third_party/dep1',
+                'repo_url': 'https://url_dep1',
+                'old_revision': '7',
+                'new_revision': '9',
+            },]
         }
     }
     self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
@@ -958,13 +943,10 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         121, build_failure_analysis.GetLowerBoundForAnalysis(failure_info))
 
-  @mock.patch.object(
-      waterfall_config, 'StepIsSupportedForMaster', return_value=True)
-  def testInitializeStepLevelResultStructured(self, _):
-    master_name = 'm'
+  def testInitializeStepLevelResultStructured(self):
     step_name = 'step'
     step_failure_info = TestFailedStep(
-        last_pass=119, current_failure=121, first_failure=120)
+        last_pass=119, current_failure=121, first_failure=120, supported=True)
 
     expected_result = {
         'step_name': step_name,
@@ -975,7 +957,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(expected_result,
                      build_failure_analysis.InitializeStepLevelResult(
-                         step_name, step_failure_info, master_name))
+                         step_name, step_failure_info))
 
   def testAddFileChangeMultipleOccurance(self):
     justification = build_failure_analysis._Justification()

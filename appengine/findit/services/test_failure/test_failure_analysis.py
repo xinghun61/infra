@@ -101,7 +101,6 @@ def AnalyzeTestFailure(failure_info, change_logs, deps_info, failure_signals):
 
   failed_steps = failure_info.failed_steps
   builds = failure_info.builds
-  master_name = failure_info.master_name
 
   cl_failure_map = defaultdict(build_failure_analysis.CLInfo)
 
@@ -113,7 +112,7 @@ def AnalyzeTestFailure(failure_info, change_logs, deps_info, failure_signals):
         build_failure_analysis.GetLowerBoundForAnalysis(step_failure_info))
     step_analysis_result = (
         build_failure_analysis.InitializeStepLevelResult(
-            step_name, step_failure_info, master_name))
+            step_name, step_failure_info))
 
     if is_test_level:
       step_analysis_result['tests'] = []

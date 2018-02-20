@@ -16,6 +16,7 @@ from services.parameters import CompileFailureInfo
 from services.parameters import FailureInfoBuilds
 from waterfall import buildbot
 from waterfall import build_util
+from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 
@@ -73,7 +74,13 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    failed_steps = {'a': {'current_failure': 124, 'first_failure': 124}}
+    failed_steps = {
+        'a': {
+            'current_failure': 124,
+            'first_failure': 124,
+            'supported': True
+        }
+    }
     builds = {
         124: {
             'chromium_revision': 'some_git_hash',
@@ -93,7 +100,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'a': {
             'last_pass': 123,
             'current_failure': 124,
-            'first_failure': 124
+            'first_failure': 124,
+            'supported': True
         }
     }
 
@@ -124,11 +132,13 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     failed_steps = {
         'a_tests': {
             'current_failure': 2,
-            'first_failure': 2
+            'first_failure': 2,
+            'supported': True
         },
         'unit_tests': {
             'current_failure': 2,
-            'first_failure': 2
+            'first_failure': 2,
+            'supported': True
         }
     }
     builds = {
@@ -152,12 +162,14 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'a_tests': {
             'current_failure': 2,
             'first_failure': 0,
-            'last_pass': None
+            'last_pass': None,
+            'supported': True
         },
         'unit_tests': {
             'current_failure': 2,
             'first_failure': 0,
-            'last_pass': None
+            'last_pass': None,
+            'supported': True
         }
     }
 
@@ -192,11 +204,13 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     failed_steps = {
         'net_unittests': {
             'current_failure': 123,
-            'first_failure': 123
+            'first_failure': 123,
+            'supported': True
         },
         'unit_tests': {
             'current_failure': 123,
-            'first_failure': 123
+            'first_failure': 123,
+            'supported': True
         }
     }
     builds = {
@@ -231,12 +245,14 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'net_unittests': {
             'last_pass': 122,
             'current_failure': 123,
-            'first_failure': 123
+            'first_failure': 123,
+            'supported': True
         },
         'unit_tests': {
             'last_pass': 121,
             'current_failure': 123,
-            'first_failure': 122
+            'first_failure': 122,
+            'supported': True
         }
     }
 
@@ -275,11 +291,13 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     failed_steps = {
         'net_unittests': {
             'current_failure': 123,
-            'first_failure': 123
+            'first_failure': 123,
+            'supported': True
         },
         'unit_tests': {
             'current_failure': 123,
-            'first_failure': 123
+            'first_failure': 123,
+            'supported': True
         }
     }
     builds = {
@@ -315,12 +333,14 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'net_unittests': {
             'last_pass': 121,
             'current_failure': 123,
-            'first_failure': 123
+            'first_failure': 123,
+            'supported': True
         },
         'unit_tests': {
             'last_pass': 121,
             'current_failure': 123,
-            'first_failure': 123
+            'first_failure': 123,
+            'supported': True
         }
     }
 
@@ -348,8 +368,9 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
                      failure_info.failed_steps.ToSerializable())
     self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
 
+  @mock.patch.object(ci_failure, '_StepIsSupportedForMaster', return_value=True)
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testGetBuildFailureInfo(self, mock_fn):
+  def testGetBuildFailureInfo(self, mock_fn, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -380,6 +401,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
             'abc_test': {
                 'current_failure': build_number,
                 'first_failure': build_number,
+                'supported': True
             }
         },
         'failure_type': failure_type.TEST,
@@ -469,3 +491,25 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
   def testAnyNewBuildSucceeded(self, mock_fn, *_):
     mock_fn.side_effect = [buildbot.FAILURE, buildbot.FAILURE]
     self.assertFalse(ci_failure.AnyNewBuildSucceeded('m', 'b', 123))
+
+  @mock.patch.object(
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value={
+          'canonical_step_name': 'unsupported_step1'
+      })
+  def testStepIsSupportedForMaster(self, _):
+    master_name = 'master1'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'unsupported_step1 on master1'
+    self.assertFalse(
+        ci_failure._StepIsSupportedForMaster(master_name, builder_name,
+                                             build_number, step_name))
+
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog',
+                     return_value={'canonical_step_name': 'step_name'})
+  def testGetCanonicalStepNameCached(self, mock_fn):
+    ci_failure._GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
+    ci_failure._GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
+    self.assertTrue(mock_fn.call_count < 2)

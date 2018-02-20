@@ -121,14 +121,13 @@ def AnalyzeCompileFailure(failure_info, change_logs, deps_info,
     return analysis_result, []
 
   builds = failure_info.builds
-  master_name = failure_info.master_name
   compile_failure_info = failure_info.failed_steps[step_name]
 
   failed_build_number = compile_failure_info.current_failure
   start_build_number = build_failure_analysis.GetLowerBoundForAnalysis(
       compile_failure_info)
   step_analysis_result = build_failure_analysis.InitializeStepLevelResult(
-      step_name, compile_failure_info, master_name)
+      step_name, compile_failure_info)
 
   if not step_analysis_result['supported']:
     return analysis_result, []

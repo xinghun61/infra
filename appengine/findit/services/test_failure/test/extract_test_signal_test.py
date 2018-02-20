@@ -42,6 +42,7 @@ _FAILURE_INFO = {
             'last_pass': 122,
             'current_failure': 123,
             'first_failure': 123,
+            'supported': True
         }
     }
 }
@@ -84,9 +85,15 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
             supported_step_name: {
                 'last_pass': 122,
                 'current_failure': 123,
-                'first_failure': 123
+                'first_failure': 123,
+                'supported': True
             },
-            unsupported_step_name: {}
+            unsupported_step_name: {
+                'last_pass': 122,
+                'current_failure': 123,
+                'first_failure': 123,
+                'supported': False
+            }
         }
     }
 
@@ -147,6 +154,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
                 'last_pass': 123,
                 'current_failure': 124,
                 'first_failure': 124,
+                'supported': True,
             }
         }
     }
@@ -203,6 +211,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
                 'last_pass': 221,
                 'current_failure': 223,
                 'first_failure': 222,
+                'supported': True,
                 'tests': {
                     'Unittest2.Subtest1': {
                         'current_failure': 223,
@@ -248,6 +257,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
                 'last_pass': 221,
                 'current_failure': 223,
                 'first_failure': 222,
+                'supported': True,
                 'tests': {
                     'Unittest2.Subtest1': {
                         'current_failure': 223,
@@ -324,6 +334,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
                 'last_pass': 221,
                 'current_failure': 223,
                 'first_failure': 222,
+                'supported': True,
                 'tests': {
                     'Unittest2.Subtest1': {
                         'current_failure': 223,
@@ -374,6 +385,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
                 'last_pass': 221,
                 'current_failure': 223,
                 'first_failure': 222,
+                'supported': True,
                 'tests': {
                     'Unittest2.Subtest1': {
                         'current_failure': 223,

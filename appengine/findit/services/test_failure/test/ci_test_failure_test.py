@@ -47,7 +47,11 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     step.isolated = True
     step.put()
 
-    failed_step = {'current_failure': 223, 'first_failure': 221}
+    failed_step = {
+        'current_failure': 223,
+        'first_failure': 221,
+        'supported': True
+    }
     failed_step = TestFailedStep.FromSerializable(failed_step)
 
     ci_test_failure._InitiateTestLevelFirstFailureAndSaveLog(
@@ -57,6 +61,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'current_failure': 223,
         'first_failure': 221,
         'last_pass': None,
+        'supported': True,
         'list_isolated_data': None,
         'tests': {
             'Unittest2.Subtest1': {
@@ -88,6 +93,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'current_failure': 223,
         'first_failure': 221,
         'last_pass': 220,
+        'supported': True,
         'tests': {}
     }
     failed_step = TestFailedStep.FromSerializable(failed_step)
@@ -99,6 +105,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'current_failure': 223,
         'first_failure': 221,
         'last_pass': 220,
+        'supported': True,
         'list_isolated_data': None,
         'tests': {
             'Unittest2.Subtest1': {
@@ -131,6 +138,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
                 221,
             'first_failure':
                 221,
+            'supported':
+                True,
             'list_isolated_data': [{
                 'isolatedserver': 'https://isolateserver.appspot.com',
                 'namespace': 'default-gzip',
@@ -212,6 +221,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'current_failure': 224,
         'first_failure': 221,
         'last_pass': 220,
+        'supported': True,
         'tests': {
             'Unittest2.Subtest1': {
                 'current_failure': 224,
@@ -260,6 +270,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'current_failure': 224,
         'first_failure': 221,
         'last_pass': 220,
+        'supported': True,
         'list_isolated_data': None,
         'tests': {
             'Unittest2.Subtest1': {
@@ -286,6 +297,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     failed_step = {
         'current_failure': 223,
         'first_failure': 221,
+        'supported': True,
         'tests': {
             'Unittest2.Subtest1': {
                 'current_failure': 223,
@@ -310,6 +322,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'current_failure': 223,
         'first_failure': 223,
         'last_pass': 222,
+        'supported': True,
         'list_isolated_data': None,
         'tests': {
             'Unittest2.Subtest1': {
@@ -330,6 +343,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     failed_step_serializable = {
         'current_failure': 223,
         'first_failure': 221,
+        'supported': True,
         'tests': {
             'Unittest2.Subtest1': {
                 'current_failure': 223,
@@ -350,7 +364,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'compile': {
             'current_failure': 223,
             'first_failure': 222,
-            'last_pass': 221
+            'last_pass': 221,
+            'supported': True
         },
         'abc_test': {
             'current_failure':
@@ -359,6 +374,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
                 222,
             'last_pass':
                 221,
+            'supported':
+                True,
             'list_isolated_data': [{
                 'isolatedserver': 'https://isolateserver.appspot.com',
                 'namespace': 'default-gzip',
@@ -523,15 +540,18 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     failed_steps = {
         'a_tests': {
             'current_failure': 2,
-            'first_failure': 0
+            'first_failure': 0,
+            'supported': True
         },
         'unit_tests': {
             'current_failure': 2,
-            'first_failure': 0
+            'first_failure': 0,
+            'supported': True
         },
         'compile': {
             'current_failure': 2,
-            'first_failure': 0
+            'first_failure': 0,
+            'supported': True
         }
     }
     failed_steps = TestFailedSteps.FromSerializable(failed_steps)
@@ -603,6 +623,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
                 2,
             'first_failure':
                 0,
+            'supported':
+                True,
             'last_pass':
                 None,
             'tests':
@@ -621,6 +643,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
                 2,
             'first_failure':
                 0,
+            'supported':
+                True,
             'last_pass':
                 None,
             'tests':
@@ -638,6 +662,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             'current_failure': 2,
             'first_failure': 0,
             'last_pass': None,
+            'supported': True,
             'tests': None,
             'list_isolated_data': None
         }
@@ -662,11 +687,13 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     failed_steps = {
         'a_tests': {
             'current_failure': 2,
-            'first_failure': 0
+            'first_failure': 0,
+            'supported': True
         },
         'unit_tests': {
             'current_failure': 2,
-            'first_failure': 0
+            'first_failure': 0,
+            'supported': True
         }
     }
     failed_steps = TestFailedSteps.FromSerializable(failed_steps)
@@ -678,6 +705,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             'current_failure': 2,
             'first_failure': 0,
             'last_pass': None,
+            'supported': True,
             'tests': None,
             'list_isolated_data': None
         },
@@ -685,6 +713,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             'current_failure': 2,
             'first_failure': 0,
             'last_pass': None,
+            'supported': True,
             'tests': None,
             'list_isolated_data': None
         }

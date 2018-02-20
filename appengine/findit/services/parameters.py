@@ -213,8 +213,12 @@ class BaseSubFailure(StructuredObject):
   first_failure = int
 
 
+class BaseFailedStep(BaseSubFailure):
+  supported = bool
+
+
 class BaseFailedSteps(TypedDict):
-  _value_type = BaseSubFailure
+  _value_type = BaseFailedStep
 
 
 # Structured objects related to compile failure info.
@@ -246,7 +250,7 @@ class IsolatedDataList(TypedList):
   _element_type = IsolatedData
 
 
-class TestFailedStep(BaseSubFailure):
+class TestFailedStep(BaseFailedStep):
   tests = FailedTests
   list_isolated_data = IsolatedDataList
 

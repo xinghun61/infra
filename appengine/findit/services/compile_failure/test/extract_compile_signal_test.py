@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import json
 import mock
 
@@ -34,6 +35,7 @@ _COMPILE_FAILURE_INFO = {
             'last_pass': 122,
             'current_failure': 123,
             'first_failure': 123,
+            'supported': True
         }
     }
 }
@@ -88,13 +90,13 @@ class ExtractCompileSignalTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_edges, signals['compile']['failed_edges'])
 
-  @mock.patch.object(
-      waterfall_config, 'StepIsSupportedForMaster', return_value=False)
-  def testCompileNotSupport(self, _):
-    self.assertEqual(
-        {},
-        extract_compile_signal.ExtractSignalsForCompileFailure(
-            CompileFailureInfo.FromSerializable(_COMPILE_FAILURE_INFO), None))
+  def testCompileNotSupport(self):
+    failure_info = copy.deepcopy(_COMPILE_FAILURE_INFO)
+    failure_info['failed_steps']['compile']['supported'] = False
+    self.assertEqual({},
+                     extract_compile_signal.ExtractSignalsForCompileFailure(
+                         CompileFailureInfo.FromSerializable(failure_info),
+                         None))
 
   def testCompileNotInFailedSteps(self):
     failure_info = {

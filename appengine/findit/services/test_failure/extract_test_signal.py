@@ -16,7 +16,6 @@ from services import extract_signal
 from services import test_results_constants
 from services import test_results
 from waterfall import extractors
-from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 
 
@@ -30,7 +29,7 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
 
   for step_name in failed_steps:
     failure_log = None
-    if not waterfall_config.StepIsSupportedForMaster(step_name, master_name):
+    if not failed_steps[step_name].supported:
       # Bail out if the step is not supported.
       continue
 

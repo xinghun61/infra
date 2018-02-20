@@ -35,6 +35,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             'compile': {
                 'current_failure': 99,
                 'first_failure': 98,
+                'supported': True,
             },
         },
         'builds': {
@@ -51,13 +52,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r99_1': {
             'revision':
                 'r99_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_1.cc',
+                'new_path': 'a/b/f99_1.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -65,13 +64,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r99_2': {
             'revision':
                 'r99_2',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_2.cc',
-                    'new_path': 'a/b/f99_2.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_2.cc',
+                'new_path': 'a/b/f99_2.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -79,13 +76,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r98_1': {
             'revision':
                 'r98_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'y/z/f98.cc',
-                    'new_path': 'y/z/f98.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'y/z/f98.cc',
+                'new_path': 'y/z/f98.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -120,7 +115,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                 'hints': {
                     ('modified f99_2.cc (and it was in'
                      ' dependencies found by ninja)'):
-                         2,
+                        2,
                 },
             }],
             'new_compile_suspected_cls': [{
@@ -133,7 +128,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                 'hints': {
                     ('modified f99_2.cc (and it was in'
                      ' dependencies found by ninja)'):
-                         2,
+                        2,
                 },
             }],
             'use_ninja_dependencies':
@@ -172,6 +167,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             'compile': {
                 'current_failure': 99,
                 'first_failure': 98,
+                'supported': True,
             }
         },
         'builds': {
@@ -187,13 +183,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r99_1': {
             'revision':
                 'r99_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_1.cc',
+                'new_path': 'a/b/f99_1.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -201,13 +195,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r99_2': {
             'revision':
                 'r99_2',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_2.cc',
-                    'new_path': 'a/b/f99_2.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_2.cc',
+                'new_path': 'a/b/f99_2.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -215,13 +207,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r98_1': {
             'revision':
                 'r98_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'y/z/f98.cc',
-                    'new_path': 'y/z/f98.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'y/z/f98.cc',
+                'new_path': 'y/z/f98.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -269,7 +259,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                 'hints': {
                     ('modified f99_2.cc (and it was in'
                      ' dependencies found by ninja)'):
-                         2,
+                        2,
                 },
             }],
         }]
@@ -306,7 +296,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       build_failure_analysis,
       'InitializeStepLevelResult',
-      return_value={'supported': False})
+      return_value={
+          'supported': False
+      })
   def testAnalyzeCompileFailureNotSupported(self, _):
     failure_info = {
         'master_name': 'm',
@@ -327,7 +319,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       waterfall_config,
       'GetDownloadBuildDataSettings',
-      return_value={'use_ninja_output_log': False})
+      return_value={
+          'use_ninja_output_log': False
+      })
   def testAnalyzeCompileFailureNotUsingNinjaOutput(self, _):
     failure_info = {
         'master_name': 'm',
@@ -340,6 +334,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             'compile': {
                 'current_failure': 99,
                 'first_failure': 98,
+                'supported': True,
             }
         },
         'builds': {
@@ -355,13 +350,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r99_1': {
             'revision':
                 'r99_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_1.cc',
+                'new_path': 'a/b/f99_1.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -369,13 +362,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r99_2': {
             'revision':
                 'r99_2',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_2.cc',
-                    'new_path': 'a/b/f99_2.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_2.cc',
+                'new_path': 'a/b/f99_2.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -383,13 +374,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'r98_1': {
             'revision':
                 'r98_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'y/z/f98.cc',
-                    'new_path': 'y/z/f98.cc'
-                },
-            ],
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'y/z/f98.cc',
+                'new_path': 'y/z/f98.cc'
+            },],
             'author': {
                 'email': 'author@abc.com'
             }
@@ -471,15 +460,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         },
         'builds': {
             '212': {
-                'blame_list': [
-                    '3045acb501991e37fb2416ab8816d2ff4e66735f',
-                ],
+                'blame_list': ['3045acb501991e37fb2416ab8816d2ff4e66735f',],
                 'chromium_revision': 'c7388ba52388421e91c113ed807dec16b830c45b'
             },
             '213': {
-                'blame_list': [
-                    'e282b48ad7a9715d132c649fe1aff9dde0347b1c',
-                ],
+                'blame_list': ['e282b48ad7a9715d132c649fe1aff9dde0347b1c',],
                 'chromium_revision': '2fefee0825b80ec3ebec5c661526818da9490180'
             }
         },

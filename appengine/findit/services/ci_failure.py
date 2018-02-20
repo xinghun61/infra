@@ -3,20 +3,27 @@
 # found in the LICENSE file.
 """Logic related to examine builds and determine regression range."""
 
+import hashlib
+import inspect
 import logging
 
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
+from gae_libs.caches import PickledMemCache
 from libs import analysis_status
+from libs.cache_decorator import Cached
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from services.parameters import FailureInfoBuild
 from services.parameters import FailureInfoBuilds
 from waterfall import build_util
 from waterfall import buildbot
+from waterfall import waterfall_config
 
 _MAX_BUILDS_TO_CHECK = 20
 _SUPPORTED_FAILURE_TYPE = [failure_type.COMPILE, failure_type.TEST]
+# Caches canonical step name for a week.
+_CACHE_EXPIRE_TIME_SECONDS = 7 * 24 * 60 * 60
 
 
 def _GetBlameListAndRevisionForBuild(build_info):
@@ -32,6 +39,49 @@ def _GetBlameListAndRevisionForBuild(build_info):
   }
 
 
+def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
+  """Generates a key to a cached canonical step name.
+
+  Using the step_name as key, assuming it's practically not possible for 2 steps
+  with different canonical_step_names have exactly the same step_name.
+
+  Args:
+    func (function): An arbitrary function.
+    args (list): Positional arguments passed to ``func``.
+    kwargs (dict): Keyword arguments passed to ``func``.
+    namespace (str): A prefix to the key for the cache.
+
+  Returns:
+    A string to represent a call to the given function with the given arguments.
+  """
+  params = inspect.getcallargs(func, *args, **kwargs)
+  step_name = params.get('step_name')
+  assert step_name
+  encoded_params = hashlib.md5(step_name).hexdigest()
+  return '%s-%s' % (namespace, encoded_params)
+
+
+@Cached(PickledMemCache(),
+        namespace='Canonical-step-name',
+        expire_time=_CACHE_EXPIRE_TIME_SECONDS,
+        key_generator=_CanonicalStepNameKeyGenerator)
+def _GetCanonicalStepName(master_name, builder_name, build_number,
+                          step_name):
+  step_metadata = build_util.GetWaterfallBuildStepLog(master_name, builder_name,
+                                                      build_number, step_name,
+                                                      FinditHttpClient(),
+                                                      'step_metadata')
+  return step_metadata.get('canonical_step_name')
+
+
+def _StepIsSupportedForMaster(master_name, builder_name, build_number,
+                              step_name):
+  canonical_step_name = _GetCanonicalStepName(
+      master_name, builder_name, build_number,step_name) or step_name
+  return waterfall_config.StepIsSupportedForMaster(
+    canonical_step_name, master_name)
+
+
 def _CreateADictOfFailedSteps(build_info):
   """ Returns a dict with build number for failed steps.
 
@@ -44,14 +94,21 @@ def _CreateADictOfFailedSteps(build_info):
       'step_name': {
         'current_failure': 555,
         'first_failure': 553,
+        'supported': True
       },
     }
   """
   failed_steps = dict()
   for step_name in build_info.failed_steps:
     failed_steps[step_name] = {
-        'current_failure': build_info.build_number,
-        'first_failure': build_info.build_number,
+        'current_failure':
+            build_info.build_number,
+        'first_failure':
+            build_info.build_number,
+        'supported':
+            _StepIsSupportedForMaster(build_info.master_name,
+                                      build_info.builder_name,
+                                      build_info.build_number, step_name)
     }
 
   return failed_steps

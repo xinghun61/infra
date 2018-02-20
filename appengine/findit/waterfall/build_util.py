@@ -279,7 +279,6 @@ def GetTryJobStepLog(try_job_id, full_step_name, http_client,
 
   return _ReturnStepLog(data, log_type)
 
-
 def GetWaterfallBuildStepLog(master_name,
                              builder_name,
                              build_number,

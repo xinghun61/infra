@@ -82,7 +82,8 @@ def _NeedANewCompileTryJob(master_name, builder_name, build_number,
         master_name, builder_name, compile_failure['first_failure'])
     analysis.put()
 
-    if compile_failure['first_failure'] == compile_failure['current_failure']:
+    if (compile_failure.get('supported') and
+        compile_failure['first_failure'] == compile_failure['current_failure']):
       return True
 
   return False

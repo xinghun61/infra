@@ -357,7 +357,8 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             'compile': {
                 'current_failure': 223,
                 'first_failure': 221,
-                'last_pass': 220
+                'last_pass': 220,
+                'supported': True
             }
         },
         'builds': {
@@ -400,7 +401,8 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             'compile': {
                 'current_failure': 223,
                 'first_failure': 223,
-                'last_pass': 220
+                'last_pass': 220,
+                'supported': True
             }
         },
         'builds': {
@@ -441,7 +443,8 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             'compile': {
                 'current_failure': 223,
                 'first_failure': 223,
-                'last_pass': 220
+                'last_pass': 220,
+                'supported': True
             }
         },
         'builds': {
@@ -481,7 +484,8 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             'compile': {
                 'current_failure': 223,
                 'first_failure': 223,
-                'last_pass': 220
+                'last_pass': 220,
+                'supported': True
             }
         },
         'builds': {
@@ -524,7 +528,8 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             'compile': {
                 'current_failure': 223,
                 'first_failure': 223,
-                'last_pass': 222
+                'last_pass': 222,
+                'supported': True
             }
         },
         'builds': {
@@ -565,7 +570,8 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             'compile': {
                 'current_failure': 223,
                 'first_failure': 223,
-                'last_pass': 222
+                'last_pass': 222,
+                'supported': True
             }
         },
         'builds': {
@@ -785,14 +791,15 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('services.swarmbot_util.GetCacheName', return_value='cache')
   def testGetParametersToScheduleTestTryJob(self, *_):
-    master_name = u'm'
-    builder_name = u'b'
+    master_name = 'm'
+    builder_name = 'b'
     build_number = 1
     failure_info = {
         'failed_steps': {
             'compile': {
                 'first_failure': 1,
                 'last_pass': 0,
+                'supported': True,
             }
         },
         'builds': {

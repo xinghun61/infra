@@ -24,12 +24,12 @@ def ExtractSignalsForCompileFailure(failure_info, http_client):
   build_number = failure_info.build_number
   step_name = 'compile'
 
-  if step_name not in failure_info.failed_steps or {}:
+  if step_name not in (failure_info.failed_steps or {}):
     logging.debug('No compile failure found when extracting signals for failed '
                   'build %s/%s/%d', master_name, builder_name, build_number)
     return signals
 
-  if not waterfall_config.StepIsSupportedForMaster(step_name, master_name):
+  if not failure_info.failed_steps[step_name].supported:
     # Bail out if the step is not supported.
     logging.info('Findit could not analyze compile failure for master %s.',
                  master_name)
@@ -38,15 +38,17 @@ def ExtractSignalsForCompileFailure(failure_info, http_client):
   failure_log = None
 
   # 1. Tries to get stored failure log from step.
-  step = (WfStep.Get(master_name, builder_name, build_number, step_name) or
-          WfStep.Create(master_name, builder_name, build_number, step_name))
+  step = (
+      WfStep.Get(master_name, builder_name, build_number, step_name) or
+      WfStep.Create(master_name, builder_name, build_number, step_name))
   if step.log_data:
     failure_log = step.log_data
   else:
     # 2. Tries to get ninja_output as failure log.
     from_ninja_output = False
-    use_ninja_output_log = (waterfall_config.GetDownloadBuildDataSettings()
-                            .get('use_ninja_output_log'))
+    use_ninja_output_log = (
+        waterfall_config.GetDownloadBuildDataSettings()
+        .get('use_ninja_output_log'))
     if use_ninja_output_log:
       failure_log = build_util.GetWaterfallBuildStepLog(
           master_name, builder_name, build_number, step_name, http_client,

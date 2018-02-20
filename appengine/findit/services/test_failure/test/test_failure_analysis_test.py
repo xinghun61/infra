@@ -150,6 +150,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             'a': {
                 'current_failure': 99,
                 'first_failure': 98,
+                'supported': True
             },
             'b': {
                 'current_failure':
@@ -158,6 +159,8 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     98,
                 'last_pass':
                     96,
+                'supported':
+                    True,
                 'list_isolated_data': [{
                     'isolatedserver': 'https://isolateserver.appspot.com',
                     'namespace': 'default-gzip',
@@ -361,6 +364,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             'unsupported_step1': {
                 'current_failure': 99,
                 'first_failure': 98,
+                'supported': False,
             },
         },
         'builds': {
@@ -425,6 +429,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             'test': {
                 'current_failure': 99,
                 'first_failure': 98,
+                'supported': True,
             }
         },
         'builds': {

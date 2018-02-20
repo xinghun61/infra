@@ -492,10 +492,10 @@ def SaveFailureToMap(cl_failure_map, new_suspected_cl_dict, step_name,
   # Ignores the case where in the same build for the same cl,
   # we have different scores.
   # Not sure if we need to handle it since it should be rare.
-  cl_failure_map[cl_key].top_score = (cl_failure_map[cl_key].top_score or
-                                      top_score)
-  cl_failure_map[cl_key].url = (cl_failure_map[cl_key].url or
-                                new_suspected_cl_dict['url'])
+  cl_failure_map[cl_key].top_score = (
+      cl_failure_map[cl_key].top_score or top_score)
+  cl_failure_map[cl_key].url = (
+      cl_failure_map[cl_key].url or new_suspected_cl_dict['url'])
 
 
 def ConvertCLFailureMapToList(cl_failure_map):
@@ -532,17 +532,13 @@ def GetLowerBoundForAnalysis(step_failure_info):
           if step_failure_info.last_pass else step_failure_info.first_failure)
 
 
-def InitializeStepLevelResult(step_name, step_failure_info, master_name):
+def InitializeStepLevelResult(step_name, step_failure_info):
   return {
-      'step_name':
-          step_name,
-      'first_failure':
-          step_failure_info.first_failure,
-      'last_pass':
-          step_failure_info.last_pass,
+      'step_name': step_name,
+      'first_failure': step_failure_info.first_failure,
+      'last_pass': step_failure_info.last_pass,
       'suspected_cls': [],
-      'supported':
-          waterfall_config.StepIsSupportedForMaster(step_name, master_name)
+      'supported': step_failure_info.supported
   }
 
 
@@ -625,10 +621,13 @@ def SaveAnalysisAfterHeuristicAnalysisCompletes(master_name, builder_name,
   duration = analysis.end_time - analysis.start_time
   status = result_status.RESULT_STATUS_TO_DESCRIPTION.get(
       analysis.result_status, 'no result')
-  monitoring.analysis_durations.add(duration.total_seconds(), {
-      'type': failure_type.GetDescriptionForFailureType(analysis.failure_type),
-      'result': 'heuristic-' + status,
-  })
+  monitoring.analysis_durations.add(
+      duration.total_seconds(), {
+          'type':
+              failure_type.GetDescriptionForFailureType(analysis.failure_type),
+          'result':
+              'heuristic-' + status,
+      })
 
 
 def SaveSuspectedCLs(suspected_cls, master_name, builder_name, build_number,
