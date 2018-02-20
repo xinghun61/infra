@@ -44,7 +44,19 @@ class FieldDetailTest(unittest.TestCase):
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(self.fd)
+    self.services.user.TestAddUser('gatsby@example.com', 111L)
+    self.services.user.TestAddUser('sport@example.com', 222L)
     self.mr.field_name = 'CPU'
+
+    # Approvals
+    self.approval_def = tracker_pb2.ApprovalDef(
+        approval_id=234, approver_ids=[111L], survey='')
+    self.config.approval_defs.append(self.approval_def)
+    self.approval_fd = tracker_bizobj.MakeFieldDef(
+        234, 789, 'UIReview', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
+    self.config.field_defs.append(self.approval_fd)
 
     self.mox = mox.Mox()
 
@@ -170,7 +182,7 @@ class FieldDetailTest(unittest.TestCase):
     self.servlet._ProcessDeleteField(self.mr, self.fd)
     self.assertTrue(self.fd.is_deleted)
 
-  def testProcessEditField(self):
+  def testProcessEditField_Normal(self):
     post_data = fake.PostData(
         name=['CPU'], field_type=['INT_TYPE'], min_value=['2'],
         admin_names=[''])
@@ -203,3 +215,41 @@ class FieldDetailTest(unittest.TestCase):
     fd = tracker_bizobj.FindFieldDef('CPU', self.config)
     self.assertIsNone(fd.min_value)
     self.assertIsNone(fd.max_value)
+
+  def testProcessEditField_RejectApproval(self):
+    self.mr.field_name = 'UIReview'
+    post_data = fake.PostData(
+        name=['UIReview'], admin_names=[''],
+        survey=['WIll there be UI changes?'],
+        approver_names=[''])
+
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        self.mr, field_def=mox.IgnoreArg(),
+        initial_applicable_type='',
+        initial_choices='',
+        initial_admins='',
+        initial_approvers='')
+    self.mox.ReplayAll()
+
+    url = self.servlet._ProcessEditField(
+        self.mr, post_data, self.config, self.approval_fd)
+    self.assertEqual('Please provide at least one default approver.',
+                     self.mr.errors.approvers)
+    self.assertIsNone(url)
+
+  def testProcessEditField_Approval(self):
+    self.mr.field_name = 'UIReview'
+    post_data = fake.PostData(
+        name=['UIReview'], admin_names=[''],
+        survey=['WIll there be UI changes?'],
+        approver_names=['sport@example.com, gatsby@example.com'])
+
+
+    url = self.servlet._ProcessEditField(
+        self.mr, post_data, self.config, self.approval_fd)
+    self.assertTrue('/fields/detail?field=UIReview&saved=1&' in url)
+
+    approval_def = tracker_bizobj.FindApprovalDef('UIReview', self.config)
+    self.assertEqual(len(approval_def.approver_ids), 2)
+    self.assertEqual(sorted(approval_def.approver_ids), sorted([111L, 222L]))

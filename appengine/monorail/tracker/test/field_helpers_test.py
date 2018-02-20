@@ -185,7 +185,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual({}, field_val_strs)
     self.assertEqual({}, field_val_strs_remove)
 
-  def testReviseApprovals(self):
+  def testReviseApprovals_New(self):
     self.config.field_defs.append(
       tracker_bizobj.MakeFieldDef(
           123, 789, 'UX Review', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
@@ -200,6 +200,14 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual(len(revised_approvals), 2)
     self.assertEqual(revised_approvals,
                      [(123, [101L, 102L], ''), (124, [103L], '')])
+
+  def testReviseApprovals_Existing(self):
+    existing_approvaldef = tracker_pb2.ApprovalDef(
+        approval_id=123, approver_ids=[101L, 102L], survey='')
+    self.config.approval_defs = [existing_approvaldef]
+    revised_approvals = field_helpers.ReviseApprovals(
+        123, [103L], '', self.config)
+    self.assertEqual(revised_approvals, [(123, [103L], '')])
 
   def testParseOneFieldValue_IntType(self):
     fd = tracker_bizobj.MakeFieldDef(

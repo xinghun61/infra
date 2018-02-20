@@ -141,7 +141,8 @@ def ShiftEnumFieldsIntoLabels(
 def ReviseApprovals(approval_id, approver_ids, survey, config):
   revised_approvals = [(
       approval.approval_id, approval.approver_ids, approval.survey) for
-                       approval in config.approval_defs]
+                       approval in config.approval_defs if
+                       approval.approval_id != approval_id]
   revised_approvals.append((approval_id, approver_ids, survey))
   return revised_approvals
 

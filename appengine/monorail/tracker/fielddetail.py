@@ -170,12 +170,12 @@ class FieldDetail(servlet.Servlet):
     admin_ids, admin_str = tracker_helpers.ParseAdminUsers(
         mr.cnxn, post_data['admin_names'], self.services.user)
 
-    if parsed.field_type_str == 'approval_type':
+    if field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
       if parsed.approvers_str:
         try:
           approver_ids_dict = self.services.user.LookupUserIDs(
               mr.cnxn, re.split('[,;\s]+', parsed.approvers_str))
-          _approver_ids = list(set(approver_ids_dict.values()))
+          approver_ids = list(set(approver_ids_dict.values()))
         except user_svc.NoSuchUserException:
           mr.errors.approvers = 'One or more approvers not found.'
       else:
@@ -206,8 +206,16 @@ class FieldDetail(servlet.Servlet):
         notify_on=parsed.notify_on, is_multivalued=parsed.is_multivalued,
         date_action=parsed.date_action_str,
         docstring=parsed.field_docstring, admin_ids=admin_ids)
-    self.services.config.UpdateConfig(
-        mr.cnxn, mr.project, well_known_labels=parsed.revised_labels)
+
+    if field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
+      approval_defs = field_helpers.ReviseApprovals(
+          field_def.field_id, approver_ids, parsed.survey, config)
+      self.services.config.UpdateConfig(
+          mr.cnxn, mr.project, approval_defs=approval_defs)
+
+    if field_def.field_type == tracker_pb2.FieldTypes.ENUM_TYPE:
+      self.services.config.UpdateConfig(
+          mr.cnxn, mr.project, well_known_labels=parsed.revised_labels)
 
     return framework_helpers.FormatAbsoluteURL(
           mr, urls.FIELD_DETAIL, field=field_def.field_name,
