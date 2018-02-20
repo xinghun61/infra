@@ -183,6 +183,12 @@ func cacheFailedTests(c context.Context, zr *zip.Reader, gsPath string) error {
 	logging.Debugf(c, "caching artifacts for %v failed tests", len(failedTests))
 	toPut := []memcache.Item{}
 	for _, f := range zr.File {
+		// If we have too many test failures, we try to cache too much data and OOM,
+		// and the instance service the request runs out of memory. Just give up after
+		// some number of failures for now.
+		if len(toPut) > 500 {
+			break
+		}
 		// I tried using goroutines to make this concurrent, but it seemed to be slower.
 		for _, test := range failedTests {
 			// Ignore retried results, results.html doesn't seem to fetch them
