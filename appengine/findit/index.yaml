@@ -70,6 +70,18 @@ indexes:
   - name: user_emails_last_edit
     direction: desc
 
+# For named cache activity
+- kind: WfTryJobData
+  properties:
+  - name: master_name
+    direction: asc
+  - name: builder_name
+    direction: asc
+  - name: try_job_type
+    direction: asc
+  - name: start_time
+    direction: desc
+
 # For MasterFlakeAnalysis
 - kind: MasterFlakeAnalysis
   properties:
