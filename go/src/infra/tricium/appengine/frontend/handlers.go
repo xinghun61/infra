@@ -27,8 +27,8 @@ import (
 	"infra/tricium/appengine/common/track"
 )
 
-func landingPageHandler(c *router.Context) {
-	templates.MustRender(c.Context, c.Writer, "pages/index.html", map[string]interface{}{
+func landingPageHandler(ctx *router.Context) {
+	templates.MustRender(ctx.Context, ctx.Writer, "pages/index.html", map[string]interface{}{
 		"StatusMsg": "This service is under construction.",
 	})
 }

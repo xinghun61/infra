@@ -20,12 +20,9 @@ func TestTrackHelperFunctions(t *testing.T) {
 
 		tt := &trit.Testing{}
 		ctx := tt.Context()
-		var runID int64 = 123
 
 		// Add completed request.
-		request := &AnalyzeRequest{
-			ID: runID,
-		}
+		request := &AnalyzeRequest{}
 		So(ds.Put(ctx, request), ShouldBeNil)
 		requestKey := ds.KeyForObj(ctx, request)
 		So(ds.Put(ctx, &AnalyzeRequestResult{
@@ -54,11 +51,12 @@ func TestTrackHelperFunctions(t *testing.T) {
 			Parent:  runKey,
 			Workers: []string{workerName},
 		}), ShouldBeNil)
-		So(ds.Put(ctx, &FunctionRunResult{
+		functionRunResult := &FunctionRunResult{
 			ID:     1,
 			Parent: functionKey,
 			State:  tricium.State_SUCCESS,
-		}), ShouldBeNil)
+		}
+		So(ds.Put(ctx, functionRunResult), ShouldBeNil)
 		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, functionKey)
 		So(ds.Put(ctx, &WorkerRun{
 			ID:       workerName,
@@ -67,30 +65,45 @@ func TestTrackHelperFunctions(t *testing.T) {
 		}), ShouldBeNil)
 		So(ds.Put(ctx, &Comment{
 			Parent:  workerKey,
-			Comment: []byte("Hello"),
+			Comment: []byte("Hello comment"),
 		}), ShouldBeNil)
 
 		Convey("FetchFunctionRuns with results", func() {
-			functionRuns, err := FetchFunctionRuns(ctx, runID)
+			functionRuns, err := FetchFunctionRuns(ctx, request.ID)
 			So(len(functionRuns), ShouldEqual, 1)
+			So(functionRuns[0].ID, ShouldEqual, "Hello")
 			So(err, ShouldBeNil)
 		})
 
 		Convey("FetchFunctionRuns without results", func() {
-			functionRuns, err := FetchFunctionRuns(ctx, runID+1)
+			functionRuns, err := FetchFunctionRuns(ctx, request.ID+1)
 			So(len(functionRuns), ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 
 		Convey("FetchComments with results", func() {
-			functionRuns, err := FetchComments(ctx, runID)
-			So(len(functionRuns), ShouldEqual, 1)
+			comments, err := FetchComments(ctx, request.ID)
+			So(len(comments), ShouldEqual, 1)
+			So(string(comments[0].Comment), ShouldEqual, "Hello comment")
 			So(err, ShouldBeNil)
 		})
 
 		Convey("FetchComments without results", func() {
-			functionRuns, err := FetchFunctionRuns(ctx, runID+1)
-			So(len(functionRuns), ShouldEqual, 0)
+			comments, err := FetchComments(ctx, request.ID+1)
+			So(len(comments), ShouldEqual, 0)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("FetchWorkerRuns with results", func() {
+			workerRuns, err := FetchWorkerRuns(ctx, request.ID)
+			So(len(workerRuns), ShouldEqual, 1)
+			So(workerRuns[0].ID, ShouldEqual, "Hello_UBUNTU")
+			So(err, ShouldBeNil)
+		})
+
+		Convey("FetchWorkerRuns without results", func() {
+			workerRuns, err := FetchWorkerRuns(ctx, request.ID+1)
+			So(len(workerRuns), ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 	})

@@ -12,24 +12,30 @@ import (
 
 // FetchFunctionRuns returns a slice of all FunctionRuns for a run.
 func FetchFunctionRuns(c context.Context, runID int64) ([]*FunctionRun, error) {
-	runKey := workflowRunKey(c, runID)
-	query := ds.NewQuery("FunctionRun").Ancestor(runKey)
 	var functionRuns []*FunctionRun
-	if err := ds.GetAll(c, query, &functionRuns); err != nil {
-		return nil, err
-	}
-	return functionRuns, nil
+	query := queryForRunID(c, "FunctionRun", runID)
+	err := ds.GetAll(c, query, &functionRuns)
+	return functionRuns, err
+}
+
+// FetchWorkerRuns returns a slice of all WorkerRuns for a run.
+func FetchWorkerRuns(c context.Context, runID int64) ([]*WorkerRun, error) {
+	var workerRuns []*WorkerRun
+	query := queryForRunID(c, "WorkerRun", runID)
+	err := ds.GetAll(c, query, &workerRuns)
+	return workerRuns, err
 }
 
 // FetchComments returns a slice of all Comments for a run.
 func FetchComments(c context.Context, runID int64) ([]*Comment, error) {
-	runKey := workflowRunKey(c, runID)
-	query := ds.NewQuery("Comment").Ancestor(runKey)
 	var comments []*Comment
-	if err := ds.GetAll(c, query, &comments); err != nil {
-		return nil, err
-	}
-	return comments, nil
+	query := queryForRunID(c, "Comment", runID)
+	err := ds.GetAll(c, query, &comments)
+	return comments, err
+}
+
+func queryForRunID(c context.Context, kind string, runID int64) *ds.Query {
+	return ds.NewQuery(kind).Ancestor(workflowRunKey(c, runID))
 }
 
 func workflowRunKey(c context.Context, runID int64) *ds.Key {

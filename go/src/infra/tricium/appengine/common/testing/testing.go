@@ -6,6 +6,8 @@
 package testing
 
 import (
+	"github.com/julienschmidt/httprouter"
+	"net/http"
 	"time"
 
 	"go.chromium.org/gae/impl/memory"
@@ -35,4 +37,28 @@ func (t *Testing) Context() context.Context {
 	tq.GetTestable(ctx).CreateQueue(common.TrackerQueue)
 	ds.GetTestable(ctx).Consistent(true)
 	return ctx
+}
+
+// MakeGetRequest builds a basic http.Request.
+func MakeGetRequest() *http.Request {
+	req, _ := http.NewRequest("GET", "/testing-path", nil)
+	return req
+}
+
+// MakeParams builds and returns params, which can be used
+// as part of router.Context passed to handler methods.
+func MakeParams(items ...string) httprouter.Params {
+	if len(items)%2 != 0 {
+		return nil
+	}
+
+	params := make([]httprouter.Param, len(items)/2)
+	for i := range params {
+		params[i] = httprouter.Param{
+			Key:   items[2*i],
+			Value: items[2*i+1],
+		}
+	}
+
+	return params
 }

@@ -32,8 +32,9 @@ func init() {
 	// This is the analyze queue handler
 	r.POST("/internal/analyze", baseInternal, analyzeHandler)
 
-	r.GET("/results", base, resultsHandler)
 	r.GET("/", base, landingPageHandler)
+	r.GET("/results", base, resultsHandler)
+	r.GET("/run/:runId", base, runPageHandler)
 
 	// Configure pRPC server.
 	s := common.NewRPCServer()
