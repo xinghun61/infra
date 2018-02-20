@@ -1,5 +1,5 @@
 hash: 6fabb7a44fb08173a82b4d467811ca7b9f5ef50ba1d94fa92954444f1875f266
-updated: 2018-02-08T19:13:07.89548024-08:00
+updated: 2018-02-20T14:21:13.955684689-08:00
 imports:
 - name: cloud.google.com/go
   version: 977ff9734558eb9c014a8201d777baad2baa38d6
@@ -41,7 +41,7 @@ imports:
   version: 6f14c445a22cbbd7a136733ac3bc0e91b97cd97a
   repo: https://chromium.googlesource.com/external/github.com/fedesog/webdriver.git
 - name: github.com/go-ole/go-ole
-  version: eabdf371ac1f50f1506de7426f53c0386ee80986
+  version: a1ec82a652ebc7e784d7df887cfb31061aeabbcc
   repo: https://chromium.googlesource.com/external/github.com/go-ole/go-ole.git
 - name: github.com/go-sql-driver/mysql
   version: bc14601d1bd56421dd60f561e6052c9ed77f9daf
@@ -52,7 +52,7 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/mock
-  version: b3e60bcdc577185fce3cf625fc96b62857ce5574
+  version: 58cd061d09382b6011f84c1291ebe50ef2e25bab
   repo: https://chromium.googlesource.com/external/github.com/golang/mock.git
   subpackages:
   - gomock
@@ -76,7 +76,7 @@ imports:
   version: 317e0006254c44a0ac427cc52a0e083ff0b9622f
   repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
 - name: github.com/gopherjs/gopherjs
-  version: 296de816d4fe28b61803072c3f89360e9d1823ff
+  version: 3926a9f66452f7a8c8d9c0e4e3074383f9aff5cd
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -102,7 +102,7 @@ imports:
   version: d6ce6262d87e3a4e153e86023ff56ae771554a41
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
 - name: github.com/klauspost/compress
-  version: 5698df94daded084fa836b7df2ffbf6cbd3dd63a
+  version: 8a8c9b92f99fe49f9c13688b0ee2824bb586c972
   repo: https://chromium.googlesource.com/external/github.com/klauspost/compress.git
   subpackages:
   - zlib
@@ -116,7 +116,7 @@ imports:
   version: 7cafcd837844e784b526369c9bce262804aebc60
   repo: https://chromium.googlesource.com/external/github.com/kr/text.git
 - name: github.com/lann/builder
-  version: f22ce00fd9394014049dad11c244859432bd6820
+  version: 1b87b36280d04fe7882d1512bf038ea2967ad534
   repo: https://chromium.googlesource.com/external/github.com/lann/builder.git
 - name: github.com/lann/ps
   version: 62de8c46ede02a7675c4c79c84883eb164cb71e3
@@ -192,7 +192,7 @@ imports:
   version: 0b37b35ec7434b77e77a4bb29b79677cced992ea
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
 - name: github.com/smartystreets/goconvey
-  version: e5b2b7c9111590d019a696c7800593f666e1a7f4
+  version: 1d63d63e6242f48a079ecf39a3dd949b7e5d03d0
   repo: https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
   subpackages:
   - convey
@@ -229,7 +229,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: f5dfe339be1d06f81b22525fe34671ee7d2c8904
+  version: cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -254,7 +254,7 @@ imports:
   version: 4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 66487607e2081c7c2af2281c62c14ee000d5024b
+  version: ce871d178848e3eea1e8795e5cfb74053dde4bb9
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -267,7 +267,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: e771abbff930c1ae3c6e2c35117fc88856f11b2f
+  version: c76a25da6c114df45a86acb8873ae83eda1430b9
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -301,7 +301,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: d50734d1d6ca477a72646f3022216ec39639f4cd
+  version: dfa18343df54bda471a4b53677aa7c0d0df882d1
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
@@ -316,6 +316,6 @@ imports:
   version: d670f9405373e636a5a2765eea47fac0c9bc91a4
   repo: https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
 - name: howett.net/plist
-  version: f270eba7ede9916a8d8c2c25d80e0ce4fb2f21fd
+  version: 84d08b7bddb35583bb3153b811c6cc52bb306f52
   repo: https://chromium.googlesource.com/external/github.com/DHowett/go-plist.git
 testImports: []
