@@ -92,6 +92,14 @@ var knownPrefixes = []string{
 	"retry_summary.json",
 }
 
+// itmForStringHash returns a memcache item for a given key. It hashes the key
+// to make sure that it'll fit into the memcache length limits.
+func itmForStringHash(c context.Context, key string) memcache.Item {
+	h := sha256.New()
+	h.Write([]byte(key))
+	return memcache.NewItem(c, fmt.Sprintf("%x", h.Sum(nil)))
+}
+
 // getZipFile retrieves a file from a layout test archive for a build number from a builder.
 var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]byte, error) {
 	prefix := ""
@@ -108,7 +116,7 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 	}
 	gsPath := gs.Path(fmt.Sprintf("gs://chromium-layout-test-archives/%s/%s/%slayout-test-results.zip", builder, buildNum, prefix))
 
-	itm := memcache.NewItem(c, fmt.Sprintf("%s|%s", gsPath, filepath))
+	itm := itmForStringHash(c, fmt.Sprintf("%s|%s", gsPath, filepath))
 	err := memcache.Get(c, itm)
 	if err != memcache.ErrCacheMiss && err != nil {
 		logging.Warningf(c, "memcache.Get error for requested file %v: %v", itm.Key(), err)
@@ -118,7 +126,7 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 	if err == memcache.ErrCacheMiss || len(itm.Value()) == 0 {
 		zr, err := readZipFile(c, gsPath)
 		if err != nil {
-			return nil, fmt.Errorf("while creating zip reader: %v", err)
+			return nil, fmt.Errorf("while reading zip file: %v", err)
 		}
 
 		// If we're serving the results.html file, we expect users to want to look at
@@ -141,14 +149,15 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 					return nil, err
 				}
 				itm.SetValue(res)
+				break
 			}
 		}
 
-		logging.Debugf(c, "len %v limit %v", len(itm.Value()), megabyte/2)
+		logging.Debugf(c, "main item caching stats: len %v limit %v", len(itm.Value()), megabyte/2)
 		if itm.Value() != nil && len(itm.Value()) < megabyte/2 {
 			logging.Debugf(c, "setting %s", itm.Key())
 			if err := memcache.Set(c, itm); err != nil {
-				logging.Warningf(c, "memcache.Set error for requested file %v: %v", itm.Key(), err)
+				logging.Warningf(c, "memcache.Set error for requested file %v: %v", filepath, err)
 			}
 		}
 	}
@@ -197,7 +206,7 @@ func cacheFailedTests(c context.Context, zr *zip.Reader, gsPath string) error {
 				break
 			}
 			if strings.Contains(f.Name, test) {
-				newItm := memcache.NewItem(c, fmt.Sprintf("%s|%s", gsPath, f.Name))
+				newItm := itmForStringHash(c, fmt.Sprintf("%s|%s", gsPath, f.Name))
 				freader, err := f.Open()
 				if err != nil {
 					logging.Warningf(c, "failed in result caching: %v", err)

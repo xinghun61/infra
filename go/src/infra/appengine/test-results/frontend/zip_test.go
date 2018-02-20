@@ -3,6 +3,7 @@ package frontend
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -20,6 +21,12 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func sha256hash(s string) string {
+	h := sha256.New()
+	h.Write([]byte(s))
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
 
 func makeGetRequest() *http.Request {
 	req, err := http.NewRequest("GET", "/doesntmatter", nil)
@@ -110,7 +117,7 @@ func TestGetZipFile(t *testing.T) {
 			So(res, ShouldBeNil)
 		})
 
-		itm := memcache.NewItem(c, "gs://chromium-layout-test-archives/test_builder/123/layout-test-results.zip|file.txt")
+		itm := memcache.NewItem(c, sha256hash("gs://chromium-layout-test-archives/test_builder/123/layout-test-results.zip|file.txt"))
 		Convey("file found", func() {
 			fileContents["file.txt"] = "hi"
 			res, err := getZipFile(c, "test_builder", "123", "file.txt")
@@ -184,7 +191,7 @@ func TestCacheFailedTests(t *testing.T) {
 
 			So(cacheFailedTests(c, zr, "gspath"), ShouldBeNil)
 
-			itm, err := memcache.GetKey(c, "gspath|failed_test")
+			itm, err := memcache.GetKey(c, sha256hash("gspath|failed_test"))
 			So(err, ShouldBeNil)
 			So(itm.Value(), ShouldResemble, []byte("test output"))
 		})
