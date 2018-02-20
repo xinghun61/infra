@@ -49,7 +49,7 @@ deps = {
 
   "infra/appengine/third_party/six":
     ("https://chromium.googlesource.com/external/bitbucket.org/gutworth/six.git"
-     "@e0898d97d5951af01ba56e86acaa7530762155c8"),
+     "@06daa9c7a4b43c49bf2a3d588c52672e1c5e3a2c"),
 
   "infra/appengine/third_party/oauth2client":
     ("https://chromium.googlesource.com/external/github.com/google/oauth2client.git"
