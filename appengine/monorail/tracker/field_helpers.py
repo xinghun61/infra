@@ -279,3 +279,18 @@ def FormatUrlFieldValue(url_str):
   if not url_str.startswith('http'):
     return 'http://' + url_str
   return url_str
+
+
+def ReviseFieldDefFromParsed(parsed, old_fd):
+  """Creates new FieldDef based on an original FieldDef and parsed FieldDef"""
+  if parsed.date_action_str in config_svc.DATE_ACTION_ENUM:
+    date_action = config_svc.DATE_ACTION_ENUM.index(parsed.date_action_str)
+  else:
+    date_action = 0
+  return tracker_bizobj.MakeFieldDef(
+      old_fd.field_id, old_fd.project_id, old_fd.field_name, old_fd.field_type,
+      parsed.applicable_type, parsed.applicable_predicate, parsed.is_required,
+      parsed.is_niche, parsed.is_multivalued, parsed.min_value,
+      parsed.max_value, parsed.regex, parsed.needs_member, parsed.needs_perm,
+      parsed.grants_perm, parsed.notify_on, date_action, parsed.field_docstring,
+      False)

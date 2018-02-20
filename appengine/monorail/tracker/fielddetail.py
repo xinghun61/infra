@@ -7,6 +7,7 @@
 
 import logging
 import time
+import re
 
 from third_party import ezt
 
@@ -16,6 +17,7 @@ from framework import permissions
 from framework import servlet
 from framework import urls
 from proto import tracker_pb2
+from services import user_svc
 from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
@@ -84,7 +86,12 @@ class FieldDetail(servlet.Servlet):
         mr.auth.effective_ids, mr.perms, mr.project, field_def)
 
     # Right now we do not allow renaming of enum fields.
-    uneditable_name = field_def.field_type == tracker_pb2.FieldTypes.ENUM_TYPE
+    _uneditable_name = field_def.field_type == tracker_pb2.FieldTypes.ENUM_TYPE
+
+    initial_choices = '\n'.join(
+        [choice.name if not choice.docstring else (
+            choice.name + ' = ' + choice.docstring) for
+         choice in field_def_view.choices])
 
     initial_approvers = ', '.join(sorted([
       approver_view.email for approver_view in field_def_view.approvers]))
@@ -96,11 +103,13 @@ class FieldDetail(servlet.Servlet):
         'admin_tab_mode': servlet.Servlet.PROCESS_TAB_LABELS,
         'field_def': field_def_view,
         'allow_edit': ezt.boolean(allow_edit),
-        'uneditable_name': ezt.boolean(uneditable_name),
+        # TODO(jojwang): update when name changes are actually saved
+        'uneditable_name': ezt.boolean(True),
         'initial_admins': initial_admins,
         'initial_applicable_type': field_def.applicable_type,
         'initial_applicable_predicate': field_def.applicable_predicate,
         'initial_approvers': initial_approvers,
+        'initial_choices': initial_choices,
         'well_known_issue_types': well_known_issue_types,
         }
 
@@ -122,20 +131,21 @@ class FieldDetail(servlet.Servlet):
           'User is not allowed to delete this field')
 
     if 'deletefield' in post_data:
-      self._ProcessDeleteField(mr, field_def)
+      return self._ProcessDeleteField(mr, field_def)
+    elif 'cancel' in post_data:
       return framework_helpers.FormatAbsoluteURL(
-          mr, urls.ADMIN_LABELS, deleted=1, ts=int(time.time()))
-
+          mr, urls.ADMIN_LABELS, ts=int(time.time()))
     else:
-      self._ProcessEditField(mr, post_data, config, field_def)
-      return framework_helpers.FormatAbsoluteURL(
-          mr, urls.FIELD_DETAIL, field=field_def.field_name,
-          saved=1, ts=int(time.time()))
+      return self._ProcessEditField(mr, post_data, config, field_def)
+
 
   def _ProcessDeleteField(self, mr, field_def):
     """The user wants to delete the specified custom field definition."""
     self.services.config.SoftDeleteFieldDef(
         mr.cnxn, mr.project_id, field_def.field_id)
+
+    return framework_helpers.FormatAbsoluteURL(
+          mr, urls.ADMIN_LABELS, deleted=1, ts=int(time.time()))
 
     # TODO(jrobbins): add logic to reaper cron task to look for
     # soft deleted field definitions that have no issues with
@@ -147,10 +157,43 @@ class FieldDetail(servlet.Servlet):
 
     parsed = field_helpers.ParseFieldDefRequest(post_data, config)
 
-    admin_ids, _admin_str = tracker_helpers.ParseAdminUsers(
+    if (parsed.min_value is not None and parsed.max_value is not None and
+        parsed.min_value > parsed.max_value):
+      mr.errors.min_value = 'Minimum value must be less than maximum.'
+
+    if parsed.regex:
+      try:
+        re.compile(parsed.regex)
+      except re.error:
+        mr.errors.regex = 'Invalid regular expression.'
+
+    admin_ids, admin_str = tracker_helpers.ParseAdminUsers(
         mr.cnxn, post_data['admin_names'], self.services.user)
 
-    # TODO(jrobbins): bounce on validation errors
+    if parsed.field_type_str == 'approval_type':
+      if parsed.approvers_str:
+        try:
+          approver_ids_dict = self.services.user.LookupUserIDs(
+              mr.cnxn, re.split('[,;\s]+', parsed.approvers_str))
+          _approver_ids = list(set(approver_ids_dict.values()))
+        except user_svc.NoSuchUserException:
+          mr.errors.approvers = 'One or more approvers not found.'
+      else:
+        mr.errors.approvers = 'Please provide at least one default approver.'
+
+    if mr.errors.AnyErrors():
+      new_field_def = field_helpers.ReviseFieldDefFromParsed(parsed, field_def)
+
+      new_field_def_view = tracker_views.FieldDefView(
+          new_field_def, config)
+
+      self.PleaseCorrect(
+          mr, field_def=new_field_def_view,
+          initial_applicable_type=parsed.applicable_type,
+          initial_choices=parsed.choices_text,
+          initial_admins = admin_str,
+          initial_approvers = parsed.approvers_str)
+      return
 
     self.services.config.UpdateFieldDef(
         mr.cnxn, mr.project_id, field_def.field_id,
@@ -165,3 +208,7 @@ class FieldDetail(servlet.Servlet):
         docstring=parsed.field_docstring, admin_ids=admin_ids)
     self.services.config.UpdateConfig(
         mr.cnxn, mr.project, well_known_labels=parsed.revised_labels)
+
+    return framework_helpers.FormatAbsoluteURL(
+          mr, urls.FIELD_DETAIL, field=field_def.field_name,
+          saved=1, ts=int(time.time()))

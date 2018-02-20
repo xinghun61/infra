@@ -5,9 +5,13 @@
 
 """Unit tests for the fielddetail servlet."""
 
+import mox
 import unittest
+import logging
 
 import webapp2
+
+from third_party import ezt
 
 from framework import permissions
 from proto import project_pb2
@@ -17,6 +21,7 @@ from testing import fake
 from testing import testing_helpers
 from tracker import fielddetail
 from tracker import tracker_bizobj
+from tracker import tracker_views
 
 
 class FieldDetailTest(unittest.TestCase):
@@ -40,6 +45,12 @@ class FieldDetailTest(unittest.TestCase):
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(self.fd)
     self.mr.field_name = 'CPU'
+
+    self.mox = mox.Mox()
+
+  def tearDown(self):
+    self.mox.UnsetStubs()
+    self.mox.ResetAll()
 
   def testGetFieldDef_NotFound(self):
     self.mr.field_name = 'NeverHeardOfIt'
@@ -118,6 +129,21 @@ class FieldDetailTest(unittest.TestCase):
     self.assertEqual('CPU', fd.field_name)
     self.assertTrue(fd.is_deleted)
 
+  def testProcessFormData_Cancel(self):
+    post_data = fake.PostData(
+        name=['CPU'],
+        cancel=['Submit'],
+        max_value=['200'])
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+    logging.info(url)
+    self.assertTrue('/adminLabels?ts=' in url)
+    config = self.services.config.GetProjectConfig(
+        self.mr.cnxn, self.mr.project_id)
+
+    fd = tracker_bizobj.FindFieldDef('CPU', config)
+    self.assertIsNone(fd.max_value)
+    self.assertIsNone(fd.min_value)
+
   def testProcessFormData_Edit(self):
     post_data = fake.PostData(
         name=['CPU'],
@@ -153,3 +179,27 @@ class FieldDetailTest(unittest.TestCase):
     fd = tracker_bizobj.FindFieldDef('CPU', self.config)
     self.assertEqual('CPU', fd.field_name)
     self.assertEqual(2, fd.min_value)
+
+  def testProcessEditField_Reject(self):
+    post_data = fake.PostData(
+        name=['CPU'], field_type=['INT_TYPE'], min_value=['4'],
+        max_value=['1'], admin_names=[''])
+
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        self.mr, field_def=mox.IgnoreArg(),
+        initial_applicable_type='',
+        initial_choices='',
+        initial_admins='',
+        initial_approvers='')
+    self.mox.ReplayAll()
+
+    url = self.servlet._ProcessEditField(
+        self.mr, post_data, self.config, self.fd)
+    self.assertEqual('Minimum value must be less than maximum.',
+                     self.mr.errors.min_value)
+    self.assertIsNone(url)
+
+    fd = tracker_bizobj.FindFieldDef('CPU', self.config)
+    self.assertIsNone(fd.min_value)
+    self.assertIsNone(fd.max_value)

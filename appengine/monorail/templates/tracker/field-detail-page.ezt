@@ -118,10 +118,8 @@
       <th>Choices:</th>
       <td>
         [if-any allow_edit]
-          <textarea name="choices" rows="10" cols="75" style="tab-size:18">
-[for field_def.choices][field_def.choices.name_padded][if-any field_def.choices.docstring]&#09;= [end][field_def.choices.docstring]
-[end]
-          </textarea>
+          <textarea name="choices" rows="10" cols="75" style="tab-size:18" [if-any allow_edit][else]disabled="disabled"[end]
+          >[initial_choices]</textarea>
         [else]
           <table cellspacing="4" cellpadding="0" style="padding: 2px; border:2px solid #eee">
             [for field_def.choices]
@@ -144,10 +142,13 @@
         <input type="number" name="min_value" style="text-align:right; width: 4em"
                value="[field_def.min_value]" class="acob"
                [if-any allow_edit][else]disabled="disabled"[end]>
+
         Max value:
         <input type="number" name="max_value" style="text-align:right; width: 4em"
                value="[field_def.max_value]" class="acob"
-               [if-any allow_edit][else]disabled="disabled"[end]><br>
+               [if-any allow_edit][else]disabled="disabled"[end]>
+        <span class="fielderror" style="margin-left:1em">
+          [if-any errors.min_value][errors.min_value][end]</span><br>
       </td>
     </tr>
   [end]
@@ -157,6 +158,8 @@
       <th>Validation:</th>
       <td>
         Regex: <input type="text" name="regex" size="30" value="[field_def.regex]" class="acob"><br>
+        <span class="fielderror" style="margin-left:1em"
+            >[if-any errors.regex][errors.regex][end]</span>
       </td>
     </tr>
   [end]
@@ -253,7 +256,9 @@
       [if-any allow_edit]
         <input type="submit" name="submit" value="Submit changes">
         <input type="submit" name="deletefield" value="Delete Field"
-               style="margin-left:2em" id="deletefield">
+               style="margin-left:1em" id="deletefield">
+        <input type="submit" name="cancel" value="Cancel"
+               style="margin-left:1em">
       [end]
     </td>
   </tr>

@@ -28,6 +28,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.mr.cnxn = fake.MonorailConnection()
     self.errors = template_helpers.EZTError()
 
+
   def testParseFieldDefRequest_Empty(self):
     post_data = fake.PostData()
     parsed = field_helpers.ParseFieldDefRequest(post_data, self.config)
@@ -418,3 +419,40 @@ class FieldHelpersTest(unittest.TestCase):
                      field_helpers.FormatUrlFieldValue('www.google.com'))
     self.assertEqual('https://www.bing.com',
                      field_helpers.FormatUrlFieldValue('https://www.bing.com'))
+
+  def testReviseFieldDefFromParsed_INT(self):
+    parsed_field_def = field_helpers.ParsedFieldDef(
+        'EstDays', 'int_type', min_value=5, max_value=7, regex='',
+        needs_member=True, needs_perm='Commit', grants_perm='View',
+        notify_on=tracker_pb2.NotifyTriggers.ANY_COMMENT,
+        is_required=True, is_niche=True, importance='required',
+        is_multivalued=True, field_docstring='updated doc', choices_text='',
+        applicable_type='Launch', applicable_predicate='', revised_labels=[],
+        date_action_str='ping_participants', approvers_str='', survey='')
+
+    fd = tracker_bizobj.MakeFieldDef(
+        123, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None,
+        '', False, False, False, 4, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
+
+    new_fd = field_helpers.ReviseFieldDefFromParsed(parsed_field_def, fd)
+    # assert INT fields
+    self.assertEqual(new_fd.min_value, 5)
+    self.assertEqual(new_fd.max_value, 7)
+
+    # assert USER fields
+    self.assertEqual(new_fd.notify_on, tracker_pb2.NotifyTriggers.ANY_COMMENT)
+    self.assertTrue(new_fd.needs_member)
+    self.assertEqual(new_fd.needs_perm, 'Commit')
+    self.assertEqual(new_fd.grants_perm, 'View')
+
+    # assert DATE fields
+    self.assertEqual(new_fd.date_action,
+                     tracker_pb2.DateAction.PING_PARTICIPANTS)
+
+    # assert general fields
+    self.assertTrue(new_fd.is_required)
+    self.assertTrue(new_fd.is_niche)
+    self.assertEqual(new_fd.applicable_type, 'Launch')
+    self.assertEqual(new_fd.docstring, 'updated doc')
+    self.assertTrue(new_fd.is_multivalued)
