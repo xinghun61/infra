@@ -68,8 +68,12 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 			ID: gerritMappingID(gd.Host, gd.Project, gd.Change, gd.Revision),
 		}
 		if err := ds.Get(c, g); err != nil {
-			logging.WithError(err).Errorf(c, "failed to get GerritChangeToRunID entity: %v", err)
-			return 0, grpc.Errorf(codes.InvalidArgument, "failed to find run ID for Gerrit change")
+			if err == ds.ErrNoSuchEntity {
+				logging.WithError(err).Infof(c, "no GerritChangeToRunID entity found: %v", err)
+				return 0, grpc.Errorf(codes.NotFound, "failed to find run ID for Gerrit change")
+			}
+			logging.WithError(err).Errorf(c, "failed to fetch GerritChangeToRunID entity: %v", err)
+			return 0, grpc.Errorf(codes.Internal, "failed to fetch run ID for Gerrit change")
 		}
 		return g.RunID, nil
 	}

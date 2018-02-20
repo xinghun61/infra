@@ -16,6 +16,9 @@ import (
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"infra/tricium/api/v1"
 	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
@@ -191,7 +194,7 @@ func TestProgress(t *testing.T) {
 			}
 			id, err := validateProgressRequest(ctx, request)
 			So(id, ShouldEqual, 0)
-			So(err, ShouldNotBeNil)
+			So(status.Code(err), ShouldEqual, codes.NotFound)
 		})
 
 		Convey("Validate request with missing Gerrit details", func() {
