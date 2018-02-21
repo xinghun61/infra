@@ -56,7 +56,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 		name, _, err := track.ExtractFunctionPlatform(fileIsolator)
 		So(err, ShouldBeNil)
 
-		// Add pending run entry.
+		// Add pending workflow run.
 		request := &track.AnalyzeRequest{}
 		So(ds.Put(ctx, request), ShouldBeNil)
 		requestKey := ds.KeyForObj(ctx, request)
@@ -91,22 +91,29 @@ func TestWorkerDoneRequest(t *testing.T) {
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
-		functionRunKey := ds.NewKey(ctx, "FunctionRun", name, 0, runKey)
+		functionRun := ds.NewKey(ctx, "FunctionRun", name, 0, runKey)
 
 		Convey("Marks worker as done", func() {
-			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, functionRunKey)
+			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, functionRun)
+			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
+			So(ds.Get(ctx, wr), ShouldBeNil)
+			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
+		})
+
+		Convey("Marks aborted worker as done", func() {
+			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, functionRun)
 			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
 			So(ds.Get(ctx, wr), ShouldBeNil)
 			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
 		})
 
 		Convey("Marks function as done and adds no comments", func() {
-			fr := &track.FunctionRunResult{ID: 1, Parent: functionRunKey}
+			fr := &track.FunctionRunResult{ID: 1, Parent: functionRun}
 			So(ds.Get(ctx, fr), ShouldBeNil)
 			So(fr.State, ShouldEqual, tricium.State_SUCCESS)
 		})
 
-		// Mark remaining workers as done.
+		// Mark multi-platform function as done on one platform.
 		err = workerDone(ctx, &admin.WorkerDoneRequest{
 			RunId:    request.ID,
 			Worker:   clangIsolatorWindows,
@@ -114,6 +121,14 @@ func TestWorkerDoneRequest(t *testing.T) {
 			State:    tricium.State_SUCCESS,
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
+
+		Convey("Multi-platform function is half done, function stays launched", func() {
+			ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
+			So(ds.Get(ctx, ar), ShouldBeNil)
+			So(ar.State, ShouldEqual, tricium.State_RUNNING)
+		})
+
+		// Mark multi-platform function as done on other platform.
 		err = workerDone(ctx, &admin.WorkerDoneRequest{
 			RunId:    request.ID,
 			Worker:   clangIsolatorUbuntu,
@@ -134,7 +149,5 @@ func TestWorkerDoneRequest(t *testing.T) {
 			So(ds.Get(ctx, ar), ShouldBeNil)
 			So(ar.State, ShouldEqual, tricium.State_SUCCESS)
 		})
-
-		// TODO(emso): Multi-platform function is half done, function stays launched.
 	})
 }
