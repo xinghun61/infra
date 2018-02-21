@@ -36,10 +36,10 @@ const (
 const (
 	// MaxAutoCommitsPerDay indicates how many commits may be landed by the
 	// findit service account in any 24 hour period.
-	MaxAutoCommitsPerDay = 4
+	MaxAutoCommitsPerDay = 8
 	// MaxAutoRevertsPerDay indicates how many reverts may be created by the
 	// findit service account in any 24 hour period.
-	MaxAutoRevertsPerDay = 10
+	MaxAutoRevertsPerDay = 20
 
 	// MaxCulpritAge indicates the maximum delay allowed between a culprit
 	// and findit reverting it.
@@ -53,8 +53,6 @@ const (
 
 // This is the numeric result code for FAILURE. (As buildbot defines it)
 var failedResultCode = 2
-
-var failableStepNames = []string{"compile"}
 
 // countRelevantCommits follows the relevant commits previous pointer until a
 // commit older than the cutoff time is found, and counts those that match the
@@ -263,11 +261,12 @@ func getRevertAndCulpritChanges(ctx context.Context, ap *AuditParams, rc *Releva
 	return revert, culprit
 }
 
-// FailedBuildIsCompileFailure is a RuleFunc that verifies that the referred
-// build contains a failed compile step.
-func FailedBuildIsCompileFailure(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+// FailedBuildIsAppropriateFailure is a RuleFunc that verifies that the referred
+// build contains a failed step appropriately named.
+func FailedBuildIsAppropriateFailure(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
-	result.RuleName = "FailedBuildIsCompileFailure"
+	result.RuleName = "FailedBuildIsAppropriateFailure"
+	failableStepName := getFailedSteps(rc.CommitMessage)
 
 	buildURL, failedBuildInfo := getFailedBuild(ctx, cs.milo, rc)
 
@@ -275,20 +274,18 @@ func FailedBuildIsCompileFailure(ctx context.Context, ap *AuditParams, rc *Relev
 
 		for _, s := range failedBuildInfo.Steps {
 			r, _ := s.Result()
-			for _, fs := range failableStepNames {
-				if s.Name == fs {
-					if int(r) == failedResultCode {
-						result.RuleResultStatus = rulePassed
-						return result
-					}
+			if s.Name == failableStepName {
+				if int(r) == failedResultCode {
+					result.RuleResultStatus = rulePassed
+					return result
 				}
 			}
 		}
 	}
 	result.RuleResultStatus = ruleFailed
 	if buildURL != "" {
-		result.Message = fmt.Sprintf("Referred build %q does not have an expected failure in either of the following steps: %s",
-			buildURL, failableStepNames)
+		result.Message = fmt.Sprintf("Referred build %q does not have an expected failure in the following step: %s",
+			buildURL, failableStepName)
 	} else {
 		result.Message = fmt.Sprintf(
 			"The revert does not point to a failed build, expected link prefixed with \"%s\"",
@@ -347,4 +344,12 @@ func OnlyCommitsOwnChange(ctx context.Context, ap *AuditParams, rc *RelevantComm
 	}
 	result.RuleResultStatus = rulePassed
 	return result
+}
+
+func getFailedSteps(commitMessage string) string {
+	stepName, err := failedStepFromCommitMessage(commitMessage)
+	if err != nil {
+		return "compile"
+	}
+	return stepName
 }

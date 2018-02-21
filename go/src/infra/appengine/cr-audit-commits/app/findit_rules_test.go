@@ -255,7 +255,7 @@ func TestFinditRules(t *testing.T) {
 			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
 				"https://ci/fake/build": fakeBuild,
 			}}
-			rr := FailedBuildIsCompileFailure(ctx, ap, rc, testClients)
+			rr := FailedBuildIsAppropriateFailure(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
 		Convey("Failed build is compile failure Fail", func() {
@@ -274,7 +274,7 @@ func TestFinditRules(t *testing.T) {
 			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
 				"https://ci/fake/build": fakeBuild,
 			}}
-			rr := FailedBuildIsCompileFailure(ctx, ap, rc, testClients)
+			rr := FailedBuildIsAppropriateFailure(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "does not have an expected failure")
 			So(rr.Message, ShouldContainSubstring, "compile")

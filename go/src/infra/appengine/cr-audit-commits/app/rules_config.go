@@ -71,7 +71,7 @@ var RuleMap = map[string]*RepoConfig{
 					AutoRevertsPerDay,
 					CulpritAge,
 					CulpritInBuild,
-					FailedBuildIsCompileFailure,
+					FailedBuildIsAppropriateFailure,
 					RevertOfCulprit,
 					OnlyCommitsOwnChange,
 				}},

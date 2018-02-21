@@ -31,6 +31,7 @@ const (
 	gerritScope       = "https://www.googleapis.com/auth/gerritcodereview"
 	emailScope        = "https://www.googleapis.com/auth/userinfo.email"
 	failedBuildPrefix = "Sample Failed Build:"
+	failedStepPrefix  = "Sample Failed Step:"
 )
 
 // Tests can put mock clients here, prod code will ignore this global.
@@ -65,15 +66,22 @@ func getAuthenticatedHTTPClient(ctx context.Context, scopes ...string) (*http.Cl
 	return &http.Client{Transport: t}, nil
 }
 
-func failedBuildFromCommitMessage(m string) (string, error) {
+func findPrefixLine(m string, prefix string) (string, error) {
 	s := bufio.NewScanner(strings.NewReader(m))
 	for s.Scan() {
 		line := s.Text()
-		if strings.HasPrefix(line, failedBuildPrefix) {
-			return strings.TrimSpace(strings.TrimPrefix(line, failedBuildPrefix)), nil
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimSpace(strings.TrimPrefix(line, prefix)), nil
 		}
 	}
-	return "", fmt.Errorf("commit message does not contain url to failed build prefixed with %q", failedBuildPrefix)
+	return "", fmt.Errorf("commit message does not contain line prefixed with %q", prefix)
+}
+func failedBuildFromCommitMessage(m string) (string, error) {
+	return findPrefixLine(m, failedBuildPrefix)
+}
+
+func failedStepFromCommitMessage(m string) (string, error) {
+	return findPrefixLine(m, failedStepPrefix)
 }
 
 func getIssueBySummaryAndAccount(ctx context.Context, cfg *RepoConfig, s, a string, cs *Clients) (*monorail.Issue, error) {
