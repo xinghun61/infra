@@ -129,6 +129,9 @@ KNOWN_INFRA_STEPS_NAMES = [
 IGNORED_STEPS = ['steps', 'presubmit', 'recipe failure reason', 'test results',
                  'Uncaught Exception', 'Failure reason', 'analyze']
 
+# Response prefix of Milo API.
+_MILO_RESPONSE_PREFIX = ')]}\'\n'
+
 
 def is_infra_step_flake(flake_name):
   return flake_name in KNOWN_INFRA_STEPS_NAMES
@@ -758,7 +761,10 @@ class CreateFlakyRun(webapp2.RequestHandler):
                     response.status_code, response.content)
       self.response.set_status(500, 'Failed to fetch build.')
       return
-    data = json.loads(response.content)['data']
+    content = response.content
+    if content.startswith(_MILO_RESPONSE_PREFIX):
+      content = content[len(_MILO_RESPONSE_PREFIX):]
+    data = json.loads(content)['data']
     json_result = json.loads(base64.b64decode(data))
     steps = json_result['steps']
 

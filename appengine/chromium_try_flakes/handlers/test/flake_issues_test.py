@@ -63,7 +63,7 @@ TEST_TEST_RESULTS_REPLY = json.dumps({
 })
 
 
-TEST_BUILDBOT_JSON_REPLY = json.dumps({
+TEST_BUILDBOT_JSON_REPLY = ')]}\'\n' + json.dumps({
   'data': base64.b64encode(json.dumps({
     'steps': [
       # Simple case.
