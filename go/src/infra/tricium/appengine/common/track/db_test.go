@@ -7,13 +7,80 @@ package track
 import (
 	"testing"
 
-	ds "go.chromium.org/gae/service/datastore"
+	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"infra/tricium/api/v1"
+	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
 
+	"infra/tricium/api/v1"
 	trit "infra/tricium/appengine/common/testing"
 )
+
+const (
+	project    = "playground/gerrit-tricium"
+	okACLUser  = "user:ok@example.com"
+	okACLGroup = "tricium-playground-requesters"
+)
+
+// mockConfigProvider mocks the common.ConfigProvider interface.
+// TODO(qyearsley): Consider adding maps of configs in MockProvider
+// in common/config/provider.go to reduce duplication in tests.
+type mockConfigProvider struct{}
+
+func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
+	return &tricium.ServiceConfig{}, nil
+}
+
+func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
+	if p == project {
+		return &tricium.ProjectConfig{
+			Name: project,
+			Acls: []*tricium.Acl{
+				{
+					Role:     tricium.Acl_READER,
+					Identity: okACLUser,
+				},
+				{
+					Role:     tricium.Acl_REQUESTER,
+					Identity: okACLUser,
+				},
+			},
+		}, nil
+	}
+	return &tricium.ProjectConfig{}, nil
+}
+
+func TestFetchRecentRequests(t *testing.T) {
+	Convey("Test Environment", t, func() {
+
+		tt := &trit.Testing{}
+		ctx := tt.Context()
+
+		request := &AnalyzeRequest{Project: project}
+		So(ds.Put(ctx, request), ShouldBeNil)
+
+		Convey("FetchRecentRequests ok user", func() {
+			ctx = auth.WithState(ctx, &authtest.FakeState{
+				Identity:       okACLUser,
+				IdentityGroups: []string{okACLGroup},
+			})
+			rs, err := FetchRecentRequests(ctx, &mockConfigProvider{})
+			So(err, ShouldBeNil)
+			So(rs, ShouldResemble, []*AnalyzeRequest{request})
+		})
+
+		Convey("FetchRecentRequests other user", func() {
+			ctx = auth.WithState(ctx, &authtest.FakeState{
+				Identity: "user:other@example.com",
+			})
+			rs, err := FetchRecentRequests(ctx, &mockConfigProvider{})
+			So(err, ShouldBeNil)
+			So(len(rs), ShouldEqual, 0)
+		})
+	})
+}
 
 func TestTrackHelperFunctions(t *testing.T) {
 	Convey("Test Environment", t, func() {

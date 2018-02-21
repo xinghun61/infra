@@ -6,8 +6,12 @@ package track
 
 import (
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/logging"
 
 	"golang.org/x/net/context"
+
+	"infra/tricium/api/v1"
+	"infra/tricium/appengine/common/config"
 )
 
 // FetchFunctionRuns returns a slice of all FunctionRuns for a run.
@@ -41,4 +45,38 @@ func queryForRunID(c context.Context, kind string, runID int64) *ds.Query {
 func workflowRunKey(c context.Context, runID int64) *ds.Key {
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", runID, nil)
 	return ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
+}
+
+// FetchRecentRequests returns a slice of AnalyzeRequest entities
+// for the most recently received requests for projects readable
+// to the current user.
+func FetchRecentRequests(c context.Context, cp config.ProviderAPI) ([]*AnalyzeRequest, error) {
+	var requests []*AnalyzeRequest
+	// NB! This only lists the last 20 requests.
+	q := ds.NewQuery("AnalyzeRequest").Order("-Received").Limit(20)
+	if err := ds.GetAll(c, q, &requests); err != nil {
+		logging.WithError(err).Errorf(c, "failed to get AnalyzeRequest entities: %v", err)
+		return nil, err
+	}
+	// Only include readable requests.
+	checked := map[string]bool{}
+	var rs []*AnalyzeRequest
+	for _, r := range requests {
+		if _, ok := checked[r.Project]; !ok {
+			pc, err := cp.GetProjectConfig(c, r.Project)
+			if err != nil {
+				logging.WithError(err).Errorf(c, "failed to get config for project %s: %v", r.Project, err)
+				return nil, err
+			}
+			checked[r.Project], err = tricium.CanRead(c, pc)
+			if err != nil {
+				logging.WithError(err).Errorf(c, "failed to check read access %s: %v", r.Project, err)
+				return nil, err
+			}
+		}
+		if checked[r.Project] {
+			rs = append(rs, r)
+		}
+	}
+	return rs, nil
 }

@@ -24,16 +24,10 @@ func init() {
 	// LUCI frameworks needs a bunch of routes exposed via default module.
 	standard.InstallHandlers(r)
 
-	// This is the URL called from the analyze form, exposed to end-users.
-	// TODO(emso): Should this be internal?
-	// NB! With Polymer this goes away and we call Tricium.Analyze directly.
-	r.POST("/internal/analyze-form", base, analyzeFormHandler)
-
 	// This is the analyze queue handler
 	r.POST("/internal/analyze", baseInternal, analyzeHandler)
 
 	r.GET("/", base, landingPageHandler)
-	r.GET("/results", base, resultsHandler)
 	r.GET("/run/:runId", base, runPageHandler)
 
 	// Configure pRPC server.

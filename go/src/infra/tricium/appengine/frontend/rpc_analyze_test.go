@@ -20,6 +20,7 @@ import (
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	trit "infra/tricium/appengine/common/testing"
+	"infra/tricium/appengine/common/track"
 )
 
 const (
@@ -94,7 +95,7 @@ func TestAnalyze(t *testing.T) {
 			})
 
 			Convey("Adds tracking of run", func() {
-				r, err := requests(ctx, &mockConfigProvider{})
+				r, err := track.FetchRecentRequests(ctx, &mockConfigProvider{})
 				So(err, ShouldBeNil)
 				So(len(r), ShouldEqual, 1)
 			})
