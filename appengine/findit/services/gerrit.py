@@ -170,19 +170,20 @@ def _IsCulpritARevert(cl_info):
   return bool(cl_info.revert_of)
 
 
-def RevertCulprit(pipeline_input):
+def RevertCulprit(repo_name, revision, build_id, build_failure_type,
+                  sample_step_name):
   """Creates a revert of a culprit and adds reviewers.
 
   Args:
-    pipeline_input (CreateRevertCLParameters): Information needed to
-      create a revert.
+    repo_name (str): Name of the repo.
+    revision (str): revision of the culprit.
+    build_id (str): Id of the sample failed build.
+    build_failure_type (int): Failure type: compile, test or flake.
+    sample_step_name (str): Sample failed step in the failed build.
 
   Returns:
     Status of this reverting.
   """
-  repo_name = pipeline_input.cl_key.repo_name
-  revision = pipeline_input.cl_key.revision
-  build_id = pipeline_input.build_id
 
   culprit = _UpdateCulprit(repo_name, revision)
   # 0. Gets information about this culprit.
@@ -259,8 +260,10 @@ def RevertCulprit(pipeline_input):
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
         culprit for failures in the build cycles as shown on:
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
-        Sample Failed Build: %s""") % (culprit_commit_position or revision,
-                                       culprit.key.urlsafe(), sample_build_url)
+        Sample Failed Build: %s\n
+        Sample Failed Step: %s""") % (culprit_commit_position or revision,
+                                      culprit.key.urlsafe(), sample_build_url,
+                                      sample_step_name)
 
     revert_change_id = codereview.CreateRevert(
         revert_reason, culprit_change_id,
@@ -281,7 +284,6 @@ def RevertCulprit(pipeline_input):
   # 3. Add reviewers.
   # If Findit cannot commit the revert, add sheriffs as reviewers and ask them
   # to 'LGTM' and commit the revert.
-  build_failure_type = pipeline_input.failure_type
   action_settings = waterfall_config.GetActionSettings()
   can_commit_revert = (
       action_settings.get('auto_commit_revert_compile')

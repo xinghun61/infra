@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import mock
 
 from common import monitoring
@@ -401,3 +402,45 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(gerrit.COMMITTED,
                      culprit_action.CommitRevert(pipeline_input, 'pipeline_id'))
+
+  def testGetSampleFailedStepName(self):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    build_id = 'm/b/123'
+    culprit.builds = {build_id: {'failures': {'step': ['test1', 'test2']}}}
+    culprit.put()
+    self.assertEqual('step',
+                     culprit_action.GetSampleFailedStepName(
+                         repo_name, revision, build_id))
+
+  @mock.patch.object(logging, 'warning')
+  def testGetSampleFailedStepNameUseAnotherBuild(self, mock_log):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    build_id = 'm/b/123'
+    culprit.builds = {'m/b/124': {'failures': {'step': ['test1', 'test2']}}}
+    culprit.put()
+    self.assertEqual('step',
+                     culprit_action.GetSampleFailedStepName(
+                         repo_name, revision, build_id))
+    mock_log.assert_called_once_with(
+        '%s is not found in culprit %s/%s\'s build,'
+        ' using another build to get a sample failed step.', build_id,
+        repo_name, revision)
+
+  @mock.patch.object(logging, 'error')
+  def testGetSampleFailedStepNameUseAnotherBuild(self, mock_log):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    build_id = 'm/b/123'
+    culprit.builds = None
+    culprit.put()
+    self.assertEqual('',
+                     culprit_action.GetSampleFailedStepName(
+                         repo_name, revision, build_id))
+    mock_log.assert_called_once_with(
+        'Cannot get a sample failed step for culprit %s/%s.', repo_name,
+        revision)

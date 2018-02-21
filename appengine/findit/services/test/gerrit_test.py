@@ -69,6 +69,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
+    sample_failed_step = 'compile'
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
@@ -95,10 +96,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = gerrit.RevertCulprit(
-        CreateRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            build_id='m/b/1',
-            failure_type=failure_type.COMPILE))
+        repo_name, revision, 'm/b/1', failure_type.COMPILE, sample_failed_step)
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
 
@@ -110,8 +108,10 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
         culprit for failures in the build cycles as shown on:
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
-        Sample Failed Build: %s""") % (commit_position, culprit.key.urlsafe(),
-                                       buildbot.CreateBuildUrl('m', 'b', '1'))
+        Sample Failed Build: %s\n
+        Sample Failed Step: %s""") % (commit_position, culprit.key.urlsafe(),
+                                      buildbot.CreateBuildUrl('m', 'b', '1'),
+                                      sample_failed_step)
     mock_gerrit.assert_called_once_with(reason, self.review_change_id, '20001')
 
     culprit_link = (
@@ -172,11 +172,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
-    revert_status = gerrit.RevertCulprit(
-        CreateRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            build_id='m/b/1',
-            failure_type=failure_type.COMPILE))
+    revert_status = gerrit.RevertCulprit(repo_name, revision, 'm/b/1',
+                                         failure_type.COMPILE, 'compile')
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_SHERIFF)
 
@@ -218,11 +215,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.cr_notification_status = status.COMPLETED
     culprit.put()
 
-    revert_status = gerrit.RevertCulprit(
-        CreateRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            build_id='m/b/1',
-            failure_type=failure_type.COMPILE))
+    revert_status = gerrit.RevertCulprit(repo_name, revision, 'm/b/1',
+                                         failure_type.COMPILE, 'compile')
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
 
@@ -247,11 +241,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = gerrit.RevertCulprit(
-        CreateRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            build_id='m/b/1',
-            failure_type=failure_type.COMPILE))
+    revert_status = gerrit.RevertCulprit(repo_name, revision, 'm/b/1',
+                                         failure_type.COMPILE, 'compile')
 
     self.assertEquals(revert_status, gerrit.SKIPPED)
 
@@ -276,11 +267,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = gerrit.RevertCulprit(
-        CreateRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            build_id='m/b/1',
-            failure_type=failure_type.COMPILE))
+    revert_status = gerrit.RevertCulprit(repo_name, revision, 'm/b/1',
+                                         failure_type.COMPILE, 'compile')
 
     self.assertEquals(revert_status, gerrit.SKIPPED)
 

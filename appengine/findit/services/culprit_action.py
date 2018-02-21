@@ -91,9 +91,33 @@ def _CanCreateRevertForCulprit(parameters, analysis_id):
   return True
 
 
+def GetSampleFailedStepName(repo_name, revision, build_id):
+  culprit = WfSuspectedCL.Get(repo_name, revision)
+
+  if culprit and culprit.builds:
+    if (culprit.builds.get(build_id) and
+        culprit.builds[build_id].get('failures')):
+      failures = culprit.builds[build_id]['failures']
+    else:
+      logging.warning('%s is not found in culprit %s/%s\'s build,'
+                      ' using another build to get a sample failed step.',
+                      build_id, repo_name, revision)
+      failures = culprit.builds.values()[0]['failures']
+    return failures.keys()[0]
+  logging.error('Cannot get a sample failed step for culprit %s/%s.', repo_name,
+                revision)
+  return ''
+
+
 def RevertCulprit(parameters, analysis_id):
+  repo_name = parameters.cl_key.repo_name
+  revision = parameters.cl_key.revision
+  build_id = parameters.build_id
+
   if _CanCreateRevertForCulprit(parameters, analysis_id):
-    return gerrit.RevertCulprit(parameters)
+    return gerrit.RevertCulprit(
+        repo_name, revision, build_id, parameters.failure_type,
+        GetSampleFailedStepName(repo_name, revision, build_id))
   return gerrit.SKIPPED
 
 
