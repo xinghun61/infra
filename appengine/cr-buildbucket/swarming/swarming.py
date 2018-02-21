@@ -917,7 +917,7 @@ def _sync_build_in_memory(
       build.failure_reason = model.FailureReason.INFRA_FAILURE
     elif task_result.get('failure'):
       build.result = model.BuildResult.FAILURE
-      if build_run_result.get('infra_failure'):
+      if build_run_result.get('infraFailure'):
         build.failure_reason = model.FailureReason.INFRA_FAILURE
       else:
         build.failure_reason = model.FailureReason.BUILD_FAILURE

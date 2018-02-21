@@ -1047,7 +1047,7 @@ class SwarmingTest(BaseTest):
           'completed_ts': '2018-01-30T00:15:18.162860',
         },
         'build_run_result': {
-          'infra_failure': {
+          'infraFailure': {
             'type': 'BOOTSTRAPPER_ERROR',
             'text': 'it is not good',
           },
