@@ -150,20 +150,23 @@ def _ExtractUrlAndExclusionFlag(dep):
   Returns:
     A tuple (url, filtered), where `url` is a string, and `filtered` is boolean.
   """
-  # The dep is either simply an URL, or a dictionary containing a URL
-  # (plus possibly a 'condition' flag).  The submodule should be excluded
-  # (filtered out) if a condition is present that says so.
-  if isinstance(dep, dict):
-    url = dep['url']
-    condition = dep.get('condition', '')
-    # TODO(crbug/808599): replace this error-prone hack with something more
-    # sensible/robust.  Due to rollback of crrev/c/899672, agable@ explains
-    # that an expedient solution such as this is needed.
-    filtered = condition.find('checkout_google_internal') >= 0
-  else:
-    url = dep
-    filtered = False
-  return (url, filtered)
+  # The dep is either simply a URL, or a dictionary containing various fields
+  # usually including (but not limited to) a URL and a conditional flag.
+  # The submodule should be excluded (filtered out) if a condition is present
+  # that says so, or if it can't be referred to by git URL in the first place.
+  if isinstance(dep, basestring):
+    return dep, False
+  if not isinstance(dep, dict):
+    raise TypeError('Dependency is neither a string nor a dict: %s' % dep)
+  url = dep.get('url')
+  if not url:
+    return url, True
+  condition = dep.get('condition', '')
+  # TODO(crbug/808599): replace this error-prone hack with something more
+  # sensible/robust.  Due to rollback of crrev/c/899672, agable@ explains
+  # that an expedient solution such as this is needed.
+  filtered = condition.find('checkout_google_internal') >= 0
+  return url, filtered
 
 
 def CollateDeps(deps_file, enable_recurse_deps):
