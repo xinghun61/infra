@@ -253,6 +253,25 @@ class SwarmingTest(BaseTest):
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '60')
 
+  def test_expiration(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.expiration_secs = 120
+
+    build = mkBuild(
+        parameters={
+          'builder_name': 'linux_chromium_rel_ng',
+        },
+        tags=['builder:linux_chromium_rel_ng'],
+    )
+
+    task_def = swarming.prepare_task_def_async(build).get_result()
+
+    self.assertEqual(task_def['expiration_secs'], '120')
+
+    builder_cfg.expiration_secs = 60
+    task_def = swarming.prepare_task_def_async(build).get_result()
+    self.assertEqual(task_def['expiration_secs'], '60')
+
   def test_auto_builder_dimension(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.auto_builder_dimension = project_config_pb2.YES

@@ -500,6 +500,9 @@ def _create_task_def_async(
 
   task = apply_if_tags(task)
 
+  if builder_cfg.expiration_secs > 0:
+    task['expiration_secs'] = str(builder_cfg.expiration_secs)
+
   task_properties = task.setdefault('properties', {})
 
   dimensions = list(builder_cfg.dimensions)

@@ -48,7 +48,7 @@ message AclSet {
 // a user that has permissions to schedule a build to the bucket, can override
 // this config.
 //
-// Next tag: 20.
+// Next tag: 21.
 message Builder {
   reserved 8;  // cipd_packages
   reserved 11; // build_numbers of the old format.
@@ -209,6 +209,8 @@ message Builder {
   optional uint32 priority = 5;
   // Maximum build execution time. Not to be confused with pending time.
   optional uint32 execution_timeout_secs = 7;
+  // Maximum build pending time.
+  optional uint32 expiration_secs = 20;
   // Caches that should be present on the bot.
   repeated CacheEntry caches = 9;
   // If YES, generate monotonically increasing contiguous numbers for each
