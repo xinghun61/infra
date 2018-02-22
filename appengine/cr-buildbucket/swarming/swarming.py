@@ -55,7 +55,6 @@ import errors
 import events
 import model
 import protoutil
-import sequence
 
 PUBSUB_TOPIC = 'swarming'
 BUILDER_PARAMETER = 'builder_name'
@@ -649,55 +648,40 @@ def _prepare_task_def_async(
   raise ndb.Return(task_def)
 
 
-def number_sequence_name(bucket, builder):
-  """Returns name of a number sequence for the builder."""
-  return '%s/%s' % (bucket, builder)
-
-
 @ndb.tasklet
-def create_task_async(build):
+def create_task_async(build, build_number=None):
   """Creates a swarming task for the build and mutates the build.
 
   May be called only if build's bucket is configured for swarming.
 
   Raises:
-    errors.InvalidInputError if build attribute values are inavlid.
+    errors.InvalidInputError if build attribute values are invalid.
   """
   settings = yield get_settings_async()
   bucket_cfg, builder_cfg = yield _get_builder_async(build)
 
-  build_number = None
-  seq_name = number_sequence_name(build.bucket, builder_cfg.name)
-  if builder_cfg.build_numbers == project_config_pb2.YES:  # pragma: no branch
-    build_number = yield sequence.generate_async(seq_name, 1)
+  task_def = yield _prepare_task_def_async(
+      build, build_number, bucket_cfg, builder_cfg, settings, False)
 
-  res = None
-  try:
-    task_def = yield _prepare_task_def_async(
-        build, build_number, bucket_cfg, builder_cfg, settings, False)
-
-    assert build.swarming_hostname
-    res = yield _call_api_async(
-        auth.get_current_identity(),
-        build.swarming_hostname,
-        'tasks/new',
-        method='POST',
-        payload=task_def,
-        # Make Swarming know what bucket the task belong too. Swarming uses
-        # this to authorize access to pools assigned to specific buckets only.
-        delegation_tags=['buildbucket:bucket:%s' % build.bucket],
-        # Higher timeout than normal because if the task creation request
-        # fails, but the task is actually created, later we will receive a
-        # notification that the task is completed, but we won't have a build
-        # for that task, which results in errors in the log.
-        deadline=30,
-        # This code path is executed by put and put_batch request handlers.
-        # Clients should retry these requests on transient errors, so
-        # do not retry requests to swarming.
-        max_attempts=1)
-  finally:
-    if res is None and build_number is not None:  # pragma: no branch
-      yield _try_return_build_number_async(seq_name, build_number)
+  assert build.swarming_hostname
+  res = yield _call_api_async(
+      auth.get_current_identity(),
+      build.swarming_hostname,
+      'tasks/new',
+      method='POST',
+      payload=task_def,
+      # Make Swarming know what bucket the task belong too. Swarming uses
+      # this to authorize access to pools assigned to specific buckets only.
+      delegation_tags=['buildbucket:bucket:%s' % build.bucket],
+      # Higher timeout than normal because if the task creation request
+      # fails, but the task is actually created, later we will receive a
+      # notification that the task is completed, but we won't have a build
+      # for that task, which results in errors in the log.
+      deadline=30,
+      # This code path is executed by put and put_batch request handlers.
+      # Clients should retry these requests on transient errors, so
+      # do not retry requests to swarming.
+      max_attempts=1)
 
   task_id = res['task_id']
   logging.info('Created a swarming task %s: %r', task_id, res)
@@ -730,18 +714,6 @@ def create_task_async(build):
   build.regenerate_lease_key()
   build.leasee = _self_identity()
   build.never_leased = False
-
-
-@ndb.tasklet
-def _try_return_build_number_async(seq_name, build_number):
-  try:
-    returned = yield sequence.try_return_async(seq_name, build_number)
-    if not returned:  # pragma: no cover
-      # Log an error to alert on high rates of number losses with info
-      # on bucket/builder.
-      logging.error('lost a build number in builder %s', seq_name)
-  except Exception:  # pragma: no cover
-    logging.exception('exception when returning a build number')
 
 
 def _generate_build_url(milo_hostname, build, build_number):

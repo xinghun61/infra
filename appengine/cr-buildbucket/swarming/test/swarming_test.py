@@ -422,7 +422,7 @@ class SwarmingTest(BaseTest):
       }
     }
 
-    swarming.create_task_async(build).get_result()
+    swarming.create_task_async(build, 1).get_result()
 
     # Test swarming request.
     self.assertEqual(
@@ -612,7 +612,6 @@ class SwarmingTest(BaseTest):
           ],
         },
         'tags': [
-          'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
           'builder:linux_chromium_rel_ng',
           'buildertag:yes',
           'commontag:yes',
@@ -635,7 +634,6 @@ class SwarmingTest(BaseTest):
       'priority': '108',
       'expiration_secs': '3600',
       'tags': [
-        'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
         'buildbucket_bucket:luci.chromium.try',
         'buildbucket_build_id:1',
         'buildbucket_hostname:cr-buildbucket.appspot.com',
@@ -675,7 +673,6 @@ class SwarmingTest(BaseTest):
             },
             'build_id': 'buildbucket/cr-buildbucket.appspot.com/1',
             'buildername': 'linux_chromium_rel_ng',
-            'buildnumber': 1,
             'predefined-property': 'x',
             'predefined-property-bool': True,
           }, sort_keys=True),
@@ -719,13 +716,11 @@ class SwarmingTest(BaseTest):
     self.assertEqual(ununicide(actual_task_def), expected_task_def)
 
     self.assertEqual(set(build.tags), {
-      'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
       'builder:linux_chromium_rel_ng',
       'swarming_dimension:cores:8',
       'swarming_dimension:os:Ubuntu',
       'swarming_dimension:pool:Chrome',
       'swarming_hostname:chromium-swarm.appspot.com',
-      'swarming_tag:build_address:luci.chromium.try/linux_chromium_rel_ng/1',
       'swarming_tag:builder:linux_chromium_rel_ng',
       'swarming_tag:buildertag:yes',
       'swarming_tag:commontag:yes',
@@ -768,7 +763,6 @@ class SwarmingTest(BaseTest):
           ],
         },
         'tags': [
-          'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
           'builder:linux_chromium_rel_ng',
           'buildertag:yes',
           'commontag:yes',
@@ -818,7 +812,6 @@ class SwarmingTest(BaseTest):
           ],
         },
         'tags': [
-          'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
           'builder:linux_chromium_rel_ng',
           'buildertag:yes',
           'commontag:yes',
@@ -958,7 +951,6 @@ class SwarmingTest(BaseTest):
           ],
         },
         'tags': [
-          'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
           'builder:linux_chromium_rel_ng',
           'buildertag:yes',
           'commontag:yes',
@@ -971,20 +963,6 @@ class SwarmingTest(BaseTest):
     }
 
     swarming.create_task_async(build).get_result()
-
-  @mock.patch('sequence.try_return_async')
-  def test_create_task_async_swarming_500(self, try_return_async):
-    build = mkBuild(
-        parameters={'builder_name': 'linux_chromium_rel_ng'}
-    )
-    self.net_err_response = net.Error('BOOM', 500, 'boom')
-    try_return_async.return_value = future(None)
-
-    with self.assertRaises(net.Error):
-      swarming.create_task_async(build).get_result()
-
-    try_return_async.assert_called_with(
-        'luci.chromium.try/linux_chromium_rel_ng', 1)
 
   def test_cancel_task(self):
     self.json_response = {'ok': True}

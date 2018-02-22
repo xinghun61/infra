@@ -21,12 +21,14 @@ from components import auth
 from components import net
 from components import utils
 
+from proto import project_config_pb2
 import acl
 import config
 import errors
 import events
 import metrics
 import model
+import sequence
 import swarming
 
 MAX_RETURN_BUILDS = 100
@@ -419,22 +421,58 @@ def add_many_async(build_request_list):
   @ndb.tasklet
   def create_swarming_tasks_async():
     """Creates a swarming task for each new build in a swarming bucket."""
+
+    # Fetch and index swarmbucket builder configs.
     buckets = set(b.bucket for b in new_builds.itervalues())
     bucket_cfg_futs = {b: config.get_bucket_async(b) for b in buckets}
+    builder_cfgs = {}  # {(bucket, builder): cfg}
+    for bucket, fut in bucket_cfg_futs.iteritems():
+      _, bucket_cfg = yield fut
+      for builder_cfg in bucket_cfg.swarming.builders:
+        builder_cfgs[(bucket, builder_cfg.name)] = builder_cfg
+
+    # For each swarmbucket builder with build numbers, generate numbers.
+    # Filter and index new_builds first.
+    numbered = {}  # {(bucket, builder): [i]}
+    for i, b in new_builds.iteritems():
+      builder = (b.parameters or {}).get(swarming.BUILDER_PARAMETER)
+      builder_id = (b.bucket, builder)
+      cfg = builder_cfgs.get(builder_id)
+      if cfg and cfg.build_numbers == project_config_pb2.YES:
+        numbered.setdefault(builder_id, []).append(i)
+    # Now actually generate build numbers.
+    build_number_futs = [] # [(indexes, seq_name, build_number_fut)]
+    for builder_id, indexes in numbered.iteritems():
+      seq_name = sequence.builder_seq_name(builder_id[0], builder_id[1])
+      fut = sequence.generate_async(seq_name, len(indexes))
+      build_number_futs.append((indexes, seq_name, fut))
+    # {i: (seq_name, build_number)}
+    build_numbers = collections.defaultdict(lambda: (None, None))
+    for indexes, seq_name, fut in build_number_futs:
+      build_number = yield fut
+      for i in sorted(indexes):
+        build_numbers[i] = (seq_name, build_number)
+        build_number += 1
 
     create_futs = {}
     for i, b in new_builds.iteritems():
       _, cfg = yield bucket_cfg_futs[b.bucket]
       if cfg and config.is_swarming_config(cfg):
-        create_futs[i] = swarming.create_task_async(b)
+        create_futs[i] = swarming.create_task_async(b, build_numbers[i][1])
+
     for i, fut in create_futs.iteritems():
+      success = False
       try:
         with _with_swarming_api_error_converter():
           yield fut
+          success = True
       except Exception as ex:
         results[i] = (None, ex)
-        # TODO: return unused build number
         del new_builds[i]
+      finally:
+        seq_name, build_number = build_numbers[i]
+        if not success and build_number is not None:  # pragma: no branch
+          yield _try_return_build_number_async(seq_name, build_number)
 
   def update_tag_indexes_async():
     """Updates tag indexes.
@@ -483,6 +521,18 @@ def add_many_async(build_request_list):
   assert all(build or ex for build, ex in results), results
   assert all(not (build and ex) for build, ex in results), results
   raise ndb.Return(results)
+
+
+@ndb.tasklet
+def _try_return_build_number_async(seq_name, build_number):
+  try:
+    returned = yield sequence.try_return_async(seq_name, build_number)
+    if not returned:  # pragma: no cover
+      # Log an error to alert on high rates of number losses with info
+      # on bucket/builder.
+      logging.error('lost a build number in builder %s', seq_name)
+  except Exception:  # pragma: no cover
+    logging.exception('exception when returning a build number')
 
 
 @contextlib.contextmanager

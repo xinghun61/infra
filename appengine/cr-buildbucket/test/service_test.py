@@ -56,6 +56,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
           project_config_pb2.Builder(
               name='infra',
               dimensions=['pool:default'],
+              build_numbers=project_config_pb2.YES,
               recipe=project_config_pb2.Builder.Recipe(
                 repository='https://example.com',
                 name='presubmit',
@@ -202,10 +203,57 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       self.add(bucket=self.test_build.bucket)
 
+  def test_add_with_build_numbers(self):
+    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+
+    build_numbers = {}
+
+    def create_task_async(build, build_number):
+      build_numbers[build.parameters['i']] = build_number
+      return future(None)
+
+    swarming.create_task_async.side_effect = create_task_async
+
+    (_, ex0), (_, ex1) = service.add_many_async([
+        service.BuildRequest(
+            project=self.chromium_project_id,
+            bucket=self.chromium_bucket.name,
+            parameters={'builder_name': 'infra', 'i': 1},
+        ),
+        service.BuildRequest(
+            project=self.chromium_project_id,
+            bucket=self.chromium_bucket.name,
+            parameters={'builder_name': 'infra', 'i': 2},
+        )
+      ]).get_result()
+
+    self.assertIsNone(ex0)
+    self.assertIsNone(ex1)
+    self.assertEqual(build_numbers, {1: 1, 2: 2})
+
+  @mock.patch('sequence.try_return_async', autospec=True)
+  def test_add_with_build_numbers_and_return(self, try_return_async):
+    try_return_async.return_value = future(None)
+    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+
+    class Error(Exception):
+      pass
+
+    swarming.create_task_async.return_value = future_exception(Error())
+
+    with self.assertRaises(Error):
+      service.add(service.BuildRequest(
+          project=self.chromium_project_id,
+          bucket=self.chromium_bucket.name,
+          parameters={'builder_name': 'infra'},
+      ))
+
+    try_return_async.assert_called_with('chromium/infra', 1)
+
   def test_add_with_swarming_200_and_400(self):
     self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
 
-    def create_task_async(b):
+    def create_task_async(b, number):  # pylint: disable=unused-argument
       if b.parameters['i'] == 1:
         return future_exception(
             net.Error('', status_code=400, response='bad request'))

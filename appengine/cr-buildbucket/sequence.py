@@ -101,3 +101,8 @@ def try_return_async(seq_name, number):
   seq.next_number = number
   yield seq.put_async()
   raise ndb.Return(True)
+
+
+def builder_seq_name(bucket, builder):  # pragma: no cover
+  """Returns name of a number sequence for the builder."""
+  return '%s/%s' % (bucket, builder)
