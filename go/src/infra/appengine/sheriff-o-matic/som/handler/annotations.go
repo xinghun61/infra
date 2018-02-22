@@ -57,9 +57,16 @@ func makeAnnotationResponse(a *model.Annotation, meta map[string]monorail.Issue)
 
 // GetAnnotationsHandler retrieves a set of annotations.
 func GetAnnotationsHandler(ctx *router.Context) {
-	c, w := ctx.Context, ctx.Writer
+	c, w, p := ctx.Context, ctx.Writer, ctx.Params
+
+	tree := p.ByName("tree")
 
 	q := datastore.NewQuery("Annotation")
+
+	if tree != "" {
+		q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
+	}
+
 	annotations := []*model.Annotation{}
 	datastore.GetAll(c, q, &annotations)
 
@@ -188,6 +195,7 @@ type postRequest struct {
 func PostAnnotationsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
+	tree := p.ByName("tree")
 	action := p.ByName("action")
 	if action != "add" && action != "remove" {
 		errStatus(c, w, http.StatusBadRequest, "unrecognized annotation action")
@@ -215,6 +223,7 @@ func PostAnnotationsHandler(ctx *router.Context) {
 	key := rawJSON.Key
 
 	annotation := &model.Annotation{
+		Tree:      datastore.MakeKey(c, "Tree", tree),
 		KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte(key))),
 		Key:       key,
 	}

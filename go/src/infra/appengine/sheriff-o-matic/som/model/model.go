@@ -82,12 +82,13 @@ type ResolveResponse struct {
 // Annotation is any information sheriffs want to annotate an alert with. For
 // example, a bug where the cause of the alert is being solved.
 type Annotation struct {
-	KeyDigest        string    `gae:"$id"`
-	Key              string    `gae:",noindex" json:"key"`
-	Bugs             []string  `gae:",noindex" json:"bugs"`
-	Comments         []Comment `gae:",noindex" json:"comments"`
-	SnoozeTime       int       `json:"snoozeTime"`
-	GroupID          string    `gae:",noindex" json:"group_id"`
+	Tree             *datastore.Key `gae:"$parent"`
+	KeyDigest        string         `gae:"$id"`
+	Key              string         `gae:",noindex" json:"key"`
+	Bugs             []string       `gae:",noindex" json:"bugs"`
+	Comments         []Comment      `gae:",noindex" json:"comments"`
+	SnoozeTime       int            `json:"snoozeTime"`
+	GroupID          string         `gae:",noindex" json:"group_id"`
 	ModificationTime time.Time
 }
 

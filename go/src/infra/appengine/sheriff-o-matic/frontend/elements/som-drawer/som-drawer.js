@@ -50,10 +50,10 @@ class SomDrawer extends Polymer.Element {
         type: Array,
         computed: '_computeTreesList(trees)',
       },
-      _trooperRotations: String,
+      _trooperString: String,
       _troopers: {
         type: Array,
-        computed: '_computeTroopers(_trooperRotations)',
+        computed: '_computeTroopers(_trooperString)',
         value: null,
       },
       // Settings.
@@ -177,12 +177,12 @@ class SomDrawer extends Polymer.Element {
     return Object.values(trees);
   }
 
-  _computeTroopers(trooperRotations) {
-    if (!trooperRotations) {
+  _computeTroopers(trooperString) {
+    if (!trooperString) {
       return [];
     }
 
-    let troopers = trooperRotations.split(',');
+    let troopers = trooperString.split(',');
     troopers[0] = troopers[0] + ' (primary)';
     if (troopers.length == 1) {
       return troopers;

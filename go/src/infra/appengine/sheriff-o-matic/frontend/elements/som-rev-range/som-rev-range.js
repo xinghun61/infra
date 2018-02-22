@@ -155,7 +155,7 @@ class SomRevRange extends Polymer.Element {
   }
 
   _haveError(range) {
-    return !!range.error;
+    return !!range && !!range.error;
   }
 }
 

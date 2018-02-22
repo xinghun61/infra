@@ -36,11 +36,11 @@ import (
 )
 
 func newTestContext() context.Context {
-	ctx := gaetesting.TestingContext()
-	ta := datastore.GetTestable(ctx)
+	c := gaetesting.TestingContext()
+	ta := datastore.GetTestable(c)
 	ta.Consistent(true)
-	ctx = gologger.StdConfig.Use(ctx)
-	return ctx
+	c = gologger.StdConfig.Use(c)
+	return c
 }
 
 type giMock struct {
@@ -399,6 +399,16 @@ func (f *fakeReasonRaw) Severity() messages.Severity {
 
 func TestMergeAlertsByReason(t *testing.T) {
 	Convey("test MergeAlertsByReason", t, func() {
+		c := newTestContext()
+		w := httptest.NewRecorder()
+
+		ctx := &router.Context{
+			Context: c,
+			Writer:  w,
+			Request: makeGetRequest(),
+			Params:  makeParams("tree", "unknown.tree"),
+		}
+
 		tests := []struct {
 			name    string
 			in      []messages.Alert
@@ -476,16 +486,19 @@ func TestMergeAlertsByReason(t *testing.T) {
 				},
 				want: []model.Annotation{
 					{
+						Tree:      datastore.MakeKey(c, "Tree", "unknown.tree"),
 						KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte("buildera.bad_test"))),
 						Key:       "buildera.bad_test",
 						GroupID:   "fakeTitle",
 					},
 					{
+						Tree:      datastore.MakeKey(c, "Tree", "unknown.tree"),
 						KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte("builderb.bad_test"))),
 						Key:       "builderb.bad_test",
 						GroupID:   "fakeTitle",
 					},
 					{
+						Tree:      datastore.MakeKey(c, "Tree", "unknown.tree"),
 						KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte("builderc.bad_test"))),
 						Key:       "builderc.bad_test",
 						GroupID:   "fakeTitle",
@@ -495,7 +508,6 @@ func TestMergeAlertsByReason(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			ctx := newTestContext()
 			test := test
 			Convey(test.name, func() {
 				groups, err := mergeAlertsByReason(ctx, test.in)
@@ -504,7 +516,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 
 				allAnns := []model.Annotation{}
 				q := datastore.NewQuery("Annotation")
-				So(datastore.GetAll(ctx, q, &allAnns), ShouldBeNil)
+				So(datastore.GetAll(c, q, &allAnns), ShouldBeNil)
 
 				sort.Sort(annList(allAnns))
 				sort.Sort(annList(test.want))
@@ -531,8 +543,8 @@ func (a annList) Swap(i, j int) {
 func TestAttachTestResults(t *testing.T) {
 	Convey("basic", t, func() {
 
-		ctx := newTestContext()
-		ctx = authtest.MockAuthConfig(ctx)
+		c := newTestContext()
+		c = authtest.MockAuthConfig(c)
 		fakeTRServer := testhelper.NewFakeServer()
 		defer fakeTRServer.Server.Close()
 
@@ -556,10 +568,10 @@ func TestAttachTestResults(t *testing.T) {
 		}
 		fakeTRServer.JSONResponse = testHistory
 
-		ctx = client.WithTestResults(ctx, fakeTRServer.Server.URL)
+		c = client.WithTestResults(c, fakeTRServer.Server.URL)
 		Convey("empty alert", func() {
 			alert := &messages.Alert{}
-			err := attachTestResults(ctx, alert)
+			err := attachTestResults(c, alert)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -588,7 +600,7 @@ func TestAttachTestResults(t *testing.T) {
 					},
 				},
 			}
-			err := attachTestResults(ctx, alert)
+			err := attachTestResults(c, alert)
 			So(err, ShouldBeNil)
 			alertTestResults := alert.Extension.(messages.BuildFailure).Reason.Raw.(*step.TestFailure).AlertTestResults
 			So(alertTestResults, ShouldNotBeEmpty)

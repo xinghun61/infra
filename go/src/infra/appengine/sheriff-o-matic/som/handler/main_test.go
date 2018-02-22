@@ -1029,6 +1029,7 @@ func TestMain(t *testing.T) {
 					})
 
 					ann := &model.Annotation{
+						Tree:             datastore.MakeKey(c, "Tree", "tree.unknown"),
 						Key:              "foobar",
 						KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
 						ModificationTime: datastore.RoundTime(clock.Now(c)),
@@ -1058,6 +1059,7 @@ func TestMain(t *testing.T) {
 
 					Convey("add", func() {
 						ann := &model.Annotation{
+							Tree:             datastore.MakeKey(c, "Tree", "tree.unknown"),
 							Key:              "foobar",
 							KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
 							ModificationTime: datastore.RoundTime(clock.Now(c)),
@@ -1071,7 +1073,7 @@ func TestMain(t *testing.T) {
 									"snoozeTime": 123123,
 									"key":        "foobar",
 								}, tok)),
-								Params: makeParams("action", "add"),
+								Params: makeParams("action", "add", "tree", "tree.unknown"),
 							})
 
 							So(w.Code, ShouldEqual, 200)
@@ -1087,7 +1089,7 @@ func TestMain(t *testing.T) {
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(change, tok)),
-								Params:  makeParams("action", "add"),
+								Params:  makeParams("action", "add", "tree", "tree.unknown"),
 							})
 
 							So(w.Code, ShouldEqual, 200)
@@ -1104,7 +1106,7 @@ func TestMain(t *testing.T) {
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(change, tok)),
-								Params:  makeParams("action", "add"),
+								Params:  makeParams("action", "add", "tree", "tree.unknown"),
 							})
 
 							So(w.Code, ShouldEqual, 400)
@@ -1119,7 +1121,7 @@ func TestMain(t *testing.T) {
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(map[string]interface{}{"key": "foobar"}, tok)),
-								Params:  makeParams("action", "remove"),
+								Params:  makeParams("action", "remove", "tree", "tree.unknown"),
 							})
 
 							So(w.Code, ShouldEqual, 404)
@@ -1138,7 +1140,7 @@ func TestMain(t *testing.T) {
 									"key":        "foobar",
 									"snoozeTime": true,
 								}, tok)),
-								Params: makeParams("action", "remove"),
+								Params: makeParams("action", "remove", "tree", "tree.unknown"),
 							})
 
 							So(w.Code, ShouldEqual, 200)

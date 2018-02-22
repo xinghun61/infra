@@ -168,7 +168,7 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 			return nil, anyErr
 		}
 
-		groupsByCategory, err := mergeAlertsByReason(c, alerts)
+		groupsByCategory, err := mergeAlertsByReason(ctx, alerts)
 		if err != nil {
 			logging.Errorf(c, "error merging alerts by reason: %v", err)
 			return nil, err
@@ -321,12 +321,16 @@ type groupCounts map[string]map[string]int
 // mergeAlertsByReason merges alerts for step failures occurring across multiple builders into
 // one alert with multiple builders indicated.
 // FIXME: Move the regression range logic into package regrange
-func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) (groupCounts, error) {
+func mergeAlertsByReason(ctx *router.Context, alerts []messages.Alert) (groupCounts, error) {
+	c, p := ctx.Context, ctx.Params
+
+	tree := p.ByName("tree")
+
 	byReason := map[string][]messages.Alert{}
 	for _, alert := range alerts {
 		bf, ok := alert.Extension.(messages.BuildFailure)
 		if !ok {
-			logging.Infof(ctx, "%s failed, but isn't a builder-failure: %s", alert.Key, alert.Type)
+			logging.Infof(c, "%s failed, but isn't a builder-failure: %s", alert.Key, alert.Type)
 			continue
 		}
 		r := bf.Reason
@@ -369,12 +373,13 @@ func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) (groupCou
 				groupTitle := mergedBF.Reason.Title(stepsAtFault)
 				for _, alr := range stepAlerts {
 					ann := &model.Annotation{
+						Tree:      datastore.MakeKey(c, "Tree", tree),
 						KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte(alr.Key))),
 						Key:       alr.Key,
 					}
-					err := datastore.Get(ctx, ann)
+					err := datastore.Get(c, ann)
 					if err != nil && err != datastore.ErrNoSuchEntity {
-						logging.Warningf(ctx, "got err while getting annotation from key %s: %s. Ignoring", alr.Key, err)
+						logging.Warningf(c, "got err while getting annotation from key %s: %s. Ignoring", alr.Key, err)
 					}
 
 					cat := alertCategory(&alr)
@@ -396,12 +401,12 @@ func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) (groupCou
 					// We only want the case where the user explicitly sets the group to something.
 					// Ungrouping an alert sets the group ID to "".
 					if err != datastore.ErrNoSuchEntity && ann.GroupID != groupTitle {
-						logging.Warningf(ctx, "Found groupID %s, wanted to set %s. Assuming user set group manually.", ann.GroupID, groupTitle)
+						logging.Warningf(c, "Found groupID %s, wanted to set %s. Assuming user set group manually.", ann.GroupID, groupTitle)
 						continue
 					}
 
 					ann.GroupID = groupTitle
-					if err := datastore.Put(ctx, ann); err != nil {
+					if err := datastore.Put(c, ann); err != nil {
 						return fmt.Errorf("got err while put: %s", err)
 					}
 				}

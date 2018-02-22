@@ -63,13 +63,16 @@
 
       window.fetch.returns(Promise.resolve(res));
       element.xsrfToken = 'xr';
+      element.tree = {
+        name: 'treeworld',
+      };
       let promise = element.sendAnnotation('bestkey', 'type', {
         foo: 'bar'
       });
       flush(() => {
         assert.equal(window.fetch.callCount, 1);
         let args = window.fetch.firstCall.args;
-        assert.equal(args[0], '/api/v1/annotations/type');
+        assert.equal(args[0], '/api/v1/annotations/treeworld/type');
         let parsed = args[1];
         assert.isDefined(parsed.body);
         parsed.body = JSON.parse(parsed.body);
@@ -210,18 +213,6 @@
   });
 
   suite('bugs', function() {
-    test('filing a bug reminds you to enter the new bug', function() {
-      assert.equal(element._filedBug, false);
-      expect(element.$.fileBugLink).be.visible;
-      expect(element.$.bugReminder).be.hidden;
-
-      element.$.fileBugLink.click();
-
-      assert.equal(element._filedBug, true);
-      expect(element.$.fileBugLink).be.hidden;
-      expect(element.$.bugReminder).be.visible;
-    });
-
     test('filing a bug generates comment for new bug', function() {
       let bugModel = [{
         title: "WebKit Win7 step failure",

@@ -34,15 +34,6 @@
         'name': 'chromium',
         'display_name': 'Chromium',
       };
-      
-      server.respondWith(
-        'GET',
-        'https://build.chromium.org/p/chromium/current_trooper.txt', [
-          200,
-          responseHeaders.text,
-          'helloworld'
-        ]
-      );
     });
 
     teardown(function() {
@@ -50,7 +41,7 @@
     });
 
     test('renders current trooper', function(done) {
-      element._trooperRotations = 'faketrooper';
+      element._trooperString = 'faketrooper';
       flush(function () {
         assert.equal('faketrooper (primary)',
           element.$.currentTroopers.textContent.trim());
@@ -59,7 +50,7 @@
     });
 
     test('renders primary/secondary troopers', function(done) {
-      element._trooperRotations = 'faketrooper,troopertoo';
+      element._trooperString = 'faketrooper,troopertoo';
       flush(function () {
         let troopers = element.$.currentTroopers.querySelectorAll('li');
         assert.equal(2, troopers.length);
@@ -70,12 +61,22 @@
     });
 
     test('gets current trooper', function(done) {
+      server.respondWith(
+        'GET',
+        'https://build.chromium.org/deprecated/chromium/current_trooper.txt', [
+          200,
+          responseHeaders.text,
+          'helloworld'
+        ]
+      );
+
       element._refresh();
 
       server.respond();
 
       flush(function () {
-        assert.equal('helloworld (primary)', element._troopers);
+        assert.equal('helloworld', element._trooperString);
+        assert.deepEqual(['helloworld (primary)'], element._troopers);
         done();
       });
     });

@@ -107,7 +107,7 @@ class SomAnnotations extends Polymer.mixinBehaviors(
 
   // Fetches new annotations from the server.
   fetchAnnotations() {
-    return window.fetch('/api/v1/annotations', {credentials: 'include'})
+    return window.fetch('/api/v1/annotations/' + this.tree.name, {credentials: 'include'})
         .then(jsonParsePromise)
         .then((req) => {
           this._annotationsResp = [];
@@ -122,7 +122,7 @@ class SomAnnotations extends Polymer.mixinBehaviors(
   sendAnnotation(key, type, change) {
     change.key = key;
     return this
-        .postJSON('/api/v1/annotations/' + type, change)
+        .postJSON('/api/v1/annotations/' + this.tree.name + '/' + type, change)
         .then(jsonParsePromise)
         .then(this._postResponse.bind(this));
   }
