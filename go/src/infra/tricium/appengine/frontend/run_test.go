@@ -146,3 +146,18 @@ func TestRunPageHandler(t *testing.T) {
 		})
 	})
 }
+
+func TestHelperFunction(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		Convey("gerritURL with well-formed Gerrit change ref", func() {
+			So(gerritURL("https://chromium-review.googlesource.com", "refs/changes/10/12310/3"), ShouldEqual, "https://chromium-review.googlesource.com/c/12310/3")
+		})
+
+		// No special effort is made to make a correct URL if the
+		// Gerrit revision is badly-formed. Garbage in, garbage out.
+		Convey("gerritURL with badly-formed Gerrit change ref", func() {
+			So(gerritURL("foo.com", "xxrefs/changes/10/12310/3xx"), ShouldEqual, "foo.com/cxxrefs/changes/10/12310/3xx")
+			So(gerritURL("foo.com", "refs/changes/123/4"), ShouldEqual, "foo.com/c/4")
+		})
+	})
+}

@@ -122,8 +122,8 @@ func fetchFunctionInfoMap(c context.Context, runID int64) (map[string]*functionI
 			State:   result.State,
 			Workers: map[string]*workerInfo{},
 		}
-		for name, info := range workerMap {
-			functionMap[fr.ID].Workers[name] = info
+		for _, name := range fr.Workers {
+			functionMap[fr.ID].Workers[name] = workerMap[name]
 		}
 	}
 	return functionMap, nil
@@ -154,5 +154,7 @@ func fetchWorkerInfoMap(c context.Context, runID int64) (map[string]*workerInfo,
 }
 
 func gerritURL(host, revision string) string {
-	return fmt.Sprintf("%s/c/%s", host, strings.TrimPrefix(revision, "refs/changes/"))
+	revision = strings.TrimPrefix(revision, "refs/changes/")
+	revision = strings.TrimLeft(revision, "0123456789")
+	return fmt.Sprintf("%s/c%s", host, revision)
 }
