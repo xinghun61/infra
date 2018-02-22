@@ -1282,3 +1282,11 @@ ALTER TABLE ApprovalDef2Approver ADD CONSTRAINT ApprovalDef2Approver_ibfk_3 FORE
 2018-02-14: Expand IssueSnapshot time columns from INT to INT UNSIGNED
 ALTER TABLE IssueSnapshot MODIFY period_start INT UNSIGNED NOT NULL;
 ALTER TABLE IssueSnapshot MODIFY period_end INT UNSIGNED NOT NULL;
+
+
+================================================================
+2018-02-22: Relax some constraints on issue snapshots
+
+ALTER TABLE IssueSnapshot MODIFY status_id int;
+ALTER TABLE IssueSnapshot DROP INDEX issue_id;
+ALTER TABLE IssueSnapshot ADD INDEX (`issue_id`,`period_start`,`period_end`);

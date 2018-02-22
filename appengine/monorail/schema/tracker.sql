@@ -794,7 +794,7 @@ CREATE TABLE IssueSnapshot (
   local_id INT NOT NULL,
   reporter_id INT UNSIGNED NOT NULL,
   owner_id INT UNSIGNED,
-  status_id INT NOT NULL,
+  status_id INT,
   period_start INT UNSIGNED NOT NULL,
   period_end INT UNSIGNED NOT NULL,
   is_open BOOLEAN DEFAULT TRUE,
@@ -806,7 +806,7 @@ CREATE TABLE IssueSnapshot (
   FOREIGN KEY (owner_id) REFERENCES User(user_id),
   FOREIGN KEY (status_id) REFERENCES StatusDef(id),
   INDEX (shard, project_id, period_start, period_end),
-  UNIQUE KEY (issue_id, period_start, period_end)
+  KEY (issue_id, period_start, period_end)
 ) ENGINE=INNODB;
 
 CREATE TABLE IssueSnapshot2Component (
