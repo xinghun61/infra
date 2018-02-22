@@ -125,6 +125,7 @@ func TestNotifier(t *testing.T) {
 				err = ds.Get(ctx, rc)
 				So(err, ShouldBeNil)
 				So(rc.IssueID, ShouldEqual, 0)
+				So(rc.NotifiedAll, ShouldBeFalse)
 			})
 			Convey("Failed audits", func() {
 				rsk := ds.KeyForObj(ctx, repoState)
@@ -158,6 +159,7 @@ func TestNotifier(t *testing.T) {
 				err = ds.Get(ctx, rc)
 				So(err, ShouldBeNil)
 				So(rc.IssueID, ShouldEqual, 12345)
+				So(rc.NotifiedAll, ShouldBeTrue)
 			})
 			Convey("Exceeded retries", func() {
 				rsk := ds.KeyForObj(ctx, repoState)
@@ -191,6 +193,7 @@ func TestNotifier(t *testing.T) {
 				err = ds.Get(ctx, rc)
 				So(err, ShouldBeNil)
 				So(rc.IssueID, ShouldEqual, 12345)
+				So(rc.NotifiedAll, ShouldBeTrue)
 			})
 		})
 	})

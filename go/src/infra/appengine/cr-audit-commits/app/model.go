@@ -6,6 +6,7 @@ package crauditcommits
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	ds "go.chromium.org/gae/service/datastore"
@@ -133,6 +134,19 @@ type RelevantCommit struct {
 	IssueID                int32
 	Retries                int32
 	NotificationComponents []string
+
+	// NotifiedAll will be true if all applicable notifications have been
+	// processed.
+	NotifiedAll bool
+
+	// NotificationStates will have strings of the form `key:value` where
+	// the key identifies a specific ruleset that might apply to this
+	// commit and value is a freeform string that makes sense to the
+	// notification function, used to keep track of the state between
+	// retries. e.g. To avoid sending duplicate emails if the notification
+	// sends multiple emails and only partially succeeds on the first
+	// attempt.
+	NotificationStates []string
 }
 
 // RuleResult represents the result of applying a single rule to a commit.
@@ -140,4 +154,29 @@ type RuleResult struct {
 	RuleName         string
 	RuleResultStatus RuleStatus
 	Message          string
+}
+
+// SetNotificationState stores the state for a given rule set.
+func (rc *RelevantCommit) SetNotificationState(ruleSetName string, state string) {
+	prefix := fmt.Sprintf("%s:", ruleSetName)
+	fullTag := fmt.Sprintf("%s:%s", ruleSetName, state)
+	for i, v := range rc.NotificationStates {
+		if strings.HasPrefix(v, prefix) {
+			rc.NotificationStates[i] = fullTag
+			return
+		}
+	}
+	rc.NotificationStates = append(rc.NotificationStates, fullTag)
+}
+
+// GetNotificationState retrieves the state for a rule set from the
+// NotificationStates field.
+func (rc *RelevantCommit) GetNotificationState(ruleSetName string) string {
+	prefix := fmt.Sprintf("%s:", ruleSetName)
+	for _, v := range rc.NotificationStates {
+		if strings.HasPrefix(v, prefix) {
+			return strings.TrimPrefix(v, prefix)
+		}
+	}
+	return ""
 }

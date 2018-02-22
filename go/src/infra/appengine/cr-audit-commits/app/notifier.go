@@ -66,7 +66,15 @@ func ViolationNotifier(rc *router.Context) {
 	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditCompletedWithViolation).Eq("IssueID", 0)
 	ds.Run(ctx, cq, func(rc *RelevantCommit) {
 		err := reportViolation(ctx, cfg, rc, cs)
-		if err != nil {
+		if err == nil {
+			rc.NotifiedAll = true
+			err = ds.Put(ctx, rc)
+			if err != nil {
+				logging.WithError(err).Errorf(ctx, "Failed to save notification state for detected violation on %s.",
+					cfg.LinkToCommit(rc.CommitHash))
+				NotificationFailures.Add(ctx, 1, "Violation", repo)
+			}
+		} else {
 			logging.WithError(err).Errorf(ctx, "Failed to file bug for detected violation on %s.", cfg.LinkToCommit(rc.CommitHash))
 			NotificationFailures.Add(ctx, 1, "Violation", repo)
 		}
@@ -75,7 +83,16 @@ func ViolationNotifier(rc *router.Context) {
 	cq = ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditFailed).Eq("IssueID", 0)
 	ds.Run(ctx, cq, func(rc *RelevantCommit) {
 		err := reportAuditFailure(ctx, cfg, rc, cs)
-		if err != nil {
+
+		if err == nil {
+			rc.NotifiedAll = true
+			err = ds.Put(ctx, rc)
+			if err != nil {
+				logging.WithError(err).Errorf(ctx, "Failed to save notification state for failed audit on %s.",
+					cfg.LinkToCommit(rc.CommitHash))
+				NotificationFailures.Add(ctx, 1, "AuditFailure", repo)
+			}
+		} else {
 			logging.WithError(err).Errorf(ctx, "Failed to file bug for audit failure on %s.", cfg.LinkToCommit(rc.CommitHash))
 			NotificationFailures.Add(ctx, 1, "AuditFailure", repo)
 		}
@@ -103,11 +120,6 @@ func reportViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, c
 			if err != nil {
 				return err
 			}
-
-			err = ds.Put(ctx, rc)
-			if err != nil {
-				return err
-			}
 		} else {
 			// The issue exists and is valid, but it's not
 			// associated with the datastore entity for this commit.
@@ -117,12 +129,6 @@ func reportViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, c
 			if err != nil {
 				return err
 			}
-
-			err = ds.Put(ctx, rc)
-			if err != nil {
-				return err
-			}
-
 		}
 	}
 	return nil
@@ -145,16 +151,7 @@ func reportAuditFailure(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit
 	// Route any failure to audit to Findit's team as they own this tool.
 	// TODO(crbug.com/798842): Use a custom component for this.
 	rc.IssueID, err = postIssue(ctx, cfg, summary, description, cs, []string{"Tools>Test>Findit>Autorevert"})
-	if err != nil {
-		return err
-	}
-
-	err = ds.Put(ctx, rc)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // isValidIssue checks that the monorail issue was created by the app and
