@@ -599,9 +599,10 @@ class FieldValueView(object):
     if applicable is not None:
       self.applicable = ezt.boolean(applicable)
     else:
-      # TODO(jojwang): monorail:3241, remove special approval_type
-      # consideration when FE is ready to show approvals on the right pages
-      if fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
+      # Note: We don't show approval types or approval sub fields
+      # in ezt issue pages
+      if (fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE or
+          fd.approval_id):
         self.applicable = ezt.boolean(False)
       else:
         # A field is applicable to a given issue if it (a) applies to all,

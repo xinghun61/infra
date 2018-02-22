@@ -63,14 +63,14 @@
   [for fields]
     [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
     [# TODO(jojwang): monorail:3241, un-suppress showing approval types in templates]
-    [is fields.field_def.type_name "APPROVAL_TYPE"][else]
+    [is fields.field_def.type_name "APPROVAL_TYPE"][else][if-any fields.field_def.approval_id][else]
       <tr>
         <th>[fields.field_name]:</th>
         <td colspan="2">
           [include "field-value-widgets.ezt" False "tmpl"]
         </td>
       <tr>
-    [end]
+    [end][end]
   [end]
 
   <tr>

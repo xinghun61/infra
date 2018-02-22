@@ -54,6 +54,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual(unchanged_labels, parsed.revised_labels)
     self.assertEqual('', parsed.approvers_str)
     self.assertEqual('', parsed.survey)
+    self.assertEqual('', parsed.parent_approval_name)
 
   def testParseFieldDefRequest_Normal(self):
     post_data = fake.PostData(
@@ -72,7 +73,8 @@ class FieldHelpersTest(unittest.TestCase):
         choices=['Hot = Lots of activity\nCold = Not much activity'],
         applicable_type=['Defect'],
         approver_names=['approver@chromium.org'],
-        survey=['Are there UX changes?']
+        survey=['Are there UX changes?'],
+        parent_approval_name=['UIReview']
     )
     parsed = field_helpers.ParseFieldDefRequest(post_data, self.config)
     self.assertEqual('somefield', parsed.field_name)
@@ -101,6 +103,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual(unchanged_labels + new_labels, parsed.revised_labels)
     self.assertEqual('approver@chromium.org', parsed.approvers_str)
     self.assertEqual('Are there UX changes?', parsed.survey)
+    self.assertEqual('UIReview', parsed.parent_approval_name)
 
   def testParseChoicesIntoWellKnownLabels_NewFieldDef(self):
     choices_text = 'Hot = Lots of activity\nCold = Not much activity'
@@ -436,7 +439,8 @@ class FieldHelpersTest(unittest.TestCase):
         is_required=True, is_niche=True, importance='required',
         is_multivalued=True, field_docstring='updated doc', choices_text='',
         applicable_type='Launch', applicable_predicate='', revised_labels=[],
-        date_action_str='ping_participants', approvers_str='', survey='')
+        date_action_str='ping_participants', approvers_str='', survey='',
+        parent_approval_name='')
 
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None,

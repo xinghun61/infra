@@ -45,6 +45,7 @@
     </td>
   </tr>
 
+  [# TODO(jojwang): monorail:3241, evaluate how to use applicable/importance for approval subfields]
   <tr>
     <th>Applicable:</th>
     <td>When issue type is:
@@ -78,16 +79,16 @@
     </td>
   </tr>
 
-  [if-any approvals]
+  [if-any approval_names]
   <tr id="subfield_row">
     <th>Parent Approval:</th>
     <td>
-      <select name="parent_approval">
-        <option value="" [is initial_parent_approval ""]selected[end]>Not an approval's subfield</option>
-        [for approvals]
-          <option value="[approvals.field_name]"
-                  [is initial_parent_approval approvals.field_name]selected[end]
-                  >[approvals.field_name]</option>
+      <select name="parent_approval_name">
+        <option value="" [is initial_parent_approval_name ""]selected[end]>Not an approval's subfield</option>
+        [for approval_names]
+          <option value="[approval_names]"
+                  [is initial_parent_approval_name approval_names]selected[end]
+                  >[approval_names]</option>
         [end]
       </select>
     </td>

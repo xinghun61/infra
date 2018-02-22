@@ -16,7 +16,9 @@ from framework import jsonfeed
 from framework import permissions
 from framework import servlet
 from framework import urls
+from proto import tracker_pb2
 from tracker import field_helpers
+from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
 from services import user_svc
@@ -50,6 +52,9 @@ class FieldCreate(servlet.Servlet):
     """
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     well_known_issue_types = tracker_helpers.FilterIssueTypes(config)
+    approval_names = [fd.field_name for fd in config.field_defs if
+                      fd.field_type is tracker_pb2.FieldTypes.APPROVAL_TYPE and
+                      not fd.is_deleted]
 
     return {
         'admin_tab_mode': servlet.Servlet.PROCESS_TAB_LABELS,
@@ -57,7 +62,7 @@ class FieldCreate(servlet.Servlet):
         'initial_field_docstring': '',
         'initial_importance': 'normal',
         'initial_is_multivalued': ezt.boolean(False),
-        'initial_parent_approval': '',
+        'initial_parent_approval_name': '',
         'initial_choices': '',
         'initial_admins': '',
         'initial_type': 'enum_type',
@@ -71,7 +76,7 @@ class FieldCreate(servlet.Servlet):
         'well_known_issue_types': well_known_issue_types,
         'initial_approvers': '',
         'initial_survey': '',
-        'approvals': [], # TODO(jojwang): monorail:3241, retrieve approvals
+        'approval_names': approval_names,
         }
 
   def ProcessFormData(self, mr, post_data):
@@ -122,8 +127,7 @@ class FieldCreate(servlet.Servlet):
       self.PleaseCorrect(
           mr, initial_field_name=parsed.field_name,
           initial_type=parsed.field_type_str,
-          # TODO(jojwang): monorail:3241, parse initial_parent_approval
-          initial_parent_approval='',
+          initial_parent_approval_name=parsed.parent_approval_name,
           initial_field_docstring=parsed.field_docstring,
           initial_applicable_type=parsed.applicable_type,
           initial_applicable_predicate=parsed.applicable_predicate,
@@ -142,13 +146,21 @@ class FieldCreate(servlet.Servlet):
       return
 
     print 'parsed is %r' % (parsed,)
+    approval_id = None
+    if parsed.parent_approval_name and (
+        parsed.field_type_str != 'approval_type'):
+      approval_fd = tracker_bizobj.FindFieldDef(
+          parsed.parent_approval_name, config)
+      if approval_fd:
+        approval_id = approval_fd.field_id
     field_id = self.services.config.CreateFieldDef(
         mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
         parsed.applicable_type, parsed.applicable_predicate,
         parsed.is_required, parsed.is_niche, parsed.is_multivalued,
         parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
         parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
-        parsed.date_action_str, parsed.field_docstring, admin_ids)
+        parsed.date_action_str, parsed.field_docstring, admin_ids,
+        approval_id=approval_id)
     if parsed.field_type_str == 'approval_type':
       revised_approvals = field_helpers.ReviseApprovals(
           field_id, approver_ids, parsed.survey, config)

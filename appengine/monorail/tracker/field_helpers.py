@@ -30,7 +30,7 @@ ParsedFieldDef = collections.namedtuple(
     'needs_member, needs_perm, grants_perm, notify_on, is_required, '
     'is_niche, importance, is_multivalued, field_docstring, choices_text, '
     'applicable_type, applicable_predicate, revised_labels, date_action_str, '
-    'approvers_str, survey')
+    'approvers_str, survey, parent_approval_name')
 
 
 def ParseFieldDefRequest(post_data, config):
@@ -70,13 +70,14 @@ def ParseFieldDefRequest(post_data, config):
   date_action_str = post_data.get('date_action')
   approvers_str = post_data.get('approver_names', '')
   survey = post_data.get('survey', '')
+  parent_approval_name = post_data.get('parent_approval_name', '')
 
   return ParsedFieldDef(
       field_name, field_type_str, min_value, max_value, regex,
       needs_member, needs_perm, grants_perm, notify_on, is_required, is_niche,
       importance, is_multivalued, field_docstring, choices_text,
       applicable_type, applicable_predicate, revised_labels, date_action_str,
-      approvers_str, survey)
+      approvers_str, survey, parent_approval_name)
 
 
 def _ParseChoicesIntoWellKnownLabels(choices_text, field_name, config):

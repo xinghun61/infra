@@ -7,6 +7,7 @@
 
 import mox
 import unittest
+import logging
 
 from third_party import ezt
 
@@ -22,6 +23,7 @@ from tracker import tracker_bizobj
 class FieldCreateTest(unittest.TestCase):
 
   def setUp(self):
+    self.cnxn = 'fake cnxn'
     self.services = service_manager.Services(
         user=fake.UserService(),
         config=fake.ConfigService(),
@@ -60,12 +62,23 @@ class FieldCreateTest(unittest.TestCase):
         self.servlet.AssertBasePermission, self.mr)
 
   def testGatherPageData(self):
+    approval_fd = tracker_bizobj.MakeFieldDef(
+        1, self.mr.project_id, 'LaunchApproval',
+        tracker_pb2.FieldTypes.APPROVAL_TYPE, None, '', False,
+        False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'some approval thing', False)
+    config = self.services.config.GetProjectConfig(
+        self.mr.cnxn, self.mr.project_id)
+    config.field_defs.append(approval_fd)
+    self.services.config.StoreConfig(self.cnxn, config)
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual(self.servlet.PROCESS_TAB_LABELS,
                      page_data['admin_tab_mode'])
     self.assertItemsEqual(
         ['Defect', 'Enhancement', 'Task', 'Other'],
         page_data['well_known_issue_types'])
+    self.assertEqual(['LaunchApproval'], page_data['approval_names'])
 
   def testProcessFormData(self):
     post_data = fake.PostData(
@@ -104,7 +117,8 @@ class FieldCreateTest(unittest.TestCase):
         name=['approvalField'],
         field_type=['approval_type'],
         approver_names=['doesnotexist@chromium.org'],
-        admin_names=[''])
+        admin_names=[''],
+        parent_approval_name=['UIApproval'])
 
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
@@ -122,7 +136,7 @@ class FieldCreateTest(unittest.TestCase):
         initial_date_action= post_data.get('date_action'),
         initial_choices=post_data.get('choices', ''),
         initial_approvers=post_data.get('approver_names', ''),
-        initial_parent_approval=post_data.get('parent_approval', ''),
+        initial_parent_approval_name=post_data.get('parent_approval_name', ''),
         initial_survey=post_data.get('survey', ''),
         initial_admins=post_data.get('admin_names')
     )
