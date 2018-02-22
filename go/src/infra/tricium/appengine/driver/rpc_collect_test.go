@@ -82,3 +82,31 @@ func TestCollectRequest(t *testing.T) {
 		})
 	})
 }
+
+func TestValidateCollectRequest(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		Convey("A request with run ID and worker name is valid", func() {
+			So(validateCollectRequest(&admin.CollectRequest{
+				RunId:             int64(1234),
+				Worker:            "Hello",
+				IsolatedInputHash: "53df47e7dcfecdafb25030cc9fabc2c18f6d9e82",
+			}), ShouldBeNil)
+
+			// Isolated input hash is optional, and may not be present
+			// if the task was aborted or failed in some other way.
+			So(validateCollectRequest(&admin.CollectRequest{
+				RunId:  int64(1234),
+				Worker: "Hello",
+			}), ShouldBeNil)
+		})
+
+		Convey("A request missing either run ID or worker name is not valid", func() {
+			So(validateCollectRequest(&admin.CollectRequest{
+				Worker: "Hello",
+			}), ShouldNotBeNil)
+			So(validateCollectRequest(&admin.CollectRequest{
+				RunId: int64(1234),
+			}), ShouldNotBeNil)
+		})
+	})
+}

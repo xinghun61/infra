@@ -102,10 +102,10 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			functionNumComments += wr.NumComments
 		}
 		// When all workers are done, aggregate the result.
-		// All worker SUCCESSS -> function SUCCESS
-		// One or more workers FAILURE -> function FAILURE
+		// All worker SUCCESS -> function SUCCESS
+		// Otherwise -> function FAILURE
 		if tricium.IsDone(wr.State) {
-			if wr.State == tricium.State_FAILURE {
+			if wr.State != tricium.State_SUCCESS {
 				functionState = tricium.State_FAILURE
 			}
 		} else {
@@ -142,10 +142,10 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			runNumComments += fr.NumComments
 		}
 		// When all functions are done, aggregate the result.
-		// All functions SUCCESSS -> run SUCCESS
-		// One or more functions FAILURE -> run FAILURE
+		// All functions SUCCESS -> run SUCCESS
+		// Otherwise -> run FAILURE
 		if tricium.IsDone(fr.State) {
-			if fr.State == tricium.State_FAILURE {
+			if fr.State != tricium.State_SUCCESS {
 				runState = tricium.State_FAILURE
 			}
 		} else {

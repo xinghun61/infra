@@ -91,24 +91,17 @@ func TestWorkerDoneRequest(t *testing.T) {
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
-		functionRun := ds.NewKey(ctx, "FunctionRun", name, 0, runKey)
+		functionKey := ds.NewKey(ctx, "FunctionRun", name, 0, runKey)
 
 		Convey("Marks worker as done", func() {
-			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, functionRun)
-			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
-			So(ds.Get(ctx, wr), ShouldBeNil)
-			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
-		})
-
-		Convey("Marks aborted worker as done", func() {
-			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, functionRun)
+			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, functionKey)
 			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
 			So(ds.Get(ctx, wr), ShouldBeNil)
 			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
 		})
 
 		Convey("Marks function as done and adds no comments", func() {
-			fr := &track.FunctionRunResult{ID: 1, Parent: functionRun}
+			fr := &track.FunctionRunResult{ID: 1, Parent: functionKey}
 			So(ds.Get(ctx, fr), ShouldBeNil)
 			So(fr.State, ShouldEqual, tricium.State_SUCCESS)
 		})
@@ -122,7 +115,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
-		Convey("Multi-platform function is half done, function stays launched", func() {
+		Convey("Multi-platform function is half done, request stays launched", func() {
 			ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
 			So(ds.Get(ctx, ar), ShouldBeNil)
 			So(ar.State, ShouldEqual, tricium.State_RUNNING)
@@ -148,6 +141,96 @@ func TestWorkerDoneRequest(t *testing.T) {
 			ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
 			So(ds.Get(ctx, ar), ShouldBeNil)
 			So(ar.State, ShouldEqual, tricium.State_SUCCESS)
+		})
+	})
+}
+
+// This test is similar to the case above, except that one of the workers is
+// aborted, so the function is considered failed, and thus the workflow run is
+// failed.
+func TestWorkerDoneRequestWithAbortedWorker(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		tt := &trit.Testing{}
+		ctx := tt.Context()
+
+		name, _, err := track.ExtractFunctionPlatform(fileIsolator)
+		So(err, ShouldBeNil)
+
+		// Add pending run entry.
+		request := &track.AnalyzeRequest{}
+		So(ds.Put(ctx, request), ShouldBeNil)
+		requestKey := ds.KeyForObj(ctx, request)
+		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
+		So(ds.Put(ctx, run), ShouldBeNil)
+		runKey := ds.KeyForObj(ctx, run)
+		So(ds.Put(ctx, &track.WorkflowRunResult{
+			ID:     1,
+			Parent: runKey,
+			State:  tricium.State_PENDING,
+		}), ShouldBeNil)
+
+		// Mark workflow as launched.
+		err = workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
+			RunId: request.ID,
+		}, mockWorkflowProvider{})
+		So(err, ShouldBeNil)
+
+		// Mark worker as launched.
+		err = workerLaunched(ctx, &admin.WorkerLaunchedRequest{
+			RunId:  request.ID,
+			Worker: fileIsolator,
+		})
+		So(err, ShouldBeNil)
+
+		// Mark worker as done.
+		err = workerDone(ctx, &admin.WorkerDoneRequest{
+			RunId:  request.ID,
+			Worker: fileIsolator,
+			State:  tricium.State_ABORTED,
+		}, &mockIsolator{})
+		So(err, ShouldBeNil)
+
+		functionKey := ds.NewKey(ctx, "FunctionRun", name, 0, runKey)
+
+		Convey("Marks worker as aborted", func() {
+			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, functionKey)
+			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
+			So(ds.Get(ctx, wr), ShouldBeNil)
+			So(wr.State, ShouldEqual, tricium.State_ABORTED)
+		})
+
+		Convey("Marks function as failed and adds no comments", func() {
+			fr := &track.FunctionRunResult{ID: 1, Parent: functionKey}
+			So(ds.Get(ctx, fr), ShouldBeNil)
+			So(fr.State, ShouldEqual, tricium.State_FAILURE)
+		})
+
+		// Mark other workers as done.
+		err = workerDone(ctx, &admin.WorkerDoneRequest{
+			RunId:    request.ID,
+			Worker:   clangIsolatorUbuntu,
+			Provides: tricium.Data_RESULTS,
+			State:    tricium.State_SUCCESS,
+		}, &mockIsolator{})
+		So(err, ShouldBeNil)
+		err = workerDone(ctx, &admin.WorkerDoneRequest{
+			RunId:    request.ID,
+			Worker:   clangIsolatorWindows,
+			Provides: tricium.Data_RESULTS,
+			State:    tricium.State_SUCCESS,
+		}, &mockIsolator{})
+		So(err, ShouldBeNil)
+
+		Convey("Marks workflow as failed", func() {
+			wr := &track.WorkflowRunResult{ID: 1, Parent: runKey}
+			So(ds.Get(ctx, wr), ShouldBeNil)
+			So(wr.State, ShouldEqual, tricium.State_FAILURE)
+		})
+
+		Convey("Marks request as failed", func() {
+			ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
+			So(ds.Get(ctx, ar), ShouldBeNil)
+			So(ar.State, ShouldEqual, tricium.State_FAILURE)
 		})
 	})
 }

@@ -25,19 +25,23 @@ import (
 // Collect processes one collect request to the Tricium driver.
 func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*admin.CollectResponse, error) {
 	logging.Infof(c, "[driver]: Received collect request (run ID: %d, worker: %s, task ID: %s)", req.RunId, req.Worker, req.TaskId)
-	if req.RunId == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
-	}
-	if req.Worker == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing worker name")
-	}
-	if req.IsolatedInputHash == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
+	if err := validateCollectRequest(req); err != nil {
+		return nil, err
 	}
 	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to trigger worker: %v", err)
 	}
 	return &admin.CollectResponse{}, nil
+}
+
+func validateCollectRequest(req *admin.CollectRequest) error {
+	if req.RunId == 0 {
+		return grpc.Errorf(codes.InvalidArgument, "missing run ID")
+	}
+	if req.Worker == "" {
+		return grpc.Errorf(codes.InvalidArgument, "missing worker name")
+	}
+	return nil
 }
 
 func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCacheAPI, sw common.SwarmingAPI, isolator common.IsolateAPI) error {
