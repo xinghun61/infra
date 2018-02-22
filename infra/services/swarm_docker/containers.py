@@ -45,6 +45,7 @@ _DOCKER_VOLUMES = {
 }
 
 _SWARMING_URL_ENV_VAR = 'SWARM_URL'
+_HOST_HOSTNAME_ENV_VAR = 'DOCKER_HOST_HOSTNAME'
 
 
 class FrozenEngineError(Exception):
@@ -211,7 +212,10 @@ class DockerClient(object):
     return volumes
 
   def _get_env(self, swarming_url):
-    env = {_SWARMING_URL_ENV_VAR: swarming_url + '/bot_code'}
+    env = {
+        _SWARMING_URL_ENV_VAR: swarming_url + '/bot_code',
+        _HOST_HOSTNAME_ENV_VAR: socket.getfqdn(),
+    }
     if self._num_configured_containers:
       env['NUM_CONFIGURED_CONTAINERS'] = self._num_configured_containers
     return env

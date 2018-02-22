@@ -339,6 +339,13 @@ class TestDockerClient(unittest.TestCase):
     client.set_num_configured_containers(42)
     self.assertEquals(client._get_env('').get('NUM_CONFIGURED_CONTAINERS'), 42)
 
+  @mock.patch('socket.getfqdn')
+  def test_host_hostname_is_set(self, mock_getfqdn):
+    mock_getfqdn.return_value = 'hostofa_hostofa_hostofa_host'
+    client = containers.DockerClient()
+    self.assertEquals(
+        client._get_env('').get('DOCKER_HOST_HOSTNAME'),
+        'hostofa_hostofa_hostofa_host')
 
 class TestContainer(unittest.TestCase):
   def setUp(self):
