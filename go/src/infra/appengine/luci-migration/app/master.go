@@ -61,8 +61,17 @@ func handleMasterPage(c *router.Context) error {
 
 	if strings.ToLower(c.Request.FormValue("format")) == "json" {
 		c.Writer.Header().Add("Content-Type", "application/json")
+
+		builders := map[string]interface{}{}
+		for _, b := range viewModel.Builders {
+			builders[b.Builder.ID.Builder] = map[string]interface{}{
+				"is_prod": b.LUCIIsProd,
+			}
+		}
+
 		return json.NewEncoder(c.Writer).Encode(map[string]interface{}{
-			"bucket": viewModel.LuciBucket,
+			"bucket":   viewModel.LuciBucket,
+			"builders": builders,
 		})
 	}
 
