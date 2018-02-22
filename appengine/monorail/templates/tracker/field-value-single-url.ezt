@@ -6,7 +6,11 @@
 [# If the field has no explicit values, then show an empty form element.]
 [if-any fields.values][else]
   <input name="custom_[fields.field_id]" id="[arg0]_custom_[fields.field_id]" value=""
-         class="multivalued customfield" style="width: 12em">
+         class="multivalued customfield"
+         [is arg0 "hidden"][else]
+           [if-any fields.field_def.is_required_bool]required="required"[end]
+         [end]
+         style="width: 12em">
 [end]
 
 [for fields.values]
