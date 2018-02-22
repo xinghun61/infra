@@ -91,7 +91,7 @@ TEST_BUILDBOT_JSON_REPLY = ')]}\'\n' + json.dumps({
       {'results': [2], 'name': 'Uncaught Exception', 'text': ['bar12c']},
       {'results': [2], 'name': 'bot_update',
        'text': ['bot_update PATCH FAILED']},
-      {'results': [2], 'name': 'Failure reason', 'text': ['bar12d']},
+      {'results': [2], 'name': 'Failure reason', 'text': None},
 
       # Detect infra-failure for 'Patch failure', but igore normal error.
       {'results': [4], 'name': 'Patch failure', 'text': ['Patch failure']},

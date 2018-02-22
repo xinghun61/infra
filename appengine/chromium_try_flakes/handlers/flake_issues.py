@@ -684,7 +684,9 @@ class CreateFlakyRun(webapp2.RequestHandler):
       containing a single entry - the name of the step.
     """
     # If test results were invalid, report whole step as flaky.
-    steptext = ' '.join(step['text'])
+    # For Luci builds, some steps don't have step text anymore. Such steps
+    # include 'Failure reason', 'analyze', etc.
+    steptext = ' '.join(step['text'] or [])
     stepname = normalize_test_type(step['name'])
     if 'TEST RESULTS WERE INVALID' in steptext:
       return [stepname], True
@@ -777,8 +779,10 @@ class CreateFlakyRun(webapp2.RequestHandler):
         continue
       if not build_result.isResultFailure(result):
         continue
+      # For Luci builds, some steps don't have step text anymore. Such steps
+      # include 'Failure reason', 'analyze', etc.
+      step_text = ' '.join(step['text'] or [])
       step_name = step['name']
-      step_text = ' '.join(step['text'])
       if step_name in IGNORED_STEPS:
         continue
 
