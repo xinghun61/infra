@@ -38,10 +38,12 @@ skip_files:
 - ^(.*/)?tests\.py$
 - ^(.*/)?\..*$
 - ^(.*/)?.*\.md$
-- ^(.*/)?README$
 - ^(.*/)?Makefile$
-- ^(.*/)?util_scripts/.*$
+- ^(.*/)?README$
+- ^(.*/)?templates/.*$
 - ^(.*/)?third_party/bower_components/.*$
+- ^(.*/)?ui/.*$
+- ^(.*/)?util_scripts/.*$
 
 libraries:
 - name: webapp2

@@ -55,20 +55,12 @@
               <a href="https://sites.google.com/a/chromium.org/cr-culprit-finder/findit/">SitePage</a>
             </paper-item>
             <template is="dom-if" if="[[userInfo.is_admin]]">
-              <paper-menu-button style="height: 18px">
-                <paper-icon-button icon="menu" slot="dropdown-trigger"></paper-icon-button>
-                <paper-listbox slot="dropdown-content">
-                  <paper-item><a href="/waterfall/try-job-dashboard">Try-jobs</a></paper-item>
-                  <br>
-                  <paper-item><a href="/waterfall/pipeline-errors-dashboard">Pipeline Errors</a></paper-item>
-                  <br>
-                  <paper-item><a href="/waterfall/config">Config</a></paper-item>
-                  <br>
-                  <paper-item><a href="/waterfall/check-trybot-mapping">Trybot Mapping</a></paper-item>
-                  <br>
-                  <paper-item><a href="/waterfall/auto-revert-metrics">Auto Revert Metrics</a></paper-item>
-                </paper-listbox>
-              </paper-menu-button>
+              |
+              <paper-item><a href="/waterfall/try-job-dashboard">Jobs</a></paper-item>
+              <paper-item><a href="/waterfall/pipeline-errors-dashboard">PipelineErrors</a></paper-item>
+              <paper-item><a href="/waterfall/check-trybot-mapping">BotMapping</a></paper-item>
+              <paper-item><a href="/waterfall/auto-revert-metrics">RevertMetric</a></paper-item>
+              <paper-item><a href="/waterfall/config">Config</a></paper-item>
             </template>
           </paper-menu>
           <div main-title></div>
