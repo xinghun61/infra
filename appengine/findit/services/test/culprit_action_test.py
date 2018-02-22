@@ -431,7 +431,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         repo_name, revision)
 
   @mock.patch.object(logging, 'error')
-  def testGetSampleFailedStepNameUseAnotherBuild(self, mock_log):
+  def testGetSampleFailedStepNameFailed(self, mock_log):
     repo_name = 'chromium'
     revision = 'rev1'
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)

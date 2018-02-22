@@ -507,8 +507,21 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         ci_failure._StepIsSupportedForMaster(master_name, builder_name,
                                              build_number, step_name))
 
-  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog',
-                     return_value={'canonical_step_name': 'step_name'})
+  def testStepIsSupportedForMasterCompile(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'compile'
+    self.assertTrue(
+        ci_failure._StepIsSupportedForMaster(master_name, builder_name,
+                                             build_number, step_name))
+
+  @mock.patch.object(
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value={
+          'canonical_step_name': 'step_name'
+      })
   def testGetCanonicalStepNameCached(self, mock_fn):
     ci_failure._GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
     ci_failure._GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')

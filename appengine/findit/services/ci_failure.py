@@ -61,25 +61,29 @@ def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
   return '%s-%s' % (namespace, encoded_params)
 
 
-@Cached(PickledMemCache(),
-        namespace='Canonical-step-name',
-        expire_time=_CACHE_EXPIRE_TIME_SECONDS,
-        key_generator=_CanonicalStepNameKeyGenerator)
-def _GetCanonicalStepName(master_name, builder_name, build_number,
-                          step_name):
+@Cached(
+    PickledMemCache(),
+    namespace='Canonical-step-name',
+    expire_time=_CACHE_EXPIRE_TIME_SECONDS,
+    key_generator=_CanonicalStepNameKeyGenerator)
+def _GetCanonicalStepName(master_name, builder_name, build_number, step_name):
   step_metadata = build_util.GetWaterfallBuildStepLog(master_name, builder_name,
                                                       build_number, step_name,
                                                       FinditHttpClient(),
                                                       'step_metadata')
-  return step_metadata.get('canonical_step_name')
+  return (step_metadata.get('canonical_step_name')
+          if step_metadata else step_name)
 
 
 def _StepIsSupportedForMaster(master_name, builder_name, build_number,
                               step_name):
-  canonical_step_name = _GetCanonicalStepName(
-      master_name, builder_name, build_number,step_name) or step_name
-  return waterfall_config.StepIsSupportedForMaster(
-    canonical_step_name, master_name)
+  if step_name == 'compile':
+    canonical_step_name = step_name
+  else:
+    canonical_step_name = _GetCanonicalStepName(
+        master_name, builder_name, build_number, step_name) or step_name
+  return waterfall_config.StepIsSupportedForMaster(canonical_step_name,
+                                                   master_name)
 
 
 def _CreateADictOfFailedSteps(build_info):
