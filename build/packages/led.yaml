@@ -8,7 +8,10 @@ builders:
   - infra-continuous-win-64
 supports_cross_compilation: true
 go_build_environ:
-  CGO_ENABLED: 0
+  CGO_ENABLED:
+    darwin:  1  # native Go DNS resolved is buggy on OSX (crbug.com/803673)
+    linux:   0  # to avoid linking to system dynamic libraries
+    windows: 0  # we have no cgo toolchain on Windows
 go_packages:
   - infra/tools/led
 root: ../../go/bin

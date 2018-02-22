@@ -50,6 +50,9 @@ go_build_environ:
   # linked. Note that when cross-compiling, cgo is disabled by default, unless
   # explicitly enabled by setting CGO_ENABLED to 1. Most likely this will fail,
   # since infra.git's go environ doesn't have C cross-compiler available.
+  #
+  # Note that is is also possible to specify this on per-target GOOS basis, by
+  # using a dictionary as a value, e.g. {'darwin': 1, 'windows': 0, 'linux': 0}.
   CGO_ENABLED: 0
 # Path to the root of the package source files on the system we're building
 # the package from. Can be absolute or relative to the path of the *.yaml

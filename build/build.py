@@ -76,10 +76,11 @@ class PackageDef(collections.namedtuple(
     """Returns a list of Go packages that must be installed for this package."""
     return self.pkg_def.get('go_packages') or []
 
-  @property
-  def cgo_enabled(self):
+  def cgo_enabled(self, target_goos):
     """Either True, False or None (meaning "let go decide itself")."""
     val = self.pkg_def.get('go_build_environ', {}).get('CGO_ENABLED')
+    if isinstance(val, dict):
+      val = val.get(target_goos)
     return None if val is None else bool(val)
 
   @property
@@ -530,13 +531,17 @@ def build_go_code(go_workspace, pkg_defs):
   # cross-compiling.
   default_environ = GoEnviron.from_environ()
 
+  # The OS we compiling for (defaulting to the host OS).
+  target_goos = default_environ.GOOS or get_host_goos()
+
   # Grab a set of all go packages we need to build and install into GOBIN,
   # figuring out a go environment they want.
   go_packages = {}  # go package name => GoEnviron
   for pkg_def in pkg_defs:
     pkg_env = default_environ
-    if pkg_def.cgo_enabled is not None:
-      pkg_env = default_environ._replace(CGO_ENABLED=pkg_def.cgo_enabled)
+    cgo_enabled = pkg_def.cgo_enabled(target_goos)
+    if cgo_enabled is not None:
+      pkg_env = default_environ._replace(CGO_ENABLED=cgo_enabled)
     for name in pkg_def.go_packages:
       if name in go_packages and go_packages[name] != pkg_env:
         raise BuildException(
@@ -769,6 +774,18 @@ def get_host_package_vars():
     # e.g. '27' (dots are not allowed in package names).
     'python_version': '%s%s' % sys.version_info[:2],
   }
+
+
+def get_host_goos():
+  """Returns GOOS value matching the host that builds the package."""
+  goos = {
+    'darwin': 'darwin',
+    'linux2': 'linux',
+    'win32': 'windows',
+  }.get(sys.platform)
+  if not goos:
+    raise ValueError('Unknown OS: %s' % sys.platform)
+  return goos
 
 
 def is_targeting_windows(pkg_vars):
