@@ -123,7 +123,7 @@ from . import reader
 PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-\.]+/)*[a-z0-9_\-\.]+$')
 
 # Regular expression for a package reference name.
-REF_RE = re.compile(r'^[a-z0-9_\-]{1,100}$')
+REF_RE = re.compile(r'^[a-z0-9_./\-]{1,256}$')
 
 # Maximum length of the tag (key + value).
 TAG_MAX_LEN = 400
