@@ -72,10 +72,22 @@ class DepsParserTest(unittest.TestCase):
                   'url': 'https://cr-internal_repo@1234',
                   'condition': 'checkout_src_internal',
               },
+              'a-cipd-package': {
+                  'packages': [
+                    {
+                        'version': 'version:1.2.3-cr0',
+                        'package': 'some/package'
+                    }
+                  ],
+                  'dep_type': 'cipd',
+                  'condition': 'checkout_android'
+              }
             }"""),
         keys=['deps'])
-    expected_deps = {'depA': 'https://cr.repo/a.git@1',
-                     'src-internal': 'https://cr-internal_repo@1234'}
+    expected_deps = {
+        'depA': 'https://cr.repo/a.git@1',
+        'src-internal': 'https://cr-internal_repo@1234'
+    }
     self.assertEqual(1, len(result))
     self.assertEqual(expected_deps, result[0])
 

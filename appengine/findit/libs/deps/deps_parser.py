@@ -114,9 +114,12 @@ def ParseDEPSContent(deps_content, keys=('deps', 'deps_os')):
   key_to_deps = OrderedDict([(key, local_scope.get(key)) for key in keys])
   if 'deps' in key_to_deps:
     deps = key_to_deps['deps']
-    for dep_path, dep_content in deps.iteritems():
+    for dep_path, dep_content in deps.items():
       if isinstance(dep_content, dict):
-        deps[dep_path] = dep_content['url']
+        if dep_content.get('url'):
+          deps[dep_path] = dep_content['url']
+        else:  # Should be cipd packages, ignore.
+          del deps[dep_path]
 
   return key_to_deps.values()
 
