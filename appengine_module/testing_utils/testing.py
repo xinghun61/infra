@@ -167,28 +167,38 @@ class AppengineTestCase(auto_stub.TestCase, MockPatchMixin):  # pragma: no cover
     self.mock(time, 'sleep', lambda _: None)
 
   def execute_queued_tasks(self):
-    tasks = self.taskqueue_stub.get_filtered_tasks()
-
     responses = []
-    while tasks:  # Some tasks spawn more tasks, we execute until empty.
+    while True:
+      # Some tasks spawn more tasks or delete existing tasks, we execute the
+      # tasks one by one ordered by (ETA, queue-name, task-name) until empty.
+      all_tasks = []
       for queue in self.taskqueue_stub.GetQueues():
-        self.taskqueue_stub.FlushQueue(queue['name'])
+        tasks = self.taskqueue_stub.get_filtered_tasks(
+            queue_names=queue['name'])
+        # Sadly, get_filtered_tasks won't set the queue name in the tasks.
+        all_tasks.extend((task, queue['name']) for task in tasks)
 
-      for task in tasks:
-        params = task.extract_params()
-        extra_environ = {
-            'HTTP_X_APPENGINE_TASKNAME': str(task.name),
-            'HTTP_X_APPENGINE_QUEUENAME': str(task.queue_name or 'default'),
-        }
+      if not all_tasks:
+        break
 
-        method = {
-             'GET': self.test_app.get,
-             'POST': self.test_app.post,
-        }[task.method]
+      all_tasks.sort(key=lambda t: (t[0].eta, t[1], t[0].name))
+      task, queue_name = all_tasks[0]
 
-        responses.append(method(task.url, params, extra_environ=extra_environ))
+      params = task.extract_params()
+      extra_environ = {
+          'HTTP_X_APPENGINE_TASKNAME': str(task.name),
+          'HTTP_X_APPENGINE_QUEUENAME': str(queue_name or 'default'),
+      }
 
-      tasks = self.taskqueue_stub.get_filtered_tasks()
+      method = {
+           'GET': self.test_app.get,
+           'POST': self.test_app.post,
+      }[task.method]
+
+      responses.append(method(task.url, params, extra_environ=extra_environ))
+
+      self.taskqueue_stub.DeleteTask(queue_name, task.name)
+
     return responses
 
 

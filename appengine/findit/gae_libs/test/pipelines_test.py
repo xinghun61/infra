@@ -146,23 +146,10 @@ class _AsynchronousPipelineCallback(pipelines.AsynchronousPipeline):
 
   def RunImpl(self, callback_num):
     assert callback_num in (0, 1, 2)
+    assert len(self.GetCallbackParameters()) == 0
     self.SaveCallbackParameters({'p': 'v'})
     for i in range(callback_num):
       self.ScheduleCallbackTask(name='%s-callback-%d' % (self.pipeline_id, i))
-
-  def OnTimeout(self, callback_num, parameters):
-    assert callback_num in (0, 1, 2)
-    assert len(parameters) == 1 and parameters['p'] == 'v'
-    # Second call to OnTimeout should fail.
-    self.SaveCallbackParameters({'p': 'should fail if called again'})
-
-  def CallbackImpl(self, callback_num, parameters):
-    assert callback_num in (0, 1, 2)
-    assert len(parameters) == 1 and parameters['p'] == 'v'
-    if callback_num > 0:
-      # Second call to CallbackImpl should fail.
-      self.SaveCallbackParameters({'p': 'should fail if called again'})
-      return None, 1
 
 
 class _WrapperForAsynchronousPipelineCallback(pipelines.GeneratorPipeline):
@@ -427,7 +414,12 @@ class PipelinesTest(TestCase):
     error_func.assert_called_with('Callback failed with error: %s',
                                   'error message')
 
-  def testAsynchronousPipelineCallbackTimeout(self):
+  @mock.patch('google.appengine.api.taskqueue.Queue.delete_tasks_by_name',
+              side_effect=taskqueue.BadTaskStateError())
+  @mock.patch.object(_AsynchronousPipelineCallback, 'CallbackImpl')
+  @mock.patch.object(_AsynchronousPipelineCallback, 'OnTimeout')
+  def testAsynchronousPipelineCallbackTimeout(
+      self, mocked_OnTimeout, mocked_CallbackImpl, _):
     p = _WrapperForAsynchronousPipelineCallback(0)
     p.start()
     self.execute_queued_tasks()
@@ -435,7 +427,20 @@ class PipelinesTest(TestCase):
     p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
     self.assertTrue(p.was_aborted)
 
-  def testAsynchronousPipelineCallbackNoTimeoutOneCallback(self):
+    mocked_OnTimeout.assert_called_once_with(0, {'p': 'v'})
+    self.assertFalse(mocked_CallbackImpl.called)
+
+  @mock.patch.object(_AsynchronousPipelineCallback, 'CallbackImpl',
+                     return_value=(None, 1))
+  @mock.patch.object(_AsynchronousPipelineCallback, 'OnTimeout')
+  def testAsynchronousPipelineCallbackNoTimeoutOneCallback(
+      self, mocked_OnTimeout, mocked_CallbackImpl):
+    original_callback = _AsynchronousPipelineCallback.callback
+    def Mocked_callback(*args, **kwargs):
+      assert '_pipeline_timeout_' not in kwargs, 'Timeout task not deleted'
+      original_callback(*args, **kwargs)
+    self.mock(_AsynchronousPipelineCallback, 'callback', Mocked_callback)
+
     p = _WrapperForAsynchronousPipelineCallback(1)
     p.start()
     self.execute_queued_tasks()
@@ -443,12 +448,20 @@ class PipelinesTest(TestCase):
     p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
     self.assertFalse(p.was_aborted)
     self.assertEqual(1, p.outputs.default.value)
+    self.assertFalse(mocked_OnTimeout.called)
+    mocked_CallbackImpl.assert_called_once_with(1, {'p': 'v'})
 
-  def testAsynchronousPipelineCallbackNoTimeoutDuplicateCallback(self):
+  @mock.patch.object(_AsynchronousPipelineCallback, 'CallbackImpl',
+                     return_value=(None, 2))
+  @mock.patch.object(_AsynchronousPipelineCallback, 'OnTimeout')
+  def testAsynchronousPipelineCallbackNoTimeoutDuplicateCallback(
+      self, mocked_OnTimeout, mocked_CallbackImpl):
     p = _WrapperForAsynchronousPipelineCallback(2)
     p.start()
     self.execute_queued_tasks()
 
     p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
     self.assertFalse(p.was_aborted)
-    self.assertEqual(1, p.outputs.default.value)
+    self.assertEqual(2, p.outputs.default.value)
+    self.assertFalse(mocked_OnTimeout.called)
+    mocked_CallbackImpl.assert_called_once_with(2, {'p': 'v'})

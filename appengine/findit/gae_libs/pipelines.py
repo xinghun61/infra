@@ -473,7 +473,6 @@ class AsynchronousPipeline(BasePipeline):
       logging.debug('Timeout callback task deleted')
     except (taskqueue.TombstonedTaskError, taskqueue.BadTaskStateError):
       # If the timeout callback task is being executed, this will happen.
-      # But in unittest, no exception is raised.
       logging.warning(
           'Could not delete timeout callback task: timeout-callback-%s',
           self.pipeline_id)
