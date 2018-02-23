@@ -37,5 +37,11 @@ var (
 			}
 			return fmt.Sprintf("%.47s...", firstLine)
 		},
+		"isBug": func(state string) bool {
+			return strings.HasPrefix(state, "BUG=")
+		},
+		"issueID": func(state string) string {
+			return strings.TrimPrefix(state, "BUG=")
+		},
 	}
 )

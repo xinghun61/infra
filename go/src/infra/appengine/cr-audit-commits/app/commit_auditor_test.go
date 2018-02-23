@@ -47,18 +47,17 @@ func TestCommitAuditor(t *testing.T) {
 				},
 			},
 		}
-		// Save repoconfig
-		// make sure there is a rule that always passes.
 		RuleMap["new-repo"] = &RepoConfig{
 			BaseRepoURL:    "https://new.googlesource.com/new.git",
 			GerritURL:      "https://new-review.googlesource.com",
 			BranchName:     "master",
 			StartingCommit: "000000",
-			Rules: []RuleSet{AccountRules{
+			Rules: map[string]RuleSet{"rules": AccountRules{
 				Account: "new@test.com",
 				Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 					return &RuleResult{"Dummy rule", rulePassed, ""}
 				}},
+				notificationFunction: fileBugForFinditViolation,
 			}},
 		}
 		repoState := &RepoState{
@@ -102,7 +101,7 @@ func TestCommitAuditor(t *testing.T) {
 				}
 			})
 			Convey("Some fail", func() {
-				RuleMap["new-repo"].Rules[0].(AccountRules).Funcs[0] = func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+				RuleMap["new-repo"].Rules["rules"].(AccountRules).Funcs[0] = func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 					return &RuleResult{"Dummy rule", ruleFailed, ""}
 				}
 				resp, err := client.Get(srv.URL + auditorPath + "?repo=new-repo")
@@ -119,7 +118,7 @@ func TestCommitAuditor(t *testing.T) {
 				}
 			})
 			Convey("Some panic", func() {
-				RuleMap["new-repo"].Rules[0].(AccountRules).Funcs[0] = func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+				RuleMap["new-repo"].Rules["rules"].(AccountRules).Funcs[0] = func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 					if rc.Status == auditScheduled {
 						panic("This always panics")
 					}

@@ -5,9 +5,6 @@
 package crauditcommits
 
 import (
-	"fmt"
-	"strings"
-
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/proto/git"
@@ -15,17 +12,17 @@ import (
 
 // RepoConfig represents the hard-coded config for a monitored repo and a
 // pointer to the entity representing its datastore-persisted state.
-type RepoConfig struct {
-	// These are expected to be hard-coded.
-	BaseRepoURL       string
-	GerritURL         string
-	BranchName        string
-	StartingCommit    string
-	MonorailAPIURL    string
-	MonorailProject   string
-	MonorailComponent string
-	MonorailLabels    []string
-	Rules             []RuleSet
+type RepoConfig struct { // These are expected to be hard-coded.
+	BaseRepoURL     string
+	GerritURL       string
+	BranchName      string
+	StartingCommit  string
+	MonorailAPIURL  string
+	MonorailProject string
+	// Do not use "AuditFailure" as a key in this map, it may cause a clash
+	// with the notification state for failed audits.
+	Rules         map[string]RuleSet
+	NotifierEmail string
 }
 
 // RepoURL composes the url of the repository by appending the branch.
@@ -38,16 +35,6 @@ func (rc *RepoConfig) LinkToCommit(commit string) string {
 	return rc.BaseRepoURL + "/+/" + commit
 }
 
-// AlertsQuery composes a monorail query for the alerts that this app
-// files for the repo.
-func (rc *RepoConfig) AlertsQuery() string {
-	labels := []string{}
-	for _, l := range rc.MonorailLabels {
-		labels = append(labels, fmt.Sprintf("label:%s", l))
-	}
-	return fmt.Sprintf("component:%s %s", rc.MonorailComponent, strings.Join(labels, " "))
-}
-
 // RuleMap maps each monitored repository to a list of account/rules structs.
 var RuleMap = map[string]*RepoConfig{
 	"chromium-src-master": {
@@ -58,14 +45,10 @@ var RuleMap = map[string]*RepoConfig{
 		StartingCommit:  "5677b32274aec4890c7dd991a6a84924e65d4853",
 		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
 		MonorailProject: "chromium",
-		// TODO(robertocn): Create a repo-level component in monorail
-		// for the whole repo.
-		MonorailLabels: []string{"CommitLog-Audit-Violation", "Restrict-View-Google"},
-		Rules: []RuleSet{
-			AccountRules{
+		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
+		Rules: map[string]RuleSet{
+			"findit-rules": AccountRules{
 				Account: "findit-for-me@appspot.gserviceaccount.com",
-				// This is *in addition* to any component defined for the repo.
-				MonorailComponent: "Tools>Test>Findit>Autorevert",
 				Funcs: []RuleFunc{
 					AutoCommitsPerDay,
 					AutoRevertsPerDay,
@@ -74,14 +57,15 @@ var RuleMap = map[string]*RepoConfig{
 					FailedBuildIsAppropriateFailure,
 					RevertOfCulprit,
 					OnlyCommitsOwnChange,
-				}},
-			AccountRules{
+				},
+				notificationFunction: fileBugForFinditViolation,
+			},
+			"release-bot-rules": AccountRules{
 				Account: "chrome-release-bot@chromium.org",
-				// This is *in addition* to any component defined for the repo.
-				MonorailComponent: "Infra>Client>Chrome>Release",
 				Funcs: []RuleFunc{
 					OnlyModifiesVersionFile,
 				},
+				notificationFunction: fileBugForReleaseBotViolation,
 			},
 		},
 	},
@@ -95,14 +79,21 @@ var RuleMap = map[string]*RepoConfig{
 type RuleSet interface {
 	MatchesCommit(*git.Commit) bool
 	MatchesRelevantCommit(*RelevantCommit) bool
+	NotificationFunction() NotificationFunc
 }
 
 // AccountRules is a RuleSet that applies to a commit if the commit has a given
 // account as either its author or its committer.
 type AccountRules struct {
-	Account           string
-	Funcs             []RuleFunc
-	MonorailComponent string
+	Account              string
+	Funcs                []RuleFunc
+	notificationFunction NotificationFunc
+}
+
+// NotificationFunction exposes the NotificationFunc assigned to this struct
+// as required by the RuleSet interface.
+func (ar AccountRules) NotificationFunction() NotificationFunc {
+	return ar.notificationFunction
 }
 
 // MatchesCommit determines whether the AccountRules set it's bound to, applies

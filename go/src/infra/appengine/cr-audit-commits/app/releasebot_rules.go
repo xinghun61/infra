@@ -17,7 +17,10 @@ import (
 // OnlyModifiesVersionFile is a RuleFunc that verifies that the only filed
 // modified by the audited CL is ``chrome/VERSION``.
 func OnlyModifiesVersionFile(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	result := &RuleResult{}
+	result := &RuleResult{
+		Message: fmt.Sprintf("The automated account %s was expected to only modify %s on the automated commit %s"+
+			" but it seems to have modified other files.", ap.TriggeringAccount, "chrome/VERSION", rc.CommitHash),
+	}
 	result.RuleName = "OnlyModifiesVersionFile"
 	result.RuleResultStatus = ruleFailed
 

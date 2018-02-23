@@ -72,7 +72,7 @@
       {{range $k, $v := .RuleMap}}
         <tr>
           <td>{{$k}} (<a href="{{$v.RepoURL}}">Link to Repository</a>)</td>
-          <td><a href="https://bugs.chromium.org/p/{{$v.MonorailProject}}/issues/list?can=1&q={{$v.AlertsQuery}}">Monorail link</a></td>
+          <td><a href="https://bugs.chromium.org/p/{{$v.MonorailProject}}/issues/list?can=1&q=reporter%3Acr-audit-commits%40appspot.gserviceaccount.com">Monorail link</a></td>
           <td><a href="/admin/status?repo={{$k}}"> Status for {{$k}}</a></td>
         </tr>
       {{end}}
@@ -152,8 +152,11 @@
                 </table>
               </td>
               <td>
-                {{if (gt .IssueID 0)}}
-                  <a href="https://bugs.chromium.org/p/{{$rc.MonorailProject}}/issues/detail?id={{.IssueID}}">Issue {{.IssueID}}</a>
+                {{range .NotificationStates}}
+                  {{if (isBug .)}}
+                    <a href="https://bugs.chromium.org/p/{{$rc.MonorailProject}}/issues/detail?id={{issueID .}}">Issue {{.IssueID}}</a>
+                    <br>
+                  {{end}}
                 {{end}}
               </td>
             </tr>

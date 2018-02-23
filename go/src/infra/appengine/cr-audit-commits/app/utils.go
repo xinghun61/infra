@@ -103,13 +103,13 @@ func getIssueBySummaryAndAccount(ctx context.Context, cfg *RepoConfig, s, a stri
 	return nil, nil
 }
 
-func postComment(ctx context.Context, cfg *RepoConfig, i *monorail.Issue, c string, cs *Clients) error {
+func postComment(ctx context.Context, cfg *RepoConfig, iID int32, c string, cs *Clients) error {
 	req := &monorail.InsertCommentRequest{
 		Comment: &monorail.InsertCommentRequest_Comment{
 			Content: c,
 		},
 		Issue: &monorail.IssueRef{
-			IssueId:   i.Id,
+			IssueId:   iID,
 			ProjectId: cfg.MonorailProject,
 		},
 	}
@@ -117,18 +117,14 @@ func postComment(ctx context.Context, cfg *RepoConfig, i *monorail.Issue, c stri
 	return err
 }
 
-func postIssue(ctx context.Context, cfg *RepoConfig, s, d string, cs *Clients, ac []string) (int32, error) {
+func postIssue(ctx context.Context, cfg *RepoConfig, s, d string, cs *Clients, components, labels []string) (int32, error) {
 	// The components for the issue will be the additional components
 	// depending on which rules were violated, and the component defined
 	// for the repo(if any).
-	components := append([]string{}, ac...)
-	if cfg.MonorailComponent != "" {
-		components = append(components, cfg.MonorailComponent)
-	}
 	iss := &monorail.Issue{
 		Description: d,
 		Components:  components,
-		Labels:      cfg.MonorailLabels,
+		Labels:      labels,
 		Status:      monorail.StatusUntriaged,
 		Summary:     s,
 	}

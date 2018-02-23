@@ -72,11 +72,12 @@ func TestCommitScanner(t *testing.T) {
 				GerritURL:      "https://new-review.googlesource.com",
 				BranchName:     "master",
 				StartingCommit: "000000",
-				Rules: []RuleSet{AccountRules{
+				Rules: map[string]RuleSet{"rules": AccountRules{
 					Account: "new@test.com",
 					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 						return &RuleResult{"Dummy rule", rulePassed, ""}
 					}},
+					notificationFunction: fileBugForFinditViolation,
 				}},
 			}
 			Convey("No revisions", func() {
@@ -179,11 +180,12 @@ func TestCommitScanner(t *testing.T) {
 				GerritURL:      "https://old-review.googlesource.com",
 				BranchName:     "master",
 				StartingCommit: "000000",
-				Rules: []RuleSet{AccountRules{
+				Rules: map[string]RuleSet{"rules": AccountRules{
 					Account: "old@test.com",
 					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 						return &RuleResult{"Dummy rule", rulePassed, ""}
 					}},
+					notificationFunction: fileBugForFinditViolation,
 				}},
 			}
 			datastore.Put(ctx, &RepoState{

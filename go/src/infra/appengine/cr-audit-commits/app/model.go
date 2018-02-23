@@ -131,9 +131,7 @@ type RelevantCommit struct {
 	CommitterAccount       string
 	AuthorAccount          string
 	CommitMessage          string `gae:",noindex"`
-	IssueID                int32
 	Retries                int32
-	NotificationComponents []string
 
 	// NotifiedAll will be true if all applicable notifications have been
 	// processed.
@@ -154,6 +152,17 @@ type RuleResult struct {
 	RuleName         string
 	RuleResultStatus RuleStatus
 	Message          string
+}
+
+// GetViolations returns the subset of RuleResults that are violations.
+func (rc *RelevantCommit) GetViolations() []RuleResult {
+	violations := []RuleResult{}
+	for _, rr := range rc.Result {
+		if rr.RuleResultStatus == ruleFailed {
+			violations = append(violations, rr)
+		}
+	}
+	return violations
 }
 
 // SetNotificationState stores the state for a given rule set.

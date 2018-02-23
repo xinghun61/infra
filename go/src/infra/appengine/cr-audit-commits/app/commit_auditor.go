@@ -46,7 +46,7 @@ type workerParams struct {
 	finishedCleanly chan bool
 
 	// These read-only globals are meant to be read by the goroutines.
-	rules []RuleSet
+	rules map[string]RuleSet
 
 	clients *Clients
 }
@@ -288,19 +288,6 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 					currentRuleResult := *f(ctx, &ap, rc, wp.clients)
 					rc.Result = append(rc.Result, currentRuleResult)
 					if currentRuleResult.RuleResultStatus == ruleFailed {
-						// The rule set may define its own monorail component.
-						if ars.MonorailComponent != "" {
-							match := false
-							for _, component := range rc.NotificationComponents {
-								if component == ars.MonorailComponent {
-									match = true
-									break
-								}
-							}
-							if !match {
-								rc.NotificationComponents = append(rc.NotificationComponents, ars.MonorailComponent)
-							}
-						}
 						rc.Status = auditCompletedWithViolation
 					}
 				}
