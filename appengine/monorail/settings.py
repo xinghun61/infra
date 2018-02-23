@@ -10,6 +10,7 @@ import re
 
 from google.appengine.api import app_identity
 
+from framework import framework_constants
 from proto import project_pb2
 from proto import site_pb2
 
@@ -111,6 +112,10 @@ banner_message = ''
 
 # User accounts with email addresses at these domains are all banned.
 banned_user_domains = []
+
+# We only send subscription notifications to users who have visited the
+# site in the last 6 months.
+subscription_timeout_secs = 180 * framework_constants.SECS_PER_DAY
 
 # Location of GCS spam classification staging trainer. Whenever the training
 # code is changed, this should be updated to point to the new package.

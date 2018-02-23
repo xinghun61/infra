@@ -6,11 +6,14 @@
 """Unit tests for features_svc module."""
 
 import logging
-import unittest
 import mox
+import time
+import unittest
 
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
+
+import settings
 
 from features import filterrules_helpers
 from features import features_constants
@@ -287,13 +290,27 @@ class FeaturesServiceTest(unittest.TestCase):
   ### Subscriptions
 
   def testGetSubscriptionsInProjects(self):
-    join_str = (
+    sqeip_join_str = (
         'SavedQueryExecutesInProject ON '
         'SavedQueryExecutesInProject.query_id = User2SavedQuery.query_id')
+    user_join_str = (
+        'User ON '
+        'User.user_id = User2SavedQuery.user_id')
+    now = 1519418530
+    self.mox.StubOutWithMock(time, 'time')
+    time.time().MultipleTimes().AndReturn(now)
+    absence_threshold = now - settings.subscription_timeout_secs
+    where = [
+        ('(User.banned IS NULL OR User.banned = %s)', ['']),
+        ('User.last_visit_timestamp >= %s', [absence_threshold]),
+        ('(User.email_bounce_timestamp IS NULL OR '
+         'User.email_bounce_timestamp = %s)', [0]),
+        ]
     self.features_service.user2savedquery_tbl.Select(
-        self.cnxn, cols=['user_id'], distinct=True,
-        joins=[(join_str, [])],
-        subscription_mode='immediate', project_id=12345).AndReturn(
+        self.cnxn, cols=['User2SavedQuery.user_id'], distinct=True,
+        joins=[(sqeip_join_str, []), (user_join_str, [])],
+        subscription_mode='immediate', project_id=12345,
+        where=where).AndReturn(
         [(1, 'asd'), (2, 'efg')])
     self.SetUpUsersSavedQueries()
     self.mox.ReplayAll()

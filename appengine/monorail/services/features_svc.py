@@ -12,6 +12,9 @@ tracker_bizobj.py.
 import collections
 import logging
 import re
+import time
+
+import settings
 
 from features import features_constants
 from features import filterrules_helpers
@@ -375,14 +378,26 @@ class FeaturesService(object):
       A dict {user_id: all_saved_queries, ...} for all users that have any
       subscription in any of the specified projects.
     """
-    join_str = (
+    sqeip_join_str = (
         'SavedQueryExecutesInProject ON '
         'SavedQueryExecutesInProject.query_id = User2SavedQuery.query_id')
+    user_join_str = (
+        'User ON '
+        'User.user_id = User2SavedQuery.user_id')
+    now = int(time.time())
+    absence_threshold = now - settings.subscription_timeout_secs
+    where = [
+        ('(User.banned IS NULL OR User.banned = %s)', ['']),
+        ('User.last_visit_timestamp >= %s', [absence_threshold]),
+        ('(User.email_bounce_timestamp IS NULL OR '
+         'User.email_bounce_timestamp = %s)', [0]),
+        ]
     # TODO(jrobbins): cache this since it rarely changes.
     subscriber_rows = self.user2savedquery_tbl.Select(
-        cnxn, cols=['user_id'], distinct=True,
-        joins=[(join_str, [])],
-        subscription_mode='immediate', project_id=project_ids)
+        cnxn, cols=['User2SavedQuery.user_id'], distinct=True,
+        joins=[(sqeip_join_str, []), (user_join_str, [])],
+        subscription_mode='immediate', project_id=project_ids,
+        where=where)
     subscriber_ids = [row[0] for row in subscriber_rows]
     logging.info('subscribers relevant to projects %r are %r',
                  project_ids, subscriber_ids)

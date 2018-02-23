@@ -21,7 +21,9 @@
         When you are in a project, you can choose one of your saved queries from the 
         the bottom section of the search dropdown menu that is next to the issue search box.<br/>
         You can also subscribe to any query to get email notifications when issues that
-        satisfy that query are modified.
+        satisfy that query are modified.<br/>
+        Subscription notifications are only generated for users who have visited the
+        site within the past six months.
     </div>
     <br>
 
