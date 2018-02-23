@@ -61,7 +61,7 @@ HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE = """
 }
 </script>
 
-<div style="font-family: arial, sans-serif">%(body)s</div>
+<div style="font-family: arial, sans-serif; white-space:pre">%(body)s</div>
 </body>
 </html>
 """
@@ -69,7 +69,7 @@ HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE = """
 HTML_BODY_WITHOUT_GMAIL_ACTION_TEMPLATE = """
 <html>
 <body>
-<div style="font-family: arial, sans-serif">%(body)s</div>
+<div style="font-family: arial, sans-serif; white-space:pre">%(body)s</div>
 </body>
 </html>
 """
