@@ -33,6 +33,7 @@ from handlers import step_by_step_comparison
 from handlers import swarming_push
 from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
+from handlers import try_job_pubsub_pipeline_callback
 from handlers import try_job_push
 from handlers import version
 from handlers.flake import analyze_regression_range
@@ -43,6 +44,8 @@ from handlers.flake import triage_flake_analysis
 
 # Default module.
 default_web_pages_handler_mappings = [
+    ('/_ah/push-handlers/tryjob',
+     try_job_pubsub_pipeline_callback.TryJobPubSubPipelineCallback),
     ('/', home.Home),
     ('/version', version.Version),
 ]

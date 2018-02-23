@@ -98,11 +98,7 @@ class _AsynchronousPipelineWithWrongOutputType(pipelines.AsynchronousPipeline):
   output_type = list
 
   def RunImpl(self, arg):
-    try:
-      task = self.get_callback_task(params={'a': arg}, name=self.pipeline_id)
-      task.add()
-    except taskqueue.TombstonedTaskError:  # pragma: no branch.
-      pass
+    self.ScheduleCallbackTask(name=self.pipeline_id, parameters={'a': arg})
 
   def CallbackImpl(self, arg, parameters):
     return None, parameters
@@ -113,8 +109,8 @@ class _AsynchronousPipelineNeedMoreCallback(pipelines.AsynchronousPipeline):
   output_type = basestring
 
   def RunImpl(self, _arg):
-    self.get_callback_task(params={}).add()
-    self.get_callback_task(params={'trigger': ''}).add()
+    self.ScheduleCallbackTask(parameters={})
+    self.ScheduleCallbackTask(parameters={'trigger': ''})
 
   def CallbackImpl(self, _arg, parameters):
     if not parameters:
@@ -127,7 +123,7 @@ class _AsynchronousPipelineCallbackError(pipelines.AsynchronousPipeline):
   output_type = str
 
   def RunImpl(self, _arg):
-    self.get_callback_task(params={}).add()
+    self.ScheduleCallbackTask(parameters={})
 
   def CallbackImpl(self, _arg, _parameters):
     return 'error message', None
@@ -141,19 +137,40 @@ class _GeneratorPipelineSpawnAsynchronousPipelineWithWrongOutputType(
     yield _AsynchronousPipelineWithWrongOutputType(arg)
 
 
-class _AsynchronousPipelineOutputAList(pipelines.AsynchronousPipeline):
+class _AsynchronousPipelineCallback(pipelines.AsynchronousPipeline):
   input_type = int
-  output_type = list
+  output_type = int
 
-  def RunImpl(self, arg):
-    try:
-      task = self.get_callback_task(params={'a': arg}, name=self.pipeline_id)
-      task.add()
-    except taskqueue.TombstonedTaskError:  # pragma: no branch.
-      pass
+  def TimeoutSeconds(self):
+    return 60
 
-  def CallbackImpl(self, arg, parameters):
-    return None, [int(parameters['a'])]
+  def RunImpl(self, callback_num):
+    assert callback_num in (0, 1, 2)
+    self.SaveCallbackParameters({'p': 'v'})
+    for i in range(callback_num):
+      self.ScheduleCallbackTask(name='%s-callback-%d' % (self.pipeline_id, i))
+
+  def OnTimeout(self, callback_num, parameters):
+    assert callback_num in (0, 1, 2)
+    assert len(parameters) == 1 and parameters['p'] == 'v'
+    # Second call to OnTimeout should fail.
+    self.SaveCallbackParameters({'p': 'should fail if called again'})
+
+  def CallbackImpl(self, callback_num, parameters):
+    assert callback_num in (0, 1, 2)
+    assert len(parameters) == 1 and parameters['p'] == 'v'
+    if callback_num > 0:
+      # Second call to CallbackImpl should fail.
+      self.SaveCallbackParameters({'p': 'should fail if called again'})
+      return None, 1
+
+
+class _WrapperForAsynchronousPipelineCallback(pipelines.GeneratorPipeline):
+  input_type = int
+  output_type = int
+
+  def RunImpl(self, callback_num):
+    yield _AsynchronousPipelineCallback(callback_num)
 
 
 class _GeneratorPipelineUnwrapInput(pipelines.GeneratorPipeline):
@@ -215,9 +232,7 @@ class PipelinesTest(TestCase):
 
   def testInputObjectConvertedToPipelineParametersOnlyOnce(self):
     args, kwargs = pipelines._ConvertInputObjectToPipelineParameters(
-        _SimpleInfo, [pipelines._ENCODED_PARAMETER_FLAG], {
-            'param': 1
-        })
+        _SimpleInfo, [pipelines._ENCODED_PARAMETER_FLAG], {'param': 1})
     self.assertListEqual([pipelines._ENCODED_PARAMETER_FLAG], args)
     self.assertDictEqual({'param': 1}, kwargs)
 
@@ -237,9 +252,7 @@ class PipelinesTest(TestCase):
 
   def testConvertPipelineParametersBackToInputObject(self):
     arg = pipelines._ConvertPipelineParametersToInputObject(
-        _SimpleInfo, [pipelines._ENCODED_PARAMETER_FLAG], {
-            'param': 1
-        })
+        _SimpleInfo, [pipelines._ENCODED_PARAMETER_FLAG], {'param': 1})
     self.assertTrue(isinstance(arg, _SimpleInfo))
     self.assertEqual(1, arg.param)
 
@@ -247,9 +260,7 @@ class PipelinesTest(TestCase):
     with self.assertRaises(AssertionError):
       pipelines._ConvertPipelineParametersToInputObject(dict, [{
           'param': 1
-      }], {
-          'key': 'value'
-      })
+      }], {'key': 'value'})
 
   def testNoConvertionIfPipelineParameterNotFromStructuredObject(self):
     arg = pipelines._ConvertPipelineParametersToInputObject(
@@ -358,20 +369,34 @@ class PipelinesTest(TestCase):
     self.assertFalse(p.was_aborted)
     self.assertEqual(10001, p.outputs.default.value)
 
+  @mock.patch('logging.warning')
+  def testScheduleSameCallbackTaskTwice(self, warning_func):
+
+    def FindTaskByName(name):
+      for task in self.taskqueue_stub.get_filtered_tasks():
+        if task.name == name:
+          return task
+
+    p = _AsynchronousPipelineCallback(0)
+    p.start(queue_name='default')
+    p.ScheduleCallbackTask(
+        name='unique-task-id', countdown=60, parameters={'p': 'v'})
+    p.ScheduleCallbackTask(
+        name='unique-task-id', countdown=60, parameters={'p': 'v'})
+    warning_func.assert_called_with('Duplicate callback task: %s',
+                                    'unique-task-id')
+    actual_task = FindTaskByName('unique-task-id')
+    self.assertIsNotNone(actual_task)
+    actual_params = actual_task.extract_params()
+    del actual_params['pipeline_id']
+    self.assertDictEqual({'p': 'v'}, actual_params)
+
   def testAsynchronousPipelineWithWrongOutputType(self):
     p = _GeneratorPipelineSpawnAsynchronousPipelineWithWrongOutputType(1)
     p.start()
     self.execute_queued_tasks()
     p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
     self.assertTrue(p.was_aborted)
-
-  def testAsynchronousPipelineOutputAList(self):
-    p = _AsynchronousPipelineOutputAList(1)
-    p.start()
-    self.execute_queued_tasks()
-    p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
-    self.assertFalse(p.was_aborted)
-    self.assertListEqual([1], p.outputs.default.value)
 
   @mock.patch('logging.warning')
   def testWarningLoggedForAsynchronousPipelineRunImplReturnAValue(
@@ -401,3 +426,29 @@ class PipelinesTest(TestCase):
       self.execute_queued_tasks()
     error_func.assert_called_with('Callback failed with error: %s',
                                   'error message')
+
+  def testAsynchronousPipelineCallbackTimeout(self):
+    p = _WrapperForAsynchronousPipelineCallback(0)
+    p.start()
+    self.execute_queued_tasks()
+
+    p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
+    self.assertTrue(p.was_aborted)
+
+  def testAsynchronousPipelineCallbackNoTimeoutOneCallback(self):
+    p = _WrapperForAsynchronousPipelineCallback(1)
+    p.start()
+    self.execute_queued_tasks()
+
+    p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
+    self.assertFalse(p.was_aborted)
+    self.assertEqual(1, p.outputs.default.value)
+
+  def testAsynchronousPipelineCallbackNoTimeoutDuplicateCallback(self):
+    p = _WrapperForAsynchronousPipelineCallback(2)
+    p.start()
+    self.execute_queued_tasks()
+
+    p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
+    self.assertFalse(p.was_aborted)
+    self.assertEqual(1, p.outputs.default.value)

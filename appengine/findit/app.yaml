@@ -55,6 +55,13 @@ handlers:
   secure: always
 
 # Endpoints handler.
+- url: /_ah/push-handlers/.*
+  script: main.default_web_application
+  # Protect PubSub push endpoints with admin login:
+  # https://cloud.google.com/pubsub/docs/push#app-engine-standard-endpoints
+  login: admin
+  secure: always
+
 - url: /_ah/spi/.*
   script: main.api_application
   secure: always

@@ -91,13 +91,18 @@
       return None, {'test': 0.80}
 """
 
+import copy
 import logging
 import types
+
+from google.appengine.api import taskqueue
+from google.appengine.ext import ndb
 
 import pipeline as pipeline
 from pipeline import handlers as pipeline_handlers
 from pipeline import status_ui as pipeline_status_ui
 
+from gae_libs import token
 from libs.structured_object import StructuredObject
 
 _UNDEFINED_TYPE = object()
@@ -295,9 +300,47 @@ class GeneratorPipeline(BasePipeline):
         break
 
 
+class _AEPipelineCallbackInfo(ndb.Model):
+  parameters = ndb.PickleProperty()
+  completed = ndb.BooleanProperty(default=False)
+
+  @classmethod
+  def GetOrCreate(cls, key):
+    ndb_key = ndb.Key(cls, key)
+    return ndb_key.get() or cls(key=ndb_key, parameters={})
+
+
 class AsynchronousPipeline(BasePipeline):
-  """Base class for asynchronous pipelines waiting for external dependencies."""
+  """Base class for asynchronous pipelines waiting for external dependencies.
+
+  Subclass should implement `CallbackImpl` besides `RunImpl`, and could use
+  `SaveCallbackParameters` and `GetCallbackParameters` to save info between
+  code executions.
+
+  Subclass should implement `TimeoutSeconds` to enable a timeout callback and
+  and `OnTimeout` to handle the timeout. For backward compatibility, default is
+  no timeout callback which will be removed.
+
+  NOTES:
+  1. Don't use AsynchronousPipeline as the root pipeline, because a mid-flight
+     asynchronous pipeline couldn't be canceled and aborted.
+  2. If an asynchronous pipeline is aborted, only its root pipeline's `OnAbort`
+     and `OnFinalized` will be called. The parent non-async pipeline should
+     handle that instead.
+  """
   async = True
+
+  def SaveCallbackParameters(self, parameters):
+    """Saves the parameters for next callback execution."""
+    assert isinstance(parameters, dict), 'Callback parameters must be a dict.'
+    callback_info = _AEPipelineCallbackInfo.GetOrCreate(self.pipeline_id)
+    callback_info.parameters = parameters
+    callback_info.put()
+
+  def GetCallbackParameters(self):
+    """Returns a copy of the saved parameters or an empty dict if not yet."""
+    callback_info = _AEPipelineCallbackInfo.GetOrCreate(self.pipeline_id)
+    return copy.deepcopy(callback_info.parameters)
 
   def CallbackImpl(self, arg, parameters):
     """This function is called upon an callback from external dependency.
@@ -316,31 +359,124 @@ class AsynchronousPipeline(BasePipeline):
     """
     raise NotImplementedError()
 
+  def TimeoutSeconds(self):
+    """Returns seconds to abort the pipeline if no timely callback.
+
+    Any non-positive value is deemed as no timeout. (Default is no timeout.)
+    A grace period of 5 minutes will be added upon the returned value.
+    """
+    return 0  # TODO: enforce a timeout after all existing pipelines migrated.
+
+  def OnTimeout(self, arg, parameters):
+    """This function is called upon timeout without timely callback.
+
+    Args:
+      arg (input_type): The input of the pipeline.
+      parameters (dict): A mapping from names to string values of the saved
+          parameters.
+    """
+    pass
+
+  def ScheduleCallbackTask(self, name=None, countdown=None, parameters=None):
+    """Schedules a task to run the callback in the same target and queue.
+
+    Use a unique task name to ensure an idempotent callback.
+
+    Args:
+      name (str): The task name to ensure only one task is scheduled.
+      countdown (int): The seconds to delay the execution of the task.
+      parameters (dict): Additional parameters to pass over to the callback. The
+        name "_pipeline_timeout_" is reserved for internal usage.
+    """
+    logging.info(
+        'Scheduling callback task: name=%r, countdown=%r, parameters=%r', name,
+        countdown, parameters)
+    parameters = parameters or {}
+    callback_task = self.get_callback_task(
+        name=name,
+        target=self.target,  # Run at the same target/version as the pipeline.
+        params=parameters,
+        countdown=countdown)
+    try:
+      callback_task.add(queue_name=self.queue_name)  # Run in the same queue.
+    except (taskqueue.TombstonedTaskError, taskqueue.TaskAlreadyExistsError):
+      logging.warning('Duplicate callback task: %s', name)
+
   def run(self, *args, **kwargs):
     self._LogStatusPath()
+
+    # Schedule an internal timeout callback task to clean up.
+    timeout_seconds = self.TimeoutSeconds()
+    if timeout_seconds > 0:
+      timeout_seconds += 60 * 5  # Add a 5 minute grace period.
+      self.ScheduleCallbackTask(
+          name='timeout-callback-%s' % self.pipeline_id,
+          countdown=timeout_seconds,
+          parameters={
+              '_pipeline_timeout_': '1',
+          })
+
     arg = _ConvertPipelineParametersToInputObject(self.input_type, args, kwargs)
     result = self.RunImpl(arg)
     if result is not None:
       logging.warning('%s.RunImpl should return nothing, but got a %s',
                       self.__class__.__name__, type(result).__name__)
 
-  def callback(self, **additional_parameters):
-    arg = _ConvertPipelineParametersToInputObject(self.input_type, self.args,
-                                                  self.kwargs)
-    returned_value = self.CallbackImpl(arg, additional_parameters)
-    if returned_value is None:
-      return  # More external callback is needed.
-
-    error, result = returned_value
-    if error is not None:
-      # Signal Pipeline framework to retry the callback up to 5 times.
-      logging.error('Callback failed with error: %s', error)
-      return 500, 'plain/text', error
-
-    if result and not isinstance(result, self.output_type):
-      self.abort('Expected output of type %s, but got %s' %
-                 (self.output_type.__name__, type(result).__name__))
+  def callback(self, **external_parameters):
+    callback_info = _AEPipelineCallbackInfo.GetOrCreate(self.pipeline_id)
+    if callback_info.completed:
+      logging.warning('Pipeline completed in a previous callback or timeout.')
       return
 
-    # Marks the pipeline as complete with the given result.
-    self.complete(_ConvertToPipelineOutput(result))
+    arg = _ConvertPipelineParametersToInputObject(self.input_type, self.args,
+                                                  self.kwargs)
+    timeouted = external_parameters.pop('_pipeline_timeout_', '') == '1'
+    parameters = copy.deepcopy(callback_info.parameters)
+
+    if timeouted:
+      # There is a low risk that OnTimeout is still called after the pipeline is
+      # completed: pipeline starts, run/RunImpl runs, external callback comes
+      # and CallbackImpl runs & completes the pipeline with a result, timeout
+      # callback task runs before the _AEPipelineCallbackInfo entity is set as
+      # completed below.
+      self.OnTimeout(arg, parameters)
+      aborted = self.abort('Timeout after %d seconds' % self.TimeoutSeconds())
+      logging.warning('%s aborted: %s', self.__class__.__name__, aborted)
+    else:
+      parameters.update(external_parameters)
+      returned_value = self.CallbackImpl(arg, parameters)
+      if returned_value is None:  # More external callback is needed.
+        return
+
+      error, result = returned_value
+      if error is not None:
+        # Signal Pipeline framework to retry the callback up to 5 times.
+        # If failure still happened after all retries, the pipeline will be
+        # cleaned up by the timeout callback task then.
+        logging.error('Callback failed with error: %s', error)
+        return 500, 'plain/text', error
+      else:  # No error, fill output.
+        if result and not isinstance(result, self.output_type):
+          aborted = self.abort('Expected output of type %s, but got %s' %
+                               (self.output_type.__name__,
+                                type(result).__name__))
+          logging.info('%s aborted: %s', self.__class__.__name__, aborted)
+        else:
+          # Marks the pipeline as complete with the given result.
+          self.complete(_ConvertToPipelineOutput(result))
+
+    # If the pipeline is already time-outed, aborted, or completed, try to
+    # delete the scheduled timeout callback task before it runs.
+    try:
+      taskqueue.Queue(self.queue_name).delete_tasks_by_name(
+          ['timeout-callback-%s' % self.pipeline_id])
+      logging.debug('Timeout callback task deleted')
+    except (taskqueue.TombstonedTaskError, taskqueue.BadTaskStateError):
+      # If the timeout callback task is being executed, this will happen.
+      # But in unittest, no exception is raised.
+      logging.warning(
+          'Could not delete timeout callback task: timeout-callback-%s',
+          self.pipeline_id)
+    callback_info = _AEPipelineCallbackInfo.GetOrCreate(self.pipeline_id)
+    callback_info.completed = True
+    callback_info.put()
