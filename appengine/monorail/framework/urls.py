@@ -121,6 +121,7 @@ COMPONENT_DETAIL = '/components/detail'
 FIELD_CHECKNAME_JSON = '/fields/checkName'
 FIELD_CREATE = '/fields/create'
 FIELD_DETAIL = '/fields/detail'
+TEMPLATE_CREATE ='/templates/create'
 WIKI_LIST = '/w/list'  # Wiki urls are just redirects to project.docs_url
 WIKI_PAGE = '/wiki/<wiki_page:.*>'
 SOURCE_PAGE = '/source/<source_page:.*>'
