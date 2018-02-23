@@ -89,7 +89,21 @@ func TestGetZipHandler(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(bytes, ShouldResemble, []byte("abcde"))
 			So(w.Code, ShouldEqual, http.StatusOK)
+		})
 
+		Convey("weird builder name", func() {
+			ctx.Params = makeParams("builder", "Test (1).(2)", "buildnum", "123", "filepath", "a/b/c")
+			getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]byte, error) {
+				So(builder, ShouldEqual, "Test__1___2_")
+				return zipRes, zipErr
+			}
+			zipRes = []byte("abcde")
+			getZipHandler(ctx)
+
+			bytes, err := ioutil.ReadAll(w.Body)
+			So(err, ShouldBeNil)
+			So(bytes, ShouldResemble, []byte("abcde"))
+			So(w.Code, ShouldEqual, http.StatusOK)
 		})
 
 		getZipFile = oldZipFile

@@ -22,6 +22,8 @@ import (
 	"go.chromium.org/luci/server/router"
 )
 
+var builderNameReplacedStrings = []string{".", "(", ")", " "}
+
 // getZipHandler handles a request to get a file from a zip archive.
 // This saves content etags in memcache, to save round trip time on fetching
 // zip files over the network, so that clients can cache the data.
@@ -29,6 +31,11 @@ func getZipHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
 	builder := p.ByName("builder")
+	for _, s := range builderNameReplacedStrings {
+		builder = strings.Replace(builder, s, "_", -1)
+	}
+	// buildNum may sometimes not be a number, if the user asks for <builder>/results
+	// which is the latest results for the builder.  ¯\_(ツ)_/¯
 	buildNum := p.ByName("buildnum")
 	filepath := strings.Trim(p.ByName("filepath"), "/")
 
@@ -122,11 +129,17 @@ var getZipFile = func(c context.Context, builder, buildNum, filepath string) ([]
 		logging.Warningf(c, "memcache.Get error for requested file %v: %v", itm.Key(), err)
 	}
 
-	logging.Debugf(c, "Getting google storage path %s", gsPath)
+	logging.Debugf(c, "Getting google storage path %s filepath %s", gsPath, filepath)
 	if err == memcache.ErrCacheMiss || len(itm.Value()) == 0 {
 		zr, err := readZipFile(c, gsPath)
 		if err != nil {
 			return nil, fmt.Errorf("while reading zip file: %v", err)
+		}
+
+		if zr == nil {
+			logging.Errorf(c, "got a nil zip file for %v", gsPath)
+			// Effectively a 404
+			return nil, nil
 		}
 
 		// If we're serving the results.html file, we expect users to want to look at
