@@ -16,7 +16,8 @@
         'Android Tests (dbg) (L Nexus5)',
         'Android Tests (dbg) (L Nexus6)',
         'Android Tests (dbg) (L Nexus7.2)',
-        'Android Tests (dbg) (L Nexus9)',
+        # http://crbug.com/815098
+        #'Android Tests (dbg) (L Nexus9)',
         'Linux Builder (dbg)',
         'Linux Builder',
         'Linux Tester',
