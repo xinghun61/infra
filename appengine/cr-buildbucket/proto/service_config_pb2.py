@@ -18,8 +18,8 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='service_config.proto',
   package='buildbucket',
-  syntax='proto2',
-  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\">\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\"`\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05J\x04\x08\x01\x10\x02')
+  syntax='proto3',
+  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\">\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\"`\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05J\x04\x08\x01\x10\x02\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -48,7 +48,7 @@ _SETTINGSCFG = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
+  syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
@@ -86,7 +86,7 @@ _SWARMINGSETTINGS = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
+  syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],

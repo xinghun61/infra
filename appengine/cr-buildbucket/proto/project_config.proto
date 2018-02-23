@@ -4,7 +4,7 @@
 
 // Schemas for project configs.
 
-syntax = "proto2";
+syntax = "proto3";
 
 package buildbucket;
 
@@ -21,19 +21,19 @@ message Acl {
     WRITER = 2;
   }
   // Role denotes a list of actions that an identity can perform.
-  optional Role role = 1;
+  Role role = 1;
   // Name of the group defined in the auth service.
-  optional string group = 2;
+  string group = 2;
   // An email address or a full identity string "kind:name". See auth service
   // on kinds of identities. Anonymous users are "anonymous:anonymous".
   // Either identity or group must be present, not both.
-  optional string identity = 3;
+  string identity = 3;
 }
 
 // A set of Acl messages. Can be referenced in a bucket by name.
 message AclSet {
   // A name of the ACL set. Required. Must match regex '^[a-z0-9_]+$'.
-  optional string name = 1;
+  string name = 1;
   // List of access control rules.
   // The order does not matter.
   repeated Acl acls = 2;
@@ -59,21 +59,21 @@ message Builder {
   // See also https://github.com/luci/luci-py/blob/3a2941345cf011a96bcd83d76328395323245bb5/appengine/swarming/swarming_rpcs.py#L166
   message CacheEntry {
     // Unique name of the cache. Required. Length is limited to 4096.
-    optional string name = 1;
+    string name = 1;
     // Path to the directory that will be linked to the named cache,
     // relative to the recipe cache directory.
     // Required. Must be unique.
-    optional string path = 2;
+    string path = 2;
   }
 
   // Specifies a recipe to run.
   message Recipe {
     // Repository URL of the recipe package.
-    optional string repository = 1;
+    string repository = 1;
     // Name of the recipe to run.
-    optional string name = 2;
+    string name = 2;
     // Revision of recipe to fetch. Defaults to the latest.
-    optional string revision = 5;
+    string revision = 5;
     // Colon-separated build properties to set.
     // A property can be overriden by "properties" build parameter.
     //
@@ -96,7 +96,7 @@ message Builder {
   //
   // If a builder name, will be propagated to "builder" build tag and
   // "buildername" recipe property.
-  optional string name = 1;
+  string name = 1;
   // Names of mixins to apply to this builder definition.
   //
   // FLATTENING
@@ -194,7 +194,7 @@ message Builder {
   // Circular references are prohibited.
   repeated string mixins = 10;
   // Builder category. Will be used for visual grouping, for example in Code Review.
-  optional string category = 6;
+  string category = 6;
   // Will be become to swarming task tags.
   // Each tag will end up in "swarming_tag" buildbucket tag, for example
   // "swarming_tag:builder:release"
@@ -204,23 +204,23 @@ message Builder {
   // If value is not specified ("<key>:"), then it excludes a default value.
   repeated string dimensions = 3;
   // Specifies that a recipe to run.
-  optional Recipe recipe = 4;
+  Recipe recipe = 4;
   // Swarming task priority.
-  optional uint32 priority = 5;
+  uint32 priority = 5;
   // Maximum build execution time. Not to be confused with pending time.
-  optional uint32 execution_timeout_secs = 7;
+  uint32 execution_timeout_secs = 7;
   // Maximum build pending time.
-  optional uint32 expiration_secs = 20;
+  uint32 expiration_secs = 20;
   // Caches that should be present on the bot.
   repeated CacheEntry caches = 9;
   // If YES, generate monotonically increasing contiguous numbers for each
   // build, unique within the builder.
   // Note: this limits the build creation rate in this builder to 5 per second.
-  optional Toggle build_numbers = 16;
+  Toggle build_numbers = 16;
   // Email of a service account to run the build as or literal 'bot' string to
   // use Swarming bot's account (if available). Passed directly to Swarming.
   // Subject to Swarming's ACLs.
-  optional string service_account = 12;
+  string service_account = 12;
   // If YES, each builder will get extra dimension "builder:<builder name>"
   // added. Default is UNSET.
   //
@@ -244,12 +244,12 @@ message Builder {
   //   }
   // (see also http://docs.buildbot.net/0.8.9/manual/cfg-properties.html#interpolate)
   // but are currently against complicating config with this.
-  optional Toggle auto_builder_dimension = 17;
+  Toggle auto_builder_dimension = 17;
   // If YES, by default a new build in this builder will be marked as
   // experimental.
   // This is useful for inherently experimental builders that use production
   // recipes.
-  optional Toggle experimental = 18;
+  Toggle experimental = 18;
   // If not empty and not "-", and a build request is not marked as
   // experimental/prod explicitly and has "mastername" property, buildbucket
   // will contact this instance of luci-migration app to determine whether the
@@ -260,22 +260,22 @@ message Builder {
   // Special value "-" means no luci_migration_host specified.
   // Useful in a builder that wants to override luci_migration_host
   // specified in builder_defaults or mixin.
-  optional string luci_migration_host = 19;
+  string luci_migration_host = 19;
 }
 
 // Configuration of buildbucket-swarming integration for one bucket.
 message Swarming {
   // Hostname of the swarming instance, e.g. "chromium-swarm.appspot.com".
-  optional string hostname = 1;
+  string hostname = 1;
   // DEPRECATED, IGNORED.
   // Used to generate a URL for Build, may contain parameters
   // {swarming_hostname}, {task_id}, {bucket} and {builder}. Defaults to:
   // https://{swarming_hostname}/user/task/{task_id}
-  optional string url_format = 2;
+  string url_format = 2;
 
   // Defines default values for builders.
   // Cannot be used in buckets that use builder mixins.
-  optional Builder builder_defaults = 3;
+  Builder builder_defaults = 3;
 
   // Configuration for each builder.
   // Swarming tasks are created only for builds for builders that are not
@@ -285,7 +285,7 @@ message Swarming {
   // Percentage of builds that should use a canary swarming task template.
   // A value from 0 to 100.
   // If omitted, default percentage is used.
-  optional google.protobuf.UInt32Value task_template_canary_percentage = 5;
+  google.protobuf.UInt32Value task_template_canary_percentage = 5;
 }
 
 // Defines one bucket in buildbucket.cfg
@@ -293,7 +293,7 @@ message Bucket {
   // Name of the bucket. Names are unique within one instance of buildbucket.
   // If another project already uses this name, a config will be rejected.
   // Name reservation is first-come first-serve.
-  optional string name = 1;
+  string name = 1;
   // List of access control rules for the bucket.
   // The order does not matter.
   repeated Acl acls = 2;
@@ -302,7 +302,7 @@ message Bucket {
   // The order does not matter.
   repeated string acl_sets = 4;
   // Buildbucket-swarming integration.
-  optional Swarming swarming = 3;
+  Swarming swarming = 3;
 }
 
 // Schema of buildbucket.cfg file, a project config.

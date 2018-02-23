@@ -4,22 +4,22 @@
 
 // Schemas for project configs.
 
-syntax = "proto2";
+syntax = "proto3";
 
 package buildbucket;
 
 // Schema of settings.cfg file, a service config.
 message SettingsCfg {
   // Swarmbucket settings.
-  optional SwarmingSettings swarming = 1;
+  SwarmingSettings swarming = 1;
 }
 
 // Swarmbucket settings.
 message SwarmingSettings {
   reserved 1; // default_hostname
   // Swarmbucket build URLs will point to this Milo instance.
-  optional string milo_hostname = 2;
+  string milo_hostname = 2;
   // Default value of swarming.task_template_canary_percentage field in
   // cr-buildbucket.cfg files.
-  optional int32 default_task_template_canary_percentage = 3;
+  int32 default_task_template_canary_percentage = 3;
 }

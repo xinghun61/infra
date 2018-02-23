@@ -24,7 +24,6 @@ import config
 LUCI_CHROMIUM_TRY_CONFIG_TEXT = (
 '''name: "luci.chromium.try"
 acls {
-  role: READER
   group: "all"
 }
 swarming {
@@ -57,7 +56,6 @@ swarming {
 MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT = (
 '''name: "master.tryserver.chromium.linux"
 acls {
-  role: READER
   group: "all"
 }
 acls {
@@ -69,7 +67,6 @@ acls {
 MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT = (
 '''name: "master.tryserver.chromium.win"
 acls {
-  role: READER
   group: "all"
 }
 acls {
@@ -81,7 +78,6 @@ acls {
 MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT = (
 '''name: "master.tryserver.chromium.mac"
 acls {
-  role: READER
   group: "all"
 }
 acls {
