@@ -31,7 +31,7 @@ const (
 	host               = "https://chromium-review.googlesource.com"
 )
 
-//mockPollRestAPI allows for modification of change state returned by QueryChanges.
+// mockPollRestAPI allows for modification of change state returned by QueryChanges.
 type mockPollRestAPI struct {
 	sync.Mutex
 	changes map[string][]gr.ChangeInfo
@@ -157,7 +157,7 @@ func TestPoll(t *testing.T) {
 		Convey("Second poll (no changes)", func() {
 			api := &mockPollRestAPI{}
 			So(poll(ctx, api, cp), ShouldBeNil)
-			// Store lastPoll timestamps from first poll
+			// Store last poll timestamps from first poll.
 			lastPolls := make(map[string]time.Time)
 			for _, gd := range gerritProjects {
 				p := &Project{ID: gerritProjectID(gd.Host, gd.Project)}
@@ -178,13 +178,11 @@ func TestPoll(t *testing.T) {
 			})
 		})
 
-		Convey("First poll (changes)", func() {
+		Convey("First poll (with changes)", func() {
 			api := &mockPollRestAPI{}
 			lastChangeTs := clock.Now(ctx)
-			owner := &gr.AccountInfo{
-				Email: "emso@chromium.org",
-			}
-			// Fill up with a change per project
+			owner := &gr.AccountInfo{Email: "emso@chromium.org"}
+			// Fill up with one change per project.
 			for _, gd := range gerritProjects {
 				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
 					{
@@ -195,21 +193,19 @@ func TestPoll(t *testing.T) {
 				})
 			}
 			So(poll(ctx, api, cp), ShouldBeNil)
-			Convey("Does not enqueues analyze requests", func() {
+			Convey("Does not enqueue analyze requests", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, 0)
 			})
 		})
 
-		Convey("Second poll (changes)", func() {
+		Convey("Second poll (with new changes adding files)", func() {
 			api := &mockPollRestAPI{}
 			lastChangeTs := tc.Now().UTC()
-			// Fill up with a change per project
+			// Fill up with one change per project.
 			rev := "abcdefg"
 			changeID := "project~branch~Ideadc0de"
 			file := "README.md"
-			owner := &gr.AccountInfo{
-				Email: "emso@chromium.org",
-			}
+			owner := &gr.AccountInfo{Email: "emso@chromium.org"}
 			for _, gd := range gerritProjects {
 				files := make(map[string]*gr.FileInfo)
 				files[file] = &gr.FileInfo{Status: "A"}
@@ -251,17 +247,17 @@ func TestPoll(t *testing.T) {
 
 		Convey("Second poll (paged changes)", func() {
 			api := &mockPollRestAPI{}
-			So(poll(ctx, api, cp), ShouldBeNil) // first poll storing timestamp
+			// The first poll stores timestamp.
+			So(poll(ctx, api, cp), ShouldBeNil)
 			tc.Add(time.Second)
-			// Fill up projects with changes
+
+			// Fill up each project with multiple changes.
 			numChanges := 6
 			revBase := "abcdefg"
 			branch := "master"
 			changeIDFooter := "Ideadc0de"
 			file := "README.md"
-			owner := &gr.AccountInfo{
-				Email: "emso@chromium.org",
-			}
+			owner := &gr.AccountInfo{Email: "emso@chromium.org"}
 			for _, gd := range gerritProjects {
 				var changes []gr.ChangeInfo
 				for i := 0; i < numChanges; i++ {
@@ -307,9 +303,7 @@ func TestPoll(t *testing.T) {
 			rev := "abcdefg"
 			changeID := "project~branch~Ideadc0de"
 			file := "README.md"
-			owner := &gr.AccountInfo{
-				Email: "emso@chromium.org",
-			}
+			owner := &gr.AccountInfo{Email: "emso@chromium.org"}
 			files := make(map[string]*gr.FileInfo)
 			files[file] = &gr.FileInfo{Status: "A"}
 			revisions := make(map[string]gr.RevisionInfo)
@@ -332,7 +326,7 @@ func TestPoll(t *testing.T) {
 				So(ds.Get(ctx, p), ShouldBeNil)
 				So(lastChangeTs.Equal(p.LastPoll), ShouldBeTrue)
 			})
-			Convey("Does not enqueues analyze requests", func() {
+			Convey("Does not enqueue analyze requests", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, 0)
 			})
 		})
