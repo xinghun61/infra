@@ -547,7 +547,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         None, None, 'pipeline_id')
 
     self.assertEqual('legacy_try_master',
-                     mock_client.TryJob.call_args[0][3]['mastername'])
+                     mock_client.TryJob.call_args[0][2]['mastername'])
     self.assertEqual(build_id, '1')
     self.assertIsNone(error)
 
