@@ -9,8 +9,11 @@ It has functions to:
   * Get information for given revisions.
 """
 
+import datetime
+
 from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs import time_util
 from services.parameters import CLKey
 from services.parameters import DictOfCLKeys
 
@@ -69,8 +72,8 @@ def GetCLInfo(revisions):
     change_log = git_repo.GetChangeLog(revision)
     if change_log:
       cls[revision]['commit_position'] = (change_log.commit_position)
-      cls[revision]['url'] = (change_log.code_review_url or
-                              change_log.commit_url)
+      cls[revision]['url'] = (
+          change_log.code_review_url or change_log.commit_url)
       cls[revision]['author'] = change_log.author.email
   return cls
 
@@ -82,3 +85,38 @@ def GetCLKeysFromCLInfo(cl_info):
     cl_keys[revision] = CLKey(
         repo_name=info['repo_name'], revision=info['revision'])
   return cl_keys
+
+
+def CountRecentCommits(repo_url,
+                       ref='refs/heads/master',
+                       time_period=datetime.timedelta(hours=1)):
+  """Gets the number of commits that landed recently.
+
+  By default, this function will count the commits landed in the master branch
+  during last hour, but can be used to count the commits landed in any ref in
+  the most recent period of any arbitrary size.
+
+  Args:
+    repo_url (str): Url to the repo.
+    ref (str): ref to count commits on.
+    time_period (datetime.delta): window of time in which to count commits.
+
+  Returns:
+    An integer representing the number of commits that landed in the last
+    hour.
+  """
+  count = 0
+  cutoff = time_util.GetUTCNow() - time_period
+  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+  next_rev = ref
+  while next_rev:
+    # 100 is a reasonable size for a page.
+    # This assumes that GetNChangeLogs returns changelogs in newer to older
+    # order.
+    logs, next_rev = git_repo.GetNChangeLogs(next_rev, 100)
+    for log in logs:
+      if log.committer.time >= cutoff:
+        count += 1
+      else:
+        return count
+  return count

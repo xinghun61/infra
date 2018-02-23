@@ -26,3 +26,7 @@ class GitRepository(object):  # pragma: no cover
   def GetSource(self, path, revision):
     """Returns source code of the file at ``path`` of the given revision."""
     raise NotImplemented()
+
+  def GetNChangeLogs(self, revision, n):
+    """Returns the changelogs for revision and its n - 1 immediate ancestors."""
+    raise NotImplemented()

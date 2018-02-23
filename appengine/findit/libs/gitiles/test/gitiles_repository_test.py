@@ -434,6 +434,37 @@ class GitRepositoryTest(TestCase):
 
     self.assertEqual(len(changelogs), 2)
 
+  def testGetNChangeLogs(self):
+    result = {'log': [], 'next': 'next_rev'}
+    log = json.loads(COMMIT_LOG[5:])
+    for _ in range(10):
+      result['log'].append(log.copy())
+
+    def _MockSendRequestForJsonResponse(_self, _url, **_kwargs):
+      return result
+
+    self.mock(gitiles_repository.GitilesRepository,
+              '_SendRequestForJsonResponse', _MockSendRequestForJsonResponse)
+
+    # If gitiles returns more than we request (unlikely), truncate the result.
+    changelogs, _ = self.git_repo.GetNChangeLogs('0', 2)
+    self.assertEqual(len(changelogs), 2)
+
+    # If gitiles returns fewer than we request, return just that page.
+    changelogs, next_rev = self.git_repo.GetNChangeLogs('0', 11)
+    self.assertEqual(len(changelogs), 10)
+    self.assertEqual('next_rev', next_rev)
+
+    # If the revision has no ancestor.
+    result['log'] = result['log'][:1]
+    changelogs, _ = self.git_repo.GetNChangeLogs('0', 10)
+    self.assertEqual(len(changelogs), 1)
+
+    # If the log is empty.
+    result['log'] = []
+    changelogs, _ = self.git_repo.GetNChangeLogs('0', 10)
+    self.assertEqual(len(changelogs), 0)
+
   def testGetWrappedGitRepositoryClass(self):
     repo = gitiles_repository.GitilesRepository(self.http_client_for_git,
                                                 'http://repo_url')
@@ -443,9 +474,11 @@ class GitRepositoryTest(TestCase):
     """Tests ``_GetChangeLogUrl`` for start_revision and end_revision."""
     repo = gitiles_repository.GitilesRepository(self.http_client_for_git,
                                                 'http://repo_url')
-    self.assertEqual(repo._GetChangeLogUrl('rev2', 'rev5'),
-                     'http://repo_url/+log/rev2..rev5')
-    self.assertEqual(repo._GetChangeLogUrl(None, 'rev5'),
-                     'http://repo_url/+log/rev5')
-    self.assertEqual(repo._GetChangeLogUrl('rev2', None),
-                     'http://repo_url/+log/rev2..master')
+    self.assertEqual(
+        repo._GetChangeLogUrl('rev2', 'rev5'),
+        'http://repo_url/+log/rev2..rev5')
+    self.assertEqual(
+        repo._GetChangeLogUrl(None, 'rev5'), 'http://repo_url/+log/rev5')
+    self.assertEqual(
+        repo._GetChangeLogUrl('rev2', None),
+        'http://repo_url/+log/rev2..master')

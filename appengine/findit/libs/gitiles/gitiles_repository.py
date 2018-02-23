@@ -102,8 +102,7 @@ class GitilesRepository(GitRepository):
     return datetime.strptime(datetime_string, date_format)
 
   def _ContributorFromDict(self, data):
-    return Contributor(data['name'],
-                       commit_util.NormalizeEmail(data['email']),
+    return Contributor(data['name'], commit_util.NormalizeEmail(data['email']),
                        self._GetDateTimeFromString(data['time']))
 
   def _ParseChangeLogFromLogData(self, data):
@@ -115,8 +114,8 @@ class GitilesRepository(GitRepository):
       if not diff.IsKnownChangeType(change_type):
         raise Exception('Unknown change type "%s"' % change_type)
       touched_files.append(
-          FileChangeInfo(change_type, file_diff['old_path'], file_diff[
-              'new_path']))
+          FileChangeInfo(change_type, file_diff['old_path'],
+                         file_diff['new_path']))
 
     reverted_revision = commit_util.GetRevertedRevision(data['message'])
     url = '%s/+/%s' % (self.repo_url, data['commit'])
@@ -213,8 +212,8 @@ class GitilesRepository(GitRepository):
                                                 '%Y-%m-%d %H:%M:%S')
 
       blame.AddRegion(
-          Region(region['start'], region['count'], region['commit'], region[
-              'author']['name'],
+          Region(region['start'], region['count'], region['commit'],
+                 region['author']['name'],
                  commit_util.NormalizeEmail(region['author']['email']),
                  author_time))
 
@@ -246,8 +245,10 @@ class GitilesRepository(GitRepository):
     while True:
       url = self._GetChangeLogUrl(start_revision, next_end_revision)
       data = self._SendRequestForJsonResponse(
-          url, params={'n': str(n),
-                       'name-status': '1'})
+          url, params={
+              'n': str(n),
+              'name-status': '1'
+          })
       assert data is not None, '_SendRequestForJsonResponse failed unexpectedly'
 
       for log in data['log']:
@@ -259,3 +260,19 @@ class GitilesRepository(GitRepository):
         break
 
     return changelogs
+
+  def GetNChangeLogs(self, revision, n):
+    """Gets a list of at most N ChangeLogs ending at the given revision."""
+    result = []
+    url = self._GetChangeLogUrl(None, revision)
+    data = self._SendRequestForJsonResponse(
+        url, params={
+            'n': str(n),
+            'name-status': '1'
+        })
+    assert data is not None, '_SendRequestForJsonResponse failed unexpectedly'
+
+    for log in data['log'][:n]:
+      result.append(self._ParseChangeLogFromLogData(log))
+
+    return result, data.get('next')

@@ -3,14 +3,17 @@
 # found in the LICENSE file.
 
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
+from libs import time_util
 from services import git
 from services.parameters import CompileFailureInfo
 from waterfall.test import wf_testcase
+
+SOME_TIME = datetime(2018, 1, 1, 1)
 
 
 class GitTest(wf_testcase.WaterfallTestCase):
@@ -179,6 +182,33 @@ class GitTest(wf_testcase.WaterfallTestCase):
     mock_change_logs['rev2'] = MockedChangeLog(123, 'url')
     return mock_change_logs.get(revision)
 
+  def _GenerateGetNChangeLogsMock(self, delta):
+    """Makes a mock that returns n changelogs `delta` time apart."""
+
+    def _inner(_self, _revision, n):
+
+      class Committer(namedtuple('Author', ['name', 'email', 'time'])):
+        pass
+
+      class MockedChangeLog(object):
+
+        def __init__(self, commit_position, t):
+          self.commit_position = commit_position
+          self.change_id = str(commit_position)
+          self.committer = Committer('committer', 'committer@abc.com', t)
+
+      result = []
+
+      end_commit_position = 100
+      end_datetime = SOME_TIME
+      for i in range(n):
+        result.append(
+            MockedChangeLog(end_commit_position - i,
+                            end_datetime - (i * delta)))
+      return result, 'next_rev'
+
+    return _inner
+
   def testGetCulpritInfo(self):
     failed_revisions = ['rev1', 'rev2']
 
@@ -226,3 +256,27 @@ class GitTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_cl_keys,
                      git.GetCLKeysFromCLInfo(cl_info).ToSerializable())
+
+  def testCountRecentCommitsFew(self):
+    self.mock(
+        CachedGitilesRepository,
+        'GetNChangeLogs',
+        self._GenerateGetNChangeLogsMock(timedelta(minutes=25)))
+    self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
+    self.assertEqual(3, git.CountRecentCommits('url'))
+
+  def testCountRecentCommitsMany(self):
+    self.mock(
+        CachedGitilesRepository,
+        'GetNChangeLogs',
+        self._GenerateGetNChangeLogsMock(timedelta(minutes=1)))
+    self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
+    self.assertTrue(10 <= git.CountRecentCommits('url'))
+
+  def testCountRecentCommitsMany(self):
+    self.mock(
+        CachedGitilesRepository,
+        'GetNChangeLogs',
+        self._GenerateGetNChangeLogsMock(timedelta(minutes=10)))
+    self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
+    self.assertEqual(7, git.CountRecentCommits('url'))
