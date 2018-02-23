@@ -5,14 +5,24 @@
 
 """A servlet for project owners to create a new template"""
 
+import collections
 import logging
+import time
 
 from third_party import ezt
 
+from framework import authdata
+from framework import framework_bizobj
+from framework import framework_helpers
 from framework import servlet
 from framework import urls
 from framework import permissions
+from tracker import field_helpers
+from tracker import template_helpers
+from tracker import tracker_bizobj
+from tracker import tracker_helpers
 from tracker import tracker_views
+from services import user_svc
 
 
 class TemplateCreate(servlet.Servlet):
@@ -49,6 +59,17 @@ class TemplateCreate(servlet.Servlet):
       for fd in config.field_defs if not fd.is_deleted]
     return {
         'admin_tab_mode': self._PROCESS_SUBTAB,
+        'initial_members_only': ezt.boolean(False),
+        'initial_name': '',
+        'initial_summary': '',
+        'initial_must_edit_summary': ezt.boolean(False),
+        'initial_description': '',
+        'initial_status': '',
+        'initial_owner': '',
+        'initial_owner_defaults_to_member': ezt.boolean(False),
+        'initial_components': '',
+        'initial_component_required': ezt.boolean(False),
+        'initial_admins': '',
         'fields': field_views,
         }
 
@@ -63,6 +84,75 @@ class TemplateCreate(servlet.Servlet):
       String URL to redirect the user to, or None if response was already sent.
     """
 
-    #TODO(jojwang): call template_helpers.ParseTemplateRequest
+    admin_ids, admin_str = tracker_helpers.ParseAdminUsers(
+        mr.cnxn, post_data.get('admin_names', ''), self.services.user)
 
-    return urls.ADMIN_TEMPLATES
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    parsed = template_helpers.ParseTemplateRequest(post_data, config)
+
+    owner_id = 0
+    if parsed.owner_str:
+      try:
+        user_id = self.services.user.LookupUserID(mr.cnxn, parsed.owner_str)
+        auth = authdata.AuthData.FromUserID(mr.cnxn, user_id, self.services)
+        if framework_bizobj.UserIsInProject(mr.project, auth.effective_ids):
+          owner_id = user_id
+        else:
+          mr.errors.owner = 'User is not a member of this project.'
+      except user_svc.NoSuchUserException:
+        mr.errors.owner = 'Owner not found.'
+
+    component_ids = tracker_helpers.LookupComponentIDs(
+        parsed.component_paths, config, mr.errors)
+
+    field_values = field_helpers.ParseFieldValues(
+        mr.cnxn, self.services.user, parsed.field_val_strs, config)
+    for fv in field_values:
+      logging.info('field_value is %r: %r',
+                   fv.field_id, tracker_bizobj.GetFieldValue(fv, {}))
+
+    if mr.errors.AnyErrors():
+      fd_id_to_fvs = collections.defaultdict(list)
+      for fv in field_values:
+        fd_id_to_fvs[fv.field_id].append(fv)
+
+      field_views = [
+          tracker_views.MakeFieldValueView(fd, config, [], [],
+                                           fd_id_to_fvs[fd.field_id], {})
+          for fd in config.field_defs if not fd.is_deleted]
+
+      self.PleaseCorrect(
+          mr,
+          initial_members_only=ezt.boolean(parsed.members_only),
+          initial_name=parsed.name,
+          initial_summary=parsed.summary,
+          initial_must_edit_summary=ezt.boolean(parsed.summary_must_be_edited),
+          initial_description=parsed.content,
+          initial_status=parsed.status,
+          initial_owner=parsed.owner_str,
+          initial_owner_defaults_to_member=ezt.boolean(
+              parsed.owner_defaults_to_member),
+          initial_components=','.join(parsed.component_paths),
+          initial_component_required=ezt.boolean(parsed.component_required),
+          initial_admins=admin_str,
+          fields=field_views
+      )
+      return
+
+    templates = config.templates
+    templates.append(tracker_bizobj.MakeIssueTemplate(
+        parsed.name, parsed.summary, parsed.status, owner_id, parsed.content,
+        parsed.labels, field_values, admin_ids, component_ids,
+        summary_must_be_edited=parsed.summary_must_be_edited,
+        owner_defaults_to_member=parsed.owner_defaults_to_member,
+        component_required=parsed.component_required,
+        members_only=parsed.members_only
+    ))
+
+    # TODO(jojwang): monorail:3537, implement services.config.CreateTemplate()
+
+    self.services.config.UpdateConfig(
+        mr.cnxn, mr.project, templates=templates)
+
+    return framework_helpers.FormatAbsoluteURL(
+        mr, urls.ADMIN_TEMPLATES, saved=1, ts=int(time.time()))

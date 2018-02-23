@@ -13,7 +13,7 @@
   <tr>
     <th>Members only:</th>
     <td>
-      <input type="checkbox" name="members_only">
+      <input type="checkbox" name="members_only" [if-any initial_members_only]checked[end]>
       <label for="members_only_checkbox">Only offer this template to project members</label>
     </td>
   </tr>
@@ -21,15 +21,15 @@
   <tr>
     <th>Name:</th>
     <td>
-      <input type="text" name="name">
+      <input type="text" name="name" value="[initial_name]">
     </td>
   </tr>
 
   <tr>
     <th>Summary:</th>
     <td>
-      <input type="text" name="summary" size="60" class=acob" value=""><br>
-      <input type="checkbox" name="summary_must_be_edited">
+      <input type="text" name="summary" size="60" class=acob" value="[initial_summary]"><br>
+      <input type="checkbox" name="summary_must_be_edited" [if-any initial_must_edit_summary]checked[end]>
       <label for="summary_must_be_edited_checkbox">Users must edit issue summary before submitting</label>
     </td>
   </tr>
@@ -37,7 +37,7 @@
   <tr>
     <th>Description:</th>
     <td>
-       <textarea name="content" rows="12" cols="75" class="undef"></textarea>
+       <textarea name="content" rows="12" cols="75" class="undef">[initial_description]</textarea>
        [# Note: wrap="hard" has no effect on content_editor because we copy to a hidden field before submission.]
     </td>
   </tr>
@@ -45,7 +45,7 @@
   <tr>
     <th>Status:</th>
     <td>
-       <input type="text" name="status" size="12" class="acob" value=""
+       <input type="text" name="status" size="12" class="acob" value="[initial_status]"
               autocomplete="off">
     </td>
   </tr>
@@ -53,10 +53,13 @@
   <tr>
     <th>Owner:</th>
     <td>
-       <input type="text" name="owner" size="25" class="saveTemplate acob" value=""
+       <input type="text" name="owner" size="25" class="saveTemplate acob" value="[initial_owner]"
               autocomplete="off">
+       <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
+          [if-any errors.owner][errors.owner][end]
+       </span>
        <span>
-        <input type="checkbox" name="owner_defaults_to_member" style="margin-left:2em">
+        <input type="checkbox" name="owner_defaults_to_member" style="margin-left:2em" [if-any initial_owner_defaults_to_member]checked[end]>
         <label for="owner_defaults_to_member_checkbox">Default to member who is entering the issue</label>
        </span>
     </td>
@@ -66,10 +69,13 @@
     <th>Components:</th>
     <td>
        <input type="text" name="components" size="75" class="acob" value=""
-              autocomplete="off">
+              autocomplete="off" value="[initial_components]">
+      <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
+          [if-any errors.components][errors.components][end]
+      </span>
        <br/>
        <span>
-        <input type="checkbox" name="component_required">
+        <input type="checkbox" name="component_required" [if-any initial_component_required]checked[end]>
         <label for="component_required_checkbox">Require at least one component</label>
        </span>
     </td>
@@ -98,7 +104,7 @@
    <tr>
      <th>Template admins:</th>
      <td>
-       <input type="text" name="admin_names" size="75" class="acob" value=""
+       <input type="text" name="admin_names" size="75" class="acob" value="[initial_admins]"
               autocomplete="off">
      </td>
    </tr>
@@ -111,6 +117,7 @@
     </td>
   </tr>
 
+[# TODO(jojwang): show initial field values, labels, add js for autocomplete, add function to cancle_btn]
 
 </table>
 </form>

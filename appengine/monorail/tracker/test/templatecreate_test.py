@@ -5,9 +5,11 @@
 
 """Unit test for Template creation servlet."""
 
+import mox
 import unittest
-
 import settings
+
+from third_party import ezt
 
 from framework import permissions
 from services import service_manager
@@ -24,12 +26,20 @@ class TemplateCreateTest(unittest.TestCase):
 
   def setUp(self):
     self.cnxn = 'fake cnxn'
-    self.mr = testing_helpers.MakeMonorailRequest()
     self.services = service_manager.Services(project=fake.ProjectService(),
                                              config=fake.ConfigService(),
                                              user=fake.UserService())
     self.servlet = templatecreate.TemplateCreate('req', 'res',
                                                services=self.services)
+    self.project = self.services.project.TestAddProject('proj')
+    self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.mr = testing_helpers.MakeMonorailRequest(
+        project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
+    self.mox = mox.Mox()
+
+  def tearDown(self):
+    self.mox.UnsetStubs()
+    self.mox.ResetAll()
 
   def testAssertBasePermission(self):
     # Anon users can never do it
@@ -63,13 +73,88 @@ class TemplateCreateTest(unittest.TestCase):
         self.mr.cnxn, self.mr.project_id)
     config.field_defs.append(fd)
     self.services.config.StoreConfig(self.cnxn, config)
+    fv = tracker_views.MakeFieldValueView(fd, config, [], [], [], {})
+
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual(self.servlet.PROCESS_TAB_TEMPLATES,
                      page_data['admin_tab_mode'])
-    fv = tracker_views.MakeFieldValueView(fd, config, [], [], [], {})
     self.assertEqual(page_data['fields'][0].field_name, fv.field_name)
+    self.assertEqual(page_data['initial_members_only'], ezt.boolean(False))
+    self.assertEqual(page_data['initial_must_edit_summary'], ezt.boolean(False))
+    self.assertEqual(
+        page_data['initial_owner_defaults_to_member'], ezt.boolean(False))
+    self.assertEqual(
+        page_data['initial_component_required'], ezt.boolean(False))
 
-  def testProcessFormData(self):
-    post_data = fake.PostData()
+  def testProcessFormData_Reject(self):
+    post_data = fake.PostData(
+      name=['sometemplate'],
+      members_only=['yes'],
+      summary=['TLDR'],
+      summary_must_be_edited=['yes'],
+      content=['HEY WHY'],
+      status=['Accepted'],
+      owner=['someone@world.com'],
+      label=['label-One', 'label-Two'],
+      field_value_1=['NO'],
+      field_value_2=['MOOD'],
+      components=['hey, hey2,he3'],
+      component_required=['yes'],
+      owner_defaults_to_memeber=['no']
+    )
+
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        self.mr,
+        initial_members_only=ezt.boolean(True),
+        initial_name='sometemplate',
+        initial_summary='TLDR',
+        initial_must_edit_summary=ezt.boolean(True),
+        initial_description='HEY WHY',
+        initial_status='Accepted',
+        initial_owner='someone@world.com',
+        initial_owner_defaults_to_member=ezt.boolean(False),
+        initial_components='hey,hey2,he3',
+        initial_component_required=ezt.boolean(True),
+        initial_admins='',
+        fields=mox.IgnoreArg()
+        )
+    self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(self.mr, post_data)
-    self.assertTrue('/adminTemplates' in url)
+    self.mox.VerifyAll()
+    self.assertEqual('Owner not found.', self.mr.errors.owner)
+    self.assertEqual('Unknown component he3', self.mr.errors.components)
+    self.assertIsNone(url)
+
+  def testProcessFormData_Accept(self):
+    fd_1 = tracker_bizobj.MakeFieldDef(
+        1, self.mr.project_id, 'UXReview', tracker_pb2.FieldTypes.STR_TYPE,
+        None, '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'First field', False)
+    config = self.services.config.GetProjectConfig(
+        self.mr.cnxn, self.mr.project_id)
+    config.field_defs.append(fd_1)
+    self.services.config.StoreConfig(self.cnxn, config)
+    post_data = fake.PostData(
+        name=['sometemplate'],
+        members_only=['yes'],
+        summary=['TLDR'],
+        summary_must_be_edited=['yes'],
+        content=['HEY WHY'],
+        status=['Accepted'],
+        label=['label-One', 'label-Two'],
+        field_value_1=['NO'],
+        component_required=['yes'],
+        owner_defaults_to_memeber=['no'])
+
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+
+    template = None
+    for tmpl in config.templates:
+      if tmpl.name == 'sometemplate':
+        template = tmpl
+    self.assertEqual(template.summary, 'TLDR')
+    self.assertEqual(template.content, 'HEY WHY')
+    self.assertItemsEqual(template.labels, ['label-One', 'label-Two'])
+    self.assertItemsEqual(template.field_values[0].str_value, 'NO')
+    self.assertTrue('/adminTemplates?saved=1&ts' in url)
