@@ -27,6 +27,7 @@ from services import build_failure_analysis
 from services import git
 from services import swarmbot_util
 from services import try_job as try_job_service
+from services.parameters import CompileTryJobResult
 from services.parameters import RunCompileTryJobParameters
 from waterfall import build_util
 from waterfall import suspected_cl_util
@@ -229,9 +230,8 @@ def CompileFailureIsFlaky(result):
     return False
 
   try_job_result = result.report.result
-  sub_ranges = (
-      result.report.metadata.get('sub_ranges') or []
-      if result.report.metadata else [])
+  sub_ranges = (result.report.metadata.get('sub_ranges') or []
+                if result.report.metadata else [])
 
   if (not try_job_result or  # There is some issue with try job, cannot decide.
       not sub_ranges or  # Missing range information.
@@ -344,7 +344,7 @@ def GetBuildProperties(pipeline_input):
   return properties
 
 
-def ScheduleCompileTryJob(parameters, notification_id):
+def ScheduleCompileTryJob(parameters, runner_id):
   master_name, builder_name, build_number = (parameters.build_key.GetParts())
   properties = GetBuildProperties(parameters)
   additional_parameters = {'compile_targets': parameters.compile_targets}
@@ -353,10 +353,17 @@ def ScheduleCompileTryJob(parameters, notification_id):
                                           parameters.force_buildbot))
 
   build_id, error = try_job_service.TriggerTryJob(
-      master_name, builder_name, tryserver_mastername, tryserver_buildername,
-      properties, additional_parameters,
+      master_name,
+      builder_name,
+      tryserver_mastername,
+      tryserver_buildername,
+      properties,
+      additional_parameters,
       failure_type.GetDescriptionForFailureType(failure_type.COMPILE),
-      parameters.cache_name, parameters.dimensions, notification_id)
+      parameters.cache_name,
+      parameters.dimensions,
+      runner_id,
+      use_new_pubsub=True)
 
   if error:
     raise exceptions.RetryException(error.reason, error.message)
@@ -375,9 +382,26 @@ def ScheduleCompileTryJob(parameters, notification_id):
       bool(parameters.compile_targets),
       bool(parameters.suspected_revisions),
       failure_type.COMPILE,
-      runner_id=notification_id)
+      runner_id=runner_id)
 
   return build_id
+
+
+def OnTryJobStateChanged(try_job_id, build_json):
+  """Updates TryJobData entity with new build state.
+
+  Args:
+    try_job_id (str): The build id of the try job.
+    build_json (dict): The up-to-date build info.
+
+  Returns:
+    CompileTryJobResult if the try job has completed; otherwise None.
+  """
+  result = try_job_service.OnTryJobStateChanged(
+      try_job_id, failure_type.COMPILE, build_json)
+  if result is not None:
+    result = CompileTryJobResult.FromSerializable(result)
+  return result
 
 
 def IdentifyCompileTryJobCulprit(parameters):

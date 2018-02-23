@@ -58,7 +58,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'status': 'COMPLETED',
         'completed_ts': '1454367574000000',
         'created_ts': '1454367570000000',
-        'updated_ts': '1454367574000000',
+        'started_ts': '1454367571000000',
     }
     report = {
         'result': {
@@ -379,7 +379,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'status': 'COMPLETED',
         'completed_ts': '1454367574000000',
         'created_ts': '1454367570000000',
-        'updated_ts': '1454367574000000',
+        'started_ts': '1454367571000000',
     }
     mock_buildbucket.GetTryJobs.return_value = [
         (None, buildbucket_client.BuildbucketBuild(build_response))

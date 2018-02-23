@@ -21,6 +21,7 @@ import json
 import logging
 import time
 
+from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
 from common import constants
@@ -32,6 +33,8 @@ from common.waterfall import failure_type
 from common.waterfall import pubsub_callback
 from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
+from common.waterfall.buildbucket_client import PubSubCallback
+from gae_libs import token
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
@@ -46,6 +49,7 @@ from model.wf_try_job_data import WfTryJobData
 from services import monitoring
 from services import swarmbot_util
 from services import test_results
+from services.parameters import CompileTryJobResult
 from waterfall import buildbot
 from waterfall import build_util
 from waterfall import waterfall_config
@@ -300,9 +304,52 @@ def GetBuildProperties(pipeline_input, try_job_type):
   return properties
 
 
-def TriggerTryJob(master_name, builder_name, tryserver_mastername,
-                  tryserver_buildername, properties, additional_parameters,
-                  try_job_type, cache_name, dimensions, notification_id):
+def CreatePubSubCallback(runner_id, use_new_pubsub):
+  """Returns the PubSubCallback instance for the given runner id.
+
+  Args:
+    runner_id (str): The identifier of the runner to trigger a try job.
+    use_new_pubsub (bool): Set as False to use the legacy PubSub topic.
+
+  Returns:
+    A PubSubCallback instance to be used in the try job.
+  """
+  if not use_new_pubsub:
+    return pubsub_callback.MakeTryJobPubsubCallback(runner_id)
+  topic = 'projects/%s/topics/build-change' % app_identity.get_application_id()
+  auth_token = token.GenerateAuthToken('pubsub', 'buildbucket', runner_id)
+  user_data = {'runner_id': runner_id}
+  return PubSubCallback(topic, auth_token, user_data)
+
+
+def TriggerTryJob(master_name,
+                  builder_name,
+                  tryserver_mastername,
+                  tryserver_buildername,
+                  properties,
+                  additional_parameters,
+                  try_job_type,
+                  cache_name,
+                  dimensions,
+                  runner_id,
+                  use_new_pubsub=False):
+  """Triggers a try job through Buildbucket.
+
+  Args:
+    master_name (str): Name of the target master on Waterfall.
+    builder_name (str): Name of the target builder/tester on Waterfall.
+    tryserver_mastername (str): Name of the tryserver master for the try job.
+    tryserver_buildername (str): Name of the tryserver builder for the try job.
+    properties (dict): A key-value map of build properties for the try job.
+    additional_parameters (dict): Additional parameters for the try job. For
+      example, the failed target list or failed tests.
+    try_job_type (int): Type of the try job, either compile or test.
+    cache_name (str): The name of the build cache.
+    dimensions (dict): The bot dimensions used to allocate a Swarming bot.
+    runner_id (str): The id of the runner to trigger this try job. One runner
+      could trigger only one try job.
+    use_new_pubsub (bool): Set as true to use the new PubSub topic and callback.
+  """
 
   # Certain parts of the recipe depend on the 'mastername' property being set
   # to values like `tryserver.chromium.linux` etc., these values should
@@ -322,7 +369,7 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
   try_job = buildbucket_client.TryJob(
       tryserver_mastername, tryserver_buildername, properties, [],
       additional_parameters, cache_name, dimensions,
-      pubsub_callback.MakeTryJobPubsubCallback(notification_id))
+      CreatePubSubCallback(runner_id, use_new_pubsub))
   # This is a no-op if the tryjob is not on swarmbucket.
   swarmbot_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
   error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
@@ -380,6 +427,7 @@ def UpdateTryJobResult(result_to_update, new_result, try_job_id):
     # schedule_try_job_pipeline, so this branch shouldn't be reached.
     result_to_update = result_to_update or []
     result_to_update.append(new_result)
+  return result_to_update
 
 
 def PrepareParametersToScheduleTryJob(master_name,
@@ -483,32 +531,19 @@ def UpdateTryJobMetadata(try_job_data,
                          buildbucket_error=None,
                          timed_out=None,
                          report=None,
-                         already_set_started=True,
                          callback_url=None,
                          callback_target=None):
   buildbucket_response = {}
 
   if buildbucket_build:
-    try_job_data.request_time = (
-        try_job_data.request_time or
-        time_util.MicrosecondsToDatetime(buildbucket_build.request_time))
-
-    # If start_time hasn't been set, use request_time.
-    start_time = try_job_data.request_time
-    if (buildbucket_build.status == BuildbucketBuild.STARTED and
-        not already_set_started):
-      # It is possible a fast build goes from
-      # 'SCHEDULED' to 'COMPLETED' between queries, so start_time may be
-      # unavailable.
-      start_time = time_util.MicrosecondsToDatetime(
-          buildbucket_build.updated_time)
-
-    try_job_data.start_time = try_job_data.start_time or start_time
-
+    try_job_data.request_time = time_util.MicrosecondsToDatetime(
+        buildbucket_build.request_time)
+    try_job_data.start_time = time_util.MicrosecondsToDatetime(
+        buildbucket_build.start_time)
     try_job_data.end_time = time_util.MicrosecondsToDatetime(
         buildbucket_build.end_time)
 
-    if try_job_type != failure_type.FLAKY_TEST:  # pragma: no branch
+    if (try_job_type is not None and try_job_type != failure_type.FLAKY_TEST):
       if report:
         try_job_data.number_of_commits_analyzed = len(report.get('result', {}))
         try_job_data.regression_range_size = report.get(
@@ -538,7 +573,7 @@ def UpdateTryJobMetadata(try_job_data,
   try_job_data.put()
 
 
-def _UpdateLastBuildbucketResponse(try_job_data, build):
+def _UpdateLastBuildbucketResponse(try_job_data, build):  # Deprecated.
   if not build or not build.response:
     return
   try_job_data.last_buildbucket_response = build.response
@@ -608,20 +643,24 @@ def _UpdateTryJobEntity(urlsafe_try_job_key,
   try_job = ndb.Key(urlsafe=urlsafe_try_job_key).get()
 
   if try_job_type == failure_type.FLAKY_TEST:
-    result_to_update = try_job.flake_results
+    try_job.flake_results = UpdateTryJobResult(try_job.flake_results, result,
+                                               try_job_id)
+    result_to_return = try_job.flake_results
   elif try_job_type == failure_type.COMPILE:
-    result_to_update = try_job.compile_results
+    try_job.compile_results = UpdateTryJobResult(try_job.compile_results,
+                                                 result, try_job_id)
+    result_to_return = try_job.compile_results
   else:
-    result_to_update = try_job.test_results
-
-  UpdateTryJobResult(result_to_update, result, try_job_id)
+    try_job.test_results = UpdateTryJobResult(try_job.test_results, result,
+                                              try_job_id)
+    result_to_return = try_job.test_results
 
   if status == BuildbucketBuild.STARTED:
     try_job.status = analysis_status.RUNNING
 
   try_job.put()
 
-  return result_to_update
+  return result_to_return
 
 
 def GetOrCreateTryJobData(try_job_type, try_job_id, urlsafe_try_job_key):
@@ -651,7 +690,6 @@ def InitializeParams(try_job_id, try_job_type, urlsafe_try_job_key):
       'allowed_response_error_times')
 
   deadline = time.time() + timeout_hours * 60 * 60
-  already_set_started = False
   backoff_time = default_pipeline_wait_seconds
   error_count = 0
 
@@ -660,7 +698,6 @@ def InitializeParams(try_job_id, try_job_type, urlsafe_try_job_key):
       'try_job_type': try_job_type,
       'urlsafe_try_job_key': urlsafe_try_job_key,
       'deadline': deadline,
-      'already_set_started': already_set_started,
       'error_count': error_count,
       'max_error_times': max_error_times,
       'default_pipeline_wait_seconds': default_pipeline_wait_seconds,
@@ -674,6 +711,53 @@ def _GetUpdatedParams(params, **kwargs):
   for key, value in kwargs.iteritems():
     new_params[key] = value
   return new_params
+
+
+def OnTryJobStateChanged(try_job_id, job_type, build_json):
+  """Updates TryJobData entity with new build state.
+
+  Args:
+    try_job_id (str): The build id of the try job.
+    job_type (int): The type of the try job, either TEST or COMPILE.
+    build_json (dict): The up-to-date build info.
+
+  Returns:
+    A dict representing the original report from the try job if it is completed,
+    otherwise None.
+  """
+  # TODO(lijeffrey): set try job type for flaky test in FlakeTryJobData.
+  assert job_type != failure_type.FLAKY_TEST, 'Flaky test job not supported yet'
+
+  build = BuildbucketBuild(build_json)
+  try_job_data = WfTryJobData.Get(try_job_id)
+  assert try_job_data, 'TryJobData was not created unexpectedly.'
+
+  parameters = {
+      'try_job_id':
+          try_job_id,
+      'try_job_type':
+          failure_type.GetFailureTypeForDescription(try_job_data.try_job_type),
+      'urlsafe_try_job_key':
+          try_job_data.try_job_key.urlsafe(),
+  }
+  if build.status == BuildbucketBuild.COMPLETED:
+    return OnTryJobCompleted(parameters, try_job_data, build, error=None)
+  elif build.status == BuildbucketBuild.STARTED:
+    OnTryJobRunning(parameters, try_job_data, build, error=None)
+  else:
+    UpdateTryJobMetadata(try_job_data, buildbucket_build=build)
+
+
+def OnTryJobTimeout(try_job_id, job_type):
+  """Updates TryJobData entity when try job doesn't complete in time."""
+  # TODO(lijeffrey): set try job type for flaky test in FlakeTryJobData.
+  assert job_type != failure_type.FLAKY_TEST, 'Flaky test job not supported yet'
+
+  try_job_data = WfTryJobData.Get(try_job_id)
+  UpdateTryJobMetadata(
+      try_job_data,
+      failure_type.GetFailureTypeForDescription(try_job_data.try_job_type),
+      timed_out=True)
 
 
 def OnGetTryJobError(params, try_job_data, build, error):
@@ -718,30 +802,17 @@ def OnTryJobCompleted(params, try_job_data, build, error):
 def OnTryJobRunning(params, try_job_data, build, error):
   try_job_id = params['try_job_id']
   try_job_type = params['try_job_type']
-  if (not params['already_set_started'] and
-      build.status == BuildbucketBuild.STARTED):
-    # It is possible this branch is skipped if a fast build goes from
-    # 'SCHEDULED' to 'COMPLETED' between queries.
-    _UpdateTryJobEntity(params['urlsafe_try_job_key'], try_job_type, try_job_id,
-                        build.url, BuildbucketBuild.STARTED)
+  _UpdateTryJobEntity(params['urlsafe_try_job_key'], try_job_type, try_job_id,
+                      build.url, BuildbucketBuild.STARTED)
 
-    # Update as much try job metadata as soon as possible to avoid data
-    # loss in case of errors.
-    UpdateTryJobMetadata(
-        try_job_data,
-        try_job_type,
-        build,
-        error,
-        False,
-        None,
-        already_set_started=False)
+  # Update as much try job metadata as soon as possible to avoid data
+  # loss in case of errors.
+  UpdateTryJobMetadata(try_job_data, try_job_type, build, error, False, None)
 
-    return _GetUpdatedParams(
-        params,
-        error_count=0,
-        backoff_time=params['default_pipeline_wait_seconds'],
-        already_set_started=True)
-  return None
+  return _GetUpdatedParams(
+      params,
+      error_count=0,
+      backoff_time=params.get('default_pipeline_wait_seconds'))
 
 
 def GetCurrentTryJobID(urlsafe_try_job_key, runner_id):

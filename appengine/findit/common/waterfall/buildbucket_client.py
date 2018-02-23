@@ -74,15 +74,16 @@ class TryJob(
   Tag for "user_agent" should not be set, as it will be added automatically.
   """
 
-  def __new__(cls,  # This is to make the last 3 tuple members optional.
-              master_name,
-              builder_name,
-              properties,
-              tags,
-              additional_build_parameters,
-              cache_name=None,
-              dimensions=None,
-              pubsub_callback=None):
+  def __new__(
+      cls,  # This is to make the last 3 tuple members optional.
+      master_name,
+      builder_name,
+      properties,
+      tags,
+      additional_build_parameters,
+      cache_name=None,
+      dimensions=None,
+      pubsub_callback=None):
     return super(cls, TryJob).__new__(
         cls, master_name, builder_name, properties, tags,
         additional_build_parameters, cache_name, dimensions, pubsub_callback)
@@ -152,7 +153,7 @@ class BuildbucketBuild(object):
     self.url = raw_json_data.get('url')
     self.status = raw_json_data.get('status')
     self.request_time = raw_json_data.get('created_ts')
-    self.updated_time = raw_json_data.get('updated_ts')
+    self.start_time = raw_json_data.get('started_ts')
     self.end_time = raw_json_data.get('completed_ts')
 
 

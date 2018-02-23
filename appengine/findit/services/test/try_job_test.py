@@ -9,6 +9,7 @@ import logging
 import mock
 import time
 
+from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
 from common import constants
@@ -17,6 +18,7 @@ from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall import try_job_error
+from gae_libs import token
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
@@ -226,9 +228,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                      analysis_2.failure_group_key)
 
   def testGetMatchingFailureGroups(self):
-    self.assertEqual([],
-                     try_job_service.GetMatchingFailureGroups(
-                         failure_type.UNKNOWN))
+    self.assertEqual(
+        [], try_job_service.GetMatchingFailureGroups(failure_type.UNKNOWN))
 
   @mock.patch.object(try_job_service, '_BlameListsIntersection')
   def testGetMatchingGroup(self, mock_fn):
@@ -487,6 +488,14 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(properties, expected_properties)
 
+  @mock.patch.object(app_identity, 'get_application_id', return_value='app-id')
+  @mock.patch.object(token, 'GenerateAuthToken', return_value='secret')
+  def testCreatePubSubCallbackForNewPubSubTopic(self, *_):
+    result = try_job_service.CreatePubSubCallback('id', True)
+    self.assertDictEqual({'runner_id': 'id'}, result.user_data)
+    self.assertEqual('secret', result.auth_token)
+    self.assertEqual('projects/app-id/topics/build-change', result.topic)
+
   @mock.patch.object(try_job_service, 'buildbucket_client')
   def testTriggerTryJob(self, mock_module):
     master_name = 'm'
@@ -665,25 +674,31 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                                          None, error, False)
     self.assertEqual(try_job_data.error, error_data)
 
-  def testUpdateTryJobMetadataUpdateStartTime(self):
+  def testUpdateTryJobMetadataUpdateTimestamps(self):
     try_job_id = '1'
     url = 'url'
     build_data = {
         'id': try_job_id,
         'url': url,
         'status': 'STARTED',
-        'completed_ts': '1454367574000000',
         'created_ts': '1454367570000000',
-        'updated_ts': '1454367571000000',
+        'started_ts': '1454367571000000',
+        'completed_ts': '1454367574000000',
     }
     build = buildbucket_client.BuildbucketBuild(build_data)
     try_job_data = WfTryJobData.Create('1')
     try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
 
-    try_job_service.UpdateTryJobMetadata(try_job_data, failure_type.COMPILE,
-                                         build, None, False, None, False)
+    try_job_service.UpdateTryJobMetadata(
+        try_job_data,
+        try_job_type=failure_type.COMPILE,
+        buildbucket_build=build)
+    self.assertEqual(try_job_data.request_time,
+                     time_util.MicrosecondsToDatetime('1454367570000000'))
     self.assertEqual(try_job_data.start_time,
                      time_util.MicrosecondsToDatetime('1454367571000000'))
+    self.assertEqual(try_job_data.end_time,
+                     time_util.MicrosecondsToDatetime('1454367574000000'))
 
   def testUpdateTryJobMetadata(self):
     try_job_id = '1'
@@ -816,8 +831,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
             })
     }
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False),
-        (None, None))
+        try_job_service._GetError(build_response, None, False, False), (None,
+                                                                        None))
     self.assertEqual(
         try_job_service._GetError({}, None, False, False), (None, None))
 
@@ -1075,7 +1090,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         'try_job_type': try_job_type,
         'urlsafe_try_job_key': urlsafe_try_job_key,
         'deadline': 1511302136.959618,
-        'already_set_started': False,
         'error_count': 0,
         'max_error_times': 5,
         'default_pipeline_wait_seconds': 5,
@@ -1093,6 +1107,104 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     new_params = try_job_service._GetUpdatedParams(parames, error_count=1)
     self.assertEqual(1, new_params['error_count'])
 
+  def testOnTryJobStateChangedWhenScheduled(self):
+    try_job = WfTryJob.Create('m', 'b', 1)
+    try_job.put()
+    try_job_data = WfTryJobData.Create('job-id')
+    try_job_data.try_job_key = ndb.Key(urlsafe=try_job.key.urlsafe())
+    try_job_data.try_job_type = failure_type.GetDescriptionForFailureType(
+        failure_type.COMPILE)
+    try_job_data.put()
+    build_json = {
+        'id': 'job-id',
+        'url': None,
+        'status': 'SCHEDULED',
+        'created_ts': '1454367570000000',
+    }
+    try_job_service.OnTryJobStateChanged('job-id', failure_type.COMPILE,
+                                         build_json)
+    try_job_data = WfTryJobData.Get('job-id')
+    self.assertIsInstance(try_job_data.request_time, datetime)
+
+  def testOnTryJobStateChangedWhenStarted(self):
+    try_job = WfTryJob.Create('m', 'b', 1)
+    try_job.put()
+    try_job_data = WfTryJobData.Create('job-id')
+    try_job_data.try_job_key = ndb.Key(urlsafe=try_job.key.urlsafe())
+    try_job_data.try_job_type = failure_type.GetDescriptionForFailureType(
+        failure_type.COMPILE)
+    try_job_data.put()
+    build_json = {
+        'id': 'job-id',
+        'url': 'https://build.url',
+        'status': 'STARTED',
+        'created_ts': '1454367570000000',
+        'started_ts': '1454367571000000',
+    }
+    try_job_service.OnTryJobStateChanged('job-id', failure_type.COMPILE,
+                                         build_json)
+    try_job_data = WfTryJobData.Get('job-id')
+    self.assertIsInstance(try_job_data.start_time, datetime)
+    try_job = WfTryJob.Get('m', 'b', 1)
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+    self.assertEqual('https://build.url', try_job.compile_results[-1]['url'])
+
+  @mock.patch.object(try_job_service, 'OnTryJobCompleted')
+  def testOnTryJobStateChangedWhenCompleted(self, mocked_OnTryJobCompleted):
+    mocked_job_result = {
+        'url': 'https://build.url',
+        'try_job_id': 'job-id',
+        'culprit': {
+            'a': 'b',
+        },
+        'report': {
+            'culprit': 'x',
+            'result': {
+                'r': 'v',
+            },
+            'last_checked_out_revision': 'r1',
+            'previously_checked_out_revision': 'r2',
+            'previously_cached_revision': 'r3',
+            'metadata': {
+                'm': 'v',
+            },
+        },
+    }
+    mocked_OnTryJobCompleted.return_value = mocked_job_result
+
+    try_job = WfTryJob.Create('m', 'b', 1)
+    try_job.put()
+
+    try_job_data = WfTryJobData.Create('job-id')
+    try_job_data.try_job_key = ndb.Key(urlsafe=try_job.key.urlsafe())
+    try_job_data.try_job_type = failure_type.GetDescriptionForFailureType(
+        failure_type.COMPILE)
+    try_job_data.put()
+
+    build_json = {
+        'id': 'job-id',
+        'url': 'https://build.url',
+        'status': 'COMPLETED',
+        'created_ts': '1454367570000000',
+        'started_ts': '1454367571000000',
+        'completed_ts': '1454367572000000',
+    }
+    returned_result = try_job_service.OnTryJobStateChanged(
+        'job-id', failure_type.COMPILE, build_json)
+    self.assertDictEqual(mocked_job_result, returned_result)
+
+  @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
+  def testOnTryJobTimeout(self, mocked_UpdateTryJobMetadata):
+    try_job_data = WfTryJobData.Create('job-id')
+    urlsafe_try_job_key = WfTryJob.Create('m', 'b', 1).key.urlsafe()
+    try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
+    try_job_data.try_job_type = failure_type.GetDescriptionForFailureType(
+        failure_type.COMPILE)
+    try_job_data.put()
+    try_job_service.OnTryJobTimeout('job-id', failure_type.COMPILE)
+    mocked_UpdateTryJobMetadata.assert_called_once_with(
+        try_job_data, failure_type.COMPILE, timed_out=True)
+
   def testOnGetTryJobError(self):
     params = {'error_count': 0, 'max_error_times': 5}
     expected_params = {'error_count': 1, 'max_error_times': 5}
@@ -1109,18 +1221,11 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                                            'message': 'message'
                                        }))
 
-  @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
-  def testOnTryJobRunningNothingToUpdate(self, mock_fn):
-    params = {'already_set_started': True, 'try_job_type': 1, 'try_job_id': '1'}
-    try_job_service.OnTryJobRunning(params, None, None, None)
-    self.assertFalse(mock_fn.called)
-
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   def testOnTryJobRunning(self, *_):
     try_job_id = '1'
     params = {
-        'already_set_started': False,
         'try_job_type': failure_type.COMPILE,
         'try_job_id': try_job_id,
         'default_pipeline_wait_seconds': 5,
@@ -1139,7 +1244,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     new_params = try_job_service.OnTryJobRunning(params, None, build, None)
 
     expected_params = {
-        'already_set_started': True,
         'try_job_type': failure_type.COMPILE,
         'try_job_id': try_job_id,
         'error_count': 0,
@@ -1157,7 +1261,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   def testOnTryJobCompletedBuildbot(self, mock_report, *_):
     try_job_id = '1'
     params = {
-        'already_set_started': False,
         'try_job_type': failure_type.COMPILE,
         'try_job_id': try_job_id,
         'default_pipeline_wait_seconds': 5,
@@ -1201,7 +1304,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   def testOnTryJobCompletedBuildbotNoReport(self, mock_log, *_):
     try_job_id = '1'
     params = {
-        'already_set_started': False,
         'try_job_type': failure_type.COMPILE,
         'try_job_id': try_job_id,
         'default_pipeline_wait_seconds': 5,
@@ -1238,7 +1340,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   def testOnTryJobCompletedSwarmingbot(self, mock_report, *_):
     try_job_id = '1'
     params = {
-        'already_set_started': False,
         'try_job_type': failure_type.COMPILE,
         'try_job_id': try_job_id,
         'default_pipeline_wait_seconds': 5,
@@ -1283,7 +1384,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   def testOnTryJobCompletedSwarmingbotNoReport(self, mock_fn, *_):
     try_job_id = '1'
     params = {
-        'already_set_started': False,
         'try_job_type': failure_type.COMPILE,
         'try_job_id': try_job_id,
         'default_pipeline_wait_seconds': 5,
@@ -1319,7 +1419,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   def testOnTryJobCompletedSwarmingbotException(self, mock_log, *_):
     try_job_id = '1'
     params = {
-        'already_set_started': False,
         'try_job_type': failure_type.COMPILE,
         'try_job_id': try_job_id,
         'default_pipeline_wait_seconds': 5,

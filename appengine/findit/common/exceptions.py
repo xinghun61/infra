@@ -22,5 +22,6 @@ class RetryException(Exception):
         reason (str): Error reason.
         message (str): Human-readable explanation of the reason.
     """
+    super(RetryException, self).__init__(message)
     self.error_reason = reason
     self.error_message = message

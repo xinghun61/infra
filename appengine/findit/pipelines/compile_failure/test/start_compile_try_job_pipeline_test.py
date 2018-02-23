@@ -10,6 +10,8 @@ from model.wf_try_job import WfTryJob
 from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
                                        as culprit_pipeline)
 from pipelines.compile_failure import start_compile_try_job_pipeline
+from pipelines.compile_failure.run_compile_try_job_pipeline import (
+    RunCompileTryJobPipeline)
 from pipelines.compile_failure.start_compile_try_job_pipeline import (
     StartCompileTryJobPipeline)
 from services import try_job as try_job_service
@@ -34,9 +36,10 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     result = pipeline.run('m', 'b', 1, heuristic_result, False, False)
     self.assertEqual(list(result), [])
 
+  @mock.patch.object(RunCompileTryJobPipeline, 'TimeoutSeconds', return_value=0)
   @mock.patch.object(compile_try_job, 'GetParametersToScheduleCompileTryJob')
   @mock.patch.object(compile_try_job, 'NeedANewCompileTryJob')
-  def testCompileTryJob(self, mock_fn, mock_parameter):
+  def testCompileTryJob(self, mock_fn, mock_parameter, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -122,10 +125,11 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.start()
     self.execute_queued_tasks()
 
+  @mock.patch.object(RunCompileTryJobPipeline, 'TimeoutSeconds', return_value=0)
   @mock.patch.object(try_job_service, 'GetCurrentTryJobID', return_value=None)
   @mock.patch.object(compile_try_job, 'GetParametersToScheduleCompileTryJob')
   @mock.patch.object(compile_try_job, 'NeedANewCompileTryJob')
-  def testCompileTryJobNoTryJobResult(self, mock_fn, mock_parameter, _):
+  def testCompileTryJobNoTryJobResult(self, mock_fn, mock_parameter, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
