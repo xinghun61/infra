@@ -20,6 +20,7 @@ _HOST_REGEX_TO_SCOPES = [
     (re.compile(r'^codereview\.chromium\.org$'), _EMAIL_SCOPE),  # Rietveld.
     (re.compile(r'^cr\-buildbucket\.appspot\.com$'),
      _EMAIL_SCOPE),  # Buildbucket.
+    (re.compile(r'^isolateserver\.appspot\.com$'), _EMAIL_SCOPE),  # Isolate.
 ]
 
 
