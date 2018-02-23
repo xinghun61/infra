@@ -1678,6 +1678,11 @@ class TestApplyIfTags(BaseTest):
       }],
     })
 
+  def test_parse_ts_without_usecs(self):
+    actual = swarming._parse_ts('2018-02-23T04:22:45')
+    expected = datetime.datetime(2018, 2, 23, 4, 22, 45)
+    self.assertEqual(actual, expected)
+
 
 def b64json(data):
   return base64.b64encode(json.dumps(data))

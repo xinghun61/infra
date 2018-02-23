@@ -1197,5 +1197,13 @@ def _extend_unique(target, items):
 
 
 def _parse_ts(ts):
-  """Parses Swarming API's timestamp, which is RFC3339."""
+  """Parses Swarming API's timestamp, which is RFC3339 without time zone."""
+
+  # time-secfrac part of RFC3339 format is optional
+  # https://tools.ietf.org/html/rfc3339#section-5.6
+  # strptime cannot handle optional parts.
+  # HACK: add the time-secfrac part if it is missing.
+  # P(time-secfrac is missing) = 1e-6.
+  if '.' not in ts:
+    ts += '.0'
   return datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
