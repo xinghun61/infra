@@ -505,8 +505,7 @@ def _create_task_def_async(
   task_properties = task.setdefault('properties', {})
 
   dimensions = list(builder_cfg.dimensions)
-  if (builder_cfg.HasField('auto_builder_dimension') and
-      builder_cfg.auto_builder_dimension == project_config_pb2.YES and
+  if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
       all(not dim.startswith('builder:') for dim in dimensions)):
     dimensions.append('builder:' + builder_cfg.name)
 
