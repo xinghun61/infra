@@ -215,5 +215,5 @@ for details on the analyze step.
 [gae-500]: http://code.google.com/status/appengine
 [bug 125984]: https://code.google.com/p/chromium/issues/detail?id=125984
 [bug 125983]: https://code.google.com/p/chromium/issues/detail?id=125983
-[chromium-cq-cfg]: https://chromium.googlesource.com/chromium/src/+/master/infra/config/cq.cfg
+[chromium-cq-cfg]: https://chromium.googlesource.com/chromium/src/+/master/infra/config/branch/cq.cfg
 [analyze-step]: http://dev.chromium.org/developers/testing/commit-queue/chromium_trybot-json
