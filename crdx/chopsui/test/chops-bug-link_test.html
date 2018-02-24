@@ -23,29 +23,29 @@
 
     test('compute bugId', function(done) {
       element.bug = 'crbug.com/id=1344928#somecomment=c1234';
-      assert.equal(1344928, element._bugId);
+      assert.equal(1344928, element.bugId);
 
       element.bug = 'crbug/1344928';
-      assert.equal(1344928, element._bugId);
+      assert.equal(1344928, element.bugId);
 
       element.bug = '1344928';
-      assert.equal(1344928, element._bugId);
+      assert.equal(1344928, element.bugId);
 
       element.bug = 'bad but link';
-      assert.equal('Unknown', element._bugId);
+      assert.equal('Unknown', element.bugId);
 
       done();
     });
 
     test('compute bugName', function(done) {
       element.bug = 'crbug/1234';
-      assert.equal('chromium', element._bugProject);
+      assert.equal('chromium', element.bugProject);
 
       element.bug = 'https://bugs.chromium.org/p/monorail/issues/detail?id=1543';
-      assert.equal('monorail', element._bugProject);
+      assert.equal('monorail', element.bugProject);
 
       element.bug = 'gerrit:10384';
-      assert.equal('gerrit', element._bugProject);
+      assert.equal('gerrit', element.bugProject);
 
       done();
     });
