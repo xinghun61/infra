@@ -244,6 +244,7 @@ def CreateTestFailureAnalysisCompletionEvent(analysis):
           not analysis.failure_result_map[step].get(test)):
         continue
       event = TestAnalysisCompletionEvent()
+      event.flake = False
       _ExtractGeneralAnalysisInfo(analysis, event)
 
       event.analysis_info.step_name = step

@@ -165,6 +165,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     event = event_reporting.CreateTestFlakeAnalysisCompletionEvent(analysis)
+    self.assertTrue(event.flake)
     self.assertEqual(event.analysis_info.master_name, master)
     self.assertEqual(event.analysis_info.builder_name, builder)
     self.assertEqual(event.analysis_info.step_name, step)
@@ -1361,6 +1362,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     event = event_reporting.CreateTestFailureAnalysisCompletionEvent(analysis)[
         0]
+    self.assertFalse(event.flake)
     self.assertEqual(event.analysis_info.master_name, master)
     self.assertEqual(event.analysis_info.builder_name, builder)
     self.assertEqual(event.analysis_info.step_name, step)
