@@ -12,9 +12,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
-	"go.chromium.org/luci/luci_config/common/cfgtypes"
-	"go.chromium.org/luci/luci_config/server/cfgclient"
-	"go.chromium.org/luci/luci_config/server/cfgclient/textproto"
+	"go.chromium.org/luci/config"
+	"go.chromium.org/luci/config/server/cfgclient"
+	"go.chromium.org/luci/config/server/cfgclient/textproto"
 
 	"google.golang.org/appengine"
 
@@ -50,7 +50,7 @@ func (luciConfigServer) GetServiceConfig(c context.Context) (*tricium.ServiceCon
 	if !appengine.IsDevAppServer() {
 		service = info.AppID(c)
 	}
-	if err := cfgclient.Get(c, cfgclient.AsService, cfgtypes.ConfigSet(fmt.Sprintf("services/%s", service)),
+	if err := cfgclient.Get(c, cfgclient.AsService, config.Set(fmt.Sprintf("services/%s", service)),
 		"service.cfg", textproto.Message(ret), nil); err != nil {
 		return nil, fmt.Errorf("failed to get service config: %v", err)
 	}
@@ -64,7 +64,7 @@ func (luciConfigServer) GetProjectConfig(c context.Context, p string) (*tricium.
 		service = info.AppID(c)
 	}
 	ret := &tricium.ProjectConfig{}
-	if err := cfgclient.Get(c, cfgclient.AsService, cfgtypes.ConfigSet(fmt.Sprintf("projects/%s", p)),
+	if err := cfgclient.Get(c, cfgclient.AsService, config.Set(fmt.Sprintf("projects/%s", p)),
 		fmt.Sprintf("%s.cfg", service), textproto.Message(ret), nil); err != nil {
 		return nil, fmt.Errorf("failed to get project config: %v", err)
 	}

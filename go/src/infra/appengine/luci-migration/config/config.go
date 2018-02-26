@@ -20,8 +20,8 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/luci_config/server/cfgclient"
-	"go.chromium.org/luci/luci_config/server/cfgclient/textproto"
+	"go.chromium.org/luci/config/server/cfgclient"
+	"go.chromium.org/luci/config/server/cfgclient/textproto"
 	"go.chromium.org/luci/server/router"
 )
 

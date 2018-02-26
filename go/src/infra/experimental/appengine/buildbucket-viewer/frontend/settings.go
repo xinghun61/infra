@@ -11,9 +11,9 @@ import (
 
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/luci_config/common/cfgtypes"
-	"go.chromium.org/luci/luci_config/server/cfgclient"
-	"go.chromium.org/luci/luci_config/server/cfgclient/textproto"
+	"go.chromium.org/luci/config"
+	"go.chromium.org/luci/config/server/cfgclient"
+	"go.chromium.org/luci/config/server/cfgclient/textproto"
 
 	"go.chromium.org/gae/service/info"
 
@@ -47,8 +47,8 @@ func getSettings(c context.Context, fallback bool) (*settings.Settings, error) {
 }
 
 // getProjectConfig loads the settings from the config service.
-func getProjectConfig(c context.Context, p cfgtypes.ProjectName) (*settings.ProjectConfig, error) {
-	configSet, path := cfgtypes.ProjectConfigSet(p), fmt.Sprintf("%s.cfg", info.AppID(c))
+func getProjectConfig(c context.Context, p string) (*settings.ProjectConfig, error) {
+	configSet, path := config.ProjectSet(p), fmt.Sprintf("%s.cfg", info.AppID(c))
 
 	// Fetch configuration from config service.
 	var pc settings.ProjectConfig
@@ -60,12 +60,12 @@ func getProjectConfig(c context.Context, p cfgtypes.ProjectName) (*settings.Proj
 }
 
 // getAllProjectConfigs loads the settings from the config service.
-func getAllProjectConfigs(c context.Context) (map[cfgtypes.ProjectName]*settings.ProjectConfig, error) {
+func getAllProjectConfigs(c context.Context) (map[string]*settings.ProjectConfig, error) {
 	// Get all project configs.
 	path := fmt.Sprintf("%s.cfg", info.AppID(c))
 	var (
 		pcfgs []*settings.ProjectConfig
-		metas []*cfgclient.Meta
+		metas []*config.Meta
 		merr  errors.MultiError
 	)
 
@@ -81,7 +81,7 @@ func getAllProjectConfigs(c context.Context) (map[cfgtypes.ProjectName]*settings
 
 	// Load the configurations into the output map. If any config failed to load,
 	// log its failure and continue.
-	projMap := make(map[cfgtypes.ProjectName]*settings.ProjectConfig, len(pcfgs))
+	projMap := make(map[string]*settings.ProjectConfig, len(pcfgs))
 	for i, pcfg := range pcfgs {
 		// Did we get an error loading this particular config?
 		if merr != nil && merr[i] != nil {
@@ -93,7 +93,7 @@ func getAllProjectConfigs(c context.Context) (map[cfgtypes.ProjectName]*settings
 			continue
 		}
 
-		projName, _, _ := metas[i].ConfigSet.SplitProject()
+		projName := metas[i].ConfigSet.Project()
 		if projName == "" {
 			log.Fields{
 				"configSet": metas[i].ConfigSet,

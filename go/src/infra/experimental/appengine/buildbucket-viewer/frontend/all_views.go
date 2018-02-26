@@ -11,8 +11,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/luci_config/common/cfgtypes"
-	"go.chromium.org/luci/luci_config/server/cfgclient"
+	"go.chromium.org/luci/config"
 	"go.chromium.org/luci/server/templates"
 
 	"infra/experimental/appengine/buildbucket-viewer/api/settings"
@@ -42,24 +41,24 @@ func getAllViewsHandler(c context.Context, req *http.Request, resp http.Response
 }
 
 func getProjectViewsHandler(c context.Context, req *http.Request, resp http.ResponseWriter, p httprouter.Params) error {
-	projectName := cfgtypes.ProjectName(p.ByName("project"))
-	if err := projectName.Validate(); err != nil {
+	projectName := p.ByName("project")
+	if err := config.ValidateProjectName(projectName); err != nil {
 		return errors.Annotate(err, "invalid project name").Err()
 	}
 
 	// Get all view project configs.
 	var (
-		projMap  map[cfgtypes.ProjectName]*settings.ProjectConfig
+		projMap  map[string]*settings.ProjectConfig
 		errorMsg string
 	)
 	pcfg, err := getProjectConfig(c, projectName)
 	switch errors.Unwrap(err) {
 	case nil:
-		projMap = map[cfgtypes.ProjectName]*settings.ProjectConfig{
+		projMap = map[string]*settings.ProjectConfig{
 			projectName: pcfg,
 		}
 
-	case cfgclient.ErrNoConfig:
+	case config.ErrNoConfig:
 		errorMsg = fmt.Sprintf("Unknown project name %q. You may need to log in.", projectName)
 
 	default:
@@ -70,7 +69,7 @@ func getProjectViewsHandler(c context.Context, req *http.Request, resp http.Resp
 }
 
 func renderProjectConfigs(c context.Context, req *http.Request, resp http.ResponseWriter,
-	pcfgs map[cfgtypes.ProjectName]*settings.ProjectConfig, errorMsg string) error {
+	pcfgs map[string]*settings.ProjectConfig, errorMsg string) error {
 
 	// Sort project names (determinism).
 	projNames := make([]string, 0, len(pcfgs))
@@ -82,7 +81,7 @@ func renderProjectConfigs(c context.Context, req *http.Request, resp http.Respon
 	// Export a projectViewList for template rendering.
 	allViews := make([]*projectViewList, len(projNames))
 	for i, projName := range projNames {
-		pcfg := pcfgs[cfgtypes.ProjectName(projName)]
+		pcfg := pcfgs[projName]
 		pvl := projectViewList{
 			Title:   pcfg.Title,
 			URL:     fmt.Sprintf("/builds/view/%s", projName),
@@ -119,8 +118,8 @@ func renderProjectConfigs(c context.Context, req *http.Request, resp http.Respon
 }
 
 func getViewHandler(c context.Context, req *http.Request, resp http.ResponseWriter, p httprouter.Params) error {
-	projectName := cfgtypes.ProjectName(p.ByName("project"))
-	if err := projectName.Validate(); err != nil {
+	projectName := p.ByName("project")
+	if err := config.ValidateProjectName(projectName); err != nil {
 		return makeHTTPError(http.StatusBadRequest, errors.Annotate(err, "invalid project name").Err())
 	}
 
