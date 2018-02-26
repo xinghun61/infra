@@ -83,9 +83,9 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         previous_swarming_task_output=flake_swarming_task_output,
         revision=revision)
 
-    self.MockAsynchronousPipeline(RunFlakeSwarmingTaskPipeline,
-                                  flake_swarming_task_input,
-                                  flake_swarming_task_output)
+    self.MockGeneratorPipeline(RunFlakeSwarmingTaskPipeline,
+                               flake_swarming_task_input,
+                               flake_swarming_task_output)
     self.MockSynchronousPipeline(UpdateFlakeAnalysisDataPointsPipeline,
                                  update_data_points_input, None)
     self.MockGeneratorPipeline(DetermineApproximatePassRatePipelineWrapper,
