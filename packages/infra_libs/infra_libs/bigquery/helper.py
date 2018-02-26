@@ -7,37 +7,68 @@ import os
 import threading
 import time
 
+from google.protobuf import json_format
 from google.protobuf import message as message_pb
+from google.protobuf import struct_pb2
 from google.protobuf import timestamp_pb2
 
 BATCH_DEFAULT = 500
 BATCH_LIMIT = 10000
 
+
 def message_to_dict(msg):
   """Converts a protobuf message to a dict, with field names as keys.
 
-  msg: an instance of google.protobuf.message.Message.
+  The conversion follows the rules described in
+  https://godoc.org/go.chromium.org/luci/tools/cmd/bqschemaupdater
+  Also omits Nones and empty lists values.
 
-  RECORD fields, represented as nested messages in the protobuf, are
-  formatted as dictionaries.
-  TIMESTAMP fields, represented as timestamp_pb2.Timestamp messages in the
-  protobuf, are converted to datetime objects.
+  Args:
+    msg: an instance of google.protobuf.message.Message.
+
+  Returns:
+    A dict with BQ-compatible fields. If there are no BQ-compatible fields,
+    returns None.
   """
   row = {}
-  for field_desc, val in msg.ListFields():
-    if field_desc.label == field_desc.LABEL_REPEATED:
-      row[field_desc.name] = [_get_value(elem) for elem in val or []]
+  for f in msg.DESCRIPTOR.fields:
+    if f.message_type:
+      if _is_empty_message_type(f.message_type):
+        # Omit message fields that would result in RECORD fields with no fields.
+        continue
+      if f.label != f.LABEL_REPEATED and not msg.HasField(f.name):
+        # Omit non-repeated message fields that we don't have.
+        continue
+
+    val = getattr(msg, f.name)
+    if f.label == f.LABEL_REPEATED:
+      if val:  # Omit empty arrays.
+        row[f.name] = [_to_bq_value(elem, f) for elem in val]
     else:
-      row[field_desc.name] = _get_value(val)
-  return row
+      bq_value = _to_bq_value(val, f)
+      if bq_value is not None:  # Omit NULL values.
+        row[f.name] = bq_value
+  return row or None  # return None if there are no fields.
 
 
-def _get_value(value):
-  if isinstance(value, timestamp_pb2.Timestamp):
+def _to_bq_value(value, field_desc):
+  if field_desc.enum_type:
+    # Enums are stored as strings.
+    enum_val = field_desc.enum_type.values_by_number.get(value)
+    if not enum_val:
+      raise ValueError('Invalid value %r for enum type %s' % (
+          value, field_desc.enum_type.full_name))
+    return enum_val.name
+  elif isinstance(value, struct_pb2.Struct):
+    # Structs are stored as JSONPB strings,
+    # see https://bit.ly/chromium-bq-struct
+    return json_format.MessageToJson(value)
+  elif isinstance(value, timestamp_pb2.Timestamp):
     return value.ToDatetime().isoformat()
   elif isinstance(value, message_pb.Message):
     return message_to_dict(value)
-  return value
+  else:
+    return value
 
 
 def send_rows(bq_client, dataset_id, table_id, rows, batch_size=BATCH_DEFAULT):
@@ -111,3 +142,15 @@ class BigQueryInsertError(Exception):
       for err in row_mapping.get('errors') or []:
         message += "Error inserting row %d: %s\n" % (index, err)
     return message
+
+
+def _is_empty_message_type(desc):
+  """Returns true if the message type results in an empty RECORD BQ field.
+
+  Note: hangs on recursive messages.
+  """
+  for f in desc.fields:
+    f_empty = f.message_type and _is_empty_message_type(f.message_type)
+    if not f_empty:  # pragma: no branch
+      return False
+  return True

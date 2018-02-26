@@ -6,13 +6,52 @@ syntax = "proto3";
 
 package bigquery;
 
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
 message TestMessage {
-    string name = 1;
-    repeated NestedMessage nesteds = 4;
+    string str = 1;
+    repeated string strs = 2;
+
+    int64 num = 3;
+    repeated int64 nums = 4;
+
+    E e = 5;
+    repeated E es = 6;
+
+    NestedMessage nested = 7;
+    repeated NestedMessage nesteds = 8;
+
+    google.protobuf.Empty empty = 9;
+    repeated google.protobuf.Empty empties = 10;
+
+    google.protobuf.Struct struct = 11;
+    repeated google.protobuf.Struct structs = 12;
+
+    google.protobuf.Timestamp timestamp = 13;
+    repeated google.protobuf.Timestamp timestamps = 14;
+
+    // This field is not included in BQ row if it does not have nums,
+    // i.e. we don't send empty arrays.
+    RepeatedContainer repeated_container = 15;
 }
 
 message NestedMessage {
-    repeated google.protobuf.Timestamp timestamps = 1;
+    int64 num = 1;
+    string str = 2;
+}
+
+message RepeatedContainer {
+    repeated int64 nums = 1;
+}
+
+enum E {
+    E0 = 0;
+    E1 = 1;
+    E2 = 2;
+}
+
+message EmptyContainer {
+    google.protobuf.Empty empty = 1;
 }

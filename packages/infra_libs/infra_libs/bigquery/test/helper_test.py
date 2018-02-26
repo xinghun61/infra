@@ -2,10 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import mock
 import unittest
 from mock import patch
 
+from google.protobuf import empty_pb2
+from google.protobuf import struct_pb2
 from google.protobuf import timestamp_pb2
 
 from infra_libs.bigquery import helper
@@ -46,9 +49,9 @@ class TestBigQueryHelper(unittest.TestCase):
       helper.send_rows(self.bq_client, self.dataset_id, self.table_id, [{}])
 
   def test_send_rows_message(self):
-    rows = [testmessage_pb2.TestMessage(name='test_name')]
+    rows = [testmessage_pb2.TestMessage(str='a')]
     helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
-    expected_rows_arg = [{'name': u'test_name'}]
+    expected_rows_arg = [{'num': 0, 'e': 'E0', 'str': u'a'}]
     self.mock_create_rows.assert_any_call(self.table, expected_rows_arg)
 
   def test_send_rows_with_errors(self):
@@ -63,26 +66,93 @@ class TestBigQueryHelper(unittest.TestCase):
       helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
 
   def test_message_to_dict(self):
+    struct0 = struct_pb2.Struct()
+    struct0['a'] = 0
+    struct1 = struct_pb2.Struct()
+    struct1['a'] = 1
+
+    dt0 = datetime.datetime(2018, 2, 20)
+    dt1 = datetime.datetime(2018, 2, 21)
+    ts0 = timestamp_pb2.Timestamp()
+    ts0.FromDatetime(dt0)
+    ts1 = timestamp_pb2.Timestamp()
+    ts1.FromDatetime(dt1)
+
     msg = testmessage_pb2.TestMessage(
-        name='test_name',
+        str='a',
+        strs=['a', 'b'],
+
+        num=1,
+        nums=[0, 1, 2],
+
+        nested=testmessage_pb2.NestedMessage(num=1, str='a'),
         nesteds=[
-          testmessage_pb2.NestedMessage(
-              timestamps=[timestamp_pb2.Timestamp(), timestamp_pb2.Timestamp()],
-          ),
-          testmessage_pb2.NestedMessage(),
+          testmessage_pb2.NestedMessage(num=1, str='a'),
+          testmessage_pb2.NestedMessage(num=2, str='b'),
         ],
+
+        empty=empty_pb2.Empty(),
+        empties=[empty_pb2.Empty(), empty_pb2.Empty()],
+
+        e=testmessage_pb2.E1,
+        es=[testmessage_pb2.E0, testmessage_pb2.E2],
+
+        struct=struct0,
+        structs=[struct0, struct1],
+
+        timestamp=ts0,
+        timestamps=[ts0, ts1],
+
+        repeated_container=testmessage_pb2.RepeatedContainer(nums=[1, 2]),
     )
     row = helper.message_to_dict(msg)
     expected = {
-        'name': u'test_name',
-        'nesteds': [
-            {'timestamps': [timestamp_pb2.Timestamp().ToDatetime().isoformat(),
-                            timestamp_pb2.Timestamp().ToDatetime().isoformat()],
-            },
-            {},
-        ],
+      'str': u'a',
+      'strs': [u'a', u'b'],
+
+      'num': 1,
+      'nums': [0, 1, 2],
+
+      'nested': {'num': 1L, 'str': 'a'},
+      'nesteds': [
+        {'num': 1L, 'str': 'a'},
+        {'num': 2L, 'str': 'b'},
+      ],
+
+      # empty messages are omitted
+
+      'e': 'E1',
+      'es': ['E0', 'E2'],
+
+      'struct': '{\n  "a": 0\n}',
+      'structs': ['{\n  "a": 0\n}', '{\n  "a": 1\n}'],
+
+      'timestamp': dt0.isoformat(),
+      'timestamps': [dt0.isoformat(), dt1.isoformat()],
+
+      'repeated_container': {'nums': [1, 2]},
     }
     self.assertEqual(row, expected)
+
+  def test_message_to_dict_empty(self):
+    row = helper.message_to_dict(testmessage_pb2.TestMessage())
+    expected = {'e': 'E0', 'str': u'', 'num': 0}
+    self.assertEqual(row, expected)
+
+  def test_message_to_dict_repeated_container_with_no_elems(self):
+    row = helper.message_to_dict(testmessage_pb2.TestMessage(
+        repeated_container=testmessage_pb2.RepeatedContainer()))
+    self.assertNotIn('repeated_container', row)
+
+  def test_message_to_dict_invalid_enum(self):
+    with self.assertRaisesRegexp(
+        ValueError, '^Invalid value -1 for enum type bigquery.E$'):
+      helper.message_to_dict(testmessage_pb2.TestMessage(e=-1))
+
+  def test_message_to_dict_omit_null(self):
+    with self.assertRaisesRegexp(
+        ValueError, '^Invalid value -1 for enum type bigquery.E$'):
+      helper.message_to_dict(testmessage_pb2.TestMessage(e=-1))
 
 
 if __name__ == '__main__':
