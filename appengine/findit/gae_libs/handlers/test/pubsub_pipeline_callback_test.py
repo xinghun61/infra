@@ -9,8 +9,6 @@ import mock
 import webapp2
 import webtest
 
-from google.appengine.api import users
-
 from testing_utils import testing
 
 from gae_libs import token
@@ -44,14 +42,6 @@ class PubSubPipelineCallbackTest(testing.AppengineTestCase):
           ('/push', _PubSubPipelineCallbackImpl),
       ], debug=True)
 
-  @mock.patch.object(users, 'is_current_user_admin', return_value=False)
-  def testAdminPermission(self, _):
-    response = self.test_app.post('/push?format=json', status=401)
-    self.assertEqual(('Either not log in yet or no permission. '
-                      'Please log in with your @google.com account.'),
-                     response.json_body.get('error_message'))
-
-  @mock.patch.object(users, 'is_current_user_admin', return_value=True)
   @mock.patch.object(_DummyAsynchronousPipeline, 'ScheduleCallbackTask')
   @mock.patch.object(
       AsynchronousPipeline,
@@ -93,7 +83,6 @@ class PubSubPipelineCallbackTest(testing.AppengineTestCase):
         parameters={'param': 123,
                     'id': 'unique-message-id'})
 
-  @mock.patch.object(users, 'is_current_user_admin', return_value=True)
   @mock.patch.object(token, 'ValidateAuthToken', return_value=(False, False))
   def testFailedPushDueToInvalidToken(self, *_):
     request_body = json.dumps({
@@ -118,7 +107,6 @@ class PubSubPipelineCallbackTest(testing.AppengineTestCase):
     response = self.test_app.post('/push?format=json', params=request_body)
     self.assertEqual(200, response.status_code)
 
-  @mock.patch.object(users, 'is_current_user_admin', return_value=True)
   @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, True))
   def testFailedPushDueToExpiredToken(self, *_):
     request_body = json.dumps({
@@ -143,7 +131,6 @@ class PubSubPipelineCallbackTest(testing.AppengineTestCase):
     response = self.test_app.post('/push?format=json', params=request_body)
     self.assertEqual(200, response.status_code)
 
-  @mock.patch.object(users, 'is_current_user_admin', return_value=True)
   @mock.patch.object(AsynchronousPipeline, 'from_id', return_value=None)
   @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testFailedPushDueToPipelineNotFound(self, *_):
@@ -169,7 +156,6 @@ class PubSubPipelineCallbackTest(testing.AppengineTestCase):
     response = self.test_app.post('/push?format=json', params=request_body)
     self.assertEqual(200, response.status_code)
 
-  @mock.patch.object(users, 'is_current_user_admin', return_value=True)
   @mock.patch.object(AsynchronousPipeline, 'from_id', return_value='not-async')
   @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testFailedPushDueToPipelineNotAsync(self, *_):
@@ -195,8 +181,7 @@ class PubSubPipelineCallbackTest(testing.AppengineTestCase):
     response = self.test_app.post('/push?format=json', params=request_body)
     self.assertEqual(200, response.status_code)
 
-  @mock.patch.object(users, 'is_current_user_admin', return_value=True)
-  def testFailedPushDueToUnexpectedFormat(self, *_):
+  def testFailedPushDueToUnexpectedFormat(self):
     request_body = json.dumps({
         'message': {
             'message_id':

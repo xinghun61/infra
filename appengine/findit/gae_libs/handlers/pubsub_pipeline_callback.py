@@ -23,7 +23,7 @@ class PubSubPipelineCallback(BaseHandler):
   callback.
   """
 
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.ANYONE  # Proected with login:admin.
   auth_scope = None  # The auth token scope for the PubSub message.
   user_id = None  # The user who pushed the PubSub message.
 

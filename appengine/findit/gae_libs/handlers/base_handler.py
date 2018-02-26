@@ -171,6 +171,7 @@ class BaseHandler(webapp2.RequestHandler):
   def _Handle(self, handler_func):
     try:
       if not self._HasPermission():
+        logging.info('Current user has no permission to access the endpoint.')
         template = 'error.html'
         data = {
             'error_message': ('Either not log in yet or no permission. '

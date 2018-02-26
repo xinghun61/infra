@@ -122,8 +122,7 @@ BOWER := $(shell command -v bower 2> /dev/null)
 
 polymer-install: clean
 ifndef NPM
-	@echo "Please install npm with " \
-	      "\`sudo apt-get install nodejs-legacy npm\`" && false
+	@echo "Please add ../../cipd/bin to the PATH in .bashrc" && false
 endif
 ifndef BOWER
 	npm install -g bower
