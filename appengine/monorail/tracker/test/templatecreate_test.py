@@ -89,18 +89,18 @@ class TemplateCreateTest(unittest.TestCase):
   def testProcessFormData_Reject(self):
     post_data = fake.PostData(
       name=['sometemplate'],
-      members_only=['yes'],
+      members_only=['on'],
       summary=['TLDR'],
-      summary_must_be_edited=['yes'],
+      summary_must_be_edited=['on'],
       content=['HEY WHY'],
       status=['Accepted'],
       owner=['someone@world.com'],
       label=['label-One', 'label-Two'],
-      field_value_1=['NO'],
-      field_value_2=['MOOD'],
+      custom_1=['NO'],
+      custom_2=['MOOD'],
       components=['hey, hey2,he3'],
-      component_required=['yes'],
-      owner_defaults_to_memeber=['no']
+      component_required=['on'],
+      owner_defaults_to_member=['no']
     )
 
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
@@ -114,9 +114,10 @@ class TemplateCreateTest(unittest.TestCase):
         initial_status='Accepted',
         initial_owner='someone@world.com',
         initial_owner_defaults_to_member=ezt.boolean(False),
-        initial_components='hey,hey2,he3',
+        initial_components='hey, hey2, he3',
         initial_component_required=ezt.boolean(True),
         initial_admins='',
+        labels=['label-One', 'label-Two'],
         fields=mox.IgnoreArg()
         )
     self.mox.ReplayAll()
@@ -137,15 +138,15 @@ class TemplateCreateTest(unittest.TestCase):
     self.services.config.StoreConfig(self.cnxn, config)
     post_data = fake.PostData(
         name=['sometemplate'],
-        members_only=['yes'],
+        members_only=['on'],
         summary=['TLDR'],
-        summary_must_be_edited=['yes'],
+        summary_must_be_edited=['on'],
         content=['HEY WHY'],
         status=['Accepted'],
         label=['label-One', 'label-Two'],
-        field_value_1=['NO'],
-        component_required=['yes'],
-        owner_defaults_to_memeber=['no'])
+        custom_1=['NO'],
+        component_required=['on'],
+        owner_defaults_to_member=['no'])
 
     url = self.servlet.ProcessFormData(self.mr, post_data)
 

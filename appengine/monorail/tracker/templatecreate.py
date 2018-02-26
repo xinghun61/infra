@@ -132,9 +132,10 @@ class TemplateCreate(servlet.Servlet):
           initial_owner=parsed.owner_str,
           initial_owner_defaults_to_member=ezt.boolean(
               parsed.owner_defaults_to_member),
-          initial_components=','.join(parsed.component_paths),
+          initial_components=', '.join(parsed.component_paths),
           initial_component_required=ezt.boolean(parsed.component_required),
           initial_admins=admin_str,
+          labels=parsed.labels,
           fields=field_views
       )
       return

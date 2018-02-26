@@ -45,7 +45,7 @@
   <tr>
     <th>Status:</th>
     <td>
-       <input type="text" name="status" size="12" class="acob" value="[initial_status]"
+       <input id="status" type="text" name="status" size="12" class="acob" value="[initial_status]"
               autocomplete="off">
     </td>
   </tr>
@@ -53,7 +53,7 @@
   <tr>
     <th>Owner:</th>
     <td>
-       <input type="text" name="owner" size="25" class="saveTemplate acob" value="[initial_owner]"
+       <input id="owner_editor" type="text" name="owner" size="25" class="acob" value="[initial_owner]"
               autocomplete="off">
        <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
           [if-any errors.owner][errors.owner][end]
@@ -68,7 +68,7 @@
   <tr>
     <th>Components:</th>
     <td>
-       <input type="text" name="components" size="75" class="acob" value=""
+       <input id="components" type="text" name="components" size="75" class="acob"
               autocomplete="off" value="[initial_components]">
       <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
           [if-any errors.components][errors.components][end]
@@ -104,7 +104,7 @@
    <tr>
      <th>Template admins:</th>
      <td>
-       <input type="text" name="admin_names" size="75" class="acob" value="[initial_admins]"
+       <input id="admin_names_editor" type="text" name="admin_names" size="75" class="acob" value="[initial_admins]"
               autocomplete="off">
      </td>
    </tr>
@@ -121,3 +121,27 @@
 
 </table>
 </form>
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+
+  _fetchOptions(
+     '[projectname]', 'issueOptions', CS_env.token, [project.cached_content_timestamp]);
+  _onload();
+
+
+  var acobElements = document.getElementsByClassName("acob");
+  for (var i = 0; i < acobElements.length; ++i) {
+     var el = acobElements[[]i];
+     el.addEventListener("focus", function(event) {
+         _acrob(null);
+         _acof(event);
+     });
+  }
+
+});
+</script>
+
+[include "../framework/master-footer.ezt"]
