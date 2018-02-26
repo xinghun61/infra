@@ -32,6 +32,15 @@ import (
 // All timestamps are in UTC.
 const timeStampLayout = "2006-01-02 15:04:05.000000000"
 
+// Status field values in a Gerrit FileInfo struct.
+// See Gerrit API docs: https://goo.gl/ABFHDg
+// This list is not exhaustive.
+const (
+	fileStatusAdded    = "A"
+	fileStatusDeleted  = "D"
+	fileStatusModified = "M"
+)
+
 // Project tracks the last poll of a Gerrit project.
 //
 // Mutable entity.
@@ -346,7 +355,7 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 		}
 		var paths []string
 		for k, v := range c.Revisions[c.CurrentRevision].Files {
-			if v.Status != "Delete" {
+			if v.Status != fileStatusDeleted {
 				paths = append(paths, k)
 			}
 		}

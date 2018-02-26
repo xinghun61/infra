@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
@@ -208,7 +209,7 @@ func TestPoll(t *testing.T) {
 			owner := &gr.AccountInfo{Email: "emso@chromium.org"}
 			for _, gd := range gerritProjects {
 				files := make(map[string]*gr.FileInfo)
-				files[file] = &gr.FileInfo{Status: "A"}
+				files[file] = &gr.FileInfo{Status: fileStatusAdded}
 				revisions := make(map[string]gr.RevisionInfo)
 				revisions[rev] = gr.RevisionInfo{Files: files}
 				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
@@ -245,6 +246,49 @@ func TestPoll(t *testing.T) {
 			})
 		})
 
+		Convey("Deleted files are not included in analyze request", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := tc.Now().UTC()
+			// Fill up with a change per project
+			rev := "abcdefg"
+			changeID := "project~branch~Ideadc0de"
+			changedFile := "changed-file.bar"
+			deletedFile := "deprecated.foo"
+			owner := &gr.AccountInfo{
+				Email: "emso@chromium.org",
+			}
+			for _, gd := range gerritProjects {
+				files := make(map[string]*gr.FileInfo)
+				files[changedFile] = &gr.FileInfo{Status: fileStatusModified}
+				files[deletedFile] = &gr.FileInfo{Status: fileStatusDeleted}
+				revisions := make(map[string]gr.RevisionInfo)
+				revisions[rev] = gr.RevisionInfo{Files: files}
+				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
+					{
+						ID:              changeID,
+						Project:         gd.Project,
+						CurrentRevision: rev,
+						Updated:         gr.TimeStamp(lastChangeTs),
+						Revisions:       revisions,
+						Owner:           owner,
+					},
+				})
+			}
+			So(poll(ctx, api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(poll(ctx, api, cp), ShouldBeNil)
+			Convey("Enqueues analyze requests with no deleted files", func() {
+				tasks := tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]
+				So(len(tasks), ShouldEqual, len(gerritProjects)-1)
+				for _, task := range tasks {
+					ar := &tricium.AnalyzeRequest{}
+					err := proto.Unmarshal(task.Payload, ar)
+					So(err, ShouldBeNil)
+					So(ar.Paths, ShouldResemble, []string{changedFile})
+				}
+			})
+		})
+
 		Convey("Second poll (paged changes)", func() {
 			api := &mockPollRestAPI{}
 			// The first poll stores timestamp.
@@ -265,7 +309,7 @@ func TestPoll(t *testing.T) {
 					changeID := fmt.Sprintf("%s~%s~%s%d", gd.Project, branch, changeIDFooter, i)
 					rev := fmt.Sprintf("%s%d", revBase, i)
 					files := make(map[string]*gr.FileInfo)
-					files[file] = &gr.FileInfo{Status: "M"}
+					files[file] = &gr.FileInfo{Status: fileStatusModified}
 					revisions := make(map[string]gr.RevisionInfo)
 					revisions[rev] = gr.RevisionInfo{Files: files}
 					changes = append(changes, gr.ChangeInfo{
@@ -305,7 +349,7 @@ func TestPoll(t *testing.T) {
 			file := "README.md"
 			owner := &gr.AccountInfo{Email: "emso@chromium.org"}
 			files := make(map[string]*gr.FileInfo)
-			files[file] = &gr.FileInfo{Status: "A"}
+			files[file] = &gr.FileInfo{Status: fileStatusAdded}
 			revisions := make(map[string]gr.RevisionInfo)
 			revisions[rev] = gr.RevisionInfo{Files: files}
 			api.addChanges(host, noWhitelistProject, []gr.ChangeInfo{
