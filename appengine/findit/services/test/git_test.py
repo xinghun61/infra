@@ -182,7 +182,7 @@ class GitTest(wf_testcase.WaterfallTestCase):
     mock_change_logs['rev2'] = MockedChangeLog(123, 'url')
     return mock_change_logs.get(revision)
 
-  def _GenerateGetNChangeLogsMock(self, delta):
+  def _GenerateGetNChangeLogsMock(self, delta, next_rev='next_rev'):
     """Makes a mock that returns n changelogs `delta` time apart."""
 
     def _inner(_self, _revision, n):
@@ -205,7 +205,7 @@ class GitTest(wf_testcase.WaterfallTestCase):
         result.append(
             MockedChangeLog(end_commit_position - i,
                             end_datetime - (i * delta)))
-      return result, 'next_rev'
+      return result, next_rev
 
     return _inner
 
@@ -273,10 +273,23 @@ class GitTest(wf_testcase.WaterfallTestCase):
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
     self.assertTrue(10 <= git.CountRecentCommits('url'))
 
-  def testCountRecentCommitsMany(self):
+  def testCountRecentCommitsNormal(self):
     self.mock(
         CachedGitilesRepository,
         'GetNChangeLogs',
         self._GenerateGetNChangeLogsMock(timedelta(minutes=10)))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
     self.assertEqual(7, git.CountRecentCommits('url'))
+
+  def testCountRecentCommitsNoNext(self):
+    self.mock(CachedGitilesRepository, 'GetNChangeLogs',
+              self._GenerateGetNChangeLogsMock(
+                  timedelta(minutes=1), next_rev=None))
+    self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
+    self.assertTrue(10 <= git.CountRecentCommits('url'))
+
+  def testCountRecentCommitsNoLogs(self):
+    self.mock(CachedGitilesRepository, 'GetNChangeLogs',
+              lambda self, r, n: ([], None))
+    self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
+    self.assertEqual(0, git.CountRecentCommits('url'))
