@@ -24,8 +24,8 @@ class LuciCheck(app.BaseApplication):
     super(LuciCheck, self).add_argparse_options(parser)
     parser.add_argument(
       '-c', '--console',
-      default='https://chromium.googlesource.com/chromium/src/+/infra/'+
-              'config/luci-milo.cfg')
+      default='https://chromium.googlesource.com/chromium/src/+/master/infra/' +
+              'config/global/luci-milo.cfg')
 
   def main(self, opts):
     sys.exit(luci_check.Checker(opts.console).check())
