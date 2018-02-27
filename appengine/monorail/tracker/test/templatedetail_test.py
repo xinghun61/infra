@@ -89,6 +89,7 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertEqual(self.servlet.PROCESS_TAB_TEMPLATES,
                      page_data['admin_tab_mode'])
     self.assertTrue(page_data['allow_edit'])
+    self.assertFalse(page_data['new_template_form'])
     self.assertItemsEqual(page_data['labels'], ['label1', 'label2'])
     self.assertEqual(page_data['initial_admins'], 'sport@example.com')
     self.assertEqual(page_data['initial_owner'], 'gatsby@example.com')

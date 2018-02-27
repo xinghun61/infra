@@ -78,6 +78,8 @@ class TemplateCreateTest(unittest.TestCase):
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual(self.servlet.PROCESS_TAB_TEMPLATES,
                      page_data['admin_tab_mode'])
+    self.assertTrue(page_data['allow_edit'])
+    self.assertTrue(page_data['new_template_form'])
     self.assertEqual(page_data['fields'][0].field_name, fv.field_name)
     self.assertEqual(page_data['initial_members_only'], ezt.boolean(False))
     self.assertEqual(page_data['initial_must_edit_summary'], ezt.boolean(False))
@@ -107,8 +109,8 @@ class TemplateCreateTest(unittest.TestCase):
     self.servlet.PleaseCorrect(
         self.mr,
         initial_members_only=ezt.boolean(True),
-        initial_name='sometemplate',
-        initial_summary='TLDR',
+        template_name='sometemplate',
+        initial_content='TLDR',
         initial_must_edit_summary=ezt.boolean(True),
         initial_description='HEY WHY',
         initial_status='Accepted',

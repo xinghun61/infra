@@ -1,0 +1,196 @@
+[define title]Issue Template [template_name][end]
+[define category_css]css/ph_detail.css[end]
+[include "../framework/master-header.ezt" "showtabs"]
+
+<a href="/p/[projectname]/adminTemplates">&lsaquo; Back to template list</a><br><br>
+
+<h4>Issue Template</h4>
+
+[if-any new_template_form]
+  <form action="create.do" method="POST">
+[else]
+  <form action="detail.do" method="POST">
+[end]
+<input type="hidden" name="token" value="[form_token]">
+<input type="hidden" name="template" value="[template_name]">
+
+
+<table cellspacing="0" cellpadding="3" class="rowmajor vt">
+  <tr>
+    <th>Members only:</th>
+    <td>
+      <input type="checkbox"[if-any allow_edit][else]disabled[end] name="members_only" [if-any initial_members_only]checked[end]>
+      <label for="members_only_checkbox">Only offer this template to project members</label>
+    </td>
+  </tr>
+
+  <tr>
+    <th>Name:</th>
+    <td>
+      [if-any new_template_form]
+        <input type="text" name="name" value="[template_name]">
+      [else]
+        [template_name]
+        <input type="hidden" name="name" value="[template_name]">
+      [end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Summary:</th>
+    <td>
+      [if-any allow_edit]
+        <input type="text" name="summary" size="60" class=acob" value="[initial_content]"><br>
+      [else]
+        [initial_content]<br>
+      [end]
+      <input type="checkbox" [if-any allow_edit][else]disabled[end] name="summary_must_be_edited" [if-any initial_must_edit_summary]checked[end]>
+      <label for="summary_must_be_edited_checkbox">Users must edit issue summary before submitting</label>
+    </td>
+  </tr>
+
+  <tr>
+    <th>Description:</th>
+    <td>
+      [if-any allow_edit]
+         <textarea name="content" rows="12" cols="75" class="undef">[initial_content]</textarea>
+         [# Note: wrap="hard" has no effect on content_editor because we copy to a hidden field before submission.]
+      [else]
+        [initial_content]
+      [end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Status:</th>
+    <td>
+      [if-any allow_edit]
+         <input id="status" type="text" name="status" size="12" class="acob" value="[initial_status]"
+                autocomplete="off">
+      [else]
+        [inital_status]
+      [end]
+    </td>
+  </tr>
+
+  <tr>
+    <th>Owner:</th>
+    <td>
+       [if-any allow_edit]
+         <input id="owner_editor" type="text" name="owner" size="25" class="acob" value="[initial_owner]"
+                autocomplete="off">
+         <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
+            [if-any errors.owner][errors.owner][end]
+         </span>
+       [else]
+         [initial_owner]<br>
+       [end]
+       <span>
+        <input type="checkbox" [if-any allow_edit][else]disabled[end] name="owner_defaults_to_member" style="margin-left:2em" [if-any initial_owner_defaults_to_member]checked[end]>
+        <label for="owner_defaults_to_member_checkbox">Default to member who is entering the issue</label>
+       </span>
+    </td>
+  </tr>
+
+  <tr>
+    <th>Components:</th>
+    <td>
+      [if-any allow_edit]
+        <input id="components" type="text" name="components" size="75" class="acob"
+               autocomplete="off" value="[initial_components]">
+       <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
+          [if-any errors.components][errors.components][end]
+       </span>
+      [else]
+        [initial_components]
+      [end]
+       <br/>
+       <span>
+        <input type="checkbox" [if-any allow_edit][else]disabled[end] name="component_required" [if-any initial_component_required]checked[end]>
+        <label for="component_required_checkbox">Require at least one component</label>
+       </span>
+    </td>
+  </tr>
+
+  [for fields]
+    [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
+    [# TODO(jojwang): monorail:3241, un-suppress showing approval types in templates]
+    [is fields.field_def.type_name "APPROVAL_TYPE"][else][if-any fields.field_def.approval_id][else]
+      <tr>
+        <th>[fields.field_name]:</th>
+        <td colspan="2">
+          [if-any allow_edit]
+             [include "field-value-widgets.ezt" False "tmpl"]
+          [else]
+            [for fields.values]
+              [fields.values.val]
+            [end]
+          [end]
+        </td>
+      <tr>
+    [end][end]
+  [end]
+
+  <tr>
+    <th>Labels:</th>
+    <td>
+      [include "label-fields.ezt" "all" ""]
+     </td>
+   </tr>
+
+   <tr>
+     <th>Template admins:</th>
+     <td>
+       [if-any allow_edit]
+         <input id="admin_names_editor" type="text" name="admin_names" size="75" class="acob" value="[initial_admins]"
+                autocomplete="off">
+       [else]
+         [initial_admins]
+       [end]
+     </td>
+   </tr>
+
+  [if-any allow_edit]
+    <tr>
+      <td></td>
+      <td>
+        <input id="submit_btn" type="submit" name="submit" value="Save template">
+        <input id="cancel_btn" type="submit" name="cancel" value="Cancel">
+      </td>
+    </tr>
+  [end]
+
+</table>
+</form>
+
+[include "../framework/footer-script.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+
+  [if-any allow_edit]
+    _fetchOptions(
+       '[projectname]', 'issueOptions', CS_env.token, [project.cached_content_timestamp]);
+    _onload();
+
+
+    var acobElements = document.getElementsByClassName("acob");
+    for (var i = 0; i < acobElements.length; ++i) {
+       var el = acobElements[[]i];
+       el.addEventListener("focus", function(event) {
+           _acrob(null);
+           _acof(event);
+       });
+    }
+  [else]
+
+    let labelInputs = document.getElementsByClassName("labelinput");
+    Array.prototype.forEach.call(labelInputs, labelInput => {
+      labelInput.disabled = true;
+    });
+  [end]
+
+});
+</script>
+
+[include "../framework/master-footer.ezt"]

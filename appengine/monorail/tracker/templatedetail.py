@@ -81,6 +81,7 @@ class TemplateDetail(servlet.Servlet):
     return {
         'admin_tab_mode': self._PROCESS_SUBTAB,
         'allow_edit': ezt.boolean(allow_edit),
+        'new_template_form': ezt.boolean(False),
         'template': template_view,
         'fields': field_views,
         'labels': template.labels,

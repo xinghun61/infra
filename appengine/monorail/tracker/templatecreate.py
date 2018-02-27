@@ -29,7 +29,7 @@ class TemplateCreate(servlet.Servlet):
   """Servlet allowing project owners to create an issue template."""
 
   _MAIN_TAB_MODE = servlet.Servlet.MAIN_TAB_PROCESS
-  _PAGE_TEMPLATE = 'tracker/template-create-page.ezt'
+  _PAGE_TEMPLATE = 'tracker/template-detail-page.ezt'
   _PROCESS_SUBTAB = servlet.Servlet.PROCESS_TAB_TEMPLATES
 
   def AssertBasePermission(self, mr):
@@ -59,9 +59,11 @@ class TemplateCreate(servlet.Servlet):
       for fd in config.field_defs if not fd.is_deleted]
     return {
         'admin_tab_mode': self._PROCESS_SUBTAB,
+        'allow_edit': ezt.boolean(True),
+        'new_template_form': ezt.boolean(True),
         'initial_members_only': ezt.boolean(False),
-        'initial_name': '',
-        'initial_summary': '',
+        'template_name': '',
+        'initial_content': '',
         'initial_must_edit_summary': ezt.boolean(False),
         'initial_description': '',
         'initial_status': '',
@@ -124,8 +126,8 @@ class TemplateCreate(servlet.Servlet):
       self.PleaseCorrect(
           mr,
           initial_members_only=ezt.boolean(parsed.members_only),
-          initial_name=parsed.name,
-          initial_summary=parsed.summary,
+          template_name=parsed.name,
+          initial_content=parsed.summary,
           initial_must_edit_summary=ezt.boolean(parsed.summary_must_be_edited),
           initial_description=parsed.content,
           initial_status=parsed.status,
