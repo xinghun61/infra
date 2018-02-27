@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"fmt"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -32,6 +33,7 @@ const (
 	emailScope        = "https://www.googleapis.com/auth/userinfo.email"
 	failedBuildPrefix = "Sample Failed Build:"
 	failedStepPrefix  = "Sample Failed Step:"
+	bugIDRegex        = "^(?i)Bug(:|=)(.*)"
 )
 
 // Tests can put mock clients here, prod code will ignore this global.
@@ -82,6 +84,21 @@ func failedBuildFromCommitMessage(m string) (string, error) {
 
 func failedStepFromCommitMessage(m string) (string, error) {
 	return findPrefixLine(m, failedStepPrefix)
+}
+
+func bugIDFromCommitMessage(m string) (string, error) {
+	s := bufio.NewScanner(strings.NewReader(m))
+	for s.Scan() {
+		line := s.Text()
+		re := regexp.MustCompile(bugIDRegex)
+		matches := re.FindAllStringSubmatch(line, -1)
+		if len(matches) != 0 {
+			for _, m := range matches {
+				return strings.Replace(string(m[2]), " ", "", -1), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("commit message does not contain any bug id")
 }
 
 func getIssueBySummaryAndAccount(ctx context.Context, cfg *RepoConfig, s, a string, cs *Clients) (*monorail.Issue, error) {

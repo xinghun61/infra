@@ -27,6 +27,12 @@ func fileBugForReleaseBotViolation(ctx context.Context, cfg *RepoConfig, rc *Rel
 	return fileBugForViolation(ctx, cfg, rc, cs, state, components, labels)
 }
 
+func fileBugForMergeApprovalViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error) {
+	components := []string{"Infra>Client>Chrome>Release"}
+	labels := []string{"CommitLog-Audit-Violation", "Merge-Without-Approval", fmt.Sprintf("M-%d", cfg.MilestoneNumber)}
+	return fileBugForViolation(ctx, cfg, rc, cs, state, components, labels)
+}
+
 // fileBugForViolation checks if the failure has already been reported to
 // monorail and files a new bug if it hasn't. If a bug already exists this
 // function will try to add a comment and associate it to the bug.

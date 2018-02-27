@@ -16,8 +16,9 @@ type RepoConfig struct { // These are expected to be hard-coded.
 	BaseRepoURL     string
 	GerritURL       string
 	BranchName      string
+	MilestoneNumber int32
 	StartingCommit  string
-	MonorailAPIURL  string
+	MonorailAPIURL  string // Only intended for release branches
 	MonorailProject string
 	// Do not use "AuditFailure" as a key in this map, it may cause a clash
 	// with the notification state for failed audits.
@@ -42,7 +43,7 @@ var RuleMap = map[string]*RepoConfig{
 		GerritURL:   "https://chromium-review.googlesource.com",
 		BranchName:  "master",
 		// No special meaning, ToT as of the time this line was added.
-		StartingCommit:  "5677b32274aec4890c7dd991a6a84924e65d4853",
+		StartingCommit:  "bafa682dc0ce1dde367ba44f31f8ec1ad07e569e",
 		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
 		MonorailProject: "chromium",
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
@@ -66,6 +67,25 @@ var RuleMap = map[string]*RepoConfig{
 					OnlyModifiesVersionFile,
 				},
 				notificationFunction: fileBugForReleaseBotViolation,
+			},
+		},
+	},
+	"chromium-src-3325": {
+		BaseRepoURL:     "https://chromium.googlesource.com/chromium/src.git",
+		GerritURL:       "https://chromium-review.googlesource.com",
+		BranchName:      "3325",
+		MilestoneNumber: 65,
+		StartingCommit:  "1593920eed56dee727e7f78ae5d206052e4ad7e0",
+		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
+		MonorailProject: "chromium",
+		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
+		Rules: map[string]RuleSet{
+			"merge-approval-rules": AccountRules{
+				Account: "*",
+				Funcs: []RuleFunc{
+					OnlyMergeApprovedChange,
+				},
+				notificationFunction: fileBugForMergeApprovalViolation,
 			},
 		},
 	},
