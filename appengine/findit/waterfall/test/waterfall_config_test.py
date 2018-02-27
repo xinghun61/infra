@@ -125,6 +125,31 @@ class MastersTest(wf_testcase.WaterfallTestCase):
                          }
                      }))
 
+  def testGetAllSupportedCompileBuilders(self):
+    expected = [{
+        'builder': 'builder1',
+        'master': 'master1'
+    }, {
+        'builder': 'builder5',
+        'master': 'master2'
+    }, {
+        'builder': 'builder4',
+        'master': 'master2'
+    }, {
+        'builder': 'builder3',
+        'master': 'master2'
+    }, {
+        'builder': 'builder2',
+        'master': 'master2'
+    }, {
+        'builder': 'Linux',
+        'master': 'chromium'
+    }]
+    self.assertEqual(expected, waterfall_config.GetSupportedCompileBuilders())
+    expected = [{'builder': 'Linux', 'master': 'chromium'}]
+    self.assertEqual(
+        expected, waterfall_config.GetSupportedCompileBuilders(platform='unix'))
+
   def testGetStepsForMastersRulesWithSettingsProvided(self):
 
     class MockSettings():

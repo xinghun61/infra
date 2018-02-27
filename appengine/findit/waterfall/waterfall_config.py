@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Determines support level for different steps for masters."""
 
+from services.deps import GetOSPlatformName
 from model.wf_config import FinditConfig
 
 # Explicitly list unsupported masters. Additional work might be needed in order
@@ -145,8 +146,8 @@ def StepIsSupportedForMaster(step_name, master_name):
 
   supported_steps = supported_master.get('supported_steps', [])
   unsupported_steps = supported_master.get('unsupported_steps', [])
-  global_unsupported_steps = (steps_for_masters_rules['global'].get(
-      'unsupported_steps', []))
+  global_unsupported_steps = (
+      steps_for_masters_rules['global'].get('unsupported_steps', []))
 
   return (step_name in supported_steps or
           (step_name not in unsupported_steps and
@@ -172,6 +173,30 @@ def GetFlakeTrybot(wf_mastername, wf_buildername, force_buildbot=False):
 
   bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
   return bot_dict.get('mastername'), bot_dict.get('flake_trybot')
+
+
+def IsCompileBuilder(master_name, builder_name):
+  # TODO(robertocn): Find a more reliable way to determine if a builder
+  #     is a compile builder.
+  return (master_name == 'chromium' or 'build' in builder_name.lower())
+
+
+def GetSupportedCompileBuilders(platform=None):
+  """Get waterfall builders that can trigger compile analyses.
+
+  Args:
+    platform (str): one of {win, android, unix, mac, ios} if given, only return
+        builders for that platform.
+  """
+  result = []
+  all_trybots = FinditConfig.Get().builders_to_trybots
+  for master_name, builders in all_trybots.iteritems():
+    for builder_name in builders:
+      if IsCompileBuilder(master_name, builder_name):
+        if not platform or platform == GetOSPlatformName(
+            master_name, builder_name):
+          result.append({'master': master_name, 'builder': builder_name})
+  return result
 
 
 def _GetTrybotConfig(master, builder):

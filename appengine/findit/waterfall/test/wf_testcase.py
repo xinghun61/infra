@@ -92,6 +92,14 @@ _DEFAULT_TRY_BOT_MAPPING = {
             'dimensions': ['os:Mac-10.9', 'cpu:x86-64']
         },
     },
+    'chromium': {
+        'Linux': {
+            'mastername': 'tryserver.master',
+            'waterfall_trybot': 'tryserver.builder',
+            'flake_trybot': 'tryserver.flake_builder',
+            'dimensions': ['os:Ubuntu-14.04', 'cpu:x86-64'],
+        },
+    },
 }
 
 _DEFAULT_TRY_JOB_SETTINGS = {
