@@ -40,19 +40,6 @@
      [end]
      <a href="detail?id=[issue.local_id]">Issue [issue.local_id]</a>
 
-   [if-any page_perms.FlagSpam]
-     <a class="spamflag" id="flag_spam"
-      style="float:right; color:[if-any issue.flagged_spam_bool]red[else]gray[end]"
-      title="[if-any issue.flagged_spam_bool]Un-f[else]F[end]lag as spam">
-     [if-any issue.flagged_spam_bool]&#9873;[else]&#9872;[end]
-     </a>
-     <form action="flagspam.do" method="post" id="spam_form" style="display:none">
-      <input type="hidden" name="token" value="[flag_spam_token]">
-      <input type="hidden" name="id" value="[issue.local_id]">
-      <input type="hidden" name="spam" value="[if-any issue.flagged_spam_bool]false[else]true[end]">
-    </form>
-   [end]
-
    </div> [# end issuemetaheader]
 
    <div class="issuemetaheader">

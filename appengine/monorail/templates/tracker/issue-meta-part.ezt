@@ -310,6 +310,22 @@
  [end][# not read_only]
 [end]
 
+[if-any page_perms.FlagSpam]
+<div style="padding: 0.5em 0;">
+  <a class="spamflag" id="flag_spam"
+    style="color:[if-any issue.flagged_spam_bool]red[else]#555[end]"
+    title="[if-any issue.flagged_spam_bool]Un-f[else]F[end]lag issue as spam">
+    [if-any issue.flagged_spam_bool]&#9873;[else]&#9872;[end]
+    [if-any issue.flagged_spam_bool]Un-f[else]F[end]lag issue as spam
+  </a>
+  <form action="flagspam.do" method="post" id="spam_form" style="display:none">
+    <input type="hidden" name="token" value="[flag_spam_token]">
+    <input type="hidden" name="id" value="[issue.local_id]">
+    <input type="hidden" name="spam" value="[if-any issue.flagged_spam_bool]false[else]true[end]">
+  </form>
+</div>
+[end]
+
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   if ($("addacomment")) {
