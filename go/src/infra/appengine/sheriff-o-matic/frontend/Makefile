@@ -10,8 +10,8 @@ help:
 	@sed -n '/^[a-zA-Z0-9_]*:/s/:.*//p' <Makefile
 
 deps:
-	bower install
 	npm install
+	bower install
 
 format:
 	clang-format -i elements/**/*.js -style=file
