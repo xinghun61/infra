@@ -5,9 +5,7 @@ services. Event data can be any piece of information we want to collect for
 analysis or tracking. It is distinct from timeseries data, for which we use
 [tsmon](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/ts_mon.md).
 
-See [katthomas's 2017 Opstoberfest
-presentation](https://docs.google.com/a/google.com/presentation/d/11DoVXM5hrmSk9pgrj2vjQNd5ihr2_9dKtPYewPbLpjA/edit?usp=sharing)
-for an overview of the components of the pipeline, with pictures!
+For Googlers, see the [internal docs](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/event_pipeline.md).
 
 [TOC]
 
@@ -215,6 +213,10 @@ alerting for builder failures.
 To execute a query which joins a table from a different cloud project, ensure
 the querying project's service account has BigQuery read permissions in the
 other project.
+
+## Other tools
+
+[Datastudio](http://datastudio.google.com): for graphs, reports, and dashboards
 
 # Limits
 
