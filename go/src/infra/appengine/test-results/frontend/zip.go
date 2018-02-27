@@ -2,7 +2,6 @@ package frontend
 
 import (
 	"archive/zip"
-	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -89,6 +88,8 @@ func getZipHandler(ctx *router.Context) {
 }
 
 const megabyte = 1 << 20
+
+// Amount of data to fetch from GCS. URL Fetch requests must be smaller than 32 MB.
 const chunkSize = megabyte * 31
 
 // knownPrefixes is a list of strings that we know will exist in the google storage bucket.
@@ -308,6 +309,44 @@ func unexpected(expected, actual []string) []string {
 	return ret
 }
 
+// streamingGSReader streams reads
+type streamingGSReader struct {
+	cl    gs.Client
+	path  gs.Path
+	c     context.Context
+	cache map[int64][]byte
+}
+
+func (s *streamingGSReader) ReadAt(p []byte, off int64) (n int, err error) {
+	if len(p) > chunkSize {
+		// I've never seen the zip package request anything this large, but just in case...
+		panic(fmt.Sprintf("bad size %v > %v", len(p), chunkSize))
+	}
+
+	for offset, dat := range s.cache {
+		if offset <= off && offset+int64(len(dat)) >= off+int64(len(p)) {
+			relativeOff := off - offset
+			return copy(p, dat[relativeOff:relativeOff+int64(len(p))]), nil
+		}
+	}
+
+	logging.Infof(s.c, "caching read for %v bytes %v + %v", s.path, off, len(p))
+	r, err := s.cl.NewReader(s.path, off, chunkSize)
+	if err != nil && err != storage.ErrObjectNotExist {
+		return 0, fmt.Errorf("while creating reader: %v", err)
+	}
+	if err == storage.ErrObjectNotExist {
+		return 0, fmt.Errorf("object not found: %v", s.path)
+	}
+	readBytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return 0, fmt.Errorf("while reading bytes: %v", err)
+	}
+	s.cache[off] = readBytes
+	return copy(p, readBytes), nil
+}
+
+// Reads the zip file at the given google storage path. If the file isn't found, returns nil for the reader.
 var readZipFile = func(c context.Context, gsPath gs.Path) (*zip.Reader, error) {
 	transport, err := auth.GetRPCTransport(c, auth.NoAuth)
 	if err != nil {
@@ -319,31 +358,23 @@ var readZipFile = func(c context.Context, gsPath gs.Path) (*zip.Reader, error) {
 		return nil, fmt.Errorf("while creating client: %v", err)
 	}
 
-	var offset int64
-	allBytes := []byte{}
-	for {
-		cloudReader, err := cl.NewReader(gsPath, offset, chunkSize)
-		if err != nil && err != storage.ErrObjectNotExist {
-			return nil, fmt.Errorf("while creating reader: %v", err)
-		}
-		if err == storage.ErrObjectNotExist {
-			return nil, nil
-		}
-
-		readBytes, err := ioutil.ReadAll(cloudReader)
-		if err != nil {
-			return nil, fmt.Errorf("while reading bytes: %v", err)
-		}
-
-		allBytes = append(allBytes, readBytes...)
-		offset += int64(len(readBytes))
-		if len(readBytes) < chunkSize {
-			break
-		}
+	// Get total size
+	attrs, err := cl.Attrs(gsPath)
+	if err != nil && err != storage.ErrObjectNotExist {
+		return nil, fmt.Errorf("while reading file size: %v", err)
+	}
+	if err == storage.ErrObjectNotExist {
+		return nil, nil
 	}
 
-	bytesReader := bytes.NewReader(allBytes)
-	zr, err := zip.NewReader(bytesReader, int64(len(allBytes)))
+	// This code used to fetch the whole file at once, but it turns out just doing
+	// a streaming reader is faster for every case that I tested.
+	zr, err := zip.NewReader(&streamingGSReader{
+		cl:    cl,
+		path:  gsPath,
+		c:     c,
+		cache: map[int64][]byte{},
+	}, attrs.Size)
 	if err != nil {
 		return nil, fmt.Errorf("while creating zip reader: %v", err)
 	}
