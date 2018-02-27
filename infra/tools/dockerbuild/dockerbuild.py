@@ -19,6 +19,8 @@ from . import source
 from . import util
 from . import wheel
 
+from .builder import PlatformNotSupported
+
 
 def _filter_platform_specs(selected_platforms, selected_specs):
   filtered_platforms = [platform.ALL[p] for p in (
@@ -104,7 +106,7 @@ def _main_wheel_build(args, system):
         pkg_path = build.build(w, system, rebuild=args.rebuild)
         if not pkg_path:
           continue
-      except wheel.PlatformNotSupported:
+      except PlatformNotSupported:
         util.LOGGER.warning('Not supported on: %s', plat.name)
         continue
       util.LOGGER.info('Finished wheel for package: %s', package.name)

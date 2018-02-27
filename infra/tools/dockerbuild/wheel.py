@@ -335,6 +335,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('oauth2client', '4.0.0'),
   Universal('oauth2client', '4.1.2'),
   Universal('packaging', '16.8'),
+  UniversalSource('PeakUtils', '1.0.3'),
   Universal('pbr', '3.0.0'),
   Universal('protobuf', '3.2.0'),
   Universal('pyasn1', '0.2.3'),
