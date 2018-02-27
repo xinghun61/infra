@@ -82,6 +82,7 @@ _DEFAULT_TRY_BOT_MAPPING = {
             'waterfall_trybot': 'trybot2',
             'flake_trybot': 'trybot2_flake',
             'not_run_tests': False,
+            'dimensions': ['os:Mac-10.9', 'cpu:x86-64']
         },
     },
     'm': {
