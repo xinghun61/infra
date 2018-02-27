@@ -122,11 +122,12 @@ FIELD_CHECKNAME_JSON = '/fields/checkName'
 FIELD_CREATE = '/fields/create'
 FIELD_DETAIL = '/fields/detail'
 TEMPLATE_CREATE ='/templates/create'
+TEMPLATE_DETAIL = '/templates/detail'
 WIKI_LIST = '/w/list'  # Wiki urls are just redirects to project.docs_url
 WIKI_PAGE = '/wiki/<wiki_page:.*>'
 SOURCE_PAGE = '/source/<source_page:.*>'
 ADMIN_INTRO = '/adminIntro'
-# TODO(jrbbins): move some editing from /admin to /adminIntro.
+# TODO(jrobbins): move some editing from /admin to /adminIntro.
 ADMIN_COMPONENTS = '/adminComponents'
 ADMIN_LABELS = '/adminLabels'
 ADMIN_RULES = '/adminRules'

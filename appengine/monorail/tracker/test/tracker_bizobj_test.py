@@ -161,6 +161,18 @@ class BizobjTest(unittest.TestCase):
         1, config))
     self.assertEqual(None, tracker_bizobj.FindApprovalDefByID(99, config))
 
+  def testFindIssueTemplate_Normal(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    template = tracker_bizobj.MakeIssueTemplate(
+        'template', 'summary', 'Available', 111L, 'content', [], [], [], [])
+    config.templates.append(template)
+    self.assertEqual(
+        template, tracker_bizobj.FindIssueTemplate('template', config))
+
+  def testFindIssueTemplate_Empty(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    self.assertIsNone(tracker_bizobj.FindIssueTemplate('template', config))
+
   def testGetGrantedPerms_Empty(self):
     config = tracker_pb2.ProjectIssueConfig()
     issue = tracker_pb2.Issue()

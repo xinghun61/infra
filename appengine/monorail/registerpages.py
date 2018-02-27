@@ -101,6 +101,7 @@ from tracker import issuererank
 from tracker import issuetips
 from tracker import spam
 from tracker import templatecreate
+from tracker import templatedetail
 
 from api import api_service
 
@@ -248,6 +249,7 @@ class ServletRegistry(object):
         urls.FIELD_CREATE: fieldcreate.FieldCreate,
         urls.FIELD_DETAIL: fielddetail.FieldDetail,
         urls.TEMPLATE_CREATE: templatecreate.TemplateCreate,
+        urls.TEMPLATE_DETAIL: templatedetail.TemplateDetail,
         urls.WIKI_LIST: redirects.WikiRedirect,
         urls.WIKI_PAGE: redirects.WikiRedirect,
         urls.SOURCE_PAGE: redirects.SourceRedirect,

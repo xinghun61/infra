@@ -128,6 +128,15 @@ def FindApprovalDefByID(approval_id, config):
   return None
 
 
+def FindIssueTemplate(template_name, config):
+  """Find the specified issue template, or return None."""
+  for template in config.templates:
+    if template.name == template_name:
+      return template
+
+  return None
+
+
 def GetGrantedPerms(issue, effective_ids, config):
   """Return a set of permissions granted by user-valued fields in an issue."""
   granted_perms = set()
