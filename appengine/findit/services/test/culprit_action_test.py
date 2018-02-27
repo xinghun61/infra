@@ -127,11 +127,22 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         culprit_action._CanCreateRevertForCulprit(parameters, pipeline_id))
 
+  def testCannotCommitRevertIfNotRevertByFindit(self):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    parameters = SubmitRevertCLParameters(
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        revert_status=gerrit.CREATED_BY_SHERIFF)
+    pipeline_id = 'pipeline_id'
+
+    self.assertFalse(culprit_action._CanCommitRevert(parameters, pipeline_id))
+
   def testCanCommitRevert(self):
     repo_name = 'chromium'
     revision = 'rev1'
     parameters = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision), revert_status=1)
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        revert_status=gerrit.CREATED_BY_FINDIT)
     pipeline_id = 'pipeline_id'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
@@ -145,7 +156,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     parameters = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision), revert_status=1)
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        revert_status=gerrit.CREATED_BY_FINDIT)
     pipeline_id = 'another_pipeline'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
@@ -383,7 +395,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
     pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=1,
+        revert_status=gerrit.CREATED_BY_FINDIT,
         failure_type=failure_type.COMPILE)
 
     self.assertEqual(gerrit.SKIPPED,
@@ -397,7 +409,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
     pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=1,
+        revert_status=gerrit.CREATED_BY_FINDIT,
         failure_type=failure_type.COMPILE)
 
     self.assertEqual(gerrit.COMMITTED,

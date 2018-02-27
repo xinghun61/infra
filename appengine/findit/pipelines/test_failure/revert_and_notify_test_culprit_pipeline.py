@@ -44,7 +44,7 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
                 build_id=build_id,
                 failure_type=build_failure_type))
 
-        if test_culprit_action.CanAutoCommitRevertByFindit(revert_status):
+        if test_culprit_action.CanAutoCommitRevertByFindit():
           submit_revert_pipeline_input = self.CreateInputObjectInstance(
               SubmitRevertCLParameters,
               cl_key=culprit,

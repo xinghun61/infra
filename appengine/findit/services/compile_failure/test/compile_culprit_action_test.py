@@ -5,7 +5,6 @@
 import mock
 
 from model.wf_suspected_cl import WfSuspectedCL
-from services import gerrit
 from services.compile_failure import compile_culprit_action
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -41,16 +40,12 @@ class CompileCulpritActionTest(wf_testcase.WaterfallTestCase):
           'auto_commit_revert_compile': False
       })
   def testCanNotCommitRevertFeatureIsOff(self, _):
-    self.assertFalse(
-        compile_culprit_action.CanAutoCommitRevertByFindit(
-            gerrit.CREATED_BY_FINDIT))
+    self.assertFalse(compile_culprit_action.CanAutoCommitRevertByFindit())
 
   @mock.patch.object(
       compile_culprit_action, '_GetDailyNumberOfCommits', return_value=10)
   def testCannotCommitRevertFeatureCommitExceeds(self, _):
-    self.assertFalse(
-        compile_culprit_action.CanAutoCommitRevertByFindit(
-            gerrit.CREATED_BY_FINDIT))
+    self.assertFalse(compile_culprit_action.CanAutoCommitRevertByFindit())
 
   @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
   def testCanAutoCommitRevertByFindit(self, mock_info):
@@ -69,6 +64,4 @@ class CompileCulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    self.assertTrue(
-        compile_culprit_action.CanAutoCommitRevertByFindit(
-            gerrit.CREATED_BY_FINDIT))
+    self.assertTrue(compile_culprit_action.CanAutoCommitRevertByFindit())

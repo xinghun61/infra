@@ -8,7 +8,6 @@ import mock
 from common.waterfall import failure_type
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
-from services import gerrit
 from services.parameters import CLKey
 from services.parameters import CulpritActionParameters
 from services.test_failure import test_culprit_action
@@ -90,16 +89,12 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
           'auto_commit_revert_test': False
       })
   def testCanNotCommitRevertFeatureIsOff(self, _):
-    self.assertFalse(
-        test_culprit_action.CanAutoCommitRevertByFindit(
-            gerrit.CREATED_BY_FINDIT))
+    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit())
 
   @mock.patch.object(
       test_culprit_action, '_GetDailyNumberOfCommits', return_value=10)
   def testCannotCommitRevertFeatureCommitExceeds(self, _):
-    self.assertFalse(
-        test_culprit_action.CanAutoCommitRevertByFindit(
-            gerrit.CREATED_BY_FINDIT))
+    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit())
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
@@ -122,6 +117,4 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.revert_committed_time = datetime(2018, 2, 14, 12, 0, 0)
     culprit.put()
 
-    self.assertTrue(
-        test_culprit_action.CanAutoCommitRevertByFindit(
-            gerrit.CREATED_BY_FINDIT))
+    self.assertTrue(test_culprit_action.CanAutoCommitRevertByFindit())

@@ -15,7 +15,6 @@ from google.appengine.ext import ndb
 from common.waterfall import failure_type
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
-from services import gerrit
 from waterfall import waterfall_config
 
 _DEFAULT_AUTO_CREATE_REVERT_DAILY_THRESHOLD_TEST = 10
@@ -77,19 +76,16 @@ def _GetDailyNumberOfCommits(limit):
           WfSuspectedCL.revert_committed_time >= earliest_time)).count(limit)
 
 
-def CanAutoCommitRevertByFindit(revert_status):
+def CanAutoCommitRevertByFindit():
   """Checks if the revert can be auto committed by Findit.
 
   The revert can be committed if:
     1. Auto revert and Auto commit is turned on;
-    2. The revert is created by Findit;
-    3. The number of commits of reverts in past 24 hours is less than the
+    2. The number of commits of reverts in past 24 hours is less than the
       daily limit;
   """
-  revert_status = revert_status
   action_settings = waterfall_config.GetActionSettings()
-  if (not revert_status == gerrit.CREATED_BY_FINDIT or
-      not bool(action_settings.get('auto_commit_revert_test')) or
+  if (not bool(action_settings.get('auto_commit_revert_test')) or
       not bool(action_settings.get('auto_create_revert_test'))):
     return False
 

@@ -128,12 +128,16 @@ def _CanCommitRevert(parameters, pipeline_id):
 
   The revert of the culprit can be committed by the analysis if all below are
   True:
+    0. Findit reverts the culprit;
     1. There is a revert for the culprit;
     2. The revert has completed;
     3. The revert should be auto commited;
     4. No other pipeline is committing the revert;
     5. No other pipeline is supposed to handle the auto commit.
   """
+  if not parameters.revert_status == gerrit.CREATED_BY_FINDIT:
+    return False
+
   culprit = WfSuspectedCL.Get(parameters.cl_key.repo_name,
                               parameters.cl_key.revision)
   assert culprit
