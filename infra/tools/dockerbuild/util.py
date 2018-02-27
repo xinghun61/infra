@@ -98,7 +98,7 @@ def resource_install(name, dest_dir):
 def download_to(url, dst_fd, hash_obj=None):
   """Downloads the specified URL, writing it to "dst_fd". Returns the
   specified hash.
-  
+
   If "hash_obj" is None, no hash will be generated. Otherwise, it should be a
   hashlib instance that will be updated with the downloaded file contents.
 
@@ -164,3 +164,50 @@ class Timer(object):
       yield t
     finally:
       t.stop()
+
+
+def check_run(system, dx, work_root, cmd, cwd=None):
+  """Runs a command |cmd|.
+
+  Args:
+    system (runtime.System): The System instance.
+    dx (dockcross.Image or None): The DockCross image to use. If None, the
+        command will be run on the local system.
+    work_root (str): The work root directory. If |dx| is not None, this will
+        be the directory mounted as "/work" in the Docker environment.
+    cmd (list): The command to run. Any components that are paths beginning
+        with |work_root| will be automatically made relative to |work_root|.
+    cwd (str or None): The working directory for the command. If None,
+        |work_root| will be used. Otherwise, |cwd| must be a subdirectory of
+        |work_root|.
+    """
+  if dx is None:
+    if cmd[0] == 'python':
+      cmd[0] = system.native_python
+    return system.check_run(cmd, cwd=cwd or work_root)
+  return dx.check_run(work_root, cmd, cwd=cwd)
+
+
+def check_run_script(system, dx, work_root, script, args=None, cwd=None):
+  """Runs a script, |script|.
+
+  An anonymous file will be created under |work_root| holding the specified
+  script.
+
+  Args:
+    script (list): A list of script lines to execute.
+    See "check_run" for full argument definition.
+  """
+  with anonfile(work_root, text=True) as fd:
+    for line in script:
+      fd.write(line)
+      fd.write('\n')
+  os.chmod(fd.name, 0755)
+
+  LOGGER.debug('Running script (path=%s): %s', fd.name, script)
+  cmd = [fd.name]
+  if args:
+    cmd.extend(args)
+  return check_run(system, dx, work_root, cmd, cwd=cwd)
+
+
