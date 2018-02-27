@@ -18,5 +18,4 @@ You can also stream:
 
 **Bonus** If `depot_tools` in your `$PATH`:
 
-    $ alias yo=cit
-    $ tar cz my_broken_checkout | yo dumpthis
+    $ tar cz my_broken_checkout | cit dumpthis
