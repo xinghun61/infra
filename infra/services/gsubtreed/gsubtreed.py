@@ -134,7 +134,7 @@ class Pusher(threading.Thread):
         raise
 
 
-def process_path(path, origin_repo, config):
+def process_path(path, origin_repo, config, dry_run):
   base_url = config['base_url']
   mirror_url = '[FILE-URL]' if base_url.startswith('file:') else origin_repo.url
 
@@ -142,6 +142,7 @@ def process_path(path, origin_repo, config):
   if path in config['path_map_exceptions']:
     subtree_repo_path = config['path_map_exceptions'][path]
   subtree_repo = repo.Repo(posixpath.join(base_url, subtree_repo_path))
+  subtree_repo.dry_run = dry_run
   subtree_repo.repos_dir = origin_repo.repos_dir
   subtree_repo.reify(share_from=origin_repo)
   subtree_repo_push = {}
@@ -240,7 +241,7 @@ def process_path(path, origin_repo, config):
   return success, synthed_count, t
 
 
-def inner_loop(origin_repo, config):
+def inner_loop(origin_repo, config, dry_run):
   """Runs one iteration of the gsubtreed algorithm.
 
   Returns:
@@ -256,7 +257,8 @@ def inner_loop(origin_repo, config):
   for path in config['enabled_paths']:
     LOGGER.info('processing path %r', path)
     try:
-      path_success, num_synthed, t = process_path(path, origin_repo, config)
+      path_success, num_synthed, t = process_path(path, origin_repo,
+                                                  config, dry_run)
       threads.append(t)
       success = path_success and success
       processed[path] = num_synthed

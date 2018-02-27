@@ -106,7 +106,8 @@ def RunTest(test_name):
         # TODO(iannucci): Let expect_tests absorb stdio
         sys.stderr = sys.stdout = dn
         local.reify()
-        success, processed = gsubtreed.inner_loop(local, cref)
+        dry_run = False
+        success, processed = gsubtreed.inner_loop(local, cref, dry_run)
     except Exception:  # pragma: no cover
       ret.append(traceback.format_exc().splitlines())
     finally:

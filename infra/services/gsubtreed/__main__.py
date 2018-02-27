@@ -17,7 +17,8 @@ from infra_libs import ts_mon
 
 
 # Return value of parse_args.
-Options = collections.namedtuple('Options', 'repo loop_opts json_output')
+Options = collections.namedtuple('Options',
+                                 'repo loop_opts json_output dry_run')
 
 commits_counter = ts_mon.CounterMetric('gsubtreed/commit_count',
     'Number of commits processed by gsubtreed',
@@ -56,7 +57,6 @@ def parse_args(args):  # pragma: no cover
   opts = parser.parse_args(args)
 
   repo = opts.repo[0]
-  repo.dry_run = opts.dry_run
   repo.repos_dir = os.path.abspath(opts.repo_dir)
 
   if not opts.ts_mon_task_job_name:
@@ -68,7 +68,7 @@ def parse_args(args):  # pragma: no cover
   ts_mon.process_argparse_options(opts)
   loop_opts = outer_loop.process_argparse_options(opts)
 
-  return Options(repo, loop_opts, opts.json_output)
+  return Options(repo, loop_opts, opts.json_output, opts.dry_run)
 
 
 def main(args):  # pragma: no cover
@@ -78,7 +78,7 @@ def main(args):  # pragma: no cover
 
   summary = collections.defaultdict(int)
   def outer_loop_iteration():
-    success, paths_counts = gsubtreed.inner_loop(opts.repo, cref)
+    success, paths_counts = gsubtreed.inner_loop(opts.repo, cref, opts.dry_run)
     for path, count in paths_counts.iteritems():
       summary[path] += count
       commits_counter.increment_by(count, fields={'path': path})
