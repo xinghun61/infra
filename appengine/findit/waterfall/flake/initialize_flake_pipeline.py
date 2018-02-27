@@ -6,10 +6,14 @@ import logging
 
 from common import constants
 from common.findit_http_client import FinditHttpClient
+from dto.int_range import IntRange
+from dto.step_metadata import StepMetadata
 from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
+from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from waterfall import build_util
 from waterfall import waterfall_config
 from waterfall.flake import triggering_sources
@@ -153,8 +157,8 @@ def ScheduleAnalysisIfNeeded(
     # results and data.
     logging.info(
         'A new master flake analysis was successfully saved for %s (%s) and '
-        'will be captured in version %s',
-        repr(normalized_test), repr(original_test), analysis.version_number)
+        'will be captured in version %s', repr(normalized_test),
+        repr(original_test), analysis.version_number)
 
     step_metadata = build_util.GetWaterfallBuildStepLog(
         normalized_test.master_name, normalized_test.builder_name,
@@ -164,26 +168,59 @@ def ScheduleAnalysisIfNeeded(
     logging.info('Initializing flake analysis pipeline for key: %s',
                  analysis.key)
 
-    pipeline_job = RecursiveFlakePipeline(
-        analysis.key.urlsafe(),
-        normalized_test.build_number,
-        None,
-        None,
-        None,
-        step_metadata=step_metadata,
-        manually_triggered=manually_triggered,
-        use_nearby_neighbor=use_nearby_neighbor,
-        force=force)
-    pipeline_job.target = appengine_util.GetTargetNameForModule(
-        constants.WATERFALL_BACKEND)
-    pipeline_job.start(queue_name=queue_name)
-    analysis.pipeline_status_path = pipeline_job.pipeline_status_path()
-    analysis.root_pipeline_id = pipeline_job.root_pipeline_id
-    analysis.put()
-    logging.info('A flake analysis was scheduled for build %s, %s, %s, %s: %s',
-                 normalized_test.master_name, normalized_test.builder_name,
-                 normalized_test.build_number, normalized_test.step_name,
-                 pipeline_job.pipeline_status_path())
+    use_new_pipeline = flake_settings.get('use_new_pipeline_for_rerun', False)
+
+    if use_new_pipeline and force:
+      # Initially, only support running the new commit-based flake analysis
+      # pipelines on forced reruns by admins.
+      # TODO(crbug.com/786518): Remove old pipeline and replace with the new
+      # once stable.
+      starting_build_info = build_util.GetBuildInfo(
+          normalized_test.master_name, normalized_test.builder_name,
+          normalized_test.build_number)
+      assert starting_build_info
+      assert starting_build_info.commit_position is not None
+
+      analyze_flake_input = AnalyzeFlakeInput(
+          analysis_urlsafe_key=analysis.key.urlsafe(),
+          commit_position_range=IntRange(
+              lower=None, upper=starting_build_info.commit_position),
+          analyze_commit_position_parameters=None,
+          manually_triggered=True,
+          retries=0,
+          step_metadata=StepMetadata.FromSerializable(step_metadata))
+
+      pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
+
+      pipeline_job.target = appengine_util.GetTargetNameForModule(
+          constants.WATERFALL_BACKEND)
+      pipeline_job.start(queue_name=queue_name)
+      analysis.pipeline_status_path = pipeline_job.pipeline_status_path()
+      analysis.root_pipeline_id = pipeline_job.root_pipeline_id
+      analysis.put()
+      analysis.LogInfo(
+          ('A flake analysis was scheduled using commit-based pipelines with '
+           'path {}').format(pipeline_job.pipeline_status_path()))
+    else:
+      pipeline_job = RecursiveFlakePipeline(
+          analysis.key.urlsafe(),
+          normalized_test.build_number,
+          None,
+          None,
+          None,
+          step_metadata=step_metadata,
+          manually_triggered=manually_triggered,
+          use_nearby_neighbor=use_nearby_neighbor,
+          force=force)
+      pipeline_job.target = appengine_util.GetTargetNameForModule(
+          constants.WATERFALL_BACKEND)
+      pipeline_job.start(queue_name=queue_name)
+      analysis.pipeline_status_path = pipeline_job.pipeline_status_path()
+      analysis.root_pipeline_id = pipeline_job.root_pipeline_id
+      analysis.put()
+      analysis.LogInfo(
+          ('A flake analysis was scheduled with build-level pipelines with '
+           'path {}').format(pipeline_job.pipeline_status_path()))
   else:
     logging.info('A flake analysis not necessary for build %s, %s, %s, %s',
                  normalized_test.master_name, normalized_test.builder_name,

@@ -6,10 +6,14 @@ from datetime import datetime
 import mock
 
 from common import constants
+from dto.int_range import IntRange
+from dto.step_metadata import StepMetadata
 from libs import analysis_status
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from waterfall import build_util
+from waterfall.build_info import BuildInfo
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.test import wf_testcase
 from waterfall.test_info import TestInfo
@@ -208,6 +212,52 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
             use_nearby_neighbor=True,
             manually_triggered=False),
         mock.call().start(queue_name=constants.DEFAULT_QUEUE),
+    ])
+
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog', return_value={})
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  @mock.patch.object(initialize_flake_pipeline, '_NeedANewAnalysis')
+  @mock.patch('waterfall.flake.initialize_flake_pipeline.AnalyzeFlakePipeline')
+  @mock.patch('waterfall.flake.initialize_flake_pipeline.MasterFlakeAnalysis')
+  def testRerunAnalysisWithAnalyzeFlakePipeline(
+      self, mocked_analysis, mocked_pipeline, mocked_need_analysis,
+      mocked_build_info, *_):
+    self.UpdateUnitTestConfigSettings(
+        'check_flake_settings',
+        override_data={
+            'use_new_pipeline_for_rerun': True
+        })
+
+    start_commit_position = 1000
+    start_build_info = BuildInfo('m', 'b 1', 123)
+    start_build_info.commit_position = start_commit_position
+    mocked_build_info.return_value = start_build_info
+    mocked_analysis.pipeline_status_path.return_value = 'status'
+    mocked_analysis.key.urlsafe.return_value = 'urlsafe_key'
+    mocked_need_analysis.return_value = (True, mocked_analysis)
+    test = TestInfo('m', 'b 1', 123, 's', 't')
+
+    analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
+        test,
+        test,
+        bug_id=None,
+        allow_new_analysis=True,
+        force=True,
+        queue_name=constants.DEFAULT_QUEUE)
+
+    self.assertIsNotNone(analysis)
+
+    analyze_flake_input = AnalyzeFlakeInput(
+        analysis_urlsafe_key='urlsafe_key',
+        commit_position_range=IntRange(lower=None, upper=start_commit_position),
+        analyze_commit_position_parameters=None,
+        manually_triggered=True,
+        retries=0,
+        step_metadata=StepMetadata.FromSerializable({}))
+
+    mocked_pipeline.assert_has_calls([
+        mock.call(analyze_flake_input),
+        mock.call().start(queue_name=constants.DEFAULT_QUEUE)
     ])
 
   @mock.patch('waterfall.flake.recursive_flake_pipeline.RecursiveFlakePipeline')
