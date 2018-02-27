@@ -222,11 +222,13 @@ def process_path(path, origin_repo, config):
         ]
 
         synthed_count += 1
-        synth_parent = commit.alter(
+        synth_parent_data = commit.data.alter(
           parents=[synth_parent.hsh] if synth_parent is not INVALID else [],
           tree=dir_tree,
           footers=collections.OrderedDict(footers),
         )
+        synth_parent = subtree_repo.get_commit(
+            subtree_repo.intern(synth_parent_data, 'commit'))
 
       if synth_parent is not INVALID and synth_parent != last_push:
         subtree_repo_push[subtree_repo[ref.ref]] = synth_parent
