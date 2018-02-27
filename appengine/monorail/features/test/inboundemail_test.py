@@ -120,6 +120,9 @@ class InboundEmailTest(unittest.TestCase):
     emailfmt.ValidateReferencesHeader(
         mox.IgnoreArg(), self.project, mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(False)
+    emailfmt.ValidateReferencesHeader(
+        mox.IgnoreArg(), self.project, mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn(False)
     self.mox.ReplayAll()
 
     email_tasks = self.inbound.ProcessMail(self.msg, self.project_addr)

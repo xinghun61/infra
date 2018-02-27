@@ -155,6 +155,9 @@ class InboundEmail(webapp2.RequestHandler):
       for ref in references:
         if emailfmt.ValidateReferencesHeader(ref, project, from_addr, subject):
           break  # Found a message ID that we could have sent.
+        if emailfmt.ValidateReferencesHeader(
+            ref, project, from_addr.lower(), subject):
+          break  # Also match all-lowercase from-address.
       else: # for-else: if loop completes with no valid reference found.
         return _MakeErrorMessageReplyTask(
             project_addr, from_addr, self._templates['not_a_reply'])
