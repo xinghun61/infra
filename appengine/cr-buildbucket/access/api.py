@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from google.protobuf import empty_pb2
 from google.protobuf import duration_pb2
 
+from components import auth
 from components import prpc
 
 from access import access_pb2
@@ -82,5 +82,6 @@ class AccessServicer(object):
 def create_routes(): # pragma: no cover
   """Instantiates a pRPC server and returns webapp2 routes for it."""
   server = prpc.Server()
+  server.add_interceptor(auth.prpc_interceptor)
   server.add_service(AccessServicer())
   return server.get_routes()
