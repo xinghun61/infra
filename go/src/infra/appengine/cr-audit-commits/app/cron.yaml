@@ -3,14 +3,18 @@ cron:
   url: /internal/cron/ts_mon/housekeeping
   schedule: every 1 minutes
 
-- description: "Commit scanner"
+- description: "Commit scanner src trunk"
   url: /_cron/commitscanner?repo=chromium-src-master
   schedule: every 5 minutes
 
-- description: "Commit auditor"
+- description: "Commit auditor src trunk"
   url: /_cron/commitauditor?repo=chromium-src-master
   schedule: every 5 minutes
 
-- description: "Commit auditor"
+- description: "Commit scanner 3325 release branch"
+  url: /_cron/commitscanner?repo=chromium-src-3325
+  schedule: every 5 minutes
+
+- description: "Commit auditor 3325 release branch"
   url: /_cron/commitauditor?repo=chromium-src-3325
   schedule: every 5 minutes
