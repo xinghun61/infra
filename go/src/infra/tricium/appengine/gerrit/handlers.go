@@ -19,6 +19,10 @@ import (
 	"infra/tricium/appengine/common/config"
 )
 
+type gerritReporter struct{}
+
+var reporter = &gerritReporter{}
+
 func pollHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 	if err := poll(c, GerritServer, config.LuciConfigServer); err != nil {
@@ -27,63 +31,6 @@ func pollHandler(ctx *router.Context) {
 		return
 	}
 	logging.Debugf(c, "[gerrit] Successfully completed poll")
-	w.WriteHeader(http.StatusOK)
-}
-
-func launchedHandler(ctx *router.Context) {
-	c, r, w := ctx.Context, ctx.Request, ctx.Writer
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Launched queue handler failed to read request body")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	rr := &admin.ReportLaunchedRequest{}
-	if err := proto.Unmarshal(body, rr); err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Launched queue handler failed to unmarshal request")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	logging.Debugf(c, "[gerrit] Report launched request for run ID: %d", rr.RunId)
-	if _, err := reporter.ReportLaunched(c, rr); err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Failed to call Gerrit.ReportLaunched")
-		switch grpc.Code(err) {
-		case codes.InvalidArgument:
-			w.WriteHeader(http.StatusBadRequest)
-		default:
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-func completedHandler(ctx *router.Context) {
-	c, r, w := ctx.Context, ctx.Request, ctx.Writer
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Completed queue handler failed to read request body")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	rr := &admin.ReportCompletedRequest{}
-	if err := proto.Unmarshal(body, rr); err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Completed queue handler failed to unmarshal request")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	logging.Debugf(c, "[gerrit] Report progress request for run ID: %d", rr.RunId)
-	if _, err := reporter.ReportCompleted(c, rr); err != nil {
-		logging.WithError(err).Errorf(c, "[gerrit] Failed to call Gerrit.ReportCompleted")
-		switch grpc.Code(err) {
-		case codes.InvalidArgument:
-			w.WriteHeader(http.StatusBadRequest)
-		default:
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-		return
-	}
 	w.WriteHeader(http.StatusOK)
 }
 

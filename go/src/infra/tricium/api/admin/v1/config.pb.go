@@ -23,10 +23,6 @@ It has these top-level messages:
 	CollectResponse
 	LaunchRequest
 	LaunchResponse
-	ReportLaunchedRequest
-	ReportLaunchedResponse
-	ReportCompletedRequest
-	ReportCompletedResponse
 	ReportResultsRequest
 	ReportResultsResponse
 	WorkflowLaunchedRequest

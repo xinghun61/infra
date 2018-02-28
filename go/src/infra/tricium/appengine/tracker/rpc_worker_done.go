@@ -284,17 +284,6 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 				return fmt.Errorf("failed to enqueue reporter results request: %v", err)
 			}
 		}
-		if tricium.IsDone(runState) {
-			b, err := proto.Marshal(&admin.ReportCompletedRequest{RunId: req.RunId})
-			if err != nil {
-				return fmt.Errorf("failed to encode ReportCompleted request: %v", err)
-			}
-			t := tq.NewPOSTTask("/gerrit/internal/report-completed", nil)
-			t.Payload = b
-			if err = tq.Add(c, common.GerritReporterQueue, t); err != nil {
-				return fmt.Errorf("failed to enqueue reporter complete request: %v", err)
-			}
-		}
 	default:
 		// Do nothing.
 	}

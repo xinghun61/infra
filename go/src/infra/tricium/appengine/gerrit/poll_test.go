@@ -58,11 +58,6 @@ func (m *mockPollRestAPI) QueryChanges(c context.Context, host, project string, 
 	return changes, more, nil
 }
 
-func (*mockPollRestAPI) PostReviewMessage(c context.Context, host, change, revision, msg string) error {
-	// not used by the poller
-	return nil
-}
-
 func (*mockPollRestAPI) PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
 	// not used by the poller
 	return nil
