@@ -1089,6 +1089,42 @@ class ConfigService(object):
     self.StoreConfig(cnxn, config)
     return template_id
 
+  def UpdateIssueTemplateDef(
+      self, cnxn, project_id, template_id, name=None, content=None,
+      summary=None, summary_must_be_edited=None, status=None, members_only=None,
+      owner_defaults_to_member=None, component_required=None, owner_id=None,
+      labels=None, component_ids=None, admin_ids=None, field_values=None):
+    config = self.GetProjectConfig(cnxn, project_id)
+    template = tracker_bizobj.FindIssueTemplateById(template_id, config)
+    if name is not None:
+      template.name = name
+    if content is not None:
+      template.content = content
+    if summary is not None:
+      template.summary = summary
+    if summary_must_be_edited is not None:
+      template.summary_must_be_edited = summary_must_be_edited
+    if status is not None:
+      template.status = status
+    if members_only is not None:
+      template.members_only = members_only
+    if owner_defaults_to_member is not None:
+      template.owner_defaults_to_member = owner_defaults_to_member
+    if component_required is not None:
+      template.component_required = component_required
+    if owner_id is not None:
+      template.owner_id = owner_id
+    if labels is not None:
+      template.labels = labels
+    if component_ids is not None:
+      template.component_ids = component_ids
+    if admin_ids is not None:
+      template.admin_ids = admin_ids
+    if field_values is not None:
+      template.field_values = field_values
+
+    self.StoreConfig(cnxn, config)
+
   def InvalidateMemcache(self, issues, key_prefix=''):
     pass
 

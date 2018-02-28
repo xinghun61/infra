@@ -173,6 +173,19 @@ class BizobjTest(unittest.TestCase):
     config = tracker_pb2.ProjectIssueConfig()
     self.assertIsNone(tracker_bizobj.FindIssueTemplate('template', config))
 
+  def testFindIssueTemplateById_Normal(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    template = tracker_bizobj.MakeIssueTemplate(
+        'template', 'summary', 'Available', 111L, 'content', [], [], [], [])
+    template.template_id = 1
+    config.templates.append(template)
+    self.assertEqual(
+        template, tracker_bizobj.FindIssueTemplateByID(1, config))
+
+  def testFindIssueTemplateById_Empty(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    self.assertIsNone(tracker_bizobj.FindIssueTemplateByID(1, config))
+
   def testGetGrantedPerms_Empty(self):
     config = tracker_pb2.ProjectIssueConfig()
     issue = tracker_pb2.Issue()

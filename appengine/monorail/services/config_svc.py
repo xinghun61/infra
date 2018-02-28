@@ -1548,6 +1548,85 @@ class ConfigService(object):
     self.InvalidateMemcacheForEntireProject(project_id)
     return template_id
 
+  def UpdateIssueTemplateDef(
+      self, cnxn, project_id, template_id, name=None, content=None,
+      summary=None, summary_must_be_edited=None, status=None, members_only=None,
+      owner_defaults_to_member=None, component_required=None, owner_id=None,
+      labels=None, component_ids=None, admin_ids=None, field_values=None):
+    """Update an existing issue template definition with the given info.
+
+    Args:
+      cnxn:connection to SQL database.
+      project_id: int ID of the current project.
+      template_id: int ID of the issue template to update.
+      name: updated name of the new issue template.
+      content: updated string content of the issue template.
+      summary: updated string summary of the issue template.
+      summary_must_be_edited: True if the summary must be edited when this
+          issue template is used to make a new issue.
+      status: updated string default status of a new issue created with this
+          template.
+      members_only: True if only members can view this issue template.
+      owner_defaults_to_member: True is issue owner should be set to member
+          creating the issue.
+      component_required: True if a component is required.
+      owner_id: updated user_id of default owner, if any.
+      labels: updated list of string labels for the new issue, if any.
+      component_ids: updated list of component_ids, if any.
+      admin_ids: updated list of admin_ids, if any.
+      field_values: updated list of FieldValu PBs, if any.
+    """
+    new_values = {}
+    if name is not None:
+      new_values['name'] = name
+    if content is not None:
+      new_values['content'] = content
+    if summary is not None:
+      new_values['summary'] = summary
+    if summary_must_be_edited is not None:
+      new_values['summary_must_be_edited'] = bool(summary_must_be_edited)
+    if status is not None:
+      new_values['status'] = status
+    if members_only is not None:
+      new_values['members_only'] = bool(members_only)
+    if owner_defaults_to_member is not None:
+      new_values['owner_defaults_to_member'] = bool(owner_defaults_to_member)
+    if component_required is not None:
+      new_values['component_required'] = bool(component_required)
+    if owner_id is not None:
+      new_values['owner_id'] = owner_id
+
+    self.template_tbl.Update(cnxn, new_values, id=template_id, commit=False)
+
+    if labels is not None:
+      self.template2label_tbl.Delete(cnxn, id=template_id, commit=False)
+      self.template2label_tbl.InsertRows(
+          cnxn, TEMPLATE2LABEL_COLS, [(template_id, label) for label in labels],
+          commit=False)
+    if component_ids is not None:
+      self.template2component_tbl.Delete(cnxn, id=template_id, commit=False)
+      self.template2component_tbl.InsertRows(
+          cnxn, TEMPLATE2COMPONENT_COLS, [(template_id, c_id) for
+                                          c_id in component_ids],
+          commit=False)
+    if admin_ids is not None:
+      self.template2admin_tbl.Delete(cnxn, id=template_id, commit=False)
+      self.template2admin_tbl.InsertRows(
+          cnxn, TEMPLATE2ADMIN_COLS, [(template_id, admin_id) for
+                                      admin_id in admin_ids],
+          commit=False)
+    if field_values is not None:
+      self.template2fieldvalue_tbl.Delete(cnxn, id=template_id, commit=False)
+      self.template2fieldvalue_tbl.InsertRows(
+          cnxn, TEMPLATE2FIELDVALUE_COLS, [
+              (template_id, fv.field_id, fv.int_value, fv.str_value, fv.user_id,
+               fv.date_value, fv.url_value) for fv in field_values],
+          commit=False)
+
+    cnxn.Commit()
+    self.config_2lc.InvalidateKeys(cnxn, [project_id])
+    self.InvalidateMemcacheForEntireProject(project_id)
+
   ### Memcache management
 
   def InvalidateMemcache(self, issues, key_prefix=''):
