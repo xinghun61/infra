@@ -39,7 +39,8 @@ class BaseTest(testing.AppengineTestCase):
     super(BaseTest, self).setUp()
 
     self.patch(
-        'events.enqueue_tasks_async', autospec=True, return_value=future(None))
+        'notifications.enqueue_tasks_async', autospec=True,
+        return_value=future(None))
 
     self.now = datetime.datetime(2015, 11, 30)
     self.patch(

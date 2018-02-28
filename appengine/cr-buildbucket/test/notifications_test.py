@@ -14,9 +14,9 @@ from testing_utils import testing
 
 from test import test_util
 import api_common
-import events
 import main
 import model
+import notifications
 
 
 class NotificationsTest(testing.AppengineTestCase):
@@ -28,7 +28,7 @@ class NotificationsTest(testing.AppengineTestCase):
         extra_environ={'REMOTE_ADDR': '127.0.0.1'})
 
     self.patch(
-        'events.enqueue_tasks_async',
+        'notifications.enqueue_tasks_async',
         autospec=True,
         return_value=test_util.future(None))
 
@@ -57,7 +57,7 @@ class NotificationsTest(testing.AppengineTestCase):
     @ndb.transactional
     def txn():
       build.put()
-      events.on_build_completing_async(build).get_result()
+      notifications.enqueue_notifications_async(build).get_result()
     txn()
 
     build = build.key.get()
@@ -69,7 +69,7 @@ class NotificationsTest(testing.AppengineTestCase):
       'id': 1,
       'mode': 'callback',
     }
-    events.enqueue_tasks_async.assert_called_with('backend-default', [
+    notifications.enqueue_tasks_async.assert_called_with('backend-default', [
       {
         'url': '/internal/task/buildbucket/notify/1',
         'payload': json.dumps(global_task_payload, sort_keys=True),
@@ -124,7 +124,7 @@ class NotificationsTest(testing.AppengineTestCase):
     @ndb.transactional
     def txn():
       build.put()
-      events.on_build_completing_async(build).get_result()
+      notifications.enqueue_notifications_async(build).get_result()
     txn()
 
     build = build.key.get()
@@ -132,7 +132,7 @@ class NotificationsTest(testing.AppengineTestCase):
       'id': 1,
       'mode': 'global',
     }
-    events.enqueue_tasks_async.assert_called_with('backend-default', [
+    notifications.enqueue_tasks_async.assert_called_with('backend-default', [
       {
         'url': '/internal/task/buildbucket/notify/1',
         'payload': json.dumps(global_task_payload, sort_keys=True),

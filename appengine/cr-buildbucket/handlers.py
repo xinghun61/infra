@@ -22,8 +22,8 @@ from swarming import swarmbucket_api
 import access
 import api
 import config
-import events
 import model
+import notifications
 import service
 import swarming
 
@@ -357,7 +357,7 @@ def get_backend_routes():
         CronUpdateBuckets),
     webapp2.Route(
         r'/internal/task/buildbucket/notify/<build_id:\d+>',
-        events.TaskPublishNotification),
+        notifications.TaskPublishNotification),
     webapp2.Route(
         r'/internal/task/buildbucket/backfill-tag-index/<rest>',
         TaskBackfillTagIndex),

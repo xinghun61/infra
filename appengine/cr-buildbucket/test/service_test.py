@@ -19,8 +19,8 @@ import acl
 import api_common
 import config
 import errors
-import events
 import model
+import notifications
 import service
 import swarming
 
@@ -92,7 +92,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         return_value='buildbucket.example.com')
 
     self.patch(
-        'events.enqueue_tasks_async', autospec=True, return_value=future(None))
+        'notifications.enqueue_tasks_async',
+        autospec=True, return_value=future(None))
 
   def mock_cannot(self, action, bucket=None):
     def can_async(requested_bucket, requested_action, _identity=None):
@@ -1446,7 +1447,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.test_build.put()
     yield
-    events.enqueue_tasks_async.assert_called_with('backend-default', [
+    notifications.enqueue_tasks_async.assert_called_with('backend-default', [
       {
         'url': '/internal/task/buildbucket/notify/1',
         'payload': json.dumps({
