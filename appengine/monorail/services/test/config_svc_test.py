@@ -1094,6 +1094,37 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.DeleteComponentDef(self.cnxn, 789, 1)
     self.mox.VerifyAll()
 
+  ### Issue template definition
+
+  def SetUpCreateIssueTemplateDef(self):
+    self.config_service.template_tbl.InsertRow(
+        self.cnxn, project_id=789, name='template', content='content',
+        summary='summary', summary_must_be_edited=True, owner_id=111L,
+        status='Available', members_only=True, owner_defaults_to_members=True,
+        component_required=True, commit=False).AndReturn(1)
+    self.config_service.template2label_tbl.InsertRows(
+        self.cnxn, config_svc.TEMPLATE2LABEL_COLS, [(1, 'label')], commit=False)
+    self.config_service.template2component_tbl.InsertRows(
+        self.cnxn, config_svc.TEMPLATE2COMPONENT_COLS, [(1, 3)], commit=False)
+    self.config_service.template2admin_tbl.InsertRows(
+        self.cnxn, config_svc.TEMPLATE2ADMIN_COLS, [(1, 222L)], commit=False)
+    self.config_service.template2fieldvalue_tbl.InsertRows(
+        self.cnxn, config_svc.TEMPLATE2FIELDVALUE_COLS, [
+            (1, 1, None, 'somestring', None, None, None)], commit=False)
+
+    self.cnxn.Commit()
+
+  def testCreateIssueTemplateDef(self):
+    fv = tracker_bizobj.MakeFieldValue(
+        1, None, 'somestring', None, None, None, False)
+    self.SetUpCreateIssueTemplateDef()
+    self.mox.ReplayAll()
+    self.config_service.CreateIssueTemplateDef(
+        self.cnxn, 789, 'template', 'content', 'summary', True, 'Available',
+        True, True, True, owner_id=111L, labels=['label'], component_ids=[3],
+        admin_ids=[222L], field_values=[fv])
+    self.mox.VerifyAll()
+
   ### Memcache management
 
   def testInvalidateMemcache(self):

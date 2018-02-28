@@ -1485,6 +1485,69 @@ class ConfigService(object):
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
     self.InvalidateMemcacheForEntireProject(project_id)
 
+  ### Issue template definition
+
+  def CreateIssueTemplateDef(
+      self, cnxn, project_id, name, content, summary, summary_must_be_edited,
+      status, members_only, owner_defaults_to_members, component_required,
+      owner_id=None, labels=None, component_ids=None, admin_ids=None,
+      field_values=None):
+    """Create a new issue template definition with the given info.
+
+    Args:
+      cnxn:connection to SQL database.
+      project_id: int ID of the current project.
+      name: name of the new issue template.
+      content: string content of the issue template.
+      summary: string summary of the issue template.
+      summary_must_be_edited: True if the summary must be edited when this
+          issue template is used to make a new issue.
+      status: string default status of a new issue created with this template.
+      members_only: True if only members can view this issue template.
+      owner_defaults_to_members: True is issue owner should be set to member
+          creating the issue.
+      component_required: True if a component is required.
+      owner_id: user_id of default owner, if any.
+      labels: list of string labels for the new issue, if any.
+      component_ids: list of component_ids, if any.
+      admin_ids: list of admin_ids, if any.
+      field_values: list of FieldValu PBs, if any.
+
+    Returns:
+      Integer template_id of the new issue template definition.
+    """
+
+    template_id = self.template_tbl.InsertRow(
+        cnxn, project_id=project_id, name=name, content=content,
+        summary=summary, summary_must_be_edited=summary_must_be_edited,
+        owner_id=owner_id, status=status, members_only=members_only,
+        owner_defaults_to_members=owner_defaults_to_members,
+        component_required=component_required, commit=False)
+
+    if labels:
+      self.template2label_tbl.InsertRows(
+          cnxn, TEMPLATE2LABEL_COLS, [(template_id, label) for label in labels],
+          commit=False)
+    if component_ids:
+      self.template2component_tbl.InsertRows(
+          cnxn, TEMPLATE2COMPONENT_COLS, [(template_id, c_id) for
+                                          c_id in component_ids], commit=False)
+    if admin_ids:
+      self.template2admin_tbl.InsertRows(
+          cnxn, TEMPLATE2ADMIN_COLS, [(template_id, admin_id) for
+                                      admin_id in admin_ids], commit=False)
+    if field_values:
+      self.template2fieldvalue_tbl.InsertRows(
+          cnxn, TEMPLATE2FIELDVALUE_COLS, [
+              (template_id, fv.field_id, fv.int_value, fv.str_value, fv.user_id,
+               fv.date_value, fv.url_value) for fv in field_values],
+          commit=False)
+
+    cnxn.Commit()
+    self.config_2lc.InvalidateKeys(cnxn, [project_id])
+    self.InvalidateMemcacheForEntireProject(project_id)
+    return template_id
+
   ### Memcache management
 
   def InvalidateMemcache(self, issues, key_prefix=''):
