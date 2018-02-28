@@ -119,7 +119,7 @@ func (ar AccountRules) NotificationFunction() NotificationFunc {
 // MatchesCommit determines whether the AccountRules set it's bound to, applies
 // to the given commit.
 func (ar AccountRules) MatchesCommit(c *git.Commit) bool {
-	return c.GetCommitter().GetEmail() == ar.Account || c.GetAuthor().GetEmail() == ar.Account
+	return ar.Account == "*" || c.GetCommitter().GetEmail() == ar.Account || c.GetAuthor().GetEmail() == ar.Account
 }
 
 // MatchesRelevantCommit determines whether the AccountRules set it's bound to,

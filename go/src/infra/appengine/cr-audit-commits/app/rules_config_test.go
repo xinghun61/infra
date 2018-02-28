@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/common/proto/git"
 )
 
 func TestRulesConfig(t *testing.T) {
@@ -16,5 +17,15 @@ func TestRulesConfig(t *testing.T) {
 		for k := range RuleMap {
 			So(k, ShouldNotEqual, "AuditFailure")
 		}
+	})
+	Convey("AccountRules", t, func() {
+		commit := &git.Commit{
+			Author:    &git.Commit_User{Email: "dummy1@test1.com"},
+			Committer: &git.Commit_User{Email: "dummy2@test2.com"},
+		}
+		So(AccountRules{Account: "dummy1@test1.com"}.MatchesCommit(commit), ShouldBeTrue)
+		So(AccountRules{Account: "dummy2@test2.com"}.MatchesCommit(commit), ShouldBeTrue)
+		So(AccountRules{Account: "dummy3@test3.com"}.MatchesCommit(commit), ShouldBeFalse)
+		So(AccountRules{Account: "*"}.MatchesCommit(commit), ShouldBeTrue)
 	})
 }
