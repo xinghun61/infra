@@ -22,6 +22,15 @@ import (
 	"infra/monorail"
 )
 
+// sendEmailForFinditViolation is not actually used by any RuleSet its purpose
+// is to illustrate how one would use sendEmailForViolation to notify about
+// violations via email.
+func sendEmailForFinditViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error) {
+	recipients := []string{"eng-team@dummy.com"}
+	subject := "A policy violation was detected on commit %s"
+	return sendEmailForViolation(ctx, cfg, rc, cs, state, recipients, subject)
+}
+
 func TestNotifier(t *testing.T) {
 
 	Convey("ViolationNotifier handler test", t, func() {
@@ -201,6 +210,63 @@ func TestNotifier(t *testing.T) {
 				So(rc.GetNotificationState("AuditFailure"), ShouldEqual, "BUG=12345")
 				So(rc.NotifiedAll, ShouldBeTrue)
 			})
+		})
+		Convey("Failed audits - email only", func() {
+			RuleMap["old-repo-email"] = &RepoConfig{
+				BaseRepoURL:     "https://old.googlesource.com/old-email.git",
+				GerritURL:       "https://old-review.googlesource.com",
+				BranchName:      "master",
+				StartingCommit:  "000000",
+				MonorailAPIURL:  "https://monorail-fake.appspot.com/_ah/api/monorail/v1",
+				MonorailProject: "fakeproject",
+				NotifierEmail:   "notifier@cr-audit-commits-test.appspotmail.com",
+				Rules: map[string]RuleSet{"rulesEmail": AccountRules{
+					Account: "author@test.com",
+					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+						return &RuleResult{"Dummy rule", rulePassed, ""}
+					}},
+					notificationFunction: sendEmailForFinditViolation,
+				}},
+			}
+			repoState := &RepoState{
+				RepoURL:            "https://old.googlesource.com/old-email.git/+/master",
+				LastKnownCommit:    "123456",
+				LastRelevantCommit: "999999",
+			}
+			ds.Put(ctx, repoState)
+			rsk := ds.KeyForObj(ctx, repoState)
+			rc := &RelevantCommit{
+				RepoStateKey:     rsk,
+				CommitHash:       "badc0de",
+				Status:           auditCompletedWithViolation,
+				Result:           []RuleResult{{"DummyRule", ruleFailed, "This commit is bad"}},
+				CommitterAccount: "committer@test.com",
+				AuthorAccount:    "author@test.com",
+				CommitMessage:    "This commit failed all audits.",
+			}
+			err := ds.Put(ctx, rc)
+			So(err, ShouldBeNil)
+
+			resp, err := client.Get(srv.URL + notifierPath + "?repo=old-repo-email")
+			So(err, ShouldBeNil)
+			So(resp.StatusCode, ShouldEqual, 200)
+			rc = &RelevantCommit{
+				RepoStateKey: rsk,
+				CommitHash:   "badc0de",
+			}
+			err = ds.Get(ctx, rc)
+			So(err, ShouldBeNil)
+			m := mail.GetTestable(ctx)
+			So(rc.NotifiedAll, ShouldBeTrue)
+			So(m.SentMessages()[0], ShouldResemble,
+				&mail.TestMessage{
+					Message: mail.Message{
+						Sender:  "notifier@cr-audit-commits-test.appspotmail.com",
+						To:      []string{"eng-team@dummy.com"},
+						Subject: "A policy violation was detected on commit badc0de",
+						Body:    "Here are the messages from the rules that were broken by this commit:\n\nThis commit is bad",
+					}})
+
 		})
 	})
 }

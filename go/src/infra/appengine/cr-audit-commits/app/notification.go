@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/gae/service/mail"
 
 	"infra/monorail"
 )
@@ -31,6 +32,38 @@ func fileBugForMergeApprovalViolation(ctx context.Context, cfg *RepoConfig, rc *
 	components := []string{"Infra>Client>Chrome>Release"}
 	labels := []string{"CommitLog-Audit-Violation", "Merge-Without-Approval", fmt.Sprintf("M-%d", cfg.MilestoneNumber)}
 	return fileBugForViolation(ctx, cfg, rc, cs, state, components, labels)
+}
+
+// sendEmailForViolation should be called by notification functions to send
+// email messages. It is expected that the subject and recipients are set by
+// the calling notification function, and the body of the email is composed
+// from the ruleResults' messages.
+func sendEmailForViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string, recipients []string, subject string) (string, error) {
+	if state == "emailSent" {
+		return state, nil
+	}
+	violationMessages := []string{}
+	// TODO(crrev.com/817200): Get only violation messages for the ruleset
+	// that uses this notification function.
+	for _, rr := range rc.GetViolations() {
+		violationMessages = append(violationMessages, rr.Message)
+	}
+
+	if len(recipients) == 0 {
+		return state, fmt.Errorf(
+			"Commit %s has a violation but no email recipients are specified",
+			rc.CommitHash)
+	}
+	err := mail.Send(ctx, &mail.Message{
+		Sender:  cfg.NotifierEmail,
+		To:      recipients,
+		Subject: fmt.Sprintf(subject, rc.CommitHash),
+		Body:    "Here are the messages from the rules that were broken by this commit:\n\n" + strings.Join(violationMessages, "\n"),
+	})
+	if err != nil {
+		return state, err
+	}
+	return "emailSent", nil
 }
 
 // fileBugForViolation checks if the failure has already been reported to
