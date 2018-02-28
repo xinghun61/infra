@@ -4,7 +4,6 @@
 import argparse
 import string
 import sys
-import MySQLdb as mdb
 import csv
 import re
 import logging
@@ -15,6 +14,8 @@ import settings
 from framework import sql
 from framework import servlet
 
+if not settings.unit_test_mode:
+  import MySQLdb as mdb
 ISSUE_LIMIT = 7000
 ISSUES_PER_RUN = 50
 COMPONENT_PREDICTOR_PROJECT = 16
@@ -23,7 +24,8 @@ def build_component_dataset(issue, csv_file):
   """Main function to build dataset for training models.
 
   Args:
-    data_path: The file path to store the dataset.
+    issue: The issue service with set up data.
+    csv_file: The csv file path to store the dataset.
   """
 
   logging.info('Building dataset')
@@ -59,7 +61,7 @@ def build_component_dataset(issue, csv_file):
   logging.info('Last close: ' + str(last_close))
 
   # Get the comments and components for 50 issues at a time so as to not
-  # overwhelm a single shard with all 5000 issues at once
+  # overwhelm a single shard with all 7000 issues at once
   for i in range(0, len(issue_ids), ISSUES_PER_RUN):
     issue_list = [str(x[0]) for x in issue_ids[i:i+ISSUES_PER_RUN]]
 
@@ -85,14 +87,32 @@ def build_component_dataset(issue, csv_file):
       comment_string = ' '.join(
           [comment.content for comment in comments[issue_id]])
 
-      pretty_issue = comment_string.lower().strip()
+      final_text = CleanText(comment_string)
 
-      no_punctuation_issue = re.sub('[^\w\s]|_+', '', pretty_issue)
-      one_space_issue = ' '.join(no_punctuation_issue.split())
-
-      final_issue = component_ids, one_space_issue
+      final_issue = component_ids, final_text
       csv_writer.writerow(final_issue)
 
   closed_index_table.Update(con, delta={'closed_index' : last_close})
 
   return csv_file
+
+
+def CleanText(text):
+  """Cleans provided text by lower casing words, removing punctuation, and
+  normalizing spacing so that there is exactly one space between each word.
+
+  Args:
+    text: Raw text to be cleaned.
+
+  Returns:
+    Cleaned version of text.
+
+  """
+
+  pretty_issue = text.lower().strip()
+
+  quoteless_issue = re.sub('\'', '', pretty_issue)
+  no_punctuation_issue = re.sub('[^\w\s]|_+', ' ', quoteless_issue)
+  one_space_issue = ' '.join(no_punctuation_issue.split())
+
+  return one_space_issue

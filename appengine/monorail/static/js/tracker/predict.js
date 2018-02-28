@@ -1,9 +1,7 @@
 (function(window) {
   // TODO: make this dynamic so it works on prod too.
-   const PREDICT_ENDPOINT =
-       'https://monorail-predict.appspot.com/_predict';
-   const LOG_ENDPOINT =
-       'https://monorail-predict.appspot.com/_log';
+   const PREDICT_ENDPOINT = '/p/chromium/suggest/component.do';
+   const LOG_ENDPOINT = '/p/chromium/suggest/componentlog.do';
 
   var componentsEl, commentEl, suggestionsEl, newIssueTextArea,
       addCommentTextArea, issueSummaryInput, existingComments, componentEdit;
@@ -42,15 +40,9 @@
     }
 
     // Log the accept.
-    var params = [
-      'acceptedSuggestion=' + encodeURIComponent(suggestion),
-      // For new issues, this parameter isn't so useful. TODO: Find a way to
-      // associate accept events with isssues during creation.
-      'issueUrl=' + encodeURIComponent(window.location.href),
-    ];
-    fetch(LOG_ENDPOINT + '?' + params.join('&')).catch(function(error) {
-      window.console.error('Failed to POST accept log.', error);
-    });
+    var log_data = {'Accepted suggestion': suggestion, 'Issue URL': window.location.href}
+
+    CS_doPost(LOG_ENDPOINT, null, log_data)
   }
 
   // Update the list of suggested components.
@@ -141,7 +133,7 @@
 
     CS_doPost(PREDICT_ENDPOINT, function(evt) {
       if (evt.target.responseText) {
-        resp = JSON.parse(evt.target.responseText);
+        resp = CS_parseJSON(evt.target);
         updateComponents(resp);
       }
     }, data);

@@ -11,8 +11,16 @@ set of features.
 
 import csv
 import hashlib
+import httplib2
+import logging
 import re
 import sys
+
+from apiclient.discovery import build
+from oauth2client.client import GoogleCredentials
+from apiclient.errors import Error as ApiClientError
+from oauth2client.client import Error as Oauth2ClientError
+
 
 SPAM_COLUMNS = ['verdict', 'subject', 'content', 'email']
 LEGACY_CSV_COLUMNS = ['verdict', 'subject', 'content']
@@ -20,6 +28,7 @@ DELIMITERS = ['\s', '\,', '\.', '\?', '!', '\:', '\(', '\)']
 
 # Must be identical to settings.spam_feature_hashes.
 SPAM_FEATURE_HASHES = 500
+# Must be identical to settings.component_feature_hashes.
 COMPONENT_FEATURE_HASHES = 500
 
 
@@ -118,3 +127,14 @@ def component_from_file(f):
     rows.append(row)
 
   return rows
+
+
+def setup_ml_engine():
+  """Sets up an instance of ml engine for ml classes."""
+  try:
+    credentials = GoogleCredentials.get_application_default()
+    ml_engine = build('ml', 'v1', http=httplib2.Http(), credentials=credentials)
+    return ml_engine
+
+  except (Oauth2ClientError, ApiClientError):
+    logging.error("Error setting up ML Engine API: %s" % sys.exc_info()[0])

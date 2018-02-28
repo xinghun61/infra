@@ -7,7 +7,6 @@
 """
 
 import collections
-import httplib2
 import logging
 import settings
 import sys
@@ -18,10 +17,6 @@ from framework import sql
 from infra_libs import ts_mon
 from services import ml_helpers
 
-from apiclient.discovery import build
-from oauth2client.client import GoogleCredentials
-from apiclient.errors import Error as ApiClientError
-from oauth2client.client import Error as Oauth2ClientError
 
 SPAMREPORT_TABLE_NAME = 'SpamReport'
 SPAMVERDICT_TABLE_NAME = 'SpamVerdict'
@@ -64,14 +59,8 @@ class SpamService(object):
     self.verdict_tbl = sql.SQLTableManager(SPAMVERDICT_TABLE_NAME)
     self.issue_tbl = sql.SQLTableManager(ISSUE_TABLE)
 
-    self.ml_engine = None
-    try:
-      credentials = GoogleCredentials.get_application_default()
-      self.ml_engine = build('ml', 'v1',
-                             http=httplib2.Http(),
-                             credentials=credentials)
-    except (Oauth2ClientError, ApiClientError):
-      logging.error("Error setting up ML Engine API: %s" % sys.exc_info()[0])
+    self.ml_engine = ml_helpers.setup_ml_engine()
+
 
   def LookupIssueFlaggers(self, cnxn, issue_id):
     """Returns users who've reported the issue or its comments as spam.
