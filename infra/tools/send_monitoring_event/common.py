@@ -205,8 +205,8 @@ def process_argparse_options(args):
       else:
         raise ValueError(
           'Expected only one log_event in the LogRequestLite proto '
-          'pointed by --event-logrequest-path. Found %d in %s',
-          len(request.log_event), args.event_logrequest_path)
+          'pointed by --event-logrequest-path. Found %d in %s' % (
+          len(request.log_event), args.event_logrequest_path))
     except Exception:
       LOGGER.exception('Failure when reading/parsing file %s',
                        args.event_logrequest_path)

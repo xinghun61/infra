@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import json
 import mock
 import unittest
 from mock import patch
@@ -106,17 +107,18 @@ class TestBigQueryHelper(unittest.TestCase):
         repeated_container=testmessage_pb2.RepeatedContainer(nums=[1, 2]),
     )
     row = helper.message_to_dict(msg)
+
     expected = {
       'str': u'a',
       'strs': [u'a', u'b'],
 
-      'num': 1,
-      'nums': [0, 1, 2],
+      'num': 1L,
+      'nums': [0L, 1L, 2L],
 
-      'nested': {'num': 1L, 'str': 'a'},
+      'nested': {'num': 1L, 'str': u'a'},
       'nesteds': [
-        {'num': 1L, 'str': 'a'},
-        {'num': 2L, 'str': 'b'},
+        {'num': 1L, 'str': u'a'},
+        {'num': 2L, 'str': u'b'},
       ],
 
       # empty messages are omitted
@@ -124,14 +126,21 @@ class TestBigQueryHelper(unittest.TestCase):
       'e': 'E1',
       'es': ['E0', 'E2'],
 
-      'struct': '{\n  "a": 0\n}',
-      'structs': ['{\n  "a": 0\n}', '{\n  "a": 1\n}'],
+      # structs are compared separately.
 
       'timestamp': dt0.isoformat(),
       'timestamps': [dt0.isoformat(), dt1.isoformat()],
 
-      'repeated_container': {'nums': [1, 2]},
+      'repeated_container': {'nums': [1L, 2L]},
     }
+
+    # compare structs as JSON values, not strings.
+    self.assertEqual(json.loads(row.pop('struct')), {'a': 0})
+    self.assertEqual(
+        [json.loads(s) for s in row.pop('structs')],
+        [{'a': 0}, {'a': 1}]
+    )
+
     self.assertEqual(row, expected)
 
   def test_message_to_dict_empty(self):

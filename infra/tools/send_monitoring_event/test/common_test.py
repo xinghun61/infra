@@ -6,7 +6,7 @@ import argparse
 import os
 import unittest
 
-import google.protobuf
+from google.protobuf import message
 
 import infra_libs
 from infra_libs import event_mon
@@ -155,24 +155,6 @@ class TestInputModesFile(unittest.TestCase):
     self.assertEqual(event.build_event.goma_stats.request_stats.success, 9)
     self.assertEqual(event.build_event.goma_stats.request_stats.failure, 1)
     self.assertEqual(event.build_event.host_name, 'foo.bar.dns')
-
-  def test_send_build_event_with_invalid_goma_stats(self):
-    # Write a file to avoid mocks
-    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
-      outfile = os.path.join(tmpdir, 'out.bin')
-      args = get_arguments(
-        ['--event-mon-run-type', 'file',
-         '--event-mon-output-file', outfile,
-         '--event-mon-service-name', 'thing',
-         '--build-event-type', 'BUILD',
-         '--build-event-hostname', 'foo.bar.dns',
-         '--build-event-build-name', 'whatever',
-         '--build-event-goma-stats-path',
-         os.path.join(DATA_DIR, 'garbage')])
-      self.assertEquals(args.event_mon_run_type, 'file')
-      event_mon.process_argparse_options(args)
-      with self.assertRaises(google.protobuf.message.DecodeError):
-        common.send_build_event(args)
 
   def test_send_build_event_with_goma_error_unknown(self):
     with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
@@ -593,15 +575,6 @@ class TestProcessRequestPath(SendingEventBaseTest):
     opts = _parse_arguments([])
     opts.event_logrequest_path = os.path.join(DATA_DIR, 'logrequest-empty.bin')
     with self.assertRaises(ValueError):
-      common.process_argparse_options(opts)
-
-  def test_logrequest_with_bad_content(self):
-    orig_event = event_mon.get_default_event()
-    self.assertIsNot(orig_event, None)
-
-    opts = _parse_arguments([])
-    opts.event_logrequest_path = os.path.join(DATA_DIR, 'garbage')
-    with self.assertRaises(google.protobuf.message.DecodeError):
       common.process_argparse_options(opts)
 
   def test_logrequest_with_missing_file(self):

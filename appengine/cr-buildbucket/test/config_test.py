@@ -12,8 +12,9 @@ utils.fix_protobuf_package()
 
 from components import config as config_component
 from components.config import validation_context
-from testing_utils import testing
 from google import protobuf
+from google.protobuf import text_format
+from testing_utils import testing
 import mock
 
 from proto import project_config_pb2
@@ -104,13 +105,13 @@ acls {
 
 def parse_cfg(text):
   cfg = project_config_pb2.BuildbucketCfg()
-  protobuf.text_format.Merge(text, cfg)
+  text_format.Merge(text, cfg)
   return cfg
 
 
 def text_to_binary(bucket_cfg_text):
   cfg = project_config_pb2.Bucket()
-  protobuf.text_format.Merge(bucket_cfg_text, cfg)
+  text_format.Merge(bucket_cfg_text, cfg)
   return cfg.SerializeToString()
 
 

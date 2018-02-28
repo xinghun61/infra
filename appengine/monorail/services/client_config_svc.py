@@ -11,10 +11,10 @@ import time
 import urllib
 import webapp2
 
-from google import protobuf
 from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
 from google.appengine.ext import db
+from google.protobuf import text_format
 
 from infra_libs import ts_mon
 
@@ -101,7 +101,7 @@ class LoadApiClientConfigs(webapp2.RequestHandler):
 
     try:
       cfg = api_clients_config_pb2.ClientCfg()
-      protobuf.text_format.Merge(content_text, cfg)
+      text_format.Merge(content_text, cfg)
     except:
       logging.error('Content was not a valid ClientCfg proto: %r', content_text)
       self.config_loads.increment({'success': False,
@@ -149,7 +149,7 @@ class ClientConfigService(object):
         content_text = f.read()
       logging.info('Read client configs from local file.')
       cfg = api_clients_config_pb2.ClientCfg()
-      protobuf.text_format.Merge(content_text, cfg)
+      text_format.Merge(content_text, cfg)
       self.client_configs = cfg
       self.load_time = int(time.time())
     except Exception as e:
@@ -159,7 +159,7 @@ class ClientConfigService(object):
     entity = ClientConfig.get_by_key_name('api_client_configs')
     if entity:
       cfg = api_clients_config_pb2.ClientCfg()
-      protobuf.text_format.Merge(entity.configs, cfg)
+      text_format.Merge(entity.configs, cfg)
       self.client_configs = cfg
       self.load_time = int(time.time())
     else:
