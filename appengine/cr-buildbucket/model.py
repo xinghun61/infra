@@ -4,6 +4,7 @@
 
 import datetime
 import random
+import re
 
 from components import auth
 from google.appengine.ext import ndb
@@ -13,6 +14,15 @@ from protorpc import messages
 
 BEGINING_OF_THE_WORLD = datetime.datetime(2010, 1, 1, 0, 0, 0, 0)
 BUILD_TIMEOUT = datetime.timedelta(days=2)
+
+# Gitiles commit buildset pattern. Example:
+# ('commit/gitiles/chromium.googlesource.com/infra/luci/luci-go/+/'
+#  'b7a757f457487cd5cfe2dae83f65c5bc10e288b7')
+RE_BUILDSET_GITILES_COMMIT = re.compile(
+    r'^commit/gitiles/([^/]+)/(.+?)/\+/([a-f0-9]{40})$')
+# Gerrit CL buildset pattern. Example:
+# patch/gerrit/chromium-review.googlesource.com/677784/5
+RE_BUILDSET_GERRIT_CL = re.compile(r'^patch/gerrit/([^/]+)/(\d+)/(\d+)$')
 
 
 class BuildStatus(messages.Enum):

@@ -36,14 +36,6 @@ MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 MAX_BUILDSET_LENGTH = 1024
 RE_TAG_INDEX_SEARCH_CURSOR = re.compile('^id>\d+$')
-# Gitiles commit buildset pattern. Example:
-# ('commit/gitiles/chromium.googlesource.com/infra/luci/luci-go/+/'
-#  'b7a757f457487cd5cfe2dae83f65c5bc10e288b7')
-RE_BUILDSET_GITILES_COMMIT = re.compile(
-    r'^commit/gitiles/[^/]+/(.+?)/\+/[a-f0-9]{40}$')
-# Gerrit CL buildset pattern. Example:
-# patch/gerrit/chromium-review.googlesource.com/677784/5
-RE_BUILDSET_GERRIT_CL = re.compile(r'^patch/gerrit/[^/]+/\d+/\d+$')
 
 validate_bucket_name = errors.validate_bucket_name
 
@@ -98,11 +90,12 @@ def validate_build_set(bs):
 
   # Verify that a buildset with a known prefix is well formed.
   if bs.startswith('commit/gitiles/'):
-    m = RE_BUILDSET_GITILES_COMMIT.match(bs)
+    m = model.RE_BUILDSET_GITILES_COMMIT.match(bs)
     if not m:
       raise errors.InvalidInputError(
-          'does not match regex "%s"' % RE_BUILDSET_GITILES_COMMIT.pattern)
-    project = m.group(1)
+          'does not match regex "%s"' % (
+              model.RE_BUILDSET_GITILES_COMMIT.pattern))
+    project = m.group(2)
     if project.startswith('a/'):
       raise errors.InvalidInputError(
           'gitiles project must not start with "a/"')
@@ -111,9 +104,9 @@ def validate_build_set(bs):
           'gitiles project must not end with ".git"')
 
   elif bs.startswith('patch/gerrit/'):
-    if not RE_BUILDSET_GERRIT_CL.match(bs):
+    if not model.RE_BUILDSET_GERRIT_CL.match(bs):
       raise errors.InvalidInputError(
-          'does not match regex "%s"' % RE_BUILDSET_GERRIT_CL.pattern)
+          'does not match regex "%s"' % model.RE_BUILDSET_GERRIT_CL.pattern)
 
 
 def validate_tags(tags, mode, builder=None):
