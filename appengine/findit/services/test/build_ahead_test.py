@@ -6,6 +6,7 @@ import mock
 
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
+from model.build_ahead_try_job import BuildAheadTryJob
 from services import build_ahead
 from waterfall.test import wf_testcase
 
@@ -57,3 +58,71 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
       self.assertFalse(build_ahead.TreeIsOpen())
 
     self.assertTrue(build_ahead.TreeIsOpen())
+
+  @mock.patch.object(buildbucket_client, 'GetTryJobs')
+  def testUpdateRunningJobs(self, mock_get_tryjobs):
+    build_ahead.UpdateRunningBuilds()
+    mock_get_tryjobs.assert_not_called()
+    BuildAheadTryJob.Create('80000001', 'unix', 'cache_1').put()
+    BuildAheadTryJob.Create('80000002', 'win', 'cache_2').put()
+    BuildAheadTryJob.Create('80000003', 'mac', 'cache_3').put()
+    mock_get_tryjobs.return_value = [
+        (None,
+         buildbucket_client.BuildbucketBuild({
+             'id': '80000001',
+             'status': 'STARTED'
+         })),
+        (None,
+         buildbucket_client.BuildbucketBuild({
+             'id': '80000002',
+             'status': 'STARTED'
+         })),
+        (None,
+         buildbucket_client.BuildbucketBuild({
+             'id': '80000003',
+             'status': 'STARTED'
+         })),
+    ]
+    self.assertEqual(3, len(build_ahead.UpdateRunningBuilds()))
+
+    mock_get_tryjobs.return_value = [
+        (None,
+         buildbucket_client.BuildbucketBuild({
+             'id': '80000001',
+             'status': 'COMPLETED'
+         })),
+        (None,
+         buildbucket_client.BuildbucketBuild({
+             'id': '80000002',
+             'status': 'STARTED'
+         })),
+        (None,
+         buildbucket_client.BuildbucketBuild({
+             'id': '80000003',
+             'status': 'STARTED'
+         })),
+    ]
+    self.assertEqual(2, len(build_ahead.UpdateRunningBuilds()))
+
+    mock_get_tryjobs.return_value = [
+        (None,
+         buildbucket_client.BuildbucketBuild({
+             'id': '80000002',
+             'status': 'COMPLETED'
+         })),
+        (None,
+         buildbucket_client.BuildbucketBuild({
+             'id': '80000003',
+             'status': 'COMPLETED'
+         })),
+    ]
+    self.assertEqual(0, len(build_ahead.UpdateRunningBuilds()))
+
+    BuildAheadTryJob.Create('80000004', 'mac', 'cache_4').put()
+    mock_get_tryjobs.return_value = [(buildbucket_client.BuildbucketError({
+        'reason': 'BUILD_NOT_FOUND',
+        'message': 'BUILD_NOT_FOUND'
+    }), None)]
+
+    self.assertEqual(0, len(build_ahead.UpdateRunningBuilds()))
+    self.assertTrue(BuildAheadTryJob.Get('80000004').running)

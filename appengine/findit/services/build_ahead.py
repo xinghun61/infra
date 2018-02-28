@@ -11,6 +11,7 @@ import logging
 
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
+from model.build_ahead_try_job import BuildAheadTryJob
 from services import swarmbot_util
 from waterfall import waterfall_config
 
@@ -89,3 +90,19 @@ def TreeIsOpen():
     except ValueError, ve:
       logging.exception('Could not parse chromium tree status: %s', ve)
   return False
+
+
+def UpdateRunningBuilds():
+  """Syncs builds in datastore with buildbucket, return ones in progress."""
+  result = []
+  builds = BuildAheadTryJob.RunningJobs()
+  if builds:
+    build_ids = [b.BuildId for b in builds]
+    updated_builds = buildbucket_client.GetTryJobs(build_ids)
+    for error, build in updated_builds:
+      if not error:
+        if build.status == build.COMPLETED:
+          BuildAheadTryJob.Get(build.id).MarkComplete(build.response)
+        else:
+          result.append(build)
+  return result
