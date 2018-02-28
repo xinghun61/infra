@@ -25,17 +25,18 @@ func TestReport(t *testing.T) {
 		commentID := "7ef59cda-183c-48b3-8343-d9036a7f1419"
 		functionName := "Spacey"
 		platform := tricium.Platform_UBUNTU
+
 		// Add comment entity with ancestors:
 		// AnalyzeRequest>WorkflowRun>FunctionRun>WorkerRun>Comment>CommentFeedback
 		request := &track.AnalyzeRequest{}
 		So(ds.Put(ctx, request), ShouldBeNil)
 		run := &track.WorkflowRun{ID: 1, Parent: ds.KeyForObj(ctx, request)}
 		So(ds.Put(ctx, run), ShouldBeNil)
-		analyzerRun := &track.FunctionRun{ID: functionName, Parent: ds.KeyForObj(ctx, run)}
-		So(ds.Put(ctx, analyzerRun), ShouldBeNil)
+		function := &track.FunctionRun{ID: functionName, Parent: ds.KeyForObj(ctx, run)}
+		So(ds.Put(ctx, function), ShouldBeNil)
 		worker := &track.WorkerRun{
 			ID:     fmt.Sprintf("%s_%s", functionName, platform),
-			Parent: ds.KeyForObj(ctx, analyzerRun),
+			Parent: ds.KeyForObj(ctx, function),
 		}
 		So(ds.Put(ctx, worker), ShouldBeNil)
 		comment := &track.Comment{UUID: commentID, Parent: ds.KeyForObj(ctx, worker), Platforms: 1}
@@ -43,15 +44,34 @@ func TestReport(t *testing.T) {
 		feedback := &track.CommentFeedback{ID: 1, Parent: ds.KeyForObj(ctx, comment)}
 		So(ds.Put(ctx, feedback), ShouldBeNil)
 
-		Convey("Report not useful request", func() {
-			Convey("For known comment ID", func() {
-				_, err := report(ctx, commentID, "")
-				So(err, ShouldBeNil)
-			})
-			Convey("For unknown comment ID", func() {
-				_, err := report(ctx, "abcdefg-hijklm", "")
-				So(err, ShouldNotBeNil)
-			})
+		Convey("Request for known comment increments count", func() {
+			request := &tricium.ReportNotUsefulRequest{CommentId: commentID}
+			response, err := server.ReportNotUseful(ctx, request)
+			So(err, ShouldBeNil)
+			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{})
+			So(ds.Get(ctx, feedback), ShouldBeNil)
+			So(feedback.NotUsefulReports, ShouldEqual, 1)
+		})
+
+		Convey("Request for unknown comment gives error", func() {
+			request := &tricium.ReportNotUsefulRequest{CommentId: "abcdefg"}
+			response, err := server.ReportNotUseful(ctx, request)
+			So(err, ShouldNotBeNil)
+			So(response, ShouldBeNil)
+			So(ds.Get(ctx, feedback), ShouldBeNil)
+			So(feedback.NotUsefulReports, ShouldEqual, 0)
+		})
+
+		Convey("Two requests increment twice", func() {
+			request := &tricium.ReportNotUsefulRequest{CommentId: commentID}
+			response, err := server.ReportNotUseful(ctx, request)
+			So(err, ShouldBeNil)
+			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{})
+			response, err = server.ReportNotUseful(ctx, request)
+			So(err, ShouldBeNil)
+			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{})
+			So(ds.Get(ctx, feedback), ShouldBeNil)
+			So(feedback.NotUsefulReports, ShouldEqual, 2)
 		})
 
 		Convey("Validates valid request", func() {
@@ -62,7 +82,14 @@ func TestReport(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		Convey("Fails invalid request", func() {
+		Convey("Validates request with no extra details", func() {
+			err := validateReportRequest(ctx, &tricium.ReportNotUsefulRequest{
+				CommentId: commentID,
+			})
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Fails invalid request with no comment ID", func() {
 			err := validateReportRequest(ctx, &tricium.ReportNotUsefulRequest{
 				MoreDetails: "More info", // missing comment ID
 			})
