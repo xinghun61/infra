@@ -416,14 +416,14 @@ def _create_task_def_async(
     'swarming_hostname': build.swarming_hostname,
   }
 
-  is_recipe = builder_cfg.HasField('recipe')
-  if is_recipe:  # pragma: no branch
+  extra_swarming_tags = []
+
+  if builder_cfg.HasField('recipe'):  # pragma: no branch
     build_properties = swarmingcfg_module.read_properties(builder_cfg.recipe)
     # Properties specified in build parameters must override those in builder
     # config.
     build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
 
-    recipe_revision = builder_cfg.recipe.revision or 'HEAD'
     build_properties.update(
         buildername=builder_cfg.name,
         buildbucket=_buildbucket_property(build),
@@ -461,10 +461,14 @@ def _create_task_def_async(
 
     task_template_params.update({
       'repository': builder_cfg.recipe.repository,
-      'revision': recipe_revision,
+      'revision': 'HEAD',
       'recipe': builder_cfg.recipe.name,
       'properties_json': json.dumps(build_properties, sort_keys=True),
     })
+    extra_swarming_tags.extend([
+      'recipe_repository:%s' % builder_cfg.recipe.repository,
+      'recipe_name:%s' % builder_cfg.recipe.name,
+    ])
 
   # Render task template.
   task_template_params = {
@@ -487,12 +491,7 @@ def _create_task_def_async(
     'buildbucket_template_canary:%s' % ('1' if build.canary else '0'),
     'buildbucket_template_revision:%s' % task_template_rev,
   ])
-  if is_recipe:  # pragma: no branch
-    _extend_unique(swarming_tags, [
-      'recipe_repository:%s' % builder_cfg.recipe.repository,
-      'recipe_revision:%s' % recipe_revision,
-      'recipe_name:%s' % builder_cfg.recipe.name,
-    ])
+  _extend_unique(swarming_tags, extra_swarming_tags)
   _extend_unique(swarming_tags, builder_cfg.swarming_tags)
   _extend_unique(swarming_tags, build.tags)
   swarming_tags.sort()

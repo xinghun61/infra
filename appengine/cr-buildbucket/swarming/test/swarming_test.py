@@ -417,7 +417,6 @@ class SwarmingTest(BaseTest):
           'priority:108',
           'recipe_name:recipe',
           'recipe_repository:https://example.com/repo',
-          'recipe_revision:HEAD',
         ],
         'service_account': 'robot@example.com',
       }
@@ -449,7 +448,6 @@ class SwarmingTest(BaseTest):
         'luci_project:chromium',
         'recipe_name:recipe',
         'recipe_repository:https://example.com/repo',
-        'recipe_revision:HEAD',
       ],
       'properties': {
         'execution_timeout_secs': '3600',
@@ -535,7 +533,6 @@ class SwarmingTest(BaseTest):
       'swarming_tag:priority:108',
       'swarming_tag:recipe_name:recipe',
       'swarming_tag:recipe_repository:https://example.com/repo',
-      'swarming_tag:recipe_revision:HEAD',
       'swarming_task_id:deadbeef',
     })
     self.assertEqual(
@@ -648,7 +645,6 @@ class SwarmingTest(BaseTest):
         'luci_project:chromium',
         'recipe_name:recipe',
         'recipe_repository:https://example.com/repo',
-        'recipe_revision:HEAD',
       ],
       'properties': {
         'execution_timeout_secs': '3600',
@@ -770,7 +766,6 @@ class SwarmingTest(BaseTest):
           'priority:108',
           'recipe_name:recipe',
           'recipe_repository:https://example.com/repo',
-          'recipe_revision:HEAD',
         ]
       }
     }
@@ -793,7 +788,7 @@ class SwarmingTest(BaseTest):
             'override_builder_cfg': {
               # Override cores dimension.
               'dimensions': ['cores:16'],
-              'recipe': {'revision': 'badcoffee'},
+              'recipe': {'name': 'bob'},
             },
           }
         },
@@ -817,9 +812,8 @@ class SwarmingTest(BaseTest):
           'buildertag:yes',
           'commontag:yes',
           'priority:108',
-          'recipe_name:recipe',
+          'recipe_name:bob',
           'recipe_repository:https://example.com/repo',
-          'recipe_revision:badcoffee',
         ]
       }
     }
@@ -934,7 +928,7 @@ class SwarmingTest(BaseTest):
             'override_builder_cfg': {
               # Override cores dimension.
               'dimensions': ['cores:16'],
-              'recipe': {'revision': 'badcoffee'},
+              'recipe': {'name': 'bob'},
             },
           }
         },
@@ -956,9 +950,8 @@ class SwarmingTest(BaseTest):
           'buildertag:yes',
           'commontag:yes',
           'priority:108',
-          'recipe_name:recipe',
+          'recipe_name:bob',
           'recipe_repository:https://example.com/repo',
-          'recipe_revision:badcoffee',
         ]
       }
     }

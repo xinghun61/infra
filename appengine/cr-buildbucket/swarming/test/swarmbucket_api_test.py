@@ -163,7 +163,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         'builder:linux_chromium_rel_ng',
         'recipe_name:presubmit',
         'recipe_repository:https://example.com',
-        'recipe_revision:HEAD',
       ],
       'priority': '100',
       'expiration_secs': '3600',
