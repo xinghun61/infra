@@ -222,6 +222,46 @@ alerting for builder failures.
 
 # Step 3: Analyze/Track/Graph Events
 
+Generally you will use the [bigquery console](https://bigquery.cloud.google.com)
+for this. You can also use [google data studio](https://datastudio.google.com),
+which allows you to create dashboards and graphs from bigquery data.
+
+## Querying plx tables from bigquery
+
+Googlers can query existing plx tables from bigquery. Here's an example query:
+
+    SELECT issue, patchset, attempt_start_msec FROM
+    chrome_infra.cq_attempts
+    LIMIT 10;
+
+To make this work on big query, you need to change the table. That example query
+would look like this on bigquery:
+
+    SELECT issue, patchset, attempt_start_msec FROM
+    `plx.google:chrome_infra.cq_attempts.all`
+    LIMIT 10;
+
+Note the `all` suffix on the table. This is only for tables which don't have
+existing suffixes like `lastNdays`, `today`.
+
+ACLs for these tables depend on the user's gaia ID. If a service account needs
+access to a plx table, you need to add them as a READER to the table, which can
+be done either in PLX or in the materialization script. Request a googler to do
+this for you.
+
+Note that it appears that enums lose their string values when you query them
+through bigquery. This means that you need to change
+
+    SELECT *
+    FROM chrome_infra.cq_attempts
+    WHERE fail_type = 'NOT_LGTM'
+
+into
+
+    SELECT *
+    FROM `plx.google:chrome_infra.cq_attempts.all`
+    WHERE fail_type = 4
+
 ## Joining tables from other projects
 
 To execute a query which joins a table from a different cloud project, ensure
