@@ -6,7 +6,10 @@
 It provides functions for:
   * Triggering a build-ahead on a specific builder.
 """
+import json
+import logging
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from services import swarmbot_util
 from waterfall import waterfall_config
@@ -66,3 +69,23 @@ def TriggerBuildAhead(wf_master, wf_builder, bot):
       cache_name=cache_name,
       dimensions=dimensions)
   return buildbucket_client.TriggerTryJobs([build_ahead_tryjob])[0]
+
+
+def TreeIsOpen():
+  """Determine whether the chromium tree is currently open."""
+  url = 'https://chromium-status.appspot.com/allstatus'
+  params = {
+      'limit': '1',
+      'fomrat': 'json',
+  }
+  client = FinditHttpClient()
+  status_code, content = client.Get(url, params)
+
+  if status_code == 200:
+    try:
+      states = json.loads(str(content))
+      if states and states[0].get('general_state') == 'open':
+        return True
+    except ValueError, ve:
+      logging.exception('Could not parse chromium tree status: %s', ve)
+  return False

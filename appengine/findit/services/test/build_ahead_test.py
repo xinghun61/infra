@@ -4,6 +4,7 @@
 
 import mock
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from services import build_ahead
 from waterfall.test import wf_testcase
@@ -38,3 +39,21 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
             ],
             pubsub_callback=None)
     ])
+
+  @mock.patch.object(FinditHttpClient, 'Get')
+  def testTreeIsOpen(self, mock_get):
+    responses = [
+        (500, None),
+        (400, None),
+        (200, None),
+        (200, '[]'),
+        (200, '[{}]'),
+        (200, '[{"general_state":"closed"}]'),
+        (200, '[{"general_state":"open"}]'),
+    ]
+    mock_get.side_effect = responses
+
+    for _ in range(len(responses) - 1):
+      self.assertFalse(build_ahead.TreeIsOpen())
+
+    self.assertTrue(build_ahead.TreeIsOpen())
