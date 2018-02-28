@@ -1082,9 +1082,9 @@ class ConfigService(object):
     if not admin_ids:
       admin_ids = []
     template = tracker_bizobj.MakeIssueTemplate(
-        name, summary, owner_id, content, labels, field_values, admin_ids,
-        component_ids, summary_must_be_edited, owner_defaults_to_member,
-        component_required, members_only)
+        name, summary, status, owner_id, content, labels, field_values,
+        admin_ids, component_ids, summary_must_be_edited,
+        owner_defaults_to_member, component_required, members_only)
     config.templates.append(template)
     self.StoreConfig(cnxn, config)
     return template_id

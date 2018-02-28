@@ -1100,7 +1100,7 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.template_tbl.InsertRow(
         self.cnxn, project_id=789, name='template', content='content',
         summary='summary', summary_must_be_edited=True, owner_id=111L,
-        status='Available', members_only=True, owner_defaults_to_members=True,
+        status='Available', members_only=True, owner_defaults_to_member=True,
         component_required=True, commit=False).AndReturn(1)
     self.config_service.template2label_tbl.InsertRows(
         self.cnxn, config_svc.TEMPLATE2LABEL_COLS, [(1, 'label')], commit=False)

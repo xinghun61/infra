@@ -80,13 +80,18 @@ class TemplateCreateTest(unittest.TestCase):
                      page_data['admin_tab_mode'])
     self.assertTrue(page_data['allow_edit'])
     self.assertTrue(page_data['new_template_form'])
+    self.assertFalse(page_data['initial_members_only'])
+    self.assertEqual(page_data['template_name'], '')
+    self.assertEqual(page_data['initial_summary'], '')
+    self.assertFalse(page_data['initial_must_edit_summary'])
+    self.assertEqual(page_data['initial_content'], '')
+    self.assertEqual(page_data['initial_status'], '')
+    self.assertEqual(page_data['initial_owner'], '')
+    self.assertFalse(page_data['initial_owner_defaults_to_member'])
+    self.assertEqual(page_data['initial_components'], '')
+    self.assertFalse(page_data['initial_component_required'])
     self.assertEqual(page_data['fields'][0].field_name, fv.field_name)
-    self.assertEqual(page_data['initial_members_only'], ezt.boolean(False))
-    self.assertEqual(page_data['initial_must_edit_summary'], ezt.boolean(False))
-    self.assertEqual(
-        page_data['initial_owner_defaults_to_member'], ezt.boolean(False))
-    self.assertEqual(
-        page_data['initial_component_required'], ezt.boolean(False))
+    self.assertEqual(page_data['initial_admins'], '')
 
   def testProcessFormData_Reject(self):
     post_data = fake.PostData(

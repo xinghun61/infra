@@ -65,7 +65,7 @@ class TemplateCreate(servlet.Servlet):
         'template_name': '',
         'initial_content': '',
         'initial_must_edit_summary': ezt.boolean(False),
-        'initial_description': '',
+        'initial_summary': '',
         'initial_status': '',
         'initial_owner': '',
         'initial_owner_defaults_to_member': ezt.boolean(False),
@@ -86,32 +86,12 @@ class TemplateCreate(servlet.Servlet):
       String URL to redirect the user to, or None if response was already sent.
     """
 
-    admin_ids, admin_str = tracker_helpers.ParseAdminUsers(
-        mr.cnxn, post_data.get('admin_names', ''), self.services.user)
-
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     parsed = template_helpers.ParseTemplateRequest(post_data, config)
 
-    owner_id = 0
-    if parsed.owner_str:
-      try:
-        user_id = self.services.user.LookupUserID(mr.cnxn, parsed.owner_str)
-        auth = authdata.AuthData.FromUserID(mr.cnxn, user_id, self.services)
-        if framework_bizobj.UserIsInProject(mr.project, auth.effective_ids):
-          owner_id = user_id
-        else:
-          mr.errors.owner = 'User is not a member of this project.'
-      except user_svc.NoSuchUserException:
-        mr.errors.owner = 'Owner not found.'
-
-    component_ids = tracker_helpers.LookupComponentIDs(
-        parsed.component_paths, config, mr.errors)
-
-    field_values = field_helpers.ParseFieldValues(
-        mr.cnxn, self.services.user, parsed.field_val_strs, config)
-    for fv in field_values:
-      logging.info('field_value is %r: %r',
-                   fv.field_id, tracker_bizobj.GetFieldValue(fv, {}))
+    (admin_ids, owner_id, component_ids,
+     field_values) = template_helpers.GetTemplateInfoFromParsed(
+         mr, self.services, parsed, config)
 
     if mr.errors.AnyErrors():
       fd_id_to_fvs = collections.defaultdict(list)
@@ -136,26 +116,18 @@ class TemplateCreate(servlet.Servlet):
               parsed.owner_defaults_to_member),
           initial_components=', '.join(parsed.component_paths),
           initial_component_required=ezt.boolean(parsed.component_required),
-          initial_admins=admin_str,
+          initial_admins=parsed.admin_str,
           labels=parsed.labels,
           fields=field_views
       )
       return
 
-    templates = config.templates
-    templates.append(tracker_bizobj.MakeIssueTemplate(
-        parsed.name, parsed.summary, parsed.status, owner_id, parsed.content,
-        parsed.labels, field_values, admin_ids, component_ids,
-        summary_must_be_edited=parsed.summary_must_be_edited,
-        owner_defaults_to_member=parsed.owner_defaults_to_member,
-        component_required=parsed.component_required,
-        members_only=parsed.members_only
-    ))
-
-    # TODO(jojwang): monorail:3537, implement services.config.CreateTemplate()
-
-    self.services.config.UpdateConfig(
-        mr.cnxn, mr.project, templates=templates)
+    labels = [label for label in parsed.labels if label]
+    self.services.config.CreateIssueTemplateDef(
+        mr.cnxn, mr.project_id, parsed.name, parsed.content, parsed.summary,
+        parsed.summary_must_be_edited, parsed.status, parsed.members_only,
+        parsed.owner_defaults_to_member, parsed.component_required,
+        owner_id, labels, component_ids, admin_ids, field_values)
 
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.ADMIN_TEMPLATES, saved=1, ts=int(time.time()))

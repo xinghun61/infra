@@ -1489,7 +1489,7 @@ class ConfigService(object):
 
   def CreateIssueTemplateDef(
       self, cnxn, project_id, name, content, summary, summary_must_be_edited,
-      status, members_only, owner_defaults_to_members, component_required,
+      status, members_only, owner_defaults_to_member, component_required,
       owner_id=None, labels=None, component_ids=None, admin_ids=None,
       field_values=None):
     """Create a new issue template definition with the given info.
@@ -1504,7 +1504,7 @@ class ConfigService(object):
           issue template is used to make a new issue.
       status: string default status of a new issue created with this template.
       members_only: True if only members can view this issue template.
-      owner_defaults_to_members: True is issue owner should be set to member
+      owner_defaults_to_member: True is issue owner should be set to member
           creating the issue.
       component_required: True if a component is required.
       owner_id: user_id of default owner, if any.
@@ -1521,7 +1521,7 @@ class ConfigService(object):
         cnxn, project_id=project_id, name=name, content=content,
         summary=summary, summary_must_be_edited=summary_must_be_edited,
         owner_id=owner_id, status=status, members_only=members_only,
-        owner_defaults_to_members=owner_defaults_to_members,
+        owner_defaults_to_member=owner_defaults_to_member,
         component_required=component_required, commit=False)
 
     if labels:

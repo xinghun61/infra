@@ -40,9 +40,9 @@
     <th>Summary:</th>
     <td>
       [if-any allow_edit]
-        <input type="text" name="summary" size="60" class=acob" value="[initial_content]"><br>
+        <input type="text" name="summary" size="60" class=acob" value="[initial_summary]"><br>
       [else]
-        [initial_content]<br>
+        [initial_summary]<br>
       [end]
       <input type="checkbox" [if-any allow_edit][else]disabled[end] name="summary_must_be_edited" [if-any initial_must_edit_summary]checked[end]>
       <label for="summary_must_be_edited_checkbox">Users must edit issue summary before submitting</label>
