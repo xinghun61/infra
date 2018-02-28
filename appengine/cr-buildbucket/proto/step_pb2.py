@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='step.proto',
   package='buildbucket.v2',
   syntax='proto3',
-  serialized_pb=_b('\n\nstep.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0c\x63ommon.proto\"\x9a\x02\n\x04Step\x12\x0c\n\x04name\x18\x01 \x01(\t\x12.\n\nstart_time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12&\n\x06status\x18\x04 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12&\n\x04logs\x18\x05 \x03(\x0b\x32\x18.buildbucket.v2.Step.Log\x12\x18\n\x10summary_markdown\x18\x07 \x01(\t\x1a<\n\x03Log\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1a\n\x12logdog_stream_name\x18\x02 \x01(\t\x12\x0b\n\x03url\x18\x03 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n\nstep.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0c\x63ommon.proto\"\x83\x02\n\x04Step\x12\x0c\n\x04name\x18\x01 \x01(\t\x12.\n\nstart_time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12&\n\x06status\x18\x04 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12&\n\x04logs\x18\x05 \x03(\x0b\x32\x18.buildbucket.v2.Step.Log\x12\x18\n\x10summary_markdown\x18\x07 \x01(\t\x1a%\n\x03Log\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08view_url\x18\x02 \x01(\tb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -44,15 +44,8 @@ _STEP_LOG = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='logdog_stream_name', full_name='buildbucket.v2.Step.Log.logdog_stream_name', index=1,
+      name='view_url', full_name='buildbucket.v2.Step.Log.view_url', index=1,
       number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='url', full_name='buildbucket.v2.Step.Log.url', index=2,
-      number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -70,7 +63,7 @@ _STEP_LOG = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=300,
-  serialized_end=360,
+  serialized_end=337,
 )
 
 _STEP = _descriptor.Descriptor(
@@ -135,7 +128,7 @@ _STEP = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=78,
-  serialized_end=360,
+  serialized_end=337,
 )
 
 _STEP_LOG.containing_type = _STEP

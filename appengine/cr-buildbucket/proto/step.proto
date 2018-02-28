@@ -18,12 +18,8 @@ message Step {
     // Unique within the step.
     string name = 1;
 
-    // LogDog stream name.
-    // Combined with Build.infra.logdog, can be used to load log contents.
-    string logdog_stream_name = 2;
-
     // URL of a human-oriented page that displays log contents.
-    string url = 3;
+    string view_url = 2;
   }
 
   // Name of the step, unique within the build.
@@ -45,7 +41,7 @@ message Step {
   repeated Log logs = 5;
 
   // Human-oriented summary of the step provided by the step itself,
-  // in Markdown format.
+  // in Markdown format (https://spec.commonmark.org/0.28/).
   //
   // V1 equivalent: combines and supersedes Buildbot's step_text and step links and also supports
   // other formatted text.

@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='build.proto',
   package='buildbucket.v2',
   syntax='proto3',
-  serialized_pb=_b('\n\x0b\x62uild.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x0c\x63ommon.proto\x1a\nstep.proto\"\x9f\x06\n\x05\x42uild\x12\n\n\x02id\x18\x01 \x01(\x03\x12+\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x1a.buildbucket.v2.Builder.ID\x12\x0e\n\x06number\x18\x03 \x01(\x05\x12/\n\x0b\x63reate_time\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nstart_time\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x0bupdate_time\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12&\n\x06status\x18\n \x01(\x0e\x32\x16.buildbucket.v2.Status\x12(\n\x04tags\x18\x0b \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12*\n\x05input\x18\x0c \x01(\x0b\x32\x1b.buildbucket.v2.Build.Input\x12,\n\x06output\x18\r \x01(\x0b\x32\x1c.buildbucket.v2.Build.Output\x12)\n\x05infra\x18\x0e \x01(\x0b\x32\x1a.buildbucket.v2.BuildInfra\x12\x12\n\ncreated_by\x18\x0f \x01(\t\x12\x0b\n\x03url\x18\x10 \x01(\t\x12#\n\x05steps\x18\x11 \x03(\x0b\x32\x14.buildbucket.v2.Step\x1a\xb8\x01\n\x05Input\x12+\n\nproperties\x18\x01 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x36\n\x0fgitiles_commits\x18\x02 \x03(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12\x14\n\x0c\x65xperimental\x18\x05 \x01(\x08\x1a\x35\n\x06Output\x12+\n\nproperties\x18\x01 \x01(\x0b\x32\x17.google.protobuf.Struct\"\x89\x03\n\nBuildInfra\x12;\n\x0b\x62uildbucket\x18\x01 \x01(\x0b\x32&.buildbucket.v2.BuildInfra.Buildbucket\x12\x35\n\x08swarming\x18\x02 \x01(\x0b\x32#.buildbucket.v2.BuildInfra.Swarming\x1a>\n\x0b\x42uildbucket\x12\x1f\n\x17service_config_revision\x18\x02 \x01(\t\x12\x0e\n\x06\x63\x61nary\x18\x04 \x01(\x08\x1a\xc6\x01\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x0f\n\x07task_id\x18\x02 \x01(\t\x12\x1c\n\x14task_service_account\x18\x03 \x01(\t\x12\x10\n\x08priority\x18\x04 \x01(\x05\x12\x33\n\x0ftask_dimensions\x18\x05 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12\x32\n\x0e\x62ot_dimensions\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\"A\n\x07\x42uilder\x1a\x36\n\x02ID\x12\x0f\n\x07project\x18\x01 \x01(\t\x12\x0e\n\x06\x62ucket\x18\x02 \x01(\t\x12\x0f\n\x07\x62uilder\x18\x03 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n\x0b\x62uild.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x0c\x63ommon.proto\x1a\nstep.proto\"\xa4\x06\n\x05\x42uild\x12\n\n\x02id\x18\x01 \x01(\x03\x12+\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x1a.buildbucket.v2.Builder.ID\x12\x0e\n\x06number\x18\x03 \x01(\x05\x12\x12\n\ncreated_by\x18\x04 \x01(\t\x12\x10\n\x08view_url\x18\x05 \x01(\t\x12/\n\x0b\x63reate_time\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nstart_time\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x0bupdate_time\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12&\n\x06status\x18\x0c \x01(\x0e\x32\x16.buildbucket.v2.Status\x12*\n\x05input\x18\x0f \x01(\x0b\x32\x1b.buildbucket.v2.Build.Input\x12,\n\x06output\x18\x10 \x01(\x0b\x32\x1c.buildbucket.v2.Build.Output\x12#\n\x05steps\x18\x11 \x03(\x0b\x32\x14.buildbucket.v2.Step\x12)\n\x05infra\x18\x12 \x01(\x0b\x32\x1a.buildbucket.v2.BuildInfra\x12(\n\x04tags\x18\x13 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x1a\xb8\x01\n\x05Input\x12+\n\nproperties\x18\x01 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x36\n\x0fgitiles_commits\x18\x02 \x03(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12\x14\n\x0c\x65xperimental\x18\x05 \x01(\x08\x1a\x35\n\x06Output\x12+\n\nproperties\x18\x01 \x01(\x0b\x32\x17.google.protobuf.Struct\"\x89\x03\n\nBuildInfra\x12;\n\x0b\x62uildbucket\x18\x01 \x01(\x0b\x32&.buildbucket.v2.BuildInfra.Buildbucket\x12\x35\n\x08swarming\x18\x02 \x01(\x0b\x32#.buildbucket.v2.BuildInfra.Swarming\x1a>\n\x0b\x42uildbucket\x12\x1f\n\x17service_config_revision\x18\x02 \x01(\t\x12\x0e\n\x06\x63\x61nary\x18\x04 \x01(\x08\x1a\xc6\x01\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x0f\n\x07task_id\x18\x02 \x01(\t\x12\x1c\n\x14task_service_account\x18\x03 \x01(\t\x12\x10\n\x08priority\x18\x04 \x01(\x05\x12\x33\n\x0ftask_dimensions\x18\x05 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12\x32\n\x0e\x62ot_dimensions\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\"A\n\x07\x42uilder\x1a\x36\n\x02ID\x12\x0f\n\x07project\x18\x01 \x01(\t\x12\x0e\n\x06\x62ucket\x18\x02 \x01(\t\x12\x0f\n\x07\x62uilder\x18\x03 \x01(\tb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,google_dot_protobuf_dot_struct__pb2.DESCRIPTOR,common__pb2.DESCRIPTOR,step__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -78,8 +78,8 @@ _BUILD_INPUT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=681,
-  serialized_end=865,
+  serialized_start=686,
+  serialized_end=870,
 )
 
 _BUILD_OUTPUT = _descriptor.Descriptor(
@@ -108,8 +108,8 @@ _BUILD_OUTPUT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=867,
-  serialized_end=920,
+  serialized_start=872,
+  serialized_end=925,
 )
 
 _BUILD = _descriptor.Descriptor(
@@ -141,85 +141,85 @@ _BUILD = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='create_time', full_name='buildbucket.v2.Build.create_time', index=3,
-      number=4, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='created_by', full_name='buildbucket.v2.Build.created_by', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='start_time', full_name='buildbucket.v2.Build.start_time', index=4,
-      number=5, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='view_url', full_name='buildbucket.v2.Build.view_url', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='end_time', full_name='buildbucket.v2.Build.end_time', index=5,
+      name='create_time', full_name='buildbucket.v2.Build.create_time', index=5,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='update_time', full_name='buildbucket.v2.Build.update_time', index=6,
+      name='start_time', full_name='buildbucket.v2.Build.start_time', index=6,
       number=7, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='status', full_name='buildbucket.v2.Build.status', index=7,
-      number=10, type=14, cpp_type=8, label=1,
+      name='end_time', full_name='buildbucket.v2.Build.end_time', index=7,
+      number=8, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='update_time', full_name='buildbucket.v2.Build.update_time', index=8,
+      number=9, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='buildbucket.v2.Build.status', index=9,
+      number=12, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='tags', full_name='buildbucket.v2.Build.tags', index=8,
-      number=11, type=11, cpp_type=10, label=3,
+      name='input', full_name='buildbucket.v2.Build.input', index=10,
+      number=15, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='output', full_name='buildbucket.v2.Build.output', index=11,
+      number=16, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='steps', full_name='buildbucket.v2.Build.steps', index=12,
+      number=17, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='input', full_name='buildbucket.v2.Build.input', index=9,
-      number=12, type=11, cpp_type=10, label=1,
+      name='infra', full_name='buildbucket.v2.Build.infra', index=13,
+      number=18, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='output', full_name='buildbucket.v2.Build.output', index=10,
-      number=13, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='infra', full_name='buildbucket.v2.Build.infra', index=11,
-      number=14, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='created_by', full_name='buildbucket.v2.Build.created_by', index=12,
-      number=15, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='url', full_name='buildbucket.v2.Build.url', index=13,
-      number=16, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='steps', full_name='buildbucket.v2.Build.steps', index=14,
-      number=17, type=11, cpp_type=10, label=3,
+      name='tags', full_name='buildbucket.v2.Build.tags', index=14,
+      number=19, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -237,7 +237,7 @@ _BUILD = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=121,
-  serialized_end=920,
+  serialized_end=925,
 )
 
 
@@ -274,8 +274,8 @@ _BUILDINFRA_BUILDBUCKET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1053,
-  serialized_end=1115,
+  serialized_start=1058,
+  serialized_end=1120,
 )
 
 _BUILDINFRA_SWARMING = _descriptor.Descriptor(
@@ -339,8 +339,8 @@ _BUILDINFRA_SWARMING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1118,
-  serialized_end=1316,
+  serialized_start=1123,
+  serialized_end=1321,
 )
 
 _BUILDINFRA = _descriptor.Descriptor(
@@ -376,8 +376,8 @@ _BUILDINFRA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=923,
-  serialized_end=1316,
+  serialized_start=928,
+  serialized_end=1321,
 )
 
 
@@ -421,8 +421,8 @@ _BUILDER_ID = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1329,
-  serialized_end=1383,
+  serialized_start=1334,
+  serialized_end=1388,
 )
 
 _BUILDER = _descriptor.Descriptor(
@@ -444,8 +444,8 @@ _BUILDER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1318,
-  serialized_end=1383,
+  serialized_start=1323,
+  serialized_end=1388,
 )
 
 _BUILD_INPUT.fields_by_name['properties'].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
@@ -460,11 +460,11 @@ _BUILD.fields_by_name['start_time'].message_type = google_dot_protobuf_dot_times
 _BUILD.fields_by_name['end_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _BUILD.fields_by_name['update_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _BUILD.fields_by_name['status'].enum_type = common__pb2._STATUS
-_BUILD.fields_by_name['tags'].message_type = common__pb2._STRINGPAIR
 _BUILD.fields_by_name['input'].message_type = _BUILD_INPUT
 _BUILD.fields_by_name['output'].message_type = _BUILD_OUTPUT
-_BUILD.fields_by_name['infra'].message_type = _BUILDINFRA
 _BUILD.fields_by_name['steps'].message_type = step__pb2._STEP
+_BUILD.fields_by_name['infra'].message_type = _BUILDINFRA
+_BUILD.fields_by_name['tags'].message_type = common__pb2._STRINGPAIR
 _BUILDINFRA_BUILDBUCKET.containing_type = _BUILDINFRA
 _BUILDINFRA_SWARMING.fields_by_name['task_dimensions'].message_type = common__pb2._STRINGPAIR
 _BUILDINFRA_SWARMING.fields_by_name['bot_dimensions'].message_type = common__pb2._STRINGPAIR
