@@ -231,7 +231,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     start_commit_position = 1000
     start_build_info = BuildInfo('m', 'b 1', 123)
     start_build_info.commit_position = start_commit_position
-    mocked_build_info.return_value = start_build_info
+    mocked_build_info.return_value = (200, start_build_info)
     mocked_analysis.pipeline_status_path.return_value = 'status'
     mocked_analysis.key.urlsafe.return_value = 'urlsafe_key'
     mocked_need_analysis.return_value = (True, mocked_analysis)

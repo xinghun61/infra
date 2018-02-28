@@ -175,9 +175,13 @@ def ScheduleAnalysisIfNeeded(
       # pipelines on forced reruns by admins.
       # TODO(crbug.com/786518): Remove old pipeline and replace with the new
       # once stable.
-      starting_build_info = build_util.GetBuildInfo(
+      _, starting_build_info = build_util.GetBuildInfo(
           normalized_test.master_name, normalized_test.builder_name,
           normalized_test.build_number)
+
+      if not starting_build_info:
+        logging.error('Failed to get starting build for flake analysis')
+
       assert starting_build_info
       assert starting_build_info.commit_position is not None
 
