@@ -67,7 +67,7 @@ class BackendNonviewableTest(unittest.TestCase):
     fake_restriction_label_rows = []
     fake_restriction_label_ids = []
     fake_at_risk_iids = []
-    self.mox.StubOutWithMock(self.services.config, 'GetLabelDefRowsAnyProject')    
+    self.mox.StubOutWithMock(self.services.config, 'GetLabelDefRowsAnyProject')
     self.services.config.GetLabelDefRowsAnyProject(
         self.mr.cnxn, where=[('LOWER(label) LIKE %s', ['restrict-view-%'])]
         ).AndReturn(fake_restriction_label_rows)
@@ -78,7 +78,7 @@ class BackendNonviewableTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     at_risk_iids = self.servlet.GetAtRiskIIDs(
-        self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids, 
+        self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids,
         self.project, self.mr.perms, self.mr.shard_id)
     self.mox.VerifyAll()
     self.assertEqual([], at_risk_iids)
@@ -91,7 +91,7 @@ class BackendNonviewableTest(unittest.TestCase):
         ]
     fake_restriction_label_ids = [123, 234]
     fake_at_risk_iids = []
-    self.mox.StubOutWithMock(self.services.config, 'GetLabelDefRowsAnyProject')    
+    self.mox.StubOutWithMock(self.services.config, 'GetLabelDefRowsAnyProject')
     self.services.config.GetLabelDefRowsAnyProject(
         self.mr.cnxn, where=[('LOWER(label) LIKE %s', ['restrict-view-%'])]
         ).AndReturn(fake_restriction_label_rows)
@@ -102,7 +102,7 @@ class BackendNonviewableTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     at_risk_iids = self.servlet.GetAtRiskIIDs(
-        self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids, 
+        self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids,
         self.project, self.mr.perms, self.mr.shard_id)
     self.mox.VerifyAll()
     self.assertEqual([], at_risk_iids)
@@ -115,7 +115,7 @@ class BackendNonviewableTest(unittest.TestCase):
         ]
     fake_restriction_label_ids = [123, 234]
     fake_at_risk_iids = [432, 543]
-    self.mox.StubOutWithMock(self.services.config, 'GetLabelDefRowsAnyProject')    
+    self.mox.StubOutWithMock(self.services.config, 'GetLabelDefRowsAnyProject')
     self.services.config.GetLabelDefRowsAnyProject(
       self.mr.cnxn, where=[('LOWER(label) LIKE %s', ['restrict-view-%'])]
       ).AndReturn(fake_restriction_label_rows)
@@ -126,13 +126,10 @@ class BackendNonviewableTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     at_risk_iids = self.servlet.GetAtRiskIIDs(
-        self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids, 
+        self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids,
         self.project, self.mr.perms, self.mr.shard_id)
     self.mox.VerifyAll()
     self.assertEqual([432, 543], at_risk_iids)
-
-  def testGetPersonalAtRiskLabelIDs(self):
-    pass  # TODO(jrobbins): For now, this is covered by GetAtRiskIIDs cases.
 
   def testGetViewableIIDs_Anon(self):
     """Anon users are never participants in any issues."""
@@ -141,8 +138,8 @@ class BackendNonviewableTest(unittest.TestCase):
     self.assertEqual([], ok_iids)
 
   def testGetViewableIIDs_NoIssues(self):
-    """This visitor does not participate in any issues."""    
-    self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByParticipant')    
+    """This visitor does not participate in any issues."""
+    self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByParticipant')
     self.services.issue.GetIIDsByParticipant(
       self.mr.cnxn, {111L}, [789], 2).AndReturn([])
     self.mox.ReplayAll()
@@ -153,8 +150,8 @@ class BackendNonviewableTest(unittest.TestCase):
     self.assertEqual([], ok_iids)
 
   def testGetViewableIIDs_SomeIssues(self):
-    """This visitor  participates in some issues."""    
-    self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByParticipant')    
+    """This visitor  participates in some issues."""
+    self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByParticipant')
     self.services.issue.GetIIDsByParticipant(
       self.mr.cnxn, {111L}, [789], 2).AndReturn([543, 654])
     self.mox.ReplayAll()

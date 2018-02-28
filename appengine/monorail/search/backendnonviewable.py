@@ -21,9 +21,9 @@ from framework import framework_helpers
 from framework import jsonfeed
 from framework import permissions
 from framework import sql
+from search import search_helpers
 
 
-RESTRICT_VIEW_PATTERN = 'restrict-view-%'
 
 # We cache the set of IIDs that a given user cannot view, and we invalidate
 # that set when the issues are changed via Monorail.  Also, we limit the live
@@ -110,26 +110,13 @@ class BackendNonviewable(jsonfeed.InternalTask):
   def GetAtRiskIIDs(
     self, cnxn, user, effective_ids, project, perms, shard_id):
     """Return IIDs of restricted issues that user might not be able to view."""
-    at_risk_label_ids = self.GetPersonalAtRiskLabelIDs(
-      cnxn, user, effective_ids, project, perms)
+    at_risk_label_ids = search_helpers.GetPersonalAtRiskLabelIDs(
+      cnxn, user, self.services.config, effective_ids, project, perms)
     at_risk_iids = self.services.issue.GetIIDsByLabelIDs(
       cnxn, at_risk_label_ids, project.project_id, shard_id)
 
     return at_risk_iids
 
-  def GetPersonalAtRiskLabelIDs(
-    self, cnxn, _user, effective_ids, project, perms):
-    """Return list of label_ids for restriction labels that user can't view."""
-    at_risk_label_ids = []
-    label_def_rows = self.services.config.GetLabelDefRowsAnyProject(
-      cnxn, where=[('LOWER(label) LIKE %s', [RESTRICT_VIEW_PATTERN])])
-    for label_id, _pid, _rank, label, _docstring, _hidden in label_def_rows:
-      label_lower = label.lower()
-      needed_perm = label_lower.split('-', 2)[-1]
-      if not perms.CanUsePerm(needed_perm, effective_ids, project, []):
-        at_risk_label_ids.append(label_id)
-
-    return at_risk_label_ids
 
   def GetViewableIIDs(self, cnxn, effective_ids, project_id, shard_id):
     """Return IIDs of issues that user can view because they participate."""
