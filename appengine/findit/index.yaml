@@ -82,6 +82,13 @@ indexes:
   - name: start_time
     direction: desc
 
+- kind: BuildAheadTryJob
+  properties:
+  - name: platform
+    direction: asc
+  - name: running
+    direction: asc
+
 # For MasterFlakeAnalysis
 - kind: MasterFlakeAnalysis
   properties:
