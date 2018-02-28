@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
+
+from common import monitoring
+from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
 from waterfall.test import wf_testcase
 
@@ -30,21 +34,73 @@ class WfTryBotCacheTest(wf_testcase.WaterfallTestCase):
     cache.AddBot('bot2', 123, 456)
     self.assertEqual(['bot2', 'bot1'], cache.recent_bots)
 
-  def testTruncateList(self):
-    init_cache = WfTryBotCache.Get('popular_cache')
-    for i in range(WfTryBotCache.MAX_RECENT_BOTS):
-      init_cache.AddBot('bot%d' % i, i, i + 1)
-    init_cache.put()
-    cache = WfTryBotCache.Get('popular_cache')
-    self.assertEqual(WfTryBotCache.MAX_RECENT_BOTS, len(cache.recent_bots))
-    cache.AddBot('fake_slave_123', 123, 456)
-    self.assertEqual(WfTryBotCache.MAX_RECENT_BOTS, len(cache.recent_bots))
-    self.assertEqual('fake_slave_123', cache.recent_bots[0])
+  def testAddFullBuild(self):
+    cache_name = 'full_build_new_cache'
+    bot_id = 'full_build_bot'
+    dimensions = [{
+        'key': 'caches',
+        'value': [cache_name, 'some_other_cache'],
+    }, {
+        'key': 'os',
+        'value': ['Windows', 'Windows2008R2'],
+    }]
 
-  def testAddCacheTime(self):
-    cache = WfTryBotCache.Get('new_cache_add_time')
-    for _ in range(cache.MAX_CACHE_TIMES + 10):
-      cache.AddCacheTime(1, True)
-      cache.AddCacheTime(1, False)
-    self.assertEqual(cache.MAX_CACHE_TIMES, len(cache.cold_cache_times))
-    self.assertEqual(cache.MAX_CACHE_TIMES, len(cache.warm_cache_times))
+    cache = WfTryBotCache.Get(cache_name)
+    cache.AddFullBuild(bot_id, 1000, dimensions)
+    cache.put()
+
+    # Make sure the bot has both caches in datastore.
+    saved_bot = WfTryBot.Get(bot_id)
+    self.assertEqual(
+        set([cache_name, 'some_other_cache']), set(saved_bot.caches))
+
+    # Make sure cache has bot, and built commit position.
+    saved_cache = WfTryBotCache.Get(cache_name)
+    self.assertIn(bot_id, saved_cache.full_build_commit_positions)
+    self.assertEqual(1000, saved_cache.full_build_commit_positions[bot_id])
+
+  @mock.patch.object(monitoring, 'cache_evictions')
+  def testAddFullBuildEvictionDetection(self, mockEvictionMetric):
+    cache_name = 'full_build_existing_cache'
+    bot_id = 'full_build_bot_2'
+    dimensions = [{
+        'key': 'caches',
+        'value': [cache_name, 'some_other_cache'],
+    }, {
+        'key': 'os',
+        'value': ['Windows', 'Windows2008R2'],
+    }]
+
+    cache = WfTryBotCache.Get(cache_name)
+    cache.AddFullBuild(bot_id, 1000, dimensions)
+    cache.put()
+    dimensions = [
+        {
+            'key': 'caches',
+            'value': [cache_name],  # Removed 'some_other_cache'.
+        },
+        {
+            'key': 'os',
+            'value': ['Windows', 'Windows2008R2'],
+        }
+    ]
+
+    cache = WfTryBotCache.Get(cache_name)
+    cache.AddFullBuild(bot_id, 1001, dimensions)
+    cache.put()
+
+    # Make sure the bot has correct caches in datastore.
+    saved_bot = WfTryBot.Get(bot_id)
+    self.assertNotIn('some_other_cache', saved_bot.caches)
+    self.assertIn(cache_name, saved_bot.caches)
+
+    # Make sure cache has bot, and built commit position.
+    saved_cache = WfTryBotCache.Get(cache_name)
+    self.assertIn(bot_id, saved_cache.full_build_commit_positions)
+    self.assertEqual(1001, saved_cache.full_build_commit_positions[bot_id])
+
+    # Make sure metric incremented.
+    self.assertTrue(
+        mockEvictionMetric.increment.called_once_with({
+            'platform': 'windows'
+        }))

@@ -70,3 +70,8 @@ flake_analyses = gae_ts_mon.CounterMetric(
         gae_ts_mon.StringField('action_taken'),
         gae_ts_mon.StringField('reason'),
     ])
+
+cache_evictions = gae_ts_mon.CounterMetric(
+    'findit/cache-evictions', 'Caches evicted from Findit trybots', [
+        gae_ts_mon.StringField('platform'),
+    ])

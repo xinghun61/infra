@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from google.appengine.ext import ndb
+from common import monitoring
 
 
 class WfTryBot(ndb.Model):
@@ -12,6 +13,39 @@ class WfTryBot(ndb.Model):
   it. Such as the local git cache.
   """
   newest_synced_revision = ndb.IntegerProperty(indexed=False)
+
+  caches = ndb.StringProperty(indexed=False, repeated=True)
+
+  def SetCaches(self, dimensions):
+    """Updates the list of available caches, removes records of evicted caches.
+
+    Args:
+      dimensions: List of dicts as returned by the swarming api in the form
+          [{'key': 'id', 'value':['bot_id']}, ...]
+    """
+    updated_caches = []
+    os_values = []
+    for d in dimensions:
+      if updated_caches and os_values:
+        break
+      if d.get('key') == 'caches':
+        updated_caches = d.get('value')
+        continue
+      if d.get('key') == 'os':
+        os_values = d.get('value')
+        continue
+
+    new_caches = set(updated_caches) - set(self.caches)
+    for cache in new_caches:
+      self.caches.append(cache)
+
+    evicted_caches = set(self.caches) - set(updated_caches)
+    for cache in evicted_caches:
+      self.caches.remove(cache)
+      # Use the shortest variant of the os name as the platform.
+      # e.g. (Linux|Mac|Windows) without version.
+      platform = min(os_values, key=len)
+      monitoring.cache_evictions.increment({'platform': platform})
 
   @staticmethod
   def Get(bot_id):
@@ -29,9 +63,6 @@ class WfTryBotCache(ndb.Model):
   The purpose is to track which bots have a warm cache, and to accumulate
   statistics about what the time advantage is for using a specific warm cache.
   """
-  # There is no point in keeping too long a list of bots.
-  MAX_RECENT_BOTS = 10
-  MAX_CACHE_TIMES = 1000
 
   # This contains a list of bot_id strings, for the bots that recently completed
   # a build using this cache name successfully. The order of the list indicates
@@ -39,15 +70,12 @@ class WfTryBotCache(ndb.Model):
   # one at the lowest index.
   recent_bots = ndb.StringProperty(indexed=False, repeated=True)
 
-  # These lists of ints should track how long it takes to complete a task on
-  # both cache states so that we can compute the expected time savings of using
-  # a warm cache and make better decisions when resources are constrained.
-  # These are to be truncated at MAX_CACHE_TIMES entries.
-  cold_cache_times = ndb.JsonProperty(indexed=False, compressed=True)
-  warm_cache_times = ndb.JsonProperty(indexed=False, compressed=True)
-
   # This dict maps a bot_id to the last revision it synced to.
   checked_out_commit_positions = ndb.JsonProperty(
+      indexed=False, compressed=False)
+
+  # This dict maps a bot_id to the last revision that was fully built.
+  full_build_commit_positions = ndb.JsonProperty(
       indexed=False, compressed=False)
 
   @staticmethod
@@ -58,13 +86,12 @@ class WfTryBotCache(ndb.Model):
       result = WfTryBotCache(
           key=key,
           recent_bots=[],
-          cold_cache_times=[],
-          warm_cache_times=[],
+          full_build_commit_positions={},
           checked_out_commit_positions={})
       result.put()
     return result
 
-  def AddBot(self, bot_id, checked_out_cp, cached_cp):
+  def AddBot(self, bot_id, checked_out_cp, cached_cp, dimensions=None):
     """Records a bot's used cache and cached/checked out revisions."""
 
     # Initialize if necessary.
@@ -74,6 +101,8 @@ class WfTryBotCache(ndb.Model):
     self.checked_out_commit_positions[bot_id] = checked_out_cp
     bot = WfTryBot.Get(bot_id)
     bot.newest_synced_revision = cached_cp
+    if dimensions:
+      bot.SetCaches(dimensions)
     bot.put()
 
     # If the bot is already at the front of the list do nothing.
@@ -85,22 +114,16 @@ class WfTryBotCache(ndb.Model):
 
     self.recent_bots.insert(0, bot_id)
 
-    # Truncate to size.
-    if len(self.recent_bots) > self.MAX_RECENT_BOTS:
-      self.recent_bots = self.recent_bots[:self.MAX_RECENT_BOTS]
-      # Truncate checked_out_commit_positions as well.
-      # Use .keys() explicitly rather than iterating over the dictionary because
-      # the clause may remove elements.
-      for bot_id in self.checked_out_commit_positions.keys():
-        if bot_id not in self.recent_bots:
-          del (self.checked_out_commit_positions[bot_id])
+  def AddFullBuild(self, bot_id, build_cp, dimensions):
+    """Records that a full build completed for this cache name on this bot.
 
-  def AddCacheTime(self, t, cold=False):
-    times = self.cold_cache_times if cold else self.warm_cache_times
-    times.append(t)
-    if len(times) > self.MAX_CACHE_TIMES:
-      # Keep only the last MAX_CACHE_TIMES values.
-      if cold:
-        self.cold_cache_times = times[-self.MAX_CACHE_TIMES:]
-      else:
-        self.warm_cache_times = times[-self.MAX_CACHE_TIMES:]
+    Args:
+      bot_id (str): The bot id of the bot where the build took place.
+      build_cp (int): The commit position of the revision that was checked out
+          and built.
+      dimensions (list of str): Dimensions of the bot as returned by swarming
+          api.
+    """
+    self.full_build_commit_positions = self.full_build_commit_positions or {}
+    self.full_build_commit_positions[bot_id] = build_cp
+    self.AddBot(bot_id, build_cp, build_cp, dimensions)
