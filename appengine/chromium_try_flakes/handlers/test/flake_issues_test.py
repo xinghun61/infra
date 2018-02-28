@@ -1197,6 +1197,141 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     flaky_runs = FlakyRun.query().fetch(100)
     self.assertEqual(len(flaky_runs), 0)
 
+  def test_is_duplicate_occurrence_without_flake(self):
+    flake_id = 'flake id'
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(
+        now - datetime.timedelta(hours=2), now)
+    flaky_run = FlakyRun(
+        parent=br_f.parent(),
+        failure_run=br_f,
+        failure_run_time_started=br_f.get().time_started,
+        failure_run_time_finished=br_f.get().time_finished,
+        success_run=br_s)
+
+    # No Flake exists.
+    self.assertFalse(
+        flake_issues.CreateFlakyRun.is_duplicate_occurrence(
+                  flake_id, flaky_run))
+
+  def test_is_duplicate_occurrence_with_match(self):
+    flake_id = 'flake id'
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(
+        now - datetime.timedelta(hours=2), now)
+    flaky_run = FlakyRun(
+        parent=br_f.parent(),
+        failure_run=br_f,
+        failure_run_time_started=br_f.get().time_started,
+        failure_run_time_finished=br_f.get().time_finished,
+        success_run=br_s)
+
+    Flake(
+        id=flake_id,
+        name=flake_id,
+        occurrences=[flaky_run.put()],
+        last_time_seen=datetime.datetime.min).put()
+
+    # Occurrence exists for same patchset.
+    self.assertTrue(
+        flake_issues.CreateFlakyRun.is_duplicate_occurrence(
+            flake_id, flaky_run))
+
+  def test_is_duplicate_occurrence_without_match(self):
+    flake_id = 'flake id'
+    now = datetime.datetime.utcnow()
+    pbr = PatchsetBuilderRuns(
+        issue=123456789,
+        patchset=20001,
+        master='master',
+        builder='test-builder').put()
+    br_f = BuildRun(
+        parent=pbr,
+        buildnumber=100,
+        result=2,
+        time_started=now - datetime.timedelta(hours=1),
+        time_finished=now).put()
+    br_s = BuildRun(
+        parent=pbr,
+        buildnumber=101,
+        result=0,
+        time_started=now - datetime.timedelta(hours=1),
+        time_finished=now).put()
+    flaky_run = FlakyRun(
+        parent=br_f.parent(),
+        failure_run=br_f,
+        failure_run_time_started=br_f.get().time_started,
+        failure_run_time_finished=br_f.get().time_finished,
+        success_run=br_s)
+
+    Flake(
+        id=flake_id,
+        name=flake_id,
+        occurrences=[flaky_run.put()],
+        last_time_seen=datetime.datetime.min).put()
+
+    # New patchset with different issue/patchset.
+    pbr = PatchsetBuilderRuns(
+        issue=5432123,
+        patchset=321,
+        master='master',
+        builder='test-builder').put()
+    br_f = BuildRun(
+        parent=pbr,
+        buildnumber=100,
+        result=2,
+        time_started=now - datetime.timedelta(hours=1),
+        time_finished=now).put()
+    br_s = BuildRun(
+        parent=pbr,
+        buildnumber=101,
+        result=0,
+        time_started=now - datetime.timedelta(hours=1),
+        time_finished=now).put()
+    flaky_run = FlakyRun(
+        parent=br_f.parent(),
+        failure_run=br_f,
+        failure_run_time_started=br_f.get().time_started,
+        failure_run_time_finished=br_f.get().time_finished,
+        success_run=br_s)
+
+    # Different patchsets won't match.
+    self.assertFalse(
+        flake_issues.CreateFlakyRun.is_duplicate_occurrence(
+            flake_id, flaky_run))
+
+  def test_create_flaky_run_with_duplicate(self):
+    now = datetime.datetime.utcnow()
+    br_f, br_s = self._create_build_runs(
+        now - datetime.timedelta(hours=2), now)
+
+    urlfetch_mock = self._create_urlfetch_mock()
+
+    flake = Flake(
+        id='update_scripts',
+        name='update_scripts',
+        occurrences=[],
+        last_time_seen=datetime.datetime.min)
+    flake.occurrences = [
+        FlakyRun(
+            parent=br_f.parent(),
+            failure_run=br_f,
+            failure_run_time_started=br_f.get().time_started,
+            failure_run_time_finished=br_f.get().time_finished,
+            success_run=br_s).put()
+    ]
+    flake_key = flake.put()
+
+    with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
+        self.test_app.post(
+            '/issues/create_flaky_run', {
+                'failure_run_key': br_f.urlsafe(),
+                'success_run_key': br_s.urlsafe()
+            })
+
+    flake = flake_key.get()
+    self.assertEqual(len(flake.occurrences), 1)
+
 
 class TestOverrideIssueID(testing.AppengineTestCase):
   app_module = main.app

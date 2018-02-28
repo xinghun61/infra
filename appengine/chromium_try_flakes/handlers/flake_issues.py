@@ -627,6 +627,31 @@ class CreateFlakyRun(webapp2.RequestHandler):
     util.add_occurrence_time_to_flake(flake, failure_time)
     flake.put()
 
+  @staticmethod
+  # This is a read-only operation, which if done with a transaction will cause
+  # a concurrency error because there are too many objects. Since there's no
+  # Read --> Write pattern happening here, there's no need for a transaction.
+  @ndb.non_transactional
+  def is_duplicate_occurrence(flake_id, flaky_run):
+      """Returns true if the given flaky run has already been reported."""
+      flake = Flake.get_by_id(flake_id)
+      if not flake:
+          return False
+
+      # Get the changelist/patchset.
+      patchset_builder_runs = flaky_run.failure_run.parent().get()
+      changelist_issue = patchset_builder_runs.issue
+      builder = patchset_builder_runs.builder
+
+      # Compare the changelist/patchset for uniqueness.
+      for occurrence in ndb.get_multi(flake.occurrences):
+          n_patchset_builder_runs = occurrence.failure_run.parent().get()
+          if (n_patchset_builder_runs.issue == changelist_issue and
+             n_patchset_builder_runs.builder == builder):
+              return True
+
+      return False
+
   @classmethod
   def _flatten_tests(cls, tests, delimiter):
     """Finds all passed, failed and skipped tests in tests trie.
@@ -838,6 +863,9 @@ class CreateFlakyRun(webapp2.RequestHandler):
 
     flaky_run_key = flaky_run.put()
     for flake, is_step in flakes_to_update:
+      if self.is_duplicate_occurrence(flake, flaky_run):
+        logging.info('Not adding duplicate occurrence for the same CL')
+        continue
       self.add_failure_to_flake(flake, flaky_run_key, failure_time, is_step)
     self.flaky_runs.increment_by(1)
 
