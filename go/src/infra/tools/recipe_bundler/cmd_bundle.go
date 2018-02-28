@@ -1,4 +1,4 @@
-// Copyright 2017 The LUCI Authors. All rights reserved.
+// Copyright 2018 The LUCI Authors. All rights reserved.
 // Use of this source code is governed under the Apache License, Version 2.0
 // that can be found in the LICENSE file.
 
@@ -7,6 +7,7 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 
 	cipd_common "go.chromium.org/luci/cipd/client/cipd/common"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag/stringmapflag"
 	"go.chromium.org/luci/common/logging"
@@ -27,6 +29,25 @@ func bundleCmd() *subcommands.Command {
 	return &subcommands.Command{
 		UsageLine: "bundle [options]",
 		ShortDesc: "Bundles recipe repos",
+		LongDesc: `This will create CIPD package bundles for each repo.
+
+The CIPD package name will be '<package-name-prefix>/<repo>'. For example
+a package name might be:
+
+  infra/recipe_bundles/chromium.googlesource.com/chromium/tools/build
+
+The package will be tagged with 'git_revision:<repo_revision_pin>'. If the tool
+was instructed to package the latest version (i.e. 'FETCH_HEAD'), it will also
+set the CIPD ref to match both the stated ref (i.e. 'HEAD'), as well as the ref
+that it resolves to ('HEAD' usually resolves to 'refs/heads/master', but this
+depends on the repo). So, if you go with the default of:
+
+  '{ref=HEAD, revision=FETCH_HEAD}'
+
+And the repo has HEAD -> refs/heads/master, the tool will update the 'HEAD' and
+'refs/heads/master' CIPD refs. If you ask this tool to fetch 'refs/foo/bar', this
+tool would update 'refs/foo/bar'.
+`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdBundle{}
@@ -36,15 +57,15 @@ func bundleCmd() *subcommands.Command {
 			ret.Flags.Var(&ret.reposInput, "r",
 				`(repeatable) A `+"`"+`repospec`+"`"+` to bundle (e.g. 'host.name/to/repo').
 
-	A git revision may be provided with an =, e.g. 'host.name/to/repo=deadbeef'.
-	The revision must be either a full hexadecimal commit id, or it may be the literal
-	'FETCH_HEAD' to indicate that the latest version should be used.
+A git revision may be provided with an =, e.g. 'host.name/to/repo=deadbeef'.
+The revision must be either a full hexadecimal commit id, or it may be the
+literal 'FETCH_HEAD' to indicate that the latest version should be used.
 
-	If this revision lies on a ref other than 'HEAD', you may provide the
-	ref to fetch after the revision by separating it with a comma, e.g.
-	'host.name/to/repo=deadbeef,refs/other/thing'. Note that most repos configure
-	'HEAD' to symlink to 'refs/heads/master'. See e.g.
-	https://stackoverflow.com/a/8841024`)
+If this revision lies on a ref other than 'HEAD', you may provide the
+ref to fetch after the revision by separating it with a comma, e.g.
+'host.name/to/repo=deadbeef,refs/other/thing'. Note that most repos configure
+'HEAD' to symlink to 'refs/heads/master'. See e.g.
+https://stackoverflow.com/a/8841024`)
 
 			ret.Flags.StringVar(&ret.localDest, "local", "",
 				`Set to a non-empty path, and this tool will produce CIPD packages in that local directory.
@@ -55,6 +76,12 @@ func bundleCmd() *subcommands.Command {
 
 			ret.Flags.StringVar(&ret.packageNamePrefix, "package-name-prefix", "infra/recipe_bundles",
 				`Set to override the default CIPD package name prefix.`)
+
+			ret.Flags.StringVar(&ret.packageNameInternalPrefix, "package-name-internal-prefix", "infra_internal/recipe_bundles",
+				`Set to override the default CIPD package name prefix for repos containing the word "internal".`)
+
+			ret.Flags.StringVar(&ret.cipd.serviceURL, "service-url", "",
+				`Set to override the default CIPD service URL.`)
 
 			return ret
 		},
@@ -75,10 +102,12 @@ type cmdBundle struct {
 
 	logCfg logging.Config
 
-	reposInput        stringmapflag.Value
-	localDest         string
-	workdir           string
-	packageNamePrefix string
+	reposInput                stringmapflag.Value
+	localDest                 string
+	workdir                   string
+	packageNamePrefix         string
+	packageNameInternalPrefix string
+	cipd                      cipdClient
 
 	env subcommands.Env
 
@@ -99,6 +128,14 @@ func parseRepoInput(input stringmapflag.Value) (ret map[string]fetchSpec, err er
 		}
 		if strings.Contains(u.Host, ":") {
 			err = errors.Reason("parsing repo %q: must not include scheme", repo).Err()
+			return
+		}
+		if strings.HasSuffix(u.Path, ".git") {
+			err = errors.Reason("parsing repo %q: must not end with .git", repo).Err()
+			return
+		}
+		if strings.HasSuffix(u.Path, "/") {
+			err = errors.Reason("parsing repo %q: must not end with slash", repo).Err()
 			return
 		}
 
@@ -156,6 +193,10 @@ func (c *cmdBundle) parseFlags() (err error) {
 		return errors.Annotate(err, "validating -package-name-prefix").Err()
 	}
 
+	if err = cipd_common.ValidatePackageName(c.packageNameInternalPrefix); err != nil {
+		return errors.Annotate(err, "validating -package-name-prefix").Err()
+	}
+
 	if c.workdir, err = filepath.Abs(c.workdir); err != nil {
 		return errors.Annotate(err, "resolving workdir").Err()
 	}
@@ -184,71 +225,121 @@ var pathSquisher = strings.NewReplacer(
 	"\\", "_",
 )
 
-func (c *cmdBundle) mkRepoDirs(repoName string) (repo gitRepo, bundledir string, err error) {
+func (c *cmdBundle) mkRepoDirs(repoName string) (repo, bundleDir string, err error) {
 	base := filepath.Join(c.workdir, pathSquisher.Replace(repoName))
-	repo = gitRepo(filepath.Join(base, "repo"))
-	bundledir = filepath.Join(base, "bndl")
+	repo = filepath.Join(base, "repo")
+	bundleDir = filepath.Join(base, "bndl")
 
-	if err = os.MkdirAll(string(repo), 0777); err != nil {
+	if err = os.MkdirAll(repo, 0777); err != nil {
 		return
 	}
 
-	err = os.MkdirAll(bundledir, 0777)
+	// Make the directory clean
+	if err = os.RemoveAll(bundleDir); err == nil {
+		err = os.MkdirAll(bundleDir, 0777)
+	}
 	return
-}
-
-type gitRepo string
-
-func (g gitRepo) git(ctx context.Context, args ...string) error {
-	logging.Debugf(ctx, "running: %q", args)
-	return nil
-}
-
-func (g gitRepo) hasCommit(ctx context.Context, commit string) bool {
-	return g.git(ctx, "cat-file", "-e", commit+"^{commit}") == nil
-}
-
-func (g gitRepo) currentRevision(ctx context.Context) (string, error) {
-	return "", nil
 }
 
 func (c *cmdBundle) run(ctx context.Context) error {
 	return parallel.FanOutIn(func(ch chan<- func() error) {
-		for repoName, fetch := range c.repos {
-			repoName, fetch := repoName, fetch
+		for repoName, spec := range c.repos {
+			repoName, spec := repoName, spec
 			ch <- func() error {
-				repo, bundleDir, err := c.mkRepoDirs(repoName)
+				repoDir, bundleDir, err := c.mkRepoDirs(repoName)
+				repo := gitRepo{repoDir, repoName}
 				if err != nil {
 					return errors.Annotate(err, "making repo dirs").Err()
 				}
-				ctx := logging.SetFields(ctx, logging.Fields{
-					"repo":    repoName,
-					"workdir": filepath.Dir(bundleDir),
-				})
+				ctx := logging.SetField(ctx, "repo", repoName)
 
-				logging.Infof(ctx, "fetching: %v", fetch)
-				if err = repo.git(ctx, "init"); err != nil {
-					return err
+				resolvedSpec, err := repo.resolveSpec(ctx, spec)
+				logging.Infof(ctx, "got revision/ref: %q", spec)
+
+				pkgName := ""
+				if strings.Contains(repoName, "internal") {
+					pkgName = fmt.Sprintf("%s/%s", c.packageNameInternalPrefix, repoName)
+				} else {
+					pkgName = fmt.Sprintf("%s/%s", c.packageNamePrefix, repoName)
 				}
-				if !fetch.isPinned() || !repo.hasCommit(ctx, fetch.revision) {
-					if err = repo.git(ctx, "fetch", "https://"+repoName, fetch.ref); err != nil {
-						return err
+
+				if err := cipd_common.ValidatePackageName(pkgName); err != nil {
+					panic(errors.Reason("bug: %q doesn't result in a valid CIPD package", repoName).Err())
+				}
+				pkgVers := "git_revision:" + resolvedSpec.revision
+				pkgRefs := stringset.NewFromSlice(
+					strings.ToLower(spec.revision),
+					strings.ToLower(resolvedSpec.ref))
+
+				if c.localDest == "" && c.cipd.serverQuiet(ctx, "resolve", pkgName, "-version", pkgVers) == nil {
+					logging.Infof(ctx, "CIPD already has `%s %s`", pkgName, pkgVers)
+					// TODO(iannucci): If a branch is cut, but points to an
+					// already-processed commit, this tool will not set the refs, even if
+					// pkgRefs contains refs which have no value for pkgName.
+					//
+					// Fixing this would require a facility to have cipd list all of the
+					// refs which have been set for a /package/, across all instances.
+					return nil
+				}
+
+				// Get initial repo checkout
+				logging.Infof(ctx, "fetching: %v", resolvedSpec)
+				if err = repo.git(ctx, "init"); err == nil {
+					if err = repo.ensureFetched(ctx, resolvedSpec); err == nil {
+						err = repo.git(ctx, "checkout", resolvedSpec.revision)
 					}
 				}
-				if err = repo.git(ctx, "checkout", fetch.revision); err != nil {
+				if err != nil {
 					return err
 				}
-				if fetch.revision, err = repo.currentRevision(ctx); err != nil {
-					return err
-				}
-				logging.Infof(ctx, "got revision: %q", fetch.revision)
 
-				// TODO
-				// if ! local check cipd to see if this is done already
-				// recipe fetch
-				// recipe bundle
-				// build cipd package
-				// [upload cipd package]
+				// recipes spec+bundle
+				logging.Infof(ctx, "recipes fetch + bundle")
+				var r recipes
+				if r, err = newRecipes(repoDir); err == nil {
+					if err = r.run(ctx, "fetch"); err == nil {
+						err = r.run(ctx, "bundle", "--destination", bundleDir)
+					}
+				}
+				if err != nil {
+					return err
+				}
+				logging.Infof(ctx, "finished bundling")
+
+				commonArgs := []string{
+					"-name", pkgName,
+					"-in", bundleDir,
+				}
+
+				// package or package+upload
+				if c.localDest != "" {
+					pkgFile := fmt.Sprintf("%s_%s.zip", pathSquisher.Replace(pkgName), resolvedSpec.revision)
+					cmd := []string{
+						"pkg-build",
+						"-out", filepath.Join(c.localDest, pkgFile),
+					}
+					cmd = append(cmd, commonArgs...)
+					if err = c.cipd.local(ctx, cmd...); err != nil {
+						return err
+					}
+					logging.Infof(ctx, "finished cipd pkg-build: %q", pkgFile)
+				} else {
+					cmd := []string{
+						"create",
+						"-tag", pkgVers,
+					}
+					cmd = append(cmd, commonArgs...)
+					if !spec.isPinned() {
+						pkgRefs.Iter(func(ref string) bool {
+							cmd = append(cmd, "-ref", ref)
+							return true
+						})
+					}
+					if err = c.cipd.server(ctx, cmd...); err != nil {
+						return err
+					}
+					logging.Infof(ctx, "finished cipd create: `%s %s`", pkgName, pkgVers)
+				}
 				return nil
 			}
 		}
