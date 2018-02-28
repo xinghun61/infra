@@ -168,6 +168,20 @@ BigQueryHelper.) The [API
 docs](https://googlecloudplatform.github.io/google-cloud-python/stable/bigquery-usage.html)
 can also be helpful.
 
+### From Python GAE:
+
+First, check the status of [crbug.com/813238](https://crbug.com/813238). If it
+is resolved:
+
+1. Use infra_libs.bigquery via Vpython (spec should be similar to that of
+   [upload_goma_logs.vpython](https://codesearch.chromium.org/chromium/build/scripts/slave/upload_goma_logs.py.vpython?q=upload_goma_logs.&sq=package:chromium&l=1))
+2. Please update this documentation. :)
+
+Otherwise, infra_libs (and google-cloud-bigquery) won't be available to you due
+to some dependency issues and you will have to workaround that. See [an
+example](https://codesearch.chromium.org/chromium/infra/appengine/findit/services/bigquery_helper.py)
+in Findit.
+
 # (Optional Step) Writing a Dataflow workflow
 
 ## Recommended Reading
