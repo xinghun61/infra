@@ -2,8 +2,8 @@
   'project': 'webrtc',
   'source_url': 'https://webrtc.googlesource.com/src',
   'status_url': 'https://webrtc-status.appspot.com',
-  'allowed_lag': 300,
-  'allowed_gap': 5,
+  'allowed_lag': 300,  # hours
+  'allowed_gap': 12,   # commits behind
   'error_recipients': 'webrtc-troopers-robots@google.com',
   'masters': {
     'chromium.webrtc.fyi': {
