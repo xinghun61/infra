@@ -12,6 +12,8 @@ from libs import analysis_status
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
+from pipelines.flake_failure.next_commit_position_pipeline import (
+    NextCommitPositionOutput)
 from waterfall import build_util
 from waterfall.build_info import BuildInfo
 from waterfall.flake import initialize_flake_pipeline
@@ -250,7 +252,9 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key='urlsafe_key',
         commit_position_range=IntRange(lower=None, upper=start_commit_position),
-        analyze_commit_position_parameters=None,
+        analyze_commit_position_parameters=NextCommitPositionOutput(
+            culprit_commit_position=None,
+            next_commit_position=start_commit_position),
         manually_triggered=True,
         retries=0,
         step_metadata=StepMetadata.FromSerializable({}))

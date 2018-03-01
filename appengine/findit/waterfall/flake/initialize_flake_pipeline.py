@@ -14,6 +14,8 @@ from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
+from pipelines.flake_failure.next_commit_position_pipeline import (
+    NextCommitPositionOutput)
 from waterfall import build_util
 from waterfall import waterfall_config
 from waterfall.flake import triggering_sources
@@ -183,13 +185,17 @@ def ScheduleAnalysisIfNeeded(
         logging.error('Failed to get starting build for flake analysis')
 
       assert starting_build_info
-      assert starting_build_info.commit_position is not None
+      starting_commit_position = starting_build_info.commit_position
+
+      assert starting_commit_position is not None
 
       analyze_flake_input = AnalyzeFlakeInput(
           analysis_urlsafe_key=analysis.key.urlsafe(),
           commit_position_range=IntRange(
-              lower=None, upper=starting_build_info.commit_position),
-          analyze_commit_position_parameters=None,
+              lower=None, upper=starting_commit_position),
+          analyze_commit_position_parameters=NextCommitPositionOutput(
+              culprit_commit_position=None,
+              next_commit_position=starting_commit_position),
           manually_triggered=True,
           retries=0,
           step_metadata=StepMetadata.FromSerializable(step_metadata))
