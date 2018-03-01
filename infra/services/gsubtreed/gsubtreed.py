@@ -271,6 +271,4 @@ def inner_loop(origin_repo, config, dry_run):
     if not rslt:  # pragma: no cover
       success = False
 
-  origin_repo.push_queued_fast_forwards(timeout=PUSH_TIMEOUT)
-
   return success, processed
