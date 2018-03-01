@@ -73,7 +73,7 @@ var RuleMap = map[string]*RepoConfig{
 	"chromium-src-3325": {
 		BaseRepoURL:     "https://chromium.googlesource.com/chromium/src.git",
 		GerritURL:       "https://chromium-review.googlesource.com",
-		BranchName:      "3325",
+		BranchName:      "refs/branch-heads/3325",
 		MilestoneNumber: 65,
 		StartingCommit:  "1593920eed56dee727e7f78ae5d206052e4ad7e0",
 		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
