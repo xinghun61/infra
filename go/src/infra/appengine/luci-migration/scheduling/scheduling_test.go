@@ -174,6 +174,7 @@ func TestScheduling(t *testing.T) {
 							strpair.Format(buildbotBuildIDTagKey, "54"),
 							"user_agent:luci-migration",
 						},
+						Experimental: true,
 					},
 				})
 			})
@@ -244,6 +245,7 @@ func TestScheduling(t *testing.T) {
 							strpair.Format(buildbotBuildIDTagKey, "53"),
 							"user_agent:luci-migration",
 						},
+						Experimental: true,
 					},
 				})
 			})

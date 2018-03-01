@@ -260,6 +260,8 @@ func (h *Scheduler) maybeSchedule(c context.Context, builder string, req *bbapi.
 	}
 
 	req.Tags = append(req.Tags, "user_agent:luci-migration")
+	req.Experimental = true
+
 	res, err := h.Buildbucket.Put(req).Context(c).Do()
 	transientFailure := true
 	if err == nil && res.Error != nil {
