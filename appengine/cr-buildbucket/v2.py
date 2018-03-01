@@ -78,6 +78,11 @@ def _parse_tags(dest_msg, tags):
   for t in tags:
     # All builds in the datastore have tags that have a colon.
     k, v = t.split(':', 1)
+    if k == 'builder':
+      # we've already parsed builder from parameters
+      # and build creation code guarantees consinstency.
+      # Exclude builder tag.
+      continue
     if k == 'buildset':
       m = model.RE_BUILDSET_GITILES_COMMIT.match(v)
       if m:
@@ -97,21 +102,27 @@ def _parse_tags(dest_msg, tags):
         )
         # TODO(nodir): fetch project from gerrit
         continue
-    elif k == 'swarming_dimension' and ':' in v:
-      k2, v2 = v.split(':', 1)
-      dest_msg.infra.swarming.task_dimensions.add(key=k2, value=v2)
+    elif k == 'swarming_dimension':
+      if ':' in v:  # pragma: no branch
+        k2, v2 = v.split(':', 1)
+        dest_msg.infra.swarming.task_dimensions.add(key=k2, value=v2)
+
+      # This line is actually covered, but pycoverage thinks it is not.
+      # It cannot be not covered because the if statement above is covered.
+      continue  # pragma: no cover
+    elif k == 'swarming_tag':
+      if ':' in v:  # pragma: no branch
+        k2, v2 = v.split(':', 1)
+        if k2 == 'priority':
+          try:
+            dest_msg.infra.swarming.priority = int(v2)
+          except ValueError as ex:
+            logging.warning('invalid tag %r: %s', t, ex)
+        elif k2 == 'buildbucket_template_revision':  # pragma: no branch
+          dest_msg.infra.buildbucket.service_config_revision = v2
+
+      # Exclude all "swarming_tag" tags.
       continue
-    elif k == 'swarming_tag' and ':' in v:
-      k2, v2 = v.split(':', 1)
-      if k2 == 'priority':
-        try:
-          dest_msg.infra.swarming.priority = int(v2)
-          continue
-        except ValueError as ex:
-          logging.warning('invalid tag %r: %s', t, ex)
-      elif k2 == 'buildbucket_template_revision':  # pragma: no branch
-        dest_msg.infra.buildbucket.service_config_revision = v2
-        continue
 
     dest_msg.tags.add(key=k, value=v)
 

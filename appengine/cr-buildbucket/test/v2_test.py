@@ -114,12 +114,7 @@ class V2Test(testing.AppengineTestCase):
         update_time=dt2,
         tags=[
           'a:b',
-          'buildset:bs',
-          'swarming_dimension:os:Ubuntu',
-          'swarming_dimension:pool:luci.chromium.try',
-          ('swarming_tag:buildbucket_template_revision:'
-           '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'),
-          'swarming_tag:priority:100',
+          'c:d'
         ],
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,
@@ -162,7 +157,7 @@ class V2Test(testing.AppengineTestCase):
         status=common_pb2.SUCCESS,
         tags=[
           common_pb2.StringPair(key='a', value='b'),
-          common_pb2.StringPair(key='buildset', value='bs'),
+          common_pb2.StringPair(key='c', value='d'),
         ],
         input=build_pb2.Build.Input(
           properties=v2._dict_to_struct(input_properties),
@@ -173,19 +168,12 @@ class V2Test(testing.AppengineTestCase):
         ),
         infra=build_pb2.BuildInfra(
           buildbucket=build_pb2.BuildInfra.Buildbucket(
-              service_config_revision=(
-                  '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'),
               canary=False,
           ),
           swarming=build_pb2.BuildInfra.Swarming(
               hostname='swarming.example.com',
               task_id='deadbeef',
               task_service_account='service-account@example.com',
-              priority=100,
-              task_dimensions=[
-                common_pb2.StringPair(key='os', value='Ubuntu'),
-                common_pb2.StringPair(key='pool', value='luci.chromium.try'),
-              ],
               bot_dimensions=[
                 common_pb2.StringPair(key='os', value='Ubuntu'),
                 common_pb2.StringPair(key='os', value='Trusty'),
@@ -200,43 +188,71 @@ class V2Test(testing.AppengineTestCase):
     )
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
-    self.assertEqual(
-        msg_to_dict(expected),
-        msg_to_dict(v2.build_to_v2(build)))
+    self.assertEqual(msg_to_dict(expected), msg_to_dict(v2.build_to_v2(build)))
 
   def test_build_to_v2_number(self):
-    build = mkbuild(
+    msg = v2.build_to_v2(mkbuild(
         result_details={
           'properties': {'buildnumber': 54},
         },
-    )
-    msg = v2.build_to_v2(build)
+    ))
     self.assertEqual(msg.number, 54)
 
-  def test_build_to_changes(self):
-    build = mkbuild(
+  def test_parse_tags(self):
+    tags = [
+      'builder:excluded',
+      'buildset:bs',
+      ('buildset:commit/gitiles/chromium.googlesource.com/'
+        'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b7'),
+      ('buildset:patch/gerrit/chromium-review.googlesource.com/677784/5'),
+      'swarming_dimension:os:Ubuntu',
+      'swarming_dimension:pool:luci.chromium.try',
+      ('swarming_tag:buildbucket_template_revision:'
+        '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'),
+      ('swarming_tag:excluded:1'),
+      'swarming_tag:priority:100',
+    ]
+
+    expected = build_pb2.Build(
         tags=[
-          'buildset:x',
-          ('buildset:commit/gitiles/chromium.googlesource.com/'
-           'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b7'),
-          ('buildset:patch/gerrit/chromium-review.googlesource.com/677784/5'),
+          common_pb2.StringPair(key='buildset', value='bs'),
         ],
+        input=build_pb2.Build.Input(
+          gitiles_commits=[
+            common_pb2.GitilesCommit(
+                host='chromium.googlesource.com',
+                project='infra/luci/luci-go',
+                id='b7a757f457487cd5cfe2dae83f65c5bc10e288b7',
+            ),
+          ],
+          gerrit_changes=[
+            common_pb2.GerritChange(
+                host='chromium-review.googlesource.com',
+                change=677784,
+                patchset=5,
+            ),
+          ],
+        ),
+        infra=build_pb2.BuildInfra(
+          buildbucket=build_pb2.BuildInfra.Buildbucket(
+              service_config_revision=(
+                  '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'),
+          ),
+          swarming=build_pb2.BuildInfra.Swarming(
+              priority=100,
+              task_dimensions=[
+                common_pb2.StringPair(key='os', value='Ubuntu'),
+                common_pb2.StringPair(key='pool', value='luci.chromium.try'),
+              ],
+          ),
+        ),
     )
-    msg = v2.build_to_v2(build)
-    self.assertEqual(list(msg.tags), [common_pb2.StringPair(
-        key='buildset',
-        value='x',
-    )])
-    self.assertEqual(list(msg.input.gitiles_commits), [common_pb2.GitilesCommit(
-        host='chromium.googlesource.com',
-        project='infra/luci/luci-go',
-        id='b7a757f457487cd5cfe2dae83f65c5bc10e288b7',
-    )])
-    self.assertEqual(list(msg.input.gerrit_changes), [common_pb2.GerritChange(
-        host='chromium-review.googlesource.com',
-        change=677784,
-        patchset=5,
-    )])
+
+    actual = build_pb2.Build()
+    v2._parse_tags(actual, tags)
+    # Compare messages as dicts.
+    # assertEqual has better support for dicts.
+    self.assertEqual(msg_to_dict(expected), msg_to_dict(actual))
 
   def test_build_to_v2_invalid_priority(self):
     build = mkbuild(
@@ -244,10 +260,7 @@ class V2Test(testing.AppengineTestCase):
     )
     msg = v2.build_to_v2(build)
     self.assertEqual(msg.infra.swarming.priority, 0)
-    self.assertEqual(list(msg.tags), [common_pb2.StringPair(
-      key='swarming_tag',
-      value='priority:blah',
-    )])
+    self.assertEqual(len(msg.tags), 0)
 
   def test_build_to_v2_no_builder_name(self):
     build = mkbuild()
