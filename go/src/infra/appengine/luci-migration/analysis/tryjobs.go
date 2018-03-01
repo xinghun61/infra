@@ -257,9 +257,23 @@ func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 // This function is deterministic.
 //
 // cancel must close keys.
-func (f *fetcher) fetchGroups(c context.Context, keys <-chan groupKey, cancel context.CancelFunc) ([]*group, error) {
-	// make `cancel` cancel c too
+func (f *fetcher) fetchGroups(c context.Context, keys <-chan groupKey, cancel context.CancelFunc) (groups []*group, err error) {
+	origC := c
 	origCancel := cancel
+
+	// fetching individual groups can take long. Give it 30sec less.
+	deadline, ok := c.Deadline()
+	if !ok {
+		panic("context does not have a deadline")
+	}
+	c, _ = clock.WithDeadline(c, deadline.Add(-30*time.Second))
+	defer func() {
+		if errors.Unwrap(err) == context.DeadlineExceeded && origC.Err() != context.DeadlineExceeded {
+			err = nil
+		}
+	}()
+
+	// make `cancel` cancel c too
 	c, cancelC := context.WithCancel(c)
 	cancel = func() {
 		origCancel()
@@ -301,7 +315,6 @@ func (f *fetcher) fetchGroups(c context.Context, keys <-chan groupKey, cancel co
 	}()
 
 	var result []*group
-	var err error
 	trustworthyGroups := 0
 
 loop:

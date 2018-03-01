@@ -64,6 +64,10 @@ func TestAnalyze(t *testing.T) {
 		c := context.Background()
 		c, _ = testclock.UseTime(c, testclock.TestRecentTimeUTC)
 
+		// using clock.WithTimeout makes requests fail with timeout,
+		// presumably because libs that we use, use current time, not clock.
+		c, _ = context.WithTimeout(c, time.Minute)
+
 		// Mock buildbucket server.
 		var buildSets []mockedBuildSet
 		bbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
