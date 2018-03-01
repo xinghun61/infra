@@ -41,3 +41,6 @@ libraries:
   version: "latest"
 - name: django
   version: 1.4
+
+skip_files:
+  - node_modules/

@@ -80,3 +80,6 @@ libraries:
 
 includes:
   - gae_ts_mon
+
+skip_files:
+  - node_modules/
