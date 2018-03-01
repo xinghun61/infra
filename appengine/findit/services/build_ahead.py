@@ -13,6 +13,7 @@ import random
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from model.build_ahead_try_job import BuildAheadTryJob
+from model.wf_try_bot_cache import WfTryBotCache
 from services import git
 from services import swarmbot_util
 from waterfall import waterfall_config
@@ -75,6 +76,39 @@ def _PlatformsToBuild():
     elif not platform_jobs:
       result.append(platform)
   return result
+
+
+def _PickRandomBuilder(builders):
+  """Randomly select one builder to do a full build for.
+
+  This selects one of the builders and uses the relative age of the newest build
+  (in revisions) for each cache as its weight for random selection, favoring the
+  caches that are older.
+  """
+  for b in builders:
+    b['newest_build'] = max(
+        b['cache_stats'].full_build_commit_positions.values() or [0])
+  newest_build = max([b['newest_build'] for b in builders])
+  for b in builders:
+    b['cache_age'] = newest_build - b['newest_build']
+
+  # Weighted random selection
+  weight_sum = sum(b['cache_age'] for b in builders)
+  r = random.uniform(0, weight_sum)
+  for b in builders:  # pragma: no branch
+    if r <= b['cache_age']:
+      return b
+    r -= b['cache_age']
+
+
+def _GetSupportedCompileCaches(platform):
+  """Gets config'd compile builders by platform & their cache name and stats."""
+  builders = waterfall_config.GetSupportedCompileBuilders(platform)
+  for builder in builders:
+    builder['cache_name'] = swarmbot_util.GetCacheName(builder['master'],
+                                                       builder['builder'])
+    builder['cache_stats'] = WfTryBotCache.Get(builder['cache_name'])
+  return builders
 
 
 def TriggerBuildAhead(wf_master, wf_builder, bot):

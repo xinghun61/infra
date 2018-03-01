@@ -3,14 +3,17 @@
 # found in the LICENSE file.
 
 import mock
+import random
 
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from model.build_ahead_try_job import BuildAheadTryJob
+from model.wf_try_bot_cache import WfTryBotCache
 from services import build_ahead
 from services import git
 from services import swarmbot_util
 from waterfall.test import wf_testcase
+from waterfall import waterfall_config
 
 CN = 'builder_cc0b584fcab5ab502af9c154891c705115ea1fefd4d176cabf5d04ae0cd4e18c'
 
@@ -208,3 +211,46 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
         }],
     ]
     self.assertEqual(['android', 'win'], build_ahead._PlatformsToBuild())
+
+  @mock.patch.object(waterfall_config, 'GetSupportedCompileBuilders')
+  @mock.patch.object(random, 'uniform')
+  def testPickRandomBuilder(self, mock_random, mock_builders):
+    linux_bot = {'master': 'dummy', 'builder': 'Linux Builder'}
+    chrome_bot = {'master': 'dummy', 'builder': 'Chrome Builder'}
+    android_bot = {'master': 'dummy', 'builder': 'Android Builder'}
+    mock_builders.return_value = [linux_bot, chrome_bot, android_bot]
+
+    linux_cache = WfTryBotCache.Get(
+        swarmbot_util.GetCacheName(linux_bot['master'], linux_bot['builder']))
+    chrome_cache = WfTryBotCache.Get(
+        swarmbot_util.GetCacheName(chrome_bot['master'], chrome_bot['builder']))
+    android_cache = WfTryBotCache.Get(
+        swarmbot_util.GetCacheName(android_bot['master'],
+                                   android_bot['builder']))
+
+    linux_cache.AddFullBuild('bot1', 100, None)
+    linux_cache.AddFullBuild('bot2', 110, None)
+    linux_cache.AddFullBuild('bot3', 120, None)
+
+    chrome_cache.AddFullBuild('bot1', 110, None)
+    chrome_cache.AddFullBuild('bot2', 120, None)
+    chrome_cache.AddFullBuild('bot3', 130, None)
+
+    android_cache.AddFullBuild('bot1', 140, None)
+
+    linux_cache.put()
+    chrome_cache.put()
+    android_cache.put()
+
+    # Expected weights are 20 for linux, 10 for chrome, 0 for android.
+    mock_random.side_effect = [i + 0.1 for i in range(30)]
+    for i in range(20):
+      self.assertEqual(
+          linux_cache,
+          build_ahead._PickRandomBuilder(
+              build_ahead._GetSupportedCompileCaches('unix'))['cache_stats'])
+    for i in range(10):
+      self.assertEqual(
+          chrome_cache,
+          build_ahead._PickRandomBuilder(
+              build_ahead._GetSupportedCompileCaches('unix'))['cache_stats'])
