@@ -15,6 +15,7 @@ from components import utils
 import gae_ts_mon
 
 from . import swarming
+from . import swarmingcfg
 import acl
 import api
 import config
@@ -45,6 +46,7 @@ def swarmbucket_api_method(
 class BuilderMessage(messages.Message):
   name = messages.StringField(1)
   category = messages.StringField(2)
+  properties_json = messages.StringField(3)
 
 
 class BucketMessage(messages.Message):
@@ -108,6 +110,8 @@ class SwarmbucketApi(remote.Service):
           BuilderMessage(
             name=builder.name,
             category=builder.category,
+            properties_json=json.dumps(
+                swarmingcfg.read_properties(builder.recipe)),
           )
           for builder in bucket.swarming.builders
         ],

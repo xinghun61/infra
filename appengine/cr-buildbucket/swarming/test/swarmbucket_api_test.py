@@ -48,6 +48,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
           recipe {
             repository: "https://example.com"
             name: "presubmit"
+            properties: "foo:bar"
+            properties_j: "baz:1"
           }
         }
         builders {
@@ -133,8 +135,16 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         {
           'name': 'luci.chromium.try',
           'builders': [
-            {'name': 'linux_chromium_rel_ng', 'category': 'Chromium'},
-            {'name': 'win_chromium_rel_ng', 'category': 'Chromium'},
+            {
+              'name': 'linux_chromium_rel_ng',
+              'category': 'Chromium',
+              'properties_json': json.dumps({'foo': 'bar', 'baz': 1})
+            },
+            {
+              'name': 'win_chromium_rel_ng',
+              'category': 'Chromium',
+              'properties_json': json.dumps({})
+            },
           ]
         }
       ]
@@ -188,6 +198,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
               'is_experimental': False,
               'is_luci': True,
             },
+            'foo': 'bar',
+            'baz': 1,
             'buildername': 'linux_chromium_rel_ng',
             'buildnumber': 0,
           }, sort_keys=True),
