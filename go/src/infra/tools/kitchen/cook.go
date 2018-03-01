@@ -322,7 +322,10 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, *k
 	}
 
 	// Extract "$kitchen" properties into more usable struct.
-	kitchenProps := &kitchenProperties{}
+	kitchenProps := &kitchenProperties{
+		GitAuth:  true,
+		DevShell: true,
+	}
 	if val, _ := props["$kitchen"]; val != nil {
 		blob, err := json.Marshal(val)
 		if err != nil {

@@ -307,11 +307,12 @@ func (ac *AuthContext) ExportIntoEnv(env environ.Env) environ.Env {
 
 // ReportServiceAccount logs service account email used by this auth context.
 func (ac *AuthContext) ReportServiceAccount() {
+	account := ac.email
 	if ac.anonymous {
-		logging.Infof(ac.ctx, "%q account is anonymous", ac.ID)
-	} else {
-		logging.Infof(ac.ctx, "%q account email is %s", ac.ID, ac.email)
+		account = "anonymous"
 	}
+	logging.Infof(ac.ctx, "%q account is %s (git_auth: %v, devshell: %v)",
+		ac.ID, account, ac.EnableGitAuth, ac.EnableDevShell)
 }
 
 ////
