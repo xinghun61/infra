@@ -3,6 +3,8 @@ is recommended you use this library over using the client API directly as it
 includes common logic for handling protobufs, formatting errors, safe guards,
 and handling edge cases.
 
+[TOC]
+
 # Usage
 
 Create a client:
@@ -58,6 +60,57 @@ What form this takes depends on the application.
 infra_libs/bigquery is available via vPython as a CIPD package. To update the
 available version, build and upload a new wheel with
 [dockerbuild](../../tools/dockerbuild/README#subcommand_wheel_build).
+
+google-cloud-bigquery is required to create a BigQuery client. Unfortunately,
+google-cloud-bigquery has quite a few dependencies. Here is the Vpython spec you
+need to use infra_libs.bigquery and google-cloud-bigquery:
+
+```
+wheel: <
+  name: "infra/python/wheels/requests-py2_py3"
+  version: "version:2.13.0"
+>
+wheel: <
+  name: "infra/python/wheels/google_api_python_client-py2_py3"
+  version: "version:1.6.2"
+>
+wheel: <
+  name: "infra/python/wheels/six-py2_py3"
+  version: "version:1.10.0"
+>
+wheel: <
+  name: "infra/python/wheels/uritemplate-py2_py3"
+  version: "version:3.0.0"
+>
+wheel: <
+  name: "infra/python/wheels/httplib2-py2_py3"
+  version: "version:0.10.3"
+>
+wheel: <
+  name: "infra/python/wheels/rsa-py2_py3"
+  version: "version:3.4.2"
+>
+wheel: <
+  name: "infra/python/wheels/pyasn1_modules-py2_py3"
+  version: "version:0.0.8"
+>
+wheel: <
+  name: "infra/python/wheels/pyasn1-py2_py3"
+  version: "version:0.2.3"
+>
+wheel: <
+  name: "infra/python/wheels/oauth2client/linux-arm64_cp27_cp27mu"
+  version: "version:3.0.0"
+>
+wheel: <
+  name: "infra/python/wheels/protobuf-py2_py3"
+  version: "version:3.2.0"
+>
+wheel: <
+  name: "infra/python/wheels/infra_libs-py2"
+  version: "version:1.3.0"
+>
+```
 
 # Recommended Monitoring
 
