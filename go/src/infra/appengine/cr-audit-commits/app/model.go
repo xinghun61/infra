@@ -133,6 +133,9 @@ type RelevantCommit struct {
 	CommitMessage          string `gae:",noindex"`
 	Retries                int32
 
+	// This will catch deprecated fields such as IssueID
+	LegacyFields ds.PropertyMap `gae:",extra"`
+
 	// NotifiedAll will be true if all applicable notifications have been
 	// processed.
 	NotifiedAll bool
