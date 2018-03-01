@@ -10,10 +10,12 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sort"
 	"time"
 
 	"golang.org/x/net/context"
+	"google.golang.org/api/googleapi"
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock"
@@ -150,9 +152,14 @@ type masterJSON struct {
 func (d *Builders) fetchBuilderNames(c context.Context, master *config.Master) (names []string, err error) {
 	// this is inefficient, but there is no better API
 	res, err := d.Buildbot.GetCompressedMasterJSON(c, &milo.MasterRequest{Name: master.Name})
-	if err != nil {
+	switch apiErr, _ := err.(*googleapi.Error); {
+	case apiErr != nil && apiErr.Code == http.StatusNotFound:
+		// Entire master was deleted. Treat it as there are no builders.
+		return nil, nil
+	case err != nil:
 		return nil, errors.Annotate(err, "GetCompressedMasterJSON RPC failed").Err()
 	}
+
 	ungzip, err := gzip.NewReader(bytes.NewReader(res.Data))
 	if err != nil {
 		return nil, err
