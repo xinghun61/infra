@@ -103,6 +103,46 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertTrue(mock_save.called)
 
+  @mock.patch.object(finish_build_analysis_pipeline,
+                     '_IdentifySuspectedRevisions')
+  @mock.patch.object(heuristic_analysis, 'GenerateSuspectedRanges')
+  @mock.patch.object(heuristic_analysis,
+                     'SaveFlakeCulpritsForSuspectedRevisions')
+  def testFinishBuildAnalysisPipelineNoSuspectedDataPoint(
+      self, mock_save, mock_ranges, mock_revisions):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    lower_bound = 1
+    upper_bound = 10
+    iterations = 100
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.status = analysis_status.COMPLETED
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.data_points = [DataPoint.Create(build_number=build_number)]
+    analysis.Save()
+
+    report_event_input = pipelines.CreateInputObjectInstance(
+        report_event_pipeline.ReportEventInput,
+        analysis_urlsafe_key=analysis.key.urlsafe())
+    self.MockGeneratorPipeline(
+        report_event_pipeline.ReportAnalysisEventPipeline, report_event_input,
+        None)
+
+    pipeline = FinishBuildAnalysisPipeline(analysis.key.urlsafe(), lower_bound,
+                                           upper_bound, iterations, False)
+    pipeline.start()
+    self.execute_queued_tasks()
+
+    mock_save.assert_not_called()
+    mock_ranges.assert_not_called()
+    mock_revisions.assert_not_called()
+
   @mock.patch.object(confidence, 'SteppinessForBuild', return_value=0.6)
   def testGetBuildConfidenceScore(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')

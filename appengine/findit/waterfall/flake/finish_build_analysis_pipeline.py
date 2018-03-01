@@ -196,7 +196,15 @@ class FinishBuildAnalysisPipeline(BasePipeline):
         build_confidence_score=build_confidence_score)
 
     suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
-    assert suspected_data_point
+    if not suspected_data_point:
+      analysis.LogInfo(
+          'No suspected data point found, skipping culprit analysis')
+      # Report event to BQ.
+      yield report_event_pipeline.ReportAnalysisEventPipeline(
+          pipelines.CreateInputObjectInstance(
+              report_event_pipeline.ReportEventInput,
+              analysis_urlsafe_key=analysis.key.urlsafe()))
+      return
 
     # Run heuristic analysis before triggering try jobs.
     http_client = FinditHttpClient()
