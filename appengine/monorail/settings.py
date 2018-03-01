@@ -251,7 +251,10 @@ else:
 
   if app_id == 'monorail-staging':
     site_name = 'Monorail Staging'
-    banner_message = 'This staging site does not send emails.'
+    banner_message = (
+      'This staging site does not send emails. '
+      'Staging will be read-only for 3 hours starting at ')
+    banner_time = (2018, 3, 2, 9, 0)
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
     db_replica_prefix = 'replica-9-'
