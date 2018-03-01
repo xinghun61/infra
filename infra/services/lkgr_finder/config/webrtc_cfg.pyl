@@ -39,7 +39,6 @@
         'Android32 (M Nexus5X)',
         'Android32 (M Nexus5X)(dbg)',
         'Android32 (more configs)',
-        'Android32 Builder MIPS (dbg)',
         'Android32 Builder x86 (dbg)',
         'Android32 Builder x86',
         'Android64 (M Nexus5X)',
