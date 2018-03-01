@@ -65,16 +65,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -174,16 +174,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -199,16 +199,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -224,16 +224,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -249,16 +249,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -652,16 +652,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -747,16 +747,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -770,15 +770,15 @@ wheel: <
 ```
 
 
-* *linux-mips64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -832,8 +832,8 @@ wheel: <
 ```
 
 
-* *manylinux-x86*
 * *manylinux-x64*
+* *manylinux-x86*
 
 ### 3.2.0.7
 
@@ -845,10 +845,10 @@ wheel: <
 ```
 
 
-* *windows-x86*
-* *manylinux-x86*
 * *manylinux-x64*
+* *manylinux-x86*
 * *windows-x64*
+* *windows-x86*
 
 ## **packaging**
 
@@ -904,16 +904,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x64-ucs2*
-* *mac-x64*
+* *linux-mips64*
 * *linux-mipsel*
-* *manylinux-x86*
+* *mac-x64*
 * *manylinux-x64*
-* *linux-arm64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 
 ### 5.2.2
 
@@ -925,16 +925,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -1099,8 +1099,8 @@ wheel: <
 ```
 
 
-* *windows-x86*
 * *windows-x64*
+* *windows-x86*
 
 ## **pyserial**
 
@@ -1156,16 +1156,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 
@@ -1181,9 +1181,9 @@ wheel: <
 ```
 
 
-* *manylinux-x86*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x86*
 
 ## **selenium**
 
@@ -1225,16 +1225,16 @@ wheel: <
 ```
 
 
-* *linux-mips64*
+* *linux-arm64*
 * *linux-armv6*
 * *linux-mips*
-* *manylinux-x86-ucs2*
-* *manylinux-x86*
-* *manylinux-x64-ucs2*
-* *linux-arm64*
+* *linux-mips64*
 * *linux-mipsel*
 * *mac-x64*
 * *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
 

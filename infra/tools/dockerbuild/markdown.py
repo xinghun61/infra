@@ -109,7 +109,7 @@ template=Build%20Infrastructure)
         package = whl.cipd_package(self._git_revision, templated=True)
 
         # Build an italic list of supported platforms.
-        plat_names = [plat.name for plat in plats] or ('universal',)
+        plat_names = sorted([plat.name for plat in plats] or ('universal',))
         supported = '\n'.join([''] + [
           '* *%s*' % (plat_name,)
           for plat_name in plat_names])
