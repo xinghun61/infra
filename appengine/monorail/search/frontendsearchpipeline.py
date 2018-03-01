@@ -600,7 +600,8 @@ def _GetProjectTimestamps(query_project_ids, needed_shard_keys):
     keys = [('all;%d' % sid)
             for sid, _subquery in needed_shard_keys]
 
-  timestamps_for_project = memcache.get_multi(keys=keys)
+  timestamps_for_project = memcache.get_multi(
+      keys=keys, namespace=settings.memcache_namespace)
   for key, timestamp in timestamps_for_project.iteritems():
     pid_str, sid_str = key.split(';')
     if pid_str == 'all':
@@ -626,7 +627,8 @@ def _GetNonviewableIIDs(
             for (logged_in_user_id, sid) in needed_shard_ids]
 
   if use_cached_searches:
-    cached_dict = memcache.get_multi(keys, key_prefix='nonviewable:')
+    cached_dict = memcache.get_multi(
+        keys, key_prefix='nonviewable:', namespace=settings.memcache_namespace)
   else:
     cached_dict = {}
 
@@ -725,11 +727,13 @@ def _GetCachedSearchResults(
 
   cached_dict = memcache.get_multi(
       ['%s;%s;%s;%d' % (memcache_key_prefix, subquery, sd_str, sid)
-       for sid, subquery in needed_shard_keys])
+       for sid, subquery in needed_shard_keys],
+      namespace=settings.memcache_namespace)
   cached_search_limit_reached_dict = memcache.get_multi(
       ['%s;%s;%s;search_limit_reached;%d' % (
           limit_reached_key_prefix, subquery, sd_str, sid)
-       for sid, subquery in needed_shard_keys])
+       for sid, subquery in needed_shard_keys],
+      namespace=settings.memcache_namespace)
 
   unfiltered_dict = {}
   search_limit_reached_dict = {}

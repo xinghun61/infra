@@ -143,7 +143,8 @@ class LabelRowTwoLevelCache(caches.AbstractTwoLevelCache):
         [self._KeyToStr((project_id, shard_id))
          for project_id in project_ids
          for shard_id in range(0, LABEL_ROW_SHARDS)], seconds=5,
-        key_prefix=self.memcache_prefix)
+        key_prefix=self.memcache_prefix,
+        namespace=settings.memcache_namespace)
 
   def InvalidateAllKeys(self, cnxn, project_ids):
     """Drop the given keys from memcache and invalidate all keys in RAM.
@@ -156,7 +157,8 @@ class LabelRowTwoLevelCache(caches.AbstractTwoLevelCache):
         [self._KeyToStr((project_id, shard_id))
          for project_id in project_ids
          for shard_id in range(0, LABEL_ROW_SHARDS)], seconds=5,
-        key_prefix=self.memcache_prefix)
+        key_prefix=self.memcache_prefix,
+        namespace=settings.memcache_namespace)
 
   def _KeyToStr(self, key):
     """Convert our tuple IDs to strings for use as memcache keys."""
@@ -1633,7 +1635,7 @@ class ConfigService(object):
     """Delete the memcache entries for issues and their project-shard pairs."""
     memcache.delete_multi(
         [str(issue.issue_id) for issue in issues], key_prefix='issue:',
-        seconds=5)
+        seconds=5, namespace=settings.memcache_namespace)
     project_shards = set(
         (issue.project_id, issue.issue_id % settings.num_logical_shards)
         for issue in issues)
@@ -1655,17 +1657,27 @@ class ConfigService(object):
     shard_id_set = {sid for _pid, sid in project_shards}
     cache_entries.extend(('all;%d' % sid) for sid in shard_id_set)
 
-    memcache.delete_multi(cache_entries, key_prefix=key_prefix)
+    memcache.delete_multi(
+        cache_entries, key_prefix=key_prefix,
+        namespace=settings.memcache_namespace)
 
   def InvalidateMemcacheForEntireProject(self, project_id):
     """Delete the memcache entries for all searches in a project."""
     project_shards = set((project_id, shard_id)
                          for shard_id in range(settings.num_logical_shards))
     self._InvalidateMemcacheShards(project_shards)
-    memcache.delete_multi([str(project_id)], key_prefix='config:')
-    memcache.delete_multi([str(project_id)], key_prefix='label_rows:')
-    memcache.delete_multi([str(project_id)], key_prefix='status_rows:')
-    memcache.delete_multi([str(project_id)], key_prefix='field_rows:')
+    memcache.delete_multi(
+        [str(project_id)], key_prefix='config:',
+        namespace=settings.memcache_namespace)
+    memcache.delete_multi(
+        [str(project_id)], key_prefix='label_rows:',
+        namespace=settings.memcache_namespace)
+    memcache.delete_multi(
+        [str(project_id)], key_prefix='status_rows:',
+        namespace=settings.memcache_namespace)
+    memcache.delete_multi(
+        [str(project_id)], key_prefix='field_rows:',
+        namespace=settings.memcache_namespace)
 
 
 class Error(Exception):

@@ -161,6 +161,11 @@ issue_cache_max_size = 400 * 1000
 # occasional users that are mentioned on any popular pages.
 user_cache_max_size = 150 * 1000
 
+# Normally we use the default namespace, but during development it is
+# sometimes useful to run a tainted version on staging that has a separate
+# memcache namespace.  E.g., os.environ.get('CURRENT_VERSION_ID')
+memcache_namespace = None  # Should be None when committed.
+
 # Recompute derived issue fields via work items rather than while
 # the user is waiting for a page to load.
 recompute_derived_fields_in_worker = True
@@ -241,6 +246,8 @@ recognized_codesite_projects = [
 
 # We usually use a DB instance named "master" for writes.
 db_master_name = 'master'
+db_region = None  # First generation DB does not specify this.
+
 # This ID is for -staging and other misc deployments. Prod is defined below.
 analytics_id = 'UA-55762617-20'
 
@@ -257,7 +264,9 @@ else:
     banner_time = (2018, 3, 2, 9, 0)
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
-    db_replica_prefix = 'replica-9-'
+    db_master_name = 'master-g2'
+    db_region = 'us-central1'
+    db_replica_prefix = 'replica-g2-'
 
   elif app_id == 'monorail-prod':
     send_all_email_to = None  # Deliver it to the intended users.
@@ -270,10 +279,17 @@ if dev_mode:
   num_logical_shards = 10
 
 # Combine the customized info above to make the name of the master DB instance.
-db_instance = db_cloud_project + ':' + db_master_name
+if db_region:
+  db_instance = db_cloud_project + ':' + db_region + ':' + db_master_name
+else:
+  db_instance = db_cloud_project + ':' + db_master_name
 
 # Format string for the name of the physical database replicas.
-physical_db_name_format = db_cloud_project + ':' + db_replica_prefix + '%02d'
+if db_region:
+  physical_db_name_format = (
+      db_cloud_project + ':' + db_region + ':' + db_replica_prefix + '%02d')
+else:
+  physical_db_name_format = db_cloud_project + ':' + db_replica_prefix + '%02d'
 
 # preferred domains to display
 preferred_domains = {

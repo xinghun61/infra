@@ -285,7 +285,7 @@ def _GetQueryResultIIDs(
   memcache_key = ';'.join([
       projects_str, canned_query, user_query, ' '.join(sd), str(shard_id)])
   memcache.set(memcache_key, (result_iids, invalidation_timestep),
-               time=expiration)
+               time=expiration, namespace=settings.memcache_namespace)
   logging.info('set memcache key %r', memcache_key)
 
   search_limit_memcache_key = ';'.join([
@@ -293,13 +293,14 @@ def _GetQueryResultIIDs(
       'search_limit_reached', str(shard_id)])
   memcache.set(search_limit_memcache_key,
                (search_limit_reached, invalidation_timestep),
-               time=expiration)
+               time=expiration, namespace=settings.memcache_namespace)
   logging.info('set search limit memcache key %r',
                search_limit_memcache_key)
 
   timestamps_for_projects = memcache.get_multi(
       keys=(['%d;%d' % (pid, shard_id) for pid in query_project_ids] +
-            ['all:%d' % shard_id]))
+            ['all:%d' % shard_id]),
+      namespace=settings.memcache_namespace)
 
   if query_project_ids:
     for pid in query_project_ids:
@@ -307,12 +308,14 @@ def _GetQueryResultIIDs(
       if key not in timestamps_for_projects:
         memcache.set(
             key, invalidation_timestep,
-            time=framework_constants.MEMCACHE_EXPIRATION)
+            time=framework_constants.MEMCACHE_EXPIRATION,
+            namespace=settings.memcache_namespace)
   else:
     key = 'all;%d' % shard_id
     if key not in timestamps_for_projects:
       memcache.set(
           key, invalidation_timestep,
-          time=framework_constants.MEMCACHE_EXPIRATION)
+          time=framework_constants.MEMCACHE_EXPIRATION,
+          namespace=settings.memcache_namespace)
 
   return result_iids, search_limit_reached, error

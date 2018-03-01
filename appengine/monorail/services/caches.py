@@ -24,6 +24,7 @@ from protorpc import protobuf
 
 from google.appengine.api import memcache
 
+import settings
 from framework import framework_constants
 from proto import tracker_pb2
 
@@ -258,7 +259,8 @@ class AbstractTwoLevelCache(object):
     """Read the given keys from memcache, return {key: value}, missing_keys."""
     memcache_hits = {}
     cached_dict = memcache.get_multi(
-        [self._KeyToStr(key) for key in keys], key_prefix=self.memcache_prefix)
+        [self._KeyToStr(key) for key in keys], key_prefix=self.memcache_prefix,
+        namespace=settings.memcache_namespace)
 
     for key_str, serialized_value in cached_dict.iteritems():
       value = self._StrToValue(serialized_value)
@@ -287,14 +289,16 @@ class AbstractTwoLevelCache(object):
     try:
       memcache.add_multi(
           strs_to_cache, key_prefix=self.memcache_prefix,
-          time=framework_constants.MEMCACHE_EXPIRATION)
+          time=framework_constants.MEMCACHE_EXPIRATION,
+          namespace=settings.memcache_namespace)
     except ValueError as e:
       # If memcache does not accept the values, ensure that no stale
       # values are left, then bail out.
       logging.error('Got memcache error: %r', e)
       memcache.delete_multi(
           strs_to_cache.keys(), seconds=5,
-          key_prefix=self.memcache_prefix)
+          key_prefix=self.memcache_prefix,
+          namespace=settings.memcache_namespace)
       return
 
     logging.info('cached batch of %d values in memcache %s',
@@ -337,7 +341,8 @@ class AbstractTwoLevelCache(object):
     self.cache.InvalidateKeys(cnxn, keys)
     memcache.delete_multi(
         [self._KeyToStr(key) for key in keys], seconds=5,
-        key_prefix=self.memcache_prefix)
+        key_prefix=self.memcache_prefix,
+        namespace=settings.memcache_namespace)
 
   def InvalidateAllKeys(self, cnxn, keys):
     """Drop the given keys from memcache and invalidate all keys in RAM.
@@ -348,7 +353,8 @@ class AbstractTwoLevelCache(object):
     self.cache.InvalidateAll(cnxn)
     memcache.delete_multi(
         [self._KeyToStr(key) for key in keys], seconds=5,
-        key_prefix=self.memcache_prefix)
+        key_prefix=self.memcache_prefix,
+        namespace=settings.memcache_namespace)
 
   def GetAllAlreadyInRam(self, keys):
     """Look only in RAM to return {key: values}, missed_keys."""

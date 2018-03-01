@@ -16,6 +16,7 @@ import logging
 
 from google.appengine.api import memcache
 
+import settings
 from framework import framework_constants
 from framework import framework_helpers
 from framework import jsonfeed
@@ -66,12 +67,14 @@ class BackendNonviewable(jsonfeed.InternalTask):
       memcache.set(
         'nonviewable:%d;%d;%d' % (project_id, user_id, mr.shard_id),
         (nonviewable_iids, cached_ts),
-        time=NONVIEWABLE_MEMCACHE_EXPIRATION)
+        time=NONVIEWABLE_MEMCACHE_EXPIRATION,
+        namespace=settings.memcache_namespace)
     else:
       memcache.set(
         'nonviewable:all;%d;%d' % (user_id, mr.shard_id),
         (nonviewable_iids, cached_ts),
-        time=NONVIEWABLE_MEMCACHE_EXPIRATION)
+        time=NONVIEWABLE_MEMCACHE_EXPIRATION,
+        namespace=settings.memcache_namespace)
 
     logging.info('set nonviewable:%s;%d;%d to %r', project_id, user_id,
                  mr.shard_id, nonviewable_iids)
