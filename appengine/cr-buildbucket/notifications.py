@@ -30,7 +30,7 @@ def enqueue_tasks_async(queue, task_defs):  # pragma: no cover
             task_age_limit=t['age_limit_sec']))
     for t in task_defs
   ]
-  # Cannot just return the return value of add_async because it is
+  # Cannot just return add_async's return value because it is
   # a non-Future object and does not play nice with `yield fut1, fut2` construct
   yield taskqueue.Queue(queue).add_async(tasks, transactional=True)
 

@@ -16,6 +16,7 @@ from google.appengine.ext import ndb
 
 from components import auth
 
+import bq
 import metrics
 import notifications
 
@@ -43,8 +44,12 @@ def on_build_started(build):  # pragma: no cover
     metrics.add_build_scheduling_duration(build)
 
 
+@ndb.tasklet
 def on_build_completing_async(build):  # pragma: no cover
-  return notifications.enqueue_notifications_async(build)
+  yield (
+    notifications.enqueue_notifications_async(build),
+    bq.enqueue_bq_export_async(build),
+  )
 
 
 def on_build_completed(build):  # pragma: no cover

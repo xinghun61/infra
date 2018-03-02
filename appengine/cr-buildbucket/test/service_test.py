@@ -94,6 +94,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.patch(
         'notifications.enqueue_tasks_async',
         autospec=True, return_value=future(None))
+    self.patch(
+        'bq.enqueue_pull_task_async', autospec=True,
+        return_value=future(None))
 
   def mock_cannot(self, action, bucket=None):
     def can_async(requested_bucket, requested_action, _identity=None):

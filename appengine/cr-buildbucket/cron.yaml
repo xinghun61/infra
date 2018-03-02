@@ -36,6 +36,19 @@ cron:
   url: /internal/cron/swarming/update_builds
   schedule: every 10 minutes
 
+
+### bq export
+
+- description: export completed prod builds to BigQuery
+  target: backend
+  url: /internal/cron/buildbucket/bq-export-prod
+  schedule: every 1 minutes
+
+- description: export completed experimental builds to BigQuery
+  target: backend
+  url: /internal/cron/buildbucket/bq-export-experimental
+  schedule: every 1 minutes
+
 ### gae_ts_mon
 
 - description: Send ts_mon metrics

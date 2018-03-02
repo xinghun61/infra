@@ -41,6 +41,9 @@ class BaseTest(testing.AppengineTestCase):
     self.patch(
         'notifications.enqueue_tasks_async', autospec=True,
         return_value=future(None))
+    self.patch(
+        'bq.enqueue_pull_task_async', autospec=True,
+        return_value=future(None))
 
     self.now = datetime.datetime(2015, 11, 30)
     self.patch(

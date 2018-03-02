@@ -21,6 +21,7 @@ import webapp2
 from swarming import swarmbucket_api
 import access
 import api
+import bq
 import config
 import model
 import notifications
@@ -348,13 +349,19 @@ def get_frontend_routes():  # pragma: no cover
 
 
 def get_backend_routes():
-  return [
+  return [  # pragma: no branch
     webapp2.Route(
         r'/internal/cron/buildbucket/check_expired_builds',
         CronCheckExpiredBuilds),
     webapp2.Route(
         r'/internal/cron/buildbucket/update_buckets',
         CronUpdateBuckets),
+    webapp2.Route(
+        r'/internal/cron/buildbucket/bq-export-prod',
+        bq.CronExportBuildsProd),
+    webapp2.Route(
+        r'/internal/cron/buildbucket/bq-export-experimental',
+        bq.CronExportBuildsExperimental),
     webapp2.Route(
         r'/internal/task/buildbucket/notify/<build_id:\d+>',
         notifications.TaskPublishNotification),
