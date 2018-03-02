@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/net/context"
 
@@ -36,7 +37,11 @@ func sendEventsToBigQuery(c context.Context, tres []*gen.TestResultEvent) error 
 	up := bq.NewUploader(c, client, bqTestResultsDataset, bqTestResultsTable)
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
-	return up.Put(c, tres)
+	m := make([]proto.Message, len(tres))
+	for i, t := range tres {
+		m[i] = t
+	}
+	return up.Put(c, m...)
 }
 
 func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadParams) ([]*gen.TestResultEvent, error) {
