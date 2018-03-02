@@ -48,6 +48,7 @@ type commonOptions struct {
 	flushTimeout  time.Duration
 	bufferingTime time.Duration
 	debug         bool
+	teeToStdout   bool
 
 	projectID    string
 	resourceType string
@@ -73,6 +74,9 @@ func (opts *commonOptions) registerFlags(f *flag.FlagSet, defaultAuthOpts auth.O
 		"How long to wait for all pending data to be flushed when exiting")
 	f.DurationVar(&opts.bufferingTime, "buffering-time", cloudtail.DefaultFlushTimeout,
 		"How long to buffer a log line before flushing it (larger values improve batching at the cost of latency)")
+	f.BoolVar(&opts.teeToStdout, "tee-to-stdout", false,
+		"If set, will reprint all consumed input to stdout (in addition to sending it to Cloud Logging)")
+
 	f.BoolVar(&opts.debug, "debug", false,
 		"If set, will print Cloud Logging calls to stdout instead of sending them")
 
@@ -266,6 +270,10 @@ func (c *sendRun) Run(a subcommands.Application, args []string, env subcommands.
 	}
 	defer tsmon.Shutdown(ctx)
 
+	if c.teeToStdout {
+		fmt.Println(c.text)
+	}
+
 	// Sending one item shouldn't involve any buffering. So make SIGINT
 	// (or timeout) abort the whole pipeline right away.
 	ctx, abort := context.WithCancel(ctx)
@@ -328,6 +336,11 @@ func (c *pipeRun) Run(a subcommands.Application, args []string, env subcommands.
 	}
 	defer tsmon.Shutdown(ctx)
 
+	var input io.Reader = os.Stdin
+	if c.teeToStdout {
+		input = io.TeeReader(input, os.Stdout)
+	}
+
 	// We need to wrap stdin in a io.Pipe to be able to prematurely abort reads on
 	// SIGINT. There seem to be no reliable way of aborting pending os.Stdin read
 	// on Linux. Closing the file descriptor doesn't work. So on SIGINT we keep
@@ -337,7 +350,7 @@ func (c *pipeRun) Run(a subcommands.Application, args []string, env subcommands.
 	pipeR, pipeW := io.Pipe()
 	go func() {
 		defer pipeW.Close()
-		io.Copy(pipeW, os.Stdin)
+		io.Copy(pipeW, input)
 	}()
 	catchCtrlC(pipeW.Close)
 
@@ -418,12 +431,18 @@ func (c *tailRun) Run(a subcommands.Application, args []string, env subcommands.
 	}
 	defer tsmon.Shutdown(ctx)
 
+	var teeOutput io.Writer
+	if c.teeToStdout {
+		teeOutput = os.Stdout
+	}
+
 	ctx, abort := context.WithCancel(ctx)
 	state.buffer.Start(ctx)
 
 	tailer, err := cloudtail.NewTailer(cloudtail.TailerOptions{
 		Path:       c.path,
 		Parser:     cloudtail.StdParser(),
+		TeeOutput:  teeOutput,
 		PushBuffer: state.buffer,
 		SeekToEnd:  true,
 	})

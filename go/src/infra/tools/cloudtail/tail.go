@@ -7,6 +7,7 @@ package cloudtail
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -34,6 +35,10 @@ type TailerOptions struct {
 
 	// PushBuffer knows how to forward log entries to the client.
 	PushBuffer PushBuffer
+
+	// TeeOutput (if not nil) receives raw text lines before they are sent to
+	// the parser. Write errors are logged, but otherwise ignored.
+	TeeOutput io.Writer
 
 	// Parser converts text lines into log entries, default is StdParser().
 	Parser LogParser
@@ -126,7 +131,7 @@ func (tailer *Tailer) Run(ctx context.Context) {
 		changeSignal = signalPeriodically(innerCtx, tailer.opts.PollingPeriod)
 	}
 
-	// poller.Poll() -> source -> PushBuffer (in drainChannel).
+	// poller.Poll() -> source -> optional teeChannel -> PushBuffer (in drainChannel).
 	source := make(chan string)
 	go func() {
 		defer close(source)
@@ -206,9 +211,16 @@ func (tailer *Tailer) Run(ctx context.Context) {
 		}
 	}()
 
-	// Note: canceled context here would cause all logs from 'source' to be simply
-	// dropped.
-	drainChannel(ctx, source, tailer.opts.Parser, tailer.opts.PushBuffer)
+	// Tee the lines to TeeOutput before parsing them and sending them to the
+	// push buffer.
+	toDrain := source
+	if tailer.opts.TeeOutput != nil {
+		toDrain = teeChannel(ctx, source, tailer.opts.TeeOutput)
+	}
+
+	// Note: canceled context here would cause all logs from 'toDrain' to be
+	// simply dropped.
+	drainChannel(ctx, toDrain, tailer.opts.Parser, tailer.opts.PushBuffer)
 }
 
 // Stop asynchronously notifies tailer to stop (i.e. 'Run' to unblock and
@@ -482,4 +494,36 @@ func signalOnChanges(ctx context.Context, path string, interval time.Duration) (
 	}()
 
 	return out, nil
+}
+
+/// Helper to tee the log lines to io.Writer.
+
+func teeChannel(ctx context.Context, source chan string, out io.Writer) chan string {
+	// If 'out' breaks, there can be a ton of errors. Throttle them.
+	lastLogTime := time.Time{}
+	logError := func(err error) {
+		if lastLogTime.IsZero() || clock.Since(ctx, lastLogTime) > 5*time.Second {
+			lastLogTime = clock.Now(ctx)
+			logging.Errorf(ctx, "Failed to tee the log - %s", err)
+		}
+	}
+
+	teed := make(chan string)
+
+	go func() {
+		defer close(teed)
+		for line := range source {
+			_, err1 := out.Write([]byte(line))
+			_, err2 := out.Write([]byte{'\n'})
+			switch {
+			case err1 != nil:
+				logError(err1)
+			case err2 != nil:
+				logError(err2)
+			}
+			teed <- line
+		}
+	}()
+
+	return teed
 }
