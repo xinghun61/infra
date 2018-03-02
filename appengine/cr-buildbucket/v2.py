@@ -123,6 +123,10 @@ def _parse_tags(dest_msg, tags):
 
       # Exclude all "swarming_tag" tags.
       continue
+    elif k in ('build_address', 'swarming_hostname', 'swarming_task_id'):
+      # These tags are added automatically and are covered by proto fields.
+      # Omit them.
+      continue
 
     dest_msg.tags.add(key=k, value=v)
 

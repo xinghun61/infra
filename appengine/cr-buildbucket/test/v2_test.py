@@ -211,6 +211,9 @@ class V2Test(testing.AppengineTestCase):
         '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'),
       ('swarming_tag:excluded:1'),
       'swarming_tag:priority:100',
+      'build_address:bucket/builder/1',
+      'swarming_hostname:swarming.example.com',
+      'swarming_task_id:deadbeef',
     ]
 
     expected = build_pb2.Build(
