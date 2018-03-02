@@ -191,6 +191,71 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_failed_steps,
                      failure_info.failed_steps.ToSerializable())
 
+  @mock.patch.object(ci_test_failure, 'FinditHttpClient', return_value=None)
+  @mock.patch.object(ci_test_failure, 'UpdateSwarmingSteps', return_value=True)
+  @mock.patch.object(
+      ci_test_failure, '_StartTestLevelCheckForFirstFailure', return_value=True)
+  @mock.patch.object(ci_test_failure, '_UpdateFirstFailureOnTestLevel')
+  def testBackwardTraverseBuildsWhenGettingTestLevelFailureInfo(
+      self, mock_fun, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 221
+    step_name = 'abc_test'
+    failed_steps = {
+        'abc_test': {
+            'current_failure':
+                223,
+            'first_failure':
+                223,
+            'supported':
+                True,
+            'list_isolated_data': [{
+                'isolatedserver': 'https://isolateserver.appspot.com',
+                'namespace': 'default-gzip',
+                'digest': 'isolatedhashabctest-223'
+            }]
+        }
+    }
+    builds = {
+        '221': {
+            'blame_list': ['commit1'],
+            'chromium_revision': 'commit1'
+        },
+        '222': {
+            'blame_list': ['commit2'],
+            'chromium_revision': 'commit2'
+        },
+        '223': {
+            'blame_list': ['commit3', 'commit4'],
+            'chromium_revision': 'commit4'
+        }
+    }
+
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': failed_steps,
+        'builds': builds
+    }
+    failure_info = TestFailureInfo.FromSerializable(failure_info)
+
+    expected_failed_steps = failed_steps
+    expected_failed_steps['abc_test']['tests'] = None
+    expected_failed_steps['abc_test']['last_pass'] = None
+    step = WfStep.Create(master_name, builder_name, build_number, step_name)
+    step.isolated = True
+    step.put()
+
+    ci_test_failure.CheckFirstKnownFailureForSwarmingTests(
+        master_name, builder_name, build_number, failure_info)
+    mock_fun.assert_called_once_with(master_name, builder_name, build_number,
+                                     step_name,
+                                     TestFailedStep.FromSerializable(
+                                         failed_steps[step_name]),
+                                     ['223', '222', '221'], None)
+
   @mock.patch.object(ci_test_failure, 'UpdateSwarmingSteps', return_value=False)
   def testCheckFirstKnownFailureForSwarmingTestsNoResult(self, _):
     master_name = 'm'
