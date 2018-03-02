@@ -69,10 +69,14 @@ BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
 # If it is, the template must be reverted to a stable version ASAP.
 DEFAULT_CANARY_TEMPLATE_PERCENTAGE = 10
 
-# This is the path, relative to swarming run dir, to the directory that contains
-# symlinks to swarming named caches. It will be prepended to paths of caches
-# defined in swarmbucket configs.
+# This is the path, relative to the swarming run dir, to the directory that
+# contains the mounted swarming named caches. It will be prepended to paths of
+# caches defined in swarmbucket configs.
 CACHE_DIR = 'cache'
+
+# This is the path, relative to the swarming run dir, which is where the recipes
+# are either checked out, or installed via CIPD package.
+KITCHEN_CHECKOUT = 'kitchen-checkout'
 
 
 ################################################################################
@@ -417,6 +421,7 @@ def _create_task_def_async(
   }
 
   extra_swarming_tags = []
+  extra_cipd_packages = []
 
   if builder_cfg.HasField('recipe'):  # pragma: no branch
     build_properties = swarmingcfg_module.read_properties(builder_cfg.recipe)
@@ -459,16 +464,35 @@ def _create_task_def_async(
       emails = [c.get('author', {}).get('email') for c in changes]
       build_properties['blamelist'] = filter(None, emails)
 
+
     task_template_params.update({
-      'repository': builder_cfg.recipe.repository,
-      'revision': 'HEAD',
       'recipe': builder_cfg.recipe.name,
       'properties_json': json.dumps(build_properties, sort_keys=True),
+      'checkout_dir': KITCHEN_CHECKOUT,
     })
-    extra_swarming_tags.extend([
-      'recipe_repository:%s' % builder_cfg.recipe.repository,
+    extra_swarming_tags = [
       'recipe_name:%s' % builder_cfg.recipe.name,
-    ])
+    ]
+
+    if builder_cfg.recipe.cipd_package:
+      task_template_params.update({
+        'repository': '',
+        'revision':   '',
+      })
+      extra_swarming_tags.append(
+        'recipe_package:' + builder_cfg.recipe.cipd_package)
+      extra_cipd_packages.append({
+        'path':         KITCHEN_CHECKOUT,
+        'package_name': builder_cfg.recipe.cipd_package,
+        'version':      builder_cfg.recipe.cipd_version or 'head',
+      })
+    else:
+      task_template_params.update({
+        'repository': builder_cfg.recipe.repository,
+        'revision': 'HEAD',
+      })
+      extra_swarming_tags.append(
+        'recipe_repository:' + builder_cfg.recipe.repository)
 
   # Render task template.
   task_template_params = {
@@ -498,10 +522,15 @@ def _create_task_def_async(
 
   task = apply_if_tags(task)
 
+  task_properties = task.setdefault('properties', {})
+
+  (task_properties
+    .setdefault('cipd_input', {})
+    .setdefault('packages', [])
+    .extend(extra_cipd_packages))
+
   if builder_cfg.expiration_secs > 0:
     task['expiration_secs'] = str(builder_cfg.expiration_secs)
-
-  task_properties = task.setdefault('properties', {})
 
   dimensions = list(builder_cfg.dimensions)
   if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and

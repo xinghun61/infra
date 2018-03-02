@@ -72,8 +72,29 @@ message Builder {
     string repository = 1;
     // Name of the recipe to run.
     string name = 2;
-    // Revision of recipe to fetch. Defaults to the latest.
-    string revision = 5;
+
+    // If set, will use CIPD to fetch the recipes, rather than using git. This
+    // obsoletes the `repository` parameter.
+    //
+    // Typically the package will look like:
+    //
+    //   infra/recipe_bundles/chromium.googlesource.com/chromium/tools/build
+    //
+    // Recipes bundled from internal repositories are typically under
+    // `infra_internal/recipe_bundles/...`.
+    //
+    // But if you're building your own recipe bundles, they could be located
+    // elsewhere.
+    string cipd_package = 6;
+
+    // The CIPD version to fetch. This can be a lower-cased git ref (like
+    // `refs/heads/master` or `head`), or it can be a cipd tag (like
+    // `git_revision:dead...beef`).
+    //
+    // The default is `head`, which corresponds to the git repo's HEAD ref. This
+    // is typically (but not always) a symbolic ref for `refs/heads/master`.
+    string cipd_version = 5;
+
     // Colon-separated build properties to set.
     // A property can be overriden by "properties" build parameter.
     //

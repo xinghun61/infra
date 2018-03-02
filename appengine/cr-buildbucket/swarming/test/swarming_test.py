@@ -105,6 +105,36 @@ class SwarmingTest(BaseTest):
             name: "build_chromium"
           }
         }
+        builders {
+          name: "linux_chromium_rel_ng cipd"
+          swarming_tags: "buildertag:yes"
+          swarming_tags: "commontag:yes"
+          dimensions: "cores:8"
+          dimensions: "os:Ubuntu"
+          dimensions: "pool:Chrome"
+          priority: 108
+          build_numbers: YES
+          service_account: "robot@example.com"
+          recipe {
+            cipd_package: "infra/recipe_bundles/chromium.googlesource.com/chromium/tools/build"
+            cipd_version: "refs/heads/master"
+            name: "recipe"
+            properties_j: "predefined-property:\\\"x\\\""
+            properties_j: "predefined-property-bool:true"
+          }
+          caches {
+            path: "a"
+            name: "a"
+          }
+          caches {
+            path: "git_cache"
+            name: "git_chromium"
+          }
+          caches {
+            path: "out"
+            name: "build_chromium"
+          }
+        }
       }
     '''
     self.bucket_cfg = project_config_pb2.Bucket()
@@ -232,6 +262,24 @@ class SwarmingTest(BaseTest):
       {'path': 'cache/git_cache', 'name': 'git_chromium'},
       {'path': 'cache/out', 'name': 'build_chromium'},
     ])
+
+  def test_recipe_cipd_package(self):
+    build = mkBuild(
+        parameters={
+          'builder_name': 'linux_chromium_rel_ng cipd',
+        },
+        tags=['builder:linux_chromium_rel_ng cipd'],
+    )
+
+    task_def = swarming.prepare_task_def_async(build).get_result()
+
+    self.assertIn(
+      {'package_name':
+          'infra/recipe_bundles/chromium.googlesource.com/chromium/tools/build',
+        'path': 'kitchen-checkout',
+        'version': 'refs/heads/master'},
+      task_def['properties']['cipd_input']['packages'],
+    )
 
   def test_execution_timeout(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
