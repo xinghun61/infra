@@ -1130,10 +1130,12 @@ class ConfigServiceTest(unittest.TestCase):
         content='content', summary='summary', component_required=True)
     self.config_service.template_tbl.Update(
         self.cnxn, new_values, id=1, commit=False)
-    self.config_service.template2label_tbl.Delete(self.cnxn, id=1, commit=False)
+    self.config_service.template2label_tbl.Delete(
+        self.cnxn, template_id=1, commit=False)
     self.config_service.template2label_tbl.InsertRows(
         self.cnxn, config_svc.TEMPLATE2LABEL_COLS, [], commit=False)
-    self.config_service.template2admin_tbl.Delete(self.cnxn, id=1, commit=False)
+    self.config_service.template2admin_tbl.Delete(
+        self.cnxn, template_id=1, commit=False)
     self.config_service.template2admin_tbl.InsertRows(
         self.cnxn, config_svc.TEMPLATE2ADMIN_COLS, [(1, 111L)], commit=False)
     self.cnxn.Commit()

@@ -1095,7 +1095,7 @@ class ConfigService(object):
       owner_defaults_to_member=None, component_required=None, owner_id=None,
       labels=None, component_ids=None, admin_ids=None, field_values=None):
     config = self.GetProjectConfig(cnxn, project_id)
-    template = tracker_bizobj.FindIssueTemplateById(template_id, config)
+    template = tracker_bizobj.FindIssueTemplateByID(template_id, config)
     if name is not None:
       template.name = name
     if content is not None:

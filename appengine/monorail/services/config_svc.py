@@ -1601,24 +1601,28 @@ class ConfigService(object):
     self.template_tbl.Update(cnxn, new_values, id=template_id, commit=False)
 
     if labels is not None:
-      self.template2label_tbl.Delete(cnxn, id=template_id, commit=False)
+      self.template2label_tbl.Delete(
+          cnxn, template_id=template_id, commit=False)
       self.template2label_tbl.InsertRows(
           cnxn, TEMPLATE2LABEL_COLS, [(template_id, label) for label in labels],
           commit=False)
     if component_ids is not None:
-      self.template2component_tbl.Delete(cnxn, id=template_id, commit=False)
+      self.template2component_tbl.Delete(
+          cnxn, template_id=template_id, commit=False)
       self.template2component_tbl.InsertRows(
           cnxn, TEMPLATE2COMPONENT_COLS, [(template_id, c_id) for
                                           c_id in component_ids],
           commit=False)
     if admin_ids is not None:
-      self.template2admin_tbl.Delete(cnxn, id=template_id, commit=False)
+      self.template2admin_tbl.Delete(
+          cnxn, template_id=template_id, commit=False)
       self.template2admin_tbl.InsertRows(
           cnxn, TEMPLATE2ADMIN_COLS, [(template_id, admin_id) for
                                       admin_id in admin_ids],
           commit=False)
     if field_values is not None:
-      self.template2fieldvalue_tbl.Delete(cnxn, id=template_id, commit=False)
+      self.template2fieldvalue_tbl.Delete(
+          cnxn, template_id=template_id, commit=False)
       self.template2fieldvalue_tbl.InsertRows(
           cnxn, TEMPLATE2FIELDVALUE_COLS, [
               (template_id, fv.field_id, fv.int_value, fv.str_value, fv.user_id,

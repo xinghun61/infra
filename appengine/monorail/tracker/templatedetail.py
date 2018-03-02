@@ -82,15 +82,23 @@ class TemplateDetail(servlet.Servlet):
         'admin_tab_mode': self._PROCESS_SUBTAB,
         'allow_edit': ezt.boolean(allow_edit),
         'new_template_form': ezt.boolean(False),
-        'template': template_view,
+        'initial_members_only': template_view.members_only,
+        'template_name': template_view.name,
+        'initial_summary': template_view.summary,
+        'initial_must_edit_summary': template_view.summary_must_be_edited,
+        'initial_content': template_view.content,
+        'initial_status': template_view.status,
+        'initial_owner': template_view.ownername,
+        'initial_owner_defaults_to_member':
+        template_view.owner_defaults_to_member,
+        'initial_components': template_view.components,
+        'initial_component_required': template_view.component_required,
         'fields': field_views,
         'labels': template.labels,
-        'initial_owner': template_view.ownername,
-        'initial_components': template_view.components,
         'initial_admins': template_view.admin_names,
         }
 
-def ProcessFormData(_self, mr, _post_data):
+  def ProcessFormData(self, mr, post_data):
     """Validate and store the contents of the issues tracker admin page.
 
     Args:
@@ -100,7 +108,60 @@ def ProcessFormData(_self, mr, _post_data):
     Returns:
       String URL to redirect the user to, or None if response was already sent.
     """
-    # TODO(jojwang): Parse post_data and save template
+
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    parsed = template_helpers.ParseTemplateRequest(post_data, config)
+    template = tracker_bizobj.FindIssueTemplate(parsed.name, config)
+    allow_edit = permissions.CanEditTemplate(
+        mr.auth.effective_ids, mr.perms, mr.project, template)
+    if not allow_edit:
+      raise permissions.PermissionException(
+          'User is not allowed edit this issue template.')
+
+    (admin_ids, owner_id, component_ids,
+     field_values) = template_helpers.GetTemplateInfoFromParsed(
+         mr, self.services, parsed, config)
+
+    if mr.errors.AnyErrors():
+      fd_id_to_fvs = collections.defaultdict(list)
+      for fv in field_values:
+        fd_id_to_fvs[fv.field_id].append(fv)
+
+      field_views = [
+          tracker_views.MakeFieldValueView(fd, config, [], [],
+                                           fd_id_to_fvs[fd.field_id], {})
+          for fd in config.field_defs if not fd.is_deleted]
+
+      self.PleaseCorrect(
+          mr,
+          initial_members_only=ezt.boolean(parsed.members_only),
+          template_name=parsed.name,
+          initial_summary=parsed.summary,
+          initial_must_edit_summary=ezt.boolean(parsed.summary_must_be_edited),
+          initial_content=parsed.content,
+          initial_status=parsed.status,
+          initial_owner=parsed.owner_str,
+          initial_owner_defaults_to_member=ezt.boolean(
+              parsed.owner_defaults_to_member),
+          initial_components=', '.join(parsed.component_paths),
+          initial_component_required=ezt.boolean(parsed.component_required),
+          initial_admins=parsed.admin_str,
+          labels=parsed.labels,
+          fields=field_views
+      )
+      return
+
+    labels = [label for label in parsed.labels if label]
+    self.services.config.UpdateIssueTemplateDef(
+        mr.cnxn, mr.project_id, template.template_id, name=parsed.name,
+        content=parsed.content, summary=parsed.summary,
+        summary_must_be_edited=parsed.summary_must_be_edited,
+        status=parsed.status, members_only=parsed.members_only,
+        owner_defaults_to_member=parsed.owner_defaults_to_member,
+        component_required=parsed.component_required, owner_id=owner_id,
+        labels=labels, component_ids=component_ids, admin_ids=admin_ids,
+        field_values=field_values)
 
     return framework_helpers.FormatAbsoluteURL(
-        mr, urls.TEMPLATE_DETAIL)
+        mr, urls.TEMPLATE_DETAIL, template=template.name,
+        saved=1, ts=int(time.time()))
