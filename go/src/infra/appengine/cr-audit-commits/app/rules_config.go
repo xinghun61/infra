@@ -125,7 +125,7 @@ func (ar AccountRules) MatchesCommit(c *git.Commit) bool {
 // MatchesRelevantCommit determines whether the AccountRules set it's bound to,
 // applies to the given commit entity.
 func (ar AccountRules) MatchesRelevantCommit(c *RelevantCommit) bool {
-	return c.CommitterAccount == ar.Account || c.AuthorAccount == ar.Account
+	return ar.Account == "*" || c.CommitterAccount == ar.Account || c.AuthorAccount == ar.Account
 }
 
 // AuditParams exposes object shared by all rules (and the worker goroutines
