@@ -102,6 +102,21 @@ class TestAndroidDockerClient(unittest.TestCase):
     self.assertEquals(env.get('ADB_LIBUSB'), '0')
     self.assertEquals(env.get('ISOLATED_CACHE_SIZE'), '1234567890')
 
+  @mock.patch('glob.glob')
+  def test_get_env_with_adb_keys(self, mock_glob):
+    mock_glob.return_value = ['adb_key_1', 'adb_key_2']
+    client = containers.AndroidDockerClient()
+    env = client._get_env('')
+    self.assertEquals(env.get('ADB_VENDOR_KEYS'), 'adb_key_1:adb_key_2')
+
+  @mock.patch('glob.glob')
+  def test_get_env_with_no_adb_keys(self, mock_glob):
+    mock_glob.return_value = []
+    client = containers.AndroidDockerClient()
+    env = client._get_env('')
+    self.assertNotIn('ADB_VENDOR_KEYS', env)
+
+
 class TestAddDevice(unittest.TestCase):
   def setUp(self):
     self.container_backend = FakeContainerBackend('container1')

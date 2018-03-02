@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import glob
 import logging
 import os
 import pipes
@@ -73,6 +74,13 @@ class AndroidDockerClient(containers.DockerClient):
     env['ADB_LIBUSB'] = '0'
     if self.cache_size:
       env['ISOLATED_CACHE_SIZE'] = self.cache_size
+    # Point ADB to all local adb keys under ~/.android/
+    keys = glob.glob(os.path.expanduser('~/.android/*key'))
+    if keys:
+      env['ADB_VENDOR_KEYS'] = ':'.join(keys)
+    else:
+      logging.warning(
+          'No local adb keys found. Device auth will most likely fail.')
     return env
 
   @staticmethod
