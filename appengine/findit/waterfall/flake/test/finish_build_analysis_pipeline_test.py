@@ -103,6 +103,70 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertTrue(mock_save.called)
 
+  @mock.patch.object(report_event_pipeline.ReportAnalysisEventPipeline,
+                     'RunImpl')
+  @mock.patch.object(finish_build_analysis_pipeline,
+                     '_IdentifySuspectedRevisions')
+  @mock.patch.object(heuristic_analysis, 'GenerateSuspectedRanges')
+  @mock.patch.object(heuristic_analysis,
+                     'SaveFlakeCulpritsForSuspectedRevisions')
+  def testFinishBuildAnalysisPipelineForce(self, mock_save, mock_ranges,
+                                           mock_revisions, mock_reporting):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    lower_bound = 1
+    upper_bound = 10
+    user_range = True
+    iterations = 100
+    suspected_revision = 'r1'
+    suspected_revisions = [suspected_revision]
+    suspected_ranges = [[None, suspected_revision]]
+    mock_revisions.return_value = suspected_revisions
+    mock_ranges.return_value = suspected_ranges
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.status = analysis_status.COMPLETED
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.suspected_flake_build_number = build_number
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=build_number, blame_list=[suspected_revision])
+    ]
+    analysis.Save()
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.status = analysis_status.COMPLETED
+    task.put()
+
+    self.MockPipeline(
+        InitializeFlakeTryJobPipeline,
+        '',
+        expected_args=[
+            analysis.key.urlsafe(), suspected_ranges, iterations, user_range,
+            True
+        ],
+        expected_kwargs={})
+
+    self.MockPipeline(
+        UpdateFlakeBugPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe()],
+        expected_kwargs={})
+
+    pipeline = FinishBuildAnalysisPipeline(analysis.key.urlsafe(), lower_bound,
+                                           upper_bound, iterations, True)
+    pipeline.start()
+    self.execute_queued_tasks()
+
+    mock_save.assert_called()
+    mock_reporting.assert_not_called()
+
   @mock.patch.object(finish_build_analysis_pipeline,
                      '_IdentifySuspectedRevisions')
   @mock.patch.object(heuristic_analysis, 'GenerateSuspectedRanges')

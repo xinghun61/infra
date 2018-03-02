@@ -228,8 +228,9 @@ class FinishBuildAnalysisPipeline(BasePipeline):
       # Update the bug associated with the analysis with results of findings.
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
 
-      # Report event to BQ.
-      yield report_event_pipeline.ReportAnalysisEventPipeline(
-          pipelines.CreateInputObjectInstance(
-              report_event_pipeline.ReportEventInput,
-              analysis_urlsafe_key=analysis.key.urlsafe()))
+      if not force:
+        # Report event to BQ.
+        yield report_event_pipeline.ReportAnalysisEventPipeline(
+            pipelines.CreateInputObjectInstance(
+                report_event_pipeline.ReportEventInput,
+                analysis_urlsafe_key=analysis.key.urlsafe()))

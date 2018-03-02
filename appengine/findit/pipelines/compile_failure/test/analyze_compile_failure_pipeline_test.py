@@ -80,6 +80,46 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.RUNNING, analysis.status)
 
+  @mock.patch.object(report_event_pipeline.ReportAnalysisEventPipeline,
+                     'RunImpl')
+  def testBuildFailurePipelineFlowWithForce(self, mock_reporting):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    current_failure_info = {}
+
+    self._SetupAnalysis(master_name, builder_name, build_number)
+
+    heuristic_params = CompileHeuristicAnalysisParameters.FromSerializable({
+        'failure_info': current_failure_info,
+        'build_completed': False
+    })
+    heuristic_output = {
+        'failure_info': None,
+        'signals': None,
+        'heuristic_result': None
+    }
+    self.MockSynchronousPipeline(
+        analyze_compile_failure_pipeline.HeuristicAnalysisForCompilePipeline,
+        heuristic_params, CompileHeuristicAnalysisOutput.FromSerializable({}))
+    self.MockPipeline(
+        analyze_compile_failure_pipeline.StartCompileTryJobPipeline,
+        'try_job_result',
+        expected_args=[
+            master_name, builder_name, build_number, heuristic_output, False,
+            True
+        ],
+        expected_kwargs={})
+
+    root_pipeline = AnalyzeCompileFailurePipeline(
+        master_name, builder_name, build_number, current_failure_info, False,
+        True)
+    root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+    mock_reporting.assert_not_called()
+
   def testBuildFailurePipelineStartWithNoneResultStatus(self):
     master_name = 'm'
     builder_name = 'b'

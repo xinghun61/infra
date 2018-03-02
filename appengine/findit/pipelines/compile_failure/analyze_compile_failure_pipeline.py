@@ -125,5 +125,6 @@ class AnalyzeCompileFailurePipeline(BasePipeline):
           report_event_pipeline.ReportEventInput,
           analysis_urlsafe_key=WfAnalysis.Get(master_name, builder_name,
                                               build_number).key.urlsafe())
-      yield report_event_pipeline.ReportAnalysisEventPipeline(
-          report_event_input)
+      if not force:
+        yield report_event_pipeline.ReportAnalysisEventPipeline(
+            report_event_input)

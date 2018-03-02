@@ -135,13 +135,14 @@ class AnalyzeTestFailurePipeline(BasePipeline):
       yield StartTestTryJobPipeline(master_name, builder_name, build_number,
                                     heuristic_result, build_completed, force)
 
-      # Report event to BQ.
-      report_event_input = pipelines.CreateInputObjectInstance(
-          report_event_pipeline.ReportEventInput,
-          analysis_urlsafe_key=WfAnalysis.Get(master_name, builder_name,
-                                              build_number).key.urlsafe())
-      yield report_event_pipeline.ReportAnalysisEventPipeline(
-          report_event_input)
+      if not force:
+        # Report event to BQ.
+        report_event_input = pipelines.CreateInputObjectInstance(
+            report_event_pipeline.ReportEventInput,
+            analysis_urlsafe_key=WfAnalysis.Get(master_name, builder_name,
+                                                build_number).key.urlsafe())
+        yield report_event_pipeline.ReportAnalysisEventPipeline(
+            report_event_input)
 
       # Trigger flake analysis on flaky tests, if any.
       yield TriggerFlakeAnalysesPipeline(master_name, builder_name,
