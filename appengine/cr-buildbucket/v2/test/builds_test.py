@@ -17,21 +17,21 @@ from testing_utils import testing
 
 from proto import common_pb2
 from proto import build_pb2
+from v2 import builds
 import model
-import v2
 
 
-class V2Test(testing.AppengineTestCase):
+class V2BuildsTest(testing.AppengineTestCase):
   def test_get_builder_id(self):
     build = model.Build(
         project='chromium',
         bucket='master.tryserver.chromium.linux',
         parameters={
-          v2.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
+          builds.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
         },
     )
     self.assertEqual(
-        v2._get_builder_id(build),
+        builds._get_builder_id(build),
         build_pb2.Builder.ID(
             project='chromium',
             bucket='master.tryserver.chromium.linux',
@@ -43,11 +43,11 @@ class V2Test(testing.AppengineTestCase):
         project='chromium',
         bucket='luci.chromium.try',
         parameters={
-          v2.BUILDER_PARAMETER: 'linux-rel',
+          builds.BUILDER_PARAMETER: 'linux-rel',
         },
     )
     self.assertEqual(
-        v2._get_builder_id(build),
+        builds._get_builder_id(build),
         build_pb2.Builder.ID(
             project='chromium',
             bucket='try',
@@ -83,7 +83,7 @@ class V2Test(testing.AppengineTestCase):
     ]
     for expected_status, build in cases:
        self.assertEqual(
-          v2._get_status(build),
+          builds._get_status(build),
           expected_status,
           msg='%r' % build,
       )
@@ -160,11 +160,11 @@ class V2Test(testing.AppengineTestCase):
           common_pb2.StringPair(key='c', value='d'),
         ],
         input=build_pb2.Build.Input(
-          properties=v2._dict_to_struct(input_properties),
+          properties=builds._dict_to_struct(input_properties),
           experimental=True,
         ),
         output=build_pb2.Build.Output(
-            properties=v2._dict_to_struct(output_properties),
+            properties=builds._dict_to_struct(output_properties),
         ),
         infra=build_pb2.BuildInfra(
           buildbucket=build_pb2.BuildInfra.Buildbucket(
@@ -188,10 +188,11 @@ class V2Test(testing.AppengineTestCase):
     )
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
-    self.assertEqual(msg_to_dict(expected), msg_to_dict(v2.build_to_v2(build)))
+    self.assertEqual(
+        msg_to_dict(expected), msg_to_dict(builds.build_to_v2(build)))
 
   def test_build_to_v2_number(self):
-    msg = v2.build_to_v2(mkbuild(
+    msg = builds.build_to_v2(mkbuild(
         result_details={
           'properties': {'buildnumber': 54},
         },
@@ -252,7 +253,7 @@ class V2Test(testing.AppengineTestCase):
     )
 
     actual = build_pb2.Build()
-    v2._parse_tags(actual, tags)
+    builds._parse_tags(actual, tags)
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
     self.assertEqual(msg_to_dict(expected), msg_to_dict(actual))
@@ -261,15 +262,15 @@ class V2Test(testing.AppengineTestCase):
     build = mkbuild(
         tags=['swarming_tag:priority:blah'],
     )
-    msg = v2.build_to_v2(build)
+    msg = builds.build_to_v2(build)
     self.assertEqual(msg.infra.swarming.priority, 0)
     self.assertEqual(len(msg.tags), 0)
 
   def test_build_to_v2_no_builder_name(self):
     build = mkbuild()
-    del build.parameters[v2.BUILDER_PARAMETER]
-    with self.assertRaises(v2.UnsupportedBuild):
-      v2.build_to_v2(build)
+    del build.parameters[builds.BUILDER_PARAMETER]
+    with self.assertRaises(builds.UnsupportedBuild):
+      builds.build_to_v2(build)
 
 
 def mkbuild(**kwargs):
@@ -277,7 +278,7 @@ def mkbuild(**kwargs):
       id=1,
       project='chromium',
       bucket='luci.chromium.try',
-      parameters={v2.BUILDER_PARAMETER: 'linux-rel'},
+      parameters={builds.BUILDER_PARAMETER: 'linux-rel'},
       created_by=auth.Identity('user', 'john@example.com'),
   )
   args['parameters'].update(kwargs.pop('parameters', {}))
