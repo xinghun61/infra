@@ -39,29 +39,33 @@ def RunSteps(api):
           'is_debug=false',
           'enable_nacl=false',
           'is_official_build=true',
+          'enable_distro_version_check=false',
+          'use_system_libjpeg=true',  # TODO(thomasanderson): This shouldn't be
+                                      # necessary when unbundling libjpeg.
       ]
       unbundle_libs = [
           # 'ffmpeg',  # https://crbug.com/731766
-          # 'flac',  # TODO(thomasanderson): Add libflac-dev to the sysroots.
+          # 'flac',  # TODO(thomasanderson): Add ogg-dev to sysroots.
           'fontconfig',
           'freetype',
-          # 'harfbuzz-ng',  # TODO(thomasanderson): Update to the debian sid
-                            # sysroot.
-          # 'icu',  # TODO(thomasanderson): Add libicu-dev to the sysroots.
-          # 'libdrm',  # TODO(thomasanderson): Update to the debian sid sysroot.
-          # 'libjpeg',  # TODO(thomasanderson): Add libjpeg62-turbo-dev to the
-                        # sysroots.
+          # 'harfbuzz-ng',  # TODO(thomasanderson): Reenable once Debian
+                            # unstable pulls in harfbuzz 1.7.5 or later.
+          # 'icu',  # The icu dev package is huge, so it's omitted from the
+                    # sysroots.
+          'libdrm',
+          'libjpeg',
           # 'libpng',  # https://crbug.com/752403#c10
-          # 'libvpx',  # TODO(thomasanderson): Add libvpx-dev to the sysroots.
-          # 'libwebp',  # TODO(thomasanderson): Add libwebp-dev to the sysroots.
+          # 'libvpx',  # TODO(thomasanderson): Update the sysroot.
+          'libwebp',
           # 'libxml',  # https://crbug.com/736026
-          # 'libxslt', # TODO(thomasanderson): Add libxslt1-dev to the sysroots.
-          # 'opus',  # TODO(thomasanderson): Add libopus-dev to the sysroots.
-          # 're2',  # TODO(thomasanderson): Add libre2-dev to the sysroots.
-          # 'snappy',  # TODO(thomasanderson): Add libsnappy-dev to the
-                       # sysroots.
+          # 'libxslt',  # TODO(thomasanderson): Add libxml2-dev to sysroots.
+          'opus',
+          # 're2',  # Chrome passes c++ strings to re2, but the inline namespace
+                    # used by libc++ (std::__1::string) differs from the one re2
+                    # expects (std::__cxx11::string), causing link failures.
+          'snappy',
           'yasm',
-          # 'zlib',  # TODO(thomasanderson): Update to the debian sid sysroot.
+          # 'zlib',  # TODO(thomasanderson): Add libminizip-dev to sysroots.
       ]
       api.python('Download sysroot.',
                  api.path.join(src_dir, 'build', 'linux', 'sysroot_scripts',

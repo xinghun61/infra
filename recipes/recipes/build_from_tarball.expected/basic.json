@@ -52,7 +52,7 @@
       "python",
       "-u",
       "[START_DIR]/build_dir/chromium-65.0.3318.0/tools/gn/bootstrap/bootstrap.py",
-      "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true"
+      "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true enable_distro_version_check=false use_system_libjpeg=true"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
     "env": {
@@ -87,6 +87,11 @@
       "--system-libraries",
       "fontconfig",
       "freetype",
+      "libdrm",
+      "libjpeg",
+      "libwebp",
+      "opus",
+      "snappy",
       "yasm"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
