@@ -43,11 +43,15 @@ cron:
   target: backend
   url: /internal/cron/buildbucket/bq-export-prod
   schedule: every 1 minutes
+  retry_parameters:
+    min_backoff_seconds: 2
 
 - description: export completed experimental builds to BigQuery
   target: backend
   url: /internal/cron/buildbucket/bq-export-experimental
   schedule: every 1 minutes
+  retry_parameters:
+    min_backoff_seconds: 2
 
 ### gae_ts_mon
 
