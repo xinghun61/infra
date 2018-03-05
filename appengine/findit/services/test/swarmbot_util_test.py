@@ -205,12 +205,12 @@ class SwarmbotUtilTest(wf_testcase.WaterfallTestCase):
     }], swarmbot_util.OnlyAvailable(all_bots))
 
   def testHaveCommitPositionInLocalGitCache(self):
-    bots = [{'bot_id': 'bot%d' % i} for i in range(10)]
-    bot5 = WfTryBot.Get('bot5')
+    bots = [{'bot_id': 'local_git_cache_bot%d' % i} for i in range(10)]
+    bot5 = WfTryBot.Get('local_git_cache_bot5')
     bot5.newest_synced_revision = 100
     bot5.put()
     self.assertEqual([{
-        'bot_id': 'bot5'
+        'bot_id': 'local_git_cache_bot5'
     }], swarmbot_util._HaveCommitPositionInLocalGitCache(bots, 1))
 
   def testSortByDistanceToCommitPosition(self):
