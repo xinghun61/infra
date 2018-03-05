@@ -1,4 +1,4 @@
-# Copyright 2016 The Chromium Authors. All rights reserved.
+# Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -14,6 +14,7 @@ from components import net
 from testing_utils import testing
 import mock
 
+from proto import build_pb2
 import bq
 import bqh
 import model
@@ -54,8 +55,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
     self.queue.add([
       taskqueue.Task(
           method='PULL',
-          payload=json.dumps({'id': b.key.id()}),
-      )
+          payload=json.dumps({'id': b.key.id()}))
       for b in builds
     ])
 
@@ -97,6 +97,48 @@ class BigQueryExportTest(testing.AppengineTestCase):
     ])
     bq._process_pull_task_batch(self.queue.name, 'builds')
     self.assertFalse(net.json_request.called)
+
+  @mock.patch('v2.build_to_v2', autospec=True)
+  @mock.patch(
+      'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True)
+  def test_cron_export_builds_to_bq_exception(self, delete_tasks, build_to_v2):
+    builds = [
+      mkbuild(
+          id=i+1,
+          status=model.BuildStatus.COMPLETED,
+          result=model.BuildResult.SUCCESS,
+          complete_time=datetime.datetime(2018, 1, 1))
+      for i in xrange(3)
+    ]
+    ndb.put_multi(builds)
+
+    tasks = [
+      taskqueue.Task(
+          method='PULL',
+          payload=json.dumps({'id': b.key.id()}))
+      for b in builds
+    ]
+    self.queue.add(tasks)
+
+    def build_to_v2_mock(build):
+      if build is builds[1]:
+        raise Exception()
+      return build_pb2.Build()
+
+    build_to_v2.side_effect = build_to_v2_mock
+
+    bq._process_pull_task_batch(self.queue.name, 'builds')
+
+    self.assertTrue(net.json_request.called)
+    actual_payload = net.json_request.call_args[1]['payload']
+    self.assertEqual(len(actual_payload['rows']), 2)
+
+    # assert second task is not deleted
+    deleted = delete_tasks.call_args[0][1]
+    self.assertEqual(
+        [t.payload for t in deleted],
+        [tasks[0].payload, tasks[2].payload],
+    )
 
   def test_cron_export_builds_to_bq_not_found(self):
     self.queue.add([taskqueue.Task(

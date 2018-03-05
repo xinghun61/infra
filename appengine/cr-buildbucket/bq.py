@@ -76,42 +76,50 @@ def _process_pull_task_batch(queue_name, dataset):
   if not tasks:
     return
 
-  # Fetch builds for the tasks and convert to v2 format.
   build_ids = [json.loads(t.payload)['id'] for t in tasks]
+  # IDs of builds that we could not save and want to retry later.
+  ids_to_retry = set()
+
+  # Fetch builds for the tasks and convert to v2 format.
   builds = ndb.get_multi([ndb.Key(model.Build, bid) for bid in build_ids])
-  to_export_builds = []
-  to_export_tasks = []
-  for t, bid, b in zip(tasks, build_ids, builds):
+  v2_builds = []
+  for bid, b in zip(build_ids, builds):
     if not b:
       logging.error('build %d not found', bid)
     elif b.status != model.BuildStatus.COMPLETED:
       logging.error('build %d is not complete', bid)
     else:
       try:
-        to_export_builds.append(v2.build_to_v2(b))
-        to_export_tasks.append(t)
+        v2_builds.append(v2.build_to_v2(b))
       except v2.UnsupportedBuild as ex:
         logging.warning(
             'skipping build %d: not supported by v2 conversion: %s',
             bid, ex)
+      except Exception:
+        ids_to_retry.add(bid)
+        logging.exception('failed to convert build to v2\nBuild id: %d', bid)
 
   row_count = 0
-  done_tasks = tasks
-  if to_export_builds:
-    failed_indexes = _export_builds(dataset, to_export_builds, lease_deadline)
-    failed_tasks = set(to_export_tasks[i] for i in failed_indexes)
-    done_tasks = [t for t in tasks if t not in failed_tasks]
-    row_count = len(to_export_builds) - len(failed_indexes)
+  if v2_builds:
+    not_inserted_ids = _export_builds(dataset, v2_builds, lease_deadline)
+    row_count = len(v2_builds) - len(not_inserted_ids)
+    ids_to_retry.update(not_inserted_ids)
 
+  done_tasks = [
+    t
+    for bid, t in zip(build_ids, tasks)
+    if bid not in ids_to_retry
+  ]
   q.delete_tasks(done_tasks)
-  logging.info('inserted %d rows, processed %d tasks', row_count, len(tasks))
+  logging.info(
+      'inserted %d rows, processed %d tasks', row_count, len(done_tasks))
 
 
 def _export_builds(dataset, v2_builds, deadline):
   """Saves v2 builds to BigQuery.
 
-  Logs insert errors and returns a list of indexes of builds that could not
-  be saved.
+  Logs insert errors and returns a list of ids of builds that could not be
+  inserted.
   """
   table_name = 'completed_BETA'  # TODO(nodir): remove beta suffix.
   # BigQuery API doc:
@@ -141,11 +149,11 @@ def _export_builds(dataset, v2_builds, deadline):
       deadline=(deadline - utils.utcnow()).total_seconds(),
   )
 
-  failed_indexes = []
+  failed_ids = []
   for err in res.get('insertErrors', []):
-    i = err['index']
-    failed_indexes.append(i)
+    b = v2_builds[err['index']]
+    failed_ids.append(b.id)
     logging.error(
         'failed to insert row for build %d: %r',
-        v2_builds[i].id, err['errors'])
-  return failed_indexes
+        b.id, err['errors'])
+  return failed_ids
