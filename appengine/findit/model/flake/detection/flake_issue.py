@@ -17,7 +17,7 @@ class FlakeIssue(ndb.Model):
   def FromMonorailIssue(self, issue):
     """Read fields from third_party.monorail_api.issue into a FlakeIssue.
 
-    Doesn't update the last_update_time which is updated internally by Findit.
+    Doesn't update the last_updated_time which is updated internally by Findit.
     """
     assert issue.id
     self.issue_id = issue.id

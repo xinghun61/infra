@@ -14,7 +14,7 @@ from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugInput)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugPipeline)
-from services.flake_failure import issue_tracking_service
+from services import issue_tracking_service
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 

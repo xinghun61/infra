@@ -5,14 +5,18 @@ import copy
 import mock
 import datetime
 
+from monorail_api import CustomizedField
 from monorail_api import Issue
 from waterfall.test import wf_testcase
 from libs import analysis_status
 from libs import time_util
+from model.flake.detection.flake import Flake
+from model.flake.detection.flake_issue import FlakeIssue
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from services.flake_failure import issue_tracking_service
+
+from services import issue_tracking_service
 from waterfall.flake import flake_constants
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
@@ -91,15 +95,17 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+      issue_tracking_service,
+      'OpenBugAlreadyExistsForLabel',
+      return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'BugAlreadyExistsForCustomField',
       return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   def testShouldFileBugForAnalysis(
       self, test_exists_fn, field_exists_fn, label_exists_fn, id_exists_fn,
       sufficient_confidence_fn, previous_attempt_fn, feature_enabled_fn,
@@ -125,7 +131,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(test_exists_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
@@ -135,9 +141,11 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+      issue_tracking_service,
+      'OpenBugAlreadyExistsForLabel',
+      return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'IsBugFilingEnabled', return_value=False)
   def testShouldFileBugForAnalysisWhenFeatureDisabled(self, feature_enabled_fn,
@@ -157,7 +165,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(feature_enabled_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
@@ -169,9 +177,11 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+      issue_tracking_service,
+      'OpenBugAlreadyExistsForLabel',
+      return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForId', return_value=True)
+      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=True)
   def testShouldFileBugForAnalysisWhenBugIdExists(self, id_exists_fn, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -188,7 +198,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(id_exists_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
@@ -200,9 +210,9 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       'HasSufficientConfidenceInCulprit',
       return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=True)
+      issue_tracking_service, 'OpenBugAlreadyExistsForLabel', return_value=True)
   def testShouldFileBugForAnalysisWhenLabelExists(self, label_exists_fn, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -218,7 +228,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(label_exists_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
@@ -226,9 +236,11 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+      issue_tracking_service,
+      'OpenBugAlreadyExistsForLabel',
+      return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
@@ -250,15 +262,17 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(confidence_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+      issue_tracking_service,
+      'OpenBugAlreadyExistsForLabel',
+      return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
@@ -281,13 +295,15 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(attempt_fn.called)
 
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+      issue_tracking_service,
+      'OpenBugAlreadyExistsForLabel',
+      return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
@@ -314,9 +330,11 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+      issue_tracking_service,
+      'OpenBugAlreadyExistsForLabel',
+      return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
@@ -326,7 +344,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'BugAlreadyExistsForCustomField',
@@ -350,9 +368,11 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       issue_tracking_service, 'IsBugFilingEnabled', return_value=True)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+      issue_tracking_service, 'OpenBugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+      issue_tracking_service,
+      'OpenBugAlreadyExistsForLabel',
+      return_value=False)
   @mock.patch.object(
       issue_tracking_service,
       'HasSufficientConfidenceInCulprit',
@@ -366,7 +386,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       'BugAlreadyExistsForCustomField',
       return_value=False)
   @mock.patch.object(
-      issue_tracking_service, 'BugAlreadyExistsForTest', return_value=True)
+      issue_tracking_service, 'OpenBugAlreadyExistsForTest', return_value=True)
   def testShouldFileBugForAnalysisWhenBugExistsForTest(self, test_exists_Fn,
                                                        *_):
     master_name = 'm'
@@ -484,15 +504,15 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
-  @mock.patch('services.flake_failure.issue_tracking_service.IssueTrackerAPI')
-  def testBugAlreadyExistsForId(self, mock_api, _):
+  @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
+  def testOpenBugAlreadyExistsForId(self, mock_api, _):
     mock_api.return_value.getIssue.return_value = None
-    self.assertFalse(issue_tracking_service.BugAlreadyExistsForId(None))
+    self.assertFalse(issue_tracking_service.OpenBugAlreadyExistsForId(None))
     self.assertFalse(mock_api.return_value.getIssue.called)
     mock_api.reset_mock()
 
     mock_api.return_value.getIssue.return_value = None
-    self.assertFalse(issue_tracking_service.BugAlreadyExistsForId(1234))
+    self.assertFalse(issue_tracking_service.OpenBugAlreadyExistsForId(1234))
     self.assertTrue(mock_api.return_value.getIssue.called)
     args, _ = mock_api.return_value.getIssue.call_args
     self.assertEqual((1234,), args)
@@ -503,7 +523,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_issue.updated = datetime.datetime(2017, 1, 1)
     mock_issue.merged_into = None
     mock_api.return_value.getIssue.return_value = mock_issue
-    self.assertTrue(issue_tracking_service.BugAlreadyExistsForId(1234))
+    self.assertTrue(issue_tracking_service.OpenBugAlreadyExistsForId(1234))
     self.assertTrue(mock_api.return_value.getIssue.called)
     args, _ = mock_api.return_value.getIssue.call_args
     self.assertEqual((1234,), args)
@@ -514,7 +534,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_issue.updated = datetime.datetime(2017, 1, 2)
     mock_issue.merged_into = None
     mock_api.return_value.getIssue.return_value = mock_issue
-    self.assertFalse(issue_tracking_service.BugAlreadyExistsForId(1234))
+    self.assertFalse(issue_tracking_service.OpenBugAlreadyExistsForId(1234))
     self.assertTrue(mock_api.return_value.getIssue.called)
     args, _ = mock_api.return_value.getIssue.call_args
     self.assertEqual((1234,), args)
@@ -522,13 +542,14 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
-  @mock.patch('services.flake_failure.issue_tracking_service.IssueTrackerAPI')
-  def testBugAlreadyExistsForLabel(self, mock_api, _):
+  @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
+  def testOpenBugAlreadyExistsForLabel(self, mock_api, _):
     with self.assertRaises(AssertionError):
-      issue_tracking_service.BugAlreadyExistsForLabel(None)
+      issue_tracking_service.OpenBugAlreadyExistsForLabel(None)
 
     mock_api.return_value.getIssues.return_value = None
-    self.assertFalse(issue_tracking_service.BugAlreadyExistsForLabel('test'))
+    self.assertFalse(
+        issue_tracking_service.OpenBugAlreadyExistsForLabel('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
     self.assertEqual(('label:test',), args)
@@ -538,7 +559,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_issue.open = True
     mock_issue.updated = datetime.datetime(2017, 1, 1)
     mock_api.return_value.getIssues.return_value = [mock_issue]
-    self.assertTrue(issue_tracking_service.BugAlreadyExistsForLabel('test'))
+    self.assertTrue(issue_tracking_service.OpenBugAlreadyExistsForLabel('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
     self.assertEqual(('label:test',), args)
@@ -551,7 +572,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_issue_2.open = False
     mock_issue_2.updated = datetime.datetime(2017, 1, 1)
     mock_api.return_value.getIssues.return_value = [mock_issue_1, mock_issue_2]
-    self.assertTrue(issue_tracking_service.BugAlreadyExistsForLabel('test'))
+    self.assertTrue(issue_tracking_service.OpenBugAlreadyExistsForLabel('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
     self.assertEqual(('label:test',), args)
@@ -564,13 +585,15 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_issue_2.open = False
     mock_issue_2.updated = datetime.datetime(2017, 1, 1)
     mock_api.return_value.getIssues.return_value = [mock_issue_1, mock_issue_2]
-    self.assertFalse(issue_tracking_service.BugAlreadyExistsForLabel('test'))
+    self.assertFalse(
+        issue_tracking_service.OpenBugAlreadyExistsForLabel('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
     self.assertEqual(('label:test',), args)
     mock_api.reset_mock()
 
-  @mock.patch.object(issue_tracking_service, 'GetExistingBugForCustomizedField')
+  @mock.patch.object(issue_tracking_service,
+                     'GetExistingBugIdForCustomizedField')
   def testBugAlreadyExistsForCustomField(self, mock_get_fn):
     mock_get_fn.return_value = None
     self.assertEqual(False,
@@ -586,15 +609,15 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
   @mock.patch.object(issue_tracking_service, 'TraverseMergedIssues')
-  @mock.patch('services.flake_failure.issue_tracking_service.IssueTrackerAPI')
-  def testGetExistingBugForCustomizedField(self, mock_api, mock_traverse_issues,
-                                           _):
+  @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
+  def testGetExistingBugIdForCustomizedField(self, mock_api,
+                                             mock_traverse_issues, _):
     with self.assertRaises(AssertionError):
-      issue_tracking_service.GetExistingBugForCustomizedField(None)
+      issue_tracking_service.GetExistingBugIdForCustomizedField(None)
 
     mock_api.return_value.getIssues.return_value = None
     self.assertEqual(
-        None, issue_tracking_service.GetExistingBugForCustomizedField('test'))
+        None, issue_tracking_service.GetExistingBugIdForCustomizedField('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
     self.assertEqual(('Flaky-Test=test is:open',), args)
@@ -609,7 +632,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_traverse_issues.return_value = mock_issue
     self.assertEqual(
         mock_issue.id,
-        issue_tracking_service.GetExistingBugForCustomizedField('test'))
+        issue_tracking_service.GetExistingBugIdForCustomizedField('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
     self.assertEqual(('Flaky-Test=test is:open',), args)
@@ -617,13 +640,13 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
-  @mock.patch('services.flake_failure.issue_tracking_service.IssueTrackerAPI')
-  def testBugAlreadyExistsForTest(self, mock_api, _):
+  @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
+  def testOpenBugAlreadyExistsForTest(self, mock_api, _):
     with self.assertRaises(AssertionError):
-      issue_tracking_service.BugAlreadyExistsForTest(None)
+      issue_tracking_service.OpenBugAlreadyExistsForTest(None)
 
     mock_api.return_value.getIssues.return_value = None
-    self.assertFalse(issue_tracking_service.BugAlreadyExistsForTest('test'))
+    self.assertFalse(issue_tracking_service.OpenBugAlreadyExistsForTest('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
     self.assertEqual(('summary:test is:open',), args)
@@ -634,7 +657,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_issue.updated = datetime.datetime(2017, 1, 1)
     mock_issue.summary = 'test is flaky'
     mock_api.return_value.getIssues.return_value = [mock_issue]
-    self.assertTrue(issue_tracking_service.BugAlreadyExistsForTest('test'))
+    self.assertTrue(issue_tracking_service.OpenBugAlreadyExistsForTest('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
     self.assertEqual(('summary:test is:open',), args)
@@ -645,33 +668,61 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     mock_issue.updated = datetime.datetime(2017, 1, 1)
     mock_issue.summary = 'test flaked'
     mock_api.return_value.getIssues.return_value = [mock_issue]
-    self.assertTrue(issue_tracking_service.BugAlreadyExistsForTest('test'))
+    self.assertTrue(issue_tracking_service.OpenBugAlreadyExistsForTest('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
     self.assertEqual(('summary:test is:open',), args)
     mock_api.reset_mock()
 
-  @mock.patch.object(
-      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
-  @mock.patch('services.flake_failure.issue_tracking_service.IssueTrackerAPI')
-  def testCreateBugForTest(self, mock_api, _):
-    with self.assertRaises(AssertionError):
-      issue_tracking_service.CreateBugForTest(None, None, None)
-    with self.assertRaises(AssertionError):
-      issue_tracking_service.CreateBugForTest('test', None, None)
-    with self.assertRaises(AssertionError):
-      issue_tracking_service.CreateBugForTest(None, 'subject', None)
-    with self.assertRaises(AssertionError):
-      issue_tracking_service.CreateBugForTest(None, None, 'body')
+  @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
+  def testCreateBug(self, mock_api):
+    summary = 'test summary'
+    description = 'test description'
+    project_id = 'proj'
+    issue = Issue({
+        'status': 'Available',
+        'summary': summary,
+        'description': description,
+        'projectId': 'chromium',
+        'state': 'open',
+    })
 
-    def set_id(issue):
-      issue.id = 1
+    issue_tracking_service.CreateBug(issue, project_id=project_id)
+    mock_api.assert_has_calls(mock.call(project_id, use_staging=False))
+    mock_api.return_value.create.assert_has_calls(mock.call(issue))
 
-    mock_api.return_value.create.side_effect = set_id
-    bug_id = issue_tracking_service.CreateBugForTest('test', 'subject', 'body')
-    self.assertTrue(mock_api.return_value.create.called)
-    self.assertEqual(1, bug_id)
-    mock_api.reset_mock()
+  @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
+  def testUpdateBug(self, mock_api):
+    summary = 'test summary'
+    description = 'test description'
+    project_id = 'proj'
+    comment = 'test comment'
+    issue = Issue({
+        'status': 'Available',
+        'summary': summary,
+        'description': description,
+        'projectId': 'chromium',
+        'state': 'open',
+    })
+
+    issue_tracking_service.UpdateBug(issue, comment, project_id=project_id)
+    mock_api.assert_has_calls(mock.call(project_id, use_staging=False))
+    mock_api.return_value.update.assert_has_calls(
+        mock.call(issue, comment, send_email=True))
+
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testCreateBugForFlakeAnalyzer(self, mock_create_bug_fn):
+    with self.assertRaises(AssertionError):
+      issue_tracking_service.CreateBugForFlakeAnalyzer(None, None, None)
+    with self.assertRaises(AssertionError):
+      issue_tracking_service.CreateBugForFlakeAnalyzer('test', None, None)
+    with self.assertRaises(AssertionError):
+      issue_tracking_service.CreateBugForFlakeAnalyzer(None, 'subject', None)
+    with self.assertRaises(AssertionError):
+      issue_tracking_service.CreateBugForFlakeAnalyzer(None, None, 'body')
+
+    issue_tracking_service.CreateBugForFlakeAnalyzer('test', 'subject', 'body')
+    self.assertTrue(mock_create_bug_fn.called)
 
   def testTraverseMergedIssuesWithoutMergeInto(self):
     issue_tracker = mock.Mock()
@@ -889,3 +940,174 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
                      issue_tracking_service.GetPriorityLabelForConfidence(.9))
     self.assertEqual('Pri-3',
                      issue_tracking_service.GetPriorityLabelForConfidence(.85))
+
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'GetBugForId')
+  def testUpdateBugForDetectedFlake(self, mock_get_bug_fn, mock_update_bug_fn):
+    occurrence_count = 10
+    step_name = 'step_foobar'
+    test_name = 'test_foobar'
+    issue_id = '100'
+    issue = Issue({
+        'status':
+            'Available',
+        'summary':
+            'summary',
+        'description':
+            'description',
+        'projectId':
+            'chromium',
+        'labels': [
+            'Sheriff-Chromium',
+            issue_tracking_service._FINDIT_DETECTED_LABEL_TEXT
+        ],
+        'fieldValues': [CustomizedField('Flaky-Test', test_name)],
+        'state':
+            'open',
+    })
+
+    comment = issue_tracking_service._FLAKE_DETECTION_COMMENT_BODY.format(
+        flake_count=occurrence_count,
+        test_name=test_name,
+        flake_url='dummy url')
+
+    flake_issue = FlakeIssue(issue_id=issue_id)
+    flake = Flake(
+        step_name=step_name,
+        test_name=test_name,
+        flake_issue=flake_issue,
+        project_id='chromium')
+    flake.put()
+
+    mock_get_bug_fn.return_value = issue
+    issue_tracking_service.UpdateBugForDetectedFlake(flake, occurrence_count)
+    mock_update_bug_fn.assert_has_calls(
+        mock.call(issue, comment, flake.project_id))
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 1))
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  @mock.patch.object(issue_tracking_service, 'GetBugForId')
+  def testUpdateBugForDetectedFlakeWithMissingFields(self, mock_get_bug_fn,
+                                                     mock_update_bug_fn, _):
+    occurrence_count = 10
+    step_name = 'step_foobar'
+    test_name = 'test_foobar'
+    issue_id = '100'
+    issue = Issue({
+        'status': 'Available',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': 'chromium',
+        'state': 'open',
+    })
+
+    comment = issue_tracking_service._FLAKE_DETECTION_COMMENT_BODY.format(
+        flake_count=occurrence_count,
+        test_name=test_name,
+        flake_url='dummy url')
+
+    flake_issue = FlakeIssue(issue_id=issue_id)
+    flake = Flake(
+        step_name=step_name,
+        test_name=test_name,
+        flake_issue=flake_issue,
+        project_id='chromium')
+    flake.put()
+
+    mock_get_bug_fn.return_value = issue
+    issue_tracking_service.UpdateBugForDetectedFlake(flake, occurrence_count)
+    mock_update_bug_fn.assert_has_calls(
+        mock.call(issue, comment, flake.project_id))
+    self.assertListEqual(
+        sorted(issue.labels),
+        sorted([
+            'Sheriff-Chromium',
+            issue_tracking_service._FINDIT_DETECTED_LABEL_TEXT
+        ]))
+    self.assertEqual(issue.field_values[0].field_name, 'Flaky-Test')
+    self.assertEqual(issue.field_values[0].field_value, test_name)
+    self.assertEqual(flake.flake_issue.last_updated_time,
+                     datetime.datetime(2018, 1, 1))
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 1))
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testCreateBugForDetectedFlake(self, create_bug_fn, _):
+    occurrence_count = 10
+    step_name = 'step_foobar'
+    test_name = 'test_foobar'
+
+    flake = Flake(
+        step_name=step_name, test_name=test_name, project_id='chromium')
+    flake.put()
+
+    def assign_id(issue, _):
+      issue.id = '100'
+
+    create_bug_fn.side_effect = assign_id
+
+    issue_tracking_service.CreateBugForDetectedFlake(flake, occurrence_count)
+    self.assertTrue(create_bug_fn.called)
+    self.assertEqual(flake.flake_issue.issue_id, '100')
+    self.assertEqual(flake.flake_issue.last_updated_time,
+                     datetime.datetime(2018, 1, 1))
+
+    issue = create_bug_fn.call_args_list[0][0][0]
+    flake_url = 'dummy url'
+    summary = issue_tracking_service._FLAKE_DETECTION_BUG_TITLE.format(
+        test_name=flake.test_name)
+    body_header = (
+        issue_tracking_service._FLAKE_DETECTION_CREATE_BUG_BODY_HEADER.format(
+            test_name=flake.test_name))
+    body_content = (
+        issue_tracking_service._FLAKE_DETECTION_CREATE_BUG_BODY.format(
+            flake_count=occurrence_count, flake_url=flake_url))
+    description = '{}\n\n{}'.format(body_header, body_content)
+    description = '{}\n\n{}'.format(
+        description,
+        issue_tracking_service._FLAKE_DETECTION_CREATE_BUG_BODY_FOOTER)
+    self.assertEqual(issue.id, '100')
+    self.assertEqual(issue.summary, summary)
+    self.assertEqual(issue.description, description)
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 1))
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testCreateBugForDetectedFlakeWithOldBug(self, create_bug_fn, _):
+    occurrence_count = 10
+    step_name = 'step_foobar'
+    test_name = 'test_foobar'
+
+    flake = Flake(
+        step_name=step_name, test_name=test_name, project_id='chromium')
+    flake.put()
+
+    def assign_id(issue, _):
+      issue.id = '100'
+
+    create_bug_fn.side_effect = assign_id
+
+    issue_tracking_service.CreateBugForDetectedFlake(flake, occurrence_count)
+    self.assertTrue(create_bug_fn.called)
+    self.assertEqual(flake.flake_issue.issue_id, '100')
+    self.assertEqual(flake.flake_issue.last_updated_time,
+                     datetime.datetime(2018, 1, 1))
+
+    issue = create_bug_fn.call_args_list[0][0][0]
+    flake_url = 'dummy url'
+    summary = issue_tracking_service._FLAKE_DETECTION_BUG_TITLE.format(
+        test_name=flake.test_name)
+    body_header = (
+        issue_tracking_service._FLAKE_DETECTION_CREATE_BUG_BODY_HEADER.format(
+            test_name=flake.test_name))
+    body_content = (
+        issue_tracking_service._FLAKE_DETECTION_CREATE_BUG_BODY.format(
+            flake_count=occurrence_count, flake_url=flake_url))
+    description = '{}\n\n{}'.format(body_header, body_content)
+    description = '{}\n\n{}'.format(
+        description,
+        issue_tracking_service._FLAKE_DETECTION_CREATE_BUG_BODY_FOOTER)
+    self.assertEqual(issue.id, '100')
+    self.assertEqual(issue.summary, summary)
+    self.assertEqual(issue.description, description)

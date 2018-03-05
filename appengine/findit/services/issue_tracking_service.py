@@ -22,6 +22,7 @@ from monorail_api import IssueTrackerAPI
 from monorail_api import Issue
 
 from model.flake import master_flake_analysis
+from model.flake.detection.flake_issue import FlakeIssue
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -34,8 +35,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
 Flake Analyzer is in beta.
 Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness""")
 
+# Comment for culprit template.
 _LINK = 'https://findit-for-me.appspot.com/waterfall/flake?key=%s'
-
 _CULPRIT_COMMENT_TEMPLATE = textwrap.dedent(
     """
 Findit identified the culprit r%s with confidence %.1f%% in the config "%s / %s"
@@ -43,6 +44,30 @@ based on the flakiness trend:"""
     .lstrip() + '\n\n' + _LINK + '\n\n' + _COMMENT_FOOTER)
 
 _FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
+
+# Flake detection templates.
+_FINDIT_DETECTED_LABEL_TEXT = 'Test-Findit-Detected'
+
+_FLAKE_DETECTION_CREATE_BUG_BODY = (
+    'We have found {flake_count} recent flakes. List of all flakes '
+    'can be found at {flake_url}.')
+
+_FLAKE_DETECTION_CREATE_BUG_BODY_FOOTER = (
+    'This issue was created automatically by Findit. Please find the right '
+    'owner to fix the respective test/step and assign this issue accordingly.')
+
+_FLAKE_DETECTION_CREATE_BUG_BODY_HEADER = '{test_name} is flaky.'
+
+_FLAKE_DETECTION_COMMENT_BODY = (
+    'Findit detected {flake_count} new flakes for test/step {test_name}. To see'
+    'the actual flakes, please visit {flake_url}. Since flakiness is ongoing, '
+    'the issue was moved back into the Sheriff Bug Queue '
+    '(unless already there).')
+
+_FLAKE_DETECTION_CREATE_BUG_BODY_PREVIOUS_ISSUE = (
+    'This flaky test/step was previously tracked in issue {old_issue_id}.')
+
+_FLAKE_DETECTION_BUG_TITLE = '{test_name} is flaky'
 
 _LOW_FLAKINESS_COMMENT_TEMPLATE = textwrap.dedent(
     """
@@ -58,7 +83,7 @@ def AddFinditLabelToIssue(issue):
     issue.labels.append(_FINDIT_ANALYZED_LABEL_TEXT)
 
 
-def BugAlreadyExistsForLabel(test_name):
+def OpenBugAlreadyExistsForLabel(test_name):
   """Returns True if the bug with the given label exists on monorail."""
   assert test_name
 
@@ -74,6 +99,13 @@ def BugAlreadyExistsForLabel(test_name):
     return True
 
   return False
+
+
+def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
+  """Returns True if the bug exists and is open on monorail."""
+  existing_bug = GetBugForId(bug_id, project_id)
+
+  return existing_bug and existing_bug.open
 
 
 def GenerateBugComment(analysis):
@@ -150,12 +182,12 @@ def ShouldFileBugForAnalysis(analysis):
     return False
 
   # Check if there's already a bug attached to this issue.
-  if BugAlreadyExistsForId(analysis.bug_id):
+  if OpenBugAlreadyExistsForId(analysis.bug_id):
     analysis.LogInfo('Bug with id {} already exists.'.format(analysis.bug_id))
     return False
 
   # TODO (crbug.com/808199): Turn off label checking when CTF is offline.
-  if BugAlreadyExistsForLabel(analysis.test_name):
+  if OpenBugAlreadyExistsForLabel(analysis.test_name):
     analysis.LogInfo('Bug already exists for label {}'.format(
         analysis.test_name))
     return False
@@ -165,7 +197,7 @@ def ShouldFileBugForAnalysis(analysis):
         analysis.test_name))
     return False
 
-  if BugAlreadyExistsForTest(analysis.test_name):
+  if OpenBugAlreadyExistsForTest(analysis.test_name):
     analysis.LogInfo('Bug about flakiness already exists')
     return False
 
@@ -255,19 +287,16 @@ def TraverseMergedIssues(bug_id, issue_tracker):
   return issue
 
 
-def BugAlreadyExistsForId(bug_id):
-  """Returns True if the bug exists and is open on monorail."""
+def GetBugForId(bug_id, project_id='chromium'):
+  """Gets a bug by id."""
   if bug_id is None:
     return False
 
   issue_tracker_api = IssueTrackerAPI(
-      'chromium', use_staging=appengine_util.IsStaging())
+      project_id, use_staging=appengine_util.IsStaging())
   issue = TraverseMergedIssues(bug_id, issue_tracker_api)
 
-  if issue is None:
-    return False
-
-  return issue.open
+  return issue
 
 
 def UnderDailyLimit(analysis):
@@ -289,28 +318,34 @@ def UnderDailyLimit(analysis):
   return bugs_filed_today < daily_bug_limit
 
 
-def GetExistingBugForCustomizedField(test_name):
-  """Returns the bug id of an existing bug for this test."""
-  assert test_name
-  query = _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE.format(test_name)
+def GetExistingBugForCustomizedField(field, project_id='chromium'):
+  """Returns the existing bug for this test if any, None otherwise."""
+  assert field
+  query = _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE.format(field)
 
   issue_tracker_api = IssueTrackerAPI(
-      'chromium', use_staging=appengine_util.IsStaging())
+      project_id, use_staging=appengine_util.IsStaging())
   issues = issue_tracker_api.getIssues(query)
 
   # If there are issues, find the root one, and return the id of it.
   if issues and issues[0]:
-    return issues[0].id
+    return issues[0]
   else:
     return None
 
 
+def GetExistingBugIdForCustomizedField(test_name, project_id='chromium'):
+  """Returns the bug id of an existing bug for this test."""
+  bug = GetExistingBugForCustomizedField(test_name, project_id)
+  return bug.id if bug else None
+
+
 def BugAlreadyExistsForCustomField(test_name):
   """Returns True if the bug with the given custom field exists on monorail."""
-  return GetExistingBugForCustomizedField(test_name) is not None
+  return GetExistingBugIdForCustomizedField(test_name) is not None
 
 
-def BugAlreadyExistsForTest(test_name):
+def OpenBugAlreadyExistsForTest(test_name):
   """Search for test_name issues that are about flakiness.
 
   Args:
@@ -344,9 +379,15 @@ def GetPriorityLabelForConfidence(confidence):
     return 'Pri-3'
 
 
-def CreateBugForTest(test_name, subject, description, priority='Pri-2'):
-  """Creates a bug with the given information.
+def CreateBugForFlakeAnalyzer(test_name, subject, description,
+                              priority='Pri-2'):
+  """Creates a bug for Flake Analyzer with the given information.
 
+  Args:
+    test_name (str): Name of the test.
+    subject (str): Subject for the issue.
+    description (str): Description for the issue.
+    priority (str, optional): Priority for the issue (Pri-0/1/2/3/4).
   Returns:
     (int) id of the bug that was filed.
   """
@@ -364,7 +405,7 @@ def CreateBugForTest(test_name, subject, description, priority='Pri-2'):
       'projectId':
           'chromium',
       'labels': [
-          'Test-Findit-Analyzed', 'Sheriff-Chromium', priority, 'Type-Bug'
+          _FINDIT_ANALYZED_LABEL_TEXT, 'Sheriff-Chromium', priority, 'Type-Bug'
       ],
       'state':
           'open',
@@ -372,9 +413,32 @@ def CreateBugForTest(test_name, subject, description, priority='Pri-2'):
       'fieldValues': [CustomizedField('Flaky-Test', test_name)]
   })
 
+  return CreateBug(issue)
+
+
+def CreateBug(issue, project_id='chromium'):
+  """Creates a bug with the given information.
+
+  Returns:
+    (int) id of the bug that was filed.
+  """
+  assert issue
+
   issue_tracker_api = IssueTrackerAPI(
-      'chromium', use_staging=appengine_util.IsStaging())
+      project_id, use_staging=appengine_util.IsStaging())
   issue_tracker_api.create(issue)
+
+  return issue.id
+
+
+def UpdateBug(issue, comment, project_id='chromium'):
+  """Creates a bug with the given information."""
+  assert issue
+
+  issue_tracker_api = IssueTrackerAPI(
+      project_id, use_staging=appengine_util.IsStaging())
+  issue_tracker_api.update(issue, comment, send_email=True)
+
   return issue.id
 
 
@@ -390,3 +454,87 @@ def HasSufficientConfidenceInCulprit(analysis, required_confidence):
 
   return (analysis.confidence_in_culprit + flake_constants.EPSILON >=
           required_confidence)
+
+
+def UpdateBugForDetectedFlake(flake, occurrence_count):
+  """Updates the bug for a detected cq flake.
+
+  Args:
+    flake (model.flake.detection.flake): Parent Flake object to check.
+    occurrence_count (int): Number of recent occurrences.
+  """
+  # TODO(crbug.com/815252): Replace when frontend url is ready.
+  flake_url = 'dummy url'
+  comment = _FLAKE_DETECTION_COMMENT_BODY.format(
+      flake_count=occurrence_count,
+      test_name=flake.test_name,
+      flake_url=flake_url)
+
+  issue = GetBugForId(flake.flake_issue.issue_id)
+
+  # Set label for Findit detected flake if it's not already there.
+  if _FINDIT_DETECTED_LABEL_TEXT not in issue.labels:
+    issue.labels.append(_FINDIT_DETECTED_LABEL_TEXT)
+  if 'Sheriff-Chromium' not in issue.labels:
+    issue.labels.append('Sheriff-Chromium')
+
+  # Set Flaky-Test field. If it's already there, it's a no-op.
+  flaky_field = CustomizedField('Flaky-Test', flake.test_name)
+  issue.field_values.append(flaky_field)
+
+  UpdateBug(issue, comment, flake.project_id)
+  flake.flake_issue.last_updated_time = time_util.GetUTCNow()
+  flake.put()
+
+
+def CreateBugForDetectedFlake(flake,
+                              occurrence_count,
+                              priority='Pri-2',
+                              old_bug_id=None):
+  """Create a bug for a detected cq flake.
+
+  Args:
+    flake (model.flake.detection.flake): Parent Flake object to check.
+    occurrence_count (int): Number of recent occurrences.
+    priority (str, optional): Priority for the issue (Pri-0/1/2/3/4).
+    old_bug_id (str): A bug id for this flake which has been closed.
+  """
+  # TODO(crbug.com/815252): Replace when frontend url is ready.
+  flake_url = 'dummy url'
+  summary = _FLAKE_DETECTION_BUG_TITLE.format(test_name=flake.test_name)
+  body_header = _FLAKE_DETECTION_CREATE_BUG_BODY_HEADER.format(
+      test_name=flake.test_name)
+  body_content = _FLAKE_DETECTION_CREATE_BUG_BODY.format(
+      flake_count=occurrence_count, flake_url=flake_url)
+  description = '{}\n\n{}'.format(body_header, body_content)
+  if old_bug_id:
+    description = '{}\n\n{}'.format(
+        description,
+        _FLAKE_DETECTION_CREATE_BUG_BODY_PREVIOUS_ISSUE.format(
+            old_bug_id=old_bug_id))
+  description = '{}\n\n{}'.format(description,
+                                  _FLAKE_DETECTION_CREATE_BUG_BODY_FOOTER)
+
+  issue = Issue({
+      'status':
+          'Available',
+      'summary':
+          summary,
+      'description':
+          description,
+      'projectId':
+          flake.project_id,
+      'labels': [
+          _FINDIT_DETECTED_LABEL_TEXT, 'Sheriff-Chromium', priority, 'Type-Bug'
+      ],
+      'state':
+          'open',
+      'components': ['Tests>Flaky'],
+      'fieldValues': [CustomizedField('Flaky-Test', flake.test_name)]
+  })
+
+  CreateBug(issue, flake.project_id)
+  flake.flake_issue = FlakeIssue()
+  flake.flake_issue.FromMonorailIssue(issue)
+  flake.flake_issue.last_updated_time = time_util.GetUTCNow()
+  flake.put()

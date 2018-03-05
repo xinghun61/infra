@@ -13,7 +13,7 @@ from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from services import test_results
-from services.flake_failure import issue_tracking_service
+from services import issue_tracking_service
 from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake import triggering_sources
@@ -58,7 +58,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
 
     if not issue_tracking_service.ShouldFileBugForAnalysis(analysis):
       existing_test_bug_id = (
-          issue_tracking_service.GetExistingBugForCustomizedField(
+          issue_tracking_service.GetExistingBugIdForCustomizedField(
               analysis.test_name))
       if existing_test_bug_id and not analysis.bug_id:
         analysis.Update(bug_id=existing_test_bug_id)
@@ -153,7 +153,7 @@ class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
 
     # Log our attempt in analysis so we don't retry perpetually.
     analysis.Update(has_attempted_filing=True)
-    bug_id = issue_tracking_service.CreateBugForTest(
+    bug_id = issue_tracking_service.CreateBugForFlakeAnalyzer(
         analysis.test_name, subject, body, priority_label)
     if not bug_id:
       analysis.LogError('Couldn\'t create bug!')

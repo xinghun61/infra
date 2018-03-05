@@ -10,7 +10,7 @@ from gae_libs import appengine_util
 from gae_libs.pipelines import SynchronousPipeline
 from libs.structured_object import StructuredObject
 from monorail_api import IssueTrackerAPI
-from services.flake_failure import issue_tracking_service
+from services import issue_tracking_service
 from waterfall.flake import flake_constants
 
 
