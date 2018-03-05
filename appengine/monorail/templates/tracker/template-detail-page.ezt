@@ -53,7 +53,7 @@
     <th>Description:</th>
     <td>
       [if-any allow_edit]
-         <textarea name="content" rows="12" cols="75" class="undef">[initial_content]</textarea>
+         <textarea name="content" rows="12" cols="75">[initial_content]</textarea>
          [# Note: wrap="hard" has no effect on content_editor because we copy to a hidden field before submission.]
       [else]
         [initial_content]
