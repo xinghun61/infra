@@ -1,0 +1,43 @@
+[
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[CACHE]/builder/bundler",
+      "-ensure-file",
+      "infra/tools/luci/recipe_bundler/${platform} latest",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/tools/luci/recipe_bundler/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[CACHE]/builder/bundler/recipe_bundler",
+      "-workdir",
+      "[CACHE]/builder/workdir",
+      "-r",
+      "chromium.googlesource.com/chromium/tools/build",
+      "-r",
+      "chromium.googlesource.com/infra/infra"
+    ],
+    "name": "run recipe_bundler"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

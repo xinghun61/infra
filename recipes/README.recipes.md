@@ -37,6 +37,7 @@
   * [master_manager_config](#recipes-master_manager_config)
   * [publish_tarball](#recipes-publish_tarball)
   * [recipe_autoroller](#recipes-recipe_autoroller) &mdash; Rolls recipes.
+  * [recipe_bundler](#recipes-recipe_bundler)
   * [recipe_roll_tryjob](#recipes-recipe_roll_tryjob)
   * [recipe_simulation](#recipes-recipe_simulation) &mdash; A continuous builder which runs recipe tests.
   * [recipes_py_continuous](#recipes-recipes_py_continuous)
@@ -393,6 +394,11 @@ Returns file size if file exists, else None
 Rolls recipes.cfg dependencies for public projects.
 
 &mdash; **def [RunSteps](/recipes/recipes/recipe_autoroller.py#50)(api, projects, auth_token, service_account):**
+### *recipes* / [recipe\_bundler](/recipes/recipes/recipe_bundler.py)
+
+[DEPS](/recipes/recipes/recipe_bundler.py#8): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+&mdash; **def [RunSteps](/recipes/recipes/recipe_bundler.py#33)(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs):**
 ### *recipes* / [recipe\_roll\_tryjob](/recipes/recipes/recipe_roll_tryjob.py)
 
 [DEPS](/recipes/recipes/recipe_roll_tryjob.py#8): [build/luci\_config][build/recipe_modules/luci_config], [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
