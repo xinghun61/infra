@@ -3,12 +3,10 @@
 # found in the LICENSE file.
 
 import datetime
-import json
 
 from components import utils
 utils.fix_protobuf_package()
 
-from google.protobuf import json_format
 from google.protobuf import struct_pb2
 from google.protobuf import timestamp_pb2
 
@@ -18,6 +16,8 @@ from testing_utils import testing
 from proto import common_pb2
 from proto import build_pb2
 from v2 import builds
+from v2 import errors
+from test import test_util
 import model
 
 
@@ -189,10 +189,11 @@ class V2BuildsTest(testing.AppengineTestCase):
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
     self.assertEqual(
-        msg_to_dict(expected), msg_to_dict(builds.build_to_v2(build)))
+        test_util.msg_to_dict(expected),
+        test_util.msg_to_dict(builds.build_to_v2_partial(build)))
 
   def test_build_to_v2_number(self):
-    msg = builds.build_to_v2(mkbuild(
+    msg = builds.build_to_v2_partial(mkbuild(
         result_details={
           'properties': {'buildnumber': 54},
         },
@@ -256,21 +257,23 @@ class V2BuildsTest(testing.AppengineTestCase):
     builds._parse_tags(actual, tags)
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
-    self.assertEqual(msg_to_dict(expected), msg_to_dict(actual))
+    self.assertEqual(
+        test_util.msg_to_dict(expected),
+        test_util.msg_to_dict(actual))
 
   def test_build_to_v2_invalid_priority(self):
     build = mkbuild(
         tags=['swarming_tag:priority:blah'],
     )
-    msg = builds.build_to_v2(build)
+    msg = builds.build_to_v2_partial(build)
     self.assertEqual(msg.infra.swarming.priority, 0)
     self.assertEqual(len(msg.tags), 0)
 
   def test_build_to_v2_no_builder_name(self):
     build = mkbuild()
     del build.parameters[builds.BUILDER_PARAMETER]
-    with self.assertRaises(builds.UnsupportedBuild):
-      builds.build_to_v2(build)
+    with self.assertRaises(errors.UnsupportedBuild):
+      builds.build_to_v2_partial(build)
 
 
 def mkbuild(**kwargs):
@@ -284,7 +287,3 @@ def mkbuild(**kwargs):
   args['parameters'].update(kwargs.pop('parameters', {}))
   args.update(kwargs)
   return model.Build(**args)
-
-
-def msg_to_dict(message):
-  return json.loads(json_format.MessageToJson(message))

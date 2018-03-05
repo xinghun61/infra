@@ -79,7 +79,7 @@ class Converter(object):
         if lines)
     return ret
 
-  def parse_steps(self, ann_substeps, name_prefix=''):
+  def parse_substeps(self, ann_substeps, name_prefix=''):
     """Parses a list of annotation substeps to a list of v2 steps.
 
     Returned list includes substeps, recursively.
@@ -90,7 +90,7 @@ class Converter(object):
         v2_step = self.parse_step(substep.step)
         v2_step.name = name_prefix + v2_step.name
         ret.append(v2_step)
-        ret.extend(self.parse_steps(
+        ret.extend(self.parse_substeps(
             substep.step.substep, name_prefix=v2_step.name + STEP_SEP))
     return ret
 

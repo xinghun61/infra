@@ -105,6 +105,9 @@ def _process_pull_task_batch(queue_name, dataset):
     row_count = len(v2_builds) - len(not_inserted_ids)
     ids_to_retry.update(not_inserted_ids)
 
+  if ids_to_retry:
+    logging.error('will retry builds %r later', sorted(build_ids))
+
   done_tasks = [
     t
     for bid, t in zip(build_ids, tasks)

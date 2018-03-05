@@ -3,13 +3,11 @@
 # found in the LICENSE file.
 
 import datetime
-import json
 import os
 
 from components import utils
 utils.fix_protobuf_package()
 
-from google.protobuf import json_format
 from google.protobuf import text_format
 from google.protobuf import timestamp_pb2
 
@@ -23,6 +21,7 @@ from proto import common_pb2
 from proto import build_pb2
 from proto import step_pb2
 from v2 import annotations
+from test import test_util
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -43,13 +42,9 @@ class AnnotationsTest(testing.AppengineTestCase):
 
     converter = annotations.Converter('logdog.example.com', 'prefix')
     actual = build_pb2.Build(
-        steps=converter.parse_steps(annotation_step.substep))
+        steps=converter.parse_substeps(annotation_step.substep))
 
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
     self.assertEqual(
-        msg_to_dict(expected), msg_to_dict(actual))
-
-
-def msg_to_dict(message):
-  return json.loads(json_format.MessageToJson(message))
+        test_util.msg_to_dict(expected), test_util.msg_to_dict(actual))

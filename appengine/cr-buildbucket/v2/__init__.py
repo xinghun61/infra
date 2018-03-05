@@ -9,6 +9,11 @@ code in this app is v1. In particular, this file implements a function that
 converts a v1 Build datastore entity to buildbucket.v2.Build message.
 """
 
-from .builds import build_to_v2
+from . import builds
 from .builds import BUILDER_PARAMETER
-from .builds import UnsupportedBuild
+from .errors import UnsupportedBuild
+
+
+def build_to_v2(build):  # pragma: no cover
+  # TODO(nodir): fetch steps.
+  return builds.build_to_v2_partial(build)

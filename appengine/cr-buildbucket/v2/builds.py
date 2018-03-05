@@ -9,22 +9,21 @@ import logging
 from google.protobuf import struct_pb2
 from google.protobuf import timestamp_pb2
 
-from proto import common_pb2
+from . import errors
 from proto import build_pb2
+from proto import common_pb2
 import model
 
 
 BUILDER_PARAMETER = 'builder_name'
 
 
-class UnsupportedBuild(Exception):
-  """A build cannot be converted to v2 format."""
+def build_to_v2_partial(build):
+  """Converts a model.Build to an incomplete build_pb2.Build.
 
+  The returned build does not include steps.
 
-def build_to_v2(build):
-  """Converts a model.Build to a build_pb2.Build.
-
-  May raise UnsupportedBuild.
+  May raise errors.UnsupportedBuild or errors.MalformedBuild.
   """
   result_details = build.result_details or {}
   ret = build_pb2.Build(
@@ -129,7 +128,8 @@ def _parse_tags(dest_msg, tags):
 def _get_builder_id(build):
   builder = (build.parameters or {}).get(BUILDER_PARAMETER)
   if not builder:
-    raise UnsupportedBuild('does not have %s parameter' % BUILDER_PARAMETER)
+    raise errors.UnsupportedBuild(
+        'does not have %s parameter' % BUILDER_PARAMETER)
 
   bucket = build.bucket
   # in V2, we drop "luci.{project}." prefix.
@@ -163,8 +163,8 @@ def _get_status(build):
       else:
         return common_pb2.INFRA_FAILURE
 
-  raise ValueError(  # pragma: no cover
-      'invalid status in build %d', build.key.id())
+  raise errors.MalformedBuild(  # pragma: no cover
+      'invalid status in build %d' % build.key.id())
 
 
 def _dict_to_struct(d):

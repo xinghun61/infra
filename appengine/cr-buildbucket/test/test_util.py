@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
+
+from google.protobuf import json_format
+
 from google.appengine.ext import ndb
 
 
@@ -28,3 +32,13 @@ def future_exception(ex):  # pragma: no cover
   f = ndb.Future()
   f.set_exception(ex)
   return f
+
+
+def msg_to_dict(message):  # pragma: no cover
+  """Converts a protobuf message to dict.
+
+  Very inefficient. Use only in tests.
+  Useful to compare protobuf messages, because unittest.assertEqual has special
+  support for dicts, but not protobuf messages.
+  """
+  return json.loads(json_format.MessageToJson(message))
