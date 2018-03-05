@@ -13,6 +13,7 @@ from search import search_helpers
 from google.appengine.ext import testbed
 from framework import permissions
 from framework import sql
+from proto import user_pb2
 from services import chart_svc
 from services import service_manager
 from testing import fake
@@ -41,6 +42,7 @@ class SearchHelpersTest(unittest.TestCase):
     self.services = service_manager.Services()
     self.services.chart = MakeChartService(self.mox)
     self.config_service = fake.ConfigService()
+    self.user = user_pb2.User()
 
   def testGetPersonalAtRiskLabelIDs_ReadOnly(self):
     """Test returns risky IDs a read-only user cannot access."""
@@ -48,21 +50,21 @@ class SearchHelpersTest(unittest.TestCase):
     self.config_service.GetLabelDefRowsAnyProject(
       self.cnxn, where=[('LOWER(label) LIKE %s', ['restrict-view-%'])]
     ).AndReturn([
-      (123, 789, 0, 'Restrict-Edit-Issue', 'docstring', 0),
-      (124, 789, 0, 'Restrict-View', 'docstring', 0),
+      (123, 789, 0, 'Restrict-View-Google', 'docstring', 0),
+      (124, 789, 0, 'Restrict-View-SecurityTeam', 'docstring', 0),
     ])
 
     self.mox.ReplayAll()
     ids = search_helpers.GetPersonalAtRiskLabelIDs(
       self.cnxn,
-      None,
+      self.user,
       self.config_service,
       effective_ids=[10L, 20L],
       project=fake.Project(project_id=789),
       perms=permissions.READ_ONLY_PERMISSIONSET)
     self.mox.VerifyAll()
 
-    self.assertEqual(ids, [123])
+    self.assertEqual(ids, [123, 124])
 
   def testGetPersonalAtRiskLabelIDs_LoggedInUser(self):
     """Test returns restricted label IDs a logged in user cannot access."""
@@ -70,36 +72,52 @@ class SearchHelpersTest(unittest.TestCase):
     self.config_service.GetLabelDefRowsAnyProject(
       self.cnxn, where=[('LOWER(label) LIKE %s', ['restrict-view-%'])]
     ).AndReturn([
-      (123, 789, 0, 'Restrict-Edit-Issue', 'docstring', 0),
-      (124, 789, 0, 'Restrict-View', 'docstring', 0),
+      (123, 789, 0, 'Restrict-View-Google', 'docstring', 0),
+      (124, 789, 0, 'Restrict-View-SecurityTeam', 'docstring', 0),
     ])
 
     self.mox.ReplayAll()
     ids = search_helpers.GetPersonalAtRiskLabelIDs(
       self.cnxn,
-      None,
+      self.user,
       self.config_service,
       effective_ids=[10L, 20L],
       project=fake.Project(project_id=789),
       perms=permissions.USER_PERMISSIONSET)
     self.mox.VerifyAll()
 
-    self.assertEqual(ids, [123])
+    self.assertEqual(ids, [123, 124])
 
-  def testGetPersonalAtRiskLabelIDs_Admin(self):
-    """Test returns nothing for an admin (who can view everything)."""
+  def testGetPersonalAtRiskLabelIDs_UserWithRVG(self):
+    """Test returns restricted label IDs a logged in user cannot access."""
     self.mox.StubOutWithMock(self.config_service, 'GetLabelDefRowsAnyProject')
     self.config_service.GetLabelDefRowsAnyProject(
       self.cnxn, where=[('LOWER(label) LIKE %s', ['restrict-view-%'])]
     ).AndReturn([
-      (123, 789, 0, 'Restrict-Edit-Issue', 'docstring', 0),
-      (124, 789, 0, 'Restrict-View', 'docstring', 0),
+      (123, 789, 0, 'Restrict-View-Google', 'docstring', 0),
+      (124, 789, 0, 'Restrict-View-SecurityTeam', 'docstring', 0),
     ])
 
     self.mox.ReplayAll()
+    perms = permissions.PermissionSet(['Google'])
     ids = search_helpers.GetPersonalAtRiskLabelIDs(
       self.cnxn,
-      None,
+      self.user,
+      self.config_service,
+      effective_ids=[10L, 20L],
+      project=fake.Project(project_id=789),
+      perms=perms)
+    self.mox.VerifyAll()
+
+    self.assertEqual(ids, [124])
+
+  def testGetPersonalAtRiskLabelIDs_Admin(self):
+    """Test returns nothing for an admin (who can view everything)."""
+    self.user.is_site_admin = True
+    self.mox.ReplayAll()
+    ids = search_helpers.GetPersonalAtRiskLabelIDs(
+      self.cnxn,
+      self.user,
       self.config_service,
       effective_ids=[10L, 20L],
       project=fake.Project(project_id=789),
