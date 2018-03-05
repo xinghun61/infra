@@ -44,7 +44,7 @@ def _LowRepoActivity():
 
 def _PlatformToDimensions(platform):
   """Maps a platform string to the corresponding swarming dimension."""
-  return PLATFORM_DIMENSION_MAP[platform]
+  return PLATFORM_DIMENSION_MAP[platform][:]
 
 
 def _AvailableBotsByPlatform(platform):
