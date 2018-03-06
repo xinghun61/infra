@@ -374,3 +374,12 @@ def get_buildbucket_cfg_url(project_id):
         'Not a valid Gitiles URL %r of project %s', config_url, project_id)
     return None
   return str(loc.join(cfg_path()))
+
+
+@ndb.tasklet
+def get_settings_async():  # pragma: no cover
+  _, global_settings = yield config.get_self_config_async(
+      'settings.cfg',
+      service_config_pb2.SettingsCfg,
+      store_last_good=True)
+  raise ndb.Return(global_settings or service_config_pb2.SettingsCfg())

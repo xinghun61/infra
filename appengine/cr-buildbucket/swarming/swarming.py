@@ -100,12 +100,8 @@ class BuildResultFileCorruptedError(Error):
 
 @ndb.tasklet
 def get_settings_async():  # pragma: no cover
-  _, global_settings = yield component_config.get_self_config_async(
-      'settings.cfg',
-      service_config_pb2.SettingsCfg,
-      store_last_good=True)
-  global_settings = global_settings or service_config_pb2.SettingsCfg()
-  raise ndb.Return(global_settings.swarming)
+  settings = yield config.get_settings_async()
+  raise ndb.Return(settings.swarming)
 
 
 @ndb.tasklet
