@@ -4,8 +4,8 @@
 
 import unittest
 
-from appengine_module.testing_utils import testing
-from appengine_module.test_results.handlers import util
+from testing_utils import testing
+from test_results import util
 
 
 class TestFileHandlerTest(testing.AppengineTestCase):
