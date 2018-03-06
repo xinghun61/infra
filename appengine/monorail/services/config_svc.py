@@ -1633,6 +1633,22 @@ class ConfigService(object):
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
     self.InvalidateMemcacheForEntireProject(project_id)
 
+  def DeleteIssueTemplateDef(self, cnxn, project_id, template_id):
+    """Delete the specified issue template definition."""
+    # TODO(jojwang): monorail:3241, soft delete may be required for launch
+    # process templates
+    self.template2label_tbl.Delete(cnxn, template_id=template_id, commit=False)
+    self.template2component_tbl.Delete(
+        cnxn, template_id=template_id, commit=False)
+    self.template2admin_tbl.Delete(cnxn, template_id=template_id, commit=False)
+    self.template2fieldvalue_tbl.Delete(
+        cnxn, template_id=template_id, commit=False)
+    self.template_tbl.Delete(cnxn, id=template_id, commit=False)
+
+    cnxn.Commit()
+    self.config_2lc.InvalidateKeys(cnxn, [project_id])
+    self.InvalidateMemcacheForEntireProject(project_id)
+
   ### Memcache management
 
   def InvalidateMemcache(self, issues, key_prefix=''):

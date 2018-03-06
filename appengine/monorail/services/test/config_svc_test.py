@@ -1148,6 +1148,27 @@ class ConfigServiceTest(unittest.TestCase):
         component_required=True, labels=[], admin_ids=[111L])
     self.mox.VerifyAll()
 
+  def SetUpDeleteIssueTemplateDef(self):
+    template_id = 1
+    self.config_service.template2label_tbl.Delete(
+        self.cnxn, template_id=template_id, commit=False)
+    self.config_service.template2component_tbl.Delete(
+        self.cnxn, template_id=template_id, commit=False)
+    self.config_service.template2admin_tbl.Delete(
+        self.cnxn, template_id=template_id, commit=False)
+    self.config_service.template2fieldvalue_tbl.Delete(
+        self.cnxn, template_id=template_id, commit=False)
+    self.config_service.template_tbl.Delete(
+        self.cnxn, id=template_id, commit=False)
+    self.cnxn.Commit()
+
+  def testDeleteIssueTemplateDef(self):
+    self.SetUpDeleteIssueTemplateDef()
+    self.mox.ReplayAll()
+    self.config_service.DeleteIssueTemplateDef(
+        self.cnxn, 789, 1)
+    self.mox.VerifyAll()
+
   ### Memcache management
 
   def testInvalidateMemcache(self):

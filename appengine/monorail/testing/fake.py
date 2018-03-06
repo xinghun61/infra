@@ -1125,6 +1125,14 @@ class ConfigService(object):
 
     self.StoreConfig(cnxn, config)
 
+  def DeleteIssueTemplateDef(self, cnxn, project_id, template_id):
+    config = self.GetProjectConfig(cnxn, project_id)
+    updated_templates = [tmpl for tmpl in config.templates if
+                         tmpl.template_id is not template_id]
+    config.templates = updated_templates
+
+    self.StoreConfig(cnxn, config)
+
   def InvalidateMemcache(self, issues, key_prefix=''):
     pass
 
