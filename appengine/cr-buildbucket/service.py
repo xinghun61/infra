@@ -31,11 +31,13 @@ import model
 import sequence
 import swarming
 
+
 MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 MAX_BUILDSET_LENGTH = 1024
 RE_TAG_INDEX_SEARCH_CURSOR = re.compile('^id>\d+$')
+RESERVED_TAG_KEYS = {'build_address', 'swarming_tag', 'swarming_dimension'}
 
 validate_bucket_name = errors.validate_bucket_name
 
@@ -141,8 +143,6 @@ def validate_tags(tags, mode, builder=None):
         validate_build_set(v)
       except errors.InvalidInputError as ex:
         raise errors.InvalidInputError('Invalid tag "%s": %s' % (t, ex))
-    if k == 'build_address' and mode != 'search':
-      raise errors.InvalidInputError('Tag "build_address" is reserved')
     if k == 'builder':
       if mode == 'append':
         raise errors.InvalidInputError(
@@ -157,6 +157,8 @@ def validate_tags(tags, mode, builder=None):
         elif t != builder_tag:
           raise errors.InvalidInputError(
               'Tag "%s" conflicts with tag "%s"' % (t, builder_tag))
+    if mode != 'search' and k in RESERVED_TAG_KEYS:
+      raise errors.InvalidInputError('Tag "%s" is reserved' % k)
 
 
 _BuildRequestBase = collections.namedtuple('_BuildRequestBase', [
