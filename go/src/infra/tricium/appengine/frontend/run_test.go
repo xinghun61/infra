@@ -118,7 +118,7 @@ func TestRunPageHandler(t *testing.T) {
 			routerContext := &router.Context{
 				Context: ctx,
 				Writer:  w,
-				Request: trit.MakeGetRequest(),
+				Request: trit.MakeGetRequest(nil),
 				Params:  trit.MakeParams("runId", "abc"),
 			}
 			runPageHandler(routerContext)
@@ -134,7 +134,7 @@ func TestRunPageHandler(t *testing.T) {
 			routerContext := &router.Context{
 				Context: ctx,
 				Writer:  w,
-				Request: trit.MakeGetRequest(),
+				Request: trit.MakeGetRequest(nil),
 				Params:  trit.MakeParams("runId", "1234"),
 			}
 			runPageHandler(routerContext)

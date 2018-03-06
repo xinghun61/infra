@@ -6,10 +6,12 @@
 package testing
 
 import (
-	"github.com/julienschmidt/httprouter"
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
 	"go.chromium.org/gae/impl/memory"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
@@ -39,9 +41,11 @@ func (t *Testing) Context() context.Context {
 	return ctx
 }
 
-// MakeGetRequest builds a basic http.Request.
-func MakeGetRequest() *http.Request {
-	req, _ := http.NewRequest("GET", "/testing-path", nil)
+// MakeGetRequest builds a basic http.Request with the given body.
+// Body can be nil if it doesn't matter.
+func MakeGetRequest(data []byte) *http.Request {
+	body := ioutil.NopCloser(bytes.NewReader(data))
+	req, _ := http.NewRequest("GET", "/testing-path", body)
 	return req
 }
 

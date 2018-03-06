@@ -10,10 +10,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 
+	"infra/tricium/api/v1"
 	trit "infra/tricium/appengine/common/testing"
 )
 
@@ -45,6 +47,36 @@ func TestLandingPageHandler(t *testing.T) {
 			b, err := ioutil.ReadAll(resp.Body)
 			So(err, ShouldBeNil)
 			So(string(b), ShouldEqual, "Landing page content")
+		})
+	})
+}
+
+func TestAnalyzeQueueHandler(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		tt := &trit.Testing{}
+		ctx := tt.Context()
+
+		w := httptest.NewRecorder()
+
+		Convey("Analyze queue handler checks for invalid requests", func() {
+			// A request with an empty paths list is not valid.
+			ar := &tricium.AnalyzeRequest{
+				Project: "some-project",
+				GitRef:  "some/ref",
+				Paths:   nil,
+			}
+			bytes, err := proto.Marshal(ar)
+			analyzeHandler(&router.Context{
+				Context: ctx,
+				Writer:  w,
+				Request: trit.MakeGetRequest(bytes),
+				Params:  trit.MakeParams(),
+			})
+			So(w.Code, ShouldEqual, 400)
+			r, err := ioutil.ReadAll(w.Body)
+			So(err, ShouldBeNil)
+			body := string(r)
+			So(body, ShouldEqual, "")
 		})
 	})
 }

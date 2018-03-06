@@ -28,9 +28,10 @@ func landingPageHandler(c *router.Context) {
 // analyzeHandler calls Tricium.Analyze for entries in the analyze queue.
 //
 // This queue is intended as a service extension point for modules
-// running within the Tricium GAE app. For instance, the Gerrit poller.
-// TODO(emso): Figure out if this queue is needed.
-// TODO(emso): Figure out if/where WrapTransient should be used for errors.
+// running within the Tricium GAE app, such as the Gerrit poller.
+// TODO(qyearsley): Figure out whether this queue is needed; if
+// the Gerrit poller can directly add RPC requests to the queue
+// then this would be unnecessary.
 func analyzeHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
 	defer r.Body.Close()
@@ -44,6 +45,11 @@ func analyzeHandler(ctx *router.Context) {
 	ar := &tricium.AnalyzeRequest{}
 	if err := proto.Unmarshal(body, ar); err != nil {
 		logging.WithError(err).Errorf(c, "[frontend] Analyze queue handler failed to unmarshal request")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err = validateAnalyzeRequest(c, ar); err != nil {
+		logging.WithError(err).Errorf(c, "[frontend] Analyze queue handler got invalid analyze request")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
