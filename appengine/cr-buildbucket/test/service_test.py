@@ -14,6 +14,7 @@ from testing_utils import testing
 import mock
 
 from proto import project_config_pb2
+from proto import service_config_pb2
 from test.test_util import future, future_exception
 import acl
 import api_common
@@ -97,6 +98,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.patch(
         'bq.enqueue_pull_task_async', autospec=True,
         return_value=future(None))
+    self.patch(
+        'config.get_settings_async', autospec=True,
+        return_value=future(service_config_pb2.SettingsCfg()))
 
   def mock_cannot(self, action, bucket=None):
     def can_async(requested_bucket, requested_action, _identity=None):

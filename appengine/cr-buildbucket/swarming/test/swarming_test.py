@@ -50,6 +50,15 @@ class BaseTest(testing.AppengineTestCase):
         'components.utils.utcnow', autospec=True,
         side_effect=lambda: self.now)
 
+    self.settings = service_config_pb2.SettingsCfg(
+        swarming=service_config_pb2.SwarmingSettings(
+            milo_hostname='milo.example.com',
+        ),
+    )
+    self.patch(
+        'config.get_settings_async', autospec=True,
+        return_value=future(self.settings))
+
 
 class SwarmingTest(BaseTest):
   def setUp(self):
@@ -67,13 +76,6 @@ class SwarmingTest(BaseTest):
     self.patch(
         'components.net.json_request_async', autospec=True,
         side_effect=json_request_async)
-
-    self.settings = service_config_pb2.SwarmingSettings(
-        milo_hostname='milo.example.com',
-    )
-    self.patch(
-        'swarming.swarming.get_settings_async', autospec=True,
-        return_value=future(self.settings))
 
     bucket_cfg_text = '''
       name: "luci.chromium.try"
@@ -969,7 +971,7 @@ class SwarmingTest(BaseTest):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_without_milo_hostname(self):
-    self.settings.milo_hostname = ''
+    self.settings.swarming.milo_hostname = ''
     build = mkBuild(
         parameters={
           'builder_name': 'linux_chromium_rel_ng',

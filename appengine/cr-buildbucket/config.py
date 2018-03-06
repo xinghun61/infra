@@ -143,12 +143,19 @@ def validate_buildbucket_cfg(cfg, ctx):
 
 @validation.rule(
     self_config_set(), 'settings.cfg', service_config_pb2.SettingsCfg)
-def validate_settings_cfg(cfg, ctx):  # pragma: no cover
+def validate_settings_cfg(cfg, ctx):
   from swarming import swarmingcfg
 
-  if cfg.HasField('swarming'):
+  if cfg.HasField('swarming'):  # pragma: no cover
     with ctx.prefix('swarming: '):
       swarmingcfg.validate_service_cfg(cfg.swarming, ctx)
+
+  with ctx.prefix('bq_export: '):
+    for rgx in cfg.bq_export.buckets_re:
+      try:
+        re.compile(rgx)
+      except re.error:
+        ctx.error('invalid regexp %r', rgx)
 
 
 class Bucket(ndb.Model):

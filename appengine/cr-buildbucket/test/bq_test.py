@@ -15,6 +15,8 @@ from testing_utils import testing
 import mock
 
 from proto import build_pb2
+from proto import service_config_pb2
+from test import test_util
 import bq
 import bqh
 import model
@@ -35,18 +37,64 @@ class BigQueryExportTest(testing.AppengineTestCase):
 
     self.queue = taskqueue.Queue('bq-export-prod')
     self.dataset = 'builds'
+    self.settings = service_config_pb2.BigQueryExport(
+        buckets_re=[
+          '^luci\.',
+          '^master\.',
+        ],
+    )
+    self.patch(
+        'config.get_settings_async', autospec=True,
+        return_value=test_util.future(
+            service_config_pb2.SettingsCfg(bq_export=self.settings)))
+
+  @mock.patch('bq.enqueue_pull_task_async', autospec=True)
+  def test_enqueue_bq_export_async(self, enqueue_pull_task_async):
+    enqueue_pull_task_async.return_value = test_util.future(None)
+
+    build = model.Build(
+        id=1,
+        bucket='luci.chromium.try',
+        status=model.BuildStatus.COMPLETED)
+
+    ndb.transactional(  # pylint: disable=no-value-for-parameter
+        lambda: bq.enqueue_bq_export_async(build).get_result())()
+
+    enqueue_pull_task_async.assert_called_once_with(
+        'bq-export-prod', json.dumps({'id': 1}))
+
+  @mock.patch('bq.enqueue_pull_task_async', autospec=True)
+  def test_enqueue_bq_export_async_unsupported_bucket(
+      self, enqueue_pull_task_async):
+    enqueue_pull_task_async.return_value = test_util.future(None)
+
+    build = model.Build(
+        id=1,
+        bucket='skia.x',
+        status=model.BuildStatus.COMPLETED)
+
+    ndb.transactional(  # pylint: disable=no-value-for-parameter
+        lambda: bq.enqueue_bq_export_async(build).get_result())()
+
+    self.assertFalse(enqueue_pull_task_async.called)
 
   def test_cron_export_builds_to_bq(self):
     builds = [
       mkbuild(
           id=1,
-          status=model.BuildStatus.SCHEDULED),
+          status=model.BuildStatus.COMPLETED,
+          result=model.BuildResult.SUCCESS,
+          complete_time=datetime.datetime(2018, 1, 1)),
       mkbuild(
           id=2,
+          status=model.BuildStatus.SCHEDULED),
+      mkbuild(
+          id=3,
           status=model.BuildStatus.STARTED,
           start_time=datetime.datetime(2018, 1, 1)),
       mkbuild(
-          id=3,
+          id=4,
+          bucket='not-whitelisted-bucket',
           status=model.BuildStatus.COMPLETED,
           result=model.BuildResult.SUCCESS,
           complete_time=datetime.datetime(2018, 1, 1)),
@@ -59,7 +107,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
       for b in builds
     ])
 
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
     net.json_request.assert_called_once_with(
         url=(
             'https://www.googleapis.com/bigquery/v2/'
@@ -72,7 +120,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
           'skipInvalidRows': False,
           'ignoreUnknownValues': False,
           'rows': [{
-            'insertId': '3',
+            'insertId': '1',
             'json': mock.ANY,
           }],
         },
@@ -80,12 +128,12 @@ class BigQueryExportTest(testing.AppengineTestCase):
         deadline=5 * 60,
     )
     actual_payload = net.json_request.call_args[1]['payload']
-    self.assertEqual(actual_payload['rows'][0]['json']['id'], 3)
+    self.assertEqual(actual_payload['rows'][0]['json']['id'], 1)
 
   def test_cron_export_builds_to_bq_unsupported(self):
     model.Build(
         id=1,
-        bucket='foo',
+        bucket='luci.foo',
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,
         create_time=datetime.datetime(2018, 1, 1),
@@ -95,7 +143,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
         method='PULL',
         payload=json.dumps({'id': 1}))
     ])
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
     self.assertFalse(net.json_request.called)
 
   @mock.patch('v2.build_to_v2', autospec=True)
@@ -127,7 +175,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
 
     build_to_v2.side_effect = build_to_v2_mock
 
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
 
     self.assertTrue(net.json_request.called)
     actual_payload = net.json_request.call_args[1]['payload']
@@ -145,11 +193,11 @@ class BigQueryExportTest(testing.AppengineTestCase):
         method='PULL',
         payload=json.dumps({'id': 1}))
     ])
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
     self.assertFalse(net.json_request.called)
 
   def test_cron_export_builds_to_bq_no_tasks(self):
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
     self.assertFalse(net.json_request.called)
 
   @mock.patch(
@@ -179,7 +227,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
       }]
     }
 
-    bq._process_pull_task_batch(self.queue.name, 'builds')
+    bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
     self.assertTrue(net.json_request.called)
 
     # assert second task is not deleted

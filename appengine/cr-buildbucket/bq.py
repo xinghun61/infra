@@ -7,6 +7,7 @@
 import datetime
 import json
 import logging
+import re
 
 from google.appengine.api import app_identity
 from google.appengine.api import taskqueue
@@ -18,6 +19,7 @@ from components import net
 from components import utils
 import bqh
 
+import config
 import model
 import v2
 
@@ -33,15 +35,19 @@ def enqueue_pull_task_async(queue, payload):  # pragma: no cover
   yield task.add_async(queue_name=queue, transactional=True)
 
 
+@ndb.tasklet
 def enqueue_bq_export_async(build):  # pragma: no cover
   """Enqueues a pull task to export a completed build to BigQuery."""
   assert ndb.in_transaction()
   assert build
   assert build.status == model.BuildStatus.COMPLETED
 
-  return enqueue_pull_task_async(
-      'bq-export-experimental' if build.experimental else 'bq-export-prod',
-      json.dumps({'id': build.key.id()}))
+  settings = yield config.get_settings_async()
+  bucket_re = _compile_bucket_re(settings.bq_export)
+  if bucket_re.match(build.bucket):
+    yield enqueue_pull_task_async(
+        'bq-export-experimental' if build.experimental else 'bq-export-prod',
+        json.dumps({'id': build.key.id()}))
 
 
 class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
@@ -54,7 +60,9 @@ class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
     assert self.queue_name
     assert self.dataset
-    _process_pull_task_batch(self.queue_name, self.dataset)
+
+    settings = config.get_settings_async().get_result()
+    _process_pull_task_batch(self.queue_name, self.dataset, settings.bq_export)
 
 
 class CronExportBuildsProd(CronExportBuilds):
@@ -67,7 +75,9 @@ class CronExportBuildsExperimental(CronExportBuilds):
   dataset = 'builds_experimental'
 
 
-def _process_pull_task_batch(queue_name, dataset):
+def _process_pull_task_batch(queue_name, dataset, bq_settings):
+  bucket_re = _compile_bucket_re(bq_settings)
+
   # Lease tasks.
   lease_duration = datetime.timedelta(minutes=5)
   lease_deadline = utils.utcnow() + lease_duration
@@ -85,9 +95,13 @@ def _process_pull_task_batch(queue_name, dataset):
   v2_builds = []
   for bid, b in zip(build_ids, builds):
     if not b:
-      logging.error('build %d not found', bid)
+      logging.error('skipping build %d: not found', bid)
     elif b.status != model.BuildStatus.COMPLETED:
-      logging.error('build %d is not complete', bid)
+      logging.error('skipping build %d: not complete', bid)
+    elif not bucket_re.match(b.bucket):
+      logging.warning(
+          'skipping build %d: bucket %r does not match %r',
+          bid, b.bucket, bucket_re.pattern)
     else:
       try:
         v2_builds.append(v2.build_to_v2(b))
@@ -106,7 +120,7 @@ def _process_pull_task_batch(queue_name, dataset):
     ids_to_retry.update(not_inserted_ids)
 
   if ids_to_retry:
-    logging.error('will retry builds %r later', sorted(build_ids))
+    logging.warning('will retry builds %r later', sorted(build_ids))
 
   done_tasks = [
     t
@@ -160,3 +174,10 @@ def _export_builds(dataset, v2_builds, deadline):
         'failed to insert row for build %d: %r',
         b.id, err['errors'])
   return failed_ids
+
+
+def _compile_bucket_re(bq_settings):
+  return re.compile('|'.join(
+      '(%s)' % r
+      for r in bq_settings.buckets_re or ['^$']
+  ))

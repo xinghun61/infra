@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='service_config.proto',
   package='buildbucket',
   syntax='proto3',
-  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\">\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\"`\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05J\x04\x08\x01\x10\x02\x62\x06proto3')
+  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\"n\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\x12.\n\tbq_export\x18\x02 \x01(\x0b\x32\x1b.buildbucket.BigQueryExport\"`\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05J\x04\x08\x01\x10\x02\"$\n\x0e\x42igQueryExport\x12\x12\n\nbuckets_re\x18\x01 \x03(\tb\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -40,6 +40,13 @@ _SETTINGSCFG = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='bq_export', full_name='buildbucket.SettingsCfg.bq_export', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -53,7 +60,7 @@ _SETTINGSCFG = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=37,
-  serialized_end=99,
+  serialized_end=147,
 )
 
 
@@ -90,13 +97,46 @@ _SWARMINGSETTINGS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=101,
-  serialized_end=197,
+  serialized_start=149,
+  serialized_end=245,
+)
+
+
+_BIGQUERYEXPORT = _descriptor.Descriptor(
+  name='BigQueryExport',
+  full_name='buildbucket.BigQueryExport',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='buckets_re', full_name='buildbucket.BigQueryExport.buckets_re', index=0,
+      number=1, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=247,
+  serialized_end=283,
 )
 
 _SETTINGSCFG.fields_by_name['swarming'].message_type = _SWARMINGSETTINGS
+_SETTINGSCFG.fields_by_name['bq_export'].message_type = _BIGQUERYEXPORT
 DESCRIPTOR.message_types_by_name['SettingsCfg'] = _SETTINGSCFG
 DESCRIPTOR.message_types_by_name['SwarmingSettings'] = _SWARMINGSETTINGS
+DESCRIPTOR.message_types_by_name['BigQueryExport'] = _BIGQUERYEXPORT
 
 SettingsCfg = _reflection.GeneratedProtocolMessageType('SettingsCfg', (_message.Message,), dict(
   DESCRIPTOR = _SETTINGSCFG,
@@ -111,6 +151,13 @@ SwarmingSettings = _reflection.GeneratedProtocolMessageType('SwarmingSettings', 
   # @@protoc_insertion_point(class_scope:buildbucket.SwarmingSettings)
   ))
 _sym_db.RegisterMessage(SwarmingSettings)
+
+BigQueryExport = _reflection.GeneratedProtocolMessageType('BigQueryExport', (_message.Message,), dict(
+  DESCRIPTOR = _BIGQUERYEXPORT,
+  __module__ = 'service_config_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.BigQueryExport)
+  ))
+_sym_db.RegisterMessage(BigQueryExport)
 
 
 # @@protoc_insertion_point(module_scope)
