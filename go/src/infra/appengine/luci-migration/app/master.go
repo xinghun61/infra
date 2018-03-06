@@ -88,7 +88,7 @@ func masterPage(c context.Context, master *config.Master) (*masterViewModel, err
 	err := datastore.Run(c, q, func(b *storage.Builder) {
 		model.Builders = append(model.Builders, masterBuilderViewModel{
 			Builder:    b,
-			ShowScores: b.Migration.Status != storage.StatusUnknown && b.Migration.Status != storage.StatusInsufficientData,
+			ShowScores: b.Migration.Status != storage.StatusUnknown && b.Migration.Status != storage.StatusNoData,
 		})
 	})
 

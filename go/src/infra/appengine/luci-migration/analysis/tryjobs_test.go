@@ -116,8 +116,9 @@ func TestAnalyze(t *testing.T) {
 		bbService.BasePath = bbServer.URL
 
 		tryjobs := &Tryjobs{
-			Buildbucket: bbService,
-			MaxBuildAge: time.Hour * 24 * 7,
+			Buildbucket:          bbService,
+			MaxBuildAge:          time.Hour * 24 * 7,
+			MinTrustworthyGroups: 1,
 		}
 
 		analyze := func() *storage.BuilderMigration {
@@ -136,8 +137,23 @@ func TestAnalyze(t *testing.T) {
 		Convey("no luci builds", func() {
 			So(analyze(), ShouldResemble, &storage.BuilderMigration{
 				AnalysisTime: clock.Now(c),
-				Status:       storage.StatusInsufficientData,
+				Status:       storage.StatusNoData,
 			})
+		})
+
+		Convey("no common build sets", func() {
+			buildSets = []mockedBuildSet{
+				{
+					Buildbot: mockedBuilds{failures: 3},
+				},
+				{
+					LUCI: mockedBuilds{failures: 1, successes: 1},
+				},
+				{
+					Buildbot: mockedBuilds{failures: 1, successes: 1},
+				},
+			}
+			So(analyze().Status, ShouldEqual, storage.StatusLowConfidence)
 		})
 
 		Convey("insufficient common build sets", func() {
@@ -154,7 +170,7 @@ func TestAnalyze(t *testing.T) {
 				},
 			}
 			tryjobs.MinTrustworthyGroups = 2
-			So(analyze().Status, ShouldEqual, storage.StatusInsufficientData)
+			So(analyze().Status, ShouldEqual, storage.StatusLowConfidence)
 		})
 
 		Convey("LUCI is correct", func() {

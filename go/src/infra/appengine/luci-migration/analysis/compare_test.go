@@ -51,7 +51,8 @@ func TestCompare(t *testing.T) {
 					LUCI:     side(time.Hour, failure, infraFailure),
 				},
 			)
-			So(comp.Status, ShouldEqual, storage.StatusInsufficientData)
+			So(comp.Status, ShouldEqual, storage.StatusLUCINotWAI)
+			So(comp.Correctness, ShouldEqual, 0)
 		})
 		Convey("avg buildbot time is 0", func() {
 			comp := compareAndRender(
@@ -61,7 +62,7 @@ func TestCompare(t *testing.T) {
 					LUCI:     side(time.Hour, failure, failure),
 				},
 			)
-			So(comp.Status, ShouldEqual, storage.StatusInsufficientData)
+			So(comp.Status, ShouldEqual, storage.StatusNoData)
 		})
 		Convey("LUCI is incorrect", func() {
 			comp := compareAndRender(

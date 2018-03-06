@@ -110,29 +110,37 @@ func compare(groups []*group, minCorrectnessGroups int, currentStatus storage.Mi
 	}
 
 	correctnessGroups := comp.CorrectnessGroups()
-	if correctnessGroups == 0 || correctnessGroups < minCorrectnessGroups {
-		comp.Status = storage.StatusInsufficientData
-		comp.StatusReason = ("Insufficient LUCI and Buildbot builds that " +
-			"share same patchsets and can be used for correctness estimation")
-		return comp
-	}
-	if avgBuildbotTimeSecs == 0.0 {
-		comp.Status = storage.StatusInsufficientData
+	switch {
+	case avgBuildbotTimeSecs == 0.0:
+		comp.Status = storage.StatusNoData
 		comp.StatusReason = "Buildbot avg duration is 0"
 		return comp
+	case comp.TotalGroups == 0:
+		comp.Status = storage.StatusNoData
+		comp.StatusReason = "No LUCI builds found for comparison"
+		return comp
 	}
-	badGroups := len(comp.FalseSuccesses) + len(comp.FalseFailures)
-	comp.Correctness = 1.0 - float64(badGroups)/float64(correctnessGroups)
+	if correctnessGroups > 0 {
+		badGroups := len(comp.FalseSuccesses) + len(comp.FalseFailures)
+		comp.Correctness = 1.0 - float64(badGroups)/float64(correctnessGroups)
+	}
 
-	avgBuildbotTimeSecs /= float64(buildbotBuilds)
-	comp.AvgTimeDelta /= time.Duration(comp.AvgTimeDeltaGroups)
-	buildbotSpeed := 1.0 / avgBuildbotTimeSecs
-	luciSpeed := 1.0 / (avgBuildbotTimeSecs + comp.AvgTimeDelta.Seconds())
-	comp.Speed = luciSpeed / buildbotSpeed
+	if comp.AvgTimeDeltaGroups > 0 {
+		avgBuildbotTimeSecs /= float64(buildbotBuilds)
+		comp.AvgTimeDelta /= time.Duration(comp.AvgTimeDeltaGroups)
+		buildbotSpeed := 1.0 / avgBuildbotTimeSecs
+		luciSpeed := 1.0 / (avgBuildbotTimeSecs + comp.AvgTimeDelta.Seconds())
+		comp.Speed = luciSpeed / buildbotSpeed
+	}
 
 	comp.InfraHealth = 1.0 - float64(len(comp.LUCIOnlyInfraFailures))/float64(comp.TotalGroups)
 
 	switch {
+	case correctnessGroups < minCorrectnessGroups:
+		// Collect available data but indicate low confidence.
+		comp.Status = storage.StatusLowConfidence
+		comp.StatusReason = ("Insufficient LUCI and Buildbot builds that " +
+			"share same patchsets and can be used for correctness estimation")
 	case comp.Correctness < 1.0:
 		comp.Status = storage.StatusLUCINotWAI
 		comp.StatusReason = "Incorrect"

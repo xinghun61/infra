@@ -53,9 +53,12 @@ const (
 	StatusLUCINotWAI MigrationStatus = 1
 	// StatusLUCIWAI means the LUCI builder is correct and fast enough.
 	StatusLUCIWAI MigrationStatus = 2
-	// StatusInsufficientData means there was not enough data to compare
+	// StatusNoData means there was no data for basis of comparison on
 	// Buildbot and LUCI.
-	StatusInsufficientData MigrationStatus = 3
+	StatusNoData MigrationStatus = 3
+	// StatusLowConfidence means there was data to compare Buildbot and LUCI,
+	// but not enough to reach the minimum desired.
+	StatusLowConfidence MigrationStatus = 4
 
 	// update String() when adding new values.
 
@@ -76,8 +79,11 @@ func (s MigrationStatus) String() string {
 	case StatusLUCIWAI:
 		return "LUCI WAI"
 
-	case StatusInsufficientData:
-		return "Not enough data to analyze"
+	case StatusNoData:
+		return "No data"
+
+	case StatusLowConfidence:
+		return "Low confidence"
 
 	case StatusMigrated:
 		return "Migrated"

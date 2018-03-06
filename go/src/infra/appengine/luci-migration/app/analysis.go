@@ -208,7 +208,7 @@ func shouldNotify(builder *storage.Builder, now time.Time) bool {
 	if notif.Time.IsZero() {
 		// a notification was never sent
 		switch builder.Migration.Status {
-		case storage.StatusInsufficientData, storage.StatusLUCINotWAI:
+		case storage.StatusNoData, storage.StatusLowConfidence, storage.StatusLUCINotWAI:
 			return false // nothing to notify about
 		default:
 			return true
