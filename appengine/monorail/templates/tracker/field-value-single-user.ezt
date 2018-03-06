@@ -7,7 +7,7 @@
 [if-any fields.values][else]
     <input type="text" name="custom_[fields.field_id]" id="[arg0]_custom_[fields.field_id]" value=""
            [is arg0 "hidden"][else]
-             [if-any fields.field_def.is_required_bool]required="required"[end]
+             [if-any arg1]required="required"[end]
            [end]
            style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off">
 [end]
@@ -17,7 +17,7 @@
   [if-index fields.values first]
     <input type="text" name="custom_[fields.field_id]" value="[fields.values.val]"
            [is arg0 "hidden"][else]
-             [if-any fields.field_def.is_required_bool]required="required"[end]
+             [if-any arg1]required="required"[end]
            [end]
            style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off">
   [else]

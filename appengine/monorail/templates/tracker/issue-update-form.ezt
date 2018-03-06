@@ -137,7 +137,7 @@
                <th class="vt" title="[fields.field_def.docstring_short][if-any fields.field_def.validate_help]
                                      [fields.field_def.validate_help][end]">[fields.field_name]:</th>
                <td class="vt">
-                 [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool ""]
+                 [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool "" fields.field_def.is_required_bool]
                  <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
                </td>
              <tr>

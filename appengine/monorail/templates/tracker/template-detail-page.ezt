@@ -120,7 +120,7 @@
         <th>[fields.field_name]:</th>
         <td colspan="2">
           [if-any allow_edit]
-             [include "field-value-widgets.ezt" False "tmpl"]
+             [include "field-value-widgets.ezt" False "tmpl" False]
           [else]
             [for fields.values]
               [fields.values.val]
@@ -155,7 +155,7 @@
       <td></td>
       <td>
         <input id="submit_btn" type="submit" name="submit" value="Save template">
-        <input id="cancel_btn" type="submit" name="cancel" value="Cancel">
+        <input id="delete_btn" type="submit" name="deletetemplate" value="Delete Template">
       </td>
     </tr>
   [end]

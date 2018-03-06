@@ -13,7 +13,7 @@
     <input type="hidden" name="components" value="[initial_components]">
     [for fields]
       [is fields.field_def.type_name "APPROVAL_TYPE"][else][if-any fields.field_def.approval_id][else]
-        [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool "hidden"]
+        [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool "hidden" fields.field_def.is_required_bool]
       [end][end]
     [end]
     [include "label-fields.ezt" "" "hidden"]
@@ -79,7 +79,7 @@
         $('description-select').style.display = '';
         descCt = $('description-select').getAttribute('data-ct');
       } else {
-        descCt = 1;  
+        descCt = 1;
       }
       $('d' + descCt).style.display = '';
       $('edit-desc-btn').style.display = '';

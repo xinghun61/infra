@@ -7,7 +7,7 @@
 [if-any fields.values][else]
     <input type="number" name="custom_[fields.field_id]" id="[arg0]_custom_[fields.field_id]" value=""
            [is arg0 "hidden"][else]
-             [if-any fields.field_def.is_required_bool] required="required"[end]
+             [if-any arg1] required="required"[end]
            [end]
            [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
@@ -19,7 +19,7 @@
   [if-index fields.values first]
     <input type="number" name="custom_[fields.field_id]" value="[fields.values.val]"
            [is arg0 "hidden"][else]
-             [if-any fields.field_def.is_required_bool]required="required"[end]
+             [if-any arg1]required="required"[end]
            [end]
            [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]

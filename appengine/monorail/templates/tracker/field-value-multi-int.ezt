@@ -5,7 +5,7 @@
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
            [if-index fields.values first]
              [is arg0 "hidden"][else]
-               [if-any fields.field_def.is_required_bool]required="required"[end]
+               [if-any arg1]required="required"[end]
              [end]
            [end]
            style="text-align:right; width:12em" class="multivalued customfield">
@@ -23,7 +23,7 @@
            [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
            [is arg0 "hidden"][else]
-             [if-any fields.field_def.is_required_bool]required="required"[end]
+             [if-any arg1]required="required"[end]
            [end]
            style="text-align:right; width:12em" class="multivalued customfield">
     <u class="addMultiFieldValueWidget" data-field-type="[fields.field_id]" data-field-type="int"

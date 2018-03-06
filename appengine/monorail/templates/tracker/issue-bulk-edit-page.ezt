@@ -60,7 +60,7 @@
         </span>
         [if-any errors.merge_into_id]
           <div class="fielderror">[errors.merge_into_id]</div>
-        [end]         
+        [end]
        </td>
    </tr>
    <tr><th width="10%">Owner:</th><td colspan="2">
@@ -103,7 +103,7 @@
              [define widget_id]custom_[fields.field_id][end]
              [define multi][if-any fields.field_def.is_multivalued_bool]multi[end][end]
              [include "issue-bulk-operator-part.ezt" widget_id multi]
-             [include "field-value-widgets.ezt" False ""]
+             [include "field-value-widgets.ezt" False "" fields.field_def.is_required_bool]
              <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
            </td>
          <tr>

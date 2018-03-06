@@ -67,7 +67,7 @@
       <tr>
         <th>[fields.field_name]:</th>
         <td colspan="2">
-          [include "field-value-widgets.ezt" False "tmpl"]
+          [include "field-value-widgets.ezt" False "tmpl" fields.field_def.is_required_bool]
         </td>
       <tr>
     [end][end]

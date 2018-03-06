@@ -89,7 +89,7 @@
        <td colspan="2">
         <input type="text" id="ownerenter" autocomplete="off"
                style="width:16em"
-	       name="owner" value="[initial_owner]" aria-activedescendant="ac-selected-row">
+               name="owner" value="[initial_owner]" aria-activedescendant="ac-selected-row">
           <span class="availability_[owner_avail_state]" id="owner_avail_state"
                 style="padding-left:1em; [if-any owner_avail_message_short][else]display:none[end]">
             &#9608;
@@ -129,7 +129,7 @@
          <tr [if-any fields.display][else]class="ifExpand"[define any_fields_to_reveal]Yes[end][end]>
           <th>[fields.field_name]:</th>
           <td colspan="2">
-            [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool ""]
+            [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool "" fields.field_def.is_required_bool]
             <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
           </td>
          <tr>
