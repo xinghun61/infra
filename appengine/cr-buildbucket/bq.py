@@ -76,11 +76,35 @@ class CronExportBuildsExperimental(CronExportBuilds):
 
 
 def _process_pull_task_batch(queue_name, dataset, bq_settings):
+  """Exports up to 1000 builds to BigQuery.
+
+  Leases pull tasks, fetches build entities, tries to convert them to v2 format
+  and insert into BigQuery in v2 format.
+
+  Ignores a build if its bucket does not match any of bq_settings.buckets_re.
+
+  If v2 conversion raises v2.errors.UnsupportedBuild, skips the build.
+  If v2 conversion raises any other exception, including
+  v2.errors.MalformedBuild, logs the exception and does not remove the task from
+  the queue. Such a task will be retried later.
+
+  If v2 conversion indicates that the build is not finalized and it has been an
+  hour or more since the  build was completed, the following strategies apply:
+  - if the build infra-failed with BOT_DIED task status, saves build as is.
+  - if the build infra-failed with BOOTSTRAPPER_ERROR and there are no steps,
+    assumes the build failed to register LogDog prefix and saves it as is.
+  - otherwise logs a warning/error, does not save to BigQuery and retries the
+    task later.
+  """
+  now = utils.utcnow()
+
+  # Parse settings.
   bucket_re = _compile_bucket_re(bq_settings)
+  allowed_logdog_hosts = set(bq_settings.allowed_logdog_hosts)
 
   # Lease tasks.
   lease_duration = datetime.timedelta(minutes=5)
-  lease_deadline = utils.utcnow() + lease_duration
+  lease_deadline = now + lease_duration
   q = taskqueue.Queue(queue_name)
   tasks = q.lease_tasks(lease_duration.total_seconds(), 1000)
   if not tasks:
@@ -92,26 +116,17 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
 
   # Fetch builds for the tasks and convert to v2 format.
   builds = ndb.get_multi([ndb.Key(model.Build, bid) for bid in build_ids])
+  v2_builds_futs = [
+    (bid, _build_to_v2_async(bid, b, bucket_re, allowed_logdog_hosts))
+    for bid, b in zip(build_ids, builds)
+  ]
   v2_builds = []
-  for bid, b in zip(build_ids, builds):
-    if not b:
-      logging.error('skipping build %d: not found', bid)
-    elif b.status != model.BuildStatus.COMPLETED:
-      logging.error('skipping build %d: not complete', bid)
-    elif not bucket_re.match(b.bucket):
-      logging.warning(
-          'skipping build %d: bucket %r does not match %r',
-          bid, b.bucket, bucket_re.pattern)
-    else:
-      try:
-        v2_builds.append(v2.build_to_v2(b))
-      except v2.UnsupportedBuild as ex:
-        logging.warning(
-            'skipping build %d: not supported by v2 conversion: %s',
-            bid, ex)
-      except Exception:
-        ids_to_retry.add(bid)
-        logging.exception('failed to convert build to v2\nBuild id: %d', bid)
+  for bid, fut in v2_builds_futs:
+    v2_build, retry = fut.get_result()
+    if retry:
+      ids_to_retry.add(bid)
+    elif v2_build:  # pragma: no branch
+      v2_builds.append(v2_build)
 
   row_count = 0
   if v2_builds:
@@ -130,6 +145,89 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
   q.delete_tasks(done_tasks)
   logging.info(
       'inserted %d rows, processed %d tasks', row_count, len(done_tasks))
+
+
+@ndb.tasklet
+def _build_to_v2_async(bid, build, bucket_re, allowed_logdog_hosts):
+  """Returns (v2_build, should_retry) tuple.
+
+  Logs reasons for returning v2_build=None or retry=True.
+  """
+  if not build:
+    logging.error('skipping build %d: not found', bid)
+    raise ndb.Return(None, False)
+
+  if build.status != model.BuildStatus.COMPLETED:
+    logging.error('skipping build %d: not complete', bid)
+    raise ndb.Return(None, False)
+
+  if not bucket_re.match(build.bucket):
+    logging.warning(
+        'skipping build %d: bucket %r does not match %r',
+        bid, build.bucket, bucket_re.pattern)
+    raise ndb.Return(None, False)
+
+  try:
+    v2_build, finalized = yield v2.build_to_v2_async(
+        build, allowed_logdog_hosts)
+  except v2.errors.UnsupportedBuild as ex:
+    logging.warning(
+        'skipping build %d: not supported by v2 conversion: %s',
+        bid, ex)
+    raise ndb.Return(None, False)
+  except Exception:
+    logging.exception(
+        'failed to convert build to v2\nBuild id: %d', bid)
+    raise ndb.Return(None, True)
+
+  if finalized:
+    raise ndb.Return(v2_build, False)
+
+  build_age = utils.utcnow() - build.complete_time
+  if _is_bot_died(build) and build_age > datetime.timedelta(hours=1):
+    logging.warning(
+        'build %d died >=1h ago and its steps are not finalized. '
+        'Will not wait longer.', bid)
+    raise ndb.Return(v2_build, False)
+
+  if (_is_kitchen_error(build) and not v2_build.steps and
+      build_age > datetime.timedelta(hours=1)):
+    logging.warning(
+        'build %d failed with kitchen error >=1h ago and has no steps. '
+        'Will not wait longer.', bid)
+    raise ndb.Return(v2_build, False)
+
+  logging.warning(
+      'build %d is not finalized. Build age: %s',
+      build.key.id(), build_age)
+  if build_age > datetime.timedelta(hours=2):  # pragma: no branch
+    # Poor man's monitoring.
+    logging.error('build is not finalized for >=2h')
+  raise ndb.Return(build, True)
+
+
+def _is_bot_died(build):
+  """Returns True if swarming task result state is BOT_DIED."""
+  task_state = (
+      (build.result_details or {})
+      .get('swarming', {})
+      .get('task_result', {})
+      .get('state')
+  )
+  return task_state == 'BOT_DIED'
+
+
+def _is_kitchen_error(build):
+  """Returns True if build has infra-failed with BOOTSTRAPPER_ERROR."""
+  # Example build:
+  # https://cr-buildbucket.appspot.com/_ah/api/buildbucket/v1/builds/8955397430730014416
+  infra_failure_type =  (
+      (build.result_details or {})
+      .get('build_run_result', {})
+      .get('infraFailure', {})
+      .get('type')
+  )
+  return infra_failure_type == 'BOOTSTRAPPER_ERROR'
 
 
 def _export_builds(dataset, v2_builds, deadline):

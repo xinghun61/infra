@@ -9,3 +9,7 @@ class UnsupportedBuild(Exception):
 
 class MalformedBuild(Exception):
   """A build has unexpected format."""
+
+
+class StepFetchError(Exception):
+  """Failed to fetch steps from LogDog."""

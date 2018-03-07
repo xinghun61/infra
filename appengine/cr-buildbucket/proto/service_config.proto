@@ -30,4 +30,6 @@ message BigQueryExport {
   // A whitelist of bucket regular expressions.
   // Builds not matching any of these patterns won't be exported to BigQuery.
   repeated string buckets_re = 1;
+  // A whitelist of LogDog hosts.
+  repeated string allowed_logdog_hosts = 2;
 }

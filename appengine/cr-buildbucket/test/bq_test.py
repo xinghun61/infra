@@ -11,6 +11,7 @@ from google.appengine.ext import ndb
 
 from components import auth
 from components import net
+from test import test_util
 from testing_utils import testing
 import mock
 
@@ -32,11 +33,17 @@ class BigQueryExportTest(testing.AppengineTestCase):
   def setUp(self):
     super(BigQueryExportTest, self).setUp()
     self.patch('components.net.json_request', autospec=True, return_value={})
+    self.now = datetime.datetime(2018, 1, 1)
     self.patch(
-        'components.utils.utcnow', return_value=datetime.datetime(2018, 1, 1))
+        'components.utils.utcnow', autospec=True, side_effect=lambda: self.now)
 
     self.queue = taskqueue.Queue('bq-export-prod')
     self.dataset = 'builds'
+
+    self.patch(
+        'v2.steps.fetch_steps_async', autospec=True,
+        return_value=test_util.future(([], True)))
+
     self.settings = service_config_pb2.BigQueryExport(
         buckets_re=[
           '^luci\.',
@@ -130,6 +137,79 @@ class BigQueryExportTest(testing.AppengineTestCase):
     actual_payload = net.json_request.call_args[1]['payload']
     self.assertEqual(actual_payload['rows'][0]['json']['id'], 1)
 
+  @mock.patch('v2.build_to_v2_async', autospec=True)
+  @mock.patch(
+      'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True)
+  def test_cron_export_builds_to_bq_not_finalized(self,
+      delete_tasks, build_to_v2_async):
+    self.now = datetime.datetime(2018, 1, 10)
+    builds = [
+      mkbuild(
+          id=1,
+          status=model.BuildStatus.COMPLETED,
+          result=model.BuildResult.SUCCESS,
+          complete_time=datetime.datetime(2018, 1, 1)),
+      mkbuild(
+          id=2,
+          status=model.BuildStatus.COMPLETED,
+          result=model.BuildResult.SUCCESS,
+          complete_time=datetime.datetime(2018, 1, 1)),
+      mkbuild(
+          id=3,
+          status=model.BuildStatus.COMPLETED,
+          result=model.BuildResult.SUCCESS,
+          complete_time=datetime.datetime(2018, 1, 1),
+          result_details={
+            'swarming': {
+              'task_result': {
+                'state': 'BOT_DIED',
+              },
+            },
+          }),
+      mkbuild(
+          id=4,
+          status=model.BuildStatus.COMPLETED,
+          result=model.BuildResult.SUCCESS,
+          complete_time=datetime.datetime(2018, 1, 1),
+          result_details={
+            'build_run_result': {
+              'infraFailure': {
+                'type': 'BOOTSTRAPPER_ERROR',
+              },
+            },
+          }),
+    ]
+    ndb.put_multi(builds)
+    tasks = [
+      taskqueue.Task(
+          method='PULL',
+          payload=json.dumps({'id': b.key.id()}))
+      for b in builds
+    ]
+    self.queue.add(tasks)
+
+    def build_to_v2_async_mock(build, *_, **__):
+      return test_util.future((
+          build_pb2.Build(id=build.key.id()),
+          build is builds[0]
+      ))
+
+    build_to_v2_async.side_effect = build_to_v2_async_mock
+
+    bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
+
+    actual_payload = net.json_request.call_args[1]['payload']
+    self.assertEqual(len(actual_payload['rows']), 3)
+    self.assertEqual(actual_payload['rows'][0]['json']['id'], 1)
+    self.assertEqual(actual_payload['rows'][1]['json']['id'], 3)
+    self.assertEqual(actual_payload['rows'][2]['json']['id'], 4)
+
+    deleted = delete_tasks.call_args[0][1]
+    self.assertEqual(
+        [json.loads(t.payload)['id'] for t in deleted],
+        [1, 3, 4],
+    )
+
   def test_cron_export_builds_to_bq_unsupported(self):
     model.Build(
         id=1,
@@ -146,10 +226,11 @@ class BigQueryExportTest(testing.AppengineTestCase):
     bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
     self.assertFalse(net.json_request.called)
 
-  @mock.patch('v2.build_to_v2', autospec=True)
+  @mock.patch('v2.build_to_v2_async', autospec=True)
   @mock.patch(
       'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True)
-  def test_cron_export_builds_to_bq_exception(self, delete_tasks, build_to_v2):
+  def test_cron_export_builds_to_bq_exception(
+      self, delete_tasks, build_to_v2_async):
     builds = [
       mkbuild(
           id=i+1,
@@ -168,12 +249,12 @@ class BigQueryExportTest(testing.AppengineTestCase):
     ]
     self.queue.add(tasks)
 
-    def build_to_v2_mock(build):
+    def build_to_v2_async_mock(build, *_, **__):
       if build is builds[1]:
-        raise Exception()
-      return build_pb2.Build()
+        return test_util.future_exception(Exception())
+      return test_util.future((build_pb2.Build(), True))
 
-    build_to_v2.side_effect = build_to_v2_mock
+    build_to_v2_async.side_effect = build_to_v2_async_mock
 
     bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
 
