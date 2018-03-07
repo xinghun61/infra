@@ -69,7 +69,7 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
     mocked_builds.return_value = (lower_bound_build, upper_bound_build)
 
     mock_swarming_task = FlakeSwarmingTask.Create(
-        master_name, builder_name, commit_position, step_name, test_name)
+        master_name, builder_name, build_number, step_name, test_name)
     mock_swarming_task.error = None
     mock_swarming_task.has_valid_artifact = True
     mock_swarming_task.tries = iterations
@@ -141,7 +141,7 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
     mocked_builds.return_value = (lower_bound_build, upper_bound_build)
 
     mock_swarming_task = FlakeSwarmingTask.Create(
-        master_name, builder_name, commit_position, step_name, test_name)
+        master_name, builder_name, build_number, step_name, test_name)
     mock_swarming_task.error = {'code': 1, 'message': 'message'}
     mock_swarming_task.has_valid_artifact = True
     mock_swarming_task.tries = iterations

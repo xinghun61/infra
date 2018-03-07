@@ -205,12 +205,12 @@ def ScheduleAnalysisIfNeeded(
       pipeline_job.target = appengine_util.GetTargetNameForModule(
           constants.WATERFALL_BACKEND)
       pipeline_job.start(queue_name=queue_name)
-      analysis.pipeline_status_path = pipeline_job.pipeline_status_path()
+      analysis.pipeline_status_path = pipeline_job.pipeline_status_path
       analysis.root_pipeline_id = pipeline_job.root_pipeline_id
       analysis.put()
       analysis.LogInfo(
           ('A flake analysis was scheduled using commit-based pipelines with '
-           'path {}').format(pipeline_job.pipeline_status_path()))
+           'path {}').format(pipeline_job.pipeline_status_path))
     else:
       pipeline_job = RecursiveFlakePipeline(
           analysis.key.urlsafe(),

@@ -82,7 +82,7 @@ class NextCommitPositionPipeline(SynchronousPipeline):
     analysis.UpdateSuspectedBuildID(lower_bound_build, upper_bound_build)
 
     # Run heuristic analysis if eligible and not yet already done.
-    if analysis.CanRunHeuristicAnalysis(analysis):  # pragma: no cover.
+    if analysis.CanRunHeuristicAnalysis():  # pragma: no cover.
       # TODO(crbug.com/798228): Run heuristic analysis and consider results
       # first before falling back to the lookback algorithm's suggestions.
       pass

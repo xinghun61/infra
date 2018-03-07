@@ -69,7 +69,7 @@ class CollectFlakeSwarmingTaskOutputInput(StructuredObject):
   # TODO(crbug.com/799569): Remove once asynchronous pipeline is in place.
   master_name = basestring
   builder_name = basestring
-  commit_position = int
+  reference_build_number = int
   step_name = basestring
   test_name = basestring
 
@@ -85,7 +85,8 @@ class CollectFlakeSwarmingTaskOutputPipeline(SynchronousPipeline):
 
     flake_swarming_task = FlakeSwarmingTask.Get(
         parameters.master_name, parameters.builder_name,
-        parameters.commit_position, parameters.step_name, parameters.test_name)
+        parameters.reference_build_number, parameters.step_name,
+        parameters.test_name)
 
     assert flake_swarming_task
 
@@ -139,7 +140,7 @@ class RunFlakeSwarmingTaskPipeline(GeneratorPipeline):
           CollectFlakeSwarmingTaskOutputInput,
           master_name=master_name,
           builder_name=builder_name,
-          commit_position=parameters.commit_position,
+          reference_build_number=build_number,
           step_name=analysis.step_name,
           test_name=analysis.test_name)
       yield CollectFlakeSwarmingTaskOutputPipeline(collect_result_input)
