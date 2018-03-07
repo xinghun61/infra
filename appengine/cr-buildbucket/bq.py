@@ -88,9 +88,10 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
   v2.errors.MalformedBuild, logs the exception and does not remove the task from
   the queue. Such a task will be retried later.
 
-  If v2 conversion indicates that the build is not finalized and it has been an
-  hour or more since the  build was completed, the following strategies apply:
-  - if the build infra-failed with BOT_DIED task status, saves build as is.
+  If v2 conversion indicates that the build is not finalized and it has been
+  20m or more since the build was completed, the following strategies apply:
+  - if the build infra-failed with BOT_DIED or TIMED_OUT task status,
+    saves build as is.
   - if the build infra-failed with BOOTSTRAPPER_ERROR and there are no steps,
     assumes the build failed to register LogDog prefix and saves it as is.
   - otherwise logs a warning/error, does not save to BigQuery and retries the
@@ -184,50 +185,29 @@ def _build_to_v2_async(bid, build, bucket_re, allowed_logdog_hosts):
     raise ndb.Return(v2_build, False)
 
   build_age = utils.utcnow() - build.complete_time
-  if _is_bot_died(build) and build_age > datetime.timedelta(hours=1):
-    logging.warning(
-        'build %d died >=1h ago and its steps are not finalized. '
-        'Will not wait longer.', bid)
-    raise ndb.Return(v2_build, False)
+  if build_age >= datetime.timedelta(minutes=20):  # pragma: no branch
+    task_state = _dict_get(
+        build.result_details, 'swarming', 'task_result', 'state')
+    if task_state in ('BOT_DIED', 'TIMED_OUT'):
+      logging.warning(
+          'build %d is not finalized and its task state is %r >=20m ago. '
+          'Will not wait longer.', bid, task_state)
+      raise ndb.Return(v2_build, False)
 
-  if (_is_kitchen_error(build) and not v2_build.steps and
-      build_age > datetime.timedelta(hours=1)):
-    logging.warning(
-        'build %d failed with kitchen error >=1h ago and has no steps. '
-        'Will not wait longer.', bid)
-    raise ndb.Return(v2_build, False)
+    infra_failure_type = _dict_get(
+        build.result_details, 'build_run_result', 'infraFailure', 'type')
+    if infra_failure_type == 'BOOTSTRAPPER_ERROR' and not v2_build.steps:
+      logging.warning(
+          'build %d is not finalized, has no steps and failed with '
+          'BOOTSTRAPPER_ERROR error >=20m ago. Will not wait longer.', bid)
+      raise ndb.Return(v2_build, False)
 
   logging.warning(
-      'build %d is not finalized. Build age: %s',
-      build.key.id(), build_age)
+      'build %d is not finalized. Build age: %s', build.key.id(), build_age)
   if build_age > datetime.timedelta(hours=2):  # pragma: no branch
     # Poor man's monitoring.
     logging.error('build is not finalized for >=2h')
-  raise ndb.Return(build, True)
-
-
-def _is_bot_died(build):
-  """Returns True if swarming task result state is BOT_DIED."""
-  task_state = (
-      (build.result_details or {})
-      .get('swarming', {})
-      .get('task_result', {})
-      .get('state')
-  )
-  return task_state == 'BOT_DIED'
-
-
-def _is_kitchen_error(build):
-  """Returns True if build has infra-failed with BOOTSTRAPPER_ERROR."""
-  # Example build:
-  # https://cr-buildbucket.appspot.com/_ah/api/buildbucket/v1/builds/8955397430730014416
-  infra_failure_type =  (
-      (build.result_details or {})
-      .get('build_run_result', {})
-      .get('infraFailure', {})
-      .get('type')
-  )
-  return infra_failure_type == 'BOOTSTRAPPER_ERROR'
+  raise ndb.Return(None, True)
 
 
 def _export_builds(dataset, v2_builds, deadline):
@@ -279,3 +259,11 @@ def _compile_bucket_re(bq_settings):
       '(%s)' % r
       for r in bq_settings.buckets_re or ['^$']
   ))
+
+
+def _dict_get(d, *keys):
+  """Returns a value from nested dicts, e.g. _dict_get({a:{b:c}}, a, b) == c."""
+  v = d
+  for k in keys:
+    v = (v or {}).get(k)
+  return v

@@ -198,16 +198,18 @@ class BigQueryExportTest(testing.AppengineTestCase):
 
     bq._process_pull_task_batch(self.queue.name, 'builds', self.settings)
 
+    expected_processed_ids = [1, 3, 4]
+
     actual_payload = net.json_request.call_args[1]['payload']
-    self.assertEqual(len(actual_payload['rows']), 3)
-    self.assertEqual(actual_payload['rows'][0]['json']['id'], 1)
-    self.assertEqual(actual_payload['rows'][1]['json']['id'], 3)
-    self.assertEqual(actual_payload['rows'][2]['json']['id'], 4)
+    self.assertEqual(
+        [r['json']['id'] for r in actual_payload['rows']],
+        expected_processed_ids,
+    )
 
     deleted = delete_tasks.call_args[0][1]
     self.assertEqual(
         [json.loads(t.payload)['id'] for t in deleted],
-        [1, 3, 4],
+        expected_processed_ids,
     )
 
   def test_cron_export_builds_to_bq_unsupported(self):
