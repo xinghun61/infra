@@ -294,8 +294,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
 
     swarming.create_task_async.return_value = future_exception(net.AuthError(
-        '', status_code=403, response='access denied'))
-    with self.assertRaises(auth.AuthorizationError):
+        '', status_code=403, response='no no'))
+    with self.assertRaisesRegexp(auth.AuthorizationError, 'no no'):
       self.add(bucket=self.test_build.bucket)
 
   def test_add_with_builder_name(self):

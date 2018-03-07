@@ -538,7 +538,7 @@ def _with_swarming_api_error_converter():
   except net.AuthError as ex:
     raise auth.AuthorizationError(
         'Auth error while calling swarming on behalf of %s: %s' % (
-          auth.get_current_identity().to_bytes(), ex
+          auth.get_current_identity().to_bytes(), ex.response
         ))
   except net.Error as ex:
     if ex.status_code == 400:
