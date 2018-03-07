@@ -162,12 +162,8 @@ class AdminTemplatesTest(TestBase):
     page_data = self.servlet.GatherPageData(self.mr)
     self.mox.VerifyAll()
 
-    self.assertItemsEqual(
-        ['admin_tab_mode', 'config', 'fields', 'user_is_project_member'],
-        page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
-    self.assertEqual([], page_data['fields'])
 
   def testProcessSubtabForm_NoEditProjectPerm(self):
     """If user lacks perms, ignore the attempt to set default templates."""
@@ -175,7 +171,6 @@ class AdminTemplatesTest(TestBase):
     post_data = fake.PostData(
         default_template_for_developers=['Test Template'],
         default_template_for_users=['Test Template'])
-    self.servlet._ParseAllTemplates = lambda x, y: self.config.templates
     self.mr.perms = permissions.EMPTY_PERMISSIONSET
     next_url = self.servlet.ProcessSubtabForm(post_data, self.mr)
     self.assertEqual(urls.ADMIN_TEMPLATES, next_url)
@@ -190,7 +185,6 @@ class AdminTemplatesTest(TestBase):
     post_data = fake.PostData(
         default_template_for_developers=['Test Template'],
         default_template_for_users=['Test Template'])
-    self.servlet._ParseAllTemplates = lambda x, y: self.config.templates
     self.assertRaises(
         permissions.PermissionException,
         self.servlet.ProcessSubtabForm, post_data, self.mr)
@@ -201,14 +195,10 @@ class AdminTemplatesTest(TestBase):
     post_data = fake.PostData(
         default_template_for_developers=['Test Template'],
         default_template_for_users=['Test Template'])
-    self.servlet._ParseAllTemplates = lambda x, y: self.config.templates
     next_url = self.servlet.ProcessSubtabForm(post_data, self.mr)
     self.assertEqual(urls.ADMIN_TEMPLATES, next_url)
     self.assertEqual(12345, self.config.default_template_for_developers)
     self.assertEqual(12345, self.config.default_template_for_users)
-
-  def testParseTemplate(self):
-    pass  # TODO(jrobbins): write this
 
   def testParseDefaultTempalteSelections_NotSpecified(self):
     self.config.templates.append(self.test_template)
@@ -237,7 +227,6 @@ class AdminTemplatesTest(TestBase):
         post_data, self.config.templates)
     self.assertEqual(12345, for_devs)
     self.assertEqual(12345, for_users)
-
 
 
 class AdminComponentsTest(TestBase):

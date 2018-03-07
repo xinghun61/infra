@@ -199,21 +199,7 @@ class AdminTemplates(IssueAdminBase):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    page_data = super(AdminTemplates, self).GatherPageData(mr)
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    field_views = [
-        tracker_views.MakeFieldValueView(fd, config, [], [], [], {})
-        # TODO(jrobbins): field-level view restrictions, display options
-        for fd in config.field_defs
-        if not fd.is_deleted]
-
-    user_is_project_member = framework_bizobj.UserIsInProject(
-        mr.project, mr.auth.effective_ids)
-    page_data.update({
-        'fields': field_views,
-        'user_is_project_member': ezt.boolean(user_is_project_member),
-        })
-    return page_data
+    return super(AdminTemplates, self).GatherPageData(mr)
 
   def ProcessSubtabForm(self, post_data, mr):
     """Process changes to new issue templates.
@@ -231,145 +217,18 @@ class AdminTemplates(IssueAdminBase):
           'Non-members are not allowed to edit templates due to '
           'and implementation constraint.')
 
-    templates = self._ParseAllTemplates(post_data, mr)
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
-    default_template_id_for_developers = None
-    default_template_id_for_users = None
     if self.CheckPerm(mr, permissions.EDIT_PROJECT):
       default_template_id_for_developers, default_template_id_for_users = (
-          self._ParseDefaultTemplateSelections(post_data, templates))
+          self._ParseDefaultTemplateSelections(post_data, config.templates))
+      if default_template_id_for_developers or default_template_id_for_users:
+        self.services.config.UpdateConfig(
+            mr.cnxn, mr.project,
+            default_template_for_developers=default_template_id_for_developers,
+            default_template_for_users=default_template_id_for_users)
 
-    if not mr.errors.AnyErrors():
-      self.services.config.UpdateConfig(
-          mr.cnxn, mr.project, templates=templates,
-          default_template_for_developers=default_template_id_for_developers,
-          default_template_for_users=default_template_id_for_users)
-
-    params = '';
-    if post_data.get('current_template_index'):
-      params = '?tindex=' + post_data['current_template_index']
-    return urls.ADMIN_TEMPLATES + params
-
-  def _ParseAllTemplates(self, post_data, mr):
-    """Iterate over the post_data and parse all templates in it."""
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    orig_templates = {tmpl.template_id: tmpl for tmpl in config.templates}
-
-    templates = []
-    for i in itertools.count():
-      if ('template_id_%s' % i) not in post_data:
-        break
-      template_id = int(post_data['template_id_%s' % i])
-      orig_template = orig_templates.get(template_id)
-      new_template = self._ParseTemplate(
-          post_data, mr, i, orig_template, config)
-      if new_template:
-        templates.append(new_template)
-
-    return templates
-
-  def _ParseTemplate(self, post_data, mr, i, orig_template, config):
-    """Parse an issue template.  Return orig_template if cannot edit."""
-    if not self._CanEditTemplate(mr, orig_template):
-      return orig_template
-
-    name = post_data['name_%s' % i]
-    if name == tracker_constants.DELETED_TEMPLATE_NAME:
-      return None
-
-    members_only = False
-    if ('members_only_%s' % i) in post_data:
-      members_only = (
-          post_data['members_only_%s' % i] == 'yes')
-    summary = ''
-    if ('summary_%s' % i) in post_data:
-      summary = post_data['summary_%s' % i]
-    summary_must_be_edited = False
-    if ('summary_must_be_edited_%s' % i) in post_data:
-      summary_must_be_edited = (
-          post_data['summary_must_be_edited_%s' % i] == 'yes')
-    content = ''
-    if ('content_%s' % i) in post_data:
-      content = post_data['content_%s' % i]
-    # wrap="hard" has no effect on the content because we copy it to
-    # a hidden form field before submission.  So, server-side word wrap.
-    content = framework_helpers.WordWrapSuperLongLines(content, max_cols=75)
-    status = ''
-    if ('status_%s' % i) in post_data:
-      status = post_data['status_%s' % i]
-    owner_id = 0
-    if ('owner_%s' % i) in post_data:
-      owner = post_data['owner_%s' % i]
-      if owner:
-        user_id = self.services.user.LookupUserID(mr.cnxn, owner)
-        auth = authdata.AuthData.FromUserID(
-            mr.cnxn, user_id, self.services)
-        if framework_bizobj.UserIsInProject(mr.project, auth.effective_ids):
-          owner_id = user_id
-
-    labels = post_data.getall('label_%s' % i)
-    labels_remove = []
-
-    field_val_strs = collections.defaultdict(list)
-    for fd in config.field_defs:
-      field_value_key = 'field_value_%d_%d' % (i, fd.field_id)
-      if post_data.get(field_value_key):
-        field_val_strs[fd.field_id].append(post_data[field_value_key])
-
-    field_helpers.ShiftEnumFieldsIntoLabels(
-        labels, labels_remove, field_val_strs, {}, config)
-    field_values = field_helpers.ParseFieldValues(
-        mr.cnxn, self.services.user, field_val_strs, config)
-    for fv in field_values:
-      logging.info('field_value is %r: %r',
-                   fv.field_id, tracker_bizobj.GetFieldValue(fv, {}))
-
-    admin_ids = []
-    if ('admin_names_%s' % i) in post_data:
-      admin_ids, _admin_str = tracker_helpers.ParseAdminUsers(
-          mr.cnxn, post_data['admin_names_%s' % i], self.services.user)
-
-    component_ids = []
-    if ('components_%s' % i) in post_data:
-      component_paths = []
-      for component_path in post_data['components_%s' % i].split(','):
-        if component_path.strip() not in component_paths:
-          component_paths.append(component_path.strip())
-      component_ids = tracker_helpers.LookupComponentIDs(
-          component_paths, config, mr.errors)
-
-    owner_defaults_to_member = False
-    if ('owner_defaults_to_member_%s' % i) in post_data:
-      owner_defaults_to_member = (
-          post_data['owner_defaults_to_member_%s' % i] == 'yes')
-
-    component_required = False
-    if ('component_required_%s' % i) in post_data:
-      component_required = post_data['component_required_%s' % i] == 'yes'
-
-    template = tracker_bizobj.MakeIssueTemplate(
-        name, summary, status, owner_id,
-        content, labels, field_values, admin_ids, component_ids,
-        summary_must_be_edited=summary_must_be_edited,
-        owner_defaults_to_member=owner_defaults_to_member,
-        component_required=component_required,
-        members_only=members_only)
-    template_id = int(post_data['template_id_%s' % i])
-    if template_id:  # new templates have ID 0, so leave that None in PB.
-      template.template_id = template_id
-    logging.info('template is %r', template)
-
-    return template
-
-  def _CanEditTemplate(self, mr, template):
-    """Return True if the user is allowed to edit this template."""
-    if self.CheckPerm(mr, permissions.EDIT_PROJECT):
-      return True
-
-    if template and not mr.auth.effective_ids.isdisjoint(template.admin_ids):
-      return True
-
-    return False
+    return urls.ADMIN_TEMPLATES
 
   def _ParseDefaultTemplateSelections(self, post_data, templates):
     """Parse the input for the default templates to offer users."""

@@ -1,246 +1,65 @@
 [define category_css]css/ph_detail.css[end]
 [include "../framework/master-header.ezt" "showtabs"]
 
-[if-any read_only][include "../framework/read-only-rejection.ezt"]
-[else]
-
 <form action="adminTemplates.do" id="adminTemplates" method="POST">
- <input type="hidden" name="token" value="[form_token]">
+  <input type="hidden" name="token" value="[form_token]">
 
- <input type="hidden" name="current_template_index" id="current_template_index" value="">
- <h4>Issue templates</h4>
- <div class="section">
-  <table>
-   <tr><td>Choose Template:<br>
-     <select size="35" id="template_menu" style="width:14em">
-      [for config.templates]
-        [if-any config.templates.can_view perms.EditProject]
-         <option value="[config.templates.index]">[config.templates.name]</option>
+  <h4>Issue templates</h4>
+  <div class="section">
+    <table cellspacing="0" cellpadding="2" border="0" class="results striped vt" id="resultstable" width="100%">
+      <tbody>
+        <tr>
+          <th>Name</th>
+        </tr>
+        [if-any config.templates][else]
+          <tr>
+            <td colspan="40">
+              <div style="padding: 3em; text-align: center">
+                This project has not defined any issue templates.
+              </div>
+            </td>
+          </tr>
         [end]
-      [end]
-     </select>
-     [if-any perms.EditProject]
-       <div style="padding-top:4px; text-align:center">
-         <input type="button" name="newbtn" id="newbtn" value="New...">
-         <input type="button" name="delbtn" id="delbtn" value="Delete">
-       </div>
+        [for config.templates]
+          [if-any config.templates.can_view perms.EditProject]
+            [define detail_url]/p/[projectname]/templates/detail?template=[format "url"][config.templates.name][end][end]
+              <tr data-url="detail_url">
+                <td style="white-space:nowrap">
+                  <a href="[detail_url]">[config.templates.name]</a></td>
+                </td>
+              </tr>
+          [end]
+        [end]
+      </tbody>
+    </table>
+
+    [if-any perms.EditProject]
+      Default template for project members:
+      <select name="default_template_for_developers" id="default_template_for_developers">
+        [for config.templates]
+          <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_developers]selected[end]>[config.templates.name]</option>
+        [end]
+      </select><br><br>
+
+      Default template for non-members:
+      <select name="default_template_for_users" id="default_template_for_users">
+         [for config.templates]
+           [define offer_template_in_users_menu]No[end]
+           [is config.templates.template_id config.default_template_for_users][define offer_template_in_users_menu]Yes[end][end]
+           [if-any config.templates.members_only][else][define offer_template_in_users_menu]Yes[end][end]
+           [is offer_template_in_users_menu "Yes"]
+             <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_users]selected[end]>[config.templates.name]</option>
+           [end]
+         [end]
+       </select>
+       <br>
+
+       <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
      [end]
-    </td>
-    <td style="color:#666; font-weight:bold;">
-     &nbsp;&rarr;&nbsp;<br><br>
-     &nbsp;&rarr;&nbsp;<br><br>
-     &nbsp;&rarr;&nbsp;<br><br>
-    </td>
-    <td id="edit_panel" class="closed">
-     <div style="border:2px solid #c3d9ff; padding: 4px 6px;">
-      <div class="ifClosed" style="width:52em; height:46em;">Select a template from the list.</div>
-      <div class="ifOpened">
-        [include "admin-templates-editor-part.ezt"]
-      </div>
-     </div>
-    </td>
-   </tr>
-  </table><br>
 
-  [if-any perms.EditProject]
-    Default template for project members:
-    <select name="default_template_for_developers" id="default_template_for_developers">
-     [for config.templates]
-      <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_developers]selected[end]>[config.templates.name]</option>
-     [end]
-    </select><br><br>
-
-    Default template for non-members:
-    <select name="default_template_for_users" id="default_template_for_users">
-     [for config.templates]
-       [define offer_template_in_users_menu]No[end]
-       [is config.templates.template_id config.default_template_for_users][define offer_template_in_users_menu]Yes[end][end]
-       [if-any config.templates.members_only][else][define offer_template_in_users_menu]Yes[end][end]
-       [is offer_template_in_users_menu "Yes"]
-         <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_users]selected[end]>[config.templates.name]</option>
-       [end]
-     [end]
-    </select>
- [end]
-
-
- [for config.templates]
-    [if-any config.templates.can_view perms.EditProject]
-      <input type="hidden" name="name_[config.templates.index]" id="name_[config.templates.index]"
-             value="[config.templates.name]">
-      <input type="hidden" name="template_id_[config.templates.index]" id="template_id_[config.templates.index]"
-             value="[config.templates.template_id]">
-      <input type="hidden" name="members_only_[config.templates.index]" id="members_only_[config.templates.index]"
-             value="[config.templates.members_only]">
-      <input type="hidden" name="summary_[config.templates.index]" id="summary_[config.templates.index]"
-             value="[config.templates.summary]">
-      <input type="hidden" name="summary_must_be_edited_[config.templates.index]" id="summary_must_be_edited_[config.templates.index]"
-             value="[config.templates.summary_must_be_edited]">
-      <input type="hidden" name="content_[config.templates.index]" id="content_[config.templates.index]"
-             value="[config.templates.content]">
-      <input type="hidden" name="status_[config.templates.index]" id="status_[config.templates.index]"
-             value="[config.templates.status]">
-      <input type="hidden" name="owner_[config.templates.index]" id="owner_[config.templates.index]"
-             value="[config.templates.ownername]">
-      <input type="hidden" name="owner_defaults_to_member_[config.templates.index]" id="owner_defaults_to_member_[config.templates.index]"
-             value="[config.templates.owner_defaults_to_member]">
-      <input type="hidden" name="component_required_[config.templates.index]" id="component_required_[config.templates.index]"
-             value="[config.templates.component_required]">
-      <input type="hidden" name="components_[config.templates.index]" id="components_[config.templates.index]"
-             value="[config.templates.components]">
-
-      [for config.templates.complete_field_values]
-        [# TODO(jrobbins): support specifying multiple values of multivalued fields]
-        <input type="hidden"
-               name="field_value_[config.templates.index]_[config.templates.complete_field_values.field_id]"
-               id="field_value_[config.templates.index]_[config.templates.complete_field_values.field_id]"
-               value="[config.templates.complete_field_values.val]">
-      [end]
-
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_0"
-             value="[config.templates.label0]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_1"
-             value="[config.templates.label1]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_2"
-             value="[config.templates.label2]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_3"
-             value="[config.templates.label3]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_4"
-             value="[config.templates.label4]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_5"
-             value="[config.templates.label5]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_6"
-             value="[config.templates.label6]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_7"
-             value="[config.templates.label7]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_8"
-             value="[config.templates.label8]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_9"
-             value="[config.templates.label9]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_10"
-             value="[config.templates.label10]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_11"
-             value="[config.templates.label11]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_12"
-             value="[config.templates.label12]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_13"
-             value="[config.templates.label13]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_14"
-             value="[config.templates.label14]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_15"
-             value="[config.templates.label15]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_16"
-             value="[config.templates.label16]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_17"
-             value="[config.templates.label17]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_18"
-             value="[config.templates.label18]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_19"
-             value="[config.templates.label19]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_20"
-             value="[config.templates.label20]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_21"
-             value="[config.templates.label21]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_22"
-             value="[config.templates.label22]">
-      <input type="hidden" name="label_[config.templates.index]" id="label_[config.templates.index]_23"
-             value="[config.templates.label23]">
-      <input type="hidden" name="admin_names_[config.templates.index]" id="admin_names_[config.templates.index]"
-             value="[config.templates.admin_names]">
-      <input type="hidden" name="can_edit_[config.templates.index]" id="can_edit_[config.templates.index]"
-             value="[config.templates.can_edit]">
-    [end]
- [end]
-
- <br><br>
-
- [define can_edit_any]No[end]
- [for config.templates]
-   [if-any config.templates.can_view][if-any config.templates.can_edit]
-     [define can_edit_any]Yes[end]
-   [end][end]
- [end]
- [if-any perms.EditProject]
-   [define can_edit_any]Yes[end]
- [end]
-
- [is can_edit_any "Yes"]
-   [if-any user_is_project_member]
-     <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
-   [else]
-     <p>You have permission to edit a specific template, but you must also be
-        a project member to make edits.</p>
-   [end]
- [end]
-
- </div>[# section]
-
+   </div>
 </form>
-[end]
+
 
 [include "../framework/footer-script.ezt"]
-[include "field-value-widgets-js.ezt"]
-<script type="text/javascript" nonce="[nonce]">
-runOnLoad(function() {
- function getParam(name, defaultVal){
-   if(name=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search)) {
-     return decodeURIComponent(name[1]);
-   }
-   return defaultVal;
- }
-
- _setFieldIDs([[]
-   [for fields][fields.field_id][if-index fields last][else], [end][end]
-   ]);
-
- [if-any perms.EditProject]
-   _templateNames.push(
-     [for config.templates]"[format "js"][config.templates.name][end]"[if-index config.templates last][else],[end][end]
-   )
- [end]
- if ($("template_menu") && $("template_menu").options.length > 0) {
-   var tindex = getParam('tindex', 0);
-   if (tindex >= $("template_menu").length) {
-     // If the specified template no longer exists default to the first one.
-     $("template_menu").options[[]0].selected = true;
-   } else {
-     $("template_menu").options[[]tindex].selected = true;
-   }
-   _selectTemplate(document.getElementById('template_menu'));
- }
-
- [# Catch changes that were not keystrokes, e.g., paste menu item.]
- setInterval(_saveTemplate, 700);
-
- _fetchOptions(
-   '[projectname]', 'issueOptions', CS_env.token, [project.cached_content_timestamp]);
- _onload();
-
- if ($("template_menu"))
-   $("template_menu").addEventListener("change", function() {
-       _selectTemplate($("template_menu"));
-   });
- if ($("newbtn"))
-   $("newbtn").addEventListener("click", _newTemplate);
- if ($("delbtn"))
-   $("delbtn").addEventListener("click", _deleteTemplate);
-
-  var acobElements = document.getElementsByClassName("acob");
-  for (var i = 0; i < acobElements.length; ++i) {
-     var el = acobElements[[]i];
-     el.addEventListener("focus", function(event) {
-         _acrob(null);
-         _acof(event);
-     });
-  }
-
-  var saveTemplateElements = document.getElementsByClassName("saveTemplate");
-  for (var i = 0; i < acobElements.length; ++i) {
-     var el = acobElements[[]i];
-     el.addEventListener("keyup", _saveTemplate);
-     el.addEventListener("change", _saveTemplate);
-  }
-});
-</script>
-
 [include "../framework/master-footer.ezt"]
