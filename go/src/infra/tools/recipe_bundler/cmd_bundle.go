@@ -254,7 +254,7 @@ func (c *cmdBundle) run(ctx context.Context) error {
 				ctx := logging.SetField(ctx, "repo", repoName)
 
 				resolvedSpec, err := repo.resolveSpec(ctx, spec)
-				logging.Infof(ctx, "got revision/ref: %q", spec)
+				logging.Infof(ctx, "got revision/ref: %q -> %q", spec, resolvedSpec)
 
 				pkgName := ""
 				if strings.Contains(repoName, "internal") {
@@ -264,11 +264,11 @@ func (c *cmdBundle) run(ctx context.Context) error {
 				}
 
 				if err := cipd_common.ValidatePackageName(pkgName); err != nil {
-					panic(errors.Reason("bug: %q doesn't result in a valid CIPD package", repoName).Err())
+					return errors.Reason("bug: %q doesn't result in a valid CIPD package", repoName).Err()
 				}
 				pkgVers := "git_revision:" + resolvedSpec.revision
 				pkgRefs := stringset.NewFromSlice(
-					strings.ToLower(spec.revision),
+					strings.ToLower(spec.ref),
 					strings.ToLower(resolvedSpec.ref))
 
 				if c.localDest == "" && c.cipd.serverQuiet(ctx, "resolve", pkgName, "-version", pkgVers) == nil {
