@@ -28,26 +28,9 @@ func TestPatchSetNumber(t *testing.T) {
 	})
 }
 
-func TestHostWithProtocol(t *testing.T) {
-	Convey("Test Environment", t, func() {
-		hostWithHTTPS := "https://chromium-review.googlesource.com"
-		hostWithHTTP := "http://chromium-review.googlesource.com"
-		host := "chromium-review.googlesource.com"
-		Convey("No transform of https", func() {
-			So(hostWithProtocol(hostWithHTTPS), ShouldEqual, hostWithHTTPS)
-		})
-		Convey("Transform of http", func() {
-			So(hostWithProtocol(hostWithHTTP), ShouldEqual, hostWithHTTPS)
-		})
-		Convey("Adds https when no protocol", func() {
-			So(hostWithProtocol(host), ShouldEqual, hostWithHTTPS)
-		})
-	})
-}
-
 func TestComposeChangesQueryURL(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		instance := "https://chromium-review.googlesource.com"
+		host := "chromium-review.googlesource.com"
 		project := "playground/gerrit-tricium"
 		formattedProject := "playground%2Fgerrit-tricium"
 		const form = "2006-01-02 15:04:05.000000000"
@@ -55,9 +38,9 @@ func TestComposeChangesQueryURL(t *testing.T) {
 		So(err, ShouldBeNil)
 		formattedTime := "2016-10-01+10%3A00%3A05.640000000"
 		Convey("First page of poll", func() {
-			So(composeChangesQueryURL(instance, project, time, 0), ShouldEqual,
-				fmt.Sprintf("%s/a/changes/?o=CURRENT_REVISION&o=CURRENT_FILES&q=project%%3A%s+after%%3A%%22%s%%22&start=0",
-					instance, formattedProject, formattedTime))
+			So(composeChangesQueryURL(host, project, time, 0), ShouldEqual,
+				fmt.Sprintf("https://%s/a/changes/?o=CURRENT_REVISION&o=CURRENT_FILES&q=project%%3A%s+after%%3A%%22%s%%22&start=0",
+					host, formattedProject, formattedTime))
 		})
 	})
 }
