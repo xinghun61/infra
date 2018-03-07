@@ -136,7 +136,7 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
     ids_to_retry.update(not_inserted_ids)
 
   if ids_to_retry:
-    logging.warning('will retry builds %r later', sorted(build_ids))
+    logging.warning('will retry builds %r later', sorted(ids_to_retry))
 
   done_tasks = [
     t
