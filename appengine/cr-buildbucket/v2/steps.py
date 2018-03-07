@@ -56,6 +56,7 @@ def fetch_steps_async(build, allowed_logdog_hosts):
     res = yield net.json_request_async(
         url='https://%s/prpc/logdog.Logs/Tail' % host,
         method='POST',
+        scopes=net.EMAIL_SCOPE,
         payload={
           'project': project,
           'path': '%s/+/%s' % (prefix, stream_name),
