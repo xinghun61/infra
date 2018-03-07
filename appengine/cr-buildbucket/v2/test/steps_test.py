@@ -32,6 +32,7 @@ class V2StepsTest(testing.AppengineTestCase):
         'annotations')
     build = model.Build(
         id=1,
+        swarming_task_id='deadbeef',
         tags=[
           'unrelated:1',
           'swarming_tag:log_location:' + url,
@@ -88,6 +89,7 @@ class FetchStepsTest(testing.AppengineTestCase):
       'annotations')
     self.test_build = model.Build(
         id=1,
+        swarming_task_id='deadbeef',
         tags=[
           'swarming_tag:log_location:' + url,
         ],
@@ -114,6 +116,15 @@ class FetchStepsTest(testing.AppengineTestCase):
     net.json_request_async.side_effect = AssertionError
     build = model.Build(id=1)
 
+    res, finalized = steps.fetch_steps_async(
+        build, self.allowed_logdog_hosts).get_result()
+    self.assertEqual(res, [])
+    self.assertTrue(finalized)
+
+  def test_no_logdog_url_swarmbucket(self):
+    net.json_request_async.side_effect = AssertionError
+    build = model.Build(id=1, swarming_task_id='deadbeef')
+
     with self.assertRaises(errors.MalformedBuild):
       steps.fetch_steps_async(build, self.allowed_logdog_hosts).get_result()
 
@@ -121,6 +132,7 @@ class FetchStepsTest(testing.AppengineTestCase):
     net.json_request_async.side_effect = AssertionError
     build = model.Build(
         id=1,
+        swarming_task_id='deadbeef',
         tags=[
           'swarming_tag:log_location:invalid',
         ],

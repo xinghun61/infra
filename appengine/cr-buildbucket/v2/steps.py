@@ -35,15 +35,17 @@ def fetch_steps_async(build, allowed_logdog_hosts):
   # Both LUCI and Buildbot builds have steps in "annotations"
   # LogDog stream, so we can have same implementation for both.
 
-  logdog_url = _get_annotation_url(build)
-  if not logdog_url:
-    raise errors.MalformedBuild(
-        'build %d does not have log location' % build.key.id())
+  annotation_url = _get_annotation_url(build)
+  if not annotation_url:
+    logging.warning(
+        'annotation URL not found in build %d. Skipping step fetching.',
+        build.key.id())
+    raise ndb.Return([], True)
   try:
-    host, project, prefix, stream_name = _parse_logdog_url(logdog_url)
+    host, project, prefix, stream_name = _parse_logdog_url(annotation_url)
   except ValueError:
     raise errors.MalformedBuild(
-        'invalid LogDog URL %r in build %d' % (logdog_url, build.key.id()))
+        'invalid LogDog URL %r in build %d' % (annotation_url, build.key.id()))
 
   if host not in allowed_logdog_hosts:
     msg = (
@@ -66,7 +68,7 @@ def fetch_steps_async(build, allowed_logdog_hosts):
   except net.NotFoundError:
     # This stream wasn't even registered.
     # It should have been registered in the beginning of the build.
-    logging.warning('logdog stream does not exist: %s', logdog_url)
+    logging.warning('logdog stream does not exist: %s', annotation_url)
     raise ndb.Return([], False)
   except net.Error as ex:
     # This includes auth errors.
@@ -91,17 +93,21 @@ def fetch_steps_async(build, allowed_logdog_hosts):
 def _get_annotation_url(build):
   """Returns a LogDog URL of the annotations datagram stream."""
 
+  if build.swarming_task_id:
+    # It is a Swarmbucket build.
+    # It MUST have an annotation URL in tags.
+    prefix = 'swarming_tag:log_location:'
+    for t in build.tags:
+      if t.startswith(prefix):
+        return t[len(prefix):]
+    raise errors.MalformedBuild(
+        'swarmbucket build %d does not have an annotation URL' % build.key.id())
+
   # Buildbot builds have log_location in properties.
   result_details = build.result_details or {}
   annotation_url = result_details.get('properties', {}).get('log_location')
   if annotation_url:
     return annotation_url
-
-  # LUCI builds have the logdog URL in tags.
-  prefix = 'swarming_tag:log_location:'
-  for t in build.tags:
-    if t.startswith(prefix):
-      return t[len(prefix):]
 
   return None
 
