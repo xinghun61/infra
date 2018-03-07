@@ -297,7 +297,7 @@ def main(argv):
               '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
         LOGGER.fatal('LKGR exceeds allowed gap (%s > %s)', rev_behind,
                      config['allowed_gap'])
-        return 1
+        return 2
 
       time_behind = repo.get_lag(lkgr)
       LOGGER.info('LKGR is %s behind', time_behind)
@@ -312,7 +312,7 @@ def main(argv):
               '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
         LOGGER.fatal('LKGR exceeds lag threshold (%s > %s)', time_behind,
                      config['allowed_lag'])
-        return 1
+        return 2
 
   return 0
 

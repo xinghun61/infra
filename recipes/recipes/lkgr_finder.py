@@ -99,6 +99,12 @@ def RunSteps(api, buildername):
           args,
           step_test_data=lambda: step_test_data
       )
+  except api.step.StepFailure as e:
+    # Don't fail the build if the LKGR is just stale.
+    if e.result.retcode == 2:
+      return
+    else:
+      raise
   finally:
     step_result = api.step.active_result
     html_status = None
@@ -134,18 +140,29 @@ def GenTests(api):
         )
     )
 
-  buildername = 'WebRTC lkgr finder'
-  botconfig = BUILDERS[buildername]
-  yield (
-      api.test(botconfig['project'] + '_lkgr_failure') +
-      api.properties.generic(buildername=buildername) +
+  webrtc_props = (
+      api.properties.generic(buildername='WebRTC lkgr finder') +
       api.properties(path_config='kitchen') +
       api.step_data(
           'read lkgr from ref',
           api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
-      ) +
+      )
+  )
+
+  yield (
+      api.test('webrtc_lkgr_failure') +
+      webrtc_props +
       api.step_data(
           'calculate webrtc lkgr',
           retcode=1
+      )
+  )
+
+  yield (
+      api.test('webrtc_lkgr_stale') +
+      webrtc_props +
+      api.step_data(
+          'calculate webrtc lkgr',
+          retcode=2
       )
   )
