@@ -27,6 +27,8 @@
     "cmd": [
       "[CACHE]/builder/bundler/recipe_bundler",
       "bundle",
+      "-log-level",
+      "debug",
       "-workdir",
       "[CACHE]/builder/workdir",
       "-r",

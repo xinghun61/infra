@@ -39,6 +39,7 @@ def RunSteps(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs):
   cmd = [
     bundler_path.join('recipe_bundler'),
     'bundle',
+    '-log-level', 'debug',
     '-workdir', api.path['cache'].join('builder', 'workdir'),
   ]
 
