@@ -17,9 +17,10 @@ from . import errors
 from third_party import annotations_pb2
 
 
-@ndb.tasklet
 def fetch_steps_async(build, allowed_logdog_hosts):
   """Fetches steps of a model.Build and returns them in step_pb2.Step format.
+
+  If the build is not a swarmbucket build, returns ([], True).
 
   Returns:
     A tuple (steps, finalized) where
@@ -27,30 +28,48 @@ def fetch_steps_async(build, allowed_logdog_hosts):
     - finalized is True if the returned steps are finalized, otherwise False.
 
   Raises:
-    errors.UnsupportedBuild: build has no anontation log URL or
-      the logdog host is not allowed.
     errors.MalformedBuild: failed to retrieve/parse logdog annotation URL.
     errors.StepFetchError: failed to fetch steps.
   """
-  # Both LUCI and Buildbot builds have steps in "annotations"
-  # LogDog stream, so we can have same implementation for both.
+  if not build.swarming_task_id:
+    # This is not a swarmbucket build.
+    # Not all Buildbot builds have annotation URL.
+    # Among those that do, not all have valid annotations, i.e. some of them are
+    # not valid annotation protos.
+    f = ndb.Future()
+    f.set_result(([], True))
+    return f
 
-  annotation_url = _get_annotation_url(build)
-  if not annotation_url:
-    logging.warning(
-        'annotation URL not found in build %d. Skipping step fetching.',
-        build.key.id())
-    raise ndb.Return([], True)
+  return fetch_steps_from_logdog_async(
+      build.key.id(), _get_annotation_url(build), allowed_logdog_hosts)
+
+
+@ndb.tasklet
+def fetch_steps_from_logdog_async(
+    build_id, annotation_url, allowed_logdog_hosts):
+  """Fetches steps from LogDog and returns them in step_pb2.Step format.
+
+  build_id is used only for logging.
+
+  Returns:
+    A tuple (steps, finalized) where
+    - steps is list of step_pb2.Step messages
+    - finalized is True if the returned steps are finalized, otherwise False.
+
+  Raises:
+    errors.MalformedBuild: failed to parse logdog annotation URL.
+    errors.StepFetchError: failed to fetch steps.
+  """
   try:
     host, project, prefix, stream_name = _parse_logdog_url(annotation_url)
   except ValueError:
     raise errors.MalformedBuild(
-        'invalid LogDog URL %r in build %d' % (annotation_url, build.key.id()))
+        'invalid LogDog URL %r in build %d' % (annotation_url, build_id))
 
   if host not in allowed_logdog_hosts:
     msg = (
         'build %d references LogDog host %s that is not allowed' %
-        (build.key.id(), host))
+        (build_id, host))
     logging.error(msg)
     raise ndb.Return([], True)
 
@@ -72,7 +91,7 @@ def fetch_steps_async(build, allowed_logdog_hosts):
     raise ndb.Return([], False)
   except net.Error as ex:
     # This includes auth errors.
-    logging.exception('failed to fetch steps for build %d', build.key.id())
+    logging.exception('failed to fetch steps for build %d', build_id)
     raise errors.StepFetchError('failed to fetch steps: %s' % ex.message)
 
   log = res['logs'][0]
@@ -90,26 +109,21 @@ def fetch_steps_async(build, allowed_logdog_hosts):
   )
 
 
-def _get_annotation_url(build):
+def _get_annotation_url(swarmbucket_build):
   """Returns a LogDog URL of the annotations datagram stream."""
 
-  if build.swarming_task_id:
-    # It is a Swarmbucket build.
-    # It MUST have an annotation URL in tags.
-    prefix = 'swarming_tag:log_location:'
-    for t in build.tags:
-      if t.startswith(prefix):
-        return t[len(prefix):]
-    raise errors.MalformedBuild(
-        'swarmbucket build %d does not have an annotation URL' % build.key.id())
+  assert swarmbucket_build.swarming_task_id
 
-  # Buildbot builds have log_location in properties.
-  result_details = build.result_details or {}
-  annotation_url = result_details.get('properties', {}).get('log_location')
-  if annotation_url:
-    return annotation_url
+  # It is a Swarmbucket build.
+  # It MUST have an annotation URL in tags.
+  prefix = 'swarming_tag:log_location:'
+  for t in swarmbucket_build.tags:
+    if t.startswith(prefix):
+      return t[len(prefix):]
 
-  return None
+  raise errors.MalformedBuild(
+      'swarmbucket build %d does not have an annotation URL' %
+      swarmbucket_build.key.id())
 
 
 def _parse_logdog_url(url):

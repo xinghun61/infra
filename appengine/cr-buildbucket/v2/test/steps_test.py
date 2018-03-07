@@ -24,7 +24,7 @@ import model
 
 
 class V2StepsTest(testing.AppengineTestCase):
-  def test_get_annotation_url_luci(self):
+  def test_get_annotation_url(self):
     url = (
         'logdog://luci-logdog-dev.appspot.com/'
         'infra/'
@@ -40,27 +40,6 @@ class V2StepsTest(testing.AppengineTestCase):
     )
     actual = steps._get_annotation_url(build)
     self.assertEqual(actual, url)
-
-  def test_get_annotation_url_buildbot(self):
-    url = (
-        'logdog://logs.chromium.org/'
-        'chromium/'
-        'bb/tryserver.chromium.linux/linux_chromium_rel_ng/652148/+/'
-        'recipes/annotations')
-    build = model.Build(
-      result_details={
-        'properties': {
-          'log_location': url,
-        }
-      }
-    )
-
-    actual = steps._get_annotation_url(build)
-    self.assertEqual(actual, url)
-
-  def test_get_annotation_url_not_found(self):
-    build = model.Build(id=1)
-    self.assertIsNone(steps._get_annotation_url(build))
 
   def test_parse_logdog_url(self):
     url = (
