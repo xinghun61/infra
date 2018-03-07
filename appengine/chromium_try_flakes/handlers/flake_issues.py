@@ -633,24 +633,27 @@ class CreateFlakyRun(webapp2.RequestHandler):
   # Read --> Write pattern happening here, there's no need for a transaction.
   @ndb.non_transactional
   def is_duplicate_occurrence(flake_id, flaky_run):
-      """Returns true if the given flaky run has already been reported."""
-      flake = Flake.get_by_id(flake_id)
-      if not flake:
-          return False
-
-      # Get the changelist/patchset.
-      patchset_builder_runs = flaky_run.failure_run.parent().get()
-      changelist_issue = patchset_builder_runs.issue
-      builder = patchset_builder_runs.builder
-
-      # Compare the changelist/patchset for uniqueness.
-      for occurrence in ndb.get_multi(flake.occurrences):
-          n_patchset_builder_runs = occurrence.failure_run.parent().get()
-          if (n_patchset_builder_runs.issue == changelist_issue and
-             n_patchset_builder_runs.builder == builder):
-              return True
-
+    """Returns true if the given flaky run has already been reported."""
+    flake = Flake.get_by_id(flake_id)
+    if not flake:
       return False
+
+    # Get the changelist/patchset.
+    patchset_builder_runs = flaky_run.failure_run.parent().get()
+    changelist_issue = patchset_builder_runs.issue
+    builder = patchset_builder_runs.builder
+
+    # Compare the changelist/patchset for uniqueness.
+    for occurrence in ndb.get_multi(flake.occurrences):
+      # Skip null occurrences or occurrences without a failure run.
+      if not occurrence or not occurrence.failure_run:  # pragma: no cover
+        continue
+      n_patchset_builder_runs = occurrence.failure_run.parent().get()
+      if (n_patchset_builder_runs.issue == changelist_issue and
+        n_patchset_builder_runs.builder == builder):
+        return True
+
+    return False
 
   @classmethod
   def _flatten_tests(cls, tests, delimiter):
