@@ -201,4 +201,15 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertFalse(template.summary_must_be_edited)
     self.assertTrue(template.component_required)
     self.assertTrue(template.owner_defaults_to_member)
-    self.assertTrue('' in url)
+    self.assertTrue('/templates/detail?saved=1&template=TestTemplate&' in url)
+
+  def testProcessFormData_Delete(self):
+     post_data = fake.PostData(
+         deletetemplate=['Submit'],
+         name=['TestTemplate'],
+         members_only=['on'],
+     )
+     url=self.servlet.ProcessFormData(self.mr, post_data)
+     template = tracker_bizobj.FindIssueTemplate('TestTemplate', self.config)
+     self.assertIsNone(template)
+     self.assertTrue('/adminTemplates?deleted=1&ts=' in url)

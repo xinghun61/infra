@@ -118,6 +118,12 @@ class TemplateDetail(servlet.Servlet):
       raise permissions.PermissionException(
           'User is not allowed edit this issue template.')
 
+    if 'deletetemplate' in post_data:
+      self.services.config.DeleteIssueTemplateDef(
+          mr.cnxn, mr.project_id, template.template_id)
+      return framework_helpers.FormatAbsoluteURL(
+          mr, urls.ADMIN_TEMPLATES, deleted=1, ts=int(time.time()))
+
     (admin_ids, owner_id, component_ids,
      field_values) = template_helpers.GetTemplateInfoFromParsed(
          mr, self.services, parsed, config)
