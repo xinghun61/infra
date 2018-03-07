@@ -44,16 +44,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
         'v2.steps.fetch_steps_async', autospec=True,
         return_value=test_util.future(([], True)))
 
-    self.settings = service_config_pb2.BigQueryExport(
-        buckets_re=[
-          '^luci\.',
-          '^master\.',
-        ],
-    )
-    self.patch(
-        'config.get_settings_async', autospec=True,
-        return_value=test_util.future(
-            service_config_pb2.SettingsCfg(bq_export=self.settings)))
+    self.settings = service_config_pb2.BigQueryExport()
 
   @mock.patch('bq.enqueue_pull_task_async', autospec=True)
   def test_enqueue_bq_export_async(self, enqueue_pull_task_async):
@@ -70,21 +61,6 @@ class BigQueryExportTest(testing.AppengineTestCase):
     enqueue_pull_task_async.assert_called_once_with(
         'bq-export-prod', json.dumps({'id': 1}))
 
-  @mock.patch('bq.enqueue_pull_task_async', autospec=True)
-  def test_enqueue_bq_export_async_unsupported_bucket(
-      self, enqueue_pull_task_async):
-    enqueue_pull_task_async.return_value = test_util.future(None)
-
-    build = model.Build(
-        id=1,
-        bucket='skia.x',
-        status=model.BuildStatus.COMPLETED)
-
-    ndb.transactional(  # pylint: disable=no-value-for-parameter
-        lambda: bq.enqueue_bq_export_async(build).get_result())()
-
-    self.assertFalse(enqueue_pull_task_async.called)
-
   def test_cron_export_builds_to_bq(self):
     builds = [
       mkbuild(
@@ -99,12 +75,6 @@ class BigQueryExportTest(testing.AppengineTestCase):
           id=3,
           status=model.BuildStatus.STARTED,
           start_time=datetime.datetime(2018, 1, 1)),
-      mkbuild(
-          id=4,
-          bucket='not-whitelisted-bucket',
-          status=model.BuildStatus.COMPLETED,
-          result=model.BuildResult.SUCCESS,
-          complete_time=datetime.datetime(2018, 1, 1)),
     ]
     ndb.put_multi(builds)
     self.queue.add([

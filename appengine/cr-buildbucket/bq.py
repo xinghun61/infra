@@ -7,7 +7,6 @@
 import datetime
 import json
 import logging
-import re
 
 from google.appengine.api import app_identity
 from google.appengine.api import taskqueue
@@ -42,12 +41,9 @@ def enqueue_bq_export_async(build):  # pragma: no cover
   assert build
   assert build.status == model.BuildStatus.COMPLETED
 
-  settings = yield config.get_settings_async()
-  bucket_re = _compile_bucket_re(settings.bq_export)
-  if bucket_re.match(build.bucket):
-    yield enqueue_pull_task_async(
-        'bq-export-experimental' if build.experimental else 'bq-export-prod',
-        json.dumps({'id': build.key.id()}))
+  yield enqueue_pull_task_async(
+      'bq-export-experimental' if build.experimental else 'bq-export-prod',
+      json.dumps({'id': build.key.id()}))
 
 
 class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
@@ -81,8 +77,6 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
   Leases pull tasks, fetches build entities, tries to convert them to v2 format
   and insert into BigQuery in v2 format.
 
-  Ignores a build if its bucket does not match any of bq_settings.buckets_re.
-
   If v2 conversion raises v2.errors.UnsupportedBuild, skips the build.
   If v2 conversion raises any other exception, including
   v2.errors.MalformedBuild, logs the exception and does not remove the task from
@@ -99,8 +93,6 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
   """
   now = utils.utcnow()
 
-  # Parse settings.
-  bucket_re = _compile_bucket_re(bq_settings)
   allowed_logdog_hosts = set(bq_settings.allowed_logdog_hosts)
 
   # Lease tasks.
@@ -118,7 +110,7 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
   # Fetch builds for the tasks and convert to v2 format.
   builds = ndb.get_multi([ndb.Key(model.Build, bid) for bid in build_ids])
   v2_builds_futs = [
-    (bid, _build_to_v2_async(bid, b, bucket_re, allowed_logdog_hosts))
+    (bid, _build_to_v2_async(bid, b, allowed_logdog_hosts))
     for bid, b in zip(build_ids, builds)
   ]
   v2_builds = []
@@ -149,7 +141,7 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
 
 
 @ndb.tasklet
-def _build_to_v2_async(bid, build, bucket_re, allowed_logdog_hosts):
+def _build_to_v2_async(bid, build, allowed_logdog_hosts):
   """Returns (v2_build, should_retry) tuple.
 
   Logs reasons for returning v2_build=None or retry=True.
@@ -160,12 +152,6 @@ def _build_to_v2_async(bid, build, bucket_re, allowed_logdog_hosts):
 
   if build.status != model.BuildStatus.COMPLETED:
     logging.error('skipping build %d: not complete', bid)
-    raise ndb.Return(None, False)
-
-  if not bucket_re.match(build.bucket):
-    logging.warning(
-        'skipping build %d: bucket %r does not match %r',
-        bid, build.bucket, bucket_re.pattern)
     raise ndb.Return(None, False)
 
   try:
@@ -252,13 +238,6 @@ def _export_builds(dataset, v2_builds, deadline):
         'failed to insert row for build %d: %r',
         b.id, err['errors'])
   return failed_ids
-
-
-def _compile_bucket_re(bq_settings):
-  return re.compile('|'.join(
-      '(%s)' % r
-      for r in bq_settings.buckets_re or ['^$']
-  ))
 
 
 def _dict_get(d, *keys):

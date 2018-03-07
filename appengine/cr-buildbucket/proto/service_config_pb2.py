@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='service_config.proto',
   package='buildbucket',
   syntax='proto3',
-  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\"n\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\x12.\n\tbq_export\x18\x02 \x01(\x0b\x32\x1b.buildbucket.BigQueryExport\"`\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05J\x04\x08\x01\x10\x02\"B\n\x0e\x42igQueryExport\x12\x12\n\nbuckets_re\x18\x01 \x03(\t\x12\x1c\n\x14\x61llowed_logdog_hosts\x18\x02 \x03(\tb\x06proto3')
+  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\"n\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\x12.\n\tbq_export\x18\x02 \x01(\x0b\x32\x1b.buildbucket.BigQueryExport\"`\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05J\x04\x08\x01\x10\x02\"4\n\x0e\x42igQueryExport\x12\x1c\n\x14\x61llowed_logdog_hosts\x18\x02 \x03(\tJ\x04\x08\x01\x10\x02\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -110,14 +110,7 @@ _BIGQUERYEXPORT = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='buckets_re', full_name='buildbucket.BigQueryExport.buckets_re', index=0,
-      number=1, type=9, cpp_type=9, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='allowed_logdog_hosts', full_name='buildbucket.BigQueryExport.allowed_logdog_hosts', index=1,
+      name='allowed_logdog_hosts', full_name='buildbucket.BigQueryExport.allowed_logdog_hosts', index=0,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -136,7 +129,7 @@ _BIGQUERYEXPORT = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=247,
-  serialized_end=313,
+  serialized_end=299,
 )
 
 _SETTINGSCFG.fields_by_name['swarming'].message_type = _SWARMINGSETTINGS

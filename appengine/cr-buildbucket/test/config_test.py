@@ -749,18 +749,3 @@ class ConfigTest(testing.AppengineTestCase):
 
     cfg.swarming.hostname = 'exists.now'
     self.assertTrue(config.is_swarming_config(cfg))
-
-  def test_validate_settings(self):
-    cfg = service_config_pb2.SettingsCfg(
-        bq_export=service_config_pb2.BigQueryExport(
-          buckets_re=[
-            ')))',
-            '^master\.',
-          ],
-        ),
-    )
-    ctx = config_component.validation.Context()
-    config.validate_settings_cfg(cfg, ctx)
-    self.assertEqual(ctx.result().messages, [
-      errmsg('bq_export: invalid regexp u\')))\''),
-    ])
