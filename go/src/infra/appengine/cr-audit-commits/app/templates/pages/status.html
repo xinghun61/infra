@@ -73,7 +73,7 @@
         <tr>
           <td>{{$k}} (<a href="{{$v.RepoURL}}">Link to Repository</a>)</td>
           <td><a href="https://bugs.chromium.org/p/{{$v.MonorailProject}}/issues/list?can=1&q=reporter%3Acr-audit-commits%40appspot.gserviceaccount.com">Monorail link</a></td>
-          <td><a href="/admin/status?repo={{$k}}"> Status for {{$k}}</a></td>
+          <td><a href="/view/status?repo={{$k}}"> Status for {{$k}}</a></td>
         </tr>
       {{end}}
     </table>
