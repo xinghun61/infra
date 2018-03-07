@@ -88,9 +88,6 @@ class MonorailConnection(object):
 
   def GetConnectionForShard(self, shard_id):
     """Return a connection to the DB replica that will be used for shard_id."""
-    if settings.dev_mode:
-      return self.GetMasterConnection()
-
     if shard_id not in self.sql_cnxns:
       physical_shard_id = shard_id % settings.num_logical_shards
       shard_instance_name = (
