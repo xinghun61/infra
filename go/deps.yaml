@@ -129,13 +129,14 @@ import:
   - user
   - cmd/aedeploy
 - package: cloud.google.com/go
-  version: 977ff9734558eb9c014a8201d777baad2baa38d6  # next commit requires go.opencensus.io/plugin/grpc which fails on Windows
+  version: master
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
   - compute/metadata
   - pubsub
   - storage
+  - spanner
 - package: google.golang.org/genproto
   version: master
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
@@ -216,7 +217,7 @@ import:
   subpackages:
   - errgroup
 - package: golang.org/x/sys
-  version: 52ba35ddf9b65dc3ad27218743aa2444fe13b690  # next commit has an illegal redeclaration
+  version: 52ba35ddf9b65dc3ad27218743aa2444fe13b690
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
@@ -243,7 +244,7 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/VividCortex/mysqlerr.git
 - package: golang.org/x/build
-  version: 1cf306ea29af714ae6f446eda4fc3ac8abb37e6d  # next commit has sort.Slice, not support on GAE yet
+  version: 1cf306ea29af714ae6f446eda4fc3ac8abb37e6d
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
@@ -279,13 +280,13 @@ import:
   subpackages:
   - memcache
 - package: github.com/google/go-querystring
-  repo: https://chromium.googlesource.com/external/github.com/google/go-querystring.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/google/go-querystring.git
   subpackages:
   - query
 - package: github.com/Microsoft/go-winio
-  repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
 - package: github.com/docker/docker
   version: tags/v1.13.0
   repo: https://chromium.googlesource.com/external/github.com/docker/docker.git
@@ -293,26 +294,34 @@ import:
   - client
   - api/types
 - package: github.com/fedesog/webdriver
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/fedesog/webdriver.git
-  version: master
 - package: github.com/aryann/difflib
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/aryann/difflib.git
-  version: master
 - package: github.com/jmoiron/sqlx
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/jmoiron/sqlx.git
-  version: master
 - package: github.com/mattes/migrate
-  repo: https://chromium.googlesource.com/external/github.com/mattes/migrate.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/mattes/migrate.git
   subpackages:
   - database/mysql
   - source/file
 - package: github.com/golang/mock
-  repo: https://chromium.googlesource.com/external/github.com/golang/mock.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/golang/mock.git
   subpackages:
   - gomock
   - mockgen
 - package: github.com/google/uuid
-  repo: https://chromium.googlesource.com/external/github.com/google/uuid.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/google/uuid.git
+- package: go.opencensus.io
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/census-instrumentation/opencensus-go.git
+  subpackages:
+  - plugin/grpc
+- package: golang.org/x/lint
+  version: master
+  repo: https://go.googlesource.com/lint.git
