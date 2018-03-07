@@ -15,6 +15,17 @@ In order to regenerate the python server and client stubs from the `.proto`
 files, follow these steps:
 
 ```bash
-$ PATH=../components/../tools:$PATH ../../../cipd/protoc \
+$ PATH=../../../luci/appengine/components/tools:$PATH ../../../cipd/protoc \
   --python_out=. --prpc-python_out=. *.proto
+```
+
+
+## Manually Exercising the API
+
+You can make anonymous requests to a server running locally like this:
+
+```bash
+$ curl -X POST localhost:8080/prpc/monorail.Users/GetUser \
+  -H "Content-Type: application/json" -H "Accept: application/json" \
+  --data '{"email": "test@example.com"}'
 ```
