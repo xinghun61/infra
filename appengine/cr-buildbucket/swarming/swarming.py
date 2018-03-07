@@ -612,7 +612,9 @@ def _get_builder_async(build):
   project_id, bucket_cfg = yield config.get_bucket_async(build.bucket)
   assert bucket_cfg, 'if there is no bucket, this code should not have run'
   assert project_id == build.project, '%r != %r' % (project_id, build.project)
-  assert bucket_cfg.HasField('swarming'), 'not a swarming bucket'
+  if not bucket_cfg.HasField('swarming'):
+    raise errors.InvalidInputError(
+        'bucket %r is not a swarming bucket' % bucket_cfg.name)
 
   for builder_cfg in bucket_cfg.swarming.builders:  # pragma: no branch
     if builder_cfg.name == builder_name:  # pragma: no branch

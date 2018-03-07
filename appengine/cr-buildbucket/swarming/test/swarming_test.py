@@ -609,7 +609,7 @@ class SwarmingTest(BaseTest):
         tags=['builder:linux_chromium_rel_ng'],
     )
 
-    with self.assertRaises(AssertionError):
+    with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_without_template(self):
