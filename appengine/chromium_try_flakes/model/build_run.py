@@ -9,15 +9,15 @@ from status import build_result
 
 # Represents a parent for BuildRun objects that are for the same patchset and
 # builder. i.e. all win_chromium_rel_swarming runs for
-# codereview.chromium.org/123456/#ps1
+# https://chromium-review.googlesource.com/c/chromium/src/+/123456/1
 class PatchsetBuilderRuns(ndb.Model):  # pragma: no cover
   @staticmethod
   def getId(issue, patchset, master, builder):
     return str(issue) + '.' + str(patchset) + '.' + master + '.' + builder
 
   def getURL(self):
-    return ('https://codereview.chromium.org/' + str(self.issue) + '/#ps' +
-            str(self.patchset))
+    return 'https://chromium-review.googlesource.com/c/chromium/src/+/%s/%s' % (
+        str(self.issue), str(self.patchset))
 
   issue = ndb.IntegerProperty(required=True)
   patchset = ndb.IntegerProperty(required=True)
