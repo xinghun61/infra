@@ -26,6 +26,7 @@
   {
     "cmd": [
       "[CACHE]/builder/bundler/recipe_bundler",
+      "bundle",
       "-workdir",
       "[CACHE]/builder/workdir",
       "-r",
