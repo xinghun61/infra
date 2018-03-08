@@ -9,10 +9,7 @@ import os
 import urllib
 import zlib
 
-from google.appengine.api.urlfetch_errors import DeadlineExceededError
-from google.appengine.api.urlfetch_errors import DownloadError
-from google.appengine.api.urlfetch_errors import ConnectionClosedError
-
+from common import http_client_util
 from common.findit_http_client import FinditHttpClient
 from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
@@ -183,7 +180,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(task_request_json, task_request.Serialize())
 
   @mock.patch.object(
-      swarming_util,
+      http_client_util,
       'SendRequestToServer',
       return_value=(None, {
           'code': 1,
@@ -257,7 +254,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_task_request_json, json.loads(data))
 
   @mock.patch.object(
-      swarming_util,
+      http_client_util,
       'SendRequestToServer',
       return_value=(None, {
           'code': 1,
@@ -485,7 +482,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(result)
     self.assertIsNone(error)
 
-  @mock.patch.object(swarming_util, 'SendRequestToServer')
+  @mock.patch.object(http_client_util, 'SendRequestToServer')
   @mock.patch.object(swarming_util, '_FetchOutputJsonInfoFromIsolatedServer')
   def testDownloadTestResultsNeedRequestToUrl(self, mock_fetch, mock_send):
     isolated_data = {
@@ -533,7 +530,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(error)
 
   @mock.patch.object(
-      swarming_util,
+      http_client_util,
       'SendRequestToServer',
       return_value=(None, {
           'code': 1,
@@ -592,61 +589,6 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(
         swarming_util._FetchOutputJsonInfoFromIsolatedServer(
             None, self.http_client))
-
-  @mock.patch.object(
-      RetryHttpClient, 'Get', side_effect=ConnectionClosedError())
-  def testSendRequestToServerConnectionClosedError(self, _):
-    content, error = swarming_util.SendRequestToServer('http://www.someurl.url',
-                                                       FinditHttpClient())
-    self.assertIsNone(content)
-    self.assertEqual(error['code'],
-                     swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
-
-  @mock.patch.object(
-      RetryHttpClient, 'Get', side_effect=DeadlineExceededError())
-  def testSendRequestToServerDeadlineExceededError(self, _):
-    content, error = swarming_util.SendRequestToServer('http://www.someurl.com',
-                                                       FinditHttpClient())
-    self.assertIsNone(content)
-    self.assertEqual(error['code'],
-                     swarming_util.URLFETCH_DEADLINE_EXCEEDED_ERROR)
-
-  @mock.patch.object(RetryHttpClient, 'Get', side_effect=DownloadError())
-  def testSendRequestToServerDownloadError(self, _):
-    content, error = swarming_util.SendRequestToServer('http://www.someurl.com',
-                                                       FinditHttpClient())
-    self.assertIsNone(content)
-    self.assertEqual(error['code'], swarming_util.URLFETCH_DOWNLOAD_ERROR)
-
-  def testGetBackoffSeconds(self):
-    self.assertEqual(1, swarming_util._GetBackoffSeconds(1, 1, 1))
-    self.assertEqual(2, swarming_util._GetBackoffSeconds(1, 2, 100))
-    self.assertEqual(100, swarming_util._GetBackoffSeconds(1, 8, 100))
-
-  @mock.patch.object(
-      RetryHttpClient, 'Get', side_effect=ConnectionClosedError())
-  def testSendRequestToServerRetryTimeout(self, _):
-    override_swarming_settings = {
-        'should_retry_server': True,
-        'server_retry_timeout_hours': -1
-    }
-    self.UpdateUnitTestConfigSettings('swarming_settings',
-                                      override_swarming_settings)
-    content, error = swarming_util.SendRequestToServer('http://www.someurl.com',
-                                                       FinditHttpClient())
-    self.assertIsNone(content)
-    self.assertEqual(error['code'],
-                     swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
-    self.assertTrue(error['retry_timeout'])
-
-  @mock.patch.object(RetryHttpClient, 'Get')
-  def testSendRequestToServerUnexpectedStatusCode(self, mocked_get):
-    unexpected_status_code = 12345
-    mocked_get.return_value = (unexpected_status_code, None)
-    content, error = swarming_util.SendRequestToServer('http://www.someurl.com',
-                                                       FinditHttpClient())
-    self.assertIsNone(content)
-    self.assertEqual(unexpected_status_code, error['code'])
 
   @mock.patch.object(
       swarming_util,
@@ -708,7 +650,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   def testGetSwarmingBotCountsNodimentsions(self):
     self.assertEqual({}, swarming_util.GetSwarmingBotCounts(None, None))
 
-  @mock.patch.object(swarming_util, 'SendRequestToServer')
+  @mock.patch.object(http_client_util, 'SendRequestToServer')
   def testGetSwarmingBotCounts(self, mock_fn):
 
     dimensions = {'os': 'OS', 'cpu': 'cpu'}
@@ -728,7 +670,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
                      swarming_util.GetSwarmingBotCounts(dimensions, None))
 
   @mock.patch.object(
-      swarming_util,
+      http_client_util,
       'SendRequestToServer',
       return_value=(None, {
           'code': 1,

@@ -7,6 +7,7 @@ import hashlib
 import json
 import logging
 
+from common import http_client_util
 from common.waterfall import buildbucket_client
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from model.wf_try_bot_cache import WfTryBot
@@ -54,7 +55,8 @@ def GetBotsByDimension(dimensions, http_client):
   url = BOT_LIST_URL % (swarming_util.SwarmingHost(),
                         swarming_util.DimensionsToQueryString(dimensions))
 
-  content, error = swarming_util.SendRequestToServer(url, http_client)
+  content, error = http_client_util.SendRequestToServer(
+      url, http_client)
   if error:
     logging.error('failed to list bots by dimension with %s, falling back to '
                   'any selecting any bot', error)
@@ -75,9 +77,8 @@ def GetAllBotsWithCache(dimensions, cache_name, http_client):
 
 def OnlyAvailable(bots):
   return [
-      b for b in bots
-      if not (b.get('task_id') or b.get('is_dead') or b.get('quarantined') or
-              b.get('deleted'))
+      b for b in bots if not (b.get('task_id') or b.get('is_dead') or
+                              b.get('quarantined') or b.get('deleted'))
   ]
 
 
@@ -198,8 +199,9 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
     git_repo = CachedGitilesRepository(
         http_client, 'https://chromium.googlesource.com/chromium/src.git')
     # TODO(crbug.com/800107): Pass revision as a parameter.
-    revision = (tryjob.properties.get('bad_revision') or
-                tryjob.properties.get('test_revision'))
+    revision = (
+        tryjob.properties.get('bad_revision') or
+        tryjob.properties.get('test_revision'))
     if not revision:
       logging.error('Tryjob %s does not have a specified revision.' % tryjob)
       return

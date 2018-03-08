@@ -170,6 +170,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=100)
+  @mock.patch.object(
       waterfall_config,
       'GetCheckFlakeSettings',
       return_value={
@@ -227,6 +229,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
+  @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=100)
   @mock.patch.object(
       waterfall_config,
       'GetCheckFlakeSettings',

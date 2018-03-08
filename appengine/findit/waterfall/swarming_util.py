@@ -5,15 +5,10 @@
 import base64
 import json
 import logging
-import time
 import urllib
 import zlib
 
-from google.appengine.api.urlfetch_errors import DeadlineExceededError
-from google.appengine.api.urlfetch_errors import DownloadError
-from google.appengine.api.urlfetch_errors import ConnectionClosedError
-
-from gae_libs.http import auth_util
+from common import http_client_util
 from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
@@ -38,11 +33,6 @@ STATES_NOT_RUNNING_TO_ERROR_CODES = {
     'TIMED_OUT': TIMED_OUT,
 }
 
-# Urlfetch error codes.
-URLFETCH_DOWNLOAD_ERROR = 100
-URLFETCH_DEADLINE_EXCEEDED_ERROR = 110
-URLFETCH_CONNECTION_CLOSED_ERROR = 120
-
 # Outputs_ref is None.
 NO_TASK_OUTPUTS = 300
 
@@ -63,107 +53,10 @@ def SwarmingHost():
   return waterfall_config.GetSwarmingSettings().get('server_host')
 
 
-def _GetBackoffSeconds(retry_backoff, tries, maximum_retry_interval):
-  """Returns how many seconds to wait before next retry.
-
-  Params:
-    retry_backoff (int): The base backoff in seconds.
-    tries (int): Indicates how many tries have been done.
-    maximum_retry_interval (int): The upper limit in seconds of how long to wait
-      between retries.
-  """
-  return min(retry_backoff * (2**(tries - 1)), maximum_retry_interval)
-
-
-def SendRequestToServer(url, http_client, post_data=None):
-  """Sends GET/POST request to arbitrary url and returns response content.
-
-  Because the Swarming and Isolated servers that SendRequestToServer tries to
-  contact are prone to outages, exceptions trying to reach them may occur thus
-  this method should retry. We want to monitor and document these occurrences
-  even if the request eventually succeeds after retrying, with the last error
-  encountered being the one that is reported.
-
-  Args:
-    url (str): The url to send the request to.
-    http_client (HttpClient): The httpclient object with which to make the
-      server calls.
-    post_data (dict): Data/params to send with the request, if any.
-
-  Returns:
-    content (dict), error (dict): The content from the server and the last error
-    encountered trying to retrieve it.
-  """
-  swarming_settings = waterfall_config.GetSwarmingSettings()
-  should_retry = swarming_settings.get('should_retry_server')
-  timeout_seconds = (
-      swarming_settings.get('server_retry_timeout_hours') * 60 * 60)
-  maximum_retry_interval = swarming_settings.get(
-      'maximum_server_contact_retry_interval_seconds')
-  deadline = time.time() + timeout_seconds
-  retry_backoff = 60
-  tries = 1
-  error = None
-
-  headers = {}
-  if post_data:
-    post_data = json.dumps(post_data, sort_keys=True, separators=(',', ':'))
-    headers['Content-Type'] = 'application/json; charset=UTF-8'
-    headers['Content-Length'] = len(post_data)
-
-  # TODO (crbug/809085): handle connection errors in a separate function.
-  while True:
-    try:
-      if post_data:
-        status_code, content = http_client.Post(url, post_data, headers=headers)
-      else:
-        status_code, content = http_client.Get(url, headers=headers)
-      if status_code == 200:
-        # Also return the last error encountered to be handled in the calling
-        # code.
-        return content, error
-      else:
-        # The retry upon 50x (501 excluded) is automatically handled in the
-        # underlying http_client, which by default retries 5 times with
-        # exponential backoff.
-        return None, {
-            'code': status_code,
-            'message': 'Unexpected status code from http request'
-        }
-    except ConnectionClosedError as e:
-      error = {'code': URLFETCH_CONNECTION_CLOSED_ERROR, 'message': e.message}
-    except DeadlineExceededError as e:
-      error = {'code': URLFETCH_DEADLINE_EXCEEDED_ERROR, 'message': e.message}
-    except DownloadError as e:
-      error = {'code': URLFETCH_DOWNLOAD_ERROR, 'message': e.message}
-    except Exception as e:  # pragma: no cover
-      logging.error(
-          'An unknown exception occurred that need to be monitored: %s',
-          e.message)
-      error = {'code': UNKNOWN, 'message': e.message}
-
-    if should_retry and time.time() < deadline:  # pragma: no cover
-      # Wait, then retry if applicable.
-      wait_time = _GetBackoffSeconds(retry_backoff, tries,
-                                     maximum_retry_interval)
-      logging.info('Retrying connection to %s in %d seconds', url, wait_time)
-      time.sleep(wait_time)
-      tries += 1
-    else:
-      if should_retry:
-        # Indicate in the error that the retry timeout was reached.
-        error['retry_timeout'] = True
-      break
-
-  logging.error('Failed to get an adequate response from %s. No data could be '
-                'retrieved', url)
-  return None, error
-
-
 def GetSwarmingTaskRequest(task_id, http_client):
   """Returns an instance of SwarmingTaskRequest representing the given task."""
   url = TASK_ID_URL % (SwarmingHost(), task_id)
-  content, error = SendRequestToServer(url, http_client)
+  content, error = http_client_util.SendRequestToServer(url, http_client)
 
   # TODO(lijeffrey): Handle/report error in calling functions.
   if not error:
@@ -190,8 +83,8 @@ def TriggerSwarmingTask(request, http_client):
 
   request.tags.extend(['findit:1', 'project:Chromium', 'purpose:post-commit'])
 
-  response_data, error = SendRequestToServer(NEW_TASK_URL % SwarmingHost(),
-                                             http_client, request.Serialize())
+  response_data, error = http_client_util.SendRequestToServer(
+      NEW_TASK_URL % SwarmingHost(), http_client, post_data=request.Serialize())
 
   if not error:
     return json.loads(response_data)['task_id'], None
@@ -239,7 +132,8 @@ def ListSwarmingTasksDataByTags(master_name,
       url = base_url
     else:
       url = base_url + '&cursor=%s' % urllib.quote(cursor)
-    new_data, _ = SendRequestToServer(url, http_client)
+    new_data, _ = http_client_util.SendRequestToServer(
+        url, http_client)
 
     # TODO(lijeffrey): handle error in calling functions.
     if not new_data:
@@ -272,7 +166,8 @@ def GetSwarmingTaskResultById(task_id, http_client):
   base_url = TASK_RESULT_URL % (SwarmingHost(), task_id)
   json_data = {}
 
-  data, error = SendRequestToServer(base_url, http_client)
+  data, error = http_client_util.SendRequestToServer(
+      base_url, http_client)
 
   if not error:
     json_data = json.loads(data)
@@ -315,7 +210,9 @@ def GetIsolatedDataForStep(master_name,
   """
   step_isolated_data = []
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {'stepname': step_name})
+                                     http_client, {
+                                         'stepname': step_name
+                                     })
   if not data:
     return step_isolated_data
 
@@ -352,7 +249,9 @@ def GetIsolatedShaForStep(master_name, builder_name, build_number, step_name,
         configuration.
   """
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {'stepname': step_name})
+                                     http_client, {
+                                         'stepname': step_name
+                                     })
   if not data:
     logging.error('Failed to get swarming task data for %s/%s/%s/%s',
                   master_name, builder_name, build_number, step_name)
@@ -387,7 +286,8 @@ def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
   }
   url = '%s/api/isolateservice/v1/retrieve' % isolated_data['isolatedserver']
 
-  return SendRequestToServer(url, http_client, post_data)
+  return http_client_util.SendRequestToServer(
+      url, http_client, post_data=post_data)
 
 
 def _ProcessRetrievedContent(output_json_content, http_client):
@@ -399,7 +299,8 @@ def _ProcessRetrievedContent(output_json_content, http_client):
   json_content = json.loads(output_json_content)
   output_json_url = json_content.get('url')
   if output_json_url:
-    get_content, _ = SendRequestToServer(output_json_url, http_client)
+    get_content, _ = http_client_util.SendRequestToServer(
+        output_json_url, http_client)
     # TODO(lijeffrey): handle error in calling function.
   elif json_content.get('content'):
     get_content = base64.b64decode(json_content['content'])
@@ -495,7 +396,8 @@ def GetSwarmingBotCounts(dimensions, http_client):
 
   url = BOT_COUNT_URL % (SwarmingHost(), DimensionsToQueryString(dimensions))
 
-  content, error = SendRequestToServer(url, http_client)
+  content, error = http_client_util.SendRequestToServer(
+      url, http_client)
   if error or not content:
     return {}
 
@@ -505,7 +407,8 @@ def GetSwarmingBotCounts(dimensions, http_client):
       k: int(content_data.get(k, 0))
       for k in ('busy', 'count', 'dead', 'quarantined')
   }
-  bot_counts['available'] = (bot_counts['count'] - bot_counts['busy'] -
-                             bot_counts['dead'] - bot_counts['quarantined'])
+  bot_counts['available'] = (
+      bot_counts['count'] - bot_counts['busy'] - bot_counts['dead'] -
+      bot_counts['quarantined'])
 
   return bot_counts

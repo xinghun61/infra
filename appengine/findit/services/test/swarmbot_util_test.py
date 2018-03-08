@@ -2,20 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
-from datetime import datetime
 import json
-import logging
 import mock
-import os
-import urllib
 
-from libs.http.retry_http_client import RetryHttpClient
-from model.wf_config import FinditConfig
+from common import http_client_util
 from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
 from services import swarmbot_util
-from waterfall import swarming_util
 from waterfall.test import wf_testcase
 
 
@@ -148,7 +141,7 @@ class SwarmbotUtilTest(wf_testcase.WaterfallTestCase):
     MockBuildbucketBuild.response = {}
     self.assertIsNone(swarmbot_util.GetBuilderCacheName(MockBuildbucketBuild))
 
-  @mock.patch.object(swarming_util, 'SendRequestToServer')
+  @mock.patch.object(http_client_util, 'SendRequestToServer')
   def testSelectWarmCacheNoOp(self, mock_fn):
 
     class MockTryJobBuildbot(object):
@@ -161,7 +154,7 @@ class SwarmbotUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(mock_fn.called)
 
   @mock.patch.object(
-      swarming_util,
+      http_client_util,
       'SendRequestToServer',
       return_value=(None, {
           'code': 1,
@@ -173,7 +166,7 @@ class SwarmbotUtilTest(wf_testcase.WaterfallTestCase):
                      swarmbot_util.GetAllBotsWithCache(dimensions, 'cache_name',
                                                        None))
 
-  @mock.patch.object(swarming_util, 'SendRequestToServer')
+  @mock.patch.object(http_client_util, 'SendRequestToServer')
   def testGetAllBotsWithCache(self, mock_fn):
 
     dimensions = {'os': 'OS', 'cpu': 'cpu'}
@@ -425,6 +418,8 @@ class SwarmbotUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('id:bot0', tryjob.dimensions[2])
 
   @mock.patch.object(
-      swarming_util, 'SendRequestToServer', return_value=(None, None))
+      http_client_util,
+      'SendRequestToServer',
+      return_value=(None, None))
   def testGetBotsByDimensionNoContent(self, _):
     self.assertEqual([], swarmbot_util.GetBotsByDimension([], None))

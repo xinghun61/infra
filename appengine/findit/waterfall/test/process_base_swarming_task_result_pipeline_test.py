@@ -184,7 +184,9 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         ._CheckTestsRunStatuses(_SAMPLE_FAILURE_LOG))
     self.assertEqual(_EXPECTED_TESTS_STATUS, tests_statuses)
 
-  def testMonitorSwarmingTaskTimeOut(self):
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskFailureLog',
+                     return_value=(None, None))
+  def testMonitorSwarmingTaskTimeOut(self, _):
     # Override swarming config settings to force a timeout.
     override_swarming_settings = {'task_timeout_hours': -1}
     self.UpdateUnitTestConfigSettings('swarming_settings',

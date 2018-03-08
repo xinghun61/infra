@@ -294,6 +294,7 @@ class RecursiveFlakePipeline(BasePipeline):
             retries=retries,
             force=force)
     else:  # Can't start analysis, reschedule.
+      print 'delay'
       retries += 1
       delay_seconds = _GetDelaySeconds(analysis, retries,
                                        self.manually_triggered)
