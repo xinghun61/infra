@@ -145,7 +145,7 @@ func TestPoll(t *testing.T) {
 					So(ds.Get(ctx, p), ShouldBeNil)
 				}
 			})
-			Convey("Enqueues no analyze request", func() {
+			Convey("Does not enqueue analyze requests", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, 0)
 			})
 		})
@@ -169,7 +169,7 @@ func TestPoll(t *testing.T) {
 					So(t.Equal(p.LastPoll), ShouldBeTrue)
 				}
 			})
-			Convey("Enqueues no analyze request", func() {
+			Convey("Does not enqueue analyze requests", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, 0)
 			})
 		})
@@ -281,6 +281,38 @@ func TestPoll(t *testing.T) {
 					So(err, ShouldBeNil)
 					So(ar.Paths, ShouldResemble, []string{changedFile})
 				}
+			})
+		})
+
+		Convey("Poll when there is a change with no files", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := tc.Now().UTC()
+			// Fill up with a change per project
+			rev := "abcdefg"
+			changeID := "project~branch~Ideadc0de"
+			owner := &gr.AccountInfo{
+				Email: "emso@chromium.org",
+			}
+			for _, gd := range gerritProjects {
+				files := make(map[string]*gr.FileInfo)
+				revisions := make(map[string]gr.RevisionInfo)
+				revisions[rev] = gr.RevisionInfo{Files: files}
+				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
+					{
+						ID:              changeID,
+						Project:         gd.Project,
+						CurrentRevision: rev,
+						Updated:         gr.TimeStamp(lastChangeTs),
+						Revisions:       revisions,
+						Owner:           owner,
+					},
+				})
+			}
+			So(poll(ctx, api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(poll(ctx, api, cp), ShouldBeNil)
+			Convey("Does not enqueue analyze requests", func() {
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, 0)
 			})
 		})
 

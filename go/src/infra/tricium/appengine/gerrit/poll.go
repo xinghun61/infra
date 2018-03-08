@@ -359,6 +359,10 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 				paths = append(paths, k)
 			}
 		}
+		if len(paths) == 0 {
+			logging.Infof(ctx, "Not making Analyze request for change %s; changes has no files", c.ID)
+			continue
+		}
 		// Sorting files to account for random enumeration in go maps.
 		// This is to get consistent behavior for the same input.
 		sort.Strings(paths)
