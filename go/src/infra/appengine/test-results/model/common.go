@@ -28,6 +28,13 @@ type Number int
 // an error.
 func (n *Number) UnmarshalJSON(data []byte) error {
 	data = bytes.Trim(data, `"`)
+	// swarmed webkit_layout_tests (possibly others) apparently use this value.
+	// It only causes problems when trying to parse *un*merged test results
+	// directly from isolate.
+	if string(data) == "DUMMY_BUILD_NUMBER" {
+		return nil
+	}
+
 	num, err := strconv.Atoi(string(data))
 	if err != nil {
 		return err
