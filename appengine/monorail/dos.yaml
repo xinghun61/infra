@@ -133,3 +133,9 @@ blacklist:
     description: someone scanning attachments 2018-02-07
   - subnet: 138.197.103.52
     description: someone using sqlmap.org on us 20180-03-08
+  - subnet: 103.7.28.53
+    description: someone endlessly requesting the same search 20180-03-08
+  - subnet: 140.123.126.210
+    description: someone crawling us poorly 20180-03-08
+  - subnet: 51.15.86.162
+    description: someone crawling issues every few seconds 20180-03-08
