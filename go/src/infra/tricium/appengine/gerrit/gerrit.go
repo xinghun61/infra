@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 
@@ -131,7 +132,7 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 		if _, ok := robos[comment.Path]; !ok {
 			robos[comment.Path] = []*robotCommentInput{}
 		}
-		robos[comment.Path] = append(robos[comment.Path], createRobotComment(runID, comment))
+		robos[comment.Path] = append(robos[comment.Path], createRobotComment(ctx, runID, comment))
 	}
 	return g.setReview(ctx, host, change, revision, &reviewInput{
 		RobotComments: robos,
@@ -144,12 +145,12 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 //
 // Checks for presence of position info to distinguish file comments, line
 // comments, and comments with character ranges.
-func createRobotComment(runID int64, comment tricium.Data_Comment) *robotCommentInput {
+func createRobotComment(c context.Context, runID int64, comment tricium.Data_Comment) *robotCommentInput {
 	roco := &robotCommentInput{
 		Message:    comment.Message,
 		RobotID:    comment.Category,
 		RobotRunID: strconv.FormatInt(runID, 10),
-		URL:        comment.Url,
+		URL:        composeRunURL(c, runID),
 		Path:       comment.Path,
 		Properties: map[string]string{"tricium_comment_uuid": comment.Id},
 	}
@@ -165,6 +166,11 @@ func createRobotComment(runID int64, comment tricium.Data_Comment) *robotComment
 		}
 	}
 	return roco
+}
+
+// composeRunURL returns the URL for viewing details about a Tricium run.
+func composeRunURL(c context.Context, runID int64) string {
+	return fmt.Sprintf("https://%s/run/%d", info.DefaultVersionHostname(c), runID)
 }
 
 // composeChangesQueryURL composes the URL used to query Gerrit for updated

@@ -12,6 +12,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/tricium/api/v1"
+	trit "infra/tricium/appengine/common/testing"
 )
 
 func TestPatchSetNumber(t *testing.T) {
@@ -46,11 +47,34 @@ func TestComposeChangesQueryURL(t *testing.T) {
 }
 
 func TestCreateRobotComment(t *testing.T) {
-	Convey("Test Enviroinment", t, func() {
+	Convey("Test Environment", t, func() {
+
+		tt := &trit.Testing{}
+		ctx := tt.Context()
 		runID := int64(1234567)
 		uuid := "7ae6f43d-22e9-4350-ace4-1fee9014509a"
+
+		Convey("Basic comment fields include UUID and URL", func() {
+			roco := createRobotComment(ctx, runID, tricium.Data_Comment{
+				Id:       uuid,
+				Path:     "README.md",
+				Message:  "Message",
+				Category: "Hello",
+			})
+			So(roco, ShouldResemble, &robotCommentInput{
+				Message:    "Message",
+				RobotID:    "Hello",
+				RobotRunID: "1234567",
+				URL:        "https://app.example.com/run/1234567",
+				Path:       "README.md",
+				Properties: map[string]string{
+					"tricium_comment_uuid": "7ae6f43d-22e9-4350-ace4-1fee9014509a",
+				},
+			})
+		})
+
 		Convey("File comment has no position info", func() {
-			roco := createRobotComment(runID, tricium.Data_Comment{
+			roco := createRobotComment(ctx, runID, tricium.Data_Comment{
 				Id:       uuid,
 				Path:     "README.md",
 				Message:  "Message",
@@ -59,9 +83,10 @@ func TestCreateRobotComment(t *testing.T) {
 			So(roco.Line, ShouldEqual, 0)
 			So(roco.Range, ShouldBeNil)
 		})
+
 		Convey("Line comment has no range info", func() {
 			line := int32(10)
-			roco := createRobotComment(runID, tricium.Data_Comment{
+			roco := createRobotComment(ctx, runID, tricium.Data_Comment{
 				Id:        uuid,
 				Path:      "README.md",
 				Message:   "Message",
@@ -71,30 +96,29 @@ func TestCreateRobotComment(t *testing.T) {
 			So(roco.Line, ShouldEqual, line)
 			So(roco.Range, ShouldBeNil)
 		})
+
 		Convey("Range comment has range", func() {
-			startLine := int32(10)
-			endLine := int32(20)
-			startChar := int32(2)
-			endChar := int32(18)
-			roco := createRobotComment(runID, tricium.Data_Comment{
+			startLine := 10
+			endLine := 20
+			startChar := 2
+			endChar := 18
+			roco := createRobotComment(ctx, runID, tricium.Data_Comment{
 				Id:        uuid,
 				Path:      "README.md",
 				Message:   "Message",
 				Category:  "Hello",
-				StartLine: startLine,
-				EndLine:   endLine,
-				StartChar: startChar,
-				EndChar:   endChar,
+				StartLine: int32(startLine),
+				EndLine:   int32(endLine),
+				StartChar: int32(startChar),
+				EndChar:   int32(endChar),
 			})
-			So(roco.Message, ShouldEqual, "Message")
-			So(roco.RobotID, ShouldEqual, "Hello")
-			So(roco.Properties["tricium_comment_uuid"], ShouldEqual, uuid)
 			So(roco.Line, ShouldEqual, startLine)
-			So(roco.Range, ShouldNotBeNil)
-			So(roco.Range.StartLine, ShouldEqual, startLine)
-			So(roco.Range.EndLine, ShouldEqual, endLine)
-			So(roco.Range.StartCharacter, ShouldEqual, startChar)
-			So(roco.Range.EndCharacter, ShouldEqual, endChar)
+			So(roco.Range, ShouldResemble, &commentRange{
+				StartLine:      startLine,
+				EndLine:        endLine,
+				StartCharacter: startChar,
+				EndCharacter:   endChar,
+			})
 		})
 
 	})
