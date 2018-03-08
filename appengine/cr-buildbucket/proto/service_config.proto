@@ -12,8 +12,6 @@ package buildbucket;
 message SettingsCfg {
   // Swarmbucket settings.
   SwarmingSettings swarming = 1;
-  // BigQuery export settings.
-  BigQueryExport bq_export = 2;
 }
 
 // Swarmbucket settings.
@@ -24,10 +22,4 @@ message SwarmingSettings {
   // Default value of swarming.task_template_canary_percentage field in
   // cr-buildbucket.cfg files.
   int32 default_task_template_canary_percentage = 3;
-}
-
-message BigQueryExport {
-  reserved 1; // buckets_re
-  // A whitelist of LogDog hosts.
-  repeated string allowed_logdog_hosts = 2;
 }

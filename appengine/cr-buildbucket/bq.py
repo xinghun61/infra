@@ -57,8 +57,7 @@ class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
     assert self.queue_name
     assert self.dataset
 
-    settings = config.get_settings_async().get_result()
-    _process_pull_task_batch(self.queue_name, self.dataset, settings.bq_export)
+    _process_pull_task_batch(self.queue_name, self.dataset)
 
 
 class CronExportBuildsProd(CronExportBuilds):
@@ -71,7 +70,7 @@ class CronExportBuildsExperimental(CronExportBuilds):
   dataset = 'builds_experimental'
 
 
-def _process_pull_task_batch(queue_name, dataset, bq_settings):
+def _process_pull_task_batch(queue_name, dataset):
   """Exports up to 1000 builds to BigQuery.
 
   Leases pull tasks, fetches build entities, tries to convert them to v2 format
@@ -93,8 +92,6 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
   """
   now = utils.utcnow()
 
-  allowed_logdog_hosts = set(bq_settings.allowed_logdog_hosts)
-
   # Lease tasks.
   lease_duration = datetime.timedelta(minutes=5)
   lease_deadline = now + lease_duration
@@ -109,13 +106,9 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
 
   # Fetch builds for the tasks and convert to v2 format.
   builds = ndb.get_multi([ndb.Key(model.Build, bid) for bid in build_ids])
-  v2_builds_futs = [
-    (bid, _build_to_v2_async(bid, b, allowed_logdog_hosts))
-    for bid, b in zip(build_ids, builds)
-  ]
   v2_builds = []
-  for bid, fut in v2_builds_futs:
-    v2_build, retry = fut.get_result()
+  for bid, b in zip(build_ids, builds):
+    v2_build, retry = _build_to_v2(bid, b)
     if retry:
       ids_to_retry.add(bid)
     elif v2_build:  # pragma: no branch
@@ -140,60 +133,31 @@ def _process_pull_task_batch(queue_name, dataset, bq_settings):
       'inserted %d rows, processed %d tasks', row_count, len(done_tasks))
 
 
-@ndb.tasklet
-def _build_to_v2_async(bid, build, allowed_logdog_hosts):
+def _build_to_v2(bid, build):
   """Returns (v2_build, should_retry) tuple.
 
   Logs reasons for returning v2_build=None or retry=True.
   """
   if not build:
     logging.error('skipping build %d: not found', bid)
-    raise ndb.Return(None, False)
+    return None, False
 
   if build.status != model.BuildStatus.COMPLETED:
     logging.error('skipping build %d: not complete', bid)
-    raise ndb.Return(None, False)
+    return None, False
 
   try:
-    v2_build, finalized = yield v2.build_to_v2_async(
-        build, allowed_logdog_hosts)
+    v2_build = v2.build_to_v2(build)
+    return v2_build, False
   except v2.errors.UnsupportedBuild as ex:
     logging.warning(
         'skipping build %d: not supported by v2 conversion: %s',
         bid, ex)
-    raise ndb.Return(None, False)
+    return None, False
   except Exception:
     logging.exception(
         'failed to convert build to v2\nBuild id: %d', bid)
-    raise ndb.Return(None, True)
-
-  if finalized:
-    raise ndb.Return(v2_build, False)
-
-  build_age = utils.utcnow() - build.complete_time
-  if build_age >= datetime.timedelta(minutes=20):  # pragma: no branch
-    task_state = _dict_get(
-        build.result_details, 'swarming', 'task_result', 'state')
-    if task_state in ('BOT_DIED', 'TIMED_OUT'):
-      logging.warning(
-          'build %d is not finalized and its task state is %r >=20m ago. '
-          'Will not wait longer.', bid, task_state)
-      raise ndb.Return(v2_build, False)
-
-    infra_failure_type = _dict_get(
-        build.result_details, 'build_run_result', 'infraFailure', 'type')
-    if infra_failure_type == 'BOOTSTRAPPER_ERROR' and not v2_build.steps:
-      logging.warning(
-          'build %d is not finalized, has no steps and failed with '
-          'BOOTSTRAPPER_ERROR error >=20m ago. Will not wait longer.', bid)
-      raise ndb.Return(v2_build, False)
-
-  logging.warning(
-      'build %d is not finalized. Build age: %s', build.key.id(), build_age)
-  if build_age > datetime.timedelta(hours=2):  # pragma: no branch
-    # Poor man's monitoring.
-    logging.error('build is not finalized for >=2h')
-  raise ndb.Return(None, True)
+    return None, True
 
 
 def _export_builds(dataset, v2_builds, deadline):
@@ -238,11 +202,3 @@ def _export_builds(dataset, v2_builds, deadline):
         'failed to insert row for build %d: %r',
         b.id, err['errors'])
   return failed_ids
-
-
-def _dict_get(d, *keys):
-  """Returns a value from nested dicts, e.g. _dict_get({a:{b:c}}, a, b) == c."""
-  v = d
-  for k in keys:
-    v = (v or {}).get(k)
-  return v
