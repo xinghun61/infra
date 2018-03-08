@@ -20,14 +20,14 @@ from third_party import annotations_pb2
 from proto import common_pb2
 from proto import build_pb2
 from proto import step_pb2
-from v2 import annotations
+from v2 import steps
 from test import test_util
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class AnnotationsTest(testing.AppengineTestCase):
+class StepsTest(testing.AppengineTestCase):
   maxDiff = None
 
   def test_parse_step(self):
@@ -40,7 +40,7 @@ class AnnotationsTest(testing.AppengineTestCase):
       text = multiline_proto.parse(f.read())
       text_format.Merge(text, expected)
 
-    converter = annotations.Converter('logdog.example.com', 'prefix')
+    converter = steps.AnnotationConverter('logdog.example.com', 'prefix')
     actual = build_pb2.Build(
         steps=converter.parse_substeps(annotation_step.substep))
 

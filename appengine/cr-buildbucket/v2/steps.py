@@ -24,7 +24,7 @@ from proto import step_pb2
 STEP_SEP = '|'
 
 
-class Converter(object):
+class AnnotationConverter(object):
   """Converts annotation_pb2.Step to step_pb2.Step."""
 
   def __init__(self, default_logdog_host, default_logdog_prefix):
