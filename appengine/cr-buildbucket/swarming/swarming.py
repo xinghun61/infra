@@ -273,6 +273,7 @@ def _buildbucket_property(build):
   return {
     'hostname': app_identity.get_default_version_hostname(),
     'build': {
+      'project': build.project,
       'bucket': build.bucket,
       'created_by': build.created_by.to_bytes(),
       'created_ts': utils.datetime_to_timestamp(build.create_time),

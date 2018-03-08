@@ -187,6 +187,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             'buildbucket': {
               'hostname': 'cr-buildbucket.appspot.com',
               'build': {
+                'project': 'chromium',
                 'bucket': 'luci.chromium.try',
                 'created_by': 'anonymous:anonymous',
                 'created_ts': 1448841600000000,

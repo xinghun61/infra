@@ -515,6 +515,7 @@ class SwarmingTest(BaseTest):
             'buildbucket': {
               'hostname': 'cr-buildbucket.appspot.com',
               'build': {
+                'project': 'chromium',
                 'bucket': 'luci.chromium.try',
                 'created_by': 'user:john@example.com',
                 'created_ts': utils.datetime_to_timestamp(build.create_time),
@@ -709,6 +710,7 @@ class SwarmingTest(BaseTest):
             'buildbucket': {
               'hostname': 'cr-buildbucket.appspot.com',
               'build': {
+                'project': 'chromium',
                 'bucket': 'luci.chromium.try',
                 'created_by': 'user:john@example.com',
                 'created_ts': utils.datetime_to_timestamp(build.create_time),
