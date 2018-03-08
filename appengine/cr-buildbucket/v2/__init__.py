@@ -13,16 +13,7 @@ from google.appengine.ext import ndb
 
 from . import builds
 from . import errors
+from .builds import build_to_v2_partial
+from .steps import AnnotationConverter
 from .builds import BUILDER_PARAMETER
 import model
-
-
-def build_to_v2(build):  # pragma: no cover
-  """Converts a model.Build to a build_pb.Build.
-
-  Raises:
-    errors.UnsupportedBuild: build is not eligible for conversion.
-    errors.MalformedBuild: build has unexpected format.
-  """
-  # TODO(nodir): steps.
-  return builds.build_to_v2_partial(build)

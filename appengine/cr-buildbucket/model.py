@@ -231,6 +231,29 @@ class Build(ndb.Model):
     self.leasee = None
 
 
+class BuildAnnotations(ndb.Model):
+  """Stores annotation_pb2.Step of a build, if available.
+
+  Available only for Swarmbucket builds, if we were able to retrieve it.
+  Created on Build completion.
+
+  Entity key:
+    Parent is Build entity key.
+    ID is 1.
+  """
+
+  ENTITY_ID = 1
+
+  # root annotation_pb2.Step in binary format.
+  annotation_binary = ndb.BlobProperty(compressed=True)
+  # where the annotations_binary came from.
+  annotation_url = ndb.StringProperty(indexed=False)
+
+  @classmethod
+  def key_for(cls, build_key):  # pragma: no cover
+    return ndb.Key(cls, cls.ENTITY_ID, parent=build_key)
+
+
 class TagIndexEntry(ndb.Model):
   """A single entry in a TagIndex, references a build."""
   created_time = ndb.DateTimeProperty(auto_now_add=True)

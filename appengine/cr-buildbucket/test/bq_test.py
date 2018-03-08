@@ -15,6 +15,8 @@ from test import test_util
 from testing_utils import testing
 import mock
 
+from third_party import annotations_pb2
+
 from proto import build_pb2
 from proto import service_config_pb2
 from test import test_util
@@ -64,13 +66,35 @@ class BigQueryExportTest(testing.AppengineTestCase):
           complete_time=datetime.datetime(2018, 1, 1)),
       mkbuild(
           id=2,
-          status=model.BuildStatus.SCHEDULED),
+          status=model.BuildStatus.COMPLETED,
+          result=model.BuildResult.FAILURE,
+          failure_reason=model.FailureReason.BUILD_FAILURE,
+          complete_time=datetime.datetime(2018, 1, 1)),
       mkbuild(
           id=3,
+          status=model.BuildStatus.SCHEDULED),
+      mkbuild(
+          id=4,
           status=model.BuildStatus.STARTED,
           start_time=datetime.datetime(2018, 1, 1)),
     ]
     ndb.put_multi(builds)
+
+    ann_step = annotations_pb2.Step(
+        substep=[
+          annotations_pb2.Step.Substep(
+              step=annotations_pb2.Step(
+                  name='bot_update',
+                  status=annotations_pb2.SUCCESS,
+              ),
+          ),
+        ],
+    )
+    model.BuildAnnotations(
+        key=model.BuildAnnotations.key_for(builds[0].key),
+        annotation_binary=ann_step.SerializeToString(),
+        annotation_url='logdog://logdog.example.com/project/prefix/+/name',
+    ).put()
     self.queue.add([
       taskqueue.Task(
           method='PULL',
@@ -90,16 +114,19 @@ class BigQueryExportTest(testing.AppengineTestCase):
           'kind': 'bigquery#tableDataInsertAllRequest',
           'skipInvalidRows': False,
           'ignoreUnknownValues': False,
-          'rows': [{
-            'insertId': '1',
-            'json': mock.ANY,
-          }],
+          'rows': [
+            { 'insertId': '1', 'json': mock.ANY },
+            { 'insertId': '2', 'json': mock.ANY },
+          ],
         },
         scopes=bqh.INSERT_ROWS_SCOPE,
         deadline=5 * 60,
     )
     actual_payload = net.json_request.call_args[1]['payload']
-    self.assertEqual(actual_payload['rows'][0]['json']['id'], 1)
+    self.assertEqual(
+        [r['json']['id'] for r in actual_payload['rows']],
+        [1, 2],
+    )
 
   def test_cron_export_builds_to_bq_unsupported(self):
     model.Build(
@@ -117,11 +144,11 @@ class BigQueryExportTest(testing.AppengineTestCase):
     bq._process_pull_task_batch(self.queue.name, 'builds')
     self.assertFalse(net.json_request.called)
 
-  @mock.patch('v2.build_to_v2', autospec=True)
+  @mock.patch('v2.build_to_v2_partial', autospec=True)
   @mock.patch(
       'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True)
   def test_cron_export_builds_to_bq_exception(
-      self, delete_tasks, build_to_v2):
+      self, delete_tasks, build_to_v2_partial):
     builds = [
       mkbuild(
           id=i+1,
@@ -140,12 +167,12 @@ class BigQueryExportTest(testing.AppengineTestCase):
     ]
     self.queue.add(tasks)
 
-    def build_to_v2_mock(build, *_, **__):
+    def build_to_v2_partial_mock(build, *_, **__):
       if build is builds[1]:
         raise Exception()
       return build_pb2.Build()
 
-    build_to_v2.side_effect = build_to_v2_mock
+    build_to_v2_partial.side_effect = build_to_v2_partial_mock
 
     bq._process_pull_task_batch(self.queue.name, 'builds')
 
@@ -208,6 +235,27 @@ class BigQueryExportTest(testing.AppengineTestCase):
         [t.payload for t in deleted],
         [tasks[0].payload, tasks[2].payload],
     )
+
+
+class ParseLogDogURLTest(testing.AppengineTestCase):
+ def test_success(self):
+    url = (
+        'logdog://luci-logdog-dev.appspot.com/'
+        'infra/'
+        'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048/+/'
+        'annotations')
+    expected = (
+      'luci-logdog-dev.appspot.com',
+      'infra',
+      'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048',
+      'annotations',
+    )
+    actual = bq.parse_logdog_url(url)
+    self.assertEqual(actual, expected)
+
+ def test_failure(self):
+    with self.assertRaises(ValueError):
+      bq.parse_logdog_url('logdog://trash')
 
 
 def mkbuild(**kwargs):

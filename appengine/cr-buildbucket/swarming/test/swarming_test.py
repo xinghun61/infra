@@ -12,6 +12,7 @@ from components import utils
 utils.fix_protobuf_package()
 
 from google import protobuf
+from google.protobuf import json_format
 
 from components import auth
 from components import net
@@ -20,6 +21,8 @@ from testing_utils import testing
 from webob import exc
 import mock
 import webapp2
+
+from third_party import annotations_pb2
 
 from swarming import isolate
 from swarming import swarming
@@ -1034,6 +1037,18 @@ class SwarmingTest(BaseTest):
 
   @mock.patch('swarming.swarming._load_build_run_result_async', autospec=True)
   def test_sync(self, load_build_run_result_async):
+    ann_step = annotations_pb2.Step(
+        substep=[
+          annotations_pb2.Step.Substep(
+              step=annotations_pb2.Step(
+                  name='bot_update',
+                  status=annotations_pb2.SUCCESS,
+              ),
+          ),
+        ],
+    )
+    ann_url = 'logdog://url'
+
     load_build_run_result_async.return_value = future((None, False))
     cases = [
       {
@@ -1068,6 +1083,26 @@ class SwarmingTest(BaseTest):
         'result': model.BuildResult.SUCCESS,
         'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
         'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },
+      {
+        'task_result': {
+          'state': 'COMPLETED',
+          'started_ts': '2018-01-29T21:15:02.649750',
+          'completed_ts': '2018-01-30T00:15:18.162860',
+        },
+        'build_run_result': {
+          'annotationUrl': ann_url,
+          'annotations': json.loads(json_format.MessageToJson(ann_step)),
+        },
+
+        'status': model.BuildStatus.COMPLETED,
+        'result': model.BuildResult.SUCCESS,
+        'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+        'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+        'build_annotations': model.BuildAnnotations(
+            annotation_url=ann_url,
+            annotation_binary=ann_step.SerializeToString(),
+        ),
       },
       {
         'task_result': {
@@ -1193,11 +1228,18 @@ class SwarmingTest(BaseTest):
     for case in cases:
       build = mkBuild(canary=False)
       build.put()
+      ann_key = model.BuildAnnotations.key_for(build.key)
+
+      # This is cleanup after prev test in this func.
+      # TODO(nodir): rewrite all this code in Go.
+      ann_key.delete()
+
       load_build_run_result_async.return_value = future((
           case.get('build_run_result'),
           case.get('build_run_result_corrupted', False),
       ))
       swarming._sync_build_async(1, case['task_result']).get_result()
+
       build = build.key.get()
       self.assertEqual(build.status, case['status'])
       self.assertEqual(build.result, case.get('result'))
@@ -1205,6 +1247,17 @@ class SwarmingTest(BaseTest):
       self.assertEqual(build.cancelation_reason, case.get('cancelation_reason'))
       self.assertEqual(build.start_time, case.get('start_time'))
       self.assertEqual(build.complete_time, case.get('complete_time'))
+
+      expected_annotations = case.get('build_annotations')
+      actual_annotations = ann_key.get()
+      self.assertEqual(expected_annotations is None, actual_annotations is None)
+      if actual_annotations:
+        self.assertEqual(
+            actual_annotations.annotation_url,
+            expected_annotations.annotation_url)
+        self.assertEqual(
+            actual_annotations.annotation_binary,
+            expected_annotations.annotation_binary)
 
   @mock.patch('swarming.isolate.fetch_async')
   def test_load_build_run_result_async(self, fetch_isolate_async):

@@ -44,7 +44,10 @@ from components.config import validation
 from google.appengine.api import app_identity
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
+from google.protobuf import json_format
 import webapp2
+
+from third_party import annotations_pb2
 
 from proto import project_config_pb2
 from proto import service_config_pb2
@@ -979,6 +982,24 @@ def _extract_properties(annotation_step):
   return ret
 
 
+def _extract_build_annotations(build_key, build_run_result):
+  build_run_result = build_run_result or {}
+  ann_dict = build_run_result.get('annotations')
+  ann_url = build_run_result.get('annotationUrl')
+  if not ann_dict or not ann_url:  # pragma: no cover
+    return None
+
+  ann_step = annotations_pb2.Step()
+  json_format.Parse(
+      json.dumps(ann_dict), ann_step, ignore_unknown_fields=True)
+
+  return model.BuildAnnotations(
+      key=model.BuildAnnotations.key_for(build_key),
+      annotation_binary=ann_step.SerializeToString(),
+      annotation_url=ann_url,
+  )
+
+
 @ndb.tasklet
 def _sync_build_async(build_id, task_result):
   """Syncs Build entity in the datastore with the swarming task."""
@@ -987,6 +1008,9 @@ def _sync_build_async(build_id, task_result):
   if task_result:
     build_run_result, build_run_result_corrupted = yield (
         _load_build_run_result_async(task_result))
+
+  build_annotations = _extract_build_annotations(
+      ndb.Key(model.Build, build_id), build_run_result)
 
   @ndb.transactional_tasklet
   def txn_async():
@@ -1004,6 +1028,8 @@ def _sync_build_async(build_id, task_result):
       futures.append(events.on_build_starting_async(build))
     elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
       futures.append(events.on_build_completing_async(build))
+      if build_annotations:
+        futures.append(build_annotations.put_async())
 
     yield futures
     raise ndb.Return(build)

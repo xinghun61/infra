@@ -7,6 +7,7 @@
 import datetime
 import json
 import logging
+import urlparse
 
 from google.appengine.api import app_identity
 from google.appengine.api import taskqueue
@@ -17,6 +18,8 @@ from components import decorators
 from components import net
 from components import utils
 import bqh
+
+from third_party import annotations_pb2
 
 import config
 import model
@@ -71,7 +74,7 @@ class CronExportBuildsExperimental(CronExportBuilds):
 
 
 def _process_pull_task_batch(queue_name, dataset):
-  """Exports up to 1000 builds to BigQuery.
+  """Exports up to 100 builds to BigQuery.
 
   Leases pull tasks, fetches build entities, tries to convert them to v2 format
   and insert into BigQuery in v2 format.
@@ -96,7 +99,7 @@ def _process_pull_task_batch(queue_name, dataset):
   lease_duration = datetime.timedelta(minutes=5)
   lease_deadline = now + lease_duration
   q = taskqueue.Queue(queue_name)
-  tasks = q.lease_tasks(lease_duration.total_seconds(), 1000)
+  tasks = q.lease_tasks(lease_duration.total_seconds(), 100)
   if not tasks:
     return
 
@@ -104,11 +107,17 @@ def _process_pull_task_batch(queue_name, dataset):
   # IDs of builds that we could not save and want to retry later.
   ids_to_retry = set()
 
-  # Fetch builds for the tasks and convert to v2 format.
-  builds = ndb.get_multi([ndb.Key(model.Build, bid) for bid in build_ids])
+  # Fetch builds and build annotations for the tasks.
+  build_keys = [ndb.Key(model.Build, bid) for bid in build_ids]
+  build_annotation_keys = map(model.BuildAnnotations.key_for, build_keys)
+  entities = ndb.get_multi(build_keys + build_annotation_keys)
+  builds = entities[:len(build_keys)]
+  build_annotations = entities[len(build_keys):]
+
+  # Convert fetched builds to v2 format.
   v2_builds = []
-  for bid, b in zip(build_ids, builds):
-    v2_build, retry = _build_to_v2(bid, b)
+  for bid, build, build_ann in zip(build_ids, builds, build_annotations):
+    v2_build, retry = _build_to_v2(bid, build, build_ann)
     if retry:
       ids_to_retry.add(bid)
     elif v2_build:  # pragma: no branch
@@ -133,7 +142,7 @@ def _process_pull_task_batch(queue_name, dataset):
       'inserted %d rows, processed %d tasks', row_count, len(done_tasks))
 
 
-def _build_to_v2(bid, build):
+def _build_to_v2(bid, build, build_ann):
   """Returns (v2_build, should_retry) tuple.
 
   Logs reasons for returning v2_build=None or retry=True.
@@ -147,8 +156,20 @@ def _build_to_v2(bid, build):
     return None, False
 
   try:
-    v2_build = v2.build_to_v2(build)
-    return v2_build, False
+    build_v2 = v2.build_to_v2_partial(build)
+
+    if build_ann:
+      ann_step = annotations_pb2.Step()
+      ann_step.ParseFromString(build_ann.annotation_binary)
+      host, project, prefix, _ = parse_logdog_url(build_ann.annotation_url)
+      converter = v2.AnnotationConverter(
+          default_logdog_host=host,
+          default_logdog_prefix='%s/%s' % (project, prefix),
+      )
+      build_v2.steps.extend(converter.parse_substeps(ann_step.substep))
+
+    return build_v2, False
+
   except v2.errors.UnsupportedBuild as ex:
     logging.warning(
         'skipping build %d: not supported by v2 conversion: %s',
@@ -202,3 +223,19 @@ def _export_builds(dataset, v2_builds, deadline):
         'failed to insert row for build %d: %r',
         b.id, err['errors'])
   return failed_ids
+
+
+def parse_logdog_url(url):
+  # LogDog URL example:
+  #   'logdog://logs.chromium.org/chromium/'
+  #   'buildbucket/cr-buildbucket.appspot.com/8953190917205316816/+/annotations'
+  u = urlparse.urlparse(url)
+  full_path = u.path.strip('/').split('/')
+  if (u.scheme != 'logdog' or u.params or u.query or u.fragment or
+      len(full_path) < 4 or '+' not in full_path):
+    raise ValueError('invalid logdog URL %r' % url)
+  project = full_path[0]
+  plus_pos = full_path.index('+')
+  stream_prefix = '/'.join(full_path[1:plus_pos])
+  stream_name = '/'.join(full_path[plus_pos+1:])
+  return u.netloc, project, stream_prefix, stream_name
