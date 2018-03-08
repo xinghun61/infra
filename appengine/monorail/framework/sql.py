@@ -666,6 +666,7 @@ COLUMN_RE_LIST = [
     _MakeRE(r'\*'),
     _MakeRE(r'COUNT\(\*\)'),
     _MakeRE(r'COUNT\({tab_col}\)'),
+    _MakeRE(r'COUNT\(DISTINCT\({tab_col}\)\)'),
     _MakeRE(r'MAX\({tab_col}\)'),
     _MakeRE(r'MIN\({tab_col}\)'),
     _MakeRE(r'GROUP_CONCAT\((DISTINCT )?{tab_col}( ORDER BY {tab_col})?' \

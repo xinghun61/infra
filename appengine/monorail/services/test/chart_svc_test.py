@@ -9,6 +9,7 @@
 import datetime
 import mox
 import re
+import settings
 import unittest
 
 from google.appengine.ext import testbed
@@ -42,6 +43,8 @@ class ChartServiceTest(unittest.TestCase):
     self.services.chart = MakeChartService(self.mox)
     self.config_service = fake.ConfigService()
     self.mox.StubOutWithMock(search_helpers, 'GetPersonalAtRiskLabelIDs')
+    self.mox.StubOutWithMock(settings, 'num_logical_shards')
+    settings.num_logical_shards = 1
 
   def tearDown(self):
     self.testbed.deactivate()
@@ -83,7 +86,7 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
       self.config_service, [10L, 20L], project, perms).AndReturn([91, 81])
 
-    self.services.chart.issuesnapshot_tbl.Select(self.cnxn,
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn,
       cols=['Comp.path', 'COUNT(DISTINCT(IssueSnapshot.issue_id))'],
       group_by=['Comp.path'],
       left_joins=[
@@ -98,6 +101,7 @@ class ChartServiceTest(unittest.TestCase):
            ' ON Is2c.issuesnapshot_id = IssueSnapshot.id', []),
           ('ComponentDef AS Comp ON Comp.id = Is2c.component_id', [])
         ],
+        shard_id=0,
         where=[
           ('IssueSnapshot.period_start <= %s', [1514764800]),
           ('IssueSnapshot.period_end > %s', [1514764800]),
@@ -110,7 +114,8 @@ class ChartServiceTest(unittest.TestCase):
            ' OR I2cc.cc_id IS NOT NULL'
            ' OR Forbidden_label.label_id IS NULL)',
            [10L, 20L, 10L, 20L]
-          )
+          ),
+          ('IssueSnapshot.shard = %s', [0])
         ]
     )
 
@@ -127,7 +132,7 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
       self.config_service, [10L, 20L], project, perms).AndReturn([91, 81])
 
-    self.services.chart.issuesnapshot_tbl.Select(self.cnxn,
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn,
       cols=['Lab.label', 'COUNT(DISTINCT(IssueSnapshot.issue_id))'],
       group_by=['Lab.label'],
       left_joins=[
@@ -142,6 +147,7 @@ class ChartServiceTest(unittest.TestCase):
            ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
           ('LabelDef AS Lab ON Lab.id = Is2l.label_id', [])
         ],
+        shard_id=0,
         where=[
           ('IssueSnapshot.period_start <= %s', [1514764800]),
           ('IssueSnapshot.period_end > %s', [1514764800]),
@@ -155,7 +161,8 @@ class ChartServiceTest(unittest.TestCase):
            ' OR Forbidden_label.label_id IS NULL)',
            [10L, 20L, 10L, 20L]
           ),
-          ('LOWER(Lab.label) LIKE %s', ['foo-%'])
+          ('LOWER(Lab.label) LIKE %s', ['foo-%']),
+          ('IssueSnapshot.shard = %s', [0])
         ]
     )
 
@@ -175,7 +182,7 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
       self.config_service, set(), project, perms).AndReturn([91, 81])
 
-    self.services.chart.issuesnapshot_tbl.Select(self.cnxn,
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn,
       cols=['Lab.label', 'COUNT(DISTINCT(IssueSnapshot.issue_id))'],
       group_by=['Lab.label'],
       left_joins=[
@@ -187,6 +194,7 @@ class ChartServiceTest(unittest.TestCase):
            ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
           ('LabelDef AS Lab ON Lab.id = Is2l.label_id', []),
         ],
+        shard_id=0,
         where=[
           ('IssueSnapshot.period_start <= %s', [1514764800]),
           ('IssueSnapshot.period_end > %s', [1514764800]),
@@ -195,7 +203,8 @@ class ChartServiceTest(unittest.TestCase):
           ('Issue.is_spam = %s', [False]),
           ('Issue.deleted = %s', [False]),
           ('Forbidden_label.label_id IS NULL', []),
-          ('LOWER(Lab.label) LIKE %s', ['foo-%'])
+          ('LOWER(Lab.label) LIKE %s', ['foo-%']),
+          ('IssueSnapshot.shard = %s', [0])
         ]
     )
 
@@ -212,7 +221,7 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
       self.config_service, [10L, 20L], project, perms).AndReturn([])
 
-    self.services.chart.issuesnapshot_tbl.Select(self.cnxn,
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn,
       cols=['Lab.label', 'COUNT(DISTINCT(IssueSnapshot.issue_id))'],
       group_by=['Lab.label'],
       left_joins=[
@@ -224,6 +233,7 @@ class ChartServiceTest(unittest.TestCase):
            ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
           ('LabelDef AS Lab ON Lab.id = Is2l.label_id', [])
         ],
+        shard_id=0,
         where=[
           ('IssueSnapshot.period_start <= %s', [1514764800]),
           ('IssueSnapshot.period_end > %s', [1514764800]),
@@ -236,7 +246,8 @@ class ChartServiceTest(unittest.TestCase):
            ' OR I2cc.cc_id IS NOT NULL)',
            [10L, 20L, 10L, 20L]
           ),
-          ('LOWER(Lab.label) LIKE %s', ['foo-%'])
+          ('LOWER(Lab.label) LIKE %s', ['foo-%']),
+          ('IssueSnapshot.shard = %s', [0])
         ]
     )
 

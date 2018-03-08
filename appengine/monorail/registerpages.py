@@ -27,6 +27,7 @@ from features import notify
 from features import rerankhotlist
 from features import updatehotlistitems
 from features import savedqueries
+from features import snapshot_counts
 from features import spammodel
 from features import spamtraining
 from features import componentexport
@@ -269,6 +270,7 @@ class ServletRegistry(object):
         urls.ISSUE_RERANK_BLOCKED_ON: issuererank.IssueRerank,
         urls.COMPONENT_SUGGESTION: componentpredict.ComponentPredict,
         urls.COMPONENT_LOG: componentlog.ComponentLog,
+        urls.SNAPSHOT_COUNTS: snapshot_counts.SnapshotCounts,
         })
 
     self._SetupUserServlets({

@@ -7,6 +7,7 @@
 
 from features import autolink
 from services import cachemanager_svc
+from services import chart_svc
 from services import config_svc
 from services import features_svc
 from services import issue_svc
@@ -27,7 +28,7 @@ class Services(object):
       self, project=None, user=None, issue=None, config=None,
       usergroup=None, cache_manager=None, autolink_obj=None,
       user_star=None, project_star=None, issue_star=None, features=None,
-      spam=None, hotlist_star=None):
+      spam=None, hotlist_star=None, chart=None):
     # Persistence services
     self.project = project
     self.user = user
@@ -44,6 +45,7 @@ class Services(object):
     self.cache_manager = cache_manager
     self.autolink = autolink_obj
     self.spam = spam
+    self.chart = chart
 
 
 def set_up_services():
@@ -66,9 +68,11 @@ def set_up_services():
     issue = issue_svc.IssueService(project, config, cache_manager)
     autolink_obj = autolink.Autolink()
     spam = spam_svc.SpamService()
+    chart = chart_svc.ChartService()
     svcs = Services(
       cache_manager=cache_manager, config=config, features=features,
       issue_star=issue_star, project=project, project_star=project_star,
       user=user, user_star=user_star, usergroup=usergroup, issue=issue,
-      autolink_obj=autolink_obj, spam=spam, hotlist_star=hotlist_star)
+      autolink_obj=autolink_obj, spam=spam, hotlist_star=hotlist_star,
+      chart=chart)
   return svcs

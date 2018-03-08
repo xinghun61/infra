@@ -8,6 +8,9 @@
 Functions for querying the IssueSnapshot table and associated join tables.
 """
 
+import settings
+
+from framework import framework_helpers
 from framework import sql
 from search import search_helpers
 
@@ -37,9 +40,7 @@ class ChartService(object):
         only labels with the specified prefix (for example 'Pri').
 
     Returns:
-      A list of pairs with values:
-        (label or component name,
-         number of occurrences for the given timestamp)
+      A dictionary of: {'label or component name': number of occurences}
     """
     restricted_label_ids = search_helpers.GetPersonalAtRiskLabelIDs(
       cnxn, None, config_svc, effective_ids, project, perms)
@@ -122,5 +123,22 @@ class ChartService(object):
     else:
       raise ValueError('`bucketby` must be in (component, label)')
 
-    return self.issuesnapshot_tbl.Select(cnxn, cols=cols,
-      left_joins=left_joins, where=where, group_by=group_by)
+    promises = []
+    for shard_id in range(settings.num_logical_shards):
+      thread_where = where + [('IssueSnapshot.shard = %s', [shard_id])]
+      p = framework_helpers.Promise(self.issuesnapshot_tbl.Select,
+        cnxn=cnxn, cols=cols, left_joins=left_joins, where=thread_where,
+        group_by=group_by, shard_id=shard_id)
+      promises.append(p)
+
+    shard_values_dict = {}
+    for promise in promises:
+      # Wait for each query to complete and add it to the dict.
+      shard_values = promise.WaitAndGetValue()
+      if not shard_values:
+        continue
+      for name, count in shard_values:
+        shard_values_dict.setdefault(name, 0)
+        shard_values_dict[name] += count
+
+    return shard_values_dict
