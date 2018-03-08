@@ -1,9 +1,11 @@
 <div id="makechanges">
  [# Note: user must have AddIssueComment permission to even include this file. ]
 
- <div class="h4" style="margin-bottom: 0; position:static"
-      ><label for="addCommentTextArea">Add a comment
+ <div class="h4" style="margin-bottom: 0; position:static">
+   <h3 class="not_styled_as_heading">
+     <label for="addCommentTextArea">Add a comment
        [if-any offer_make_changes]and make changes[end]</label>
+   </h3>
  </div>
  <div id="makechangesarea" class="closed" style="margin-top:0; padding:5px">
 

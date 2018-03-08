@@ -5,6 +5,7 @@
          on the issue peek page.
 ]
 
+<h3 class="visually_hidden">Issue metadata</h3>
 <table cellspacing="0" cellpadding="0">
      <tr><th align="left" style="padding-right:.3em">Status:</th>
       <td width="100%">
@@ -152,8 +153,8 @@
      [for issue.derived_labels]
        [is issue.derived_labels.prefix ""]
         <tr>
-	  <td colspan="2" class="widemeta">
-	    <a href="list?q=label:[issue.derived_labels.name]"
+          <td colspan="2" class="widemeta">
+            <a href="list?q=label:[issue.derived_labels.name]"
                title="Derived: [issue.derived_labels.name] [if-any issue.derived_labels.docstring]= [end][issue.derived_labels.docstring]"
                class="derived label">[issue.derived_labels.name]</a>
           </td>
@@ -182,7 +183,7 @@
             <a href="[issue.blocked_on.url]" title="[issue.blocked_on.display_name]: [issue.blocked_on.summary]"
             >[issue.blocked_on.display_name]</a><br>
           [else]
-	    [issue.blocked_on.display_name]<br>
+            [issue.blocked_on.display_name]<br>
           [end]
         [end][end]
         [for issue.blocked_on][if-any issue.blocked_on.is_open][else]
@@ -190,7 +191,7 @@
             <a href="[issue.blocked_on.url]" title="[issue.blocked_on.display_name]: [issue.blocked_on.summary]" class="closed_ref"
             >[issue.blocked_on.display_name]</a><br>
           [else]
-	    [issue.blocked_on.display_name]<br>
+            [issue.blocked_on.display_name]<br>
           [end]
         [end][end]
       </span>

@@ -38,7 +38,7 @@
        </a>
       [end]
      [end]
-     <a href="detail?id=[issue.local_id]">Issue [issue.local_id]</a>
+     <h1 class="not_styled_as_heading"><a href="detail?id=[issue.local_id]">Issue [issue.local_id]</a></h1>
 
    </div> [# end issuemetaheader]
 
@@ -52,7 +52,7 @@
     <br>
     Comments by non-members will not trigger notification emails to users who starred this issue.
    [end]
-   <div id="issue_meta_details"> [# @@@]
+   <div id="issue_meta_details">
    [include "issue-meta-part.ezt" "show make changes below"]
 
    [is any_visible_deleted "true"]
@@ -79,7 +79,7 @@
         >report incorrect spam classification</a>.
       </div>
     [end][end]
-    <span class="h3" style="padding-left:4px">[issue.summary]</span>
+    <h1 class="not_styled_as_heading"><span class="h3" style="padding-left:4px">[issue.summary]</span></h1>
   </td>
   <td class="issueheader">
     [if-any flipper.show]
@@ -116,6 +116,7 @@
 
  <tr>
   <td class="vt issuedescription" width="100%" height="100%" id="cursorarea" colspan="2">
+    <h3 class="visually_hidden">Issue description</h3>
     [include "issue-comments-part.ezt" "show-delete-comment-link"]
   </td>
  </tr>
@@ -126,8 +127,8 @@
    <td></td>
    <td class="vt issuecomment">
      <div class="issuecommentheader" style="margin-bottom:1em"></div>
-     <span class="indicator">&#9658;</span> <a href="[login_url]"
-     >Sign in</a> to add a comment
+     <span class="indicator">&#9658;</span>
+     <h2 class="not_styled_as_heading"><a href="[login_url]" >Sign in</a> to add a comment</h2>
    </td>
   </tr>
  [end]

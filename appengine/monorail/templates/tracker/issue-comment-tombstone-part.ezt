@@ -1,10 +1,12 @@
 <div class="cursor_off vt issuecomment" id="hc[comments.sequence]">
   <div class="issuecommentheader" style="background:#e8e8e8">
-    <span class="author">
-      <a name="c[comments.sequence]"
-         href="[project_home_url]/issues/detail?id=[issue.local_id]#c[comments.sequence]">Comment [comments.sequence]</a>
-      <span style="margin-left: 1em">Deleted</span>
-    </span>
+    <h3 class="not_styled_as_heading">
+      <span class="author">
+        <a name="c[comments.sequence]"
+           href="[project_home_url]/issues/detail?id=[issue.local_id]#c[comments.sequence]">Comment [comments.sequence]</a>
+        <span style="margin-left: 1em">Deleted</span>
+      </span>
+    </h3>
   </div>
 </div>
 

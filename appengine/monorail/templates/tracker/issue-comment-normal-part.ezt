@@ -3,14 +3,16 @@
   <div class="issuecommentheader">
     <span class="author">
       [if-any comments.creator_role]<span class="role_label">Project Member</span>[end]
-      <a name="c[comments.sequence]" id="c_ts[comments.timestamp]"
-         href="[project_home_url]/issues/detail?id=[issue.local_id]#c[comments.sequence]">Comment [comments.sequence]</a>
-      by
-      [include "../framework/user-link.ezt" comments.creator]</span>,
-      <span class="date" title="[comments.date_tooltip] UTC">
-        [comments.date_string]
-        [if-any comments.date_relative]([comments.date_relative])[end]
-      </span>
+      <h3 class="not_styled_as_heading">
+        <a name="c[comments.sequence]" id="c_ts[comments.timestamp]"
+           href="[project_home_url]/issues/detail?id=[issue.local_id]#c[comments.sequence]">Comment [comments.sequence]</a>
+        by
+        [include "../framework/user-link.ezt" comments.creator]</span>,
+        <span class="date" title="[comments.date_tooltip] UTC">
+          [comments.date_string]
+          [if-any comments.date_relative]([comments.date_relative])[end]
+        </span>
+      </h3>
     [if-any page_perms.ViewInboundMessages comments.can_delete_bool][if-any comments.inbound_message]
       via <a target="_blank" href="original?id=[issue.local_id]&seq=[comments.sequence]">email</a>
     [end][end]

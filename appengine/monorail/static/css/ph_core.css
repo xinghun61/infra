@@ -895,3 +895,24 @@ html>body .goog-inline-block {
     font-weight: bold;
     color: #000;
 }
+
+/* Just for screen readers. */
+.visually_hidden {
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}
+
+.not_styled_as_heading {
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    display: inline !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
