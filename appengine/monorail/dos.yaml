@@ -131,3 +131,5 @@ blacklist:
     description: someone hitting /p/monorail template admin page 2017-12-20
   - subnet: 180.76.13.8
     description: someone scanning attachments 2018-02-07
+  - subnet: 138.197.103.52
+    description: someone using sqlmap.org on us 20180-03-08
