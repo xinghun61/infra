@@ -112,7 +112,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
         method='POST',
         payload={
           'kind': 'bigquery#tableDataInsertAllRequest',
-          'skipInvalidRows': False,
+          'skipInvalidRows': True,
           'ignoreUnknownValues': False,
           'rows': [
             { 'insertId': '1', 'json': mock.ANY },

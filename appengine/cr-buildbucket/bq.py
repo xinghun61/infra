@@ -203,7 +203,9 @@ def _export_builds(dataset, v2_builds, deadline):
       method='POST',
       payload={
         'kind': 'bigquery#tableDataInsertAllRequest',
-        'skipInvalidRows': False,
+        # Do not fail entire request because of one bad build.
+        # We handle invalid rows below.
+        'skipInvalidRows': True,
         'ignoreUnknownValues': False,
         'rows': [
           {
