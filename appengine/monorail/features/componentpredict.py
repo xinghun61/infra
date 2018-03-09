@@ -13,6 +13,7 @@ import cloudstorage
 from framework import sql
 from services import ml_helpers
 from framework import jsonfeed
+from framework import framework_helpers
 
 from features import generate_dataset
 
@@ -35,6 +36,7 @@ class ComponentPredict(jsonfeed.JsonFeed):
     return {'components': [self.GetComponent(component_id)]}
 
 
+  @framework_helpers.retry(3)
   def GetPrediction(self, instance, ml_engine, model_name):
     """Gets component prediction from default model based on provided text.
 
