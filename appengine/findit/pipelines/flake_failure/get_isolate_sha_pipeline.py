@@ -13,9 +13,12 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
+from services import swarmbot_util
 from services.flake_failure import flake_try_job
 from waterfall import build_util
 from waterfall import swarming_util
+from waterfall import waterfall_config
+from waterfall.flake import flake_constants
 
 
 class GetIsolateShaForCommitPositionParameters(StructuredObject):
@@ -92,13 +95,24 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
       yield GetIsolateShaForBuildPipeline(get_build_sha_parameters)
     else:
       # The requested commit position needs to be compiled.
+      _, reference_build_info = build_util.GetBuildInfo(
+          master_name, builder_name, analysis.build_number)
+      parent_mastername = reference_build_info.parent_mastername or master_name
+      parent_buildername = (
+          reference_build_info.parent_buildername or builder_name)
+      cache_name = swarmbot_util.GetCacheName(
+          parent_mastername,
+          parent_buildername,
+          suffix=flake_constants.FLAKE_CACHE_SUFFIX)
+      dimensions = waterfall_config.GetTrybotDimensions(parent_mastername,
+                                                        parent_buildername)
       try_job = flake_try_job.GetTryJob(master_name, builder_name, step_name,
                                         test_name, parameters.revision)
       run_flake_try_job_parameters = self.CreateInputObjectInstance(
           RunFlakeTryJobParameters,
           analysis_urlsafe_key=parameters.analysis_urlsafe_key,
           revision=parameters.revision,
-          flake_cache_name=None,
-          dimensions=ListOfBasestring(),
+          flake_cache_name=cache_name,
+          dimensions=ListOfBasestring.FromSerializable(dimensions),
           urlsafe_try_job_key=try_job.key.urlsafe())
       yield RunFlakeTryJobPipeline(run_flake_try_job_parameters)

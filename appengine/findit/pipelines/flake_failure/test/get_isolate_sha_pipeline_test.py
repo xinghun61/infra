@@ -20,8 +20,10 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
+from services import swarmbot_util
 from waterfall import build_util
 from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.build_info import BuildInfo
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -86,22 +88,31 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     pipeline_job.start()
     self.execute_queued_tasks()
 
+  @mock.patch.object(waterfall_config, 'GetTrybotDimensions')
+  @mock.patch.object(swarmbot_util, 'GetCacheName')
   @mock.patch.object(build_util, 'GetBoundingBuilds')
+  @mock.patch.object(build_util, 'GetBuildInfo')
   def testGetIsolateShaForCommitPositionPipelineCommitLevel(
-      self, mocked_build_info):
+      self, mocked_reference_build, mocked_bounding_builds, mocked_cache,
+      mocked_dimensions):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
     step_name = 's'
     test_name = 't'
+    dimensions = ['dimensions']
     requested_commit_position = 1000
     containing_build_commit_position = 1001
     requested_revision = 'r1000'
     expected_sha = 'sha1'
+    cache_name = 'cache'
+    mocked_cache.return_value = cache_name
+    mocked_dimensions.return_value = dimensions
 
     build = BuildInfo(master_name, builder_name, build_number)
     build.commit_position = containing_build_commit_position
-    mocked_build_info.return_value = (None, build)
+    mocked_reference_build.return_value = (None, build)
+    mocked_bounding_builds.return_value = (None, build)
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -114,8 +125,8 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     run_flake_try_job_parameters = RunFlakeTryJobParameters(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         revision=requested_revision,
-        flake_cache_name=None,
-        dimensions=ListOfBasestring(),
+        flake_cache_name=cache_name,
+        dimensions=ListOfBasestring.FromSerializable(dimensions),
         urlsafe_try_job_key=try_job.key.urlsafe())
 
     get_sha_input = GetIsolateShaForCommitPositionParameters(
