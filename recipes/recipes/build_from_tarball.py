@@ -42,6 +42,7 @@ def RunSteps(api):
           'enable_distro_version_check=false',
           'use_system_libjpeg=true',  # TODO(thomasanderson): This shouldn't be
                                       # necessary when unbundling libjpeg.
+          'use_v8_context_snapshot=false',
       ]
       unbundle_libs = [
           # 'ffmpeg',  # https://crbug.com/731766
