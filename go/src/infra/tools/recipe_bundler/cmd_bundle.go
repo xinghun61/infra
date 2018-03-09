@@ -18,7 +18,6 @@ import (
 
 	cipd_common "go.chromium.org/luci/cipd/client/cipd/common"
 	"go.chromium.org/luci/common/cli"
-	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag/stringmapflag"
 	"go.chromium.org/luci/common/logging"
@@ -74,11 +73,11 @@ https://stackoverflow.com/a/8841024`)
 			ret.Flags.StringVar(&ret.workdir, "workdir", "./recipe_bundler",
 				`Set where this tool should store its repo checkouts`)
 
-			ret.Flags.StringVar(&ret.packageNamePrefix, "package-name-prefix", "infra/recipe_bundles",
-				`Set to override the default CIPD package name prefix.`)
+			ret.Flags.StringVar(&ret.packageNamePrefix, "package-name-prefix", "",
+				`Set the CIPD package name prefix.`)
 
-			ret.Flags.StringVar(&ret.packageNameInternalPrefix, "package-name-internal-prefix", "infra_internal/recipe_bundles",
-				`Set to override the default CIPD package name prefix for repos containing the word "internal".`)
+			ret.Flags.StringVar(&ret.packageNameInternalPrefix, "package-name-internal-prefix", "",
+				`Set the CIPD package name prefix for repos containing the word "internal".`)
 
 			ret.Flags.StringVar(&ret.cipd.serviceURL, "service-url", "",
 				`Set to override the default CIPD service URL.`)
@@ -189,12 +188,18 @@ func (c *cmdBundle) parseFlags() (err error) {
 		}
 	}
 
+	if c.packageNamePrefix == "" {
+		return errors.New("-package-name-prefix is required")
+	}
 	if err = cipd_common.ValidatePackageName(c.packageNamePrefix); err != nil {
 		return errors.Annotate(err, "validating -package-name-prefix").Err()
 	}
 
+	if c.packageNameInternalPrefix == "" {
+		return errors.New("-package-name-internal-prefix is required")
+	}
 	if err = cipd_common.ValidatePackageName(c.packageNameInternalPrefix); err != nil {
-		return errors.Annotate(err, "validating -package-name-prefix").Err()
+		return errors.Annotate(err, "validating -package-name-internal-prefix").Err()
 	}
 
 	if c.workdir, err = filepath.Abs(c.workdir); err != nil {
@@ -267,19 +272,26 @@ func (c *cmdBundle) run(ctx context.Context) error {
 					return errors.Reason("bug: %q doesn't result in a valid CIPD package", repoName).Err()
 				}
 				pkgVers := "git_revision:" + resolvedSpec.revision
-				pkgRefs := stringset.NewFromSlice(
-					strings.ToLower(spec.ref),
-					strings.ToLower(resolvedSpec.ref))
+				pkgRefArgs := []string{"-ref", spec.ref}
+				if resolvedSpec.ref != spec.ref {
+					pkgRefArgs = append(pkgRefArgs, "-ref", resolvedSpec.ref)
+				}
 
 				if c.localDest == "" && c.cipd.serverQuiet(ctx, "resolve", pkgName, "-version", pkgVers) == nil {
 					logging.Infof(ctx, "CIPD already has `%s %s`", pkgName, pkgVers)
-					// TODO(iannucci): If a branch is cut, but points to an
-					// already-processed commit, this tool will not set the refs, even if
-					// pkgRefs contains refs which have no value for pkgName.
-					//
-					// Fixing this would require a facility to have cipd list all of the
-					// refs which have been set for a /package/, across all instances.
-					return nil
+
+					if spec.isPinned() {
+						// if the user requested a pinned revision, don't presume that we
+						// need to move a ref for them.
+						return nil
+					}
+
+					// We just got the "freshest" value for these refs, so set them in CIPD.
+					cmd := append([]string{
+						"set-ref",
+						"-version", pkgVers,
+					}, pkgRefArgs...)
+					return c.cipd.server(ctx, cmd...)
 				}
 
 				// Get initial repo checkout
@@ -330,10 +342,7 @@ func (c *cmdBundle) run(ctx context.Context) error {
 					}
 					cmd = append(cmd, commonArgs...)
 					if !spec.isPinned() {
-						pkgRefs.Iter(func(ref string) bool {
-							cmd = append(cmd, "-ref", ref)
-							return true
-						})
+						cmd = append(cmd, pkgRefArgs...)
 					}
 					if err = c.cipd.server(ctx, cmd...); err != nil {
 						return err

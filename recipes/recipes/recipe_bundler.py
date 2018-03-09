@@ -27,10 +27,19 @@ PROPERTIES = {
     help=('The list of repo specs to process, as defined by recipe_bundler\'s '
           '"-r" flag.'),
   ),
+
+  'package_name_prefix': Property(
+    kind=str, help='The CIPD package prefix for non-internal recipes',
+  ),
+
+  'package_name_internal_prefix': Property(
+    kind=str, help='The CIPD package prefix for internal recipes',
+  ),
 }
 
 
-def RunSteps(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs):
+def RunSteps(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs,
+             package_name_prefix, package_name_internal_prefix):
   bundler_path = api.path['cache'].join('builder', 'bundler')
   api.cipd.ensure(bundler_path, {
     recipe_bundler_pkg: recipe_bundler_vers,
@@ -41,6 +50,8 @@ def RunSteps(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs):
     'bundle',
     '-log-level', 'debug',
     '-workdir', api.path['cache'].join('builder', 'workdir'),
+    '-package-name-prefix', package_name_prefix,
+    '-package-name-internal-prefix', package_name_internal_prefix,
   ]
 
   for spec in repo_specs:
@@ -55,4 +66,6 @@ def GenTests(api):
       'chromium.googlesource.com/chromium/tools/build',
       'chromium.googlesource.com/infra/infra',
     ],
+    package_name_prefix='infra/recipe_bundles',
+    package_name_internal_prefix='infra_internal/recipe_bundles',
   )
