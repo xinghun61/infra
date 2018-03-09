@@ -1,7 +1,13 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""Handles requests to disable/enable auto-revert."""
+"""Handles requests to disable/enable auto-commit.
+
+This handler is mainly for troopers to turn off auto-commit when fire happens.
+So it will turn on/off auto-commit for both failure types (compile and
+consistent test failure) at the same time.
+Admins: use config page to turn on/off auto-commit for a single type.
+"""
 
 import copy
 import json
@@ -21,13 +27,16 @@ class ChangeAutoRevertSetting(BaseHandler):
   @token.AddXSRFToken(action_id='config')
   def HandleGet(self):
     action_configs = waterfall_config.GetActionSettings()
+
+    # Either config is True means the feature is on.
+    auto_commit_revert = (
+        action_configs.get('auto_commit_revert_compile', False) or
+        action_configs.get('auto_commit_revert_test', False))
     return {
         'template': 'change_auto_revert_setting.html',
         'data': {
-            'is_admin':
-                users.is_current_user_admin(),
-            'auto_commit_revert_compile_on':
-                action_configs.get('auto_commit_revert_compile', False),
+            'is_admin': users.is_current_user_admin(),
+            'auto_commit_revert_on': auto_commit_revert,
         }
     }
 
@@ -37,9 +46,9 @@ class ChangeAutoRevertSetting(BaseHandler):
     is_admin = users.is_current_user_admin()
 
     # Only admin could turn auto-commit back on again.
-    flag = self.request.get('auto_commit_revert_compile', '').lower()
-    auto_commit_revert_compile = flag == 'true'
-    if auto_commit_revert_compile and not is_admin:
+    flag = self.request.get('auto_commit_revert', '').lower()
+    auto_commit_revert = flag == 'true'
+    if auto_commit_revert and not is_admin:
       return BaseHandler.CreateError('Only admin could turn auto-commit on.',
                                      403)
 
@@ -49,10 +58,11 @@ class ChangeAutoRevertSetting(BaseHandler):
 
     updated = False
     action_configs = waterfall_config.GetActionSettings()
-    if auto_commit_revert_compile != action_configs.get(
-        'auto_commit_revert_compile'):
+    if (auto_commit_revert != action_configs.get('auto_commit_revert_compile')
+        or auto_commit_revert != action_configs.get('auto_commit_revert_test')):
       action_settings = copy.deepcopy(action_configs)
-      action_settings['auto_commit_revert_compile'] = auto_commit_revert_compile
+      action_settings['auto_commit_revert_compile'] = auto_commit_revert
+      action_settings['auto_commit_revert_test'] = auto_commit_revert
       updated = wf_config.FinditConfig.Get().Update(
           user,
           acl.IsPrivilegedUser(user.email(), is_admin),

@@ -3,10 +3,8 @@
 # found in the LICENSE file.
 
 import mock
-import re
 
 import webapp2
-import webtest
 
 from gae_libs import token
 from handlers import change_auto_revert_setting
@@ -28,7 +26,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
 
     expected_response = {
         'is_admin': False,
-        'auto_commit_revert_compile_on': True,
+        'auto_commit_revert_on': True,
         'xsrf_token': response.json_body.get('xsrf_token'),
     }
     self.assertEqual(200, response.status_int)
@@ -40,7 +38,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
 
     params = {
         'xsrf_token': 'token',
-        'auto_commit_revert_compile': 'false',
+        'auto_commit_revert': 'false',
         'update_reason': 'reason',
     }
 
@@ -57,7 +55,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
 
     params = {
         'xsrf_token': 'token',
-        'auto_commit_revert_compile': 'true',
+        'auto_commit_revert': 'true',
         'update_reason': 'reason',
         'format': 'json',
     }
@@ -70,12 +68,13 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testAdminCouldTurnOnAutoCommit(self, _):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
-    self.UpdateUnitTestConfigSettings('action_settings',
-                                      {'auto_commit_revert_compile': False})
+    self.UpdateUnitTestConfigSettings('action_settings', {
+        'auto_commit_revert_compile': False
+    })
 
     params = {
         'xsrf_token': 'token',
-        'auto_commit_revert_compile': 'true',
+        'auto_commit_revert': 'true',
         'update_reason': 'reason',
         'format': 'json',
     }
@@ -83,20 +82,21 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
     response = self.test_app.post(
         '/change-auto-revert-setting', params=params, status=302)
     self.assertTrue(
-        response.headers.get('Location', '').endswith(
-            '/change-auto-revert-setting'))
+        response.headers.get('Location',
+                             '').endswith('/change-auto-revert-setting'))
     self.assertTrue(
         waterfall_config.GetActionSettings().get('auto_commit_revert_compile'))
 
   @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testAutoCommitAlreadyTurnedOn(self, _):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
-    self.UpdateUnitTestConfigSettings('action_settings',
-                                      {'auto_commit_revert_compile': True})
+    self.UpdateUnitTestConfigSettings('action_settings', {
+        'auto_commit_revert_compile': True
+    })
 
     params = {
         'xsrf_token': 'token',
-        'auto_commit_revert_compile': 'true',
+        'auto_commit_revert': 'true',
         'update_reason': 'reason',
         'format': 'json',
     }
@@ -113,7 +113,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
 
     params = {
         'xsrf_token': 'token',
-        'auto_commit_revert_compile': 'false',
+        'auto_commit_revert': 'false',
         'update_reason': '\n',
         'format': 'json',
     }
@@ -122,3 +122,44 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
         '/change-auto-revert-setting', params=params, status=400)
     self.assertEqual('Please enter the reason.',
                      response.json_body.get('error_message'))
+
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
+  def testTurnOffAutoCommitForBothFailureTypes(self, _):
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+    self.UpdateUnitTestConfigSettings('action_settings', {
+        'auto_commit_revert_compile': False,
+        'auto_commit_revert_test': True
+    })
+
+    params = {
+        'xsrf_token': 'token',
+        'auto_commit_revert': 'false',
+        'update_reason': 'reason',
+        'format': 'json',
+    }
+
+    response = self.test_app.post(
+        '/change-auto-revert-setting', params=params, status=302)
+    self.assertTrue(
+        response.headers.get('Location',
+                             '').endswith('/change-auto-revert-setting'))
+    self.assertFalse(
+        waterfall_config.GetActionSettings().get('auto_commit_revert_compile'))
+    self.assertFalse(
+        waterfall_config.GetActionSettings().get('auto_commit_revert_test'))
+
+  def testChangeAutoRevertSettingGetBothFailureTypes(self):
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
+    self.UpdateUnitTestConfigSettings('action_settings', {
+        'auto_commit_revert_compile': False,
+        'auto_commit_revert_test': True
+    })
+    response = self.test_app.get('/change-auto-revert-setting?format=json')
+
+    expected_response = {
+        'is_admin': False,
+        'auto_commit_revert_on': True,
+        'xsrf_token': response.json_body.get('xsrf_token'),
+    }
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_response, response.json_body)
