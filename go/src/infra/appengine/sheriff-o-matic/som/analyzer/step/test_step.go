@@ -15,6 +15,7 @@ import (
 
 	"infra/appengine/sheriff-o-matic/som/client"
 	te "infra/appengine/sheriff-o-matic/som/testexpectations"
+	"infra/appengine/test-results/model"
 	"infra/monitoring/messages"
 )
 
@@ -218,8 +219,6 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 		return name, nil, nil
 	}
 
-	failedTests := []string{}
-
 	trc := client.GetTestResults(ctx)
 	testResults, err := trc.TestResults(ctx, f.Master, f.Build.BuilderName, name, f.Build.Number)
 
@@ -234,37 +233,13 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 			logging.Infof(ctx, "name != f.Step.Name: %q vs %q", name, f.Step.Name)
 			// Signal that we still found something useful, even if we
 			// don't have test results.
-			return name, failedTests, nil
+			return name, []string{}, nil
 		}
 
 		return name, nil, nil
 	}
 
-	delim := "/"
-	if testResults.PathDelim != nil {
-		delim = *testResults.PathDelim
-	}
-
-	for testName, res := range testResults.Tests.Flatten(delim) {
-
-		expected := res.Expected
-		actual := res.Actual
-		if expected != nil || actual != nil {
-			ue := unexpected(expected, actual)
-
-			hasPass := false
-			// If there was a pass at all, count it.
-			for _, r := range actual {
-				if r == "PASS" {
-					hasPass = true
-				}
-			}
-
-			if len(ue) > 0 && !hasPass {
-				failedTests = append(failedTests, testName)
-			}
-		}
-	}
+	failedTests := unexpectedFailures(testResults)
 
 	if len(failedTests) > maxFailedTests {
 		sort.Strings(failedTests)
@@ -273,6 +248,26 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 	}
 
 	return name, failedTests, nil
+}
+
+func unexpectedFailures(testResults *model.FullResult) []string {
+	failedTests := []string{}
+	delim := "/"
+	if testResults.PathDelim != nil {
+		delim = *testResults.PathDelim
+	}
+
+	for testName, res := range testResults.Tests.Flatten(delim) {
+		if res.Unexpected != nil && *res.Unexpected {
+			for _, act := range res.Actual {
+				if act == "PASS" {
+					break
+				}
+			}
+			failedTests = append(failedTests, testName)
+		}
+	}
+	return failedTests
 }
 
 // Read Findit results and get suspected cls or check if flaky for each test.
@@ -314,28 +309,6 @@ func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failed
 		TestsWithFinditResults = append(TestsWithFinditResults, testResult)
 	}
 	return TestsWithFinditResults, nil
-}
-
-// unexpected returns the set of expected xor actual.
-func unexpected(expected, actual []string) []string {
-	e, a := make(map[string]bool), make(map[string]bool)
-	for _, s := range expected {
-		e[s] = true
-	}
-	for _, s := range actual {
-		a[s] = true
-	}
-
-	ret := []string{}
-
-	// Any value in the expected set is a valid test result.
-	for k := range a {
-		if !e[k] {
-			ret = append(ret, k)
-		}
-	}
-
-	return ret
 }
 
 func getExpectationsForTest(ctx context.Context, testName string, config *te.BuilderConfig) ([]*te.ExpectationStatement, error) {

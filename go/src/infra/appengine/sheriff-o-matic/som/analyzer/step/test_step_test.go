@@ -459,53 +459,37 @@ func TestTestStepFailureAlerts(t *testing.T) {
 
 func TestUnexpected(t *testing.T) {
 	Convey("unexpected", t, func() {
-		tests := []struct {
-			name                   string
-			expected, actual, want []string
-		}{
-			{
-				name: "empty",
-				want: []string{},
-			},
-			{
-				name:     "extra FAIL",
-				expected: []string{"PASS"},
-				actual:   []string{"FAIL"},
-				want:     []string{"FAIL"},
-			},
-			{
-				name:     "FAIL FAIL",
-				expected: []string{"FAIL"},
-				actual:   []string{"FAIL"},
-				want:     []string{},
-			},
-			{
-				name:     "PASS PASS",
-				expected: []string{"PASS"},
-				actual:   []string{"PASS"},
-				want:     []string{},
-			},
-			{
-				name:     "Flaky PASS",
-				expected: []string{"PASS", "FAIL"},
-				actual:   []string{"PASS"},
-				want:     []string{},
-			},
-			{
-				name:     "Flaky CRASH",
-				expected: []string{"PASS", "FAIL"},
-				actual:   []string{"CRASH"},
-				want:     []string{"CRASH"},
-			},
-		}
+		r := &model.FullResult{}
+		So(unexpectedFailures(r), ShouldBeEmpty)
 
-		for _, test := range tests {
-			test := test
-			Convey(test.name, func() {
-				got := unexpected(test.expected, test.actual)
-				So(got, ShouldResemble, test.want)
-			})
-		}
+		tptr := true
+		fptr := false
+		Convey("pass", func() {
+			r := &model.FullResult{
+				Tests: model.FullTest{
+					"foo": &model.FullTestLeaf{
+						Actual:     []string{"PASS"},
+						Expected:   []string{"PASS"},
+						Unexpected: &fptr,
+					},
+				},
+			}
+			So(unexpectedFailures(r), ShouldBeEmpty)
+		})
+
+		Convey("fail", func() {
+			r := &model.FullResult{
+				Tests: model.FullTest{
+					"foo": &model.FullTestLeaf{
+						Actual:     []string{"FAIL"},
+						Expected:   []string{"PASS"},
+						Unexpected: &tptr,
+					},
+				},
+			}
+			So(unexpectedFailures(r), ShouldResemble, []string{"foo"})
+		})
+
 	})
 }
 
