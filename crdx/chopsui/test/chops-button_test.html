@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<title>button</title>
+<meta charset="utf-8">
+<link rel="import" href="../chops-button.html">
+<script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+<script src="../../web-component-tester/browser.js"></script>
+
+<test-fixture id="chops-button-test">
+  <template>
+    <chops-button></chops-button>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('chops-button', function() {
+    let element;
+    setup(function() {
+      element = fixture('chops-button-test');
+    });
+
+    test('chops-button can be disabled', function() {
+      expect(element.hasAttribute('disabled')).to.be.eql(false);
+
+      element.disabled = true;
+
+      expect(element.hasAttribute('disabled')).to.be.eql(true);
+    });
+  });
+</script>
