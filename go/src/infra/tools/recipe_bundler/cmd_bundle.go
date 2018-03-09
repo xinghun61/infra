@@ -289,6 +289,7 @@ func (c *cmdBundle) run(ctx context.Context) error {
 					// We just got the "freshest" value for these refs, so set them in CIPD.
 					cmd := append([]string{
 						"set-ref",
+						pkgName,
 						"-version", pkgVers,
 					}, pkgRefArgs...)
 					return c.cipd.server(ctx, cmd...)
