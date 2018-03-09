@@ -562,7 +562,8 @@ class MonorailRequest(MonorailRequestBase):
     try:
       return int(value)
     except (TypeError, ValueError):
-      raise exceptions.InputException('Invalid value for integer param')
+      raise exceptions.InputException(
+          'Invalid value for integer param: %r' % value)
 
   def GetPositiveIntParam(self, query_param_name, default_value=None):
     """Returns 0 if the user-provided value is less than 0."""

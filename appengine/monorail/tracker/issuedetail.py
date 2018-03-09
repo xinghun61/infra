@@ -704,7 +704,7 @@ class IssueDetail(issuepeek.IssuePeek):
 
           # Store everything we got from the form.  If the user lacked perms
           # any attempted edit would be a no-op because of the logic above.
-          amendments, _ = self.services.issue.ApplyIssueComment(
+          amendments, comment_pb = self.services.issue.ApplyIssueComment(
             mr.cnxn, self.services,
             mr.auth.user_id, mr.project_id, mr.local_id, summary, status,
             owner_id, cc_ids, labels, field_values, component_ids,
@@ -731,10 +731,10 @@ class IssueDetail(issuepeek.IssuePeek):
         tracker_helpers.AddIssueStarrers(
             mr.cnxn, self.services, mr,
             merge_into_iid, merge_into_project, new_starrers)
-        merge_comment = tracker_helpers.MergeCCsAndAddComment(
+        merge_comment_pb = tracker_helpers.MergeCCsAndAddComment(
             self.services, mr, issue, merge_into_project, merge_into_issue)
       elif merge_into_issue:
-        merge_comment = None
+        merge_comment_pb = None
         logging.info('merge denied: target issue %s not modified',
                      merge_into_iid)
       # TODO(jrobbins): distinguish between EditIssue and
@@ -779,20 +779,25 @@ class IssueDetail(issuepeek.IssuePeek):
       copied_to_project_name_and_local_id = self.HandleCopyOrMove(
           mr.cnxn, mr, copy_to_project, issue, send_email, move=False)
 
-    # TODO(sheyang): use global issue id in case the issue gets moved again
-    # before the task gets processed
     if amendments or parsed.comment.strip() or parsed.attachments:
+      # TODO(jrobbins): Remove the seq_num parameter after we have
+      # deployed the change that switches to comment_id.
       cmnts = self.services.issue.GetCommentsForIssue(mr.cnxn, issue.issue_id)
+      seq_num = len(cmnts) - 1
       notify.PrepareAndSendIssueChangeNotification(
-          issue.issue_id, mr.request.host, reporter_id, len(cmnts) - 1,
-          send_email=send_email, old_owner_id=old_owner_id)
+          issue.issue_id, mr.request.host, reporter_id, seq_num,
+          send_email=send_email, old_owner_id=old_owner_id,
+          comment_id=comment_pb.id)
 
-    if merge_into_issue and merge_allowed and merge_comment:
+    if merge_into_issue and merge_allowed and merge_comment_pb:
+      # TODO(jrobbins): Remove the merge_seq_num parameter after we have
+      # deployed the change that switches to comment_id.
       cmnts = self.services.issue.GetCommentsForIssue(
           mr.cnxn, merge_into_issue.issue_id)
+      merge_seq_num = len(cmnts) - 1
       notify.PrepareAndSendIssueChangeNotification(
           merge_into_issue.issue_id, mr.request.host, reporter_id,
-          len(cmnts) - 1, send_email=send_email)
+          merge_seq_num, send_email=send_email, comment_id=merge_comment_pb.id)
 
     if permit_edit:
       # Only users who can edit metadata could have edited blocking.

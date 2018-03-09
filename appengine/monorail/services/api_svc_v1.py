@@ -545,13 +545,17 @@ class MonorailApi(remote.Service):
       tracker_helpers.AddIssueStarrers(
           mar.cnxn, self._services, mar,
           merge_into_issue.issue_id, merge_into_project, new_starrers)
-      _merge_comment = tracker_helpers.MergeCCsAndAddComment(
+      merge_comment_pb = tracker_helpers.MergeCCsAndAddComment(
         self._services, mar, issue, merge_into_project, merge_into_issue)
+      # TODO(jrobbins): Remove the merge_seq_num parameter after we have
+      # deployed the change that switches to comment_id.
       merge_into_issue_cmnts = self._services.issue.GetCommentsForIssue(
           mar.cnxn, merge_into_issue.issue_id)
+      merge_seq_num = len(merge_into_issue_cmnts) - 1
       notify.PrepareAndSendIssueChangeNotification(
           merge_into_issue.issue_id, framework_helpers.GetHostPort(),
-          mar.auth.user_id, len(merge_into_issue_cmnts) - 1, send_email=True)
+          mar.auth.user_id, merge_seq_num, send_email=True,
+          comment_id=merge_comment_pb.id)
 
     tracker_fulltext.IndexIssues(
         mar.cnxn, [issue], self._services.user, self._services.issue,
@@ -565,9 +569,13 @@ class MonorailApi(remote.Service):
     seq = len(cmnts) - 1
 
     if request.sendEmail:
+      # TODO(jrobbins): Remove the seq parameter after we have
+      # deployed the change that switches to comment_id.  However,
+      # we need seq for the response protobuffer.
       notify.PrepareAndSendIssueChangeNotification(
           issue.issue_id, framework_helpers.GetHostPort(),
-          comment.user_id, seq, send_email=True, old_owner_id=old_owner_id)
+          comment.user_id, seq, send_email=True, old_owner_id=old_owner_id,
+          comment_id=comment.id)
 
     can_delete = permissions.CanDelete(
       mar.auth.user_id, mar.auth.effective_ids, mar.perms,
@@ -724,9 +732,12 @@ class MonorailApi(remote.Service):
       we.StarIssue(new_issue, True)
 
       if request.sendEmail:
+        # TODO(jrobbins): Convert this to using comment_id and remove
+        # seq_num parameter.
+        seq_num = 0
         notify.PrepareAndSendIssueChangeNotification(
             new_issue.issue_id, framework_helpers.GetHostPort(),
-            new_issue.reporter_id, 0)
+            new_issue.reporter_id, seq_num)
 
     return api_pb2_v1_helpers.convert_issue(
         api_pb2_v1.IssuesGetInsertResponse, new_issue, mar, self._services)

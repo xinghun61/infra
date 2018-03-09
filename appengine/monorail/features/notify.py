@@ -45,9 +45,11 @@ from tracker import tracker_helpers
 from tracker import tracker_views
 
 
+# TODO(jrobbins): Remove seq_num after all callers are updated.
 def PrepareAndSendIssueChangeNotification(
     issue_id, hostport, commenter_id, seq_num,
-    send_email=True, old_owner_id=framework_constants.NO_USER_SPECIFIED):
+    send_email=True, old_owner_id=framework_constants.NO_USER_SPECIFIED,
+    comment_id=None):
   """Create a task to notify users that an issue has changed.
 
   Args:
@@ -64,6 +66,8 @@ def PrepareAndSendIssueChangeNotification(
   params = dict(
       issue_id=issue_id, commenter_id=commenter_id, seq=seq_num,
       hostport=hostport, old_owner_id=old_owner_id, send_email=int(send_email))
+  if comment_id:  # Only set if non-none otherwise it will be string 'None'.
+      params['comment_id'] = comment_id
   logging.info('adding notify task with params %r', params)
   taskqueue.add(url=urls.NOTIFY_ISSUE_CHANGE_TASK + '.do', params=params)
 
@@ -133,10 +137,11 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
     hostport = mr.GetParam('hostport')
     old_owner_id = mr.GetPositiveIntParam('old_owner_id')
     send_email = bool(mr.GetIntParam('send_email'))
+    comment_id = mr.GetPositiveIntParam('comment_id')
     params = dict(
         issue_id=issue_id, commenter_id=commenter_id,
         seq_num=seq_num, hostport=hostport, old_owner_id=old_owner_id,
-        omit_ids=omit_ids, send_email=send_email)
+        omit_ids=omit_ids, send_email=send_email, comment_id=comment_id)
 
     logging.info('issue change params are %r', params)
     # TODO(jrobbins): Re-enable the issue cache for notifications after
@@ -154,7 +159,18 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
 
     all_comments = self.services.issue.GetCommentsForIssue(
         mr.cnxn, issue.issue_id)
-    comment = all_comments[seq_num]
+    if comment_id:
+      logging.info('Looking up comment by comment_id')
+      for c in all_comments:
+        if c.id == comment_id:
+          comment = c
+          logging.info('Comment was found by comment_id')
+          break
+      else:
+        raise ValueError('Comment %r was not found' % comment_id)
+    else:
+      logging.info('Looking up comment by seq_num')
+      comment = all_comments[seq_num]
 
     # Only issues that any contributor could view sent to mailing lists.
     contributor_could_view = permissions.CanViewIssue(

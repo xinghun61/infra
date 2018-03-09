@@ -736,7 +736,7 @@ def MergeCCsAndAddCommentMultipleIssues(
   target_cc = merge_into_issue.cc_ids
   add_cc = [user_id for user_id in source_cc if user_id not in target_cc]
 
-  services.issue.ApplyIssueComment(
+  _, merge_comment_pb = services.issue.ApplyIssueComment(
       mr.cnxn, services, mr.auth.user_id,
       merge_into_project.project_id, merge_into_issue.local_id,
       merge_into_issue.summary, merge_into_issue.status,
@@ -747,7 +747,7 @@ def MergeCCsAndAddCommentMultipleIssues(
       merge_into_issue.dangling_blocking_refs, merge_into_issue.merged_into,
       index_now=False, comment=merge_comment)
 
-  return merge_comment
+  return merge_comment_pb
 
 
 def SignAttachmentID(aid):

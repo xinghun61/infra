@@ -290,7 +290,7 @@ class IssuePeek(servlet.Servlet):
       raise permissions.PermissionException(
           'User is not allowed to edit this issue')
 
-    amendments, _ = self.services.issue.ApplyIssueComment(
+    amendments, comment_pb = self.services.issue.ApplyIssueComment(
         mr.cnxn, self.services, mr.auth.user_id,
         mr.project_id, mr.local_id, summary, status, owner_id, cc_ids,
         labels, field_values, component_ids, issue.blocked_on_iids,
@@ -302,11 +302,15 @@ class IssuePeek(servlet.Servlet):
 
     if send_email:
       if amendments or comment.strip():
+        # TODO(jrobbins): Remove the seq_num parameter after we have
+        # deployed the change that switches to comment_id.
         cmnts = self.services.issue.GetCommentsForIssue(
             mr.cnxn, issue.issue_id)
+        seq_num = len(cmnts) - 1
         notify.PrepareAndSendIssueChangeNotification(
-            issue.issue_id, mr.request.host, mr.auth.user_id, len(cmnts) - 1,
-            send_email=send_email, old_owner_id=old_owner_id)
+            issue.issue_id, mr.request.host, mr.auth.user_id, seq_num,
+            send_email=send_email, old_owner_id=old_owner_id,
+            comment_id=comment_pb.id)
 
     # TODO(jrobbins): allow issue merge via quick-edit.
 

@@ -331,8 +331,11 @@ class IssueEntry(servlet.Servlet):
       return
 
     # Initial description is comment 0.
+    # TODO(jrobbins): Convert this to using comment_id and remove
+    # seq_num parameter.
+    seq_num = 0
     notify.PrepareAndSendIssueChangeNotification(
-        issue.issue_id, mr.request.host, reporter_id, 0)
+        issue.issue_id, mr.request.host, reporter_id, seq_num)
 
     notify.PrepareAndSendIssueBlockingNotification(
         issue.issue_id, mr.request.host, parsed.blocked_on.iids, reporter_id)
