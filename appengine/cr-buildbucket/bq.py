@@ -168,6 +168,9 @@ def _build_to_v2(bid, build, build_ann):
       )
       build_v2.steps.extend(converter.parse_substeps(ann_step.substep))
 
+      for s in build_v2.steps:
+        s.summary_markdown = ''
+
     return build_v2, False
 
   except v2.errors.UnsupportedBuild as ex:
