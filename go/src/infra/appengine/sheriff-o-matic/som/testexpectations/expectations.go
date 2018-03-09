@@ -68,7 +68,7 @@ var (
 			PortName:   "mac-mac10.11",
 			Specifiers: []string{"Mac10.11", "Debug"},
 		},
-		"WebKit Mac10.11 (retina)": {
+		"WebKit Mac10.12 (retina)": {
 			PortName:   "mac-retina",
 			Specifiers: []string{"Retina", "Release"},
 		},
