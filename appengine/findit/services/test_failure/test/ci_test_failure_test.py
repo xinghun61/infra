@@ -7,7 +7,9 @@ import mock
 import os
 
 from common.findit_http_client import FinditHttpClient
+from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from model.wf_step import WfStep
+from services import swarming
 from services import test_results
 from services.parameters import TestFailureInfo
 from services.parameters import TestFailedStep
@@ -523,7 +525,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             master_name, builder_name, build_number, step_name, failed_step,
             None))
 
-  @mock.patch.object(swarming_util, 'GetIsolatedDataForStep', return_value=None)
+  @mock.patch.object(swarming, 'GetIsolatedDataForStep', return_value=None)
   def testGetSameStepFromBuildNotIsolated(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -539,7 +541,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
       return_value={
           'per_iteration_data': 'invalid'
       })
-  @mock.patch.object(swarming_util, 'GetIsolatedDataForStep')
+  @mock.patch.object(swarming, 'GetIsolatedDataForStep')
   def testGetSameStepFromBuildReslutLogInvalid(self, mock_isolated_data, _):
     master_name = 'm'
     builder_name = 'b'
@@ -557,7 +559,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         ci_test_failure._GetSameStepFromBuild(master_name, builder_name,
                                               build_number, step_name, None))
 
-  @mock.patch.object(swarming_util, 'GetIsolatedDataForStep')
+  @mock.patch.object(swarming, 'GetIsolatedDataForStep')
   @mock.patch.object(test_results,
                      'RetrieveShardedTestResultsFromIsolatedServer')
   def testGetSameStepFromBuild(self, mock_step_log, mock_isolated_data):
@@ -597,7 +599,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         ci_test_failure.AnyTestHasFirstTimeFailure(tests, build_number))
 
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  @mock.patch.object(swarming, 'GetIsolatedDataForFailedStepsInABuild')
   def testUpdateSwarmingSteps(self, mock_data):
     master_name = 'm'
     builder_name = 'b'
@@ -621,64 +623,18 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     }
     failed_steps = TestFailedSteps.FromSerializable(failed_steps)
 
-    mock_data.return_value = [{
-        'failure': True,
-        'internal_failure': False,
-        'tags': ['stepname:net_unittests'],
-        'outputs_ref': {
+    mock_data.return_value = {
+        'a_tests': [{
             'isolatedserver': 'https://isolateserver.appspot.com',
             'namespace': 'default-gzip',
-            'isolated': 'isolatedhashnetunittests'
-        }
-    }, {
-        'failure': False,
-        'internal_failure': False,
-        'tags': ['stepname:unit_tests'],
-        'outputs_ref': {
+            'digest': 'isolatedhashatests'
+        }],
+        'unit_tests': [{
             'isolatedserver': 'https://isolateserver.appspot.com',
             'namespace': 'default-gzip',
-            'isolated': 'isolatedhashunittests'
-        }
-    }, {
-        'failure': True,
-        'internal_failure': False,
-        'tags': ['stepname:unit_tests'],
-        'outputs_ref': {
-            'isolatedserver': 'https://isolateserver.appspot.com',
-            'namespace': 'default-gzip',
-            'isolated': 'isolatedhashunittests1'
-        }
-    }, {
-        'failure': True,
-        'internal_failure': False,
-        'tags': ['stepname:a'],
-        'outputs_ref': {
-            'isolatedserver': 'https://isolateserver.appspot.com',
-            'namespace': 'default-gzip',
-            'isolated': 'isolatedhasha'
-        }
-    }, {
-        'failure': True,
-        'internal_failure': False,
-        'tags': ['stepname:a_tests'],
-        'outputs_ref': {
-            'isolatedserver': 'https://isolateserver.appspot.com',
-            'namespace': 'default-gzip',
-            'isolated': 'isolatedhashatests'
-        }
-    }, {
-        'failure': True,
-        'internal_failure': False,
-        'tags': ['stepname:abc_test'],
-        'outputs_ref': {
-            'isolatedserver': 'https://isolateserver.appspot.com',
-            'namespace': 'default-gzip',
-            'isolated': 'isolatedhashabctest-223'
-        }
-    }, {
-        'failure': True,
-        'internal_failure': True
-    }]
+            'digest': 'isolatedhashunittests1'
+        }]
+    }
     result = ci_test_failure.UpdateSwarmingSteps(
         master_name, builder_name, build_number, failed_steps, None)
 
@@ -743,8 +699,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(result)
     self.assertEqual(expected_failed_steps, failed_steps.ToSerializable())
 
-  @mock.patch.object(
-      swarming_util, 'ListSwarmingTasksDataByTags', return_value=[])
+  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags', return_value=[])
   def testUpdateSwarmingStepsDownloadFailed(self, _):
     master_name = 'm'
     builder_name = 'download_failed'

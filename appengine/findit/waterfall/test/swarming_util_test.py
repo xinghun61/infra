@@ -2,20 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
 import json
 import mock
 import os
-import urllib
 import zlib
 
-from common import http_client_util
-from common.findit_http_client import FinditHttpClient
+from infra_api_clients import http_client_util
+from infra_api_clients.swarming import swarming_util as i_swarming_util
 from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
 from waterfall import swarming_util
 from waterfall import waterfall_config
-from waterfall.swarming_task_request import SwarmingTaskRequest
 from waterfall.test import wf_testcase
 
 ALL_BOTS = [{'bot_id': 'bot%d' % b} for b in range(10)]
@@ -44,33 +41,6 @@ class SwarmingHttpClient(RetryHttpClient):
 
   def _SetResponseForGetRequestIsolated(self, url, file_hash):
     self.get_responses[url] = self._GetData('isolated', file_hash)
-
-  def _SetResponseForGetRequestSwarmingList(self, master_name, builder_name,
-                                            build_number, step_name):
-    if builder_name == 'download_failed':
-      return
-
-    url = ('https://%s/api/swarming/v1/tasks/'
-           'list?tags=%s&tags=%s&tags=%s') % (
-               FinditConfig().Get().swarming_settings.get('server_host'),
-               urllib.quote('master:%s' % master_name),
-               urllib.quote('buildername:%s' % builder_name),
-               urllib.quote('buildnumber:%d' % build_number))
-
-    url += '&tags=%s' % urllib.quote('stepname:%s' % step_name)
-    response = self._GetData('step')
-
-    cursor_swarming_data = {
-        'cursor': None,
-        'items': [],
-        'state': 'all',
-        'limit': 100,
-        'sort': 'created_ts'
-    }
-    cursor_url = ('%s&cursor=thisisacursor') % url
-
-    self.get_responses[url] = response
-    self.get_responses[cursor_url] = json.dumps(cursor_swarming_data)
 
   def _SetResponseForGetRequestSwarmingResult(self, task_id):
     url = ('https://%s/api/swarming/v1/task/%s/result') % (
@@ -102,295 +72,12 @@ class SwarmingHttpClient(RetryHttpClient):
     pass
 
 
-class _LoggedHttpClient(RetryHttpClient):
-
-  def __init__(self, interceptor=None):
-    self.responses = collections.defaultdict(dict)
-    self.requests = {}
-    self.interceptor = interceptor
-
-  def _Get(self, url, _, headers):
-    self.requests[url] = ('get', None, headers)
-    return self.responses.get('get', {}).get(url)
-
-  def _Post(self, url, responses, _, headers):
-    self.requests[url] = ('post', responses, headers)
-    return self.responses.get('post', {}).get(url, (None, 404))
-
-  def _Put(self, *_):  # pragma: no cover
-    pass
-
-  def SetResponse(self, method, url, content=None, status_code=200):
-    self.responses[method][url] = (status_code, content, {})
-
-  def GetRequest(self, url):
-    return self.requests.get(url)
-
-
 class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(SwarmingUtilTest, self).setUp()
     self.http_client = SwarmingHttpClient()
-    self.logged_http_client = _LoggedHttpClient()
     self.step_name = 'browser_tests on platform'
-
-  def testGetSwarmingTaskRequest(self):
-    task_request_json = {
-        'expiration_secs': 2,
-        'name': 'name',
-        'parent_task_id': 'pti',
-        'priority': 1,
-        'properties': {
-            'command': 'cmd',
-            'dimensions': [{
-                'key': 'd',
-                'value': 'dv'
-            }],
-            'env': [{
-                'key': 'e',
-                'value': 'ev'
-            }],
-            'execution_timeout_secs': 4,
-            'extra_args': ['--flag'],
-            'grace_period_secs': 5,
-            'idempotent': True,
-            'inputs_ref': {
-                'isolated': 'i',
-                'isolatedserver': 'is',
-                'namespace': 'ns',
-            },
-            'io_timeout_secs': 3,
-        },
-        'tags': ['tag'],
-        'user': 'user',
-        'pubsub_topic': None,
-        'pubsub_auth_token': None,
-        'pubsub_userdata': None,
-    }
-    task_id = '1'
-    url = ('https://chromium-swarm.appspot.com/api/swarming/v1/task/%s/request'
-           % task_id)
-    self.logged_http_client.SetResponse('get', url,
-                                        json.dumps(task_request_json), 200)
-
-    task_request = swarming_util.GetSwarmingTaskRequest(task_id,
-                                                        self.logged_http_client)
-
-    self.assertEqual(task_request_json, task_request.Serialize())
-
-  @mock.patch.object(
-      http_client_util,
-      'SendRequestToServer',
-      return_value=(None, {
-          'code': 1,
-          'message': 'error'
-      }))
-  def testGetSwarmingTaskRequestError(self, _):
-    self.assertIsNone(
-        swarming_util.GetSwarmingTaskRequest('task_id1', FinditHttpClient()))
-
-  def testTriggerSwarmingTask(self):
-    request = SwarmingTaskRequest()
-    request.expiration_secs = 2
-    request.name = 'name'
-    request.parent_task_id = 'pti'
-    request.priority = 1
-    request.tags = ['tag']
-    request.user = 'user'
-    request.command = 'cmd'
-    request.dimensions = [{'key': 'd', 'value': 'dv'}]
-    request.env = [{'key': 'e', 'value': 'ev'}]
-    request.execution_timeout_secs = 4
-    request.extra_args = ['--flag']
-    request.grace_period_secs = 5
-    request.idempotent = True
-    request.inputs_ref = {'isolated': 'i'}
-    request.io_timeout_secs = 3
-
-    url = 'https://chromium-swarm.appspot.com/api/swarming/v1/tasks/new'
-    self.logged_http_client.SetResponse('post', url, json.dumps({
-        'task_id': '1'
-    }), 200)
-
-    expected_task_request_json = {
-        'expiration_secs': 72000,
-        'name': 'name',
-        'parent_task_id': 'pti',
-        'priority': 150,
-        'properties': {
-            'command': 'cmd',
-            'dimensions': [{
-                'key': 'd',
-                'value': 'dv'
-            }],
-            'env': [{
-                'key': 'e',
-                'value': 'ev'
-            }],
-            'execution_timeout_secs': 4,
-            'extra_args': ['--flag'],
-            'grace_period_secs': 5,
-            'idempotent': True,
-            'inputs_ref': {
-                'isolated': 'i'
-            },
-            'io_timeout_secs': 3,
-        },
-        'tags': ['tag', 'findit:1', 'project:Chromium', 'purpose:post-commit'],
-        'user': 'user',
-        'pubsub_topic': None,
-        'pubsub_auth_token': None,
-        'pubsub_userdata': None,
-    }
-
-    task_id, error = swarming_util.TriggerSwarmingTask(request,
-                                                       self.logged_http_client)
-    self.assertEqual('1', task_id)
-    self.assertIsNone(error)
-
-    method, data, _ = self.logged_http_client.GetRequest(url)
-    self.assertEqual('post', method)
-    self.assertEqual(expected_task_request_json, json.loads(data))
-
-  @mock.patch.object(
-      http_client_util,
-      'SendRequestToServer',
-      return_value=(None, {
-          'code': 1,
-          'message': 'error'
-      }))
-  def testTriggerSwarmingTaskError(self, _):
-    request = SwarmingTaskRequest()
-    task_id, error = swarming_util.TriggerSwarmingTask(request,
-                                                       FinditHttpClient())
-    self.assertIsNone(task_id)
-    self.assertIsNotNone(error)
-
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
-  def testGetIsolatedShaForStep(self, mocked_list_swarming_tasks_data):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    step_name = 's'
-    mocked_http_client = None
-    isolated_sha = 'a1b2c3d4'
-
-    mocked_list_swarming_tasks_data.return_value = [{
-        'tags': ['data:%s' % isolated_sha]
-    }]
-
-    self.assertEqual(isolated_sha,
-                     swarming_util.GetIsolatedShaForStep(
-                         master_name, builder_name, build_number, step_name,
-                         mocked_http_client))
-
-  @mock.patch.object(
-      swarming_util, 'ListSwarmingTasksDataByTags', return_value=None)
-  def testGetIsolatedShaForStepNoData(self, _):
-    mocked_http_client = None
-    self.assertIsNone(
-        swarming_util.GetIsolatedShaForStep('m', 'b', 123, 's',
-                                            mocked_http_client))
-
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
-  def testGetIsolatedShaForStepNoShaFound(self,
-                                          mocked_list_swarming_tasks_data):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    step_name = 's'
-    mocked_http_client = None
-
-    mocked_list_swarming_tasks_data.return_value = [{
-        'tags': ['some', 'random', 'tags']
-    }]
-
-    self.assertIsNone(
-        swarming_util.GetIsolatedShaForStep(master_name, builder_name,
-                                            build_number, step_name,
-                                            mocked_http_client))
-
-  def testGetIsolatedDataForStep(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    step_name = 'unit_tests'
-
-    self.http_client._SetResponseForGetRequestSwarmingList(
-        master_name, builder_name, build_number, step_name)
-    data = swarming_util.GetIsolatedDataForStep(
-        master_name, builder_name, build_number, step_name, self.http_client)
-    expected_data = [{
-        'digest':
-            'isolatedhashunittests',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }]
-    self.assertEqual(expected_data, data)
-
-  def testGetIsolatedDataForStepNotOnlyFailure(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    step_name = 'unit_tests'
-
-    self.http_client._SetResponseForGetRequestSwarmingList(
-        master_name, builder_name, build_number, step_name)
-    data = swarming_util.GetIsolatedDataForStep(
-        master_name,
-        builder_name,
-        build_number,
-        step_name,
-        self.http_client,
-        only_failure=False)
-    expected_data = [{
-        'digest':
-            'isolatedhashunittests',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }, {
-        'digest':
-            'isolatedhashunittests1',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }]
-    self.assertEqual(sorted(expected_data), sorted(data))
-
-  def testGetIsolatedDataForStepFailed(self):
-    master_name = 'm'
-    builder_name = 'download_failed'
-    build_number = 223
-    step_name = 's1'
-
-    self.http_client._SetResponseForGetRequestSwarmingList(
-        master_name, builder_name, build_number, step_name)
-
-    data = swarming_util.GetIsolatedDataForStep(
-        master_name, builder_name, build_number, step_name, self.http_client)
-
-    self.assertEqual([], data)
-
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
-  def testGetIsolatedDataForStepNoOutputsRef(self, mock_data):
-    master_name = 'm'
-    builder_name = 'download_failed'
-    build_number = 223
-    step_name = 's1'
-
-    mock_data.return_value = [{'failure': True}, {'failure': False}]
-
-    data = swarming_util.GetIsolatedDataForStep(
-        master_name, builder_name, build_number, step_name, self.http_client)
-    expected_data = []
-
-    self.assertEqual(expected_data, data)
 
   def testDownloadTestResults(self):
     isolated_data = {
@@ -508,40 +195,6 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(send_content2, result)
 
-  def testGetSwarmingTaskResultById(self):
-    task_id = '2944afa502297110'
-
-    self.http_client._SetResponseForGetRequestSwarmingResult(task_id)
-
-    data, error = swarming_util.GetSwarmingTaskResultById(
-        task_id, self.http_client)
-
-    expected_outputs_ref = {
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server'),
-        'namespace':
-            'default-gzip',
-        'isolated':
-            'shard1_isolated'
-    }
-
-    self.assertEqual('COMPLETED', data['state'])
-    self.assertEqual(expected_outputs_ref, data['outputs_ref'])
-    self.assertIsNone(error)
-
-  @mock.patch.object(
-      http_client_util,
-      'SendRequestToServer',
-      return_value=(None, {
-          'code': 1,
-          'message': 'error'
-      }))
-  def testGetSwarmingTaskResultByIdError(self, _):
-    data, error = swarming_util.GetSwarmingTaskResultById(
-        'task_id', FinditHttpClient())
-    self.assertEqual({}, data)
-    self.assertIsNotNone(error)
-
   def testGetSwarmingTaskFailureLog(self):
     outputs_ref = {
         'isolatedserver':
@@ -578,20 +231,13 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failure_log, failure_log)
 
-  def testGetTagValueInvalidTag(self):
-    tags = ['a:1', 'b:2']
-    self.assertIsNone(swarming_util.GetTagValue(tags, 'c'))
-
-  def testGenerateIsolatedDataOutputsrefNone(self):
-    self.assertEqual({}, swarming_util.GenerateIsolatedData(None))
-
   def testFetchOutputJsonInfoFromIsolatedServerReturnNone(self):
     self.assertIsNone(
         swarming_util._FetchOutputJsonInfoFromIsolatedServer(
             None, self.http_client))
 
   @mock.patch.object(
-      swarming_util,
+      i_swarming_util,
       'GetSwarmingTaskResultById',
       return_value=({
           'outputs_ref': 'ref'
@@ -602,7 +248,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(swarming_util.GetIsolatedOutputForTask(None, None))
 
   @mock.patch.object(
-      swarming_util,
+      i_swarming_util,
       'GetSwarmingTaskResultById',
       return_value=({
           'a': []
@@ -611,7 +257,9 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(swarming_util.GetIsolatedOutputForTask(None, None))
 
   @mock.patch.object(
-      swarming_util, 'GetSwarmingTaskResultById', return_value=(None, 'error'))
+      i_swarming_util,
+      'GetSwarmingTaskResultById',
+      return_value=(None, 'error'))
   def testGetIsolatedOutputForTaskDataError(self, _):
     self.assertIsNone(swarming_util.GetIsolatedOutputForTask(None, None))
 
@@ -630,53 +278,3 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     expected_result = json.loads(
         zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
-
-  def testDimensionsToQueryString(self):
-    self.assertEqual(
-        swarming_util.DimensionsToQueryString({
-            'bot_id': 'slave1'
-        }), swarming_util.DimensionsToQueryString(['bot_id:slave1']))
-    self.assertEqual(
-        '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
-        # Use Ordered dict to preserve the order of the dimensions.
-        swarming_util.DimensionsToQueryString(
-            collections.OrderedDict([('bot_id', 'slave1'), ('cpu', 'x86_64'),
-                                     ('os', 'Mac')])))
-    self.assertEqual(
-        '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
-        swarming_util.DimensionsToQueryString(
-            ['bot_id:slave1', 'cpu:x86_64', 'os:Mac']))
-
-  def testGetSwarmingBotCountsNodimentsions(self):
-    self.assertEqual({}, swarming_util.GetSwarmingBotCounts(None, None))
-
-  @mock.patch.object(http_client_util, 'SendRequestToServer')
-  def testGetSwarmingBotCounts(self, mock_fn):
-
-    dimensions = {'os': 'OS', 'cpu': 'cpu'}
-
-    content_data = {'count': '10', 'dead': '1', 'quarantined': '0', 'busy': '5'}
-    mock_fn.return_value = (json.dumps(content_data), None)
-
-    expected_counts = {
-        'count': 10,
-        'dead': 1,
-        'quarantined': 0,
-        'busy': 5,
-        'available': 4
-    }
-
-    self.assertEqual(expected_counts,
-                     swarming_util.GetSwarmingBotCounts(dimensions, None))
-
-  @mock.patch.object(
-      http_client_util,
-      'SendRequestToServer',
-      return_value=(None, {
-          'code': 1,
-          'message': 'error'
-      }))
-  def testGetSwarmingBotCountsError(self, _):
-
-    dimensions = {'os': 'OS', 'cpu': 'cpu'}
-    self.assertEqual({}, swarming_util.GetSwarmingBotCounts(dimensions, None))

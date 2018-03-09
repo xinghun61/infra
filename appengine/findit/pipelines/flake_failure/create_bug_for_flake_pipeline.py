@@ -12,10 +12,10 @@ from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from services import swarming
 from services import test_results
 from services import issue_tracking_service
 from waterfall import build_util
-from waterfall import swarming_util
 from waterfall.flake import triggering_sources
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
     AnalyzeFlakeForBuildNumberPipeline)
@@ -70,17 +70,15 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
       analysis.LogInfo('Bug not failed because latest build number not found.')
       return
 
-    tasks = swarming_util.ListSwarmingTasksDataByTags(
-        analysis.master_name, analysis.builder_name, most_recent_build_number,
-        FinditHttpClient(), {
-            'stepname': analysis.step_name
-        })
+    tasks = swarming.ListSwarmingTasksDataByTags(
+        FinditHttpClient(), analysis.master_name, analysis.builder_name,
+        most_recent_build_number, analysis.step_name)
     if not tasks:
       analysis.LogInfo('Bug not filed because no recent runs found.')
       return
 
     task = tasks[0]
-    if not test_results.IsTestEnabled(analysis.test_name, task['task_id']):
+    if not test_results.IsTestEnabled(analysis.test_name, task.task_id):
       analysis.LogInfo('Bug not filed because test was fixed or disabled.')
       return
 

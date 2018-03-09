@@ -9,17 +9,13 @@ import json
 def SendRequestToServer(url, http_client, post_data=None):
   """Sends GET/POST request to arbitrary url and returns response content.
 
-  We are using this function to send requests to some services that are prone to
-  outages, exceptions trying to reach them may occur thus this method should
-  retry.
-
   Args:
     url (str): The url to send the request to.
     http_client (HttpClient): The httpclient object with which to make the
       server calls.
     post_data (dict): Data/params to send with the request, if any.
   Returns:
-    status_code, content (dict), error (dict): Status code, the content from
+    content (dict), error (dict): the content from
       the server and the last error encountered trying to retrieve it.
   """
   error = None

@@ -8,7 +8,7 @@ import mock
 import os
 
 from services import gtest
-from services import test_results_constants
+from services import constants
 from services.gtest import GtestResults
 from waterfall.test import wf_testcase
 
@@ -115,7 +115,7 @@ class GtestTest(wf_testcase.WaterfallTestCase):
 
     failed_test_log = self.gtest_results.GetConsistentTestFailureLog(
         json.loads(step_log))
-    self.assertEqual(test_results_constants.FLAKY_FAILURE_LOG, failed_test_log)
+    self.assertEqual(constants.FLAKY_FAILURE_LOG, failed_test_log)
 
   def testDoesTestExist(self):
     existing_test_name = 'test'

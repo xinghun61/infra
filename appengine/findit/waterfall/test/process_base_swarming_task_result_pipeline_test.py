@@ -9,12 +9,14 @@ import mock
 
 from google.appengine.api import taskqueue
 
+from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
+from services import constants
 from services import test_results
-from waterfall import swarming_util
+from waterfall import swarming_util as wf_swarming_util
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
 from waterfall.process_flake_swarming_task_result_pipeline import (
@@ -142,7 +144,7 @@ _EXPECTED_CLASSIFIED_TESTS = {
 
 class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
-  def _MockedGetSwarmingTaskResultById(self, task_id, _):
+  def _MockedGetSwarmingTaskResultById(self, _host, task_id, _):
     return _SWARMING_TASK_RESULTS[task_id], None
 
   def setUp(self):
@@ -184,8 +186,8 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         ._CheckTestsRunStatuses(_SAMPLE_FAILURE_LOG))
     self.assertEqual(_EXPECTED_TESTS_STATUS, tests_statuses)
 
-  @mock.patch.object(swarming_util, 'GetSwarmingTaskFailureLog',
-                     return_value=(None, None))
+  @mock.patch.object(
+      wf_swarming_util, 'GetSwarmingTaskFailureLog', return_value=(None, None))
   def testMonitorSwarmingTaskTimeOut(self, _):
     # Override swarming config settings to force a timeout.
     override_swarming_settings = {'task_timeout_hours': -1}
@@ -285,7 +287,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
           'message': 'error'
       }))
   @mock.patch.object(
-      swarming_util,
+      wf_swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   def testMonitorSwarmingTaskGetSwarmingTaskResultIdErrorRecovered(self, *_):
@@ -303,7 +305,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(task.error, {'code': 1, 'message': 'error'})
 
   @mock.patch.object(
-      swarming_util,
+      wf_swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(None, {
           'code': 1,
@@ -350,7 +352,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(analysis_status.ERROR, task.status)
     self.assertEqual(task.error, {
-        'code': swarming_util.NO_TASK_OUTPUTS,
+        'code': constants.NO_TASK_OUTPUTS,
         'message': 'outputs_ref is None'
     })
 
@@ -367,12 +369,12 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(analysis_status.ERROR, task.status)
     self.assertEqual(task.error, {
-        'code': swarming_util.BOT_DIED,
+        'code': constants.BOT_DIED,
         'message': 'BOT_DIED'
     })
 
   @mock.patch.object(
-      swarming_util,
+      wf_swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   def testProcessSwarmingTaskResultPipeline(self, _):
@@ -410,7 +412,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('abc_tests', task.canonical_step_name)
 
   @mock.patch.object(
-      swarming_util,
+      wf_swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   def testProcessSwarmingTaskResultPipelineSerializedCallback(self, _):
@@ -519,7 +521,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(task.error)
 
   @mock.patch.object(
-      swarming_util,
+      wf_swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   @mock.patch.object(test_results, 'IsTestResultsValid', return_value=True)
@@ -572,7 +574,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(mocked_logging.called)
 
   @mock.patch.object(
-      swarming_util,
+      wf_swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   def testProcessSwarmingTaskResultPipelineBackwardCompatibleCallback(self, _):

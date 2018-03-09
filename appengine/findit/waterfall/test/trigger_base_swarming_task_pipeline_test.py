@@ -8,11 +8,12 @@ import time
 
 from common.waterfall import pubsub_callback
 from gae_libs import token
+from infra_api_clients.swarming import swarming_util
+from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 from libs import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
-from waterfall import swarming_util
+from services import swarming
 from waterfall import waterfall_config
-from waterfall.swarming_task_request import SwarmingTaskRequest
 from waterfall.test import wf_testcase
 from waterfall.trigger_base_swarming_task_pipeline import (
     TriggerBaseSwarmingTaskPipeline)
@@ -99,10 +100,10 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     def MockedDownloadSwarmingTaskData(*_):
       return [{'task_id': '1'}, {'task_id': '2'}]
 
-    self.mock(swarming_util, 'ListSwarmingTasksDataByTags',
+    self.mock(swarming, 'ListSwarmingTasksDataByTags',
               MockedDownloadSwarmingTaskData)
 
-    def MockedGetSwarmingTaskRequest(ref_task_id, *_):
+    def MockedGetSwarmingTaskRequest(_host, ref_task_id, *_):
       self.assertEqual('1', ref_task_id)
       return SwarmingTaskRequest.Deserialize({
           'expiration_secs': 3600,
@@ -160,7 +161,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
       new_request_json.update(new_request.Serialize())
       return 'new_task_id', None
 
-    self.mock(swarming_util, 'TriggerSwarmingTask', MockedTriggerSwarmingTask)
+    self.mock(swarming, 'TriggerSwarmingTask', MockedTriggerSwarmingTask)
 
     def MockedGetSwarmingTaskName(*_):
       return 'new_task_name'
@@ -256,7 +257,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       pubsub_callback, 'GetVerificationToken', return_value='blah')
   @mock.patch.object(
-      swarming_util,
+      swarming,
       'ListSwarmingTasksDataByTags',
       return_value=[{
           'task_id': '1'
@@ -264,7 +265,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
           'task_id': '2'
       }])
   @mock.patch.object(
-      swarming_util, 'TriggerSwarmingTask', return_value=('new_task_id', None))
+      swarming, 'TriggerSwarmingTask', return_value=('new_task_id', None))
   @mock.patch.object(
       TriggerBaseSwarmingTaskPipeline,
       '_GetSwarmingTaskName',

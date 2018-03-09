@@ -6,8 +6,9 @@ from datetime import timedelta
 import random
 
 from common.findit_http_client import FinditHttpClient
+from infra_api_clients.swarming import swarming_util
 from libs import time_util
-from waterfall import swarming_util
+from services import swarming
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -192,11 +193,10 @@ def BotsAvailableForTask(step_metadata):
           'minimum_percentage_of_available_bots',
           DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS))
   dimensions = step_metadata.get('dimensions')
-  bot_counts = swarming_util.GetSwarmingBotCounts(dimensions,
-                                                  FinditHttpClient())
-
-  total_count = bot_counts.get('count') or -1
-  available_count = bot_counts.get('available', 0)
+  bot_counts = swarming_util.GetBotCounts(swarming.SwarmingHost(), dimensions,
+                                          FinditHttpClient)
+  total_count = bot_counts.count or -1
+  available_count = bot_counts.available or 0
   available_rate = float(available_count) / total_count
 
   return (available_count > minimum_number_of_available_bots and

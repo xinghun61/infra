@@ -4,10 +4,11 @@
 
 import mock
 
+from infra_api_clients.swarming import swarming_util
+from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from waterfall import swarming_util
-from waterfall.swarming_task_request import SwarmingTaskRequest
+from services import swarming
 from waterfall.test import wf_testcase
 from waterfall.trigger_flake_swarming_task_pipeline import (
     TriggerFlakeSwarmingTaskPipeline)
@@ -72,13 +73,11 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                      TriggerFlakeSwarmingTaskPipeline()._GetIterationsToRerun())
 
   @mock.patch.object(
-      swarming_util,
-      'ListSwarmingTasksDataByTags',
-      return_value=[{
+      swarming, 'ListSwarmingTasksDataByTags', return_value=[{
           'task_id': '1'
       }])
   @mock.patch.object(
-      swarming_util, 'TriggerSwarmingTask', return_value=('new_task_id', None))
+      swarming, 'TriggerSwarmingTask', return_value=('new_task_id', None))
   @mock.patch.object(
       TriggerFlakeSwarmingTaskPipeline,
       '_GetSwarmingTaskName',

@@ -10,12 +10,13 @@ import logging
 from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
+from infra_api_clients.swarming import swarming_util
 from model.wf_step import WfStep
+from services import swarming
+from services import test_results
 from services.parameters import FailedTest
 from services.parameters import FailedTests
 from services.parameters import IsolatedDataList
-from services import test_results
-from waterfall import swarming_util
 
 _NON_FAILURE_STATUSES = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
 
@@ -78,7 +79,7 @@ def _GetSameStepFromBuild(master_name, builder_name, build_number, step_name,
     return step
 
   # Sends request to swarming server for isolated data.
-  step_isolated_data = swarming_util.GetIsolatedDataForStep(
+  step_isolated_data = swarming.GetIsolatedDataForStep(
       master_name, builder_name, build_number, step_name, http_client)
 
   if not step_isolated_data:
@@ -209,21 +210,11 @@ def UpdateSwarmingSteps(master_name, builder_name, build_number, failed_steps,
   updates failed swarming steps for isolated data.
   Also creates and saves swarming steps in datastore.
   """
-  data = swarming_util.ListSwarmingTasksDataByTags(master_name, builder_name,
-                                                   build_number, http_client)
-  if not data:
-    return False
+  build_isolated_data = swarming.GetIsolatedDataForFailedStepsInABuild(
+      master_name, builder_name, build_number, failed_steps, http_client)
 
-  tag_name = 'stepname'
-  build_isolated_data = defaultdict(list)
-  for item in data:
-    if item['failure'] and not item['internal_failure']:
-      # Only retrieves test results from tasks which have failures and
-      # the failure should not be internal infrastructure failure.
-      swarming_step_name = swarming_util.GetTagValue(item['tags'], tag_name)
-      if swarming_step_name in failed_steps and item.get('outputs_ref'):
-        isolated_data = swarming_util.GenerateIsolatedData(item['outputs_ref'])
-        build_isolated_data[swarming_step_name].append(isolated_data)
+  if not build_isolated_data:
+    return False
 
   new_steps = []
   for step_name in build_isolated_data:

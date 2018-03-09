@@ -6,9 +6,10 @@ import copy
 from datetime import datetime
 import mock
 
+from infra_api_clients.swarming import swarming_util
+from infra_api_clients.swarming.swarming_bot_counts import SwarmingBotCounts
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from waterfall import swarming_util
 from waterfall.flake import flake_analysis_util
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
@@ -180,17 +181,16 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
       self.assertEqual(mocked_utc_eta,
                        flake_analysis_util.GetETAToStartAnalysis(False))
 
-  @mock.patch.object(swarming_util, 'GetSwarmingBotCounts')
+  @mock.patch.object(swarming_util, 'GetBotCounts')
   def testCheckBotsAvailability(self, mock_fn):
     step_metadata = {'dimensions': {'os': 'OS'}}
 
-    mock_fn.return_value = {
+    mock_fn.return_value = SwarmingBotCounts({
         'count': 20,
         'dead': 1,
         'quarantined': 0,
-        'busy': 5,
-        'available': 14
-    }
+        'busy': 5
+    })
 
     self.assertFalse(flake_analysis_util.BotsAvailableForTask(None))
     self.assertTrue(flake_analysis_util.BotsAvailableForTask(step_metadata))

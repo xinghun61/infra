@@ -5,7 +5,9 @@
 import mock
 
 from common.findit_http_client import FinditHttpClient
+from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from model.flake.flake_analysis_request import BuildStep
+from services import swarming
 from waterfall import buildbot
 from waterfall import build_util
 from waterfall import swarming_util
@@ -88,11 +90,13 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[123])
   @mock.patch.object(
-      swarming_util,
+      swarming,
       'ListSwarmingTasksDataByTags',
-      return_value=[{
-          'tags': ['stepname:browser_tests on platform']
-      }])
+      return_value=[
+          SwarmingTaskData({
+              'tags': ['stepname:browser_tests on platform']
+          })
+      ])
   def testGetMatchingWaterfallBuildStep(self, *_):
     master_name, builder_name, build_number, step_name, step_metadata = (
         step_mapper._GetMatchingWaterfallBuildStep(self.build_step,
@@ -141,8 +145,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       'GetWaterfallBuildStepLog',
       return_value=wf_testcase.SAMPLE_STEP_METADATA)
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[123])
-  @mock.patch.object(
-      swarming_util, 'ListSwarmingTasksDataByTags', return_value=None)
+  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags', return_value=None)
   def testGetMatchingWaterfallBuildStepNoTask(self, *_):
     master_name, _, _, _, _ = step_mapper._GetMatchingWaterfallBuildStep(
         self.build_step, self.http_client)

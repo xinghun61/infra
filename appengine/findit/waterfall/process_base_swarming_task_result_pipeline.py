@@ -13,10 +13,12 @@ from common import constants
 from common.findit_http_client import FinditHttpClient
 from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
+from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
-from services import test_results_constants
+from services import swarming
+from services import constants as service_constants
 from services import test_results
-from waterfall import swarming_util
+from waterfall import swarming_util as wf_swarming_util
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK_EXCEPTION
@@ -157,7 +159,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         # Updates status as ERROR.
         task.status = analysis_status.ERROR
         task.error = {
-            'code': swarming_util.TIMED_OUT,
+            'code': service_constants.TIMED_OUT,
             'message': 'Process swarming task result timed out'
         }
         task.put()
@@ -186,7 +188,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           task.put()
 
     data, error = swarming_util.GetSwarmingTaskResultById(
-        task_id, self.HTTP_CLIENT)
+        swarming.SwarmingHost(), task_id, self.HTTP_CLIENT)
 
     if error:
       # An error occurred at some point when trying to retrieve data from
@@ -207,10 +209,10 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         step_name_no_platform or
         swarming_util.GetTagValue(data.get('tags', {}), 'ref_name'))
 
-    if task_state not in swarming_util.STATES_RUNNING:
+    if task_state not in service_constants.STATES_RUNNING:
       task_completed = True
 
-      if task_state == swarming_util.STATE_COMPLETED:
+      if task_state == service_constants.STATE_COMPLETED:
         outputs_ref = data.get('outputs_ref')
 
         # If swarming task aborted because of errors in request arguments,
@@ -219,25 +221,25 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           logging.error('outputs_ref for task %s is None', task_id)
           task.status = analysis_status.ERROR
           task.error = {
-              'code': swarming_util.NO_TASK_OUTPUTS,
+              'code': service_constants.NO_TASK_OUTPUTS,
               'message': 'outputs_ref is None'
           }
           task.put()
           check_task_completion()
           return
 
-        output_json, error = swarming_util.GetSwarmingTaskFailureLog(
+        output_json, error = wf_swarming_util.GetSwarmingTaskFailureLog(
             outputs_ref, self.HTTP_CLIENT)
 
         if not output_json:
           error = error or {
-              'code': swarming_util.NO_OUTPUT_JSON,
+              'code': service_constants.NO_OUTPUT_JSON,
               'message': 'No swarming task failure log'
           }
 
         if not test_results.IsTestResultsValid(output_json):
           error = error or {
-              'code': test_results_constants.UNRECOGNIZABLE,
+              'code': constants.UNRECOGNIZABLE,
               'message': 'Test results format is unrecognized, '
                          'cannot find a parser.'
           }
@@ -256,7 +258,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         task.put()
       else:
         # The swarming task did not complete.
-        code = swarming_util.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state]
+        code = service_constants.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state]
         message = task_state
 
         task.status = analysis_status.ERROR

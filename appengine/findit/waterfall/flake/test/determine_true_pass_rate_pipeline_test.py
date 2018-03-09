@@ -5,15 +5,14 @@
 from datetime import datetime
 import copy
 import mock
+
 from common import constants
-
 from gae_libs.pipelines import pipeline_handlers
-
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from waterfall import swarming_util
+from services import constants as service_constants
 from waterfall.flake import flake_constants
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import determine_true_pass_rate_pipeline
@@ -308,7 +307,9 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[
             analysis.key.urlsafe(), build_number, iterations, timeout
         ],
-        expected_kwargs={'rerun': rerun})
+        expected_kwargs={
+            'rerun': rerun
+        })
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
                                                  build_number, rerun)
@@ -480,8 +481,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual((30, 3600),
                      determine_true_pass_rate_pipeline.
-                     _CalculateRunParametersForSwarmingTask(
-                         analysis, 123))
+                     _CalculateRunParametersForSwarmingTask(analysis, 123))
 
   def testCalculateRunParametersForSwarmingTaskExceedsMaxTasks(self):
     master_name = 'm'
@@ -503,8 +503,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual((200, 3600),
                      determine_true_pass_rate_pipeline.
-                     _CalculateRunParametersForSwarmingTask(
-                         analysis, 123))
+                     _CalculateRunParametersForSwarmingTask(analysis, 123))
 
   def testCalculateRunParametersForSwarmingTaskWithSumLessThanAnHour(self):
     master_name = 'm'
@@ -584,8 +583,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual((iterations_to_run_after_timeout, 3600),
                      determine_true_pass_rate_pipeline.
-                     _CalculateRunParametersForSwarmingTask(
-                         analysis, 123))
+                     _CalculateRunParametersForSwarmingTask(analysis, 123))
 
   def testTestDoesNotExist(self):
     self.assertFalse(determine_true_pass_rate_pipeline._TestDoesNotExist(1, 1))
@@ -619,11 +617,11 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
                                     step_name, test_name)
     task.status = analysis_status.ERROR
-    task.error = {'code': swarming_util.TIMED_OUT}
+    task.error = {'code': service_constants.TIMED_OUT}
     task.put()
 
     self.assertEqual(
-        swarming_util.TIMED_OUT,
+        service_constants.TIMED_OUT,
         determine_true_pass_rate_pipeline._GetSwarmingTaskErrorCode(
             analysis, task, 1.0))
     self.assertIsNone(

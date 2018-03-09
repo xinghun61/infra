@@ -4,7 +4,7 @@
 
 import unittest
 
-from waterfall.swarming_task_request import SwarmingTaskRequest
+from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 
 
 class SwarmingTaskRequestTest(unittest.TestCase):
@@ -22,18 +22,14 @@ class SwarmingTaskRequestTest(unittest.TestCase):
         'pubsub_userdata': 'data',
         'properties': {
             'command': 'path/to/binary',
-            'dimensions': [
-                {
-                    'key': 'cpu',
-                    'value': 'x86-64',
-                },
-            ],
-            'env': [
-                {
-                    'key': 'name',
-                    'value': '1',
-                },
-            ],
+            'dimensions': [{
+                'key': 'cpu',
+                'value': 'x86-64',
+            },],
+            'env': [{
+                'key': 'name',
+                'value': '1',
+            },],
             'execution_timeout_secs': 10,
             'grace_period_secs': 5,
             'extra_args': ['--arg=value'],

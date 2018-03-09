@@ -4,10 +4,11 @@
 
 import datetime
 
+from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
-from waterfall import swarming_util
+from waterfall import swarming_util as wf_swarming_util
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
 from waterfall.test import (process_base_swarming_task_result_pipeline_test as
@@ -17,7 +18,7 @@ from waterfall.test import wf_testcase
 
 class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
-  def _MockedGetSwarmingTaskResultById(self, task_id, _):
+  def _MockedGetSwarmingTaskResultById(self, _host, task_id, _):
     return base_test._SWARMING_TASK_RESULTS[task_id], None
 
   def setUp(self):
@@ -34,7 +35,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testProcessSwarmingTaskResultPipeline(self):
     # End to end test.
-    self.mock(swarming_util, 'GetSwarmingTaskFailureLog',
+    self.mock(wf_swarming_util, 'GetSwarmingTaskFailureLog',
               self._MockedGetSwarmingTaskFailureLog)
 
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,

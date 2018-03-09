@@ -13,7 +13,7 @@ import base64
 from collections import defaultdict
 import cStringIO
 
-from services import test_results_constants
+from services import constants
 
 _PRE_TEST_PREFIX = 'PRE_'
 
@@ -140,7 +140,7 @@ class GtestResults(object):
     sio.close()
 
     if not failed_test_log:
-      return test_results_constants.FLAKY_FAILURE_LOG
+      return constants.FLAKY_FAILURE_LOG
 
     return failed_test_log
 

@@ -4,8 +4,8 @@
 
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
+from services import constants
 from services import test_results
-from waterfall import swarming_util
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
 
@@ -58,7 +58,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
       # The test exists, but something went wrong preventing even a single test
       # result from being processed.
       flake_swarming_task.error = {
-          'code': swarming_util.UNKNOWN,
+          'code': constants.UNKNOWN,
           'message': 'Test exists but results indeterminate'
       }
       flake_swarming_task.status = analysis_status.ERROR

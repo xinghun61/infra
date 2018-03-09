@@ -10,11 +10,12 @@ import time
 from common.findit_http_client import FinditHttpClient
 from common.waterfall.pubsub_callback import MakeSwarmingPubsubCallback
 from gae_libs.pipeline_wrapper import BasePipeline
+from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from libs import time_util
 from model.flake.flake_swarming_task import FlakeSwarmingTask
+from services import swarming
 from waterfall import buildbot
-from waterfall import swarming_util
 from waterfall import waterfall_config
 
 NO_TASK = 'no_task'
@@ -248,7 +249,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     Args:
       master_name (str): The master name.
       builder_name (str): The builder name.
-      build_number (str): The build number.
+      build_number (int): The build number.
       step_name (str): The failed test step name.
       tests (list): A list of test cases, eg: ['suite1.test1', 'suite2.testw2']
       overridden_isolated_sha (str): The isolated sha of the compiled binaries
@@ -275,10 +276,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     http_client = FinditHttpClient()
 
     # 0. Retrieve existing Swarming task ids for the given step.
-    swarming_task_items = swarming_util.ListSwarmingTasksDataByTags(
-        master_name, builder_name, build_number, http_client, {
-            'stepname': step_name
-        })
+    swarming_task_items = swarming.ListSwarmingTasksDataByTags(
+        http_client, master_name, builder_name, build_number, step_name)
     if len(swarming_task_items) < 1:
       if self.GetBuildDataFromMilo(master_name, builder_name, build_number,
                                    http_client):
@@ -288,7 +287,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     ref_task_id = swarming_task_items[0]['task_id']
 
     # 1. Retrieve Swarming task parameters from a given Swarming task id.
-    ref_request = swarming_util.GetSwarmingTaskRequest(ref_task_id, http_client)
+    ref_request = swarming_util.GetSwarmingTaskRequest(swarming.SwarmingHost(),
+                                                       ref_task_id, http_client)
 
     # 2. Update/Overwrite parameters for the re-run.
     iterations_to_rerun = iterations_to_rerun or self._GetIterationsToRerun()
@@ -306,7 +306,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
         hard_timeout_seconds=hard_timeout_seconds)
 
     # 3. Trigger a new Swarming task to re-run the failed tests.
-    task_id, error = swarming_util.TriggerSwarmingTask(new_request, http_client)
+    task_id, error = swarming.TriggerSwarmingTask(new_request, http_client)
 
     # Update swarming task info.
     swarming_task = self._GetSwarmingTask(*call_args)

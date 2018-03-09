@@ -5,7 +5,7 @@
 
 from common.findit_http_client import FinditHttpClient
 from services import gtest
-from services import test_results_constants
+from services import constants
 from services.gtest import GtestResults
 from waterfall import swarming_util
 
@@ -78,7 +78,7 @@ def GetConsistentTestFailureLog(test_results_log):
   """Analyzes the archived test json results and extract reliable failures."""
   test_result_object = _GetTestResultObject(test_results_log)
   return (test_result_object.GetConsistentTestFailureLog(test_results_log)
-          if test_result_object else test_results_constants.WRONG_FORMAT_LOG)
+          if test_result_object else constants.WRONG_FORMAT_LOG)
 
 
 def IsTestResultUseful(test_results_log):

@@ -11,9 +11,9 @@ from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from infra_api_clients import logdog_util
 from model.wf_build import WfBuild
+from services import swarming
 from waterfall import build_util
 from waterfall import buildbot
-from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
 
@@ -297,10 +297,10 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual((None, None),
                      build_util.GetBoundingBuilds('m', 'b', None, None, 50))
 
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   def testFindValidBuildNumberForStepNearby(self, mock_list_fn):
     # pylint: disable=unused-argument
-    def ListFnImpl(master, builder, build_number, http, step):
+    def ListFnImpl(http, master, builder, build_number, step):
       if build_number == 8:
         return ['foo']
       return []
@@ -310,10 +310,10 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
                      build_util.FindValidBuildNumberForStepNearby(
                          'm', 'b', 's', 5))
 
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   def testFindValidBuildNumberForStepNearbyWithExcluded(self, mock_list_fn):
     # pylint: disable=unused-argument
-    def ListFnImpl(master, builder, build_number, http, step):
+    def ListFnImpl(http, master, builder, build_number, step):
       if build_number == 8 or build_number == 6:
         return ['foo']
       return []
@@ -323,8 +323,7 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
                      build_util.FindValidBuildNumberForStepNearby(
                          'm', 'b', 's', 5, [6]))
 
-  @mock.patch.object(
-      swarming_util, 'ListSwarmingTasksDataByTags', return_value=[])
+  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags', return_value=[])
   def testFindValidBuildNumberForStepNearbyWhenNoneValid(self, _):
     self.assertEqual(None,
                      build_util.FindValidBuildNumberForStepNearby(

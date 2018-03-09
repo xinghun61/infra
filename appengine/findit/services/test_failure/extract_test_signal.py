@@ -13,7 +13,7 @@ import logging
 
 from model.wf_step import WfStep
 from services import extract_signal
-from services import test_results_constants
+from services import constants
 from services import test_results
 from waterfall import extractors
 from waterfall.failure_signal import FailureSignal
@@ -53,8 +53,7 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
             merged_test_results)
 
       if not merged_test_results or failure_log in [
-          test_results_constants.INVALID_FAILURE_LOG,
-          test_results_constants.WRONG_FORMAT_LOG
+          constants.INVALID_FAILURE_LOG, constants.WRONG_FORMAT_LOG
       ]:
         # 3. Gets stdout log.
         json_formatted_log = False
@@ -81,7 +80,7 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       try:
         json_failure_log = (
             json.loads(failure_log)
-            if failure_log != test_results_constants.FLAKY_FAILURE_LOG else {})
+            if failure_log != constants.FLAKY_FAILURE_LOG else {})
       except ValueError:
         json_failure_log = {}
         logging.warning('failure_log %s is not valid JSON.' % failure_log)

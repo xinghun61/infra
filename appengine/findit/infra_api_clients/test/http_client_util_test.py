@@ -4,8 +4,8 @@
 
 import mock
 
-from common import http_client_util
 from common.findit_http_client import FinditHttpClient
+from infra_api_clients import http_client_util
 from waterfall.test import wf_testcase
 
 
@@ -25,6 +25,8 @@ class HttpClientUtilTest(wf_testcase.WaterfallTestCase):
     content, error = http_client_util.SendRequestToServer(
         'http://www.someurl.com',
         FinditHttpClient(403, None),
-        post_data={'data': 'data'})
+        post_data={
+            'data': 'data'
+        })
     self.assertIsNone(content)
     self.assertEqual(403, error['code'])

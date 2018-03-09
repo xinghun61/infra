@@ -7,6 +7,7 @@ import mock
 from dto.test_location import TestLocation
 from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.pipelines import pipeline_handlers
+from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
@@ -16,10 +17,10 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
+from services import swarming
 from services import test_results
 from services import issue_tracking_service
 from waterfall import build_util
-from waterfall import swarming_util
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
     AnalyzeFlakeForBuildNumberPipeline)
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
@@ -31,7 +32,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
 
   @mock.patch.object(test_results, 'IsTestEnabled', return_value=True)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
   def testCreateBugForFlakePipeline(self, should_file_fn, list_swarming_fn, *_):
@@ -41,7 +42,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    list_swarming_fn.return_value = [{'task_id': 'id'}]
+    list_swarming_fn.return_value = [SwarmingTaskData({'task_id': 'id'})]
 
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -84,7 +85,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(test_results, 'IsTestEnabled', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   def testCreateBugForFlakePipelineWhenNoTasksReturned(self, list_swarming_fn,
                                                        *_):
     master_name = 'm'
@@ -119,7 +120,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(list_swarming_fn.called)
 
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   @mock.patch.object(test_results, 'IsTestEnabled', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
@@ -131,7 +132,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    list_swarming_fn.return_value = [{'task_id': 'task_id'}]
+    list_swarming_fn.return_value = [SwarmingTaskData({'task_id': 'task_id'})]
 
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -161,7 +162,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   @mock.patch.object(
       issue_tracking_service, 'CreateBugForFlakeAnalyzer',
       return_value=123)  # 123 is the bug_number.
@@ -173,7 +174,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    list_swarming_fn.return_value = [{'task_id': 'id'}]
+    list_swarming_fn.return_value = [SwarmingTaskData({'task_id': 'id'})]
 
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,

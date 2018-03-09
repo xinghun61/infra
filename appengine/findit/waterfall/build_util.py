@@ -12,8 +12,8 @@ from common.waterfall import failure_type
 from infra_api_clients import logdog_util
 from libs import time_util
 from model.wf_build import WfBuild
+from services import swarming
 from waterfall import buildbot
-from waterfall import swarming_util
 
 HTTP_CLIENT_NO_404_ERROR = FinditHttpClient(no_error_logging_statuses=[404])
 
@@ -141,7 +141,7 @@ def GetBoundingBuilds(master_name, builder_name, lower_bound_build_number,
   """
   lower_bound_build_number = lower_bound_build_number or 0
   _, earliest_build_info = GetBuildInfo(master_name, builder_name,
-                                     lower_bound_build_number)
+                                        lower_bound_build_number)
   assert earliest_build_info
   assert earliest_build_info.commit_position is not None
 
@@ -156,7 +156,7 @@ def GetBoundingBuilds(master_name, builder_name, lower_bound_build_number,
     return None, None
 
   _, latest_build_info = GetBuildInfo(master_name, builder_name,
-                                   upper_bound_build_number)
+                                      upper_bound_build_number)
   assert latest_build_info
   assert latest_build_info.commit_position is not None
 
@@ -171,13 +171,13 @@ def GetBoundingBuilds(master_name, builder_name, lower_bound_build_number,
   while upper_bound - lower_bound > 1:
     candidate_build_number = (upper_bound - lower_bound) / 2 + lower_bound
     _, candidate_build = GetBuildInfo(master_name, builder_name,
-                                   candidate_build_number)
+                                      candidate_build_number)
     assert candidate_build
 
     if candidate_build.commit_position == requested_commit_position:
       # Exact match.
       _, lower_bound_build = GetBuildInfo(master_name, builder_name,
-                                       candidate_build_number - 1)
+                                          candidate_build_number - 1)
       assert lower_bound_build
       return lower_bound_build, candidate_build
 
@@ -232,10 +232,8 @@ def FindValidBuildNumberForStepNearby(master_name,
   for build in builds_to_look_at:
     if exclude_list and build in exclude_list:
       continue
-    swarming_task_items = swarming_util.ListSwarmingTasksDataByTags(
-        master_name, builder_name, build, http_client, {
-            'stepname': step_name
-        })
+    swarming_task_items = swarming.ListSwarmingTasksDataByTags(
+        http_client, master_name, builder_name, build, step_name)
     if swarming_task_items:
       return build
 
@@ -278,6 +276,7 @@ def GetTryJobStepLog(try_job_id, full_step_name, http_client,
                                         log_type, http_client)
 
   return _ReturnStepLog(data, log_type)
+
 
 def GetWaterfallBuildStepLog(master_name,
                              builder_name,

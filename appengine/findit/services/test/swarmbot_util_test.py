@@ -5,7 +5,7 @@
 import json
 import mock
 
-from common import http_client_util
+from infra_api_clients import http_client_util
 from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
 from services import swarmbot_util
@@ -418,8 +418,6 @@ class SwarmbotUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('id:bot0', tryjob.dimensions[2])
 
   @mock.patch.object(
-      http_client_util,
-      'SendRequestToServer',
-      return_value=(None, None))
+      http_client_util, 'SendRequestToServer', return_value=(None, None))
   def testGetBotsByDimensionNoContent(self, _):
     self.assertEqual([], swarmbot_util.GetBotsByDimension([], None))

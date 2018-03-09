@@ -13,10 +13,10 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
+from services import swarming
 from services import swarmbot_util
 from services.flake_failure import flake_try_job
 from waterfall import build_util
-from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -52,7 +52,7 @@ class GetIsolateShaForBuildPipeline(SynchronousPipeline):
   output_type = basestring
 
   def RunImpl(self, parameters):
-    return swarming_util.GetIsolatedShaForStep(
+    return swarming.GetIsolatedShaForStep(
         parameters.master_name, parameters.builder_name,
         parameters.build_number, parameters.step_name, FinditHttpClient())
 

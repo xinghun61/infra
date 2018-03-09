@@ -5,11 +5,12 @@
 import datetime
 import mock
 
+from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
-from waterfall import swarming_util
+from waterfall import swarming_util as wf_swarming_util
 from waterfall.build_info import BuildInfo
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
@@ -20,7 +21,7 @@ from waterfall.test import wf_testcase
 
 class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
-  def _MockedGetSwarmingTaskResultById(self, task_id, _):
+  def _MockedGetSwarmingTaskResultById(self, _host, task_id, _):
     return base_test._SWARMING_TASK_RESULTS[task_id], None
 
   def setUp(self):
@@ -77,7 +78,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.ERROR, task.status)
 
   @mock.patch.object(
-      swarming_util,
+      wf_swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(base_test._SAMPLE_FAILURE_LOG, None))
   @mock.patch.object(

@@ -7,17 +7,17 @@ import hashlib
 import json
 import logging
 
-from common import http_client_util
 from common.waterfall import buildbucket_client
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from infra_api_clients import http_client_util
+from infra_api_clients.swarming import swarming_util
 from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
-from waterfall import swarming_util
+from services import swarming
 from waterfall.flake import flake_constants
 
 # Swarming URL templates.
 BOT_LIST_URL = 'https://%s/api/swarming/v1/bots/list%s'
-BOT_COUNT_URL = 'https://%s/api/swarming/v1/bots/count%s'
 
 
 def GetCacheName(master, builder, suffix=""):
@@ -52,11 +52,11 @@ def GetBuilderCacheName(build):
 
 
 def GetBotsByDimension(dimensions, http_client):
-  url = BOT_LIST_URL % (swarming_util.SwarmingHost(),
-                        swarming_util.DimensionsToQueryString(dimensions))
+  url = BOT_LIST_URL % (
+      swarming.SwarmingHost(),
+      swarming_util.ParametersToQueryString(dimensions, 'dimensions'))
 
-  content, error = http_client_util.SendRequestToServer(
-      url, http_client)
+  content, error = http_client_util.SendRequestToServer(url, http_client)
   if error:
     logging.error('failed to list bots by dimension with %s, falling back to '
                   'any selecting any bot', error)

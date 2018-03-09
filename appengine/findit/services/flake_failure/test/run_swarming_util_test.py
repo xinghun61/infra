@@ -7,8 +7,8 @@ from datetime import datetime
 from dto.swarming_task_error import SwarmingTaskError
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from services import constants
 from services.flake_failure import run_swarming_util
-from waterfall import swarming_util
 from waterfall.test import wf_testcase
 
 
@@ -79,7 +79,7 @@ class RunSwarmingUtilTest(wf_testcase.WaterfallTestCase):
                      run_swarming_util.CalculateRunParametersForSwarmingTask(
                          analysis, commit_position,
                          SwarmingTaskError(
-                             code=swarming_util.TIMED_OUT, message='m')))
+                             code=constants.TIMED_OUT, message='m')))
 
   def testCalculateRunParametersForSwarmingTaskExceedsMaxTasks(self):
     commit_position = 1000

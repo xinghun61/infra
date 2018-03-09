@@ -5,10 +5,12 @@
 import logging
 
 from common.findit_http_client import FinditHttpClient
+from infra_api_clients.swarming import swarming_util
+from services import swarming
 from services import test_results
 from waterfall import buildbot
 from waterfall import build_util
-from waterfall import swarming_util
+from waterfall import swarming_util as wf_swarming_util
 
 
 def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
@@ -66,14 +68,18 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
     return no_matching_result  # No name of the step.
 
   # 4. Check whether there is matching step.
-  tasks = swarming_util.ListSwarmingTasksDataByTags(
-      wf_master_name, wf_builder_name, builds[0], http_client, {
+  tasks = swarming.ListSwarmingTasksDataByTags(
+      http_client,
+      wf_master_name,
+      wf_builder_name,
+      builds[0],
+      additional_tag_filters={
           'name': name,
           'os': os_name
       })
   if tasks:  # One matching buildbot is found.
-    wf_step_name = swarming_util.GetTagValue(tasks[0].get('tags', []),
-                                             'stepname')
+    wf_step_name = tasks[0].tags.get('stepname')[0] if 'stepname' in tasks[
+        0].tags else ''
     logging.info('%s/%s/%s is mapped to %s/%s/%s', cq_build_step.master_name,
                  cq_build_step.builder_name, cq_build_step.step_name,
                  wf_master_name, wf_builder_name, wf_step_name)
@@ -130,7 +136,7 @@ def FindMatchingWaterfallStep(build_step, test_name):
   if build_step.swarmed:
     # Retrieve a sample output from Isolate.
     task_id = metadata['swarm_task_ids'][0]
-    output = swarming_util.GetIsolatedOutputForTask(task_id, http_client)
+    output = wf_swarming_util.GetIsolatedOutputForTask(task_id, http_client)
     if output:
       # Guess from the format.
       build_step.supported = (

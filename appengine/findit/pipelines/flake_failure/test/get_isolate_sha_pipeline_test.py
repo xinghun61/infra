@@ -20,9 +20,9 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
+from services import swarming
 from services import swarmbot_util
 from waterfall import build_util
-from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.build_info import BuildInfo
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -31,7 +31,7 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class GetIsolateShaPipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(swarming_util, 'GetIsolatedShaForStep')
+  @mock.patch.object(swarming, 'GetIsolatedShaForStep')
   def testGetIsolateShaForBuildPipeline(self, mocked_get_isolate_sha):
     master_name = 'm'
     builder_name = 'b'
