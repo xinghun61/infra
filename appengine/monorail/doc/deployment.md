@@ -5,7 +5,7 @@
 1.  You need the master and replica databases set up on the Developer API console
 1.  Make sure that the app ID is correct in app.yaml.
 1.  In the monorail directory, run the command  `make deploy_staging `
-1.  Make any needed schema changes by looking at the end of sql/alter-table-log.txt.  Be sure to connect to the staging master DB.
+1.  Make any needed schema changes by looking at the end of schema/alter-table-log.txt.  Be sure to connect to the staging master DB.
 1.  On console.cloud.google.com, try out the new version using a version specific URL:
     1.  Test some of the expected changes
     1.  Add a comment to an issue
