@@ -3,17 +3,20 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+from datetime import timedelta
 import mock
 
 from google.appengine.ext import ndb
 
+from dto import swarming_task_error
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
 from libs.gitiles.change_log import ChangeLog
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-# TODO(crbug.com/809885): Merge flake_analysis_uitl.py.
+from pipelines.flake_failure import run_flake_swarming_task_pipeline
+# TODO(crbug.com/809885): Merge flake_analysis_util.py.
 from services.flake_failure import flake_analysis_util
 from waterfall.flake import flake_analysis_util as flake_util
 from waterfall.flake import flake_constants
@@ -41,6 +44,29 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
   def testCanStartAnalysisImmediately(self, *_):
     self.assertTrue(
         flake_analysis_util.CanStartAnalysisImmediately(None, 0, False))
+
+  def testCanFailedSwarmingTaskBeSalvaged(self):
+    completed_time = datetime(2018, 1, 1)
+    started_time = completed_time - timedelta(hours=1)
+    error = swarming_task_error.SwarmingTaskError(code=1, message='test')
+    has_valid_artifact = True
+    tries = 100
+    successes = 50
+    task_id = 'task'
+    task_output = run_flake_swarming_task_pipeline.RunFlakeSwarmingTaskOutput(
+        completed_time=completed_time,
+        error=error,
+        has_valid_artifact=has_valid_artifact,
+        iterations=tries,
+        pass_count=successes,
+        started_time=started_time,
+        task_id=task_id)
+    self.assertTrue(
+        flake_analysis_util.CanFailedSwarmingTaskBeSalvaged(task_output))
+
+    task_output.iterations = None
+    self.assertFalse(
+        flake_analysis_util.CanFailedSwarmingTaskBeSalvaged(task_output))
 
   @mock.patch.object(
       flake_util,

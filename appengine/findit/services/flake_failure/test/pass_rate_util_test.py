@@ -35,18 +35,6 @@ class PassRateUtilTest(WaterfallTestCase):
     self.assertEqual(flake_constants.PASS_RATE_TEST_NOT_FOUND,
                      pass_rate_util.GetPassRate(swarming_task_output))
 
-  def testGetPassRateTaskError(self):
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
-        error=SwarmingTaskError(code=1, message='error'),
-        iterations=None,
-        pass_count=None,
-        started_time=None,
-        completed_time=None,
-        has_valid_artifact=True,
-        task_id='task_id')
-
-    self.assertIsNone(pass_rate_util.GetPassRate(swarming_task_output))
-
   def testGetPassRate(self):
     swarming_task_output = RunFlakeSwarmingTaskOutput(
         error=None,

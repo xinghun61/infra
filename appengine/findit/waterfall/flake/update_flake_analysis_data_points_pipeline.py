@@ -128,6 +128,15 @@ def _UpdateAnalysisDataPointsWithSwarmingTask(flake_swarming_task,
   flake_analysis.put()
 
 
+def _CanFailedSwarmingTaskBeSalvaged(task):
+  """Returns if the task has all the necessary fields."""
+  if not task:
+    return False
+  return (task.tries > 0 and task.successes >= 0 and task.started_time and
+          task.completed_time and task.task_id and
+          task.has_valid_artifact is not None)
+
+
 class UpdateFlakeAnalysisDataPointsPipeline(BasePipeline):
   """Updates a MasterFlakeAnalysis with results of a swarming task."""
 
@@ -155,7 +164,9 @@ class UpdateFlakeAnalysisDataPointsPipeline(BasePipeline):
                                                 step_name, test_name)
     assert flake_swarming_task
 
-    if flake_swarming_task.status == analysis_status.ERROR:
+    # Check if the swarming task can be salvaged.
+    if (flake_swarming_task.status == analysis_status.ERROR and
+        not _CanFailedSwarmingTaskBeSalvaged(flake_swarming_task)):
       flake_analysis.swarming_task_attempts_for_build += 1
       flake_analysis.put()
       flake_analysis.LogInfo(

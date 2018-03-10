@@ -1,7 +1,6 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Utility functions for processing a flaky test's pass rates."""
 
 from waterfall import waterfall_config
@@ -37,13 +36,12 @@ def CalculateNewPassRate(existing_pass_rate, existing_iterations,
 
 
 def GetPassRate(swarming_task_output):
-  """Determines a pass rate based on a swarming task's output."""
-  assert swarming_task_output
+  """Determines a pass rate based on a swarming task's output.
 
-  if swarming_task_output.error:
-    # TODO(crbug.com/808947): A failed swarming task's partial data can
-    # sometimes still be salvaged.
-    return None
+  The passrate for an invalid swarming_task_output is undefined and may
+  potentially throw an exception.
+  """
+  assert swarming_task_output
 
   if swarming_task_output.iterations > 0:
     return (float(swarming_task_output.pass_count) /

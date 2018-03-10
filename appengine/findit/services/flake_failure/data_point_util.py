@@ -7,6 +7,7 @@ from google.appengine.ext import ndb
 
 from model.flake.master_flake_analysis import DataPoint
 from services.flake_failure import pass_rate_util
+from services.flake_failure import flake_analysis_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -113,10 +114,10 @@ def UpdateAnalysisDataPoints(analysis_urlsafe_key, commit_position, revision,
 
   data_point = analysis.FindMatchingDataPointWithCommitPosition(commit_position)
   error = swarming_task_output.error
-
   if data_point:
     # A data point has already been created. Data should be combined.
-    if error:
+    if error and not flake_analysis_util.CanFailedSwarmingTaskBeSalvaged(
+        swarming_task_output):
       # The latest swarming task ran into an error.
       # TODO(crbug.com/808947): A failed swarming task's partial data can
       # sometimes still be salvaged.
@@ -131,7 +132,6 @@ def UpdateAnalysisDataPoints(analysis_urlsafe_key, commit_position, revision,
     assert swarming_task_output.iterations is not None
     assert swarming_task_output.pass_count is not None
     assert swarming_task_output.task_id
-
     # The latest swarming task completed successfully. Incorporate the incoming
     # data with the existing data point.
     old_pass_rate = data_point.pass_rate
@@ -158,7 +158,8 @@ def UpdateAnalysisDataPoints(analysis_urlsafe_key, commit_position, revision,
     # diagnostics in case of failures. Note if no pass rate is ultimately able
     # to be determined due to too many failed attempts, the UI should be
     # responsible not to display a data point with a pass_rate of None.
-    if error:
+    if error and not flake_analysis_util.CanFailedSwarmingTaskBeSalvaged(
+        swarming_task_output):
       # TODO(crbug.com/808947): A failed swarming task's partial data can
       # sometimes still be salvaged.
       elapsed_seconds = None

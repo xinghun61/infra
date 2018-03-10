@@ -370,3 +370,40 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
     self.assertEqual([], analysis.data_points)
+
+  @mock.patch.object(update_flake_analysis_data_points_pipeline,
+                     '_UpdateAnalysisDataPointsWithSwarmingTask')
+  def testUpdateFlakeAnalysisDataPointsPipelineWithSalvagedSwarmingTask(
+      self, mock_update_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 0
+    step_name = 's'
+    test_name = 't'
+    task_id = 'task_id'
+    has_valid_artifact = True
+    tries = 100
+    successes = 50
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.put()
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.status = analysis_status.ERROR
+    task.task_id = task_id
+    task.has_valid_artifact = has_valid_artifact
+    task.tries = tries
+    task.successes = successes
+    task.started_time = datetime.datetime(1, 1, 1, 0, 0)
+    task.completed_time = datetime.datetime(1, 1, 1, 0, 1)
+    task.put()
+
+    pipeline_job = UpdateFlakeAnalysisDataPointsPipeline(
+        analysis.key.urlsafe(), build_number)
+
+    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    mock_update_fn.assert_called_with(task, analysis)
