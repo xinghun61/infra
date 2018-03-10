@@ -121,6 +121,12 @@ def ParseDEPSContent(deps_content, keys=('deps', 'deps_os')):
         else:  # Should be cipd packages, ignore.
           del deps[dep_path]
 
+      # The url might also use python string formatting (i.e. "{var}"), instead
+      # of Var(), so make sure any substitutions are applied.
+      # Example: '{chrome_git}/chrome/tools/symsrc.git@8da00481eda2a4dd...'
+      if dep_path in deps:
+        deps[dep_path] = deps[dep_path].format(**local_scope['vars'])
+
   return key_to_deps.values()
 
 

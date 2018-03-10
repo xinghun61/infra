@@ -553,3 +553,35 @@ class DepsParserTest(unittest.TestCase):
       self.assertEqual(expected_deps_tree_json, root_dep.ToDict())
 
     _Test(['all', 'win'], expected_deps_tree_json_all)
+
+  def testBuildspecDEPSContentParsing(self):
+    """Tests buildspec format parsing."""
+    result = deps_parser.ParseDEPSContent('', keys=['deps'])
+    self.assertEqual(1, len(result))
+    self.assertEqual({}, result[0])
+
+    result = deps_parser.ParseDEPSContent(
+        textwrap.dedent("""
+            vars = {
+              'cr_repo': 'https://cr.repo',
+              'chrome_git': 'https://chrome',
+              'revision': '1',
+            }
+
+            deps = {
+              'depA': {
+                  'url': '{cr_repo}/a.git@{revision}',
+              },
+              'depB': {
+                  'url': '{chrome_git}/a.git@123'
+              },
+            }"""),
+        keys=['deps'])
+
+    expected_deps = {
+        'depA': 'https://cr.repo/a.git@1',
+        'depB': 'https://chrome/a.git@123',
+    }
+
+    self.assertEqual(1, len(result))
+    self.assertEqual(expected_deps, result[0])
