@@ -82,14 +82,14 @@
       <tr [if-any page_perms.EditIssue page_perms.EditIssueStatus][else]style="display:none;"[end]><th width="10%"><label for="statusenter">Status:</label></th>
        <td class="inplace">
         <input type="text" id="statusenter" autocomplete="off" style="width:16em"
-               name="status" value="[initial_status]">
+               name="status" value="[initial_status]" aria-autocomplete="list" role="combobox">
        </td>
       </tr>
       <tr [if-any page_perms.EditIssue page_perms.EditIssueOwner][else]style="display:none;"[end]><th width="10%"><label for="ownerenter">Owner:</label></th>
        <td colspan="2">
         <input type="text" id="ownerenter" autocomplete="off"
                style="width:16em"
-               name="owner" value="[initial_owner]" aria-activedescendant="ac-selected-row">
+               name="owner" value="[initial_owner]" aria-autocomplete="list" role="combobox">
           <span class="availability_[owner_avail_state]" id="owner_avail_state"
                 style="padding-left:1em; [if-any owner_avail_message_short][else]display:none[end]">
             &#9608;
@@ -104,7 +104,7 @@
 
       <tr [if-any page_perms.EditIssue page_perms.EditIssueCc][else]style="display:none;"[end]><th><label for="memberenter">Cc:</label></th>
        <td colspan="2" class="inplace">
-        <input type="text" multiple id="memberenter" autocomplete="off" name="cc" value="[initial_cc]">
+        <input type="text" multiple id="memberenter" autocomplete="off" name="cc" value="[initial_cc]" aria-autocomplete="list" role="combobox">
         [if-any errors.cc]
          <div class="fielderror">[errors.cc]</div>
         [end]
@@ -114,7 +114,7 @@
       [# TODO(jrobbins): page_perms.EditIssueComponent]
       <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th><label for="components">Components:</label></th>
        <td colspan="2" class="inplace">
-        <input type="text" id="components" autocomplete="off" name="components" value="[initial_components]">
+        <input type="text" id="components" autocomplete="off" name="components" value="[initial_components]" aria-autocomplete="list" role="combobox">
         [if-any errors.components]
          <div class="fielderror">[errors.components]</div>
         [end]

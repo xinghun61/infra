@@ -806,6 +806,10 @@ function ac_checkCompletions() {
  */
 function ac_updateCompletionList(show) {
   var clist = document.getElementById('ac-list');
+  let input = ac_focusedInput;
+  input.setAttribute('aria-activedescendant', 'ac-status-row-none');
+  let tableEl;
+  let tableBody;
   if (show && ac_completions && ac_completions.length) {
     if (!clist) {
       clist = document.createElement('DIV');
@@ -814,8 +818,25 @@ function ac_updateCompletionList(show) {
       clist.style.display = 'none';
       // with 'listbox' and 'option' roles, screenreader narrates total
       // number of options eg. 'New = issue has not .... 1 of 9'
-      clist.setAttribute('role', 'grid');
       document.body.appendChild(clist);
+      tableEl = document.createElement('table');
+      tableEl.setAttribute('cellpadding', 0);
+      tableEl.setAttribute('cellspacing', 0);
+      tableEl.id = 'ac-table';
+      tableEl.setAttribute('role', 'presentation');
+      tableBody = document.createElement('tbody');
+      tableBody.id = 'ac-table-body';
+      tableEl.appendChild(tableBody);
+      tableBody.setAttribute('role', 'listbox');
+      clist.appendChild(tableEl);
+      input.setAttribute('aria-controls', 'ac-table');
+      input.setAttribute('aria-haspopup', 'grid');
+    } else {
+      tableEl = document.getElementById('ac-table');
+      tableBody = document.getElementById('ac-table-body');
+      while (tableBody.childNodes.length) {
+        tableBody.removeChild(tableBody.childNodes[0]);
+      }
     }
 
     // If no choice is selected, then select the first item, if desired.
@@ -824,15 +845,6 @@ function ac_updateCompletionList(show) {
     }
 
     var headerCount= 0;
-    var tableEl = document.createElement('table');
-    tableEl.setAttribute('cellpadding', 0);
-    tableEl.setAttribute('cellspacing', 0);
-    tableEl.id = 'ac-table';
-    tableEl.setAttribute('role', 'listbox');
-    let tableBody = document.createElement('tbody');
-    tableEl.appendChild(tableBody);
-    tableBody.setAttribute('role', 'listbox');
-    tableBody.setAttribute('aria-activedescendant', 'ac-selected-row');
     for (var i = 0; i < Math.min(ac_max_options, ac_completions.length); ++i) {
       if (ac_completions[i].heading) {
         var rowEl = document.createElement('tr');
@@ -850,9 +862,9 @@ function ac_updateCompletionList(show) {
         var rowEl = document.createElement('tr');
         tableBody.appendChild(rowEl);
         if (i == ac_selected) {
-          rowEl.id = 'ac-selected-row';
           rowEl.className = 'selected';
         }
+        rowEl.id = `ac-status-row-${i}`;
         rowEl.setAttribute('data-index', i);
         rowEl.setAttribute('role', 'option');
         rowEl.addEventListener('mousedown', function(event) {
@@ -891,31 +903,23 @@ function ac_updateCompletionList(show) {
       }
     }
 
-    while (clist.childNodes.length) {
-        clist.removeChild(clist.childNodes[0]);
-    }
-    clist.appendChild(tableEl);
     // position
     var inputBounds = nodeBounds(ac_focusedInput);
     clist.style.left = inputBounds.x + 'px';
     clist.style.top = (inputBounds.y + inputBounds.h) + 'px';
 
+    window.setTimeout(ac_autoscroll, 100);
+    input.setAttribute('aria-activedescendant', `ac-status-row-${ac_selected}`);
     // Note - we use '' instead of 'block', since 'block' has odd effects on
     // the screen in IE, and causes scrollbars to resize
     clist.style.display = '';
 
-    window.setTimeout(ac_autoscroll, 100);
-
-    let input = document.getElementById('statusenter');
-    input.setAttribute('aria-owns', 'ac-table');
-    input.setAttribute('aria-haspopup', 'grid');
-    input.setAttribute('aria-activedescendant', 'ac-selected-row');
-
   } else {
-    if (clist) {
+    tableBody = document.getElementById('ac-table-body');
+    if (clist && tableBody) {
       clist.style.display = 'none';
-      while (clist.childNodes.length) {
-          clist.removeChild(clist.childNodes[0]);
+      while (tableBody.childNodes.length) {
+          tableBody.removeChild(tableBody.childNodes[0]);
       }
     }
   }
@@ -928,7 +932,7 @@ function ac_updateCompletionList(show) {
 /** Scroll the autocomplete menu to show the currently selected row. */
 function ac_autoscroll() {
   var acList = document.getElementById('ac-list');
-  var acSelRow = document.getElementById('ac-selected-row');
+  var acSelRow = acList.getElementsByClassName('selected')[0];
   var acSelRowTop = acSelRow ? acSelRow.offsetTop : 0;
   var acSelRowHeight = acSelRow ? acSelRow.offsetHeight : 0;
 
