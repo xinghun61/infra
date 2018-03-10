@@ -357,6 +357,7 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
       if subctx.result().has_errors:
         should_try_merge = False
 
+  seen = set()
   for i, b in enumerate(swarming.builders):
     with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
       # Validate b before merging, otherwise merging will fail.
@@ -368,6 +369,10 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
 
       merged = copy.deepcopy(b)
       flatten_builder(merged, swarming.builder_defaults, mixins)
+      if merged.name in seen:
+        ctx.error('duplicate builder name')
+      else:
+        seen.add(merged.name)
       validate_builder_cfg(merged, mixins, True, ctx)
 
 

@@ -141,6 +141,27 @@ class ProjectCfgTest(testing.AppengineTestCase):
     self.cfg_test(
         '''
           hostname: "example.com"
+          builder_defaults {
+            recipe {
+              name: "meeper"
+              repository: "https://example.com"
+            }
+          }
+          builders {
+            name: "meep"
+          }
+          builders {
+            name: "meep"
+          }
+        ''',
+        '',
+        [
+          'builder meep: duplicate builder name',
+        ])
+
+    self.cfg_test(
+        '''
+          hostname: "example.com"
           builder_defaults {name: "x"}
           builders {
             name: "release"
