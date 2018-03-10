@@ -244,8 +244,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       '_GetSuspectedFlakeInfo',
       return_value={
           'build_number': 100,
-          'commit_position': 12345,
+          'commit_position': 200,
+          'lower_bound_commit_position': 100,
           'git_hash': 'git_hash_1',
+          'lower_bound_git_hash': 'git_hash_0',
           'triage_result': 0,
           'confidence': .5
       })
@@ -256,12 +258,14 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
   def testAnyoneCanViewScheduledAnalysis(self, *_):
     master_name = 'm'
     builder_name = 'b'
-    build_number = '123'
+    build_number = 123
     step_name = 's'
     test_name = 't'
     culprit_git_hash = 'git_hash_1'
+    lower_git_hash = 'git_hash_0'
     culprit_url = 'url'
-    culprit_commit_position = 12345
+    culprit_commit_position = 200
+    lower_commit_position = 100
     success_rate = .9
 
     suspect = FlakeCulprit.Create('repo', culprit_git_hash,
@@ -270,9 +274,13 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     data_point = DataPoint()
-    data_point.build_number = int(build_number)
+    data_point.build_number = 100
     data_point.pass_rate = success_rate
     data_point.task_ids = ['task_id']
+    data_point.commit_position = culprit_commit_position
+    data_point.previous_build_commit_position = lower_commit_position
+    data_point.git_hash = culprit_git_hash
+    data_point.previous_build_git_hash = lower_git_hash
     analysis.data_points.append(data_point)
     analysis.status = analysis_status.COMPLETED
     analysis.suspected_flake_build_number = 100
@@ -290,8 +298,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/flake',
-        params={'key': analysis.key.urlsafe(),
-                'format': 'json'})
+        params={
+            'key': analysis.key.urlsafe(),
+            'format': 'json'
+        })
 
     expected_check_flake_result = {
         'key':
@@ -328,8 +338,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'suspected_flake': {
             'confidence': 0.5,
             'build_number': 100,
-            'commit_position': culprit_commit_position,
-            'git_hash': culprit_git_hash,
+            'commit_position': 200,
+            'lower_bound_commit_position': 100,
+            'git_hash': 'git_hash_1',
+            'lower_bound_git_hash': 'git_hash_0',
             'triage_result': 0
         },
         'suspected_culprits': [{
@@ -366,9 +378,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'regression_range_confidence':
             '50',
         'regression_range_lower':
-            '',
+            lower_commit_position,
         'regression_range_upper':
-            'git_hash_1',
+            culprit_commit_position
     }
 
     self.assertEquals(200, response.status_int)
@@ -489,8 +501,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/flake',
-        params={'key': analysis.key.urlsafe(),
-                'format': 'json'})
+        params={
+            'key': analysis.key.urlsafe(),
+            'format': 'json'
+        })
 
     expected_check_flake_result = {
         'key':
@@ -562,7 +576,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'regression_range_lower':
             '',
         'regression_range_upper':
-            'a_git_hash',
+            12345
     }
 
     self.assertEqual(200, response.status_int)
@@ -602,7 +616,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'xsrf_token':
                 'abc',
         },
-        status=400,)
+        status=400,
+    )
     self.assertEqual(
         ('Flake analysis is not supported for "s/t". Either '
          'the test type is not supported or the test is not swarmed yet.'),
@@ -644,8 +659,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/flake',
-        params={'key': analysis.key.urlsafe(),
-                'format': 'json'})
+        params={
+            'key': analysis.key.urlsafe(),
+            'format': 'json'
+        })
 
     # Because TriagedResult uses auto_now=True, a direct dict comparison will
     # always fail. Instead only compare the relevant fields for trige_history.
@@ -1019,9 +1036,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.test_app.post(
         '/waterfall/flake',
-        params={'key': analysis.key.urlsafe(),
-                'cancel': '1',
-                'format': 'json'})
+        params={
+            'key': analysis.key.urlsafe(),
+            'cancel': '1',
+            'format': 'json'
+        })
     self.assertEqual(original_key, analysis.key)
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
@@ -1051,9 +1070,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.test_app.post(
         '/waterfall/flake',
-        params={'key': analysis.key.urlsafe(),
-                'cancel': '1',
-                'format': 'json'})
+        params={
+            'key': analysis.key.urlsafe(),
+            'cancel': '1',
+            'format': 'json'
+        })
     self.assertEqual(original_key, analysis.key)
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertEqual(analysis_status.ERROR, analysis.try_job_status)

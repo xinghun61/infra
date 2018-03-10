@@ -198,9 +198,9 @@ def _GetLastAttemptedSwarmingTaskDetails(analysis):
   swarming_task_id = analysis.last_attempted_swarming_task_id
   build_number = analysis.last_attempted_build_number
 
-  task_id = (swarming_task_id if swarming_task_id and
-             swarming_task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION) else
-             None)
+  task_id = (
+      swarming_task_id if swarming_task_id and
+      swarming_task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION) else None)
 
   return {'task_id': task_id, 'build_number': build_number}
 
@@ -567,10 +567,11 @@ class CheckFlake(BaseHandler):
             analysis.test_name,
         'analysis_status':
             analysis.status_description,
-        'regression_range_upper':
-            suspected_flake.get('git_hash', '') or '',
-        'regression_range_lower':
-            suspected_flake.get('lower_bound_git_hash', '') or '',
+        'regression_range_upper': (suspected_flake.get('commit_position', '') or
+                                   suspected_flake.get('git_hash', '') or ''),
+        'regression_range_lower': (
+            suspected_flake.get('lower_bound_commit_position', '') or
+            suspected_flake.get('lower_bound_git_hash', '') or ''),
         'regression_range_confidence':
             regression_range_confidence,
         'culprit_analysis_status':
