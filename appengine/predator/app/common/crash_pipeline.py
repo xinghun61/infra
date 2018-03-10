@@ -213,6 +213,21 @@ class PublishResultPipeline(CrashBasePipeline):
     self._predator.PublishResult(self._crash_identifiers)
 
 
+def UpdateCrashAnalysisData(crash_data, client):
+  """Update CrashAnalysis instance in Datastore with crash_data for analysis."""
+  log = Log.Get(crash_data.identifiers) or Log.Create(crash_data.identifiers)
+  # Reset log since it's the beginning of analysis.
+  log.Reset()
+  client.SetLog(log)
+
+  # Update the datastore with the new crash_data information to prepare for
+  # a new round of crash analysis.
+  model = (client.GetAnalysis(crash_data.identifiers) or
+           client.CreateAnalysis(crash_data.identifiers))
+  model.Initialize(crash_data)
+  model.put()
+
+
 class CrashWrapperPipeline(BasePipeline):
   """Fire off pipelines to (1) do the analysis and (2) publish results.
 
@@ -243,25 +258,13 @@ class CrashWrapperPipeline(BasePipeline):
         CachedGitilesRepository.Factory(HttpClientAppengine()),
         CrashConfig.Get())
     crash_data = predator_client.GetCrashData(raw_crash_data)
-    log = Log.Get(crash_data.identifiers) or Log.Create(crash_data.identifiers)
-    # Reset log since it's the beginning of analysis.
-    log.Reset()
-    predator_client.SetLog(log)
-
-    # Create CrashAnalysis for this crash and store it in datastore. Even if
-    # we do not need a new analysis for this crash, we still want to keep the
-    # data up to date, so we may rerun it or push back useful information to
-    # clients.
-    model = (predator_client.GetAnalysis(crash_data.identifiers) or
-             predator_client.CreateAnalysis(crash_data.identifiers))
-    model.Initialize(crash_data)
-    model.put()
 
     need_analysis = predator_client.NeedsNewAnalysis(crash_data)
     if need_analysis:
       logging.info('New %s analysis is scheduled for %s',
                    self._client_id, crash_data.identifiers)
 
+      UpdateCrashAnalysisData(crash_data, predator_client)
       run_analysis = yield CrashAnalysisPipeline(self._client_id,
                                                  crash_data.identifiers)
       with pipeline.After(run_analysis):
@@ -297,6 +300,9 @@ class RerunPipeline(BasePipeline):
     for crash in updated:
       logging.info('Initialize analysis for crash %s', crash.identifiers)
       if publish_to_client:
-        yield CrashWrapperPipeline(crash.ToJson())
+        run_analysis = yield CrashAnalysisPipeline(client_id,
+                                                   crash.identifiers)
+        with pipeline.After(run_analysis):
+          yield PublishResultPipeline(client_id, crash.identifiers)
       else:
         yield CrashAnalysisPipeline(client_id, crash.identifiers)

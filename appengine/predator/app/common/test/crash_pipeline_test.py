@@ -8,6 +8,7 @@ import mock
 
 from google.appengine.ext import ndb
 
+from analysis import log_util
 from analysis.culprit import Culprit
 from analysis.suspect import Suspect
 from analysis.type_enums import CrashClient
@@ -15,6 +16,7 @@ from common import crash_pipeline
 from common.appengine_testcase import AppengineTestCase
 from common.predator_for_chromecrash import PredatorForFracas
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
+from common.model.log import Log
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
 from libs.gitiles.change_log import ChangeLog
@@ -105,19 +107,6 @@ class CrashWrapperPipelineTest(AppengineTestCase):
   app_module = pipeline_handlers._APP
 
   @mock.patch('common.crash_pipeline.PredatorForClientID')
-  def testPipelineRun(self, mock_predator_app_for_client_ID):
-    """Tests ``CrashWrapperPipeline`` runs as expected."""
-    json_crash_data = self.GetDummyChromeCrashData()
-    mock_predator_app = self.GetMockPredatorApp()
-    mock_predator_app.PublishResult = mock.Mock(return_value=None)
-    mock_predator_app_for_client_ID.return_value = mock_predator_app
-    self.MockPipeline(crash_pipeline.CrashAnalysisPipeline, None,
-                      [json_crash_data])
-    pipeline = crash_pipeline.CrashWrapperPipeline(json_crash_data)
-    pipeline.start()
-    self.execute_queued_tasks()
-
-  @mock.patch('common.crash_pipeline.PredatorForClientID')
   def testDoNotNeedNewAnalysisIfNeedsNewAnalysisReturnsFalse(
       self, mock_predator_app_for_client_ID):
     mock_predator_app = self.GetMockPredatorApp()
@@ -132,9 +121,10 @@ class CrashWrapperPipelineTest(AppengineTestCase):
     pipeline.start()
     self.execute_queued_tasks()
 
+  @mock.patch('common.crash_pipeline.UpdateCrashAnalysisData')
   @mock.patch('common.crash_pipeline.PredatorForClientID')
-  def testDoNotNeedNewAnalysisIfNeedsNewAnalysisReturnsTrue(
-      self, mock_predator_app_for_client_ID):
+  def testNeedNewAnalysisIfNeedsNewAnalysisReturnsTrue(
+      self, mock_predator_app_for_client_ID, mock_update_crash_analysis_data):
     mock_predator_app = self.GetMockPredatorApp()
     mock_predator_app.NeedsNewAnalysis = mock.Mock(return_value=True)
     mock_predator_app_for_client_ID.return_value = mock_predator_app
@@ -149,6 +139,23 @@ class CrashWrapperPipelineTest(AppengineTestCase):
     pipeline = crash_pipeline.CrashWrapperPipeline(json_crash_data)
     pipeline.start()
     self.execute_queued_tasks()
+    self.assertTrue(mock_update_crash_analysis_data.called)
+
+  def testUpdateCrashAnalysisData(self):
+    """Tests ``UpdateCrashAnalysisData`` function."""
+    raw_crash_data = self.GetDummyChromeCrashData(signature='sig',
+                                                  platform='win')
+    client = self.GetMockPredatorApp()
+    crash_data = client.GetCrashData(raw_crash_data)
+    log = Log.Create(crash_data.identifiers)
+    log_util.LogError(log, 'MockError', 'Test mock error log.')
+
+    crash_pipeline.UpdateCrashAnalysisData(crash_data, client)
+    updated_crash_analysis = client.GetAnalysis(crash_data.identifiers)
+    reset_log = Log.Get(crash_data.identifiers)
+    self.assertEqual(updated_crash_analysis.signature, 'sig')
+    self.assertEqual(updated_crash_analysis.platform, 'win')
+    self.assertEqual(reset_log.logs, [])
 
 
 class RerunPipelineTest(AppengineTestCase):
@@ -186,17 +193,17 @@ class RerunPipelineTest(AppengineTestCase):
     self.assertTrue(mock_predator_for_client.called)
     self.assertEqual(mock_reinitialize.call_count, 1)
 
-  @mock.patch('common.model.fracas_crash_analysis.'
-              'FracasCrashAnalysis.ReInitialize')
-  @mock.patch('common.crash_pipeline.PredatorForClientID')
-  def testPipelineRunPublish(self, mock_predator_for_client, mock_reinitialize):
+  @mock.patch('common.model.crash_analysis.CrashAnalysis.ReInitialize')
+  def testPipelineRunPublish(self, mock_reinitialize):
     """Test ``RerunPipeline`` runs as expected."""
+    client = CrashClient.FRACAS
     crash_keys = [self.crash_analyses[0].key.urlsafe()]
-    self.MockPipeline(crash_pipeline.CrashWrapperPipeline, None,
-                      [self.crash_analyses[0].ToJson()])
+    self.MockPipeline(crash_pipeline.CrashAnalysisPipeline, None,
+                      [client, self.crash_analyses[0].identifiers])
+    self.MockPipeline(crash_pipeline.PublishResultPipeline, None,
+                      [client, self.crash_analyses[0].identifiers])
     pipeline = crash_pipeline.RerunPipeline(
         self.crash_analyses[0].client_id, crash_keys, publish_to_client=True)
     pipeline.start()
     self.execute_queued_tasks()
-    self.assertTrue(mock_predator_for_client.called)
-    self.assertEqual(mock_reinitialize.call_count, 1)
+    self.assertTrue(mock_reinitialize.called)
