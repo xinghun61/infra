@@ -158,10 +158,13 @@ def validate_recipe_cfg(recipe, ctx, final=True):
 
   If final is False, does not validate for completeness.
   """
-  if final and not recipe.name:
-    ctx.error('name unspecified')
-  if final and not recipe.repository:
-    ctx.error('repository unspecified')
+  if final:
+    if not recipe.name:
+      ctx.error('name unspecified')
+    if recipe.cipd_package and recipe.repository:
+      ctx.error('specify either cipd_package or repository, not both')
+    if not recipe.cipd_package and not recipe.repository:
+      ctx.error('specify either cipd_package or repository')
   validate_recipe_properties(recipe.properties, recipe.properties_j, ctx)
 
 

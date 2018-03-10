@@ -481,7 +481,7 @@ def _create_task_def_async(
       extra_cipd_packages.append({
         'path':         KITCHEN_CHECKOUT,
         'package_name': builder_cfg.recipe.cipd_package,
-        'version':      builder_cfg.recipe.cipd_version or 'head',
+        'version':      builder_cfg.recipe.cipd_version or 'refs/heads/master',
       })
     else:
       task_template_params.update({

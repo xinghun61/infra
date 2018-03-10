@@ -61,6 +61,13 @@ class ProjectCfgTest(testing.AppengineTestCase):
               properties_j: "x:true"
             }
           }
+          builders {
+            name: "release cipd"
+            recipe {
+              cipd_package: "some/package"
+              name: "foo"
+            }
+          }
         ''',
         '',
         [])
@@ -128,7 +135,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
           'hostname: unspecified',
           'builder #1: name unspecified',
           'builder #1: recipe: name unspecified',
-          'builder #1: recipe: repository unspecified',
+          'builder #1: recipe: specify either cipd_package or repository',
         ])
 
     self.cfg_test(
@@ -258,8 +265,8 @@ class ProjectCfgTest(testing.AppengineTestCase):
           builder_defaults {
             dimensions: "pool:default"
             recipe {
-                name: "foo"
-                properties: "a"
+              name: "foo"
+              properties: "a"
             }
           }
           builders { name: "debug" }
@@ -267,6 +274,26 @@ class ProjectCfgTest(testing.AppengineTestCase):
         '',
         [
           'builder_defaults: recipe: properties \'a\': does not have a colon',
+        ])
+
+  def test_cipd_and_repository_bad(self):
+    self.cfg_test(
+        '''
+          hostname: "chromium-swarm.appspot.com"
+          builders {
+            name: "debug"
+            dimensions: "pool:default"
+            recipe {
+              name: "foo"
+              repository: "https://example.com"
+              cipd_package: "some/package"
+            }
+          }
+        ''',
+        '',
+        [
+          ('builder debug: recipe: specify either cipd_package '
+           'or repository, not both'),
         ])
 
   def test_validate_builder_mixins(self):
