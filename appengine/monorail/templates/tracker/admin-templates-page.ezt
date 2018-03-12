@@ -1,64 +1,73 @@
 [define category_css]css/ph_detail.css[end]
 [include "../framework/master-header.ezt" "showtabs"]
 
-<form action="adminTemplates.do" id="adminTemplates" method="POST">
-  <input type="hidden" name="token" value="[form_token]">
-
-  <h4>Issue templates</h4>
-  <div class="section">
-    <table cellspacing="0" cellpadding="2" border="0" class="results striped vt" id="resultstable" width="100%">
-      <tbody>
-        <tr>
-          <th>Name</th>
-        </tr>
-        [if-any config.templates][else]
-          <tr>
-            <td colspan="40">
-              <div style="padding: 3em; text-align: center">
-                This project has not defined any issue templates.
-              </div>
-            </td>
-          </tr>
-        [end]
-        [for config.templates]
-          [if-any config.templates.can_view perms.EditProject]
-            [define detail_url]/p/[projectname]/templates/detail?template=[format "url"][config.templates.name][end][end]
-              <tr data-url="detail_url">
-                <td style="white-space:nowrap">
-                  <a href="[detail_url]">[config.templates.name]</a></td>
-                </td>
-              </tr>
-          [end]
-        [end]
-      </tbody>
-    </table>
+<h4>Default templates</h4>
+<div class="section" style="padding-top:0">
+  <form action="adminTemplates.do" id="adminTemplates" method="POST">
+    <input type="hidden" name="token" value="[form_token]">
 
     [if-any perms.EditProject]
-      Default template for project members:
-      <select name="default_template_for_developers" id="default_template_for_developers">
-        [for config.templates]
-          <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_developers]selected[end]>[config.templates.name]</option>
-        [end]
-      </select><br><br>
+      <div style="margin: 2em 0 1em 0">
+        Default template for project members:
+        <select name="default_template_for_developers" id="default_template_for_developers">
+          [for config.templates]
+            <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_developers]selected[end]>[config.templates.name]</option>
+          [end]
+        </select>
+        <br><br>
 
-      Default template for non-members:
-      <select name="default_template_for_users" id="default_template_for_users">
-         [for config.templates]
-           [define offer_template_in_users_menu]No[end]
-           [is config.templates.template_id config.default_template_for_users][define offer_template_in_users_menu]Yes[end][end]
-           [if-any config.templates.members_only][else][define offer_template_in_users_menu]Yes[end][end]
-           [is offer_template_in_users_menu "Yes"]
-             <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_users]selected[end]>[config.templates.name]</option>
+        Default template for non-members:
+        <select name="default_template_for_users" id="default_template_for_users">
+           [for config.templates]
+             [define offer_template_in_users_menu]No[end]
+             [is config.templates.template_id config.default_template_for_users][define offer_template_in_users_menu]Yes[end][end]
+             [if-any config.templates.members_only][else][define offer_template_in_users_menu]Yes[end][end]
+             [is offer_template_in_users_menu "Yes"]
+               <option value="[config.templates.name]" [is config.templates.template_id config.default_template_for_users]selected[end]>[config.templates.name]</option>
+             [end]
            [end]
-         [end]
-       </select>
-       <br>
+         </select>
+       </div>
 
-       <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+       <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit" style="margin-left:0">
      [end]
+  </form>
+</div>
 
-   </div>
-</form>
+<h4>Issue templates</h4>
+<div class="section">
+  <table cellspacing="0" cellpadding="2" border="0" class="results striped vt" id="resultstable" width="100%">
+    <tbody>
+      <tr>
+        <th>Name</th>
+      </tr>
+      [if-any config.templates][else]
+        <tr>
+          <td colspan="40">
+            <div style="padding: 3em; text-align: center">
+              This project has not defined any issue templates.
+            </div>
+          </td>
+        </tr>
+      [end]
+      [for config.templates]
+        [if-any config.templates.can_view perms.EditProject]
+          [define detail_url]/p/[projectname]/templates/detail?template=[format "url"][config.templates.name][end][end]
+            <tr data-url="detail_url">
+              <td style="white-space:nowrap" class="id">
+                <a href="[detail_url]">[config.templates.name]</a></td>
+              </td>
+            </tr>
+        [end]
+      [end]
+    </tbody>
+  </table>
+
+  [if-any perms.EditProject]
+    <p><a href="/p/[projectname]/templates/create" class="buttonify" style="padding: 1px">Add template</a></p>
+  [end]
+</div>
+
 
 
 [include "../framework/footer-script.ezt"]
