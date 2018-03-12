@@ -11,6 +11,7 @@ from findit_api import FindItApi
 from gae_libs.pipelines import pipeline_handlers
 from gae_libs.pipelines import pipeline_status_ui
 from handlers import auto_revert_metrics
+from handlers import build_ahead
 from handlers import build_failure
 from handlers import calculate_confidence_scores
 from handlers import change_auto_revert_setting
@@ -121,6 +122,7 @@ waterfall_backend_web_pages_handler_mappings = [
     ('/waterfall/cron/obscure-emails', obscure_emails.ObscureEmails),
     ('/waterfall/cron/periodic-bot-update',
      periodic_bot_update.PeriodicBotUpdate),
+    ('/waterfall/cron/periodic-build-ahead', build_ahead.BuildAhead),
     ('/waterfall/task/process-failure-analysis-requests',
      process_failure_analysis_requests.ProcessFailureAnalysisRequests),
     ('/waterfall/task/process-flake-analysis-request',

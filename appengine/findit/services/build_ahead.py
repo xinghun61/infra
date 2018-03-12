@@ -27,6 +27,10 @@ PLATFORM_DIMENSION_MAP = {
 }
 BUILD_AHEAD_PLATFORMS = sorted(PLATFORM_DIMENSION_MAP.keys())
 
+# How many commit positions it takes for the copy of a cache to be considered
+# stale.
+STALE_CACHE_AGE = 1000  # Nice round number, usually less than a week.
+
 
 def _LowRepoActivity():
   """Returns true if 3 or fewer commits have landed in the last hour.
@@ -105,6 +109,9 @@ def _GetSupportedCompileCaches(platform):
   """Gets config'd compile builders by platform & their cache name and stats."""
   builders = waterfall_config.GetSupportedCompileBuilders(platform)
   for builder in builders:
+    # It is OK to use the master and builder directly instead of looking for a
+    # parent, because GetSupportedCompileBuilders filters out test builders,
+    # which are the ones that have parent builders.
     builder['cache_name'] = swarmbot_util.GetCacheName(builder['master'],
                                                        builder['builder'])
     builder['cache_stats'] = WfTryBotCache.Get(builder['cache_name'])
@@ -130,7 +137,8 @@ def TriggerBuildAhead(wf_master, wf_builder, bot):
   cache_name = swarmbot_util.GetCacheName(wf_master, wf_builder)
   recipe = 'findit/chromium/compile'
   dimensions = waterfall_config.GetTrybotDimensions(wf_master, wf_builder)
-  dimensions = waterfall_config._MergeDimensions(dimensions, ['id:%s' % bot])
+  if bot:
+    dimensions = waterfall_config._MergeDimensions(dimensions, ['id:%s' % bot])
   master_name, builder_name = waterfall_config.GetSwarmbucketBot(
       wf_master, wf_builder)
   # By setting the revisions to (HEAD~1, HEAD), we get the findit compile recipe
@@ -167,7 +175,7 @@ def TriggerBuildAhead(wf_master, wf_builder, bot):
   return buildbucket_client.TriggerTryJobs([build_ahead_tryjob])[0]
 
 
-def TreeIsOpen():
+def _TreeIsOpen():
   """Determine whether the chromium tree is currently open."""
   url = 'https://chromium-status.appspot.com/allstatus'
   params = {
@@ -187,7 +195,7 @@ def TreeIsOpen():
   return False
 
 
-def UpdateRunningBuilds():
+def _UpdateRunningBuilds():
   """Syncs builds in datastore with buildbucket, return ones in progress."""
   result = []
   builds = BuildAheadTryJob.RunningJobs()
@@ -201,3 +209,92 @@ def UpdateRunningBuilds():
         else:
           result.append(build)
   return result
+
+
+def _TriggerAndSave(master, builder, cache_name, platform, bot):
+  """Starts a new build ahead try job on the specified bot and saves it to ndb.
+
+  Args:
+    master (str): Waterfall master which config to match.
+    builder (str): Waterfall builder which config to match.
+    cache_name (str): The cache name used by tryjobs intended to match the
+        master/builder combo above.
+    platform (str): Platform for the master/builder combo.
+    bot (str): The `id` dimension of bot selected to do the build. None to
+        let swarming pick the bot.
+
+  Returns:
+    The BuildAheadTryJobEntity.
+  """
+  error, build = TriggerBuildAhead(master, builder, bot)
+  if error:
+    raise Exception(error)
+  build_ahead = BuildAheadTryJob.Create(build.id, platform, cache_name)
+  build_ahead.put()
+  return build_ahead
+
+
+def _OldEnough(try_bot_cache, bot_id):
+  """Checks if the build in the given bot's cache is older than threshold."""
+  built_cp = try_bot_cache.full_build_commit_positions[bot_id]
+  tot_cp = git.GetCLInfo(['HEAD']).get('HEAD', {}).get('commit_position')
+  return built_cp < tot_cp - STALE_CACHE_AGE
+
+
+def _StartBuildAhead(platform):
+  """Chooses a target builder for the given platform and starts a build.
+
+  It also tries to choose which bot to do the build on based on the number of
+  available bots that have a copy of the cache and the relative age of their
+  latest full builds.
+
+  Returns:
+    A BuildAheadTryJob entity. In certain conditions it skips triggering a
+    build, and in those cases it returns None.
+  """
+  chosen_builder = _PickRandomBuilder(_GetSupportedCompileCaches(platform))
+  try_bot_cache = chosen_builder['cache_stats']
+  master = chosen_builder['master']
+  builder = chosen_builder['builder']
+  cache_name = chosen_builder['cache_name']
+
+  bot_ids_with_cache = try_bot_cache.full_build_commit_positions.keys()
+  available_bots = _AvailableBotsByPlatform(platform)
+  available_bot_ids_with_cache = [
+      b for b in bot_ids_with_cache if b in set(
+          ab.get('bot_id') for ab in available_bots)
+  ]
+  if len(available_bot_ids_with_cache) >= 2:
+    # Select the second newest one, we want the newest cache to remain available
+    # for a possible compile tryjob.
+    bot_id = sorted(
+        available_bot_ids_with_cache,
+        key=lambda b: try_bot_cache.full_build_commit_positions[b],
+        reverse=True)[1]
+  elif not available_bot_ids_with_cache:
+    # Let swarming pick the bot.
+    bot_id = None
+  elif _OldEnough(try_bot_cache, available_bot_ids_with_cache[0]):
+    # Rebuild the only available cache (it's likely too old to save significant
+    # time).
+    bot_id = available_bot_ids_with_cache[0]
+  else:
+    # Do nothing, because the available cache is new enough to be useful as is,
+    # compared to the risk of forcing a build from scratch if we block it while
+    # we rebuild.
+    return None
+  return _TriggerAndSave(master, builder, cache_name, platform, bot_id)
+
+
+def BuildCaches():
+  """Entry point for the logic that builds caches ahead of need.
+
+  Its three main stages are:
+    - Update the status of ongoing build aheads.
+    - Decide which platforms to trigger based on repo activity and pool usage.
+    - Trigger jobs on the selected platforms.
+  """
+  _UpdateRunningBuilds()
+  if _TreeIsOpen():
+    for platform in _PlatformsToBuild():
+      _StartBuildAhead(platform)
