@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import logging
+import math
 
 from google.appengine.ext import ndb
 
@@ -160,6 +161,11 @@ class PredatorForCracas(PredatorForChromeCrash):
     return CracasCrashData
 
 
+def NormalizeConfidenceScore(score):
+  """Normalize (-inf, inf) score into [0, 1] score."""
+  return 1 / (1 + math.exp(-score))
+
+
 class PredatorForFracas(PredatorForChromeCrash):  # pylint: disable=W0223
   @classmethod
   def _ClientID(cls):
@@ -177,3 +183,27 @@ class PredatorForFracas(PredatorForChromeCrash):  # pylint: disable=W0223
   def CrashDataCls(cls):
     """The class of crash data."""
     return FracasCrashData
+
+  def ResultMessageToClient(self, crash_identifiers):
+    """Converts a culprit result into a publishable result for client.
+
+    Args:
+      crash_identifiers (dict): Dict containing identifiers that can uniquely
+        identify CrashAnalysis entity.
+
+    Returns:
+      A dict of the given ``crash_identifiers``, this model's
+      ``client_id``, and a publishable version of this model's ``result``.
+    """
+    message = super(PredatorForFracas, self).ResultMessageToClient(
+        crash_identifiers)
+    result = message['result']
+
+    # Fracas assume that the confidence score is in [0, 1], Normalize the
+    # confidence into [0, 1]
+    if 'suspected_cls' in result:
+      for suspected_cl in result['suspected_cls']:
+        suspected_cl['confidence'] = NormalizeConfidenceScore(
+            suspected_cl['confidence'])
+
+    return message

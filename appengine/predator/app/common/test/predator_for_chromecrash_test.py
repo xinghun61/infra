@@ -18,6 +18,7 @@ from analysis.type_enums import CrashClient
 from common import predator_app
 from common import predator_for_chromecrash
 from common.appengine_testcase import AppengineTestCase
+from common.predator_for_chromecrash import NormalizeConfidenceScore
 from common.predator_for_chromecrash import PredatorForChromeCrash
 from common.predator_for_chromecrash import PredatorForCracas
 from common.predator_for_chromecrash import PredatorForFracas
@@ -155,6 +156,36 @@ class PredatorForFracasTest(AppengineTestCase):
 
     self.assertDictEqual(self._client.ResultMessageToClient(crash_identifiers),
                          expected_processed_suspect)
+
+  def testNormalizeConfidenceScore(self):
+    """Tests ``NormalizeConfidenceScore`` function."""
+    score = 100
+    normalized_score = NormalizeConfidenceScore(score)
+    self.assertTrue(normalized_score >= 0)
+    self.assertTrue(normalized_score <= 1)
+
+  def testResultMessageToClientNormalizeScore(self):
+    """Tests the confidence for all suspected cls to Fracas is within [0, 1]."""
+    message = {'client': 'fracas',
+               'other_data': 'blabla',
+               'result': {
+                   'suspected_cls': [
+                       {'confidence': 302,
+                        'other': 'blabla...'},
+                       {'confidence': -234,
+                        'other': 'blabla...'},
+                       {'confidence': 0,
+                        'other': 'bla...'},
+                   ]
+               }}
+    with mock.patch(
+        'common.predator_app.PredatorApp.'
+        'ResultMessageToClient') as mock_result_message_to_client:
+      mock_result_message_to_client.return_value = message
+      updated_message = self._client.ResultMessageToClient({'sig': 's'})
+      for suspected_cl in updated_message['result']['suspected_cls']:
+        self.assertTrue(suspected_cl['confidence'] <= 1)
+        self.assertTrue(suspected_cl['confidence'] >= 0)
 
 
 class PredatorForCracasTest(AppengineTestCase):
