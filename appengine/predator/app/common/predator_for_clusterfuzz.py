@@ -20,6 +20,10 @@ from analysis.linear.changelist_features.touch_crashed_component import (
     TouchCrashedComponentFeature)
 from analysis.linear.changelist_features.touch_crashed_directory import (
     TouchCrashedDirectoryFeature)
+from analysis.linear.changelist_features.touch_crashed_directory import (
+    TouchParentDirectoryFeature)
+from analysis.linear.changelist_features.touch_crashed_directory import (
+    TouchGrandParentDirectoryFeature)
 from analysis.linear.changelist_features.touch_crashed_file import (
     TouchCrashedFileFeature)
 from analysis.linear.changelist_features.touch_crashed_file_meta import (
@@ -46,11 +50,13 @@ class PredatorForClusterfuzz(PredatorApp):
     super(PredatorForClusterfuzz, self).__init__(get_repository, config)
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
-            'MinDistance': Weight(1.),
+            'MinDistance': Weight(2.),
             'TopFrameIndex': Weight(1.),
             'TouchCrashedFile': Weight(1.),
         }),
         'TouchCrashedDirectory': Weight(1.),
+        'TouchParentDirectory': Weight(0.2),
+        'TouchGrandParentDirectory': Weight(0.04),
         'TouchCrashedComponent': Weight(1.),
         'NumberOfTouchedFiles': Weight(0.5),
     })
@@ -59,12 +65,14 @@ class PredatorForClusterfuzz(PredatorApp):
     top_frame_index_feature = TopFrameIndexFeature()
     touch_crashed_file_feature = TouchCrashedFileFeature()
 
+    blacklist_directories = config.feature_options['TouchCrashedDirectory']
     meta_feature = WrapperMetaFeature(
         [TouchCrashedFileMetaFeature([min_distance_feature,
                                       top_frame_index_feature,
                                       touch_crashed_file_feature]),
-         TouchCrashedDirectoryFeature(options=config.feature_options[
-             'TouchCrashedDirectory']),
+         TouchCrashedDirectoryFeature(options=blacklist_directories),
+         TouchParentDirectoryFeature(options=blacklist_directories),
+         TouchGrandParentDirectoryFeature(options=blacklist_directories),
          TouchCrashedComponentFeature(
              self._component_classifier,
              options=config.feature_options['TouchCrashedComponent']),

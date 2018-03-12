@@ -7,7 +7,13 @@ import unittest
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.crash_report import CrashReport
 from analysis.linear.changelist_features.touch_crashed_directory import (
+    TouchCrashedDirectoryBaseFeature)
+from analysis.linear.changelist_features.touch_crashed_directory import (
     TouchCrashedDirectoryFeature)
+from analysis.linear.changelist_features.touch_crashed_directory import (
+    TouchParentDirectoryFeature)
+from analysis.linear.changelist_features.touch_crashed_directory import (
+    TouchGrandParentDirectoryFeature)
 from analysis.linear.changelist_features.touch_crashed_directory import (
     _IsTestFile)
 from analysis.linear.changelist_features.min_distance import Distance
@@ -28,11 +34,11 @@ from libs.gitiles.gitiles_repository import GitilesRepository
 import libs.math.logarithms as lmath
 
 
-class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
-  """Tests ``TouchCrashedDirectoryFeature``."""
+class TouchCrashedDirectoryBaseFeatureTest(AnalysisTestCase):
+  """Tests ``TouchCrashedDirectoryBaseFeature``."""
 
   def setUp(self):
-    super(TouchCrashedDirectoryFeatureTest, self).setUp()
+    super(TouchCrashedDirectoryBaseFeatureTest, self).setUp()
     frame1 = StackFrame(0, 'src/', 'func', 'p/f.cc',
                         'src/p/f.cc', [2, 3], 'h://repo')
     stack = CallStack(0, frame_list=[frame1])
@@ -43,6 +49,32 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
     self._report = CrashReport('8', 'sig', 'linux', stack_trace, ('2', '6'),
                                deps, dep_rolls)
     self._feature = TouchCrashedDirectoryFeature()
+
+  def testMatchWhenCrashedDirectryIsEmpty(self):
+    """Tests ``Match`` returns False when the crashed directory is empty."""
+    self.assertFalse(self._feature.Match(None, FileChangeInfo.FromDict({
+            'change_type': 'add',
+            'new_path': 'p/a.cc',
+            'old_path': None,
+    })))
+
+  def testCrashedGroupFactoryReturnsNoneWhenFrameIsEmpty(self):
+    """Tests ``CrashedGroupFactory`` returns None if frame is empty."""
+    self.assertIsNone(self._feature.CrashedGroupFactory(None))
+
+  def testGetCrashedDirectory(self):
+    """Tests ``GetCrashedDirectory`` get directory according to level."""
+    level_0_feature = TouchCrashedDirectoryBaseFeature(level=0)
+    self.assertEqual(level_0_feature.GetCrashedDirectory('a/b/c.cc'), 'a/b')
+
+    level_1_feature = TouchCrashedDirectoryBaseFeature(level=1)
+    self.assertEqual(level_1_feature.GetCrashedDirectory('a/b/c.cc'), 'a')
+
+    level_2_feature = TouchCrashedDirectoryBaseFeature(level=2)
+    self.assertEqual(level_2_feature.GetCrashedDirectory('a/b/c.cc'), '')
+
+    level_3_feature = TouchCrashedDirectoryBaseFeature(level=3)
+    self.assertEqual(level_3_feature.GetCrashedDirectory('a/b/c.cc'), '')
 
   def testFeatureValueIsOneWhenThereIsMatchedDirectory(self):
     """Test that feature value is 1 when there is matched directory."""
@@ -112,7 +144,31 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
 
   def testCrashedGroupFactoryReturnsNoneWhenDirectoryIsBlacklisted(self):
     """Tests that ``CrashGroupFactory`` returns None when dir blacklisted."""
-    feature = TouchCrashedDirectoryFeature(options={'blacklist': ['bad_dir']})
+    feature = TouchCrashedDirectoryBaseFeature(
+        options={'blacklist': ['bad_dir']}, level=0)
     frame = StackFrame(0, 'src/', 'func', 'bad_dir/f.cc',
                        'src/bad_dir/f.cc', [2, 3], 'h://repo')
     self.assertIsNone(feature.CrashedGroupFactory(frame))
+
+class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
+  """Tests ``TouchCrashedDirectoryFeature``."""
+
+  def testFeatureName(self):
+    feature = TouchCrashedDirectoryFeature()
+    self.assertEqual(feature.name, 'TouchCrashedDirectory')
+
+
+class TouchParentDirectoryFeatureTest(AnalysisTestCase):
+  """Tests ``TouchParentDirectoryFeature``."""
+
+  def testFeatureName(self):
+    feature = TouchParentDirectoryFeature()
+    self.assertEqual(feature.name, 'TouchParentDirectory')
+
+
+class TouchGrandParentDirectoryFeatureTest(AnalysisTestCase):
+  """Tests ``TouchGrandParentDirectoryFeature``."""
+
+  def testFeatureName(self):
+    feature = TouchGrandParentDirectoryFeature()
+    self.assertEqual(feature.name, 'TouchGrandParentDirectory')
