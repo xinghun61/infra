@@ -303,8 +303,9 @@ def ScheduleFlakeTryJob(parameters, runner_id):
   build_id, error = try_job_service.TriggerTryJob(
       master_name, builder_name, tryserver_mastername, tryserver_buildername,
       properties, {},
-      failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
-      parameters.flake_cache_name, parameters.dimensions, runner_id)
+      failure_type.GetDescriptionForFailureType(
+          failure_type.FLAKY_TEST), parameters.flake_cache_name,
+      parameters.dimensions.ToSerializable(), runner_id)
 
   if error:
     raise exceptions.RetryException(error.message, error.reason)

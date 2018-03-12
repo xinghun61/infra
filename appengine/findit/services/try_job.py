@@ -345,7 +345,7 @@ def TriggerTryJob(master_name,
       example, the failed target list or failed tests.
     try_job_type (int): Type of the try job, either compile or test.
     cache_name (str): The name of the build cache.
-    dimensions (dict): The bot dimensions used to allocate a Swarming bot.
+    dimensions ([str]): The bot dimensions used to allocate a Swarming bot.
     runner_id (str): The id of the runner to trigger this try job. One runner
       could trigger only one try job.
     use_new_pubsub (bool): Set as true to use the new PubSub topic and callback.
