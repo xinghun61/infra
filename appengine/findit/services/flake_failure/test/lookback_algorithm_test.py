@@ -125,13 +125,6 @@ class LookbackAlgorithmTest(TestCase):
         (None, 71),  # 70 nonexistent, 71 flaky. 71 must be the culprit.
         lookback_algorithm._DetermineNextCommitPosition(data_points))
 
-  def testIsFullyStable(self):
-    self.assertTrue(lookback_algorithm.IsFullyStable(1.0))
-    self.assertTrue(lookback_algorithm.IsFullyStable(0.0))
-    self.assertFalse(lookback_algorithm.IsFullyStable(0.99))
-    self.assertFalse(lookback_algorithm.IsFullyStable(0.02))
-    self.assertTrue(lookback_algorithm.IsFullyStable(-1))
-
   def testBisectPoint(self):
     self.assertEqual(0, lookback_algorithm.BisectPoint(0, 1))
     self.assertEqual(1, lookback_algorithm.BisectPoint(0, 2))

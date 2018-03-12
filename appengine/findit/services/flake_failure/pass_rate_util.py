@@ -94,8 +94,8 @@ def HasPassRateConverged(overall_pass_rate,
   return abs(pass_rate_without_partials - overall_pass_rate) <= margin
 
 
-def HasSufficientInformationForConvergence(
-    overall_pass_rate, total_iterations, partial_pass_rate, partial_iterations):
+def HasSufficientInformation(overall_pass_rate, total_iterations,
+                             partial_pass_rate, partial_iterations):
   """Determines whether a pass rate is enough for an analysis to proceed.
 
   Args:
@@ -112,16 +112,49 @@ def HasSufficientInformationForConvergence(
     Whether the overall pass rate with number of iterations is sufficient to
         proceed.
   """
-  return (MinimumIterationsReached(total_iterations) and
-          HasPassRateConverged(overall_pass_rate, total_iterations,
-                               partial_pass_rate, partial_iterations))
+  flake_settings = waterfall_config.GetCheckFlakeSettings()
+  lower_flake_threshold = flake_settings.get(
+      'lower_flake_threshold', flake_constants.DEFAULT_LOWER_FLAKE_THRESHOLD)
+  upper_flake_threshold = flake_settings.get(
+      'upper_flake_threshold', flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD)
+  minimum_iterations = waterfall_config.GetCheckFlakeSettings().get(
+      'minimum_iterations_required_for_confergence',
+      flake_constants.MINIMUM_ITERATIONS_REQUIRED_FOR_CONVERGENCE)
+
+  if overall_pass_rate is None or total_iterations == 0:
+    return False
+
+  if MinimumIterationsReached(total_iterations):
+    # The test is already flaky beyond reasonable doubt.
+    if not IsStable(overall_pass_rate, lower_flake_threshold,
+                    upper_flake_threshold):
+      return True
+
+    # The test is stable thus far. Check for convergence.
+    return HasPassRateConverged(overall_pass_rate, total_iterations,
+                                partial_pass_rate, partial_iterations)
+
+  # For cases with few iterations, check if the test is flaky or stable by
+  # checking its theoretical pass rate padded up to the minimum required
+  # iterations with both passes and fails. Only if it is flaky with both
+  # theoretical values can it safely be deemed flaky.
+  overall_pass_count = float(overall_pass_rate * total_iterations)
+  theoretical_minimum_pass_rate = overall_pass_count / minimum_iterations
+  theoretical_maximum_pass_rate = ((
+      overall_pass_count + minimum_iterations - total_iterations) /
+                                   minimum_iterations)
+
+  return (not IsStable(theoretical_minimum_pass_rate, lower_flake_threshold,
+                       upper_flake_threshold) and
+          not IsStable(theoretical_maximum_pass_rate, lower_flake_threshold,
+                       upper_flake_threshold))
 
 
 def IsFullyStable(pass_rate):
   """Determines whether a pass rate is fully stable.
 
-      Fully stable data points have pass rates that are either -1 (nonexistent)
-      test, 0%, or 100%.
+      Fully stable data points have pass rates that are -1 (nonexistent
+      test), 0%, or 100%.
 
   Args:
     pass_rate (float): A data point's pass rate.
@@ -131,8 +164,30 @@ def IsFullyStable(pass_rate):
         in the analysis' lower/upper flake thresholds.
   """
   assert pass_rate is not None
-  return (TestDoesNotExist(pass_rate) or pass_rate <= flake_constants.EPSILON or
-          abs(pass_rate - 1.0) <= flake_constants.EPSILON)
+  return IsStable(pass_rate, 0, 1.0)
+
+
+def IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
+  """Determines whether a pass rate is stable, with tolerances.
+
+    Flake Analyzer should allow for a slight tolerance when determining a test
+    is flaky or stable, for example 98% passing or above and 2% or below are
+    still considered stable. If this tolerance is not to be used, use
+    IsFullyStable instead which ensures 100% and 0% as the thresholds.
+
+  Args:
+    pass_rate (float): A floating point value between 0 and 1 to check whether
+        it is within tolerable bounds.
+    lower_flake_threshold (float): The lower bound value a pass rate must be
+        under to be considered stable. Should be between 0 and 1.
+    upper_flake_threshold (float): the upper bound value a pass rate must be
+        over in order to be considered stable. Shoul be between 0 and 1 and
+        greater than upper_flake_threshold.
+  """
+  assert upper_flake_threshold > lower_flake_threshold
+  return (TestDoesNotExist(pass_rate) or
+          pass_rate < lower_flake_threshold + flake_constants.EPSILON or
+          pass_rate > upper_flake_threshold - flake_constants.EPSILON)
 
 
 def MinimumIterationsReached(iterations):

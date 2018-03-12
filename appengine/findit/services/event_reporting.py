@@ -18,7 +18,7 @@ from model.proto.gen.test_analysis_pb2 import TestAnalysisCompletionEvent
 from model.wf_try_job import WfTryJob
 from model.wf_suspected_cl import WfSuspectedCL
 from services import bigquery_helper
-from services.flake_failure.lookback_algorithm import IsFullyStable
+from services.flake_failure.pass_rate_util import IsFullyStable
 from waterfall import waterfall_config
 from waterfall.flake import triggering_sources
 

@@ -238,9 +238,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
       return_value=False)
   @mock.patch.object(pass_rate_util, 'TestDoesNotExist', return_value=False)
   @mock.patch.object(
-      pass_rate_util,
-      'HasSufficientInformationForConvergence',
-      return_value=True)
+      pass_rate_util, 'HasSufficientInformation', return_value=True)
   def testDetermineApproximatePassRateConverged(self, *_):
     commit_position = 1000
     incoming_pass_count = 15
@@ -273,6 +271,93 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         isolate_sha=isolate_sha,
         previous_swarming_task_output=flake_swarming_task_output,
         revision=revision)
+
+    pipeline_job = DetermineApproximatePassRatePipeline(
+        determine_approximate_pass_rate_input)
+    pipeline_job.start()
+    self.execute_queued_tasks()
+
+  @mock.patch.object(
+      data_point_util,
+      'MaximumIterationsPerDataPointReached',
+      return_value=False)
+  @mock.patch.object(pass_rate_util, 'TestDoesNotExist', return_value=False)
+  @mock.patch.object(
+      pass_rate_util, 'HasSufficientInformation', return_value=False)
+  def testDetermineApproximatePassRateNotYetConverged(self, *_):
+    commit_position = 1000
+    incoming_pass_count = 15
+    iterations_completed = 30
+    expected_iterations = 15
+    incoming_pass_rate = 0.5
+    isolate_sha = 'sha1'
+    revision = 'r1000'
+    timeout_seconds = 3600
+    started_time = datetime(2018, 1, 1, 0, 0, 0)
+    completed_time = datetime(2018, 1, 1, 1, 0, 0)
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(
+            pass_rate=incoming_pass_rate,
+            commit_position=commit_position,
+            elapsed_seconds=timeout_seconds,
+            iterations=iterations_completed)
+    ]
+    analysis.Save()
+
+    flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+        error=None,
+        pass_count=incoming_pass_count,
+        iterations=iterations_completed,
+        started_time=started_time,
+        completed_time=completed_time,
+        has_valid_artifact=True,
+        task_id='task_id')
+
+    determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        previous_swarming_task_output=flake_swarming_task_output,
+        revision=revision)
+
+    flake_swarming_task_input = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=expected_iterations,
+        timeout_seconds=timeout_seconds)
+
+    flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+        error=None,
+        pass_count=incoming_pass_count,
+        iterations=expected_iterations,
+        completed_time=completed_time,
+        started_time=started_time,
+        has_valid_artifact=True,
+        task_id='task_id')
+
+    update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        revision=revision,
+        swarming_task_output=flake_swarming_task_output)
+
+    recursive_input = DetermineApproximatePassRateInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        previous_swarming_task_output=flake_swarming_task_output,
+        revision=revision)
+
+    self.MockGeneratorPipeline(RunFlakeSwarmingTaskPipeline,
+                               flake_swarming_task_input,
+                               flake_swarming_task_output)
+    self.MockSynchronousPipeline(UpdateFlakeAnalysisDataPointsPipeline,
+                                 update_data_points_input, None)
+    self.MockGeneratorPipeline(DetermineApproximatePassRatePipelineWrapper,
+                               recursive_input, None)
 
     pipeline_job = DetermineApproximatePassRatePipeline(
         determine_approximate_pass_rate_input)

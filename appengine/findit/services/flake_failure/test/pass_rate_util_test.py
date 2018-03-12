@@ -56,13 +56,28 @@ class PassRateUtilTest(WaterfallTestCase):
     self.assertTrue(
         pass_rate_util.HasPassRateConverged(0.5, 100, 1.0, 50, margin=0.5))
 
+  def testHasSSufficientInformationNoPassRate(self):
+    self.assertFalse(pass_rate_util.HasSufficientInformation(None, 0, 0, 0))
+
+  def testHasSSufficientInformationEarlyFlakyInsufficientIterations(self):
+    self.assertFalse(pass_rate_util.HasSufficientInformation(0.5, 2, 0.5, 2))
+
+  def testHasSSufficientInformationEarlyFlaky(self):
+    self.assertTrue(pass_rate_util.HasSufficientInformation(0.5, 20, 0.5, 20))
+
+  def testHasSufficientInformationFlaky(self):
+    self.assertTrue(pass_rate_util.HasSufficientInformation(0.5, 100, 0.5, 30))
+
+  def testHasSufficientInformationEarlyStable(self):
+    self.assertFalse(pass_rate_util.HasSufficientInformation(0.0, 3, 0.0, 3))
+    self.assertFalse(pass_rate_util.HasSufficientInformation(1.0, 3, 1.0, 3))
+
   @mock.patch.object(
       pass_rate_util, 'MinimumIterationsReached', return_value=True)
-  @mock.patch.object(pass_rate_util, 'HasPassRateConverged', return_value=True)
-  def testHasSufficientInformationForConvergence(self, *_):
-    self.assertTrue(
-        pass_rate_util.HasSufficientInformationForConvergence(
-            0.5, 100, 0.5, 30))
+  @mock.patch.object(pass_rate_util, 'HasPassRateConverged', return_value=False)
+  def testHasSufficientInformationStable(self, *_):
+    self.assertFalse(
+        pass_rate_util.HasSufficientInformation(1.0, 100, 0.97, 30))
 
   def testIsFullyStable(self):
     self.assertTrue(pass_rate_util.IsFullyStable(-1))
@@ -70,6 +85,14 @@ class PassRateUtilTest(WaterfallTestCase):
     self.assertTrue(pass_rate_util.IsFullyStable(1.0))
     self.assertFalse(pass_rate_util.IsFullyStable(0.01))
     self.assertFalse(pass_rate_util.IsFullyStable(0.99))
+
+  def testIsStable(self):
+    self.assertTrue(pass_rate_util.IsStable(-1, 0.02, 0.98))
+    self.assertTrue(pass_rate_util.IsStable(0.0, 0.02, 0.98))
+    self.assertTrue(pass_rate_util.IsStable(0.02, 0.02, 0.98))
+    self.assertTrue(pass_rate_util.IsStable(0.98, 0.02, 0.98))
+    self.assertTrue(pass_rate_util.IsStable(1.0, 0.02, 0.98))
+    self.assertFalse(pass_rate_util.IsStable(0.5, 0.02, 0.98))
 
   def testMinimumIterationsReached(self):
     self.assertTrue(

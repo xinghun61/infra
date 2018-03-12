@@ -91,7 +91,8 @@ def _DetermineNextCommitPosition(data_points):
         # No flaky region has been identified, no findings.
         return None, None
 
-    if IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
+    if pass_rate_util.IsStable(pass_rate, lower_flake_threshold,
+                               upper_flake_threshold):
       if flakes_in_a_row > 0:
         # A regression range (stable data point --> flaky data point) has been
         # identified. Perform the exponential search on that smaller range only.
@@ -175,8 +176,8 @@ def GetLatestRegressionRange(data_points):
   if len(data_points) == 1:
     data_point = data_points[0]
 
-    if IsStable(data_point.pass_rate, lower_flake_threshold,
-                upper_flake_threshold):
+    if pass_rate_util.IsStable(data_point.pass_rate, lower_flake_threshold,
+                               upper_flake_threshold):
       # A lower bound stable is found, but no upper bound. The caller of this
       # function should interpret this as the flakiness being unreproducible.
       return data_point.commit_position, None
@@ -189,8 +190,8 @@ def GetLatestRegressionRange(data_points):
   # positions.
   latest_stable_index = None
   for i, data_point in enumerate(data_points):
-    if IsStable(data_point.pass_rate, lower_flake_threshold,
-                upper_flake_threshold):
+    if pass_rate_util.IsStable(data_point.pass_rate, lower_flake_threshold,
+                               upper_flake_threshold):
       latest_stable_index = i
       break
 
@@ -201,8 +202,9 @@ def GetLatestRegressionRange(data_points):
 
   # A regression range has been identified.
   adjacent_flaky_data_point = data_points[latest_stable_index - 1]
-  assert not IsStable(adjacent_flaky_data_point.pass_rate,
-                      lower_flake_threshold, upper_flake_threshold)
+  assert not pass_rate_util.IsStable(adjacent_flaky_data_point.pass_rate,
+                                     lower_flake_threshold,
+                                     upper_flake_threshold)
 
   return (data_points[latest_stable_index].commit_position,
           adjacent_flaky_data_point.commit_position)
@@ -269,43 +271,3 @@ def GetNextCommitPosition(data_points, use_bisect):
 
   # Allow the algorithm to decide what to do.
   return _DetermineNextCommitPosition(data_points)
-
-
-def IsFullyStable(pass_rate):
-  """Determines whether a pass rate is fully stable.
-
-      Fully stable data points have pass rates that are -1 (nonexistent
-      test), 0%, or 100%.
-
-  Args:
-    pass_rate (float): A data point's pass rate.
-
-  Returns:
-    Boolean whether the pass rate is fully stable, which disallows tolerances
-        in the analysis' lower/upper flake thresholds.
-  """
-  assert pass_rate is not None
-  return IsStable(pass_rate, 0, 1.0)
-
-
-def IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
-  """Determines whether a pass rate is stable, with tolerances.
-
-    Flake Analyzer should allow for a slight tolerance when determining a test
-    is flaky or stable, for example 98% passing or above and 2% or below are
-    still considered stable. If this tolerance is not to be used, use
-    IsFullyStable instead which ensures 100% and 0% as the thresholds.
-
-  Args:
-    pass_rate (float): A floating point value between 0 and 1 to check whether
-        it is within tolerable bounds.
-    lower_flake_threshold (float): The lower bound value a pass rate must be
-        under to be considered stable. Should be between 0 and 1.
-    upper_flake_threshold (float): the upper bound value a pass rate must be
-        over in order to be considered stable. Shoul be between 0 and 1 and
-        greater than upper_flake_threshold.
-  """
-  assert upper_flake_threshold > lower_flake_threshold
-  return (pass_rate_util.TestDoesNotExist(pass_rate) or
-          pass_rate < lower_flake_threshold + flake_constants.EPSILON or
-          pass_rate > upper_flake_threshold - flake_constants.EPSILON)

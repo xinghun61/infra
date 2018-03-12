@@ -103,7 +103,7 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
       return
 
     # Move on if there is sufficient information about the pass rate.
-    if pass_rate_util.HasSufficientInformationForConvergence(
+    if pass_rate_util.HasSufficientInformation(
         pass_rate_at_commit_position, iterations_already_completed,
         previous_pass_rate, previous_iterations):
       analysis.LogInfo(
