@@ -1,12 +1,12 @@
 [define category_css]css/ph_detail.css[end]
 [include "../framework/master-header.ezt" "showtabs"]
 
-<h4>Default templates</h4>
-<div class="section" style="padding-top:0">
-  <form action="adminTemplates.do" id="adminTemplates" method="POST">
-    <input type="hidden" name="token" value="[form_token]">
+[if-any perms.EditProject]
+  <h4>Default templates</h4>
+  <div class="section" style="padding-top:0">
+    <form action="adminTemplates.do" id="adminTemplates" method="POST">
+      <input type="hidden" name="token" value="[form_token]">
 
-    [if-any perms.EditProject]
       <div style="margin: 2em 0 1em 0">
         Default template for project members:
         <select name="default_template_for_developers" id="default_template_for_developers">
@@ -30,9 +30,9 @@
        </div>
 
        <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit" style="margin-left:0">
-     [end]
-  </form>
-</div>
+    </form>
+  </div>
+[end]
 
 <h4>Issue templates</h4>
 <div class="section">
