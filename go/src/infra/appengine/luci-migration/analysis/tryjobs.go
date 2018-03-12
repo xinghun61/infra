@@ -200,6 +200,7 @@ func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 	req.Status(bbapi.StatusCompleted)
 	req.Tag(strpair.Format(buildbucket.TagBuilder, f.Builder))
 	req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
+	req.IncludeExperimental(true)
 	req.Fields("builds(tags, result_details_json)")
 	if cap(keys) > 0 {
 		req.MaxBuilds(int64(cap(keys)))
@@ -358,6 +359,7 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 			strpair.Format(buildbucket.TagBuilder, f.Builder),
 			strpair.Format(buildbucket.TagBuildSet, g.Key.GerritChange.String()))
 		req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
+		req.IncludeExperimental(true)
 		req.Fields(
 			"builds(cancelation_reason)",
 			"builds(completed_ts)",

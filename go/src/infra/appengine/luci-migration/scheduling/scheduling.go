@@ -176,6 +176,7 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	req.Context(c)
 	req.Bucket(build.Bucket)
 	req.CreationTsLow(buildbucket.FormatTimestamp(build.CreationTime) + 1)
+	req.IncludeExperimental(true)
 	req.Tag(
 		strpair.Format(buildbucket.TagBuildSet, buildSet),
 		strpair.Format(buildbucket.TagBuilder, build.Builder),
