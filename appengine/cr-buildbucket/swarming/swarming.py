@@ -345,10 +345,11 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
     props = swarmingcfg_module.read_properties(builder_cfg.recipe)
     master = props.get(MASTER_PROPERTY)
 
-  if master and builder_cfg.luci_migration_host not in (None, '', '-'):
+  host = swarmingcfg_module.clear_dash(builder_cfg.luci_migration_host)
+  if master and host:
     try:
       url = 'https://%s/masters/%s/builders/%s/' % (
-          builder_cfg.luci_migration_host, master, builder_cfg.name)
+          host, master, builder_cfg.name)
       res = yield net.json_request_async(url, params={'format': 'json'})
       ret = res.get('luci_is_prod')
     except net.NotFoundError:

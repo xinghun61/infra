@@ -93,8 +93,6 @@ def merge_builder(b1, b2):
   b1.MergeFrom(b2)
   b1.dimensions[:] = dims
   b1.swarming_tags[:] = sorted(set(b1.swarming_tags))
-  if b1.luci_migration_host == '-':
-    b1.luci_migration_host = ''
 
   caches = [
     t[1]
@@ -161,9 +159,10 @@ def validate_recipe_cfg(recipe, ctx, final=True):
   if final:
     if not recipe.name:
       ctx.error('name unspecified')
-    if recipe.cipd_package and recipe.repository:
+    repo = clear_dash(recipe.repository)
+    if recipe.cipd_package and repo:
       ctx.error('specify either cipd_package or repository, not both')
-    if not recipe.cipd_package and not recipe.repository:
+    if not recipe.cipd_package and not repo:
       ctx.error('specify either cipd_package or repository')
   validate_recipe_properties(recipe.properties, recipe.properties_j, ctx)
 
@@ -410,3 +409,10 @@ def validate_service_cfg(swarming, ctx):
   if swarming.milo_hostname:
     with ctx.prefix('milo_hostname: '):
       validate_hostname(swarming.milo_hostname, ctx)
+
+
+def clear_dash(s):
+  """Returns s if it is not '-', otherwise returns ''."""
+  if s == '-':
+    return ''
+  return s

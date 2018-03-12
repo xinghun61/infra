@@ -317,6 +317,27 @@ class ProjectCfgTest(testing.AppengineTestCase):
            'or repository, not both'),
         ])
 
+  def test_clear_recipe_repository(self):
+    self.cfg_test(
+        '''
+          hostname: "chromium-swarm.appspot.com"
+          builder_defaults {
+            recipe {
+              name: "foo"
+              repository: "https://example.com"
+            }
+          }
+          builders {
+            name: "debug"
+            recipe {
+              repository: "-"
+              cipd_package: "some/package"
+            }
+          }
+        ''',
+        '',
+        [])
+
   def test_validate_builder_mixins(self):
     def test(cfg_text, expected_errors):
       ctx = config_component.validation.Context()
@@ -784,7 +805,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
     self.assertEqual(b.luci_migration_host, 'example.com')
 
     swarmingcfg.merge_builder(b, no)
-    self.assertEqual(b.luci_migration_host, '')
+    self.assertEqual(b.luci_migration_host, '-')
 
 
 class ServiceCfgTest(testing.AppengineTestCase):

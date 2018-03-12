@@ -69,7 +69,8 @@ message Builder {
   // Specifies a recipe to run.
   message Recipe {
     // Repository URL of the recipe package.
-    string repository = 1;
+    // Value "-" is treated as unset.
+  string repository = 1;
     // Name of the recipe to run.
     string name = 2;
 
