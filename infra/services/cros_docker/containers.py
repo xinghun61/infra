@@ -11,8 +11,8 @@ import time
 from infra.services.swarm_docker import containers
 
 
-CROS_HOSTNAME_ENV_VAR = 'SWARMING_BOT_CROS_HOSTNAME'
 CROS_SSH_ID_ENV_VAR = 'CROS_SSH_ID_FILE_PATH'
+UNIVERSAL_CROS_HOSTNAME = 'variable_chromeos_device_hostname'
 
 
 class CrosContainerDescriptor(containers.ContainerDescriptorBase):
@@ -59,9 +59,25 @@ class CrosDockerClient(containers.DockerClient):
                        additional_env=None):
     assert isinstance(container_desc, CrosContainerDescriptor)
     env = {
-        CROS_HOSTNAME_ENV_VAR: container_desc.device_hostname,
         CROS_SSH_ID_ENV_VAR: container_desc.ssh_id_path,
     }
-    super(CrosDockerClient, self).create_container(
+    container = super(CrosDockerClient, self).create_container(
         container_desc, image_name, swarming_url, labels,
         additional_env=env)
+
+    # Add an entry to /etc/hosts that points a universal hostname to the
+    # cros device.
+    ip = None
+    try:
+      ip = socket.gethostbyname(container_desc.device_hostname)
+      logging.info('Fetched IPv4 of %s: %s', container_desc.device_hostname, ip)
+    except socket.gaierror:
+      logging.error(
+          'Unable to get IPv4 of %s. Hosts file will remain unchanged.',
+          container_desc.device_hostname)
+    if ip:
+      append_cmd = 'echo "%s %s" >> /etc/hosts' % (ip, UNIVERSAL_CROS_HOSTNAME)
+      out = container.exec_run('/bin/bash -c %s' % pipes.quote(append_cmd))
+      logging.info('Result from modifying hosts file: %s', out)
+
+    return container

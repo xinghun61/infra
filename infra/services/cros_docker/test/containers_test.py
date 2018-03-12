@@ -4,6 +4,7 @@
 # pylint: disable=unused-argument
 
 import mock
+import socket
 import unittest
 
 from infra.services.cros_docker import containers
@@ -39,15 +40,41 @@ class TestAndroidContainerDescriptor(unittest.TestCase):
 
 class TestCrosDockerClient(unittest.TestCase):
   @mock.patch.object(swarm_containers.DockerClient, 'create_container')
-  def test_create_container(self, mock_create_container):
-    fake_container = containers_test.FakeContainer('cros_device123')
+  @mock.patch('socket.gethostbyname')
+  def test_create_container(self, mock_gethost, mock_create_container):
+    fake_container_backend = containers_test.FakeContainerBackend('container1')
+    fake_container = swarm_containers.Container(fake_container_backend)
+    fake_container_backend.exec_outputs = ['']
     mock_create_container.return_value = fake_container
+    mock_gethost.return_value = '12.34.56.78'
+
     desc = containers.CrosContainerDescriptor('device123', 'some_ssh_path')
     client = containers.CrosDockerClient()
     client.create_container(desc, 'image', 'swarm-url.com', {})
     expected_env = {
-        'SWARMING_BOT_CROS_HOSTNAME': 'device123',
         'CROS_SSH_ID_FILE_PATH': 'some_ssh_path',
     }
     mock_create_container.assert_called_once_with(
         desc, 'image', 'swarm-url.com', {}, additional_env=expected_env)
+    self.assertEquals(len(fake_container_backend.exec_inputs), 1)
+    self.assertIn(
+        containers.UNIVERSAL_CROS_HOSTNAME,
+        fake_container_backend.exec_inputs[0])
+
+  @mock.patch.object(swarm_containers.DockerClient, 'create_container')
+  @mock.patch('socket.gethostbyname')
+  def test_create_container_ip_error(self, mock_gethost, mock_create_container):
+    fake_container_backend = containers_test.FakeContainerBackend('container1')
+    fake_container = swarm_containers.Container(fake_container_backend)
+    mock_create_container.return_value = fake_container
+    mock_gethost.side_effect = socket.gaierror('some error')
+
+    desc = containers.CrosContainerDescriptor('device123', 'some_ssh_path')
+    client = containers.CrosDockerClient()
+    client.create_container(desc, 'image', 'swarm-url.com', {})
+    expected_env = {
+        'CROS_SSH_ID_FILE_PATH': 'some_ssh_path',
+    }
+    mock_create_container.assert_called_once_with(
+        desc, 'image', 'swarm-url.com', {}, additional_env=expected_env)
+    self.assertEquals(len(fake_container_backend.exec_inputs), 0)
