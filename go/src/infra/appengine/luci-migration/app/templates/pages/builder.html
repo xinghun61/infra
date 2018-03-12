@@ -135,6 +135,10 @@ limitations under the License. */}}
       <h3>Why?</h3>
       <div>{{$b.Details}}</div>
       {{end}}
+    {{else}}
+      <div class="status">
+        Status: <span class="label label-{{$b.StatusClassSuffix}}">{{$b.Builder.Migration.Status}}</span>
+      </div>
     {{end}}
     </div>
   </div>

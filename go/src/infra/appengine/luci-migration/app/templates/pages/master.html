@@ -31,8 +31,8 @@ limitations under the License. */}}
           <tr>
             <td>Builder</td>
             <td>LUCI is Prod</td>
-    {{if $m.Tryjobs}}
             <td>Migration Status</td>
+    {{if $m.Tryjobs}}
             <td>Experiment percentage</td>
             <td>LUCI Correctness</td>
             <td>LUCI Speed</td>
@@ -46,8 +46,10 @@ limitations under the License. */}}
               <a href="builders/{{$b.ID.Builder}}">{{$b.ID.Builder}}</a>
             </td>
             <td>{{$b.LUCIIsProd}}</td>
-      {{if $m.Tryjobs}}
-            <td>{{$b.Migration.Status}}</td>
+            <td>
+              {{if ne $b.Migration.Status 0}}{{$b.Migration.Status}}{{end}}
+            </td>
+            {{if $m.Tryjobs}}
             <td>{{$b.ExperimentPercentage}}%</td>
             <td>
         {{if $b.ShowScores}}

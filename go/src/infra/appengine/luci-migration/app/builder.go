@@ -147,8 +147,8 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 	model.StatusKnown = mig.Status != storage.StatusUnknown && model.Details != ""
 	model.StatusClassSuffix = migrationStatusLabelClassSuffix(mig.Status)
 	model.StatusAge = clock.Now(c).Sub(model.Builder.Migration.AnalysisTime)
-	model.StatusOutdated = model.StatusAge > 24*time.Hour
 	model.TryBuilder = model.Builder.SchedulingType == config.SchedulingType_TRYJOBS
+	model.StatusOutdated = model.TryBuilder && mig.Status != storage.StatusMigrated && model.StatusAge > 24*time.Hour
 	model.ExperimentLevel = model.Builder.ExperimentPercentage / 10
 	return model, nil
 }
