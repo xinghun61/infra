@@ -163,6 +163,8 @@
 </table>
 </form>
 
+[include "field-value-widgets-js.ezt"]
+
 [include "../framework/footer-script.ezt"]
 
 <script type="text/javascript" nonce="[nonce]">

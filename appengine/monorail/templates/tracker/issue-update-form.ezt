@@ -334,6 +334,12 @@ runOnLoad(function() {
       _acof(event);
     });
   }
+  if ($("blocking")) {
+    $("blocking").addEventListener("focus", function(event) {
+      _acrob(null);
+      _acof(event);
+    });
+  }
   if ($("statusedit")) {
     $("statusedit").addEventListener("focus", function(event) {
       _acof(event);

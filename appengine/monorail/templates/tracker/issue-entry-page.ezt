@@ -291,7 +291,7 @@ runOnLoad(function() {
     }
   });
 
-  var _blockIdsToListeners = [[]"blocked_on", "blocking"];
+  var _blockIdsToListeners = [[]"blocked_on", "blocking", "hotlistsenter"];
   for (var i = 0; i < _blockIdsToListeners.length; i++) {
     var id = _blockIdsToListeners[[]i];
     if ($(id)) {

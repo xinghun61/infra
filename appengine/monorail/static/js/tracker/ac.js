@@ -807,7 +807,9 @@ function ac_checkCompletions() {
 function ac_updateCompletionList(show) {
   var clist = document.getElementById('ac-list');
   let input = ac_focusedInput;
-  input.setAttribute('aria-activedescendant', 'ac-status-row-none');
+  if (input) {
+   input.setAttribute('aria-activedescendant', 'ac-status-row-none');
+  }
   let tableEl;
   let tableBody;
   if (show && ac_completions && ac_completions.length) {
