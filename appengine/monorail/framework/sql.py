@@ -695,7 +695,7 @@ JOIN_RE_LIST = [
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r'( AND {tab_col} = {tab_col})?'
         r'( AND {tab_col} = {placeholder})?'
-        r' AND {tab_col} {compare_op} {placeholder}$'),
+        r' AND \(?{tab_col} {compare_op} {placeholder}\)?$'),
     _MakeRE(
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r'( AND {tab_col} = {tab_col})?'
