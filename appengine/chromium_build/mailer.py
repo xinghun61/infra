@@ -115,6 +115,9 @@ class Email(BaseHandler):
         if field not in step:
           logging.error('build_step did not contain field %s' % field)
           return False
+        if step[field] is None:
+          logging.error('build_step[%r] is None' % field)
+          return False
 
     return True
 
