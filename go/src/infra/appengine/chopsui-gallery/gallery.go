@@ -24,12 +24,22 @@ func pageBase() router.MiddlewareChain {
 
 func init() {
 	r := router.New()
+	basemw := pageBase()
 	standard.InstallHandlers(r)
-	r.GET("/", pageBase(), gallery)
-	http.DefaultServeMux.Handle("/", r)
+
+	rootRouter := router.New()
+	rootRouter.GET("/*path", basemw, gallery)
+
+	http.DefaultServeMux.Handle("/_ah/", r)
+	http.DefaultServeMux.Handle("/admin/", r)
+	http.DefaultServeMux.Handle("/api/", r)
+	http.DefaultServeMux.Handle("/auth/", r)
+	http.DefaultServeMux.Handle("/internal/", r)
+
+	http.DefaultServeMux.Handle("/", rootRouter)
 }
 
 func gallery(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
-	templates.MustRender(c, w, "pages/docs.html", templates.Args{})
+	templates.MustRender(c, w, "pages/index.html", templates.Args{})
 }

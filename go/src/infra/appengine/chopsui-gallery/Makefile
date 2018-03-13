@@ -31,7 +31,7 @@ deploy_prod_run:
 	gae.py upload -A chopsui-gallery
 
 deps:
-	rm -r bower_components
+	rm -r bower_components || true
 	bower install
 
 devserver: build

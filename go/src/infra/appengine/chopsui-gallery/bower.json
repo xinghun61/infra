@@ -13,11 +13,9 @@
     "tests"
   ],
   "dependencies": {
-    "chopsui": "chopsui#*"
-  },
-  "devDependencies": {
-      "iron-demo-helpers": "PolymerElements/iron-demo-helpers",
-      "iron-component-page": "^3.0.1"
+    "chopsui": "chopsui#*",
+    "iron-demo-helpers": "PolymerElements/iron-demo-helpers",
+    "iron-component-page": "^3.0.1"
   },
   "resolutions": {
     "polymer": "^2.0.0"

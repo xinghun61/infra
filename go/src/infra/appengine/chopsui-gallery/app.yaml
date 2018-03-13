@@ -10,9 +10,12 @@ handlers:
   static_dir: demo
   secure: always
 
-- url: /elements
-  static_dir: elements
+- url: /components
+  static_dir: components
   secure: always
+
+- url: /images
+  static_dir: images
 
 - url: /bower_components
   static_dir: bower_components
