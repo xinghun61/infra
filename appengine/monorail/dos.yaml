@@ -25,6 +25,7 @@ blacklist:
 #   description: an IPv6 address
 # - subnet: 2001:DB8::/32
 #   description: an IPv6 subnet
+
   - subnet: 2001:41d0:1000:250::/64
     description: someone who crawls all attachments sequentially
   - subnet: 47.153.189.55
@@ -139,3 +140,5 @@ blacklist:
     description: someone crawling us poorly 20180-03-08
   - subnet: 51.15.86.162
     description: someone crawling issues every few seconds 20180-03-08
+  - subnet: 84.38.132.202
+    description: someone fuzzing us 2018-03-13
