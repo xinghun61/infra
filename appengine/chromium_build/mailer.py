@@ -7,11 +7,16 @@ import time
 from google.appengine.api import app_identity
 from google.appengine.api import mail
 from google.appengine.ext import ndb
+from google.appengine.api import oauth
 import webapp2
 from webapp2_extras import jinja2
 
 import gatekeeper_mailer
 import gae_ts_mon
+
+
+GATEKEEPER_SERVICE_ACCOUNT_EMAIL = (
+    'gatekeeper@chromium-build.iam.gserviceaccount.com')
 
 
 class MailerSecret(ndb.Model):
@@ -36,6 +41,16 @@ class MainPage(BaseHandler):
   def get(self):
     context = {'title': 'Chromium Gatekeeper Mailer'}
     self.render_response('main_mailer.html', **context)
+
+
+def _get_user_email():
+  """Returns the email of the oauth client user."""
+  try:
+    user = oauth.get_current_user([
+        "https://www.googleapis.com/auth/userinfo.email"])
+  except (oauth.OAuthRequestError, oauth.OAuthServiceFailureError):
+    user = None
+  return user.email() if user else None
 
 
 class Email(BaseHandler):
@@ -122,6 +137,14 @@ class Email(BaseHandler):
     return True
 
   def post(self):
+    email = _get_user_email()
+    logging.info('current user email is %s', email)
+    if email != GATEKEEPER_SERVICE_ACCOUNT_EMAIL:
+      # self.response.out.write('user %r is not authorized' % email)
+      logging.warning('user %r is not authorized' % email)
+      # self.error(403)
+      # return
+
     blob = self.request.get('json')
     if not blob:
       self.response.out.write('no json data sent')
@@ -200,7 +223,7 @@ class Email(BaseHandler):
     self.response.out.write('email sent')
 
 
-app = webapp2.WSGIApplication([('/mailer', MainPage),
+app = webapp2.WSGIApplication([('/mailer/', MainPage),
                                ('/mailer/email', Email)],
                               debug=True)
 gae_ts_mon.initialize(app)
