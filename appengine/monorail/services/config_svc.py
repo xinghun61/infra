@@ -33,6 +33,8 @@ TEMPLATE2ADMIN_TABLE_NAME = 'Template2Admin'
 TEMPLATE2COMPONENT_TABLE_NAME = 'Template2Component'
 TEMPLATE2FIELDVALUE_TABLE_NAME = 'Template2FieldValue'
 PROJECTISSUECONFIG_TABLE_NAME = 'ProjectIssueConfig'
+TEMPLATE2MILESTONE_TABLE_NAME = 'Template2Milestone'
+TEMPLATE2APPROVALVALUE_TABLE_NAME = 'Template2ApprovalValue'
 LABELDEF_TABLE_NAME = 'LabelDef'
 FIELDDEF_TABLE_NAME = 'FieldDef'
 FIELDDEF2ADMIN_TABLE_NAME = 'FieldDef2Admin'
@@ -53,6 +55,9 @@ TEMPLATE2ADMIN_COLS = ['template_id', 'admin_id']
 TEMPLATE2FIELDVALUE_COLS = [
     'template_id', 'field_id', 'int_value', 'str_value', 'user_id',
     'date_value', 'url_value']
+TEMPLATE2MILESTONE_COLS = ['id', 'template_id', 'name', 'rank']
+TEMPLATE2APPROVALVALUE_COLS = [
+    'approval_id', 'template_id', 'milestone_id', 'status']
 PROJECTISSUECONFIG_COLS = [
     'project_id', 'statuses_offer_merge', 'exclusive_label_prefixes',
     'default_template_for_developers', 'default_template_for_users',
@@ -338,6 +343,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
   def _DeserializeIssueConfigs(
       self, config_rows, template_rows, template2label_rows,
       template2component_rows, template2admin_rows, template2fieldvalue_rows,
+      template2milestone_rows, template2approvalvalue_rows,
       statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
       componentdef_rows, component2admin_rows, component2cc_rows,
       component2label_rows, approvaldef2approver_rows):
@@ -383,6 +389,24 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
       template = template_dict.get(template_id)
       if template:
         template.field_values.append(fv)
+
+    # TODO(jojwang): monorail:3241, deserialize approvals w/out milestones
+    ms_to_av_dict = collections.defaultdict(list)
+    for av_row in template2approvalvalue_rows:
+      (approval_id, _template_id, milestone_id, status) = av_row
+      approval_value = tracker_pb2.ApprovalValue(
+          approval_id=approval_id,
+          status=tracker_pb2.ApprovalStatus(status.upper()))
+      ms_to_av_dict[milestone_id].append(approval_value)
+
+    for ms_row in template2milestone_rows:
+      (milestone_id, template_id, name, rank) = ms_row
+      ms = tracker_pb2.Milestone(
+          milestone_id=milestone_id, name=name, rank=rank)
+      ms.approval_values = ms_to_av_dict[milestone_id]
+      template = template_dict.get(template_id)
+      if template:
+        template.milestones.append(ms)
 
     for statusdef_row in statusdef_rows:
       (_, project_id, _rank, status,
@@ -448,6 +472,10 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     template2fv_rows = self.config_service.template2fieldvalue_tbl.Select(
         cnxn, cols=TEMPLATE2FIELDVALUE_COLS, template_id=template_ids)
     logging.info('t2fv is %r', template2fv_rows)
+    template2milestone_rows = self.config_service.template2milestone_tbl.Select(
+        cnxn, cols=TEMPLATE2MILESTONE_COLS, template_id=template_ids)
+    template2av_rows = self.config_service.template2approvalvalue_tbl.Select(
+        cnxn, cols=TEMPLATE2APPROVALVALUE_COLS, template_id=template_ids)
 
     statusdef_rows = self.config_service.statusdef_tbl.Select(
         cnxn, cols=STATUSDEF_COLS, project_id=project_ids,
@@ -484,10 +512,10 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     retrieved_dict = self._DeserializeIssueConfigs(
         config_rows, template_rows, template2label_rows,
         template2component_rows, template2admin_rows,
-        template2fv_rows, statusdef_rows, labeldef_rows,
-        fielddef_rows, fielddef2admin_rows, componentdef_rows,
-        component2admin_rows, component2cc_rows, component2label_rows,
-        approver_rows)
+        template2fv_rows, template2milestone_rows, template2av_rows,
+        statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
+        componentdef_rows, component2admin_rows, component2cc_rows,
+        component2label_rows, approver_rows)
     return retrieved_dict
 
   def FetchItems(self, cnxn, keys):
@@ -520,6 +548,10 @@ class ConfigService(object):
     self.template2admin_tbl = sql.SQLTableManager(TEMPLATE2ADMIN_TABLE_NAME)
     self.template2fieldvalue_tbl = sql.SQLTableManager(
         TEMPLATE2FIELDVALUE_TABLE_NAME)
+    self.template2milestone_tbl = sql.SQLTableManager(
+        TEMPLATE2MILESTONE_TABLE_NAME)
+    self.template2approvalvalue_tbl = sql.SQLTableManager(
+        TEMPLATE2APPROVALVALUE_TABLE_NAME)
     self.projectissueconfig_tbl = sql.SQLTableManager(
         PROJECTISSUECONFIG_TABLE_NAME)
     self.statusdef_tbl = sql.SQLTableManager(STATUSDEF_TABLE_NAME)

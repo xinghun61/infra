@@ -406,7 +406,7 @@ class ApprovalValue(messages.Message):
 class Milestone(messages.Message):
   milestone_id = messages.IntegerField(1)
   name = messages.StringField(2)
-  approval_values = messages.MessageField(ApprovalValue, 3)
+  approval_values = messages.MessageField(ApprovalValue, 3, repeated=True)
   rank = messages.IntegerField(4)
 
 

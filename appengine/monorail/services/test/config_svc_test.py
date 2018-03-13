@@ -29,6 +29,7 @@ def MakeConfigService(cache_manager, my_mox):
   for table_var in [
       'template_tbl', 'template2label_tbl', 'template2admin_tbl',
       'template2component_tbl', 'template2fieldvalue_tbl',
+      'template2milestone_tbl', 'template2approvalvalue_tbl',
       'projectissueconfig_tbl', 'statusdef_tbl', 'labeldef_tbl', 'fielddef_tbl',
       'fielddef2admin_tbl', 'componentdef_tbl', 'component2admin_tbl',
       'component2cc_tbl', 'component2label_tbl', 'approvaldef2approver_tbl']:
@@ -176,11 +177,21 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
       (789, 'Duplicate', 'Pri Type', 1, 2,
        'Type Pri Summary', '-Pri', 'Mstone', 'Owner',
        '', None)]
-    self.template_rows = []
+    self.template_rows = [
+        (1, 789, 'firstName', 'firstContent', 'firstSummary',
+         False, None, None, False, False, False),
+        (2, 789, 'secondName', 'secondContent', 'secondSummary',
+         False, None, None, False, False, False),]
     self.template2label_rows = []
     self.template2component_rows = []
     self.template2admin_rows = []
     self.template2fieldvalue_rows = []
+    self.template2milestone_rows = [
+        (22, 1, 'Canary', 1),
+        (23, 1, 'Stable', 11)
+    ]
+    # TODO(jojwang): monorail:3576, test template approval deserialization.
+    self.template2av_rows = []
     self.statusdef_rows = [(1, 789, 1, 'New', True, 'doc', False),
                            (2, 789, 2, 'Fixed', False, 'doc', False)]
     self.labeldef_rows = [(1, 789, 1, 'Security', 'doc', False),
@@ -202,13 +213,14 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
 
   def testDeserializeIssueConfigs_Empty(self):
     config_dict = self.config_2lc._DeserializeIssueConfigs(
-        [], [], [], [], [], [], [], [], [], [], [], [], [], [], [])
+        [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [])
     self.assertEqual({}, config_dict)
 
   def testDeserializeIssueConfigs_Normal(self):
     config_dict = self.config_2lc._DeserializeIssueConfigs(
         self.config_rows, self.template_rows, self.template2label_rows,
         self.template2component_rows, self.template2admin_rows,
+        self.template2fieldvalue_rows, self.template2milestone_rows,
         self.template2fieldvalue_rows, self.statusdef_rows, self.labeldef_rows,
         self.fielddef_rows, self.fielddef2admin_rows, self.componentdef_rows,
         self.component2admin_rows, self.component2cc_rows,
@@ -217,13 +229,16 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     config = config_dict[789]
     self.assertEqual(789, config.project_id)
     self.assertEqual(['Duplicate'], config.statuses_offer_merge)
-    self.assertEqual([], config.templates)
     self.assertEqual(len(self.labeldef_rows), len(config.well_known_labels))
     self.assertEqual(len(self.statusdef_rows), len(config.well_known_statuses))
     self.assertEqual(len(self.fielddef_rows), len(config.field_defs))
     self.assertEqual(len(self.componentdef_rows), len(config.component_defs))
     self.assertEqual(len(self.approvaldef2approver_rows),
                      len(config.approval_defs[0].approver_ids))
+    self.assertEqual(len(self.template_rows), len(config.templates))
+    launch_template = tracker_bizobj.FindIssueTemplate('firstName', config)
+    self.assertEqual(len(self.template2milestone_rows),
+                     len(launch_template.milestones))
 
   def SetUpFetchConfigs(self, project_ids):
     self.config_service.projectissueconfig_tbl.Select(
@@ -246,6 +261,12 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.config_service.template2fieldvalue_tbl.Select(
         self.cnxn, cols=config_svc.TEMPLATE2FIELDVALUE_COLS,
         template_id=template_ids).AndReturn(self.template2fieldvalue_rows)
+    self.config_service.template2milestone_tbl.Select(
+        self.cnxn, cols=config_svc.TEMPLATE2MILESTONE_COLS,
+        template_id=template_ids).AndReturn(self.template2milestone_rows)
+    self.config_service.template2approvalvalue_tbl.Select(
+        self.cnxn, cols=config_svc.TEMPLATE2APPROVALVALUE_COLS,
+        template_id=template_ids).AndReturn(self.template2av_rows)
 
     self.config_service.statusdef_tbl.Select(
         self.cnxn, cols=config_svc.STATUSDEF_COLS, project_id=project_ids,
@@ -646,6 +667,12 @@ class ConfigServiceTest(unittest.TestCase):
         template_id=[]).AndReturn([])
     self.config_service.template2fieldvalue_tbl.Select(
         self.cnxn, cols=config_svc.TEMPLATE2FIELDVALUE_COLS,
+        template_id=[]).AndReturn([])
+    self.config_service.template2milestone_tbl.Select(
+        self.cnxn, cols=config_svc.TEMPLATE2MILESTONE_COLS,
+        template_id=[]).AndReturn([])
+    self.config_service.template2approvalvalue_tbl.Select(
+        self.cnxn, cols=config_svc.TEMPLATE2APPROVALVALUE_COLS,
         template_id=[]).AndReturn([])
     self.config_service.statusdef_tbl.Select(
         self.cnxn, cols=config_svc.STATUSDEF_COLS,
