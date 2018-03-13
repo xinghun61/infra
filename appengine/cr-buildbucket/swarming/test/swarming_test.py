@@ -606,6 +606,36 @@ class SwarmingTest(BaseTest):
         tags=['buildbucket:bucket:luci.chromium.try'],
     )])
 
+  def test_create_task_async_experimental(self):
+    build = mkBuild(
+        parameters={'builder_name': 'linux_chromium_rel_ng'},
+        experimental=True,
+    )
+
+    self.json_response = {
+      'task_id': 'deadbeef',
+      'request': {
+        'expiration_secs': 3600,
+        'properties': {
+          'execution_timeout_secs': 1800,
+        },
+        'tags': [
+          'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
+          'builder:linux_chromium_rel_ng',
+          'buildertag:yes',
+          'priority:108',
+          'recipe_name:recipe',
+          'recipe_repository:https://example.com/repo',
+        ],
+        'service_account': 'robot@example.com',
+      }
+    }
+
+    swarming.create_task_async(build, 1).get_result()
+
+    actual_task_def = net.json_request_async.call_args[1]['payload']
+    self.assertEqual(actual_task_def['priority'], '216')
+
   def test_create_task_async_for_non_swarming_bucket(self):
     self.bucket_cfg.ClearField('swarming')
     build = mkBuild(

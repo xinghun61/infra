@@ -497,9 +497,13 @@ def _create_task_def_async(
     k: v or '' for k, v in task_template_params.iteritems()}
   task = format_obj(task_template, task_template_params)
 
+  priority = int(task.get('priority', 0))
   if builder_cfg.priority > 0:  # pragma: no branch
-    # Swarming accepts priority as a string
-    task['priority'] = str(builder_cfg.priority)
+    priority = builder_cfg.priority
+  if build.experimental:
+    priority = min(255, priority * 2)
+  # Swarming accepts priority as a string
+  task['priority'] = str(priority)
 
   if builder_cfg.service_account:  # pragma: no branch
     # Don't pass it if not defined, for backward compatibility.
