@@ -68,7 +68,7 @@
          <input id="status" type="text" name="status" size="12" class="acob" value="[initial_status]"
                 autocomplete="off">
       [else]
-        [inital_status]
+        [initial_status]
       [end]
     </td>
   </tr>
