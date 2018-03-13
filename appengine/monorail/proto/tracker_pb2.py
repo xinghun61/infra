@@ -382,6 +382,34 @@ class ApprovalDef(messages.Message):
   survey = messages.StringField(5)
 
 
+class ApprovalStatus(messages.Enum):
+  """Statuses that an approval field could be set to."""
+  NEEDS_REVIEW = 1
+  NA = 2
+  REVIEW_REQUESTED = 3
+  REVIEW_STARTED = 4
+  NEED_INFO = 5
+  APPROVED = 6
+  NOT_APPROVED = 7
+
+
+class ApprovalValue(messages.Message):
+  """Holds a single approval field value in an issue."""
+  approval_id = messages.IntegerField(1)
+  status = messages.EnumField(ApprovalStatus, 2)
+  setter_id = messages.IntegerField(3)
+  set_on = messages.IntegerField(4)
+  approver_ids = messages.IntegerField(5, repeated=True)
+  subfield_values = messages.MessageField(FieldValue, 6, repeated=True)
+
+
+class Milestone(messages.Message):
+  milestone_id = messages.IntegerField(1)
+  name = messages.StringField(2)
+  approval_values = messages.MessageField(ApprovalValue, 3)
+  rank = messages.IntegerField(4)
+
+
 class TemplateDef(messages.Message):
   """Definition of one issue template."""
   template_id = messages.IntegerField(57)
@@ -407,6 +435,7 @@ class TemplateDef(messages.Message):
   # Components.
   component_ids = messages.IntegerField(43, repeated=True)
   component_required = messages.BooleanField(44, default=False)
+  milestones = messages.MessageField(Milestone, 45, repeated=True)
 
 
 class ProjectIssueConfig(messages.Message):

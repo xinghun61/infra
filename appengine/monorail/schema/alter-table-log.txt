@@ -1316,3 +1316,10 @@ CREATE TABLE Template2ApprovalValue (
   FOREIGN KEY (template_id) REFERENCES Template(id),
   FOREIGN KEY (milestone_id) REFERENCES Template2Milestone(id)
 ) ENGINE=INNODB;
+
+
+================================================================
+2018-03-13: Edit approval state enum
+
+ALTER TABLE Template2ApprovalValue CHANGE launch_status status ENUM (
+  'needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved');

@@ -1513,7 +1513,7 @@ class ConfigService(object):
       labels: list of string labels for the new issue, if any.
       component_ids: list of component_ids, if any.
       admin_ids: list of admin_ids, if any.
-      field_values: list of FieldValu PBs, if any.
+      field_values: list of FieldValue PBs, if any.
 
     Returns:
       Integer template_id of the new issue template definition.
