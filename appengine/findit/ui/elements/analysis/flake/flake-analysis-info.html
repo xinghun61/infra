@@ -209,15 +209,17 @@
           var status = "";
           var extraInfo = "";
 
+          var regressionStatus = regressionRangeAnalysisStatus.toLowerCase();
+          var culpritStatus = culpritAnalysisStatus.toLowerCase();
+
           // Regression is finished, but culprit isn't done.
-          if (regressionRangeAnalysisStatus.toLowerCase() === "completed" &&
-            culpritAnalysisStatus.toLowerCase() !== "running" &&
-            culpritAnalysisStatus.toLowerCase() !== "pending" &&
-            culpritAnalysisStatus.toLowerCase() !== "error") {
+          if (regressionStatus === "completed" && culpritStatus !== "running" &&
+              culpritStatus !== "pending" && culpritStatus !== "error") {
             status = "Analysis complete.";
-            // Regression is complete, and culprit analysis is running or pending.
-          } else if (regressionRangeAnalysisStatus.toLowerCase() !== "error" &&
-                     culpritAnalysisStatus.toLowerCase() !== "error"){
+          } else if (regressionStatus === "pending") {
+            status = "Analysis pending.";
+          // Regression is complete, and culprit analysis is running or pending.
+          } else if (regressionStatus !== "error" && culpritStatus !== "error"){
             status = "Analysis running.";
           } else {
             status = "Analysis ended in error.";
@@ -225,11 +227,13 @@
 
           // Add extra information
           if (culpritUrl) {
-            extraInfo += " Culprit: <a href='" + culpritUrl + "'>" + culpritText + "</a>. ";
+            extraInfo += (" Culprit: <a href='" + culpritUrl + "'>" +
+                          culpritText + "</a>. ");
           }
 
           if (bugId) {
-            extraInfo += " Bug: <a href='https://crbug.com/" + bugId + "'>" + bugId + "</a>. ";
+            extraInfo += (" Bug: <a href='https://crbug.com/" + bugId + "'>" +
+                          bugId + "</a>. ");
           }
 
           if (extraInfo) {
