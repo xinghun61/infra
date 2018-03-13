@@ -5,6 +5,7 @@
 import logging
 
 from common import constants
+from common import monitoring
 from gae_libs import appengine_util
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
@@ -71,6 +72,7 @@ class AnalyzeTestFailurePipeline(BasePipeline):
     analysis.aborted = True
     analysis.put()
 
+    monitoring.aborted_pipelines.increment({'type': 'test'})
     if not run_try_job:
       return
 

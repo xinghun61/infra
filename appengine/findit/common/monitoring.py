@@ -75,3 +75,10 @@ cache_evictions = gae_ts_mon.CounterMetric(
     'findit/cache-evictions', 'Caches evicted from Findit trybots', [
         gae_ts_mon.StringField('platform'),
     ])
+
+aborted_pipelines = gae_ts_mon.CounterMetric(
+    'findit/aborted-pipelines',
+    'Analysis pipelines aborted',
+    [
+        gae_ts_mon.StringField('type'),  # 'flake', 'test' or 'compile'.
+    ])

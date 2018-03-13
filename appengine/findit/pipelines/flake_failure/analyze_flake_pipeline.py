@@ -4,6 +4,7 @@
 
 from google.appengine.ext import ndb
 
+from common import monitoring
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs.pipelines import GeneratorPipeline
@@ -75,6 +76,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
 
     flake_analysis_util.ReportError(analysis_urlsafe_key)
     analysis.Update(end_time=time_util.GetUTCNow())
+    monitoring.aborted_pipelines.increment({'type': 'flake'})
 
   def RunImpl(self, parameters):
     analysis_urlsafe_key = parameters.analysis_urlsafe_key

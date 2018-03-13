@@ -5,6 +5,7 @@
 import logging
 
 from common import constants
+from common import monitoring
 from gae_libs import appengine_util
 from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import BasePipeline
@@ -63,6 +64,8 @@ class AnalyzeCompileFailurePipeline(BasePipeline):
         run_try_job = True
     analysis.aborted = True
     analysis.put()
+
+    monitoring.aborted_pipelines.increment({'type': 'compile'})
 
     if not run_try_job:
       return
