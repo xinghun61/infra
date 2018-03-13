@@ -488,6 +488,31 @@ CREATE TABLE Template2Component (
 ) ENGINE=INNODB;
 
 
+CREATE TABLE Template2Milestone (
+  id INT NOT NULL AUTO_INCREMENT,
+  template_id INT NOT NULL,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id, template_id),
+  FOREIGN KEY (template_id) REFERENCES Template(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Template2ApprovalValue (
+  approval_id INT NOT NULL,
+  template_id INT NOT NULL,
+  milestone_id INT NOT NULL,
+  launch_status ENUM ('NA', 'review_requested', 'started', 'need_info', 'approved', 'not_approved'),
+
+  PRIMARY KEY (approval_id, template_id, milestone_id),
+
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (template_id) REFERENCES Template(id),
+  FOREIGN KEY (milestone_id) REFERENCES Template2Milestone(id)
+) ENGINE=INNODB;
+
+
 CREATE TABLE ProjectIssueConfig (
   project_id SMALLINT UNSIGNED NOT NULL,
 

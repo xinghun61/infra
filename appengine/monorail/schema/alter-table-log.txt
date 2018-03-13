@@ -1290,3 +1290,29 @@ ALTER TABLE IssueSnapshot MODIFY period_end INT UNSIGNED NOT NULL;
 ALTER TABLE IssueSnapshot MODIFY status_id int;
 ALTER TABLE IssueSnapshot DROP INDEX issue_id;
 ALTER TABLE IssueSnapshot ADD INDEX (`issue_id`,`period_start`,`period_end`);
+
+================================================================
+2018-03-12: Add launch template milestones and approval tables
+
+CREATE TABLE Template2Milestone (
+  id INT NOT NULL AUTO_INCREMENT,
+  template_id INT NOT NULL,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id, template_id),
+  FOREIGN KEY (template_id) REFERENCES Template(id)
+) ENGINE=INNODB;
+
+CREATE TABLE Template2ApprovalValue (
+  approval_id INT NOT NULL,
+  template_id INT NOT NULL,
+  milestone_id INT NOT NULL,
+  launch_status ENUM ('NA', 'review_requested', 'started', 'need_info', 'approved', 'not_approved'),
+
+  PRIMARY KEY (approval_id, template_id, milestone_id),
+
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (template_id) REFERENCES Template(id),
+  FOREIGN KEY (milestone_id) REFERENCES Template2Milestone(id)
+) ENGINE=INNODB;
