@@ -710,13 +710,15 @@ class AST2SelectTest(unittest.TestCase):
     left_joins, where = ast2select._ProcessCustomFieldCond(
         cond, 'Cond1', 'User1')
     self.assertEqual(
-        [('User AS User1 ON Cond1.user_id = User1.user_id AND '
+        [('User AS User1 ON '
           'LOWER(User1.email) = %s', [val]),
          ('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
-          'Cond1.field_id = %s', [1])],
+          'Cond1.field_id = %s AND '
+          'Cond1.user_id = User1.user_id', [1])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+    self.assertTrue(sql._IsValidJoin(left_joins[1][0]))
     self.assertEqual(
         [('Cond1.field_id IS NOT NULL', [])],
         where)

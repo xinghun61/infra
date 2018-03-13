@@ -704,6 +704,15 @@ class BizobjTest(unittest.TestCase):
         result_labels[:result_labels.index('OpSys-All')])
     self.assertEqual('Pri -status', harmonized.default_sort_spec.strip())
 
+  def testHarmonizeConfigs_DeletedCustomField(self):
+    """Only non-deleted custom fields in configs are included."""
+    harmonized = tracker_bizobj.HarmonizeConfigs([self.config])
+    self.assertEqual(1, len(harmonized.field_defs))
+
+    self.config.field_defs[0].is_deleted = True
+    harmonized = tracker_bizobj.HarmonizeConfigs([self.config])
+    self.assertEqual(0, len(harmonized.field_defs))
+
   def testHarmonizeLabelOrStatusRows_Empty(self):
     def_rows = []
     actual = tracker_bizobj.HarmonizeLabelOrStatusRows(def_rows)

@@ -397,11 +397,12 @@ def _ProcessCustomFieldCond(cond, alias, user_alias):
         email_cond_str, email_cond_args = _Compare(
             user_alias, op, field_type, 'email', cond.str_values)
         left_joins.append((
-            'User AS {user_alias} ON {alias}.user_id = {user_alias}.user_id '
-            'AND {email_cond}'.format(
-                alias=alias, user_alias=user_alias, email_cond=email_cond_str),
+            'User AS {user_alias} ON {email_cond}'.format(
+                user_alias=user_alias, email_cond=email_cond_str),
             email_cond_args))
-        cond_str, cond_args = '', []
+        cond_str = '{alias}.user_id = {user_alias}.user_id'.format(
+            alias=alias, user_alias=user_alias)
+        cond_args = []
     elif field_type == tracker_pb2.FieldTypes.URL_TYPE:
       cond_str, cond_args = _Compare(
           alias, op, field_type, 'url_value', cond.str_values)

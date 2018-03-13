@@ -700,10 +700,17 @@ JOIN_RE_LIST = [
         r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
         r'( AND {tab_col} = {tab_col})?'
         r'( AND {tab_col} = {placeholder})?'
+        r' AND {tab_col} = {tab_col}$'),
+    _MakeRE(
+        r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
+        r'( AND {tab_col} = {tab_col})?'
+        r'( AND {tab_col} = {placeholder})?'
         r' AND \({tab_col} IS NULL OR'
         r' {tab_col} != {placeholder}\)$'),
     _MakeRE(
         r'^{table}{opt_alias} ON {tab_col} = {tab_col} AND {email_cond}$'),
+    _MakeRE(
+        r'^{table}{opt_alias} ON {email_cond}$'),
     _MakeRE(
         r'^{table}{opt_alias} ON '
         r'\({tab_col} = {tab_col} OR {tab_col} = {tab_col}\)$'),
