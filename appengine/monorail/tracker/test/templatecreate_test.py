@@ -32,7 +32,13 @@ class TemplateCreateTest(unittest.TestCase):
     self.servlet = templatecreate.TemplateCreate('req', 'res',
                                                services=self.services)
     self.project = self.services.project.TestAddProject('proj')
-    self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.config = self.services.config.GetProjectConfig(
+        'fake cnxn', self.project.project_id)
+    first_tmpl = tracker_bizobj.MakeIssueTemplate(
+        'sometemplate', 'summary', None, None, 'content', [], [], [],
+        [])
+    self.config.templates.append(first_tmpl)
+    self.services.config.StoreConfig(None, self.config)
     self.mr = testing_helpers.MakeMonorailRequest(
         project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
     self.mox = mox.Mox()
@@ -132,6 +138,8 @@ class TemplateCreateTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual('Owner not found.', self.mr.errors.owner)
     self.assertEqual('Unknown component he3', self.mr.errors.components)
+    self.assertEqual(
+        'Template with name sometemplate already exists', self.mr.errors.name)
     self.assertIsNone(url)
 
   def testProcessFormData_Accept(self):
@@ -144,7 +152,7 @@ class TemplateCreateTest(unittest.TestCase):
     config.field_defs.append(fd_1)
     self.services.config.StoreConfig(self.cnxn, config)
     post_data = fake.PostData(
-        name=['sometemplate'],
+        name=['secondtemplate'],
         members_only=['on'],
         summary=['TLDR'],
         summary_must_be_edited=['on'],
@@ -159,7 +167,7 @@ class TemplateCreateTest(unittest.TestCase):
 
     template = None
     for tmpl in config.templates:
-      if tmpl.name == 'sometemplate':
+      if tmpl.name == 'secondtemplate':
         template = tmpl
     self.assertEqual(template.summary, 'TLDR')
     self.assertEqual(template.content, 'HEY WHY')

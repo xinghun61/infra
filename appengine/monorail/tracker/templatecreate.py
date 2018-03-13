@@ -89,6 +89,9 @@ class TemplateCreate(servlet.Servlet):
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     parsed = template_helpers.ParseTemplateRequest(post_data, config)
 
+    if tracker_bizobj.FindIssueTemplate(parsed.name, config):
+      mr.errors.name = 'Template with name %s already exists' % parsed.name
+
     (admin_ids, owner_id, component_ids,
      field_values) = template_helpers.GetTemplateInfoFromParsed(
          mr, self.services, parsed, config)

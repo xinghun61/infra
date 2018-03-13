@@ -29,6 +29,9 @@
     <td>
       [if-any new_template_form]
         <input type="text" name="name" value="[template_name]">
+        <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
+          [if-any errors.name][errors.name][end]
+        </span>
       [else]
         [template_name]
         <input type="hidden" name="name" value="[template_name]">
