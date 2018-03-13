@@ -3,9 +3,12 @@
 # found in the LICENSE file.
 """This module is for test results related operations."""
 
+import json
+
 from common.findit_http_client import FinditHttpClient
-from services import gtest
 from services import constants
+from services import gtest
+from services import isolate
 from services.gtest import GtestResults
 from waterfall import swarming_util
 
@@ -40,10 +43,10 @@ def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
   """Gets test results from isolated server and merge the results."""
   shard_results = []
   for isolated_data in list_isolated_data:
-    output_json, _ = swarming_util.DownloadTestResults(isolated_data,
-                                                       http_client)
+    file_content, _ = isolate.DownloadFileFromIsolatedServer(
+        isolated_data, http_client, 'output.json')
+    output_json = json.loads(file_content) if file_content else None
     if not output_json:
-      # TODO(lijeffrey): Report/handle error returned from _DownloadTestResults.
       return None
     shard_results.append(output_json)
 

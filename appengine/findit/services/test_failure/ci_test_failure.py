@@ -246,7 +246,6 @@ def CheckFirstKnownFailureForSwarmingTests(master_name, builder_name,
   for step_name, failed_step in failed_steps.iteritems():
     if not failed_step.list_isolated_data:  # Non-swarming step.
       continue  # pragma: no cover.
-    print 'here'
     # Checks tests in one step and updates failed_step info if swarming.
     result = _StartTestLevelCheckForFirstFailure(master_name, builder_name,
                                                  build_number, step_name,

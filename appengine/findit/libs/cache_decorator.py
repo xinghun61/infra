@@ -132,7 +132,7 @@ class CacheDecorator(object):
     """Sets result to ``self._cache``.
 
     Args:
-      key (str): The key to retriev result from.
+      key (str): The key to retrieve result from.
       result (any type): The result of the key.
       func (callable): The function to decorate.
       args (iterable): The argument list of the decorated function.
@@ -175,6 +175,7 @@ class Cached(CacheDecorator):
     @functools.wraps(func)
     def Wrapped(*args, **kwargs):
       key = self._key_generator(func, args, kwargs, namespace=self._namespace)
+      assert key, 'Cache key should not be None or empty.'
       cached_result = self.GetCache(key, func, args, kwargs)
 
       if cached_result is not None:

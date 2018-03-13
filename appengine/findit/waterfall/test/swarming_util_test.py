@@ -7,7 +7,6 @@ import mock
 import os
 import zlib
 
-from infra_api_clients import http_client_util
 from infra_api_clients.swarming import swarming_util as i_swarming_util
 from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
@@ -50,23 +49,16 @@ class SwarmingHttpClient(RetryHttpClient):
     self.get_responses[url] = response
 
   def _SetResponseForPostRequest(self, isolated_hash):
-    if isolated_hash == 'not found':
-      response = '{"content":"eJyrrgUAAXUA+Q=="}'
-    else:
-      response = self._GetData('isolated', isolated_hash)
+    response = self._GetData('isolated', isolated_hash)
 
     self.post_responses[isolated_hash] = response
 
   def _Get(self, url, *_):
-    if url in self.get_responses:
-      return 200, self.get_responses[url], {}
-    return 404, 'Download Failed!', {}
+    return 200, self.get_responses[url], {}
 
   def _Post(self, url, data, *_):
     data = json.loads(data)
-    if data and data.get('digest') and data['digest'] in self.post_responses:
-      return 200, self.post_responses[data['digest']], {}
-    return 404, 'Download Failed!', {}
+    return 200, self.post_responses[data['digest']], {}
 
   def _Put(self, *_):  # pragma: no cover
     pass
@@ -78,122 +70,6 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     super(SwarmingUtilTest, self).setUp()
     self.http_client = SwarmingHttpClient()
     self.step_name = 'browser_tests on platform'
-
-  def testDownloadTestResults(self):
-    isolated_data = {
-        'digest':
-            'shard1_isolated',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }
-    isolated_storage_url = waterfall_config.GetSwarmingSettings().get(
-        'isolated_storage_url')
-    self.http_client._SetResponseForPostRequest('shard1_isolated')
-    self.http_client._SetResponseForPostRequest('shard1_url')
-    self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard1' % isolated_storage_url, 'shard1')
-
-    result, error = swarming_util.DownloadTestResults(isolated_data,
-                                                      self.http_client)
-
-    expected_result = json.loads(
-        zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
-    self.assertEqual(expected_result, result)
-    self.assertIsNone(error)
-
-  def testDownloadTestResultsFailedForSecondHash(self):
-    isolated_data = {
-        'digest':
-            'not found',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }
-
-    result, error = swarming_util.DownloadTestResults(isolated_data,
-                                                      self.http_client)
-
-    self.assertIsNone(result)
-    self.assertIsNotNone(error)
-
-  def testDownloadTestResultsFailedForParsingSecondHash(self):
-    isolated_data = {
-        'digest':
-            'not found',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }
-
-    self.http_client._SetResponseForPostRequest('not found')
-    result, error = swarming_util.DownloadTestResults(isolated_data,
-                                                      self.http_client)
-
-    self.assertIsNone(result)
-    self.assertIsNone(error)
-
-  def testDownloadTestResultsFailedForFileUrl(self):
-    isolated_data = {
-        'digest':
-            'shard1_isolated',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }
-    self.http_client._SetResponseForPostRequest('shard1_isolated')
-    result, error = swarming_util.DownloadTestResults(isolated_data,
-                                                      self.http_client)
-
-    self.assertIsNone(result)
-    self.assertIsNotNone(error)
-
-  def testDownloadTestResultsFailedForFile(self):
-    isolated_data = {
-        'digest':
-            'shard1_isolated',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }
-    self.http_client._SetResponseForPostRequest('shard1_isolated')
-    self.http_client._SetResponseForPostRequest('shard1_url')
-    result, error = swarming_util.DownloadTestResults(isolated_data,
-                                                      self.http_client)
-
-    self.assertIsNone(result)
-    self.assertIsNone(error)
-
-  @mock.patch.object(http_client_util, 'SendRequestToServer')
-  @mock.patch.object(swarming_util, '_FetchOutputJsonInfoFromIsolatedServer')
-  def testDownloadTestResultsNeedRequestToUrl(self, mock_fetch, mock_send):
-    isolated_data = {
-        'digest':
-            'shard1_isolated',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }
-    fetch_content1 = {'url': 'url_hash'}
-    fetch_content2 = {'url': 'url_test_log'}
-    mock_fetch.side_effect = [(json.dumps(fetch_content1), None),
-                              (json.dumps(fetch_content2), None)]
-
-    send_content1 = {'files': {'output.json': {'h': 'output_json_hash'}}}
-    send_content2 = {'all_tests': []}
-    mock_send.side_effect = [(zlib.compress(json.dumps(send_content1)), None),
-                             (zlib.compress(json.dumps(send_content2)), None)]
-
-    result, _ = swarming_util.DownloadTestResults(isolated_data,
-                                                  self.http_client)
-
-    self.assertEqual(send_content2, result)
 
   def testGetSwarmingTaskFailureLog(self):
     outputs_ref = {
@@ -214,27 +90,10 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
     result, error = swarming_util.GetSwarmingTaskFailureLog(
         outputs_ref, self.http_client)
-
     expected_result = json.loads(
         zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
     self.assertIsNone(error)
-
-  def testProcessRetrievedContentGetDirectly(self):
-    output_json_content = ('{"content": "eJyrVkpLzMwpLUotVrKKVgpJLS4xV'
-                           'IrVUVAqS8zJTFGyUigpKk2tBQDr9wxZ"}')
-
-    failure_log = swarming_util._ProcessRetrievedContent(
-        output_json_content, self.http_client)
-
-    expected_failure_log = {'failures': ['Test1'], 'valid': True}
-
-    self.assertEqual(expected_failure_log, failure_log)
-
-  def testFetchOutputJsonInfoFromIsolatedServerReturnNone(self):
-    self.assertIsNone(
-        swarming_util._FetchOutputJsonInfoFromIsolatedServer(
-            None, self.http_client))
 
   @mock.patch.object(
       i_swarming_util,

@@ -2,9 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import mock
 
 from services import gtest
+from services import isolate
 from services import test_results
 from services.gtest import GtestResults
 from waterfall import swarming_util
@@ -31,7 +33,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
                          [], None))
 
   @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
-  @mock.patch.object(swarming_util, 'DownloadTestResults')
+  @mock.patch.object(isolate, 'DownloadFileFromIsolatedServer')
   def testRetrieveShardedTestResultsFromIsolatedServer(self, mock_data, _):
     isolated_data = [{
         'digest':
@@ -49,7 +51,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
             waterfall_config.GetSwarmingSettings().get('isolated_server')
     }]
 
-    mock_data.side_effect = [({
+    mock_data.side_effect = [(json.dumps({
         'all_tests': ['test1', 'test2'],
         'per_iteration_data': [{
             'test1': [{
@@ -58,7 +60,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
                 'status': 'SUCCESS'
             }]
         }]
-    }, 200), ({
+    }), 200), (json.dumps({
         'all_tests': ['test1', 'test2'],
         'per_iteration_data': [{
             'test2': [{
@@ -67,7 +69,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
                 'status': 'SUCCESS'
             }]
         }]
-    }, 200)]
+    }), 200)]
     result = test_results.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, None)
     expected_result = {
@@ -89,7 +91,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_result, result)
 
   @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
-  @mock.patch.object(swarming_util, 'DownloadTestResults')
+  @mock.patch.object(isolate, 'DownloadFileFromIsolatedServer')
   def testRetrieveShardedTestResultsFromIsolatedServerOneShard(
       self, mock_data, _):
     isolated_data = [{
@@ -101,7 +103,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
             waterfall_config.GetSwarmingSettings().get('isolated_server')
     }]
     data = {'all_tests': ['test'], 'per_iteration_data': []}
-    mock_data.return_value = (data, 200)
+    mock_data.return_value = (json.dumps(data), 200)
 
     result = test_results.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, None)
@@ -109,7 +111,7 @@ class TestResultsTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(data, result)
 
   @mock.patch.object(gtest, 'IsTestResultsInExpectedFormat', return_value=True)
-  @mock.patch.object(swarming_util, 'DownloadTestResults')
+  @mock.patch.object(isolate, 'DownloadFileFromIsolatedServer')
   def testRetrieveShardedTestResultsFromIsolatedServerFailed(
       self, mock_data, _):
     isolated_data = [{
