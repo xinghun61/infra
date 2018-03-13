@@ -26,5 +26,5 @@ cron:
 - description: Perform full builds on bot compile caches.
   url: /waterfall/cron/periodic-build-ahead
   # Dummy schedule, only while testing this by hand. Real schedule below.
-  schedule: 3rd sunday of december
+  schedule: 3rd sunday of dec 00:00
   # schedule: every 5 minutes
