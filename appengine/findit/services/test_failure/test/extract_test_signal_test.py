@@ -10,10 +10,10 @@ import os
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from services import extract_signal
+from services import swarmed_test_util
 from services.parameters import TestFailureInfo
 from services.test_failure import extract_test_signal
 from waterfall import build_util
-from services import test_results
 from waterfall.test import wf_testcase
 
 _ABC_TEST_FAILURE_LOG = """
@@ -62,7 +62,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
       return json.loads(f.read())
 
   @mock.patch.object(
-      test_results,
+      swarmed_test_util,
       'RetrieveShardedTestResultsFromIsolatedServer',
       return_value=None)
   @mock.patch.object(
@@ -107,7 +107,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
       build_util,
       'GetWaterfallBuildStepLog',
       return_value=_ABC_TEST_FAILURE_LOG)
-  @mock.patch.object(test_results,
+  @mock.patch.object(swarmed_test_util,
                      'RetrieveShardedTestResultsFromIsolatedServer')
   def testGetSignalFromStepLog(self, mock_gtest, _):
     master_name = 'm'
@@ -135,7 +135,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
       build_util,
       'GetWaterfallBuildStepLog',
       return_value=_ABC_TEST_FAILURE_LOG)
-  @mock.patch.object(test_results,
+  @mock.patch.object(swarmed_test_util,
                      'RetrieveShardedTestResultsFromIsolatedServer')
   def testGetSignalFromStepLogFlaky(self, mock_gtest, _):
     master_name = 'm'
@@ -365,7 +365,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_signals, signals)
 
   @mock.patch.object(
-      test_results,
+      swarmed_test_util,
       'RetrieveShardedTestResultsFromIsolatedServer',
       return_value=None)
   @mock.patch.object(extract_signal, 'GetStdoutLog', return_value=None)

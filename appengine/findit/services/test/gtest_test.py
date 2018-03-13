@@ -131,7 +131,7 @@ class GtestTest(wf_testcase.WaterfallTestCase):
 
   def testIsTestEnabledWhenResultEmpty(self):
     test_name = 'test'
-    self.assertFalse(self.gtest_results.IsTestEnabled(test_name, None))
+    self.assertFalse(self.gtest_results.IsTestEnabled(None, test_name))
 
   def testIsTestEnabledWhenDisabled(self):
     test_name = 'test'
@@ -141,18 +141,32 @@ class GtestTest(wf_testcase.WaterfallTestCase):
         'disabled_tests': [test_name]
     }
     self.assertFalse(
-        self.gtest_results.IsTestEnabled(test_name, isolate_output))
+        self.gtest_results.IsTestEnabled(isolate_output, test_name))
 
   def testIsTestEnabledWhenNotInAllTests(self):
     test_name = 'test'
     isolate_output = {'all_tests': [], 'disabled_tests': [test_name]}
     self.assertFalse(
-        self.gtest_results.IsTestEnabled(test_name, isolate_output))
+        self.gtest_results.IsTestEnabled(isolate_output, test_name))
 
   def testIsTestEnabledWhenEnabled(self):
     test_name = 'test'
     isolate_output = {'all_tests': ['test'], 'disabled_tests': []}
-    self.assertTrue(self.gtest_results.IsTestEnabled(test_name, isolate_output))
+    self.assertTrue(self.gtest_results.IsTestEnabled(isolate_output, test_name))
+
+  def testGetMergedTestResultsOneShard(self):
+    shard_results = [{
+        'all_tests': ['test1', 'test2'],
+        'per_iteration_data': [{
+            'test1': [{
+                'output_snippet': '[ RUN ] test1.\\r\\n',
+                'output_snippet_base64': 'WyBSVU4gICAgICBdIEFjY291bnRUcm',
+                'status': 'SUCCESS'
+            }]
+        }]
+    }]
+    self.assertEqual(shard_results[0],
+                     self.gtest_results.GetMergedTestResults(shard_results))
 
   def testGetMergedTestResults(self):
     shard_results = [{
@@ -269,3 +283,28 @@ class GtestTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         expected_statuses,
         self.gtest_results.GetTestsRunStatuses(_SAMPLE_TEST_RESULTS))
+
+  def testGetTestLocationNoTestLocations(self):
+    result, error = self.gtest_results.GetTestLocation({}, 'test')
+    self.assertIsNone(result)
+    self.assertEqual('test_locations not found.', error)
+
+  def testGetTestLocationNoTestLocation(self):
+    result, error = self.gtest_results.GetTestLocation({
+        'test_locations': {
+            'test': {}
+        }
+    }, 'test')
+    self.assertIsNone(result)
+    self.assertEqual('test_location not found for test.', error)
+
+  def testGetTestLocation(self):
+    test_name = 'test'
+    expected_test_location = {
+        'line': 123,
+        'file': '/path/to/test_file.cc',
+    }
+    test_results_log = {'test_locations': {test_name: expected_test_location,}}
+    result, error = self.gtest_results.GetTestLocation(test_results_log, 'test')
+    self.assertEqual(expected_test_location, result.ToSerializable())
+    self.assertIsNone(error)

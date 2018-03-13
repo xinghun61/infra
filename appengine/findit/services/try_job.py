@@ -49,7 +49,6 @@ from model.wf_try_job_data import WfTryJobData
 from services import monitoring
 from services import swarmbot_util
 from services import test_results
-from services.parameters import CompileTryJobResult
 from waterfall import buildbot
 from waterfall import build_util
 from waterfall import waterfall_config

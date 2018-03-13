@@ -11,9 +11,9 @@ from libs import time_util
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
+from services import swarmed_test_util
 from services import test_results
 from services import try_job as try_job_service
-from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -94,7 +94,8 @@ def GetSwarmingTaskIdForTryJob(report, revision, step_name, test_name):
     return task_ids[0] if task_ids else None
 
   for task_id in task_ids:
-    output_json = swarming_util.GetIsolatedOutputForTask(task_id, http_client)
+    output_json = swarmed_test_util.GetIsolatedOutputForTask(
+        task_id, http_client)
     if output_json and test_results.IsTestResultUseful(output_json):
       return task_id
 

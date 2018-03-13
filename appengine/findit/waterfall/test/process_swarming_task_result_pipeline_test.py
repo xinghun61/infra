@@ -8,7 +8,7 @@ from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
-from waterfall import swarming_util as wf_swarming_util
+from services import swarmed_test_util
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
 from waterfall.test import (process_base_swarming_task_result_pipeline_test as
@@ -35,7 +35,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testProcessSwarmingTaskResultPipeline(self):
     # End to end test.
-    self.mock(wf_swarming_util, 'GetSwarmingTaskFailureLog',
+    self.mock(swarmed_test_util, 'GetSwarmingTaskFailureLog',
               self._MockedGetSwarmingTaskFailureLog)
 
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,

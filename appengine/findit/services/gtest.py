@@ -13,6 +13,7 @@ import base64
 from collections import defaultdict
 import cStringIO
 
+from dto.test_location import TestLocation
 from services import constants
 
 _PRE_TEST_PREFIX = 'PRE_'
@@ -24,11 +25,11 @@ RESULTS_INVALID = 10
 _NON_FAILURE_STATUSES = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
 
 
-def IsTestResultsInExpectedFormat(test_results_log):
+def IsTestResultsInExpectedFormat(test_results_json):
   """Checks if the log can be parsed by gtest.
 
   Args:
-    test_results_log (dict): It should be in below format:
+    test_results_json (dict): It should be in below format:
     {
         'all_tests': ['test1',
                       'test2',
@@ -52,11 +53,11 @@ def IsTestResultsInExpectedFormat(test_results_log):
     }
 
   """
-  return (isinstance(test_results_log, dict) and
-          isinstance(test_results_log.get('all_tests'), list) and
-          isinstance(test_results_log.get('per_iteration_data'), list) and all(
+  return (isinstance(test_results_json, dict) and
+          isinstance(test_results_json.get('all_tests'), list) and
+          isinstance(test_results_json.get('per_iteration_data'), list) and all(
               isinstance(i, dict)
-              for i in test_results_log.get('per_iteration_data')))
+              for i in test_results_json.get('per_iteration_data')))
 
 
 class GtestResults(object):
@@ -107,22 +108,22 @@ class GtestResults(object):
     else:
       return base64.b64encode(str1 + str2)
 
-  def GetConsistentTestFailureLog(self, gtest_result):
+  def GetConsistentTestFailureLog(self, test_results_json):
     """Analyzes the archived gtest json results and extract reliable failures.
 
     Args:
-      gtest_result (dict): A JSON file for failed step log.
+      test_results_json (dict): A JSON file for failed step log.
 
     Returns:
       A string contains the names of reliable test failures and related
       log content.
-      If gtest_results_log in gtest json result is 'invalid', we will return
+      If test_results_json in gtest json result is 'invalid', we will return
       'invalid' as the result.
       If we find out that all the test failures in this step are flaky, we will
       return 'flaky' as result.
     """
     sio = cStringIO.StringIO()
-    for iteration in gtest_result['per_iteration_data']:
+    for iteration in test_results_json['per_iteration_data']:
       for test_name in iteration.keys():
         is_reliable_failure = True
 
@@ -144,11 +145,11 @@ class GtestResults(object):
 
     return failed_test_log
 
-  def DoesTestExist(self, gtest_result, test_name):
-    """Determines whether test_name is in gtest_result's 'all_tests' field.
+  def DoesTestExist(self, test_results_json, test_name):
+    """Determines whether test_name is in test_results_json's 'all_tests' field.
 
     Args:
-      gtest_result (dict): A gtest's json output expected to be in the format:
+      test_results_json (dict): A gtest's json output in the format:
           {
               'all_tests': [(str)],
               ...,
@@ -156,17 +157,17 @@ class GtestResults(object):
       test_name (str): The name of the test to check.
 
     Returns:
-      True if the test exists according to gtest_result, False otherwise.
+      True if the test exists according to test_results_json, False otherwise.
     """
-    return test_name in (gtest_result.get('all_tests') or [])
+    return test_name in (test_results_json.get('all_tests') or [])
 
-  def IsTestEnabled(self, test_name, gtest_result):
+  def IsTestEnabled(self, test_results_json, test_name):
     """Returns True if the test is enabled, False otherwise."""
-    if not gtest_result:
+    if not test_results_json:
       return False
 
-    all_tests = gtest_result.get('all_tests', [])
-    disabled_tests = gtest_result.get('disabled_tests', [])
+    all_tests = test_results_json.get('all_tests', [])
+    disabled_tests = test_results_json.get('disabled_tests', [])
 
     # Checks if one test was enabled by checking the test results.
     # If the disabled tests array is empty, we assume the test is enabled.
@@ -213,6 +214,9 @@ class GtestResults(object):
         ]
       }
     """
+    if len(shard_results) == 1:
+      return shard_results[0]
+
     merged_results = {'all_tests': set(), 'per_iteration_data': []}
     for shard_result in shard_results:
       merged_results['all_tests'].update(shard_result.get('all_tests', []))
@@ -222,12 +226,12 @@ class GtestResults(object):
     merged_results['all_tests'] = sorted(merged_results['all_tests'])
     return merged_results
 
-  def GetFailedTestsInformation(self, test_results_log):
+  def GetFailedTestsInformation(self, test_results_json):
     """Parses the json data to get all the reliable failures' information."""
     failed_test_log = {}
     reliable_failed_tests = {}
 
-    for iteration in (test_results_log.get('per_iteration_data') or []):
+    for iteration in (test_results_json.get('per_iteration_data') or []):
       for test_name in iteration.keys():
 
         if (any(test['status'] in _NON_FAILURE_STATUSES
@@ -246,28 +250,43 @@ class GtestResults(object):
 
     return failed_test_log, reliable_failed_tests
 
-  def IsTestResultUseful(self, test_results_log):
+  def IsTestResultUseful(self, test_results_json):
     """Checks if the log contains useful information."""
     # If this task doesn't have result, per_iteration_data will look like
     # [{}, {}, ...]
-    return test_results_log and any(
-        test_results_log.get('per_iteration_data') or [])
+    return test_results_json and any(
+        test_results_json.get('per_iteration_data') or [])
 
-  def GetTestsRunStatuses(self, test_results_log):
+  def GetTestsRunStatuses(self, test_results_json):
     """Parses test results and gets accumulated test run statuses.
 
       Args:
-      test_results_log (dict): A dict of all test results in the task.
+      test_results_json (dict): A dict of all test results in the task.
 
     Returns:
       tests_statuses (dict): A dict of different statuses for each test.
     """
     tests_statuses = defaultdict(lambda: defaultdict(int))
-    if test_results_log:
-      for iteration in test_results_log.get('per_iteration_data'):
+    if test_results_json:
+      for iteration in test_results_json.get('per_iteration_data'):
         for test_name, tests in iteration.iteritems():
           tests_statuses[test_name]['total_run'] += len(tests)
           for test in tests:
             tests_statuses[test_name][test['status']] += 1
 
     return tests_statuses
+
+  def GetTestLocation(self, test_results_json, test_name):
+    """Gets test location for a specific test."""
+    test_locations = test_results_json.get('test_locations')
+
+    if not test_locations:
+      error_str = 'test_locations not found.'
+      return None, error_str
+
+    test_location = test_locations.get(test_name)
+
+    if not test_location:
+      error_str = 'test_location not found for %s.' % test_name
+      return None, error_str
+    return TestLocation.FromSerializable(test_location), None

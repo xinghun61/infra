@@ -12,9 +12,9 @@ from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
-from services import swarming
-from services import test_results
 from services import issue_tracking_service
+from services import swarmed_test_util
+from services import swarming
 from waterfall import build_util
 from waterfall.flake import triggering_sources
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
@@ -78,7 +78,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
       return
 
     task = tasks[0]
-    if not test_results.IsTestEnabled(analysis.test_name, task.task_id):
+    if not swarmed_test_util.IsTestEnabled(analysis.test_name, task.task_id):
       analysis.LogInfo('Bug not filed because test was fixed or disabled.')
       return
 

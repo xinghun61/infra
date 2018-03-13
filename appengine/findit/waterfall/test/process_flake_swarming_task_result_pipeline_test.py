@@ -9,8 +9,8 @@ from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from services import swarmed_test_util
 from waterfall import build_util
-from waterfall import swarming_util as wf_swarming_util
 from waterfall.build_info import BuildInfo
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
@@ -78,7 +78,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.ERROR, task.status)
 
   @mock.patch.object(
-      wf_swarming_util,
+      swarmed_test_util,
       'GetSwarmingTaskFailureLog',
       return_value=(base_test._SAMPLE_FAILURE_LOG, None))
   @mock.patch.object(

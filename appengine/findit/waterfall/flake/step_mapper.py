@@ -5,12 +5,11 @@
 import logging
 
 from common.findit_http_client import FinditHttpClient
-from infra_api_clients.swarming import swarming_util
+from services import swarmed_test_util
 from services import swarming
 from services import test_results
 from waterfall import buildbot
 from waterfall import build_util
-from waterfall import swarming_util as wf_swarming_util
 
 
 def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
@@ -136,7 +135,7 @@ def FindMatchingWaterfallStep(build_step, test_name):
   if build_step.swarmed:
     # Retrieve a sample output from Isolate.
     task_id = metadata['swarm_task_ids'][0]
-    output = wf_swarming_util.GetIsolatedOutputForTask(task_id, http_client)
+    output = swarmed_test_util.GetIsolatedOutputForTask(task_id, http_client)
     if output:
       # Guess from the format.
       build_step.supported = (

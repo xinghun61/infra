@@ -25,7 +25,6 @@ from services.parameters import CompileTryJobResult
 from services.parameters import IdentifyCompileTryJobCulpritParameters
 from services.parameters import RunCompileTryJobParameters
 from waterfall import suspected_cl_util
-from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 

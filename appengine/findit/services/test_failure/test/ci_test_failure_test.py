@@ -9,14 +9,13 @@ import os
 from common.findit_http_client import FinditHttpClient
 from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from model.wf_step import WfStep
+from services import swarmed_test_util
 from services import swarming
-from services import test_results
 from services.parameters import TestFailureInfo
 from services.parameters import TestFailedStep
 from services.parameters import TestFailedSteps
 from services.parameters import FailureInfoBuilds
 from services.test_failure import ci_test_failure
-from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -127,7 +126,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
   @mock.patch.object(ci_test_failure, 'UpdateSwarmingSteps', return_value=True)
-  @mock.patch.object(ci_test_failure, 'test_results')
+  @mock.patch.object(ci_test_failure, 'swarmed_test_util')
   def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(
       self, mock_module, _):
     master_name = 'm'
@@ -504,7 +503,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_builds, builds.ToSerializable())
 
   @mock.patch.object(
-      test_results,
+      swarmed_test_util,
       'RetrieveShardedTestResultsFromIsolatedServer',
       return_value=None)
   def testStartTestLevelCheckForFirstFailure(self, _):
@@ -536,7 +535,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
                                               build_number, step_name, None))
 
   @mock.patch.object(
-      test_results,
+      swarmed_test_util,
       'RetrieveShardedTestResultsFromIsolatedServer',
       return_value={
           'per_iteration_data': 'invalid'
@@ -560,7 +559,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
                                               build_number, step_name, None))
 
   @mock.patch.object(swarming, 'GetIsolatedDataForStep')
-  @mock.patch.object(test_results,
+  @mock.patch.object(swarmed_test_util,
                      'RetrieveShardedTestResultsFromIsolatedServer')
   def testGetSameStepFromBuild(self, mock_step_log, mock_isolated_data):
     master_name = 'm'

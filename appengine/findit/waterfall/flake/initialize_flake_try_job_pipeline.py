@@ -12,7 +12,6 @@ from common import monitoring
 from services import swarmbot_util
 from services.flake_failure import heuristic_analysis
 from waterfall import build_util
-from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import flake_constants

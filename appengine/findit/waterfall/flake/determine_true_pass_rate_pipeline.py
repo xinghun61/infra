@@ -14,7 +14,6 @@ from gae_libs import appengine_util
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from waterfall import swarming_util
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
@@ -145,9 +144,10 @@ def _CalculateRunParametersForSwarmingTask(analysis, build_number):
     # iterations so the next attempt is more likely to finish.
     # TODO(crbug.com/772509): Task results may still be salvaged even in case
     # of timeout, so rerun may be unnecessary.
-    iterations_for_task = (analysis.algorithm_parameters.get(
-        'iterations_to_run_after_timeout',
-        flake_constants.DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT))
+    iterations_for_task = (
+        analysis.algorithm_parameters.get(
+            'iterations_to_run_after_timeout',
+            flake_constants.DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT))
   else:
     # If we're above the iteration maximum, then bring it down. Don't touch
     # the timeout, swarming will return after the iterations are complete.
@@ -199,9 +199,10 @@ class DetermineTruePassRatePipeline(BasePipeline):
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
 
-    max_iterations_to_rerun = (analysis.algorithm_parameters.get(
-        'max_iterations_to_rerun',
-        flake_constants.DEFAULT_MAX_ITERATIONS_TO_RERUN))
+    max_iterations_to_rerun = (
+        analysis.algorithm_parameters.get(
+            'max_iterations_to_rerun',
+            flake_constants.DEFAULT_MAX_ITERATIONS_TO_RERUN))
 
     # Extract pass rate and iterations information before running the task.
     data_point_for_build_number = (
@@ -212,7 +213,7 @@ class DetermineTruePassRatePipeline(BasePipeline):
       pass_rate = data_point_for_build_number.pass_rate
       iterations_completed = data_point_for_build_number.iterations
       analysis.LogInfo('swarming tasks for build %s: %s' %
-                      (build_number, data_point_for_build_number.task_ids))
+                       (build_number, data_point_for_build_number.task_ids))
 
     # If max iterations have been performed, and the pass rate hasn't converged
     # just move on to the next build number.
@@ -223,9 +224,10 @@ class DetermineTruePassRatePipeline(BasePipeline):
 
     # If there are too many swarming tasks that fail for a certain build_number
     # bail out completely.
-    max_swarming_retries_per_build = (analysis.algorithm_parameters.get(
-        'swarming_task_retries_per_build',
-        flake_constants.MAX_SWARMING_TASK_RETRIES_PER_BUILD))
+    max_swarming_retries_per_build = (
+        analysis.algorithm_parameters.get(
+            'swarming_task_retries_per_build',
+            flake_constants.MAX_SWARMING_TASK_RETRIES_PER_BUILD))
     if (analysis.swarming_task_attempts_for_build >=
         max_swarming_retries_per_build):
       _UpdateAnalysisWithSwarmingTaskError(analysis)
@@ -234,8 +236,8 @@ class DetermineTruePassRatePipeline(BasePipeline):
       update_flake_bug_pipeline = UpdateFlakeBugPipeline(analysis_urlsafe_key)
       update_flake_bug_pipeline.target = appengine_util.GetTargetNameForModule(
           constants.WATERFALL_BACKEND)
-      update_flake_bug_pipeline.start(queue_name=self.queue_name or
-                                      constants.DEFAULT_QUEUE)
+      update_flake_bug_pipeline.start(
+          queue_name=self.queue_name or constants.DEFAULT_QUEUE)
       analysis.LogError('Swarming task ended in error after %d attempts.' %
                         analysis.swarming_task_attempts_for_build)
 

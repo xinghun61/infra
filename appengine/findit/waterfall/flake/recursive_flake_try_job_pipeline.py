@@ -9,7 +9,6 @@ from google.appengine.ext import ndb
 from common import monitoring
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
-from dto.int_range import IntRange
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
@@ -18,7 +17,6 @@ from libs import time_util
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
-from pipelines.delay_pipeline import DelayPipeline
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
@@ -26,8 +24,6 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
 from gae_libs import pipelines
 from services import swarmed_test_util
 from services.flake_failure import flake_try_job
-from waterfall import swarming_util
-from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants

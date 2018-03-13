@@ -7,10 +7,10 @@ import mock
 from common.findit_http_client import FinditHttpClient
 from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from model.flake.flake_analysis_request import BuildStep
+from services import swarmed_test_util
 from services import swarming
 from waterfall import buildbot
 from waterfall import build_util
-from waterfall import swarming_util
 from waterfall.flake import step_mapper
 from waterfall.test import wf_testcase
 
@@ -47,7 +47,9 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       return_value=('tryserver.m', 'b', 123, 'browser_tests',
                     wf_testcase.SAMPLE_STEP_METADATA))
   @mock.patch.object(
-      swarming_util, 'GetIsolatedOutputForTask', return_value=_SAMPLE_OUTPUT)
+      swarmed_test_util,
+      'GetIsolatedOutputForTask',
+      return_value=_SAMPLE_OUTPUT)
   def testFindMatchingWaterfallStep(self, *_):
     step_mapper.FindMatchingWaterfallStep(self.build_step, 'test1')
     self.assertTrue(self.build_step.swarmed)
@@ -78,7 +80,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       return_value=('tryserver.m', 'b', 123, 'browser_tests',
                     wf_testcase.SAMPLE_STEP_METADATA))
   @mock.patch.object(
-      swarming_util, 'GetIsolatedOutputForTask', return_value=None)
+      swarmed_test_util, 'GetIsolatedOutputForTask', return_value=None)
   def testFindMatchingWaterfallStepNoOutput(self, *_):
     step_mapper.FindMatchingWaterfallStep(self.build_step, 'test1')
     self.assertTrue(self.build_step.swarmed)
@@ -160,7 +162,9 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(self.wf_build_step.supported)
 
   @mock.patch.object(
-      swarming_util, 'GetIsolatedOutputForTask', return_value=_SAMPLE_OUTPUT)
+      swarmed_test_util,
+      'GetIsolatedOutputForTask',
+      return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
       build_util,
       'GetWaterfallBuildStepLog',

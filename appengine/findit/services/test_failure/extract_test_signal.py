@@ -14,6 +14,7 @@ import logging
 from model.wf_step import WfStep
 from services import extract_signal
 from services import constants
+from services import swarmed_test_util
 from services import test_results
 from waterfall import extractors
 from waterfall.failure_signal import FailureSignal
@@ -46,7 +47,7 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       list_isolated_data = (
           list_isolated_data.ToSerializable() if list_isolated_data else [])
       merged_test_results = (
-          test_results.RetrieveShardedTestResultsFromIsolatedServer(
+          swarmed_test_util.RetrieveShardedTestResultsFromIsolatedServer(
               list_isolated_data, http_client))
       if merged_test_results:
         failure_log = test_results.GetConsistentTestFailureLog(

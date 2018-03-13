@@ -12,6 +12,7 @@ from google.appengine.ext import ndb
 from common.findit_http_client import FinditHttpClient
 from infra_api_clients.swarming import swarming_util
 from model.wf_step import WfStep
+from services import swarmed_test_util
 from services import swarming
 from services import test_results
 from services.parameters import FailedTest
@@ -58,7 +59,7 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
   list_isolated_data = failed_step.list_isolated_data
   list_isolated_data = (
       list_isolated_data.ToSerializable() if list_isolated_data else [])
-  result_log = test_results.RetrieveShardedTestResultsFromIsolatedServer(
+  result_log = swarmed_test_util.RetrieveShardedTestResultsFromIsolatedServer(
       list_isolated_data, http_client)
 
   if not test_results.IsTestResultsValid(result_log):
@@ -85,7 +86,7 @@ def _GetSameStepFromBuild(master_name, builder_name, build_number, step_name,
   if not step_isolated_data:
     return None
 
-  result_log = test_results.RetrieveShardedTestResultsFromIsolatedServer(
+  result_log = swarmed_test_util.RetrieveShardedTestResultsFromIsolatedServer(
       step_isolated_data, http_client)
 
   if not test_results.IsTestResultsValid(result_log):

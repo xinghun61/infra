@@ -6,10 +6,38 @@
 import logging
 
 from common.findit_http_client import FinditHttpClient
-from dto.test_location import TestLocation
-from waterfall import swarming_util
+from infra_api_clients.swarming import swarming_util
+from services import isolate
+from services import swarming
+from services import test_results
 
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
+
+
+def GetSwarmingTaskFailureLog(outputs_ref, http_client):
+  """Downloads failure log from isolated server."""
+  isolated_data = swarming_util.GenerateIsolatedData(outputs_ref)
+  return isolate.DownloadFileFromIsolatedServer(isolated_data, http_client,
+                                                'output.json')
+
+
+def GetIsolatedOutputForTask(task_id, http_client):
+  """Get isolated output for a swarming task based on it's id."""
+  task_result_data, error = swarming_util.GetSwarmingTaskResultById(
+      swarming.SwarmingHost(), task_id, http_client)
+
+  if error or not task_result_data:
+    return None
+
+  outputs_ref = task_result_data.get('outputs_ref')
+  if not outputs_ref:
+    return None
+
+  test_result_log, error = GetSwarmingTaskFailureLog(outputs_ref, http_client)
+
+  if error:
+    return None
+  return test_result_log
 
 
 def GetTestLocation(task_id, test_name):
@@ -24,23 +52,34 @@ def GetTestLocation(task_id, test_name):
         if the test location was not be retrieved.
 
   """
-  task_output = swarming_util.GetIsolatedOutputForTask(task_id,
-                                                       _FINDIT_HTTP_CLIENT)
-
-  if not task_output:
-    logging.error('No isolated output returned for %s', task_id)
+  test_results_log = GetIsolatedOutputForTask(task_id, _FINDIT_HTTP_CLIENT)
+  test_location, error = test_results.GetTestLocation(test_results_log,
+                                                      test_name)
+  if error:
+    logging.error('Failed to get test location for task %s: %s', task_id, error)
     return None
+  return test_location
 
-  test_locations = task_output.get('test_locations')
 
-  if not test_locations:
-    logging.error('test_locations not found for task %s', task_id)
-    return None
+def IsTestEnabled(test_name, task_id):
+  """Returns True if the test is enabled, False otherwise."""
+  # Get the isolated outputs from the test that was just run.
+  test_results_log = GetIsolatedOutputForTask(task_id, _FINDIT_HTTP_CLIENT)
+  return test_results.IsTestEnabled(test_results_log, test_name)
 
-  test_location = test_locations.get(test_name)
 
-  if not test_location:
-    logging.error('test_location not found for %s', test_name)
-    return None
+def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
+                                                 http_client):
+  """Gets test results from isolated server and merge the results."""
+  shard_results = []
+  for isolated_data in list_isolated_data:
+    test_result_log, _ = isolate.DownloadFileFromIsolatedServer(
+        isolated_data, http_client, 'output.json')
+    if not test_result_log:
+      return None
+    shard_results.append(test_result_log)
 
-  return TestLocation.FromSerializable(test_location)
+  if not shard_results:
+    return []
+
+  return test_results.GetMergedTestResults(shard_results)

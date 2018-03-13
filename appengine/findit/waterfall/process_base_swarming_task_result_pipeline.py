@@ -15,10 +15,10 @@ from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
-from services import swarming
 from services import constants as service_constants
+from services import swarmed_test_util
+from services import swarming
 from services import test_results
-from waterfall import swarming_util as wf_swarming_util
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK_EXCEPTION
@@ -228,7 +228,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           check_task_completion()
           return
 
-        output_json, error = wf_swarming_util.GetSwarmingTaskFailureLog(
+        output_json, error = swarmed_test_util.GetSwarmingTaskFailureLog(
             outputs_ref, self.HTTP_CLIENT)
 
         if not output_json:
@@ -239,7 +239,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
         if not test_results.IsTestResultsValid(output_json):
           error = error or {
-              'code': constants.UNRECOGNIZABLE,
+              'code': service_constants.UNRECOGNIZABLE,
               'message': 'Test results format is unrecognized, '
                          'cannot find a parser.'
           }

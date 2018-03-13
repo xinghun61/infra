@@ -14,10 +14,10 @@ from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
+from services import swarmed_test_util
 from services import test_results
 from services import try_job as try_job_service
 from services.flake_failure import flake_try_job
-from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -50,7 +50,7 @@ class FlakeTryJobServiceTest(TestCase):
             }
         }, 'r'))
 
-  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
+  @mock.patch.object(swarmed_test_util, 'GetIsolatedOutputForTask')
   def testGetSwarmingTaskIdForTryJobNotFoundTaskWithResult(self, mock_fn):
     output_json = {'per_iteration_data': [{}, {}]}
     mock_fn.return_result = output_json
@@ -83,7 +83,7 @@ class FlakeTryJobServiceTest(TestCase):
                                                  test_name))
 
   @mock.patch.object(
-      swarming_util, 'GetIsolatedOutputForTask', return_value=None)
+      swarmed_test_util, 'GetIsolatedOutputForTask', return_value=None)
   def testGetSwarmingTaskIdForTryJobNoOutputJson(self, _):
     revision = 'r0'
     step_name = 'gl_tests'
@@ -188,7 +188,7 @@ class FlakeTryJobServiceTest(TestCase):
 
   @mock.patch.object(
       test_results, 'IsTestResultUseful', side_effect=[False, True])
-  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
+  @mock.patch.object(swarmed_test_util, 'GetIsolatedOutputForTask')
   def testGetSwarmingTaskIdForTryJob(self, mock_fn, _):
     output_json_1 = {'per_iteration_data': [{}, {}]}
     output_json_2 = {'per_iteration_data': [{'Test.One': 'log for Test.One'}]}
