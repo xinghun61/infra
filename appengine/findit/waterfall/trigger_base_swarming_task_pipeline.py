@@ -284,7 +284,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
         return NO_TASK_EXCEPTION
       return NO_TASK
 
-    ref_task_id = swarming_task_items[0]['task_id']
+    ref_task_id = swarming_task_items[0].task_id
 
     # 1. Retrieve Swarming task parameters from a given Swarming task id.
     ref_request = swarming_util.GetSwarmingTaskRequest(swarming.SwarmingHost(),

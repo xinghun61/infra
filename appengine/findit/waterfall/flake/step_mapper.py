@@ -78,7 +78,7 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
           'os': os_name
       })
   if tasks:  # One matching buildbot is found.
-    wf_step_name = tasks[0].tags.get('stepname')[0] if 'stepname' in tasks[
+    wf_step_name = tasks[0].tags['stepname'][0] if 'stepname' in tasks[
         0].tags else ''
     logging.info('%s/%s/%s is mapped to %s/%s/%s', cq_build_step.master_name,
                  cq_build_step.builder_name, cq_build_step.step_name,

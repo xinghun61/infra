@@ -9,6 +9,7 @@ import time
 from common.waterfall import pubsub_callback
 from gae_libs import token
 from infra_api_clients.swarming import swarming_util
+from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 from libs import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
@@ -95,13 +96,18 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
       'GetSwarmingTopic',
       return_value='projects/findit-for-me/topics/swarm')
   @mock.patch.object(token, 'GenerateAuthToken', return_value='auth_token')
+  @mock.patch.object(
+      swarming,
+      'ListSwarmingTasksDataByTags',
+      return_value=[
+          SwarmingTaskData({
+              'task_id': '1'
+          }),
+          SwarmingTaskData({
+              'task_id': '2'
+          })
+      ])
   def testTriggerANewSwarmingTask(self, *_):
-
-    def MockedDownloadSwarmingTaskData(*_):
-      return [{'task_id': '1'}, {'task_id': '2'}]
-
-    self.mock(swarming, 'ListSwarmingTasksDataByTags',
-              MockedDownloadSwarmingTaskData)
 
     def MockedGetSwarmingTaskRequest(_host, ref_task_id, *_):
       self.assertEqual('1', ref_task_id)
@@ -259,11 +265,14 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       swarming,
       'ListSwarmingTasksDataByTags',
-      return_value=[{
-          'task_id': '1'
-      }, {
-          'task_id': '2'
-      }])
+      return_value=[
+          SwarmingTaskData({
+              'task_id': '1'
+          }),
+          SwarmingTaskData({
+              'task_id': '2'
+          })
+      ])
   @mock.patch.object(
       swarming, 'TriggerSwarmingTask', return_value=('new_task_id', None))
   @mock.patch.object(
