@@ -14,6 +14,10 @@ SSH_CONFIG_FILE_CONTENTS = (
 # overwritten. The identity file is unique per container.
 IdentityFile %s
 ConnectionAttempts 4
+# The identity of variable_chromeos_device_hostname is unique per container, so
+# make known_hosts file similarly unique. (Otherwise, in all but the last
+# container that updates it, ssh complains about "POSSIBLE DNS SPOOFING".)
+UserKnownHostsFile /b/known_hosts
 # Disable strict host key checking, but don't disable the known_hosts recording
 # so that we don't get those annoying "Host key has been permanently added..."
 # messages everytime we run an ssh command.
