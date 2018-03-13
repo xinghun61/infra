@@ -1,5 +1,5 @@
 {
   "skip_testing": ["windows"],
-  "expected_coverage_min": 60.0,
+  "expected_coverage_min": 50.0,
   "expected_coverage_max": 100.0
 }

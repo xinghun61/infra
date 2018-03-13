@@ -12,7 +12,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -381,17 +380,10 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		return statusError{err, code}
 	}
 
-	wg := sync.WaitGroup{}
+	if !info.IsDevAppServer(c) {
+		logTestResultEvents(c, &f, p)
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if !info.IsDevAppServer(c) {
-			logTestResultEvents(c, &f, p)
-		}
-	}()
-
-	wg.Wait()
 	return nil
 }
 
@@ -423,68 +415,59 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 		err  error
 	}, len(names))
 
-	wg := sync.WaitGroup{}
-
 	for i, name := range names {
-		i, name, p := i, name, p
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-			p.Name = name
-			tf, err := getTestFileAlt(c, p, u.DeprecatedMaster)
-			if err != nil {
-				if _, ok := err.(ErrNoMatches); ok {
-					files[i].tf = createEmptyAggregateTestFileEntity(p)
-					return
-				}
-				logging.WithError(err).Errorf(c, "updateIncremental: getTestFileAlt")
-				files[i].err = err
-				return
-			}
-
-			reader, err := tf.DataReader(c)
-			if err != nil {
-				logging.WithError(err).Errorf(c, "updateIncremental: GetData")
-				files[i].err = err
-				return
-			}
-			var a model.AggregateResult
-			if err := json.NewDecoder(reader).Decode(&a); err != nil {
-				logging.WithError(err).Warningf(c, "updateIncremental: unmarshal TestFile data")
-				files[i].err = statusError{err, http.StatusBadRequest}
-				return
-			}
-
-			if tf.Builder != a.Builder {
-				logging.Warningf(c, "Builder in TestFile entity for aggregated file "+
-					"does not match data in linked JSON file. Deleting corrupted entity.")
-
-				// Try to delete data entities linked to the corrupted aggregate file.
-				if err = datastore.Delete(c, tf.DataKeys); err != nil {
-					logging.WithError(err).Warningf(
-						c, "Failed to delete data keys linked with corrupted entity")
-				}
-
-				// Delete entity for the corrupted aggregate file.
-				err = datastore.Delete(c, datastore.KeyForObj(c, tf))
-				if err != nil {
-					logging.WithError(err).Errorf(c, "updateIncremental: delete entity")
-					files[i].err = statusError{err, http.StatusInternalServerError}
-					return
-				}
-
-				// Create a new empty entity.
+		p.Name = name
+		tf, err := getTestFileAlt(c, p, u.DeprecatedMaster)
+		if err != nil {
+			if _, ok := err.(ErrNoMatches); ok {
 				files[i].tf = createEmptyAggregateTestFileEntity(p)
-				return
+				continue
+			}
+			logging.WithError(err).Errorf(c, "updateIncremental: getTestFileAlt")
+			files[i].err = err
+			continue
+		}
+
+		reader, err := tf.DataReader(c)
+		if err != nil {
+			logging.WithError(err).Errorf(c, "updateIncremental: GetData")
+			files[i].err = err
+			continue
+		}
+		var a model.AggregateResult
+		if err := json.NewDecoder(reader).Decode(&a); err != nil {
+			logging.WithError(err).Warningf(c, "updateIncremental: unmarshal TestFile data")
+			files[i].err = statusError{err, http.StatusBadRequest}
+			continue
+		}
+
+		if tf.Builder != a.Builder {
+			logging.Warningf(c, "Builder in TestFile entity for aggregated file "+
+				"does not match data in linked JSON file. Deleting corrupted entity.")
+
+			// Try to delete data entities linked to the corrupted aggregate file.
+			if err = datastore.Delete(c, tf.DataKeys); err != nil {
+				logging.WithError(err).Warningf(
+					c, "Failed to delete data keys linked with corrupted entity")
 			}
 
-			files[i].tf = tf
-			files[i].aggr = &a
-		}()
+			// Delete entity for the corrupted aggregate file.
+			err = datastore.Delete(c, datastore.KeyForObj(c, tf))
+			if err != nil {
+				logging.WithError(err).Errorf(c, "updateIncremental: delete entity")
+				files[i].err = statusError{err, http.StatusInternalServerError}
+				continue
+			}
+
+			// Create a new empty entity.
+			files[i].tf = createEmptyAggregateTestFileEntity(p)
+			continue
+		}
+
+		files[i].tf = tf
+		files[i].aggr = &a
 	}
 
-	wg.Wait()
 	for idx, file := range files {
 		if file.err != nil {
 			logging.Fields{
@@ -496,19 +479,13 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 	}
 
 	return datastore.RunInTransaction(c, func(c context.Context) error {
-		wg = sync.WaitGroup{}
 		errs := make([]error, len(files))
 
 		for i, file := range files {
 			i, file := i, file
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				errs[i] = updateAggregate(c, file.tf, file.aggr, incr)
-			}()
+			errs[i] = updateAggregate(c, file.tf, file.aggr, incr)
 		}
 
-		wg.Wait()
 		// Prioritize returning http.StatusInternalServerError status
 		// code errors over other errors.
 		var e error
