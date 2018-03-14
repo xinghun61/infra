@@ -57,3 +57,6 @@ class MemoizedFunction(Function):
       fx = self._f(x)
       self._memos[x] = fx
       return fx
+    except TypeError:
+      # Not to memorize when x is not hashable.
+      return self._f(x)

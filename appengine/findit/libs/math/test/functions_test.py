@@ -10,6 +10,7 @@ from libs.math.functions import MemoizedFunction
 # Some arbitrary functions:
 _F = lambda x: x + 1
 _G = lambda x: x * x
+_E = lambda x: 4
 
 
 class FunctionsTest(unittest.TestCase):
@@ -59,3 +60,15 @@ class FunctionsTest(unittest.TestCase):
     f._f = _G
     f.ClearMemos()
     self.assertEqual(_G(5), f(5))
+
+  def testNotToMemorizeIfXIsNotHashable(self):
+    """``MemoizedFunction`` won't memorize when x is not hashable.
+
+    We cannot always requir that the input of MemoizedFunction is hashable,
+    that requirement would be too strict. So when the x is not hashable,
+    we just bail out and run the internal function instead of getting result
+    from memo."""
+    f = MemoizedFunction(_E)
+    y = f({1: 3})
+    self.assertEqual(y, 4)
+    self.assertEqual(f._memos, {})
