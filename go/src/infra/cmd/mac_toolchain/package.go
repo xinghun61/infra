@@ -68,8 +68,10 @@ func makePackages(xcodeAppPath string, cipdPackagePrefix string, excludeAll, exc
 		return
 	}
 	packageDef := cipd.PackageDef{
-		Root:        absXcodeAppPath,
-		InstallMode: "copy",
+		Root:             absXcodeAppPath,
+		InstallMode:      "copy",
+		PreserveModTime:  true,
+		PreserveWritable: true,
 	}
 	mac := packageDef
 	mac.Package = cipdPackagePrefix + "/mac"

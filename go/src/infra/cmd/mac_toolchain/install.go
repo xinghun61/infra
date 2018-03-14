@@ -42,6 +42,9 @@ func installPackages(ctx context.Context, xcodeVersion, xcodeAppPath, cipdPackag
 	// Xcode really wants its files to be user-writable (hangs mysteriously
 	// otherwise). CIPD by default installs everything read-only. Update
 	// permissions post-install.
+	//
+	// TODO(sergeyberezin): remove this once crbug.com/803158 is resolved and all
+	// currently used Xcode versions are re-uploaded.
 	if err := RunCommand(ctx, "chmod", "-R", "u+w", xcodeAppPath); err != nil {
 		return errors.Annotate(err, "failed to update Xcode.app permissions in %s", xcodeAppPath).Err()
 	}
