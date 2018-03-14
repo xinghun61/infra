@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import mock
 
 from dto.int_range import IntRange
@@ -218,6 +219,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
   def testAnalyzeFlakePipelineStartTaskAfterDelay(self, mocked_delay,
                                                   mocked_revision, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    # Random date in the past, for coverage.
+    analysis.request_time = datetime.datetime(2015, 1, 1, 1, 1, 1)
     analysis.Save()
 
     start_commit_position = 1000

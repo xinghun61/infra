@@ -82,3 +82,8 @@ aborted_pipelines = gae_ts_mon.CounterMetric(
     [
         gae_ts_mon.StringField('type'),  # 'flake', 'test' or 'compile'.
     ])
+
+pipeline_times = gae_ts_mon.CounterMetric('findit/pipeline-times',
+                                          'Current age of ongoing pipelines', [
+                                              gae_ts_mon.StringField('type'),
+                                          ])

@@ -82,6 +82,12 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
     analysis_urlsafe_key = parameters.analysis_urlsafe_key
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
+    if analysis.request_time:
+      monitoring.pipeline_times.increment_by(
+          int((time_util.GetUTCNow() - analysis.request_time).total_seconds()),
+          {
+              'type': 'flake'
+          })
 
     commit_position_parameters = parameters.analyze_commit_position_parameters
     commit_position_to_analyze = commit_position_parameters.next_commit_position
