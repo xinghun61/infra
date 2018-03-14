@@ -46,13 +46,22 @@ led get-builder ... |
 					"Providing an empty json_value will remove that property.")
 
 			ret.Flags.StringVar(&ret.recipeIsolate, "rbh", "",
-				"override the recipe bundle `hash` (such as you might get from the isolate command).")
+				"override the recipe bundle `hash` (if not using CIPD or git). These should be prepared with"+
+					" `recipes.py bundle` from the repo containing your desired recipe and then isolating the"+
+					" resulting folder contents. The `led edit-recipe-bundle` subcommand does all this"+
+					" automatically.")
 
 			ret.Flags.StringVar(&ret.recipeURL, "ru", "",
-				"override the recipe repo `url` (if not using a bundle).")
+				"override the recipe repo `url` (if not using CIPD or isolated).")
 
 			ret.Flags.StringVar(&ret.recipeRevision, "rr", "",
-				"override the recipe repo `revision` (if not using a bundle).")
+				"override the recipe repo `revision` (if not using CIPD or isolated).")
+
+			ret.Flags.StringVar(&ret.recipeCIPDPkg, "rCP", "",
+				"override the recipe CIPD `package` (if not using git or isolated).")
+
+			ret.Flags.StringVar(&ret.recipeCIPDVer, "rCV", "",
+				"override the recipe CIPD `version` (if not using git or isolated).")
 
 			ret.Flags.StringVar(&ret.recipeName, "r", "",
 				"override the `recipe` to run.")
@@ -76,6 +85,8 @@ type cmdEdit struct {
 	recipeURL      string
 	recipeRevision string
 	recipeName     string
+	recipeCIPDPkg  string
+	recipeCIPDVer  string
 
 	swarmingHost string
 }
@@ -119,7 +130,7 @@ func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.
 
 	err := editMode(ctx, func(jd *JobDefinition) error {
 		ejd := jd.Edit()
-		ejd.RecipeSource(c.recipeIsolate, c.recipeURL, c.recipeRevision)
+		ejd.RecipeSource(c.recipeIsolate, c.recipeURL, c.recipeRevision, c.recipeCIPDPkg, c.recipeCIPDVer)
 		ejd.Dimensions(c.dimensions)
 		ejd.Properties(c.properties)
 		ejd.Recipe(c.recipeName)

@@ -80,12 +80,20 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 				})
 
 				if ret.S.KitchenArgs.RepositoryURL != "" && ret.S.KitchenArgs.Revision != "" {
-					ret.U.RecipeProdSource = &RecipeProdSource{
+					ret.U.RecipeGitSource = &RecipeGitSource{
 						ret.S.KitchenArgs.RepositoryURL,
 						ret.S.KitchenArgs.Revision,
 					}
 					ret.S.KitchenArgs.RepositoryURL = ""
 					ret.S.KitchenArgs.Revision = ""
+				}
+				if cipdRecipe, ok := ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir]; ok {
+					pkgname, vers := "", ""
+					for pkgname, vers = range cipdRecipe {
+						break
+					}
+					delete(ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir], pkgname)
+					ret.U.RecipeCIPDSource = &RecipeCIPDSource{pkgname, vers}
 				}
 
 				ret.U.RecipeName = ret.S.KitchenArgs.RecipeName

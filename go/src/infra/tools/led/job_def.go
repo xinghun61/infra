@@ -70,7 +70,8 @@ type Userland struct {
 	// combined via isolated inclusions with the Properties.InputsRef.Isolated
 	// when the job is launched with an `led launch` command.
 	RecipeIsolatedHash string            `json:"recipe_isolated_hash"`
-	RecipeProdSource   *RecipeProdSource `json:"recipe_prod_source"`
+	RecipeGitSource    *RecipeGitSource  `json:"recipe_git_source"`
+	RecipeCIPDSource   *RecipeCIPDSource `json:"recipe_cipd_source"`
 
 	RecipeName       string                 `json:"recipe_name"`
 	RecipeProperties map[string]interface{} `json:"recipe_properties"`
@@ -80,11 +81,18 @@ type Userland struct {
 	Dimensions map[string]string `json:"dimensions"`
 }
 
-// RecipeProdSource instructs the JobDefinition to obtain its recipes from
-// a production (i.e. published in a repo) location.
-type RecipeProdSource struct {
+// RecipeGitSource instructs the JobDefinition to obtain its recipes from
+// a git repo.
+type RecipeGitSource struct {
 	RepositoryURL string `json:"repository_url"`
 	Revision      string `json:"revision"`
+}
+
+// RecipeCIPDSource instructs the JobDefinition to obtain its recipes from
+// a CIPD package.
+type RecipeCIPDSource struct {
+	Package string `json:"package"`
+	Version string `json:"version"`
 }
 
 // Systemland is the data in a swarmbucket task which is controlled by the LUCI

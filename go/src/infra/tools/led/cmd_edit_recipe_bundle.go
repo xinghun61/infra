@@ -215,7 +215,7 @@ func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env 
 		logging.Infof(ctx, "isolating recipes: done")
 
 		ejd := jd.Edit()
-		ejd.RecipeSource(string(hash), "", "")
+		ejd.RecipeSource(string(hash), "", "", "", "")
 		return ejd.Finalize()
 	})
 	if err != nil {

@@ -86,21 +86,37 @@ func (ejd *EditJobDefinition) Recipe(recipe string) {
 // RecipeSource modifies the source for the recipes. This can either be an
 // isolated hash (i.e. bundled recipes) or it can be a repo/revision pair (i.e.
 // production or gerrit CL recipes).
-func (ejd *EditJobDefinition) RecipeSource(isolated, repo, revision string) {
-	if isolated == "" && repo == "" && revision == "" {
+func (ejd *EditJobDefinition) RecipeSource(isolated, repo, revision, cipdPkg, cipdVer string) {
+	if isolated == "" && repo == "" && revision == "" && cipdPkg == "" && cipdVer == "" {
 		return
 	}
 	ejd.tweakUserland(func(u *Userland) error {
-		if isolated != "" && (repo != "" || revision != "") {
-			return errors.New("specify either isolated or (repo||revision), but not both")
-		}
-		if isolated != "" {
+		switch {
+		case isolated != "":
+			switch {
+			case repo != "":
+				return errors.New("specify either isolated or repo, but not both")
+			case cipdPkg != "":
+				return errors.New("specify either isolated or cipdPkg, but not both")
+			}
+			u.RecipeCIPDSource = nil
+			u.RecipeGitSource = nil
 			u.RecipeIsolatedHash = isolated
-			u.RecipeProdSource = nil
-		} else {
-			u.RecipeProdSource = &RecipeProdSource{repo, revision}
+
+		case repo != "":
+			if cipdPkg != "" {
+				return errors.New("specify either repo or cipdPkg, but not both")
+			}
+			u.RecipeCIPDSource = nil
+			u.RecipeGitSource = &RecipeGitSource{repo, revision}
+			u.RecipeIsolatedHash = ""
+
+		default:
+			u.RecipeCIPDSource = &RecipeCIPDSource{cipdPkg, cipdVer}
+			u.RecipeGitSource = nil
 			u.RecipeIsolatedHash = ""
 		}
+
 		return nil
 	})
 }

@@ -47,18 +47,31 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 			// TODO(iannucci): add recipe_repository swarming tag
 			// `led isolate` should be able to capture this and embed in the
 			// JobDefinition.
-		} else if u.RecipeProdSource != nil {
-			args.RepositoryURL = u.RecipeProdSource.RepositoryURL
-			args.Revision = u.RecipeProdSource.Revision
+		} else if u.RecipeGitSource != nil {
+			args.RepositoryURL = u.RecipeGitSource.RepositoryURL
+			args.Revision = u.RecipeGitSource.Revision
 
-			tagRevision := u.RecipeProdSource.Revision
+			tagRevision := u.RecipeGitSource.Revision
 			if tagRevision == "" {
 				tagRevision = "HEAD"
 			}
 			st.Tags = append(st.Tags,
-				"recipe_repository:"+u.RecipeProdSource.RepositoryURL,
-				"recipe_revision:"+u.RecipeProdSource.Revision,
+				"recipe_repository:"+u.RecipeGitSource.RepositoryURL,
+				"recipe_revision:"+u.RecipeGitSource.Revision,
 			)
+		} else if u.RecipeCIPDSource != nil {
+			if st.Properties == nil {
+				st.Properties = &swarming.SwarmingRpcsTaskProperties{}
+			}
+			if st.Properties.CipdInput == nil {
+				st.Properties.CipdInput = &swarming.SwarmingRpcsCipdInput{}
+			}
+			st.Properties.CipdInput.Packages = append(
+				st.Properties.CipdInput.Packages, &swarming.SwarmingRpcsCipdPackage{
+					Path:        args.CheckoutDir,
+					PackageName: u.RecipeCIPDSource.Package,
+					Version:     u.RecipeCIPDSource.Version,
+				})
 		}
 
 		if u.RecipeName != "" {
