@@ -83,6 +83,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             'isolated_tests': {
                 step_name: [isolate_sha]
             },
+            'last_checked_out_revision': None,
             'metadata': {},
             'previously_checked_out_revision': 'r9999',
             'previously_cached_revision': 'r9999',
@@ -186,6 +187,7 @@ class RunFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'isolated_tests': {
             step_name: [isolate_sha]
         },
+        'last_checked_out_revision': None,
         'metadata': {},
         'previously_checked_out_revision': 'r9999',
         'previously_cached_revision': 'r9999',

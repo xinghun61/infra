@@ -9,6 +9,8 @@ from libs.structured_object import StructuredObject
 from libs.structured_object import TypedDict
 from libs.structured_object import TypedList
 
+# TODO(crbug.com/821623): Refactor into dto's.
+
 
 class BuildKey(StructuredObject):
   """Key to a build, an analysis or a try job."""
