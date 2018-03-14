@@ -20,7 +20,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}, {'deps_file': '.DEPS.git', 'managed': True, 'name': 'v8', 'url': 'https://chromium.googlesource.com/v8/v8'}]",
+      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--patch_root",
       "infra",
       "--revision_mapping_file",
@@ -173,12 +173,127 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+      "--url",
+      "https://chromium.googlesource.com/v8/v8"
+    ],
+    "name": "git setup"
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "cache",
+      "populate",
+      "-c",
+      "[GIT_CACHE]",
+      "https://chromium.googlesource.com/v8/v8"
+    ],
+    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "populate cache"
+  },
+  {
+    "cmd": [
+      "git",
+      "cache",
+      "exists",
+      "--quiet",
+      "--cache-dir",
+      "[GIT_CACHE]",
+      "https://chromium.googlesource.com/v8/v8"
+    ],
+    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "git cache",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
+      "git",
+      "remote",
+      "set-url",
+      "origin",
+      "mirror_dir"
+    ],
+    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "git remote"
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "master",
+      "--progress"
+    ],
+    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "git fetch"
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "infra_step": true,
+    "name": "git checkout"
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "infra_step": true,
+    "name": "read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
+    "infra_step": true,
+    "name": "git clean"
+  },
+  {
+    "cmd": [
       "git",
       "push",
       "https://chromium.googlesource.com/v8/v8",
       "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef:refs/heads/lkgr"
     ],
-    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/v8",
+    "cwd": "[BUILDER_CACHE]/V8_lkgr_finder/workdir",
     "infra_step": true,
     "name": "push lkgr to ref"
   },
