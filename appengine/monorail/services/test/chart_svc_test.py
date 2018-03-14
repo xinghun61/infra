@@ -51,6 +51,16 @@ class ChartServiceTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
+  def _verifySQL(self, cols, left_joins, where, group_by):
+    for col in cols:
+      self.assertTrue(sql._IsValidColumnName(col))
+    for join_str, _ in left_joins:
+      self.assertTrue(sql._IsValidJoin(join_str))
+    for where_str, _ in where:
+      self.assertTrue(sql._IsValidWhereCond(where_str))
+    for groupby_str in group_by:
+      self.assertTrue(sql._IsValidGroupByTerm(groupby_str))
+
   def testQueryIssueSnapshots_InvalidBucketBy(self):
     """Make sure the `bucketby` argument is checked."""
     project = fake.Project(project_id=789)
@@ -86,38 +96,43 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
       self.config_service, [10L, 20L], project, perms).AndReturn([91, 81])
 
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn,
-      cols=['Comp.path', 'COUNT(DISTINCT(IssueSnapshot.issue_id))'],
-      group_by=['Comp.path'],
-      left_joins=[
-          ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
-          ('Issue2Label AS Forbidden_label'
-           ' ON Issue.id = Forbidden_label.issue_id'
-           ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
-          ('Issue2Cc AS I2cc'
-           ' ON Issue.id = I2cc.issue_id'
-           ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
-          ('IssueSnapshot2Component AS Is2c'
-           ' ON Is2c.issuesnapshot_id = IssueSnapshot.id', []),
-          ('ComponentDef AS Comp ON Comp.id = Is2c.component_id', [])
-        ],
-        shard_id=0,
-        where=[
-          ('IssueSnapshot.period_start <= %s', [1514764800]),
-          ('IssueSnapshot.period_end > %s', [1514764800]),
-          ('IssueSnapshot.project_id = %s', [789]),
-          ('IssueSnapshot.is_open = %s', [True]),
-          ('Issue.is_spam = %s', [False]),
-          ('Issue.deleted = %s', [False]),
-          ('(Issue.reporter_id IN (%s,%s)'
-           ' OR Issue.owner_id IN (%s,%s)'
-           ' OR I2cc.cc_id IS NOT NULL'
-           ' OR Forbidden_label.label_id IS NULL)',
-           [10L, 20L, 10L, 20L]
-          ),
-          ('IssueSnapshot.shard = %s', [0])
-        ]
-    )
+    cols = [
+      'Comp.path',
+      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+    ]
+    left_joins = [
+      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
+      ('Issue2Label AS Forbidden_label'
+       ' ON Issue.id = Forbidden_label.issue_id'
+       ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
+      ('Issue2Cc AS I2cc'
+       ' ON Issue.id = I2cc.issue_id'
+       ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
+      ('IssueSnapshot2Component AS Is2c'
+       ' ON Is2c.issuesnapshot_id = IssueSnapshot.id', []),
+      ('ComponentDef AS Comp ON Comp.id = Is2c.component_id', [])
+    ]
+    where = [
+      ('IssueSnapshot.period_start <= %s', [1514764800]),
+      ('IssueSnapshot.period_end > %s', [1514764800]),
+      ('IssueSnapshot.project_id = %s', [789]),
+      ('IssueSnapshot.is_open = %s', [True]),
+      ('Issue.is_spam = %s', [False]),
+      ('Issue.deleted = %s', [False]),
+      ('(Issue.reporter_id IN (%s,%s)'
+       ' OR Issue.owner_id IN (%s,%s)'
+       ' OR I2cc.cc_id IS NOT NULL'
+       ' OR Forbidden_label.label_id IS NULL)',
+       [10L, 20L, 10L, 20L]
+      ),
+      ('IssueSnapshot.shard = %s', [0])
+    ]
+    group_by = ['Comp.path']
+
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
+      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+
+    self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
@@ -132,39 +147,44 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
       self.config_service, [10L, 20L], project, perms).AndReturn([91, 81])
 
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn,
-      cols=['Lab.label', 'COUNT(DISTINCT(IssueSnapshot.issue_id))'],
-      group_by=['Lab.label'],
-      left_joins=[
-          ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
-          ('Issue2Label AS Forbidden_label'
-           ' ON Issue.id = Forbidden_label.issue_id'
-           ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
-          ('Issue2Cc AS I2cc'
-           ' ON Issue.id = I2cc.issue_id'
-           ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
-          ('IssueSnapshot2Label AS Is2l'
-           ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
-          ('LabelDef AS Lab ON Lab.id = Is2l.label_id', [])
-        ],
-        shard_id=0,
-        where=[
-          ('IssueSnapshot.period_start <= %s', [1514764800]),
-          ('IssueSnapshot.period_end > %s', [1514764800]),
-          ('IssueSnapshot.project_id = %s', [789]),
-          ('IssueSnapshot.is_open = %s', [True]),
-          ('Issue.is_spam = %s', [False]),
-          ('Issue.deleted = %s', [False]),
-          ('(Issue.reporter_id IN (%s,%s)'
-           ' OR Issue.owner_id IN (%s,%s)'
-           ' OR I2cc.cc_id IS NOT NULL'
-           ' OR Forbidden_label.label_id IS NULL)',
-           [10L, 20L, 10L, 20L]
-          ),
-          ('LOWER(Lab.label) LIKE %s', ['foo-%']),
-          ('IssueSnapshot.shard = %s', [0])
-        ]
-    )
+    cols = [
+      'Lab.label',
+      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+    ]
+    left_joins = [
+      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
+      ('Issue2Label AS Forbidden_label'
+       ' ON Issue.id = Forbidden_label.issue_id'
+       ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
+      ('Issue2Cc AS I2cc'
+       ' ON Issue.id = I2cc.issue_id'
+       ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
+      ('IssueSnapshot2Label AS Is2l'
+       ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
+      ('LabelDef AS Lab ON Lab.id = Is2l.label_id', [])
+    ]
+    where = [
+      ('IssueSnapshot.period_start <= %s', [1514764800]),
+      ('IssueSnapshot.period_end > %s', [1514764800]),
+      ('IssueSnapshot.project_id = %s', [789]),
+      ('IssueSnapshot.is_open = %s', [True]),
+      ('Issue.is_spam = %s', [False]),
+      ('Issue.deleted = %s', [False]),
+      ('(Issue.reporter_id IN (%s,%s)'
+       ' OR Issue.owner_id IN (%s,%s)'
+       ' OR I2cc.cc_id IS NOT NULL'
+       ' OR Forbidden_label.label_id IS NULL)',
+       [10L, 20L, 10L, 20L]
+      ),
+      ('LOWER(Lab.label) LIKE %s', ['foo-%']),
+      ('IssueSnapshot.shard = %s', [0])
+    ]
+    group_by = ['Lab.label']
+
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
+      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+
+    self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
@@ -182,31 +202,36 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
       self.config_service, set(), project, perms).AndReturn([91, 81])
 
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn,
-      cols=['Lab.label', 'COUNT(DISTINCT(IssueSnapshot.issue_id))'],
-      group_by=['Lab.label'],
-      left_joins=[
-          ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
-          ('Issue2Label AS Forbidden_label'
-           ' ON Issue.id = Forbidden_label.issue_id'
-           ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
-          ('IssueSnapshot2Label AS Is2l'
-           ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
-          ('LabelDef AS Lab ON Lab.id = Is2l.label_id', []),
-        ],
-        shard_id=0,
-        where=[
-          ('IssueSnapshot.period_start <= %s', [1514764800]),
-          ('IssueSnapshot.period_end > %s', [1514764800]),
-          ('IssueSnapshot.project_id = %s', [789]),
-          ('IssueSnapshot.is_open = %s', [True]),
-          ('Issue.is_spam = %s', [False]),
-          ('Issue.deleted = %s', [False]),
-          ('Forbidden_label.label_id IS NULL', []),
-          ('LOWER(Lab.label) LIKE %s', ['foo-%']),
-          ('IssueSnapshot.shard = %s', [0])
-        ]
-    )
+    cols = [
+      'Lab.label',
+      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+    ]
+    left_joins = [
+      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
+      ('Issue2Label AS Forbidden_label'
+       ' ON Issue.id = Forbidden_label.issue_id'
+       ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
+      ('IssueSnapshot2Label AS Is2l'
+       ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
+      ('LabelDef AS Lab ON Lab.id = Is2l.label_id', []),
+    ]
+    where = [
+      ('IssueSnapshot.period_start <= %s', [1514764800]),
+      ('IssueSnapshot.period_end > %s', [1514764800]),
+      ('IssueSnapshot.project_id = %s', [789]),
+      ('IssueSnapshot.is_open = %s', [True]),
+      ('Issue.is_spam = %s', [False]),
+      ('Issue.deleted = %s', [False]),
+      ('Forbidden_label.label_id IS NULL', []),
+      ('LOWER(Lab.label) LIKE %s', ['foo-%']),
+      ('IssueSnapshot.shard = %s', [0])
+    ]
+    group_by = ['Lab.label']
+
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
+      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+
+    self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
@@ -221,35 +246,40 @@ class ChartServiceTest(unittest.TestCase):
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
       self.config_service, [10L, 20L], project, perms).AndReturn([])
 
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn,
-      cols=['Lab.label', 'COUNT(DISTINCT(IssueSnapshot.issue_id))'],
-      group_by=['Lab.label'],
-      left_joins=[
-          ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
-          ('Issue2Cc AS I2cc'
-           ' ON Issue.id = I2cc.issue_id'
-           ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
-          ('IssueSnapshot2Label AS Is2l'
-           ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
-          ('LabelDef AS Lab ON Lab.id = Is2l.label_id', [])
-        ],
-        shard_id=0,
-        where=[
-          ('IssueSnapshot.period_start <= %s', [1514764800]),
-          ('IssueSnapshot.period_end > %s', [1514764800]),
-          ('IssueSnapshot.project_id = %s', [789]),
-          ('IssueSnapshot.is_open = %s', [True]),
-          ('Issue.is_spam = %s', [False]),
-          ('Issue.deleted = %s', [False]),
-          ('(Issue.reporter_id IN (%s,%s)'
-           ' OR Issue.owner_id IN (%s,%s)'
-           ' OR I2cc.cc_id IS NOT NULL)',
-           [10L, 20L, 10L, 20L]
-          ),
-          ('LOWER(Lab.label) LIKE %s', ['foo-%']),
-          ('IssueSnapshot.shard = %s', [0])
-        ]
-    )
+    cols = [
+      'Lab.label',
+      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+    ]
+    left_joins = [
+      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
+      ('Issue2Cc AS I2cc'
+       ' ON Issue.id = I2cc.issue_id'
+       ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
+      ('IssueSnapshot2Label AS Is2l'
+       ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
+      ('LabelDef AS Lab ON Lab.id = Is2l.label_id', []),
+    ]
+    where = [
+      ('IssueSnapshot.period_start <= %s', [1514764800]),
+      ('IssueSnapshot.period_end > %s', [1514764800]),
+      ('IssueSnapshot.project_id = %s', [789]),
+      ('IssueSnapshot.is_open = %s', [True]),
+      ('Issue.is_spam = %s', [False]),
+      ('Issue.deleted = %s', [False]),
+      ('(Issue.reporter_id IN (%s,%s)'
+       ' OR Issue.owner_id IN (%s,%s)'
+       ' OR I2cc.cc_id IS NOT NULL)',
+       [10L, 20L, 10L, 20L]
+      ),
+      ('LOWER(Lab.label) LIKE %s', ['foo-%']),
+      ('IssueSnapshot.shard = %s', [0]),
+    ]
+    group_by = ['Lab.label']
+
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
+      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+
+    self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
