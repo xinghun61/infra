@@ -346,7 +346,7 @@ Returns file size if file exists, else None
 
 [DEPS](/recipes/recipes/lkgr_finder.py#8): [build/chromium\_checkout][build/recipe_modules/chromium_checkout], [build/v8][build/recipe_modules/v8], [build/webrtc][build/recipe_modules/webrtc], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/lkgr_finder.py#54)(api, buildername):**
+&mdash; **def [RunSteps](/recipes/recipes/lkgr_finder.py#62)(api, buildername):**
 ### *recipes* / [luci\_check](/recipes/recipes/luci_check.py)
 
 [DEPS](/recipes/recipes/luci_check.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python]

@@ -29,6 +29,14 @@ PROPERTIES = {
 
 
 BUILDERS = freeze({
+  'chromium-lkgr-finder': {
+    'project': 'chromium',
+    'lkgr_status_gs_path': 'chromium-infra/lkgr-status',
+    'repo': 'https://chromium.googlesource.com/chromium/src',
+    'ref': 'refs/heads/lkgr',
+    'gclient_config': 'chromium',
+    'checkout_dir': 'src',
+  },
   'V8 lkgr finder': {
     'project': 'v8',
     'allowed_lag': 4,
