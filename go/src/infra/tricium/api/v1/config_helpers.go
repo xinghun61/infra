@@ -200,8 +200,12 @@ func IsFunctionValid(f *Function, sc *ServiceConfig) error {
 
 // IsImplValid checks if the impl entry is valid.
 //
-// A valid impl entry has a valid runtime platform, one with a runtime, specifies platforms
-// for data-dependencies when needed, has a cmd or recipe based implementation, and a deadline.
+// A valid impl entry has a valid runtime platform, one with a runtime,
+// specifies platforms for data-dependencies when needed, has a cmd or recipe
+// based implementation, and a deadline.
+//
+// TODO(qyearsley): for consistency with isFunctionValid, this could be changed
+// to return only an error, and return nil if valid.
 func IsImplValid(i *Impl, sc *ServiceConfig, needs *Data_TypeDetails, provides *Data_TypeDetails) (bool, error) {
 	if i.GetRuntimePlatform() == Platform_ANY {
 		return false, errors.New("must provide runtime platform for impl")

@@ -238,7 +238,7 @@ func TestGetRecipeCmd(t *testing.T) {
 	})
 }
 
-func TestIsValid(t *testing.T) {
+func TestIsFunctionValid(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
 		sc := &ServiceConfig{
@@ -246,6 +246,12 @@ func TestIsValid(t *testing.T) {
 				{
 					Name:       Platform_LINUX,
 					Dimensions: []string{"pool:Default"},
+					HasRuntime: true,
+				},
+				{
+					Name:       Platform_IOS,
+					Dimensions: []string{"pool:Default"},
+					HasRuntime: false,
 				},
 			},
 		}
@@ -303,7 +309,132 @@ func TestIsValid(t *testing.T) {
 			err := IsFunctionValid(f, sc)
 			So(err, ShouldNotBeNil)
 		})
+	})
+}
 
-		// TODO(emso): add missing tests for IsImplValid
+func TestIsImplValid(t *testing.T) {
+	Convey("Test Environment", t, func() {
+
+		sc := &ServiceConfig{
+			Platforms: []*Platform_Details{
+				{
+					Name:       Platform_UBUNTU,
+					Dimensions: []string{"pool:Default"},
+					HasRuntime: true,
+				},
+				{
+					Name:       Platform_ANDROID,
+					HasRuntime: false,
+				},
+			},
+		}
+
+		anyType := &Data_TypeDetails{
+			IsPlatformSpecific: false,
+		}
+
+		Convey("Example of a valid non-platform-specific Impl", func() {
+			impl := &Impl{
+				RuntimePlatform: Platform_UBUNTU,
+				Impl:            &Impl_Cmd{Cmd: &Cmd{Exec: "hello"}},
+				Deadline:        60,
+			}
+			ok, err := IsImplValid(impl, sc, anyType, anyType)
+			So(err, ShouldBeNil)
+			So(ok, ShouldBeTrue)
+		})
+
+		Convey("Runtime platform of Impl must exist in service config", func() {
+			impl := &Impl{
+				RuntimePlatform: Platform_IOS,
+				Impl:            &Impl_Cmd{Cmd: &Cmd{Exec: "hello"}},
+				Deadline:        60,
+			}
+			ok, err := IsImplValid(impl, sc, anyType, anyType)
+			So(err, ShouldNotBeNil)
+			So(ok, ShouldBeFalse)
+		})
+
+		Convey("Runtime platform of Impl must have a runtime", func() {
+			impl := &Impl{
+				RuntimePlatform: Platform_ANDROID,
+				Impl:            &Impl_Cmd{Cmd: &Cmd{Exec: "hello"}},
+				Deadline:        60,
+			}
+			ok, err := IsImplValid(impl, sc, anyType, anyType)
+			So(err, ShouldNotBeNil)
+			So(ok, ShouldBeFalse)
+		})
+
+		Convey("Runtime platform must be included in Impl", func() {
+			impl := &Impl{
+				Impl:     &Impl_Cmd{Cmd: &Cmd{Exec: "hello"}},
+				Deadline: 60,
+			}
+			ok, err := IsImplValid(impl, sc, anyType, anyType)
+			So(err, ShouldNotBeNil)
+			So(ok, ShouldBeFalse)
+		})
+
+		Convey("Impl must have deadline specified", func() {
+			impl := &Impl{
+				RuntimePlatform: Platform_UBUNTU,
+				Impl:            &Impl_Cmd{Cmd: &Cmd{Exec: "hello"}},
+			}
+			ok, err := IsImplValid(impl, sc, anyType, anyType)
+			So(err, ShouldNotBeNil)
+			So(ok, ShouldBeFalse)
+		})
+
+		Convey("Impl must have cmd or recipe specified", func() {
+			impl := &Impl{
+				RuntimePlatform: Platform_UBUNTU,
+				Deadline:        60,
+			}
+			ok, err := IsImplValid(impl, sc, anyType, anyType)
+			So(err, ShouldNotBeNil)
+			So(ok, ShouldBeFalse)
+		})
+
+		Convey("Example of a valid platform-specific Impl", func() {
+			impl := &Impl{
+				RuntimePlatform:     Platform_UBUNTU,
+				NeedsForPlatform:    Platform_ANDROID,
+				ProvidesForPlatform: Platform_ANDROID,
+				Impl:                &Impl_Cmd{Cmd: &Cmd{Exec: "hello"}},
+				Deadline:            60,
+			}
+			needsType := &Data_TypeDetails{
+				Type:               Data_CLANG_DETAILS,
+				IsPlatformSpecific: true,
+			}
+			providesType := &Data_TypeDetails{
+				Type:               Data_RESULTS,
+				IsPlatformSpecific: true,
+			}
+			ok, err := IsImplValid(impl, sc, needsType, providesType)
+			So(err, ShouldBeNil)
+			So(ok, ShouldBeTrue)
+		})
+
+		Convey("If type is platform-specific, platforms must be specified", func() {
+			impl := &Impl{
+				RuntimePlatform: Platform_UBUNTU,
+				Impl:            &Impl_Cmd{Cmd: &Cmd{Exec: "hello"}},
+				Deadline:        60,
+			}
+			needsType := &Data_TypeDetails{
+				Type:               Data_CLANG_DETAILS,
+				IsPlatformSpecific: true,
+			}
+			providesType := &Data_TypeDetails{
+				Type:               Data_RESULTS,
+				IsPlatformSpecific: true,
+			}
+			ok, err := IsImplValid(impl, sc, needsType, providesType)
+			So(err, ShouldNotBeNil)
+			So(ok, ShouldBeFalse)
+		})
+
 	})
 }
