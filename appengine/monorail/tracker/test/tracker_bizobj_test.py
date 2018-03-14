@@ -161,6 +161,35 @@ class BizobjTest(unittest.TestCase):
         1, config))
     self.assertEqual(None, tracker_bizobj.FindApprovalDefByID(99, config))
 
+  def testFindApprovalValueByID_Normal(self):
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
+    av_22 = tracker_pb2.ApprovalValue()
+    self.assertEqual(
+        av_24, tracker_bizobj.FindApprovalValueByID(24, [av_22, av_24]))
+
+  def testFindApprovalValueByID_None(self):
+    av_no_id = tracker_pb2.ApprovalValue()
+    self.assertIsNone(tracker_bizobj.FindApprovalValueByID(24, [av_no_id]))
+
+  def testFindMilestoneByID_Normal(self):
+    canary_ms = tracker_pb2.Milestone(milestone_id=2, name='Canary')
+    stable_ms = tracker_pb2.Milestone(name='Stable')
+    self.assertEqual(
+        canary_ms, tracker_bizobj.FindMilestoneByID(2, [stable_ms, canary_ms]))
+
+  def testFindMilestoneByID_None(self):
+    stable_ms = tracker_pb2.Milestone(name='Stable')
+    self.assertIsNone(tracker_bizobj.FindMilestoneByID(42, [stable_ms]))
+
+  def testFindMilestone_Normal(self):
+    canary_ms = tracker_pb2.Milestone(milestone_id=2)
+    stable_ms = tracker_pb2.Milestone(name='Stable')
+    self.assertEqual(stable_ms, tracker_bizobj.FindMilestone(
+        'Stable', [stable_ms, canary_ms]))
+
+  def testFindMilestone_None(self):
+    self.assertIsNone(tracker_bizobj.FindMilestone('ghost_ms', []))
+
   def testFindIssueTemplate_Normal(self):
     config = tracker_pb2.ProjectIssueConfig()
     template = tracker_bizobj.MakeIssueTemplate(

@@ -187,11 +187,10 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.template2admin_rows = []
     self.template2fieldvalue_rows = []
     self.template2milestone_rows = [
-        (22, 1, 'Canary', 1),
-        (23, 1, 'Stable', 11)
+        (1, 1, 'Canary', 1),
+        (2, 1, 'Stable', 11)
     ]
-    # TODO(jojwang): monorail:3576, test template approval deserialization.
-    self.template2av_rows = []
+    self.template2av_rows = [(21, 1, 1, 'needs_review'), (22, 1, 1, 'not_set')]
     self.statusdef_rows = [(1, 789, 1, 'New', True, 'doc', False),
                            (2, 789, 2, 'Fixed', False, 'doc', False)]
     self.labeldef_rows = [(1, 789, 1, 'Security', 'doc', False),
@@ -221,7 +220,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
         self.config_rows, self.template_rows, self.template2label_rows,
         self.template2component_rows, self.template2admin_rows,
         self.template2fieldvalue_rows, self.template2milestone_rows,
-        self.template2fieldvalue_rows, self.statusdef_rows, self.labeldef_rows,
+        self.template2av_rows, self.statusdef_rows, self.labeldef_rows,
         self.fielddef_rows, self.fielddef2admin_rows, self.componentdef_rows,
         self.component2admin_rows, self.component2cc_rows,
         self.component2label_rows, self.approvaldef2approver_rows)
@@ -239,6 +238,17 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     launch_template = tracker_bizobj.FindIssueTemplate('firstName', config)
     self.assertEqual(len(self.template2milestone_rows),
                      len(launch_template.milestones))
+    canary_ms = tracker_bizobj.FindMilestone(
+        'Canary', launch_template.milestones)
+    av_21 = tracker_bizobj.FindApprovalValueByID(
+        21, canary_ms.approval_values)
+    self.assertEqual(av_21.status, tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
+    av_22 = tracker_bizobj.FindApprovalValueByID(
+        22, canary_ms.approval_values)
+    self.assertEqual(av_22.status, tracker_pb2.ApprovalStatus.NOT_SET)
+    stable_ms = tracker_bizobj.FindMilestone(
+        'Stable', launch_template.milestones)
+    self.assertEqual(0, len(stable_ms.approval_values))
 
   def SetUpFetchConfigs(self, project_ids):
     self.config_service.projectissueconfig_tbl.Select(

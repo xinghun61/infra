@@ -128,6 +128,33 @@ def FindApprovalDefByID(approval_id, config):
   return None
 
 
+def FindApprovalValueByID(approval_id, approval_values):
+  """Find the specified approval_value in the given list or return None."""
+  for av in approval_values:
+    if av.approval_id == approval_id:
+      return av
+
+  return None
+
+
+def FindMilestoneByID(milestone_id, milestones):
+  """Find the specified milesonte, or return None"""
+  for ms in milestones:
+    if ms.milestone_id == milestone_id:
+      return ms
+
+  return None
+
+
+def FindMilestone(name, milestones):
+  """Find the specified milestone, or return None"""
+  for ms in milestones:
+    if ms.name.lower() == name.lower():
+      return ms
+
+  return None
+
+
 def FindIssueTemplate(template_name, config):
   """Find the specified issue template, or return None."""
   for template in config.templates:
@@ -440,7 +467,7 @@ def ConvertDictToTemplate(template_dict):
 def MakeIssueTemplate(
     name, summary, status, owner_id, content, labels, field_values, admin_ids,
     component_ids, summary_must_be_edited=None, owner_defaults_to_member=None,
-    component_required=None, members_only=None):
+    component_required=None, members_only=None, milestones=None):
   """Make an issue template PB."""
   template = tracker_pb2.TemplateDef()
   template.name = name
@@ -464,6 +491,8 @@ def MakeIssueTemplate(
     template.component_required = component_required
   if members_only is not None:
     template.members_only = members_only
+  if milestones is not None:
+    template.milestones = milestones
 
   return template
 
