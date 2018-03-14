@@ -94,7 +94,7 @@ def GetSwarmingTaskIdForTryJob(report, revision, step_name, test_name):
     return task_ids[0] if task_ids else None
 
   for task_id in task_ids:
-    output_json = swarmed_test_util.GetIsolatedOutputForTask(
+    output_json = swarmed_test_util.GetTestResultForSwarmingTask(
         task_id, http_client)
     if output_json and test_results.IsTestResultUseful(output_json):
       return task_id

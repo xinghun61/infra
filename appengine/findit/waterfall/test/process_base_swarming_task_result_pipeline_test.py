@@ -187,7 +187,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(_EXPECTED_TESTS_STATUS, tests_statuses)
 
   @mock.patch.object(
-      swarmed_test_util, 'GetSwarmingTaskFailureLog', return_value=(None, None))
+      swarmed_test_util, 'GetOutputJsonByOutputsRef', return_value=(None, None))
   def testMonitorSwarmingTaskTimeOut(self, _):
     # Override swarming config settings to force a timeout.
     override_swarming_settings = {'task_timeout_hours': -1}
@@ -288,7 +288,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
       }))
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskFailureLog',
+      'GetOutputJsonByOutputsRef',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   def testMonitorSwarmingTaskGetSwarmingTaskResultIdErrorRecovered(self, *_):
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
@@ -306,12 +306,12 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskFailureLog',
+      'GetOutputJsonByOutputsRef',
       return_value=(None, {
           'code': 1,
           'message': 'error'
       }))
-  def testMonitorSwarmingTaskGetSwarmingTaskFailureLogError(self, _):
+  def testMonitorSwarmingTaskGetOutputJsonByOutputsRefError(self, _):
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
                                  self.build_number, self.step_name)
     task.task_id = 'task_id1'
@@ -375,7 +375,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskFailureLog',
+      'GetOutputJsonByOutputsRef',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   def testProcessSwarmingTaskResultPipeline(self, _):
     # End to end test.
@@ -413,7 +413,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskFailureLog',
+      'GetOutputJsonByOutputsRef',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   def testProcessSwarmingTaskResultPipelineSerializedCallback(self, _):
     # End to end test.
@@ -522,7 +522,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskFailureLog',
+      'GetOutputJsonByOutputsRef',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   @mock.patch.object(test_results, 'IsTestResultsValid', return_value=True)
   def testProcessSwarmingTaskResultPipelineIdempotency(self, *_):
@@ -575,7 +575,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskFailureLog',
+      'GetOutputJsonByOutputsRef',
       return_value=(_SAMPLE_FAILURE_LOG, None))
   def testProcessSwarmingTaskResultPipelineBackwardCompatibleCallback(self, _):
     # End to end test.

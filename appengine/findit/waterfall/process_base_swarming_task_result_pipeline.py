@@ -228,7 +228,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           check_task_completion()
           return
 
-        output_json, error = swarmed_test_util.GetSwarmingTaskFailureLog(
+        output_json, error = swarmed_test_util.GetOutputJsonByOutputsRef(
             outputs_ref, self.HTTP_CLIENT)
 
         if not output_json:

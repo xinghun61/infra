@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Functions for operating on tests run in swarming."""
 
+import json
 import logging
 
 from common.findit_http_client import FinditHttpClient
@@ -14,14 +15,15 @@ from services import test_results
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
 
 
-def GetSwarmingTaskFailureLog(outputs_ref, http_client):
+def GetOutputJsonByOutputsRef(outputs_ref, http_client):
   """Downloads failure log from isolated server."""
   isolated_data = swarming_util.GenerateIsolatedData(outputs_ref)
-  return isolate.DownloadFileFromIsolatedServer(isolated_data, http_client,
-                                                'output.json')
+  file_content, error = isolate.DownloadFileFromIsolatedServer(
+      isolated_data, http_client, 'output.json')
+  return json.loads(file_content) if file_content else None, error
 
 
-def GetIsolatedOutputForTask(task_id, http_client):
+def GetTestResultForSwarmingTask(task_id, http_client):
   """Get isolated output for a swarming task based on it's id."""
   task_result_data, error = swarming_util.GetSwarmingTaskResultById(
       swarming.SwarmingHost(), task_id, http_client)
@@ -33,7 +35,7 @@ def GetIsolatedOutputForTask(task_id, http_client):
   if not outputs_ref:
     return None
 
-  test_result_log, error = GetSwarmingTaskFailureLog(outputs_ref, http_client)
+  test_result_log, error = GetOutputJsonByOutputsRef(outputs_ref, http_client)
 
   if error:
     return None
@@ -52,7 +54,7 @@ def GetTestLocation(task_id, test_name):
         if the test location was not be retrieved.
 
   """
-  test_results_log = GetIsolatedOutputForTask(task_id, _FINDIT_HTTP_CLIENT)
+  test_results_log = GetTestResultForSwarmingTask(task_id, _FINDIT_HTTP_CLIENT)
   test_location, error = test_results.GetTestLocation(test_results_log,
                                                       test_name)
   if error:
@@ -64,7 +66,7 @@ def GetTestLocation(task_id, test_name):
 def IsTestEnabled(test_name, task_id):
   """Returns True if the test is enabled, False otherwise."""
   # Get the isolated outputs from the test that was just run.
-  test_results_log = GetIsolatedOutputForTask(task_id, _FINDIT_HTTP_CLIENT)
+  test_results_log = GetTestResultForSwarmingTask(task_id, _FINDIT_HTTP_CLIENT)
   return test_results.IsTestEnabled(test_results_log, test_name)
 
 
@@ -77,7 +79,7 @@ def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
         isolated_data, http_client, 'output.json')
     if not test_result_log:
       return None
-    shard_results.append(test_result_log)
+    shard_results.append(json.loads(test_result_log))
 
   if not shard_results:
     return []

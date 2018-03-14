@@ -48,7 +48,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
                     wf_testcase.SAMPLE_STEP_METADATA))
   @mock.patch.object(
       swarmed_test_util,
-      'GetIsolatedOutputForTask',
+      'GetTestResultForSwarmingTask',
       return_value=_SAMPLE_OUTPUT)
   def testFindMatchingWaterfallStep(self, *_):
     step_mapper.FindMatchingWaterfallStep(self.build_step, 'test1')
@@ -80,7 +80,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       return_value=('tryserver.m', 'b', 123, 'browser_tests',
                     wf_testcase.SAMPLE_STEP_METADATA))
   @mock.patch.object(
-      swarmed_test_util, 'GetIsolatedOutputForTask', return_value=None)
+      swarmed_test_util, 'GetTestResultForSwarmingTask', return_value=None)
   def testFindMatchingWaterfallStepNoOutput(self, *_):
     step_mapper.FindMatchingWaterfallStep(self.build_step, 'test1')
     self.assertTrue(self.build_step.swarmed)
@@ -163,7 +163,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetIsolatedOutputForTask',
+      'GetTestResultForSwarmingTask',
       return_value=_SAMPLE_OUTPUT)
   @mock.patch.object(
       build_util,

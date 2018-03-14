@@ -30,13 +30,13 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock(swarming_util, 'GetSwarmingTaskResultById',
               self._MockedGetSwarmingTaskResultById)
 
-  def _MockedGetSwarmingTaskFailureLog(self, *_):
+  def _MockedGetOutputJsonByOutputsRef(self, *_):
     return base_test._SAMPLE_FAILURE_LOG, None
 
   def testProcessSwarmingTaskResultPipeline(self):
     # End to end test.
-    self.mock(swarmed_test_util, 'GetSwarmingTaskFailureLog',
-              self._MockedGetSwarmingTaskFailureLog)
+    self.mock(swarmed_test_util, 'GetOutputJsonByOutputsRef',
+              self._MockedGetOutputJsonByOutputsRef)
 
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
                                  self.build_number, self.step_name)

@@ -135,7 +135,8 @@ def FindMatchingWaterfallStep(build_step, test_name):
   if build_step.swarmed:
     # Retrieve a sample output from Isolate.
     task_id = metadata['swarm_task_ids'][0]
-    output = swarmed_test_util.GetIsolatedOutputForTask(task_id, http_client)
+    output = swarmed_test_util.GetTestResultForSwarmingTask(
+        task_id, http_client)
     if output:
       # Guess from the format.
       build_step.supported = (

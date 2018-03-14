@@ -79,7 +79,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskFailureLog',
+      'GetOutputJsonByOutputsRef',
       return_value=(base_test._SAMPLE_FAILURE_LOG, None))
   @mock.patch.object(
       build_util, 'GetBuildInfo', return_value=BuildInfo('m', 'b', 123))
