@@ -180,7 +180,7 @@ def _TreeIsOpen():
   url = 'https://chromium-status.appspot.com/allstatus'
   params = {
       'limit': '1',
-      'fomrat': 'json',
+      'format': 'json',
   }
   client = FinditHttpClient()
   status_code, content = client.Get(url, params)
