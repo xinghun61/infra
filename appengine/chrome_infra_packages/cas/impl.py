@@ -540,7 +540,8 @@ class CASService(object):
         str(expires),
         gs_path,
       ])
-      _, signature = self._app_identity_sign_blob(to_sign)
+      key, signature = self._app_identity_sign_blob(to_sign)
+      logging.info('Signed %r with key %s', to_sign, key)
       cached = {'signature': signature, 'expires': expires}
       # Make the memcache entry expire sooner that the signature, so that the
       # returned URL always lives for at least SIGNED_URL_EXPIRATION_MIN_SEC.
