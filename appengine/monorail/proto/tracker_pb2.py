@@ -391,12 +391,13 @@ class ApprovalStatus(messages.Enum):
   NEED_INFO = 5
   APPROVED = 6
   NOT_APPROVED = 7
+  NOT_SET = 8
 
 
 class ApprovalValue(messages.Message):
   """Holds a single approval field value in an issue."""
   approval_id = messages.IntegerField(1)
-  status = messages.EnumField(ApprovalStatus, 2)
+  status = messages.EnumField(ApprovalStatus, 2, default='NOT_SET')
   setter_id = messages.IntegerField(3)
   set_on = messages.IntegerField(4)
   approver_ids = messages.IntegerField(5, repeated=True)

@@ -503,7 +503,7 @@ CREATE TABLE Template2ApprovalValue (
   approval_id INT NOT NULL,
   template_id INT NOT NULL,
   milestone_id INT NOT NULL,
-  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved'),
+  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set'),
 
   PRIMARY KEY (approval_id, template_id, milestone_id),
 

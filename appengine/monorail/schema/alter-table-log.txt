@@ -1323,3 +1323,10 @@ CREATE TABLE Template2ApprovalValue (
 
 ALTER TABLE Template2ApprovalValue CHANGE launch_status status ENUM (
   'needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved');
+
+
+================================================================
+2018-03-14: Edit approval state enum *AGAIN*
+
+ALTER TABLE Template2ApprovalValue MODIFY status ENUM (
+  'needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set');

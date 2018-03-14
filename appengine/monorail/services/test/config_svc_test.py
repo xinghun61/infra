@@ -1138,18 +1138,30 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.template2fieldvalue_tbl.InsertRows(
         self.cnxn, config_svc.TEMPLATE2FIELDVALUE_COLS, [
             (1, 1, None, 'somestring', None, None, None)], commit=False)
+    self.config_service.template2milestone_tbl.InsertRow(
+        self.cnxn, template_id=1, name='Canary', rank=11,
+        commit=False).AndReturn(1)
+    self.config_service.template2approvalvalue_tbl.InsertRows(
+        self.cnxn, config_svc.TEMPLATE2APPROVALVALUE_COLS,
+        [(23, 1, 1, 'needs_review'), (24, 1, 1, 'not_set')], commit=False)
 
     self.cnxn.Commit()
 
   def testCreateIssueTemplateDef(self):
     fv = tracker_bizobj.MakeFieldValue(
         1, None, 'somestring', None, None, None, False)
+    av_23 = tracker_pb2.ApprovalValue(
+        approval_id=23, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
+    approval_values = [av_23, av_24]
+    milestones = [tracker_pb2.Milestone(
+        name='Canary', approval_values=approval_values, rank=11)]
     self.SetUpCreateIssueTemplateDef()
     self.mox.ReplayAll()
     self.config_service.CreateIssueTemplateDef(
         self.cnxn, 789, 'template', 'content', 'summary', True, 'Available',
         True, True, True, owner_id=111L, labels=['label'], component_ids=[3],
-        admin_ids=[222L], field_values=[fv])
+        admin_ids=[222L], field_values=[fv], milestones=milestones)
     self.mox.VerifyAll()
 
   def SetUpUpdateIssueTemplateDef(self):
@@ -1165,14 +1177,31 @@ class ConfigServiceTest(unittest.TestCase):
         self.cnxn, template_id=1, commit=False)
     self.config_service.template2admin_tbl.InsertRows(
         self.cnxn, config_svc.TEMPLATE2ADMIN_COLS, [(1, 111L)], commit=False)
+    self.config_service.template2approvalvalue_tbl.Delete(
+        self.cnxn, template_id=1, commit=False)
+    self.config_service.template2milestone_tbl.Delete(
+        self.cnxn, template_id=1, commit=False)
+    self.config_service.template2milestone_tbl.InsertRow(
+        self.cnxn, template_id=1, name='Canary', rank=11,
+        commit=False).AndReturn(1)
+    self.config_service.template2approvalvalue_tbl.InsertRows(
+        self.cnxn, config_svc.TEMPLATE2APPROVALVALUE_COLS,
+        [(20, 1, 1, 'not_set'), (21, 1, 1, 'not_set')], commit=False)
+
     self.cnxn.Commit()
 
   def testUpdateIssueTemplateDef(self):
+    av_20 = tracker_pb2.ApprovalValue(approval_id=20)
+    av_21 = tracker_pb2.ApprovalValue(approval_id=21)
+    approval_values = [av_20, av_21]
+    milestones = [tracker_pb2.Milestone(
+        name='Canary', approval_values=approval_values, rank=11)]
     self.SetUpUpdateIssueTemplateDef()
     self.mox.ReplayAll()
     self.config_service.UpdateIssueTemplateDef(
         self.cnxn, 789, 1, content='content', summary='summary',
-        component_required=True, labels=[], admin_ids=[111L])
+        component_required=True, labels=[], admin_ids=[111L],
+        milestones=milestones)
     self.mox.VerifyAll()
 
   def SetUpDeleteIssueTemplateDef(self):
@@ -1184,6 +1213,10 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.template2admin_tbl.Delete(
         self.cnxn, template_id=template_id, commit=False)
     self.config_service.template2fieldvalue_tbl.Delete(
+        self.cnxn, template_id=template_id, commit=False)
+    self.config_service.template2approvalvalue_tbl.Delete(
+        self.cnxn, template_id=template_id, commit=False)
+    self.config_service.template2milestone_tbl.Delete(
         self.cnxn, template_id=template_id, commit=False)
     self.config_service.template_tbl.Delete(
         self.cnxn, id=template_id, commit=False)

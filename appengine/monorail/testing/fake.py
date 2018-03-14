@@ -1071,11 +1071,12 @@ class ConfigService(object):
         if cd.component_id != component_id]
     self.StoreConfig(cnxn, config)
 
+  # TODO(jojwang): monorail:3576, update/create templates with milestones
   def CreateIssueTemplateDef(
       self, cnxn, project_id, name, content, summary, summary_must_be_edited,
       status, members_only, owner_defaults_to_member, component_required,
       owner_id=None, labels=None, component_ids=None, admin_ids=None,
-      field_values=None):
+      field_values=None, milestones=None):
     config = self.GetProjectConfig(cnxn, project_id)
     template_id = self.next_template_id
     self.next_template_id += 1
@@ -1093,7 +1094,8 @@ class ConfigService(object):
       self, cnxn, project_id, template_id, name=None, content=None,
       summary=None, summary_must_be_edited=None, status=None, members_only=None,
       owner_defaults_to_member=None, component_required=None, owner_id=None,
-      labels=None, component_ids=None, admin_ids=None, field_values=None):
+      labels=None, component_ids=None, admin_ids=None, field_values=None,
+      milestones=None):
     config = self.GetProjectConfig(cnxn, project_id)
     template = tracker_bizobj.FindIssueTemplateByID(template_id, config)
     if name is not None:
