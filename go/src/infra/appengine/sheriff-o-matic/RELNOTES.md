@@ -1,3 +1,37 @@
+# Release Notes sheriff-o-matic 2018-03-15
+
+- 8 commits, 7 bugs affected since 13c7c43 (2018-02-14T00:47:52Z)
+- 3 Authors:
+  - zhangtiff@google.com
+  - martiniss@chromium.org
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SoM: create annotation migration.](https://chromium-review.googlesource.com/961801) (zhangtiff@google.com)
+- [Rename "WebKit Mac10.11 (retina)" to "WebKit Mac10.12 (retina)"](https://chromium-review.googlesource.com/953213) (martiniss@chromium.org)
+- [[som] Fix unexpected test failure identification](https://chromium-review.googlesource.com/956967) (seanmccullough@chromium.org)
+- [[som] Lock bower, npm dependencies](https://chromium-review.googlesource.com/938757) (seanmccullough@chromium.org)
+- [SoM: Split annotations by tree.](https://chromium-review.googlesource.com/930329) (zhangtiff@google.com)
+- [SoM: Clean up bug filing and add label:infra-troopers to bugs filed from infra failures.](https://chromium-review.googlesource.com/924801) (zhangtiff@google.com)
+- [[som] Fix broken file bug button.](https://chromium-review.googlesource.com/919688) (seanmccullough@chromium.org)
+- [[som] deflake expectations parser tests](https://chromium-review.googlesource.com/916806) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/818524](https://crbug.com/818524)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/812403](https://crbug.com/812403)
+  -  [https://crbug.com/819853](https://crbug.com/819853)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/784529](https://crbug.com/784529)
+  -  [https://crbug.com/796664](https://crbug.com/796664)
+  -  [https://crbug.com/809803](https://crbug.com/809803)
+  -  [https://crbug.com/809805](https://crbug.com/809805)
+
 # Release Notes sheriff-o-matic 2018-02-13
 
 - 1 commits, 1 bugs affected since 9cb5283 (2018-02-09T21:55:37Z)
