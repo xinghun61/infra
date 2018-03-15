@@ -328,7 +328,7 @@ func (at *AggregateTest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals the supplied data into at.
 func (at *AggregateTest) UnmarshalJSON(data []byte) error {
-	var m map[string]interface{}
+	var m map[string]*json.RawMessage
 	if err := json.Unmarshal(data, &m); err != nil {
 		return err
 	}
@@ -342,15 +342,16 @@ func (at *AggregateTest) UnmarshalJSON(data []byte) error {
 }
 
 // constructTree constructs the tree of Nodes from the supplied map.
-func (at *AggregateTest) constructTree(m map[string]interface{}) error {
+func (at *AggregateTest) constructTree(m map[string]*json.RawMessage) error {
 	for k, v := range m {
-		mm, ok := v.(map[string]interface{})
-		if !ok {
-			continue
+		maybeLeaf := map[string]*json.RawMessage{}
+		err := json.Unmarshal(*v, &maybeLeaf)
+		if err != nil {
+			return err
 		}
-
-		if isAggregateTestLeaf(mm) {
-			l, err := makeAggregateTestLeaf(mm)
+		if isAggregateTestLeaf(maybeLeaf) {
+			l := &AggregateTestLeaf{}
+			err := json.Unmarshal(*v, l)
 			if err != nil {
 				return err
 			}
@@ -362,7 +363,7 @@ func (at *AggregateTest) constructTree(m map[string]interface{}) error {
 		}
 
 		var child AggregateTest
-		if err := child.constructTree(mm); err != nil {
+		if err := child.constructTree(maybeLeaf); err != nil {
 			return err
 		}
 		if *at == nil {
@@ -385,19 +386,17 @@ func (at *AggregateTest) constructTree(m map[string]interface{}) error {
 
 // isAggregateTestLeaf returns true if the supplied map is likely an
 // AggregateTestLeaf.
-func isAggregateTestLeaf(m map[string]interface{}) bool {
+func isAggregateTestLeaf(m map[string]*json.RawMessage) bool {
 	for key, val := range m {
-		if key == "results" {
-			if _, ok := val.([]interface{}); ok {
-				return true
-			}
+		if key == "results" && len(*val) > 0 {
+			return true
 		}
 	}
 	return false
 }
 
 // makeAggregateTestLeaf returns a AggregateTestLeaf from the supplied map.
-func makeAggregateTestLeaf(m map[string]interface{}) (*AggregateTestLeaf, error) {
+func makeAggregateTestLeaf(m map[string]*json.RawMessage) (*AggregateTestLeaf, error) {
 	l := &AggregateTestLeaf{}
 	b, err := json.Marshal(m)
 	if err != nil {
@@ -482,7 +481,7 @@ func (rs *ResultSummary) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals the provided data into rs.
 func (rs *ResultSummary) UnmarshalJSON(data []byte) error {
-	var tmp []interface{}
+	var tmp []*json.RawMessage
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
@@ -490,14 +489,13 @@ func (rs *ResultSummary) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("model: UnmarshalJSON: ResultSummary wrong length: %d, expect: %d", len(tmp), 2)
 	}
 
-	count, ok := tmp[0].(float64)
-	if !ok {
+	count := float64(0)
+	if err := json.Unmarshal(*tmp[0], &count); err != nil {
 		return fmt.Errorf("model: UnmarshalJSON: ResultSummary wrong type: %v", tmp)
 	}
 	rs.Count = int(count)
 
-	rs.Type, ok = tmp[1].(string)
-	if !ok {
+	if err := json.Unmarshal(*tmp[1], &rs.Type); err != nil {
 		return fmt.Errorf("model: UnmarshalJSON: ResultSummary wrong type: %v", tmp)
 	}
 
