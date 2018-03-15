@@ -23,7 +23,7 @@
 
 <tbody class="collapse"> [# collapse/expand controls undelete-able comments]
  <tr>
-  <td nowrap="nowrap" class="vt" style="width:12em; padding:0" rowspan="3" id="issuemeta">
+  <td class="vt" style="width:12em; padding:0" rowspan="3" id="issuemeta">
    <div id="meta-float">
 
    <div class="h3 issuemetaheader">
