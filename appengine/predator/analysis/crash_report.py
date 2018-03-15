@@ -67,6 +67,6 @@ class CrashReport(namedtuple(
     return super(CrashReport, cls).__new__(
         cls, crashed_version, signature, platform, stacktrace,
         tuple(regression_range) if regression_range else None,
-        _FrozenDict(dependencies) if dependencies else {},
-        _FrozenDict(dependency_rolls) if dependency_rolls else {},
+        _FrozenDict(dependencies) if dependencies else _FrozenDict({}),
+        _FrozenDict(dependency_rolls) if dependency_rolls else _FrozenDict({}),
         root_repo_url, root_repo_path)

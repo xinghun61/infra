@@ -112,9 +112,17 @@ def ParseDEPSContent(deps_content, keys=('deps', 'deps_os')):
   # We assume that the returned values have the same order of input ``keys``.
   # So we used OrderedDict to maintain the order.
   key_to_deps = OrderedDict([(key, local_scope.get(key)) for key in keys])
-  if 'deps' in key_to_deps:
-    deps = key_to_deps['deps']
+
+  def UpdateUrlMappingInDepsDict(deps):
+    """Updates the url mappings in deps.
+
+    Makes sure that every entry in deps is a dep_path mapping to a url
+    string.
+    """
     for dep_path, dep_content in deps.items():
+      if not dep_content:
+        continue
+
       if isinstance(dep_content, dict):
         if dep_content.get('url'):
           deps[dep_path] = dep_content['url']
@@ -126,6 +134,13 @@ def ParseDEPSContent(deps_content, keys=('deps', 'deps_os')):
       # Example: '{chrome_git}/chrome/tools/symsrc.git@8da00481eda2a4dd...'
       if dep_path in deps:
         deps[dep_path] = deps[dep_path].format(**local_scope['vars'])
+
+  if 'deps' in key_to_deps:
+    UpdateUrlMappingInDepsDict(key_to_deps['deps'])
+
+  if 'deps_os' in key_to_deps:
+    for os_deps in key_to_deps['deps_os'].itervalues():
+      UpdateUrlMappingInDepsDict(os_deps)
 
   return key_to_deps.values()
 

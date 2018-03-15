@@ -108,6 +108,11 @@ class DepsParserTest(unittest.TestCase):
               },
               'unix': {
                 'depA': None,
+              },
+              'ios': {
+                'depA': {
+                  'url': '{cr_repo}/a.git@123'
+                }
               }
             }"""),
         keys=['deps_os'])
@@ -117,6 +122,9 @@ class DepsParserTest(unittest.TestCase):
         },
         'unix': {
             'depA': None
+        },
+        'ios': {
+            'depA': 'https://cr.repo/a.git@123'
         }
     }
     self.assertEqual(1, len(result))
