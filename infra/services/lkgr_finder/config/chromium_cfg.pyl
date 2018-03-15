@@ -21,9 +21,11 @@
     'chromium.linux': {
       'base_url': 'https://build.chromium.org/p/chromium.linux',
       'builders': [
-        'Linux Builder',
-        'Linux Builder (dbg)',
-        'Linux Builder (dbg)(32)',
+        # TODO(machenbach): Temporarily removed as lkgr-finder is broken on
+        # their data. Maybe LUCI causes issues?
+        # 'Linux Builder',
+        # 'Linux Builder (dbg)',
+        # 'Linux Builder (dbg)(32)',
       ],
     },  # chromium.linux
     'chromium.chromiumos': {
