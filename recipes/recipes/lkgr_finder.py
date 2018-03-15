@@ -31,7 +31,8 @@ PROPERTIES = {
 BUILDERS = freeze({
   'chromium-lkgr-finder': {
     'project': 'chromium',
-    'lkgr_status_gs_path': 'chromium-infra/lkgr-status',
+    # TODO(machenbach): ACLs needed or different bucket.
+    #'lkgr_status_gs_path': 'chromium-infra/lkgr-status',
     'repo': 'https://chromium.googlesource.com/chromium/src',
     'ref': 'refs/heads/lkgr',
     'gclient_config': 'chromium',
