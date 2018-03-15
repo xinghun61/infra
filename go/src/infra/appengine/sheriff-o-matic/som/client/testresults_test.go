@@ -69,7 +69,7 @@ func TestBuilderTestHistory(t *testing.T) {
 				BuildNumbers:   []int64{10, 9, 8, 7, 6, 5, 4, 3},
 				ChromeRevision: []string{"10", "9", "8", "7", "6", "5", "4", "3"},
 				Tests: map[string]*TestResultHistory{
-					"foo_test": &TestResultHistory{
+					"foo_test": {
 						Results: [][]interface{}{
 							{float64(1), "A"},
 							{float64(2), "B"},
@@ -105,42 +105,42 @@ func TestBuilderTestHistory(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(len(res), ShouldEqual, 8)
 				So(res, ShouldResemble, []*BuildTestResults{
-					&BuildTestResults{
+					{
 						ChromeRevision: "10",
 						BuildNumber:    10,
 						Results:        []string{"FAIL"},
 					},
-					&BuildTestResults{
+					{
 						ChromeRevision: "9",
 						BuildNumber:    9,
 						Results:        []string{"PASS"},
 					},
-					&BuildTestResults{
+					{
 						ChromeRevision: "8",
 						BuildNumber:    8,
 						Results:        []string{"PASS"},
 					},
-					&BuildTestResults{
+					{
 						ChromeRevision: "7",
 						BuildNumber:    7,
 						Results:        []string{"CRASH", "CRASH", "PASS"},
 					},
-					&BuildTestResults{
+					{
 						ChromeRevision: "6",
 						BuildNumber:    6,
 						Results:        []string{"CRASH", "CRASH", "PASS"},
 					},
-					&BuildTestResults{
+					{
 						ChromeRevision: "5",
 						BuildNumber:    5,
 						Results:        []string{"CRASH", "CRASH", "PASS"},
 					},
-					&BuildTestResults{
+					{
 						ChromeRevision: "4",
 						BuildNumber:    4,
 						Results:        []string{"FAIL"},
 					},
-					&BuildTestResults{
+					{
 						ChromeRevision: "3",
 						BuildNumber:    3,
 						Results:        []string{"FAIL"},

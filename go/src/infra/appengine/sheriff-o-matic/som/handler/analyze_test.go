@@ -553,7 +553,7 @@ func TestAttachTestResults(t *testing.T) {
 				BuildNumbers:   []int64{10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0},
 				ChromeRevision: []string{"10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "0"},
 				Tests: map[string]*client.TestResultHistory{
-					"test 1": &client.TestResultHistory{
+					"test 1": {
 						Results: [][]interface{}{
 							{float64(5), "B"},
 							{float64(5), "A"},
