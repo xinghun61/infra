@@ -44,4 +44,11 @@ class BannedTest(unittest.TestCase):
     _request, mr = testing_helpers.GetRequestObjects()
     page_data = servlet.GatherPageData(mr)
 
+    self.assertFalse(page_data['is_plus_address'])
+    self.assertEquals(None, page_data['currentPageURLEncoded'])
+
+    mr.auth.user_pb.email = 'user+shadystuff@example.com'
+    page_data = servlet.GatherPageData(mr)
+
+    self.assertTrue(page_data['is_plus_address'])
     self.assertEquals(None, page_data['currentPageURLEncoded'])

@@ -13,6 +13,8 @@ checks has_banned and redirects to this page.
 
 import logging
 
+from third_party import ezt
+
 from framework import permissions
 from framework import servlet
 
@@ -34,11 +36,14 @@ class Banned(servlet.Servlet):
       logging.info('non-banned user: %s', mr.auth.user_pb)
       self.abort(404)
 
-  def GatherPageData(self, _mr):
+  def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page."""
+    # Aside from plus-addresses, we do not display the specific
+    # reason for banning.
+    is_plus_address = '+' in (mr.auth.user_pb.email or '')
+
     return {
-        # We do not actually display the specific reason for banning.
-        # That info is available via command-line tools..
+        'is_plus_address': ezt.boolean(is_plus_address),
 
         # Make the "Sign Out" link just sign out, don't try to bring the
         # user back to this page after they sign out.

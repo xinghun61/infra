@@ -61,9 +61,6 @@ def AssertBasePermissionForUser(user, user_view):
   if permissions.IsBanned(user, user_view):
     raise permissions.BannedUserException(
         'You have been banned from using this site')
-  if '+' in (user.email or ''):
-    raise permissions.BannedUserException(
-        'Accounts with + in the mailbox name are possible exploits')
 
 
 def AssertBasePermission(mr):

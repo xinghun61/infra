@@ -4,7 +4,13 @@
 
 <h4>What happened?</h4>
 
-<p>You are not allowed to access this service.</p>
+<p>
+[if-any is_plus_address]
+  We do not accept accounts with "+" in the email address.
+[else]
+  You are not allowed to access this service.
+[end]
+</p>
 
 <p>Please <a href="mailto:[feedback_email]">contact us</a> if you believe that you should be able to access this service. (This is a Google Group; what you write will be visible on the Internet.)</p>
 

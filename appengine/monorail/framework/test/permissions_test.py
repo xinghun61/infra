@@ -514,46 +514,46 @@ class PermissionsTest(unittest.TestCase):
 
   def testCanViewGroup_HasPerm(self):
     self.assertTrue(permissions.CanViewGroup(
-        permissions.PermissionSet([permissions.VIEW_GROUP]), 
+        permissions.PermissionSet([permissions.VIEW_GROUP]),
         None, None, None, None, None))
 
   def testCanViewGroup_IsMemberOfFriendProject(self):
     group_settings = usergroup_pb2.MakeSettings('owners', friend_projects=[890])
     self.assertFalse(permissions.CanViewGroup(
-        permissions.PermissionSet([]), 
+        permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789}))
     self.assertTrue(permissions.CanViewGroup(
-        permissions.PermissionSet([]), 
+        permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789, 890}))
 
   def testCanViewGroup_VisibleToOwner(self):
     group_settings = usergroup_pb2.MakeSettings('owners')
     self.assertFalse(permissions.CanViewGroup(
-        permissions.PermissionSet([]), 
+        permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789}))
     self.assertFalse(permissions.CanViewGroup(
-        permissions.PermissionSet([]), 
+        permissions.PermissionSet([]),
         {222L}, group_settings, {222L}, {333L}, {789}))
     self.assertTrue(permissions.CanViewGroup(
-        permissions.PermissionSet([]), 
+        permissions.PermissionSet([]),
         {333L}, group_settings, {222L}, {333L}, {789}))
 
   def testCanViewGroup_IsVisibleToMember(self):
     group_settings = usergroup_pb2.MakeSettings('members')
     self.assertFalse(permissions.CanViewGroup(
-        permissions.PermissionSet([]), 
+        permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789}))
     self.assertTrue(permissions.CanViewGroup(
-        permissions.PermissionSet([]), 
+        permissions.PermissionSet([]),
         {222L}, group_settings, {222L}, {333L}, {789}))
     self.assertTrue(permissions.CanViewGroup(
-        permissions.PermissionSet([]), 
+        permissions.PermissionSet([]),
         {333L}, group_settings, {222L}, {333L}, {789}))
 
   def testCanViewGroup_AnyoneCanView(self):
     group_settings = usergroup_pb2.MakeSettings('anyone')
     self.assertTrue(permissions.CanViewGroup(
-        permissions.PermissionSet([]), 
+        permissions.PermissionSet([]),
         {111L}, group_settings, {222L}, {333L}, {789}))
 
   def testIsBanned_AnonUser(self):
@@ -583,6 +583,14 @@ class PermissionsTest(unittest.TestCase):
     settings.banned_user_domains = ['spammer.com', 'phisher.com']
     self.assertTrue(permissions.IsBanned(user, user_view))
     settings.banned_user_domains = orig_banned_user_domains
+
+  def testIsBanned_PlusAddressUser(self):
+    """We don't allow users who have + in their email address."""
+    user = user_pb2.User(email='user@example.com')
+    self.assertFalse(permissions.IsBanned(user, None))
+
+    user.email = 'user+shadystuff@example.com'
+    self.assertTrue(permissions.IsBanned(user, None))
 
   def testGetCustomPermissions(self):
     project = project_pb2.Project()

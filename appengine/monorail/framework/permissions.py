@@ -694,6 +694,10 @@ def IsBanned(user, user_view):
     if user_view.domain in settings.banned_user_domains:
       return True  # Some spammers create many accounts with the same domain.
 
+  if '+' in (user.email or ''):
+    # Spammers can make plus-addr Google accounts in unexpected domains.
+    return True
+
   return False
 
 
