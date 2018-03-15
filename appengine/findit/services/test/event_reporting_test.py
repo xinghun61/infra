@@ -8,6 +8,7 @@ import logging
 from google.protobuf import timestamp_pb2
 
 from libs import analysis_status
+from libs import time_util
 from model import suspected_cl_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -145,7 +146,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(len(event.analysis_info.suspects), 1)
     self.assertEqual(event.analysis_info.suspects[0].revision, revision)
 
-  def testCreateTestFlakeAnalysisCompletionEventWithNoSuspectedBuild(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFlakeAnalysisCompletionEventWithNoSuspectedBuild(self, _):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
     builder = 'builder'
@@ -183,7 +186,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.outcomes, [findit_pb2.REPRODUCIBLE])
     self.assertTrue(event.flake)
 
-  def testCreateTestFlakeAnalysisCompletionEventWithCrNotification(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFlakeAnalysisCompletionEventWithCrNotification(self, _):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
     builder = 'builder'
@@ -264,7 +269,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.actions, [findit_pb2.CL_COMMENTED])
     self.assertTrue(event.flake)
 
-  def testCreateTestFlakeAnalysisCompletionEventWithBugCreation(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFlakeAnalysisCompletionEventWithBugCreation(self, _):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
     builder = 'builder'
@@ -343,7 +350,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     ])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.BUG_CREATED])
 
-  def testCreateTestFlakeAnalysisCompletionEventWithBugComment(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFlakeAnalysisCompletionEventWithBugComment(self, _):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
     builder = 'builder'
@@ -422,7 +431,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     ])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.BUG_COMMENTED])
 
-  def testCreateTestFlakeAnalysisCompletionEventWithSuspects(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFlakeAnalysisCompletionEventWithSuspects(self, _):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
     builder = 'builder'
@@ -489,7 +500,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.outcomes,
                      [findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED])
 
-  def testCreateTestFlakeAnalysisCompletionEventWithNoSuspects(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFlakeAnalysisCompletionEventWithNoSuspects(self, _):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
     builder = 'builder'
@@ -528,7 +541,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.outcomes,
                      [findit_pb2.REGRESSION_IDENTIFIED])
 
-  def testCreateTestFlakeAnalysisCompletionEventWithNoRegressionRange(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFlakeAnalysisCompletionEventWithNoRegressionRange(self, _):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
     builder = 'builder'
@@ -561,7 +576,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.outcomes,
                      [findit_pb2.NOT_REPRODUCIBLE])
 
-  def testCreateTestFlakeAnalysisCompletionEventWithNoDataPoints(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFlakeAnalysisCompletionEventWithNoDataPoints(self, _):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
     builder = 'builder'
@@ -592,7 +609,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(event.analysis_info.outcomes, [])
 
-  def testCreateCompileFailureAnalysisCompletionEvent(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateCompileFailureAnalysisCompletionEvent(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10
@@ -707,7 +726,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(event.failed_build_rules, ['CXX', 'LINK'])
 
-  def testCreateCompileFailureAnalysisCompletionEventNoFailureInfo(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateCompileFailureAnalysisCompletionEventNoFailureInfo(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10
@@ -802,7 +823,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(event.failed_build_rules, ['CXX', 'LINK'])
 
-  def testCreateCompileFailureAnalysisCompletionEventNoCulprit(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateCompileFailureAnalysisCompletionEventNoCulprit(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10
@@ -895,7 +918,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(event.failed_build_rules, ['CXX', 'LINK'])
 
-  def testCreateCompileFailureAnalysisCompletionEventNoSuspect(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateCompileFailureAnalysisCompletionEventNoSuspect(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10
@@ -976,7 +1001,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(event.failed_build_rules, ['CXX', 'LINK'])
 
-  def testCreateCompileFailureAnalysisCompletionEventRevertCreated(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateCompileFailureAnalysisCompletionEventRevertCreated(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10
@@ -1081,7 +1108,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(event.failed_build_rules, ['CXX', 'LINK'])
 
-  def testCreateCompileFailureAnalysisCompletionEventClComment(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateCompileFailureAnalysisCompletionEventClComment(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10
@@ -1186,7 +1215,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(event.failed_build_rules, ['CXX', 'LINK'])
 
-  def testCreateCompileFailureAnalysisCompletionEventNoSignals(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateCompileFailureAnalysisCompletionEventNoSignals(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10
@@ -1268,7 +1299,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(event.failed_build_rules, [])
 
-  def testCreateTestFailureAnalysisCompletionEvent(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFailureAnalysisCompletionEvent(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10
@@ -1392,7 +1425,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
                      [findit_pb2.CULPRIT, findit_pb2.SUSPECT])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.REVERT_SUBMITTED])
 
-  def testCreateTestFailureAnalysisCompletionEventNoCulprit(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFailureAnalysisCompletionEventNoCulprit(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10
@@ -1488,7 +1523,9 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.outcomes, [findit_pb2.SUSPECT])
     self.assertEqual(event.analysis_info.actions, [])
 
-  def testCreateTestFailureAnalysisCompletionEventCulpritInSuspects(self):
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFailureAnalysisCompletionEventCulpritInSuspects(self, _):
     master = 'm'
     builder = 'b'
     build_number = 10

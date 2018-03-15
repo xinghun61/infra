@@ -11,6 +11,7 @@ from google.appengine.ext import ndb
 from google.protobuf.timestamp_pb2 import Timestamp
 
 from libs import analysis_status
+from libs import time_util
 
 from model.proto.gen import findit_pb2
 from model.proto.gen.compile_analysis_pb2 import CompileAnalysisCompletionEvent
@@ -91,7 +92,7 @@ def _ExtractGeneralAnalysisInfo(analysis, event):
 
   seconds = unix_time(analysis.start_time)
   event.analysis_info.timestamp.started.FromSeconds(seconds)
-  seconds = unix_time(analysis.end_time)
+  seconds = unix_time(time_util.GetUTCNow())
   event.analysis_info.timestamp.completed.FromSeconds(seconds)
 
   event.analysis_info.detected_build_number = analysis.build_number
