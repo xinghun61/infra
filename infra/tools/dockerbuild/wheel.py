@@ -330,6 +330,7 @@ SPECS = {s.spec.tag: s for s in (
   UniversalSource('httplib2', '0.10.3'),
   Universal('idna', '2.5'),
   Universal('ipaddress', '1.0.18', pyversions=['py2']),
+  Universal('json5', '0.6.0'),
   Universal('mock', '2.0.0'),
   UniversalSource('oauth2client', '3.0.0'),
   Universal('oauth2client', '4.0.0'),
