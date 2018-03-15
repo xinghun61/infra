@@ -63,6 +63,17 @@ class AssertBasePermissionTest(unittest.TestCase):
         permissions.BannedUserException,
         servlet_helpers.AssertBasePermission, mr)
 
+  def testPlusAddressAccount(self):
+    _, mr = testing_helpers.GetRequestObjects(path='/hosting')
+    mr.auth.user_pb.email = 'mailinglist+spammer@chromium.org'
+    self.assertRaises(
+        permissions.BannedUserException,
+        servlet_helpers.AssertBasePermissionForUser,
+        mr.auth.user_pb, mr.auth.user_view)
+    self.assertRaises(
+        permissions.BannedUserException,
+        servlet_helpers.AssertBasePermission, mr)
+
   def testNoAccessToProject(self):
     project = project_pb2.Project()
     project.project_name = 'proj'
