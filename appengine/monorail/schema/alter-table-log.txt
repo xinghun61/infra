@@ -1259,8 +1259,8 @@ ALTER TABLE FieldDef ADD COLUMN approval_id INT;
 2018-02-08: Drop previous approval tables and add default approvers table
 
 DROP TABLE ApprovalStatusDef;
-DROP TABLE Approval2Approvers;
-DROP TABLE Issue2AprovalValue;
+DROP TABLE Approval2Approver;
+DROP TABLE Issue2ApprovalValue;
 
 CREATE TABLE ApprovalDef2Approver (
   approval_id INT NOT NULL,
@@ -1330,3 +1330,50 @@ ALTER TABLE Template2ApprovalValue CHANGE launch_status status ENUM (
 
 ALTER TABLE Template2ApprovalValue MODIFY status ENUM (
   'needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set');
+
+
+================================================================
+2018-03-15: Add Issue Approval and Mileston tables
+
+// Following two may result in 'Unknown table' error. Safe to ignore.
+DROP TABLE Approval2Approver;
+DROP TABLE Issue2ApprovalValue;
+
+CREATE TABLE Issue2Milestone (
+  id INT NOT NULL AUTO_INCREMENT,
+  issue_id INT NOT NULL,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id, issue_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+) ENGINE=INNODB;
+
+CREATE TABLE Issue2ApprovalValue (
+  issue_id INT NOT NULL,
+  approval_id INT NOT NULL,
+  milestone_id INT NOT NULL,
+  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
+  setter_id INT UNSIGNED,
+  set_on INT,
+
+  PRIMARY KEY (issue_id, approval_id, milestone_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (milestone_id) REFERENCES Issue2Milestone(id),
+  FOREIGN KEY (setter_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+CREATE TABLE IssueApproval2Approvers (
+  issue_id INT NOT NULL,
+  approval_id INT NOT NULL,
+  approver_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (issue_id, approval_id, approver_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (approver_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+ALTER TABLE Template2ApprovalValue MODIFY status ENUM (
+  'needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL;

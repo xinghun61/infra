@@ -274,6 +274,46 @@ CREATE TABLE Issue2Notify (
   FOREIGN KEY (issue_id) REFERENCES Issue(id)
 ) ENGINE=INNODB;
 
+
+CREATE TABLE Issue2Milestone (
+  id INT NOT NULL AUTO_INCREMENT,
+  issue_id INT NOT NULL,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id, issue_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Issue2ApprovalValue (
+  issue_id INT NOT NULL,
+  approval_id INT NOT NULL,
+  milestone_id INT NOT NULL,
+  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
+  setter_id INT,
+  set_on INT,
+
+  PRIMARY KEY (issue_id, approval_id, milestone_id),
+  FOREIGN KEY (setter_id) REFERENCES User(user_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (milestone_id) REFERENCES Issue2Milestone(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE IssueApproval2Approvers (
+  issue_id INT NOT NULL,
+  approval_id INT NOT NULL,
+  approver_id INT NOT NULL,
+
+  PRIMARY KEY (issue_id, approval_id, approver_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (approver_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
 CREATE TABLE IssueVisitHistory (
   issue_id INT NOT NULL,
   user_id INT UNSIGNED NOT NULL,
@@ -503,7 +543,7 @@ CREATE TABLE Template2ApprovalValue (
   approval_id INT NOT NULL,
   template_id INT NOT NULL,
   milestone_id INT NOT NULL,
-  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set'),
+  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
 
   PRIMARY KEY (approval_id, template_id, milestone_id),
 
