@@ -60,27 +60,31 @@
     {% endif %}
     <br />
 
-    Changed files:
-    <ul>
-      {% for f in change['files'] %}
-        <li>
-          {% if f['url'] %}
-            <a href="{{f['url']}}"><b>{{f['name']}}</b></a>
-          {% else %}
-            <b>{{f['name']}}</b>{% endif %}</li>
-      {% endfor %}
-    </ul>
+    {% if change['files'] %}
+      Changed files:
+      <ul>
+        {% for f in change['files'] %}
+          <li>
+            {% if f['url'] %}
+              <a href="{{f['url']}}"><b>{{f['name']}}</b></a>
+            {% else %}
+              <b>{{f['name']}}</b>{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
 
     Comments:
     <pre>{{change['comments']}}</pre>
 
-    Properties:
-    <ul>
-      {% for prop in change['properties'] %}
-        <li>
-          {{prop[0]}}: {{prop[1]}}<br/></li>
-      {% endfor %}
-    </ul>
+    {% if change['properties'] %}
+      Properties:
+      <ul>
+        {% for prop in change['properties'] %}
+          <li>
+            {{prop[0]}}: {{prop[1]}}<br/></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
     </p>
   {% endfor %}
 {% endblock %}
