@@ -3,9 +3,8 @@
 # found in the LICENSE file.
 """An object representing a map of compiled tests to isolated shas."""
 
-from dto.list_of_basestring import ListOfBasestring
 from libs.structured_object import TypedDict
 
 
 class IsolatedTests(TypedDict):
-  _value_type = ListOfBasestring
+  _value_type = basestring

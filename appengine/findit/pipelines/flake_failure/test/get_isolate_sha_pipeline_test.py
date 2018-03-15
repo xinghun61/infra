@@ -4,7 +4,11 @@
 
 import mock
 
+from dto.flake_try_job_report import FlakeTryJobReport
+from dto.flake_try_job_result import FlakeTryJobResult
 from dto.list_of_basestring import ListOfBasestring
+from dto.isolated_tests import IsolatedTests
+from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -16,6 +20,10 @@ from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionParameters)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionPipeline)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaForTryJobParameters)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaForTryJobPipeline)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
@@ -49,6 +57,38 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
 
     self.assertTrue(mocked_get_isolate_sha.called)
+
+  def testGetIsolateShaForTryJobPipeline(self):
+    test_name = 't'
+    expected_sha = 'sha1'
+    try_job_id = 'try_job_id'
+    url = 'url'
+
+    isolated_tests = IsolatedTests()
+    isolated_tests[test_name] = expected_sha
+
+    try_job_report = FlakeTryJobReport(
+        result={},
+        isolated_tests=isolated_tests,
+        last_checked_out_revision=None,
+        previously_cached_revision=None,
+        previously_checked_out_revision=None,
+        metadata=None)
+
+    try_job_result = FlakeTryJobResult(
+        report=try_job_report, url=url, try_job_id=try_job_id)
+
+    get_try_job_sha_parameters = GetIsolateShaForTryJobParameters(
+        try_job_result=try_job_result, test_name=test_name)
+
+    pipeline_job = GetIsolateShaForTryJobPipeline(get_try_job_sha_parameters)
+    pipeline_job.start()
+    self.execute_queued_tasks()
+
+    pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
+    returned_sha = pipeline_job.outputs.default.value
+
+    self.assertEqual(expected_sha, returned_sha)
 
   @mock.patch.object(build_util, 'GetBoundingBuilds')
   def testGetIsolateShaForCommitPositionPipelineBuildLevel(
@@ -106,8 +146,12 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     requested_revision = 'r1000'
     expected_sha = 'sha1'
     cache_name = 'cache'
+    try_job_id = 'try_job_id'
+    url = 'url'
     mocked_cache.return_value = cache_name
     mocked_dimensions.return_value = dimensions
+    expected_isolated_tests = IsolatedTests()
+    expected_isolated_tests[test_name] = expected_sha
 
     build = BuildInfo(master_name, builder_name, build_number)
     build.commit_position = containing_build_commit_position
@@ -134,8 +178,27 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
         commit_position=requested_commit_position,
         revision=requested_revision)
 
+    expected_try_job_report = FlakeTryJobReport(
+        result={},
+        isolated_tests=expected_isolated_tests,
+        last_checked_out_revision=None,
+        previously_cached_revision=None,
+        previously_checked_out_revision=None,
+        metadata=None)
+
+    expected_try_job_result = FlakeTryJobResult(
+        report=expected_try_job_report, url=url, try_job_id=try_job_id)
+
+    get_isolate_sha_for_try_job_pipeline = GetIsolateShaForTryJobParameters(
+        try_job_result=expected_try_job_result, test_name=test_name)
+
     self.MockAsynchronousPipeline(RunFlakeTryJobPipeline,
-                                  run_flake_try_job_parameters, expected_sha)
+                                  run_flake_try_job_parameters,
+                                  expected_try_job_report)
+
+    self.MockSynchronousPipeline(GetIsolateShaForTryJobPipeline,
+                                 get_isolate_sha_for_try_job_pipeline,
+                                 expected_sha)
 
     pipeline_job = GetIsolateShaForCommitPositionPipeline(get_sha_input)
     pipeline_job.start()

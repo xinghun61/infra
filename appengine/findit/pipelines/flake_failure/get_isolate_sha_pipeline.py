@@ -5,16 +5,18 @@
 from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
+from dto.flake_try_job_result import FlakeTryJobResult
 from dto.list_of_basestring import ListOfBasestring
 from gae_libs.pipelines import GeneratorPipeline
+from gae_libs.pipelines import pipeline
 from gae_libs.pipelines import SynchronousPipeline
 from libs.structured_object import StructuredObject
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
-from services import swarming
 from services import swarmbot_util
+from services import swarming
 from services.flake_failure import flake_try_job
 from waterfall import build_util
 from waterfall import waterfall_config
@@ -47,6 +49,11 @@ class GetIsolateShaForBuildParameters(StructuredObject):
   step_name = basestring
 
 
+class GetIsolateShaForTryJobParameters(StructuredObject):
+  try_job_result = FlakeTryJobResult
+  test_name = basestring
+
+
 class GetIsolateShaForBuildPipeline(SynchronousPipeline):
   input_type = GetIsolateShaForBuildParameters
   output_type = basestring
@@ -55,6 +62,18 @@ class GetIsolateShaForBuildPipeline(SynchronousPipeline):
     return swarming.GetIsolatedShaForStep(
         parameters.master_name, parameters.builder_name,
         parameters.build_number, parameters.step_name, FinditHttpClient())
+
+
+# TODO(crbug.com/822466): Investigate a way to extract values from futures
+# without needing to create dedicated pipelines.
+class GetIsolateShaForTryJobPipeline(SynchronousPipeline):
+  input_type = GetIsolateShaForTryJobParameters
+  output_type = basestring
+
+  def RunImpl(self, parameters):
+    isolated_tests = parameters.try_job_result.report.isolated_tests
+    test_name = parameters.test_name
+    return isolated_tests.get(test_name)
 
 
 class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
@@ -115,4 +134,12 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
           flake_cache_name=cache_name,
           dimensions=ListOfBasestring.FromSerializable(dimensions),
           urlsafe_try_job_key=try_job.key.urlsafe())
-      yield RunFlakeTryJobPipeline(run_flake_try_job_parameters)
+
+      with pipeline.InOrder():
+        try_job_result = yield RunFlakeTryJobPipeline(
+            run_flake_try_job_parameters)
+        get_isolate_sha_from_try_job_input = self.CreateInputObjectInstance(
+            GetIsolateShaForTryJobParameters,
+            try_job_result=try_job_result,
+            test_name=test_name)
+        yield GetIsolateShaForTryJobPipeline(get_isolate_sha_from_try_job_input)
