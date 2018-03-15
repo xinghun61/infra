@@ -233,7 +233,9 @@ def ReportEventsToBigquery(events_and_ids, project_id, dataset_id, table_id):
       'json':
           json.loads(
               json_format.MessageToJson(
-                  event, preserving_proto_field_name=True)),
+                  event,
+                  preserving_proto_field_name=True,
+                  including_default_value_fields=True)),
       'insertId':
           insert_id
   } for event, insert_id in events_and_ids]
