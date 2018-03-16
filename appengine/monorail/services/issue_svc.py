@@ -109,9 +109,9 @@ ISSUESNAPSHOT2CC_COLS = ['issuesnapshot_id', 'cc_id']
 ISSUESNAPSHOT2COMPONENT_COLS = ['issuesnapshot_id', 'component_id']
 ISSUESNAPSHOT2LABEL_COLS = ['issuesnapshot_id', 'label_id']
 ISSUE2MILESTONE_COLS = ['id', 'issue_id', 'name', 'rank']
-ISSUE2APPROVALVALUE_COLS = ['issue_id', 'approval_id', 'milestone_id',
+ISSUE2APPROVALVALUE_COLS = ['approval_id', 'issue_id', 'milestone_id',
                             'status', 'setter_id', 'set_on']
-ISSUEAPPROVAL2APPROVERS_COLS = ['issue_id', 'approval_id', 'approver_id']
+ISSUEAPPROVAL2APPROVERS_COLS = ['approval_id', 'approver_id', 'issue_id']
 
 CHUNK_SIZE = 1000
 
@@ -1093,7 +1093,7 @@ class IssueService(object):
       ms_id = self.issue2milestone_tbl.InsertRow(
           cnxn, issue_id=issue.issue_id, name=ms.name,
           rank=ms.rank, commit=commit)
-      av_rows =  [(issue.issue_id, av.approval_id, ms_id,
+      av_rows =  [(av.approval_id, issue.issue_id, ms_id,
                    av.status.name.lower(), av.setter_id, av.set_on)
                   for av in ms.approval_values]
       self.issue2approvalvalue_tbl.InsertRows(

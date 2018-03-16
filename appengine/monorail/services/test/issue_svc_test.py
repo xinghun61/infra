@@ -326,8 +326,8 @@ class IssueServiceTest(unittest.TestCase):
     milestone = tracker_pb2.Milestone(
         name='Canary', approval_values=approval_values, rank=11)
     ms_row = (78901, 'Canary', 11)
-    av_rows = [(78901, 23, 1, 'needs_review', None, None),
-               (78901, 24, 1, 'not_set', None, None)]
+    av_rows = [(23, 78901, 1, 'needs_review', None, None),
+               (24, 78901, 1, 'not_set', None, None)]
     self.SetUpAllocateNextLocalID(789, None, None)
     self.SetUpInsertIssue(store_label=True, ms_row=ms_row, av_rows=av_rows)
     self.SetUpInsertComment(7890101, is_description=True)
