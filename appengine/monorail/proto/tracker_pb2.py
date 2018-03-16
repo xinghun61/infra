@@ -26,6 +26,36 @@ class FieldValue(messages.Message):
   derived = messages.BooleanField(5, default=False)
 
 
+class ApprovalStatus(messages.Enum):
+  """Statuses that an approval field could be set to."""
+  NEEDS_REVIEW = 1
+  NA = 2
+  REVIEW_REQUESTED = 3
+  REVIEW_STARTED = 4
+  NEED_INFO = 5
+  APPROVED = 6
+  NOT_APPROVED = 7
+  NOT_SET = 8
+
+
+class ApprovalValue(messages.Message):
+  """Holds a single approval field value in an issue."""
+  approval_id = messages.IntegerField(1)
+  status = messages.EnumField(ApprovalStatus, 2, default='NOT_SET')
+  setter_id = messages.IntegerField(3)
+  set_on = messages.IntegerField(4)
+  approver_ids = messages.IntegerField(5, repeated=True)
+  subfield_values = messages.MessageField(FieldValue, 6, repeated=True)
+
+
+class Milestone(messages.Message):
+  """Holds a single launch review milestone. (Not a project milestone)"""
+  milestone_id = messages.IntegerField(1)
+  name = messages.StringField(2)
+  approval_values = messages.MessageField(ApprovalValue, 3, repeated=True)
+  rank = messages.IntegerField(4)
+
+
 class DanglingIssueRef(messages.Message):
   """Holds a reference to an issue still on Google Codesite."""
   project = messages.StringField(1, required=True)
@@ -46,7 +76,7 @@ class Issue(messages.Message):
   Summary, Status, Owner, CC, reporter, and opened_timestamp are hard
   fields that are always there.  All other metadata is stored as
   labels or custom fields.
-  Next available tag: 55.
+  Next available tag: 59.
   """
   # Globally unique issue ID.
   issue_id = messages.IntegerField(42)
@@ -136,6 +166,8 @@ class Issue(messages.Message):
   # assume_stale is used in RAM to ensure that a value saved to the DB was
   # loaded from the DB in the same request handler (not via the cache).
   assume_stale = messages.BooleanField(57, default=True)
+
+  milestones = messages.MessageField(Milestone, 58, repeated=True)
 
 
 class FieldID(messages.Enum):
@@ -380,35 +412,6 @@ class ApprovalDef(messages.Message):
   approval_id = messages.IntegerField(1)
   approver_ids = messages.IntegerField(4, repeated=True)
   survey = messages.StringField(5)
-
-
-class ApprovalStatus(messages.Enum):
-  """Statuses that an approval field could be set to."""
-  NEEDS_REVIEW = 1
-  NA = 2
-  REVIEW_REQUESTED = 3
-  REVIEW_STARTED = 4
-  NEED_INFO = 5
-  APPROVED = 6
-  NOT_APPROVED = 7
-  NOT_SET = 8
-
-
-class ApprovalValue(messages.Message):
-  """Holds a single approval field value in an issue."""
-  approval_id = messages.IntegerField(1)
-  status = messages.EnumField(ApprovalStatus, 2, default='NOT_SET')
-  setter_id = messages.IntegerField(3)
-  set_on = messages.IntegerField(4)
-  approver_ids = messages.IntegerField(5, repeated=True)
-  subfield_values = messages.MessageField(FieldValue, 6, repeated=True)
-
-
-class Milestone(messages.Message):
-  milestone_id = messages.IntegerField(1)
-  name = messages.StringField(2)
-  approval_values = messages.MessageField(ApprovalValue, 3, repeated=True)
-  rank = messages.IntegerField(4)
 
 
 class TemplateDef(messages.Message):

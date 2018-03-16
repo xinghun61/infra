@@ -61,6 +61,9 @@ ISSUESNAPSHOT_TABLE_NAME = 'IssueSnapshot'
 ISSUESNAPSHOT2CC_TABLE_NAME = 'IssueSnapshot2Cc'
 ISSUESNAPSHOT2COMPONENT_TABLE_NAME = 'IssueSnapshot2Component'
 ISSUESNAPSHOT2LABEL_TABLE_NAME = 'IssueSnapshot2Label'
+ISSUE2MILESTONE_TABLE_NAME = 'Issue2Milestone'
+ISSUE2APPROVALVALUE_TABLE_NAME = 'Issue2ApprovalValue'
+ISSUEAPPROVAL2APPROVER_TABLE_NAME = 'IssueApproval2Approvers'
 
 
 ISSUE_COLS = [
@@ -105,6 +108,10 @@ ISSUESNAPSHOT_COLS = ['id', 'issue_id', 'shard', 'project_id', 'local_id',
 ISSUESNAPSHOT2CC_COLS = ['issuesnapshot_id', 'cc_id']
 ISSUESNAPSHOT2COMPONENT_COLS = ['issuesnapshot_id', 'component_id']
 ISSUESNAPSHOT2LABEL_COLS = ['issuesnapshot_id', 'label_id']
+ISSUE2MILESTONE_COLS = ['id', 'issue_id', 'name', 'rank']
+ISSUE2APPROVALVALUE_COLS = ['issue_id', 'approval_id', 'milestone_id',
+                            'status', 'setter_id', 'set_on']
+ISSUEAPPROVAL2APPROVERS_COLS = ['issue_id', 'approval_id', 'approver_id']
 
 CHUNK_SIZE = 1000
 
@@ -381,6 +388,11 @@ class IssueService(object):
         ISSUESNAPSHOT2COMPONENT_TABLE_NAME)
     self.issuesnapshot2label_tbl = sql.SQLTableManager(
         ISSUESNAPSHOT2LABEL_TABLE_NAME)
+    self.issue2milestone_tbl = sql.SQLTableManager(ISSUE2MILESTONE_TABLE_NAME)
+    self.issue2approvalvalue_tbl = sql.SQLTableManager(
+        ISSUE2APPROVALVALUE_TABLE_NAME)
+    self.issueapproval2approver_tbl = sql.SQLTableManager(
+        ISSUEAPPROVAL2APPROVER_TABLE_NAME)
 
     # Tables that represent comments.
     self.comment_tbl = sql.SQLTableManager(COMMENT_TABLE_NAME)
@@ -461,7 +473,7 @@ class IssueService(object):
       self, cnxn, services, project_id, summary, status,
       owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
       marked_description, blocked_on=None, blocking=None, attachments=None,
-      timestamp=None, index_now=True):
+      timestamp=None, index_now=True, milestones=None):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -515,6 +527,8 @@ class IssueService(object):
       issue.blocking_iids = blocking
     if attachments:
       issue.attachment_count = len(attachments)
+    if milestones:
+      issue.milestones = milestones
     timestamp = timestamp or int(time.time())
     issue.opened_timestamp = timestamp
     issue.modified_timestamp = timestamp
@@ -829,6 +843,7 @@ class IssueService(object):
     self._UpdateIssuesCc(cnxn, [issue], commit=False)
     self._UpdateIssuesNotify(cnxn, [issue], commit=False)
     self._UpdateIssuesRelation(cnxn, [issue], commit=False)
+    self._CreateIssueMilestones(cnxn, issue, commit=False)
     self._StoreIssueSnapshots(cnxn, [issue], commit=False)
     cnxn.Commit()
     self._config_service.InvalidateMemcache([issue])
@@ -1067,6 +1082,22 @@ class IssueService(object):
     self.issue_tbl.Update(cnxn, delta, id=iids, commit=False)
     if invalidate:
       self.InvalidateIIDs(cnxn, iids)
+
+  #TODO(jojwang): monorail:3576, add _UpdateIssuesApprovals.
+
+  def _CreateIssueMilestones(self, cnxn, issue, commit=True):
+    """Insert Issue2[Milestone] and [ApprovalValue] rows for the given issue."""
+    # NOTE: currently not supporting milestone editing.
+    # only editing approvalvalues within milestones
+    for ms in issue.milestones:
+      ms_id = self.issue2milestone_tbl.InsertRow(
+          cnxn, issue_id=issue.issue_id, name=ms.name,
+          rank=ms.rank, commit=commit)
+      av_rows =  [(issue.issue_id, av.approval_id, ms_id,
+                   av.status.name.lower(), av.setter_id, av.set_on)
+                  for av in ms.approval_values]
+      self.issue2approvalvalue_tbl.InsertRows(
+          cnxn, ISSUE2APPROVALVALUE_COLS, av_rows, commit=commit)
 
   def DeltaUpdateIssue(
       self, cnxn, services, reporter_id, project_id,

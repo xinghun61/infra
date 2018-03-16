@@ -43,7 +43,9 @@ def MakeIssueService(project_service, config_service, cache_manager, my_mox):
       'issueformerlocations_tbl', 'comment_tbl', 'commentcontent_tbl',
       'issueupdate_tbl', 'issuesnapshot_tbl', 'attachment_tbl',
       'reindexqueue_tbl', 'localidcounter_tbl', 'issuesnapshot2label_tbl',
-      'issuesnapshot2cc_tbl', 'issuesnapshot2component_tbl']:
+      'issuesnapshot2cc_tbl', 'issuesnapshot2component_tbl',
+      'issue2milestone_tbl', 'issue2approvalvalue_tbl',
+      'issueapproval2approver']:
     setattr(issue_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
   return issue_service
@@ -317,8 +319,17 @@ class IssueServiceTest(unittest.TestCase):
 
   def testCreateIssue(self):
     settings.classifier_spam_thresh = 0.9
+    av_23 = tracker_pb2.ApprovalValue(
+        approval_id=23, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
+    approval_values = [av_23, av_24]
+    milestone = tracker_pb2.Milestone(
+        name='Canary', approval_values=approval_values, rank=11)
+    ms_row = (78901, 'Canary', 11)
+    av_rows = [(78901, 23, 1, 'needs_review', None, None),
+               (78901, 24, 1, 'not_set', None, None)]
     self.SetUpAllocateNextLocalID(789, None, None)
-    self.SetUpInsertIssue(store_label=True)
+    self.SetUpInsertIssue(store_label=True, ms_row=ms_row, av_rows=av_rows)
     self.SetUpInsertComment(7890101, is_description=True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), self.reporter, False).AndReturn(
@@ -331,7 +342,7 @@ class IssueServiceTest(unittest.TestCase):
     actual_local_id = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
         'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
-        index_now=False, timestamp=self.now)
+        index_now=False, timestamp=self.now, milestones=[milestone])
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
 
@@ -501,7 +512,8 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual(locations, [(781, 1), (782, 11)])
 
-  def SetUpInsertIssue(self, label_rows=None, store_label=False):
+  def SetUpInsertIssue(
+      self, label_rows=None, store_label=False, ms_row=None, av_rows=None):
     row = (789, 1, 1, 111L, 111L,
            self.now, 0, self.now, self.now, self.now, self.now,
            None, 0,
@@ -520,6 +532,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesCc()
     self.SetUpUpdateIssuesNotify()
     self.SetUpUpdateIssuesRelation()
+    self.SetUpCreateIssueMilestones(ms_row=ms_row, av_rows=av_rows)
     self.SetUpUpdateIssuesStoreSnapshots(store_label=label_rows or store_label)
 
   def SetUpInsertSpamIssue(self):
@@ -605,6 +618,16 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.danglingrelation_tbl.InsertRows(
         self.cnxn, issue_svc.DANGLINGRELATION_COLS, dangling_relation_rows,
         ignore=True, commit=False)
+
+  def SetUpCreateIssueMilestones(self, ms_row=None, av_rows=None):
+    if ms_row:
+      (issue_id, name, rank) = ms_row
+      self.services.issue.issue2milestone_tbl.InsertRow(
+          self.cnxn, issue_id=issue_id, name=name,
+          rank=rank, commit=False).AndReturn(1)
+      av_rows=av_rows or []
+      self.services.issue.issue2approvalvalue_tbl.InsertRows(
+          self.cnxn, issue_svc.ISSUE2APPROVALVALUE_COLS, av_rows, commit=False)
 
   def SetUpUpdateIssuesStoreSnapshots(self, store_label, replace_now=None,
                                       found_id=None, project_id=789,

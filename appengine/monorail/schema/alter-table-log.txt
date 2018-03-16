@@ -1335,9 +1335,8 @@ ALTER TABLE Template2ApprovalValue MODIFY status ENUM (
 ================================================================
 2018-03-15: Add Issue Approval and Mileston tables
 
-// Following two may result in 'Unknown table' error. Safe to ignore.
-DROP TABLE Approval2Approver;
-DROP TABLE Issue2ApprovalValue;
+DROP TABLE IF EXISTS Approval2Approver;
+DROP TABLE IF EXISTS Issue2ApprovalValue;
 
 CREATE TABLE Issue2Milestone (
   id INT NOT NULL AUTO_INCREMENT,

@@ -1363,7 +1363,8 @@ class IssueService(object):
       self, cnxn, services, project_id,
       summary, status, owner_id, cc_ids, labels, field_values,
       component_ids, reporter_id, marked_description, blocked_on=None,
-      blocking=None, attachments=None, timestamp=None, index_now=True):
+      blocking=None, attachments=None, timestamp=None, index_now=True,
+      milestones=None):
     issue = tracker_pb2.Issue()
     issue.project_id = project_id
     issue.summary = summary
@@ -1384,6 +1385,9 @@ class IssueService(object):
 
     if blocking:
       issue.blocking_iids.extend(blocking)
+
+    if milestones:
+      issue.milestones=milestones
 
     issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
     issue.issue_id = project_id * 1000000 + issue.local_id
