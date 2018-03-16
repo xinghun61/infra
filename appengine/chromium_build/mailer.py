@@ -19,11 +19,6 @@ GATEKEEPER_SERVICE_ACCOUNT_EMAIL = (
     'gatekeeper@chromium-build.iam.gserviceaccount.com')
 
 
-class MailerSecret(ndb.Model):
-  """Model to represent the shared secret for the mail endpoint."""
-  secret = ndb.StringProperty()
-
-
 class BaseHandler(webapp2.RequestHandler):
   """Provide a cached Jinja environment to each request."""
   @webapp2.cached_property
@@ -54,45 +49,6 @@ def _get_user_email():
 
 
 class Email(BaseHandler):
-  @staticmethod
-  def linear_compare(a, b):
-    """Scan through the entire string even if a mismatch is detected early.
-
-    This thwarts timing attacks attempting to guess the key one byte at a
-    time.
-    """
-    if len(a) != len(b):
-      return False
-    result = 0
-    for x, y in zip(a, b):
-      result |= ord(x) ^ ord(y)
-    return result == 0
-
-  @staticmethod
-  def _validate_message(message, url, secret):
-    """Cryptographically validates the message."""
-    mytime = time.time()
-
-    if abs(mytime - message['time']) > 60:
-      logging.error('message was rejected due to time')
-      return False
-
-    cleaned_url = url.rstrip('/') + '/'
-    cleaned_message_url = message['url'].rstrip('/') + '/'
-
-    if cleaned_message_url != cleaned_url:
-      logging.error('message URL did not match: %s vs %s', cleaned_message_url,
-          cleaned_url)
-      return False
-
-    hasher = hmac.new(str(secret), message['message'], hashlib.sha256)
-    hasher.update(str(message['time']))
-    hasher.update(str(message['salt']))
-
-    client_hash = hasher.hexdigest()
-
-    return Email.linear_compare(client_hash, message['hmac-sha256'])
-
   @staticmethod
   def _verify_json(build_data):
     """Verifies that the submitted JSON contains all the proper fields."""
@@ -140,10 +96,10 @@ class Email(BaseHandler):
     email = _get_user_email()
     logging.info('current user email is %s', email)
     if email != GATEKEEPER_SERVICE_ACCOUNT_EMAIL:
-      # self.response.out.write('user %r is not authorized' % email)
+      self.response.out.write('user %r is not authorized' % email)
       logging.warning('user %r is not authorized' % email)
-      # self.error(403)
-      # return
+      self.error(403)
+      return
 
     blob = self.request.get('json')
     if not blob:
@@ -159,19 +115,6 @@ class Email(BaseHandler):
       self.response.out.write('couldn\'t decode json')
       logging.error('error decoding incoming json: %s' % e)
       self.error(400)
-      return
-
-    secret = MailerSecret.get_or_insert('mailer_secret').secret
-    if not secret:
-      self.response.out.write('unauthorized')
-      logging.critical('mailer shared secret has not been set!')
-      self.error(500)
-      return
-
-    if not self._validate_message(message, self.request.url, secret):
-      self.response.out.write('unauthorized')
-      logging.error('incoming message did not validate')
-      self.error(403)
       return
 
     try:

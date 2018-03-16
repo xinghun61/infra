@@ -5,7 +5,6 @@
 
 import datetime
 import hashlib
-import hmac
 import json
 import random
 import time
@@ -20,21 +19,6 @@ class MailTestCase(cb.CbTestCase):
     super(MailTestCase, self).setUp()
     self.input_json = json.loads(self.read_file('input.json'))
     self.build_data = json.loads(self.input_json['message'])
-
-  @staticmethod
-  def _hash_message(mytime, message, url, secret):
-    salt = random.getrandbits(32)
-    hasher = hmac.new(secret, message, hashlib.sha256)
-    hasher.update(str(mytime))
-    hasher.update(str(salt))
-    client_hash = hasher.hexdigest()
-
-    return {'message': message,
-            'time': mytime,
-            'salt': salt,
-            'url': url,
-            'hmac-sha256': client_hash,
-           }
 
   def test_html_format(self):
     import gatekeeper_mailer
@@ -71,33 +55,3 @@ class MailTestCase(cb.CbTestCase):
 
     self.assertEqual(saw, expected)
 
-  def test_hmac_validation(self):
-    from mailer import Email
-    message = self.input_json['message']
-    url = 'http://invalid.chromium.org'
-    secret = 'pajamas'
-
-    test_json = self._hash_message(time.time(), message, url, secret)
-    # pylint: disable=W0212
-    self.assertTrue(Email._validate_message(test_json, url, secret))
-
-    # Test that a trailing slash doesn't affect URL parsing.
-    test_json = self._hash_message(time.time(), message, url + '/', secret)
-    # pylint: disable=W0212
-    self.assertTrue(Email._validate_message(test_json, url, secret))
-
-    tests = [
-        self._hash_message(time.time() + 61, message, url, secret),
-        self._hash_message(time.time() - 61, message, url, secret),
-        self._hash_message(time.time(), message, url + 'hey', secret),
-        self._hash_message(time.time(), message, url, secret + 'hey'),
-    ]
-
-    for test_json in tests:
-      # pylint: disable=W0212
-      self.assertFalse(Email._validate_message(test_json, url, secret))
-
-    test_json = self._hash_message(time.time(), message, url, secret)
-    test_json['message'] = test_json['message'] + 'hey'
-    # pylint: disable=W0212
-    self.assertFalse(Email._validate_message(test_json, url, secret))
