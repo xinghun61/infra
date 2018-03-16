@@ -74,7 +74,7 @@ def MakeTestIssue(
     derived_owner_id=0, issue_id=None, reporter_id=None, opened_timestamp=None,
     closed_timestamp=None, modified_timestamp=None, is_spam=False,
     component_ids=None, project_name=None, field_values=None, cc_ids=None,
-    derived_cc_ids=None, assume_stale=True):
+    derived_cc_ids=None, assume_stale=True, milestones=None):
   """Easily make an Issue for testing."""
   issue = tracker_pb2.Issue()
   issue.project_id = project_id
@@ -117,6 +117,8 @@ def MakeTestIssue(
     issue.component_ids = component_ids
   if field_values is not None:
     issue.field_values = field_values
+  if milestones is not None:
+    issue.milestones = milestones
   return issue
 
 
@@ -1395,6 +1397,18 @@ class IssueService(object):
     self.TestAddIssue(issue)
     self.comments_by_iid[issue.issue_id][0].content = marked_description
     return issue.local_id
+
+  def UpdateIssueApprovalValue(
+      self, cnxn, issue_id, approvalvalue, commit=True):
+    issue = self.GetIssue(cnxn, issue_id)
+    for ms in issue.milestones:
+      for av in ms.approval_values:
+        if av.approval_id == approvalvalue.approval_id:
+          ms.approval_values = [ms_av for ms_av in ms.approval_values if
+                                ms_av is not av]
+          ms.approval_values.append(approvalvalue)
+          return
+    return
 
   def SetUsedLocalID(self, cnxn, project_id):
     self.next_id = self.GetHighestLocalID(cnxn, project_id) + 1

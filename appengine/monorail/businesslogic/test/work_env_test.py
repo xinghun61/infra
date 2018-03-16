@@ -5,6 +5,7 @@
 
 """Tests for the WorkEnv class."""
 
+import logging
 import unittest
 
 from google.appengine.api import memcache
@@ -17,6 +18,7 @@ from proto import tracker_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
+from tracker import tracker_bizobj
 
 
 class WorkEnvTest(unittest.TestCase):
@@ -296,7 +298,26 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetIssueByLocalID(789, 1)
 
-  # FUTURE: UpdateIssue()
+  def testUpdateIssueApprovalValue(self):
+    """We can update an issue's approvalvalue."""
+    av_21 = tracker_pb2.ApprovalValue(approval_id=21)
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
+    milestones = [tracker_pb2.Milestone(
+        milestone_id=1, rank=1, approval_values=[av_21, av_24])]
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Avialable', 111L,
+                               issue_id=78901, milestones=milestones)
+    self.services.issue.TestAddIssue(issue)
+    new_av_24 = tracker_pb2.ApprovalValue(
+        approval_id=24, status=tracker_pb2.ApprovalStatus.APPROVED,
+        set_on=3456, setter_id=222L)
+    self.work_env.UpdateIssueApprovalValue(78901, new_av_24)
+
+    issue = self.services.issue.GetIssue(self.cnxn, 78901)
+    ms = issue.milestones[0]
+    updated_av = tracker_bizobj.FindApprovalValueByID(24, ms.approval_values)
+    self.assertEqual(updated_av, new_av_24)
+
+  # FUTURE: testUpdateIssue()
 
   def testDeleteIssue(self):
     """We can mark and unmark an issue as deleted."""

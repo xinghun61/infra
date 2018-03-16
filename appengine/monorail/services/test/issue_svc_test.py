@@ -448,6 +448,18 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
 
+  def testUpdateIssueApprovalValue(self):
+    av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L)
+
+    self.services.issue.issue2approvalvalue_tbl.Update(
+        self.cnxn, {'status': 'not_set', 'setter_id': 111L, 'set_on': None},
+        approval_id=23, issue_id=78901, commit=False)
+
+    self.mox.ReplayAll()
+    self.services.issue.UpdateIssueApprovalValue(
+        self.cnxn, 78901, av, commit=False)
+    self.mox.VerifyAll()
+
   def testGetAllIssuesInProject_NoIssues(self):
     self.SetUpGetHighestLocalID(789, None, None)
     self.mox.ReplayAll()

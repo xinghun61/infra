@@ -301,7 +301,7 @@ class WorkEnv(object):
   def CreateIssue(
       self, project_id, summary, status, owner_id, cc_ids, labels,
       field_values, component_ids, marked_description, blocked_on=None,
-      blocking=None, attachments=None):
+      blocking=None, attachments=None, milestones=None):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -318,6 +318,7 @@ class WorkEnv(object):
       blocking: list of issue_ids that this issue blocks.
       attachments: [(filename, contents, mimetype),...] attachments uploaded at
           the time the comment was made.
+      milestones: list of Milestone PBs.
 
     Returns:
       The newly created Issue.
@@ -328,7 +329,7 @@ class WorkEnv(object):
           self.mr.cnxn, self.services, project_id, summary, status,
           owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
           marked_description, blocked_on=blocked_on, blocking=blocking,
-          attachments=attachments)
+          attachments=attachments, milestones=milestones)
       logging.info('created issue %r in project %r', new_local_id, project_id)
       self.services.project.UpdateRecentActivity(self.mr.cnxn, project_id)
       new_issue = self.services.issue.GetIssueByLocalID(
@@ -399,6 +400,15 @@ class WorkEnv(object):
       issue = self.services.issue.GetIssueByLocalID(
           self.mr.cnxn, project_id, local_id, use_cache=use_cache)
     return issue
+
+  def UpdateIssueApprovalValue(self, issue_id, approvalvalue):
+    """Update an issue's approvalvalue."""
+    with self.mr.profiler.Phase(
+        'updating approvalvalue for issue %r' % issue_id):
+      self.services.issue.UpdateIssueApprovalValue(
+          self.mr.cnxn, issue_id, approvalvalue)
+    logging.info('updated ApprovalValue %r for issue %r',
+                 approvalvalue.approval_id, issue_id)
 
   # FUTURE: UpdateIssue()
   def UpdateIssue(self, issue, delta, comment):
