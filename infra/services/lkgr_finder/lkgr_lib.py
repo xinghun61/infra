@@ -336,6 +336,8 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
       for build_num in sorted(builder_data.keys(), key=int):
         this_build_data = builder_data[build_num]
         txt = this_build_data.get('text', [])
+        if txt is None:
+          continue
         if 'exception' in txt and 'slave' in txt and 'lost' in txt:
           continue
         revision = None
