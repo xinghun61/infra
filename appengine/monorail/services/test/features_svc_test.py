@@ -25,7 +25,8 @@ from tracker import tracker_constants
 
 
 def MakeFeaturesService(cache_manager, my_mox):
-  features_service = features_svc.FeaturesService(cache_manager)
+  features_service = features_svc.FeaturesService(cache_manager,
+      fake.ConfigService())
   features_service.hotlist_tbl = my_mox.CreateMock(sql.SQLTableManager)
   features_service.hotlist2issue_tbl = my_mox.CreateMock(sql.SQLTableManager)
   features_service.hotlist2user_tbl = my_mox.CreateMock(sql.SQLTableManager)
@@ -87,8 +88,10 @@ class FeaturesServiceTest(unittest.TestCase):
     self.mox = mox.Mox()
     self.cnxn = self.mox.CreateMock(sql.MonorailConnection)
     self.cache_manager = fake.CacheManager()
+    self.config_service = fake.ConfigService()
 
-    self.features_service = features_svc.FeaturesService(self.cache_manager)
+    self.features_service = features_svc.FeaturesService(self.cache_manager,
+        self.config_service)
 
     for table_var in [
         'user2savedquery_tbl', 'quickedithistory_tbl',
@@ -452,7 +455,8 @@ class FeaturesServiceTest(unittest.TestCase):
   def SetUpCreateHotlist(self):
     # Check for the existing hotlist: there should be none.
     self.features_service.hotlist_tbl.Select(
-        self.cnxn, cols=['id', 'name'], name=['hot1']).AndReturn([])
+        self.cnxn, cols=['id', 'name'], is_deleted=False,
+        name=['hot1']).AndReturn([])
 
     # Inserting the hotlist returns the id.
     self.features_service.hotlist_tbl.InsertRow(
@@ -484,8 +488,8 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def SetUpLookupHotlistIDs(self):
     self.features_service.hotlist_tbl.Select(
-        self.cnxn, cols=['id', 'name'], name=['hot1']).AndReturn([
-          (123, 'hot1')])
+      self.cnxn, cols=['id', 'name'], is_deleted=False,
+          name=['hot1']).AndReturn([(123, 'hot1')])
     self.features_service.hotlist2user_tbl.Select(
         self.cnxn, cols=['hotlist_id', 'user_id'], hotlist_id=[123],
         user_id=[567], role_name='owner').AndReturn([(123, 567)])
@@ -501,7 +505,8 @@ class FeaturesServiceTest(unittest.TestCase):
   def SetUpLookupUserHotlists(self):
     self.features_service.hotlist2user_tbl.Select(
         self.cnxn, cols=['user_id', 'hotlist_id'],
-        user_id=[111L]).AndReturn([(111L, 123)])
+        user_id=[111L], left_joins=[('Hotlist ON hotlist_id = id', [])],
+        where=[('Hotlist.is_deleted = %s', [False])]).AndReturn([(111L, 123)])
 
   def testLookupUserHotlists(self):
     self.SetUpLookupUserHotlists()
@@ -514,7 +519,8 @@ class FeaturesServiceTest(unittest.TestCase):
   def SetUpLookupIssueHotlists(self):
     self.features_service.hotlist2issue_tbl.Select(
         self.cnxn, cols=['hotlist_id', 'issue_id'],
-        issue_id=[987]).AndReturn([(123, 987)])
+        issue_id=[987], left_joins=[('Hotlist ON hotlist_id = id', [])],
+        where=[('Hotlist.is_deleted = %s', [False])]).AndReturn([(123, 987)])
 
   def testLookupIssueHotlists(self):
     self.SetUpLookupIssueHotlists()
@@ -535,7 +541,7 @@ class FeaturesServiceTest(unittest.TestCase):
       role_rows=[]
     self.features_service.hotlist_tbl.Select(
         self.cnxn, cols=features_svc.HOTLIST_COLS,
-        id=[hotlist_id]).AndReturn(hotlist_rows)
+        id=[hotlist_id], is_deleted=False).AndReturn(hotlist_rows)
     self.features_service.hotlist2user_tbl.Select(
         self.cnxn, cols=['hotlist_id', 'user_id', 'role_name'],
         hotlist_id=[hotlist_id]).AndReturn(role_rows)
@@ -739,17 +745,26 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def SetUpDeleteHotlist(self, cnxn, hotlist_id):
     hotlist_rows = [(hotlist_id, 'hotlist', 'test hotlist',
-                     'test list', False, '')]
+        'test list', False, '')]
     self.SetUpGetHotlists(678, hotlist_rows=hotlist_rows,
-                          role_rows=[(hotlist_id, 111L, 'owner', )])
-    self.features_service.hotlist2issue_tbl.Delete(
-        cnxn, hotlist_id=hotlist_id, commit=False)
-    self.features_service.hotlist2user_tbl.Delete(
-        cnxn, hotlist_id=hotlist_id, commit=False)
-    self.features_service.hotlist_tbl.Delete(cnxn, id=hotlist_id, commit=False)
+        role_rows=[(hotlist_id, 111L, 'owner', )])
+    self.features_service.hotlist2issue_tbl.Select(self.cnxn,
+        cols=['Issue.project_id'], hotlist_id=hotlist_id, distinct=True,
+        left_joins=[('Issue ON issue_id = id', [])]).AndReturn([(1,)])
+    self.features_service.hotlist_tbl.Update(cnxn, {'is_deleted': True},
+        commit=False, id=hotlist_id)
 
   def testDeleteHotlist(self):
     self.SetUpDeleteHotlist(self.cnxn, 678)
     self.mox.ReplayAll()
     self.features_service.DeleteHotlist(self.cnxn, 678, commit=False)
+    self.mox.VerifyAll()
+
+  def testGetProjectIDsFromHotlist(self):
+    self.features_service.hotlist2issue_tbl.Select(self.cnxn,
+        cols=['Issue.project_id'], hotlist_id=678, distinct=True,
+        left_joins=[('Issue ON issue_id = id', [])])
+
+    self.mox.ReplayAll()
+    self.features_service.GetProjectIDsFromHotlist(self.cnxn, 678)
     self.mox.VerifyAll()

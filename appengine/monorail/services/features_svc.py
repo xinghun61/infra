@@ -22,6 +22,7 @@ from framework import framework_bizobj
 from framework import sql
 from proto import features_pb2
 from services import caches
+from services import config_svc
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
@@ -123,7 +124,7 @@ class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
   def FetchItems(self, cnxn, keys):
     """On RAM and memcache miss, hit the database to get missing hotlists."""
     hotlist_rows = self.features_service.hotlist_tbl.Select(
-        cnxn, cols=HOTLIST_COLS, id=keys)
+        cnxn, cols=HOTLIST_COLS, is_deleted=False, id=keys)
     issue_rows = self.features_service.hotlist2issue_tbl.Select(
         cnxn, cols=HOTLIST2ISSUE_COLS, hotlist_id=keys,
         order_by=[('rank DESC', []), ('issue_id', [])])
@@ -137,11 +138,12 @@ class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
 class FeaturesService(object):
   """The persistence layer for servlets in the features directory."""
 
-  def __init__(self, cache_manager):
+  def __init__(self, cache_manager, config_service):
     """Initialize this object so that it is ready to use.
 
     Args:
       cache_manager: local cache with distributed invalidation.
+      config_service: an instance of ConfigService.
     """
     self.quickedithistory_tbl = sql.SQLTableManager(QUICKEDITHISTORY_TABLE_NAME)
     self.quickeditmostrecent_tbl = sql.SQLTableManager(
@@ -166,6 +168,8 @@ class FeaturesService(object):
     self.hotlist_2lc = HotlistTwoLevelCache(cache_manager, self)
     self.hotlist_names_owner_to_ids = caches.RamCache(cache_manager, 'hotlist')
     self.hotlist_user_to_ids = caches.RamCache(cache_manager, 'hotlist')
+
+    self.config_service = config_service
 
   ### QuickEdit command history
 
@@ -779,7 +783,7 @@ class FeaturesService(object):
     if missed_keys:
       missed_names, missed_owners = map(list, zip(*missed_keys))
       hotlist_rows = self.hotlist_tbl.Select(
-          cnxn, cols=['id', 'name'], name=missed_names)
+          cnxn, cols=['id', 'name'], is_deleted=False, name=missed_names)
       if hotlist_rows:
         id_to_name = dict(hotlist_rows)
         hotlist_ids = [row[0] for row in hotlist_rows]
@@ -802,7 +806,9 @@ class FeaturesService(object):
     if missed_ids:
       retrieved_dict = {user_id: [] for user_id in missed_ids}
       id_rows = self.hotlist2user_tbl.Select(
-          cnxn, cols=['user_id', 'hotlist_id'], user_id=user_ids)
+          cnxn, cols=['user_id', 'hotlist_id'], user_id=user_ids,
+          left_joins=[('Hotlist ON hotlist_id = id', [])],
+          where=[('Hotlist.is_deleted = %s', [False])])
       for (user_id, hotlist_id) in id_rows:
         retrieved_dict[user_id].append(hotlist_id)
       self.hotlist_user_to_ids.CacheAll(retrieved_dict)
@@ -815,12 +821,19 @@ class FeaturesService(object):
     # TODO(jojwang): create hotlist_issue_to_ids cache
     retrieved_dict = {issue_id: [] for issue_id in issue_ids}
     id_rows = self.hotlist2issue_tbl.Select(
-        cnxn, cols=['hotlist_id', 'issue_id'], issue_id=issue_ids)
+        cnxn, cols=['hotlist_id', 'issue_id'], issue_id=issue_ids,
+        left_joins=[('Hotlist ON hotlist_id = id', [])],
+        where=[('Hotlist.is_deleted = %s', [False])])
     for hotlist_id, issue_id in id_rows:
       retrieved_dict[issue_id].append(hotlist_id)
     return retrieved_dict
-  ### Get hotlists
 
+  def GetProjectIDsFromHotlist(self, cnxn, hotlist_id):
+    return self.hotlist2issue_tbl.Select(cnxn,
+        cols=['Issue.project_id'], hotlist_id=hotlist_id, distinct=True,
+        left_joins=[('Issue ON issue_id = id', [])])
+
+  ### Get hotlists
   def GetHotlists(self, cnxn, hotlist_ids, use_cache=True):
     """Returns dict of {hotlist_id: hotlist PB}."""
     hotlists_dict, missed_ids = self.hotlist_2lc.GetAll(
@@ -913,19 +926,25 @@ class FeaturesService(object):
     if not hotlist:
       raise NoSuchHotlistException()
 
-    self.hotlist2issue_tbl.Delete(cnxn, hotlist_id=hotlist_id, commit=False)
-    self.hotlist2user_tbl.Delete(cnxn, hotlist_id=hotlist_id, commit=False)
-    self.hotlist_tbl.Delete(cnxn, id=hotlist_id, commit=commit)
+    # Fetch all associated project IDs in order to invalidate their cache.
+    project_ids = self.GetProjectIDsFromHotlist(cnxn, hotlist_id)
+
+    delta = {'is_deleted': True}
+    self.hotlist_tbl.Update(cnxn, delta, id=hotlist_id, commit=commit)
 
     self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
     self.hotlist_user_to_ids.InvalidateKeys(cnxn, hotlist.owner_ids)
     self.hotlist_user_to_ids.InvalidateKeys(cnxn, hotlist.editor_ids)
     if not hotlist.owner_ids:  # Should never happen.
-      logging.warn('Deleting unowned Hotlist: id:%r, name:%r',
+      logging.warn('Soft-deleting unowned Hotlist: id:%r, name:%r',
         hotlist_id, hotlist.name)
     for owner_id in hotlist.owner_ids:
       self.hotlist_names_owner_to_ids.InvalidateKeys(cnxn,
           (hotlist.name, owner_id))
+
+    for project_id in project_ids:
+      project_id = project_id[0]
+      self.config_service.InvalidateMemcacheForEntireProject(project_id)
 
 
 class HotlistAlreadyExists(Exception):

@@ -1139,6 +1139,9 @@ class ConfigService(object):
   def InvalidateMemcache(self, issues, key_prefix=''):
     pass
 
+  def InvalidateMemcacheForEntireProject(self, project_id):
+    pass
+
 
 class IssueService(object):
   """Fake version of IssueService that just works in-RAM."""

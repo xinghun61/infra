@@ -775,6 +775,7 @@ CREATE TABLE Hotlist (
   description TEXT,
 
   is_private BOOLEAN DEFAULT FALSE,
+  is_deleted BOOLEAN DEFAULT FALSE,
   default_col_spec TEXT,
 
   PRIMARY KEY (id)

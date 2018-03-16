@@ -57,7 +57,7 @@ def set_up_services():
     # issue (which depends on project and config), things with no deps.
     cache_manager = cachemanager_svc.CacheManager()
     config = config_svc.ConfigService(cache_manager)
-    features = features_svc.FeaturesService(cache_manager)
+    features = features_svc.FeaturesService(cache_manager, config)
     hotlist_star = star_svc.HotlistStarService(cache_manager)
     issue_star = star_svc.IssueStarService(cache_manager)
     project = project_svc.ProjectService(cache_manager)

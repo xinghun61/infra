@@ -1377,3 +1377,7 @@ CREATE TABLE IssueApproval2Approvers (
 
 ALTER TABLE Template2ApprovalValue MODIFY status ENUM (
   'needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL;
+
+================================================================
+2018-03-15: Soft-delete Hotlists.
+ALTER TABLE Hotlist ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
