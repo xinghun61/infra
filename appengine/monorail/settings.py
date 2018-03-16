@@ -272,6 +272,7 @@ else:
     analytics_id = 'UA-55762617-14'
     banner_message = 'This site will be read-only for 3-4 hours starting at '
     banner_time = (2018, 3, 18, 8, 0)
+    read_only = True
 
 if dev_mode:
   site_name = 'Monorail Dev'
