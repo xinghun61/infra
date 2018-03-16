@@ -170,6 +170,7 @@ def _build_to_v2(bid, build, build_ann):
 
       for s in build_v2.steps:
         s.summary_markdown = ''
+        s.ClearField('logs')
 
     return build_v2, False
 
