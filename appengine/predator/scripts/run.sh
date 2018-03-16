@@ -9,13 +9,7 @@
 
 set -e
 
-# TODO(katesonia): Remove this variable and unconditionally use predator-for-me
-# later.
-if [[ -z "${WITH_NEW_APP_ID}" ]]; then
-  PROD_APP_ID="google.com:findit-for-me"
-else
-  PROD_APP_ID="predator-for-me"
-fi
+PROD_APP_ID="predator-for-me"
 THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE:-$0}" )" && pwd )"
 PREDATOR_DIR="${THIS_SCRIPT_DIR}/.."
 PREDATOR_APP_DIR="${THIS_SCRIPT_DIR}/../app"
