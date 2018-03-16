@@ -6,6 +6,7 @@
 
 """Unit tests for issue_svc module."""
 
+import logging
 import time
 import unittest
 
@@ -163,22 +164,49 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.dangling_relation_rows = [
         (78901, 'codesite', 5001, 'blocking'),
         (78901, 'codesite', 5002, 'blockedon')]
+    self.milestone_rows = [(1, 78901, 'Canary', 1), (2, 78901, 'Stable', 11)]
+    self.approvalvalue_rows = [(21, 78901, 1, 'needs_review', None, None),
+                               (22, 78901, 1, 'not_set', None, None)]
 
   def tearDown(self):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
+  def testUnpackApprovalValue(self):
+    av, issue_id, ms_id = self.issue_2lc._UnpackApprovalValue(
+        self.approvalvalue_rows[0])
+    self.assertEqual(av.status, tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
+    self.assertIsNone(av.setter_id)
+    self.assertIsNone(av.set_on)
+    self.assertEqual(issue_id, 78901)
+    self.assertEqual(ms_id, 1)
+
+  def testUnpackMilestone(self):
+    ms, issue_id = self.issue_2lc._UnpackMilestone(
+        self.milestone_rows[0])
+    self.assertEqual(ms.name, 'Canary')
+    self.assertEqual(ms.milestone_id, 1)
+    self.assertEqual(ms.rank, 1)
+    self.assertEqual(issue_id, 78901)
+
   def testDeserializeIssues_Empty(self):
     issue_dict = self.issue_2lc._DeserializeIssues(
-        self.cnxn, [], [], [], [], [], [], [], [], [])
+        self.cnxn, [], [], [], [], [], [], [], [], [], [], [])
     self.assertEqual({}, issue_dict)
 
   def testDeserializeIssues_Normal(self):
     issue_dict = self.issue_2lc._DeserializeIssues(
         self.cnxn, self.issue_rows, self.summary_rows, self.label_rows,
         self.component_rows, self.cc_rows, self.notify_rows,
-        self.fieldvalue_rows, self.relation_rows, self.dangling_relation_rows)
+        self.fieldvalue_rows, self.relation_rows, self.dangling_relation_rows,
+        self.milestone_rows, self.approvalvalue_rows)
     self.assertItemsEqual([78901], issue_dict.keys())
+    issue = issue_dict[78901]
+    self.assertEqual(len(issue.milestones), 2)
+    canary_ms = tracker_bizobj.FindMilestoneByID(1, issue.milestones)
+    self.assertEqual(len(canary_ms.approval_values), 2)
+    stable_ms = tracker_bizobj.FindMilestoneByID(2, issue.milestones)
+    self.assertEqual(len(stable_ms.approval_values), 0)
 
   def testDeserializeIssues_UnexpectedLabel(self):
     unexpected_label_rows = [
@@ -189,7 +217,8 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
       self.issue_2lc._DeserializeIssues,
       self.cnxn, self.issue_rows, self.summary_rows, unexpected_label_rows,
       self.component_rows, self.cc_rows, self.notify_rows,
-      self.fieldvalue_rows, self.relation_rows, self.dangling_relation_rows)
+      self.fieldvalue_rows, self.relation_rows, self.dangling_relation_rows,
+      self.milestone_rows, self.approvalvalue_rows)
 
   def testDeserializeIssues_UnexpectedIssueRelation(self):
     unexpected_relation_rows = [
@@ -201,7 +230,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
       self.cnxn, self.issue_rows, self.summary_rows, self.label_rows,
       self.component_rows, self.cc_rows, self.notify_rows,
       self.fieldvalue_rows, unexpected_relation_rows,
-      self.dangling_relation_rows)
+      self.dangling_relation_rows, self.milestone_rows, self.approvalvalue_rows)
 
   def SetUpFetchItems(self, issue_ids):
     shard_id = None
@@ -226,6 +255,12 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.issue_service.issue2fieldvalue_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUE2FIELDVALUE_COLS, shard_id=shard_id,
         issue_id=issue_ids).AndReturn(self.fieldvalue_rows)
+    self.issue_service.issue2milestone_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUE2MILESTONE_COLS,
+        issue_id=issue_ids).AndReturn(self.milestone_rows)
+    self.issue_service.issue2approvalvalue_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUE2APPROVALVALUE_COLS,
+        issue_id=issue_ids).AndReturn(self.approvalvalue_rows)
     self.issue_service.issuerelation_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
         issue_id=issue_ids, kind='blockedon',

@@ -223,10 +223,25 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
         bool(derived))
     return fv, issue_id
 
+  def _UnpackApprovalValue(self, av_row):
+    """Contruct an ApprovalValue PB from a DB row."""
+    (approval_id, issue_id, milestone_id, status, setter_id, set_on) = av_row
+    av = tracker_pb2.ApprovalValue(
+        approval_id=approval_id, setter_id=setter_id, set_on=set_on,
+        status=tracker_pb2.ApprovalStatus(status.upper()))
+    return av, issue_id, milestone_id
+
+  def _UnpackMilestone(self, ms_row):
+    """Construct a Milestone PB from a DB row."""
+    (ms_id, issue_id, name, rank) = ms_row
+    ms = tracker_pb2.Milestone(
+        milestone_id=ms_id, name=name, rank=rank)
+    return ms, issue_id
+
   def _DeserializeIssues(
       self, cnxn, issue_rows, summary_rows, label_rows, component_rows,
       cc_rows, notify_rows, fieldvalue_rows, relation_rows,
-      dangling_relation_rows):
+      dangling_relation_rows, milestone_rows, approvalvalue_rows):
     """Convert the given DB rows into a dict of Issue PBs."""
     results_dict = {}
     for issue_row in issue_rows:
@@ -269,6 +284,16 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
     for fv_row in fieldvalue_rows:
       fv, issue_id = self._UnpackFieldValue(fv_row)
       results_dict[issue_id].field_values.append(fv)
+
+    milestone_avs_dict = collections.defaultdict(list)
+    for av_row in approvalvalue_rows:
+      av, issue_id, ms_id = self._UnpackApprovalValue(av_row)
+      milestone_avs_dict[ms_id, issue_id].append(av)
+
+    for ms_row in milestone_rows:
+      ms, issue_id = self._UnpackMilestone(ms_row)
+      ms.approval_values = milestone_avs_dict[ms.milestone_id, issue_id]
+      results_dict[issue_id].milestones.append(ms)
 
     for issue_id, dst_issue_id, kind, rank in relation_rows:
       src_issue = results_dict.get(issue_id)
@@ -325,6 +350,10 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
     fieldvalue_rows = self.issue_service.issue2fieldvalue_tbl.Select(
         cnxn, cols=ISSUE2FIELDVALUE_COLS, shard_id=shard_id,
         issue_id=issue_ids)
+    milestone_rows = self.issue_service.issue2milestone_tbl.Select(
+        cnxn, cols=ISSUE2MILESTONE_COLS, issue_id=issue_ids)
+    approvalvalue_rows = self.issue_service.issue2approvalvalue_tbl.Select(
+        cnxn, cols=ISSUE2APPROVALVALUE_COLS, issue_id=issue_ids)
     if issue_ids:
       ph = sql.PlaceHolders(issue_ids)
       blocked_on_rows = self.issue_service.issuerelation_tbl.Select(
@@ -349,7 +378,8 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
 
     issue_dict = self._DeserializeIssues(
         cnxn, issue_rows, summary_rows, label_rows, component_rows, cc_rows,
-        notify_rows, fieldvalue_rows, relation_rows, dangling_relation_rows)
+        notify_rows, fieldvalue_rows, relation_rows, dangling_relation_rows,
+        milestone_rows, approvalvalue_rows)
     logging.info('IssueTwoLevelCache.FetchItems returning: %r', issue_dict)
     return issue_dict
 
