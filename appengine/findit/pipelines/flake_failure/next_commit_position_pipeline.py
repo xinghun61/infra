@@ -7,6 +7,7 @@ from google.appengine.ext import ndb
 from dto.int_range import IntRange
 from gae_libs.pipelines import SynchronousPipeline
 from libs.structured_object import StructuredObject
+from services import step_util
 from services.flake_failure import lookback_algorithm
 from services.flake_failure import next_commit_position_utils
 from waterfall import build_util
@@ -75,8 +76,10 @@ class NextCommitPositionPipeline(SynchronousPipeline):
 
     # Round off the next calculated commit position to the nearest builds on
     # both sides.
-    lower_bound_build, upper_bound_build = build_util.GetBoundingBuilds(
-        master_name, builder_name, None, None, calculated_next_commit_position)
+    lower_bound_build, upper_bound_build = (
+        step_util.GetValidBoundingBuildsForStep(
+            master_name, builder_name, analysis.step_name, None, None,
+            calculated_next_commit_position))
 
     # Update the analysis' suspected build cycle if identified.
     analysis.UpdateSuspectedBuildID(lower_bound_build, upper_bound_build)

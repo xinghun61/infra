@@ -116,86 +116,7 @@ def GetLatestBuildNumber(master_name, builder_name):
   return recent_builds[0]
 
 
-def GetBoundingBuilds(master_name, builder_name, lower_bound_build_number,
-                      upper_bound_build_number, requested_commit_position):
-  """Finds the two builds immediately before and after a commit position.
-
-  Args:
-    master_name (str): The name of the master.
-    builder_name (str): The name of the builder.
-    lower_bound_build_number (int): The earliest build number to search.
-    upper_bound_build_number (int): The latest build number to search.
-    requested_commit_position (int): The specified commit_position to find the
-        bounding build numbers.
-
-  Returns:
-    (BuildInfo, Buildinfo): The two nearest builds that bound the requested
-        commit position, with the first being earlier of the two. For example,
-        if build_1 has commit position 100, build_2 has commit position 110,
-        and 105 is requested, returns (build_1, build_2). Returns None for
-        either or both of the builds if they cannot be determined. If the
-        requested commit is before the lower bound, returns (None, BuildInfo).
-        If the requested commit is after the upper bound, returns
-        (BuildInfo, None). The calling code should check for the returned builds
-        and decide what to do accordingly.
-  """
-  lower_bound_build_number = lower_bound_build_number or 0
-  _, earliest_build_info = GetBuildInfo(master_name, builder_name,
-                                        lower_bound_build_number)
-  assert earliest_build_info
-  assert earliest_build_info.commit_position is not None
-
-  if requested_commit_position <= earliest_build_info.commit_position:
-    return None, earliest_build_info
-
-  if upper_bound_build_number is None:
-    upper_bound_build_number = GetLatestBuildNumber(master_name, builder_name)
-
-  if upper_bound_build_number is None:
-    logging.error('Failed to detect latest build number')
-    return None, None
-
-  _, latest_build_info = GetBuildInfo(master_name, builder_name,
-                                      upper_bound_build_number)
-  assert latest_build_info
-  assert latest_build_info.commit_position is not None
-
-  if requested_commit_position >= latest_build_info.commit_position:
-    return latest_build_info, None
-
-  # Bisect the build number range and search for the earliest build whose
-  # commit position >= requested_commit_position.
-  upper_bound = upper_bound_build_number
-  lower_bound = lower_bound_build_number
-
-  while upper_bound - lower_bound > 1:
-    candidate_build_number = (upper_bound - lower_bound) / 2 + lower_bound
-    _, candidate_build = GetBuildInfo(master_name, builder_name,
-                                      candidate_build_number)
-    assert candidate_build
-
-    if candidate_build.commit_position == requested_commit_position:
-      # Exact match.
-      _, lower_bound_build = GetBuildInfo(master_name, builder_name,
-                                          candidate_build_number - 1)
-      assert lower_bound_build
-      return lower_bound_build, candidate_build
-
-    if candidate_build.commit_position > requested_commit_position:
-      # Go left.
-      upper_bound = candidate_build_number
-    else:
-      # Go right.
-      lower_bound = candidate_build_number
-
-  _, lower_bound_build = GetBuildInfo(master_name, builder_name, lower_bound)
-  _, upper_bound_build = GetBuildInfo(master_name, builder_name, upper_bound)
-  assert lower_bound_build
-  assert upper_bound_build
-
-  return lower_bound_build, upper_bound_build
-
-
+# TODO(crbug/821865): Remove this after new flake pipelines are stable.
 def FindValidBuildNumberForStepNearby(master_name,
                                       builder_name,
                                       step_name,
@@ -232,9 +153,8 @@ def FindValidBuildNumberForStepNearby(master_name,
   for build in builds_to_look_at:
     if exclude_list and build in exclude_list:
       continue
-    swarming_task_items = swarming.ListSwarmingTasksDataByTags(
-        http_client, master_name, builder_name, build, step_name)
-    if swarming_task_items:
+    if swarming.CanFindSwarmingTaskFromBuildForAStep(
+        http_client, master_name, builder_name, build, step_name):
       return build
 
   return None

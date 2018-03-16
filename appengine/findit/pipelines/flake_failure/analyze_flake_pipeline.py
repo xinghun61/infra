@@ -100,7 +100,8 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
 
       # Create a FlakeCulprit.
       culprit_revision = commit_position_util.GetRevisionFromCommitPosition(
-          analysis.master_name, analysis.builder_name, culprit_commit_position)
+          analysis.master_name, analysis.builder_name, analysis.step_name,
+          culprit_commit_position)
       culprit = flake_analysis_util.UpdateCulprit(
           analysis_urlsafe_key, culprit_revision, culprit_commit_position)
       confidence_score = confidence_score_util.CalculateCulpritConfidenceScore(
@@ -137,7 +138,8 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
         return
 
     revision_to_analyze = commit_position_util.GetRevisionFromCommitPosition(
-        analysis.master_name, analysis.builder_name, commit_position_to_analyze)
+        analysis.master_name, analysis.builder_name, analysis.step_name,
+        commit_position_to_analyze)
 
     # Check for bot availability. If this is a user rerun or the maximum retries
     # have been reached, continue regardless of bot availability.

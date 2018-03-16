@@ -12,6 +12,7 @@ from gae_libs.pipelines import pipeline
 from gae_libs.pipelines import SynchronousPipeline
 from libs.structured_object import StructuredObject
 from model.flake.flake_swarming_task import FlakeSwarmingTask
+from services import step_util
 from waterfall import build_util
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
@@ -119,8 +120,9 @@ class RunFlakeSwarmingTaskPipeline(GeneratorPipeline):
 
     master_name = analysis.master_name
     builder_name = analysis.builder_name
-    _, upper_bound_build = build_util.GetBoundingBuilds(
-        master_name, builder_name, None, None, parameters.commit_position)
+    _, upper_bound_build = step_util.GetValidBoundingBuildsForStep(
+        master_name, builder_name, analysis.step_name, None, None,
+        parameters.commit_position)
     build_number = upper_bound_build.build_number
 
     with pipeline.InOrder():

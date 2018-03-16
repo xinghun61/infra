@@ -5,7 +5,6 @@
 from datetime import datetime
 import mock
 
-from dto.swarming_task_error import SwarmingTaskError
 from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -16,7 +15,7 @@ from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskOutput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskPipeline)
-from waterfall import build_util
+from services import step_util
 from waterfall.build_info import BuildInfo
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
@@ -50,7 +49,7 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
         task_id='task_id')
     self.assertEqual(60, task_output.GetElapsedSeconds())
 
-  @mock.patch.object(build_util, 'GetBoundingBuilds')
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   def testRunFlakeSwarmingTaskResultPipeline(self, mocked_builds):
     master_name = 'm'
     builder_name = 'b'
@@ -122,7 +121,7 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
     self.assertEqual(pass_count, run_flake_swarming_task_output['pass_count'])
     self.assertEqual(task_id, run_flake_swarming_task_output['task_id'])
 
-  @mock.patch.object(build_util, 'GetBoundingBuilds')
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   def testRunFlakeSwarmingTaskResultPipelineWithError(self, mocked_builds):
     master_name = 'm'
     builder_name = 'b'

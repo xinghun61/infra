@@ -5,8 +5,8 @@
 import mock
 
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from services import step_util
 from services.flake_failure import commit_position_util
-from waterfall import build_util
 from waterfall.build_info import BuildInfo
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -14,7 +14,7 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class CommitPositionUtilTest(WaterfallTestCase):
 
   @mock.patch.object(CachedGitilesRepository, 'GetCommitsBetweenRevisions')
-  @mock.patch.object(build_util, 'GetBoundingBuilds')
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   def testGetRevisionFromCommitPosition(self, mocked_builds, mocked_commits):
     lower_bound_build = BuildInfo('m', 'b', 123)
     lower_bound_build.commit_position = 996
@@ -28,7 +28,7 @@ class CommitPositionUtilTest(WaterfallTestCase):
 
     self.assertEqual('r997',
                      commit_position_util.GetRevisionFromCommitPosition(
-                         'm', 'b', 997))
+                         'm', 'b', 's', 997))
     self.assertEqual('r1000',
                      commit_position_util.GetRevisionFromCommitPosition(
-                         'm', 'b', 1000))
+                         'm', 'b', 's', 1000))

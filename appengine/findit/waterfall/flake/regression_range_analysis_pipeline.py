@@ -9,8 +9,8 @@ from google.appengine.ext import ndb
 from common.findit_http_client import FinditHttpClient
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
+from services import step_util
 from waterfall import build_util
-from waterfall import buildbot
 from waterfall.flake.lookback_algorithm import IsStable
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
@@ -169,8 +169,9 @@ def _GetEarliestContainingBuildNumber(commit_position, master_flake_analysis):
   if lower_bound is not None and lower_bound == upper_bound:
     return lower_bound
 
-  _, upper_bound_build = build_util.GetBoundingBuilds(
-      master_name, builder_name, lower_bound, upper_bound, commit_position)
+  _, upper_bound_build = step_util.GetValidBoundingBuildsForStep(
+      master_name, builder_name, master_flake_analysis.step_name, lower_bound,
+      upper_bound, commit_position)
   return upper_bound_build.build_number
 
 

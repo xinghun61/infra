@@ -9,6 +9,7 @@ from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from services import step_util
 from waterfall import build_util
 from waterfall.build_info import BuildInfo
 from waterfall.flake import regression_range_analysis_pipeline
@@ -131,7 +132,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
       self.assertEqual(expected_dict[build_number].ToDict(),
                        builds_to_commits[build_number].ToDict())
 
-  @mock.patch.object(build_util, 'GetBoundingBuilds')
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   @mock.patch.object(build_util, 'GetLatestBuildNumber')
   def testGetEarliestBuildNumberFromRelativeBuildNumber(self, mock_build,
                                                         mock_bound):
@@ -188,8 +189,8 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       build_util, 'GetBuildInfo', return_value=(200, BuildInfo('m', 'b', 123)))
   @mock.patch.object(
-      build_util,
-      'GetBoundingBuilds',
+      step_util,
+      'GetValidBoundingBuildsForStep',
       return_value=(BuildInfo('m', 'b', 122), BuildInfo('m', 'b', 123)))
   def testGetEarliestBuildNumberNoDataPoints(self, *_):
     self.assertEqual(

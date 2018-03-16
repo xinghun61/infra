@@ -15,6 +15,7 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
+from services import step_util
 from services import swarmbot_util
 from services import swarming
 from services.flake_failure import flake_try_job
@@ -97,8 +98,8 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
     step_name = analysis.step_name
     commit_position = parameters.commit_position
 
-    _, earliest_containing_build = build_util.GetBoundingBuilds(
-        master_name, builder_name, None, None, commit_position)
+    _, earliest_containing_build = step_util.GetValidBoundingBuildsForStep(
+        master_name, builder_name, step_name, None, None, commit_position)
 
     assert earliest_containing_build
     assert earliest_containing_build.commit_position >= commit_position

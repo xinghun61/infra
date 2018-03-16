@@ -171,3 +171,10 @@ def GetIsolatedShaForStep(master_name, builder_name, build_number, step_name,
   logging.error('Isolated sha not found for %s/%s/%s/%s', master_name,
                 builder_name, build_number, step_name)
   return None
+
+
+def CanFindSwarmingTaskFromBuildForAStep(http_client, master_name, builder_name,
+                                         build_number, step_name):
+  tasks = ListSwarmingTasksDataByTags(http_client, master_name, builder_name,
+                                      build_number, step_name)
+  return len(tasks) > 0

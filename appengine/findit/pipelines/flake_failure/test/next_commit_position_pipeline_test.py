@@ -13,9 +13,9 @@ from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionInput)
 from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionPipeline)
+from services import step_util
 from services.flake_failure import lookback_algorithm
 from services.flake_failure import next_commit_position_utils
-from waterfall import build_util
 from waterfall.build_info import BuildInfo
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -122,7 +122,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     self.assertIsNone(next_commit_position_output['next_commit_position'])
 
   @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
-  @mock.patch.object(build_util, 'GetBoundingBuilds')
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
   def testNextCommitPositionPipelineContinueAnalysis(
       self, mock_heuristic, mock_bounding_builds, mock_next_commit):
