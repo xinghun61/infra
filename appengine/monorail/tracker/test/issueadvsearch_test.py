@@ -8,7 +8,7 @@
 import unittest
 
 from services import service_manager
-from testing import fake 
+from testing import fake
 from testing import testing_helpers
 from tracker import issueadvsearch
 
@@ -38,7 +38,7 @@ class IssueAdvSearchTest(unittest.TestCase):
     post_data = {}
     url = self.servlet.ProcessFormData(mr, post_data)
     self.assertTrue('can=2' in url)
- 
+
     post_data['can'] = 42
     url = self.servlet.ProcessFormData(mr, post_data)
     self.assertTrue('can=42' in url)

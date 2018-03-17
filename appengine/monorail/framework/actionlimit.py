@@ -203,7 +203,7 @@ def CustomizeLimit(user, action_type, soft_limit, hard_limit, lifetime_limit):
     action_type: int action type.
     soft_limit: soft limit of period.
     hard_limit: hard limit of period.
-    lifetime_limit: lifetime limit. 
+    lifetime_limit: lifetime limit.
   """
   al = GetLimitPB(user, action_type)
   al.lifetime_limit = lifetime_limit

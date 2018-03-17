@@ -62,7 +62,7 @@
   <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
     cur_vis_value = $("visibility").value;
-    
+
     function _updateSettings() {
       if ($("import_group").checked) {
         $("group_type").disabled = false;

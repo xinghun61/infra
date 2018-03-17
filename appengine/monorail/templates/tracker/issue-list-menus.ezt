@@ -87,7 +87,7 @@ runOnLoad(function() {
        _closeSubmenus();
       });
     }
-  
+
     var sortDownEl = $("pop_down_" + colIndex);
     if (sortDownEl) {
       sortDownEl.addEventListener("click", function () {
@@ -116,7 +116,7 @@ runOnLoad(function() {
         _showRight("filter_" + colIndex, showOnlyEl);
       });
     }
-  
+
     var groupByEl = $("pop_groupby_" + colIndex);
     if (groupByEl) {
       groupByEl.addEventListener("click", function () {

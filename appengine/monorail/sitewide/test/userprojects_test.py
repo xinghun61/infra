@@ -13,7 +13,7 @@ from testing import fake
 from testing import testing_helpers
 
 
-class UserProjectsTest(unittest.TestCase): 
+class UserProjectsTest(unittest.TestCase):
 
   def setUp(self):
     self.services = service_manager.Services(

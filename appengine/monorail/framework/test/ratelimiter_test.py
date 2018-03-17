@@ -374,6 +374,3 @@ class ApiRateLimiterTest(unittest.TestCase):
     count = sum(counters.values())
     # Extra cost charged
     self.assertEqual(settings.api_ratelimiting_cost_penalty, count)
-    
-
-

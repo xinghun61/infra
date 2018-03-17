@@ -173,7 +173,7 @@ class RamCacheConsolidateTest(unittest.TestCase):
     self.cache_manager.invalidate_tbl.SelectValue(
         mr.cnxn, 'COUNT(*)').AndReturn(112)
     self.cache_manager.invalidate_tbl.SelectValue(
-        mr.cnxn, 'COUNT(*)').AndReturn(112)  
+        mr.cnxn, 'COUNT(*)').AndReturn(112)
     self.mox.ReplayAll()
 
     json_data = self.servlet.HandleRequest(mr)

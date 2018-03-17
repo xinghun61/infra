@@ -51,7 +51,7 @@ runOnLoad(function() {
   var oddballAnchors = document.getElementsByClassName("remove_oddball");
   for (var i = 0; i < oddballAnchors.length; ++i) {
     var oddballAnchor = oddballAnchors[[]i];
-    
+
     oddballAnchor.addEventListener("click", function(event) {
       var oddballSpan = $("span_" + this.id);
       oddballSpan.style.display = "none";

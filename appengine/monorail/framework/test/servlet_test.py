@@ -243,7 +243,7 @@ class ServletTest(unittest.TestCase):
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual('you_are_on_vacation', help_data['cue'])
 
-    mr.auth.user_pb.dismissed_cues = ['you_are_on_vacation']    
+    mr.auth.user_pb.dismissed_cues = ['you_are_on_vacation']
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
 

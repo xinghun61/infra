@@ -38,7 +38,7 @@ class CaptchaTest(unittest.TestCase):
         (False, 'incorrect-captcha-sol'),
         captcha.Verify('1.2.3.4', ''))
     self.mox.VerifyAll()
-    
+
   def testVerify_NullGuess(self):
     self.mox.StubOutWithMock(captcha, '_AskRecaptcha')
     # We are verifying that _AskRecaptcha is not called.
@@ -47,7 +47,7 @@ class CaptchaTest(unittest.TestCase):
         (False, 'incorrect-captcha-sol'),
         captcha.Verify('1.2.3.4', None))
     self.mox.VerifyAll()
-    
+
   def testVerify_GotErrorCode(self):
     self.mox.StubOutWithMock(captcha, '_AskRecaptcha')
     captcha._AskRecaptcha(

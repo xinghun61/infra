@@ -16,7 +16,7 @@ from datetime import timedelta
 
 from framework import framework_helpers
 from framework import permissions
-from framework import jsonfeed 
+from framework import jsonfeed
 from framework import servlet
 from framework import urls
 from google.appengine.api import taskqueue

@@ -139,7 +139,7 @@ class RamCacheConsolidate(jsonfeed.InternalTask):
     # Delete anything other than the last 1000 rows because we won't
     # look at them anyway.  If a job gets a request and sees 1000 new
     # rows, it will drop all caches of all types, so it is as if there
-    # were 
+    # were INVALIDATE_ALL_KEYS entries.
     if old_count > MAX_INVALIDATE_ROWS_TO_CONSIDER:
       kept_timesteps = tbl.Select(
         mr.cnxn, ['timestep'],
@@ -147,7 +147,7 @@ class RamCacheConsolidate(jsonfeed.InternalTask):
         limit=MAX_INVALIDATE_ROWS_TO_CONSIDER)
       earliest_kept = kept_timesteps[-1][0]
       tbl.Delete(mr.cnxn, where=[('timestep < %s', [earliest_kept])])
-    
+
     new_count = tbl.SelectValue(mr.cnxn, 'COUNT(*)')
 
     return {

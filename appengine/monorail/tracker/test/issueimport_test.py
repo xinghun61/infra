@@ -14,7 +14,7 @@ from tracker import issueimport
 
 
 class IssueExportTest(unittest.TestCase):
-  
+
   def setUp(self):
     self.services = service_manager.Services()
     self.servlet = issueimport.IssueImport(

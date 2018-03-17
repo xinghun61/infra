@@ -462,7 +462,7 @@ class TableViewHelpersTest(unittest.TestCase):
         label_values, non_col_labels)
     self.assertEqual(
         {'type': [('Defect', False)],
-         'milestone': [('Soon', False)]}, 
+         'milestone': [('Soon', False)]},
         label_values)
     self.assertEqual([], non_col_labels)
 
@@ -472,7 +472,7 @@ class TableViewHelpersTest(unittest.TestCase):
         ['OS-Mac', 'OS-Linux'], ['os', 'arch'],
         label_values, non_col_labels)
     self.assertEqual(
-        {'os': [('Mac', False), ('Linux', False)]}, 
+        {'os': [('Mac', False), ('Linux', False)]},
         label_values)
     self.assertEqual([], non_col_labels)
 

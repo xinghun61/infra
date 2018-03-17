@@ -489,7 +489,7 @@ class ApiV1HelpersTest(unittest.TestCase):
     self.assertEquals([], fv_list_add)
     self.assertEquals(
         [tracker_bizobj.MakeFieldValue(
-            3, None, 'Scout', None, None, None, False)], 
+            3, None, 'Scout', None, None, None, False)],
         fv_list_remove)
     self.assertEquals([11, 2], fv_list_clear)
     self.assertEquals([], label_list_add)

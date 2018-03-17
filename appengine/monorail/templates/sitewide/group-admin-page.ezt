@@ -8,7 +8,7 @@
 
 	<h4>Group membership visibility</h4>
 
-	The group members may be viewed by: 
+	The group members may be viewed by:
 	[include "../framework/group-setting-fields.ezt"]
 	<br>
 

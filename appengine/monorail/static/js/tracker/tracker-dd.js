@@ -7,20 +7,19 @@
 
 /**
  * Functions used by Monorail to control drag-and-drop re-orderable lists
- * 
  *
  */
 
 /**
  * Initializes the drag-and-drop functionality on the elements of a
- * container node. 
+ * container node.
  * TODO(lukasperaza): allow bulk drag-and-drop
  * @param {Element} container The HTML container element to turn into
  *    a drag-and-drop list. The items of the list must have the
  *    class 'drag_item'
  */
 function TKR_initDragAndDrop(container, opt_onDrop, opt_preventMultiple) {
-  
+
   var dragSrc = null;
   var dragLocation = null;
   var dragItems = container.getElementsByClassName('drag_item');

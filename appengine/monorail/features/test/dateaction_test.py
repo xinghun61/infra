@@ -119,7 +119,7 @@ class IssueDateActionTaskTest(unittest.TestCase):
         tracker_bizobj.MakeFieldDef(
             123, 789, 'NextAction', tracker_pb2.FieldTypes.DATE_TYPE,
             '', '', False, False, False, None, None, None, False, '',
-            None, None, tracker_pb2.DateAction.PING_OWNER_ONLY, 
+            None, None, tracker_pb2.DateAction.PING_OWNER_ONLY,
             'Date of next expected progress update', False),
         tracker_bizobj.MakeFieldDef(
             124, 789, 'EoL', tracker_pb2.FieldTypes.DATE_TYPE,
