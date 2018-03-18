@@ -270,8 +270,6 @@ else:
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
     analytics_id = 'UA-55762617-14'
-    banner_message = 'This site will be read-only for 3-4 hours starting at '
-    banner_time = (2018, 3, 18, 8, 0)
 
 if dev_mode:
   site_name = 'Monorail Dev'
