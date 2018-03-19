@@ -29,22 +29,24 @@
 
      <b style="margin-right:1em">[if-any is_hotlist]Hotlist[else]Project[end] People</b>
 
-     [if-any offer_membership_editing]
-      <input type="button" value="Add members" style="font-size:80%"
-             id="add_members_button">
-      <input type="submit" value="Remove members" style="font-size:80%"
-             id="removebtn" name="removebtn" disabled="disabled">
-      [# TOOD(jrobbins): extra confirmation when removing yourself as owner.]
-      [if-any is_hotlist]
-        <a id="transfer-ownership" class="buttonify" style="font-size:80%">Transfer ownership</a>
-        [include "../features/transfer-hotlist-form.ezt"]
-      [end]
-     [end]
-     [if-any is_hotlist]
-      [if-any offer_remove_self]
-       <a id="remove-self" class="buttonify" style="font-size:80%">Remove myself</a>
-       [include "../features/remove-self-hotlist-form.ezt"]
-      [end]
+     [if-any read_only][else]
+       [if-any offer_membership_editing]
+        <input type="button" value="Add members" style="font-size:80%"
+               id="add_members_button">
+        <input type="submit" value="Remove members" style="font-size:80%"
+               id="removebtn" name="removebtn" disabled="disabled">
+        [# TOOD(jrobbins): extra confirmation when removing yourself as owner.]
+        [if-any is_hotlist]
+          <a id="transfer-ownership" class="buttonify" style="font-size:80%">Transfer ownership</a>
+          [include "../features/transfer-hotlist-form.ezt"]
+        [end]
+       [end]
+       [if-any is_hotlist]
+        [if-any offer_remove_self]
+         <a id="remove-self" class="buttonify" style="font-size:80%">Remove myself</a>
+         [include "../features/remove-self-hotlist-form.ezt"]
+        [end]
+       [end]
      [end]
    </div>
 
@@ -102,12 +104,14 @@
   </div>
 [end]
 
-[if-any is_hotlist]
-[include "people-add-members-form.ezt" "hotlist"]
-[else]
-[include "people-add-members-form.ezt" "project"]
+[if-any read_only][else]
+  [if-any is_hotlist]
+  [include "people-add-members-form.ezt" "hotlist"]
+  [else]
+  [include "people-add-members-form.ezt" "project"]
+  [end]
+  [# TODO(jojwang): make more elegant later, just one line]
 [end]
-[# TODO(jojwang): make more elegant later, just one line]
 
 </form>
 

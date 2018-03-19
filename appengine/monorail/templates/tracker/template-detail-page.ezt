@@ -4,6 +4,9 @@
 
 <a href="/p/[projectname]/adminTemplates">&lsaquo; Back to template list</a><br><br>
 
+[if-any read_only][include "../framework/read-only-rejection.ezt"]
+[else]
+
 <h4>Issue Template</h4>
 
 [if-any new_template_form]
@@ -167,6 +170,8 @@
 </form>
 
 [include "field-value-widgets-js.ezt"]
+
+[end][# end if not read_only]
 
 [include "../framework/footer-script.ezt"]
 

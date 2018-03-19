@@ -99,17 +99,26 @@
  </td>
 </tr>
 
-[if-any offer_edit_perms offer_edit_member_notes]
- <tr>
-   <th></th>
-   <td>
-    <input type="submit" name="submit" value="Save changes">
-    [if-any offer_remove_role]
-      <input type="submit" name="remove" value="Remove member"
-             style="margin-left:3em" id="remove_member">
-    [end]
-   </td>
- </tr>
+[if-any read_only]
+   <tr>
+     <th></th>
+     <td>
+       [include "../framework/read-only-rejection.ezt"]
+     </td>
+   </tr>
+[else]
+  [if-any offer_edit_perms offer_edit_member_notes]
+   <tr>
+     <th></th>
+     <td>
+      <input type="submit" name="submit" value="Save changes">
+      [if-any offer_remove_role]
+        <input type="submit" name="remove" value="Remove member"
+               style="margin-left:3em" id="remove_member">
+      [end]
+     </td>
+   </tr>
+  [end]
 [end]
 
 </table>
