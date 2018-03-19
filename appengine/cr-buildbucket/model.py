@@ -15,6 +15,10 @@ from protorpc import messages
 BEGINING_OF_THE_WORLD = datetime.datetime(2010, 1, 1, 0, 0, 0, 0)
 BUILD_TIMEOUT = datetime.timedelta(days=2)
 
+# If builds weren't scheduled for this duration on a given builder, the
+# Builder entity is deleted.
+BUILDER_EXPIRATION_DURATION = datetime.timedelta(weeks=4)
+
 # Gitiles commit buildset pattern. Example:
 # ('commit/gitiles/chromium.googlesource.com/infra/luci/luci-go/+/'
 #  'b7a757f457487cd5cfe2dae83f65c5bc10e288b7')
@@ -252,6 +256,23 @@ class BuildAnnotations(ndb.Model):
   @classmethod
   def key_for(cls, build_key):  # pragma: no cover
     return ndb.Key(cls, cls.ENTITY_ID, parent=build_key)
+
+
+class Builder(ndb.Model):
+  """A builder in a bucket.
+
+  Used internally for metrics.
+  Registered automatically by scheduling a build.
+  Unregistered automatically by not scheduling builds for
+  BUILDER_EXPIRATION_DURATION.
+
+  Entity key:
+    No parent. ID is a string with format "{project}:{bucket}:{builder}".
+  """
+
+  # Last time we received a valid build scheduling request for this builder.
+  # Probabilistically updated by services.py, see its _should_update_builder.
+  last_scheduled = ndb.DateTimeProperty()
 
 
 class TagIndexEntry(ndb.Model):

@@ -336,6 +336,14 @@ class TaskCancelSwarmingTask(webapp2.RequestHandler):  # pragma: no cover
     swarming.cancel_task(host, task_id)
 
 
+class UnregisterBuilders(webapp2.RequestHandler):  # pragma: no cover
+  """Unregisters builders that didn't have builds for a long time."""
+
+  @decorators.require_taskqueue('backend-default')
+  def post(self):
+    service.unregister_builders()
+
+
 def get_frontend_routes():  # pragma: no cover
   routes = [
     webapp2.Route(r'/', MainHandler),
@@ -362,6 +370,9 @@ def get_backend_routes():
     webapp2.Route(
         r'/internal/cron/buildbucket/bq-export-experimental',
         bq.CronExportBuildsExperimental),
+    webapp2.Route(
+        r'/internal/cron/buildbucket/unregister-builders',
+        UnregisterBuilders),
     webapp2.Route(
         r'/internal/task/buildbucket/notify/<build_id:\d+>',
         notifications.TaskPublishNotification),

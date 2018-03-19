@@ -6,6 +6,7 @@ import collections
 import contextlib
 import datetime
 import logging
+import random
 import re
 import sys
 import urlparse
@@ -38,6 +39,7 @@ DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 MAX_BUILDSET_LENGTH = 1024
 RE_TAG_INDEX_SEARCH_CURSOR = re.compile('^id>\d+$')
 RESERVED_TAG_KEYS = {'build_address', 'swarming_tag', 'swarming_dimension'}
+BUILDER_PARAMETER = swarming.BUILDER_PARAMETER
 
 validate_bucket_name = errors.validate_bucket_name
 
@@ -216,7 +218,7 @@ class BuildRequest(_BuildRequestBase):
     validate_bucket_name(self.bucket)
     validate_tags(
         self.tags, 'new',
-        builder=self.parameters.get('builder_name') if self.parameters else None
+        builder=(self.parameters or {}).get(BUILDER_PARAMETER)
     )
     if self.parameters is not None and not isinstance(self.parameters, dict):
       raise errors.InvalidInputError('parameters must be a dict or None')
@@ -253,7 +255,7 @@ class BuildRequest(_BuildRequestBase):
         project=self.project,
         initial_tags=self.tags,
         tags=self.tags,
-        parameters=self.parameters,
+        parameters=self.parameters or {},
         status=model.BuildStatus.SCHEDULED,
         created_by=created_by,
         create_time=now,
@@ -270,7 +272,7 @@ class BuildRequest(_BuildRequestBase):
 
     # Auto-add builder tag.
     # Note that we leave build.initial_tags intact.
-    builder = (build.parameters or {}).get('builder_name')
+    builder = build.parameters.get(BUILDER_PARAMETER)
     if builder:
       builder_tag = 'builder:' + builder
       if builder_tag not in build.tags:
@@ -323,13 +325,14 @@ def add_many_async(build_request_list):
   # swarmbucket_api.SwarmbucketApi.get_task_def.
 
   # Preliminary preparations.
+  now = utils.utcnow()
   assert all(isinstance(r, BuildRequest) for r in build_request_list)
   # A list of all requests. If a i-th request is None, it means it is done.
   build_request_list = build_request_list[:]
   results = [None] * len(build_request_list)  # return value of this function
   identity = auth.get_current_identity()
   ctx = ndb.get_context()
-  new_builds = {}
+  new_builds = {}  # {i: model.Build}
 
   logging.info(
       '%s is creating %d builds',
@@ -406,12 +409,36 @@ def add_many_async(build_request_list):
 
     For each pending request, create a Build entity, but don't put it.
     """
-    now = utils.utcnow()
     # Ensure that build id order is reverse of build request order
     reqs = list(pending_reqs())
     build_ids = model.create_build_ids(now, len(reqs))
     for (i, r), build_id in zip(reqs, build_ids):
       new_builds[i] = r.create_build(build_id, identity, now)
+
+  @ndb.tasklet
+  def update_builders_async():
+    """Creates/updates model.Builder entities."""
+    builder_ids = set()
+    for b in new_builds.itervalues():
+      builder = b.parameters.get(BUILDER_PARAMETER)
+      if builder:
+        builder_ids.add('%s:%s:%s' % (b.project, b.bucket, builder))
+    keys = [ndb.Key(model.Builder, bid) for bid in builder_ids]
+    builders = yield ndb.get_multi_async(keys)
+
+    to_put = []
+    for key, builder in zip(keys, builders):
+      if not builder:
+        # Register it!
+        to_put.append(model.Builder(key=key, last_scheduled=now))
+      else:
+        since_last_update = now - builder.last_scheduled
+        update_probability = since_last_update.total_seconds() / 3600.0
+        if _should_update_builder(update_probability):
+          builder.last_scheduled = now
+          to_put.append(builder)
+    if to_put:
+      yield ndb.put_multi_async(to_put)
 
   @ndb.tasklet
   def create_swarming_tasks_async():
@@ -504,6 +531,7 @@ def add_many_async(build_request_list):
   yield check_cached_builds_async()
   create_new_builds()
   if new_builds:
+    yield update_builders_async()
     yield create_swarming_tasks_async()
     # Update tag indexes after swarming tasks are successfully created,
     # as opposed to before, to avoid creating tag index entries for
@@ -516,6 +544,10 @@ def add_many_async(build_request_list):
   assert all(build or ex for build, ex in results), results
   assert all(not (build and ex) for build, ex in results), results
   raise ndb.Return(results)
+
+
+def _should_update_builder(probability):  # pragma: no cover
+  return random.random() < probability
 
 
 @ndb.tasklet
@@ -553,6 +585,14 @@ def _with_swarming_api_error_converter():
       logging.error(msg)
       raise errors.InvalidInputError(msg)
     raise  # pragma: no cover
+
+
+def unregister_builders():
+  """Unregisters builders that didn't have builds for 4 weeks."""
+  threshold = utils.utcnow() - model.BUILDER_EXPIRATION_DURATION
+  q = model.Builder.query(model.Builder.last_scheduled < threshold)
+  keys = q.fetch(keys_only=True)
+  ndb.delete_multi(keys)
 
 
 def retry(

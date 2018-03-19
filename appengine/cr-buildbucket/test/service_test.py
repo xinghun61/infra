@@ -102,6 +102,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         'config.get_settings_async', autospec=True,
         return_value=future(service_config_pb2.SettingsCfg()))
 
+    self.patch(
+        'service._should_update_builder', side_effect=lambda p: p > 0.5)
+
   def mock_cannot(self, action, bucket=None):
     def can_async(requested_bucket, requested_action, _identity=None):
       match = (
@@ -149,7 +152,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
 
   def test_add(self):
-    params = {'buildername': 'linux_rel'}
+    params = {'builder_name': 'linux_rel'}
     build = self.add(
         bucket='chromium',
         parameters=params,
@@ -161,6 +164,44 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.parameters, params)
     self.assertEqual(build.created_by, auth.get_current_identity())
     self.assertEqual(build.canary_preference, model.CanaryPreference.CANARY)
+
+  def test_add_update_builders(self):
+    recently = self.now - datetime.timedelta(minutes=1)
+    while_ago = self.now - datetime.timedelta(minutes=61)
+    ndb.put_multi([
+      model.Builder(id='chromium:try:linux_rel', last_scheduled=recently),
+      model.Builder(id='chromium:try:mac_rel', last_scheduled=while_ago),
+    ])
+
+    service.add_many_async([
+      service.BuildRequest(
+          project='chromium',
+          bucket='try',
+          parameters={'builder_name': 'linux_rel'},
+          canary_preference=model.CanaryPreference.PROD,
+      ),
+      service.BuildRequest(
+          project='chromium',
+          bucket='try',
+          parameters={'builder_name': 'mac_rel'},
+          canary_preference=model.CanaryPreference.PROD,
+      ),
+      service.BuildRequest(
+          project='chromium',
+          bucket='try',
+          parameters={'builder_name': 'win_rel'},
+          canary_preference=model.CanaryPreference.PROD,
+      ),
+    ]).get_result()
+
+    builders = model.Builder.query().fetch()
+    self.assertEqual(len(builders), 3)
+    self.assertEqual(builders[0].key.id(), 'chromium:try:linux_rel')
+    self.assertEqual(builders[0].last_scheduled, recently)
+    self.assertEqual(builders[1].key.id(), 'chromium:try:mac_rel')
+    self.assertEqual(builders[1].last_scheduled, self.now)
+    self.assertEqual(builders[2].key.id(), 'chromium:try:win_rel')
+    self.assertEqual(builders[2].last_scheduled, self.now)
 
   def test_add_with_client_operation_id(self):
     build = self.add(
@@ -1762,7 +1803,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     cancel_task_async.assert_called_with('swarming.example.com', 'deadbeef')
 
-  ###########################  LONGEST_PENDING_TIME ############################
+  ################################ PAUSE BUCKET ################################
 
   def test_pause_bucket(self):
     self.test_build.bucket = 'foo'
@@ -1815,3 +1856,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
     with self.assertRaises(errors.InvalidInputError):
       service.pause('test', True)
+
+  ############################ UNREGISTER BUILDERS #############################
+
+  def test_unregister_builders(self):
+    model.Builder(
+        id='chromium:try:linux_rel',
+        last_scheduled=self.now - datetime.timedelta(weeks=8),
+    ).put()
+    service.unregister_builders()
+    builders = model.Builder.query().fetch()
+    self.assertFalse(builders)

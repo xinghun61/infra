@@ -53,6 +53,13 @@ cron:
   retry_parameters:
     min_backoff_seconds: 2
 
+## cleanup builders
+
+- description: unregister builders that didn't have builds for a long time.
+  target: backend
+  url: /internal/cron/buildbucket/unregister-builders
+  schedule: every 1 hours
+
 ### gae_ts_mon
 
 - description: Send ts_mon metrics
