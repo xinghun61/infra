@@ -202,10 +202,11 @@ class RevealEmailsToMembersTest(unittest.TestCase):
       # Assert profile url still contains user ID.
       self.assertEqual('/u/%s/' % viewed_user_id, user_view.profile_url)
 
-  def testRevealEmailsToPriviledgedDomain(self):
+  def testDontRevealEmailsToPriviledgedDomain(self):
+    """We no longer give this advantage based on email address domain."""
     for priviledged_user_domain in settings.priviledged_user_domains:
       self.mr.auth.user_pb.email = 'test@' + priviledged_user_domain
-      self.CheckRevealAllToMember(100001L, True)
+      self.CheckRevealAllToMember(100001L, False)
 
   def testRevealEmailToSelf(self):
     self.mr.auth.user_pb.email = 'user@example.com'

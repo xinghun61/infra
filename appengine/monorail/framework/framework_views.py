@@ -210,12 +210,7 @@ def _ShouldRevealEmail(auth, project, viewed_email):
   if project and framework_bizobj.UserIsInProject(project, auth.effective_ids):
     return True
 
-  # Case 5: Emails that end in priviledged user domains see unobscured email
-  #         addresses.
-  if framework_bizobj.IsPriviledgedDomainUser(auth.user_pb.email):
-    return True
-
-  # Case 6: Do not obscure your own email.
+  # Case 5: Do not obscure your own email.
   if viewed_email and auth.user_pb.email == viewed_email:
     return True
 

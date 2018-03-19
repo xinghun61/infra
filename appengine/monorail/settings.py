@@ -230,7 +230,8 @@ mail_domain = None
 # The format string may include "{revnum}" for the revision number.
 revision_url_format = 'https://crrev.com/{revnum}'
 
-# Users with emails in the priviledged domains see unobscured email addresses.
+# Users with emails in the "priviledged" domains do NOT get any advantage
+# but they do default their preference to show unobscured email addresses.
 priviledged_user_domains = [
   'google.com', 'chromium.org', 'webrtc.org',
   ]
