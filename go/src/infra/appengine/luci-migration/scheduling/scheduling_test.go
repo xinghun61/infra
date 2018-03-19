@@ -94,8 +94,7 @@ func TestScheduling(t *testing.T) {
 		bbService.BasePath = bbServer.URL
 
 		h := &Scheduler{
-			MaxHourlyRatePerBuilder: 5,
-			Buildbucket:             bbService,
+			Buildbucket: bbService,
 		}
 
 		Convey("schedules buildbot builds on LUCI", func() {
@@ -202,16 +201,6 @@ func TestScheduling(t *testing.T) {
 				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
 				So(actualPutRequests, ShouldBeEmpty)
-			})
-
-			Convey("honors rate limit", func() {
-				putBuilder(100)
-				for i := 0; i < h.MaxHourlyRatePerBuilder*2; i++ {
-					err := h.BuildCompleted(c, b)
-					So(err, ShouldBeNil)
-					b.ID--
-				}
-				So(actualPutRequests, ShouldHaveLength, h.MaxHourlyRatePerBuilder)
 			})
 		})
 

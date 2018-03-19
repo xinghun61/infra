@@ -220,10 +220,7 @@ func handleBuildbucketPubSub(c *router.Context) error {
 		return err
 	}
 
-	handler := &scheduling.Scheduler{
-		Buildbucket:             bb,
-		MaxHourlyRatePerBuilder: 5,
-	}
+	handler := &scheduling.Scheduler{Buildbucket: bb}
 	return handler.BuildCompleted(c.Context, &b)
 }
 

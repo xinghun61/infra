@@ -26,11 +26,9 @@ package scheduling
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"golang.org/x/net/context"
 
@@ -40,7 +38,6 @@ import (
 	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/luci/buildbucket"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
-	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
@@ -70,10 +67,7 @@ type OutputProperties struct {
 
 // Scheduler schedules Buildbot builds on LUCI.
 type Scheduler struct {
-	// MaxHourlyRatePerBuilder is the maximum number of builds
-	// we can schedule on a LUCI builder.
-	MaxHourlyRatePerBuilder int
-	Buildbucket             *bbapi.Service
+	Buildbucket *bbapi.Service
 }
 
 // BuildCompleted handles a build completion notification.
@@ -152,7 +146,7 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 			c,
 			"scheduling Buildbot build %d on LUCI for builder %q and buildset %q",
 			build.ID, &builder.ID, build.Tags.Get(buildbucket.TagBuildSet))
-		return h.maybeSchedule(c, builder.ID.Builder, newBuild)
+		return h.schedule(c, builder.ID.Builder, newBuild)
 	})
 }
 
@@ -202,7 +196,7 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 
 	return withLock(c, build.ID, func() error {
 		logging.Infof(c, "retrying LUCI build %d", build.ID)
-		return h.maybeSchedule(c, build.Builder, newBuild)
+		return h.schedule(c, build.Builder, newBuild)
 	})
 }
 
@@ -238,28 +232,8 @@ func withLock(c context.Context, buildID int64, f func() error) error {
 	return nil
 }
 
-// maybeSchedule creates a build and logs a successful result,
-// unless the app scheduled enough builds for this builder in the past hour.
-func (h *Scheduler) maybeSchedule(c context.Context, builder string, req *bbapi.ApiPutRequestMessage) error {
-	// Did we schedule enough builds in the past hour?
-	hour := clock.Now(c).Truncate(time.Hour).Unix()
-	countKey := fmt.Sprintf("created-count-%q-%q-%d", req.Bucket, builder, hour)
-	switch count, err := memcache.Increment(c, countKey, 1, 0); {
-	case err != nil:
-		return errors.Annotate(err, "failed to increment build created counter at %q", countKey).Tag(transient.Tag).Err()
-	case count > uint64(h.MaxHourlyRatePerBuilder):
-		logging.Warningf(
-			c,
-			"Not creating build: reached maximum created builds for builder %q:%q this hour",
-			req.Bucket, builder)
-		return nil
-	default:
-		logging.Infof(
-			c,
-			"created %d builds for builder %q:%q this hour",
-			count, req.Bucket, builder)
-	}
-
+// schedule creates a build and logs a successful result.
+func (h *Scheduler) schedule(c context.Context, builder string, req *bbapi.ApiPutRequestMessage) error {
 	req.Tags = append(req.Tags, "user_agent:luci-migration")
 	req.Experimental = true
 
