@@ -55,8 +55,6 @@ class PredatorForClusterfuzz(PredatorApp):
             'TouchCrashedFile': Weight(1.),
         }),
         'TouchCrashedDirectory': Weight(1.),
-        'TouchParentDirectory': Weight(0.2),
-        'TouchGrandParentDirectory': Weight(0.04),
         'TouchCrashedComponent': Weight(1.),
         'NumberOfTouchedFiles': Weight(0.5),
     })
@@ -71,8 +69,6 @@ class PredatorForClusterfuzz(PredatorApp):
                                       top_frame_index_feature,
                                       touch_crashed_file_feature]),
          TouchCrashedDirectoryFeature(options=blacklist_directories),
-         TouchParentDirectoryFeature(options=blacklist_directories),
-         TouchGrandParentDirectoryFeature(options=blacklist_directories),
          TouchCrashedComponentFeature(
              self._component_classifier,
              options=config.feature_options['TouchCrashedComponent']),
