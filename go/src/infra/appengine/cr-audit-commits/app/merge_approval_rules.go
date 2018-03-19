@@ -17,6 +17,10 @@ const (
 	mergeApprovedLabel  = "Merge-Approved-%d"
 )
 
+var chromeTPMs = []string{"cmasso@chromium.org", "govind@chromium.org", "amineer@chromium.org", "abdulsyed@chromium.org",
+	"bhthompson@chromium.org", "josafat@chromium.org", "gkihumba@chromium.org", "kbleicher@chromium.org",
+	"mmoss@chromium.org"}
+
 // OnlyMergeApprovedChange is a RuleFunc that verifies that only approved changes are merged into a release branch.
 func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
@@ -29,6 +33,13 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 		return result
 	}
 
+	//Exclude Chrome TPM changes
+	for _, tpm := range chromeTPMs {
+		if rc.AuthorAccount == tpm {
+			result.RuleResultStatus = rulePassed
+			return result
+		}
+	}
 	bugID, err := bugIDFromCommitMessage(rc.CommitMessage)
 	if err != nil {
 		result.Message = fmt.Sprintf("Revision %s was merged to %s release branch with no bug attached!"+

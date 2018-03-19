@@ -105,6 +105,15 @@ func TestMergeApprovalRules(t *testing.T) {
 			So(rr.Message, ShouldContainSubstring, rc.CommitHash)
 
 		})
+		Convey("Change to commit is authored by a Chrome TPM", func() {
+			rc.CommitMessage = "This change's author is a Chrome TPM"
+			rc.AuthorAccount = "cmasso@chromium.org"
+			// Run rule
+			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			// Check result code
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+
+		})
 		Convey("Change to commit is by Chrome release bot", func() {
 			rc.CommitMessage = "This change's author is Chrome release bot"
 			rc.AuthorAccount = "chrome-release-bot@chromium.org"
