@@ -97,6 +97,7 @@ class CQAttempt(BigQueryObject):
 
     self.max_bbucket_ids_msec = None
     self.contributing_bbucket_ids = None
+    self.earliest_equivalent_patchset = None
 
   @staticmethod
   def get_bigquery_attributes():
@@ -131,6 +132,7 @@ class CQAttempt(BigQueryObject):
         'click_to_patch_committed_sec',
         'click_to_failure_sec',
         'click_to_result_sec',
+        'earliest_equivalent_patchset',
     ]
 
 
@@ -149,6 +151,7 @@ class CQEvent(BigQueryObject):
     self.failure_reason = None
     self.dry_run = False
     self.contributing_buildbucket_ids = None
+    self.earliest_equivalent_patchset = None
 
   @staticmethod
   def get_bigquery_attributes():
@@ -162,4 +165,5 @@ class CQEvent(BigQueryObject):
         'dry_run',
         'failure_reason',
         'contributing_buildbucket_ids',
+        'earliest_equivalent_patchset',
     ]

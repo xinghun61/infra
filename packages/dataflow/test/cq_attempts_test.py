@@ -232,6 +232,12 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     ]
     self.assertIsNone(self.combFn.extract_output(accumulator))
 
+  def test_earliest_equivalent_patchset(self):
+    event = self.basic_event()
+    event.earliest_equivalent_patchset = 455
+    attempt = self.combFn.extract_output([event])
+    self.assertEqual(attempt['earliest_equivalent_patchset'], 455)
+
   def test_extract_consistent_field(self):
     event = self.basic_event()
     attempt = self.combFn.extract_output([event])
