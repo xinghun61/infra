@@ -51,6 +51,10 @@ class NextCommitPositionPipeline(SynchronousPipeline):
     data_points = analysis.GetDataPointsWithinCommitPositionRange(
         IntRange(lower=specified_lower_bound, upper=specified_upper_bound))
 
+    # Data points must be sorted in reverse order by commit position before.
+    data_points = sorted(
+        data_points, key=lambda k: k.commit_position, reverse=True)
+
     # A suspected build id is available when there is a regression range that
     # spans a single build cycle. During this time, bisect is preferred to
     # exponential search.

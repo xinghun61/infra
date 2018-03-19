@@ -98,6 +98,10 @@ def _DetermineNextCommitPosition(data_points):
         # identified. Perform the exponential search on that smaller range only.
         previous_data_point = data_points[i - 1]
 
+        # Ensure the data points are sorted in descending order.
+        assert (previous_data_point.commit_position >
+                current_data_point.commit_position)
+
         # If the previous point and this one have adjacent commit positions,
         # the culprit is found.
         if previous_data_point.commit_position - commit_position == 1:
