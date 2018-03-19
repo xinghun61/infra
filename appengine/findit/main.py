@@ -31,6 +31,7 @@ from handlers import pipeline_errors_dashboard
 from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
 from handlers import step_by_step_comparison
+from handlers import swarming_pubsub_pipeline_callback
 from handlers import swarming_push
 from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
@@ -45,6 +46,8 @@ from handlers.flake import triage_flake_analysis
 
 # Default module.
 default_web_pages_handler_mappings = [
+    ('/_ah/push-handlers/swarming',
+     swarming_pubsub_pipeline_callback.SwarmingPubSubPipelineCallback),
     ('/_ah/push-handlers/tryjob',
      try_job_pubsub_pipeline_callback.TryJobPubSubPipelineCallback),
     ('/', home.Home),
