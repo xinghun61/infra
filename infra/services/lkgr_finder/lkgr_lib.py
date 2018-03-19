@@ -265,17 +265,6 @@ def ReadBuildData(filename):  # pragma: no cover
     raise
 
 
-def FetchLKGR(lkgr_url):  # pragma: no cover
-  """Get the current LKGR from the status app."""
-  LOGGER.debug('Fetching current LKGR from %s', lkgr_url)
-  try:
-    r = requests.get(lkgr_url)
-  except requests.exceptions.RequestException:
-    LOGGER.error('RequestException while fetching %s', lkgr_url)
-    return
-  return r.content.strip()
-
-
 ##################################################
 # Data Processing
 ##################################################
@@ -541,45 +530,6 @@ def UpdateTag(new_lkgr, repo, dry):  # pragma: no cover
       repo._git(push_cmd)  # pylint: disable=W0212
   except subprocess.CalledProcessError:
     LOGGER.error('Failed to push new lkgr tag.')
-
-
-def PostLKGR(status_url, lkgr, lkgr_alt, password_file, dry):  # pragma: no cover
-  """Posts the LKGR to the status_url.
-
-  Args:
-    status_url: the instance of chromium-status to post the lkgr to
-    lkgr: the value of the new lkgr to post
-    lkgr_alt: the keyfunc representation of the lkgr
-    password_file: path to a password file containing the shared secret
-    dry: if True, don't actually make the post request
-  """
-  url = status_url + '/commits'
-  LOGGER.info('Posting to %s', url)
-
-  try:
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           password_file), 'r') as f:
-      password = f.read().strip()
-  except (IOError, TypeError):
-    LOGGER.error('Could not read password file %s, aborting upload' %
-                 password_file)
-    return
-
-  params = {
-      'hash': lkgr,
-      'position_ref': lkgr_alt[1],
-      'position_num': lkgr_alt[0],
-  }
-
-  if dry:
-    LOGGER.debug('Dry-run: Not posting with params %s', params)
-    return
-  try:
-    LOGGER.debug('Posting with params %s', params)
-    params.update({'password': password})
-    requests.post(url, params=params)
-  except requests.exceptions.RequestException:
-    LOGGER.error('RequestException while posting to %s', url)
 
 
 def WriteLKGR(lkgr, filename, dry):  # pragma: no cover
