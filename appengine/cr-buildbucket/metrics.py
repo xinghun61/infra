@@ -210,7 +210,7 @@ LEASE_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     bucketer=BUCKETER_24_HR,
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
 SCHEDULING_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
-    'buildbucket/builds/scheduling_duration',
+    'buildbucket/builds/scheduling_latency',
     'Duration of a build remaining in SCHEDULED state',
     _build_fields('bucket'),
     bucketer=BUCKETER_48_HR,
