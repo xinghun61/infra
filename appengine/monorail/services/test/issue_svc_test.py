@@ -468,6 +468,18 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, 78901, av, commit=False)
     self.mox.VerifyAll()
 
+  def testUpdateIssueApprovalApprovers(self):
+    self.services.issue.issueapproval2approver_tbl.Delete(
+        self.cnxn, issue_id=78901, approval_id=23, commit=False)
+    self.services.issue.issueapproval2approver_tbl.InsertRows(
+        self.cnxn, issue_svc.ISSUEAPPROVAL2APPROVER_COLS,
+        [(23, 111, 78901), (23, 222, 78901), (23, 444, 78901)], commit=False)
+
+    self.mox.ReplayAll()
+    self.services.issue.UpdateIssueApprovalApprovers(
+        self.cnxn, 78901, 23, [111, 222, 444], commit=False)
+    self.mox.VerifyAll()
+
   def testGetAllIssuesInProject_NoIssues(self):
     self.SetUpGetHighestLocalID(789, None, None)
     self.mox.ReplayAll()

@@ -410,6 +410,15 @@ class WorkEnv(object):
     logging.info('updated ApprovalValue %r for issue %r',
                  approvalvalue.approval_id, issue_id)
 
+  def UpdateIssueApprovalApprovers(self, issue_id, approval_id, approver_ids):
+    """Update an issue's approval approvers."""
+    with self.mr.profiler.Phase(
+        'updating approvers for issue %r, approval %r' % (
+            issue_id, approval_id)):
+      self.services.issue.UpdateIssueApprovalApprovers(
+          self.mr.cnxn, issue_id, approval_id, approver_ids)
+    logging.info('updated approvers to %r' % approver_ids)
+
   # FUTURE: UpdateIssue()
   def UpdateIssue(self, issue, delta, comment):
     pass

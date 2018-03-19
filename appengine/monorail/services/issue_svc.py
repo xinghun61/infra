@@ -63,7 +63,7 @@ ISSUESNAPSHOT2COMPONENT_TABLE_NAME = 'IssueSnapshot2Component'
 ISSUESNAPSHOT2LABEL_TABLE_NAME = 'IssueSnapshot2Label'
 ISSUE2MILESTONE_TABLE_NAME = 'Issue2Milestone'
 ISSUE2APPROVALVALUE_TABLE_NAME = 'Issue2ApprovalValue'
-ISSUEAPPROVAL2APPROVER_TABLE_NAME = 'IssueApproval2Approvers'
+ISSUEAPPROVAL2APPROVER_TABLE_NAME = 'IssueApproval2Approver'
 
 
 ISSUE_COLS = [
@@ -1138,7 +1138,18 @@ class IssueService(object):
       cnxn.Commit()
     self.issue_2lc.InvalidateKeys(cnxn, [issue_id])
 
-  # TODO(jojwang): monorail:3576, Implement updating approvers
+  def UpdateIssueApprovalApprovers(
+      self, cnxn, issue_id, approval_id, approver_ids, commit=True):
+    """Update the list of approvers allowed to approve an issue's approval."""
+    self.issueapproval2approver_tbl.Delete(
+        cnxn, issue_id=issue_id, approval_id=approval_id, commit=False)
+    self.issueapproval2approver_tbl.InsertRows(
+        cnxn, ISSUEAPPROVAL2APPROVER_COLS, [(approval_id, approver_id, issue_id)
+                                            for approver_id in approver_ids],
+        commit=False)
+    if commit:
+      cnxn.Commit()
+    self.issue_2lc.InvalidateKeys(cnxn, [issue_id])
 
   def _CreateIssueMilestones(self, cnxn, issue, commit=True):
     """Insert Issue2[Milestone] and [ApprovalValue] rows for the given issue."""

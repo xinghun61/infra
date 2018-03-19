@@ -302,7 +302,7 @@ CREATE TABLE Issue2ApprovalValue (
 ) ENGINE=INNODB;
 
 
-CREATE TABLE IssueApproval2Approvers (
+CREATE TABLE IssueApproval2Approver (
   issue_id INT NOT NULL,
   approval_id INT NOT NULL,
   approver_id INT NOT NULL,

@@ -1380,3 +1380,8 @@ ALTER TABLE Template2ApprovalValue MODIFY status ENUM (
 ================================================================
 2018-03-15: Soft-delete Hotlists.
 ALTER TABLE Hotlist ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
+
+===============================================================
+2018-03-19: Rename issue approvers table.
+
+RENAME TABLE IssueApproval2Approvers TO IssueApproval2Approver;

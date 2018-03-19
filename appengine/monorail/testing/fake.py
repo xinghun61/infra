@@ -1410,6 +1410,16 @@ class IssueService(object):
           return
     return
 
+  def UpdateIssueApprovalApprovers(
+      self, cnxn, issue_id, approval_id, approver_ids, commit=True):
+    issue = self.GetIssue(cnxn, issue_id)
+    for ms in issue.milestones:
+      for av in ms.approval_values:
+        if av.approval_id == approval_id:
+          av.approver_ids = approver_ids
+          return
+    return
+
   def SetUsedLocalID(self, cnxn, project_id):
     self.next_id = self.GetHighestLocalID(cnxn, project_id) + 1
 

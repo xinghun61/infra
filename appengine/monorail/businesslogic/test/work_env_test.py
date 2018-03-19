@@ -317,6 +317,22 @@ class WorkEnvTest(unittest.TestCase):
     updated_av = tracker_bizobj.FindApprovalValueByID(24, ms.approval_values)
     self.assertEqual(updated_av, new_av_24)
 
+  def testUpdateIssueApprovalApprovers(self):
+    """We can update an issue's approval approvers."""
+    av_23 = tracker_pb2.ApprovalValue(approval_id=23, approver_ids=[555])
+    milestones = [tracker_pb2.Milestone(
+        milestone_id=1, rank=1, approval_values=[av_23])]
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Avialable', 111L,
+                               issue_id=78901, milestones=milestones)
+    self.services.issue.TestAddIssue(issue)
+
+    self.work_env.UpdateIssueApprovalApprovers(78901, 23, [111, 222, 444])
+
+    issue = self.services.issue.GetIssue(self.cnxn, 78901)
+    ms = issue.milestones[0]
+    updated_av = tracker_bizobj.FindApprovalValueByID(23, ms.approval_values)
+    self.assertItemsEqual([111, 222, 444], updated_av.approver_ids)
+
   # FUTURE: testUpdateIssue()
 
   def testDeleteIssue(self):
