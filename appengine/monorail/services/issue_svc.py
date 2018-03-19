@@ -111,7 +111,7 @@ ISSUESNAPSHOT2LABEL_COLS = ['issuesnapshot_id', 'label_id']
 ISSUE2MILESTONE_COLS = ['id', 'issue_id', 'name', 'rank']
 ISSUE2APPROVALVALUE_COLS = ['approval_id', 'issue_id', 'milestone_id',
                             'status', 'setter_id', 'set_on']
-ISSUEAPPROVAL2APPROVERS_COLS = ['approval_id', 'approver_id', 'issue_id']
+ISSUEAPPROVAL2APPROVER_COLS = ['approval_id', 'approver_id', 'issue_id']
 
 CHUNK_SIZE = 1000
 
@@ -241,7 +241,8 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
   def _DeserializeIssues(
       self, cnxn, issue_rows, summary_rows, label_rows, component_rows,
       cc_rows, notify_rows, fieldvalue_rows, relation_rows,
-      dangling_relation_rows, milestone_rows, approvalvalue_rows):
+      dangling_relation_rows, milestone_rows, approvalvalue_rows,
+      av_approver_rows):
     """Convert the given DB rows into a dict of Issue PBs."""
     results_dict = {}
     for issue_row in issue_rows:
@@ -285,9 +286,15 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       fv, issue_id = self._UnpackFieldValue(fv_row)
       results_dict[issue_id].field_values.append(fv)
 
+    approvers_dict = collections.defaultdict(list)
+    for approver_row in av_approver_rows:
+      approval_id, approver_id, issue_id = approver_row
+      approvers_dict[approval_id, issue_id].append(approver_id)
+
     milestone_avs_dict = collections.defaultdict(list)
     for av_row in approvalvalue_rows:
       av, issue_id, ms_id = self._UnpackApprovalValue(av_row)
+      av.approver_ids = approvers_dict[av.approval_id, issue_id]
       milestone_avs_dict[ms_id, issue_id].append(av)
 
     for ms_row in milestone_rows:
@@ -354,6 +361,8 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
         cnxn, cols=ISSUE2MILESTONE_COLS, issue_id=issue_ids)
     approvalvalue_rows = self.issue_service.issue2approvalvalue_tbl.Select(
         cnxn, cols=ISSUE2APPROVALVALUE_COLS, issue_id=issue_ids)
+    av_approver_rows = self.issue_service.issueapproval2approver_tbl.Select(
+        cnxn, cols=ISSUEAPPROVAL2APPROVER_COLS, issue_id=issue_ids)
     if issue_ids:
       ph = sql.PlaceHolders(issue_ids)
       blocked_on_rows = self.issue_service.issuerelation_tbl.Select(
@@ -379,7 +388,7 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
     issue_dict = self._DeserializeIssues(
         cnxn, issue_rows, summary_rows, label_rows, component_rows, cc_rows,
         notify_rows, fieldvalue_rows, relation_rows, dangling_relation_rows,
-        milestone_rows, approvalvalue_rows)
+        milestone_rows, approvalvalue_rows, av_approver_rows)
     logging.info('IssueTwoLevelCache.FetchItems returning: %r', issue_dict)
     return issue_dict
 

@@ -46,7 +46,7 @@ def MakeIssueService(project_service, config_service, cache_manager, my_mox):
       'reindexqueue_tbl', 'localidcounter_tbl', 'issuesnapshot2label_tbl',
       'issuesnapshot2cc_tbl', 'issuesnapshot2component_tbl',
       'issue2milestone_tbl', 'issue2approvalvalue_tbl',
-      'issueapproval2approver']:
+      'issueapproval2approver_tbl']:
     setattr(issue_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
   return issue_service
@@ -167,6 +167,8 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.milestone_rows = [(1, 78901, 'Canary', 1), (2, 78901, 'Stable', 11)]
     self.approvalvalue_rows = [(21, 78901, 1, 'needs_review', None, None),
                                (22, 78901, 1, 'not_set', None, None)]
+    self.av_approver_rows = [
+        (22, 111, 78901), (22, 222, 78901), (22, 333, 78901)]
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -191,7 +193,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
 
   def testDeserializeIssues_Empty(self):
     issue_dict = self.issue_2lc._DeserializeIssues(
-        self.cnxn, [], [], [], [], [], [], [], [], [], [], [])
+        self.cnxn, [], [], [], [], [], [], [], [], [], [], [], [])
     self.assertEqual({}, issue_dict)
 
   def testDeserializeIssues_Normal(self):
@@ -199,12 +201,14 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
         self.cnxn, self.issue_rows, self.summary_rows, self.label_rows,
         self.component_rows, self.cc_rows, self.notify_rows,
         self.fieldvalue_rows, self.relation_rows, self.dangling_relation_rows,
-        self.milestone_rows, self.approvalvalue_rows)
+        self.milestone_rows, self.approvalvalue_rows, self.av_approver_rows)
     self.assertItemsEqual([78901], issue_dict.keys())
     issue = issue_dict[78901]
     self.assertEqual(len(issue.milestones), 2)
     canary_ms = tracker_bizobj.FindMilestoneByID(1, issue.milestones)
     self.assertEqual(len(canary_ms.approval_values), 2)
+    av_22 = tracker_bizobj.FindApprovalValueByID(22, canary_ms.approval_values)
+    self.assertItemsEqual(av_22.approver_ids, [111, 222, 333])
     stable_ms = tracker_bizobj.FindMilestoneByID(2, issue.milestones)
     self.assertEqual(len(stable_ms.approval_values), 0)
 
@@ -218,7 +222,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
       self.cnxn, self.issue_rows, self.summary_rows, unexpected_label_rows,
       self.component_rows, self.cc_rows, self.notify_rows,
       self.fieldvalue_rows, self.relation_rows, self.dangling_relation_rows,
-      self.milestone_rows, self.approvalvalue_rows)
+      self.milestone_rows, self.approvalvalue_rows, self.av_approver_rows)
 
   def testDeserializeIssues_UnexpectedIssueRelation(self):
     unexpected_relation_rows = [
@@ -230,7 +234,8 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
       self.cnxn, self.issue_rows, self.summary_rows, self.label_rows,
       self.component_rows, self.cc_rows, self.notify_rows,
       self.fieldvalue_rows, unexpected_relation_rows,
-      self.dangling_relation_rows, self.milestone_rows, self.approvalvalue_rows)
+      self.dangling_relation_rows, self.milestone_rows, self.approvalvalue_rows,
+      self.av_approver_rows)
 
   def SetUpFetchItems(self, issue_ids):
     shard_id = None
@@ -261,6 +266,9 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.issue_service.issue2approvalvalue_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUE2APPROVALVALUE_COLS,
         issue_id=issue_ids).AndReturn(self.approvalvalue_rows)
+    self.issue_service.issueapproval2approver_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUEAPPROVAL2APPROVER_COLS,
+        issue_id=issue_ids).AndReturn(self.av_approver_rows)
     self.issue_service.issuerelation_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
         issue_id=issue_ids, kind='blockedon',
