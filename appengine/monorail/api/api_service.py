@@ -23,23 +23,12 @@
 # TODO(agable): Actually integrate the rpcexplorer.
 # You can use the API Explorer here: https://bugs.chromium.org/rpcexplorer
 
+
+from api import users_servicer
 from components import prpc
-
-from api import monorail_pb2
-from api import monorail_prpc_pb2
-
-class UsersServicer(object):
-
-  DESCRIPTION = monorail_prpc_pb2.UsersServiceDescription
-
-  def GetUser(self, request, _context):
-    ret = monorail_pb2.User()
-    ret.email = request.email
-    ret.id = hash(request.email)
-    return ret
 
 
 def RegisterApiHandlers(registry):
   server = prpc.Server()
-  server.add_service(UsersServicer())
+  server.add_service(users_servicer.UsersServicer())
   registry.routes.extend(server.get_routes())

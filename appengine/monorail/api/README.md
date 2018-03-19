@@ -16,7 +16,7 @@ files, follow these steps:
 
 ```bash
 $ PATH=../../../luci/appengine/components/tools:$PATH ../../../cipd/protoc \
-  --python_out=. --prpc-python_out=. *.proto
+  --python_out=. --prpc-python_out=. proto/*.proto
 ```
 
 

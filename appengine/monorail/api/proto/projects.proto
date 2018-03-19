@@ -1,24 +1,13 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is govered by a BSD-style
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
 
 syntax = "proto3";
 
+
 package monorail;
 
-service Users {
-  rpc GetUser (GetUserRequest) returns (User) {}
-}
-
-message GetUserRequest {
-  string email = 1;
-}
-
-message User {
-  string email = 1;
-  int64 id = 2;
-}
 
 service Projects {
   rpc ListProjects (ListProjectsRequest) returns (ListProjectsResponse) {}
@@ -26,15 +15,18 @@ service Projects {
   rpc PatchProjectConfiguredLabels (PatchProjectConfiguredLabelsRequest) returns (Labels) {}
 }
 
+
 message ListProjectsRequest {
   int32 page_size = 1;
   string page_token = 2;
 }
 
+
 message ListProjectsResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
 }
+
 
 message Project {
   string name = 1;
@@ -42,10 +34,12 @@ message Project {
   string description = 3;
 }
 
+
 message UpdateProjectConfiguredLabelsRequest {
   string project = 1;
   Labels labels = 2;
 }
+
 
 message PatchProjectConfiguredLabelsRequest {
   string project = 1;
@@ -53,39 +47,13 @@ message PatchProjectConfiguredLabelsRequest {
   repeated Label removed_labels = 3;
 }
 
+
 message Labels {
   repeated Label labels = 1;
 }
 
+
 message Label {
   string name = 1;
   int64 rank = 2;
-}
-
-service Issues {
-  rpc CreateIssue (CreateIssueRequest) returns (Issue) {}
-  rpc DeleteIssueComment (DeleteIssueCommentRequest) returns (Comment) {}
-}
-
-message CreateIssueRequest {
-  string project = 1;
-  Issue issue = 2;
-}
-
-message Issue {
-  string project = 1;
-  int64 issue_number = 2;
-  string summary = 3;
-  string description = 4;
-}
-
-message DeleteIssueCommentRequest {
-  string project = 1;
-  int64 issue = 2;
-  int64 comment = 3;
-}
-
-message Comment {
-  string content = 1;
-  bool deleted = 2;
 }
