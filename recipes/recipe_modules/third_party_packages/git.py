@@ -196,7 +196,10 @@ class GitApi(util.ModuleShim):
             '--with-libpcre2',
             ])
 
-        self.m.step('make install', ['make', 'install'])
+        self.m.step('make install', [
+          'make', 'install',
+          '-j', str(self.m.platform.cpu_count),
+          ])
 
     tag = self.m.properties.get('git_release_tag')
     if not tag:

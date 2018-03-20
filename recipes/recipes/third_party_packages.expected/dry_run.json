@@ -384,7 +384,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/tic_build",
     "name": "python.ncurses-6.0.make tic",
@@ -427,7 +429,9 @@
   {
     "cmd": [
       "make",
-      "install.libs"
+      "install.libs",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
     "env_prefixes": {
@@ -495,7 +499,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
     "name": "python.readline-7.0.make",
@@ -559,7 +565,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/zlib-1.2.11/zlib-1.2.11",
     "name": "python.zlib-1.2.11.make",
@@ -628,7 +636,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/sqlite-autoconf-3190300/sqlite-autoconf-3190300",
     "name": "python.sqlite-autoconf-3190300.make",
@@ -692,7 +702,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/libnsl-1.0.4/libnsl-1.0.4",
     "name": "python.libnsl-1.0.4.make",
@@ -756,7 +768,9 @@
   },
   {
     "cmd": [
-      "make"
+      "make",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/openssl-1.1.0f/openssl-1.1.0f",
     "name": "python.openssl-1.1.0f.make",
@@ -867,7 +881,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/sed-4.2.2/sed-4.2.2",
     "name": "python.sed-4.2.2.make",
@@ -930,7 +946,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/autoconf-2.69/autoconf-2.69",
     "name": "python.autoconf-2.69.make",
@@ -1661,7 +1679,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/_support/zlib-1.2.11/zlib-1.2.11",
     "name": "git.zlib-1.2.11.make",
@@ -1725,7 +1745,9 @@
   },
   {
     "cmd": [
-      "make"
+      "make",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/_support/openssl-1.1.0f/openssl-1.1.0f",
     "name": "git.openssl-1.1.0f.make",
@@ -1816,7 +1838,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/_support/curl-7.54.0/curl-7.54.0",
     "env": {
@@ -1884,7 +1908,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/_support/pcre2-10.23/pcre2-10.23",
     "name": "git.pcre2-10.23.make",
@@ -1947,7 +1973,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/_support/autoconf-2.69/autoconf-2.69",
     "name": "git.autoconf-2.69.make",
@@ -2038,7 +2066,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
@@ -3216,7 +3246,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/swig/_support/autoconf-2.69/autoconf-2.69",
     "name": "swig.autoconf-2.69.make",
@@ -3299,7 +3331,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/swig/_support/automake-1.15/automake-1.15",
     "env_prefixes": {
@@ -3369,7 +3403,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/swig/_support/pcre-8.41/pcre-8.41",
     "name": "swig.pcre-8.41.make",

@@ -203,7 +203,7 @@ class SupportPrefix(util.ModuleShim):
         configure_cmd = ['bash'] + configure_cmd
 
       self.m.step('configure', configure_cmd)
-      self.m.step('make', ['make'])
+      self.m.step('make', ['make', '-j', str(self.m.platform.cpu_count)])
 
       # Install OpenSSL. Note that "install_sw" is an OpenSSL-specific
       # sub-target that only installs headers and library, saving time.
@@ -228,7 +228,10 @@ class SupportPrefix(util.ModuleShim):
         './configure',
         '--prefix=%s' % (prefix,),
       ] + (configure_args or []))
-      self.m.step('make', ['make', 'install'])
+      self.m.step('make', [
+        'make', 'install',
+        '-j', str(self.m.platform.cpu_count),
+        ])
     return Source(
         prefix=self._ensure_and_build_archive(
           name, tag, build_fn, archive_name=archive_name),
@@ -311,7 +314,10 @@ class SupportPrefix(util.ModuleShim):
           src.join('configure'),
           '--prefix=%s' % (tic_prefix,),
         ])
-        self.m.step('make tic', ['make', 'install'])
+        self.m.step('make tic', [
+          'make', 'install',
+          '-j', str(self.m.platform.cpu_count),
+          ])
 
       # Determine the list of all supported profiles. The "toe" command (table
       # of entries) will dump a list.
@@ -365,7 +371,10 @@ class SupportPrefix(util.ModuleShim):
           '--enable-termcap',
           '--with-fallbacks=%s' % (','.join(fallbacks),),
         ])
-        self.m.step('make', ['make', 'install.libs'])
+        self.m.step('make', [
+          'make', 'install.libs',
+          '-j', str(self.m.platform.cpu_count),
+          ])
 
     return Source(
         prefix=self._ensure_and_build_archive(

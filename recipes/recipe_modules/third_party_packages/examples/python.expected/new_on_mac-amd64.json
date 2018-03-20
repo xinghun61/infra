@@ -417,7 +417,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/tic_build",
     "env": {
@@ -469,7 +471,9 @@
   {
     "cmd": [
       "make",
-      "install.libs"
+      "install.libs",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
     "env": {
@@ -549,7 +553,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
     "env": {
@@ -625,7 +631,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/zlib-1.2.11/zlib-1.2.11",
     "env": {
@@ -706,7 +714,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/sqlite-autoconf-3190300/sqlite-autoconf-3190300",
     "env": {
@@ -796,7 +806,9 @@
   },
   {
     "cmd": [
-      "make"
+      "make",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/openssl-0.9.8zh/openssl-0.9.8zh",
     "env": {
@@ -885,7 +897,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/sed-4.2.2/sed-4.2.2",
     "env": {
@@ -960,7 +974,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/python/_support/autoconf-2.69/autoconf-2.69",
     "env": {

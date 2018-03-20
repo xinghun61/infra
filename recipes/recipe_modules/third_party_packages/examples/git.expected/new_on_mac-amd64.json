@@ -297,7 +297,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/_support/zlib-1.2.11/zlib-1.2.11",
     "name": "zlib-1.2.11.make",
@@ -362,7 +364,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/_support/curl-7.54.0/curl-7.54.0",
     "name": "curl-7.54.0.make",
@@ -424,7 +428,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/_support/pcre2-10.23/pcre2-10.23",
     "name": "pcre2-10.23.make",
@@ -484,7 +490,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/_support/autoconf-2.69/autoconf-2.69",
     "name": "autoconf-2.69.make",
@@ -565,7 +573,9 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install",
+      "-j",
+      "2"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
