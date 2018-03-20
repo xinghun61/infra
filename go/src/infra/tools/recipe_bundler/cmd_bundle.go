@@ -16,7 +16,7 @@ import (
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 
-	cipd_common "go.chromium.org/luci/cipd/client/cipd/common"
+	cipd_common "go.chromium.org/luci/cipd/common"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag/stringmapflag"
