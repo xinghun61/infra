@@ -192,7 +192,8 @@ def GetSupportedCompileBuilders(platform=None):
   all_trybots = FinditConfig.Get().builders_to_trybots
   for master_name, builders in all_trybots.iteritems():
     for builder_name in builders:
-      if IsCompileBuilder(master_name, builder_name):
+      if (IsCompileBuilder(master_name, builder_name) and
+          GetSwarmbucketBot(master_name, builder_name) != (None, None)):
         if not platform or platform == GetOSPlatformName(
             master_name, builder_name):
           result.append({'master': master_name, 'builder': builder_name})
