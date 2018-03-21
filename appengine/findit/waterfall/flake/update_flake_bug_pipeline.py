@@ -219,5 +219,6 @@ class UpdateFlakeBugPipeline(BasePipeline):
       })
 
     issue_tracker.update(issue, comment, send_email=True)
+    analysis.Update(has_commented_on_bug=True)
     logging.info('Bug %s/%s was updated.', project_name, analysis.bug_id)
     return True

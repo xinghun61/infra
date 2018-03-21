@@ -386,3 +386,4 @@ class SendNotificationForFlakeCulpritPipelineTest(
 
     pipeline_job = SendNotificationForFlakeCulpritPipeline()
     self.assertTrue(pipeline_job.run(analysis.key.urlsafe()))
+    self.assertTrue(analysis.has_commented_on_cl)

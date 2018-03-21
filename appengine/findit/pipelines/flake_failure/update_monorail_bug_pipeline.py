@@ -68,5 +68,6 @@ class UpdateMonorailBugPipeline(SynchronousPipeline):
       })
 
     issue_tracker.update(issue, comment, send_email=True)
+    analysis.Update(has_commented_on_bug=True)
     analysis.LogInfo('Bug %s/%s was updated.' % (project_name, analysis.bug_id))
     return True

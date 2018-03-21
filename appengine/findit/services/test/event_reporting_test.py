@@ -212,6 +212,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
                                           test)
+    analysis.has_commented_on_cl = True
     analysis.data_points = [
         DataPoint.Create(),
         DataPoint.Create(),
@@ -295,6 +296,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
                                           test)
+    analysis.has_filed_bug = True
     analysis.data_points = [
         DataPoint.Create(),
         DataPoint.Create(),
@@ -376,6 +378,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
                                           test)
+    analysis.has_commented_on_bug = True
     analysis.data_points = [
         DataPoint.Create(),
         DataPoint.Create(),

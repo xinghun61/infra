@@ -210,6 +210,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(should_file_fn.called)
     self.assertTrue(create_bug_fn.called)
     self.assertTrue(analysis.has_attempted_filing)
+    self.assertTrue(analysis.has_filed_bug)
 
   @mock.patch.object(
       issue_tracking_service,

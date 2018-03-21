@@ -347,22 +347,13 @@ def CreateTestFlakeAnalysisCompletionEvent(analysis):
     event.analysis_info.outcomes.append(findit_pb2.NOT_REPRODUCIBLE)
 
   # Actions.
-
-  if culprit and culprit.cr_notification_status == analysis_status.COMPLETED:
+  if analysis.has_commented_on_cl:
     event.analysis_info.actions.append(findit_pb2.CL_COMMENTED)
 
-  # TODO (crbug.com/805247): Track these actions explicitly in
-  # master_flake_analysis.
-  # Check that a bug_id was found, it was reported by findit, and that the
-  # confidence for the finding is high so that we know that findit commented
-  # on the bug that was given through an API trigger.
-  flake_settings = waterfall_config.GetCheckFlakeSettings()
-  min_confidence = flake_settings.get('minimum_confidence_score_to_run_tryjobs')
-  if (analysis.bug_id and not analysis.has_attempted_filing and
-      analysis.confidence_in_suspected_build >= min_confidence):
+  if analysis.has_commented_on_bug:
     event.analysis_info.actions.append(findit_pb2.BUG_COMMENTED)
 
-  if (analysis.bug_id and analysis.has_attempted_filing):
+  if analysis.has_filed_bug:
     event.analysis_info.actions.append(findit_pb2.BUG_CREATED)
 
   return event

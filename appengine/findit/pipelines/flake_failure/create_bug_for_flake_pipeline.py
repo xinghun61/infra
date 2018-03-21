@@ -157,7 +157,7 @@ class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
       analysis.LogError('Couldn\'t create bug!')
       return
 
-    analysis.Update(bug_id=bug_id)
+    analysis.Update(bug_id=bug_id, has_filed_bug=True)
     analysis.LogInfo('Filed bug with id %d' % bug_id)
 
     flake_analysis_request = FlakeAnalysisRequest.GetVersion(

@@ -232,6 +232,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
         mock.call().getIssue(123),
         mock.call().update(dummy_issue, mock.ANY, send_email=True)
     ])
+    self.assertTrue(analysis.has_commented_on_bug)
 
   @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
   def testBugNotUpdatedWithCulpritFoundIfBUpdateDisabled(self, issue_tracker):

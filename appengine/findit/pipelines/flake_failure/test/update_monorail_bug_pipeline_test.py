@@ -105,6 +105,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
 
     pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
     self.assertTrue(pipeline_job.outputs.default.value)
+    self.assertTrue(analysis.has_commented_on_bug)
 
   @mock.patch.object(appengine_util, 'IsStaging', return_value=False)
   @mock.patch.object(

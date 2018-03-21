@@ -257,5 +257,8 @@ class SendNotificationForFlakeCulpritPipeline(BasePipeline):
     review_server_host = culprit_info['review_server_host']
     review_change_id = culprit_info['review_change_id']
 
-    return _SendNotificationForCulprit(culprit, review_server_host,
-                                       review_change_id)
+    success = _SendNotificationForCulprit(culprit, review_server_host,
+                                          review_change_id)
+    if success:
+      analysis.Update(has_commented_on_cl=True)
+    return success

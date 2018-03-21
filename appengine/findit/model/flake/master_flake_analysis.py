@@ -306,6 +306,13 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     self.last_attempted_swarming_task_id = None
     self.last_attempted_revision = None
 
+    # Reset booleans that track the actions taken by this analysis.
+    self.has_filed_bug = False
+    self.has_commented_on_bug = False
+    self.has_commented_on_cl = False
+    self.has_created_autorevert = False
+    self.has_submitted_autorevert = False
+
   def GetCommitPositionOfBuild(self, build_number):
     """Gets the commit position of a build in self.data_points if available.
 
@@ -581,3 +588,18 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # particular build during an analysis. Reset when the build number is changed.
   swarming_task_attempts_for_build = ndb.IntegerProperty(
       default=0, indexed=False)
+
+  # Track if this analysis has created a bug.
+  has_filed_bug = ndb.BooleanProperty(default=False, indexed=False)
+
+  # Track if this analysis has commented on a bug.
+  has_commented_on_bug = ndb.BooleanProperty(default=False, indexed=False)
+
+  # Track if this analysis has commented on a cl.
+  has_commented_on_cl = ndb.BooleanProperty(default=False, indexed=False)
+
+  # Track if this analysis has created a revert for a test.
+  has_created_autorevert = ndb.BooleanProperty(default=False, indexed=False)
+
+  # Track if this analysis has submitted a revert cl for a test.
+  has_submitted_autorevert = ndb.BooleanProperty(default=False, indexed=False)

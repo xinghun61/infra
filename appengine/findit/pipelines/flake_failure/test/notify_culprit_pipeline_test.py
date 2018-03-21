@@ -85,3 +85,4 @@ class NotifyCulpritPipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
 
     self.assertTrue(mocked_notify.called)
+    self.assertTrue(analysis.has_commented_on_cl)
