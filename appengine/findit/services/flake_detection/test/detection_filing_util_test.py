@@ -44,105 +44,140 @@ class DetectionFilingUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 1))
   def testGetTotalRecentFlakeOccurrences(self, _):
+    step_name = 's'
+    test_name = 't'
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    build_id = 1
+    flake_type = FlakeType.CQ_FALSE_REJECTION
+
     now = time_util.GetUTCNow()
-    flake = Flake()
-    flake.flake_occurrences = [
-        FlakeOccurrence(
-            master_name='m',
-            builder_name='b',
-            build_number=100,
-            build_id=1,
-            time_reported=now - datetime.timedelta(hours=1),
-            flake_type=FlakeType.CQ_FALSE_REJECTION),
-        FlakeOccurrence(
-            master_name='m',
-            builder_name='b',
-            build_number=100,
-            build_id=1,
-            time_reported=now - datetime.timedelta(hours=2),
-            flake_type=FlakeType.CQ_FALSE_REJECTION),
-        FlakeOccurrence(
-            master_name='m',
-            builder_name='b',
-            build_number=100,
-            build_id=1,
-            time_reported=now - datetime.timedelta(hours=3),
-            flake_type=FlakeType.CQ_FALSE_REJECTION),
-        FlakeOccurrence(
-            master_name='m',
-            builder_name='b',
-            build_number=100,
-            build_id=1,
-            time_reported=now - datetime.timedelta(hours=25),
-            flake_type=FlakeType.CQ_FALSE_REJECTION),
-    ]
+    flake = Flake.Create(step_name, test_name)
     flake.put()
+
+    fo = FlakeOccurrence.Create(
+        step_name=step_name,
+        test_name=test_name,
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        build_id=build_id,
+        time_reported=now - datetime.timedelta(hours=1),
+        flake_type=flake_type).put()
+    FlakeOccurrence.Create(
+        step_name=step_name,
+        test_name=test_name,
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        build_id=build_id,
+        time_reported=now - datetime.timedelta(hours=2),
+        flake_type=flake_type).put()
+    FlakeOccurrence.Create(
+        step_name=step_name,
+        test_name=test_name,
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        build_id=build_id,
+        time_reported=now - datetime.timedelta(hours=3),
+        flake_type=flake_type).put()
+    FlakeOccurrence.Create(
+        step_name=step_name,
+        test_name=test_name,
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        build_id=build_id,
+        time_reported=now - datetime.timedelta(hours=25),
+        flake_type=flake_type).put()
+
     self.assertEqual(
         detection_filing_util.GetTotalRecentFlakeOccurrences(
             flake, delta=datetime.timedelta(hours=10)), 3)
 
-    del flake.flake_occurrences[0]
-    flake.put()
+    fo.delete()
     self.assertEqual(
         detection_filing_util.GetTotalRecentFlakeOccurrences(flake), 2)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 1))
   def testFlakeHasEnoughOccurrencesToFileBugCQRejection(self, _):
+    step_name = 's'
+    test_name = 't'
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    build_id = 1
+    flake_type = FlakeType.CQ_FALSE_REJECTION
     now = time_util.GetUTCNow()
 
-    flake = Flake()
+    flake = Flake.Create(step_name, test_name)
+    flake.put()
 
     self.assertFalse(
         detection_filing_util.FlakeHasEnoughOccurrencesToFileBug(flake))
 
-    flake.flake_occurrences = [
-        FlakeOccurrence(
-            master_name='m',
-            builder_name='b',
-            build_number=100,
-            build_id=1,
-            time_reported=now - datetime.timedelta(hours=1),
-            flake_type=FlakeType.CQ_FALSE_REJECTION),
-        FlakeOccurrence(
-            master_name='m',
-            builder_name='b',
-            build_number=100,
-            build_id=1,
-            time_reported=now - datetime.timedelta(hours=2),
-            flake_type=FlakeType.CQ_FALSE_REJECTION),
-        FlakeOccurrence(
-            master_name='m',
-            builder_name='b',
-            build_number=100,
-            build_id=1,
-            time_reported=now - datetime.timedelta(hours=3),
-            flake_type=FlakeType.CQ_FALSE_REJECTION)
-    ]
-    flake.put()
+    FlakeOccurrence.Create(
+        step_name=step_name,
+        test_name=test_name,
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        build_id=build_id,
+        time_reported=now - datetime.timedelta(hours=1),
+        flake_type=flake_type).put()
+    FlakeOccurrence.Create(
+        step_name=step_name,
+        test_name=test_name,
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        build_id=build_id,
+        time_reported=now - datetime.timedelta(hours=2),
+        flake_type=flake_type).put()
+    FlakeOccurrence.Create(
+        step_name=step_name,
+        test_name=test_name,
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        build_id=build_id,
+        time_reported=now - datetime.timedelta(hours=3),
+        flake_type=flake_type).put()
+
     self.assertTrue(
         detection_filing_util.FlakeHasEnoughOccurrencesToFileBug(flake))
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 1))
   def testFlakeHasEnoughOccurrencesToFileBugOutrightFlake(self, _):
+    step_name = 's'
+    test_name = 't'
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    build_id = 1
+    flake_type = FlakeType.OUTRIGHT_FLAKE
     now = time_util.GetUTCNow()
 
-    flake = Flake()
+    flake = Flake.Create(step_name, test_name)
+    flake.put()
 
     self.assertFalse(
         detection_filing_util.FlakeHasEnoughOccurrencesToFileBug(flake))
 
-    flake.flake_occurrences = [
-        FlakeOccurrence(
-            master_name='m',
-            builder_name='b',
-            build_number=100,
-            build_id=1,
-            time_reported=now - datetime.timedelta(hours=1),
-            flake_type=FlakeType.OUTRIGHT_FLAKE)
-    ]
-    flake.put()
+    FlakeOccurrence.Create(
+        step_name=step_name,
+        test_name=test_name,
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        build_id=build_id,
+        time_reported=now - datetime.timedelta(hours=1),
+        flake_type=flake_type).put()
+
     self.assertTrue(
         detection_filing_util.FlakeHasEnoughOccurrencesToFileBug(flake))
 

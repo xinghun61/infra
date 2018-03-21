@@ -37,10 +37,9 @@ def HasFlakeDetectionUpdateLimitBeenReached():
 def GetTotalRecentFlakeOccurrences(flake, delta=datetime.timedelta(days=1)):
   """Gets the number of flake occurrences in the past 24H."""
   one_day_ago = time_util.GetUTCNow() - delta
-  return len([
-      occurrence for occurrence in flake.flake_occurrences
-      if occurrence.time_reported > one_day_ago
-  ])
+  flake_occurrences = FlakeOccurrence.query(
+      FlakeOccurrence.time_reported > one_day_ago, ancestor=flake.key)
+  return len(flake_occurrences.fetch())
 
 
 def FlakeHasEnoughOccurrencesToFileBug(flake):
@@ -55,13 +54,15 @@ def FlakeHasEnoughOccurrencesToFileBug(flake):
     (boolean) True if the thresholds have been passed, False otherwise.
   """
   one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
+  flake_occurrences = FlakeOccurrence.query(
+      FlakeOccurrence.time_reported > one_day_ago, ancestor=flake.key)
   num_cq_false_rejection = len([
-      occurrence for occurrence in flake.flake_occurrences
+      occurrence for occurrence in flake_occurrences
       if occurrence.time_reported > one_day_ago and
       occurrence.flake_type == FlakeType.CQ_FALSE_REJECTION
   ])
   num_outright_flake = len([
-      occurrence for occurrence in flake.flake_occurrences
+      occurrence for occurrence in flake_occurrences
       if occurrence.time_reported > one_day_ago and
       occurrence.flake_type == FlakeType.OUTRIGHT_FLAKE
   ])

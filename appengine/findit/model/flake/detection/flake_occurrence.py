@@ -7,6 +7,9 @@ from google.appengine.ext.ndb import msgprop
 
 from protorpc import messages
 
+from model.flake.detection.flake import Flake
+
+
 class FlakeType(messages.Enum):
   """Enumerates the different types of flakes."""
 
@@ -39,3 +42,34 @@ class FlakeOccurrence(ndb.Model):
 
   # The type of the flake.
   flake_type = msgprop.EnumProperty(FlakeType)
+
+  @staticmethod
+  def Get(step_name, test_name, build_id):
+    """Get a flake for step/test if it exists."""
+    flake_key = ndb.Key(Flake, Flake.GetId(step_name, test_name))
+    flake_occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.build_id == build_id, ancestor=flake_key).fetch()
+    return flake_occurrences[0] if flake_occurrences else None
+
+  @staticmethod
+  def Create(step_name, test_name, build_id, master_name, builder_name,
+             build_number, time_reported, flake_type):
+    """Create a flake for step/test and any other kwargs."""
+    assert build_id
+    assert master_name
+    assert builder_name
+    assert build_number
+    assert time_reported
+    assert flake_type
+
+    flake_key = ndb.Key(Flake, Flake.GetId(step_name, test_name))
+    assert flake_key.get()
+
+    return FlakeOccurrence(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number,
+        build_id=build_id,
+        time_reported=time_reported,
+        flake_type=flake_type,
+        parent=flake_key)

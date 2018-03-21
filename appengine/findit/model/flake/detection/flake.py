@@ -4,8 +4,8 @@
 
 from google.appengine.ext import ndb
 
-from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.detection.flake_issue import FlakeIssue
+
 
 class Flake(ndb.Model):
   """Parent Flake which FlakeOccurrences are grouped under."""
@@ -16,11 +16,31 @@ class Flake(ndb.Model):
   # Used in conjunction with step_name to identify the test.
   test_name = ndb.StringProperty(indexed=True)
 
-  # Flake occurrence instances.
-  flake_occurrences = ndb.StructuredProperty(FlakeOccurrence, repeated=True)
-
   # Issue object that's attached.
   flake_issue = ndb.StructuredProperty(FlakeIssue)
 
   # Project id in monorail (e.g. chromium).
   project_id = ndb.StringProperty(indexed=True)
+
+  @staticmethod
+  def GetId(step_name, test_name):
+    assert step_name
+    assert test_name
+    return '{}/{}'.format(step_name, test_name)
+
+  @staticmethod
+  def Get(step_name, test_name):
+    """Get a flake for step/test if it exists."""
+    flake_key = ndb.Key(Flake, Flake.GetId(step_name, test_name))
+    return flake_key.get()
+
+  @staticmethod
+  def Create(step_name, test_name, flake_issue=None, project_id=None):
+    """Create a flake for step/test and any other kwargs."""
+    flake_id = Flake.GetId(step_name, test_name)
+    return Flake(
+        step_name=step_name,
+        test_name=test_name,
+        flake_issue=flake_issue,
+        project_id=project_id,
+        id=flake_id)
