@@ -1,0 +1,57 @@
+
+<link rel="import" href="/bower_components/iron-form/iron-form.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-card/paper-card.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+
+<link rel="import" href="expandable-card.html">
+
+<dom-module id="subscribe-card">
+  <template>
+    <style>
+      paper-card {
+        width: 500px;
+      }
+
+      paper-input{
+        width: 75%;
+        display: inline-block;
+      }
+
+      .header {
+        width: auto;
+        clear: both;
+
+        font-size: 14pt;
+      }
+
+      .subtext {
+        margin-top: 10px;
+
+        color: gray;
+        font-size: 11pt;
+      }
+    </style>
+    <paper-card>
+      <div class="card-content">
+      <span class="header">Notification options</span>
+      <div class="subtext">Send me a notification when the analysis completes.</div>
+        <iron-form id="subscribeForm">
+            <form>
+              <paper-input required type="email" label="foo@bar.com" name=notifcation_email></paper-input>
+              <button>Email me</button>
+            </form>
+          </iron-form>
+      </div>
+  </template>
+
+  <script>
+    (function () {
+      'use strict';
+
+      Polymer({
+        is: 'subscribe-card',
+      });
+    })();
+  </script>
+</dom-module>
