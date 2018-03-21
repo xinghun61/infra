@@ -306,7 +306,8 @@ def RevertCulprit(repo_name, revision, build_id, build_failure_type,
 
 def _CulpritWasAutoCommitted(culprit_info):
   author_email = culprit_info['author']['email']
-  return author_email in constants.NO_AUTO_COMMIT_REVERT_ACCOUNTS
+  return (constants.AUTO_ROLLER_ACCOUNT_PATTERN.match(author_email) or
+          author_email in constants.NO_AUTO_COMMIT_REVERT_ACCOUNTS)
 
 
 def _CanAutoCommitRevertByGerrit(repo_name, revision):

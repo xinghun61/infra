@@ -569,3 +569,12 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
         'identified', self.culprit_commit_position, culprit.key.urlsafe())
     mock_post.assert_called_once_with(self.review_change_id, message, True)
+
+  def testCulpritWasAutoCommitted(self):
+    culprit_info = {
+        'author': {
+            'email': 'skia-chromium-autoroll@skia-buildbots.google.com.'
+                     'iam.gserviceaccount.com'
+        }
+    }
+    self.assertTrue(gerrit._CulpritWasAutoCommitted(culprit_info))

@@ -3,9 +3,10 @@
 # found in the LICENSE file.
 """Includes all the constants of module names, queue names, url paths, etc."""
 
-import endpoints
-
 import os
+import re
+
+import endpoints
 
 # Names of all modules.
 WATERFALL_BACKEND = 'waterfall-backend'
@@ -58,15 +59,12 @@ NO_BLAME_ACTION_ACCOUNTS = ['chrome-release-bot@chromium.org']
 
 # List of accounts like DEPS rollers that auto-commit code.
 NO_AUTO_COMMIT_REVERT_ACCOUNTS = [  # yapf: disable
-    'angle-deps-roller@chromium.org',
     'blink-w3c-test-autoroller@chromium.org',
-    'catapult-deps-roller@chromium.org',
     'chromeos-commit-bot@chromium.org',
-    'depot-tools-roller@chromium.org',
     'ios-autoroll@chromium.org',
-    'pdfium-deps-roller@chromium.org',
-    'src-internal-roller@chromium.org',
-    'skia-deps-roller@chromium.org',
     'v8-autoroll@chromium.org',
-    'webrtc-autoroll@chromium.org',
 ] + NO_BLAME_ACTION_ACCOUNTS
+
+AUTO_ROLLER_ACCOUNT_PATTERN = re.compile(
+    r'.*-chromium-autoroll@skia-buildbots\.google\.com\.iam\.'
+    r'gserviceaccount\.com')
