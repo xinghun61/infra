@@ -11,6 +11,7 @@ from google.appengine.api import users
 from handlers.flake import check_flake
 from handlers.flake.check_flake import CheckFlake
 from libs import analysis_status
+from libs import time_util
 from libs.analysis_status import STATUS_TO_DESCRIPTION
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
@@ -240,6 +241,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
                      response.json_body.get('error_message'))
 
   @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 1))
+  @mock.patch.object(
       check_flake,
       '_GetSuspectedFlakeInfo',
       return_value={
@@ -323,6 +326,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             test_name,
         'request_time':
             '2016-10-01 12:10:00 UTC',
+        'ended_days_ago':
+            '91 days, 10:50:00',
+        'duration':
+            '00:59:55',
+        'analysis_complete':
+            False,
         'build_level_number':
             1,
         'revision_level_number':
@@ -333,8 +342,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             100,
         'pending_time':
             '00:00:05',
-        'duration':
-            '00:59:55',
         'suspected_flake': {
             'confidence': 0.5,
             'build_number': 100,
@@ -464,6 +471,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         response.headers.get('Location', '').endswith(expected_url_surfix))
 
   @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 1))
+  @mock.patch.object(
       check_flake,
       '_GetSuspectedFlakeInfo',
       return_value={
@@ -526,6 +535,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             test_name,
         'request_time':
             '2016-10-01 12:10:00 UTC',
+        'ended_days_ago':
+            '91 days, 10:50:00',
+        'duration':
+            '00:59:55',
+        'analysis_complete':
+            False,
         'build_level_number':
             1,
         'revision_level_number':
@@ -536,8 +551,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             100,
         'pending_time':
             '00:00:05',
-        'duration':
-            '00:59:55',
         'suspected_flake': {
             'build_number': 100,
             'commit_position': 12345,

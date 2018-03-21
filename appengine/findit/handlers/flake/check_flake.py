@@ -519,6 +519,18 @@ class CheckFlake(BaseHandler):
       else:
         culprit_status = 'error'
 
+    # Just use utc now when request_time is missing, but don't save it.
+    if not analysis.request_time:
+      analysis.request_time = time_util.GetUTCNow()
+
+    # Just use utc now when end_time is missing, but don't save it.
+    if not analysis.end_time:
+      analysis.end_time = time_util.GetUTCNow()
+
+    analysis_complete = (
+        analysis.status != analysis_status.RUNNING and
+        analysis.try_job_status != analysis_status.RUNNING)
+
     data = {
         'key':
             analysis.key.urlsafe(),
@@ -541,6 +553,12 @@ class CheckFlake(BaseHandler):
             culprit,
         'request_time':
             time_util.FormatDatetime(analysis.request_time),
+        'ended_days_ago':
+            str(time_util.GetUTCNow() - analysis.end_time).split('.')[0],
+        'duration':
+            str(analysis.end_time - analysis.request_time).split('.')[0],
+        'analysis_complete':
+            analysis_complete,
         'build_level_number':
             build_level_number,
         'revision_level_number':

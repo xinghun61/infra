@@ -130,6 +130,11 @@
     #triage_flake {
       margin-top: 50px;
     }
+
+    #timestamps {
+      color: gray;
+      font-style: italic;
+    }
   </style>
   <link rel="stylesheet" type="text/css" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
@@ -494,6 +499,11 @@
           <a id="build-link" target="_blank"></a>
         </div>
       </div>
+      {% if analysis_complete %}
+        <div id="timestamps">
+          Completed {{ ended_days_ago }} ago (total duration {{ duration }}).
+        </div>
+      {% endif %}
     </div>
 
     {% if show_debug_options %}
