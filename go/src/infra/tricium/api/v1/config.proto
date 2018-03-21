@@ -25,6 +25,7 @@ message ServiceConfig {
   repeated Function functions = 3;
 
   // Details for connected projects.
+  // DEPRECATED, see https://crbug.com/824558
   repeated ProjectDetails projects = 4;
 
   // Base recipe command used for workers implemented as recipes.
@@ -50,6 +51,7 @@ message ServiceConfig {
   string isolate_server = 8;
 }
 
+// DEPRECATED, see https://crbug.com/824558
 message ProjectDetails {
   // Project name used to map these project details to the config for a project.
   string name = 1;
@@ -93,6 +95,16 @@ message ProjectConfig {
 
   // Selection of function implementations to run for this project.
   repeated Selection selections = 4;
+
+  // Repositories, including Git and Gerrit details.
+  repeated RepoDetails repos = 5;
+
+  // General service account for this project.
+  // Used for any service interaction, with the exception of swarming.
+  string service_account = 6;
+
+  // Project-specific swarming service account.
+  string swarming_service_account = 7;
 }
 
 // Repository details for a project.
@@ -106,6 +118,10 @@ message RepoDetails {
 
   // If repository kind is GIT then provide Git details.
   GitRepoDetails git_details = 2;
+
+  // If there is an associated Gerrit project, details can be added here.
+  // By adding GerritDetails, Gerrit polling is enabled.
+  GerritDetails gerrit_details = 3;
 }
 
 // Git repository details.
