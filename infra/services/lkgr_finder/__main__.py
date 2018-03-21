@@ -5,7 +5,9 @@
 
 """Fetch the latest results for a pre-selected set of builders we care about.
 If we find a 'good' revision -- based on criteria explained below -- we
-mark the revision as LKGR, write it to a file.
+mark the revision as LKGR, and POST it to the LKGR server:
+
+http://chromium-status.appspot.com/lkgr
 
 We're looking for a sequence in the revision history that looks something
 like this:
@@ -92,9 +94,11 @@ def ParseArgs(argv):
   output_group = parser.add_argument_group('Output data formats')
   output_group.add_argument('--dry-run', '-n', action='store_true',
                             help='Don\'t actually do any real output actions.')
+  output_group.add_argument('--post', action='store_true',
+                            help='Post the LKGR to the configured status app.')
   output_group.add_argument('--tag', action='store_true',
                             help='Update the lkgr tag (Git repos only)')
-  output_group.add_argument('--read-from-file', metavar='FILE', required=True,
+  output_group.add_argument('--read-from-file', metavar='FILE',
                             help='Read the LKGR from the specified file.')
   output_group.add_argument('--write-to-file', metavar='FILE',
                             help='Write the LKGR to the specified file.')
@@ -106,6 +110,9 @@ def ParseArgs(argv):
                             help='Send email to LKGR admins upon error (cron).')
 
   config_group = parser.add_argument_group('Project configuration overrides')
+  config_group.add_argument('--password-file',
+                            default=NOTSET,
+                            help='File containing password for status app.')
   config_group.add_argument('--error-recipients', metavar='EMAILS',
                             default=NOTSET,
                             help='Send email to these addresses upon error.')
@@ -122,8 +129,8 @@ def ParseArgs(argv):
                                  ' before it\'s considered out-of-date. This '
                                  'is a minimum and will be increased when '
                                  'commit activity slows.')
-  config_arg_names = ['error_recipients', 'update_recipients', 'allowed_gap',
-                      'allowed_lag']
+  config_arg_names = ['password_file', 'error_recipients', 'update_recipients',
+                      'allowed_gap', 'allowed_lag']
 
   parser.add_argument('--project', required=True,
                       help='Project for which to calculate the LKGR.Currently '
@@ -215,17 +222,32 @@ def main(argv):
   lkgr = None
   if not args.force:
     # Get old/current LKGR.
-    lkgr = lkgr_lib.ReadLKGR(args.read_from_file)
-    if lkgr is None:
-      if args.email_errors and 'error_recipients' in config:
-        lkgr_lib.SendMail(config['error_recipients'],
-                          'Failed to read %s LKGR. Please seed an initial '
-                          'LKGR in file %s' %
-                          (args.project, args.read_from_file),
-                          '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
-      LOGGER.fatal('Failed to read current %s LKGR. Please seed an initial '
-                   'LKGR in file %s' % (args.project, args.read_from_file))
-      return 1
+    # TODO(sergiyb): Deprecate --write-to-file as an input when all clients are
+    # passing --read-from-file instead.
+    read_from_file = args.read_from_file or args.write_to_file
+    if read_from_file:
+      # If the new lkgr should be written to a file, read the current one from
+      # the same file.
+      lkgr = lkgr_lib.ReadLKGR(read_from_file)
+      if lkgr is None:
+        if args.email_errors and 'error_recipients' in config:
+          lkgr_lib.SendMail(config['error_recipients'],
+                            'Failed to read %s LKGR. Please seed an initial '
+                            'LKGR in file %s' %
+                            (args.project, read_from_file),
+                            '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
+        LOGGER.fatal('Failed to read current %s LKGR. Please seed an initial '
+                     'LKGR in file %s' % (args.project, read_from_file))
+        return 1
+    else:
+      lkgr = lkgr_lib.FetchLKGR(config['status_url'] + repo.status_path)
+      if lkgr is None:
+        if args.email_errors and 'error_recipients' in config:
+          lkgr_lib.SendMail(config['error_recipients'],
+                            'Failed to fetch %s LKGR' % args.project,
+                            '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
+        LOGGER.fatal('Failed to fetch current %s LKGR' % args.project)
+        return 1
 
     if not repo.check_rev(lkgr):
       if args.email_errors and 'error_recipients' in config:
@@ -245,9 +267,17 @@ def main(argv):
     if args.write_to_file:
       lkgr_lib.WriteLKGR(candidate, args.write_to_file, args.dry_run)
 
+    if args.post:
+      lkgr_lib.PostLKGR(
+          config['status_url'], candidate, repo.keyfunc(candidate),
+          config['password_file'], args.dry_run)
+      if config['update_recipients']:
+        subject = 'Updated %s LKGR to %s' % (args.project, candidate)
+        message = subject + '.\n'
+        lkgr_lib.SendMail(config['update_recipients'],
+                          subject, message, args.dry_run)
+
     if args.tag:
-      # TODO(machenbach): Currently the wrapping recipe udpates the refs. We
-      # should instead use this method here.
       lkgr_lib.UpdateTag(candidate, config['source_url'], args.dry_run)
 
   else:
