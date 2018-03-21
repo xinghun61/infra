@@ -167,6 +167,16 @@ def IsFullyStable(pass_rate):
   return IsStable(pass_rate, 0, 1.0)
 
 
+def IsStableDefaultThresholds(pass_rate):
+  """Override for IsStable that uses the default thresholds."""
+  flake_settings = waterfall_config.GetCheckFlakeSettings()
+  lower_flake_threshold = flake_settings.get(
+      'lower_flake_threshold', flake_constants.DEFAULT_LOWER_FLAKE_THRESHOLD)
+  upper_flake_threshold = flake_settings.get(
+      'upper_flake_threshold', flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD)
+  return IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold)
+
+
 def IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
   """Determines whether a pass rate is stable, with tolerances.
 

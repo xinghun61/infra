@@ -39,3 +39,15 @@ class ConfidenceScoreUtilTest(WaterfallTestCase):
     self.assertEqual(1.0,
                      confidence_score_util.CalculateCulpritConfidenceScore(
                          analysis, 1000))
+
+  def testCalculateCulpritConfidenceScoreIntroducedStableToFlaky(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(pass_rate=0.7, commit_position=1000),
+        DataPoint.Create(
+            pass_rate=flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD,
+            commit_position=999)
+    ]
+    self.assertEqual(.7,
+                     confidence_score_util.CalculateCulpritConfidenceScore(
+                         analysis, 1000))

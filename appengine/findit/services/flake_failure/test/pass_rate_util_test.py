@@ -94,6 +94,14 @@ class PassRateUtilTest(WaterfallTestCase):
     self.assertTrue(pass_rate_util.IsStable(1.0, 0.02, 0.98))
     self.assertFalse(pass_rate_util.IsStable(0.5, 0.02, 0.98))
 
+  def testIsStableDefaultTresholds(self):
+    self.assertTrue(pass_rate_util.IsStableDefaultThresholds(-1))
+    self.assertTrue(pass_rate_util.IsStableDefaultThresholds(0.0))
+    self.assertTrue(pass_rate_util.IsStableDefaultThresholds(0.02))
+    self.assertTrue(pass_rate_util.IsStableDefaultThresholds(0.98))
+    self.assertTrue(pass_rate_util.IsStableDefaultThresholds(1.0))
+    self.assertFalse(pass_rate_util.IsStableDefaultThresholds(0.5))
+
   def testMinimumIterationsReached(self):
     self.assertTrue(
         pass_rate_util.MinimumIterationsReached(
