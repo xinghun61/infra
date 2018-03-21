@@ -80,7 +80,6 @@ class ProjectCfgTest(testing.AppengineTestCase):
           map(config_test.errmsg, expected_errors),
           ctx.result().messages)
 
-
     test([], [], [])
 
     runtime = '$recipe_engine/runtime:' + json.dumps({
@@ -157,6 +156,19 @@ class ProjectCfgTest(testing.AppengineTestCase):
         '',
         [
           'builder meep: duplicate builder name',
+        ])
+
+    self.cfg_test(
+        '''
+          hostname: "example.com"
+          builders {
+            name: ":/:"
+          }
+        ''',
+        '',
+        [
+          ('builder :/:: name uses invalid char(s) u\'/:\'. '
+          'Alphabet: "%s"') % swarmingcfg.BUILDER_NAME_VALID_CHARS,
         ])
 
     self.cfg_test(
