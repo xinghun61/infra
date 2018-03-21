@@ -224,6 +224,9 @@ message Builder {
   // Colon-delimited key-value pair of task dimensions.
   //
   // If value is not specified ("<key>:"), then it excludes a default value.
+  //
+  // If this builder is defined in a bucket, dimension "pool" is defaulted
+  // to the name of the bucket. See Bucket message below.
   repeated string dimensions = 3;
   // Specifies that a recipe to run.
   Recipe recipe = 4;
