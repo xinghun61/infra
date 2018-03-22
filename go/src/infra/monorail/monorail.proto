@@ -20,6 +20,8 @@ service Monorail {
     rpc InsertComment(InsertCommentRequest) returns (InsertCommentResponse){};
     // Lists issues from a project.
     rpc IssuesList(IssuesListRequest) returns (IssuesListResponse){};
+    // GetIssue gets an issue by id.
+    rpc GetIssue(GetIssueRequest) returns (Issue){};
 }
 
 // A monorail issue.
@@ -181,4 +183,8 @@ message Update {
 message AtomPerson {
     // User email.
     string name = 1;
+}
+
+message GetIssueRequest {
+  IssueRef issue = 1;
 }

@@ -155,6 +155,20 @@ func (c *epClient) IssuesList(ctx context.Context, req *IssuesListRequest, optio
 	return res, nil
 }
 
+func (c *epClient) GetIssue(ctx context.Context, req *GetIssueRequest, options ...grpc.CallOption) (*Issue, error) {
+	if err := checkOptions(options); err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("/projects/%s/issues/%d", req.Issue.ProjectId, req.Issue.IssueId)
+	res := &Issue{}
+	err := c.call(ctx, "GET", url, nil, res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func checkOptions(options []grpc.CallOption) error {
 	if len(options) > 0 {
 		return errGrpcOptions

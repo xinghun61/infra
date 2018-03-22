@@ -78,6 +78,7 @@ type mockMonorailClient struct {
 	il *mr.IssuesListResponse
 	ic *mr.InsertCommentResponse
 	ii *mr.InsertIssueResponse
+	gi *mr.Issue
 	e  error
 }
 
@@ -91,4 +92,8 @@ func (c mockMonorailClient) InsertComment(ctx context.Context, in *mr.InsertComm
 
 func (c mockMonorailClient) IssuesList(ctx context.Context, in *mr.IssuesListRequest, opts ...grpc.CallOption) (*mr.IssuesListResponse, error) {
 	return c.il, c.e
+}
+
+func (c mockMonorailClient) GetIssue(ctx context.Context, in *mr.GetIssueRequest, opts ...grpc.CallOption) (*mr.Issue, error) {
+	return c.gi, c.e
 }
