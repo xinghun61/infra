@@ -44,6 +44,7 @@ COMPONENT2CC_TABLE_NAME = 'Component2Cc'
 COMPONENT2LABEL_TABLE_NAME = 'Component2Label'
 STATUSDEF_TABLE_NAME = 'StatusDef'
 APPROVALDEF2APPROVER_TABLE_NAME = 'ApprovalDef2Approver'
+APPROVALDEF2SURVEY_TABLE_NAME = 'ApprovalDef2Survey'
 
 TEMPLATE_COLS = [
     'id', 'project_id', 'name', 'content', 'summary', 'summary_must_be_edited',
@@ -81,6 +82,7 @@ COMPONENT2ADMIN_COLS = ['component_id', 'admin_id']
 COMPONENT2CC_COLS = ['component_id', 'cc_id']
 COMPONENT2LABEL_COLS = ['component_id', 'label_id']
 APPROVALDEF2APPROVER_COLS = ['approval_id', 'approver_id', 'project_id']
+APPROVALDEF2SURVEY_COLS = ['approval_id', 'survey', 'project_id']
 
 NOTIFY_ON_ENUM = ['never', 'any_comment']
 DATE_ACTION_ENUM = ['no_action', 'ping_owner_only', 'ping_participants']
@@ -346,7 +348,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
       template2milestone_rows, template2approvalvalue_rows,
       statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
       componentdef_rows, component2admin_rows, component2cc_rows,
-      component2label_rows, approvaldef2approver_rows):
+      component2label_rows, approvaldef2approver_rows, approvaldef2survey_rows):
     """Convert the given row tuples into a dict of ProjectIssueConfig PBs."""
     result_dict = {}
     template_dict = {}
@@ -436,6 +438,17 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
           approvaldef_dict[approval_id] = approval_def
         approval_def.approver_ids.append(approver_id)
 
+    for survey_row in approvaldef2survey_rows:
+      approval_id, survey, project_id = survey_row
+      if project_id in result_dict:
+        approval_def = approvaldef_dict.get(approval_id)
+        if approval_def is None:
+          approval_def = tracker_pb2.ApprovalDef(
+              approval_id=approval_id)
+          result_dict[project_id].approval_defs.append(approval_def)
+          approvaldef_dict[approval_id] = approval_def
+        approval_def.survey = survey
+
     for fd_row in fielddef_rows:
       fd = self._UnpackFieldDef(fd_row)
       result_dict[fd.project_id].field_defs.append(fd)
@@ -487,7 +500,8 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
 
     approver_rows = self.config_service.approvaldef2approver_tbl.Select(
         cnxn, cols=APPROVALDEF2APPROVER_COLS, project_id=project_ids)
-    # TODO(jojwang): monorail:3241, Select approval survey rows
+    survey_rows = self.config_service.approvaldef2survey_tbl.Select(
+        cnxn, cols=APPROVALDEF2SURVEY_COLS, project_id=project_ids)
 
     # TODO(jrobbins): For now, sort by field name, but someday allow admins
     # to adjust the rank to group and order field definitions logically.
@@ -515,7 +529,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
         template2fv_rows, template2milestone_rows, template2av_rows,
         statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
         componentdef_rows, component2admin_rows, component2cc_rows,
-        component2label_rows, approver_rows)
+        component2label_rows, approver_rows, survey_rows)
     return retrieved_dict
 
   def FetchItems(self, cnxn, keys):
@@ -564,6 +578,8 @@ class ConfigService(object):
     self.component2label_tbl = sql.SQLTableManager(COMPONENT2LABEL_TABLE_NAME)
     self.approvaldef2approver_tbl = sql.SQLTableManager(
         APPROVALDEF2APPROVER_TABLE_NAME)
+    self.approvaldef2survey_tbl = sql.SQLTableManager(
+        APPROVALDEF2SURVEY_TABLE_NAME)
 
     self.config_2lc = ConfigTwoLevelCache(cache_manager, self)
     self.label_row_2lc = LabelRowTwoLevelCache(cache_manager, self)
@@ -1117,7 +1133,12 @@ class ConfigService(object):
            approver_id in approval_def.approver_ids],
           commit=False)
 
-    # TODO(jojwang): monorail:3241, update approval2survey_tbl
+      self.approvaldef2survey_tbl.Delete(
+          cnxn, approval_id=approval_def.approval_id, commit=False)
+      self.approvaldef2survey_tbl.InsertRow(
+          cnxn, approval_id=approval_def.approval_id,
+          survey=approval_def.survey, project_id=config.project_id,
+          commit=False)
 
   def UpdateConfig(
       self, cnxn, project, well_known_statuses=None,

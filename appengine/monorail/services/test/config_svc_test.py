@@ -32,7 +32,8 @@ def MakeConfigService(cache_manager, my_mox):
       'template2milestone_tbl', 'template2approvalvalue_tbl',
       'projectissueconfig_tbl', 'statusdef_tbl', 'labeldef_tbl', 'fielddef_tbl',
       'fielddef2admin_tbl', 'componentdef_tbl', 'component2admin_tbl',
-      'component2cc_tbl', 'component2label_tbl', 'approvaldef2approver_tbl']:
+      'component2cc_tbl', 'component2label_tbl', 'approvaldef2approver_tbl',
+      'approvaldef2survey_tbl']:
     setattr(config_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
   return config_service
@@ -200,6 +201,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
                            1, 99, None, '', '',
                            None, 'NEVER', 'no_action', 'doc', False, None)]
     self.approvaldef2approver_rows = [(2, 101, 789), (2, 102, 789)]
+    self.approvaldef2survey_rows = [(2, 'Q1\nQ2\nQ3', 789)]
     self.fielddef2admin_rows = []
     self.componentdef_rows = []
     self.component2admin_rows = []
@@ -212,7 +214,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
 
   def testDeserializeIssueConfigs_Empty(self):
     config_dict = self.config_2lc._DeserializeIssueConfigs(
-        [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [])
+        [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [])
     self.assertEqual({}, config_dict)
 
   def testDeserializeIssueConfigs_Normal(self):
@@ -223,7 +225,8 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
         self.template2av_rows, self.statusdef_rows, self.labeldef_rows,
         self.fielddef_rows, self.fielddef2admin_rows, self.componentdef_rows,
         self.component2admin_rows, self.component2cc_rows,
-        self.component2label_rows, self.approvaldef2approver_rows)
+        self.component2label_rows, self.approvaldef2approver_rows,
+        self.approvaldef2survey_rows)
     self.assertItemsEqual([789], config_dict.keys())
     config = config_dict[789]
     self.assertEqual(789, config.project_id)
@@ -234,6 +237,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual(len(self.componentdef_rows), len(config.component_defs))
     self.assertEqual(len(self.approvaldef2approver_rows),
                      len(config.approval_defs[0].approver_ids))
+    self.assertEqual(config.approval_defs[0].survey, 'Q1\nQ2\nQ3')
     self.assertEqual(len(self.template_rows), len(config.templates))
     launch_template = tracker_bizobj.FindIssueTemplate('firstName', config)
     self.assertEqual(len(self.template2milestone_rows),
@@ -291,6 +295,9 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.config_service.approvaldef2approver_tbl.Select(
         self.cnxn, cols=config_svc.APPROVALDEF2APPROVER_COLS,
         project_id=project_ids).AndReturn(self.approvaldef2approver_rows)
+    self.config_service.approvaldef2survey_tbl.Select(
+        self.cnxn, cols=config_svc.APPROVALDEF2SURVEY_COLS,
+        project_id=project_ids).AndReturn(self.approvaldef2survey_rows)
 
     self.config_service.fielddef_tbl.Select(
         self.cnxn, cols=config_svc.FIELDDEF_COLS, project_id=project_ids,
@@ -695,6 +702,9 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.approvaldef2approver_tbl.Select(
         self.cnxn, cols=config_svc.APPROVALDEF2APPROVER_COLS,
         project_id=project_ids).AndReturn([])
+    self.config_service.approvaldef2survey_tbl.Select(
+        self.cnxn, cols=config_svc.APPROVALDEF2SURVEY_COLS,
+        project_id=project_ids).AndReturn([])
     self.config_service.fielddef_tbl.Select(
         self.cnxn, cols=config_svc.FIELDDEF_COLS,
         project_id=project_ids, order_by=[('field_name', [])]).AndReturn([])
@@ -881,13 +891,21 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.statusdef_tbl.InsertRows(
         self.cnxn, config_svc.STATUSDEF_COLS[1:], [], commit=False)
 
-  def SetUpUpdateApprovals_Default(self, approval_id, approver_rows):
+  def SetUpUpdateApprovals_Default(
+      self, approval_id, approver_rows, survey_row):
       self.config_service.approvaldef2approver_tbl.Delete(
           self.cnxn, approval_id=approval_id, commit=False)
 
       self.config_service.approvaldef2approver_tbl.InsertRows(
           self.cnxn, config_svc.APPROVALDEF2APPROVER_COLS,
           approver_rows, commit=False)
+
+      approval_id, survey, project_id = survey_row
+      self.config_service.approvaldef2survey_tbl.Delete(
+          self.cnxn, approval_id=approval_id, commit=False)
+      self.config_service.approvaldef2survey_tbl.InsertRow(
+          self.cnxn, approval_id=approval_id, survey=survey,
+          project_id=project_id, commit=False)
 
   def testStoreConfig(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
@@ -936,15 +954,15 @@ class ConfigServiceTest(unittest.TestCase):
   def testUpdateApprovals(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     approver_rows = [(123, 111L, 789), (123, 222L, 789)]
+    survey_row = (123, 'Q1\nQ2', 789)
     first_approval = tracker_bizobj.MakeFieldDef(
         123, 789, 'FirstApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
         None, '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'the first one', False)
     config.field_defs = [first_approval]
-    config.approval_defs = [
-        tracker_pb2.ApprovalDef(approval_id=123, approver_ids=[111L, 222L])
-    ]
-    self.SetUpUpdateApprovals_Default(123, approver_rows)
+    config.approval_defs = [tracker_pb2.ApprovalDef(
+        approval_id=123, approver_ids=[111L, 222L], survey='Q1\nQ2')]
+    self.SetUpUpdateApprovals_Default(123, approver_rows, survey_row)
 
     self.mox.ReplayAll()
     self.config_service._UpdateApprovals(self.cnxn, config)
