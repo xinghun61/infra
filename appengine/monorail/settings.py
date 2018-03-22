@@ -125,10 +125,9 @@ trainer_staging = ('gs://monorail-staging-mlengine/spam_trainer_1517870972/'
 
 # Location of GCS spam classification prod trainer. Whenever the training
 # code is changed, this should be updated to point to the new package.
-trainer_prod = ('gs://monorail-prod-mlengine/spam_trainer_1513384825/packages/'
-                'bf320de135919fcefe0dc6cff887e26518171b7e54a06b8a821a631ab230b'
-                '488/trainer-0.1.tar.gz')
-
+trainer_prod = ('gs://monorail-prod-mlengine/spam_trainer_1521755738/packages/'
+                '3339dfcb5d7b6c9d714fb9b332fd72d05823e9a1850ceaf16533a6124bcad'
+                '6fd/trainer-0.1.tar.gz')
 ####
 # Part 3: Settings that enable specific features
 
