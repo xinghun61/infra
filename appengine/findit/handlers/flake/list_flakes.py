@@ -123,8 +123,9 @@ class ListFlakes(BaseHandler):
               master_flake_analysis.key.urlsafe(),
           'master_name':
               master_flake_analysis.master_name,
-          'request_utc_timestamp':
-              time_util.ConvertToTimestamp(master_flake_analysis.request_time),
+          'request_utc_timestamp': (
+              time_util.ConvertToTimestamp(master_flake_analysis.request_time)
+              if master_flake_analysis.request_time else 'None'),
           'result_status':
               result_status.RESULT_STATUS_TO_DESCRIPTION.get(
                   master_flake_analysis.result_status),
