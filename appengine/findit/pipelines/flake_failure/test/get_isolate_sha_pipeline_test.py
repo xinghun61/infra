@@ -60,27 +60,40 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     self.assertTrue(mocked_get_isolate_sha.called)
 
   def testGetIsolateShaForTryJobPipeline(self):
-    test_name = 't'
-    expected_sha = 'sha1'
-    try_job_id = 'try_job_id'
-    url = 'url'
+    step_name = 'interactive_ui_tests'
+    expected_sha = 'ddd3e494ed97366f99453e5a8321b77449f26a58'
 
-    isolated_tests = IsolatedTests()
-    isolated_tests[test_name] = expected_sha
-
-    try_job_report = FlakeTryJobReport(
-        result={},
-        isolated_tests=isolated_tests,
-        last_checked_out_revision=None,
-        previously_cached_revision=None,
-        previously_checked_out_revision=None,
-        metadata=None)
-
-    try_job_result = FlakeTryJobResult(
-        report=try_job_report, url=url, try_job_id=try_job_id)
+    try_job_result = FlakeTryJobResult.FromSerializable({
+        'report': {
+            'previously_checked_out_revision':
+                'f5dc74a384d48f1a0929dc056cadae2a0019f8b5',
+            'previously_cached_revision':
+                '17b7ff2ff8e107b0e9cebcd9d6894072acc98639',
+            'result': {
+                'f5dc74a384d48f1a0929dc056cadae2a0019f8b5': {
+                    'interactive_ui_tests': {
+                        'status': 'skipped',
+                        'valid': True
+                    }
+                }
+            },
+            'isolated_tests': {
+                'interactive_ui_tests':
+                    'ddd3e494ed97366f99453e5a8321b77449f26a58'
+            },
+            'last_checked_out_revision':
+                None,
+            'metadata': {}
+        },
+        'url': (
+            'https://ci.chromium.org/p/chromium/builders/luci.chromium.findit/'
+            'findit_variable/1391'),
+        'try_job_id':
+            '8951342990533358272'
+    })
 
     get_try_job_sha_parameters = GetIsolateShaForTryJobParameters(
-        try_job_result=try_job_result, test_name=test_name)
+        try_job_result=try_job_result, step_name=step_name)
 
     pipeline_job = GetIsolateShaForTryJobPipeline(get_try_job_sha_parameters)
     pipeline_job.start()
@@ -191,7 +204,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
         report=expected_try_job_report, url=url, try_job_id=try_job_id)
 
     get_isolate_sha_for_try_job_pipeline = GetIsolateShaForTryJobParameters(
-        try_job_result=expected_try_job_result, test_name=test_name)
+        try_job_result=expected_try_job_result, step_name=step_name)
 
     self.MockAsynchronousPipeline(RunFlakeTryJobPipeline,
                                   run_flake_try_job_parameters,

@@ -52,7 +52,7 @@ class GetIsolateShaForBuildParameters(StructuredObject):
 
 class GetIsolateShaForTryJobParameters(StructuredObject):
   try_job_result = FlakeTryJobResult
-  test_name = basestring
+  step_name = basestring
 
 
 class GetIsolateShaForBuildPipeline(SynchronousPipeline):
@@ -73,8 +73,8 @@ class GetIsolateShaForTryJobPipeline(SynchronousPipeline):
 
   def RunImpl(self, parameters):
     isolated_tests = parameters.try_job_result.report.isolated_tests
-    test_name = parameters.test_name
-    return isolated_tests.get(test_name)
+    step_name = parameters.step_name
+    return isolated_tests.get(step_name)
 
 
 class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
@@ -142,5 +142,5 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
         get_isolate_sha_from_try_job_input = self.CreateInputObjectInstance(
             GetIsolateShaForTryJobParameters,
             try_job_result=try_job_result,
-            test_name=test_name)
+            step_name=step_name)
         yield GetIsolateShaForTryJobPipeline(get_isolate_sha_from_try_job_input)
