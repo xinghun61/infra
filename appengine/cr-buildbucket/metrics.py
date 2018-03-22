@@ -221,9 +221,9 @@ LEASE_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     _build_fields('bucket'),
     bucketer=BUCKETER_24_HR,
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
-SCHEDULING_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
-    'buildbucket/builds/scheduling_latency',
-    'Duration of a build remaining in SCHEDULED state',
+START_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
+    'buildbucket/builds/start_latency',
+    'Duration of a build remaining in SCHEDULED state, i.e. not starting.',
     _build_fields('bucket'),
     bucketer=BUCKETER_48_HR,
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
@@ -308,7 +308,7 @@ GLOBAL_METRICS = [
   CURRENTLY_PENDING,
   CURRENTLY_RUNNING,
   LEASE_LATENCY_SEC,
-  SCHEDULING_LATENCY_SEC,
+  START_LATENCY_SEC,
   BUILD_COUNT_PROD,
   BUILD_COUNT_EXPERIMENTAL,
 ]
@@ -325,7 +325,7 @@ def update_global_metrics():
       set_build_status_metric(
           CURRENTLY_RUNNING, b.name, model.BuildStatus.STARTED),
       set_build_latency(LEASE_LATENCY_SEC, b.name, True),
-      set_build_latency(SCHEDULING_LATENCY_SEC, b.name, False),
+      set_build_latency(START_LATENCY_SEC, b.name, False),
     ])
 
   for key in model.Builder.query().iter(keys_only=True):
