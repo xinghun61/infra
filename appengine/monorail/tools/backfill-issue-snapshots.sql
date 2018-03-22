@@ -8,6 +8,7 @@
 DROP PROCEDURE IF EXISTS BackfillIssueSnapshotsCcs;
 DROP PROCEDURE IF EXISTS BackfillIssueSnapshotsComponents;
 DROP PROCEDURE IF EXISTS BackfillIssueSnapshotsLabels;
+DROP PROCEDURE IF EXISTS BackfillIssueSnapshotsHotlists;
 DROP PROCEDURE IF EXISTS BackfillIssueSnapshotsChunk;
 DROP PROCEDURE IF EXISTS BackfillIssueSnapshotsManyChunks;
 
@@ -102,6 +103,38 @@ BEGIN
       (issuesnapshot_id, component_id)
       VALUES
       (c_issuesnapshot_id, c_component_id);
+
+  END LOOP;
+
+  CLOSE curs;
+END;
+
+
+CREATE PROCEDURE BackfillIssueSnapshotsHotlists(IN c_issue_id INT, IN c_issuesnapshot_id INT)
+BEGIN
+
+  DECLARE done INT DEFAULT FALSE;
+
+  DECLARE c_hotlist_id INT;
+
+  DECLARE curs CURSOR FOR
+    SELECT hotlist_id
+    FROM Hotlist2Issue
+    WHERE issue_id = c_issue_id;
+
+  DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+  OPEN curs;
+
+  hotlist_loop: LOOP
+    FETCH curs INTO c_hotlist_id;
+    IF done THEN
+      LEAVE hotlist_loop;
+    END IF;
+
+    INSERT INTO IssueSnapshot2Hotlist
+      (issuesnapshot_id, hotlist_id)
+      VALUES
+      (c_issuesnapshot_id, c_hotlist_id);
 
   END LOOP;
 

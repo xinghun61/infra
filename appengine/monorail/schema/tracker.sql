@@ -864,7 +864,6 @@ CREATE TABLE IssueSnapshot (
   period_start INT UNSIGNED NOT NULL,
   period_end INT UNSIGNED NOT NULL,
   is_open BOOLEAN DEFAULT TRUE,
-  -- TODO(jeffcarp): Add Hotlist information
 
   PRIMARY KEY (id),
   FOREIGN KEY (project_id) REFERENCES Project(project_id),
@@ -900,4 +899,13 @@ CREATE TABLE IssueSnapshot2Cc(
   PRIMARY KEY (issuesnapshot_id, cc_id),
   FOREIGN KEY (issuesnapshot_id) REFERENCES IssueSnapshot(id),
   FOREIGN KEY (cc_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+CREATE TABLE IssueSnapshot2Hotlist(
+  issuesnapshot_id INT NOT NULL,
+  hotlist_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (issuesnapshot_id, hotlist_id),
+  FOREIGN KEY (issuesnapshot_id) REFERENCES IssueSnapshot(id),
+  FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id)
 ) ENGINE=INNODB;
