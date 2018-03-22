@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import logging
 
 from google.appengine.ext import ndb
 
@@ -195,6 +196,16 @@ add_build_scheduling_duration = _duration_adder(  # pragma: no branch
     lambda b: (b.start_time - b.create_time).total_seconds())
 
 
+BUILD_COUNT_PROD = gae_ts_mon.GaugeMetric(
+    _METRIC_PREFIX_PROD + 'count',
+    'Number of pending/running prod builds',
+    _build_fields('bucket', 'builder', 'status'))
+BUILD_COUNT_EXPERIMENTAL = gae_ts_mon.GaugeMetric(
+    _METRIC_PREFIX_EXPERIMENTAL + 'count',
+    'Number of pending/running experimental builds',
+    _build_fields('bucket', 'builder', 'status'))
+
+# TODO(nodir): remove CURRENTLY_PENDING and CURRENTLY_RUNNING
 CURRENTLY_PENDING = gae_ts_mon.GaugeMetric(
     'buildbucket/builds/pending',
     'Number of pending builds',
@@ -203,6 +214,7 @@ CURRENTLY_RUNNING = gae_ts_mon.GaugeMetric(
     'buildbucket/builds/running',
     'Number of running builds',
     _build_fields('bucket'))
+
 LEASE_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/builds/never_leased_duration',
     'Duration between a build is created and it is leased for the first time',
@@ -238,6 +250,7 @@ TAG_INDEX_SEARCH_SKIPPED_BUILDS = gae_ts_mon.NonCumulativeDistributionMetric(
 
 @ndb.tasklet
 def set_build_status_metric(metric, bucket, status):
+  # TODO(nodir): remove this function
   q = model.Build.query(
       model.Build.bucket == bucket,
       model.Build.status == status,
@@ -245,6 +258,26 @@ def set_build_status_metric(metric, bucket, status):
   )
   value = yield q.count_async()
   metric.set(value, {'bucket': bucket}, target_fields=GLOBAL_TARGET_FIELDS)
+
+
+@ndb.tasklet
+def set_build_count_metric_async(bucket, builder, status, experimental):
+  assert isinstance(bucket, basestring)
+  assert isinstance(builder, basestring)
+  q = model.Build.query(
+      model.Build.bucket == bucket,
+      model.Build.tags=='builder:%s' % builder,
+      model.Build.status == status,
+      model.Build.experimental == experimental,
+  )
+  value = yield q.count_async()
+  fields = {
+    'bucket': bucket,
+    'builder': builder,
+    'status': str(status),
+  }
+  metric = BUILD_COUNT_EXPERIMENTAL if experimental else BUILD_COUNT_PROD
+  metric.set(value, fields=fields, target_fields=GLOBAL_TARGET_FIELDS)
 
 
 @ndb.tasklet
@@ -281,6 +314,7 @@ GLOBAL_METRICS = [
 
 def update_global_metrics():
   """Updates the metrics in GLOBAL_METRICS."""
+  start = utils.utcnow()
   futures = []
   for b in config.get_buckets_async().get_result():
     futures.extend([
@@ -291,5 +325,15 @@ def update_global_metrics():
       set_build_latency(LEASE_LATENCY_SEC, b.name, True),
       set_build_latency(SCHEDULING_LATENCY_SEC, b.name, False),
     ])
+
+  for key in model.Builder.query().iter(keys_only=True):
+    _, bucket, builder = key.id().split(':', 2)
+    for status in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED):
+      for experimental in (False, True):
+        futures.append(set_build_count_metric_async(
+            bucket, builder, status, experimental))
+
   for f in futures:
     f.check_success()
+
+  logging.info('global metric computation took %s', utils.utcnow() - start)
