@@ -141,10 +141,34 @@
       "--read-from-file",
       "97ab2f7d6e7bab812309e05884bdeeaef11962f7",
       "--write-to-file",
+      "/path/to/tmp/",
+      "--html",
       "/path/to/tmp/"
     ],
     "cwd": "[BUILDER_CACHE]/chromium_lkgr_finder/infra",
     "name": "calculate chromium lkgr"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "-h",
+      "Content-Type:text/html",
+      "cp",
+      "-a",
+      "public-read",
+      "<html>lkgr</html>",
+      "gs://chromium-v8/chromium-lkgr-status/chromium-lkgr-status.html"
+    ],
+    "infra_step": true,
+    "name": "gsutil upload",
+    "~followup_annotations": [
+      "@@@STEP_LINK@chromium-lkgr-status.html@https://storage.cloud.google.com/chromium-v8/chromium-lkgr-status/chromium-lkgr-status.html@@@"
+    ]
   },
   {
     "cmd": [
