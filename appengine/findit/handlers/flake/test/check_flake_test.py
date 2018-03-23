@@ -288,6 +288,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.suspected_flake_build_number = 100
     analysis.confidence_in_suspected_build = .5
+    analysis.updated_time = datetime.datetime(2016, 1, 1)
     analysis.request_time = datetime.datetime(2016, 10, 01, 12, 10, 00)
     analysis.start_time = datetime.datetime(2016, 10, 01, 12, 10, 05)
     analysis.end_time = datetime.datetime(2016, 10, 01, 13, 10, 00)
@@ -391,7 +392,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEquals(200, response.status_int)
-    self.assertEqual(expected_check_flake_result, response.json_body)
+    self.assertDictContainsSubset(expected_check_flake_result,
+                                  response.json_body)
 
   @mock.patch.object(
       check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
@@ -501,6 +503,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.data_points.append(data_point)
     analysis.status = analysis_status.RUNNING
     analysis.suspected_flake_build_number = 100
+    analysis.updated_time = datetime.datetime(2016, 1, 1)
     analysis.request_time = datetime.datetime(2016, 10, 01, 12, 10, 00)
     analysis.start_time = datetime.datetime(2016, 10, 01, 12, 10, 05)
     analysis.end_time = datetime.datetime(2016, 10, 01, 13, 10, 00)
@@ -593,7 +596,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(200, response.status_int)
-    self.assertEqual(expected_check_flake_result, response.json_body)
+    self.assertDictContainsSubset(expected_check_flake_result,
+                                  response.json_body)
 
   @mock.patch.object(
       check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')

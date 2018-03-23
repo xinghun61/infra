@@ -499,11 +499,15 @@
           <a id="build-link" target="_blank"></a>
         </div>
       </div>
-      {% if analysis_complete %}
+
         <div id="timestamps">
-          Completed {{ ended_days_ago }} ago (total duration {{ duration }}).
+          {% if analysis_complete %}
+            Completed {{ ended_days_ago }} ago (total duration {{ duration }}).
+          {% else %}
+            Last update {{ time_updated }} ago.
+          {% endif %}
         </div>
-      {% endif %}
+
     </div>
 
     {% if show_debug_options %}

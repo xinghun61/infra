@@ -557,6 +557,8 @@ class CheckFlake(BaseHandler):
             str(time_util.GetUTCNow() - analysis.end_time).split('.')[0],
         'duration':
             str(analysis.end_time - analysis.request_time).split('.')[0],
+        'last_updated':
+            str(time_util.GetUTCNow() - analysis.updated_time).split('.')[0],
         'analysis_complete':
             analysis_complete,
         'build_level_number':
