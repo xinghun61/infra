@@ -64,6 +64,7 @@ ISSUESNAPSHOT2LABEL_TABLE_NAME = 'IssueSnapshot2Label'
 ISSUE2MILESTONE_TABLE_NAME = 'Issue2Milestone'
 ISSUE2APPROVALVALUE_TABLE_NAME = 'Issue2ApprovalValue'
 ISSUEAPPROVAL2APPROVER_TABLE_NAME = 'IssueApproval2Approver'
+ISSUEAPPROVAL2COMMENT_TABLE_NAME = 'IssueApproval2Comment'
 
 
 ISSUE_COLS = [
@@ -112,6 +113,7 @@ ISSUE2MILESTONE_COLS = ['id', 'issue_id', 'name', 'rank']
 ISSUE2APPROVALVALUE_COLS = ['approval_id', 'issue_id', 'milestone_id',
                             'status', 'setter_id', 'set_on']
 ISSUEAPPROVAL2APPROVER_COLS = ['approval_id', 'approver_id', 'issue_id']
+ISSUEAPPROVAL2COMMENT_COLS = ['approval_id', 'comment_id']
 
 CHUNK_SIZE = 1000
 
@@ -432,6 +434,8 @@ class IssueService(object):
         ISSUE2APPROVALVALUE_TABLE_NAME)
     self.issueapproval2approver_tbl = sql.SQLTableManager(
         ISSUEAPPROVAL2APPROVER_TABLE_NAME)
+    self.issueapproval2comment_tbl = sql.SQLTableManager(
+        ISSUEAPPROVAL2COMMENT_TABLE_NAME)
 
     # Tables that represent comments.
     self.comment_tbl = sql.SQLTableManager(COMMENT_TABLE_NAME)
@@ -1977,7 +1981,8 @@ class IssueService(object):
 
   ### Comments
 
-  def _UnpackComment(self, comment_row, content_dict, inbound_message_dict):
+  def _UnpackComment(
+      self, comment_row, content_dict, inbound_message_dict, approval_dict):
     """Partially construct a Comment PB from a DB row."""
     (comment_id, issue_id, created, project_id, commenter_id,
      deleted_by, is_spam, is_description, commentcontent_id) = comment_row
@@ -1992,6 +1997,7 @@ class IssueService(object):
     comment.deleted_by = deleted_by or 0
     comment.is_spam = bool(is_spam)
     comment.is_description = bool(is_description)
+    comment.approval_id = approval_dict.get(comment_id)
     return comment
 
   def _UnpackAmendment(self, amendment_row):
@@ -2057,7 +2063,8 @@ class IssueService(object):
     return attach, comment_id
 
   def _DeserializeComments(
-      self, comment_rows, commentcontent_rows, amendment_rows, attachment_rows):
+      self, comment_rows, commentcontent_rows, amendment_rows, attachment_rows,
+      approval_rows):
     """Turn rows into IssueComment PBs."""
     results = []  # keep objects in the same order as the rows
     results_dict = {}  # for fast access when joining.
@@ -2068,10 +2075,13 @@ class IssueService(object):
     inbound_message_dict = dict(
         (commentcontent_id, inbound_message) for
         commentcontent_id, _, inbound_message in commentcontent_rows)
+    approval_dict = dict(
+        (comment_id, approval_id) for approval_id, comment_id in
+        approval_rows)
 
     for comment_row in comment_rows:
       comment = self._UnpackComment(
-          comment_row, content_dict, inbound_message_dict)
+          comment_row, content_dict, inbound_message_dict, approval_dict)
       results.append(comment)
       results_dict[comment.id] = comment
 
@@ -2109,6 +2119,8 @@ class IssueService(object):
     content_rows = self.commentcontent_tbl.Select(
         cnxn, cols=COMMENTCONTENT_COLS, id=commentcontent_ids,
         shard_id=shard_id)
+    approval_rows = self.issueapproval2comment_tbl.Select(
+        cnxn, cols=ISSUEAPPROVAL2COMMENT_COLS, comment_id=cids)
     amendment_rows = []
     attachment_rows = []
     if not content_only:
@@ -2118,7 +2130,8 @@ class IssueService(object):
           cnxn, cols=ATTACHMENT_COLS, comment_id=cids, shard_id=shard_id)
 
     comments = self._DeserializeComments(
-        comment_rows, content_rows, amendment_rows, attachment_rows)
+        comment_rows, content_rows, amendment_rows, attachment_rows,
+        approval_rows)
     return comments
 
   def GetComment(self, cnxn, comment_id):
@@ -2172,9 +2185,12 @@ class IssueService(object):
         cnxn, cols=ISSUEUPDATE_COLS, comment_id=comment_ids, shard_id=shard_id)
     attachment_rows = self.attachment_tbl.Select(
         cnxn, cols=ATTACHMENT_COLS, comment_id=comment_ids, shard_id=shard_id)
+    approval_rows = self.issueapproval2comment_tbl.Select(
+        cnxn, cols=ISSUEAPPROVAL2COMMENT_COLS, comment_id=comment_ids)
 
     comments = self._DeserializeComments(
-        comment_rows, content_rows, amendment_rows, attachment_rows)
+        comment_rows, content_rows, amendment_rows, attachment_rows,
+        approval_rows)
 
     for i in xrange(len(comment_ids)):
       comments[i].sequence = sequences[i]

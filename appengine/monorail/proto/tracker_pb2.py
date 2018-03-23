@@ -254,6 +254,8 @@ class IssueComment(messages.Message):
   project_id = messages.IntegerField(50)
   # User who entered the comment
   user_id = messages.IntegerField(4, required=True, default=0)
+  # id of the APPROVAL_TYPE fielddef, if this is an approval comment.
+  approval_id = messages.IntegerField(54)
   # Time when comment was entered (seconds).
   timestamp = messages.IntegerField(5, required=True)
   # Text of the comment

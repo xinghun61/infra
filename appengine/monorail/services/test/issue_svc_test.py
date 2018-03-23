@@ -46,7 +46,7 @@ def MakeIssueService(project_service, config_service, cache_manager, my_mox):
       'reindexqueue_tbl', 'localidcounter_tbl', 'issuesnapshot2label_tbl',
       'issuesnapshot2cc_tbl', 'issuesnapshot2component_tbl',
       'issue2milestone_tbl', 'issue2approvalvalue_tbl',
-      'issueapproval2approver_tbl']:
+      'issueapproval2approver_tbl', 'issueapproval2comment_tbl']:
     setattr(issue_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
   return issue_service
@@ -1314,26 +1314,33 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(amendments, actual)
 
   def testDeserializeComments_Empty(self):
-    comments = self.services.issue._DeserializeComments([], [], [], [])
+    comments = self.services.issue._DeserializeComments([], [], [], [], [])
     self.assertEqual([], comments)
 
   def SetUpCommentRows(self):
     comment_rows = [
         (7890101, 78901, self.now, 789, 111L,
+         None, False, False, 'unused_commentcontent_id'),
+        (7890102, 78901, self.now, 789, 111L,
          None, False, False, 'unused_commentcontent_id')]
-    commentcontent_rows = [(7890101, 'content', 'msg')]
+    commentcontent_rows = [(7890101, 'content', 'msg'),
+                           (7890102, 'content2', 'msg')]
     amendment_rows = [
         (1, 78901, 7890101, 'cc', 'old', 'new val', 222, None, None)]
     attachment_rows = []
-    return comment_rows, commentcontent_rows, amendment_rows, attachment_rows
+    approval_rows = [(23, 7890102)]
+    return (comment_rows, commentcontent_rows, amendment_rows,
+            attachment_rows, approval_rows)
 
   def testDeserializeComments_Normal(self):
     (comment_rows, commentcontent_rows, amendment_rows,
-     attachment_rows) = self.SetUpCommentRows()
+     attachment_rows, approval_rows) = self.SetUpCommentRows()
     commentcontent_rows = [(7890101, 'content', 'msg')]
     comments = self.services.issue._DeserializeComments(
-        comment_rows, commentcontent_rows, amendment_rows, attachment_rows)
-    self.assertEqual(1, len(comments))
+        comment_rows, commentcontent_rows, amendment_rows, attachment_rows,
+        approval_rows)
+    self.assertEqual(2, len(comments))
+
 
   def SetUpGetComments(self, issue_ids):
     # Assumes one comment per issue.
@@ -1350,6 +1357,11 @@ class IssueServiceTest(unittest.TestCase):
         id=[issue_id + 5000 for issue_id in issue_ids],
         shard_id=mox.IsA(int)).AndReturn([
         (issue_id + 5000, 'content', None) for issue_id in issue_ids])
+    self.services.issue.issueapproval2comment_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUEAPPROVAL2COMMENT_COLS,
+        comment_id=cids).AndReturn([
+            (23, cid) for cid in cids])
+
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1381,6 +1393,8 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(2, len(comments))
     self.assertEqual('content', comments[0].content)
     self.assertEqual('content', comments[1].content)
+    self.assertEqual(23, comments[0].approval_id)
+    self.assertEqual(23, comments[1].approval_id)
 
   def SetUpGetComment_Found(self, comment_id):
     # Assumes one comment per issue.
@@ -1395,6 +1409,9 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,
         id=[commentcontent_id], shard_id=mox.IsA(int)).AndReturn([
             (commentcontent_id, 'content', None)])
+    self.services.issue.issueapproval2comment_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUEAPPROVAL2COMMENT_COLS,
+        comment_id=[comment_id]).AndReturn([(23, comment_id)])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
@@ -1409,6 +1426,7 @@ class IssueServiceTest(unittest.TestCase):
     comment = self.services.issue.GetComment(self.cnxn, 7890101)
     self.mox.VerifyAll()
     self.assertEqual('content', comment.content)
+    self.assertEqual(23, comment.approval_id)
 
   def SetUpGetComment_Missing(self, comment_id):
     # Assumes one comment per issue.
@@ -1419,6 +1437,9 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.commentcontent_tbl.Select(
         self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,
         id=[], shard_id=mox.IsA(int)).AndReturn([])
+    self.services.issue.issueapproval2comment_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUEAPPROVAL2COMMENT_COLS,
+        comment_id=[]).AndReturn([])
     # Assume no amendments or attachment for now.
     self.services.issue.issueupdate_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUEUPDATE_COLS,
