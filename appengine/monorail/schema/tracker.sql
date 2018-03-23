@@ -291,7 +291,7 @@ CREATE TABLE Issue2ApprovalValue (
   approval_id INT NOT NULL,
   milestone_id INT NOT NULL,
   status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
-  setter_id INT,
+  setter_id INT UNSIGNED,
   set_on INT,
 
   PRIMARY KEY (issue_id, approval_id, milestone_id),
@@ -305,7 +305,7 @@ CREATE TABLE Issue2ApprovalValue (
 CREATE TABLE IssueApproval2Approver (
   issue_id INT NOT NULL,
   approval_id INT NOT NULL,
-  approver_id INT NOT NULL,
+  approver_id INT UNSIGNED NOT NULL,
 
   PRIMARY KEY (issue_id, approval_id, approver_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
