@@ -835,10 +835,12 @@ CREATE TABLE HotlistVisitHistory (
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
 
+
 CREATE TABLE ComponentIssueClosedIndex (
   closed_index INT NOT NULL,
   PRIMARY KEY (closed_index)
 ) ENGINE=INNODB;
+
 
 CREATE TABLE ApprovalDef2Approver (
   approval_id INT NOT NULL,
@@ -851,6 +853,19 @@ CREATE TABLE ApprovalDef2Approver (
   FOREIGN KEY (approver_id) REFERENCES User(user_id),
   FOREIGN KEY (project_id) REFERENCES Project(project_id)
 ) ENGINE=INNODB;
+
+
+CREATE TABLE ApprovalDef2Survey (
+  approval_id INT NOT NULL,
+  survey TEXT,
+  project_id SMALLINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (approval_id),
+
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (project_id) REFERENCES Project(project_id)
+) ENGINE=INNODB;
+
 
 CREATE TABLE IssueSnapshot (
   id INT NOT NULL AUTO_INCREMENT,
@@ -874,6 +889,7 @@ CREATE TABLE IssueSnapshot (
   KEY (issue_id, period_start, period_end)
 ) ENGINE=INNODB;
 
+
 CREATE TABLE IssueSnapshot2Component (
   issuesnapshot_id INT NOT NULL,
   component_id INT NOT NULL,
@@ -882,6 +898,7 @@ CREATE TABLE IssueSnapshot2Component (
   FOREIGN KEY (issuesnapshot_id) REFERENCES IssueSnapshot(id),
   FOREIGN KEY (component_id) REFERENCES ComponentDef(id)
 ) ENGINE=INNODB;
+
 
 CREATE TABLE IssueSnapshot2Label(
   issuesnapshot_id INT NOT NULL,
@@ -892,6 +909,7 @@ CREATE TABLE IssueSnapshot2Label(
   FOREIGN KEY (label_id) REFERENCES LabelDef(id)
 ) ENGINE=INNODB;
 
+
 CREATE TABLE IssueSnapshot2Cc(
   issuesnapshot_id INT NOT NULL,
   cc_id INT UNSIGNED NOT NULL,
@@ -900,6 +918,7 @@ CREATE TABLE IssueSnapshot2Cc(
   FOREIGN KEY (issuesnapshot_id) REFERENCES IssueSnapshot(id),
   FOREIGN KEY (cc_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
+
 
 CREATE TABLE IssueSnapshot2Hotlist(
   issuesnapshot_id INT NOT NULL,

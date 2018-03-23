@@ -1397,3 +1397,17 @@ CREATE TABLE IssueSnapshot2Hotlist(
   FOREIGN KEY (issuesnapshot_id) REFERENCES IssueSnapshot(id),
   FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id)
 ) ENGINE=INNODB;
+
+================================================================
+2018-03-23: Add ApprovalDef2Survey table.
+
+CREATE TABLE ApprovalDef2Survey (
+  approval_id INT NOT NULL,
+  survey TEXT,
+  project_id SMALLINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (approval_id, project_id),
+
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (project_id) REFERENCES Project(id)
+) ENGINE=INNODB;
