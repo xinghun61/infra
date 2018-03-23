@@ -76,7 +76,7 @@ func main() {
 		}
 		slurp, _ := ioutil.ReadAll(stderr)
 		if err := cmd.Wait(); err != nil {
-			log.Fatalf("Command failed: %v, stderr: %v", err, slurp)
+			log.Fatalf("Command failed: %v, stderr: %s", err, slurp)
 		}
 	}
 
