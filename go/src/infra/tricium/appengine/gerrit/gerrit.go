@@ -177,8 +177,14 @@ func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offse
 	ts := lastTimestamp.Format(timeStampLayout)
 	v := url.Values{}
 	v.Add("start", strconv.Itoa(offset))
+	// We only ask for the latest patch set because we don't want to
+	// analyze any previous patch sets. Including the list of files is
+	// necessary to create an analyze request.
 	v.Add("o", "CURRENT_REVISION")
 	v.Add("o", "CURRENT_FILES")
+	// Including the account emails is necessary to be able to filter based
+	// on the whitelisted_groups field of the project config.
+	v.Add("o", "DETAILED_ACCOUNTS")
 	v.Add("q", fmt.Sprintf("project:%s after:\"%s\"", project, ts))
 	return fmt.Sprintf("https://%s/a/changes/?%s", host, v.Encode())
 }
