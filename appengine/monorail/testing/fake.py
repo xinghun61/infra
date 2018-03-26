@@ -1482,7 +1482,7 @@ class IssueService(object):
   def _MakeIssueComment(
       self, project_id, user_id, content, inbound_message=None,
       amendments=None, attachments=None, kept_attachments=None, timestamp=None,
-      is_spam=False, is_description=False):
+      is_spam=False, is_description=False, approval_id=None):
     comment = tracker_pb2.IssueComment()
     comment.project_id = project_id
     comment.user_id = user_id
@@ -1496,6 +1496,8 @@ class IssueService(object):
       comment.inbound_message = inbound_message
     if amendments:
       comment.amendments.extend(amendments)
+    if approval_id:
+      comment.approval_id = approval_id
     return comment
 
   def CopyIssues(self, cnxn, dest_project, issues, user_service, copier_id):
@@ -1595,7 +1597,7 @@ class IssueService(object):
       self, _cnxn, issue, user_id, content,
       inbound_message=None, amendments=None, attachments=None,
       kept_attachments=None, timestamp=None, is_spam=False,
-      is_description=False, commit=True):
+      is_description=False, approval_id=None, commit=True):
     # Add a comment to an issue
     comment = tracker_pb2.IssueComment()
     comment.id = len(self.comments_by_cid)
@@ -1613,6 +1615,8 @@ class IssueService(object):
       comment.inbound_message = inbound_message
     comment.is_spam = is_spam
     comment.is_description = is_description
+    if approval_id:
+      comment.approval_id = approval_id
 
     pid = issue.project_id
     self.comments_by_project.setdefault(pid, {})

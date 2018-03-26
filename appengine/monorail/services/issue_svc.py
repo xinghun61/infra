@@ -2170,7 +2170,7 @@ class IssueService(object):
     """
     commentcontent_id = self.commentcontent_tbl.InsertRow(
         cnxn, content=comment.content,
-        inbound_message=comment.inbound_message, commit=commit)
+        inbound_message=comment.inbound_message, commit=False)
     comment_id = self.comment_tbl.InsertRow(
         cnxn, issue_id=comment.issue_id, created=comment.timestamp,
         project_id=comment.project_id,
@@ -2178,7 +2178,7 @@ class IssueService(object):
         deleted_by=comment.deleted_by or None,
         is_spam=comment.is_spam, is_description=comment.is_description,
         commentcontent_id=commentcontent_id,
-        commit=commit)
+        commit=False)
     comment.id = comment_id
 
     amendment_rows = []
@@ -2200,7 +2200,7 @@ class IssueService(object):
             None, removed_user_id, amendment.custom_field_name))
     # ISSUEUPDATE_COLS[1:] to skip id column.
     self.issueupdate_tbl.InsertRows(
-        cnxn, ISSUEUPDATE_COLS[1:], amendment_rows, commit=commit)
+        cnxn, ISSUEUPDATE_COLS[1:], amendment_rows, commit=False)
 
     attachment_rows = []
     for attach in comment.attachments:
@@ -2208,7 +2208,15 @@ class IssueService(object):
           comment.issue_id, comment.id, attach.filename, attach.filesize,
           attach.mimetype, attach.deleted, attach.gcs_object_id])
     self.attachment_tbl.InsertRows(
-        cnxn, ATTACHMENT_COLS[1:], attachment_rows, commit=commit)
+        cnxn, ATTACHMENT_COLS[1:], attachment_rows, commit=False)
+
+    if comment.approval_id:
+      self.issueapproval2comment_tbl.InsertRows(
+          cnxn, ISSUEAPPROVAL2COMMENT_COLS,
+          [(comment.approval_id, comment_id)], commit=False)
+
+    if commit:
+      cnxn.Commit()
 
   def _UpdateComment(self, cnxn, comment, update_cols=None):
     """Update the given issue comment in SQL.
@@ -2232,7 +2240,7 @@ class IssueService(object):
   def _MakeIssueComment(
       self, project_id, user_id, content, inbound_message=None,
       amendments=None, attachments=None, kept_attachments=None, timestamp=None,
-      is_spam=False, is_description=False):
+      is_spam=False, is_description=False, approval_id=None):
     """Create in IssueComment protocol buffer in RAM.
 
     Args:
@@ -2250,6 +2258,9 @@ class IssueService(object):
       timestamp: time at which the comment was made, defaults to now.
       is_spam: True if the comment was classified as spam.
       is_description: True if the comment is a description for the issue.
+      approval_id: id, if any, of the APPROVAL_TYPE FieldDef this comment
+          belongs to.
+
     Returns:
       The new IssueComment protocol buffer.
 
@@ -2271,6 +2282,8 @@ class IssueService(object):
     if amendments:
       logging.info('amendments is %r', amendments)
       comment.amendments.extend(amendments)
+    if approval_id:
+      comment.approval_id = approval_id
 
     if attachments:
       for filename, body, mimetype in attachments:
@@ -2300,7 +2313,7 @@ class IssueService(object):
   def CreateIssueComment(
       self, cnxn, issue, user_id, content, inbound_message=None,
       amendments=None, attachments=None, kept_attachments=None, timestamp=None,
-      is_spam=False, is_description=False, commit=True):
+      is_spam=False, is_description=False, approval_id=None, commit=True):
     """Create and store a new comment on the specified issue.
 
     Args:
@@ -2320,6 +2333,8 @@ class IssueService(object):
       timestamp: time at which the comment was made, defaults to now.
       is_spam: True if the comment is classified as spam.
       is_description: True if the comment is a description for the issue.
+      approval_id: id, if any, of the APPROVAL_TYPE FieldDef this comment
+          belongs to.
       commit: set to False to not commit to DB yet.
 
     Returns:
@@ -2338,7 +2353,7 @@ class IssueService(object):
         issue.project_id, user_id, content, amendments=amendments,
         inbound_message=inbound_message, attachments=attachments,
         timestamp=timestamp, is_spam=is_spam, is_description=is_description,
-        kept_attachments=kept_attachments)
+        kept_attachments=kept_attachments, approval_id=approval_id)
     comment.issue_id = issue.issue_id
 
     if attachments or kept_attachments:

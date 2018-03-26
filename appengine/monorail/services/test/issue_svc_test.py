@@ -1425,33 +1425,41 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, issue_ids=[100001, 100002])
     self.mox.VerifyAll()
 
-  def SetUpInsertComment(self, comment_id, is_spam=False, is_description=False):
+  def SetUpInsertComment(
+      self, comment_id, is_spam=False, is_description=False, approval_id=None):
     commentcontent_id = comment_id * 10
     self.services.issue.commentcontent_tbl.InsertRow(
         self.cnxn, content='content',
-        inbound_message=None, commit=True).AndReturn(commentcontent_id)
+        inbound_message=None, commit=False).AndReturn(commentcontent_id)
     self.services.issue.comment_tbl.InsertRow(
         self.cnxn, issue_id=78901, created=self.now, project_id=789,
         commenter_id=111L, deleted_by=None, is_spam=is_spam,
         is_description=is_description, commentcontent_id=commentcontent_id,
-        commit=True).AndReturn(comment_id)
+        commit=False).AndReturn(comment_id)
 
     amendment_rows = []
     self.services.issue.issueupdate_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUEUPDATE_COLS[1:], amendment_rows,
-        commit=True)
+        commit=False)
 
     attachment_rows = []
     self.services.issue.attachment_tbl.InsertRows(
         self.cnxn, issue_svc.ATTACHMENT_COLS[1:], attachment_rows,
-        commit=True)
+        commit=False)
+
+    if approval_id:
+      self.services.issue.issueapproval2comment_tbl.InsertRows(
+          self.cnxn, issue_svc.ISSUEAPPROVAL2COMMENT_COLS,
+          [(approval_id, comment_id)], commit=False)
+
+    self.cnxn.Commit()
 
   def testInsertComment(self):
-    self.SetUpInsertComment(7890101)
+    self.SetUpInsertComment(7890101, approval_id=23)
     self.mox.ReplayAll()
     comment = tracker_pb2.IssueComment(
         issue_id=78901, timestamp=self.now, project_id=789, user_id=111L,
-        content='content')
+        content='content', approval_id=23)
     self.services.issue.InsertComment(self.cnxn, comment, commit=True)
     self.mox.VerifyAll()
     self.assertEqual(7890101, comment.id)
@@ -1477,10 +1485,11 @@ class IssueServiceTest(unittest.TestCase):
 
   def testMakeIssueComment(self):
     comment = self.services.issue._MakeIssueComment(
-        789, 111L, 'content', timestamp=self.now)
+        789, 111L, 'content', timestamp=self.now, approval_id=23)
     self.assertEqual('content', comment.content)
     self.assertEqual([], comment.amendments)
     self.assertEqual([], comment.attachments)
+    self.assertEqual(comment.approval_id, 23)
 
   def testMakeIssueComment_NonAscii(self):
     _ = self.services.issue._MakeIssueComment(
@@ -1490,10 +1499,10 @@ class IssueServiceTest(unittest.TestCase):
   def testCreateIssueComment_Normal(self):
     issue_1, _issue_2 = self.SetUpGetIssues()
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
-    self.SetUpInsertComment(7890101)
+    self.SetUpInsertComment(7890101, approval_id=24)
     self.mox.ReplayAll()
     comment = self.services.issue.CreateIssueComment(
-        self.cnxn, issue_1, 111L, 'content', timestamp=self.now)
+        self.cnxn, issue_1, 111L, 'content', timestamp=self.now, approval_id=24)
     self.mox.VerifyAll()
     self.assertEqual('content', comment.content)
 
