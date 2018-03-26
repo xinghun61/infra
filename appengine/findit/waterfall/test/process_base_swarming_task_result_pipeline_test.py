@@ -9,12 +9,12 @@ import mock
 
 from google.appengine.api import taskqueue
 
+from dto import swarming_task_error
 from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
-from services import constants
 from services import swarmed_test_util
 from services import test_results
 from waterfall.process_base_swarming_task_result_pipeline import (
@@ -351,10 +351,11 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                  self.step_name)
 
     self.assertEqual(analysis_status.ERROR, task.status)
-    self.assertEqual(task.error, {
-        'code': constants.NO_TASK_OUTPUTS,
-        'message': 'outputs_ref is None'
-    })
+    self.assertEqual(
+        task.error, {
+            'code': swarming_task_error.NO_TASK_OUTPUTS,
+            'message': 'outputs_ref is None'
+        })
 
   def testMonitorSwarmingTaskNotCompletedWithExitCode(self):
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
@@ -369,7 +370,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(analysis_status.ERROR, task.status)
     self.assertEqual(task.error, {
-        'code': constants.BOT_DIED,
+        'code': swarming_task_error.BOT_DIED,
         'message': 'BOT_DIED'
     })
 

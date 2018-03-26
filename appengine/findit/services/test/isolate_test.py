@@ -8,6 +8,7 @@ import mock
 import zlib
 
 from infra_api_clients import http_client_util
+from infra_api_clients.isolate import isolate_util
 from services import isolate
 from waterfall.test import wf_testcase
 
@@ -94,3 +95,19 @@ class IsolateTest(wf_testcase.WaterfallTestCase):
 
     self.assertIsNone(result)
     self.assertEqual({'code': 2000}, error)
+
+  @mock.patch.object(
+      isolate_util,
+      'FetchFileFromIsolatedServer',
+      return_value=(json.dumps({
+          'files': {}
+      }), None))
+  def testGetIsolatedOuptputFileToHashMapNoFiles(self, mock_fn):
+    mapping, error = isolate.GetIsolatedOuptputFileToHashMap(
+        'digest', 'gzip', 'isolated_server', None)
+    self.assertIsNone(mapping)
+    self.assertEqual({
+        'code': 310,
+        'message': 'No files in isolated response'
+    }, error.ToSerializable())
+    mock_fn.assert_called_once_with('digest', 'gzip', 'isolated_server', None)

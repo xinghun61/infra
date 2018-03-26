@@ -2,9 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from dto import swarming_task_error
+from dto.swarming_task_error import SwarmingTaskError
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from services import constants
 from services import test_results
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
@@ -57,10 +58,8 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     if tries == 0 and test_results.DoesTestExist(output_json, test_name):
       # The test exists, but something went wrong preventing even a single test
       # result from being processed.
-      flake_swarming_task.error = {
-          'code': constants.UNKNOWN,
-          'message': 'Test exists but results indeterminate'
-      }
+      flake_swarming_task.error = SwarmingTaskError.GenerateError(
+          swarming_task_error.UNKNOWN).ToSerializable()
       flake_swarming_task.status = analysis_status.ERROR
 
     flake_swarming_task.put()

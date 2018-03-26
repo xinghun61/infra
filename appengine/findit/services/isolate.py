@@ -4,6 +4,8 @@
 
 import json
 
+from dto import swarming_task_error
+from dto.swarming_task_error import SwarmingTaskError
 from infra_api_clients.isolate import isolate_util
 
 
@@ -27,7 +29,9 @@ def GetIsolatedOuptputFileToHashMap(digest, name_space, isolated_server,
 
   file_hash_mapping = {}
   content_json = json.loads(content)
-  assert content_json.get('files'), 'No files key in content from isolate.'
+  if not content_json.get('files'):
+    return None, SwarmingTaskError.GenerateError(
+        swarming_task_error.NO_ISOLATED_FILES)
   for file_name, info in content_json['files'].iteritems():
     file_hash_mapping[file_name] = info.get('h')
   return file_hash_mapping, None

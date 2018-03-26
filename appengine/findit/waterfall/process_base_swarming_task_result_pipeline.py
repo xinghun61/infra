@@ -11,6 +11,8 @@ from google.appengine.api import taskqueue
 
 from common import constants
 from common.findit_http_client import FinditHttpClient
+from dto import swarming_task_error
+from dto.swarming_task_error import SwarmingTaskError
 from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.swarming import swarming_util
@@ -158,10 +160,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         # Timeout.
         # Updates status as ERROR.
         task.status = analysis_status.ERROR
-        task.error = {
-            'code': service_constants.TIMED_OUT,
-            'message': 'Process swarming task result timed out'
-        }
+        task.error = SwarmingTaskError.GenerateError(
+            swarming_task_error.TIMED_OUT).ToSerializable()
         task.put()
         timeout_hours = waterfall_config.GetSwarmingSettings().get(
             'task_timeout_hours')
@@ -220,10 +220,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         if not outputs_ref:
           logging.error('outputs_ref for task %s is None', task_id)
           task.status = analysis_status.ERROR
-          task.error = {
-              'code': service_constants.NO_TASK_OUTPUTS,
-              'message': 'outputs_ref is None'
-          }
+          task.error = SwarmingTaskError.GenerateError(
+              swarming_task_error.NO_TASK_OUTPUTS).ToSerializable()
           task.put()
           check_task_completion()
           return
@@ -232,17 +230,12 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
             outputs_ref, self.HTTP_CLIENT)
 
         if not output_json:
-          error = error or {
-              'code': service_constants.NO_OUTPUT_JSON,
-              'message': 'No swarming task failure log'
-          }
+          error = error or SwarmingTaskError.GenerateError(
+              swarming_task_error.NO_OUTPUT_JSON).ToSerializable()
 
         if not test_results.IsTestResultsValid(output_json):
-          error = error or {
-              'code': service_constants.UNRECOGNIZABLE,
-              'message': 'Test results format is unrecognized, '
-                         'cannot find a parser.'
-          }
+          error = error or SwarmingTaskError.GenerateError(
+              swarming_task_error.UNRECOGNIZABLE).ToSerializable()
 
         if error:
           task.status = analysis_status.ERROR
@@ -258,7 +251,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         task.put()
       else:
         # The swarming task did not complete.
-        code = service_constants.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state]
+        code = swarming_task_error.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state]
         message = task_state
 
         task.status = analysis_status.ERROR

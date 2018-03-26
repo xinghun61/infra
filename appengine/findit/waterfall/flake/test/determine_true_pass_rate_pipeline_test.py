@@ -7,12 +7,12 @@ import copy
 import mock
 
 from common import constants
+from dto import swarming_task_error
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from services import constants as service_constants
 from waterfall.flake import flake_constants
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import determine_true_pass_rate_pipeline
@@ -617,11 +617,11 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
                                     step_name, test_name)
     task.status = analysis_status.ERROR
-    task.error = {'code': service_constants.TIMED_OUT}
+    task.error = {'code': swarming_task_error.TIMED_OUT}
     task.put()
 
     self.assertEqual(
-        service_constants.TIMED_OUT,
+        swarming_task_error.TIMED_OUT,
         determine_true_pass_rate_pipeline._GetSwarmingTaskErrorCode(
             analysis, task, 1.0))
     self.assertIsNone(

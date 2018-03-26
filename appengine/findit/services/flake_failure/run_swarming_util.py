@@ -4,9 +4,9 @@
 """Functions to assist in determining swarming parameters for flake analysis."""
 
 from common import monitoring
+from dto import swarming_task_error
 from libs import analysis_status
 from libs import time_util
-from services import constants
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -128,7 +128,7 @@ def CalculateRunParametersForSwarmingTask(analysis, commit_position, error):
   time_for_task_seconds = _EstimateTimeoutForTask(timeout_per_test,
                                                   iterations_for_task)
 
-  if error and error.code == constants.TIMED_OUT:
+  if error and error.code == swarming_task_error.TIMED_OUT:
     # If the previous run timed out, run a smaller, fixed number of
     # iterations so the next attempt is more likely to finish.
     iterations_for_task = waterfall_config.GetCheckFlakeSettings().get(
