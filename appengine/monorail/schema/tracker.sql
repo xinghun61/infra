@@ -314,6 +314,17 @@ CREATE TABLE IssueApproval2Approver (
 ) ENGINE=INNODB;
 
 
+CREATE TABLE IssueApproval2Comment (
+  approval_id INT NOT NULL,
+  comment_id INT NOT NULL,
+
+  PRIMARY KEY (comment_id),
+  INDEX (approval_id),
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (comment_id) REFERENCES Comment(id)
+) ENGINE=INNODB;
+
+
 CREATE TABLE IssueVisitHistory (
   issue_id INT NOT NULL,
   user_id INT UNSIGNED NOT NULL,
