@@ -19,8 +19,8 @@ from services import service_manager
 from testing import fake
 
 
-def MakeChartService(my_mox):
-  chart_service = chart_svc.ChartService()
+def MakeChartService(my_mox, config):
+  chart_service = chart_svc.ChartService(config)
   for table_var in ['issuesnapshot_tbl', 'labeldef_tbl']:
     setattr(chart_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
   return chart_service
@@ -40,7 +40,7 @@ class SearchHelpersTest(unittest.TestCase):
     self.mox = mox.Mox()
     self.cnxn = self.mox.CreateMock(sql.MonorailConnection)
     self.services = service_manager.Services()
-    self.services.chart = MakeChartService(self.mox)
+    self.services.chart = MakeChartService(self.mox, self.services.config)
     self.config_service = fake.ConfigService()
     self.user = user_pb2.User()
 

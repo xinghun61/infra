@@ -20,6 +20,7 @@ from framework import exceptions
 from framework import sql
 from proto import tracker_pb2
 from services import caches
+from services import chart_svc
 from services import issue_svc
 from services import service_manager
 from services import spam_svc
@@ -34,18 +35,17 @@ class MockIndex(object):
     pass
 
 
-def MakeIssueService(project_service, config_service, cache_manager, my_mox):
+def MakeIssueService(project_service, config_service, cache_manager,
+    chart_service, my_mox):
   issue_service = issue_svc.IssueService(
-      project_service, config_service, cache_manager)
+      project_service, config_service, cache_manager, chart_service)
   for table_var in [
       'issue_tbl', 'issuesummary_tbl', 'issue2label_tbl',
       'issue2component_tbl', 'issue2cc_tbl', 'issue2notify_tbl',
       'issue2fieldvalue_tbl', 'issuerelation_tbl', 'danglingrelation_tbl',
       'issueformerlocations_tbl', 'comment_tbl', 'commentcontent_tbl',
-      'issueupdate_tbl', 'issuesnapshot_tbl', 'attachment_tbl',
-      'reindexqueue_tbl', 'localidcounter_tbl', 'issuesnapshot2label_tbl',
-      'issuesnapshot2cc_tbl', 'issuesnapshot2component_tbl',
-      'issue2milestone_tbl', 'issue2approvalvalue_tbl',
+      'issueupdate_tbl', 'attachment_tbl', 'reindexqueue_tbl',
+      'localidcounter_tbl', 'issue2milestone_tbl', 'issue2approvalvalue_tbl',
       'issueapproval2approver_tbl', 'issueapproval2comment_tbl']:
     setattr(issue_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
@@ -79,9 +79,10 @@ class IssueIDTwoLevelCacheTest(unittest.TestCase):
     self.project_service = fake.ProjectService()
     self.config_service = fake.ConfigService()
     self.cache_manager = fake.CacheManager()
+    self.chart_service = chart_svc.ChartService(self.config_service)
     self.issue_service = MakeIssueService(
         self.project_service, self.config_service, self.cache_manager,
-        self.mox)
+        self.chart_service, self.mox)
     self.issue_id_2lc = self.issue_service.issue_id_2lc
     self.spam_service = fake.SpamService()
 
@@ -138,9 +139,10 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.project_service = fake.ProjectService()
     self.config_service = fake.ConfigService()
     self.cache_manager = fake.CacheManager()
+    self.chart_service = chart_svc.ChartService(self.config_service)
     self.issue_service = MakeIssueService(
         self.project_service, self.config_service, self.cache_manager,
-        self.mox)
+        self.chart_service, self.mox)
     self.issue_2lc = self.issue_service.issue_2lc
 
     now = int(time.time())
@@ -315,14 +317,15 @@ class IssueServiceTest(unittest.TestCase):
     self.services.config = fake.ConfigService()
     self.services.features = fake.FeaturesService()
     self.cache_manager = fake.CacheManager()
+    self.services.chart = chart_svc.ChartService(self.services.config)
     self.services.issue = MakeIssueService(
         self.services.project, self.services.config, self.cache_manager,
-        self.mox)
+        self.services.chart, self.mox)
     self.services.spam = self.mox.CreateMock(spam_svc.SpamService)
     self.now = int(time.time())
     self.orig_index_issues = tracker_fulltext.IndexIssues
     tracker_fulltext.IndexIssues = lambda *args: None
-    self.mox.StubOutWithMock(self.services.issue, '_currentTime')
+    self.mox.StubOutWithMock(self.services.chart, 'StoreIssueSnapshots')
 
   def classifierResult(self, score, failed_open=False):
     return {'confidence_is_spam': score,
@@ -372,7 +375,7 @@ class IssueServiceTest(unittest.TestCase):
     av_rows = [(23, 78901, 1, 'needs_review', None, None),
                (24, 78901, 1, 'not_set', None, None)]
     self.SetUpAllocateNextLocalID(789, None, None)
-    self.SetUpInsertIssue(store_label=True, ms_row=ms_row, av_rows=av_rows)
+    self.SetUpInsertIssue(ms_row=ms_row, av_rows=av_rows)
     self.SetUpInsertComment(7890101, is_description=True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), self.reporter, False).AndReturn(
@@ -580,7 +583,7 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(locations, [(781, 1), (782, 11)])
 
   def SetUpInsertIssue(
-      self, label_rows=None, store_label=False, ms_row=None, av_rows=None):
+      self, label_rows=None, ms_row=None, av_rows=None):
     row = (789, 1, 1, 111L, 111L,
            self.now, 0, self.now, self.now, self.now, self.now,
            None, 0,
@@ -600,7 +603,8 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesNotify()
     self.SetUpUpdateIssuesRelation()
     self.SetUpCreateIssueMilestones(ms_row=ms_row, av_rows=av_rows)
-    self.SetUpUpdateIssuesStoreSnapshots(store_label=label_rows or store_label)
+    self.services.chart.StoreIssueSnapshots(self.cnxn, mox.IgnoreArg(),
+        commit=False)
 
   def SetUpInsertSpamIssue(self):
     row = (789, 1, 1, 111L, 111L,
@@ -620,7 +624,8 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesCc()
     self.SetUpUpdateIssuesNotify()
     self.SetUpUpdateIssuesRelation()
-    self.SetUpUpdateIssuesStoreSnapshots(store_label=True)
+    self.services.chart.StoreIssueSnapshots(self.cnxn, mox.IgnoreArg(),
+        commit=False)
 
   def SetUpUpdateIssuesSummary(self):
     self.services.issue.issuesummary_tbl.InsertRows(
@@ -696,62 +701,8 @@ class IssueServiceTest(unittest.TestCase):
       self.services.issue.issue2approvalvalue_tbl.InsertRows(
           self.cnxn, issue_svc.ISSUE2APPROVALVALUE_COLS, av_rows, commit=False)
 
-  def SetUpUpdateIssuesStoreSnapshots(self, store_label, replace_now=None,
-                                      found_id=None, project_id=789,
-                                      owner_id=111L, component_ids=None,
-                                      cc_rows=None):
-    """Set up all calls to mocks that _StoreIssueSnapshots will call."""
-    now = self.services.issue._currentTime().AndReturn(replace_now or 12345678)
-
-    if found_id:
-      select_return = [(found_id,)]
-    else:
-      select_return = []
-
-    self.services.issue.issuesnapshot_tbl.Select(self.cnxn,
-        cols=issue_svc.ISSUESNAPSHOT_COLS,
-        issue_id=78901, limit=1,
-        order_by=[('period_start DESC', [])]).AndReturn(select_return)
-
-    if found_id:
-      self.services.issue.issuesnapshot_tbl.Update(self.cnxn,
-          {'period_end': now},
-          where=[('IssueSnapshot.id = %s', [found_id])], commit=False)
-
-    self.services.issue.issuesnapshot_tbl.InsertRows(self.cnxn,
-      issue_svc.ISSUESNAPSHOT_COLS[1:],
-      [(78901, 1, project_id, 1, 111L, owner_id, 1,
-        now, 4294967295, True)],
-      replace=True, commit=False, return_generated_ids=True).AndReturn([5678])
-
-    if store_label:
-      label_rows = [(5678, 1)]
-    else:
-      label_rows = []
-
-    self.services.issue.issuesnapshot2label_tbl.InsertRows(self.cnxn,
-        issue_svc.ISSUESNAPSHOT2LABEL_COLS,
-        label_rows,
-        replace=True, commit=False)
-
-    if not cc_rows:
-      cc_rows = []
-    self.services.issue.issuesnapshot2cc_tbl.InsertRows(
-        self.cnxn, issue_svc.ISSUESNAPSHOT2CC_COLS,
-        [(5678, row[1]) for row in cc_rows],
-        replace=True, commit=False)
-
-    if component_ids:
-      component_rows = [(5678, component_id) for component_id in component_ids]
-    else:
-      component_rows = []
-    self.services.issue.issuesnapshot2component_tbl.InsertRows(
-        self.cnxn, issue_svc.ISSUESNAPSHOT2COMPONENT_COLS,
-        component_rows,
-        replace=True, commit=False)
-
   def testInsertIssue(self):
-    self.SetUpInsertIssue(store_label=True)
+    self.SetUpInsertIssue()
     self.mox.ReplayAll()
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, owner_id=111L, reporter_id=111L,
@@ -790,10 +741,12 @@ class IssueServiceTest(unittest.TestCase):
       self.SetUpUpdateIssuesNotify()
       self.SetUpUpdateIssuesSummary()
       self.SetUpUpdateIssuesRelation()
-      self.SetUpUpdateIssuesStoreSnapshots(store_label=True)
+      self.services.chart.StoreIssueSnapshots(self.cnxn, mox.IgnoreArg(),
+          commit=False)
 
     if given_delta:
-      self.SetUpUpdateIssuesStoreSnapshots(store_label=False)
+      self.services.chart.StoreIssueSnapshots(self.cnxn, mox.IgnoreArg(),
+          commit=False)
 
     self.cnxn.Commit()
 
@@ -1167,7 +1120,8 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.issue_tbl.Update(
         self.cnxn, delta, id=78901, commit=False)
 
-    self.SetUpUpdateIssuesStoreSnapshots(store_label=False)
+    self.services.chart.StoreIssueSnapshots(self.cnxn, mox.IgnoreArg(),
+        commit=False)
 
     self.cnxn.Commit()
     self.mox.ReplayAll()
@@ -1805,75 +1759,6 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.InvalidateIIDs(self.cnxn, [78901])
     self.mox.ReplayAll()
     self.services.issue.ApplyIssueRerank(self.cnxn, 78901, relations_to_change)
-    self.mox.VerifyAll()
-
-  def testStoreIssueSnapshots_NoChange(self):
-    """Test that _StoreIssueSnapshots inserts and updates previous
-    issue snapshots correctly."""
-
-    now_1 = 1517599888
-    now_2 = 1517599999
-
-    issue = fake.MakeTestIssue(issue_id=78901,
-        project_id=789, local_id=1, reporter_id=111L, owner_id=111L,
-        summary='sum', status='Status1',
-        labels=['Type-Defect'],
-        component_ids=[11], assume_stale=False,
-        opened_timestamp=123456789, modified_timestamp=123456789,
-        star_count=12, cc_ids=[222L, 333L], derived_cc_ids=[888L])
-
-    # Snapshot #1
-    cc_rows = [(5678, 222L), (5678, 333L), (5678, 888L)]
-    self.SetUpUpdateIssuesStoreSnapshots(store_label=True, replace_now=now_1,
-      component_ids=[11], cc_rows=cc_rows)
-
-    # Snapshot #2
-    self.SetUpUpdateIssuesStoreSnapshots(store_label=True, replace_now=now_2,
-      found_id=5678, component_ids=[11], cc_rows=cc_rows)
-
-    self.mox.ReplayAll()
-    self.services.issue._StoreIssueSnapshots(self.cnxn, [issue], commit=False)
-    self.services.issue._StoreIssueSnapshots(self.cnxn, [issue], commit=False)
-    self.mox.VerifyAll()
-
-  def testStoreIssueSnapshots_AllFieldsChanged(self):
-    """Test that _StoreIssueSnapshots inserts and updates previous
-    issue snapshots correctly. This tests that all relations (labels,
-    CCs, and components) are updated."""
-
-    now_1 = 1517599888
-    now_2 = 1517599999
-
-    issue_1 = fake.MakeTestIssue(issue_id=78901,
-        project_id=789, local_id=1, reporter_id=111L, owner_id=111L,
-        summary='sum', status='Status1',
-        labels=['Type-Defect'],
-        component_ids=[11, 12], assume_stale=False,
-        opened_timestamp=123456789, modified_timestamp=123456789,
-        star_count=12, cc_ids=[222L, 333L], derived_cc_ids=[888L])
-
-    issue_2 = fake.MakeTestIssue(issue_id=78901,
-        project_id=123, local_id=1, reporter_id=111L, owner_id=222L,
-        summary='sum', status='Status2',
-        labels=['Type-Enhancement'],
-        component_ids=[13], assume_stale=False,
-        opened_timestamp=123456789, modified_timestamp=123456789,
-        star_count=12, cc_ids=[222L, 444L], derived_cc_ids=[888L, 999L])
-
-    # Snapshot #1
-    cc_rows_1 = [(5678, 222L), (5678, 333L), (5678, 888L)]
-    self.SetUpUpdateIssuesStoreSnapshots(store_label=True, replace_now=now_1,
-      component_ids=[11, 12], cc_rows=cc_rows_1)
-
-    # Snapshot #2
-    cc_rows_2 = [(5678, 222L), (5678, 444L), (5678, 888L), (5678, 999L)]
-    self.SetUpUpdateIssuesStoreSnapshots(store_label=True, replace_now=now_2,
-      found_id=5678, project_id=123, owner_id=222L, component_ids=[13],
-      cc_rows=cc_rows_2)
-
-    self.mox.ReplayAll()
-    self.services.issue._StoreIssueSnapshots(self.cnxn, [issue_1], commit=False)
-    self.services.issue._StoreIssueSnapshots(self.cnxn, [issue_2], commit=False)
     self.mox.VerifyAll()
 
 

@@ -493,9 +493,8 @@ class WorkEnv(object):
     """
     with self.mr.profiler.Phase('querying snapshot counts'):
       return self.services.chart.QueryIssueSnapshots(
-        self.mr.cnxn, self.services.config, timestamp,
-        bucketby, self.mr.auth.effective_ids, self.mr.project, self.mr.perms,
-        label_prefix=label_prefix)
+        self.mr.cnxn, timestamp, bucketby, self.mr.auth.effective_ids,
+        self.mr.project, self.mr.perms, label_prefix=label_prefix)
 
   ### User methods
 

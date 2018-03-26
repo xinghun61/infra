@@ -8,29 +8,56 @@
 Functions for querying the IssueSnapshot table and associated join tables.
 """
 
+import logging
 import settings
+import time
 
 from framework import framework_helpers
 from framework import sql
 from search import search_helpers
+from tracker import tracker_bizobj
+from tracker import tracker_helpers
 
 
 ISSUESNAPSHOT_TABLE_NAME = 'IssueSnapshot'
+ISSUESNAPSHOT2CC_TABLE_NAME = 'IssueSnapshot2Cc'
+ISSUESNAPSHOT2COMPONENT_TABLE_NAME = 'IssueSnapshot2Component'
+ISSUESNAPSHOT2LABEL_TABLE_NAME = 'IssueSnapshot2Label'
+
+ISSUESNAPSHOT_COLS = ['id', 'issue_id', 'shard', 'project_id', 'local_id',
+    'reporter_id', 'owner_id', 'status_id', 'period_start', 'period_end',
+    'is_open']
+ISSUESNAPSHOT2CC_COLS = ['issuesnapshot_id', 'cc_id']
+ISSUESNAPSHOT2COMPONENT_COLS = ['issuesnapshot_id', 'component_id']
+ISSUESNAPSHOT2LABEL_COLS = ['issuesnapshot_id', 'label_id']
 
 
 class ChartService(object):
   """Class for querying chart data."""
 
-  def __init__(self):
-    self.issuesnapshot_tbl = sql.SQLTableManager(ISSUESNAPSHOT_TABLE_NAME)
+  def __init__(self, config_service):
+    """Constructor for ChartService.
 
-  def QueryIssueSnapshots(self, cnxn, config_svc, unixtime, bucketby,
+    Args:
+      config_service (ConfigService): An instance of ConfigService.
+    """
+    self.config_service = config_service
+
+    # Set up SQL table objects.
+    self.issuesnapshot_tbl = sql.SQLTableManager(ISSUESNAPSHOT_TABLE_NAME)
+    self.issuesnapshot2cc_tbl = sql.SQLTableManager(
+        ISSUESNAPSHOT2CC_TABLE_NAME)
+    self.issuesnapshot2component_tbl = sql.SQLTableManager(
+        ISSUESNAPSHOT2COMPONENT_TABLE_NAME)
+    self.issuesnapshot2label_tbl = sql.SQLTableManager(
+        ISSUESNAPSHOT2LABEL_TABLE_NAME)
+
+  def QueryIssueSnapshots(self, cnxn, unixtime, bucketby,
                           effective_ids, project, perms, label_prefix=None):
     """Queries historical issue counts grouped by label or component.
 
     Args:
       cnxn: A MonorailConnection instance.
-      config_svc: A ConfigService instance.
       unixtime: An integer representing the Unix time in seconds.
       bucketby: Which dimension to group by. Either 'label' or 'component'.
       effective_ids: The effective User IDs associated with the current user.
@@ -43,7 +70,7 @@ class ChartService(object):
       A dictionary of: {'label or component name': number of occurences}
     """
     restricted_label_ids = search_helpers.GetPersonalAtRiskLabelIDs(
-      cnxn, None, config_svc, effective_ids, project, perms)
+      cnxn, None, self.config_service, effective_ids, project, perms)
 
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
@@ -142,3 +169,82 @@ class ChartService(object):
         shard_values_dict[name] += count
 
     return shard_values_dict
+
+  def StoreIssueSnapshots(self, cnxn, issues, commit=True):
+    """Adds an IssueSnapshot and updates the previous one for each issue."""
+    for issue in issues:
+      right_now = self._currentTime()
+
+      # Look for an existing (latest) IssueSnapshot with this issue_id.
+      previous_snapshots = self.issuesnapshot_tbl.Select(
+          cnxn, cols=ISSUESNAPSHOT_COLS,
+          issue_id=issue.issue_id,
+          limit=1,
+          order_by=[('period_start DESC', [])])
+
+      if len(previous_snapshots) > 0:
+        previous_snapshot_id = previous_snapshots[0][0]
+        logging.info('Found previous IssueSnapshot with id: %s',
+          previous_snapshot_id)
+
+        # Update previous snapshot's end time to right now.
+        delta = { 'period_end': right_now }
+        where = [('IssueSnapshot.id = %s', [previous_snapshot_id])]
+        self.issuesnapshot_tbl.Update(cnxn, delta, commit=commit, where=where)
+
+      config = self.config_service.GetProjectConfig(cnxn, issue.project_id)
+      period_end = settings.maximum_snapshot_period_end
+      is_open = tracker_helpers.MeansOpenInProject(
+        tracker_bizobj.GetStatus(issue), config)
+      shard = issue.issue_id % settings.num_logical_shards
+      status = tracker_bizobj.GetStatus(issue)
+      status_id = self.config_service.LookupStatusID(
+          cnxn, issue.project_id, status) or None
+      owner_id = tracker_bizobj.GetOwnerId(issue) or None
+
+      issuesnapshot_rows = [(issue.issue_id, shard, issue.project_id,
+        issue.local_id, issue.reporter_id, owner_id, status_id, right_now,
+        period_end, is_open)]
+
+      ids = self.issuesnapshot_tbl.InsertRows(
+          cnxn, ISSUESNAPSHOT_COLS[1:],
+          issuesnapshot_rows,
+          replace=True, commit=commit,
+          return_generated_ids=True)
+      issuesnapshot_id = ids[0]
+
+      # Add all labels to IssueSnapshot2Label.
+      label_rows = [
+          (issuesnapshot_id,
+           self.config_service.LookupLabelID(cnxn, issue.project_id, label))
+          for label in tracker_bizobj.GetLabels(issue)
+      ]
+      self.issuesnapshot2label_tbl.InsertRows(
+          cnxn, ISSUESNAPSHOT2LABEL_COLS,
+          label_rows, replace=True, commit=commit)
+
+      # Add all CCs to IssueSnapshot2Cc.
+      cc_rows = [
+        (issuesnapshot_id, cc_id)
+        for cc_id in tracker_bizobj.GetCcIds(issue)
+      ]
+      self.issuesnapshot2cc_tbl.InsertRows(
+          cnxn, ISSUESNAPSHOT2CC_COLS,
+          cc_rows,
+          replace=True, commit=commit)
+
+      # Add all components to IssueSnapshot2Component.
+      component_rows = [
+        (issuesnapshot_id, component_id)
+        for component_id in issue.component_ids
+      ]
+      self.issuesnapshot2component_tbl.InsertRows(
+          cnxn, ISSUESNAPSHOT2COMPONENT_COLS,
+          component_rows,
+          replace=True, commit=commit)
+
+
+  def _currentTime(self):
+    """This is a separate method so it can be mocked by tests."""
+    return time.time()
+

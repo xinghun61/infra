@@ -23,9 +23,10 @@ from testing import fake
 from search import search_helpers
 
 
-def MakeChartService(my_mox):
-  chart_service = chart_svc.ChartService()
-  for table_var in ['issuesnapshot_tbl', 'labeldef_tbl']:
+def MakeChartService(my_mox, config):
+  chart_service = chart_svc.ChartService(config)
+  for table_var in ['issuesnapshot_tbl', 'issuesnapshot2label_tbl',
+      'issuesnapshot2component_tbl', 'issuesnapshot2cctbl', 'labeldef_tbl']:
     setattr(chart_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
   return chart_service
 
@@ -40,11 +41,12 @@ class ChartServiceTest(unittest.TestCase):
     self.mox = mox.Mox()
     self.cnxn = self.mox.CreateMock(sql.MonorailConnection)
     self.services = service_manager.Services()
-    self.services.chart = MakeChartService(self.mox)
     self.config_service = fake.ConfigService()
+    self.services.chart = MakeChartService(self.mox, self.config_service)
     self.mox.StubOutWithMock(search_helpers, 'GetPersonalAtRiskLabelIDs')
     self.mox.StubOutWithMock(settings, 'num_logical_shards')
     settings.num_logical_shards = 1
+    self.mox.StubOutWithMock(self.services.chart, '_currentTime')
 
   def tearDown(self):
     self.testbed.deactivate()
@@ -66,13 +68,14 @@ class ChartServiceTest(unittest.TestCase):
     project = fake.Project(project_id=789)
     perms = permissions.USER_PERMISSIONSET
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
-      self.config_service, [10L, 20L], project, perms).AndReturn([91, 81])
+        self.config_service, [10L, 20L], project,
+        perms).AndReturn([91, 81])
 
     self.mox.ReplayAll()
     with self.assertRaises(ValueError):
-      self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
-        unixtime=1514764800, bucketby='rutabaga', effective_ids=[10L, 20L],
-        project=project, perms=perms, label_prefix='rutabaga')
+      self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
+        bucketby='rutabaga', effective_ids=[10L, 20L], project=project,
+        perms=perms, label_prefix='rutabaga')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_NoLabelPrefix(self):
@@ -80,13 +83,14 @@ class ChartServiceTest(unittest.TestCase):
     project = fake.Project(project_id=789)
     perms = permissions.USER_PERMISSIONSET
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
-      self.config_service, [10L, 20L], project, perms).AndReturn([91, 81])
+        self.config_service, [10L, 20L], project,
+        perms).AndReturn([91, 81])
 
     self.mox.ReplayAll()
     with self.assertRaises(ValueError):
-      self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
-        unixtime=1514764800, bucketby='label', effective_ids=[10L, 20L],
-        project=project, perms=perms)
+      self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
+        bucketby='label', effective_ids=[10L, 20L], project=project,
+        perms=perms)
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_Components(self):
@@ -94,7 +98,8 @@ class ChartServiceTest(unittest.TestCase):
     project = fake.Project(project_id=789)
     perms = permissions.PermissionSet(['BarPerm'])
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
-      self.config_service, [10L, 20L], project, perms).AndReturn([91, 81])
+        self.config_service, [10L, 20L], project,
+        perms).AndReturn([91, 81])
 
     cols = [
       'Comp.path',
@@ -135,9 +140,9 @@ class ChartServiceTest(unittest.TestCase):
     self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
-    self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
-      unixtime=1514764800, bucketby='component', effective_ids=[10L, 20L],
-      project=project, perms=perms)
+    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
+        bucketby='component', effective_ids=[10L, 20L], project=project,
+        perms=perms)
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_Labels(self):
@@ -145,7 +150,8 @@ class ChartServiceTest(unittest.TestCase):
     project = fake.Project(project_id=789)
     perms = permissions.PermissionSet(['BarPerm'])
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
-      self.config_service, [10L, 20L], project, perms).AndReturn([91, 81])
+        self.config_service, [10L, 20L], project,
+        perms).AndReturn([91, 81])
 
     cols = [
       'Lab.label',
@@ -187,9 +193,9 @@ class ChartServiceTest(unittest.TestCase):
     self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
-    self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
-      unixtime=1514764800, bucketby='label', effective_ids=[10L, 20L],
-      project=project, perms=perms, label_prefix='Foo')
+    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
+      bucketby='label', effective_ids=[10L, 20L], project=project,
+      perms=perms, label_prefix='Foo')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_LabelsNotLoggedInUser(self):
@@ -200,7 +206,8 @@ class ChartServiceTest(unittest.TestCase):
     project = fake.Project(project_id=789)
     perms = permissions.READ_ONLY_PERMISSIONSET
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
-      self.config_service, set(), project, perms).AndReturn([91, 81])
+        self.config_service, set([]), project,
+        perms).AndReturn([91, 81])
 
     cols = [
       'Lab.label',
@@ -234,9 +241,9 @@ class ChartServiceTest(unittest.TestCase):
     self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
-    self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
-      unixtime=1514764800, bucketby='label', effective_ids=set([]),
-      project=project, perms=perms, label_prefix='Foo')
+    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
+        bucketby='label', effective_ids=set([]),
+        project=project, perms=perms, label_prefix='Foo')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_NoRestrictedLabels(self):
@@ -244,7 +251,8 @@ class ChartServiceTest(unittest.TestCase):
     project = fake.Project(project_id=789)
     perms = permissions.USER_PERMISSIONSET
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
-      self.config_service, [10L, 20L], project, perms).AndReturn([])
+        self.config_service, [10L, 20L], project,
+        perms).AndReturn([])
 
     cols = [
       'Lab.label',
@@ -282,7 +290,132 @@ class ChartServiceTest(unittest.TestCase):
     self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
-    self.services.chart.QueryIssueSnapshots(self.cnxn, self.config_service,
-      unixtime=1514764800, bucketby='label', effective_ids=[10L, 20L],
-      project=project, perms=perms, label_prefix='Foo')
+    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
+        bucketby='label', effective_ids=[10L, 20L], project=project,
+        perms=perms, label_prefix='Foo')
+    self.mox.VerifyAll()
+
+  def SetUpStoreIssueSnapshots(self, store_label, replace_now=None,
+                                      found_id=None, project_id=789,
+                                      owner_id=111L, component_ids=None,
+                                      cc_rows=None):
+    """Set up all calls to mocks that StoreIssueSnapshots will call."""
+    now = self.services.chart._currentTime().AndReturn(replace_now or 12345678)
+
+    if found_id:
+      select_return = [(found_id,)]
+    else:
+      select_return = []
+
+    self.services.chart.issuesnapshot_tbl.Select(self.cnxn,
+        cols=chart_svc.ISSUESNAPSHOT_COLS,
+        issue_id=78901, limit=1,
+        order_by=[('period_start DESC', [])]).AndReturn(select_return)
+
+    if found_id:
+      self.services.chart.issuesnapshot_tbl.Update(self.cnxn,
+          {'period_end': now},
+          where=[('IssueSnapshot.id = %s', [found_id])], commit=False)
+
+    # Shard is 0 because len(shards) = 1 and 1 % 1 = 0.
+    shard = 0
+    self.services.chart.issuesnapshot_tbl.InsertRows(self.cnxn,
+      chart_svc.ISSUESNAPSHOT_COLS[1:],
+      [(78901, shard, project_id, 1, 111L, owner_id, 1,
+        now, 4294967295, True)],
+      replace=True, commit=False, return_generated_ids=True).AndReturn([5678])
+
+    if store_label:
+      label_rows = [(5678, 1)]
+    else:
+      label_rows = []
+
+    self.services.chart.issuesnapshot2label_tbl.InsertRows(self.cnxn,
+        chart_svc.ISSUESNAPSHOT2LABEL_COLS,
+        label_rows,
+        replace=True, commit=False)
+
+    if not cc_rows:
+      cc_rows = []
+    self.services.chart.issuesnapshot2cc_tbl.InsertRows(
+        self.cnxn, chart_svc.ISSUESNAPSHOT2CC_COLS,
+        [(5678, row[1]) for row in cc_rows],
+        replace=True, commit=False)
+
+    if component_ids:
+      component_rows = [(5678, component_id) for component_id in component_ids]
+    else:
+      component_rows = []
+    self.services.chart.issuesnapshot2component_tbl.InsertRows(
+        self.cnxn, chart_svc.ISSUESNAPSHOT2COMPONENT_COLS,
+        component_rows,
+        replace=True, commit=False)
+
+  def testStoreIssueSnapshots_NoChange(self):
+    """Test that StoreIssueSnapshots inserts and updates previous
+    issue snapshots correctly."""
+
+    now_1 = 1517599888
+    now_2 = 1517599999
+
+    issue = fake.MakeTestIssue(issue_id=78901,
+        project_id=789, local_id=1, reporter_id=111L, owner_id=111L,
+        summary='sum', status='Status1',
+        labels=['Type-Defect'],
+        component_ids=[11], assume_stale=False,
+        opened_timestamp=123456789, modified_timestamp=123456789,
+        star_count=12, cc_ids=[222L, 333L], derived_cc_ids=[888L])
+
+    # Snapshot #1
+    cc_rows = [(5678, 222L), (5678, 333L), (5678, 888L)]
+    self.SetUpStoreIssueSnapshots(store_label=True, replace_now=now_1,
+      component_ids=[11], cc_rows=cc_rows)
+
+    # Snapshot #2
+    self.SetUpStoreIssueSnapshots(store_label=True, replace_now=now_2,
+      found_id=5678, component_ids=[11], cc_rows=cc_rows)
+
+    self.mox.ReplayAll()
+    self.services.chart.StoreIssueSnapshots(self.cnxn, [issue], commit=False)
+    self.services.chart.StoreIssueSnapshots(self.cnxn, [issue], commit=False)
+    self.mox.VerifyAll()
+
+  def testStoreIssueSnapshots_AllFieldsChanged(self):
+    """Test that StoreIssueSnapshots inserts and updates previous
+    issue snapshots correctly. This tests that all relations (labels,
+    CCs, and components) are updated."""
+
+    now_1 = 1517599888
+    now_2 = 1517599999
+
+    issue_1 = fake.MakeTestIssue(issue_id=78901,
+        project_id=789, local_id=1, reporter_id=111L, owner_id=111L,
+        summary='sum', status='Status1',
+        labels=['Type-Defect'],
+        component_ids=[11, 12], assume_stale=False,
+        opened_timestamp=123456789, modified_timestamp=123456789,
+        star_count=12, cc_ids=[222L, 333L], derived_cc_ids=[888L])
+
+    issue_2 = fake.MakeTestIssue(issue_id=78901,
+        project_id=123, local_id=1, reporter_id=111L, owner_id=222L,
+        summary='sum', status='Status2',
+        labels=['Type-Enhancement'],
+        component_ids=[13], assume_stale=False,
+        opened_timestamp=123456789, modified_timestamp=123456789,
+        star_count=12, cc_ids=[222L, 444L], derived_cc_ids=[888L, 999L])
+
+    # Snapshot #1
+    cc_rows_1 = [(5678, 222L), (5678, 333L), (5678, 888L)]
+    self.SetUpStoreIssueSnapshots(store_label=True, replace_now=now_1,
+      component_ids=[11, 12], cc_rows=cc_rows_1)
+
+    # Snapshot #2
+    cc_rows_2 = [(5678, 222L), (5678, 444L), (5678, 888L), (5678, 999L)]
+    self.SetUpStoreIssueSnapshots(store_label=True, replace_now=now_2,
+      found_id=5678, project_id=123, owner_id=222L, component_ids=[13],
+      cc_rows=cc_rows_2)
+
+    self.mox.ReplayAll()
+    self.services.chart.StoreIssueSnapshots(self.cnxn, [issue_1], commit=False)
+    self.services.chart.StoreIssueSnapshots(self.cnxn, [issue_2], commit=False)
     self.mox.VerifyAll()

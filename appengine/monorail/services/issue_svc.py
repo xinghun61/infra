@@ -402,13 +402,15 @@ class IssueService(object):
       'Issues created, broken down by spam label.',
       [ts_mon.StringField('type')])
 
-  def __init__(self, project_service, config_service, cache_manager):
+  def __init__(self, project_service, config_service, cache_manager,
+      chart_service):
     """Initialize this object so that it is ready to use.
 
     Args:
       project_service: services object for project info.
       config_service: services object for tracker configuration info.
       cache_manager: local cache with distributed invalidation.
+      chart_service (ChartService): An instance of ChartService.
     """
     # Tables that represent issue data.
     self.issue_tbl = sql.SQLTableManager(ISSUE_TABLE_NAME)
@@ -458,6 +460,7 @@ class IssueService(object):
         cache_manager, self, project_service, config_service)
 
     self._config_service = config_service
+    self.chart_service = chart_service
 
   ### Issue ID lookups
 
@@ -887,7 +890,7 @@ class IssueService(object):
     self._UpdateIssuesNotify(cnxn, [issue], commit=False)
     self._UpdateIssuesRelation(cnxn, [issue], commit=False)
     self._CreateIssueMilestones(cnxn, issue, commit=False)
-    self._StoreIssueSnapshots(cnxn, [issue], commit=False)
+    self.chart_service.StoreIssueSnapshots(cnxn, [issue], commit=False)
     cnxn.Commit()
     self._config_service.InvalidateMemcache([issue])
 
@@ -948,7 +951,7 @@ class IssueService(object):
         self._UpdateIssuesSummary(cnxn, issues, commit=False)
         self._UpdateIssuesRelation(cnxn, issues, commit=False)
 
-    self._StoreIssueSnapshots(cnxn, issues, commit=False)
+    self.chart_service.StoreIssueSnapshots(cnxn, issues, commit=False)
 
     iids_to_invalidate = [issue.issue_id for issue in issues]
     if just_derived and invalidate:
@@ -1271,83 +1274,6 @@ class IssueService(object):
           cnxn, [issue], services.user_service, self, self._config_service)
 
     return amendments, comment_pb
-
-  def _StoreIssueSnapshots(self, cnxn, issues, commit=True):
-    """Adds an IssueSnapshot and updates the previous one for each issue."""
-    for issue in issues:
-      right_now = self._currentTime()
-
-      # Look for an existing (latest) IssueSnapshot with this issue_id.
-      previous_snapshots = self.issuesnapshot_tbl.Select(
-          cnxn, cols=ISSUESNAPSHOT_COLS,
-          issue_id=issue.issue_id,
-          limit=1,
-          order_by=[('period_start DESC', [])])
-
-      if len(previous_snapshots) > 0:
-        previous_snapshot_id = previous_snapshots[0][0]
-        logging.info('Found previous IssueSnapshot with id: %s',
-          previous_snapshot_id)
-
-        # Update previous snapshot's end time to right now.
-        delta = { 'period_end': right_now }
-        where = [('IssueSnapshot.id = %s', [previous_snapshot_id])]
-        self.issuesnapshot_tbl.Update(cnxn, delta, commit=commit, where=where)
-
-      config = self._config_service.GetProjectConfig(cnxn, issue.project_id)
-      period_end = settings.maximum_snapshot_period_end
-      is_open = tracker_helpers.MeansOpenInProject(
-        tracker_bizobj.GetStatus(issue), config)
-      shard = issue.issue_id % settings.num_logical_shards
-      status = tracker_bizobj.GetStatus(issue)
-      status_id = self._config_service.LookupStatusID(
-          cnxn, issue.project_id, status) or None
-      owner_id = tracker_bizobj.GetOwnerId(issue) or None
-
-      issuesnapshot_rows = [(issue.issue_id, shard, issue.project_id,
-        issue.local_id, issue.reporter_id, owner_id, status_id, right_now,
-        period_end, is_open)]
-
-      ids = self.issuesnapshot_tbl.InsertRows(
-          cnxn, ISSUESNAPSHOT_COLS[1:],
-          issuesnapshot_rows,
-          replace=True, commit=commit,
-          return_generated_ids=True)
-      issuesnapshot_id = ids[0]
-
-      # Add all labels to IssueSnapshot2Label.
-      label_rows = [
-          (issuesnapshot_id,
-           self._config_service.LookupLabelID(cnxn, issue.project_id, label))
-          for label in tracker_bizobj.GetLabels(issue)
-      ]
-      self.issuesnapshot2label_tbl.InsertRows(
-          cnxn, ISSUESNAPSHOT2LABEL_COLS,
-          label_rows, replace=True, commit=commit)
-
-      # Add all CCs to IssueSnapshot2Cc.
-      cc_rows = [
-        (issuesnapshot_id, cc_id)
-        for cc_id in tracker_bizobj.GetCcIds(issue)
-      ]
-      self.issuesnapshot2cc_tbl.InsertRows(
-          cnxn, ISSUESNAPSHOT2CC_COLS,
-          cc_rows,
-          replace=True, commit=commit)
-
-      # Add all components to IssueSnapshot2Component.
-      component_rows = [
-        (issuesnapshot_id, component_id)
-        for component_id in issue.component_ids
-      ]
-      self.issuesnapshot2component_tbl.InsertRows(
-          cnxn, ISSUESNAPSHOT2COMPONENT_COLS,
-          component_rows,
-          replace=True, commit=commit)
-
-  def _currentTime(self):
-    """This is a separate method so it can be mocked by tests."""
-    return time.time()
 
   def InvalidateIIDs(self, cnxn, iids_to_invalidate):
     """Invalidate the specified issues in the Invalidate table and memcache."""

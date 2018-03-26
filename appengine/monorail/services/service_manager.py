@@ -65,10 +65,10 @@ def set_up_services():
     user = user_svc.UserService(cache_manager)
     user_star = star_svc.UserStarService(cache_manager)
     usergroup = usergroup_svc.UserGroupService(cache_manager)
-    issue = issue_svc.IssueService(project, config, cache_manager)
+    chart = chart_svc.ChartService(config)
+    issue = issue_svc.IssueService(project, config, cache_manager, chart)
     autolink_obj = autolink.Autolink()
     spam = spam_svc.SpamService()
-    chart = chart_svc.ChartService()
     svcs = Services(
       cache_manager=cache_manager, config=config, features=features,
       issue_star=issue_star, project=project, project_star=project_star,

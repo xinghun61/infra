@@ -23,7 +23,7 @@ class SnapshotCountsTest(unittest.TestCase):
     self.cnxn = 'fake cnxn'
     self.mox = mox.Mox()
     self.services = service_manager.Services(
-      chart=chart_svc.ChartService())
+      chart=chart_svc.ChartService(fake.ConfigService()))
     self.servlet = snapshot_counts.SnapshotCounts('req', 'res',
       services=self.services)
     self.path_base = '/p/proj%s' % urls.SNAPSHOT_COUNTS
@@ -62,7 +62,7 @@ class SnapshotCountsTest(unittest.TestCase):
       'bucketby': 'label',
       'label_prefix': 'Type',
     })
-    self.services.chart.QueryIssueSnapshots(mox.IgnoreArg(), mox.IgnoreArg(),
+    self.services.chart.QueryIssueSnapshots(mox.IgnoreArg(),
       self.default_timestamp, 'label', mox.IgnoreArg(), mox.IgnoreArg(),
       mox.IgnoreArg(), label_prefix='Type').AndReturn([])
 
@@ -78,7 +78,7 @@ class SnapshotCountsTest(unittest.TestCase):
       'bucketby': 'label',
       'label_prefix': 'Type',
     })
-    self.services.chart.QueryIssueSnapshots(mox.IgnoreArg(), mox.IgnoreArg(),
+    self.services.chart.QueryIssueSnapshots(mox.IgnoreArg(),
       self.default_timestamp, 'label', mox.IgnoreArg(), mox.IgnoreArg(),
       mox.IgnoreArg(), label_prefix='Type').AndReturn([
       ('name1', 12),
@@ -99,7 +99,7 @@ class SnapshotCountsTest(unittest.TestCase):
       'timestamp': self.default_timestamp,
       'bucketby': 'component',
     })
-    self.services.chart.QueryIssueSnapshots(mox.IgnoreArg(), mox.IgnoreArg(),
+    self.services.chart.QueryIssueSnapshots(mox.IgnoreArg(),
       self.default_timestamp, 'component', mox.IgnoreArg(), mox.IgnoreArg(),
       mox.IgnoreArg(), label_prefix=None).AndReturn([
       ('name>name1', 12),
