@@ -29,6 +29,7 @@ from framework import framework_bizobj
 from framework import framework_constants
 from proto import project_pb2
 from proto import site_pb2
+from proto import tracker_pb2
 from proto import usergroup_pb2
 from tracker import tracker_bizobj
 
@@ -94,6 +95,11 @@ SET_STAR = 'SetStar'
 FLAG_SPAM = 'FlagSpam'
 VERDICT_SPAM = 'VerdictSpam'
 MODERATE_SPAM = 'ModerateSpam'
+
+RESTRICTED_APPROVAL_STATUSES = [
+    tracker_pb2.ApprovalStatus.NA, tracker_pb2.ApprovalStatus.REVIEW_STARTED,
+    tracker_pb2.ApprovalStatus.APPROVED,
+    tracker_pb2.ApprovalStatus.NOT_APPROVED]
 
 STANDARD_ADMIN_PERMISSIONS = [
     EDIT_PROJECT, CREATE_PROJECT, PUBLISH_PROJECT, VIEW_DEBUG,
@@ -895,6 +901,18 @@ def CanCommentIssue(effective_ids, perms, project, issue, granted_perms=None):
   return perms.CanUsePerm(
       ADD_ISSUE_COMMENT, effective_ids, project,
       GetRestrictions(issue), granted_perms=granted_perms)
+
+
+def CanUpdateApprovalStatus(
+    effective_ids, approver_ids, current_status, new_status):
+  """Return True if a user can change the approval status to the new status."""
+  if not effective_ids.isdisjoint(approver_ids):
+    return True # Approval approvers can always change the approval status
+
+  if set([current_status, new_status]).isdisjoint(RESTRICTED_APPROVAL_STATUSES):
+    return True
+
+  return False
 
 
 def CanViewComponentDef(effective_ids, perms, project, component_def):

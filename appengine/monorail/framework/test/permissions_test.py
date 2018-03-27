@@ -1096,6 +1096,28 @@ class IssuePermissionsTest(unittest.TestCase):
         {111L}, permissions.PermissionSet([]),
         None, None))
 
+  def testCanUpdateApprovalStatus_Approver(self):
+     self.assertTrue(permissions.CanUpdateApprovalStatus(
+         {111L, 222L}, [222L], tracker_pb2.ApprovalStatus.APPROVED,
+         tracker_pb2.ApprovalStatus.NOT_APPROVED))
+
+     self.assertTrue(permissions.CanUpdateApprovalStatus(
+         {111L, 222L}, [222L], tracker_pb2.ApprovalStatus.NEEDS_REVIEW,
+         tracker_pb2.ApprovalStatus.NA))
+
+  def testCanUpdateApprovalStatus_NonApprover(self):
+    self.assertTrue(permissions.CanUpdateApprovalStatus(
+        {111L, 222L}, [333L], tracker_pb2.ApprovalStatus.NEED_INFO,
+        tracker_pb2.ApprovalStatus.REVIEW_REQUESTED))
+
+    self.assertFalse(permissions.CanUpdateApprovalStatus(
+        {111L, 222L}, [333L], tracker_pb2.ApprovalStatus.NEEDS_REVIEW,
+        tracker_pb2.ApprovalStatus.NA))
+
+    self.assertFalse(permissions.CanUpdateApprovalStatus(
+        {111L, 222L}, [333L], tracker_pb2.ApprovalStatus.NOT_APPROVED,
+        tracker_pb2.ApprovalStatus.APPROVED))
+
   def testCanViewComponentDef_ComponentAdmin(self):
     cd = tracker_pb2.ComponentDef(admin_ids=[111L])
     perms = permissions.PermissionSet([])
