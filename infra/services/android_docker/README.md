@@ -85,10 +85,10 @@ methods for fetching information about USB devices.
 Deploying the script
 --------------------------
 The script and its dependencies are deployed as a CIPD package via puppet. The
-package (infra/android_docker/$platform) is continously built on this
+package (infra/docker_devices/$platform) is continously built on this
 [bot](https://build.chromium.org/p/chromium.infra/builders/infra-continuous-precise-64).
 Puppet deploys it to the relevant bots at
-[these revisions](https://chrome-internal.googlesource.com/infra/puppet/+/78f1ba25470edf4256e5862d7b9c3eb1fba9dcad/puppetm/etc/puppet/hieradata/cipd.yaml#387).
+[these revisions](https://chrome-internal.googlesource.com/infra/puppet/+/abab6a79a69671288c6be4c87dfc053a11a46b4b/puppetm/etc/puppet/hieradata/cipd.yaml#469).
 The canary pin affects bots on [chromium-swarm-dev](https://chromium-swarm-dev.appspot.com),
 which the android testers on the [chromium.swarm](https://build.chromium.org/p/chromium.swarm/builders)
 waterfall run tests against. If the canary has been updated, the bots look fine,
