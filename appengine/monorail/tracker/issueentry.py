@@ -303,7 +303,8 @@ class IssueEntry(servlet.Servlet):
             issue_tuple = (issue.issue_id, mr.auth.user_id, int(time.time()),
                            '')
             self.services.features.AddIssueToHotlists(
-                mr.cnxn, hotlist_ids, issue_tuple)
+                mr.cnxn, hotlist_ids, issue_tuple, self.services.issue,
+                self.services.chart)
 
         except tracker_helpers.OverAttachmentQuota:
           mr.errors.attachments = 'Project attachment quota exceeded.'

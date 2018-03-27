@@ -228,13 +228,15 @@ class HotlistIssues(servlet.Servlet):
     else:
       if post_data.get('remove') == 'true':
         self.services.features.RemoveIssuesFromHotlist(
-            mr.cnxn, mr.hotlist_id, selected_iids)
+            mr.cnxn, mr.hotlist_id, selected_iids, self.services.issue,
+            self.services.chart)
       else:
         added_tuples =  [(issue_id, mr.auth.user_id,
                           int(time.time()), '') for issue_id in
                          selected_iids]
         self.services.features.AddIssuesToHotlists(
-            mr.cnxn, [mr.hotlist_id], added_tuples)
+            mr.cnxn, [mr.hotlist_id], added_tuples, self.services.issue,
+            self.services.chart)
       return framework_helpers.FormatAbsoluteURL(
           mr, hotlist_view_url, saved=1, ts=int(time.time()),
           include_project=False, colspec=current_col_spec)

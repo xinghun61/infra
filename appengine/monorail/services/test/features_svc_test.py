@@ -18,6 +18,7 @@ import settings
 from features import filterrules_helpers
 from features import features_constants
 from framework import sql
+from services import chart_svc
 from services import features_svc
 from testing import fake
 from tracker import tracker_bizobj
@@ -92,6 +93,8 @@ class FeaturesServiceTest(unittest.TestCase):
 
     self.features_service = features_svc.FeaturesService(self.cache_manager,
         self.config_service)
+    self.issue_service = fake.IssueService()
+    self.chart_service = self.mox.CreateMock(chart_svc.ChartService)
 
     for table_var in [
         'user2savedquery_tbl', 'quickedithistory_tbl',
@@ -695,13 +698,15 @@ class FeaturesServiceTest(unittest.TestCase):
             (333L, None, None, '')]
     self.SetUpGetHotlists(456)
     self.SetUpUpdateHotlistItems(
-        self. cnxn, 456, [], added_tuples)
+        self.cnxn, 456, [], added_tuples)
     self.SetUpGetHotlists(567)
     self.SetUpUpdateHotlistItems(
-        self. cnxn, 567, [], added_tuples)
+        self.cnxn, 567, [], added_tuples)
+    self.chart_service.StoreIssueSnapshots(self.cnxn, [], commit=False)
     self.mox.ReplayAll()
     self.features_service.AddIssuesToHotlists(
-        self.cnxn, [456, 567], added_tuples, commit=False)
+        self.cnxn, [456, 567], added_tuples, self.issue_service,
+        self.chart_service, commit=False)
     self.mox.VerifyAll()
 
   def testRemoveIssuesFromHotlist(self):
@@ -711,9 +716,11 @@ class FeaturesServiceTest(unittest.TestCase):
             (456, 666L, 11L, None, None, '')])
     self.SetUpUpdateHotlistItems(
         self. cnxn, 456, [555L], [])
+    self.chart_service.StoreIssueSnapshots(self.cnxn, [], commit=False)
     self.mox.ReplayAll()
     self.features_service.RemoveIssuesFromHotlist(
-        self.cnxn, 456, [555L], commit=False)
+        self.cnxn, 456, [555L], self.issue_service, self.chart_service,
+        commit=False)
     self.mox.VerifyAll()
 
   def testRemoveIssueFromHotlist(self):
@@ -723,9 +730,11 @@ class FeaturesServiceTest(unittest.TestCase):
             (456, 666L, 11L, None, None, '')])
     self.SetUpUpdateHotlistItems(
         self. cnxn, 456, [555L], [])
+    self.chart_service.StoreIssueSnapshots(self.cnxn, [[]], commit=False)
     self.mox.ReplayAll()
     self.features_service.RemoveIssueFromHotlist(
-        self.cnxn, 456, 555L, commit=False)
+        self.cnxn, 456, 555L, self.issue_service, self.chart_service,
+        commit=False)
     self.mox.VerifyAll()
 
   def testUpdateHotlistItems(self):

@@ -606,17 +606,25 @@ class FeaturesService(object):
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
 
-  def AddIssueToHotlists(self, cnxn, hotlist_ids, issue_tuple, commit=True):
+  def AddIssueToHotlists(self, cnxn, hotlist_ids, issue_tuple, issue_svc,
+                         chart_svc, commit=True):
     """Add a single issue, specified in the issue_tuple, to the given hotlists.
 
     Args:
       cnxn: connection to SQL database.
       hotlist_ids: a list of hotlist_ids to add the issues to.
       issue_tuple: (issue_id, user_id, ts, note) of the issue to be added.
+      issue_svc: an instance of IssueService.
+      chart_svc: an instance of ChartService.
     """
-    self.AddIssuesToHotlists(cnxn, hotlist_ids, [issue_tuple], commit=commit)
+    self.AddIssuesToHotlists(cnxn, hotlist_ids, [issue_tuple], issue_svc,
+        chart_svc, commit=commit)
 
-  def AddIssuesToHotlists(self, cnxn, hotlist_ids, added_tuples, commit=True):
+    issue = issue_svc.GetIssues(cnxn, [issue_tuple[0]])
+    chart_svc.StoreIssueSnapshots(cnxn, [issue], commit=commit)
+
+  def AddIssuesToHotlists(self, cnxn, hotlist_ids, added_tuples, issue_svc,
+                          chart_svc, commit=True):
     """Add the issues given in the added_tuples list to the given hotlists.
 
     Args:
@@ -624,29 +632,45 @@ class FeaturesService(object):
       hotlist_ids: a list of hotlist_ids to add the issues to.
       added_tuples: a list of (issue_id, user_id, ts, note)
         for issues to be added.
+      issue_svc: an instance of IssueService.
+      chart_svc: an instance of ChartService.
     """
     for hotlist_id in hotlist_ids:
       self.UpdateHotlistItems(cnxn, hotlist_id, [], added_tuples, commit=commit)
 
-  def RemoveIssueFromHotlist(self, cnxn, hotlist_id, issue_id, commit=True):
+    issues = issue_svc.GetIssues(cnxn,
+        [added_tuple[0] for added_tuple in added_tuples])
+    chart_svc.StoreIssueSnapshots(cnxn, issues, commit=commit)
+
+  def RemoveIssueFromHotlist(self, cnxn, hotlist_id, issue_id, issue_svc,
+                             chart_svc, commit=True):
     """Remove a single issue from a hotlist.
 
     Args:
       cnxn: connection to SQL database.
       hotlist_id: hotlist's id.
       issue_id: issue_id of the issue to be removed.
+      issue_svc: an instance of IssueService.
+      chart_svc: an instance of ChartService.
     """
     self.UpdateHotlistItems(cnxn, hotlist_id, [issue_id], [], commit=commit)
+    issue = issue_svc.GetIssues(cnxn, [issue_id])
+    chart_svc.StoreIssueSnapshots(cnxn, [issue], commit=commit)
 
-  def RemoveIssuesFromHotlist(self, cnxn, hotlist_id, issue_ids, commit=True):
+  def RemoveIssuesFromHotlist(self, cnxn, hotlist_id, issue_ids, issue_svc,
+                              chart_svc, commit=True):
     """Remove the issues given in issue_ids from a hotlist.
 
     Args:
       cnxn: connection to SQL database.
       hotlist_id: hotlist's id.
       issue_ids: a list of issue_ids to be removed.
+      issue_svc: an instance of IssueService.
+      chart_svc: an instance of ChartService.
     """
     self.UpdateHotlistItems(cnxn, hotlist_id, issue_ids, [], commit=commit)
+    issues = issue_svc.GetIssues(cnxn, issue_ids)
+    chart_svc.StoreIssueSnapshots(cnxn, issues, commit=commit)
 
   def UpdateHotlistItems(
       self, cnxn, hotlist_id, remove, added_tuples, commit=True):

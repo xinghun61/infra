@@ -351,6 +351,14 @@ class ChartServiceTest(unittest.TestCase):
         component_rows,
         replace=True, commit=False)
 
+    # Spacing of string must match.
+    self.cnxn.Execute((
+      '\n        INSERT INTO IssueSnapshot2Hotlist '
+      '(issuesnapshot_id, hotlist_id)\n        '
+      'SELECT %s, hotlist_id FROM Hotlist2Issue '
+      'WHERE issue_id = %s\n      '
+    ), [5678, 78901])
+
   def testStoreIssueSnapshots_NoChange(self):
     """Test that StoreIssueSnapshots inserts and updates previous
     issue snapshots correctly."""

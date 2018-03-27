@@ -234,6 +234,7 @@ BEGIN
     CALL BackfillIssueSnapshotsLabels(c_issue_id, c_issuesnapshot_id);
     CALL BackfillIssueSnapshotsCcs(c_issue_id, c_issuesnapshot_id);
     CALL BackfillIssueSnapshotsComponents(c_issue_id, c_issuesnapshot_id);
+    CALL BackfillIssueSnapshotsHotlists(c_issue_id, c_issuesnapshot_id);
 
   END LOOP;
 

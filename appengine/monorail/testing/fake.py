@@ -1867,14 +1867,17 @@ class FeaturesService(object):
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
 
-  def AddIssuesToHotlists(self, cnxn, hotlist_ids, added_tuples, commit=True):
+  def AddIssuesToHotlists(self, cnxn, hotlist_ids, added_tuples, issue_svc,
+                          chart_svc, commit=True):
     for hotlist_id in hotlist_ids:
       self.UpdateHotlistItems(cnxn, hotlist_id, [], added_tuples, commit=commit)
 
-  def RemoveIssueFromHotlist(self, cnxn, hotlist_id, issue_id, commit=True):
+  def RemoveIssueFromHotlist(self, cnxn, hotlist_id, issue_id, issue_svc,
+                             chart_svc, commit=True):
     self.UpdateHotlistItems(cnxn, hotlist_id, [issue_id], [], commit=commit)
 
-  def RemoveIssuesFromHotlist(self, cnxn, hotlist_id, issue_ids, commit=True):
+  def RemoveIssuesFromHotlist(self, cnxn, hotlist_id, issue_ids, issue_svc,
+                              chart_svc, commit=True):
     self.UpdateHotlistItems(cnxn, hotlist_id, issue_ids, [], commit=commit)
 
   def UpdateHotlistItems(

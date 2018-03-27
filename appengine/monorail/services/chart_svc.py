@@ -243,8 +243,15 @@ class ChartService(object):
           component_rows,
           replace=True, commit=commit)
 
+      # Add all components to IssueSnapshot2Hotlist.
+      # This is raw SQL to obviate passing FeaturesService down through
+      #   the call stack wherever this function is called.
+      # TODO(jrobbins): sort out dependencies between service classes.
+      cnxn.Execute('''
+        INSERT INTO IssueSnapshot2Hotlist (issuesnapshot_id, hotlist_id)
+        SELECT %s, hotlist_id FROM Hotlist2Issue WHERE issue_id = %s
+      ''', [issuesnapshot_id, issue.issue_id])
 
   def _currentTime(self):
     """This is a separate method so it can be mocked by tests."""
     return time.time()
-
