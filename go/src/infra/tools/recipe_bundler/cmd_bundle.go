@@ -329,6 +329,7 @@ func (c *cmdBundle) run(ctx context.Context) error {
 					pkgFile := fmt.Sprintf("%s_%s.zip", pathSquisher.Replace(pkgName), resolvedSpec.revision)
 					cmd := []string{
 						"pkg-build",
+						"-install-mode", "copy",
 						"-out", filepath.Join(c.localDest, pkgFile),
 					}
 					cmd = append(cmd, commonArgs...)
@@ -339,6 +340,7 @@ func (c *cmdBundle) run(ctx context.Context) error {
 				} else {
 					cmd := []string{
 						"create",
+						"-install-mode", "copy",
 						"-tag", pkgVers,
 					}
 					cmd = append(cmd, commonArgs...)
