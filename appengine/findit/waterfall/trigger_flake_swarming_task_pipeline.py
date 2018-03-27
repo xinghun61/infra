@@ -78,7 +78,7 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
     swarming_rerun_settings = flake_settings.get('swarming_rerun', {})
     return swarming_rerun_settings.get('iterations_to_rerun', 100)
 
-  def _OnTaskTriggered(self):  # pragma: no cover.
+  def _OnSwarmingTaskTriggered(self):  # pragma: no cover.
     monitoring.swarming_tasks.increment({
         'operation': 'trigger',
         'category': 'identify-regression-range'

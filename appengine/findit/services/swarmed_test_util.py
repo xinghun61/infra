@@ -10,8 +10,11 @@ import time
 from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
+from dto import swarming_task_error
+from dto.swarming_task_error import SwarmingTaskError
 from infra_api_clients.swarming import swarming_util
 from services import isolate
+from services import constants
 from services import swarming
 from services import test_results
 from waterfall import waterfall_config
@@ -27,22 +30,50 @@ def GetOutputJsonByOutputsRef(outputs_ref, http_client):
   return json.loads(file_content) if file_content else None, error
 
 
+def GetSwarmingTaskData(task_id, http_client=_FINDIT_HTTP_CLIENT):
+  """Gets information about a swarming task.
+
+  Returns:
+       (str, dict, dict): The state, test result and error for a swarming task.
+  """
+  data, error = swarming_util.GetSwarmingTaskResultById(swarming.SwarmingHost(),
+                                                        task_id, http_client)
+
+  error = SwarmingTaskError.FromSerializable(error)
+  if not data:
+    return None, None, error
+
+  task_state = data['state']
+  output_json = None
+  if task_state not in constants.STATE_NOT_STOP:
+    if task_state == constants.STATE_COMPLETED:
+      outputs_ref = data.get('outputs_ref')
+
+      # If swarming task aborted because of errors in request arguments,
+      # it's possible that there is no outputs_ref.
+      if not outputs_ref:
+        error = error or SwarmingTaskError.GenerateError(
+            swarming_task_error.NO_TASK_OUTPUTS)
+      else:
+        output_json, error = GetOutputJsonByOutputsRef(outputs_ref, http_client)
+        if not output_json:
+          error = error or SwarmingTaskError.GenerateError(
+              swarming_task_error.NO_OUTPUT_JSON)
+        elif not test_results.IsTestResultsValid(output_json):
+          error = error or SwarmingTaskError.GenerateError(
+              swarming_task_error.UNRECOGNIZABLE)
+          output_json = None
+    else:
+      # The swarming task did not complete successfully.
+      logging.error('Swarming task stopped with status: %s', task_state)
+      error = SwarmingTaskError.GenerateError(
+          swarming_task_error.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state])
+  return task_state, output_json, error
+
+
 def GetTestResultForSwarmingTask(task_id, http_client):
   """Get isolated output for a swarming task based on it's id."""
-  task_result_data, error = swarming_util.GetSwarmingTaskResultById(
-      swarming.SwarmingHost(), task_id, http_client)
-
-  if error or not task_result_data:
-    return None
-
-  outputs_ref = task_result_data.get('outputs_ref')
-  if not outputs_ref:
-    return None
-
-  test_result_log, error = GetOutputJsonByOutputsRef(outputs_ref, http_client)
-
-  if error:
-    return None
+  _state, test_result_log, _error = GetSwarmingTaskData(task_id, http_client)
   return test_result_log
 
 

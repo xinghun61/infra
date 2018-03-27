@@ -29,13 +29,19 @@ NO_TASK_OUTPUTS = 300
 NO_ISOLATED_FILES = 310
 # Unable to retrieve output json.
 NO_OUTPUT_JSON = 320
+# Runner(pipeline) timed out.
+RUNNER_TIMEOUT = 350
 # Other/miscellaneous error codes.
 UNKNOWN = 1000
 # Unable to recognize the format of output json.
 UNRECOGNIZABLE = 10
 
 ERROR_CODE_TO_MESSAGE = {
-    TIMED_OUT: 'Process swarming task result timed out',
+    BOT_DIED: 'BOT_DIED',
+    CANCELED: 'CANCELED',
+    EXPIRED: 'EXPIRED',
+    TIMED_OUT: 'TIMED_OUT',
+    RUNNER_TIMEOUT: 'Process swarming task result timed out',
     NO_TASK_OUTPUTS: 'outputs_ref is None',
     NO_OUTPUT_JSON: 'No swarming task failure log',
     UNKNOWN: 'Unknown error',
@@ -56,5 +62,4 @@ class SwarmingTaskError(StructuredObject):
   def GenerateError(cls, code):
     return cls(
         code=code,
-        message=ERROR_CODE_TO_MESSAGE.get(
-            code, ERROR_CODE_TO_MESSAGE[UNKNOWN]))
+        message=ERROR_CODE_TO_MESSAGE.get(code, ERROR_CODE_TO_MESSAGE[UNKNOWN]))

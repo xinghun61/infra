@@ -209,7 +209,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         step_name_no_platform or
         swarming_util.GetTagValue(data.get('tags', {}), 'ref_name'))
 
-    if task_state not in service_constants.STATES_RUNNING:
+    if task_state not in service_constants.STATE_NOT_STOP:
       task_completed = True
 
       if task_state == service_constants.STATE_COMPLETED:

@@ -34,7 +34,7 @@ class TriggerSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
   def _GetIterationsToRerun(self):
     return waterfall_config.GetSwarmingSettings().get('iterations_to_rerun')
 
-  def _OnTaskTriggered(self):  # pragma: no cover.
+  def _OnSwarmingTaskTriggered(self):  # pragma: no cover.
     monitoring.swarming_tasks.increment({
         'operation': 'trigger',
         'category': 'identify-flake'
