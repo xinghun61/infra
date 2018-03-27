@@ -137,7 +137,7 @@ def main():
   compare.add_argument('--model2',
                        default='spam_trainer_1513384515'
                        if project[0].project == 'monorail-staging' else
-                       'spam_trainer_1513384825',
+                       'spam_trainer_1522141200',
                        help='The second model to find the auc values of.')
 
   args = parser.parse_args()
