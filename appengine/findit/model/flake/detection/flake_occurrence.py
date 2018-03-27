@@ -10,6 +10,15 @@ from protorpc import messages
 from model.flake.detection.flake import Flake
 
 
+def FlakeTypeFromString(flake_type):
+  """Gets the enum flake type for a string."""
+  if 'cq_false_rejection' in flake_type.lower():
+    return FlakeType.CQ_FALSE_REJECTION
+  elif 'outright_flake' in flake_type.lower():
+    return FlakeType.OUTRIGHT_FLAKE
+  return None
+
+
 class FlakeType(messages.Enum):
   """Enumerates the different types of flakes."""
 

@@ -7,12 +7,20 @@ import mock
 
 from gae_libs.testcase import TestCase
 
+from model.flake.detection import flake_occurrence
 from model.flake.detection.flake import Flake
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.detection.flake_occurrence import FlakeType
 
 
 class FlakeOccurrenceTest(TestCase):
+
+  def testFlakeTypeFromString(self):
+    self.assertEqual(FlakeType.CQ_FALSE_REJECTION,
+                     flake_occurrence.FlakeTypeFromString('cq_false_rejection'))
+    self.assertEqual(FlakeType.OUTRIGHT_FLAKE,
+                     flake_occurrence.FlakeTypeFromString('outright_flake'))
+    self.assertEqual(None, flake_occurrence.FlakeTypeFromString('unknown'))
 
   def testGet(self):
     step_name = 's'

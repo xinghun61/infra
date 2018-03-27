@@ -38,6 +38,10 @@ def GetDefaultVersionHostname():  # pragma: no cover.
   return app_identity.get_default_version_hostname()
 
 
+def GetApplicationId():  # pragma: no cover.
+  return app_identity.get_application_id()
+
+
 def IsStaging():
   """Returns True if it is a staging app.
 

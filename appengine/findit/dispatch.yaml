@@ -19,3 +19,6 @@ dispatch:
 
   - url: "*/waterfall/*"
     module: waterfall-frontend
+
+  - url: "*/flake-detection/cron/*"
+    module: flake-detection-backend

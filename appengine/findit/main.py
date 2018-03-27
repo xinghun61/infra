@@ -21,6 +21,7 @@ from handlers import check_trybot_mapping
 from handlers import collect_tree_closures
 from handlers import config
 from handlers import culprit
+from handlers import detect_flakes
 from handlers import failure_log
 from handlers import help_triage
 from handlers import home
@@ -134,3 +135,11 @@ waterfall_backend_web_pages_handler_mappings = [
 waterfall_backend_web_application = webapp2.WSGIApplication(
     waterfall_backend_web_pages_handler_mappings, debug=False)
 gae_ts_mon.initialize(waterfall_backend_web_application)
+
+# "flake-detection-backend" module.
+flake_detection_backend_web_pages_handler_mappings = [
+    ('/flake-detection/cron/detect-cq-flakes', detect_flakes.DetectFlakes)
+]
+flake_detection_backend_web_application = webapp2.WSGIApplication(
+    flake_detection_backend_web_pages_handler_mappings, debug=False)
+gae_ts_mon.initialize(flake_detection_backend_web_application)

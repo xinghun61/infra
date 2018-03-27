@@ -62,6 +62,7 @@ def DatetimeFromString(date):
   if not date or isinstance(date, datetime):
     return date
   valid_formats = [
+      '%Y-%m-%d %H:%M:%S.%f %Z',
       '%Y-%m-%d %H:%M:%S.%f000',
       '%Y-%m-%d %H:%M:%S.%f',
       '%Y-%m-%d %H:%M:%S',

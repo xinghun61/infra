@@ -28,3 +28,9 @@ cron:
   # Dummy schedule, only while testing this by hand. Real schedule below.
   schedule: 3rd sunday of dec 00:00
   # schedule: every 5 minutes
+
+- description: Query and store flakes detected on cq.
+  url: /flake-detection/cron/detect-cq-flakes
+  # Dummy schedule, only while testing this by hand. Real schedule below.
+  schedule: 3rd sunday of dec 00:00
+  # schedule: every 5 minutes
