@@ -1,0 +1,6 @@
+dispatch:
+  - url: "*/prpc/*"
+    service: api
+
+  - url: "*/*"
+    service: default

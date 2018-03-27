@@ -1,0 +1,48 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package testresults;
+
+service TestResults {
+  rpc Collect(CollectTestResultsRequest) returns (CollectTestResultsResponse) {}
+}
+
+message CollectTestResultsRequest {
+  message Isolate {
+    string host = 1;
+    string namespace = 2;
+    // One hash for each shard.
+    repeated string hash = 3;
+  }
+
+  // Isolate identifies the isolated output to collect results from.
+  Isolate isolate = 1;
+
+  // Buildbot specifies a buildbot build.
+  message Buildbot {
+    string master = 1;
+    string builder = 2;
+    int64 build_number = 3;
+  }
+
+  // Buildbucket specifies a buildbucket build.
+  message Buildbucket {
+    int64 build_id = 1;
+  }
+
+  // TODO: handle local workstation, FindIt, possibly others.
+  oneof build {
+    Buildbucket buildbucket = 2;
+    Buildbot buildbot = 3;
+  }
+
+  // Step is the step name to collect results for.
+  string step = 4;
+}
+
+message CollectTestResultsResponse {
+  int64 num_results_collected = 1;
+}
