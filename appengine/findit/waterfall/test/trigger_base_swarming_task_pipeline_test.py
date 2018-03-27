@@ -57,11 +57,11 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = TriggerSwarmingTaskPipeline()
     with mock.patch.object(
         pipeline, '_GetSwarmingTask', return_value=swarming_task):
-      self.assertTrue(pipeline._NeedANewSwarmingTask(force=True))
+      self.assertTrue(pipeline.NeedANewSwarmingTask(force=True))
 
   @mock.patch.object(
       TriggerBaseSwarmingTaskPipeline,
-      '_NeedANewSwarmingTask',
+      'NeedANewSwarmingTask',
       return_value=False)
   def testWaitingForTheTaskId(self, _):
     master_name = 'm'
@@ -111,11 +111,11 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     def MockedGetSwarmingTaskRequest(_host, ref_task_id, *_):
       self.assertEqual('1', ref_task_id)
-      return SwarmingTaskRequest.Deserialize({
-          'expiration_secs': 3600,
+      return SwarmingTaskRequest.FromSerializable({
+          'expiration_secs': '3600',
           'name': 'ref_task_request',
           'parent_task_id': 'pti',
-          'priority': 25,
+          'priority': '25',
           'properties': {
               'command':
                   'cmd',
@@ -138,21 +138,21 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                   },
               ],
               'execution_timeout_secs':
-                  3600,
+                  '3600',
               'extra_args': [
                   '--flag=value',
                   '--gtest_filter=d.f',
                   '--test-launcher-filter-file=path/to/filter/file',
               ],
               'grace_period_secs':
-                  30,
+                  '30',
               'idempotent':
                   True,
               'inputs_ref': {
-                  'a': 1
+                  'isolatedserver': 'isolatedserver'
               },
               'io_timeout_secs':
-                  1200,
+                  '1200',
           },
           'tags': ['master:a', 'buildername:b', 'name:a_tests'],
           'user': 'user',
@@ -164,7 +164,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     new_request_json = {}
 
     def MockedTriggerSwarmingTask(new_request, *_):
-      new_request_json.update(new_request.Serialize())
+      new_request_json.update(new_request.ToSerializable())
       return 'new_task_id', None
 
     self.mock(swarming, 'TriggerSwarmingTask', MockedTriggerSwarmingTask)
@@ -189,13 +189,13 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     expected_new_request_json = {
         'expiration_secs':
-            3600,
+            '3600',
         'name':
             'new_task_name',
         'parent_task_id':
             '',
         'priority':
-            25,
+            '25',
         'properties': {
             'command':
                 'cmd',
@@ -208,7 +208,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                 'value': '1'
             },],
             'execution_timeout_secs':
-                3600,
+                '3600',
             'extra_args': [
                 '--flag=value',
                 '--gtest_filter=a.b:a.c',
@@ -217,14 +217,14 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                 '--gtest_also_run_disabled_tests',
             ],
             'grace_period_secs':
-                30,
+                '30',
             'idempotent':
                 False,
             'inputs_ref': {
-                'a': 1
+                'isolatedserver': 'isolatedserver'
             },
             'io_timeout_secs':
-                1200,
+                '1200',
         },
         'tags': [
             'ref_master:%s' % master_name,
@@ -249,7 +249,9 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual('new_task_id', new_task_id)
-    self.assertEqual(expected_new_request_json, new_request_json)
+    self.assertEqual(
+        SwarmingTaskRequest.FromSerializable(expected_new_request_json),
+        SwarmingTaskRequest.FromSerializable(new_request_json))
 
     swarming_task = WfSwarmingTask.Get(master_name, builder_name, build_number,
                                        step_name)
@@ -282,10 +284,10 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(swarming_util, 'GetSwarmingTaskRequest')
   def testNoNewSwarmingTaskIsNeededButForceSpecified(self, task_fn, *_):
     request_json = {
-        'expiration_secs': 3600,
+        'expiration_secs': '3600',
         'name': 'ref_task_request',
         'parent_task_id': 'pti',
-        'priority': 25,
+        'priority': '25',
         'properties': {
             'command':
                 'cmd',
@@ -308,26 +310,26 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                 },
             ],
             'execution_timeout_secs':
-                3600,
+                '3600',
             'extra_args': [
                 '--flag=value',
                 '--gtest_filter=d.f',
                 '--test-launcher-filter-file=path/to/filter/file',
             ],
             'grace_period_secs':
-                30,
+                '30',
             'idempotent':
                 True,
             'inputs_ref': {
-                'a': 1
+                'isolatedserver': 'isolatedserver'
             },
             'io_timeout_secs':
-                1200,
+                '1200',
         },
         'tags': ['master:a', 'buildername:b', 'name:a_tests'],
         'user': 'user',
     }
-    request = SwarmingTaskRequest.Deserialize(request_json)
+    request = SwarmingTaskRequest.FromSerializable(request_json)
     task_fn.return_value = request
 
     master_name = 'm'
@@ -385,15 +387,15 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     iterations = 100
     overridden_isolated_sha = 'overridden_sha'
 
-    ref_request = SwarmingTaskRequest.Deserialize({
+    ref_request = SwarmingTaskRequest.FromSerializable({
         'expiration_secs':
-            3600,
+            '3600',
         'name':
             'ref_task_request',
         'parent_task_id':
             'pti',
         'priority':
-            25,
+            '25',
         'properties': {
             'command':
                 'cmd',
@@ -416,21 +418,21 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                 },
             ],
             'execution_timeout_secs':
-                3600,
+                '3600',
             'extra_args': [
                 '--flag=value',
                 '--gtest_filter=d.f',
                 '--test-launcher-filter-file=path/to/filter/file',
             ],
             'grace_period_secs':
-                30,
+                '30',
             'idempotent':
                 True,
             'inputs_ref': {
-                'a': 1
+                'isolatedserver': 'isolatedserver'
             },
             'io_timeout_secs':
-                1200,
+                '1200'
         },
         'tags': [
             'master:%s' % master_name,
@@ -449,13 +451,13 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     expected_new_request_json = {
         'expiration_secs':
-            3600,
+            '3600',
         'name':
             'new_task_name',
         'parent_task_id':
             '',
         'priority':
-            25,
+            '25',
         'properties': {
             'command':
                 'cmd',
@@ -468,7 +470,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                 'value': '1'
             },],
             'execution_timeout_secs':
-                3600,
+                '3600',
             'extra_args': [
                 '--flag=value',
                 '--gtest_filter=a.b:a.c',
@@ -477,15 +479,15 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                 '--gtest_also_run_disabled_tests',
             ],
             'grace_period_secs':
-                30,
+                '30',
             'idempotent':
                 False,
             'inputs_ref': {
-                'a': 1,
+                'isolatedserver': 'isolatedserver',
                 'isolated': overridden_isolated_sha
             },
             'io_timeout_secs':
-                1200,
+                '1200',
         },
         'tags': [
             'ref_master:%s' % master_name,
@@ -509,4 +511,6 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
             }),
     }
 
-    self.assertEqual(expected_new_request_json, new_request.Serialize())
+    self.assertEqual(
+        SwarmingTaskRequest.FromSerializable(expected_new_request_json),
+        new_request)

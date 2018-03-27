@@ -42,3 +42,10 @@ def OnTryJobError(try_job_type, error_dict, master_name, builder_name):
       'master_name': master_name,
       'builder_name': builder_name
   })
+
+
+def OnSwarmingTaskStatusChange(operation, category):
+  monitoring.swarming_tasks.increment({
+      'operation': operation,
+      'category': category
+  })

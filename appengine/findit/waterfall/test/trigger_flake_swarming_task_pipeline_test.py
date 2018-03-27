@@ -104,11 +104,11 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     task.parameters['iterations_to_rerun'] = 100
     task.put()
 
-    mock_fn.return_value = SwarmingTaskRequest.Deserialize({
-        'expiration_secs': 60 * 60,
+    mock_fn.return_value = SwarmingTaskRequest.FromSerializable({
+        'expiration_secs': '3600',
         'name': 'ref_task_request',
         'parent_task_id': 'pti',
-        'priority': 25,
+        'priority': '25',
         'properties': {
             'command':
                 'cmd',
@@ -131,21 +131,21 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
                 },
             ],
             'execution_timeout_secs':
-                60 * 60,
+                '3600',
             'extra_args': [
                 '--flag=value',
                 '--gtest_filter=d.f',
                 '--test-launcher-filter-file=path/to/filter/file',
             ],
             'grace_period_secs':
-                30,
+                '30',
             'idempotent':
                 True,
             'inputs_ref': {
-                'a': 1
+                'isolatedserver': 'isolatedserver'
             },
             'io_timeout_secs':
-                1200,
+                '1200',
         },
         'tags': ['master:m', 'buildername:b', 'name:s'],
         'user': 'user',

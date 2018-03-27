@@ -4,7 +4,7 @@
 
 import mock
 
-from common import monitoring as mo
+from common import monitoring as common_monitoring
 from common.waterfall import failure_type
 from services import monitoring
 from waterfall.test import wf_testcase
@@ -12,8 +12,8 @@ from waterfall.test import wf_testcase
 
 class MonitoringTest(wf_testcase.WaterfallTestCase):
 
-  @mock.patch.object(mo.try_jobs, 'increment')
-  def testOnTryJobTriggered(self, mock_mo):
+  @mock.patch.object(common_monitoring.try_jobs, 'increment')
+  def testOnTryJobTriggered(self, mock_common_monitoring):
     try_job_type = failure_type.COMPILE
     master_name = 'm'
     builder_name = 'b'
@@ -24,16 +24,16 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
         'master_name': master_name,
         'builder_name': builder_name
     }
-    mock_mo.assert_called_once_with(parameters)
+    mock_common_monitoring.assert_called_once_with(parameters)
 
-  @mock.patch.object(mo.culprit_found, 'increment')
-  def testOnCulpritsAction(self, mock_mo):
+  @mock.patch.object(common_monitoring.culprit_found, 'increment')
+  def testOnCulpritsAction(self, mock_common_monitoring):
     monitoring.OnCulpritAction('test', 'culprit_notified')
     parameters = {'type': 'test', 'action_taken': 'culprit_notified'}
-    mock_mo.assert_called_once_with(parameters)
+    mock_common_monitoring.assert_called_once_with(parameters)
 
-  @mock.patch.object(mo.try_job_errors, 'increment')
-  def testOnTryJobError(self, mock_mo):
+  @mock.patch.object(common_monitoring.try_job_errors, 'increment')
+  def testOnTryJobError(self, mock_common_monitoring):
     try_job_type = failure_type.COMPILE
     master_name = 'm'
     builder_name = 'b'
@@ -46,4 +46,10 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
         'master_name': master_name,
         'builder_name': builder_name
     }
-    mock_mo.assert_called_once_with(parameters)
+    mock_common_monitoring.assert_called_once_with(parameters)
+
+  @mock.patch.object(common_monitoring.swarming_tasks, 'increment')
+  def testOnSwarmingTaskStatusChange(self, mock_common_monitoring):
+    monitoring.OnSwarmingTaskStatusChange('operation', 'category')
+    parameters = {'operation': 'operation', 'category': 'category'}
+    mock_common_monitoring.assert_called_once_with(parameters)

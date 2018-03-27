@@ -11,9 +11,9 @@ from google.appengine.api import taskqueue
 
 from common import exceptions
 from common.waterfall import buildbucket_client
-from dto.list_of_basestring import ListOfBasestring
 from gae_libs.pipelines import pipeline
 from libs import analysis_status
+from libs.list_of_basestring import ListOfBasestring
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import MasterFlakeAnalysis

@@ -16,10 +16,10 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(http_client_util, 'SendRequestToServer')
   def testGetSwarmingTaskRequest(self, mock_get):
     task_request_json = {
-        'expiration_secs': 2,
+        'expiration_secs': '2',
         'name': 'name',
         'parent_task_id': 'pti',
-        'priority': 1,
+        'priority': '1',
         'properties': {
             'command': 'cmd',
             'dimensions': [{
@@ -30,16 +30,16 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
                 'key': 'e',
                 'value': 'ev'
             }],
-            'execution_timeout_secs': 4,
+            'execution_timeout_secs': '4',
             'extra_args': ['--flag'],
-            'grace_period_secs': 5,
+            'grace_period_secs': '5',
             'idempotent': True,
             'inputs_ref': {
                 'isolated': 'i',
                 'isolatedserver': 'is',
                 'namespace': 'ns',
             },
-            'io_timeout_secs': 3,
+            'io_timeout_secs': '3',
         },
         'tags': ['tag'],
         'user': 'user',
@@ -51,8 +51,8 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
     mock_get.return_value = (json.dumps(task_request_json), None)
 
     task_request = swarming_util.GetSwarmingTaskRequest('host', task_id, None)
-
-    self.assertEqual(task_request_json, task_request.Serialize())
+    self.assertEqual(
+        SwarmingTaskRequest.FromSerializable(task_request_json), task_request)
 
   @mock.patch.object(
       http_client_util,
@@ -67,11 +67,41 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(http_client_util, 'SendRequestToServer')
   def testTriggerSwarmingTask(self, mock_post):
-    request = SwarmingTaskRequest()
+    task_request_json = {
+        'expiration_secs': '72000',
+        'name': 'name',
+        'parent_task_id': 'pti',
+        'priority': '150',
+        'properties': {
+            'command': 'cmd',
+            'dimensions': [{
+                'key': 'd',
+                'value': 'dv'
+            }],
+            'env': [{
+                'key': 'e',
+                'value': 'ev'
+            }],
+            'execution_timeout_secs': '4',
+            'extra_args': ['--flag'],
+            'grace_period_secs': '5',
+            'idempotent': True,
+            'inputs_ref': {
+                'isolated': 'i'
+            },
+            'io_timeout_secs': '3',
+        },
+        'tags': ['tag', 'findit:1', 'project:Chromium', 'purpose:post-commit'],
+        'user': 'user',
+        'pubsub_topic': None,
+        'pubsub_auth_token': None,
+        'pubsub_userdata': None,
+    }
 
     mock_post.return_value = json.dumps({'task_id': '1'}), None
 
-    task_id, error = swarming_util.TriggerSwarmingTask('host', request, None)
+    task_id, error = swarming_util.TriggerSwarmingTask(
+        'host', SwarmingTaskRequest.FromSerializable(task_request_json), None)
     self.assertEqual('1', task_id)
     self.assertIsNone(error)
 
@@ -83,7 +113,7 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
           'message': 'error'
       }))
   def testTriggerSwarmingTaskError(self, _):
-    request = SwarmingTaskRequest()
+    request = SwarmingTaskRequest.FromSerializable({})
     task_id, error = swarming_util.TriggerSwarmingTask('host', request, None)
     self.assertIsNone(task_id)
     self.assertIsNotNone(error)

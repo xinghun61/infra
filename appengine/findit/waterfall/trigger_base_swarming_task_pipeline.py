@@ -13,6 +13,7 @@ from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from libs import time_util
+from libs.list_of_basestring import ListOfBasestring
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from services import swarming
 from waterfall import buildbot
@@ -52,12 +53,12 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     new_request.user = ''
 
     if hard_timeout_seconds:
-      new_request.execution_timeout_secs = hard_timeout_seconds
+      new_request.properties.execution_timeout_secs = hard_timeout_seconds
 
     if overridden_isolated_sha:
       # A swarming task is being triggered at a specific revision and not
       # necessarily a build number.
-      new_request.inputs_ref['isolated'] = overridden_isolated_sha
+      new_request.properties.inputs_ref.isolated = overridden_isolated_sha
 
     _pubsub_callback = MakeSwarmingPubsubCallback(self.pipeline_id)
     new_request.pubsub_topic = _pubsub_callback.get('topic')
@@ -65,16 +66,17 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     new_request.pubsub_userdata = _pubsub_callback.get('user_data')
 
     # To force a fresh re-run and ignore cached result of any equivalent run.
-    new_request.idempotent = False
+    new_request.properties.idempotent = False
 
     # Set the gtest_filter to run the given tests only.
     # Remove existing test filter first.
-    new_request.extra_args = [
-        a for a in new_request.extra_args
+    new_request.properties.extra_args = ListOfBasestring.FromSerializable([
+        a for a in new_request.properties.extra_args
         if (not a.startswith('--gtest_filter') and
             not a.startswith('--test-launcher-filter-file'))
-    ]
-    new_request.extra_args.append('--gtest_filter=%s' % ':'.join(tests))
+    ])
+    new_request.properties.extra_args.append(
+        '--gtest_filter=%s' % ':'.join(tests))
 
     # On Android, --gtest_repeat is only supported for gtest, but not for other
     # test types. E.g. instrumentation tests currently support it via
@@ -86,13 +88,13 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     #
     # https://crbug.com/669632 tracks the effort to unify the command switches
     # of the Android test runner that are used here.
-    new_request.extra_args.append('--gtest_repeat=%s' % iterations)
+    new_request.properties.extra_args.append('--gtest_repeat=%s' % iterations)
 
     ref_os = swarming_util.GetTagValue(ref_request.tags, 'os') or ''
     if ref_os.lower() == 'android':  # Workaround. pragma: no cover.
-      new_request.extra_args.append('--num_retries=0')
+      new_request.properties.extra_args.append('--num_retries=0')
     else:
-      new_request.extra_args.append('--test-launcher-retry-limit=0')
+      new_request.properties.extra_args.append('--test-launcher-retry-limit=0')
 
     # Also rerun disabled tests. Scenario: the test was disabled before Findit
     # runs any analysis. One possible case:
@@ -109,17 +111,18 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     #
     # Note: test runner on Android ignores this flag because it is not supported
     # yet even though it exists.
-    new_request.extra_args.append('--gtest_also_run_disabled_tests')
+    new_request.properties.extra_args.append('--gtest_also_run_disabled_tests')
 
     # Remove the env setting for sharding.
     sharding_settings = ['GTEST_SHARD_INDEX', 'GTEST_TOTAL_SHARDS']
-    new_request.env = [
-        e for e in new_request.env if e['key'] not in sharding_settings
+    new_request.properties.env = [
+        e for e in new_request.properties.env
+        if e['key'] not in sharding_settings
     ]
 
     # Reset tags for searching and monitoring.
     ref_name = swarming_util.GetTagValue(ref_request.tags, 'name')
-    new_request.tags = []
+    new_request.tags = ListOfBasestring()
     new_request.tags.append('ref_master:%s' % master_name)
     new_request.tags.append('ref_buildername:%s' % builder_name)
     new_request.tags.append('ref_buildnumber:%s' % build_number)
@@ -143,7 +146,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
 
   def _GetArgs(self, master_name, builder_name, build_number, step_name, tests):
     # Returns an array you can pass into _GetSwarmingTask, _CreateSwarmingTask,
-    # _NeedANewSwarmingTask as the arguments.
+    # NeedANewSwarmingTask as the arguments.
 
     # Should be overwritten in child method.
     raise NotImplementedError('_GetArgs should be implemented in child class')
@@ -166,7 +169,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     """A hook function called after the Swarming task is actually triggered."""
     pass
 
-  def _NeedANewSwarmingTask(self, *args, **kwargs):
+  def NeedANewSwarmingTask(self, *args, **kwargs):
     swarming_task = self._GetSwarmingTask(*args)
 
     if not swarming_task:
@@ -269,7 +272,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     call_args = self._GetArgs(master_name, builder_name, build_number,
                               step_name, tests)
     # Check if a new Swarming Task is really needed.
-    if not self._NeedANewSwarmingTask(*call_args, force=force):
+    if not self.NeedANewSwarmingTask(*call_args, force=force):
       return self._GetSwarmingTaskId(*call_args)
 
     assert tests

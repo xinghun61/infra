@@ -1,89 +1,105 @@
-# Copyright 2016 The Chromium Authors. All rights reserved.
+# Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from libs.list_of_basestring import ListOfBasestring
+from libs.structured_object import StructuredObject
 
-class SwarmingTaskRequest(object):
+
+class SwarmingTaskInputsRef(StructuredObject):
+  """Contains information on the locations of the binaries to run against."""
+  # A hash represented the ioslated input pointing to the binaries to test.
+  isolated = basestring
+
+  # The url to the server the isolated inputs reside on.
+  isolatedserver = basestring
+
+  namespace = basestring
+
+
+class SwarmingTaskProperties(StructuredObject):
+  """Fields populated in swarming task requests."""
+  caches = list
+  command = basestring
+  env_prefixes = list
+  cipd_input = dict
+  dimensions = list
+  env = list
+
+  # The maximum amount of time the swarming task is allowed to run before being
+  # terminated returned as a string representation of an int.
+  execution_timeout_secs = basestring
+
+  extra_args = ListOfBasestring
+
+  # String representation of int.
+  grace_period_secs = basestring
+
+  idempotent = bool
+
+  # Information pointing to the location of the test binaries.
+  inputs_ref = SwarmingTaskInputsRef
+
+  io_timeout_secs = basestring  # String representaiton of int.
+
+
+class SwarmingTaskRequest(StructuredObject):
   """Represents a task request on Swarming server."""
+  authenticated = basestring
 
-  def __init__(self):
-    self.expiration_secs = 3600
-    self.name = ''
-    self.parent_task_id = ''
-    # Set as lowest priority. Note: The higher value, the lower priority.
-    self.priority = 150
-    self.tags = []
-    self.user = ''
+  # The created timestamp according to Swarming, returned as a string
+  # representation of a timestamp.
+  created_ts = basestring
 
-    # Settings in task properties.
-    self.command = None
-    self.dimensions = []
-    self.env = []
-    self.execution_timeout_secs = 3600
-    self.extra_args = []
-    self.grace_period_secs = 30
-    self.idempotent = True
-    self.inputs_ref = {}
-    self.io_timeout_secs = 1200
+  # String representation of int.
+  expiration_secs = basestring
 
-    # Pub/Sub parameters
-    self.pubsub_topic = None
-    self.pubsub_auth_token = None
-    self.pubsub_userdata = None
+  # The name of the swarming task.
+  name = basestring
 
-  def Serialize(self):
-    """Serializes and returns a dict representing the Swarming task request."""
-    return {
-        'expiration_secs': self.expiration_secs,
-        'name': self.name,
-        'parent_task_id': self.parent_task_id,
-        'priority': self.priority,
-        'properties': {
-            'command': self.command,
-            'dimensions': self.dimensions,
-            'env': self.env,
-            'execution_timeout_secs': self.execution_timeout_secs,
-            'extra_args': self.extra_args,
-            'grace_period_secs': self.grace_period_secs,
-            'idempotent': self.idempotent,
-            'inputs_ref': self.inputs_ref,
-            'io_timeout_secs': self.io_timeout_secs,
-        },
-        'tags': self.tags,
-        'user': self.user,
-        'pubsub_topic': self.pubsub_topic,
-        'pubsub_auth_token': self.pubsub_auth_token,
-        'pubsub_userdata': self.pubsub_userdata,
-    }
+  parent_task_id = basestring
+
+  # The priority of the swarming task. The lower the number, the higher the
+  # priority, represented as a string.
+  priority = basestring
+
+  service_account = basestring
+  tags = ListOfBasestring
+  user = basestring
+  properties = SwarmingTaskProperties
+
+  # Pub/Sub parameters
+  pubsub_topic = basestring
+  pubsub_auth_token = basestring
+  pubsub_userdata = basestring
 
   @staticmethod
-  def Deserialize(data):
-    """Deserializes and returns a Swarming task request from the given data.
-
-    Args:
-      data (dict): A serialized dict representing a Swarming task request.
-    """
-    task_request = SwarmingTaskRequest()
-
-    task_request.expiration_secs = data['expiration_secs']
-    task_request.name = data['name']
-    task_request.parent_task_id = data.get('parent_task_id')
-    task_request.priority = data['priority']
-    task_request.tags = data['tags'] or []
-    task_request.user = data.get('user')
-    task_request.pubsub_topic = data.get('pubsub_topic')
-    task_request.pubsub_auth_token = data.get('pubsub_auth_token')
-    task_request.pubsub_userdata = data.get('pubsub_userdata')
-
-    task_request.command = data['properties'].get('command')
-    task_request.dimensions = data['properties']['dimensions']
-    task_request.env = data['properties'].get('env') or []
-    task_request.execution_timeout_secs = data['properties'][
-        'execution_timeout_secs']
-    task_request.grace_period_secs = data['properties']['grace_period_secs']
-    task_request.extra_args = data['properties']['extra_args'] or []
-    task_request.idempotent = data['properties']['idempotent']
-    task_request.inputs_ref = data['properties']['inputs_ref']
-    task_request.io_timeout_secs = data['properties']['io_timeout_secs']
-
-    return task_request
+  def GetSwarmingTaskRequestTemplate():
+    """Returns a template SwarmingTaskRequest object with default values."""
+    return SwarmingTaskRequest(
+        authenticated=None,
+        created_ts=None,
+        expiration_secs='3600',
+        name='',
+        parent_task_id='',
+        priority='150',
+        properties=SwarmingTaskProperties(
+            caches=[],
+            cipd_input={},
+            command=None,
+            dimensions=[],
+            env=None,
+            env_prefixes=[],
+            execution_timeout_secs='3600',
+            extra_args=None,
+            grace_period_secs='30',
+            io_timeout_secs='1200',
+            idempotent=True,
+            inputs_ref=SwarmingTaskInputsRef(
+                isolated=None, isolatedserver=None, namespace=None)),
+        pubsub_auth_token=None,
+        pubsub_topic=None,
+        pubsub_userdata=None,
+        service_account=None,
+        tags=ListOfBasestring(),
+        user='')

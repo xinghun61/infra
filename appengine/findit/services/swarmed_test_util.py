@@ -5,12 +5,16 @@
 
 import json
 import logging
+import time
+
+from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
 from infra_api_clients.swarming import swarming_util
 from services import isolate
 from services import swarming
 from services import test_results
+from waterfall import waterfall_config
 
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
 
@@ -85,3 +89,25 @@ def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
     return []
 
   return test_results.GetMergedTestResults(shard_results)
+
+
+def GetTaskIdFromSwarmingTaskEntity(urlsafe_task_key):
+  """Gets swarming task id from SwarmingTask. Waits and polls if needed."""
+  swarming_settings = waterfall_config.GetSwarmingSettings()
+  wait_seconds = swarming_settings.get('get_swarming_task_id_wait_seconds')
+  timeout_seconds = swarming_settings.get(
+      'get_swarming_task_id_timeout_seconds')
+  deadline = time.time() + timeout_seconds
+
+  while time.time() < deadline:
+    swarming_task = ndb.Key(urlsafe=urlsafe_task_key).get()
+
+    if not swarming_task:
+      raise Exception('Swarming task was deleted unexpectedly!')
+
+    if swarming_task.task_id:
+      return swarming_task.task_id
+    # Wait for the existing pipeline to start the Swarming task.
+    time.sleep(wait_seconds)
+
+  raise Exception('Timed out waiting for task_id.')

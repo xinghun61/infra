@@ -26,7 +26,7 @@ def GetSwarmingTaskRequest(host, task_id, http_client):
 
   if not error:
     json_data = json.loads(content)
-    return SwarmingTaskRequest.Deserialize(json_data)
+    return SwarmingTaskRequest.FromSerializable(json_data)
   return None
 
 
@@ -39,7 +39,7 @@ def TriggerSwarmingTask(host, request, http_client):
   """
 
   response_data, error = http_client_util.SendRequestToServer(
-      _NEW_TASK_URL % host, http_client, post_data=request.Serialize())
+      _NEW_TASK_URL % host, http_client, post_data=request.ToSerializable())
 
   if not error:
     return json.loads(response_data)['task_id'], None

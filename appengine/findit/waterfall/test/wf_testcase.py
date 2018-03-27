@@ -11,6 +11,7 @@ from google.appengine.api import urlfetch
 import gae_ts_mon
 
 from gae_libs.testcase import TestCase
+from libs.structured_object import StructuredObject
 from model.wf_config import FinditConfig
 
 _DEFAULT_STEPS_FOR_MASTERS_RULES = {

@@ -6,10 +6,10 @@ from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
 from dto.flake_try_job_result import FlakeTryJobResult
-from dto.list_of_basestring import ListOfBasestring
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from gae_libs.pipelines import SynchronousPipeline
+from libs.list_of_basestring import ListOfBasestring
 from libs.structured_object import StructuredObject
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)

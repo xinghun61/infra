@@ -12,7 +12,7 @@ from waterfall import build_util
 
 
 # TODO(crbug/804617): Modify this function to use new LUCI API when ready.
-def _GetCandidataBounds(master_name, builder_name, upper_bound, lower_bound,
+def _GetCandidateBounds(master_name, builder_name, upper_bound, lower_bound,
                         requested_commit_position):
   """ Bisects the build number range and search for the earliest build whose
       commit position >= requested_commit_position.
@@ -110,7 +110,7 @@ def GetValidBoundingBuildsForStep(
     return latest_build_info, None
 
   # Gets candidata builds.
-  upper_bound, lower_bound = _GetCandidataBounds(
+  upper_bound, lower_bound = _GetCandidateBounds(
       master_name, builder_name, upper_bound_build_number,
       lower_bound_build_number, requested_commit_position)
 

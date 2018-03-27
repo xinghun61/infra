@@ -6,10 +6,10 @@ import mock
 
 from dto.flake_try_job_report import FlakeTryJobReport
 from dto.flake_try_job_result import FlakeTryJobResult
-from dto.list_of_basestring import ListOfBasestring
 from dto.isolated_tests import IsolatedTests
 from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import pipeline_handlers
+from libs.list_of_basestring import ListOfBasestring
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.get_isolate_sha_pipeline import (

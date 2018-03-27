@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from dto.dict_of_basestring import DictOfBasestring
-from dto.list_of_basestring import ListOfBasestring
+from libs.list_of_basestring import ListOfBasestring
 from libs.structured_object import StructuredObject
 
 

@@ -15,10 +15,10 @@ from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from dto.flake_try_job_result import FlakeTryJobResult
-from dto.list_of_basestring import ListOfBasestring
 from gae_libs import appengine_util
 from gae_libs.pipelines import AsynchronousPipeline
 from gae_libs.pipelines import pipeline
+from libs.list_of_basestring import ListOfBasestring
 from libs.structured_object import StructuredObject
 from model.flake.flake_try_job_data import FlakeTryJobData
 from services import try_job as try_job_service

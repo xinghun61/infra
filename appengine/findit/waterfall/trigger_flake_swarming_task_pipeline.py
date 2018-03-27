@@ -36,7 +36,7 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
                                              build_number, step_name, test_name)
     return swarming_task
 
-  def _NeedANewSwarmingTask(self, *args, **_):
+  def NeedANewSwarmingTask(self, *args, **_):
     """Creates or resets an existing flake swarming task entity.
 
     For determining the true pass rate of tests, multiple swarming tasks at the
@@ -58,8 +58,8 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
     Returns:
       True upon creating or resetting a swarming task.
     """
-    swarming_task = (self._GetSwarmingTask(*args) or
-                     self._CreateSwarmingTask(*args))
+    swarming_task = (
+        self._GetSwarmingTask(*args) or self._CreateSwarmingTask(*args))
 
     # Queued will be set to true if The task has been created but has not yet
     # been executed for cases it was triggered through Findit API. Queued should

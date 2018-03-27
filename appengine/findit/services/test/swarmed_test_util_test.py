@@ -4,13 +4,18 @@
 
 import json
 import mock
+import time
 
 from dto.test_location import TestLocation
 from infra_api_clients.swarming import swarming_util
+from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
+from libs import analysis_status
+from model.wf_swarming_task import WfSwarmingTask
 from services import gtest
 from services import isolate
 from services import swarmed_test_util
 from services import test_results
+from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 
@@ -204,3 +209,59 @@ class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
         isolated_data, None)
 
     self.assertIsNone(result)
+
+  def testGetTaskIdFromSwarmingTaskEntity(self):
+    swarming_task = WfSwarmingTask.Create('m', 'b', 123, 's')
+    swarming_task.task_id = 'task_id'
+    swarming_task.put()
+
+    self.assertEqual('task_id',
+                     swarmed_test_util.GetTaskIdFromSwarmingTaskEntity(
+                         swarming_task.key.urlsafe()))
+
+  def testGetTaskIdFromSwarmingTaskEntityNoTask(self):
+    swarming_task = WfSwarmingTask.Create('m', 'b', 200, 's')
+    swarming_task.put()
+    key = swarming_task.key.urlsafe()
+    swarming_task.key.delete()
+    with self.assertRaises(Exception):
+      swarmed_test_util.GetTaskIdFromSwarmingTaskEntity(key)
+
+  @mock.patch.object(
+      waterfall_config,
+      'GetSwarmingSettings',
+      return_value={
+          'get_swarming_task_id_wait_seconds': 0,
+          'get_swarming_task_id_timeout_seconds': -1
+      })
+  def testGetTaskIdFromSwarmingTaskEntityTimeOut(self, _):
+    swarming_task = WfSwarmingTask.Create('m', 'b', 123, 's')
+    swarming_task.put()
+    with self.assertRaises(Exception):
+      swarmed_test_util.GetTaskIdFromSwarmingTaskEntity(
+          swarming_task.key.urlsafe())
+
+  def testWaitingForTheTaskId(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    step_name = 's'
+
+    swarming_task = WfSwarmingTask.Create(master_name, builder_name,
+                                          build_number, step_name)
+    swarming_task.status = analysis_status.PENDING
+    swarming_task.put()
+
+    def MockedSleep(*_):
+      swarming_task = WfSwarmingTask.Get(master_name, builder_name,
+                                         build_number, step_name)
+      self.assertEqual(analysis_status.PENDING, swarming_task.status)
+      swarming_task.status = analysis_status.RUNNING
+      swarming_task.task_id = 'task_id'
+      swarming_task.put()
+
+    self.mock(time, 'sleep', MockedSleep)
+
+    self.assertEqual('task_id',
+                     swarmed_test_util.GetTaskIdFromSwarmingTaskEntity(
+                         swarming_task.key.urlsafe()))

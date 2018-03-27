@@ -5,9 +5,9 @@ from datetime import datetime
 import mock
 
 from common import exceptions
-from dto.list_of_basestring import ListOfBasestring
 from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.testcase import TestCase
+from libs.list_of_basestring import ListOfBasestring
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
