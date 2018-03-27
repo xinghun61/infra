@@ -166,28 +166,17 @@ class AdminTemplatesTest(TestBase):
     self.assertEqual(789, config_view.project_id)
 
   def testProcessSubtabForm_NoEditProjectPerm(self):
-    """If user lacks perms, ignore the attempt to set default templates."""
+    """If user lacks perms, raise an exception."""
     self.config.templates.append(self.test_template)
     post_data = fake.PostData(
         default_template_for_developers=['Test Template'],
         default_template_for_users=['Test Template'])
     self.mr.perms = permissions.EMPTY_PERMISSIONSET
-    next_url = self.servlet.ProcessSubtabForm(post_data, self.mr)
-    self.assertEqual(urls.ADMIN_TEMPLATES, next_url)
-    self.assertEqual(0, self.config.default_template_for_developers)
-    self.assertEqual(0, self.config.default_template_for_users)
-
-  def testProcessSubtabForm_Nonmember(self):
-    """If user lacks perms, ignore the attempt to set default templates."""
-    self.mr.auth.user_id = 999L
-    self.mr.auth.effective_ids = {999L}
-    self.config.templates.append(self.test_template)
-    post_data = fake.PostData(
-        default_template_for_developers=['Test Template'],
-        default_template_for_users=['Test Template'])
     self.assertRaises(
         permissions.PermissionException,
         self.servlet.ProcessSubtabForm, post_data, self.mr)
+    self.assertEqual(0, self.config.default_template_for_developers)
+    self.assertEqual(0, self.config.default_template_for_users)
 
   def testProcessSubtabForm_Normal(self):
     """If user has perms, set default templates."""

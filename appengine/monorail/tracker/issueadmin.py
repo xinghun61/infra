@@ -93,6 +93,10 @@ class AdminStatuses(IssueAdminBase):
     Returns:
       The URL of the page to show after processing.
     """
+    if not self.CheckPerm(mr, permissions.EDIT_PROJECT):
+      raise permissions.PermissionException(
+          'Only project owners may edit the status definitions')
+
     wks_open_text = post_data.get('predefinedopen', '')
     wks_open_matches = framework_constants.IDENTIFIER_DOCSTRING_RE.findall(
         wks_open_text)
@@ -158,6 +162,10 @@ class AdminLabels(IssueAdminBase):
     Returns:
       The URL of the page to show after processing.
     """
+    if not self.CheckPerm(mr, permissions.EDIT_PROJECT):
+      raise permissions.PermissionException(
+          'Only project owners may edit the label definitions')
+
     wkl_text = post_data.get('predefinedlabels', '')
     wkl_matches = framework_constants.IDENTIFIER_DOCSTRING_RE.findall(wkl_text)
     wkl_tuples = [
@@ -211,22 +219,19 @@ class AdminTemplates(IssueAdminBase):
     Returns:
       The URL of the page to show after processing.
     """
-    if not framework_bizobj.UserIsInProject(
-          mr.project, mr.auth.effective_ids):
+    if not self.CheckPerm(mr, permissions.EDIT_PROJECT):
       raise permissions.PermissionException(
-          'Non-members are not allowed to edit templates due to '
-          'and implementation constraint.')
+          'Only project owners may edit the default templates')
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
-    if self.CheckPerm(mr, permissions.EDIT_PROJECT):
-      default_template_id_for_developers, default_template_id_for_users = (
-          self._ParseDefaultTemplateSelections(post_data, config.templates))
-      if default_template_id_for_developers or default_template_id_for_users:
-        self.services.config.UpdateConfig(
-            mr.cnxn, mr.project,
-            default_template_for_developers=default_template_id_for_developers,
-            default_template_for_users=default_template_id_for_users)
+    default_template_id_for_developers, default_template_id_for_users = (
+        self._ParseDefaultTemplateSelections(post_data, config.templates))
+    if default_template_id_for_developers or default_template_id_for_users:
+      self.services.config.UpdateConfig(
+          mr.cnxn, mr.project,
+          default_template_for_developers=default_template_id_for_developers,
+          default_template_for_users=default_template_id_for_users)
 
     return urls.ADMIN_TEMPLATES
 
@@ -396,6 +401,9 @@ class AdminViews(IssueAdminBase):
     Returns:
       The URL of the page to show after processing.
     """
+    if not self.CheckPerm(mr, permissions.EDIT_PROJECT):
+      raise permissions.PermissionException(
+          'Only project owners may edit the default views')
     existing_queries = savedqueries_helpers.ParseSavedQueries(
         mr.cnxn, post_data, self.services.project)
     added_queries = savedqueries_helpers.ParseSavedQueries(
