@@ -129,6 +129,7 @@ class SwarmingTest(BaseTest):
             name: "recipe"
             properties_j: "predefined-property:\\\"x\\\""
             properties_j: "predefined-property-bool:true"
+            properties: "buildername:linux_chromium_rel_ng"
           }
           caches {
             path: "a"

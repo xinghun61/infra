@@ -430,8 +430,12 @@ def _create_task_def_async(
     # config.
     build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
 
+    # In order to allow some builders to behave like other builders, we allow
+    # builders to explicitly set buildername.
+    if 'buildername' not in build_properties:
+      build_properties['buildername'] = builder_cfg.name
+
     build_properties.update(
-        buildername=builder_cfg.name,
         buildbucket=_buildbucket_property(build),
     )
     assert isinstance(build.experimental, bool)
