@@ -67,6 +67,8 @@ class AndroidDockerClient(containers.DockerClient):
     volumes = volumes.copy()
     # Needed for access to device watchdog.
     volumes['/opt/infra-android'] = {'bind': '/opt/infra-android', 'mode': 'ro'}
+    # Needed by wifi_manager to connect to wifi.
+    volumes['/creds/passwords'] = {'bind': '/creds/passwords', 'mode': 'ro'}
     return volumes
 
   def _get_env(self, swarming_url):
