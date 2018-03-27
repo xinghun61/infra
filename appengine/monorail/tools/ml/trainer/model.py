@@ -10,14 +10,14 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
-from trainer.ml_helpers import COMPONENT_FEATURE_HASHES
+from trainer.ml_helpers import COMPONENT_FEATURES
 from trainer.ml_helpers import SPAM_FEATURE_HASHES
 
 # Important: we assume this list mirrors the output of GenerateFeaturesRaw.
 INPUT_COLUMNS = {'component': [
                      tf.feature_column.numeric_column(
-                         key='word_hashes',
-                         shape=(COMPONENT_FEATURE_HASHES,)),
+                         key='word_features',
+                         shape=(COMPONENT_FEATURES,)),
                  ],
                  'spam': [
                      tf.feature_column.numeric_column(

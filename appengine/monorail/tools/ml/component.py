@@ -19,19 +19,22 @@ import json
 import os
 import re
 import sys
-import googleapiclient
 
+import googleapiclient
+from googleapiclient import discovery
+from googleapiclient import errors
 from google.cloud.storage import client, bucket, blob
-import ml_helpers
 from apiclient.discovery import build
 from oauth2client.client import GoogleCredentials
+
+import ml_helpers
 
 credentials = GoogleCredentials.get_application_default()
 
 # This must be identical with settings.component_features.
 COMPONENT_FEATURES = 5000
 
-MODEL_NAME = 'component'
+MODEL_NAME = 'component_top_words'
 
 
 def Predict(args):
@@ -40,30 +43,33 @@ def Predict(args):
   with open(args.content) as f:
     content = f.read()
 
-  instance = ml_helpers.GenerateFeaturesRaw([content],
-    COMPONENT_FEATURES)
-
   project_ID = 'projects/%s' % args.project
   full_model_name = '%s/models/%s' % (project_ID, MODEL_NAME)
+  model_request = ml.projects().models().get(name=full_model_name)
+  model_response = model_request.execute()
+
+  version_name = model_response['defaultVersion']['name']
+
+  model_name = 'component_trainer_' + re.search("v_(\d+)",
+                                                version_name).group(1)
+
+  client_obj = client.Client(project=args.project)
+  bucket_name = '%s-mlengine' % args.project
+  bucket_obj = bucket.Bucket(client_obj, bucket_name)
+
+  instance = ml_helpers.GenerateFeaturesRaw([content],
+                                            COMPONENT_FEATURES,
+                                            getTopWords(bucket_name,
+                                                        model_name))
+
 
   request = ml.projects().predict(name=full_model_name, body={
-    'instances': [{'inputs': instance['word_hashes']}]
+    'instances': [{'inputs': instance['word_features']}]
   })
 
   try:
     response = request.execute()
 
-    model_request = ml.projects().models().get(name=full_model_name)
-    model_response = model_request.execute()
-
-    version_name = model_response['defaultVersion']['name']
-
-    model_name = 'component_trainer_' + re.search("v_(\d+)",
-                                                  version_name).group(1)
-
-    client_obj = client.Client(project=args.project)
-    bucket_name = '%s-mlengine' % args.project
-    bucket_obj = bucket.Bucket(client_obj, bucket_name)
 
     bucket_obj.blob = blob.Blob('%s/component_index.json'
                                 % model_name, bucket_obj)
@@ -75,6 +81,22 @@ def Predict(args):
   except googleapiclient.errors.HttpError, err:
     print('There was an error. Check the details:')
     print(err._get_reason())
+
+
+def getTopWords(bucket_name, model_name):
+  storage = discovery.build('storage', 'v1', credentials=credentials)
+  objects = storage.objects()
+
+  request = objects.get_media(bucket=bucket_name,
+                              object=model_name + '/topwords.txt')
+  response = request.execute()
+
+  top_list = response.split()
+  top_words = {}
+  for i in range(len(top_list)):
+    top_words[top_list[i]] = i
+
+  return top_words
 
 
 def read_indexes(response, component_index):

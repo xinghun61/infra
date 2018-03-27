@@ -24,7 +24,7 @@ from google.cloud.storage import blob, bucket, client
 import trainer.dataset
 import trainer.model
 import trainer.ml_helpers
-
+import trainer.top_words
 
 def generate_experiment_fn(**experiment_args):
   """Create an experiment function.
@@ -59,9 +59,11 @@ def generate_experiment_fn(**experiment_args):
       X, y = trainer.ml_helpers.transform_spam_csv_to_features(
           training_data)
     else:
+      top_list = trainer.top_words.make_top_words_list(hparams.job_dir)
       X, y, index_to_component = trainer.ml_helpers \
-          .transform_component_csv_to_features(training_data)
+          .transform_component_csv_to_features(training_data, top_list)
 
+    tf.logging.info('Features generated')
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
       random_state=42)
 
@@ -80,6 +82,7 @@ def generate_experiment_fn(**experiment_args):
       shuffle=False # Don't shuffle evaluation data
     )
 
+    tf.logging.info('Numpy fns created')
     if hparams.trainer_type == 'component':
       store_component_conversion(hparams.job_dir, index_to_component)
 

@@ -9,13 +9,15 @@ import re
 import settings
 
 import cloudstorage
-
-from framework import sql
-from services import ml_helpers
-from framework import jsonfeed
-from framework import framework_helpers
+from googleapiclient import discovery
+from googleapiclient import errors
+from oauth2client.client import GoogleCredentials
 
 from features import generate_dataset
+from framework import sql
+from framework import jsonfeed
+from framework import framework_helpers
+from services import ml_helpers
 
 
 class ComponentPredict(jsonfeed.JsonFeed):
@@ -23,15 +25,35 @@ class ComponentPredict(jsonfeed.JsonFeed):
   component model given the provided text.
   """
 
-  def Predict(self, instance):
-    ml_engine = ml_helpers.setup_ml_engine()
+  top_words = {}
 
-    model_name = 'projects/%s/models/%s' % (
-      settings.classifier_project_id, settings.component_model_name)
+  def InitializeTopWords(self, trainer_name):
+    """Gets list of top words from GCS to be used as features for component
+    prediction.
+    """
+
+    credentials = GoogleCredentials.get_application_default()
+    storage = discovery.build('storage', 'v1', credentials=credentials)
+    objects = storage.objects()
+
+    request = objects.get_media(bucket=settings.component_ml_bucket,
+                                object=trainer_name + '/topwords.txt')
+    response = request.execute()
+    top_list = response.split()
+
+    # This turns the top words list into a dictionary for faster feature
+    # generation.
+    for i in range(len(top_list)):
+      self.top_words[top_list[i]] = i
+
+    logging.info('Length of top words list: %s', len(self.top_words))
+
+
+  def Predict(self, instance, ml_engine, model_name, trainer_name):
 
     best_score_index = self.GetPrediction(instance, ml_engine, model_name)
 
-    component_id = self.GetComponentID(ml_engine, model_name, best_score_index)
+    component_id = self.GetComponentID(trainer_name, best_score_index)
 
     return {'components': [self.GetComponent(component_id)]}
 
@@ -39,6 +61,12 @@ class ComponentPredict(jsonfeed.JsonFeed):
   @framework_helpers.retry(3)
   def GetPrediction(self, instance, ml_engine, model_name):
     """Gets component prediction from default model based on provided text.
+
+    Args:
+      instance: The dict object returned from ml_helpers.GenerateFeaturesRaw
+        containing the features generated from the provided text.
+      ml_engine: An ML Engine instance for making predictions.
+      model_name: The full path to the model's location.
 
     Returns:
       The index of the component with the highest score. ML engine's predict
@@ -48,7 +76,7 @@ class ComponentPredict(jsonfeed.JsonFeed):
       so the index of the highest score also happens to be the component's
       index.
     """
-    body = {'instances': [{'inputs': instance['word_hashes']}]}
+    body = {'instances': [{'inputs': instance['word_features']}]}
 
     request = ml_engine.projects().predict(name=model_name, body=body)
     response = request.execute()
@@ -61,13 +89,14 @@ class ComponentPredict(jsonfeed.JsonFeed):
     return scores.index(max(scores))
 
 
-  def GetComponentID(self, ml_engine, model_name, index):
+  def GetComponentID(self, trainer_name, index):
     """Gets the actual component ID from the provided index by getting the
     mapping of indexes to IDs, which is stored in the bucket where the model's
     trainer is stored.
 
     Args:
-      model_name: The name of the model to get the default version of.
+      trainer_name: The name of the trainer that generated the current default
+        model.
       index: The index of the component we want to get the ID of.
 
     Returns:
@@ -75,24 +104,13 @@ class ComponentPredict(jsonfeed.JsonFeed):
       mapping.
     """
 
-    bucket_name = settings.component_ml_bucket
+    mapping_path = '/%s/%s/component_index.json' % (
+        settings.component_ml_bucket, trainer_name)
 
-    model_request = ml_engine.projects().models().get(name=model_name)
-    model_response = model_request.execute()
-    version_name = model_response['defaultVersion']['name']
+    logging.info('Mapping path full name: %r', mapping_path)
 
-    # Gets the timestamp number from the folder containing the model's trainer
-    # in order to get the correct index/component mapping.
-    model_full_name = 'component_trainer_' + re.search('v_(\d+)',
-                                                       version_name).group(1)
-
-    model_path = '/%s/%s/component_index.json' % (bucket_name,
-                                                    model_full_name)
-
-    logging.info('Model full name: %r', model_path)
-
-    #TODO(carapew): Memcache the index mapping file.
-    gcs_file = cloudstorage.open(model_path, mode='r')
+    # TODO(carapew): Memcache the index mapping file.
+    gcs_file = cloudstorage.open(mapping_path, mode='r')
 
     logging.info('Index component mapping opened')
 
@@ -125,11 +143,34 @@ class ComponentPredict(jsonfeed.JsonFeed):
     logging.info('text: %r', text)
     clean_text = generate_dataset.CleanText(text)
 
+    ml_engine = ml_helpers.setup_ml_engine()
+
+    model_name = 'projects/%s/models/%s' % (
+      settings.classifier_project_id, settings.component_model_name)
+
+    model_request = ml_engine.projects().models().get(name=model_name)
+
+    model_response = model_request.execute()
+
+    version_name = model_response['defaultVersion']['name']
+
+    # Gets the timestamp number from the folder containing the model's trainer
+    # in order to get the correct files for mappings and features.
+    trainer_name = 'component_trainer_' + re.search('v_(\d+)',
+                                                    version_name).group(1)
+
+    # TODO(carapew): Use memcache to get top words rather than storing as a
+    # variable of ComponentPredict.
+    if self.top_words == {}:
+      self.InitializeTopWords(trainer_name)
+
     instance = ml_helpers.GenerateFeaturesRaw(
         [clean_text],
-        settings.component_feature_hashes)
+        settings.component_features,
+        self.top_words
+    )
 
-    prediction = self.Predict(instance)
+    prediction = self.Predict(instance, ml_engine, model_name, trainer_name)
     logging.info('prediction: %r', str(prediction))
     return prediction
 

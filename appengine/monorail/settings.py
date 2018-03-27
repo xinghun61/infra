@@ -352,15 +352,15 @@ alert_service_account = 'chrome-trooper-alerts@google.com'
 # Comments. This should be the same value that the model was trained with.
 spam_feature_hashes = 500
 
-# The number of hash buckets to use when vectorizing text from Issues and
+# The number of features to use when vectorizing text from Issues and
 # Comments. This should be the same value that the model was trained with.
-component_feature_hashes = 500
+component_features = 5000
 
 # The name of the spam model in ML Engine.
 spam_model_name = 'spam_only_words'
 
 # The name of the component model in ML Engine
-component_model_name = 'component'
+component_model_name = 'component_top_words'
 
 # The name of the gcs bucket containing component predicition trainer code.
 component_ml_bucket = classifier_project_id + '-mlengine'

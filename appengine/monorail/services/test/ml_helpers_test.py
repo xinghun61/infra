@@ -9,20 +9,48 @@ from services import ml_helpers
 
 NUM_WORD_HASHES = 5
 
+TOP_WORDS = {'cat': 0, 'dog': 1, 'bunny': 2, 'chinchilla': 3, 'hamster': 4}
+NUM_COMPONENT_FEATURES = len(TOP_WORDS)
+
 
 class MLHelpersTest(unittest.TestCase):
 
-  def testHashFeatures(self):
-    hashes = ml_helpers._HashFeatures(tuple(), NUM_WORD_HASHES)
+  def testSpamHashFeatures(self):
+    hashes = ml_helpers._SpamHashFeatures(tuple(), NUM_WORD_HASHES)
     self.assertEquals([0, 0, 0, 0, 0], hashes)
 
-    hashes = ml_helpers._HashFeatures(('', ''), NUM_WORD_HASHES)
+    hashes = ml_helpers._SpamHashFeatures(('', ''), NUM_WORD_HASHES)
     self.assertEquals([1.0, 0, 0, 0, 0], hashes)
 
-    hashes = ml_helpers._HashFeatures(('abc', 'abc def'), NUM_WORD_HASHES)
+    hashes = ml_helpers._SpamHashFeatures(('abc', 'abc def'), NUM_WORD_HASHES)
     self.assertEquals([0, 0, 2/3, 0, 1/3], hashes)
 
+  def testComponentFeatures(self):
+
+    features = ml_helpers._ComponentFeatures(['cat dog is not bunny'
+                                              ' chinchilla hamster'],
+                                             NUM_COMPONENT_FEATURES,
+                                             TOP_WORDS)
+    self.assertEquals([1, 1, 1, 1, 1], features)
+
+    features = ml_helpers._ComponentFeatures(['none of these are features'],
+                                             NUM_COMPONENT_FEATURES,
+                                             TOP_WORDS)
+    self.assertEquals([0, 0, 0, 0, 0], features)
+
+    features = ml_helpers._ComponentFeatures(['do hamsters look like a'
+                                             ' chinchilla'],
+                                             NUM_COMPONENT_FEATURES,
+                                             TOP_WORDS)
+    self.assertEquals([0, 0, 0, 1, 0], features)
+
+    features = ml_helpers._ComponentFeatures([''],
+                                             NUM_COMPONENT_FEATURES,
+                                             TOP_WORDS)
+    self.assertEquals([0, 0, 0, 0, 0], features)
+
   def testGenerateFeaturesRaw(self):
+
     features = ml_helpers.GenerateFeaturesRaw(
         ['abc', 'abc def http://www.google.com http://www.google.com'],
       NUM_WORD_HASHES)
@@ -31,6 +59,12 @@ class MLHelpersTest(unittest.TestCase):
     features = ml_helpers.GenerateFeaturesRaw(['abc', 'abc def'],
       NUM_WORD_HASHES)
     self.assertEquals([0.0, 0.0, 2/3, 0.0, 1/3], features['word_hashes'])
+
+    features = ml_helpers.GenerateFeaturesRaw(['do hamsters look like a'
+                                               ' chinchilla'],
+                                              NUM_COMPONENT_FEATURES,
+                                              TOP_WORDS)
+    self.assertEquals([0, 0, 0, 1, 0], features['word_features'])
 
     # BMP Unicode
     features = ml_helpers.GenerateFeaturesRaw(

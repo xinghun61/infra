@@ -28,11 +28,27 @@ DELIMITERS = ['\s', '\,', '\.', '\?', '!', '\:', '\(', '\)']
 
 # Must be identical to settings.spam_feature_hashes.
 SPAM_FEATURE_HASHES = 500
-# Must be identical to settings.component_feature_hashes.
-COMPONENT_FEATURE_HASHES = 500
+# Must be identical to settings.component_features.
+COMPONENT_FEATURES = 5000
 
 
-def _HashFeatures(content, num_features):
+def _ComponentFeatures(content, num_features, top_words):
+  """
+    This uses the most common words in the entire dataset as features.
+    The count of common words in the issue comments makes up the features.
+  """
+
+  features = [0] * num_features
+  for blob in content:
+    words = blob.split()
+    for word in words:
+      if word in top_words:
+        features[top_words[word]] += 1
+
+  return features
+
+
+def _SpamHashFeatures(content, num_features):
   """
     Feature hashing is a fast and compact way to turn a string of text into a
     vector of feature values for classification and training.
@@ -56,19 +72,24 @@ def _HashFeatures(content, num_features):
   return features
 
 
-def GenerateFeaturesRaw(content, num_hashes):
+def GenerateFeaturesRaw(content, num_features, top_words=None):
   """Generates a vector of features for a given issue or comment.
 
   Args:
     content: The content of the issue's description and comments.
-    num_hashes: The number of feature hashes to generate.
+    num_features: The number of features to generate.
   """
   # If we've been passed real unicode strings, convert them to just bytestrings.
   for idx, value in enumerate(content):
     if isinstance(value, unicode):
       content[idx] = value.encode('utf-8')
 
-  return { 'word_hashes': _HashFeatures(content, num_hashes)}
+  if top_words:
+    return { 'word_features': _ComponentFeatures(content,
+                                                   num_features,
+                                                   top_words)}
+
+  return { 'word_hashes': _SpamHashFeatures(content, num_features)}
 
 
 def transform_spam_csv_to_features(csv_training_data):
@@ -82,13 +103,18 @@ def transform_spam_csv_to_features(csv_training_data):
   return X, y
 
 
-def transform_component_csv_to_features(csv_training_data):
+def transform_component_csv_to_features(csv_training_data, top_list):
   X = []
   y = []
+  top_words = {}
+
+  for i in range(len(top_list)):
+    top_words[top_list[i]] = i
 
   component_to_index = {}
   index_to_component = {}
   component_index = 0
+
   for row in csv_training_data:
     component, content = row
     component = str(component).split(",")[0]
@@ -98,7 +124,9 @@ def transform_component_csv_to_features(csv_training_data):
       index_to_component[component_index] = component
       component_index += 1
 
-    X.append(GenerateFeaturesRaw([str(content)], COMPONENT_FEATURE_HASHES))
+    X.append(GenerateFeaturesRaw([content],
+                                 COMPONENT_FEATURES,
+                                 top_words))
     y.append(component_to_index[component])
 
   return X, y, index_to_component
