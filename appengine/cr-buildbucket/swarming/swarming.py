@@ -777,7 +777,9 @@ def cancel_task_async(hostname, task_id):
   Noop if the task started running.
   """
   res = yield _call_api_async(
-      None, hostname, 'task/%s/cancel' % task_id, method='POST')
+      None, hostname, 'task/%s/cancel' % task_id, method='POST', payload={
+        'kill_running': True,
+      })
 
   if res.get('ok'):
     logging.info('response: %r', res)

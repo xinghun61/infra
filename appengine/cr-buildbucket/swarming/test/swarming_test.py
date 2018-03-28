@@ -1054,7 +1054,7 @@ class SwarmingTest(BaseTest):
         method='POST',
         scopes=net.EMAIL_SCOPE,
         delegation_token=None,
-        payload=None,
+        payload={'kill_running': True},
         deadline=None,
         max_attempts=None,
     )
