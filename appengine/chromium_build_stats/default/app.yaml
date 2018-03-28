@@ -30,9 +30,13 @@ handlers:
 - url: /file.*
   script: _go_app
   login: required
+  secure: always
 - url: /ninja_log.*
   script: _go_app
+  secure: always
 - url: /compiler_proxy_log.*
   script: _go_app
+  secure: always
 - url: /.*
   script: _go_app
+  secure: always
