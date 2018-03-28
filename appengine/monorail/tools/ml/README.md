@@ -1,4 +1,4 @@
-﻿# Monorail Machine Learning Classifiers
+# Monorail Machine Learning Classifiers
 
 Monorail has two machine learning classifiers running in ML Engine: a spam classifier and a component predictor.
 
@@ -42,7 +42,7 @@ gcloud ml-engine local train \
     -- \
     --train-steps 1000 \
     --verbosity DEBUG \
-    --train-file $TRAIN_DATA_DIR/2017-09-14
+    --train-file $TRAIN_DATA_DIR/2017-09-14 \
     --trainer-type spam
 ```
 
@@ -60,7 +60,7 @@ gcloud ml-engine local train \
     --train-steps 1000 \
     --verbosity DEBUG \
     --gcs-bucket monorail-prod.appspot.com \
-    --gcs-prefix spam_training_data
+    --gcs-prefix spam_training_data \
     --trainer-type spam
 ```
 
@@ -96,7 +96,7 @@ gcloud ml-engine jobs submit training $JOB_NAME \
     --train-steps 1000 \
     --verbosity DEBUG \
     --gcs-bucket monorail-prod.appspot.com \
-    --gcs-prefix spam_training_data
+    --gcs-prefix spam_training_data \
     --trainer-type spam
 ```
 
