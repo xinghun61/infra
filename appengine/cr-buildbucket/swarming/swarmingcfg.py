@@ -174,7 +174,7 @@ def validate_recipe_cfg(recipe, ctx, final=True):
 def validate_recipe_property(key, value, ctx):
   if not key:
     ctx.error('key not specified')
-  elif key in {'buildername', 'buildbucket'}:
+  elif key == 'buildbucket':
     ctx.error('reserved property')
   elif key == '$recipe_engine/runtime':
     if not isinstance(value, dict):

@@ -90,7 +90,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         properties=[
           '',
           ':',
-          'buildername:foobar',
+          'buildbucket:foobar',
           'x:y',
         ],
         properties_j=[
@@ -102,7 +102,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         expected_errors=[
           'properties \'\': does not have a colon',
           'properties \':\': key not specified',
-          'properties \'buildername:foobar\': reserved property',
+          'properties \'buildbucket:foobar\': reserved property',
           'properties_j \'x:"y"\': duplicate property',
           'properties_j \'y:b\': No JSON object could be decoded',
           'properties_j \'z\': does not have a colon',
