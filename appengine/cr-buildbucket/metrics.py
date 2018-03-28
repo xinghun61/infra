@@ -205,16 +205,6 @@ BUILD_COUNT_EXPERIMENTAL = gae_ts_mon.GaugeMetric(
     'Number of pending/running experimental builds',
     _build_fields('bucket', 'builder', 'status'))
 
-# TODO(nodir): remove CURRENTLY_PENDING and CURRENTLY_RUNNING
-CURRENTLY_PENDING = gae_ts_mon.GaugeMetric(
-    'buildbucket/builds/pending',
-    'Number of pending builds',
-    _build_fields('bucket'))
-CURRENTLY_RUNNING = gae_ts_mon.GaugeMetric(
-    'buildbucket/builds/running',
-    'Number of running builds',
-    _build_fields('bucket'))
-
 LEASE_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/builds/never_leased_duration',
     'Duration between a build is created and it is leased for the first time',
@@ -246,18 +236,6 @@ TAG_INDEX_SEARCH_SKIPPED_BUILDS = gae_ts_mon.NonCumulativeDistributionMetric(
     [gae_ts_mon.StringField('tag')],
     # We can't have more than 1000 entries in a tag index.
     bucketer=BUCKETER_1K)
-
-
-@ndb.tasklet
-def set_build_status_metric(metric, bucket, status):
-  # TODO(nodir): remove this function
-  q = model.Build.query(
-      model.Build.bucket == bucket,
-      model.Build.status == status,
-      model.Build.experimental == False,
-  )
-  value = yield q.count_async()
-  metric.set(value, {'bucket': bucket}, target_fields=GLOBAL_TARGET_FIELDS)
 
 
 @ndb.tasklet
@@ -298,15 +276,13 @@ def set_build_latency(metric_sec, bucket, must_be_never_leased):
   for e in q.iter(projection=[model.Build.create_time]):
     latency = (now - e.create_time).total_seconds()
     dist.add(latency)
-  if dist.count == 0:
+  if dist.count == 0:  # pragma: no cover
     dist.add(0)
   metric_sec.set(dist, {'bucket': bucket}, target_fields=GLOBAL_TARGET_FIELDS)
 
 
 # Metrics that are per-app rather than per-instance.
 GLOBAL_METRICS = [
-  CURRENTLY_PENDING,
-  CURRENTLY_RUNNING,
   LEASE_LATENCY_SEC,
   START_LATENCY_SEC,
   BUILD_COUNT_PROD,
@@ -320,10 +296,6 @@ def update_global_metrics():
   futures = []
   for b in config.get_buckets_async().get_result():
     futures.extend([
-      set_build_status_metric(
-          CURRENTLY_PENDING, b.name, model.BuildStatus.SCHEDULED),
-      set_build_status_metric(
-          CURRENTLY_RUNNING, b.name, model.BuildStatus.STARTED),
       set_build_latency(LEASE_LATENCY_SEC, b.name, True),
       set_build_latency(START_LATENCY_SEC, b.name, False),
     ])

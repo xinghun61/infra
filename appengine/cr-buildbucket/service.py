@@ -592,7 +592,9 @@ def unregister_builders():
   threshold = utils.utcnow() - model.BUILDER_EXPIRATION_DURATION
   q = model.Builder.query(model.Builder.last_scheduled < threshold)
   keys = q.fetch(keys_only=True)
-  ndb.delete_multi(keys)
+  if keys:  # pragma: no branch
+    logging.warning('unregistered builders: %s', [k.id() for k in keys])
+    ndb.delete_multi(keys)
 
 
 def retry(

@@ -20,45 +20,6 @@ class MetricsTest(testing.AppengineTestCase):
     super(MetricsTest, self).setUp()
     gae_ts_mon.reset_for_unittest(disable=True)
 
-  def test_set_build_status_metric(self):
-    ndb.put_multi([
-      model.Build(
-          bucket='chromium',
-          status=model.BuildStatus.SCHEDULED,
-          create_time=datetime.datetime(2015, 1, 1),
-          experimental=True,
-      ),
-      model.Build(
-          bucket='chromium',
-          status=model.BuildStatus.SCHEDULED,
-          create_time=datetime.datetime(2015, 1, 1),
-      ),
-      model.Build(
-          bucket='chromium',
-          status=model.BuildStatus.SCHEDULED,
-          create_time=datetime.datetime(2015, 1, 1),
-      ),
-      model.Build(
-          bucket='v8',
-          status=model.BuildStatus.SCHEDULED,
-          create_time=datetime.datetime(2015, 1, 1),
-      ),
-      model.Build(
-          bucket='chromium',
-          status=model.BuildStatus.STARTED,
-          create_time=datetime.datetime(2015, 1, 1),
-          start_time=datetime.datetime(2015, 1, 1),
-          canary=False,
-      ),
-    ])
-    metrics.set_build_status_metric(
-        metrics.CURRENTLY_PENDING,
-        'chromium',
-        model.BuildStatus.SCHEDULED).get_result()
-    self.assertEqual(2, metrics.CURRENTLY_PENDING.get(
-        {'bucket': 'chromium'},
-        target_fields=metrics.GLOBAL_TARGET_FIELDS))
-
   def test_set_build_count_metric(self):
     ndb.put_multi([
       model.Build(
@@ -155,16 +116,22 @@ class MetricsTest(testing.AppengineTestCase):
     ])
     metrics.set_build_latency(
         metrics.LEASE_LATENCY_SEC, 'chromium', True).get_result()
+    metrics.set_build_latency(
+        metrics.START_LATENCY_SEC, 'chromium', False).get_result()
     dist = metrics.LEASE_LATENCY_SEC.get(
+        {'bucket': 'chromium'},
+        target_fields=metrics.GLOBAL_TARGET_FIELDS)
+    self.assertEquals(dist.sum, 4.0 * 24 * 3600)  # 4 days
+    dist = metrics.START_LATENCY_SEC.get(
         {'bucket': 'chromium'},
         target_fields=metrics.GLOBAL_TARGET_FIELDS)
     self.assertEquals(dist.sum, 4.0 * 24 * 3600)  # 4 days
 
   @mock.patch('config.get_buckets_async', autospec=True)
-  @mock.patch('metrics.set_build_status_metric', autospec=True)
+  @mock.patch('metrics.set_build_latency', autospec=True)
   @mock.patch('metrics.set_build_count_metric_async', autospec=True)
   def test_update_global_metrics(
-      self, set_build_count_metric_async, set_build_status_metric,
+      self, set_build_count_metric_async, set_build_latency,
       get_buckets_async):
     get_buckets_async.return_value = future([
       project_config_pb2.Bucket(name='x')
@@ -175,10 +142,10 @@ class MetricsTest(testing.AppengineTestCase):
 
     metrics.update_global_metrics()
 
-    set_build_status_metric.assert_any_call(
-        metrics.CURRENTLY_PENDING, 'x', model.BuildStatus.SCHEDULED)
-    set_build_status_metric.assert_any_call(
-        metrics.CURRENTLY_RUNNING, 'x', model.BuildStatus.STARTED)
+    set_build_latency.assert_any_call(
+        metrics.LEASE_LATENCY_SEC, 'x', True)
+    set_build_latency.assert_any_call(
+        metrics.START_LATENCY_SEC, 'x', False)
 
     set_build_count_metric_async.assert_any_call(
         'luci.chromium.try', 'release', model.BuildStatus.SCHEDULED, False)
