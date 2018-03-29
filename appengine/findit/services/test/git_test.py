@@ -9,6 +9,7 @@ from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs import time_util
+from model.wf_suspected_cl import WfSuspectedCL
 from services import git
 from services.parameters import CompileFailureInfo
 from waterfall.test import wf_testcase
@@ -228,34 +229,6 @@ class GitTest(wf_testcase.WaterfallTestCase):
         }
     }
     self.assertEqual(expected_culprits, git.GetCLInfo(failed_revisions))
-
-  def testGetCLKeysFromCLInfo(self):
-    cl_info = {
-        'rev1': {
-            'revision': u'rev1',
-            'repo_name': u'chromium'
-        },
-        'rev2': {
-            'revision': u'rev2',
-            'repo_name': u'chromium',
-            'commit_position': 123,
-            'url': 'url'
-        }
-    }
-
-    expected_cl_keys = {
-        'rev1': {
-            'repo_name': u'chromium',
-            'revision': u'rev1'
-        },
-        'rev2': {
-            'repo_name': u'chromium',
-            'revision': u'rev2'
-        }
-    }
-
-    self.assertEqual(expected_cl_keys,
-                     git.GetCLKeysFromCLInfo(cl_info).ToSerializable())
 
   def testCountRecentCommitsFew(self):
     self.mock(

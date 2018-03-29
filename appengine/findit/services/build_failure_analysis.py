@@ -7,8 +7,9 @@ It has functions to:
   * Provide common logic to help analyze build failures.
 """
 
-from collections import defaultdict
+import logging
 import os
+from collections import defaultdict
 
 from google.appengine.ext import ndb
 
@@ -19,14 +20,14 @@ from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
+from libs.list_of_basestring import ListOfBasestring
 from libs.gitiles.diff import ChangeType
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
+from model.wf_suspected_cl import WfSuspectedCL
 from services import files
 from services import git
-from services.parameters import CLKey
-from services.parameters import ListOfCLKeys
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
@@ -644,10 +645,14 @@ def SaveSuspectedCLs(suspected_cls, master_name, builder_name, build_number,
 def GetHeuristicSuspectedCLs(master_name, builder_name, build_number):
   """Gets revisions of suspected cls found by heuristic approach."""
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-  suspects = ListOfCLKeys()
+  suspects = ListOfBasestring()
   if analysis and analysis.suspected_cls:
-    suspects.extend([
-        CLKey(repo_name=cl['repo_name'], revision=cl['revision'])
-        for cl in analysis.suspected_cls
-    ])
+    for cl in analysis.suspected_cls:
+      culprit = WfSuspectedCL.Get(cl['repo_name'], cl['revision'])
+      if not culprit:  # pragma: no cover
+        logging.warning('No culprit found for repo_name %s and revision %s',
+                        cl['repo_name'], cl['revision'])
+        continue
+      suspects.append(culprit.key.urlsafe())
+
   return suspects

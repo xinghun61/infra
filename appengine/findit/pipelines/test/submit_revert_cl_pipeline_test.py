@@ -12,11 +12,11 @@ from infra_api_clients.codereview.cl_info import Commit
 from infra_api_clients.codereview.gerrit import Gerrit
 from libs import analysis_status as status
 from libs import time_util
+from model import entity_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from services import culprit_action
 from services import gerrit
-from services.parameters import CLKey
 from services.parameters import SubmitRevertCLParameters
 from waterfall import suspected_cl_util
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
@@ -77,7 +77,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,
         failure_type=failure_type.COMPILE)
     pipeline = SubmitRevertCLPipeline(pipeline_input)
@@ -96,7 +96,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,
         failure_type=failure_type.COMPILE)
     SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
@@ -111,7 +111,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,
         failure_type=failure_type.COMPILE)
     SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
@@ -127,7 +127,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,
         failure_type=failure_type.COMPILE)
     pipeline = SubmitRevertCLPipeline(pipeline_input)

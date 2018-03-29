@@ -4,19 +4,19 @@
 
 import mock
 
+from dto.dict_of_basestring import DictOfBasestring
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
+from libs.list_of_basestring import ListOfBasestring
 from model.wf_try_job import WfTryJob
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
 from pipelines.test_failure.identify_test_try_job_culprit_pipeline import (
     IdentifyTestTryJobCulpritPipeline)
+from model.wf_suspected_cl import WfSuspectedCL
 from services.parameters import BuildKey
-from services.parameters import CLKey
 from services.parameters import CulpritActionParameters
-from services.parameters import DictOfCLKeys
 from services.parameters import IdentifyTestTryJobCulpritParameters
-from services.parameters import ListOfCLKeys
 from services.parameters import TestTryJobResult
 from services.test_failure import test_try_job
 from waterfall.test import wf_testcase
@@ -130,6 +130,13 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             },
         }
     }
+
+    repo_name = 'chromium'
+    revision = 'rev2'
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, 100)
+    culprit.put()
+
     culprits_result = {
         'rev1': {
             'revision': 'rev1',
@@ -138,17 +145,16 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             'url': 'url_1'
         },
         'rev2': {
-            'revision': 'rev2',
-            'repo_name': 'chromium',
+            'revision': revision,
             'commit_position': 2,
-            'url': 'url_2'
+            'url': 'url_2',
+            'repo_name': repo_name
         }
     }
-    mock_fn.return_value = culprits_result, ListOfCLKeys()
+    mock_fn.return_value = culprits_result, ListOfBasestring()
 
-    culprits = DictOfCLKeys()
-    culprits['rev1'] = CLKey(repo_name='chromium', revision='rev1')
-    culprits['rev2'] = CLKey(repo_name='chromium', revision='rev2')
+    culprits = DictOfBasestring()
+    culprits['rev2'] = culprit.key.urlsafe()
     self.MockGeneratorPipeline(
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=CulpritActionParameters(
@@ -157,7 +163,7 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=ListOfCLKeys()),
+            heuristic_cls=ListOfBasestring()),
         mocked_output=False)
 
     parameters = IdentifyTestTryJobCulpritParameters(
@@ -184,8 +190,8 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 master_name=master_name,
                 builder_name=builder_name,
                 build_number=build_number),
-            culprits=DictOfCLKeys(),
-            heuristic_cls=ListOfCLKeys()),
+            culprits=DictOfBasestring(),
+            heuristic_cls=ListOfBasestring()),
         mocked_output=False)
     parameters = IdentifyTestTryJobCulpritParameters(
         build_key=BuildKey(

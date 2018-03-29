@@ -5,6 +5,8 @@
     * pipeline inputs and outputs
     * Parameters for service functions."""
 
+from dto.dict_of_basestring import DictOfBasestring
+from libs.list_of_basestring import ListOfBasestring
 from libs.structured_object import StructuredObject
 from libs.structured_object import TypedDict
 from libs.structured_object import TypedList
@@ -24,12 +26,6 @@ class BuildKey(StructuredObject):
     return self.master_name, self.builder_name, self.build_number
 
 
-class CLKey(StructuredObject):
-  """Key to a CL."""
-  repo_name = basestring
-  revision = basestring
-
-
 class BaseCL(StructuredObject):
   repo_name = basestring
   revision = basestring
@@ -37,38 +33,30 @@ class BaseCL(StructuredObject):
   url = basestring
 
 
-class DictOfCLKeys(TypedDict):
-  _value_type = CLKey
-
-
-class ListOfCLKeys(TypedList):
-  _element_type = CLKey
-
-
 class CreateRevertCLParameters(StructuredObject):
   """Input for CreateRevertCLPipeline."""
-  cl_key = CLKey
+  cl_key = basestring
   build_id = basestring
   failure_type = int
 
 
 class SubmitRevertCLParameters(StructuredObject):
   """Input for SubmitRevertCLPipeline."""
-  cl_key = CLKey
+  cl_key = basestring
   revert_status = int
   failure_type = int
 
 
 class SendNotificationToIrcParameters(StructuredObject):
   """Input for SendNotificationToIrcPipeline."""
-  cl_key = CLKey
+  cl_key = basestring
   revert_status = int
   commit_status = int
   failure_type = int
 
 
 class SendNotificationForCulpritParameters(StructuredObject):
-  cl_key = CLKey
+  cl_key = basestring
   force_notify = bool
   revert_status = int
   failure_type = int
@@ -78,8 +66,8 @@ class CulpritActionParameters(StructuredObject):
   """Input for RevertAndNotifyCompileCulpritPipeline and
      RevertAndNotifyTestCulpritPipeline."""
   build_key = BuildKey
-  culprits = DictOfCLKeys
-  heuristic_cls = ListOfCLKeys
+  culprits = DictOfBasestring
+  heuristic_cls = ListOfBasestring
 
 
 class RunTryJobParameters(StructuredObject):

@@ -17,10 +17,10 @@ from infra_api_clients.codereview.cl_info import Revert
 from infra_api_clients.codereview.gerrit import Gerrit
 from libs import analysis_status as status
 from libs import time_util
+from model import entity_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from services import gerrit
-from services.parameters import CLKey
 from services.parameters import CreateRevertCLParameters
 from services.parameters import SubmitRevertCLParameters
 from waterfall import buildbot
@@ -170,7 +170,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         Revert('20001', revert_cl, 'a@b', datetime(2017, 2, 1, 1, 0, 0)))
     mock_fn.return_value = cl_info
 
-    WfSuspectedCL.Create(repo_name, revision, 123).put()
+    suspect_cl = WfSuspectedCL.Create(repo_name, revision, 123)
+    suspect_cl.put()
 
     revert_status = gerrit.RevertCulprit(repo_name, revision, 'm/b/1',
                                          failure_type.COMPILE, 'compile')
@@ -179,8 +180,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            revert_status=revert_status))
+            cl_key=suspect_cl.key.urlsafe(), revert_status=revert_status))
     self.assertEqual(gerrit.SKIPPED, commit_status)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -299,8 +299,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            revert_status=revert_status))
+            cl_key=culprit.key.urlsafe(), revert_status=revert_status))
     self.assertEqual(gerrit.SKIPPED, commit_status)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -337,8 +336,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            revert_status=revert_status))
+            cl_key=culprit.key.urlsafe(), revert_status=revert_status))
 
     self.assertEqual(gerrit.ERROR, commit_status)
     mock_commit.assert_called_once_with(revert_change_id)
@@ -413,8 +411,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            revert_status=revert_status))
+            cl_key=culprit.key.urlsafe(), revert_status=revert_status))
 
     self.assertEqual(gerrit.SKIPPED, commit_status)
 
@@ -451,8 +448,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            revert_status=revert_status))
+            cl_key=culprit.key.urlsafe(), revert_status=revert_status))
 
     self.assertEqual(gerrit.COMMITTED, commit_status)
 

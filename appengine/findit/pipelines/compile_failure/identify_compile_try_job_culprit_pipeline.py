@@ -5,6 +5,7 @@
 from gae_libs.pipelines import GeneratorPipeline
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as revert_pipeline)
+from services import consistent_failure_culprits
 from services import git
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
@@ -36,5 +37,6 @@ class IdentifyCompileTryJobCulpritPipeline(GeneratorPipeline):
                 master_name=master_name,
                 builder_name=builder_name,
                 build_number=build_number),
-            culprits=git.GetCLKeysFromCLInfo(culprits),
+            culprits=consistent_failure_culprits.GetWfSuspectedClKeysFromCLInfo(
+                culprits),
             heuristic_cls=heuristic_cls))

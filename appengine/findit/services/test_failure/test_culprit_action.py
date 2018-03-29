@@ -34,7 +34,7 @@ def CanAutoCreateRevert(culprit, parameters):
   """Checks if Findit can auto create a revert.
 
   Args:
-    culprit (CLKey): Information about a culprit commit.
+    culprit (Basestring): Urlsafe key for the suspected cl.
     parameters (CulpritActionParameters): Parameters to run culprit action
       pipelines.
 

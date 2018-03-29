@@ -13,6 +13,7 @@ from google.appengine.ext import ndb
 
 from common.waterfall import failure_type
 from libs import analysis_status
+from model import entity_util
 from model.wf_suspected_cl import WfSuspectedCL
 from services import ci_failure
 from services import gerrit
@@ -72,9 +73,9 @@ def _CanCreateRevertForCulprit(parameters, analysis_id):
     No revert of this culprit is complete or skipped, and
     no other pipeline is doing the revert on the same culprit.
   """
-  culprit = WfSuspectedCL.Get(parameters.cl_key.repo_name,
-                              parameters.cl_key.revision)
+  culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
   assert culprit
+
   if ((culprit.revert_cl and culprit.revert_status == analysis_status.COMPLETED)
       or culprit.revert_status == analysis_status.SKIPPED or
       (culprit.revert_status == analysis_status.RUNNING and
@@ -110,8 +111,11 @@ def GetSampleFailedStepName(repo_name, revision, build_id):
 
 
 def RevertCulprit(parameters, analysis_id):
-  repo_name = parameters.cl_key.repo_name
-  revision = parameters.cl_key.revision
+  culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
+  assert culprit
+
+  repo_name = culprit.repo_name
+  revision = culprit.revision
   build_id = parameters.build_id
 
   if _CanCreateRevertForCulprit(parameters, analysis_id):
@@ -138,8 +142,7 @@ def _CanCommitRevert(parameters, pipeline_id):
   if not parameters.revert_status == gerrit.CREATED_BY_FINDIT:
     return False
 
-  culprit = WfSuspectedCL.Get(parameters.cl_key.repo_name,
-                              parameters.cl_key.revision)
+  culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
   assert culprit
 
   if (not culprit.revert_cl or
@@ -171,19 +174,19 @@ def CommitRevert(parameters, analysis_id):
 # Functions to send notification to irc.
 def SendMessageToIRC(parameters):
   """Sends a message to irc if Findit auto-reverts a culprit."""
-  repo_name = parameters.cl_key.repo_name
-  revision = parameters.cl_key.revision
   revert_status = parameters.revert_status
   commit_status = parameters.commit_status
   sent = False
 
   if revert_status == gerrit.CREATED_BY_FINDIT:
-    # No need to send notification to irc if Findit doesn't create revert.
-    culprit = WfSuspectedCL.Get(repo_name, revision)
+    culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
+
     if not culprit:
-      logging.error('Failed to send notification to irc about culprit %s, %s:'
-                    ' entity not found in datastore.' % (repo_name, revision))
+      logging.error('Failed to send notification to irc about culprit:'
+                    ' entity not found in datastore.')
     else:
+      repo_name = culprit.repo_name
+      revision = culprit.revision
       revert_cl_url = culprit.revert_cl_url
       if not revert_cl_url:
         logging.error('Failed to send notification to irc about culprit %s, %s:'
@@ -257,8 +260,12 @@ def _ShouldSendNotification(repo_name, revision, force_notify, revert_status,
 
 
 def SendNotificationForCulprit(parameters):
-  repo_name = parameters.cl_key.repo_name
-  revision = parameters.cl_key.revision
+  culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
+  assert culprit
+
+  revision = culprit.revision
+  repo_name = culprit.repo_name
+
   force_notify = parameters.force_notify
   revert_status = parameters.revert_status
   sent = False

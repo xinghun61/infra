@@ -6,7 +6,9 @@ import mock
 
 from common import constants
 from common.waterfall import failure_type
+from dto.dict_of_basestring import DictOfBasestring
 from gae_libs.pipelines import pipeline_handlers
+from libs.list_of_basestring import ListOfBasestring
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from pipelines.test_failure import revert_and_notify_test_culprit_pipeline
@@ -16,11 +18,8 @@ from services import ci_failure
 from services import culprit_action
 from services import gerrit
 from services.parameters import BuildKey
-from services.parameters import CLKey
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
-from services.parameters import DictOfCLKeys
-from services.parameters import ListOfCLKeys
 from services.parameters import SendNotificationForCulpritParameters
 from services.parameters import SubmitRevertCLParameters
 from services.test_failure import test_culprit_action
@@ -43,16 +42,15 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    repo_name = 'chromium'
-    revision = 'r1'
-    cl_key = CLKey(repo_name=repo_name, revision=revision)
-    culprits = DictOfCLKeys()
+
+    cl_key = 'mockurlsafekey'
+    culprits = DictOfBasestring()
     culprits['r1'] = cl_key
-    heuristic_cls = ListOfCLKeys()
+    heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
 
     input_object = SendNotificationForCulpritParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=cl_key,
         force_notify=True,
         revert_status=None,
         failure_type=failure_type.TEST)
@@ -78,12 +76,11 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    repo_name = 'chromium'
-    revision = 'r1'
-    cl_key = CLKey(repo_name=repo_name, revision=revision)
-    culprits = DictOfCLKeys()
+
+    cl_key = 'mockurlsafekey'
+    culprits = DictOfBasestring()
     culprits['r1'] = cl_key
-    heuristic_cls = ListOfCLKeys()
+    heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
 
     pipeline = RevertAndNotifyTestCulpritPipeline(
@@ -109,31 +106,28 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 124
     build_id = 'm/b/124'
-    repo_name = 'chromium/test'
-    revision = 'r1'
-    cl_key = CLKey(repo_name=repo_name, revision=revision)
-    culprits = DictOfCLKeys()
+
+    cl_key = 'mockurlsafekey'
+    culprits = DictOfBasestring()
     culprits['r1'] = cl_key
-    heuristic_cls = ListOfCLKeys()
+    heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
 
-    self.MockSynchronousPipeline(
-        CreateRevertCLPipeline,
-        CreateRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            build_id=build_id,
-            failure_type=failure_type.TEST), gerrit.CREATED_BY_FINDIT)
-    self.MockSynchronousPipeline(
-        SubmitRevertCLPipeline,
-        SubmitRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            revert_status=gerrit.CREATED_BY_FINDIT,
-            failure_type=failure_type.TEST), gerrit.COMMITTED)
+    self.MockSynchronousPipeline(CreateRevertCLPipeline,
+                                 CreateRevertCLParameters(
+                                     cl_key=cl_key,
+                                     build_id=build_id,
+                                     failure_type=failure_type.TEST),
+                                 gerrit.CREATED_BY_FINDIT)
+    self.MockSynchronousPipeline(SubmitRevertCLPipeline,
+                                 SubmitRevertCLParameters(
+                                     cl_key=cl_key,
+                                     revert_status=gerrit.CREATED_BY_FINDIT,
+                                     failure_type=failure_type.TEST),
+                                 gerrit.COMMITTED)
     self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
                                  SendNotificationForCulpritParameters(
-                                     cl_key=CLKey(
-                                         repo_name=repo_name,
-                                         revision=revision),
+                                     cl_key=cl_key,
                                      force_notify=True,
                                      revert_status=gerrit.CREATED_BY_FINDIT,
                                      failure_type=failure_type.TEST), True)
@@ -160,25 +154,22 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 124
     build_id = 'm/b/124'
-    repo_name = 'chromium/test'
-    revision = 'r1'
-    cl_key = CLKey(repo_name=repo_name, revision=revision)
-    culprits = DictOfCLKeys()
+
+    cl_key = 'mockurlsafekey'
+    culprits = DictOfBasestring()
     culprits['r1'] = cl_key
-    heuristic_cls = ListOfCLKeys()
+    heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
 
-    self.MockSynchronousPipeline(
-        CreateRevertCLPipeline,
-        CreateRevertCLParameters(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
-            build_id=build_id,
-            failure_type=failure_type.TEST), gerrit.CREATED_BY_FINDIT)
+    self.MockSynchronousPipeline(CreateRevertCLPipeline,
+                                 CreateRevertCLParameters(
+                                     cl_key=cl_key,
+                                     build_id=build_id,
+                                     failure_type=failure_type.TEST),
+                                 gerrit.CREATED_BY_FINDIT)
     self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
                                  SendNotificationForCulpritParameters(
-                                     cl_key=CLKey(
-                                         repo_name=repo_name,
-                                         revision=revision),
+                                     cl_key=cl_key,
                                      force_notify=True,
                                      revert_status=gerrit.CREATED_BY_FINDIT,
                                      failure_type=failure_type.TEST), True)

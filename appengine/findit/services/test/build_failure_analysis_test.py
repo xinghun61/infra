@@ -1007,10 +1007,16 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(max_score)
 
   def testGetHeuristicSuspectedCLs(self):
+    repo_name = 'chromium'
+    revision = 'r123_2'
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, None)
+    culprit.put()
+
     analysis = WfAnalysis.Create('m', 'b', 123)
     analysis.suspected_cls = [{
-        'repo_name': 'chromium',
-        'revision': 'r123_2',
+        'repo_name': repo_name,
+        'revision': revision,
         'commit_position': None,
         'url': None,
         'failures': {
@@ -1020,7 +1026,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }]
     analysis.put()
 
-    suspected_cls = [{'repo_name': 'chromium', 'revision': 'r123_2'}]
+    suspected_cls = [culprit.key.urlsafe()]
 
     self.assertEqual(suspected_cls,
                      build_failure_analysis.GetHeuristicSuspectedCLs(

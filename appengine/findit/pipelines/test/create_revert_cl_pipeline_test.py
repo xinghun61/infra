@@ -18,7 +18,6 @@ from model.wf_suspected_cl import WfSuspectedCL
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from services import culprit_action
 from services import gerrit
-from services.parameters import CLKey
 from services.parameters import CreateRevertCLParameters
 from waterfall import buildbot
 from waterfall import suspected_cl_util
@@ -81,7 +80,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         build_id=build_id,
         failure_type=failure_type.COMPILE)
     pipeline = CreateRevertCLPipeline(pipeline_input)
@@ -110,8 +109,12 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     revision = 'rev1'
     build_id = 'm/b/123'
 
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.revert_status = status.SKIPPED
+    culprit.put()
+
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         build_id=build_id,
         failure_type=failure_type.COMPILE)
     pipeline = CreateRevertCLPipeline(pipeline_input)
@@ -129,7 +132,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         build_id=build_id,
         failure_type=failure_type.COMPILE)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
@@ -144,7 +147,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         build_id=build_id,
         failure_type=failure_type.COMPILE)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
@@ -161,7 +164,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         build_id=build_id,
         failure_type=failure_type.COMPILE)
     pipeline = CreateRevertCLPipeline(pipeline_input)

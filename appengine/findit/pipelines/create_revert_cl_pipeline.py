@@ -2,8 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from google.appengine.ext import ndb
+
 from gae_libs.pipelines import SynchronousPipeline
 from libs import analysis_status as status
+from model import entity_util
 from model.wf_suspected_cl import WfSuspectedCL
 from services import culprit_action
 from services.parameters import CreateRevertCLParameters
@@ -14,9 +17,8 @@ class CreateRevertCLPipeline(SynchronousPipeline):
   output_type = int
 
   def OnAbort(self, pipeline_input):
-
-    culprit = WfSuspectedCL.Get(pipeline_input.cl_key.repo_name,
-                                pipeline_input.cl_key.revision)
+    culprit = entity_util.GetEntityFromUrlsafeKey(pipeline_input.cl_key)
+    assert culprit
 
     if culprit.revert_pipeline_id == self.pipeline_id:
       if culprit.revert_status and culprit.revert_status != status.COMPLETED:

@@ -6,9 +6,10 @@ from datetime import datetime
 import mock
 
 from common.waterfall import failure_type
+from dto.dict_of_basestring import DictOfBasestring
 from libs import time_util
+from libs.list_of_basestring import ListOfBasestring
 from model.wf_suspected_cl import WfSuspectedCL
-from services.parameters import CLKey
 from services.parameters import CulpritActionParameters
 from services.test_failure import test_culprit_action
 from waterfall import suspected_cl_util
@@ -20,8 +21,18 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(TestCulpritActionTest, self).setUp()
-    culprit_dict = {'repo_name': 'chromium', 'revision': 'rev1'}
-    self.culprit = CLKey.FromSerializable(culprit_dict)
+
+    repo_name = 'chromium'
+    revision = 'rev1'
+
+    self.culprit = WfSuspectedCL.Create(repo_name, revision,
+                                        100).put().urlsafe()
+
+    culprit_dict = DictOfBasestring()
+    culprit_dict[revision] = self.culprit
+
+    heuristic_cls = ListOfBasestring()
+    heuristic_cls.append(self.culprit)
 
     parameters_dict = {
         'build_key': {
@@ -30,9 +41,9 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
             'build_number': 123
         },
         'culprits': {
-            'rev1': culprit_dict
+            'rev1': self.culprit
         },
-        'heuristic_cls': [culprit_dict]
+        'heuristic_cls': heuristic_cls
     }
     self.parameters = CulpritActionParameters.FromSerializable(parameters_dict)
 
@@ -75,12 +86,37 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
   def testCanAutoCreateRevert(self, _):
-    culprit = WfSuspectedCL.Create('chromium', 'rev1', 123)
+    repo_name = 'chromium'
+    revision = 'rev1'
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.failure_type.append(failure_type.TEST)
     culprit.revert_created_time = datetime(2018, 2, 14, 12, 0, 0)
     culprit.put()
+
+    culprit_dict = DictOfBasestring()
+    culprit_dict[revision] = culprit.key.urlsafe()
+
+    heuristic_cls = ListOfBasestring()
+    heuristic_cls.append(culprit.key.urlsafe())
+
+    parameters_dict = {
+        'build_key': {
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 123
+        },
+        'culprits': {
+            'rev1': culprit.key.urlsafe()
+        },
+        'heuristic_cls': heuristic_cls
+    }
+
+    parameters = CulpritActionParameters.FromSerializable(parameters_dict)
+
     self.assertTrue(
-        test_culprit_action.CanAutoCreateRevert(self.culprit, self.parameters))
+        test_culprit_action.CanAutoCreateRevert(culprit.key.urlsafe(),
+                                                parameters))
 
   @mock.patch.object(
       waterfall_config,

@@ -7,7 +7,9 @@ import mock
 
 from common import monitoring
 from common.waterfall import failure_type
+from dto.dict_of_basestring import DictOfBasestring
 from libs import analysis_status
+from libs.list_of_basestring import ListOfBasestring
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from services import ci_failure
@@ -15,11 +17,8 @@ from services import culprit_action
 from services import gerrit
 from services import irc
 from services.parameters import BuildKey
-from services.parameters import CLKey
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
-from services.parameters import DictOfCLKeys
-from services.parameters import ListOfCLKeys
 from services.parameters import SendNotificationForCulpritParameters
 from services.parameters import SendNotificationToIrcParameters
 from services.parameters import SubmitRevertCLParameters
@@ -33,16 +32,15 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    cl_key = CLKey(repo_name='chromium', revision='r1')
-    culprits = DictOfCLKeys()
-    culprits['r1'] = cl_key
+    culprits = DictOfBasestring()
+    culprits['r1'] = 'mockurlsafekey'
     parameters = CulpritActionParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
             build_number=build_number),
         culprits=culprits,
-        heuristic_cls=ListOfCLKeys())
+        heuristic_cls=ListOfBasestring())
     self.assertFalse(culprit_action.ShouldTakeActionsOnCulprit(parameters))
 
   @mock.patch.object(ci_failure, 'AnyNewBuildSucceeded', return_value=False)
@@ -50,20 +48,26 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    cl_key = CLKey(repo_name='chromium', revision='r1')
-    culprits = DictOfCLKeys()
-    culprits['r1'] = cl_key
+    culprits = DictOfBasestring()
+    culprits['r1'] = 'mockurlsafekey'
     parameters = CulpritActionParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
             build_number=build_number),
         culprits=culprits,
-        heuristic_cls=ListOfCLKeys())
+        heuristic_cls=ListOfBasestring())
     self.assertTrue(culprit_action.ShouldTakeActionsOnCulprit(parameters))
 
   def testShouldForceNotify(self):
-    culprit_dict = {'repo_name': 'chromium', 'revision': 'rev1'}
+    cl_key = 'mockurlsafekey'
+
+    culprit_dict = DictOfBasestring()
+    culprit_dict['rev1'] = cl_key
+
+    heuristic_cls = ListOfBasestring()
+    heuristic_cls.append(cl_key)
+
     parameters_dict = {
         'build_key': {
             'master_name': 'm',
@@ -73,25 +77,24 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         'culprits': {
             'rev1': culprit_dict
         },
-        'heuristic_cls': [culprit_dict]
+        'heuristic_cls': heuristic_cls
     }
     self.assertTrue(
         culprit_action.ShouldForceNotify(
-            CLKey.FromSerializable(culprit_dict),
-            CulpritActionParameters.FromSerializable(parameters_dict)))
+            cl_key, CulpritActionParameters.FromSerializable(parameters_dict)))
 
   def testRevertHasCompleted(self):
     repo_name = 'chromium'
     revision = 'rev1'
-    parameters = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        build_id='build_id')
-    pipeline_id = 'pipeline_id'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_cl = RevertCL()
     culprit.revert_status = analysis_status.COMPLETED
     culprit.put()
+
+    parameters = CreateRevertCLParameters(
+        cl_key=culprit.key.urlsafe(), build_id='build_id')
+    pipeline_id = 'pipeline_id'
 
     self.assertFalse(
         culprit_action._CanCreateRevertForCulprit(parameters, pipeline_id))
@@ -99,15 +102,15 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
   def testRevertACulpritIsBeingReverted(self):
     repo_name = 'chromium'
     revision = 'rev1'
-    parameters = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        build_id='build_id')
-    pipeline_id = 'another_pipeline'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_status = analysis_status.RUNNING
     culprit.revert_pipeline_id = 'pipeline_id'
     culprit.put()
+
+    parameters = CreateRevertCLParameters(
+        cl_key=culprit.key.urlsafe(), build_id='build_id')
+    pipeline_id = 'another_pipeline'
 
     self.assertFalse(
         culprit_action._CanCreateRevertForCulprit(parameters, pipeline_id))
@@ -115,24 +118,21 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
   def test_CanCreateRevertForCulprit(self):
     repo_name = 'chromium'
     revision = 'rev1'
-    parameters = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        build_id='build_id')
-    pipeline_id = 'pipeline_id'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_status = analysis_status.RUNNING
     culprit.put()
 
+    parameters = CreateRevertCLParameters(
+        cl_key=culprit.key.urlsafe(), build_id='build_id')
+    pipeline_id = 'pipeline_id'
+
     self.assertTrue(
         culprit_action._CanCreateRevertForCulprit(parameters, pipeline_id))
 
   def testCannotCommitRevertIfNotRevertByFindit(self):
-    repo_name = 'chromium'
-    revision = 'rev1'
     parameters = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=gerrit.CREATED_BY_SHERIFF)
+        cl_key='mockurlsafekey', revert_status=gerrit.CREATED_BY_SHERIFF)
     pipeline_id = 'pipeline_id'
 
     self.assertFalse(culprit_action._CanCommitRevert(parameters, pipeline_id))
@@ -140,25 +140,21 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
   def testCanCommitRevert(self):
     repo_name = 'chromium'
     revision = 'rev1'
-    parameters = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=gerrit.CREATED_BY_FINDIT)
-    pipeline_id = 'pipeline_id'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_cl = RevertCL()
     culprit.revert_status = analysis_status.COMPLETED
     culprit.put()
 
+    parameters = SubmitRevertCLParameters(
+        cl_key=culprit.key.urlsafe(), revert_status=gerrit.CREATED_BY_FINDIT)
+    pipeline_id = 'pipeline_id'
+
     self.assertTrue(culprit_action._CanCommitRevert(parameters, pipeline_id))
 
   def testCannotCommitRevertByAnotherAnalysis(self):
     repo_name = 'chromium'
     revision = 'rev1'
-    parameters = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
-        revert_status=gerrit.CREATED_BY_FINDIT)
-    pipeline_id = 'another_pipeline'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_cl = RevertCL()
@@ -166,6 +162,10 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.revert_submission_status = analysis_status.RUNNING
     culprit.submit_revert_pipeline_id = 'pipeline_id'
     culprit.put()
+
+    parameters = SubmitRevertCLParameters(
+        cl_key=culprit.key.urlsafe(), revert_status=gerrit.CREATED_BY_FINDIT)
+    pipeline_id = 'another_pipeline'
 
     self.assertFalse(culprit_action._CanCommitRevert(parameters, pipeline_id))
 
@@ -212,12 +212,10 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(irc, 'SendMessageToIrc')
   def testNoNeedToSendNotification(self, mocked_irc):
-    repo_name = 'chromium'
-    revision = 'rev'
     revert_status = gerrit.CREATED_BY_SHERIFF
     commit_status = gerrit.SKIPPED
     pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key='mockurlsafekey',
         revert_status=revert_status,
         commit_status=commit_status,
         failure_type=failure_type.COMPILE)
@@ -226,12 +224,10 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(irc, 'SendMessageToIrc')
   def testSendNotificationNoCulprit(self, mocked_irc):
-    repo_name = 'chromium'
-    revision = 'rev'
     revert_status = gerrit.CREATED_BY_FINDIT
     commit_status = gerrit.ERROR
     pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key='mockurlsafekey',
         revert_status=revert_status,
         commit_status=commit_status,
         failure_type=failure_type.COMPILE)
@@ -246,10 +242,11 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     commit_status = gerrit.ERROR
 
-    WfSuspectedCL.Create(repo_name, revision, 1).put()
+    culprit = WfSuspectedCL.Create(repo_name, revision, 1)
+    culprit.put()
 
     pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,
         commit_status=commit_status,
         failure_type=failure_type.COMPILE)
@@ -270,7 +267,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,
         commit_status=commit_status,
         failure_type=failure_type.COMPILE)
@@ -333,8 +330,11 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     force_notify = True
     revert_status = gerrit.CREATED_BY_SHERIFF
 
+    culprit = WfSuspectedCL.Create(repo_name, revision, 1)
+    culprit.put()
+
     pipeline_input = SendNotificationForCulpritParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         force_notify=force_notify,
         revert_status=revert_status,
         failure_type=failure_type.COMPILE)
@@ -349,8 +349,11 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     force_notify = True
     revert_status = gerrit.CREATED_BY_SHERIFF
 
+    culprit = WfSuspectedCL.Create(repo_name, revision, 1)
+    culprit.put()
+
     pipeline_input = SendNotificationForCulpritParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         force_notify=force_notify,
         revert_status=revert_status,
         failure_type=failure_type.COMPILE)
@@ -363,8 +366,11 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     revision = 'rev1'
     build_id = 'm/b/123'
 
+    culprit = WfSuspectedCL.Create(repo_name, revision, 1)
+    culprit.put()
+
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         build_id=build_id,
         failure_type=failure_type.COMPILE)
     self.assertEqual(gerrit.SKIPPED,
@@ -380,8 +386,11 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     revision = 'rev1'
     build_id = 'm/b/123'
 
+    culprit = WfSuspectedCL.Create(repo_name, revision, 1)
+    culprit.put()
+
     pipeline_input = CreateRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         build_id=build_id,
         failure_type=failure_type.COMPILE)
     self.assertEqual(gerrit.CREATED_BY_FINDIT,
@@ -393,8 +402,11 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
+    culprit = WfSuspectedCL.Create(repo_name, revision, 1)
+    culprit.put()
+
     pipeline_input = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=culprit.key.urlsafe(),
         revert_status=gerrit.CREATED_BY_FINDIT,
         failure_type=failure_type.COMPILE)
 
@@ -404,11 +416,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(gerrit, 'CommitRevert', return_value=gerrit.COMMITTED)
   @mock.patch.object(culprit_action, '_CanCommitRevert', return_value=True)
   def testCommit(self, *_):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
     pipeline_input = SubmitRevertCLParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key='mockurlsafekey',
         revert_status=gerrit.CREATED_BY_FINDIT,
         failure_type=failure_type.COMPILE)
 

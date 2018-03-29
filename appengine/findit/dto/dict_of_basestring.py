@@ -8,4 +8,4 @@ from libs.structured_object import TypedDict
 class DictOfBasestring(TypedDict):
 
   # TODO(crbug.com/806361): Support generic typed lists and dicts.
-  _element_type = basestring
+  _value_type = basestring

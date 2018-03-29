@@ -24,6 +24,7 @@ from common.waterfall import failure_type
 from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
 from libs import time_util
+from model import entity_util
 from model.base_suspected_cl import RevertCL
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
@@ -360,8 +361,12 @@ def CommitRevert(pipeline_input):
   # Note that we don't know which was the final action taken by the pipeline
   # before this point. That is why this is where we increment the appropriate
   # metrics.
-  repo_name = pipeline_input.cl_key.repo_name
-  revision = pipeline_input.cl_key.revision
+  culprit = entity_util.GetEntityFromUrlsafeKey(pipeline_input.cl_key)
+  assert culprit
+
+  repo_name = culprit.repo_name
+  revision = culprit.revision
+
   if not _CanAutoCommitRevertByGerrit(repo_name, revision):
     return SKIPPED
 
@@ -369,7 +374,6 @@ def CommitRevert(pipeline_input):
   culprit_host = culprit_info['review_server_host']
   codereview = codereview_util.GetCodeReviewForReview(culprit_host)
 
-  culprit = WfSuspectedCL.Get(repo_name, revision)
   revert_change_id = codereview.GetChangeIdFromReviewUrl(culprit.revert_cl_url)
 
   committed = codereview.SubmitRevert(revert_change_id)

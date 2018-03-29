@@ -12,10 +12,11 @@ It has functions to:
 import datetime
 
 from common.findit_http_client import FinditHttpClient
+from dto.dict_of_basestring import DictOfBasestring
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import time_util
-from services.parameters import CLKey
-from services.parameters import DictOfCLKeys
+from model.base_suspected_cl import BaseSuspectedCL
+from model.wf_suspected_cl import WfSuspectedCL
 
 
 def GetGitBlame(repo_url, revision, touched_file_path):
@@ -76,16 +77,6 @@ def GetCLInfo(revisions):
           change_log.code_review_url or change_log.commit_url)
       cls[revision]['author'] = change_log.author.email
   return cls
-
-
-def GetCLKeysFromCLInfo(cl_info):
-  """Get a dict of CLKeys object from result of GetCLInfo."""
-  cl_keys = DictOfCLKeys()
-  for revision, info in cl_info.iteritems():
-    cl_keys[revision] = CLKey(
-        repo_name=info['repo_name'], revision=info['revision'])
-  return cl_keys
-
 
 def CountRecentCommits(repo_url,
                        ref='refs/heads/master',

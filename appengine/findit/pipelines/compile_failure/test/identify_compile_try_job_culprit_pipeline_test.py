@@ -4,18 +4,18 @@
 
 import mock
 
+from dto.dict_of_basestring import DictOfBasestring
 from gae_libs.pipelines import pipeline_handlers
+from libs.list_of_basestring import ListOfBasestring
 from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
                                        as culprit_pipeline)
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as revert_pipeline)
+from model.wf_suspected_cl import WfSuspectedCL
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
-from services.parameters import CLKey
 from services.parameters import CompileTryJobResult
 from services.parameters import CulpritActionParameters
-from services.parameters import DictOfCLKeys
-from services.parameters import ListOfCLKeys
 from services.parameters import IdentifyCompileTryJobCulpritParameters
 from waterfall.test import wf_testcase
 
@@ -64,18 +64,25 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         'try_job_id': try_job_id,
     }
 
+    repo_name = 'chromium'
+    revision = 'rev2'
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, 100)
+    culprit.put()
+
     culprits_result = {
         'rev2': {
-            'revision': 'rev2',
+            'revision': revision,
             'commit_position': 2,
             'url': 'url_2',
-            'repo_name': 'chromium'
+            'repo_name': repo_name
         }
     }
-    mock_fn.return_value = culprits_result, ListOfCLKeys()
+    mock_fn.return_value = culprits_result, ListOfBasestring()
 
-    culprits = DictOfCLKeys()
-    culprits['rev2'] = CLKey(repo_name='chromium', revision='rev2')
+    culprits = DictOfBasestring()
+    culprits['rev2'] = culprit.key.urlsafe()
+
     self.MockGeneratorPipeline(
         pipeline_class=revert_pipeline.RevertAndNotifyCompileCulpritPipeline,
         expected_input=CulpritActionParameters(
@@ -84,7 +91,7 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
-            heuristic_cls=ListOfCLKeys()),
+            heuristic_cls=ListOfBasestring()),
         mocked_output=False)
 
     pipeline_input = IdentifyCompileTryJobCulpritParameters(

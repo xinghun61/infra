@@ -7,7 +7,6 @@ import mock
 from common.waterfall import failure_type
 from services import culprit_action
 from services import gerrit
-from services.parameters import CLKey
 from services.parameters import SendNotificationForCulpritParameters
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
@@ -19,10 +18,8 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       culprit_action, 'SendNotificationForCulprit', return_value=True)
   def testSendNotification(self, _):
-    repo_name = 'chromium'
-    revision = 'rev1'
     pipeline_input = SendNotificationForCulpritParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key='mockurlsafekey',
         force_notify=True,
         revert_status=gerrit.CREATED_BY_SHERIFF,
         failure_type=failure_type.COMPILE)

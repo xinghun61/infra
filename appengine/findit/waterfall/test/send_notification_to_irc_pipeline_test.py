@@ -7,7 +7,6 @@ import mock
 from common.waterfall import failure_type
 from services import culprit_action
 from services import gerrit
-from services.parameters import CLKey
 from services.parameters import SendNotificationToIrcParameters
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
@@ -18,12 +17,10 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(culprit_action, 'SendMessageToIRC', return_value=True)
   def testSendNotification(self, *_):
-    repo_name = 'chromium'
-    revision = 'rev'
     revert_status = gerrit.CREATED_BY_FINDIT
     commit_status = gerrit.COMMITTED
     pipeline_input = SendNotificationToIrcParameters(
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key='mockurlsafekey',
         revert_status=revert_status,
         commit_status=commit_status,
         failure_type=failure_type.COMPILE)
