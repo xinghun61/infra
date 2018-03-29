@@ -298,8 +298,8 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetIssueByLocalID(789, 1)
 
-  def testUpdateIssueApprovalValue(self):
-    """We can update an issue's approvalvalue."""
+  def testUpdateIssueApprovalStatus(self):
+    """We can update an issue's ApprovalValue status."""
     av_21 = tracker_pb2.ApprovalValue(approval_id=21)
     av_24 = tracker_pb2.ApprovalValue(approval_id=24)
     milestones = [tracker_pb2.Milestone(
@@ -310,7 +310,9 @@ class WorkEnvTest(unittest.TestCase):
     new_av_24 = tracker_pb2.ApprovalValue(
         approval_id=24, status=tracker_pb2.ApprovalStatus.APPROVED,
         set_on=3456, setter_id=222L)
-    self.work_env.UpdateIssueApprovalValue(78901, new_av_24)
+    self.work_env.UpdateIssueApprovalStatus(
+        78901, new_av_24.approval_id, new_av_24.status, new_av_24.setter_id,
+        new_av_24.set_on)
 
     issue = self.services.issue.GetIssue(self.cnxn, 78901)
     ms = issue.milestones[0]

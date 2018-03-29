@@ -401,14 +401,16 @@ class WorkEnv(object):
           self.mr.cnxn, project_id, local_id, use_cache=use_cache)
     return issue
 
-  def UpdateIssueApprovalValue(self, issue_id, approvalvalue):
+  def UpdateIssueApprovalStatus(
+      self, issue_id, approval_id, status, setter_id, set_on):
     """Update an issue's approvalvalue."""
+    # TODO(jojwang): check user has permission to change status
     with self.mr.profiler.Phase(
         'updating approvalvalue for issue %r' % issue_id):
-      self.services.issue.UpdateIssueApprovalValue(
-          self.mr.cnxn, issue_id, approvalvalue)
+      self.services.issue.UpdateIssueApprovalStatus(
+          self.mr.cnxn, issue_id, approval_id, status, setter_id, set_on)
     logging.info('updated ApprovalValue %r for issue %r',
-                 approvalvalue.approval_id, issue_id)
+                 approval_id, issue_id)
 
   def UpdateIssueApprovalApprovers(self, issue_id, approval_id, approver_ids):
     """Update an issue's approval approvers."""

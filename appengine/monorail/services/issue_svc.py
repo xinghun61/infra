@@ -1129,16 +1129,18 @@ class IssueService(object):
     if invalidate:
       self.InvalidateIIDs(cnxn, iids)
 
-  def UpdateIssueApprovalValue(
-      self, cnxn, issue_id, approvalvalue, commit=True):
+  def UpdateIssueApprovalStatus(
+      self, cnxn, issue_id, approval_id, status, setter_id, set_on,
+      commit=True):
     """Update the approvalvalue for the given issue_id's issue."""
+    set_on = set_on or int(time.time())
     delta = {
-        'status': approvalvalue.status.name.lower(),
-        'setter_id': approvalvalue.setter_id,
-        'set_on': approvalvalue.set_on,
+        'status': status.name.lower(),
+        'setter_id': setter_id,
+        'set_on': set_on,
         }
     self.issue2approvalvalue_tbl.Update(
-        cnxn, delta, approval_id=approvalvalue.approval_id, issue_id=issue_id,
+        cnxn, delta, approval_id=approval_id, issue_id=issue_id,
         commit=False)
 
     if commit:

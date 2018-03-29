@@ -1398,15 +1398,16 @@ class IssueService(object):
     self.comments_by_iid[issue.issue_id][0].content = marked_description
     return issue.local_id
 
-  def UpdateIssueApprovalValue(
-      self, cnxn, issue_id, approvalvalue, commit=True):
+  def UpdateIssueApprovalStatus(
+      self, cnxn, issue_id, approval_id, status, setter_id, set_on,
+      commit=True):
     issue = self.GetIssue(cnxn, issue_id)
     for ms in issue.milestones:
       for av in ms.approval_values:
-        if av.approval_id == approvalvalue.approval_id:
-          ms.approval_values = [ms_av for ms_av in ms.approval_values if
-                                ms_av is not av]
-          ms.approval_values.append(approvalvalue)
+        if av.approval_id == approval_id:
+          av.status = status
+          av.setter_id = setter_id
+          av.set_on = set_on
           return
     return
 

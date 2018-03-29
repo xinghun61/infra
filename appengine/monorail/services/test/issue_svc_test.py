@@ -459,16 +459,17 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
 
-  def testUpdateIssueApprovalValue(self):
-    av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L)
+  def testUpdateIssueApprovalStatus(self):
+    av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L, set_on=1234)
 
     self.services.issue.issue2approvalvalue_tbl.Update(
-        self.cnxn, {'status': 'not_set', 'setter_id': 111L, 'set_on': None},
+        self.cnxn, {'status': 'not_set', 'setter_id': 111L, 'set_on': 1234},
         approval_id=23, issue_id=78901, commit=False)
 
     self.mox.ReplayAll()
-    self.services.issue.UpdateIssueApprovalValue(
-        self.cnxn, 78901, av, commit=False)
+    self.services.issue.UpdateIssueApprovalStatus(
+        self.cnxn, 78901, av.approval_id, av.status,
+        av.setter_id, av.set_on, commit=False)
     self.mox.VerifyAll()
 
   def testUpdateIssueApprovalApprovers(self):
