@@ -915,6 +915,14 @@ def CanUpdateApprovalStatus(
   return False
 
 
+def CanUpdateApprovers(effective_ids, current_approver_ids):
+  """Return True if a user can edit the list of approvers for an approval."""
+  if not effective_ids.isdisjoint(current_approver_ids):
+    return True
+
+  return False
+
+
 def CanViewComponentDef(effective_ids, perms, project, component_def):
   """Return True if a user can view the given component definition."""
   if not effective_ids.isdisjoint(component_def.admin_ids):
