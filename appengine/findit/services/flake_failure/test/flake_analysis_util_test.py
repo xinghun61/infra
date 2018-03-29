@@ -8,6 +8,7 @@ import mock
 
 from google.appengine.ext import ndb
 
+from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto import swarming_task_error
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
@@ -15,7 +16,6 @@ from libs import time_util
 from libs.gitiles.change_log import ChangeLog
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from pipelines.flake_failure import run_flake_swarming_task_pipeline
 # TODO(crbug.com/809885): Merge flake_analysis_util.py.
 from services.flake_failure import flake_analysis_util
 from waterfall.flake import flake_analysis_util as flake_util
@@ -53,7 +53,7 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
     tries = 100
     successes = 50
     task_id = 'task'
-    task_output = run_flake_swarming_task_pipeline.RunFlakeSwarmingTaskOutput(
+    task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
         has_valid_artifact=has_valid_artifact,

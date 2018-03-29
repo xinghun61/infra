@@ -7,11 +7,10 @@ import mock
 
 from google.appengine.ext import ndb
 
+from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto.swarming_task_error import SwarmingTaskError
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
-    RunFlakeSwarmingTaskOutput)
 from services.flake_failure import data_point_util
 from waterfall.flake import flake_constants
 from waterfall.test import wf_testcase
@@ -117,7 +116,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = 'task_id'
 
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
         has_valid_artifact=has_valid_artifact,
@@ -158,7 +157,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = 'task_id'
 
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
         has_valid_artifact=has_valid_artifact,
@@ -197,7 +196,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = 'task_id'
 
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
         has_valid_artifact=has_valid_artifact,
@@ -247,7 +246,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.Save()
 
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
         has_valid_artifact=has_valid_artifact,
@@ -296,7 +295,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.Save()
 
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
         has_valid_artifact=has_valid_artifact,
@@ -346,7 +345,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.Save()
 
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
         has_valid_artifact=has_valid_artifact,
@@ -396,7 +395,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.Save()
 
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
         has_valid_artifact=has_valid_artifact,

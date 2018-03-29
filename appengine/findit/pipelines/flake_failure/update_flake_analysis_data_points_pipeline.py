@@ -3,10 +3,9 @@
 # found in the LICENSE file.
 """Updates a flake analysis' data points with incoming pass rate information."""
 
+from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from gae_libs.pipelines import GeneratorPipeline
 from libs.structured_object import StructuredObject
-from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
-    RunFlakeSwarmingTaskOutput)
 from services.flake_failure import data_point_util
 
 
@@ -21,7 +20,7 @@ class UpdateFlakeAnalysisDataPointsInput(StructuredObject):
   revision = basestring
 
   # The results of the flake swarming task to update data points with.
-  swarming_task_output = RunFlakeSwarmingTaskOutput
+  swarming_task_output = FlakeSwarmingTaskOutput
 
 
 class UpdateFlakeAnalysisDataPointsPipeline(GeneratorPipeline):

@@ -5,6 +5,7 @@
 from datetime import datetime
 import mock
 
+from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto.swarming_task_error import SwarmingTaskError
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.flake.master_flake_analysis import DataPoint
@@ -21,8 +22,6 @@ from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskInput)
-from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
-    RunFlakeSwarmingTaskOutput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskPipeline)
 from services.flake_failure import data_point_util
@@ -61,7 +60,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         iterations=iterations,
         timeout_seconds=timeout_seconds)
 
-    flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+    flake_swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
         pass_count=incoming_pass_count,
         iterations=iterations,
@@ -119,7 +118,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     ]
     analysis.Save()
 
-    flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+    flake_swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=SwarmingTaskError(code=1, message='error'),
         has_valid_artifact=has_valid_artifact,
@@ -166,7 +165,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     ]
     analysis.Save()
 
-    flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+    flake_swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
         pass_count=incoming_pass_count,
         iterations=iterations,
@@ -211,7 +210,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     ]
     analysis.Save()
 
-    flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+    flake_swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
         pass_count=incoming_pass_count,
         iterations=iterations,
@@ -256,7 +255,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     ]
     analysis.Save()
 
-    flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+    flake_swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
         pass_count=incoming_pass_count,
         iterations=iterations,
@@ -306,7 +305,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     ]
     analysis.Save()
 
-    flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+    flake_swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
         pass_count=incoming_pass_count,
         iterations=iterations_completed,
@@ -329,7 +328,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         iterations=expected_iterations,
         timeout_seconds=timeout_seconds)
 
-    flake_swarming_task_output = RunFlakeSwarmingTaskOutput(
+    flake_swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
         pass_count=incoming_pass_count,
         iterations=expected_iterations,

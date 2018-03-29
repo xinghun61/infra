@@ -5,10 +5,9 @@
 from datetime import datetime
 import mock
 
+from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
-    RunFlakeSwarmingTaskOutput)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     UpdateFlakeAnalysisDataPointsInput)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
@@ -26,7 +25,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
     analysis.Save()
     commit_position = 1000
     revision = 'r1000'
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
         pass_count=5,
         iterations=10,

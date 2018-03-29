@@ -4,13 +4,12 @@
 
 from google.appengine.ext import ndb
 
+from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskInput)
-from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
-    RunFlakeSwarmingTaskOutput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskPipeline)
 from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
@@ -33,7 +32,7 @@ class DetermineApproximatePassRateInput(StructuredObject):
   isolate_sha = basestring
 
   # The output of the last swarming task that was run.
-  previous_swarming_task_output = RunFlakeSwarmingTaskOutput
+  previous_swarming_task_output = FlakeSwarmingTaskOutput
 
   # The revision corresponding to the commit position.
   revision = basestring

@@ -4,9 +4,8 @@
 
 import mock
 
+from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto.swarming_task_error import SwarmingTaskError
-from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
-    RunFlakeSwarmingTaskOutput)
 from services.flake_failure import pass_rate_util
 from waterfall.flake import flake_constants
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -24,7 +23,7 @@ class PassRateUtilTest(WaterfallTestCase):
         1.0, 10, 0.5, 10))
 
   def testGetPassRateNonexistentTest(self):
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
         iterations=0,
         pass_count=0,
@@ -36,7 +35,7 @@ class PassRateUtilTest(WaterfallTestCase):
                      pass_rate_util.GetPassRate(swarming_task_output))
 
   def testGetPassRate(self):
-    swarming_task_output = RunFlakeSwarmingTaskOutput(
+    swarming_task_output = FlakeSwarmingTaskOutput(
         error=None,
         iterations=10,
         pass_count=4,

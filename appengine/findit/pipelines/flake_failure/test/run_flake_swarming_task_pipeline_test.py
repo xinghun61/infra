@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 import mock
 
 from gae_libs import pipelines
@@ -11,8 +10,6 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskInput)
-from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
-    RunFlakeSwarmingTaskOutput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskPipeline)
 from services import step_util
@@ -26,28 +23,6 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
   app_module = pipeline_handlers._APP
-
-  def testGetElapsedSecondsNoStartEndTimes(self):
-    task_output = RunFlakeSwarmingTaskOutput(
-        completed_time=None,
-        error=None,
-        has_valid_artifact=True,
-        iterations=50,
-        pass_count=25,
-        started_time=None,
-        task_id='task_id')
-    self.assertIsNone(task_output.GetElapsedSeconds())
-
-  def testGetElapsedSeconds(self):
-    task_output = RunFlakeSwarmingTaskOutput(
-        completed_time=datetime(2018, 2, 21, 0, 1, 0),
-        error=None,
-        has_valid_artifact=True,
-        iterations=50,
-        pass_count=25,
-        started_time=datetime(2018, 2, 21, 0, 0, 0),
-        task_id='task_id')
-    self.assertEqual(60, task_output.GetElapsedSeconds())
 
   @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   def testRunFlakeSwarmingTaskResultPipeline(self, mocked_builds):
