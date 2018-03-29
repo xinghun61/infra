@@ -53,7 +53,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     new_request.user = ''
 
     if hard_timeout_seconds:
-      new_request.properties.execution_timeout_secs = hard_timeout_seconds
+      new_request.properties.execution_timeout_secs = str(hard_timeout_seconds)
 
     if overridden_isolated_sha:
       # A swarming task is being triggered at a specific revision and not

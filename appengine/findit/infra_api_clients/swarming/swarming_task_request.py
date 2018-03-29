@@ -39,7 +39,8 @@ class SwarmingTaskProperties(StructuredObject):
   # Information pointing to the location of the test binaries.
   inputs_ref = SwarmingTaskInputsRef
 
-  io_timeout_secs = basestring  # String representaiton of int.
+  # String representaiton of int.
+  io_timeout_secs = basestring
 
 
 class SwarmingTaskRequest(StructuredObject):
