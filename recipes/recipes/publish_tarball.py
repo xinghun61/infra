@@ -27,6 +27,15 @@ DEPS = [
   'omahaproxy',
 ]
 
+# Sometimes a revision will be bad because the checkout will fail, causing
+# publish_tarball to fail.  The version will stay in the omaha version list for
+# several months and publish_tarball will keep re-running on the same broken
+# version.  This blacklist exists to exclude those broken versions so the bot
+# doesn't keep retrying and sending build failure emails out.
+BLACKLISTED_VERSIONS = [
+    '67.0.3376.0',
+    '67.0.3376.1',
+]
 
 def gsutil_upload(api, source, bucket, dest, args):
   api.gsutil.upload(source, bucket, dest, args, name=str('upload ' + dest))
@@ -178,7 +187,8 @@ def RunSteps(api):
       if 'chromium-%s.tar.xz' % release['version'] not in ls_result:
         missing_releases.add(release['version'])
     for version in missing_releases:
-      api.trigger({'buildername': 'publish_tarball', 'version': version})
+      if version not in BLACKLISTED_VERSIONS:
+        api.trigger({'buildername': 'publish_tarball', 'version': version})
     return
 
   version = api.properties['version']
