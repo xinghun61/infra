@@ -34,6 +34,12 @@ func TestCheckSpaceMix(t *testing.T) {
 			So(c.StartChar, ShouldEqual, 0)
 			So(c.EndChar, ShouldEqual, 2)
 		})
+		Convey("Tab and multiple space in ignored files (with extension)", func() {
+			So(checkSpaceMix("Makefile", "\t  some code", 1), ShouldBeNil)
+		})
+		Convey("Tab and multiple space in ignored files (no extension)", func() {
+			So(checkSpaceMix("Makefile", "\t  some code", 1), ShouldBeNil)
+		})
 	})
 }
 

@@ -20,6 +20,19 @@ const (
 	category = "Spacey"
 )
 
+var (
+	mixedWhitespaceBlacklist = []string{".mk", "makefile", "Makefile"}
+)
+
+func isIgnoredByMixedWhitespace(path string) bool {
+	for _, ext := range mixedWhitespaceBlacklist {
+		if ext == filepath.Ext(path) || ext == filepath.Base(path) {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
@@ -74,6 +87,10 @@ func main() {
 
 // checkSpaceMix looks for a mix of white space characters in the start of the provided line.
 func checkSpaceMix(path, line string, pos int) *tricium.Data_Comment {
+	if isIgnoredByMixedWhitespace(path) {
+		log.Printf("Not emitting comments for file: %s", path)
+		return nil
+	}
 	// Three space detectors, each to be set to one if there was an occurence.
 	ws := 0
 	tab := 0
