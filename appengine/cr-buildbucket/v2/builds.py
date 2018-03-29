@@ -64,7 +64,6 @@ def build_to_v2_partial(build):
       ret.infra.swarming.bot_dimensions.add(key=d['key'], value=v)
 
   _parse_tags(ret, build.tags)
-  # TODO(nodir): fetch steps.
   return ret
 
 
