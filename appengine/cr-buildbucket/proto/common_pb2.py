@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='common.proto',
   package='buildbucket.v2',
   syntax='proto3',
-  serialized_pb=_b('\n\x0c\x63ommon.proto\x12\x0e\x62uildbucket.v2\"O\n\x0cGerritChange\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06\x63hange\x18\x03 \x01(\x03\x12\x10\n\x08patchset\x18\x04 \x01(\x03\"G\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\t\x12\x0b\n\x03ref\x18\x04 \x01(\t\"(\n\nStringPair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t*w\n\x06Status\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n\tSCHEDULED\x10\x01\x12\x0b\n\x07STARTED\x10\x02\x12\x0b\n\x07SUCCESS\x10\x04\x12\x0b\n\x07\x46\x41ILURE\x10\x08\x12\x11\n\rINFRA_FAILURE\x10\x10\x12\x0c\n\x08\x43\x41NCELED\x10 b\x06proto3')
+  serialized_pb=_b('\n\x0c\x63ommon.proto\x12\x0e\x62uildbucket.v2\"O\n\x0cGerritChange\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06\x63hange\x18\x03 \x01(\x03\x12\x10\n\x08patchset\x18\x04 \x01(\x03\"G\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\t\x12\x0b\n\x03ref\x18\x04 \x01(\t\"(\n\nStringPair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t*\x92\x01\n\x06Status\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n\tSCHEDULED\x10\x01\x12\x0b\n\x07STARTED\x10\x02\x12\x19\n\x15\x43OMPLETED_STATUS_MASK\x10\x04\x12\x0b\n\x07SUCCESS\x10\x0c\x12\x0b\n\x07\x46\x41ILURE\x10\x14\x12\x11\n\rINFRA_FAILURE\x10$\x12\x0c\n\x08\x43\x41NCELED\x10\x44\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -43,26 +43,30 @@ _STATUS = _descriptor.EnumDescriptor(
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='SUCCESS', index=3, number=4,
+      name='COMPLETED_STATUS_MASK', index=3, number=4,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='FAILURE', index=4, number=8,
+      name='SUCCESS', index=4, number=12,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='INFRA_FAILURE', index=5, number=16,
+      name='FAILURE', index=5, number=20,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='CANCELED', index=6, number=32,
+      name='INFRA_FAILURE', index=6, number=36,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CANCELED', index=7, number=68,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=228,
-  serialized_end=347,
+  serialized_start=229,
+  serialized_end=375,
 )
 _sym_db.RegisterEnumDescriptor(_STATUS)
 
@@ -70,10 +74,11 @@ Status = enum_type_wrapper.EnumTypeWrapper(_STATUS)
 STATUS_UNSPECIFIED = 0
 SCHEDULED = 1
 STARTED = 2
-SUCCESS = 4
-FAILURE = 8
-INFRA_FAILURE = 16
-CANCELED = 32
+COMPLETED_STATUS_MASK = 4
+SUCCESS = 12
+FAILURE = 20
+INFRA_FAILURE = 36
+CANCELED = 68
 
 
 
