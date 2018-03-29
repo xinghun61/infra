@@ -92,4 +92,4 @@ class RunTestSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testTimeoutSeconds(self):
     p = RunTestSwarmingTaskPipeline(self.pipeline_input)
-    self.assertEqual(7200, p.TimeoutSeconds())
+    self.assertEqual(82800, p.TimeoutSeconds())

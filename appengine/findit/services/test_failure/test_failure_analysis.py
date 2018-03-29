@@ -6,6 +6,8 @@
 import copy
 from collections import defaultdict
 
+from google.appengine.ext import ndb
+
 from common.findit_http_client import FinditHttpClient
 from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
@@ -253,3 +255,58 @@ def UpdateAnalysisResultWithFlakeInfo(analysis_result, flaky_failures):
         all_flaked = False
 
   return updated_result, all_flaked
+
+
+@ndb.transactional
+def GetsFirstFailureAtTestLevel(master_name, builder_name, build_number,
+                                failure_info, force):
+  """Gets first time failed steps and tests in the build that has not been
+    analyzed.
+
+  This function will also update analysis.failure_result_map for new failures
+  that has not been analyzed.
+
+  But if force is True, this function will return all first time failures in the
+  build and not update analysis.failure_result_map
+  """
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+
+  if not analysis:
+    return {}
+
+  # A dict to store all the first time failed steps and/ or tests which
+  # have not triggered a swarming task yet.
+  result_steps = defaultdict(list)
+  failure_result_map = analysis.failure_result_map
+
+  for failed_step_name, step_failure_details in failure_info[
+      'failed_steps'].iteritems():
+    if not step_failure_details.get('tests'):
+      # Not a test type Findit currently handles.
+      continue
+
+    if not force:
+      if failure_result_map.get(failed_step_name):
+        # The step has been processed.
+        continue
+      else:
+        failure_result_map[failed_step_name] = {}
+
+    for failed_test_name, test_failure_details in step_failure_details[
+        'tests'].iteritems():
+      if not force:
+        # Updates analysis.failure_result_map only when the analysis runs at the
+        # first time.
+        task_key = '%s/%s/%s' % (master_name, builder_name,
+                                 test_failure_details['first_failure'])
+        failure_result_map[failed_step_name][failed_test_name] = task_key
+
+      if test_failure_details['first_failure'] == test_failure_details[
+          'current_failure']:
+        # First time failure, add to result_steps.
+        result_steps[failed_step_name].append(
+            test_failure_details['base_test_name'])
+
+  if not force:
+    analysis.put()
+  return result_steps

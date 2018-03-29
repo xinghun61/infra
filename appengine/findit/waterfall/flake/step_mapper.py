@@ -137,7 +137,7 @@ def FindMatchingWaterfallStep(build_step, test_name):
     task_id = metadata['swarm_task_ids'][0]
     output = swarmed_test_util.GetTestResultForSwarmingTask(
         task_id, http_client)
-    if output:
+    if output and test_results.IsTestResultsValid(output):
       # Guess from the format.
       build_step.supported = (
           test_results.IsTestResultsValid(output) and

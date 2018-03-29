@@ -17,6 +17,7 @@ from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
 from services.test_failure import extract_test_signal
 from services.test_failure import test_failure_analysis
+from waterfall import build_util
 from waterfall.test import wf_testcase
 
 SAMPLE_HEURISTIC_RESULT = {
@@ -608,3 +609,204 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             analysis_result, flaky_failures))
 
     self.assertFalse(all_flaked)
+
+  def testGetsFirstFailureAtTestLevelNoAnalysis(self):
+    result = (
+        test_failure_analysis.GetsFirstFailureAtTestLevel(
+            'm', 'b', 1, {}, False))
+    self.assertEqual(result, {})
+
+  def testGetsFirstFailureAtTestLevelNoFailureResultMap(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 2
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
+
+    failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 2,
+        'chromium_revision': None,
+        'builds': {
+            2: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            'abc_test': {
+                'current_failure': 2,
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'Unittest2.Subtest1': {
+                        'current_failure': 2,
+                        'first_failure': 2,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    },
+                    'Unittest3.Subtest2': {
+                        'current_failure': 2,
+                        'first_failure': 1,
+                        'last_pass': 0,
+                        'base_test_name': 'Unittest3.Subtest2'
+                    }
+                }
+            },
+            'a_test': {
+                'current_failure': 2,
+                'first_failure': 1,
+                'last_pass': 0,
+            }
+        },
+        'failure_type': failure_type.TEST
+    }
+
+    expected_result = {'abc_test': ['Unittest2.Subtest1']}
+    expected_failure_result_map = {
+        'abc_test': {
+            'Unittest2.Subtest1':
+                build_util.CreateBuildId(master_name, builder_name,
+                                         build_number),
+            'Unittest3.Subtest2':
+                build_util.CreateBuildId(master_name, builder_name, 1)
+        }
+    }
+
+    result = (
+        test_failure_analysis.GetsFirstFailureAtTestLevel(
+            master_name, builder_name, build_number, failure_info, False))
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+
+    self.assertEqual(result, expected_result)
+    self.assertEqual(analysis.failure_result_map, expected_failure_result_map)
+
+  def testGetsFirstFailureAtTestLevel(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 2
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {'a_tests': {'Unittest1.Subtest1': 'm/b/1'}}
+    analysis.put()
+
+    failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 2,
+        'chromium_revision': None,
+        'builds': {
+            2: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            'abc_test': {
+                'current_failure': 2,
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'Unittest2.Subtest1': {
+                        'current_failure': 2,
+                        'first_failure': 2,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    },
+                    'Unittest3.Subtest2': {
+                        'current_failure': 2,
+                        'first_failure': 1,
+                        'last_pass': 0,
+                        'base_test_name': 'Unittest3.Subtest2'
+                    }
+                }
+            },
+            'a_tests': {
+                'current_failure': 2,
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'Unittest1.Subtest1': {
+                        'current_failure': 2,
+                        'first_failure': 1,
+                        'last_pass': 0,
+                        'base_test_name': 'Unittest3.Subtest2'
+                    }
+                }
+            }
+        },
+        'failure_type': failure_type.TEST
+    }
+
+    expected_result = {'abc_test': ['Unittest2.Subtest1']}
+    result = (
+        test_failure_analysis.GetsFirstFailureAtTestLevel(
+            master_name, builder_name, build_number, failure_info, False))
+    self.assertEqual(result, expected_result)
+
+  def testGetsFirstFailureAtTestLevelForRerun(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 2
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {'a_tests': {'Unittest1.Subtest1': 'm/b/2'}}
+    analysis.put()
+
+    failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 2,
+        'chromium_revision': None,
+        'builds': {
+            2: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            'abc_test': {
+                'current_failure': 2,
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'Unittest2.Subtest1': {
+                        'current_failure': 2,
+                        'first_failure': 2,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    },
+                    'Unittest3.Subtest2': {
+                        'current_failure': 2,
+                        'first_failure': 1,
+                        'last_pass': 0,
+                        'base_test_name': 'Unittest3.Subtest2'
+                    }
+                }
+            },
+            'a_tests': {
+                'current_failure': 2,
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'Unittest1.Subtest1': {
+                        'current_failure': 2,
+                        'first_failure': 2,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest1.Subtest1'
+                    }
+                }
+            }
+        },
+        'failure_type': failure_type.TEST
+    }
+
+    expected_result = {
+        'a_tests': ['Unittest1.Subtest1'],
+        'abc_test': ['Unittest2.Subtest1']
+    }
+    result = (
+        test_failure_analysis.GetsFirstFailureAtTestLevel(
+            master_name, builder_name, build_number, failure_info, True))
+    self.assertEqual(result, expected_result)

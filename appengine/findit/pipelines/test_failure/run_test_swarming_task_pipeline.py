@@ -9,6 +9,7 @@ from dto.run_swarming_task_parameters import RunSwarmingTaskParameters
 from gae_libs.pipelines import AsynchronousPipeline
 from gae_libs.pipelines import pipeline
 from services.test_failure import test_swarming
+from waterfall import waterfall_config
 
 
 class RunTestSwarmingTaskPipeline(AsynchronousPipeline):
@@ -19,7 +20,9 @@ class RunTestSwarmingTaskPipeline(AsynchronousPipeline):
   output_type = bool
 
   def TimeoutSeconds(self):
-    return 2 * 60 * 60  # 2 hours. This will enable a timeout callback.
+    timeout_hours = waterfall_config.GetSwarmingSettings().get(
+        'task_timeout_hours', 24)
+    return timeout_hours * 60 * 60
 
   def OnTimeout(self, run_swarming_task_params, parameters):
     task_id = parameters['task_id']

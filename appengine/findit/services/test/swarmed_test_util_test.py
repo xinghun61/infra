@@ -91,8 +91,7 @@ class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
         swarmed_test_util.GetTestResultForSwarmingTask(None, None))
 
   @mock.patch.object(
-      swarming_util, 'GetSwarmingTaskResultById',
-      return_value=(None, {}))
+      swarming_util, 'GetSwarmingTaskResultById', return_value=(None, {}))
   def testGetTestResultForSwarmingTaskDataError(self, _):
     self.assertIsNone(
         swarmed_test_util.GetTestResultForSwarmingTask(None, None))
@@ -272,29 +271,13 @@ class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
                      swarmed_test_util.GetTaskIdFromSwarmingTaskEntity(
                          swarming_task.key.urlsafe()))
 
-  @mock.patch.object(
-      swarming_util, 'GetSwarmingTaskResultById')
-  def testGetSwarmingTaskDataNoData(self, mock_fn):
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskResultById')
+  def testGetSwarmingTaskStateAndResultNoData(self, mock_fn):
     error = {'code': 1, 'message': 'error'}
     mock_fn.return_value = (None, error)
     self.assertEqual((None, None, SwarmingTaskError.FromSerializable(error)),
-                     swarmed_test_util.GetSwarmingTaskData('task_id', None))
-
-  @mock.patch.object(SwarmingTaskError, 'GenerateError', return_value='error')
-  @mock.patch.object(
-      swarmed_test_util,
-      'GetOutputJsonByOutputsRef',
-      return_value=('content', None))
-  @mock.patch.object(
-      swarming_util,
-      'GetSwarmingTaskResultById',
-      return_value=({
-          'state': constants.STATE_COMPLETED,
-          'outputs_ref': 'outputs_ref'
-      }, None))
-  def testGetSwarmingTaskDataTestResultInvalid(self, *_):
-    self.assertEqual((constants.STATE_COMPLETED, None, 'error'),
-                     swarmed_test_util.GetSwarmingTaskData('task_id', None))
+                     swarmed_test_util.GetSwarmingTaskStateAndResult(
+                         'task_id', None))
 
   @mock.patch.object(
       swarming_util,
@@ -303,13 +286,14 @@ class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
           'state': 'BOT_DIED',
           'outputs_ref': 'outputs_ref'
       }, None))
-  def testGetSwarmingTaskDataFailedState(self, _):
+  def testGetSwarmingTaskStateAndResultFailedState(self, _):
     error = SwarmingTaskError.FromSerializable({
         'code': swarming_task_error.BOT_DIED,
         'message': 'BOT_DIED'
     })
     self.assertEqual(('BOT_DIED', None, error),
-                     swarmed_test_util.GetSwarmingTaskData('task_id', None))
+                     swarmed_test_util.GetSwarmingTaskStateAndResult(
+                         'task_id', None))
 
   @mock.patch.object(
       swarming_util,
@@ -318,6 +302,7 @@ class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
           'state': constants.STATE_RUNNING,
           'outputs_ref': 'outputs_ref'
       }, None))
-  def testGetSwarmingTaskDataRunning(self, _):
+  def testGetSwarmingTaskStateAndResultRunning(self, _):
     self.assertEqual((constants.STATE_RUNNING, None, None),
-                     swarmed_test_util.GetSwarmingTaskData('task_id', None))
+                     swarmed_test_util.GetSwarmingTaskStateAndResult(
+                         'task_id', None))

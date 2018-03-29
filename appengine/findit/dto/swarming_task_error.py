@@ -41,7 +41,7 @@ ERROR_CODE_TO_MESSAGE = {
     CANCELED: 'CANCELED',
     EXPIRED: 'EXPIRED',
     TIMED_OUT: 'TIMED_OUT',
-    RUNNER_TIMEOUT: 'Process swarming task result timed out',
+    RUNNER_TIMEOUT: 'Runner to run swarming task timed out',
     NO_TASK_OUTPUTS: 'outputs_ref is None',
     NO_OUTPUT_JSON: 'No swarming task failure log',
     UNKNOWN: 'Unknown error',
