@@ -30,7 +30,7 @@ def GetOutputJsonByOutputsRef(outputs_ref, http_client):
   return json.loads(file_content) if file_content else None, error
 
 
-def GetSwarmingTaskStateAndResult(task_id, http_client=_FINDIT_HTTP_CLIENT):
+def GetSwarmingTaskDataAndResult(task_id, http_client=_FINDIT_HTTP_CLIENT):
   """Gets information about a swarming task.
 
   Returns:
@@ -64,12 +64,12 @@ def GetSwarmingTaskStateAndResult(task_id, http_client=_FINDIT_HTTP_CLIENT):
       logging.error('Swarming task stopped with status: %s', task_state)
       error = SwarmingTaskError.GenerateError(
           swarming_task_error.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state])
-  return task_state, output_json, error
+  return data, output_json, error
 
 
-def GetTestResultForSwarmingTask(task_id, http_client):
+def GetTestResultForSwarmingTask(task_id, http_client=_FINDIT_HTTP_CLIENT):
   """Get isolated output for a swarming task based on it's id."""
-  _state, test_result_log, _error = GetSwarmingTaskStateAndResult(
+  _data, test_result_log, _error = GetSwarmingTaskDataAndResult(
       task_id, http_client)
   return test_result_log
 

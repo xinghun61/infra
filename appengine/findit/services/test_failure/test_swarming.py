@@ -12,6 +12,7 @@ from dto import swarming_task_error
 from dto.swarming_task_error import SwarmingTaskError
 from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
+from libs import time_util
 from model.wf_swarming_task import WfSwarmingTask
 from services import constants
 from services import monitoring
@@ -111,7 +112,10 @@ def _UpdateSwarmingTaskEntity(master_name,
                               error=None,
                               tests_statuses=None,
                               parameters=None,
-                              canonical_step_name=None):
+                              canonical_step_name=None,
+                              created_ts=None,
+                              started_ts=None,
+                              completed_ts=None):
   task = WfSwarmingTask.Get(master_name, builder_name, build_number, step_name)
   assert task
   task.status = status or task.status
@@ -121,6 +125,12 @@ def _UpdateSwarmingTaskEntity(master_name,
   task.parameters = task.parameters or {}
   task.parameters.update(parameters or {})
   task.canonical_step_name = canonical_step_name or task.canonical_step_name
+  task.created_time = task.created_time or time_util.DatetimeFromString(
+      created_ts)
+  task.started_time = task.started_time or time_util.DatetimeFromString(
+      started_ts)
+  task.completed_time = task.completed_time or time_util.DatetimeFromString(
+      completed_ts)
   task.put()
 
 
@@ -151,7 +161,7 @@ def OnSwarmingTaskTimeout(run_swarming_task_params, task_id):
 
   error = SwarmingTaskError.GenerateError(swarming_task_error.RUNNER_TIMEOUT)
 
-  _state, output_json, _error = swarmed_test_util.GetSwarmingTaskStateAndResult(
+  data, output_json, _ = swarmed_test_util.GetSwarmingTaskDataAndResult(
       task_id)
   if output_json and test_results.IsTestResultsValid(output_json):
     tests_statuses = test_results.GetTestsRunStatuses(output_json)
@@ -162,7 +172,11 @@ def OnSwarmingTaskTimeout(run_swarming_task_params, task_id):
         step_name,
         status=analysis_status.COMPLETED,
         error=error,
-        tests_statuses=tests_statuses)
+        tests_statuses=tests_statuses,
+        created_ts=data.get('created_ts'),
+        started_ts=data.get('started_ts'),
+        completed_ts=data.get('completed_ts')
+    )
   else:
     _UpdateSwarmingTaskEntity(
         master_name,
@@ -199,7 +213,7 @@ def OnSwarmingTaskError(master_name,
 
 
 def OnSwarmingTaskCompleted(master_name, builder_name, build_number, step_name,
-                            output_json):
+                            data, output_json):
   tests_statuses = test_results.GetTestsRunStatuses(output_json)
   _UpdateSwarmingTaskEntity(
       master_name,
@@ -207,7 +221,11 @@ def OnSwarmingTaskCompleted(master_name, builder_name, build_number, step_name,
       build_number,
       step_name,
       status=analysis_status.COMPLETED,
-      tests_statuses=tests_statuses)
+      tests_statuses=tests_statuses,
+      created_ts=data.get('created_ts'),
+      started_ts=data.get('started_ts'),
+      completed_ts=data.get('completed_ts')
+    )
   return True
 
 
@@ -216,17 +234,20 @@ def OnSwarmingTaskStateChanged(run_swarming_task_parameters, task_id):
       run_swarming_task_parameters.build_key.GetParts())
   step_name = run_swarming_task_parameters.step_name
 
-  task_state, output_json, error = (
-      swarmed_test_util.GetSwarmingTaskStateAndResult(task_id))
-  if not task_state:
+  data, output_json, error = (
+      swarmed_test_util.GetSwarmingTaskDataAndResult(task_id))
+
+  if not data or not data.get('state'):
     # Error when get task state.
     OnSwarmingTaskError(master_name, builder_name, build_number, step_name,
                         error, False)
     return None
-  elif (task_state == constants.STATE_COMPLETED and output_json and
+
+  task_state = data['state']
+  if (task_state == constants.STATE_COMPLETED and output_json and
         test_results.IsTestResultsValid(output_json)):
     return OnSwarmingTaskCompleted(master_name, builder_name, build_number,
-                                   step_name, output_json)
+                                   step_name, data, output_json)
   elif task_state in constants.STATE_NOT_STOP:
     if task_state == constants.STATE_RUNNING:  # pragma: no branch
       _UpdateSwarmingTaskEntity(

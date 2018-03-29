@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import json
 import mock
 
@@ -240,8 +241,8 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(test_results, 'IsTestResultsValid', return_value=True)
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskStateAndResult',
-      return_value=(constants.STATE_COMPLETED, 'content', None))
+      'GetSwarmingTaskDataAndResult',
+      return_value=({'state': constants.STATE_COMPLETED}, 'content', None))
   def testOnSwarmingTaskTimeoutGotResult(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -271,7 +272,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskStateAndResult',
+      'GetSwarmingTaskDataAndResult',
       return_value=(None, None, 'error'))
   def testOnSwarmingTaskTimeout(self, _):
     master_name = 'm'
@@ -307,19 +308,33 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     WfSwarmingTask.Create(master_name, builder_name, build_number,
                           step_name).put()
+
+    data = {
+      'state': constants.STATE_COMPLETED,
+      'created_ts': '2015-07-30T18:11:16.743220',
+      'started_ts': '2015-07-30T18:12:16.743220',
+      'completed_ts': '2015-07-30T18:15:16.743220'
+    }
+
     test_swarming.OnSwarmingTaskCompleted(
-        master_name, builder_name, build_number, step_name, 'output_json')
+        master_name, builder_name, build_number, step_name, data, 'output_json')
 
     swarming_task = WfSwarmingTask.Get(master_name, builder_name, build_number,
                                        step_name)
     self.assertEqual('tests_statuses', swarming_task.tests_statuses)
     self.assertEqual(analysis_status.COMPLETED, swarming_task.status)
+    self.assertEqual(datetime.datetime(2015, 7, 30, 18, 11, 16, 743220),
+                     swarming_task.created_time)
+    self.assertEqual(datetime.datetime(2015, 7, 30, 18, 12, 16, 743220),
+                     swarming_task.started_time)
+    self.assertEqual(datetime.datetime(2015, 7, 30, 18, 15, 16, 743220),
+                     swarming_task.completed_time)
 
   @mock.patch.object(test_results, 'IsTestResultsValid', return_value=True)
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskStateAndResult',
-      return_value=(constants.STATE_COMPLETED, 'content', None))
+      'GetSwarmingTaskDataAndResult',
+      return_value=({'state': constants.STATE_COMPLETED}, 'content', None))
   @mock.patch.object(
       test_swarming, 'OnSwarmingTaskCompleted', return_value=True)
   def testOnSwarmingTaskStateChangedCompleted(self, mock_complete, *_):
@@ -340,13 +355,14 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
 
     result = test_swarming.OnSwarmingTaskStateChanged(parameters, 'task_id')
     self.assertTrue(result)
-    mock_complete.assert_called_once_with(master_name, builder_name,
-                                          build_number, step_name, 'content')
+    mock_complete.assert_called_once_with(
+        master_name, builder_name, build_number, step_name,
+        {'state': constants.STATE_COMPLETED}, 'content')
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskStateAndResult',
-      return_value=(constants.STATE_RUNNING, None, None))
+      'GetSwarmingTaskDataAndResult',
+      return_value=({'state': constants.STATE_RUNNING}, None, None))
   @mock.patch.object(test_swarming, '_UpdateSwarmingTaskEntity')
   def testOnSwarmingTaskStateChangedRunning(self, mock_update, _):
     master_name = 'm'
@@ -375,8 +391,8 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskStateAndResult',
-      return_value=(constants.STATE_COMPLETED, None,
+      'GetSwarmingTaskDataAndResult',
+      return_value=({'state': constants.STATE_COMPLETED}, None,
                     SwarmingTaskError.FromSerializable({
                         'code': 1,
                         'message': 'message'
@@ -401,7 +417,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       swarmed_test_util,
-      'GetSwarmingTaskStateAndResult',
+      'GetSwarmingTaskDataAndResult',
       return_value=(None, None, 'error'))
   @mock.patch.object(test_swarming, 'OnSwarmingTaskError')
   def testOnSwarmingTaskStateChangedNoTaskData(self, mock_error, _):
