@@ -14,6 +14,7 @@ import (
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
+	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/auth"
@@ -68,7 +69,14 @@ func MiddlewareBase() router.MiddlewareChain {
 func MiddlewareForInternal() router.MiddlewareChain {
 	// TODO(vadimsh): Figure out how to assert that the handler is called by GAE
 	// itself or by PubSub. That's how internal routes are supposed to be called.
-	return MiddlewareBase()
+	return MiddlewareBase().Extend(auth.Authenticate(anonymousMethod{}))
+}
+
+// TODO(qyearsley): Extract this to an appropriate place in luci-go so it might be re-used.
+type anonymousMethod struct{}
+
+func (m anonymousMethod) Authenticate(ctx context.Context, r *http.Request) (*auth.User, error) {
+	return &auth.User{Identity: identity.AnonymousIdentity}, nil
 }
 
 // MiddlewareForUI returns a middleware chain intended for Web UI routes.
