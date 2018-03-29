@@ -2,12 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from gae_libs.testcase import TestCase
 from infra_api_clients.swarming.swarming_task_request import (
     SwarmingTaskInputsRef)
 from infra_api_clients.swarming.swarming_task_request import (
     SwarmingTaskProperties)
 from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
-from gae_libs.testcase import TestCase
 from libs.list_of_basestring import ListOfBasestring
 
 
@@ -15,7 +15,6 @@ class SwarmingTaskRequestTest(TestCase):
 
   def testGetSwarmingTaskRequestTemplate(self):
     expected_request = SwarmingTaskRequest(
-        authenticated=None,
         created_ts=None,
         expiration_secs='3600',
         name='',
@@ -23,7 +22,6 @@ class SwarmingTaskRequestTest(TestCase):
         priority='150',
         properties=SwarmingTaskProperties(
             caches=[],
-            cipd_input={},
             command=None,
             dimensions=[],
             env=None,
@@ -44,3 +42,80 @@ class SwarmingTaskRequestTest(TestCase):
 
     self.assertEqual(expected_request,
                      SwarmingTaskRequest.GetSwarmingTaskRequestTemplate())
+
+  def testFromSerializable(self):
+    data = {
+        'expiration_secs': '50',
+        'name': 'a swarming task',
+        'parent_task_id': 'parent task id',
+        'priority': '150',
+        'tags': ['a'],
+        'user': 'someone',
+        'some_unused_field': 'blabla',
+        'pubsub_topic': 'topic',
+        'pubsub_auth_token': 'token',
+        'pubsub_userdata': 'data',
+        'properties': {
+            'command': 'path/to/binary',
+            'unused_property': 'blabla',
+            'dimensions': [{
+                'key': 'cpu',
+                'value': 'x86-64',
+            },],
+            'env': [{
+                'key': 'name',
+                'value': '1',
+            },],
+            'execution_timeout_secs': 10,
+            'grace_period_secs': 5,
+            'extra_args': ['--arg=value'],
+            'idempotent': True,
+            'inputs_ref': {
+                'namespace': 'default-gzip',
+                'isolated': 'a-hash',
+                'random_field': 'blabla'
+            },
+            'io_timeout_secs': 10,
+        },
+    }
+
+    expected_request = SwarmingTaskRequest(
+        created_ts=None,
+        expiration_secs='50',
+        name='a swarming task',
+        parent_task_id='parent task id',
+        priority='150',
+        properties=SwarmingTaskProperties(
+            caches=None,
+            command='path/to/binary',
+            dimensions=[
+                {
+                    'key': 'cpu',
+                    'value': 'x86-64',
+                },
+            ],
+            env=[
+                {
+                    'key': 'name',
+                    'value': '1',
+                },
+            ],
+            env_prefixes=None,
+            execution_timeout_secs='10',
+            extra_args=ListOfBasestring.FromSerializable(['--arg=value']),
+            grace_period_secs='5',
+            io_timeout_secs='10',
+            idempotent=True,
+            inputs_ref=SwarmingTaskInputsRef(
+                isolated='a-hash',
+                isolatedserver=None,
+                namespace='default-gzip')),
+        pubsub_auth_token='token',
+        pubsub_topic='topic',
+        pubsub_userdata='data',
+        service_account=None,
+        tags=ListOfBasestring.FromSerializable(['a']),
+        user='someone')
+
+    self.assertEqual(expected_request,
+                     SwarmingTaskRequest.FromSerializable(data))
