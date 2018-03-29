@@ -340,7 +340,17 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 					owners[c.Owner.Email] = false
 					continue
 				}
-				authOK, err := auth.GetState(ctx).DB().IsMember(ctx, ident, gerritDetails.WhitelistedGroup)
+				state := auth.GetState(ctx)
+				if state == nil {
+					logging.Errorf(ctx, "Failed to check auth, no State in context")
+					continue
+				}
+				db := state.DB()
+				if db == nil {
+					logging.Errorf(ctx, "Failed to check auth, nil authdb in State")
+					continue
+				}
+				authOK, err := db.IsMember(ctx, ident, gerritDetails.WhitelistedGroup)
 				if err != nil {
 					logging.Errorf(ctx, "Failed to check auth for %s, err: %v", c.Owner.Email, err)
 				}
