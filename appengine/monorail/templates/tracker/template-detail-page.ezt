@@ -121,7 +121,7 @@
   [for fields]
     [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
     [# TODO(jojwang): monorail:3241, un-suppress showing approval types in templates]
-    [is fields.field_def.type_name "APPROVAL_TYPE"][else][if-any fields.field_def.approval_id][else]
+    [if-any fields.field_def.approval_id][else]
       <tr>
         <th>[fields.field_name]:</th>
         <td colspan="2">
@@ -134,7 +134,7 @@
           [end]
         </td>
       <tr>
-    [end][end]
+    [end]
   [end]
 
   <tr>
@@ -153,6 +153,15 @@
        [else]
          [initial_admins]
        [end]
+     </td>
+   </tr>
+
+   <tr>
+     <th>Launch Gates</th>
+     <td colspan="7">
+       <input type="checkbox" name="add_gates" id="cb_add_gates" [if-any allow_edit][else]disabled[end]>
+       <label for="cb_add_gates">Include Gates and Approval Tasks in issue</label>
+       [include "launch-gates-widget.ezt"]
      </td>
    </tr>
 
@@ -183,6 +192,14 @@ runOnLoad(function() {
        '[projectname]', 'issueOptions', CS_env.token, [project.cached_content_timestamp]);
     _onload();
 
+    let addGatesCheckbox = document.getElementById('cb_add_gates');
+    addGatesCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        $('launch-gates-table').classList.remove('hidden');
+      } else{
+        $('launch-gates-table').classList.add('hidden');
+      }
+    });
 
     var acobElements = document.getElementsByClassName("acob");
     for (var i = 0; i < acobElements.length; ++i) {

@@ -177,6 +177,10 @@ form {
     margin: 0;
 }
 
+.hidden {
+  display: none !important;
+}
+
 /* Project tab bar. */
 .gtb {
   background: #fff;
@@ -915,4 +919,20 @@ html>body .goog-inline-block {
     border: none !important;
     padding: 0 !important;
     margin: 0 !important;
+}
+
+/* Launch gates table. */
+
+#launch-gates-table {
+    border-collapse: collapse;
+}
+#launch-gates-table td, #launch-gates-table th {
+    border: 1px solid #ddd;
+    padding: 4px;
+}
+#launch-gates-table tr:nth-child(even){background-color: #f2f2f2;}
+
+#launch-gates-table th {
+    text-align: left;
+    background-color: #6ec5ff;
 }

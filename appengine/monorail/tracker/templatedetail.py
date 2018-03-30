@@ -22,6 +22,7 @@ from tracker import template_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from tracker import tracker_views
+from proto import tracker_pb2
 from services import user_svc
 
 
@@ -74,6 +75,7 @@ class TemplateDetail(servlet.Servlet):
       tracker_views.MakeFieldValueView(fd, config, [], [],
                                        fd_id_to_fvs[fd.field_id], {})
       for fd in config.field_defs if not fd.is_deleted]
+    initial_milestones = [tracker_pb2.Milestone()] * 6
 
     allow_edit = permissions.CanEditTemplate(
         mr.auth.effective_ids, mr.perms, mr.project, template)
@@ -93,7 +95,10 @@ class TemplateDetail(servlet.Servlet):
         template_view.owner_defaults_to_member,
         'initial_components': template_view.components,
         'initial_component_required': template_view.component_required,
-        'fields': field_views,
+        'fields': [view for view in field_views
+                   if view.field_def.type_name is not 'APPROVAL_TYPE'],
+        'initial_milestones': initial_milestones,
+        'approvals': [],
         'labels': template.labels,
         'initial_admins': template_view.admin_names,
         }

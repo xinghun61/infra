@@ -23,6 +23,7 @@ from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from tracker import tracker_views
 from services import user_svc
+from proto import tracker_pb2
 
 
 class TemplateCreate(servlet.Servlet):
@@ -57,6 +58,7 @@ class TemplateCreate(servlet.Servlet):
     field_views = [
       tracker_views.MakeFieldValueView(fd, config, [], [], [], {})
       for fd in config.field_defs if not fd.is_deleted]
+    initial_milestones = [tracker_pb2.Milestone()] * 6
     return {
         'admin_tab_mode': self._PROCESS_SUBTAB,
         'allow_edit': ezt.boolean(True),
@@ -72,7 +74,11 @@ class TemplateCreate(servlet.Servlet):
         'initial_components': '',
         'initial_component_required': ezt.boolean(False),
         'initial_admins': '',
-        'fields': field_views,
+        'fields': [view for view in field_views
+                   if view.field_def.type_name is not "APPROVAL_TYPE"],
+        'initial_milestones': initial_milestones,
+        'approvals': [view for view in field_views
+                   if view.field_def.type_name is "APPROVAL_TYPE"],
         }
 
   def ProcessFormData(self, mr, post_data):

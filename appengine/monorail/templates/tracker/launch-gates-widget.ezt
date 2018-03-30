@@ -1,0 +1,39 @@
+<table id="launch-gates-table" class="hidden">
+  <tr>
+    <th>Approval</th>
+    <th style="color:grey">omit</th>
+    <th><input name="phase_0" placeholder="Gate Name" size="7"></th>
+    <th><input name="phase_1" size="7"></th>
+    <th><input name="phase_2" size="7"></th>
+    <th><input name="phase_3" size="7"></th>
+    <th><input name="phase_4" size="7"></th>
+    <th><input name="phase_5" size="7"></th>
+  </tr>
+  [for approvals]
+    <tr>
+      <td>[approvals.field_name]</td>
+      <td><input name="approval_[approvals.field_id]" value="omit" type="radio" checked="checked"></td>
+      <td><input id="[approvals.field_id]_phase_0" name="approval_[approvals.field_id]" value="phase_0" type="radio"></td>
+      <td><input id="[approvals.field_id]_phase_1" name="approval_[approvals.field_id]" value="phase_1" type="radio"></td>
+      <td><input id="[approvals.field_id]_phase_2" name="approval_[approvals.field_id]" value="phase_2" type="radio"></td>
+      <td><input id="[approvals.field_id]_phase_3" name="approval_[approvals.field_id]" value="phase_3" type="radio"></td>
+      <td><input id="[approvals.field_id]_phase_4" name="approval_[approvals.field_id]" value="phase_4" type="radio"></td>
+      <td><input id="[approvals.field_id]_phase_5" name="approval_[approvals.field_id]" value="phase_5" type="radio"></td>
+    </tr>
+  [end]
+</table>
+
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  _onload();
+  let phaseNum = 0;
+  [for initial_milestones]
+    document.getElementsByName(`phase_${phaseNum++}`)[0].value = "[initial_milestones.name]";
+  [end]
+
+  [# TODO(jojwang): monorail:3576, for editing a milestone, pre-select appropriate approvals]
+
+});
+
+</script>
