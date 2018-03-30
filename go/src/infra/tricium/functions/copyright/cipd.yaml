@@ -1,0 +1,4 @@
+package: infra/tricium/function/copyright
+install_mode: symlink
+data:
+- file: copyright
