@@ -377,11 +377,12 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
                      culprit_action.RevertCulprit(pipeline_input,
                                                   'pipeline_id'))
 
+  # TODO(crbug.com/827692): Deflake this test.
   @mock.patch.object(
       gerrit, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
   @mock.patch.object(
       culprit_action, '_CanCreateRevertForCulprit', return_value=True)
-  def testRevertCulprit(self, *_):
+  def disabled_testRevertCulprit(self, *_):
     repo_name = 'chromium'
     revision = 'rev1'
     build_id = 'm/b/123'

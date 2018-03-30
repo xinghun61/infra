@@ -25,8 +25,9 @@ from waterfall.test import wf_testcase
 class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
+  # TODO(crbug.com/827691): Deflake this test.
   @mock.patch.object(test_try_job, 'IdentifyTestTryJobCulprits')
-  def testIdentifyCulpritForTestTryJobSuccess(self, mock_fn):
+  def disabled_testIdentifyCulpritForTestTryJobSuccess(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
