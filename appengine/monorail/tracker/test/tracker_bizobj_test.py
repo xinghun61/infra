@@ -171,24 +171,25 @@ class BizobjTest(unittest.TestCase):
     av_no_id = tracker_pb2.ApprovalValue()
     self.assertIsNone(tracker_bizobj.FindApprovalValueByID(24, [av_no_id]))
 
-  def testFindMilestoneByID_Normal(self):
-    canary_ms = tracker_pb2.Milestone(milestone_id=2, name='Canary')
-    stable_ms = tracker_pb2.Milestone(name='Stable')
+  def testFindPhaseByID_Normal(self):
+    canary_phase = tracker_pb2.Phase(phase_id=2, name='Canary')
+    stable_phase = tracker_pb2.Phase(name='Stable')
     self.assertEqual(
-        canary_ms, tracker_bizobj.FindMilestoneByID(2, [stable_ms, canary_ms]))
+        canary_phase,
+        tracker_bizobj.FindPhaseByID(2, [stable_phase, canary_phase]))
 
-  def testFindMilestoneByID_None(self):
-    stable_ms = tracker_pb2.Milestone(name='Stable')
-    self.assertIsNone(tracker_bizobj.FindMilestoneByID(42, [stable_ms]))
+  def testFindPhaseByID_None(self):
+    stable_phase = tracker_pb2.Phase(name='Stable')
+    self.assertIsNone(tracker_bizobj.FindPhaseByID(42, [stable_phase]))
 
-  def testFindMilestone_Normal(self):
-    canary_ms = tracker_pb2.Milestone(milestone_id=2)
-    stable_ms = tracker_pb2.Milestone(name='Stable')
-    self.assertEqual(stable_ms, tracker_bizobj.FindMilestone(
-        'Stable', [stable_ms, canary_ms]))
+  def testFindPhase_Normal(self):
+    canary_phase = tracker_pb2.Phase(phase_id=2)
+    stable_phase = tracker_pb2.Phase(name='Stable')
+    self.assertEqual(stable_phase, tracker_bizobj.FindPhase(
+        'Stable', [stable_phase, canary_phase]))
 
-  def testFindMilestone_None(self):
-    self.assertIsNone(tracker_bizobj.FindMilestone('ghost_ms', []))
+  def testFindPhase_None(self):
+    self.assertIsNone(tracker_bizobj.FindPhase('ghost_phase', []))
 
   def testFindIssueTemplate_Normal(self):
     config = tracker_pb2.ProjectIssueConfig()

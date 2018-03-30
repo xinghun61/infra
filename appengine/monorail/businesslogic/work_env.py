@@ -301,7 +301,7 @@ class WorkEnv(object):
   def CreateIssue(
       self, project_id, summary, status, owner_id, cc_ids, labels,
       field_values, component_ids, marked_description, blocked_on=None,
-      blocking=None, attachments=None, milestones=None):
+      blocking=None, attachments=None, phases=None):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -318,7 +318,7 @@ class WorkEnv(object):
       blocking: list of issue_ids that this issue blocks.
       attachments: [(filename, contents, mimetype),...] attachments uploaded at
           the time the comment was made.
-      milestones: list of Milestone PBs.
+      phases: list of Milestone PBs.
 
     Returns:
       The newly created Issue.
@@ -329,7 +329,7 @@ class WorkEnv(object):
           self.mr.cnxn, self.services, project_id, summary, status,
           owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
           marked_description, blocked_on=blocked_on, blocking=blocking,
-          attachments=attachments, milestones=milestones)
+          attachments=attachments, phases=phases)
       logging.info('created issue %r in project %r', new_local_id, project_id)
       self.services.project.UpdateRecentActivity(self.mr.cnxn, project_id)
       new_issue = self.services.issue.GetIssueByLocalID(

@@ -74,7 +74,7 @@ def MakeTestIssue(
     derived_owner_id=0, issue_id=None, reporter_id=None, opened_timestamp=None,
     closed_timestamp=None, modified_timestamp=None, is_spam=False,
     component_ids=None, project_name=None, field_values=None, cc_ids=None,
-    derived_cc_ids=None, assume_stale=True, milestones=None):
+    derived_cc_ids=None, assume_stale=True, phases=None):
   """Easily make an Issue for testing."""
   issue = tracker_pb2.Issue()
   issue.project_id = project_id
@@ -117,8 +117,8 @@ def MakeTestIssue(
     issue.component_ids = component_ids
   if field_values is not None:
     issue.field_values = field_values
-  if milestones is not None:
-    issue.milestones = milestones
+  if phases is not None:
+    issue.phases = phases
   return issue
 
 
@@ -1077,7 +1077,7 @@ class ConfigService(object):
       self, cnxn, project_id, name, content, summary, summary_must_be_edited,
       status, members_only, owner_defaults_to_member, component_required,
       owner_id=None, labels=None, component_ids=None, admin_ids=None,
-      field_values=None, milestones=None):
+      field_values=None, phases=None):
     config = self.GetProjectConfig(cnxn, project_id)
     template_id = self.next_template_id
     self.next_template_id += 1
@@ -1086,7 +1086,7 @@ class ConfigService(object):
     template = tracker_bizobj.MakeIssueTemplate(
         name, summary, status, owner_id, content, labels, field_values,
         admin_ids, component_ids, summary_must_be_edited,
-        owner_defaults_to_member, component_required, members_only, milestones)
+        owner_defaults_to_member, component_required, members_only, phases)
     config.templates.append(template)
     self.StoreConfig(cnxn, config)
     return template_id
@@ -1096,7 +1096,7 @@ class ConfigService(object):
       summary=None, summary_must_be_edited=None, status=None, members_only=None,
       owner_defaults_to_member=None, component_required=None, owner_id=None,
       labels=None, component_ids=None, admin_ids=None, field_values=None,
-      milestones=None):
+      phases=None):
     config = self.GetProjectConfig(cnxn, project_id)
     template = tracker_bizobj.FindIssueTemplateByID(template_id, config)
     if name is not None:
@@ -1125,8 +1125,8 @@ class ConfigService(object):
       template.admin_ids = admin_ids
     if field_values is not None:
       template.field_values = field_values
-    if milestones is not None:
-      template.milestones = milestones
+    if phases is not None:
+      template.phases = phases
 
     self.StoreConfig(cnxn, config)
 
@@ -1366,7 +1366,7 @@ class IssueService(object):
       summary, status, owner_id, cc_ids, labels, field_values,
       component_ids, reporter_id, marked_description, blocked_on=None,
       blocking=None, attachments=None, timestamp=None, index_now=True,
-      milestones=None):
+      phases=None):
     issue = tracker_pb2.Issue()
     issue.project_id = project_id
     issue.summary = summary
@@ -1388,8 +1388,8 @@ class IssueService(object):
     if blocking:
       issue.blocking_iids.extend(blocking)
 
-    if milestones:
-      issue.milestones=milestones
+    if phases:
+      issue.phases = phases
 
     issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
     issue.issue_id = project_id * 1000000 + issue.local_id
@@ -1402,8 +1402,8 @@ class IssueService(object):
       self, cnxn, issue_id, approval_id, status, setter_id, set_on,
       commit=True):
     issue = self.GetIssue(cnxn, issue_id)
-    for ms in issue.milestones:
-      for av in ms.approval_values:
+    for phase in issue.phases:
+      for av in phase.approval_values:
         if av.approval_id == approval_id:
           av.status = status
           av.setter_id = setter_id
@@ -1414,8 +1414,8 @@ class IssueService(object):
   def UpdateIssueApprovalApprovers(
       self, cnxn, issue_id, approval_id, approver_ids, commit=True):
     issue = self.GetIssue(cnxn, issue_id)
-    for ms in issue.milestones:
-      for av in ms.approval_values:
+    for phase in issue.phases:
+      for av in phase.approval_values:
         if av.approval_id == approval_id:
           av.approver_ids = approver_ids
           return

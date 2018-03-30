@@ -33,7 +33,7 @@ TEMPLATE2ADMIN_TABLE_NAME = 'Template2Admin'
 TEMPLATE2COMPONENT_TABLE_NAME = 'Template2Component'
 TEMPLATE2FIELDVALUE_TABLE_NAME = 'Template2FieldValue'
 PROJECTISSUECONFIG_TABLE_NAME = 'ProjectIssueConfig'
-TEMPLATE2MILESTONE_TABLE_NAME = 'Template2Milestone'
+TEMPLATE2PHASE_TABLE_NAME = 'Template2Phase'
 TEMPLATE2APPROVALVALUE_TABLE_NAME = 'Template2ApprovalValue'
 LABELDEF_TABLE_NAME = 'LabelDef'
 FIELDDEF_TABLE_NAME = 'FieldDef'
@@ -56,9 +56,9 @@ TEMPLATE2ADMIN_COLS = ['template_id', 'admin_id']
 TEMPLATE2FIELDVALUE_COLS = [
     'template_id', 'field_id', 'int_value', 'str_value', 'user_id',
     'date_value', 'url_value']
-TEMPLATE2MILESTONE_COLS = ['id', 'template_id', 'name', 'rank']
+TEMPLATE2PHASE_COLS = ['id', 'template_id', 'name', 'rank']
 TEMPLATE2APPROVALVALUE_COLS = [
-    'approval_id', 'template_id', 'milestone_id', 'status']
+    'approval_id', 'template_id', 'phase_id', 'status']
 PROJECTISSUECONFIG_COLS = [
     'project_id', 'statuses_offer_merge', 'exclusive_label_prefixes',
     'default_template_for_developers', 'default_template_for_users',
@@ -345,7 +345,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
   def _DeserializeIssueConfigs(
       self, config_rows, template_rows, template2label_rows,
       template2component_rows, template2admin_rows, template2fieldvalue_rows,
-      template2milestone_rows, template2approvalvalue_rows,
+      template2phase_rows, template2approvalvalue_rows,
       statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
       componentdef_rows, component2admin_rows, component2cc_rows,
       component2label_rows, approvaldef2approver_rows, approvaldef2survey_rows):
@@ -392,23 +392,23 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
       if template:
         template.field_values.append(fv)
 
-    # TODO(jojwang): monorail:3241, deserialize approvals w/out milestones
-    ms_to_av_dict = collections.defaultdict(list)
+    # TODO(jojwang): monorail:3241, deserialize approvals w/out phases
+    phase_to_av_dict = collections.defaultdict(list)
     for av_row in template2approvalvalue_rows:
-      (approval_id, _template_id, milestone_id, status) = av_row
+      (approval_id, _template_id, phase_id, status) = av_row
       approval_value = tracker_pb2.ApprovalValue(
           approval_id=approval_id,
           status=tracker_pb2.ApprovalStatus(status.upper()))
-      ms_to_av_dict[milestone_id].append(approval_value)
+      phase_to_av_dict[phase_id].append(approval_value)
 
-    for ms_row in template2milestone_rows:
-      (milestone_id, template_id, name, rank) = ms_row
-      ms = tracker_pb2.Milestone(
-          milestone_id=milestone_id, name=name, rank=rank)
-      ms.approval_values = ms_to_av_dict[milestone_id]
+    for phase_row in template2phase_rows:
+      (phase_id, template_id, name, rank) = phase_row
+      phase = tracker_pb2.Phase(
+          phase_id=phase_id, name=name, rank=rank)
+      phase.approval_values = phase_to_av_dict[phase_id]
       template = template_dict.get(template_id)
       if template:
-        template.milestones.append(ms)
+        template.phases.append(phase)
 
     for statusdef_row in statusdef_rows:
       (_, project_id, _rank, status,
@@ -485,8 +485,8 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     template2fv_rows = self.config_service.template2fieldvalue_tbl.Select(
         cnxn, cols=TEMPLATE2FIELDVALUE_COLS, template_id=template_ids)
     logging.info('t2fv is %r', template2fv_rows)
-    template2milestone_rows = self.config_service.template2milestone_tbl.Select(
-        cnxn, cols=TEMPLATE2MILESTONE_COLS, template_id=template_ids)
+    template2phase_rows = self.config_service.template2phase_tbl.Select(
+        cnxn, cols=TEMPLATE2PHASE_COLS, template_id=template_ids)
     template2av_rows = self.config_service.template2approvalvalue_tbl.Select(
         cnxn, cols=TEMPLATE2APPROVALVALUE_COLS, template_id=template_ids)
 
@@ -526,7 +526,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     retrieved_dict = self._DeserializeIssueConfigs(
         config_rows, template_rows, template2label_rows,
         template2component_rows, template2admin_rows,
-        template2fv_rows, template2milestone_rows, template2av_rows,
+        template2fv_rows, template2phase_rows, template2av_rows,
         statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
         componentdef_rows, component2admin_rows, component2cc_rows,
         component2label_rows, approver_rows, survey_rows)
@@ -562,8 +562,8 @@ class ConfigService(object):
     self.template2admin_tbl = sql.SQLTableManager(TEMPLATE2ADMIN_TABLE_NAME)
     self.template2fieldvalue_tbl = sql.SQLTableManager(
         TEMPLATE2FIELDVALUE_TABLE_NAME)
-    self.template2milestone_tbl = sql.SQLTableManager(
-        TEMPLATE2MILESTONE_TABLE_NAME)
+    self.template2phase_tbl = sql.SQLTableManager(
+        TEMPLATE2PHASE_TABLE_NAME)
     self.template2approvalvalue_tbl = sql.SQLTableManager(
         TEMPLATE2APPROVALVALUE_TABLE_NAME)
     self.projectissueconfig_tbl = sql.SQLTableManager(
@@ -1546,7 +1546,7 @@ class ConfigService(object):
       self, cnxn, project_id, name, content, summary, summary_must_be_edited,
       status, members_only, owner_defaults_to_member, component_required,
       owner_id=None, labels=None, component_ids=None, admin_ids=None,
-      field_values=None, milestones=None):
+      field_values=None, phases=None):
     """Create a new issue template definition with the given info.
 
     Args:
@@ -1567,7 +1567,7 @@ class ConfigService(object):
       component_ids: list of component_ids, if any.
       admin_ids: list of admin_ids, if any.
       field_values: list of FieldValue PBs, if any.
-      milestones: list of Milestone PBs, if any.
+      phases: list of Phase PBs, if any.
 
     Returns:
       Integer template_id of the new issue template definition.
@@ -1599,15 +1599,15 @@ class ConfigService(object):
                fv.date_value, fv.url_value) for fv in field_values],
           commit=False)
 
-    if milestones:
-      for ms in milestones:
-        milestone_id = self.template2milestone_tbl.InsertRow(
-            cnxn, template_id=template_id, name=ms.name,
-            rank=ms.rank, commit=False)
+    if phases:
+      for phase in phases:
+        phase_id = self.template2phase_tbl.InsertRow(
+            cnxn, template_id=template_id, name=phase.name,
+            rank=phase.rank, commit=False)
         self.template2approvalvalue_tbl.InsertRows(
             cnxn, TEMPLATE2APPROVALVALUE_COLS,
-            [(av.approval_id, template_id, milestone_id, av.status.name.lower())
-             for av in ms.approval_values],
+            [(av.approval_id, template_id, phase_id, av.status.name.lower())
+             for av in phase.approval_values],
             commit=False)
 
     cnxn.Commit()
@@ -1620,7 +1620,7 @@ class ConfigService(object):
       summary=None, summary_must_be_edited=None, status=None, members_only=None,
       owner_defaults_to_member=None, component_required=None, owner_id=None,
       labels=None, component_ids=None, admin_ids=None, field_values=None,
-      milestones=None):
+      phases=None):
     """Update an existing issue template definition with the given info.
 
     Args:
@@ -1643,7 +1643,7 @@ class ConfigService(object):
       component_ids: updated list of component_ids, if any.
       admin_ids: updated list of admin_ids, if any.
       field_values: updated list of FieldValue PBs, if any.
-      milestones: updated list of Milestone PBs, if any.
+      phases: updated list of Phase PBs, if any.
     """
     new_values = {}
     if name is not None:
@@ -1695,19 +1695,19 @@ class ConfigService(object):
               (template_id, fv.field_id, fv.int_value, fv.str_value, fv.user_id,
                fv.date_value, fv.url_value) for fv in field_values],
           commit=False)
-    if milestones is not None:
+    if phases is not None:
       self.template2approvalvalue_tbl.Delete(
           cnxn, template_id=template_id, commit=False)
-      self.template2milestone_tbl.Delete(
+      self.template2phase_tbl.Delete(
           cnxn, template_id=template_id, commit=False)
-      for ms in milestones:
-        milestone_id = self.template2milestone_tbl.InsertRow(
-            cnxn, template_id=template_id, name=ms.name, rank=ms.rank,
+      for phase in phases:
+        phase_id = self.template2phase_tbl.InsertRow(
+            cnxn, template_id=template_id, name=phase.name, rank=phase.rank,
             commit=False)
         self.template2approvalvalue_tbl.InsertRows(
             cnxn, TEMPLATE2APPROVALVALUE_COLS,
-            [(av.approval_id, template_id, milestone_id, av.status.name.lower())
-                for av in ms.approval_values], commit=False)
+            [(av.approval_id, template_id, phase_id, av.status.name.lower())
+             for av in phase.approval_values], commit=False)
 
     cnxn.Commit()
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
@@ -1725,7 +1725,7 @@ class ConfigService(object):
         cnxn, template_id=template_id, commit=False)
     self.template2approvalvalue_tbl.Delete(
         cnxn, template_id=template_id, commit=False)
-    self.template2milestone_tbl.Delete(
+    self.template2phase_tbl.Delete(
           cnxn, template_id=template_id, commit=False)
     self.template_tbl.Delete(cnxn, id=template_id, commit=False)
 

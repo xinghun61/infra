@@ -302,10 +302,10 @@ class WorkEnvTest(unittest.TestCase):
     """We can update an issue's ApprovalValue status."""
     av_21 = tracker_pb2.ApprovalValue(approval_id=21)
     av_24 = tracker_pb2.ApprovalValue(approval_id=24)
-    milestones = [tracker_pb2.Milestone(
-        milestone_id=1, rank=1, approval_values=[av_21, av_24])]
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Avialable', 111L,
-                               issue_id=78901, milestones=milestones)
+    phases = [tracker_pb2.Phase(
+        phase_id=1, rank=1, approval_values=[av_21, av_24])]
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
+                               issue_id=78901, phases=phases)
     self.services.issue.TestAddIssue(issue)
     new_av_24 = tracker_pb2.ApprovalValue(
         approval_id=24, status=tracker_pb2.ApprovalStatus.APPROVED,
@@ -315,24 +315,24 @@ class WorkEnvTest(unittest.TestCase):
         new_av_24.set_on)
 
     issue = self.services.issue.GetIssue(self.cnxn, 78901)
-    ms = issue.milestones[0]
-    updated_av = tracker_bizobj.FindApprovalValueByID(24, ms.approval_values)
+    phase = issue.phases[0]
+    updated_av = tracker_bizobj.FindApprovalValueByID(24, phase.approval_values)
     self.assertEqual(updated_av, new_av_24)
 
   def testUpdateIssueApprovalApprovers(self):
     """We can update an issue's approval approvers."""
     av_23 = tracker_pb2.ApprovalValue(approval_id=23, approver_ids=[555])
-    milestones = [tracker_pb2.Milestone(
-        milestone_id=1, rank=1, approval_values=[av_23])]
+    phases = [tracker_pb2.Phase(
+        phase_id=1, rank=1, approval_values=[av_23])]
     issue = fake.MakeTestIssue(789, 1, 'summary', 'Avialable', 111L,
-                               issue_id=78901, milestones=milestones)
+                               issue_id=78901, phases=phases)
     self.services.issue.TestAddIssue(issue)
 
     self.work_env.UpdateIssueApprovalApprovers(78901, 23, [111, 222, 444])
 
     issue = self.services.issue.GetIssue(self.cnxn, 78901)
-    ms = issue.milestones[0]
-    updated_av = tracker_bizobj.FindApprovalValueByID(23, ms.approval_values)
+    phase = issue.phases[0]
+    updated_av = tracker_bizobj.FindApprovalValueByID(23, phase.approval_values)
     self.assertItemsEqual([111, 222, 444], updated_av.approver_ids)
 
   # FUTURE: testUpdateIssue()

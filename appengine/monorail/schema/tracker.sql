@@ -275,7 +275,19 @@ CREATE TABLE Issue2Notify (
 ) ENGINE=INNODB;
 
 
+-- TODO(jojwang): monorail:3576 , DROP this table when safe.
 CREATE TABLE Issue2Milestone (
+  id INT NOT NULL AUTO_INCREMENT,
+  issue_id INT NOT NULL,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id, issue_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Issue2Phase (
   id INT NOT NULL AUTO_INCREMENT,
   issue_id INT NOT NULL,
   name VARCHAR(255) BINARY NOT NULL,
@@ -289,16 +301,16 @@ CREATE TABLE Issue2Milestone (
 CREATE TABLE Issue2ApprovalValue (
   issue_id INT NOT NULL,
   approval_id INT NOT NULL,
-  milestone_id INT NOT NULL,
+  phase_id INT NOT NULL,
   status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
   setter_id INT UNSIGNED,
   set_on INT,
 
-  PRIMARY KEY (issue_id, approval_id, milestone_id),
+  PRIMARY KEY (issue_id, approval_id, phase_id),
   FOREIGN KEY (setter_id) REFERENCES User(user_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
-  FOREIGN KEY (milestone_id) REFERENCES Issue2Milestone(id)
+  FOREIGN KEY (phase_id) REFERENCES Issue2Phase(id)
 ) ENGINE=INNODB;
 
 
@@ -539,7 +551,19 @@ CREATE TABLE Template2Component (
 ) ENGINE=INNODB;
 
 
+-- TODO(jojwang): monorail:3576, DROP this table when safe.
 CREATE TABLE Template2Milestone (
+  id INT NOT NULL AUTO_INCREMENT,
+  template_id INT NOT NULL,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id, template_id),
+  FOREIGN KEY (template_id) REFERENCES Template(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Template2Phase (
   id INT NOT NULL AUTO_INCREMENT,
   template_id INT NOT NULL,
   name VARCHAR(255) BINARY NOT NULL,
@@ -553,14 +577,14 @@ CREATE TABLE Template2Milestone (
 CREATE TABLE Template2ApprovalValue (
   approval_id INT NOT NULL,
   template_id INT NOT NULL,
-  milestone_id INT NOT NULL,
+  phase_id INT NOT NULL,
   status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
 
-  PRIMARY KEY (approval_id, template_id, milestone_id),
+  PRIMARY KEY (approval_id, template_id, phase_id),
 
   FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
   FOREIGN KEY (template_id) REFERENCES Template(id),
-  FOREIGN KEY (milestone_id) REFERENCES Template2Milestone(id)
+  FOREIGN KEY (phase_id) REFERENCES Template2Phase(id)
 ) ENGINE=INNODB;
 
 

@@ -48,6 +48,15 @@ class ApprovalValue(messages.Message):
   subfield_values = messages.MessageField(FieldValue, 6, repeated=True)
 
 
+class Phase(messages.Message):
+  """Holds a single launch review phase."""
+  phase_id = messages.IntegerField(1)
+  name = messages.StringField(2)
+  approval_values = messages.MessageField(ApprovalValue, 3, repeated=True)
+  rank = messages.IntegerField(4)
+
+
+# TODO(jojwang): monorail:3576, delete this class when safe.
 class Milestone(messages.Message):
   """Holds a single launch review milestone. (Not a project milestone)"""
   milestone_id = messages.IntegerField(1)
@@ -76,7 +85,7 @@ class Issue(messages.Message):
   Summary, Status, Owner, CC, reporter, and opened_timestamp are hard
   fields that are always there.  All other metadata is stored as
   labels or custom fields.
-  Next available tag: 59.
+  Next available tag: 60.
   """
   # Globally unique issue ID.
   issue_id = messages.IntegerField(42)
@@ -167,7 +176,9 @@ class Issue(messages.Message):
   # loaded from the DB in the same request handler (not via the cache).
   assume_stale = messages.BooleanField(57, default=True)
 
+  # TODO(jojwang): monorail:3576, delete milestones when safe.
   milestones = messages.MessageField(Milestone, 58, repeated=True)
+  phases = messages.MessageField(Phase, 59, repeated=True)
 
 
 class FieldID(messages.Enum):
@@ -441,7 +452,9 @@ class TemplateDef(messages.Message):
   # Components.
   component_ids = messages.IntegerField(43, repeated=True)
   component_required = messages.BooleanField(44, default=False)
+  # TODO(jojwang): monorail:3576, delete milestones when safe.
   milestones = messages.MessageField(Milestone, 45, repeated=True)
+  phases = messages.MessageField(Phase, 46, repeated=True)
 
 
 class ProjectIssueConfig(messages.Message):

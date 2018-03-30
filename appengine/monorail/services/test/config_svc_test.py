@@ -29,7 +29,7 @@ def MakeConfigService(cache_manager, my_mox):
   for table_var in [
       'template_tbl', 'template2label_tbl', 'template2admin_tbl',
       'template2component_tbl', 'template2fieldvalue_tbl',
-      'template2milestone_tbl', 'template2approvalvalue_tbl',
+      'template2phase_tbl', 'template2approvalvalue_tbl',
       'projectissueconfig_tbl', 'statusdef_tbl', 'labeldef_tbl', 'fielddef_tbl',
       'fielddef2admin_tbl', 'componentdef_tbl', 'component2admin_tbl',
       'component2cc_tbl', 'component2label_tbl', 'approvaldef2approver_tbl',
@@ -187,7 +187,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.template2component_rows = []
     self.template2admin_rows = []
     self.template2fieldvalue_rows = []
-    self.template2milestone_rows = [
+    self.template2phase_rows = [
         (1, 1, 'Canary', 1),
         (2, 1, 'Stable', 11)
     ]
@@ -221,7 +221,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     config_dict = self.config_2lc._DeserializeIssueConfigs(
         self.config_rows, self.template_rows, self.template2label_rows,
         self.template2component_rows, self.template2admin_rows,
-        self.template2fieldvalue_rows, self.template2milestone_rows,
+        self.template2fieldvalue_rows, self.template2phase_rows,
         self.template2av_rows, self.statusdef_rows, self.labeldef_rows,
         self.fielddef_rows, self.fielddef2admin_rows, self.componentdef_rows,
         self.component2admin_rows, self.component2cc_rows,
@@ -240,19 +240,19 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual(config.approval_defs[0].survey, 'Q1\nQ2\nQ3')
     self.assertEqual(len(self.template_rows), len(config.templates))
     launch_template = tracker_bizobj.FindIssueTemplate('firstName', config)
-    self.assertEqual(len(self.template2milestone_rows),
-                     len(launch_template.milestones))
-    canary_ms = tracker_bizobj.FindMilestone(
-        'Canary', launch_template.milestones)
+    self.assertEqual(len(self.template2phase_rows),
+                     len(launch_template.phases))
+    canary_phase = tracker_bizobj.FindPhase(
+        'Canary', launch_template.phases)
     av_21 = tracker_bizobj.FindApprovalValueByID(
-        21, canary_ms.approval_values)
+        21, canary_phase.approval_values)
     self.assertEqual(av_21.status, tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
     av_22 = tracker_bizobj.FindApprovalValueByID(
-        22, canary_ms.approval_values)
+        22, canary_phase.approval_values)
     self.assertEqual(av_22.status, tracker_pb2.ApprovalStatus.NOT_SET)
-    stable_ms = tracker_bizobj.FindMilestone(
-        'Stable', launch_template.milestones)
-    self.assertEqual(0, len(stable_ms.approval_values))
+    stable_phase = tracker_bizobj.FindPhase(
+        'Stable', launch_template.phases)
+    self.assertEqual(0, len(stable_phase.approval_values))
 
   def SetUpFetchConfigs(self, project_ids):
     self.config_service.projectissueconfig_tbl.Select(
@@ -275,9 +275,9 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.config_service.template2fieldvalue_tbl.Select(
         self.cnxn, cols=config_svc.TEMPLATE2FIELDVALUE_COLS,
         template_id=template_ids).AndReturn(self.template2fieldvalue_rows)
-    self.config_service.template2milestone_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2MILESTONE_COLS,
-        template_id=template_ids).AndReturn(self.template2milestone_rows)
+    self.config_service.template2phase_tbl.Select(
+        self.cnxn, cols=config_svc.TEMPLATE2PHASE_COLS,
+        template_id=template_ids).AndReturn(self.template2phase_rows)
     self.config_service.template2approvalvalue_tbl.Select(
         self.cnxn, cols=config_svc.TEMPLATE2APPROVALVALUE_COLS,
         template_id=template_ids).AndReturn(self.template2av_rows)
@@ -685,8 +685,8 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.template2fieldvalue_tbl.Select(
         self.cnxn, cols=config_svc.TEMPLATE2FIELDVALUE_COLS,
         template_id=[]).AndReturn([])
-    self.config_service.template2milestone_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2MILESTONE_COLS,
+    self.config_service.template2phase_tbl.Select(
+        self.cnxn, cols=config_svc.TEMPLATE2PHASE_COLS,
         template_id=[]).AndReturn([])
     self.config_service.template2approvalvalue_tbl.Select(
         self.cnxn, cols=config_svc.TEMPLATE2APPROVALVALUE_COLS,
@@ -1166,7 +1166,7 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.template2fieldvalue_tbl.InsertRows(
         self.cnxn, config_svc.TEMPLATE2FIELDVALUE_COLS, [
             (1, 1, None, 'somestring', None, None, None)], commit=False)
-    self.config_service.template2milestone_tbl.InsertRow(
+    self.config_service.template2phase_tbl.InsertRow(
         self.cnxn, template_id=1, name='Canary', rank=11,
         commit=False).AndReturn(1)
     self.config_service.template2approvalvalue_tbl.InsertRows(
@@ -1182,14 +1182,14 @@ class ConfigServiceTest(unittest.TestCase):
         approval_id=23, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
     av_24 = tracker_pb2.ApprovalValue(approval_id=24)
     approval_values = [av_23, av_24]
-    milestones = [tracker_pb2.Milestone(
+    phases = [tracker_pb2.Phase(
         name='Canary', approval_values=approval_values, rank=11)]
     self.SetUpCreateIssueTemplateDef()
     self.mox.ReplayAll()
     self.config_service.CreateIssueTemplateDef(
         self.cnxn, 789, 'template', 'content', 'summary', True, 'Available',
         True, True, True, owner_id=111L, labels=['label'], component_ids=[3],
-        admin_ids=[222L], field_values=[fv], milestones=milestones)
+        admin_ids=[222L], field_values=[fv], phases=phases)
     self.mox.VerifyAll()
 
   def SetUpUpdateIssueTemplateDef(self):
@@ -1207,9 +1207,9 @@ class ConfigServiceTest(unittest.TestCase):
         self.cnxn, config_svc.TEMPLATE2ADMIN_COLS, [(1, 111L)], commit=False)
     self.config_service.template2approvalvalue_tbl.Delete(
         self.cnxn, template_id=1, commit=False)
-    self.config_service.template2milestone_tbl.Delete(
+    self.config_service.template2phase_tbl.Delete(
         self.cnxn, template_id=1, commit=False)
-    self.config_service.template2milestone_tbl.InsertRow(
+    self.config_service.template2phase_tbl.InsertRow(
         self.cnxn, template_id=1, name='Canary', rank=11,
         commit=False).AndReturn(1)
     self.config_service.template2approvalvalue_tbl.InsertRows(
@@ -1222,14 +1222,14 @@ class ConfigServiceTest(unittest.TestCase):
     av_20 = tracker_pb2.ApprovalValue(approval_id=20)
     av_21 = tracker_pb2.ApprovalValue(approval_id=21)
     approval_values = [av_20, av_21]
-    milestones = [tracker_pb2.Milestone(
+    phases = [tracker_pb2.Phase(
         name='Canary', approval_values=approval_values, rank=11)]
     self.SetUpUpdateIssueTemplateDef()
     self.mox.ReplayAll()
     self.config_service.UpdateIssueTemplateDef(
         self.cnxn, 789, 1, content='content', summary='summary',
         component_required=True, labels=[], admin_ids=[111L],
-        milestones=milestones)
+        phases=phases)
     self.mox.VerifyAll()
 
   def SetUpDeleteIssueTemplateDef(self):
@@ -1244,7 +1244,7 @@ class ConfigServiceTest(unittest.TestCase):
         self.cnxn, template_id=template_id, commit=False)
     self.config_service.template2approvalvalue_tbl.Delete(
         self.cnxn, template_id=template_id, commit=False)
-    self.config_service.template2milestone_tbl.Delete(
+    self.config_service.template2phase_tbl.Delete(
         self.cnxn, template_id=template_id, commit=False)
     self.config_service.template_tbl.Delete(
         self.cnxn, id=template_id, commit=False)

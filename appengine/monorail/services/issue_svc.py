@@ -61,7 +61,7 @@ ISSUESNAPSHOT_TABLE_NAME = 'IssueSnapshot'
 ISSUESNAPSHOT2CC_TABLE_NAME = 'IssueSnapshot2Cc'
 ISSUESNAPSHOT2COMPONENT_TABLE_NAME = 'IssueSnapshot2Component'
 ISSUESNAPSHOT2LABEL_TABLE_NAME = 'IssueSnapshot2Label'
-ISSUE2MILESTONE_TABLE_NAME = 'Issue2Milestone'
+ISSUE2PHASE_TABLE_NAME = 'Issue2Phase'
 ISSUE2APPROVALVALUE_TABLE_NAME = 'Issue2ApprovalValue'
 ISSUEAPPROVAL2APPROVER_TABLE_NAME = 'IssueApproval2Approver'
 ISSUEAPPROVAL2COMMENT_TABLE_NAME = 'IssueApproval2Comment'
@@ -109,8 +109,8 @@ ISSUESNAPSHOT_COLS = ['id', 'issue_id', 'shard', 'project_id', 'local_id',
 ISSUESNAPSHOT2CC_COLS = ['issuesnapshot_id', 'cc_id']
 ISSUESNAPSHOT2COMPONENT_COLS = ['issuesnapshot_id', 'component_id']
 ISSUESNAPSHOT2LABEL_COLS = ['issuesnapshot_id', 'label_id']
-ISSUE2MILESTONE_COLS = ['id', 'issue_id', 'name', 'rank']
-ISSUE2APPROVALVALUE_COLS = ['approval_id', 'issue_id', 'milestone_id',
+ISSUE2PHASE_COLS = ['id', 'issue_id', 'name', 'rank']
+ISSUE2APPROVALVALUE_COLS = ['approval_id', 'issue_id', 'phase_id',
                             'status', 'setter_id', 'set_on']
 ISSUEAPPROVAL2APPROVER_COLS = ['approval_id', 'approver_id', 'issue_id']
 ISSUEAPPROVAL2COMMENT_COLS = ['approval_id', 'comment_id']
@@ -227,23 +227,23 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
 
   def _UnpackApprovalValue(self, av_row):
     """Contruct an ApprovalValue PB from a DB row."""
-    (approval_id, issue_id, milestone_id, status, setter_id, set_on) = av_row
+    (approval_id, issue_id, phase_id, status, setter_id, set_on) = av_row
     av = tracker_pb2.ApprovalValue(
         approval_id=approval_id, setter_id=setter_id, set_on=set_on,
         status=tracker_pb2.ApprovalStatus(status.upper()))
-    return av, issue_id, milestone_id
+    return av, issue_id, phase_id
 
-  def _UnpackMilestone(self, ms_row):
-    """Construct a Milestone PB from a DB row."""
-    (ms_id, issue_id, name, rank) = ms_row
-    ms = tracker_pb2.Milestone(
-        milestone_id=ms_id, name=name, rank=rank)
-    return ms, issue_id
+  def _UnpackPhase(self, phase_row):
+    """Construct a Phase PB from a DB row."""
+    (phase_id, issue_id, name, rank) = phase_row
+    phase = tracker_pb2.Phase(
+        phase_id=phase_id, name=name, rank=rank)
+    return phase, issue_id
 
   def _DeserializeIssues(
       self, cnxn, issue_rows, summary_rows, label_rows, component_rows,
       cc_rows, notify_rows, fieldvalue_rows, relation_rows,
-      dangling_relation_rows, milestone_rows, approvalvalue_rows,
+      dangling_relation_rows, phase_rows, approvalvalue_rows,
       av_approver_rows):
     """Convert the given DB rows into a dict of Issue PBs."""
     results_dict = {}
@@ -293,16 +293,16 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       approval_id, approver_id, issue_id = approver_row
       approvers_dict[approval_id, issue_id].append(approver_id)
 
-    milestone_avs_dict = collections.defaultdict(list)
+    phase_avs_dict = collections.defaultdict(list)
     for av_row in approvalvalue_rows:
-      av, issue_id, ms_id = self._UnpackApprovalValue(av_row)
+      av, issue_id, phase_id = self._UnpackApprovalValue(av_row)
       av.approver_ids = approvers_dict[av.approval_id, issue_id]
-      milestone_avs_dict[ms_id, issue_id].append(av)
+      phase_avs_dict[phase_id, issue_id].append(av)
 
-    for ms_row in milestone_rows:
-      ms, issue_id = self._UnpackMilestone(ms_row)
-      ms.approval_values = milestone_avs_dict[ms.milestone_id, issue_id]
-      results_dict[issue_id].milestones.append(ms)
+    for phase_row in phase_rows:
+      phase, issue_id = self._UnpackPhase(phase_row)
+      phase.approval_values = phase_avs_dict[phase.phase_id, issue_id]
+      results_dict[issue_id].phases.append(phase)
 
     for issue_id, dst_issue_id, kind, rank in relation_rows:
       src_issue = results_dict.get(issue_id)
@@ -359,8 +359,8 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
     fieldvalue_rows = self.issue_service.issue2fieldvalue_tbl.Select(
         cnxn, cols=ISSUE2FIELDVALUE_COLS, shard_id=shard_id,
         issue_id=issue_ids)
-    milestone_rows = self.issue_service.issue2milestone_tbl.Select(
-        cnxn, cols=ISSUE2MILESTONE_COLS, issue_id=issue_ids)
+    phase_rows = self.issue_service.issue2phase_tbl.Select(
+        cnxn, cols=ISSUE2PHASE_COLS, issue_id=issue_ids)
     approvalvalue_rows = self.issue_service.issue2approvalvalue_tbl.Select(
         cnxn, cols=ISSUE2APPROVALVALUE_COLS, issue_id=issue_ids)
     av_approver_rows = self.issue_service.issueapproval2approver_tbl.Select(
@@ -390,7 +390,7 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
     issue_dict = self._DeserializeIssues(
         cnxn, issue_rows, summary_rows, label_rows, component_rows, cc_rows,
         notify_rows, fieldvalue_rows, relation_rows, dangling_relation_rows,
-        milestone_rows, approvalvalue_rows, av_approver_rows)
+        phase_rows, approvalvalue_rows, av_approver_rows)
     logging.info('IssueTwoLevelCache.FetchItems returning: %r', issue_dict)
     return issue_dict
 
@@ -431,7 +431,7 @@ class IssueService(object):
         ISSUESNAPSHOT2COMPONENT_TABLE_NAME)
     self.issuesnapshot2label_tbl = sql.SQLTableManager(
         ISSUESNAPSHOT2LABEL_TABLE_NAME)
-    self.issue2milestone_tbl = sql.SQLTableManager(ISSUE2MILESTONE_TABLE_NAME)
+    self.issue2phase_tbl = sql.SQLTableManager(ISSUE2PHASE_TABLE_NAME)
     self.issue2approvalvalue_tbl = sql.SQLTableManager(
         ISSUE2APPROVALVALUE_TABLE_NAME)
     self.issueapproval2approver_tbl = sql.SQLTableManager(
@@ -519,7 +519,7 @@ class IssueService(object):
       self, cnxn, services, project_id, summary, status,
       owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
       marked_description, blocked_on=None, blocking=None, attachments=None,
-      timestamp=None, index_now=True, milestones=None):
+      timestamp=None, index_now=True, phases=None):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -541,6 +541,7 @@ class IssueService(object):
           the time the comment was made.
       timestamp: time that the issue was entered, defaults to now.
       index_now: True if the issue should be updated in the full text index.
+      phases: list of Phase PBs, if any.
 
     Returns:
       The integer local ID of the new issue.
@@ -573,8 +574,8 @@ class IssueService(object):
       issue.blocking_iids = blocking
     if attachments:
       issue.attachment_count = len(attachments)
-    if milestones:
-      issue.milestones = milestones
+    if phases:
+      issue.phases = phases
     timestamp = timestamp or int(time.time())
     issue.opened_timestamp = timestamp
     issue.modified_timestamp = timestamp
@@ -889,7 +890,7 @@ class IssueService(object):
     self._UpdateIssuesCc(cnxn, [issue], commit=False)
     self._UpdateIssuesNotify(cnxn, [issue], commit=False)
     self._UpdateIssuesRelation(cnxn, [issue], commit=False)
-    self._CreateIssueMilestones(cnxn, issue, commit=False)
+    self._CreateIssuePhases(cnxn, issue, commit=False)
     self.chart_service.StoreIssueSnapshots(cnxn, [issue], commit=False)
     cnxn.Commit()
     self._config_service.InvalidateMemcache([issue])
@@ -1160,17 +1161,17 @@ class IssueService(object):
       cnxn.Commit()
     self.issue_2lc.InvalidateKeys(cnxn, [issue_id])
 
-  def _CreateIssueMilestones(self, cnxn, issue, commit=True):
-    """Insert Issue2[Milestone] and [ApprovalValue] rows for the given issue."""
-    # NOTE: currently not supporting milestone editing.
-    # only editing approvalvalues within milestones
-    for ms in issue.milestones:
-      ms_id = self.issue2milestone_tbl.InsertRow(
-          cnxn, issue_id=issue.issue_id, name=ms.name,
-          rank=ms.rank, commit=commit)
-      av_rows =  [(av.approval_id, issue.issue_id, ms_id,
+  def _CreateIssuePhases(self, cnxn, issue, commit=True):
+    """Insert Issue2[Phase] and [ApprovalValue] rows for the given issue."""
+    # NOTE: currently not supporting phase editing.
+    # only editing approvalvalues within phases.
+    for phase in issue.phases:
+      phase_id = self.issue2phase_tbl.InsertRow(
+          cnxn, issue_id=issue.issue_id, name=phase.name,
+          rank=phase.rank, commit=commit)
+      av_rows =  [(av.approval_id, issue.issue_id, phase_id,
                    av.status.name.lower(), av.setter_id, av.set_on)
-                  for av in ms.approval_values]
+                  for av in phase.approval_values]
       self.issue2approvalvalue_tbl.InsertRows(
           cnxn, ISSUE2APPROVALVALUE_COLS, av_rows, commit=commit)
 

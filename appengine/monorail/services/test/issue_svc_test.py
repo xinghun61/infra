@@ -45,7 +45,7 @@ def MakeIssueService(project_service, config_service, cache_manager,
       'issue2fieldvalue_tbl', 'issuerelation_tbl', 'danglingrelation_tbl',
       'issueformerlocations_tbl', 'comment_tbl', 'commentcontent_tbl',
       'issueupdate_tbl', 'attachment_tbl', 'reindexqueue_tbl',
-      'localidcounter_tbl', 'issue2milestone_tbl', 'issue2approvalvalue_tbl',
+      'localidcounter_tbl', 'issue2phase_tbl', 'issue2approvalvalue_tbl',
       'issueapproval2approver_tbl', 'issueapproval2comment_tbl']:
     setattr(issue_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
@@ -166,7 +166,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.dangling_relation_rows = [
         (78901, 'codesite', 5001, 'blocking'),
         (78901, 'codesite', 5002, 'blockedon')]
-    self.milestone_rows = [(1, 78901, 'Canary', 1), (2, 78901, 'Stable', 11)]
+    self.phase_rows = [(1, 78901, 'Canary', 1), (2, 78901, 'Stable', 11)]
     self.approvalvalue_rows = [(21, 78901, 1, 'needs_review', None, None),
                                (22, 78901, 1, 'not_set', None, None)]
     self.av_approver_rows = [
@@ -185,12 +185,12 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual(issue_id, 78901)
     self.assertEqual(ms_id, 1)
 
-  def testUnpackMilestone(self):
-    ms, issue_id = self.issue_2lc._UnpackMilestone(
-        self.milestone_rows[0])
-    self.assertEqual(ms.name, 'Canary')
-    self.assertEqual(ms.milestone_id, 1)
-    self.assertEqual(ms.rank, 1)
+  def testUnpackPhase(self):
+    phase, issue_id = self.issue_2lc._UnpackPhase(
+        self.phase_rows[0])
+    self.assertEqual(phase.name, 'Canary')
+    self.assertEqual(phase.phase_id, 1)
+    self.assertEqual(phase.rank, 1)
     self.assertEqual(issue_id, 78901)
 
   def testDeserializeIssues_Empty(self):
@@ -203,16 +203,17 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
         self.cnxn, self.issue_rows, self.summary_rows, self.label_rows,
         self.component_rows, self.cc_rows, self.notify_rows,
         self.fieldvalue_rows, self.relation_rows, self.dangling_relation_rows,
-        self.milestone_rows, self.approvalvalue_rows, self.av_approver_rows)
+        self.phase_rows, self.approvalvalue_rows, self.av_approver_rows)
     self.assertItemsEqual([78901], issue_dict.keys())
     issue = issue_dict[78901]
-    self.assertEqual(len(issue.milestones), 2)
-    canary_ms = tracker_bizobj.FindMilestoneByID(1, issue.milestones)
-    self.assertEqual(len(canary_ms.approval_values), 2)
-    av_22 = tracker_bizobj.FindApprovalValueByID(22, canary_ms.approval_values)
+    self.assertEqual(len(issue.phases), 2)
+    canary_phase = tracker_bizobj.FindPhaseByID(1, issue.phases)
+    self.assertEqual(len(canary_phase.approval_values), 2)
+    av_22 = tracker_bizobj.FindApprovalValueByID(
+        22, canary_phase.approval_values)
     self.assertItemsEqual(av_22.approver_ids, [111, 222, 333])
-    stable_ms = tracker_bizobj.FindMilestoneByID(2, issue.milestones)
-    self.assertEqual(len(stable_ms.approval_values), 0)
+    stable_phase = tracker_bizobj.FindPhaseByID(2, issue.phases)
+    self.assertEqual(len(stable_phase.approval_values), 0)
 
   def testDeserializeIssues_UnexpectedLabel(self):
     unexpected_label_rows = [
@@ -224,7 +225,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
       self.cnxn, self.issue_rows, self.summary_rows, unexpected_label_rows,
       self.component_rows, self.cc_rows, self.notify_rows,
       self.fieldvalue_rows, self.relation_rows, self.dangling_relation_rows,
-      self.milestone_rows, self.approvalvalue_rows, self.av_approver_rows)
+      self.phase_rows, self.approvalvalue_rows, self.av_approver_rows)
 
   def testDeserializeIssues_UnexpectedIssueRelation(self):
     unexpected_relation_rows = [
@@ -236,7 +237,7 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
       self.cnxn, self.issue_rows, self.summary_rows, self.label_rows,
       self.component_rows, self.cc_rows, self.notify_rows,
       self.fieldvalue_rows, unexpected_relation_rows,
-      self.dangling_relation_rows, self.milestone_rows, self.approvalvalue_rows,
+      self.dangling_relation_rows, self.phase_rows, self.approvalvalue_rows,
       self.av_approver_rows)
 
   def SetUpFetchItems(self, issue_ids):
@@ -262,9 +263,9 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.issue_service.issue2fieldvalue_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUE2FIELDVALUE_COLS, shard_id=shard_id,
         issue_id=issue_ids).AndReturn(self.fieldvalue_rows)
-    self.issue_service.issue2milestone_tbl.Select(
-        self.cnxn, cols=issue_svc.ISSUE2MILESTONE_COLS,
-        issue_id=issue_ids).AndReturn(self.milestone_rows)
+    self.issue_service.issue2phase_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUE2PHASE_COLS,
+        issue_id=issue_ids).AndReturn(self.phase_rows)
     self.issue_service.issue2approvalvalue_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUE2APPROVALVALUE_COLS,
         issue_id=issue_ids).AndReturn(self.approvalvalue_rows)
@@ -369,13 +370,13 @@ class IssueServiceTest(unittest.TestCase):
         approval_id=23, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
     av_24 = tracker_pb2.ApprovalValue(approval_id=24)
     approval_values = [av_23, av_24]
-    milestone = tracker_pb2.Milestone(
+    phase = tracker_pb2.Phase(
         name='Canary', approval_values=approval_values, rank=11)
-    ms_row = (78901, 'Canary', 11)
+    phase_row = (78901, 'Canary', 11)
     av_rows = [(23, 78901, 1, 'needs_review', None, None),
                (24, 78901, 1, 'not_set', None, None)]
     self.SetUpAllocateNextLocalID(789, None, None)
-    self.SetUpInsertIssue(ms_row=ms_row, av_rows=av_rows)
+    self.SetUpInsertIssue(phase_row=phase_row, av_rows=av_rows)
     self.SetUpInsertComment(7890101, is_description=True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), self.reporter, False).AndReturn(
@@ -388,7 +389,7 @@ class IssueServiceTest(unittest.TestCase):
     actual_local_id = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
         'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
-        index_now=False, timestamp=self.now, milestones=[milestone])
+        index_now=False, timestamp=self.now, phases=[phase])
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
 
@@ -584,7 +585,7 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(locations, [(781, 1), (782, 11)])
 
   def SetUpInsertIssue(
-      self, label_rows=None, ms_row=None, av_rows=None):
+      self, label_rows=None, phase_row=None, av_rows=None):
     row = (789, 1, 1, 111L, 111L,
            self.now, 0, self.now, self.now, self.now, self.now,
            None, 0,
@@ -603,7 +604,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesCc()
     self.SetUpUpdateIssuesNotify()
     self.SetUpUpdateIssuesRelation()
-    self.SetUpCreateIssueMilestones(ms_row=ms_row, av_rows=av_rows)
+    self.SetUpCreateIssuePhases(phase_row=phase_row, av_rows=av_rows)
     self.services.chart.StoreIssueSnapshots(self.cnxn, mox.IgnoreArg(),
         commit=False)
 
@@ -692,10 +693,10 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, issue_svc.DANGLINGRELATION_COLS, dangling_relation_rows,
         ignore=True, commit=False)
 
-  def SetUpCreateIssueMilestones(self, ms_row=None, av_rows=None):
-    if ms_row:
-      (issue_id, name, rank) = ms_row
-      self.services.issue.issue2milestone_tbl.InsertRow(
+  def SetUpCreateIssuePhases(self, phase_row=None, av_rows=None):
+    if phase_row:
+      (issue_id, name, rank) = phase_row
+      self.services.issue.issue2phase_tbl.InsertRow(
           self.cnxn, issue_id=issue_id, name=name,
           rank=rank, commit=False).AndReturn(1)
       av_rows=av_rows or []
