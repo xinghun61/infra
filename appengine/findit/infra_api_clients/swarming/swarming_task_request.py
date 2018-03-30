@@ -85,10 +85,10 @@ class SwarmingTaskRequest(StructuredObject):
             caches=[],
             command=None,
             dimensions=[],
-            env=None,
+            env=[],
             env_prefixes=[],
             execution_timeout_secs='3600',
-            extra_args=None,
+            extra_args=ListOfBasestring(),
             grace_period_secs='30',
             io_timeout_secs='1200',
             idempotent=True,
@@ -128,13 +128,13 @@ class SwarmingTaskRequest(StructuredObject):
         properties=SwarmingTaskProperties(
             caches=properties.get('caches'),
             command=properties.get('command'),
-            dimensions=properties.get('dimensions'),
-            env=properties.get('env'),
-            env_prefixes=properties.get('env_prefixes'),
+            dimensions=properties.get('dimensions') or [],
+            env=properties.get('env') or [],
+            env_prefixes=properties.get('env_prefixes') or [],
             execution_timeout_secs=str(
                 properties.get('execution_timeout_secs')),
             extra_args=ListOfBasestring.FromSerializable(
-                properties.get('extra_args')),
+                properties.get('extra_args') or []),
             grace_period_secs=str(properties.get('grace_period_secs')),
             io_timeout_secs=str(properties.get('io_timeout_secs')),
             idempotent=properties.get('idempotent'),
@@ -146,5 +146,5 @@ class SwarmingTaskRequest(StructuredObject):
         pubsub_topic=data.get('pubsub_topic'),
         pubsub_userdata=data.get('pubsub_userdata'),
         service_account=data.get('service_account'),
-        tags=ListOfBasestring.FromSerializable(data.get('tags')),
+        tags=ListOfBasestring.FromSerializable(data.get('tags') or []),
         user=data.get('user'))
