@@ -14,10 +14,11 @@ class SnapshotCounts(jsonfeed.InternalTask):
   """Handles IssueSnapshot queries.
 
   URL params:
-    bucketby (str): One of (label, component). Defines the second dimension
-      for bucketing IssueSnapshot counts. Defaults to 'label'.
     timestamp (int): The point in time at which snapshots will be counted.
-    label_prefix (str): Required if bucketby=label. Returns only labels
+    group_by (str, optional): One of (label, component). Defines the second
+      dimension for bucketing IssueSnapshot counts. Defaults to None, returning
+      one key 'total'.
+    label_prefix (str): Required if group_by=label. Returns only labels
       with this prefix, e.g. 'Pri'.
 
   Output:
@@ -29,17 +30,17 @@ class SnapshotCounts(jsonfeed.InternalTask):
   """
 
   def HandleRequest(self, mr):
-    bucketby = mr.GetParam('bucketby') or 'label'
+    group_by = mr.GetParam('group_by', None)
     label_prefix = mr.GetParam('label_prefix')
     timestamp = mr.GetParam('timestamp')
     if timestamp:
       timestamp = int(timestamp)
     else:
       return { 'error': 'Param `timestamp` required.' }
-    if bucketby == 'label' and not label_prefix:
+    if group_by == 'label' and not label_prefix:
       return { 'error': 'Param `label_prefix` required.' }
 
     with work_env.WorkEnv(mr, self.services) as we:
-      results = we.SnapshotCountsQuery(timestamp, bucketby, label_prefix)
+      results = we.SnapshotCountsQuery(timestamp, group_by, label_prefix)
 
     return results

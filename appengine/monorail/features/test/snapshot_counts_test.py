@@ -41,7 +41,7 @@ class SnapshotCountsTest(unittest.TestCase):
   def testSnapshotCounts_TimestampRequired(self):
     """Tests that url param `timestamp` is required."""
     mr = self.makeMonorailGETRequest({
-      'bucketby': 'component',
+      'group_by': 'component',
     })
     response = self.servlet.HandleRequest(mr)
     self.assertEqual(response, { 'error': 'Param `timestamp` required.' })
@@ -50,7 +50,7 @@ class SnapshotCountsTest(unittest.TestCase):
     """Tests that url param `label_prefix` is required."""
     mr = self.makeMonorailGETRequest({
       'timestamp': self.default_timestamp,
-      'bucketby': 'label',
+      'group_by': 'label',
     })
     response = self.servlet.HandleRequest(mr)
     self.assertEqual(response, { 'error': 'Param `label_prefix` required.' })
@@ -59,12 +59,12 @@ class SnapshotCountsTest(unittest.TestCase):
     """Tests the case when there are no snapshots."""
     mr = self.makeMonorailGETRequest({
       'timestamp': self.default_timestamp,
-      'bucketby': 'label',
+      'group_by': 'label',
       'label_prefix': 'Type',
     })
     self.services.chart.QueryIssueSnapshots(mox.IgnoreArg(),
-      self.default_timestamp, 'label', mox.IgnoreArg(), mox.IgnoreArg(),
-      mox.IgnoreArg(), label_prefix='Type').AndReturn([])
+      self.default_timestamp, mox.IgnoreArg(), mox.IgnoreArg(),
+      mox.IgnoreArg(), group_by='label', label_prefix='Type').AndReturn([])
 
     self.mox.ReplayAll()
     response = self.servlet.HandleRequest(mr)
@@ -75,12 +75,12 @@ class SnapshotCountsTest(unittest.TestCase):
     """Tests the case when bucketing by label."""
     mr = self.makeMonorailGETRequest({
       'timestamp': self.default_timestamp,
-      'bucketby': 'label',
+      'group_by': 'label',
       'label_prefix': 'Type',
     })
     self.services.chart.QueryIssueSnapshots(mox.IgnoreArg(),
-      self.default_timestamp, 'label', mox.IgnoreArg(), mox.IgnoreArg(),
-      mox.IgnoreArg(), label_prefix='Type').AndReturn([
+      self.default_timestamp, mox.IgnoreArg(), mox.IgnoreArg(),
+      mox.IgnoreArg(), group_by='label', label_prefix='Type').AndReturn([
       ('name1', 12),
       ('name2', 14),
     ])
@@ -97,11 +97,11 @@ class SnapshotCountsTest(unittest.TestCase):
     """Tests the case when bucketing by label."""
     mr = self.makeMonorailGETRequest({
       'timestamp': self.default_timestamp,
-      'bucketby': 'component',
+      'group_by': 'component',
     })
     self.services.chart.QueryIssueSnapshots(mox.IgnoreArg(),
-      self.default_timestamp, 'component', mox.IgnoreArg(), mox.IgnoreArg(),
-      mox.IgnoreArg(), label_prefix=None).AndReturn([
+      self.default_timestamp, mox.IgnoreArg(), mox.IgnoreArg(),
+      mox.IgnoreArg(), group_by='component', label_prefix=None).AndReturn([
       ('name>name1', 12),
       ('name>name2', 14),
     ])

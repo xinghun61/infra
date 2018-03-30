@@ -52,22 +52,24 @@ class ChartService(object):
     self.issuesnapshot2label_tbl = sql.SQLTableManager(
         ISSUESNAPSHOT2LABEL_TABLE_NAME)
 
-  def QueryIssueSnapshots(self, cnxn, unixtime, bucketby,
-                          effective_ids, project, perms, label_prefix=None):
+  def QueryIssueSnapshots(self, cnxn, unixtime, effective_ids, project, perms,
+                          group_by=None, label_prefix=None):
     """Queries historical issue counts grouped by label or component.
 
     Args:
       cnxn: A MonorailConnection instance.
       unixtime: An integer representing the Unix time in seconds.
-      bucketby: Which dimension to group by. Either 'label' or 'component'.
       effective_ids: The effective User IDs associated with the current user.
       project: A project object representing the current project.
       perms: A permissions object associated with the current user.
-      label_prefix: Required when bucketby is 'label.' Will limit the query to
+      group_by (str, optional): Which dimension to group by. Values can
+        be 'label', 'component', or None, in which case no grouping will
+        be applied.
+      label_prefix: Required when group_by is 'label.' Will limit the query to
         only labels with the specified prefix (for example 'Pri').
 
     Returns:
-      A dictionary of: {'label or component name': number of occurences}
+      A dictionary of: {'2nd dimension or "total"': number of occurences}
     """
     restricted_label_ids = search_helpers.GetPersonalAtRiskLabelIDs(
       cnxn, None, self.config_service, effective_ids, project, perms)
@@ -124,7 +126,7 @@ class ChartService(object):
     else:
       where.append((forbidden_label_clause, []))
 
-    if bucketby == 'component':
+    if group_by == 'component':
       cols = ['Comp.path', 'COUNT(DISTINCT(IssueSnapshot.issue_id))']
       left_joins.extend([
         (('IssueSnapshot2Component AS Is2c ON'
@@ -132,7 +134,7 @@ class ChartService(object):
         ('ComponentDef AS Comp ON Comp.id = Is2c.component_id', []),
       ])
       group_by = ['Comp.path']
-    elif bucketby == 'label':
+    elif group_by == 'label':
       cols = ['Lab.label', 'COUNT(DISTINCT(IssueSnapshot.issue_id))']
       left_joins.extend([
         (('IssueSnapshot2Label AS Is2l'
@@ -147,8 +149,10 @@ class ChartService(object):
       # ensure regex is case-insensitive.
       where.append(('LOWER(Lab.label) LIKE %s', [label_prefix.lower() + '-%']))
       group_by = ['Lab.label']
+    elif not group_by:
+      cols = ['COUNT(DISTINCT(IssueSnapshot.issue_id))']
     else:
-      raise ValueError('`bucketby` must be in (component, label)')
+      raise ValueError('`group_by` must be label, component, or None.')
 
     promises = []
     for shard_id in range(settings.num_logical_shards):
@@ -164,9 +168,13 @@ class ChartService(object):
       shard_values = promise.WaitAndGetValue()
       if not shard_values:
         continue
-      for name, count in shard_values:
-        shard_values_dict.setdefault(name, 0)
-        shard_values_dict[name] += count
+      if group_by:
+        for name, count in shard_values:
+          shard_values_dict.setdefault(name, 0)
+          shard_values_dict[name] += count
+      else:
+        shard_values_dict.setdefault('total', 0)
+        shard_values_dict['total'] += shard_values[0][0]
 
     return shard_values_dict
 

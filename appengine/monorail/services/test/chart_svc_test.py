@@ -53,18 +53,19 @@ class ChartServiceTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
-  def _verifySQL(self, cols, left_joins, where, group_by):
+  def _verifySQL(self, cols, left_joins, where, group_by=None):
     for col in cols:
       self.assertTrue(sql._IsValidColumnName(col))
     for join_str, _ in left_joins:
       self.assertTrue(sql._IsValidJoin(join_str))
     for where_str, _ in where:
       self.assertTrue(sql._IsValidWhereCond(where_str))
-    for groupby_str in group_by:
-      self.assertTrue(sql._IsValidGroupByTerm(groupby_str))
+    if group_by:
+      for groupby_str in group_by:
+        self.assertTrue(sql._IsValidGroupByTerm(groupby_str))
 
-  def testQueryIssueSnapshots_InvalidBucketBy(self):
-    """Make sure the `bucketby` argument is checked."""
+  def testQueryIssueSnapshots_InvalidGroupBy(self):
+    """Make sure the `group_by` argument is checked."""
     project = fake.Project(project_id=789)
     perms = permissions.USER_PERMISSIONSET
     search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
@@ -74,8 +75,8 @@ class ChartServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     with self.assertRaises(ValueError):
       self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        bucketby='rutabaga', effective_ids=[10L, 20L], project=project,
-        perms=perms, label_prefix='rutabaga')
+          effective_ids=[10L, 20L], project=project, perms=perms,
+          group_by='rutabaga', label_prefix='rutabaga')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_NoLabelPrefix(self):
@@ -89,8 +90,8 @@ class ChartServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     with self.assertRaises(ValueError):
       self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        bucketby='label', effective_ids=[10L, 20L], project=project,
-        perms=perms)
+          effective_ids=[10L, 20L], project=project, perms=perms,
+          group_by='label')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_Components(self):
@@ -141,8 +142,8 @@ class ChartServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        bucketby='component', effective_ids=[10L, 20L], project=project,
-        perms=perms)
+        effective_ids=[10L, 20L], project=project, perms=perms,
+        group_by='component')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_Labels(self):
@@ -194,8 +195,56 @@ class ChartServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-      bucketby='label', effective_ids=[10L, 20L], project=project,
-      perms=perms, label_prefix='Foo')
+        effective_ids=[10L, 20L], project=project, perms=perms,
+        group_by='label', label_prefix='Foo')
+    self.mox.VerifyAll()
+
+  def testQueryIssueSnapshots_NoGroupBy(self):
+    """Test a burndown query from a regular user with no grouping."""
+    project = fake.Project(project_id=789)
+    perms = permissions.PermissionSet(['BarPerm'])
+    search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
+        self.config_service, [10L, 20L], project,
+        perms).AndReturn([91, 81])
+
+    cols = [
+      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+    ]
+    left_joins = [
+      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
+      ('Issue2Label AS Forbidden_label'
+       ' ON Issue.id = Forbidden_label.issue_id'
+       ' AND Forbidden_label.label_id IN (%s,%s)', [91, 81]),
+      ('Issue2Cc AS I2cc'
+       ' ON Issue.id = I2cc.issue_id'
+       ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
+    ]
+    where = [
+      ('IssueSnapshot.period_start <= %s', [1514764800]),
+      ('IssueSnapshot.period_end > %s', [1514764800]),
+      ('IssueSnapshot.project_id = %s', [789]),
+      ('IssueSnapshot.is_open = %s', [True]),
+      ('Issue.is_spam = %s', [False]),
+      ('Issue.deleted = %s', [False]),
+      ('(Issue.reporter_id IN (%s,%s)'
+       ' OR Issue.owner_id IN (%s,%s)'
+       ' OR I2cc.cc_id IS NOT NULL'
+       ' OR Forbidden_label.label_id IS NULL)',
+       [10L, 20L, 10L, 20L]
+      ),
+      ('IssueSnapshot.shard = %s', [0])
+    ]
+    group_by = None
+
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
+      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+
+    self._verifySQL(cols, left_joins, where)
+
+    self.mox.ReplayAll()
+    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
+        effective_ids=[10L, 20L], project=project, perms=perms,
+        group_by=None, label_prefix='Foo')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_LabelsNotLoggedInUser(self):
@@ -242,8 +291,8 @@ class ChartServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        bucketby='label', effective_ids=set([]),
-        project=project, perms=perms, label_prefix='Foo')
+        effective_ids=set([]), project=project, perms=perms, group_by='label',
+        label_prefix='Foo')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_NoRestrictedLabels(self):
@@ -291,8 +340,8 @@ class ChartServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        bucketby='label', effective_ids=[10L, 20L], project=project,
-        perms=perms, label_prefix='Foo')
+        effective_ids=[10L, 20L], project=project, perms=perms,
+        group_by='label', label_prefix='Foo')
     self.mox.VerifyAll()
 
   def SetUpStoreIssueSnapshots(self, store_label, replace_now=None,
