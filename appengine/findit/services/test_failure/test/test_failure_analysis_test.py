@@ -610,6 +610,31 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(all_flaked)
 
+  def testGetFirstTimeFailedSteps(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {
+        'step1': {
+            'test1': 'm/b/99',
+            'test2': 'm/b/100'
+        },
+        'non_swarming': 'm/b/100',
+        'step2': {
+            'test3': 'm/b/99'
+        },
+        'step3': {
+            'test4': 'm/b/100',
+            'test5': 'm/b/98'
+        }
+    }
+    analysis.put()
+
+    self.assertItemsEqual(['step1', 'step3'],
+                          test_failure_analysis.GetFirstTimeFailedSteps(
+                              master_name, builder_name, build_number))
+
   def testGetsFirstFailureAtTestLevelNoAnalysis(self):
     result = (
         test_failure_analysis.GetsFirstFailureAtTestLevel(

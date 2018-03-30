@@ -10,9 +10,13 @@ from google.appengine.ext import ndb
 
 from common.waterfall import failure_type
 from dto import swarming_task_error
+from dto.collect_swarming_task_results_inputs import (
+    CollectSwarmingTaskResultsInputs)
+from dto.collect_swarming_task_results_outputs import (
+    CollectSwarmingTaskResultsOutputs)
+from dto.run_swarming_task_parameters import RunSwarmingTaskParameters
 from dto.run_swarming_tasks_input import RunSwarmingTasksInput
 from dto.swarming_task_error import SwarmingTaskError
-from dto.run_swarming_task_parameters import RunSwarmingTaskParameters
 from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
@@ -242,7 +246,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       swarmed_test_util,
       'GetSwarmingTaskDataAndResult',
-      return_value=({'state': constants.STATE_COMPLETED}, 'content', None))
+      return_value=({
+          'state': constants.STATE_COMPLETED
+      }, 'content', None))
   def testOnSwarmingTaskTimeoutGotResult(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -310,10 +316,10 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
                           step_name).put()
 
     data = {
-      'state': constants.STATE_COMPLETED,
-      'created_ts': '2015-07-30T18:11:16.743220',
-      'started_ts': '2015-07-30T18:12:16.743220',
-      'completed_ts': '2015-07-30T18:15:16.743220'
+        'state': constants.STATE_COMPLETED,
+        'created_ts': '2015-07-30T18:11:16.743220',
+        'started_ts': '2015-07-30T18:12:16.743220',
+        'completed_ts': '2015-07-30T18:15:16.743220'
     }
 
     test_swarming.OnSwarmingTaskCompleted(
@@ -323,18 +329,23 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
                                        step_name)
     self.assertEqual('tests_statuses', swarming_task.tests_statuses)
     self.assertEqual(analysis_status.COMPLETED, swarming_task.status)
-    self.assertEqual(datetime.datetime(2015, 7, 30, 18, 11, 16, 743220),
-                     swarming_task.created_time)
-    self.assertEqual(datetime.datetime(2015, 7, 30, 18, 12, 16, 743220),
-                     swarming_task.started_time)
-    self.assertEqual(datetime.datetime(2015, 7, 30, 18, 15, 16, 743220),
-                     swarming_task.completed_time)
+    self.assertEqual(
+        datetime.datetime(2015, 7, 30, 18, 11, 16, 743220),
+        swarming_task.created_time)
+    self.assertEqual(
+        datetime.datetime(2015, 7, 30, 18, 12, 16, 743220),
+        swarming_task.started_time)
+    self.assertEqual(
+        datetime.datetime(2015, 7, 30, 18, 15, 16, 743220),
+        swarming_task.completed_time)
 
   @mock.patch.object(test_results, 'IsTestResultsValid', return_value=True)
   @mock.patch.object(
       swarmed_test_util,
       'GetSwarmingTaskDataAndResult',
-      return_value=({'state': constants.STATE_COMPLETED}, 'content', None))
+      return_value=({
+          'state': constants.STATE_COMPLETED
+      }, 'content', None))
   @mock.patch.object(
       test_swarming, 'OnSwarmingTaskCompleted', return_value=True)
   def testOnSwarmingTaskStateChangedCompleted(self, mock_complete, *_):
@@ -362,7 +373,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       swarmed_test_util,
       'GetSwarmingTaskDataAndResult',
-      return_value=({'state': constants.STATE_RUNNING}, None, None))
+      return_value=({
+          'state': constants.STATE_RUNNING
+      }, None, None))
   @mock.patch.object(test_swarming, '_UpdateSwarmingTaskEntity')
   def testOnSwarmingTaskStateChangedRunning(self, mock_update, _):
     master_name = 'm'
@@ -392,7 +405,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       swarmed_test_util,
       'GetSwarmingTaskDataAndResult',
-      return_value=({'state': constants.STATE_COMPLETED}, None,
+      return_value=({
+          'state': constants.STATE_COMPLETED
+      }, None,
                     SwarmingTaskError.FromSerializable({
                         'code': 1,
                         'message': 'message'
@@ -475,6 +490,167 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
                                        step_name)
     self.assertEqual(error, swarming_task.error)
     self.assertEqual(analysis_status.PENDING, swarming_task.status)
+
+  @mock.patch.object(
+      test_failure_analysis, 'GetFirstTimeFailedSteps', return_value=['step'])
+  def testGetStepsToCollectSwarmingTaskResults(self, mock_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 13
+    params = CollectSwarmingTaskResultsInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True)
+
+    self.assertEqual(['step'],
+                     test_swarming.GetStepsToCollectSwarmingTaskResults(params))
+    mock_fn.assert_called_once_with(master_name, builder_name, build_number)
+
+  @mock.patch.object(test_failure_analysis, 'GetFirstTimeFailedSteps')
+  def testGetStepsToCollectSwarmingTaskResultsBuildNotComplete(self, mock_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 14
+    params = CollectSwarmingTaskResultsInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=False)
+
+    self.assertEqual([],
+                     test_swarming.GetStepsToCollectSwarmingTaskResults(params))
+    self.assertFalse(mock_fn.called)
+
+  def testCollectSwarmingTaskResultsTaskRunning(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 15
+    params = CollectSwarmingTaskResultsInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True)
+    steps = ['step1', 'step2']
+
+    task1 = WfSwarmingTask.Create(master_name, builder_name, build_number,
+                                  'step2')
+    task1.status = analysis_status.COMPLETED
+    task1.put()
+    WfSwarmingTask.Create(master_name, builder_name, build_number,
+                          'step1').put()
+    self.assertIsNone(
+        test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
+
+  def testCollectSwarmingTaskResultsError(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 15
+    params = CollectSwarmingTaskResultsInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True)
+    steps = ['step1', 'step2']
+
+    task1 = WfSwarmingTask.Create(master_name, builder_name, build_number,
+                                  'step1')
+    task1.status = analysis_status.ERROR
+    task1.put()
+    task2 = WfSwarmingTask.Create(master_name, builder_name, build_number,
+                                  'step2')
+    task2.status = analysis_status.COMPLETED
+    task2.tests_statuses = {
+        'TestSuite1.test1': {
+            'total_run': 2,
+            'SUCCESS': 2
+        },
+        'TestSuite1.test2': {
+            'total_run': 4,
+            'SUCCESS': 2,
+            'FAILURE': 2
+        },
+        'TestSuite1.test3': {
+            'total_run': 6,
+            'FAILURE': 6
+        },
+        'TestSuite1.test4': {
+            'total_run': 6,
+            'SKIPPED': 6
+        },
+        'TestSuite1.test5': {
+            'total_run': 6,
+            'UNKNOWN': 6
+        }
+    }
+    task2.put()
+
+    expected_result_json = {
+        'consistent_failures': {
+            'step2': ['TestSuite1.test3', 'TestSuite1.test4']
+        }
+    }
+    self.assertEqual(
+        CollectSwarmingTaskResultsOutputs.FromSerializable(
+            expected_result_json),
+        test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
+
+  def testCollectSwarmingTaskResultsNoResult(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 16
+    params = CollectSwarmingTaskResultsInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True)
+    steps = ['step1']
+
+    task1 = WfSwarmingTask.Create(master_name, builder_name, build_number,
+                                  'step1')
+    task1.status = analysis_status.COMPLETED
+    task1.put()
+
+    self.assertEqual(
+        CollectSwarmingTaskResultsOutputs.FromSerializable({}),
+        test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
+
+  def testCollectSwarmingTaskResultsAllFlaky(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 17
+    params = CollectSwarmingTaskResultsInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True)
+    steps = ['step2']
+
+    task2 = WfSwarmingTask.Create(master_name, builder_name, build_number,
+                                  'step2')
+    task2.status = analysis_status.COMPLETED
+    task2.tests_statuses = {
+        'TestSuite1.test1': {
+            'total_run': 2,
+            'SUCCESS': 2
+        },
+        'TestSuite1.test2': {
+            'total_run': 4,
+            'SUCCESS': 2,
+            'FAILURE': 2
+        },
+    }
+    task2.put()
+
+    self.assertEqual(
+        CollectSwarmingTaskResultsOutputs.FromSerializable({}),
+        test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
 
   @mock.patch.object(
       test_swarming, 'NeedANewSwarmingTask', side_effect=[True, False])

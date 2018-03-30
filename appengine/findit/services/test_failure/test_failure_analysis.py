@@ -18,6 +18,7 @@ from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicResult
 from services.test_failure import ci_test_failure
 from services.test_failure import extract_test_signal
+from waterfall import build_util
 from waterfall.failure_signal import FailureSignal
 
 
@@ -255,6 +256,23 @@ def UpdateAnalysisResultWithFlakeInfo(analysis_result, flaky_failures):
         all_flaked = False
 
   return updated_result, all_flaked
+
+
+def GetFirstTimeFailedSteps(master_name, builder_name, build_number):
+  """Gets steps that have tests failed first time in the build."""
+  current_build_id = build_util.CreateBuildId(master_name, builder_name,
+                                              build_number)
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  assert analysis, "Cannot get WfAnalysis entity for %s" % current_build_id
+
+  first_failed_steps = []
+  for step, tests in (analysis.failure_result_map or {}).iteritems():
+    if isinstance(tests, basestring):  # Non-swarming.
+      continue
+
+    if current_build_id in tests.values():
+      first_failed_steps.append(step)
+  return first_failed_steps
 
 
 @ndb.transactional

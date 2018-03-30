@@ -3,14 +3,12 @@
 # found in the LICENSE file.
 """Logic related to examine builds and determine regression range."""
 
-from collections import defaultdict
 import json
 import logging
 
 from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
-from infra_api_clients.swarming import swarming_util
 from model.wf_step import WfStep
 from services import swarmed_test_util
 from services import swarming
