@@ -17,6 +17,11 @@ CHROMITE_REPOSITORY = 'https://chromium.googlesource.com/chromiumos/chromite'
 # The number of stable release branches to build in addition to the beta
 # branch.
 DEFAULT_STABLE_COUNT = 2
+# This is needed for lakitu. Lakitu has 36 week stable cycle.
+# TODO(sawlani) change this once LTS milestone is defined.
+BASE_LTS_MILESTONE = 63
+# Every 4th milestone will be LTS starting from BASE_LTS_MILESTONE.
+NEXT_LTS_MILESTONE_MODULO = 4
 
 # Regular expression to match release branch names.
 RELEASE_RE = re.compile(r'release-R(\d+)-.*')
@@ -186,6 +191,15 @@ def subcommand_add_release(args):
     # Shave off the top [stable_count+1] releases.
     count = args.stable_count+1
     releases, deleted = releases[:count], releases[count:]
+    # Check if LTS release in deleted releases.
+    for v, name in deleted:
+      if ((v - BASE_LTS_MILESTONE) % NEXT_LTS_MILESTONE_MODULO) == 0:
+        releases.append((v, name))
+        deleted.remove((v, name))
+        # We allow one milestone to exist in LTS window.
+        # LTS window starts after stable window.
+        break
+
     if add_release not in releases:
       raise ValueError("Updated releases do not include added (%s):\n%s" % (
           add_release[1], '\n'.join(r[1] for r in releases)))
