@@ -40,6 +40,18 @@ class TemplateHelpers(unittest.TestCase):
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action',
         'Approval for UX review', False)
+    self.fd_3 = tracker_bizobj.MakeFieldDef(
+        3, 789, 'UXApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'Approval for UX review', False)
+    self.fd_4 = tracker_bizobj.MakeFieldDef(
+        4, 789, 'TestApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'Approval for Test review', False)
+    self.ad_3 = tracker_pb2.ApprovalDef(approval_id=3)
+    self.ad_4 = tracker_pb2.ApprovalDef(approval_id=4)
     self.cd_1 = tracker_bizobj.MakeComponentDef(
         1, 789, 'BackEnd', 'doc', False, [111L], [], 100000, 222L)
 
@@ -64,10 +76,12 @@ class TemplateHelpers(unittest.TestCase):
     self.assertEqual(parsed.component_paths, [])
     self.assertFalse(parsed.component_required)
     self.assertFalse(parsed.owner_defaults_to_member)
+    self.assertItemsEqual(parsed.phase_names, ['', '', '', '', '', ''])
+    self.assertEqual(parsed.approvals_by_phase_idx, {})
 
   def testParseTemplateRequest_Normal(self):
-    self.config.field_defs.append(self.fd_1)
-    self.config.field_defs.append(self.fd_2)
+    self.config.field_defs.extend([self.fd_1, self.fd_2])
+    self.config.approval_defs.extend([self.ad_3, self.ad_4])
     post_data = fake.PostData(
         name=['sometemplate'],
         members_only=['on'],
@@ -82,7 +96,15 @@ class TemplateHelpers(unittest.TestCase):
         components=['hey, hey2,he3'],
         component_required=['on'],
         owner_defaults_to_memeber=['no'],
-        admin_names=['jojwang@test.com, annajo@test.com']
+        admin_names=['jojwang@test.com, annajo@test.com'],
+        phase_0=['Canary'],
+        phase_1=['Stable-Exp'],
+        phase_2=['Stable'],
+        phase_3=[''],
+        phase_4=[''],
+        phase_5=['Oops'],
+        approval_3=['phase_2'],
+        approval_4=['phase_2']
     )
 
     parsed = template_helpers.ParseTemplateRequest(post_data, self.config)
@@ -99,6 +121,9 @@ class TemplateHelpers(unittest.TestCase):
     self.assertTrue(parsed.component_required)
     self.assertFalse(parsed.owner_defaults_to_member)
     self.assertEqual(parsed.admin_str, 'jojwang@test.com, annajo@test.com')
+    self.assertItemsEqual(parsed.phase_names,
+                          ['Canary', 'Stable-Exp', 'Stable', '', '', 'Oops'])
+    self.assertEqual(parsed.approvals_by_phase_idx, {2:[3, 4]})
 
   def testGetTemplateInfoFromParsed_Normal(self):
     self.config.field_defs.append(self.fd_1)
@@ -107,7 +132,7 @@ class TemplateHelpers(unittest.TestCase):
     parsed = template_helpers.ParsedTemplate(
         'template', True, 'summary', True, 'content', 'Available',
         '1@ex.com', ['label1', 'label1'], {1: ['NO'], 2: ['MOOD']},
-        ['BackEnd'], True, True, '2@ex.com')
+        ['BackEnd'], True, True, '2@ex.com', [], {})
     (admin_ids, owner_id,
      component_ids, field_values) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)
@@ -123,7 +148,7 @@ class TemplateHelpers(unittest.TestCase):
     parsed = template_helpers.ParsedTemplate(
         'template', True, 'summary', True, 'content', 'Available',
         '4@ex.com', ['label1', 'label1'], {1: ['NO'], 2: ['MOOD']},
-        ['BackEnd'], True, True, '2@ex.com')
+        ['BackEnd'], True, True, '2@ex.com', [], {})
     (admin_ids, _owner_id,
      _component_ids, field_values) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)

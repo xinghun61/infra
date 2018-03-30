@@ -17,10 +17,15 @@ from tracker import tracker_helpers
 from services import user_svc
 
 
+PHASE_INPUTS = [
+    'phase_0', 'phase_1', 'phase_2', 'phase_3', 'phase_4', 'phase_5']
+
+
 ParsedTemplate = collections.namedtuple(
     'ParsedTemplate', 'name, members_only, summary, summary_must_be_edited, '
     'content, status, owner_str, labels, field_val_strs, component_paths, '
-    'component_required, owner_defaults_to_member, admin_str')
+    'component_required, owner_defaults_to_member, admin_str, phase_names, '
+    'approvals_by_phase_idx')
 
 
 def ParseTemplateRequest(post_data, config):
@@ -53,10 +58,21 @@ def ParseTemplateRequest(post_data, config):
 
   admin_str = post_data.get('admin_names', '')
 
-  return ParsedTemplate(name, members_only, summary, summary_must_be_edited,
-                        content, status, owner_str, labels, field_val_strs,
-                        component_paths, component_required,
-                        owner_defaults_to_member, admin_str)
+  phase_names = [post_data.get(phase_input, '') for phase_input in PHASE_INPUTS]
+
+  approvals_by_phase_idx = collections.defaultdict(list)
+  for approval_def in config.approval_defs:
+    phase_num = post_data.get('approval_%d' % approval_def.approval_id, '')
+    try:
+      idx = PHASE_INPUTS.index(phase_num)
+      approvals_by_phase_idx[idx].append(approval_def.approval_id)
+    except ValueError:
+      logging.info('approval %d was omitted' % approval_def.approval_id)
+
+  return ParsedTemplate(
+      name, members_only, summary, summary_must_be_edited, content, status,
+      owner_str, labels, field_val_strs, component_paths, component_required,
+      owner_defaults_to_member, admin_str, phase_names, approvals_by_phase_idx)
 
 
 def GetTemplateInfoFromParsed(mr, services, parsed, config):
