@@ -197,7 +197,7 @@ class SwarmbotUtilTest(wf_testcase.WaterfallTestCase):
         'bot_id': 'bot5'
     }], swarmbot_util.OnlyAvailable(all_bots))
 
-  def testHaveCommitPositionInLocalGitCache(self):
+  def disabled_testHaveCommitPositionInLocalGitCache(self):  # crbug.com/827693
     bots = [{'bot_id': 'local_git_cache_bot%d' % i} for i in range(10)]
     bot5 = WfTryBot.Get('local_git_cache_bot5')
     bot5.newest_synced_revision = 100
