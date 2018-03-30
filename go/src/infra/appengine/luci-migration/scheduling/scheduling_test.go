@@ -25,6 +25,7 @@ import (
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/proto"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/retry/transient"
@@ -50,10 +51,10 @@ func TestScheduling(t *testing.T) {
 			},
 		})
 
-		buildSet := &buildbucket.GerritChange{
+		buildSet := &buildbucketpb.GerritChange{
 			Host:     "gerrit.example.com",
 			Change:   1,
-			PatchSet: 1,
+			Patchset: 1,
 		}
 
 		// Mock buildbucket server.
@@ -129,11 +130,11 @@ func TestScheduling(t *testing.T) {
 					ID:        54,
 					Bucket:    "master.tryserver.chromium.linux",
 					Builder:   "linux_chromium_rel_ng",
-					Status:    buildbucket.StatusSuccess,
-					BuildSets: []buildbucket.BuildSet{buildSet},
+					Status:    buildbucketpb.Status_SUCCESS,
+					BuildSets: []buildbucketpb.BuildSet{buildSet},
 					Tags: strpair.Map{
-						buildbucket.TagBuildSet: []string{buildSet.String()},
-						"master":                []string{"tryserver.chromium.linux"},
+						bbapi.TagBuildSet: []string{buildSet.BuildSetString()},
+						"master":          []string{"tryserver.chromium.linux"},
 					},
 					Output: buildbucket.Output{
 						Properties: &OutputProperties{
@@ -168,7 +169,7 @@ func TestScheduling(t *testing.T) {
 						ClientOperationId: "luci-migration-retry-54",
 						ParametersJson:    actualPutRequests[0].ParametersJson,
 						Tags: []string{
-							strpair.Format(buildbucket.TagBuildSet, buildSet.String()),
+							strpair.Format(bbapi.TagBuildSet, buildSet.BuildSetString()),
 							strpair.Format(attemptTagKey, "0"),
 							strpair.Format(buildbotBuildIDTagKey, "54"),
 							"user_agent:luci-migration",
@@ -208,7 +209,7 @@ func TestScheduling(t *testing.T) {
 			luciMigrationBuildTags := strpair.Map{}
 			luciMigrationBuildTags.Set(buildbotBuildIDTagKey, "53")
 			luciMigrationBuildTags.Set(attemptTagKey, "0")
-			luciMigrationBuildTags.Set("buildset", buildSet.String())
+			luciMigrationBuildTags.Set("buildset", buildSet.BuildSetString())
 			luciMigrationBuildTags.Set("master", "masterX")
 
 			Convey("retries LUCI builds", func() {
@@ -216,7 +217,7 @@ func TestScheduling(t *testing.T) {
 					Build: buildbucket.Build{
 						ID:     54,
 						Bucket: "luci.test.x",
-						Status: buildbucket.StatusFailure,
+						Status: buildbucketpb.Status_FAILURE,
 						Tags:   luciMigrationBuildTags,
 					},
 				}
@@ -229,7 +230,7 @@ func TestScheduling(t *testing.T) {
 						ClientOperationId: "luci-migration-retry-54",
 						ParametersJson:    b.ParametersJSON,
 						Tags: []string{
-							strpair.Format(buildbucket.TagBuildSet, buildSet.String()),
+							strpair.Format(bbapi.TagBuildSet, buildSet.BuildSetString()),
 							strpair.Format(attemptTagKey, "1"),
 							strpair.Format(buildbotBuildIDTagKey, "53"),
 							"user_agent:luci-migration",
@@ -245,11 +246,11 @@ func TestScheduling(t *testing.T) {
 						ID:      54,
 						Bucket:  "luci.test.x",
 						Builder: "some",
-						Status:  buildbucket.StatusFailure,
+						Status:  buildbucketpb.Status_FAILURE,
 						Tags: strpair.Map{
-							buildbotBuildIDTagKey:   []string{"53"},
-							attemptTagKey:           []string{"0"},
-							buildbucket.TagBuildSet: []string{buildSet.String()},
+							buildbotBuildIDTagKey: []string{"53"},
+							attemptTagKey:         []string{"0"},
+							bbapi.TagBuildSet:     []string{buildSet.BuildSetString()},
 						},
 					},
 				}
@@ -265,12 +266,12 @@ func TestScheduling(t *testing.T) {
 					Build: buildbucket.Build{
 						ID:     54,
 						Bucket: "luci.test.x",
-						Status: buildbucket.StatusFailure,
+						Status: buildbucketpb.Status_FAILURE,
 						Tags:   luciMigrationBuildTags,
 					},
 				}
 				searchResults = []*bbapi.ApiCommonBuildMessage{{
-					CreatedTs: buildbucket.FormatTimestamp(b.CreationTime) + 1, // 1 newer Build
+					CreatedTs: bbapi.FormatTimestamp(b.CreationTime) + 1, // 1 newer Build
 				}}
 				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
@@ -282,8 +283,8 @@ func TestScheduling(t *testing.T) {
 					Build: buildbucket.Build{
 						ID:        54,
 						Bucket:    "luci.test.x",
-						Status:    buildbucket.StatusFailure,
-						BuildSets: []buildbucket.BuildSet{buildSet},
+						Status:    buildbucketpb.Status_FAILURE,
+						BuildSets: []buildbucketpb.BuildSet{buildSet},
 						Tags: strpair.Map{
 							buildbotBuildIDTagKey: []string{"53"},
 							attemptTagKey:         []string{"2"},
@@ -300,7 +301,7 @@ func TestScheduling(t *testing.T) {
 					Build: buildbucket.Build{
 						ID:     54,
 						Bucket: "luci.chromium.try",
-						Status: buildbucket.StatusFailure,
+						Status: buildbucketpb.Status_FAILURE,
 						// no attempt tag
 					},
 				}
@@ -314,7 +315,7 @@ func TestScheduling(t *testing.T) {
 					Build: buildbucket.Build{
 						ID:     54,
 						Bucket: "luci.chromium.try",
-						Status: buildbucket.StatusSuccess,
+						Status: buildbucketpb.Status_SUCCESS,
 						Tags:   luciMigrationBuildTags,
 					},
 				}
@@ -328,7 +329,7 @@ func TestScheduling(t *testing.T) {
 					Build: buildbucket.Build{
 						ID:     54,
 						Bucket: "luci.test.x",
-						Status: buildbucket.StatusFailure,
+						Status: buildbucketpb.Status_FAILURE,
 						Tags:   luciMigrationBuildTags,
 					},
 				}
@@ -343,7 +344,7 @@ func TestScheduling(t *testing.T) {
 					Build: buildbucket.Build{
 						ID:     54,
 						Bucket: "luci.test.x",
-						Status: buildbucket.StatusFailure,
+						Status: buildbucketpb.Status_FAILURE,
 						Tags:   luciMigrationBuildTags,
 					},
 				}
@@ -358,7 +359,7 @@ func TestScheduling(t *testing.T) {
 					Build: buildbucket.Build{
 						ID:     54,
 						Bucket: "luci.test.x",
-						Status: buildbucket.StatusFailure,
+						Status: buildbucketpb.Status_FAILURE,
 						Tags:   luciMigrationBuildTags,
 					},
 				}

@@ -27,6 +27,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/proto"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/strpair"
@@ -198,8 +199,8 @@ func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 	req.Context(c)
 	req.Bucket(f.LUCIBucket)
 	req.Status(bbapi.StatusCompleted)
-	req.Tag(strpair.Format(buildbucket.TagBuilder, f.Builder))
-	req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
+	req.Tag(strpair.Format(bbapi.TagBuilder, f.Builder))
+	req.CreationTsLow(bbapi.FormatTimestamp(f.MinCreationDate))
 	req.IncludeExperimental(true)
 	req.Fields("builds(tags, result_details_json)")
 	if cap(keys) > 0 {
@@ -222,9 +223,9 @@ func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 			return errors.Annotate(err, "parsing build %d", msg.Id).Err()
 		}
 
-		var change *buildbucket.GerritChange
+		var change *buildbucketpb.GerritChange
 		for _, bs := range b.BuildSets {
-			if cl, ok := bs.(*buildbucket.GerritChange); ok {
+			if cl, ok := bs.(*buildbucketpb.GerritChange); ok {
 				if change != nil {
 					logging.Warningf(c, "build %d has multiple Gerrit changes; using first one, %q", b.ID, change)
 					break
@@ -356,9 +357,9 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 		req.Bucket(bucket)
 		req.Status(bbapi.StatusCompleted)
 		req.Tag(
-			strpair.Format(buildbucket.TagBuilder, f.Builder),
-			strpair.Format(buildbucket.TagBuildSet, g.Key.GerritChange.String()))
-		req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
+			strpair.Format(bbapi.TagBuilder, f.Builder),
+			strpair.Format(bbapi.TagBuildSet, g.Key.GerritChange.BuildSetString()))
+		req.CreationTsLow(bbapi.FormatTimestamp(f.MinCreationDate))
 		req.IncludeExperimental(true)
 		req.Fields(
 			"builds(cancelation_reason)",

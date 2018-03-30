@@ -37,6 +37,7 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/proto"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
@@ -76,7 +77,7 @@ func (h *Scheduler) BuildCompleted(c context.Context, build *Build) error {
 	case build.Status.Completed() && strings.HasPrefix(build.Bucket, "master."):
 		return h.buildbotBuildCompleted(c, build)
 
-	case (build.Status == buildbucket.StatusFailure || build.Status == buildbucket.StatusError) &&
+	case (build.Status == buildbucketpb.Status_FAILURE || build.Status == buildbucketpb.Status_INFRA_FAILURE) &&
 		strings.HasPrefix(build.Bucket, "luci."):
 
 		// Note that result==FAILURE builds include infra-failed builds.
@@ -112,7 +113,7 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 	}
 
 	// Should we experiment with this CL?
-	if !shouldExperiment(build.Tags.Get(buildbucket.TagBuildSet), builder.ExperimentPercentage) {
+	if !shouldExperiment(build.Tags.Get(bbapi.TagBuildSet), builder.ExperimentPercentage) {
 		return nil
 	}
 
@@ -134,7 +135,7 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 	newTags := strpair.Map{}
 	newTags.Set(buildbotBuildIDTagKey, strconv.FormatInt(build.ID, 10))
 	newTags.Set(attemptTagKey, "0")
-	newTags[buildbucket.TagBuildSet] = build.Tags[buildbucket.TagBuildSet]
+	newTags[bbapi.TagBuildSet] = build.Tags[bbapi.TagBuildSet]
 	newBuild := &bbapi.ApiPutRequestMessage{
 		Bucket:            master.LuciBucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
@@ -145,14 +146,14 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 		logging.Infof(
 			c,
 			"scheduling Buildbot build %d on LUCI for builder %q and buildset %q",
-			build.ID, &builder.ID, build.Tags.Get(buildbucket.TagBuildSet))
+			build.ID, &builder.ID, build.Tags.Get(bbapi.TagBuildSet))
 		return h.schedule(c, builder.ID.Builder, newBuild)
 	})
 }
 
 func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	attempt, attemptErr := strconv.Atoi(build.Tags.Get(attemptTagKey))
-	buildSet := build.Tags.Get(buildbucket.TagBuildSet)
+	buildSet := build.Tags.Get(bbapi.TagBuildSet)
 	buildbotBuildID := build.Tags.Get(buildbotBuildIDTagKey)
 	switch {
 	case attemptErr != nil || buildSet == "" || buildbotBuildID == "":
@@ -169,11 +170,11 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	req := h.Buildbucket.Search()
 	req.Context(c)
 	req.Bucket(build.Bucket)
-	req.CreationTsLow(buildbucket.FormatTimestamp(build.CreationTime) + 1)
+	req.CreationTsLow(bbapi.FormatTimestamp(build.CreationTime) + 1)
 	req.IncludeExperimental(true)
 	req.Tag(
-		strpair.Format(buildbucket.TagBuildSet, buildSet),
-		strpair.Format(buildbucket.TagBuilder, build.Builder),
+		strpair.Format(bbapi.TagBuildSet, buildSet),
+		strpair.Format(bbapi.TagBuilder, build.Builder),
 	)
 	switch newerBuilds, err := req.Fetch(1, nil); {
 	case err != nil:
@@ -186,7 +187,7 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	newTags := strpair.Map{}
 	newTags.Set(buildbotBuildIDTagKey, buildbotBuildID)
 	newTags.Set(attemptTagKey, strconv.Itoa(attempt+1))
-	newTags.Set(buildbucket.TagBuildSet, buildSet)
+	newTags.Set(bbapi.TagBuildSet, buildSet)
 	newBuild := &bbapi.ApiPutRequestMessage{
 		Bucket:            build.Bucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),

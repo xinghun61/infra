@@ -19,16 +19,16 @@ import (
 	"testing"
 	"time"
 
-	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/proto"
 
 	"infra/appengine/luci-migration/storage"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-const success = buildbucket.StatusSuccess
-const failure = buildbucket.StatusFailure
-const infraFailure = buildbucket.StatusError
+const success = buildbucketpb.Status_SUCCESS
+const failure = buildbucketpb.Status_FAILURE
+const infraFailure = buildbucketpb.Status_INFRA_FAILURE
 
 func TestCompare(t *testing.T) {
 	t.Parallel()

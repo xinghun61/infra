@@ -18,13 +18,13 @@ import (
 	"testing"
 	"time"
 
-	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/clock/testclock"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func side(duration time.Duration, statuses ...buildbucket.Status) groupSide {
+func side(duration time.Duration, statuses ...buildbucketpb.Status) groupSide {
 	s := make(groupSide, len(statuses))
 	for i, st := range statuses {
 		s[i] = &build{
@@ -60,7 +60,7 @@ func TestGroup(t *testing.T) {
 			for i := 1; i <= 3; i++ {
 				duration := time.Duration(i) * 10 * time.Minute
 				s = append(s, &build{
-					Status:         buildbucket.StatusSuccess,
+					Status:         buildbucketpb.Status_SUCCESS,
 					CreationTime:   testclock.TestRecentTimeUTC,
 					CompletionTime: testclock.TestRecentTimeUTC.Add(duration),
 					RunDuration:    duration,

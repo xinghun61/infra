@@ -18,19 +18,19 @@ import (
 	"fmt"
 	"time"
 
-	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/proto"
 )
 
 type groupKey struct {
 	// do not put interfaces in this struct,
 	// because it is used as a map key.
 
-	buildbucket.GerritChange
+	buildbucketpb.GerritChange
 	GotRevision string
 }
 
 func (k *groupKey) String() string {
-	return fmt.Sprintf("%s @ %q", &k.GerritChange, k.GotRevision)
+	return fmt.Sprintf("%s @ %q", k.GerritChange.BuildSetString(), k.GotRevision)
 }
 
 // group is two sets of builds, for Buildbot and LUCI, that should have the same
@@ -47,7 +47,7 @@ func (g *group) trustworthy() bool {
 
 // build contains minimal information needed for analysis.
 type build struct {
-	Status         buildbucket.Status
+	Status         buildbucketpb.Status
 	CreationTime   time.Time
 	CompletionTime time.Time
 	RunDuration    time.Duration
@@ -82,7 +82,7 @@ func (s groupSide) MostRecentlyCompleted() time.Time {
 // success returns true if at least one build succeeded, otherwise false.
 func (s groupSide) success() bool {
 	for _, b := range s {
-		if b.Status == buildbucket.StatusSuccess {
+		if b.Status == buildbucketpb.Status_SUCCESS {
 			return true
 		}
 	}
@@ -91,13 +91,13 @@ func (s groupSide) success() bool {
 
 // countInfraFailures returns number of builds that Infra Failed.
 func (s groupSide) countInfraFailures() int {
-	errors := 0
+	count := 0
 	for _, b := range s {
-		if b.Status == buildbucket.StatusError {
-			errors++
+		if b.Status == buildbucketpb.Status_INFRA_FAILURE {
+			count++
 		}
 	}
-	return errors
+	return count
 }
 
 // trustworthy returns true if s can be used for correctness analysis.
@@ -110,7 +110,7 @@ func (s groupSide) trustworthy() bool {
 	// consider this result too vulnerable to flakes.
 	failures := 0
 	for _, b := range s {
-		if b.Status == buildbucket.StatusFailure {
+		if b.Status == buildbucketpb.Status_FAILURE {
 			failures++
 			if failures >= 2 {
 				return true

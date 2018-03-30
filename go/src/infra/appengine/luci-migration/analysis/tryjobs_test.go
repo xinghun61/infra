@@ -24,7 +24,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/proto"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
@@ -37,13 +37,13 @@ import (
 
 func buildMsg(key groupKey, duration time.Duration, result string) *bbapi.ApiCommonBuildMessage {
 	return &bbapi.ApiCommonBuildMessage{
-		Tags:              []string{strpair.Format(buildbucket.TagBuildSet, key.GerritChange.String())},
+		Tags:              []string{strpair.Format(bbapi.TagBuildSet, key.GerritChange.BuildSetString())},
 		Status:            "COMPLETED",
 		Result:            result,
 		CreatedBy:         "user:someone@example.com",
-		CreatedTs:         buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC),
-		StartedTs:         buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC),
-		CompletedTs:       buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC.Add(duration)),
+		CreatedTs:         bbapi.FormatTimestamp(testclock.TestRecentTimeUTC),
+		StartedTs:         bbapi.FormatTimestamp(testclock.TestRecentTimeUTC),
+		CompletedTs:       bbapi.FormatTimestamp(testclock.TestRecentTimeUTC.Add(duration)),
 		ResultDetailsJson: fmt.Sprintf(`{"properties": {"got_revision": %q}}`, key.GotRevision),
 	}
 }
@@ -78,28 +78,28 @@ func TestAnalyze(t *testing.T) {
 			}()
 
 			tags := strpair.ParseMap(r.URL.Query()["tag"])
-			buildSet := tags.Get(buildbucket.TagBuildSet)
+			buildSet := tags.Get(bbapi.TagBuildSet)
 			if buildSet == "" {
 				for i := 0; i < len(buildSets); i++ {
 					// only group key matters here, the rest is ignored
-					patchSet := i + 1
+					patchSet := int64(i) + 1
 					res.Builds = append(res.Builds, buildMsg(mkKey(patchSet), time.Hour, bbapi.ResultSuccess))
 				}
 				return
 			}
 
-			cl, ok := buildbucket.ParseBuildSet(buildSet).(*buildbucket.GerritChange)
+			cl, ok := buildbucketpb.ParseBuildSet(buildSet).(*buildbucketpb.GerritChange)
 			testCtx.So(ok, ShouldBeTrue)
-			testCtx.So(cl.PatchSet, ShouldBeBetween, 0, len(buildSets)+1)
-			key := mkKey(cl.PatchSet)
+			testCtx.So(cl.Patchset, ShouldBeBetween, 0, len(buildSets)+1)
+			key := mkKey(cl.Patchset)
 			testCtx.So(cl, ShouldResemble, &key.GerritChange)
 
 			var spec mockedBuilds
 			switch r.FormValue("bucket") {
 			case "luci.chromium.try":
-				spec = buildSets[cl.PatchSet-1].LUCI
+				spec = buildSets[cl.Patchset-1].LUCI
 			case "master.tryserver.chromium.linux":
-				spec = buildSets[cl.PatchSet-1].Buildbot
+				spec = buildSets[cl.Patchset-1].Buildbot
 			}
 
 			// the order of res.Builds is newest to oldest.
@@ -238,9 +238,9 @@ func TestAnalyze(t *testing.T) {
 			So(set1.LUCI, ShouldHaveLength, 3)
 			So(set1.LUCI.success(), ShouldBeTrue)
 			// order must be from oldest to newest
-			So(set1.LUCI[0].Status, ShouldEqual, buildbucket.StatusFailure)
-			So(set1.LUCI[1].Status, ShouldEqual, buildbucket.StatusSuccess)
-			So(set1.LUCI[2].Status, ShouldEqual, buildbucket.StatusSuccess)
+			So(set1.LUCI[0].Status, ShouldEqual, buildbucketpb.Status_FAILURE)
+			So(set1.LUCI[1].Status, ShouldEqual, buildbucketpb.Status_SUCCESS)
+			So(set1.LUCI[2].Status, ShouldEqual, buildbucketpb.Status_SUCCESS)
 
 			set2 := gmap[mkKey(3)]
 			So(set2, ShouldNotBeNil)
@@ -252,12 +252,12 @@ func TestAnalyze(t *testing.T) {
 	})
 }
 
-func mkKey(patchSet int) groupKey {
+func mkKey(patchSet int64) groupKey {
 	return groupKey{
-		GerritChange: buildbucket.GerritChange{
+		GerritChange: buildbucketpb.GerritChange{
 			Host:     "gerrit.example.com",
 			Change:   1,
-			PatchSet: patchSet,
+			Patchset: patchSet,
 		},
 		GotRevision: "deadbeef",
 	}
