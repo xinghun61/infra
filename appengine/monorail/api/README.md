@@ -16,7 +16,7 @@ files, follow these steps:
 
 ```bash
 $ PATH=../../../luci/appengine/components/tools:$PATH ../../../cipd/protoc \
-  --python_out=. --prpc-python_out=. proto/*.proto
+  --python_out=. --prpc-python_out=. api_proto/*.proto
 ```
 
 
@@ -25,7 +25,7 @@ $ PATH=../../../luci/appengine/components/tools:$PATH ../../../cipd/protoc \
 You can make anonymous requests to a server running locally like this:
 
 ```bash
-$ curl -X POST localhost:8080/prpc/monorail.Users/GetUser \
+$ curl -i -X POST localhost:8080/prpc/monorail.Users/GetUser \
   -H "Content-Type: application/json" -H "Accept: application/json" \
   --data '{"email": "test@example.com"}'
 ```

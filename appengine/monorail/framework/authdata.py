@@ -29,12 +29,12 @@ class AuthData(object):
     email: email address for the user, or None.
   """
 
-  def __init__(self):
-    self.user_id = 0
-    self.effective_ids = set()
+  def __init__(self, user_id=0, email=None):
+    self.user_id = user_id
+    self.effective_ids = {user_id} if user_id else set()
     self.user_view = None
-    self.user_pb = user_pb2.MakeUser(0)
-    self.email = None
+    self.user_pb = user_pb2.MakeUser(user_id)
+    self.email = email
 
   @classmethod
   def FromRequest(cls, cnxn, services):
@@ -115,3 +115,8 @@ class AuthData(object):
       auth.user_pb = services.user.GetUser(cnxn, auth.user_id)
       if auth.user_pb:
         auth.user_view = framework_views.UserView(auth.user_pb)
+
+  def __repr__(self):
+    """Return a string more useful for debugging."""
+    return 'AuthData(email=%r, user_id=%r, effective_ids=%r)' % (
+        self.email, self.user_id, self.effective_ids)
