@@ -1449,11 +1449,17 @@ CREATE TABLE Template2Phase (
 ) ENGINE=INNODB;
 
 ALTER TABLE Issue2ApprovalValue DROP FOREIGN KEY Issue2ApprovalValue_ibfk_4;
-ALTER TABLE Issue2ApprovalValue CHANGE COLUMN milestone_id phase_id int NOT NULL;
+ALTER TABLE Issue2ApprovalValue ADD COLUMN phase_id int NOT NULL;
 CREATE INDEX IF NOT EXISTS phase_id ON Issue2ApprovalValue (phase_id);
 ALTER TABLE Issue2ApprovalValue ADD FOREIGN KEY (phase_id) REFERENCES Issue2Phase(id);
 
 ALTER TABLE Template2ApprovalValue DROP FOREIGN KEY Template2ApprovalValue_ibfk_3;
-ALTER TABLE Template2ApprovalValue CHANGE milestone_id phase_id int NOT NULL;
+ALTER TABLE Template2ApprovalValue ADD COLUMN phase_id int NOT NULL;
 CREATE INDEX IF NOT EXISTS phase_id ON Template2ApprovalValue (phase_id);
 ALTER TABLE Template2ApprovalValue ADD FOREIGN KEY (phase_id) REFERENCES Template2Phase(id);
+
+================================================================
+Upcoming:
+TODO(jojwang): drop milestone_id from Issue2ApprovalValue.
+TODO(jojwang): drop milestone_id from Template2ApprovalValue.
+
