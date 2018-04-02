@@ -100,7 +100,6 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
           '--gerrit_fetch',
           '--upstream', upstream,
 
-          '--skip_canned', 'CheckRietveldTryJobExecution',
           '--skip_canned', 'CheckTreeIsOpen',
           '--skip_canned', 'CheckBuildbotPendingBuilds',
         ]

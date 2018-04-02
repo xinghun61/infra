@@ -149,8 +149,6 @@
       "--upstream",
       "0af4f7a7096d34672a3d020e29d0335f47b1b242",
       "--skip_canned",
-      "CheckRietveldTryJobExecution",
-      "--skip_canned",
       "CheckTreeIsOpen",
       "--skip_canned",
       "CheckBuildbotPendingBuilds"
