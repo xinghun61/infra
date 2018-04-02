@@ -73,6 +73,13 @@ func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadPar
 			Name:     name,
 		}
 
+		if ftl.Runtime != nil {
+			testRun.Time = float32(*ftl.Runtime)
+		}
+		for _, t := range ftl.Runtimes {
+			testRun.Times = append(testRun.Times, float32(*t))
+		}
+
 		startTime, err := ptypes.TimestampProto(time.Unix(int64(f.SecondsEpoch), 0))
 		if err != nil {
 			return nil, err
