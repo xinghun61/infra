@@ -304,3 +304,97 @@ func initializeClients(ctx context.Context, cfg *RepoConfig) (*Clients, error) {
 	}
 	return cs, nil
 }
+
+func escapeToken(t string) string {
+	return strings.Replace(
+		strings.Replace(
+			strings.Replace(
+				t, "\\", "\\\\", -1),
+			"\n", "\\n", -1),
+		":", "\\c", -1)
+
+}
+func unescapeToken(t string) string {
+	// Hack needed due to golang's lack of positive lookbehind in regexp.
+
+	// Only replace \n for newline if preceded by an even number of
+	// backslashes.
+	// e.g:  (in the example below (0x0a) represents whatever "\n" means to go)
+	//   \\n -> \n, \\\n -> \(0x0a), \\\n -> \\n, \\\\\n -> \\(0x0a)
+	re := regexp.MustCompile("\\\\+n") // One or more slashes followed by n.
+	t = re.ReplaceAllStringFunc(t, func(s string) string {
+		if len(s)%2 != 0 {
+			return s
+		}
+		return strings.Replace(s, "\\n", "\n", 1)
+	})
+
+	// Same for colons.
+	re = regexp.MustCompile("\\\\+c") // One or more slashes followed by c.
+	t = re.ReplaceAllStringFunc(t, func(s string) string {
+		if len(s)%2 != 0 {
+			return s
+		}
+		return strings.Replace(s, "\\c", ":", 1)
+	})
+
+	return strings.Replace(t, "\\\\", "\\", -1)
+}
+
+// GetToken returns the value of a token, and a boolean indicating if the token
+// exists (as opposed to the token being the empty string).
+func GetToken(ctx context.Context, tokenName, packedTokens string) (string, bool) {
+	tokenName = escapeToken(tokenName)
+	pairs := strings.Split(packedTokens, "\n")
+	for _, v := range pairs {
+		parts := strings.SplitN(v, ":", 2)
+		if len(parts) != 2 {
+			logging.Warningf(ctx, "Missing ':' separator in key:value token %s in RuleResult.MetaData", v)
+			continue
+		}
+		if parts[0] != tokenName {
+			continue
+		}
+		return unescapeToken(parts[1]), true
+	}
+	return "", false
+}
+
+// SetToken modifies the value of the token if it exists, or adds it if not.
+func SetToken(ctx context.Context, tokenName, tokenValue, packedTokens string) (string, error) {
+	tokenValue = escapeToken(tokenValue)
+	tokenName = escapeToken(tokenName)
+	modified := false
+	newVal := fmt.Sprintf("%s:%s", tokenName, tokenValue)
+	pairs := strings.Split(packedTokens, "\n")
+	for i, v := range pairs {
+		if strings.HasPrefix(v, tokenName+":") {
+			pairs[i] = newVal
+			modified = true
+			break
+		}
+	}
+	if !modified {
+		pairs = append(pairs, newVal)
+	}
+	return strings.Join(pairs, "\n"), nil
+}
+
+// GetToken is a convenience method to get tokens from a RuleResult's MetaData.
+// exists (as opposed to the token being the empty string).
+// Assumes rr.MetaData is a \n separated list of "key:value" strings, used by
+// rules to specify details of the notification not conveyed in the .Message
+// field.
+func (rr *RuleResult) GetToken(ctx context.Context, tokenName string) (string, bool) {
+	return GetToken(ctx, tokenName, rr.MetaData)
+}
+
+// SetToken is a convenience method to set tokens on a RuleResult's MetaData.
+// Assumes rr.MetaData is a \n separated list of "key:value" strings, used by
+// rules to specify details of the notification not conveyed in the .Message
+// field.
+func (rr *RuleResult) SetToken(ctx context.Context, tokenName, tokenValue string) error {
+	var err error
+	rr.MetaData, err = SetToken(ctx, tokenName, tokenValue, rr.MetaData)
+	return err
+}

@@ -55,7 +55,7 @@ func TestCommitAuditor(t *testing.T) {
 			Rules: map[string]RuleSet{"rules": AccountRules{
 				Account: "new@test.com",
 				Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-					return &RuleResult{"Dummy rule", rulePassed, ""}
+					return &RuleResult{"Dummy rule", rulePassed, "", ""}
 				}},
 				notificationFunction: fileBugForFinditViolation,
 			}},
@@ -102,7 +102,7 @@ func TestCommitAuditor(t *testing.T) {
 			})
 			Convey("Some fail", func() {
 				RuleMap["new-repo"].Rules["rules"].(AccountRules).Funcs[0] = func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-					return &RuleResult{"Dummy rule", ruleFailed, ""}
+					return &RuleResult{"Dummy rule", ruleFailed, "", ""}
 				}
 				resp, err := client.Get(srv.URL + auditorPath + "?repo=new-repo")
 				So(err, ShouldBeNil)
@@ -122,7 +122,7 @@ func TestCommitAuditor(t *testing.T) {
 					if rc.Status == auditScheduled {
 						panic("This always panics")
 					}
-					return &RuleResult{"Dummy rule", ruleFailed, ""}
+					return &RuleResult{"Dummy rule", ruleFailed, "", ""}
 				}
 				resp, err := client.Get(srv.URL + auditorPath + "?repo=new-repo")
 				So(err, ShouldBeNil)

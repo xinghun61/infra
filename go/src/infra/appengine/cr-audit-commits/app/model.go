@@ -155,6 +155,9 @@ type RuleResult struct {
 	RuleName         string
 	RuleResultStatus RuleStatus
 	Message          string
+	// Freeform string that can be used by rules to pass data to notifiers.
+	// Notably used by the .GetToken and .SetToken methods.
+	MetaData string `gae:",noindex"`
 }
 
 // GetViolations returns the subset of RuleResults that are violations.

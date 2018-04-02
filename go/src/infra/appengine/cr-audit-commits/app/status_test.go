@@ -61,7 +61,7 @@ func TestStatusPage(t *testing.T) {
 				Rules: map[string]RuleSet{"rules": AccountRules{
 					Account: "new@test.com",
 					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, ""}
+						return &RuleResult{"Dummy rule", rulePassed, "", ""}
 					}},
 				}},
 			}
@@ -99,9 +99,9 @@ func TestStatusPage(t *testing.T) {
 						CommitHash:   fmt.Sprintf("%02d%02d%02d", i, i, i),
 						Status:       AuditStatus(i % 3), // Alternate all statuses.
 						Result: []RuleResult{
-							{"First Rule", rulePassed, ""},
-							{"Second Rule", ruleFailed, "Some rules fail"},
-							{"Third Rule", ruleSkipped, "Some rules are skipped"},
+							{"First Rule", rulePassed, "", ""},
+							{"Second Rule", ruleFailed, "Some rules fail", ""},
+							{"Third Rule", ruleSkipped, "Some rules are skipped", ""},
 						},
 						CommitTime: cTime,
 					}

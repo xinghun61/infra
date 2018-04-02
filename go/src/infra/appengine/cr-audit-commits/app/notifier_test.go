@@ -67,7 +67,7 @@ func TestNotifier(t *testing.T) {
 				Rules: map[string]RuleSet{"rules": AccountRules{
 					Account: "new@test.com",
 					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, ""}
+						return &RuleResult{"Dummy rule", rulePassed, "", ""}
 					}},
 					notificationFunction: fileBugForFinditViolation,
 				}},
@@ -90,7 +90,7 @@ func TestNotifier(t *testing.T) {
 				Rules: map[string]RuleSet{"rules": AccountRules{
 					Account: "author@test.com",
 					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, ""}
+						return &RuleResult{"Dummy rule", rulePassed, "", "label:Random-Label"}
 					}},
 					notificationFunction: fileBugForFinditViolation,
 				}},
@@ -119,7 +119,7 @@ func TestNotifier(t *testing.T) {
 					RepoStateKey:     rsk,
 					CommitHash:       "600dc0de",
 					Status:           auditCompleted,
-					Result:           []RuleResult{{"DummyRule", rulePassed, ""}},
+					Result:           []RuleResult{{"DummyRule", rulePassed, "", ""}},
 					CommitterAccount: "committer@test.com",
 					AuthorAccount:    "author@test.com",
 					CommitMessage:    "This commit passed all audits.",
@@ -153,7 +153,7 @@ func TestNotifier(t *testing.T) {
 					RepoStateKey:     rsk,
 					CommitHash:       "badc0de",
 					Status:           auditCompletedWithViolation,
-					Result:           []RuleResult{{"DummyRule", ruleFailed, "This commit is bad"}},
+					Result:           []RuleResult{{"DummyRule", ruleFailed, "This commit is bad", ""}},
 					CommitterAccount: "committer@test.com",
 					AuthorAccount:    "author@test.com",
 					CommitMessage:    "This commit failed all audits.",
@@ -223,7 +223,7 @@ func TestNotifier(t *testing.T) {
 				Rules: map[string]RuleSet{"rulesEmail": AccountRules{
 					Account: "author@test.com",
 					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, ""}
+						return &RuleResult{"Dummy rule", rulePassed, "", ""}
 					}},
 					notificationFunction: sendEmailForFinditViolation,
 				}},
@@ -239,7 +239,7 @@ func TestNotifier(t *testing.T) {
 				RepoStateKey:     rsk,
 				CommitHash:       "badc0de",
 				Status:           auditCompletedWithViolation,
-				Result:           []RuleResult{{"DummyRule", ruleFailed, "This commit is bad"}},
+				Result:           []RuleResult{{"DummyRule", ruleFailed, "This commit is bad", ""}},
 				CommitterAccount: "committer@test.com",
 				AuthorAccount:    "author@test.com",
 				CommitMessage:    "This commit failed all audits.",
