@@ -3,6 +3,8 @@
 const MAX_ATTEMPTS = 10;
 const CHROMIUM_PREFIX = "chromium%2Fsrc~master~";
 
+const gerritHost = 'https://chromium-review.googlesource.com';
+
 class SomTestExpectations extends Polymer.Element {
 
   static get is() {
@@ -15,6 +17,15 @@ class SomTestExpectations extends Polymer.Element {
         type: String,
         value: '',
         observer: '_editedTestNameChanged',
+      },
+      signedIn: {
+        type: Boolean,
+        value: false
+      },
+      clientId: {
+        type: String,
+        // Default to staging, localhost is whitelisted for dev/debugging.
+        value: '408214842030-n7qkqet08nqmsvoap6qkik6euga4v41v.apps.googleusercontent.com'
       },
       _testExpectationsJson: {
         type: Array,
@@ -49,6 +60,10 @@ class SomTestExpectations extends Polymer.Element {
   }
 
   ready() {
+    if (window.location.host == 'sheriff-o-matic.appspot.com') {
+      this.clientId = '297387252952-io4k56a9uagle7rq4o8b7sclfih6136c.apps.googleusercontent.com';
+    }
+
     super.ready();
 
     this.refresh();
@@ -101,9 +116,14 @@ class SomTestExpectations extends Polymer.Element {
   }
 
   _onCreateChangeCL(evt) {
+    if (!this.$.signIn.signedIn) {
+      this.$.signIn.signIn();
+      return;
+    }
     let expectation = this._testExpectationsJson.find((t) => {
       return t.TestName == this.$.editExpectationForm.expectation.TestName;
     }, this) || {};
+
     Object.assign(expectation, evt.detail.newValue);
     let formData = {
       TestName: expectation.TestName,
@@ -113,68 +133,150 @@ class SomTestExpectations extends Polymer.Element {
       XsrfToken: window.xsrfToken,
     };
 
-    fetch('/api/v1/testexpectation', {
-      method: 'POST',
-      credentials: 'same-origin',
-      body: JSON.stringify(formData),
-    }).then((resp) => {
-      if (resp.ok) {
-        resp.json().then((data) => {
+    try {
+      fetch('/api/v1/testexpectation', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: JSON.stringify(formData),
+      }).then(resp => {
+        if (resp.ok) {
+          resp.json().then(body => {
             this.$.editDialog.toggle();
             this.$.changeListStatusDialog.toggle();
-            this._queuedRequestId = data.QueuedRequestID;
             this._errorMessage = '';
             this._statusMessage = '';
-            this._pollCLStatus();
-        });
-      } else {
-        // TODO: indicate failure in the dialog.
-        window.console.error('Non-OK response for updating expectation', resp);
-      }
-    }).catch((error) => {
-      window.console.error('Failed to update layout expectation: ', error);
+            this._createCL(body, formData);
+          }).catch(err => {
+            this._reportError('error decoding response JSON: ' + err);
+          });
+        } else {
+          console.error('bad response', resp);
+          this._reportError('bad response: ' + resp.status);
+        }
+      }).catch(err => {
+        this._reportError('error creating changes for CL: ' + err)
+      });
+
+    } catch (error) {
+      this._reportError('Failed to update layout expectation: ' + error);
       this.$.editDialog.toggle();
+    }
+  }
+
+  // TODO(seanmccullough): Simplify this mess of Promises.
+  _createCL(changes, changeInfo) {
+    let changeInput = {
+      // https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#change-input
+      project: 'chromium/src',
+      branch: 'master',
+      subject: 'update ' + changeInfo.TestName + ' expectations',
+      status: 'DRAFT',
+      topic: ''
+    };
+
+    let authPostJson =
+        '?$m=POST&$ct=application/json%3B%20charset%3DUTF-8&access_token=' +
+         this._oAuthToken.access_token;
+
+    let authPutText = '?$m=PUT&$ct=text/plain&access_token=' +
+        this._oAuthToken.access_token;
+
+    this._statusMessage = 'Creating CL...';
+    let createChange = fetch(gerritHost + '/changes/' + authPostJson, {
+      method: 'POST',
+      body: JSON.stringify(changeInput),
+      mode: 'cors',
+      headers: new Headers({
+          'Content-Type': 'text/plain; charset=UTF-8'
+      })
+    }).then(resp => {
+      if (!resp.ok) {
+        console.error('createChange resp not ok', resp);
+        this._reportError('Could not create change: ' + resp.status);
+        return;
+      }
+      return resp.text();
+    }).catch(err => {
+       console.error('createChange resp not ok', err);
+       this._reportError('Could not create change: ' + err);
+    });
+
+    let editFiles = createChange.then(changeInfoStr => {
+      // Strip jsonp prefix.
+      this._changeInfo = JSON.parse(changeInfoStr.substr(4));
+      let changeRequests = [];
+      this._statusMessage = 'Editing file(s)...';
+      for (let fileName in changes.CL) {
+        let contents = changes.CL[fileName];
+        let path = '/changes/' + this._changeInfo.change_id + '/edit/' +
+            encodeURIComponent(fileName) + authPutText;
+        changeRequests.push(fetch(gerritHost + path, {
+           method: 'POST',
+           body: contents,
+           mode: 'cors',
+           headers: new Headers({
+               'Content-Type': 'text/plain; charset=UTF-8'
+           })
+       }));
+      }
+
+      return Promise.all(changeRequests);
+    }).catch(err => {
+      console.error('createChange resp not ok', err);
+      this._reportError('Could not create change: ' + err);
+    });
+
+    let publish = editFiles.then(resps => {
+      for (let r in resps) {
+        if (!resps[r].ok) {
+          console.error('resp not ok', resps[r]);
+          this._reportError('Could not edit file: ' + resps[r].status);
+          return;
+        }
+      }
+
+      this._statusMessage = 'Publishing...';
+      let path = '/changes/' + this._changeInfo.change_id + '/edit:publish';
+      return fetch(gerritHost + path + authPostJson, {
+         method: 'POST',
+         body: JSON.stringify({notify: "NONE"}),
+         mode: 'cors',
+         headers: new Headers({
+             'Content-Type': 'text/plain; charset=UTF-8'
+         })
+      });
+    }).catch(err => {
+      console.error('could not edit files', err);
+      this._reportError('Could not create change: ' + err);
+    });
+
+    publish.then(resp => {
+       if (!resp.ok) {
+         console.error('resp not ok', resp);
+         this._reportError('Error publishing change: ' + resp.status);
+         return;
+       }
+       return resp.text();
+    }).then(respStr => {
+       // Success. Update the status dialog with a link to the CL.
+       this.$.changeListStatusDialog.toggle();
+       this._changeListId = this._changeInfo.change_id;
+       if (this._changeListId.startsWith(CHROMIUM_PREFIX)) {
+         this._changeListId =
+             this._changeListId.substr(CHROMIUM_PREFIX.length);
+       }
+       this.$.changeListDialog.toggle();
+    }).catch(err => {
+      console.error('could not publish change', err);
+      this._reportError('Could not publish change: ' + err);
     });
   }
 
-  _pollCLStatus(opt_attempt) {
-    let attempt = opt_attempt || 1;
-    // Commence polling to get the CL ID.
-    fetch(`/api/v1/testexpectation/${this._queuedRequestId}`, {
-        credentials: 'same-origin'
-    }).then((resp) => {
-      if (resp.ok) {
-        resp.json().then((data) => {
-          if (data.ChangeID != '') {
-            this.$.changeListStatusDialog.toggle();
-            this._changeListId = data.ChangeID;
-            if (this._changeListId.startsWith(CHROMIUM_PREFIX)) {
-              this._changeListId =
-                  this._changeListId.substr(CHROMIUM_PREFIX.length);
-            }
-            this.$.changeListDialog.toggle();
-          } else if (data.ErrorMessage != '') {
-            this._errorMessage = data.ErrorMessage;
-            this._statusMessage = '';
-            this.$.progress.hidden = true;
-            this._cancelPollingTask();
-          } else if (attempt < MAX_ATTEMPTS) {
-            let delay = attempt * attempt;
-            this._countdown(delay);
-            this.$.progress.hidden = false;
-            attempt += 1;
-            this._pollingTask = Polymer.Async.timeOut.after(delay * 1000).run(
-                this._pollCLStatus.bind(this, attempt));
-          } else {
-            this._statusMessage = 'Too many CL status fetch attempts. Giving up.';
-          }
-        });
-      } else {
-        this._statusMessage = 'Failed to get CL status: ' + error;
-      }
-    }).catch((error) => {
-      this._statusMessage = 'Error trying to fetch cl status: ' + error;
-    });
+  _reportError(msg) {
+    console.error(msg);
+    this._errorMessage = msg;
+    this._statusMessage = '';
+    this.$.progress.hidden = true;
   }
 
   _countdown(delay) {
@@ -240,6 +342,10 @@ class SomTestExpectations extends Polymer.Element {
     if (this._countdownTask) {
       Polymer.Async.timeOut.cancel(this._countdownTask);
     }
+  }
+
+  handleSignin(resp) {
+    this._oAuthToken = resp.detail;
   }
 }
 

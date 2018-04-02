@@ -6,6 +6,8 @@
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../../bower_components/google-signin/google-signin.html">
+<link rel="import" href="../../bower_components/google-signin/google-signin-aware.html">
 
 <link rel="import" href="../../elements/som-header-styles.html">
 <link rel="import" href="../../elements/som-input-styles.html">
@@ -71,7 +73,19 @@
       paper-progress {
         width: inherit;
       }
+      google-signin {
+        max-width: 120px;
+      }
     </style>
+    <google-signin-aware
+        scopes="https://www.googleapis.com/auth/gerritcodereview"
+        client-id="[[clientId]]"
+        on-google-signin-aware-success="handleSignin">
+    </google-signin-aware>
+    <div hidden="[[signedIn]]">You must be also be signed in with web client OAuth to edit expectations.</div>
+    <google-signin id="signIn" signed-in="{{signedIn}}"
+        client-id="408214842030-n7qkqet08nqmsvoap6qkik6euga4v41v.apps.googleusercontent.com">
+    </google-signin>
     <iron-ajax
         id="testExpectationsAjax"
         url="/api/v1/testexpectations"

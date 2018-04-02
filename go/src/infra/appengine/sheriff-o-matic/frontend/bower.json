@@ -81,7 +81,8 @@
     "vaadin-grid": "https://github.com/vaadin/vaadin-grid.git#61eb02c4378d936df486aeef9b0e8f51c9869245",
     "web-animations-js": "https://github.com/web-animations/web-animations-js.git#a2dddad1c210c8abe5bc1c5a5e126e9946d44252",
     "web-component-tester": "https://github.com/Polymer/web-component-tester.git#1ddc0535aa436849e9653df6d4f9d93a6dc6d398",
-    "webcomponentsjs": "https://github.com/Polymer/webcomponentsjs.git#f01672c05cca9ec5839b064d2f5e1da73f01ea10"
+    "webcomponentsjs": "https://github.com/Polymer/webcomponentsjs.git#f01672c05cca9ec5839b064d2f5e1da73f01ea10",
+    "google-signin": "GoogleWebComponents/google-signin#^2.0.0"
   },
   "resolutions": {
     "accessibility-developer-tools": "3616c094e090174f70b53ca4cea25529522abffb",
