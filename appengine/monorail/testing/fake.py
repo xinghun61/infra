@@ -26,7 +26,6 @@ from services import caches
 from services import config_svc
 from services import features_svc
 from services import project_svc
-from services import user_svc
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
@@ -455,7 +454,7 @@ class UserService(object):
         self._CreateUser(cnxn, email)
         user_id = self.users_by_email.get(email)
       else:
-        raise user_svc.NoSuchUserException(email)
+        raise exceptions.NoSuchUserException(email)
 
     return user_id
 

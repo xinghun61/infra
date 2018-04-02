@@ -25,6 +25,11 @@ class NoSuchProjectException(Error):
   pass
 
 
+class NoSuchUserException(Error):
+  """No user with the specified name exists."""
+  pass
+
+
 class NoSuchIssueException(Error):
   """The requested issue was not found."""
   pass
@@ -37,6 +42,41 @@ class NoSuchAttachmentException(Error):
 
 class NoSuchCommentException(Error):
   """The requested comment was not found."""
+  pass
+
+
+class NoSuchComponentException(Error):
+  """No component with the specified name exists."""
+  pass
+
+
+class InvalidComponentNameException(Error):
+  """The component name is invalid."""
+  pass
+
+
+class NoSuchFieldDefException(Error):
+  """No field def for specified project exists."""
+  pass
+
+
+class InvalidFieldTypeException(Error):
+  """Expected field type and actual field type do not match."""
+  pass
+
+
+class CircularGroupException(Error):
+  """Circular nested group exception."""
+  pass
+
+
+class GroupExistsException(Error):
+  """Group already exists exception."""
+  pass
+
+
+class NoSuchGroupException(Error):
+  """Requested group was not found exception."""
   pass
 
 

@@ -11,6 +11,7 @@ import time
 
 from third_party import ezt
 
+from framework import exceptions
 from framework import framework_helpers
 from framework import jsonfeed
 from framework import permissions
@@ -21,7 +22,6 @@ from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
-from services import user_svc
 
 
 class FieldCreate(servlet.Servlet):
@@ -118,7 +118,7 @@ class FieldCreate(servlet.Servlet):
           approver_ids_dict = self.services.user.LookupUserIDs(
               mr.cnxn, re.split('[,;\s]+', parsed.approvers_str))
           approver_ids = list(set(approver_ids_dict.values()))
-        except user_svc.NoSuchUserException:
+        except exceptions.NoSuchUserException:
           mr.errors.approvers = 'One or more approvers not found.'
       else:
         mr.errors.approvers = 'Please provide at least one default approver.'

@@ -24,7 +24,6 @@ from search import frontendsearchpipeline
 from services import api_svc_v1
 from services import service_manager
 from services import tracker_fulltext
-from services import user_svc
 from testing import fake
 from testing_utils import testing
 from tracker import tracker_bizobj
@@ -64,7 +63,7 @@ class FakeMonorailApiRequest(object):
       try:
         self.viewed_user_auth = authdata.AuthData.FromEmail(
           self.cnxn, self.viewed_username, services)
-      except user_svc.NoSuchUserException:
+      except exceptions.NoSuchUserException:
         self.viewed_user_auth = None
     if 'projectId' in request:
       self.project_name = request['projectId']
@@ -1061,7 +1060,7 @@ class AllBaseChecksTest(unittest.TestCase):
 
   def testNoUser(self):
     requester = RequesterMock(email='notexist@example.com')
-    with self.assertRaises(user_svc.NoSuchUserException):
+    with self.assertRaises(exceptions.NoSuchUserException):
       api_svc_v1.api_base_checks(
           None, requester, self.services, None, self.auth_client_ids, [])
 

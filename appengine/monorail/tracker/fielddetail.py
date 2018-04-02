@@ -11,13 +11,13 @@ import re
 
 from third_party import ezt
 
+from framework import exceptions
 from framework import framework_helpers
 from framework import framework_views
 from framework import permissions
 from framework import servlet
 from framework import urls
 from proto import tracker_pb2
-from services import user_svc
 from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
@@ -176,7 +176,7 @@ class FieldDetail(servlet.Servlet):
           approver_ids_dict = self.services.user.LookupUserIDs(
               mr.cnxn, re.split('[,;\s]+', parsed.approvers_str))
           approver_ids = list(set(approver_ids_dict.values()))
-        except user_svc.NoSuchUserException:
+        except exceptions.NoSuchUserException:
           mr.errors.approvers = 'One or more approvers not found.'
       else:
         mr.errors.approvers = 'Please provide at least one default approver.'

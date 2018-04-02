@@ -30,6 +30,7 @@ from features import notify_helpers
 from features import notify_reasons
 from framework import authdata
 from framework import emailfmt
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
@@ -39,7 +40,6 @@ from framework import monorailrequest
 from framework import permissions
 from framework import template_helpers
 from framework import urls
-from services import user_svc
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from tracker import tracker_views
@@ -770,7 +770,7 @@ class OutboundEmailTask(jsonfeed.InternalTask):
       if user.banned:
         logging.info('Not notifying banned user %r', user.email)
         return {'note': 'Skipping because user is banned.'}
-    except user_svc.NoSuchUserException:
+    except exceptions.NoSuchUserException:
       pass
 
     references = email_params.get('references')

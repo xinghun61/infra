@@ -54,8 +54,6 @@ from framework import xsrf
 from proto import project_pb2
 from search import query2ast
 from services import secrets_svc
-from services import user_svc
-from services import usergroup_svc
 from tracker import tracker_views
 
 NONCE_LENGTH = 32
@@ -185,11 +183,11 @@ class Servlet(webapp2.RequestHandler):
       self.response.headers['X-Frame-Options'] = 'SAMEORIGIN'
       webapp2.RequestHandler.dispatch(self)
 
-    except user_svc.NoSuchUserException as e:
+    except exceptions.NoSuchUserException as e:
       logging.warning('Trapped NoSuchUserException %s', e)
       self.abort(404, 'user not found')
 
-    except usergroup_svc.NoSuchGroupException as e:
+    except exceptions.NoSuchGroupException as e:
       logging.warning('Trapped NoSuchGroupException %s', e)
       self.abort(404, 'user group not found')
 

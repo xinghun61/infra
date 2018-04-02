@@ -4,7 +4,7 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Classes to hold information parsed from a request.
-@@@"""
+"""
 
 from google.appengine.api import users
 
@@ -72,7 +72,7 @@ class AuthData(object):
       A new AuthData object.
 
     Raises:
-      user_svc.NoSuchUserException: If the user of the email does not exist.
+      execptions.NoSuchUserException: If the user of the email does not exist.
     """
     auth = cls()
     auth.email = email

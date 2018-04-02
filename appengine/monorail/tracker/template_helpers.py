@@ -9,12 +9,12 @@ import collections
 import logging
 
 from framework import authdata
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_helpers
 from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
-from services import user_svc
 
 
 PHASE_INPUTS = [
@@ -88,7 +88,7 @@ def GetTemplateInfoFromParsed(mr, services, parsed, config):
         owner_id = user_id
       else:
         mr.errors.owner = 'User is not a member of this project.'
-    except user_svc.NoSuchUserException:
+    except exceptions.NoSuchUserException:
       mr.errors.owner = 'Owner not found.'
 
   component_ids = tracker_helpers.LookupComponentIDs(

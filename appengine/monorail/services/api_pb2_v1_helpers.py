@@ -20,7 +20,6 @@ from proto import api_pb2_v1
 from proto import project_pb2
 from proto import tracker_pb2
 from services import project_svc
-from services import user_svc
 from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
@@ -94,7 +93,7 @@ def convert_person(user_id, cnxn, services, trap_exception=False):
     return None
   try:
     user = services.user.GetUser(cnxn, user_id)
-  except user_svc.NoSuchUserException as ex:
+  except exceptions.NoSuchUserException as ex:
     if trap_exception:
       logging.warning(str(ex))
       return None
@@ -325,7 +324,7 @@ def _get_user_email(user_service, cnxn, user_id):
             cnxn, user_id)
     if not user_email:
       user_email = framework_constants.DELETED_USER_NAME
-  except user_svc.NoSuchUserException:
+  except exceptions.NoSuchUserException:
     user_email = framework_constants.DELETED_USER_NAME
   return user_email
 

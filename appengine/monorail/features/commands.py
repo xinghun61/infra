@@ -8,9 +8,9 @@
 import logging
 import re
 
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
-from services import user_svc
 from tracker import tracker_constants
 
 
@@ -190,7 +190,7 @@ class AssignmentParser(object):
       else:
         try:
           self.owner_id = _LookupMeOrUsername(cnxn, value, services, user_id)
-        except user_svc.NoSuchUserException:
+        except exceptions.NoSuchUserException:
           logging.warning('bad owner: %r when committing to project_id %r',
                           value, config.project_id)
           valid_line = False
@@ -207,7 +207,7 @@ class AssignmentParser(object):
             self.cc_list.append(user_id)
         self.cc_list = [user_id for user_id in self.cc_list
                         if user_id not in self.cc_remove]
-      except user_svc.NoSuchUserException:
+      except exceptions.NoSuchUserException:
         logging.warning('bad cc: %r when committing to project_id %r',
                         value, config.project_id)
         valid_line = False

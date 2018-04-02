@@ -8,11 +8,11 @@
 import logging
 import re
 
+from framework import exceptions
 from framework import framework_helpers
 from framework import permissions
 from framework import servlet
 from proto import usergroup_pb2
-from services import user_svc
 from sitewide import group_helpers
 
 
@@ -57,7 +57,7 @@ class GroupCreate(servlet.Servlet):
           mr.cnxn, existing_group_id)
       if existing_settings:
         mr.errors.groupname = 'That user group already exists'
-    except user_svc.NoSuchUserException:
+    except exceptions.NoSuchUserException:
       pass
 
     if post_data.get('import_group'):

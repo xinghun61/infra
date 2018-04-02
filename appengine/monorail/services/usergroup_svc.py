@@ -18,6 +18,7 @@ import collections
 import logging
 import re
 
+from framework import exceptions
 from framework import permissions
 from framework import sql
 from proto import usergroup_pb2
@@ -203,7 +204,7 @@ class UserGroupService(object):
     # Circle detection
     for mid in member_ids:
       if self.group_dag.IsChild(cnxn, group_id, mid):
-        raise CircularGroupException(
+        raise exceptions.CircularGroupException(
             '%s is already an ancestor of group %s.' % (mid, group_id))
 
     self.usergroup_tbl.Delete(
@@ -526,23 +527,3 @@ class UserGroupDAG(object):
     result['parents'] = self.user_group_parents
     result['children'] = self.user_group_children
     return str(result)
-
-
-class Error(Exception):
-  """Base class for errors from this module."""
-  pass
-
-
-class CircularGroupException(Error):
-  """Circular nested group exception."""
-  pass
-
-
-class GroupExistsException(Error):
-  """Group already exists exception."""
-  pass
-
-
-class NoSuchGroupException(Error):
-  """Requested group was not found exception."""
-  pass

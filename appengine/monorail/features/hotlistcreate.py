@@ -11,13 +11,13 @@ import re
 
 from features import features_constants
 from features import hotlist_helpers
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_helpers
 from framework import permissions
 from framework import servlet
 from framework import urls
 from services import features_svc
-from services import user_svc
 from proto import api_pb2_v1
 
 
@@ -85,7 +85,7 @@ class HotlistCreate(servlet.Servlet):
       try:
         editor_dict = self.services.user.LookupUserIDs(mr.cnxn, editor_emails)
         editor_ids = editor_dict.values()
-      except user_svc.NoSuchUserException:
+      except exceptions.NoSuchUserException:
         mr.errors.editors = _MSG_INVALID_MEMBERS_INPUT
       # In case the logged-in user specifies themselves as an editor, ignore it.
       editor_ids = [eid for eid in editor_ids if eid != mr.auth.user_id]

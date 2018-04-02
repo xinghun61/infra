@@ -10,6 +10,7 @@ import time
 
 from third_party import ezt
 
+from framework import exceptions
 from framework import framework_helpers
 from framework import framework_views
 from framework import paginate
@@ -17,7 +18,6 @@ from framework import permissions
 from framework import servlet
 from project import project_helpers
 from proto import usergroup_pb2
-from services import usergroup_svc
 from sitewide import group_helpers
 from sitewide import sitewide_views
 
@@ -58,7 +58,7 @@ class GroupDetail(servlet.Servlet):
     group_settings = self.services.usergroup.GetGroupSettings(
         mr.cnxn, group_id)
     if not group_settings:
-      raise usergroup_svc.NoSuchGroupException()
+      raise exceptions.NoSuchGroupException()
 
     member_ids_dict, owner_ids_dict = (
         self.services.usergroup.LookupVisibleMembers(
@@ -151,7 +151,7 @@ class GroupDetail(servlet.Servlet):
       try:
         self.services.usergroup.UpdateMembers(
             mr.cnxn, group_id, new_member_ids, role)
-      except usergroup_svc.CircularGroupException:
+      except exceptions.CircularGroupException:
         mr.errors.addmembers = (
             'The members are already ancestors of current group.')
 

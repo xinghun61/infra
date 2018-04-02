@@ -11,6 +11,7 @@ import re
 
 from features import autolink_constants
 from framework import authdata
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import permissions
@@ -18,7 +19,6 @@ from framework import timestr
 from framework import validate
 from proto import tracker_pb2
 from services import config_svc
-from services import user_svc
 from tracker import tracker_bizobj
 
 
@@ -165,7 +165,7 @@ def ParseOneFieldValue(cnxn, user_service, fd, val_str):
     if val_str:
       try:
         user_id = user_service.LookupUserID(cnxn, val_str, autocreate=False)
-      except user_svc.NoSuchUserException:
+      except exceptions.NoSuchUserException:
         # Set to invalid user ID to display error during the validation step.
         user_id = INVALID_USER_ID
       return tracker_bizobj.MakeFieldValue(

@@ -23,8 +23,6 @@ from framework import permissions
 from framework import ratelimiter
 from services import config_svc
 from services import service_manager
-from services import user_svc
-from services import usergroup_svc
 from testing import fake
 from testing import testing_helpers
 
@@ -152,7 +150,7 @@ class MonorailServicerTest(unittest.TestCase):
     """An expected exception in the Do* method causes an error status."""
     self.SetUpRecordMonitoringStats()
     # pylint: disable=attribute-defined-outside-init
-    self.request.exc_class = user_svc.NoSuchUserException
+    self.request.exc_class = exceptions.NoSuchUserException
     response = self.svcr.CalcSomething(
         self.request, self.prpc_context, cnxn=self.cnxn, auth=self.auth)
     self.assertTrue(self.svcr.was_called)
@@ -277,22 +275,21 @@ class MonorailServicerTest(unittest.TestCase):
   def testProcessException(self):
     """Expected exceptions are converted to pRPC codes, expected not."""
     self.CheckExceptionStatus(
-        user_svc.NoSuchUserException(), codes.StatusCode.NOT_FOUND)
+        exceptions.NoSuchUserException(), codes.StatusCode.NOT_FOUND)
     self.CheckExceptionStatus(
         exceptions.NoSuchProjectException(), codes.StatusCode.NOT_FOUND)
     self.CheckExceptionStatus(
         exceptions.NoSuchIssueException(), codes.StatusCode.NOT_FOUND)
     self.CheckExceptionStatus(
-        config_svc.NoSuchComponentException(), codes.StatusCode.NOT_FOUND)
+        exceptions.NoSuchComponentException(), codes.StatusCode.NOT_FOUND)
     self.CheckExceptionStatus(
         permissions.BannedUserException(), codes.StatusCode.PERMISSION_DENIED)
     self.CheckExceptionStatus(
         permissions.PermissionException(), codes.StatusCode.PERMISSION_DENIED)
     self.CheckExceptionStatus(
-        usergroup_svc.GroupExistsException(),
-        codes.StatusCode.INVALID_ARGUMENT)
+        exceptions.GroupExistsException(), codes.StatusCode.INVALID_ARGUMENT)
     self.CheckExceptionStatus(
-        config_svc.InvalidComponentNameException(),
+        exceptions.InvalidComponentNameException(),
         codes.StatusCode.INVALID_ARGUMENT)
     self.CheckExceptionStatus(
         ratelimiter.ApiRateLimitExceeded('client_id', 'email'),

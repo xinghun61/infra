@@ -12,6 +12,7 @@ import mox
 
 from google.appengine.ext import testbed
 
+from framework import exceptions
 from framework import permissions
 from framework import sql
 from proto import usergroup_pb2
@@ -164,7 +165,7 @@ class UserGroupServiceTest(unittest.TestCase):
     self.SetUpDAG([(888,), (999,)], [(999, 888)])
     self.mox.ReplayAll()
     self.assertRaises(
-        usergroup_svc.CircularGroupException,
+        exceptions.CircularGroupException,
         self.usergroup_service.UpdateMembers, self.cnxn, 999, [888], 'member')
     self.mox.VerifyAll()
 

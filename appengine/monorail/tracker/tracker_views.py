@@ -14,6 +14,7 @@ import urllib
 from google.appengine.api import app_identity
 from third_party import ezt
 
+from framework import exceptions
 from framework import filecontent
 from framework import framework_constants
 from framework import framework_helpers
@@ -24,7 +25,6 @@ from framework import template_helpers
 from framework import timestr
 from framework import urls
 from proto import tracker_pb2
-from services import user_svc
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
@@ -281,7 +281,7 @@ class DanglingIssueRefView(object):
     """Makes a simple object to display a link to an issue still in Codesite.
 
     Satisfies the same API and internal data members as IssueRefView,
-    excpet for the arguments to __init__.
+    except for the arguments to __init__.
 
     Args:
       project_name: The name of the project on Codesite
@@ -786,7 +786,7 @@ class IssueTemplateView(template_helpers.PBProxy):
     try:
       self.owner_view = framework_views.MakeUserView(
           mr.cnxn, user_service, template.owner_id)
-    except user_svc.NoSuchUserException:
+    except exceptions.NoSuchUserException:
       self.owner_view = None
     if self.owner_view:
       self.ownername = self.owner_view.email

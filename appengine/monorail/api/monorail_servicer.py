@@ -19,10 +19,6 @@ from framework import exceptions
 from framework import framework_bizobj
 from framework import ratelimiter
 from framework import permissions
-# TODO(jrobbins): Move exceptions from these modules to framework.execptions.
-from services import config_svc
-from services import user_svc
-from services import usergroup_svc
 
 
 def ConvertPRPCStatusToHTTPStatus(context):
@@ -142,7 +138,7 @@ class MonorailServicer(object):
     """Return True if we convert an exception to a pRPC status code."""
     logging.info(e.message)
     exc_type = type(e)
-    if exc_type == user_svc.NoSuchUserException:
+    if exc_type == exceptions.NoSuchUserException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
       prpc_context.details = 'The user does not exist.'
     elif exc_type ==  exceptions.NoSuchProjectException:
@@ -151,7 +147,7 @@ class MonorailServicer(object):
     elif exc_type ==  exceptions.NoSuchIssueException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
       prpc_context.details = 'The issue does not exist.'
-    elif exc_type == config_svc.NoSuchComponentException:
+    elif exc_type == exceptions.NoSuchComponentException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
       prpc_context.details = 'The component does not exist.'
     elif exc_type == permissions.BannedUserException:
@@ -160,10 +156,10 @@ class MonorailServicer(object):
     elif exc_type == permissions.PermissionException:
       prpc_context.set_code(codes.StatusCode.PERMISSION_DENIED)
       prpc_context.details = 'Permission denied.'
-    elif exc_type == usergroup_svc.GroupExistsException:
+    elif exc_type == exceptions.GroupExistsException:
       prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
       prpc_context.details = 'The user group already exists.'
-    elif exc_type == config_svc.InvalidComponentNameException:
+    elif exc_type == exceptions.InvalidComponentNameException:
       prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
       prpc_context.details = 'That component name is invalid.'
     # TODO(jrobbins): Increment and enforce action limits.

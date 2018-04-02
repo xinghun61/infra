@@ -21,7 +21,6 @@ from framework import template_helpers
 from framework import urls
 from project import project_helpers
 from project import project_views
-from services import user_svc
 
 CHECKBOX_PERMS = [
     permissions.VIEW,
@@ -129,7 +128,7 @@ class PeopleDetail(servlet.Servlet):
     member_username = None
     try:
       member_username = self.services.user.LookupUserEmail(cnxn, member_id)
-    except user_svc.NoSuchUserException:
+    except exceptions.NoSuchUserException:
       logging.info('user_id %s not found', member_id)
 
     if not member_username:

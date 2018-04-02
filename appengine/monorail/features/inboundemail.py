@@ -32,7 +32,6 @@ from framework import permissions
 from framework import sql
 from framework import template_helpers
 from proto import project_pb2
-from services import user_svc
 from tracker import tracker_helpers
 
 
@@ -170,7 +169,7 @@ class InboundEmail(webapp2.RequestHandler):
       auth = authdata.AuthData.FromEmail(
           cnxn, author_addr, self.services, autocreate=is_alert)
       author_id = auth.user_id
-    except user_svc.NoSuchUserException:
+    except exceptions.NoSuchUserException:
       author_id = None
     if not author_id:
       return _MakeErrorMessageReplyTask(
@@ -460,7 +459,7 @@ class BouncedEmail(BounceNotificationHandler):
       user = services.user.GetUser(cnxn, user_id)
       user.email_bounce_timestamp = int(time.time())
       services.user.UpdateUser(cnxn, user_id, user)
-    except user_svc.NoSuchUserException:
+    except exceptions.NoSuchUserException:
       logging.info('User %r not found, ignoring', email_addr)
       logging.info('Received bounce post ... [%s]', self.request)
       logging.info('Bounce original: %s', bounce_message.original)

@@ -46,11 +46,8 @@ from proto import tracker_pb2
 from search import frontendsearchpipeline
 from services import api_pb2_v1_helpers
 from services import client_config_svc
-from services import config_svc
 from services import service_manager
 from services import tracker_fulltext
-from services import user_svc
-from services import usergroup_svc
 from sitewide import sitewide_helpers
 from tracker import field_helpers
 from tracker import issuedetail
@@ -109,13 +106,13 @@ def monorail_api_method(
         self.ratelimiter.CheckStart(c_id, c_email, start_time)
         self.increment_request_limit(mar, request, c_id, c_email)
         ret = func(self, mar, *args, **kwargs)
-      except user_svc.NoSuchUserException as e:
+      except exceptions.NoSuchUserException as e:
         approximate_http_status = 404
         raise endpoints.NotFoundException(
             'The user does not exist: %s' % str(e))
       except (exceptions.NoSuchProjectException,
               exceptions.NoSuchIssueException,
-              config_svc.NoSuchComponentException) as e:
+              exceptions.NoSuchComponentException) as e:
         approximate_http_status = 404
         raise endpoints.NotFoundException(str(e))
       except (permissions.BannedUserException,
@@ -139,8 +136,8 @@ def monorail_api_method(
         approximate_http_status = 403
         raise endpoints.ForbiddenException(
             'The requester has exceeded API quotas limit')
-      except (usergroup_svc.GroupExistsException,
-              config_svc.InvalidComponentNameException,
+      except (exceptions.GroupExistsException,
+              exceptions.InvalidComponentNameException,
               ratelimiter.ApiRateLimitExceeded) as e:
         approximate_http_status = 400
         raise endpoints.BadRequestException(str(e))
@@ -200,7 +197,7 @@ def api_base_checks(request, requester, services, cnxn,
 
   Raises:
     endpoints.UnauthorizedException: If the requester is anonymous.
-    user_svc.NoSuchUserException: If the requester does not exist in Monorail.
+    exceptions.NoSuchUserException: If the requester does not exist in Monorail.
     NoSuchProjectException: If the project does not exist in Monorail.
     permissions.BannedUserException: If the requester is banned.
     permissions.PermissionException: If the requester does not have
@@ -247,7 +244,7 @@ def api_base_checks(request, requester, services, cnxn,
   issue_local_id = None
   if hasattr(request, 'issueId'):
     issue_local_id = request.issueId
-  # This could raise user_svc.NoSuchUserException
+  # This could raise exceptions.NoSuchUserException
   requester_id = services.user.LookupUserID(cnxn, requester.email())
   requester_pb = services.user.GetUser(cnxn, requester_id)
   requester_view = framework_views.UserView(requester_pb)
@@ -701,7 +698,7 @@ class MonorailApi(remote.Service):
         try:
           owner_id = self._services.user.LookupUserID(
               mar.cnxn, request.owner.name)
-        except user_svc.NoSuchUserException:
+        except exceptions.NoSuchUserException:
           raise endpoints.BadRequestException(
               'The specified owner %s does not exist.' % request.owner.name)
 
@@ -810,7 +807,7 @@ class MonorailApi(remote.Service):
     user_dict = self._services.user.LookupExistingUserIDs(
         mar.cnxn, [request.groupName])
     if request.groupName.lower() in user_dict:
-      raise usergroup_svc.GroupExistsException(
+      raise exceptions.GroupExistsException(
           'group %s already exists' % request.groupName)
 
     if request.ext_group_type:
@@ -834,7 +831,7 @@ class MonorailApi(remote.Service):
   def groups_get(self, mar, request):
     """Get a group's settings and users."""
     if not mar.viewed_user_auth:
-      raise user_svc.NoSuchUserException(request.groupName)
+      raise exceptions.NoSuchUserException(request.groupName)
     group_id = mar.viewed_user_auth.user_id
     group_settings = self._services.usergroup.GetGroupSettings(
         mar.cnxn, group_id)
@@ -948,14 +945,14 @@ class MonorailApi(remote.Service):
     config = self._services.config.GetProjectConfig(mar.cnxn, mar.project_id)
     leaf_name = request.componentName
     if not tracker_constants.COMPONENT_NAME_RE.match(leaf_name):
-      raise config_svc.InvalidComponentNameException(
+      raise exceptions.InvalidComponentNameException(
           'The component name %s is invalid.' % leaf_name)
 
     parent_path = request.parentPath
     if parent_path:
       parent_def = tracker_bizobj.FindComponentDef(parent_path, config)
       if not parent_def:
-        raise config_svc.NoSuchComponentException(
+        raise exceptions.NoSuchComponentException(
             'Parent component %s does not exist.' % parent_path)
       if not permissions.CanEditComponentDef(
           mar.auth.effective_ids, mar.perms, mar.project, parent_def, config):
@@ -968,7 +965,7 @@ class MonorailApi(remote.Service):
       path = leaf_name
 
     if tracker_bizobj.FindComponentDef(path, config):
-      raise config_svc.InvalidComponentNameException(
+      raise exceptions.InvalidComponentNameException(
           'The name %s is already in use.' % path)
 
     created = int(time.time())
@@ -1008,7 +1005,7 @@ class MonorailApi(remote.Service):
     component_def = tracker_bizobj.FindComponentDef(
         component_path, config)
     if not component_def:
-      raise config_svc.NoSuchComponentException(
+      raise exceptions.NoSuchComponentException(
           'The component %s does not exist.' % component_path)
     if not permissions.CanViewComponentDef(
         mar.auth.effective_ids, mar.perms, mar.project, component_def):
@@ -1044,7 +1041,7 @@ class MonorailApi(remote.Service):
     component_def = tracker_bizobj.FindComponentDef(
         component_path, config)
     if not component_def:
-      raise config_svc.NoSuchComponentException(
+      raise exceptions.NoSuchComponentException(
           'The component %s does not exist.' % component_path)
     if not permissions.CanViewComponentDef(
         mar.auth.effective_ids, mar.perms, mar.project, component_def):
@@ -1066,7 +1063,7 @@ class MonorailApi(remote.Service):
       if update.field == api_pb2_v1.ComponentUpdateFieldID.LEAF_NAME:
         leaf_name = update.leafName
         if not tracker_constants.COMPONENT_NAME_RE.match(leaf_name):
-          raise config_svc.InvalidComponentNameException(
+          raise exceptions.InvalidComponentNameException(
               'The component name %s is invalid.' % leaf_name)
 
         if '>' in original_path:
@@ -1077,7 +1074,7 @@ class MonorailApi(remote.Service):
 
         conflict = tracker_bizobj.FindComponentDef(new_path, config)
         if conflict and conflict.component_id != component_def.component_id:
-          raise config_svc.InvalidComponentNameException(
+          raise exceptions.InvalidComponentNameException(
               'The name %s is already in use.' % new_path)
         update_filterrule = True
       elif update.field == api_pb2_v1.ComponentUpdateFieldID.DESCRIPTION:

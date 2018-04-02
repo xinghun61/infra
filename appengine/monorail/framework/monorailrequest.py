@@ -35,7 +35,6 @@ from framework import profiler
 from framework import sql
 from framework import template_helpers
 from proto import api_pb2_v1
-from services import user_svc
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
@@ -139,7 +138,7 @@ class MonorailApiRequest(MonorailRequestBase):
       try:
         self.viewed_user_auth = authdata.AuthData.FromEmail(
             self.cnxn, self.viewed_username, services)
-      except user_svc.NoSuchUserException:
+      except exceptions.NoSuchUserException:
         self.viewed_user_auth = None
     self.LookupLoggedInUserPerms()
 
@@ -441,7 +440,7 @@ class MonorailRequest(MonorailRequestBase):
       with self.profiler.Phase('get viewed user, if any'):
         self.viewed_user_auth = authdata.AuthData.FromEmail(
             self.cnxn, self.viewed_username, services, autocreate=False)
-    except user_svc.NoSuchUserException:
+    except exceptions.NoSuchUserException:
       logging.info('could not find user %r', self.viewed_username)
       webapp2.abort(404, 'user not found')
 

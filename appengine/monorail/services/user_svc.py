@@ -13,6 +13,7 @@ import time
 
 import settings
 from framework import actionlimit
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
@@ -202,7 +203,7 @@ class UserService(object):
       A dict {user_id: email_addr} for all the requested IDs.
 
     Raises:
-      NoSuchUserException: if any requested user cannot be found.
+      exceptions.NoSuchUserException: if any requested user cannot be found.
     """
     self.email_cache.CacheItem(framework_constants.NO_USER_SPECIFIED, '')
     emails_dict, missed_ids = self.email_cache.GetAll(user_ids)
@@ -219,7 +220,7 @@ class UserService(object):
     nonexist_ids = [user_id for user_id in user_ids
                     if user_id and user_id not in emails_dict]
     if nonexist_ids:
-      raise NoSuchUserException(
+      raise exceptions.NoSuchUserException(
           'No email addresses found for users %r' % nonexist_ids)
 
     return emails_dict
@@ -235,7 +236,8 @@ class UserService(object):
       String email address of that user or None if user_id is invalid.
 
     Raises:
-      NoSuchUserException: if no email address was found for that user.
+      exceptions.NoSuchUserException: if no email address was found for that
+      user.
     """
     if not user_id:
       return None
@@ -283,8 +285,8 @@ class UserService(object):
       A dict {email_addr: user_id} for the requested emails.
 
     Raises:
-      NoSuchUserException: if some users were not found and autocreate is
-          False.
+      exceptions.NoSuchUserException: if some users were not found and
+          autocreate is False.
     """
     # Skip any addresses that look like "--", because that means "no user".
     # Also, make sure all email addresses are lower case.
@@ -303,7 +305,7 @@ class UserService(object):
     logging.info('nonexist_emails: %r, autocreate is %r',
                  nonexist_emails, autocreate)
     if not autocreate:
-      raise NoSuchUserException('%r' % nonexist_emails)
+      raise exceptions.NoSuchUserException('%r' % nonexist_emails)
 
     if not allowgroups:
       # Only create accounts for valid email addresses.
@@ -331,19 +333,20 @@ class UserService(object):
       email: string email address of the user to look up.
       autocreate: set to True to create users that were not found.
       allowgroups: set to True to allow non-email user name for group
-      creation.
+          creation.
 
     Returns:
       The int user ID of the specified user.
 
     Raises:
-      NoSuchUserException if the user was not found and autocreate is False.
+      exceptions.NoSuchUserException if the user was not found and autocreate
+          is False.
     """
     email = email.lower()
     email_dict = self.LookupUserIDs(
         cnxn, [email], autocreate=autocreate, allowgroups=allowgroups)
     if email not in email_dict:
-      raise NoSuchUserException('%r not found' % email)
+      raise exceptions.NoSuchUserException('%r not found' % email)
     return email_dict[email]
 
   ### Retrieval of user objects: with preferences, action limits, and cues
@@ -389,7 +392,7 @@ class UserService(object):
       Nothing.
     """
     if not user_id:
-      raise NoSuchUserException('Cannot update anonymous user')
+      raise exceptions.NoSuchUserException('Cannot update anonymous user')
 
     delta = {
         'is_site_admin': user.is_site_admin,
@@ -599,13 +602,3 @@ def _ActionLimitToRow(user_id, action_kind, al):
   return (user_id, action_kind, al.recent_count, al.reset_timestamp,
           al.lifetime_count, al.lifetime_limit, al.period_soft_limit,
           al.period_hard_limit)
-
-
-class Error(Exception):
-  """Base class for errors from this module."""
-  pass
-
-
-class NoSuchUserException(Error):
-  """No user with the specified name exists."""
-  pass

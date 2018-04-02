@@ -32,13 +32,12 @@ import collections
 import logging
 import re
 
-from collections import defaultdict
+from framework import exceptions
 from proto import ast_pb2
 from proto import tracker_pb2
 # TODO(jrobbins): if BUILTIN_ISSUE_FIELDS was passed through, I could
 # remove this dep.
 from search import query2ast
-from services import user_svc
 from tracker import tracker_bizobj
 
 
@@ -358,7 +357,7 @@ def _PreprocessExactUsers(cnxn, cond, user_service, id_fields):
     except ValueError:
       try:
         user_ids.append(user_service.LookupUserID(cnxn, val))
-      except user_svc.NoSuchUserException:
+      except exceptions.NoSuchUserException:
         logging.info('could not convert user %r to int ID', val)
         return cond  # preprocessing failed, stick with the original cond.
 
@@ -426,7 +425,7 @@ def _PreprocessHotlistCond(
       try:
         user_id = services.user.LookupUserID(cnxn, cur_user)
         users_to_hotlists[user_id].append(hotlists_str)
-      except user_svc.NoSuchUserException:
+      except exceptions.NoSuchUserException:
         logging.info('could not convert user %r to int ID', val)
         return cond
   hotlist_ids = set()

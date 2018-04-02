@@ -20,7 +20,6 @@ from proto import ast_pb2
 from proto import tracker_pb2
 from search import query2ast
 from search import searchpipeline
-from services import user_svc
 from tracker import component_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
@@ -712,7 +711,7 @@ def _ParseOneRule(
     if action_value:
       try:
         user_id = user_service.LookupUserID(cnxn, action_value)
-      except user_svc.NoSuchUserException:
+      except exceptions.NoSuchUserException:
         user_id = framework_constants.NO_USER_SPECIFIED
         error_list.append(
             'Rule %d: No such user: %s' % (rule_num, action_value))
@@ -729,7 +728,7 @@ def _ParseOneRule(
         user_id = user_service.LookupUserID(
             cnxn, email.strip(), autocreate=True)
         cc_ids.append(user_id)
-      except user_svc.NoSuchUserException:
+      except exceptions.NoSuchUserException:
         error_list.append(
             'Rule %d: No such user: %s' % (rule_num, email.strip()))
 

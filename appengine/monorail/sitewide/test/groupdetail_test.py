@@ -7,9 +7,9 @@
 
 import unittest
 
+from framework import exceptions
 from framework import permissions
 from services import service_manager
-from services import usergroup_svc
 from sitewide import groupdetail
 from testing import fake
 from testing import testing_helpers
@@ -137,7 +137,7 @@ class GroupDetailTest(unittest.TestCase):
     """If there is no such user group, raise an exception."""
     self.mr.viewed_user_auth.user_id = 404L
     self.assertRaises(
-        usergroup_svc.NoSuchGroupException,
+        exceptions.NoSuchGroupException,
         self.servlet.GatherPageData, self.mr)
 
 

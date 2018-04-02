@@ -1120,9 +1120,9 @@ class ConfigService(object):
       try:
         approval_fd = ids_to_field_def[approval_def.approval_id]
         if approval_fd.field_type != tracker_pb2.FieldTypes.APPROVAL_TYPE:
-          return InvalidFieldTypeException()
+          raise exceptions.InvalidFieldTypeException()
       except KeyError:
-        return NoSuchFieldDefException()
+        raise exceptions.NoSuchFieldDefException()
 
       self.approvaldef2approver_tbl.Delete(
           cnxn, approval_id=approval_def.approval_id, commit=False)
@@ -1783,27 +1783,3 @@ class ConfigService(object):
         [str(project_id)], key_prefix='field_rows:',
         namespace=settings.memcache_namespace)
 
-
-class Error(Exception):
-  """Base class for errors from this module."""
-  pass
-
-
-class NoSuchComponentException(Error):
-  """No component with the specified name exists."""
-  pass
-
-
-class InvalidComponentNameException(Error):
-  """The component name is invalid."""
-  pass
-
-
-class NoSuchFieldDefException(Error):
-  """No field def for specified project exists."""
-  pass
-
-
-class InvalidFieldTypeException(Error):
-  """Expected field type and actual field type do not match."""
-  pass
