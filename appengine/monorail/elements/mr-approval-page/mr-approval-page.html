@@ -1,12 +1,19 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../../bower_components/chopsui/chops-header.html">
+<link rel="import" href="../../bower_components/chopsui/chops-login.html">
+
 <dom-module id="mr-approval-page">
   <template>
     <style>
+      chops-header {
+        background-color: #BBDEFB;
+      }
     </style>
-    <div id="test">
-      hoppityHop, this is a test page
-    </div>
+    <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
+      <span slot="subheader">&gt; <a href="#">Feature Launch Issue</a></span>
+      <chops-login logout-url="/" user="test@chromium.org"></chops-login>
+    </chops-header>
   </template>
   <script src="../../elements/mr-approval-page/mr-approval-page.js"></script>
 </dom-module>

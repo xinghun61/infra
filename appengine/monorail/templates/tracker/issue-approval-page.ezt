@@ -9,4 +9,14 @@
 <script src="/elements/mr-approval-page/mr-approval-page.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
 [end]
 
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    background-color: #EEE;
+    font-family: 'Roboto', 'Noto', sans-serif;
+  }
+</style>
+
 <mr-approval-page></mr-approval-page>

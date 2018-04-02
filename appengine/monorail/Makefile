@@ -67,12 +67,13 @@ run: serve
 deps:
 	bower install
 	npm install
+	ln -sf ../../../crdx/chopsui bower_components/chopsui
 
 vulcanize: deps
-	$(VULCANIZE_PATH) elements/approval-page.html --inline-script | $(CRISPER_PATH) --html elements/approval-page.vulcanized.html --js elements/approval-page.vulcanized.js --only-split
+	$(VULCANIZE_PATH) elements/mr-approval-page/mr-approval-page.html --inline-script | $(CRISPER_PATH) --html elements/mr-approval-page/mr-approval-page.vulcanized.html --js elements/mr-approval-page/mr-approval-page.vulcanized.js --only-split
 
 clean_vulcanized:
-	rm -f elements/approval-page.vulcanized.js elements/approval-page.vulcanized.html
+	rm -f elements/mr-approval-page/mr-approval-page.vulcanized.js elements/mr-approval-page/mr-approval-page.vulcanized.html
 
 
 # AppEngine apps can be tested locally and in non-default versions upload to
