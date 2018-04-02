@@ -22,16 +22,47 @@ DEPS = [
 ]
 
 
-# Builder name => [{GOOS: ..., GOARCH: ...}].
-CROSS_COMPILING_BUILDERS = {
-  'infra-continuous-precise-64': [
-    {'GOOS': 'linux', 'GOARCH': 'arm'},
-    {'GOOS': 'linux', 'GOARCH': 'arm64'},
-    {'GOOS': 'linux', 'GOARCH': 'mips64'},
-    {'GOOS': 'linux', 'GOARCH': 's390x'},
-    {'GOOS': 'linux', 'GOARCH': 'ppc64'},
-    {'GOOS': 'linux', 'GOARCH': 'ppc64le'},
-  ],
+# Mapping from a builder name to a list of GOOS-GOARCH variants it should build
+# CIPD packages for. 'native' means "do not cross-compile, build for the host
+# platform". Targeting 'native' will also usually build non-go based packages.
+#
+# If a builder is missing from the mapping, 'native' is assumed for it.
+#
+# If a builder is present, but the list of GOOS-GOARCH for it is empty, it won't
+# be used for building CIPD packages at all.
+CIPD_PACKAGE_BUILDERS = {
+  # trusty-32 is the primary builder for linux-386.
+  'infra-continuous-precise-32': [],
+  'infra-continuous-trusty-32':  ['native'],
+
+  # trusty-64 is the primary builder for linux-amd64, and the rest just
+  # cross-compile to different platforms (to speed up the overall cycle time by
+  # doing stuff in parallel).
+  'infra-continuous-precise-64': ['linux-arm', 'linux-arm64'],
+  'infra-continuous-trusty-64':  ['native'],
+  'infra-continuous-xenial-64':  ['linux-mips64'],
+  'infra-continuous-yakkety-64': ['linux-s390x'],
+  'infra-continuous-zesty-64':   ['linux-ppc64', 'linux-ppc64le'],
+
+  # 10.13 is the primary builder for darwin-amd64.
+  'infra-continuous-mac-10.9-64':  [],
+  'infra-continuous-mac-10.10-64': [],
+  'infra-continuous-mac-10.11-64': [],
+  'infra-continuous-mac-10.12-64': [],
+  'infra-continuous-mac-10.13-64': ['native'],
+
+  # Windows builders each build and test for their own bitness.
+  'infra-continuous-win-32': ['native'],
+  'infra-continuous-win-64': ['native'],
+}
+
+
+# Set of builders that build and upload LUCI binaries to Google Storage, for
+# clients that don't use CIPD (like chromium/src hooks).
+LEGACY_LUCI_BUILDERS = {
+  'infra-continuous-trusty-64',
+  'infra-continuous-mac-10.13-64',
+  'infra-continuous-win-64',
 }
 
 
@@ -40,9 +71,18 @@ CROSS_COMPILING_BUILDERS = {
 GO_DEPS_BUNDLING_BUILDER = 'infra-continuous-trusty-64'
 
 
-def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber,
-                        goos, goarch):
-  # 'goos' and 'goarch' used for cross-compilation of Go code.
+def get_go_platforms_for_cipd(builder):
+  """Yields a list of (GOOS, GOARCH) to build for on the given builder."""
+  for plat in CIPD_PACKAGE_BUILDERS.get(builder, ['native']):
+    if plat == 'native':
+      yield None, None  # reset GOOS and GOARCH
+    else:
+      yield plat.split('-', 1)
+
+
+def build_cipd_packages(
+    api, repo, rev, mastername, buildername, buildnumber, goos, goarch):
+  # 'goos' and 'goarch' are used for cross-compilation of Go code.
   step_suffix = ''
   env = {}
   if goos or goarch:
@@ -169,7 +209,7 @@ def build_main(api, mastername, buildername, buildnumber, project_name,
         # http://crbug/766416 is resolved.
         args = ['test']
         if (api.platform.is_linux and api.platform.bits == 32 and
-            project_name == 'infra_internal'):
+            project_name == 'infra_internal'):  # pragma: no cover
           args.append('--no-coverage')
         api.python('infra python tests', 'test.py', args)
 
@@ -205,17 +245,15 @@ def build_main(api, mastername, buildername, buildnumber, project_name,
         ['python', api.path['checkout'].join('go', 'test.py')])
 
   if buildnumber != -1:
-    build_cipd_packages(api, repo_name, rev, mastername, buildername,
-                        buildnumber, None, None)
-    for spec in CROSS_COMPILING_BUILDERS.get(buildername, []):
-      build_cipd_packages(api, repo_name, rev, mastername, buildername,
-                          buildnumber, spec['GOOS'], spec['GOARCH'])
-  else:
+    for goos, goarch in get_go_platforms_for_cipd(buildername):
+      build_cipd_packages(
+          api, repo_name, rev, mastername, buildername, buildnumber,
+          goos, goarch)
+  else:  # pragma: no cover
     result = api.step('cipd - not building packages', None)
     result.presentation.status = api.step.WARNING
 
-  # Only build luci-go executables on 64 bits, public CI.
-  if project_name == 'infra' and buildername.endswith('-64'):
+  if buildername in LEGACY_LUCI_BUILDERS:
     build_luci(api)
 
 
@@ -234,68 +272,7 @@ def GenTests(api):
   }
 
   yield (
-    api.test('infra') +
-    api.properties.git_scheduled(
-        path_config='kitchen',
-        buildername='infra-continuous',
-        buildnumber=123,
-        mastername='chromium.infra',
-        repository='https://chromium.googlesource.com/infra/infra',
-    ) +
-    api.override_step_data(
-        'cipd - upload packages', api.json.output(cipd_json_output))
-  )
-  yield (
-    api.test('infra_win') +
-    api.properties.git_scheduled(
-        path_config='kitchen',
-        buildername='infra-continuous',
-        buildnumber=123,
-        mastername='chromium.infra',
-        repository='https://chromium.googlesource.com/infra/infra',
-    ) +
-    api.platform.name('win')
-  )
-  yield (
-    api.test('infra_internal') +
-    api.properties.git_scheduled(
-        path_config='kitchen',
-        buildername='infra-internal-continuous',
-        buildnumber=123,
-        mastername='internal.infra',
-        repository=
-            'https://chrome-internal.googlesource.com/infra/infra_internal',
-    ) +
-    api.override_step_data(
-        'cipd - upload packages', api.json.output(cipd_json_output))
-  )
-  yield (
-    api.test('infra_internal-32_bit') +
-    api.platform.bits(32) + api.platform.name('linux') +
-    api.properties.git_scheduled(
-        path_config='kitchen',
-        buildername='infra-internal-continuous',
-        buildnumber=123,
-        mastername='internal.infra',
-        repository=
-            'https://chrome-internal.googlesource.com/infra/infra_internal',
-    ) +
-    api.override_step_data(
-        'cipd - upload packages', api.json.output(cipd_json_output))
-  )
-  yield (
-    api.test('infra-64') +
-    api.properties.git_scheduled(
-        path_config='kitchen',
-        buildername='infra-continuous-64',
-        buildnumber=123,
-        mastername='chromium.infra',
-        repository='https://chromium.googlesource.com/infra/infra',
-    )
-  )
-
-  yield (
-    api.test('infra-cross-compile') +
+    api.test('infra-continuous-precise-64') +
     api.properties.git_scheduled(
         path_config='kitchen',
         buildername='infra-continuous-precise-64',
@@ -304,30 +281,45 @@ def GenTests(api):
         repository='https://chromium.googlesource.com/infra/infra',
     ) +
     api.override_step_data(
-        'cipd - upload packages', api.json.output(cipd_json_output)) +
-    api.override_step_data(
         'cipd - upload packages [GOOS:linux GOARCH:arm]',
+        api.json.output(cipd_json_output)) +
+    api.override_step_data(
+        'cipd - upload packages [GOOS:linux GOARCH:arm64]',
         api.json.output(cipd_json_output))
   )
-
   yield (
-    api.test('infra-go-deps-bundle') +
+    api.test('infra-continuous-trusty-64') +
     api.properties.git_scheduled(
         path_config='kitchen',
         buildername='infra-continuous-trusty-64',
         buildnumber=123,
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/infra/infra',
-    )
+    ) +
+    api.override_step_data(
+        'cipd - upload packages', api.json.output(cipd_json_output))
   )
-
   yield (
-    api.test('infra_swarming') +
+    api.test('infra-continuous-win-64') +
     api.properties.git_scheduled(
         path_config='kitchen',
-        buildername='infra-continuous-32',
-        buildnumber=-1,
+        buildername='infra-continuous-win-64',
+        buildnumber=123,
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/infra/infra',
-    )
+    ) +
+    api.platform.name('win')
+  )
+  yield (
+    api.test('infra-internal-continuous') +
+    api.properties.git_scheduled(
+        path_config='kitchen',
+        buildername='infra-internal-continuous',
+        buildnumber=123,
+        mastername='internal.infra',
+        repository=
+            'https://chrome-internal.googlesource.com/infra/infra_internal',
+    ) +
+    api.override_step_data(
+        'cipd - upload packages', api.json.output(cipd_json_output))
   )

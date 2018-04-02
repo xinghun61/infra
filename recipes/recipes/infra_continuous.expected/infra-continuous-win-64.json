@@ -3,7 +3,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "RECIPE_MODULE[depot_tools::bot_update]\\resources\\bot_update.py",
       "--spec-path",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--patch_root",
@@ -13,7 +13,7 @@
       "--git-cache-dir",
       "[GIT_CACHE]",
       "--cleanup-dir",
-      "[CLEANUP]/bot_update",
+      "[CLEANUP]\\bot_update",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -22,7 +22,7 @@
     "env_prefixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]",
-        "/opt/infra-system/bin"
+        "C:\\infra-system\\bin"
       ]
     },
     "infra_step": true,
@@ -69,16 +69,16 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "RECIPE_PACKAGE_REPO[depot_tools]\\gclient.py",
       "runhooks"
     ],
-    "cwd": "[START_DIR]/infra",
+    "cwd": "[START_DIR]\\infra",
     "env": {
-      "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
+      "PATH": "<PATH>;RECIPE_PACKAGE_REPO[depot_tools]"
     },
     "env_prefixes": {
       "PATH": [
-        "/opt/infra-system/bin"
+        "C:\\infra-system\\bin"
       ]
     },
     "name": "gclient runhooks"
@@ -90,10 +90,10 @@
       "test.py",
       "test"
     ],
-    "cwd": "[START_DIR]/infra",
+    "cwd": "[START_DIR]\\infra",
     "env_prefixes": {
       "PATH": [
-        "/opt/infra-system/bin"
+        "C:\\infra-system\\bin"
       ]
     },
     "name": "infra python tests"
@@ -102,13 +102,13 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/go/env.py",
+      "[START_DIR]\\infra\\go\\env.py",
       "go",
       "version"
     ],
     "env_prefixes": {
       "PATH": [
-        "/opt/infra-system/bin"
+        "C:\\infra-system\\bin"
       ]
     },
     "name": "go third parties"
@@ -117,13 +117,13 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/go/env.py",
+      "[START_DIR]\\infra\\go\\env.py",
       "python",
-      "[START_DIR]/infra/go/test.py"
+      "[START_DIR]\\infra\\go\\test.py"
     ],
     "env_prefixes": {
       "PATH": [
-        "/opt/infra-system/bin"
+        "C:\\infra-system\\bin"
       ]
     },
     "name": "infra go tests"
@@ -132,13 +132,13 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/build/build.py",
+      "[START_DIR]\\infra\\build\\build.py",
       "--builder",
-      "infra-continuous"
+      "infra-continuous-win-64"
     ],
     "env_prefixes": {
       "PATH": [
-        "/opt/infra-system/bin"
+        "C:\\infra-system\\bin"
       ]
     },
     "name": "cipd - build packages"
@@ -147,11 +147,11 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/build/test_packages.py"
+      "[START_DIR]\\infra\\build\\test_packages.py"
     ],
     "env_prefixes": {
       "PATH": [
-        "/opt/infra-system/bin"
+        "C:\\infra-system\\bin"
       ]
     },
     "name": "cipd - test packages integrity"
@@ -160,41 +160,152 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/build/build.py",
+      "[START_DIR]\\infra\\build\\build.py",
       "--no-rebuild",
       "--upload",
       "--service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json",
+      "C:\\creds\\service_accounts\\service-account-cipd-builder.json",
       "--json-output",
       "/path/to/tmp/json",
       "--builder",
-      "infra-continuous",
+      "infra-continuous-win-64",
       "--tags",
-      "buildbot_build:chromium.infra/infra-continuous/123",
+      "buildbot_build:chromium.infra/infra-continuous-win-64/123",
       "git_repository:https://chromium.googlesource.com/infra/infra",
       "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
     ],
     "env_prefixes": {
       "PATH": [
-        "/opt/infra-system/bin"
+        "C:\\infra-system\\bin"
       ]
     },
     "name": "cipd - upload packages",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"failed\": [], @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"succeeded\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"info\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"abcdefabcdef63ad814cd1dfffe2fcfc9f81299c\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/tools/some_tool/linux-bitness\"@@@",
-      "@@@STEP_LOG_LINE@json.output@      }, @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"pkg_def_name\": \"some_tool\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LINK@infra/tools/some_tool/linux-bitness abcdefabcdef63ad814cd1dfffe2fcfc9f81299c@http://example.com/not-implemented-yet@@@"
+      "@@@STEP_LOG_END@json.output (invalid)@@@",
+      "@@@STEP_LOG_LINE@json.output (exception)@No JSON object could be decoded@@@",
+      "@@@STEP_LOG_END@json.output (exception)@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]\\resources\\fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmcontents",
+      "[START_DIR]\\infra\\go\\bin"
+    ],
+    "env_prefixes": {
+      "PATH": [
+        "C:\\infra-system\\bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "clean go bin"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]\\infra\\go\\env.py",
+      "go",
+      "install",
+      "go.chromium.org/luci/client/cmd/..."
+    ],
+    "env_prefixes": {
+      "PATH": [
+        "C:\\infra-system\\bin"
+      ]
+    },
+    "name": "build luci-go"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]\\resources\\fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "listdir",
+      "[START_DIR]\\infra\\go\\bin"
+    ],
+    "env_prefixes": {
+      "PATH": [
+        "C:\\infra-system\\bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "listing go bin",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@listdir@[START_DIR]\\infra\\go\\bin\\file 1@@@",
+      "@@@STEP_LOG_LINE@listdir@[START_DIR]\\infra\\go\\bin\\file 2@@@",
+      "@@@STEP_LOG_END@listdir@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]\\upload_to_google_storage.py",
+      "-b",
+      "chromium-luci",
+      "[START_DIR]\\infra\\go\\bin\\file 1",
+      "[START_DIR]\\infra\\go\\bin\\file 2"
+    ],
+    "env": {
+      "DEPOT_TOOLS_GSUTIL_BIN_DIR": "[CACHE]\\gsutil"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "C:\\infra-system\\bin"
+      ]
+    },
+    "name": "upload go bin"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]\\resources\\fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[START_DIR]\\infra\\go\\bin\\file 1.sha1",
+      "/path/to/tmp/"
+    ],
+    "env_prefixes": {
+      "PATH": [
+        "C:\\infra-system\\bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "file 1 sha1",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@0123456789abcdeffedcba987654321012345678@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]\\resources\\fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[START_DIR]\\infra\\go\\bin\\file 2.sha1",
+      "/path/to/tmp/"
+    ],
+    "env_prefixes": {
+      "PATH": [
+        "C:\\infra-system\\bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "file 2 sha1",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@0123456789abcdeffedcba987654321012345678@@@"
     ]
   },
   {
