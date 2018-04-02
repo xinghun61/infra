@@ -130,7 +130,7 @@ class TemplateDetail(servlet.Servlet):
           mr, urls.ADMIN_TEMPLATES, deleted=1, ts=int(time.time()))
 
     (admin_ids, owner_id, component_ids,
-     field_values) = template_helpers.GetTemplateInfoFromParsed(
+     field_values, _phases) = template_helpers.GetTemplateInfoFromParsed(
          mr, self.services, parsed, config)
 
     if mr.errors.AnyErrors():

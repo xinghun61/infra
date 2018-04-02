@@ -50,8 +50,14 @@ class TemplateHelpers(unittest.TestCase):
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action',
         'Approval for Test review', False)
+    self.fd_5 = tracker_bizobj.MakeFieldDef(
+        5, 789, 'SomeApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'Approval for Test review', False)
     self.ad_3 = tracker_pb2.ApprovalDef(approval_id=3)
     self.ad_4 = tracker_pb2.ApprovalDef(approval_id=4)
+    self.ad_5 = tracker_pb2.ApprovalDef(approval_id=5)
     self.cd_1 = tracker_bizobj.MakeComponentDef(
         1, 789, 'BackEnd', 'doc', False, [111L], [], 100000, 222L)
 
@@ -126,34 +132,72 @@ class TemplateHelpers(unittest.TestCase):
     self.assertEqual(parsed.approvals_by_phase_idx, {2:[3, 4]})
 
   def testGetTemplateInfoFromParsed_Normal(self):
-    self.config.field_defs.append(self.fd_1)
-    self.config.field_defs.append(self.fd_2)
+    self.config.field_defs.extend([self.fd_1, self.fd_2])
     self.config.component_defs.append(self.cd_1)
     parsed = template_helpers.ParsedTemplate(
         'template', True, 'summary', True, 'content', 'Available',
         '1@ex.com', ['label1', 'label1'], {1: ['NO'], 2: ['MOOD']},
         ['BackEnd'], True, True, '2@ex.com', [], {})
-    (admin_ids, owner_id,
-     component_ids, field_values) = template_helpers.GetTemplateInfoFromParsed(
+    (admin_ids, owner_id, component_ids,
+     field_values, phases) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)
     self.assertEqual(admin_ids, [222L])
     self.assertEqual(owner_id, 111L)
     self.assertEqual(component_ids, [1])
     self.assertEqual(field_values[0].str_value, 'NO')
     self.assertEqual(field_values[1].str_value, 'MOOD')
+    self.assertEqual(phases, [])
 
   def testGetTemplateInfoFromParsed_Errors(self):
-    self.config.field_defs.append(self.fd_1)
-    self.config.field_defs.append(self.fd_2)
+    self.config.field_defs.extend([self.fd_1, self.fd_2])
     parsed = template_helpers.ParsedTemplate(
         'template', True, 'summary', True, 'content', 'Available',
         '4@ex.com', ['label1', 'label1'], {1: ['NO'], 2: ['MOOD']},
         ['BackEnd'], True, True, '2@ex.com', [], {})
-    (admin_ids, _owner_id,
-     _component_ids, field_values) = template_helpers.GetTemplateInfoFromParsed(
+    (admin_ids, _owner_id, _component_ids,
+     field_values, phases) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)
     self.assertEqual(admin_ids, [222L])
     self.assertEqual(field_values[0].str_value, 'NO')
     self.assertEqual(field_values[1].str_value, 'MOOD')
     self.assertEqual(self.mr.errors.owner, 'Owner not found.')
     self.assertEqual(self.mr.errors.components, 'Unknown component BackEnd')
+    self.assertEqual(phases, [])
+
+  def testGetPhasesFromParsed_Normal(self):
+    self.config.field_defs.extend([self.fd_1, self.fd_2])
+    self.config.approval_defs.extend([self.ad_3, self.ad_4, self.ad_5])
+
+    phase_names = ['Canary', '', 'Stable-Exp', '', '', '']
+    approvals_by_phase_idx = {0: [self.ad_3, self.ad_4], 2: [self.ad_5]}
+
+    phases = template_helpers._GetPhasesFromParsed(
+        self.mr, phase_names, approvals_by_phase_idx)
+    self.assertEqual(len(phases), 2)
+
+    canary = tracker_bizobj.FindPhase('canary', phases)
+    self.assertEqual(canary.rank, 0)
+    self.assertIsNotNone(
+        tracker_bizobj.FindApprovalValueByID(3, canary.approval_values))
+    self.assertIsNotNone(
+        tracker_bizobj.FindApprovalValueByID(4, canary.approval_values))
+
+
+    stable_exp = tracker_bizobj.FindPhase('stable-exp', phases)
+    self.assertEqual(stable_exp.rank, 2)
+    self.assertIsNotNone(
+        tracker_bizobj.FindApprovalValueByID(5, stable_exp.approval_values))
+
+    self.assertIsNone(self.mr.errors.phase_approvals)
+
+  def testGetPhasesFromParsed_Errors(self):
+    self.config.field_defs.extend([self.fd_1, self.fd_2])
+    self.config.approval_defs.extend([self.ad_3, self.ad_4, self.ad_5])
+
+    phase_names = ['Canary', 'Extra', 'Stable-Exp', '', '', '']
+    approvals_by_phase_idx = {0: [self.ad_3, self.ad_4], 2: [self.ad_5]}
+
+    template_helpers._GetPhasesFromParsed(
+        self.mr, phase_names, approvals_by_phase_idx)
+    self.assertEqual(self.mr.errors.phase_approvals,
+                     'Defined gates must have assigned approvals.')

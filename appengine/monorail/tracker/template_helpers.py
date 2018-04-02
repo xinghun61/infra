@@ -15,6 +15,7 @@ from framework import framework_helpers
 from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
+from proto import tracker_pb2
 
 
 PHASE_INPUTS = [
@@ -76,6 +77,8 @@ def ParseTemplateRequest(post_data, config):
 
 
 def GetTemplateInfoFromParsed(mr, services, parsed, config):
+  """Get Template field info and PBs from a ParsedTemplate."""
+
   admin_ids, _ = tracker_helpers.ParseAdminUsers(
       mr.cnxn, parsed.admin_str, services.user)
 
@@ -100,4 +103,34 @@ def GetTemplateInfoFromParsed(mr, services, parsed, config):
     logging.info('field_value is %r: %r',
                  fv.field_id, tracker_bizobj.GetFieldValue(fv, {}))
 
-  return admin_ids, owner_id, component_ids, field_values
+  phases = _GetPhasesFromParsed(
+      mr, parsed.phase_names, parsed.approvals_by_phase_idx)
+
+  return admin_ids, owner_id, component_ids, field_values, phases
+
+
+def _GetPhasesFromParsed(mr, phase_names, approvals_by_phase_idx):
+  """Get Phase PBs from a parsed phase_names and approvals_by_phase_idx."""
+
+  phases = []
+  valid_phase_idxs = [idx for idx, name in enumerate(phase_names) if name]
+  if set(valid_phase_idxs) != set(approvals_by_phase_idx.keys()):
+    mr.errors.phase_approvals = 'Defined gates must have assigned approvals.'
+    return phases
+
+  for idx in approvals_by_phase_idx:
+    approval_defs = approvals_by_phase_idx[idx]
+    phase_name = phase_names[idx]
+
+    # Distributing the ranks over a wider range is not necessary since
+    # any edits to template phases will cause a complete rewrite
+    phase = tracker_pb2.Phase(name=phase_name, rank=idx)
+    phases.append(phase)
+    for approval_def in approval_defs:
+      av = tracker_pb2.ApprovalValue(
+          approval_id=approval_def.approval_id,
+          approver_ids=approval_def.approver_ids)
+      # TODO(jojwang): monorail:3651, add default sub_field_values
+      phase.approval_values.append(av)
+
+  return phases

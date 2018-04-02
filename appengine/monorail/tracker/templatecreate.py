@@ -99,7 +99,7 @@ class TemplateCreate(servlet.Servlet):
       mr.errors.name = 'Template with name %s already exists' % parsed.name
 
     (admin_ids, owner_id, component_ids,
-     field_values) = template_helpers.GetTemplateInfoFromParsed(
+     field_values, _phases) = template_helpers.GetTemplateInfoFromParsed(
          mr, self.services, parsed, config)
 
     if mr.errors.AnyErrors():
