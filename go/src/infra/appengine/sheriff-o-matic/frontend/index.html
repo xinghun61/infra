@@ -72,6 +72,9 @@ crdx('setFeedbackButtonLink', 'https://goto.google.com/som-bug');
     ga('set', 'page', window.location.pathname);
     ga('send', 'pageview');
   });
-
+{{else}}
+  let ga = function(i,s,o,g,r,a,m) {
+    console.log('dev mode ga:', i, s, o, g, r, a, m);
+  };
 {{end}}
 </script>

@@ -65,6 +65,7 @@ class SomEditExpectationForm extends Polymer.LegacyElementMixin(Polymer.Element)
   }
 
   _addBug(evt) {
+    ga('send', 'event', this.nodeName.toLocaleLowerCase(), 'add-bug');
     this._newBugError = '';
     let bug = this.$.newBug.value;
     let parser = document.createElement('a');
@@ -91,10 +92,13 @@ class SomEditExpectationForm extends Polymer.LegacyElementMixin(Polymer.Element)
   }
 
   _removeBug(evt) {
+    ga('send', 'event', this.nodeName.toLocaleLowerCase(), 'remove-bug');
     this.arrayDelete('_editValue.Bugs', evt.target.value);
   }
 
   _toggleExpectation(evt) {
+    ga('send', 'event', this.nodeName.toLocaleLowerCase(),
+        'toggle-expectation');
     if (!this._editValue.Expectations) {
       this._editValue.Expectations = [evt.target.value];
       return;
@@ -119,6 +123,7 @@ class SomEditExpectationForm extends Polymer.LegacyElementMixin(Polymer.Element)
   }
 
   _toggleModifier(evt) {
+    ga('send', 'event', this.nodeName.toLocaleLowerCase(), 'toggle-modifier');
     if (!this._editValue.Modifiers) {
       this._editValue.Modifiers = [evt.target.value];
       return;

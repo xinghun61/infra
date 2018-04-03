@@ -117,9 +117,14 @@ class SomTestExpectations extends Polymer.Element {
 
   _onCreateChangeCL(evt) {
     if (!this.$.signIn.signedIn) {
+      ga('send', 'event', this.nodeName.toLocaleLowerCase(),
+          'create-change-cl-start', 'logged-out');
       this.$.signIn.signIn();
       return;
     }
+    ga('send', 'event', this.nodeName.toLocaleLowerCase(),
+        'create-change-cl-start', 'logged-in');
+    this._createCLStartTime = new Date();
     let expectation = this._testExpectationsJson.find((t) => {
       return t.TestName == this.$.editExpectationForm.expectation.TestName;
     }, this) || {};
@@ -266,6 +271,9 @@ class SomTestExpectations extends Polymer.Element {
              this._changeListId.substr(CHROMIUM_PREFIX.length);
        }
        this.$.changeListDialog.toggle();
+       let elapsed = new Date().getTime() - this._createCLStartTime.getTime();
+       ga('send', 'event', this.nodeName.toLocaleLowerCase(),
+           'create-change-cl-end', 'success', elapsed);
     }).catch(err => {
       console.error('could not publish change', err);
       this._reportError('Could not publish change: ' + err);
@@ -274,6 +282,9 @@ class SomTestExpectations extends Polymer.Element {
 
   _reportError(msg) {
     console.error(msg);
+    let elapsed = new Date().getTime() - this._createCLStartTime.getTime();
+    ga('send', 'event', this.nodeName.toLocaleLowerCase(),
+        'create-change-cl-end', 'error', elapsed);
     this._errorMessage = msg;
     this._statusMessage = '';
     this.$.progress.hidden = true;
@@ -299,6 +310,7 @@ class SomTestExpectations extends Polymer.Element {
   }
 
   _openEditor(testName) {
+    ga('send', 'event', this.nodeName.toLocaleLowerCase(), 'open-editor');
     if (!this._testExpectationsJson ||
         !this._testExpectationsJson.length > 0) {
       return;
@@ -333,15 +345,6 @@ class SomTestExpectations extends Polymer.Element {
 
     this.$.editExpectationForm.set('expectation', expectation);
     this.$.editDialog.toggle();
-  }
-
-  _cancelPollingTask(evt) {
-    if (this._pollingTask) {
-      Polymer.Async.timeOut.cancel(this._pollingTask);
-    }
-    if (this._countdownTask) {
-      Polymer.Async.timeOut.cancel(this._countdownTask);
-    }
   }
 
   handleSignin(resp) {
