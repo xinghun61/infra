@@ -135,13 +135,14 @@ class TemplateCreate(servlet.Servlet):
           initial_component_required=ezt.boolean(parsed.component_required),
           initial_admins=parsed.admin_str,
           labels=parsed.labels,
-          fields=field_views,
+          fields=[view for view in field_views
+                  if view.field_def.type_name is not 'APPROVAL_TYPE'],
           initial_add_phases=ezt.boolean(parsed.add_phases),
           initial_phases=[tracker_pb2.Phase(name=name) for name in
                           parsed.phase_names],
           approvals=[view for view in field_views
-                     if view.field_def.type_name is "APPROVAL_TYPE"],
-          prechecked_approvals = prechecked_approvals
+                     if view.field_def.type_name is 'APPROVAL_TYPE'],
+          prechecked_approvals=prechecked_approvals
       )
       return
 

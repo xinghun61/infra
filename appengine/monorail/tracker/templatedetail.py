@@ -75,8 +75,16 @@ class TemplateDetail(servlet.Servlet):
       tracker_views.MakeFieldValueView(fd, config, [], [],
                                        fd_id_to_fvs[fd.field_id], {})
       for fd in config.field_defs if not fd.is_deleted]
-    # TODO(jojwang): monorail:3576, temporary value
-    initial_phases = [tracker_pb2.Phase()] * 6
+
+    initial_phases = template.phases[:]
+    # TODO(jojwang): monorail:3576, replace this sort by adding order_by
+    # when fetching phases at config_svc:488
+    initial_phases.sort(key=lambda phase: phase.rank)
+    prechecked_approvals = []
+    for idx, phase in enumerate(initial_phases):
+      for av in phase.approval_values:
+        prechecked_approvals.append('%d_phase_%d' % (av.approval_id, idx))
+    initial_phases.extend([tracker_pb2.Phase()] * (6 - len(template.phases)))
 
     allow_edit = permissions.CanEditTemplate(
         mr.auth.effective_ids, mr.perms, mr.project, template)
@@ -98,11 +106,11 @@ class TemplateDetail(servlet.Servlet):
         'initial_component_required': template_view.component_required,
         'fields': [view for view in field_views
                    if view.field_def.type_name is not 'APPROVAL_TYPE'],
-        # TODO(jojwang): monorail:3576, temp value
-        'initial_add_phases': ezt.boolean(False),
+        'initial_add_phases': ezt.boolean(template.phases),
         'initial_phases': initial_phases,
-        'approvals': [],
-        'prechecked_approvals': [],  # TODO(jojwang): monorail:3576, temp value
+        'approvals': [view for view in field_views
+                      if view.field_def.type_name is 'APPROVAL_TYPE'],
+        'prechecked_approvals': prechecked_approvals,
         'labels': template.labels,
         'initial_admins': template_view.admin_names,
         }
@@ -134,7 +142,7 @@ class TemplateDetail(servlet.Servlet):
           mr, urls.ADMIN_TEMPLATES, deleted=1, ts=int(time.time()))
 
     (admin_ids, owner_id, component_ids,
-     field_values, _phases) = template_helpers.GetTemplateInfoFromParsed(
+     field_values, phases) = template_helpers.GetTemplateInfoFromParsed(
          mr, self.services, parsed, config)
 
     if mr.errors.AnyErrors():
@@ -146,6 +154,11 @@ class TemplateDetail(servlet.Servlet):
           tracker_views.MakeFieldValueView(fd, config, [], [],
                                            fd_id_to_fvs[fd.field_id], {})
           for fd in config.field_defs if not fd.is_deleted]
+
+      prechecked_approvals = []
+      for phs_idx, approval_ids in parsed.approvals_by_phase_idx.iteritems():
+        prechecked_approvals.extend(['%d_phase_%d' % (approval_id, phs_idx)
+                                     for approval_id in approval_ids])
 
       self.PleaseCorrect(
           mr,
@@ -162,7 +175,14 @@ class TemplateDetail(servlet.Servlet):
           initial_component_required=ezt.boolean(parsed.component_required),
           initial_admins=parsed.admin_str,
           labels=parsed.labels,
-          fields=field_views
+          fields=[view for view in field_views
+                  if view.field_def.type_name is not 'APPROVAL_TYPE'],
+          initial_add_phases=ezt.boolean(parsed.add_phases),
+          initial_phases=[tracker_pb2.Phase(name=name) for name in
+                          parsed.phase_names],
+          approvals=[view for view in field_views
+                     if view.field_def.type_name is 'APPROVAL_TYPE'],
+          prechecked_approvals=prechecked_approvals
       )
       return
 
@@ -175,7 +195,7 @@ class TemplateDetail(servlet.Servlet):
         owner_defaults_to_member=parsed.owner_defaults_to_member,
         component_required=parsed.component_required, owner_id=owner_id,
         labels=labels, component_ids=component_ids, admin_ids=admin_ids,
-        field_values=field_values)
+        field_values=field_values, phases=phases)
 
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.TEMPLATE_DETAIL, template=template.name,

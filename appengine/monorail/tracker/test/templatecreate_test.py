@@ -32,8 +32,33 @@ class TemplateCreateTest(unittest.TestCase):
     self.servlet = templatecreate.TemplateCreate('req', 'res',
                                                services=self.services)
     self.project = self.services.project.TestAddProject('proj')
+
+    self.fd_1 = tracker_bizobj.MakeFieldDef(
+        1, self.project.project_id, 'StringFieldName',
+        tracker_pb2.FieldTypes.STR_TYPE, None, '', False,
+        False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'some approval thing', False)
+
+    self.fd_2 = tracker_bizobj.MakeFieldDef(
+        2, self.project.project_id, 'UXApproval',
+        tracker_pb2.FieldTypes.APPROVAL_TYPE, None, '', False, False, False,
+        None, None, '', False, '', '', tracker_pb2.NotifyTriggers.NEVER,
+        'no_action', 'Approval for UX review', False)
+    self.fd_3 = tracker_bizobj.MakeFieldDef(
+        3, self.project.project_id, 'TestApproval',
+        tracker_pb2.FieldTypes.APPROVAL_TYPE, None, '', False, False, False,
+        None, None, '', False, '', '', tracker_pb2.NotifyTriggers.NEVER,
+        'no_action', 'Approval for Test review', False)
+    ad_2 = tracker_pb2.ApprovalDef(approval_id=2)
+    ad_3 = tracker_pb2.ApprovalDef(approval_id=3)
+
     self.config = self.services.config.GetProjectConfig(
         'fake cnxn', self.project.project_id)
+    self.config.approval_defs.extend([ad_2, ad_3])
+    self.config.field_defs.extend([self.fd_1, self.fd_2, self.fd_3])
+
+
     first_tmpl = tracker_bizobj.MakeIssueTemplate(
         'sometemplate', 'summary', None, None, 'content', [], [], [],
         [])
@@ -69,18 +94,8 @@ class TemplateCreateTest(unittest.TestCase):
         self.servlet.AssertBasePermission, self.mr)
 
   def testGatherPageData(self):
-    fd = tracker_bizobj.MakeFieldDef(
-        1, self.mr.project_id, 'StringFieldName',
-        tracker_pb2.FieldTypes.STR_TYPE, None, '', False,
-        False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
-        'some approval thing', False)
-    config = self.services.config.GetProjectConfig(
-        self.mr.cnxn, self.mr.project_id)
-    config.field_defs.append(fd)
-    self.services.config.StoreConfig(self.cnxn, config)
-    fv = tracker_views.MakeFieldValueView(fd, config, [], [], [], {})
-
+    fv = tracker_views.MakeFieldValueView(
+        self.fd_1, self.config, [], [], [], {})
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual(self.servlet.PROCESS_TAB_TEMPLATES,
                      page_data['admin_tab_mode'])
@@ -100,23 +115,6 @@ class TemplateCreateTest(unittest.TestCase):
     self.assertEqual(page_data['initial_admins'], '')
 
   def testProcessFormData_Reject(self):
-    fd_1 = tracker_bizobj.MakeFieldDef(
-        1, 789, 'UXApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
-        '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
-        'Approval for UX review', False)
-    fd_2 = tracker_bizobj.MakeFieldDef(
-        2, 789, 'TestApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
-        '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
-        'Approval for Test review', False)
-    ad_1 = tracker_pb2.ApprovalDef(approval_id=1)
-    ad_2 = tracker_pb2.ApprovalDef(approval_id=2)
-    config = self.services.config.GetProjectConfig(
-        self.mr.cnxn, self.mr.project_id)
-    config.field_defs.extend([fd_1, fd_2])
-    config.approval_defs.extend([ad_1, ad_2])
-    self.services.config.StoreConfig(self.cnxn, config)
     post_data = fake.PostData(
       name=['sometemplate'],
       members_only=['on'],
@@ -138,8 +136,8 @@ class TemplateCreateTest(unittest.TestCase):
       phase_3=[''],
       phase_4=[''],
       phase_5=[''],
-      approval_1=['phase_1'],
-      approval_2=['phase_2']
+      approval_2=['phase_1'],
+      approval_3=['phase_2']
     )
 
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
@@ -162,7 +160,7 @@ class TemplateCreateTest(unittest.TestCase):
         initial_phases=[tracker_pb2.Phase(name=name) for
                         name in ['Canary', 'Stable-Exp', 'Stable', '', '', '']],
         approvals=mox.IgnoreArg(),
-        prechecked_approvals=['1_phase_1', '2_phase_2'],
+        prechecked_approvals=['2_phase_1', '3_phase_2'],
         )
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(self.mr, post_data)
@@ -176,34 +174,72 @@ class TemplateCreateTest(unittest.TestCase):
     self.assertIsNone(url)
 
   def testProcessFormData_Accept(self):
-    fd_1 = tracker_bizobj.MakeFieldDef(
-        1, self.mr.project_id, 'UXReview', tracker_pb2.FieldTypes.STR_TYPE,
-        None, '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'First field', False)
-    config = self.services.config.GetProjectConfig(
-        self.mr.cnxn, self.mr.project_id)
-    config.field_defs.append(fd_1)
-    self.services.config.StoreConfig(self.cnxn, config)
     post_data = fake.PostData(
-        name=['secondtemplate'],
-        members_only=['on'],
-        summary=['TLDR'],
-        summary_must_be_edited=['on'],
-        content=['HEY WHY'],
-        status=['Accepted'],
-        label=['label-One', 'label-Two'],
-        custom_1=['NO'],
-        component_required=['on'],
-        owner_defaults_to_member=['no'])
+      name=['secondtemplate'],
+      members_only=['on'],
+      summary=['TLDR'],
+      summary_must_be_edited=['on'],
+      content=['HEY WHY'],
+      status=['Accepted'],
+      label=['label-One', 'label-Two'],
+      custom_1=['NO'],
+      component_required=['on'],
+      owner_defaults_to_member=['no'],
+      add_phases = ['no'],
+      phase_0=[''],
+      phase_1=[''],
+      phase_2=[''],
+      phase_3=[''],
+      phase_4=[''],
+      phase_5=['OOPs'],
+      approval_2=['phase_0'],
+      approval_3=['phase_2'])
 
     url = self.servlet.ProcessFormData(self.mr, post_data)
 
     template = None
-    for tmpl in config.templates:
+    for tmpl in self.config.templates:
       if tmpl.name == 'secondtemplate':
         template = tmpl
     self.assertEqual(template.summary, 'TLDR')
     self.assertEqual(template.content, 'HEY WHY')
     self.assertItemsEqual(template.labels, ['label-One', 'label-Two'])
     self.assertItemsEqual(template.field_values[0].str_value, 'NO')
+    # errors in phases should not matter if add_phases is not 'on'
+    self.assertIsNone(self.mr.errors.phase_approvals)
+    self.assertEqual(template.phases, [])
+    self.assertTrue('/adminTemplates?saved=1&ts' in url)
+
+  def testProcessFormData_AcceptPhases(self):
+    post_data = fake.PostData(
+      name=['secondtemplate'],
+      members_only=['on'],
+      summary=['TLDR'],
+      summary_must_be_edited=['on'],
+      content=['HEY WHY'],
+      status=['Accepted'],
+      label=['label-One', 'label-Two'],
+      custom_1=['NO'],
+      component_required=['on'],
+      owner_defaults_to_member=['no'],
+      add_phases = ['on'],
+      phase_0=['Canary'],
+      phase_1=['Stable'],
+      phase_2=[''],
+      phase_3=[''],
+      phase_4=[''],
+      phase_5=[''],
+      approval_2=['phase_0'],
+      approval_3=['phase_1'])
+
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+    template = tracker_bizobj.FindIssueTemplate('secondtemplate', self.config)
+    canary_phase = tracker_bizobj.FindPhase('canary', template.phases)
+    self.assertEqual(canary_phase.rank, 0)
+    self.assertEqual(canary_phase.approval_values[0].approval_id, 2)
+
+    stable_phase = tracker_bizobj.FindPhase('stable', template.phases)
+    self.assertEqual(stable_phase.rank, 1)
+    self.assertEqual(stable_phase.approval_values[0].approval_id, 3)
+
     self.assertTrue('/adminTemplates?saved=1&ts' in url)

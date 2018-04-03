@@ -64,14 +64,38 @@ class TemplateDetailTest(unittest.TestCase):
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action',
         'Approval for UX review', False)
+    self.fd_3 = tracker_bizobj.MakeFieldDef(
+        3, 789, 'TestApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'Approval for Test',
+        False)
+    self.fd_4 = tracker_bizobj.MakeFieldDef(
+        4, 789, 'SecurityApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'Approval for Security',
+        False)
+
+    self.ad_3 = tracker_pb2.ApprovalDef(approval_id=3)
+    self.ad_4 = tracker_pb2.ApprovalDef(approval_id=4)
+
     self.cd_1 = tracker_bizobj.MakeComponentDef(
         1, 789, 'BackEnd', 'doc', False, [111L], [], 100000, 222L)
     self.template.component_ids.append(1)
+
+    self.canary_phase = tracker_pb2.Phase(
+        name='Canary', phase_id=1, rank=1,
+        approval_values=[tracker_pb2.ApprovalValue(approval_id=3)])
+    self.stable_phase = tracker_pb2.Phase(
+        name='Stable', phase_id=2, rank=3,
+        approval_values=[tracker_pb2.ApprovalValue(approval_id=4)])
+    self.template.phases.extend([self.stable_phase, self.canary_phase])
 
     self.config = self.services.config.GetProjectConfig(
         'fake cnxn', self.project.project_id)
     self.config.templates.append(self.template)
     self.config.component_defs.append(self.cd_1)
+    self.config.field_defs.extend([self.fd_1, self.fd_2, self.fd_3, self.fd_4])
+    self.config.approval_defs.extend([self.ad_3, self.ad_4])
     self.services.config.StoreConfig(None, self.config)
 
   def tearDown(self):
@@ -127,6 +151,13 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertFalse(page_data['initial_component_required'])
     self.assertItemsEqual(page_data['labels'], ['label1', 'label2'])
     self.assertEqual(page_data['initial_admins'], 'sport@example.com')
+    self.assertTrue(page_data['initial_add_phases'])
+    self.assertEqual(len(page_data['initial_phases']), 6)
+    phases = [phase for phase in page_data['initial_phases'] if phase.name]
+    self.assertEqual(len(phases), 2)
+    self.assertEqual(len(page_data['approvals']), 2)
+    self.assertItemsEqual(page_data['prechecked_approvals'],
+                          ['3_phase_0', '4_phase_1'])
 
   def testProcessFormData_Reject(self):
     post_data = fake.PostData(
@@ -142,7 +173,16 @@ class TemplateDetailTest(unittest.TestCase):
       custom_2=['MOOD'],
       components=['hey, hey2,he3'],
       component_required=['on'],
-      owner_defaults_to_member=['no']
+      owner_defaults_to_member=['no'],
+      add_phases = ['on'],
+      phase_0=['Canary'],
+      phase_1=['Stable-Exp'],
+      phase_2=['Stable'],
+      phase_3=[''],
+      phase_4=[''],
+      phase_5=[''],
+      approval_3=['phase_0'],
+      approval_4=['phase_2']
     )
 
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
@@ -160,7 +200,12 @@ class TemplateDetailTest(unittest.TestCase):
         initial_component_required=ezt.boolean(True),
         initial_admins='',
         labels=['label-One', 'label-Two'],
-        fields=mox.IgnoreArg()
+        fields=mox.IgnoreArg(),
+        initial_add_phases=ezt.boolean(True),
+        initial_phases=[tracker_pb2.Phase(name=name) for
+                        name in ['Canary', 'Stable-Exp', 'Stable', '', '', '']],
+        approvals=mox.IgnoreArg(),
+        prechecked_approvals=['3_phase_0', '4_phase_2']
         )
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(self.mr, post_data)
@@ -168,12 +213,10 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertEqual('Owner not found.', self.mr.errors.owner)
     self.assertEqual('Unknown component he3', self.mr.errors.components)
     self.assertIsNone(url)
+    self.assertEqual('Defined gates must have assigned approvals.',
+                     self.mr.errors.phase_approvals)
 
   def testProcessFormData_Accept(self):
-    self.config.field_defs.append(self.fd_1)
-    self.config.field_defs.append(self.fd_2)
-    self.config.component_defs.append(self.cd_1)
-    self.services.config.StoreConfig(None, self.config)
     post_data = fake.PostData(
       name=['TestTemplate'],
       members_only=['on'],
@@ -187,7 +230,16 @@ class TemplateDetailTest(unittest.TestCase):
       custom_2=['MOOD'],
       components=['BackEnd'],
       component_required=['on'],
-      owner_defaults_to_member=['on']
+      owner_defaults_to_member=['on'],
+      add_phases = ['no'],
+      phase_0=[''],
+      phase_1=[''],
+      phase_2=[''],
+      phase_3=[''],
+      phase_4=[''],
+      phase_5=['OOPs'],
+      approval_3=['phase_0'],
+      approval_4=['phase_2']
     )
     url = self.servlet.ProcessFormData(self.mr, post_data)
     template = tracker_bizobj.FindIssueTemplate('TestTemplate', self.config)
@@ -201,6 +253,46 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertFalse(template.summary_must_be_edited)
     self.assertTrue(template.component_required)
     self.assertTrue(template.owner_defaults_to_member)
+    # errors in phases should not matter if add_phases is not 'on'
+    self.assertIsNone(self.mr.errors.phase_approvals)
+    self.assertEqual(template.phases, [])
+    self.assertTrue('/templates/detail?saved=1&template=TestTemplate&' in url)
+
+  def testProcessFormData_AcceptPhases(self):
+    post_data = fake.PostData(
+      name=['TestTemplate'],
+      members_only=['on'],
+      summary=['TLDR'],
+      summary_must_be_edited=[''],
+      content=['HEY WHY'],
+      status=['Accepted'],
+      owner=['daisy@example.com'],
+      label=['label-One', 'label-Two'],
+      custom_1=['NO'],
+      custom_2=['MOOD'],
+      components=['BackEnd'],
+      component_required=['on'],
+      owner_defaults_to_member=['on'],
+      add_phases = ['on'],
+      phase_0=['Canary'],
+      phase_1=['Stable'],
+      phase_2=[''],
+      phase_3=[''],
+      phase_4=[''],
+      phase_5=[''],
+      approval_3=['phase_0'],
+      approval_4=['phase_1']
+    )
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+    template = tracker_bizobj.FindIssueTemplate('TestTemplate', self.config)
+    canary_phase = tracker_bizobj.FindPhase('canary', template.phases)
+    self.assertEqual(canary_phase.rank, 0)
+    self.assertEqual(canary_phase.approval_values[0].approval_id, 3)
+
+    stable_phase = tracker_bizobj.FindPhase('stable', template.phases)
+    self.assertEqual(stable_phase.rank, 1)
+    self.assertEqual(stable_phase.approval_values[0].approval_id, 4)
+
     self.assertTrue('/templates/detail?saved=1&template=TestTemplate&' in url)
 
   def testProcessFormData_Delete(self):
