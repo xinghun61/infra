@@ -1,12 +1,13 @@
 package: infra/tools/git/${platform}
 description: git is an Infra Git wrapper.
-builders:
-  - infra-continuous-mac-10.9-64
-  - infra-continuous-precise-32
-  - infra-continuous-precise-64
-  - infra-continuous-win-32
-  - infra-continuous-win-64
-supports_cross_compilation: true
+platforms:
+  - linux-386
+  - linux-amd64
+  - linux-arm64
+  - linux-armv6l
+  - mac-amd64
+  - windows-386
+  - windows-amd64
 go_packages:
   - infra/tools/git
 root: ../../go/bin

@@ -1,12 +1,17 @@
 package: infra/tools/luci-auth/${platform}
 description: auth is CLI for authentication.
-builders:
-  - infra-continuous-mac-10.9-64
-  - infra-continuous-precise-32
-  - infra-continuous-precise-64
-  - infra-continuous-win-32
-  - infra-continuous-win-64
-supports_cross_compilation: true
+platforms:
+  - linux-386
+  - linux-amd64
+  - linux-arm64
+  - linux-armv6l
+  - linux-mips64
+  - linux-ppc64
+  - linux-ppc64le
+  - linux-s390x
+  - mac-amd64
+  - windows-386
+  - windows-amd64
 go_build_environ:
   CGO_ENABLED:
     darwin:  1  # native Go DNS resolved is buggy on OSX (crbug.com/803673)

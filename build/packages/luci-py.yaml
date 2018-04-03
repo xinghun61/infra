@@ -1,8 +1,11 @@
 # TODO(crbug.com/781065): Remove this file after migrating to luci-lite.
 package: infra/luci-py
 description: contents of luci-py
-builders:
-  - infra-continuous-precise-64
+
+# Platform agnostic really, but need to pick one platform to build on.
+platforms:
+  - linux-amd64
+
 root: ../../luci
 
 data:

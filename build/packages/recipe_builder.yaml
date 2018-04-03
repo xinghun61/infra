@@ -1,12 +1,9 @@
 package: infra/tools/luci/recipe_bundler/${platform}
 description:
   recipe_bundler is a tool which generates CIPD packages from recipe repos.
-builders:
-  - infra-continuous-mac-10.9-64
-  - infra-continuous-precise-64
-supported_platforms:
-  - linux
-  - mac
+platforms:
+  - linux-amd64
+  - mac-amd64
 go_packages:
   - infra/tools/recipe_bundler
 root: ../../go/bin

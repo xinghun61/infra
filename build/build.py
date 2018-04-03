@@ -99,31 +99,29 @@ class PackageDef(collections.namedtuple(
             self.path,
             'Only "CGO_ENABLED" is supported in "go_build_environ" currently')
 
-  def should_build(self, builder, host_vars):
+  def should_build(self, builder):
     """Returns True if package should be built in the current environment.
 
-    Takes into account 'builders' and 'supports_cross_compilation' properties of
-    the package definition file.
+    Takes into account 'builders' and 'platforms' properties of the package
+    definition file.
     """
     # If '--builder' is not specified, ignore 'builders' property. Otherwise, if
     # 'builders' YAML attribute it not empty, verify --builder is listed there.
+    # This is useful to guarantee a package (usually platform independent) is
+    # built only by one builder.
     builders = self.pkg_def.get('builders')
     if builder and builders and builder not in builders:
       return False
 
-    # If cross-compiling, pick only packages that support cross-compilation.
-    if (is_cross_compiling() and
-        not self.pkg_def.get('supports_cross_compilation')):
-      return False
-
-    # Verify target platform is supported for the package if they're specified.
-    supported_platforms = self.pkg_def.get('supported_platforms')
-    if supported_platforms:
-      target_platform = (os.environ.get('GOOS') or
-                         host_vars['platform'].split('-')[0])
-      return target_platform in supported_platforms
-
-    return True
+    # If the package doesn't have 'platforms' set, assume it doesn't want to be
+    # cross-compiled, and supports only native host platform or it's platform
+    # independent. Otherwise build it only if the target of the compilation is
+    # declared as supported. Note that these are CIPD-flavored platform strings
+    # (e.g. "mac-amd64"), exactly like they appear in CIPD package names.
+    platforms = self.pkg_def.get('platforms')
+    if not platforms:
+      return not is_cross_compiling()
+    return get_package_vars()['platform'] in platforms
 
   def preprocess(self, pkg_vars):
     """Parses the definition and filters/extends it before passing to CIPD.
@@ -771,8 +769,6 @@ def get_host_package_vars():
     'exe_suffix': EXE_SUFFIX,
     # e.g. 'linux-amd64'
     'platform': '%s-%s' % (platform_variant, platform_arch),
-    # e.g. '27' (dots are not allowed in package names).
-    'python_version': '%s%s' % sys.version_info[:2],
   }
 
 
@@ -1009,7 +1005,7 @@ def run(
   except PackageDefException as exc:
     print >> sys.stderr, exc
     return 1
-  packages_to_build = [p for p in defs if p.should_build(builder, host_vars)]
+  packages_to_build = [p for p in defs if p.should_build(builder)]
 
   print_title('Overview')
   if upload:

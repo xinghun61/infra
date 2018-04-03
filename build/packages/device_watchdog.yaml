@@ -1,10 +1,8 @@
 package: infra/tools/device_watchdog/${platform}
 description: watchdog daemon for android devices
-builders:
-  - infra-continuous-precise-64
-supports_cross_compilation: true
-supported_platforms:
-  - android
+platforms:
+  - android-amd64
+  - android-armv6l
 go_packages:
   - infra/tools/device_watchdog
 root: ../../go/bin

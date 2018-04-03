@@ -1,11 +1,13 @@
 package: infra/monitoring/sysmon/${platform}
 description: sysmon reports machine tsmon metrics.
-builders:
-  - infra-continuous-mac-10.9-64
-  - infra-continuous-precise-32
-  - infra-continuous-precise-64
-  - infra-continuous-win-32
-  - infra-continuous-win-64
+platforms:
+  - linux-386
+  - linux-amd64
+  - linux-arm64
+  - linux-armv6l
+  - mac-amd64
+  - windows-386
+  - windows-amd64
 go_packages:
   - infra/monitoring/sysmon/cmd/sysmon
 root: ../../go/bin

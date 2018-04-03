@@ -14,34 +14,53 @@ There are two flavors of packages:
 Package definition
 ------------------
 
-A package is defined in a *.yaml file that is parsed by `build.py` script before
+A package is defined in a YAML file that is parsed by `build.py` script before
 being passed to the CIPD client.
 
 The package file has the following structure:
 
 ```yaml
 # Name of the package in CIPD repository.
-package: infra/example/package
+package: infra/example/package/${platform}
+
 # Human readable description of the package.
 description: Example package
-# Optional list of Buildbot CI builders to build this package on. If not
-# specified the package will be build on all CI builders. When build.py script
-# is invoked manually (without --builder flag), this property is ignored.
+
+# Optional filter with a list of CIPD platform suffixes for which to build this
+# package. If not specified, will be built only for the host platform. Note that
+# this is a filter: whenever build.py script is invoked with some GOOS and
+# GOARCH, it looks at this list to decide whether to build the package or not.
+# The list of platforms we attempt to build for is thus outside of build.py
+# control: it is specified by whoever calls build.py (see infra_continuous.py
+# recipe).
+platforms:
+  - android-amd64
+  - android-armv6l
+  - linux-386
+  - linux-amd64
+  - linux-arm64
+  - linux-armv6l
+  - linux-mips64
+  - linux-ppc64
+  - linux-ppc64le
+  - linux-s390x
+  - mac-amd64
+  - windows-386
+  - windows-amd64
+
+# Optional filter with a list of CI builders to build this package on. If not
+# specified the package will be build on all CI builders that target platforms
+# specified in the 'platforms' filter. When build.py script is invoked manually
+# (without --builder flag), this filter is ignored.
 builders:
   - infra-continuous-precise-64
   - ...
-# If true, it means the package is friendly to different GOOS and GOARCH. If not
-# set or false, this package will be skipped when doing cross-compilation.
-supports_cross_compilation: true
-# Optional list of OSes for which to build this package. Supported values: win,
-# linux, mac, android
-supported_platforms:
-  - android
-  - ...
+
 # Optional list of go packages to 'go install' before zipping this package.
 go_packages:
   - go.chromium.org/luci/cipd/client/cmd/cipd
   - ...
+
 # Environment variables to set when building go code. Only CGO_ENABLED is
 # recognized currently.
 go_build_environ:
@@ -54,6 +73,7 @@ go_build_environ:
   # Note that is is also possible to specify this on per-target GOOS basis, by
   # using a dictionary as a value, e.g. {'darwin': 1, 'windows': 0, 'linux': 0}.
   CGO_ENABLED: 0
+
 # Path to the root of the package source files on the system we're building
 # the package from. Can be absolute or relative to the path of the *.yaml
 # file itself.
@@ -104,8 +124,7 @@ Following features of the package definition are implemented by `build.py`
 all necessary files for packaging):
 
 * `builders`
-* `supports_cross_compilation`
-* `supported_platforms`
+* `platforms`
 * `go_build_environ`
 * `go_packages`
 * `generate_bat_shim`
@@ -130,7 +149,7 @@ Available variables are defined in [build.py](build.py) in `get_package_vars`:
   what the target platform is (when cross-compiling), as `(flavor)-(bitness)`
   string. It is suitable for packages that do not depend much on the exact
   version of the OS, for example packages with statically linked binaries.
-  All possible combinations thus far:
+  Examples of possible combinations:
     * linux-amd64
     * linux-386
     * linux-armv6l
@@ -138,8 +157,7 @@ Available variables are defined in [build.py](build.py) in `get_package_vars`:
     * mac-386
     * windows-amd64
     * windows-386
-* `${python_version}` defines python version as '(major)(minor)' string,
-  e.g '27'. Not set when cross-compiling.
+    * ...
 
 See [packages](packages/) for examples of package definitions.
 
@@ -209,8 +227,8 @@ Cross compilation of Go code
 
 `build.py` script recognizes `GOOS` and `GOARCH` environment variables used to
 specify a target platform when cross-compiling Go code. When it detects them, it
-builds only Go packages that have `supports_cross_compilation` property set to
-true in the package definition YAML. It also changes the meaning of
+builds only Go packages that have the target CIPD platform specified in the
+`platforms` list in the package definition YAML. It also changes the meaning of
 `${platform}` and `${exe_suffix}` to match the values for the target platform.
 
 Built packages have `+${platform}` suffix in file names and coexist with native

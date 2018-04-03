@@ -1,9 +1,9 @@
 package: infra/machine-db/crimson/${platform}
 description: Machine Database Crimson client.
-builders:
-  - infra-continuous-mac-10.13-64
-  - infra-continuous-trusty-64
-  - infra-continuous-win-64
+platforms:
+  - linux-amd64
+  - mac-amd64
+  - windows-amd64
 go_packages:
   - go.chromium.org/luci/machine-db/client/cmd/crimson
 root: ../../go/bin

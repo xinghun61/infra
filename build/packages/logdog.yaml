@@ -1,11 +1,9 @@
 package: infra/tools/luci/logdog/logdog/${platform}
 description: logdog is a LogDog CLI client.
-builders:
-  - infra-continuous-mac-10.9-64
-  - infra-continuous-precise-32
-  - infra-continuous-precise-64
-  - infra-continuous-win-32
-  - infra-continuous-win-64
+platforms:
+  - linux-amd64
+  - mac-amd64
+  - windows-amd64
 go_packages:
   - infra/tools/logdog
 root: ../../go/bin

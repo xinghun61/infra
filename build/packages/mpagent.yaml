@@ -1,8 +1,8 @@
 package: infra/machine-provider/agent/gce/${platform}
 description: Machine Provider agent.
-builders:
-  - infra-continuous-trusty-64
-  - infra-continuous-win-64
+platforms:
+  - linux-amd64
+  - windows-amd64
 install_mode: copy
 go_packages:
   - go.chromium.org/luci/mp/cmd/mpagent

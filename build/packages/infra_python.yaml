@@ -1,16 +1,18 @@
 package: infra/infra_python/${platform}
 description: Virtual environment + 'infra' package with infra.git python code.
-builders:
-  - infra-continuous-mac-10.9-64
-  - infra-continuous-precise-32
-  - infra-continuous-precise-64
-  - infra-continuous-win-32
-  - infra-continuous-win-64
-root: ../../
+platforms:
+  - linux-386
+  - linux-amd64
+  - mac-amd64
+  - windows-386
+  - windows-amd64
+
 uses_python_env: true
+
 go_packages:
   - infra/tools/cloudtail/cmd/cloudtail
 
+root: ../../
 data:
   # Virtual environment with all third party packages.
   - dir: ENV
