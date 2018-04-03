@@ -12,6 +12,5 @@ htmlcov
 .DS_Store
 workspace.xml
 elements/**/*\.vulcanized.*
-bower_components/*
-!bower_components/chopsui
+bower_components
 node_modules
