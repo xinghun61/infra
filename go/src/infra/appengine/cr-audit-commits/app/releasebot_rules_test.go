@@ -77,6 +77,7 @@ func TestReleaseBotRules(t *testing.T) {
 			rr := OnlyModifiesVersionFile(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+			So(rr.Message, ShouldEqual, "")
 
 		})
 		Convey("Introduces unexpected changes", func() {
