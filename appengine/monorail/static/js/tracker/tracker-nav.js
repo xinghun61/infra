@@ -42,7 +42,8 @@ function TKR_goToAnchor(anchor) {
  * @return {Element} user editable colspec form field.
  */
 function TKR_getColspecElement() {
- return document.getElementById('colspec_field').firstChild;
+ var elem = document.getElementById('colspec_field');
+ return elem && elem.firstChild;
 }
 
 
@@ -100,7 +101,11 @@ window.setInterval(TKR_autosizeArtifactSerchField, 700);
  */
 function TKR_formatContextQueryArgs() {
   var args = "";
-  var colspec = TKR_getColspecElement().value;
+  var colSpecElem = TKR_getColspecElement()
+  if (!colSpecElem) {
+    return;
+  }
+  var colspec = colSpecElem.value;
   if (_ctxHotlistID != "") args += "&hotlist_id=" + _ctxHotlistID;
   if (_ctxCan != 2) args += "&can=" + _ctxCan;
   args += "&q=" + encodeURIComponent(_ctxQuery);

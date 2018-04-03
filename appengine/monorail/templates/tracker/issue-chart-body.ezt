@@ -1,1 +1,10 @@
 <h1>Charts</h1>
+
+[if-any dev_mode]
+<link rel="import" href="/elements/bar-chart.html?version=[app_version]" nonce="[nonce]">
+[else]
+<link rel="import" href="/elements/bar-chart.vulcanized.html?version=[app_version]" nonce="[nonce]">
+<script src="/elements/bar-chart.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
+[end]
+
+<bar-chart></bar-chart>

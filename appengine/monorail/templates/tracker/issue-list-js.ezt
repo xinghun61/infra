@@ -66,7 +66,10 @@ runOnLoad(function() {
     _showBelow("pop_" + colIndex, target);
     event.preventDefault();
   }
-  $("resultstablehead").addEventListener("click", _handleHeaderClick);
+  var resultsTableHead = $("resultstablehead");
+  if (resultsTableHead) {
+    resultsTableHead.addEventListener("click", _handleHeaderClick);
+  }
 });
 </script>
 

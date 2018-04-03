@@ -11,7 +11,7 @@ REVISION
 htmlcov
 .DS_Store
 workspace.xml
-elements/*\.vulcanized.*
+elements/**/*\.vulcanized.*
 bower_components/*
 !bower_components/chopsui
 node_modules

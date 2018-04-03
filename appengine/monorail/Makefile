@@ -69,11 +69,18 @@ deps:
 	npm install
 	ln -sf ../../../crdx/chopsui bower_components/chopsui
 
-vulcanize: deps
-	$(VULCANIZE_PATH) elements/mr-approval-page/mr-approval-page.html --inline-script | $(CRISPER_PATH) --html elements/mr-approval-page/mr-approval-page.vulcanized.html --js elements/mr-approval-page/mr-approval-page.vulcanized.js --only-split
+vulcanize:
+	$(VULCANIZE_PATH) elements/mr-approval-page/mr-approval-page.html --inline-script \
+	| $(CRISPER_PATH) \
+		--html elements/mr-approval-page/mr-approval-page.vulcanized.html \
+		--js elements/mr-approval-page/mr-approval-page.vulcanized.js --only-split
+	$(VULCANIZE_PATH) elements/bar-chart.html --inline-script \
+	| $(CRISPER_PATH) \
+		--html elements/bar-chart.vulcanized.html \
+		--js elements/bar-chart.vulcanized.js --only-split
 
 clean_vulcanized:
-	rm -f elements/mr-approval-page/mr-approval-page.vulcanized.js elements/mr-approval-page/mr-approval-page.vulcanized.html
+	rm -f elements/**/*.vulcanized.{js,html}
 
 
 # AppEngine apps can be tested locally and in non-default versions upload to
