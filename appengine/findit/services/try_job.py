@@ -177,7 +177,7 @@ def ReviveOrCreateTryJobEntity(master_name, builder_name, build_number,
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.put()
 
-  return try_job_entity_revived_or_created, try_job.key
+  return try_job_entity_revived_or_created, try_job.key.urlsafe()
 
 
 def IsBuildFailureUniqueAcrossPlatforms(master_name,
@@ -217,13 +217,20 @@ def IsBuildFailureUniqueAcrossPlatforms(master_name,
   return not existing_group
 
 
-def NeedANewWaterfallTryJob(master_name, builder_name, build_number,
-                            force_try_job):
+def NeedANewWaterfallTryJob(master_name,
+                            builder_name,
+                            build_number,
+                            force_try_job,
+                            build_completed=True):
   """Preliminary check if a new try job is needed.
 
+  Don't need try job if build not completed yet.
   Checks if a tryserver is setup for the builder,
   and only runs for builds start within 24 hours, unless it's a forced rerun.
   """
+  if not build_completed:
+    return False
+
   tryserver_mastername, tryserver_buildername = (
       waterfall_config.GetWaterfallTrybot(master_name, builder_name))
 

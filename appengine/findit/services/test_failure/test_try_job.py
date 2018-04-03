@@ -40,7 +40,8 @@ def _GetStepsAndTests(failed_steps):
   """Extracts failed steps and tests from failed_steps data structure.
 
   Args:
-    failed_steps: Failed steps and test, plus extra information. Example:
+    failed_steps(TestFailedSteps): Failed steps and test information.
+    Example of a serialized TestFailedSteps:
     {
         'step_a': {
             'last_pass': 4,
@@ -89,7 +90,7 @@ def _GetStepsAndTests(failed_steps):
     return failed_steps_and_tests
 
   for step_name, step in failed_steps.iteritems():
-    for test_name in (step.get('tests') or [None]):
+    for test_name in (step.tests or [None]):
       failed_steps_and_tests.append([step_name, test_name])
 
   return sorted(failed_steps_and_tests)
@@ -117,13 +118,15 @@ def _IsTestFailureUniqueAcrossPlatforms(master_name, builder_name, build_number,
     return True
   groups = _GetMatchingTestFailureGroups(failed_steps_and_tests)
 
+  # TODO(crbug/808699): update this function call when refactor
+  # start_compile_try_job_pipeline.
   return try_job_service.IsBuildFailureUniqueAcrossPlatforms(
       master_name,
       builder_name,
       build_number,
       build_failure_type,
       blame_list,
-      heuristic_result,
+      heuristic_result.ToSerializable(),
       groups,
       failed_steps_and_tests=failed_steps_and_tests)
 
@@ -142,50 +145,79 @@ def _HasBuildKeyForBuildInfoInFailureResultMap(master_name, builder_name,
   return False
 
 
-def _NeedANewTestTryJob(master_name, builder_name, build_number, force_try_job):
+def _NeedANewTestTryJob(start_test_try_job_inputs):
+  """Decides if a new test try job is needed.
 
-  if (not force_try_job and
+  A new test try job is needed if:
+  1. It passed preliminary checks in try_job_service.NeedANewWaterfallTryJob,
+  2. It's for a test failure,
+  3. It contains some first failed steps/tests
+
+  Returns:
+    A bool to indicate if a new try job is needed.
+  """
+  master_name, builder_name, build_number = (
+      start_test_try_job_inputs.build_key.GetParts())
+  force = start_test_try_job_inputs.force
+  build_completed = start_test_try_job_inputs.build_completed
+
+  # TODO(crbug/808699):  update this function call when refactor
+  # start_compile_try_job_pipeline.
+  need_new_try_job = try_job_service.NeedANewWaterfallTryJob(
+      master_name,
+      builder_name,
+      build_number,
+      force,
+      build_completed=build_completed)
+  if not need_new_try_job:
+    return False
+
+  failure_info = start_test_try_job_inputs.heuristic_result.failure_info
+  if not failure_info or failure_info.failure_type is None:
+    return False
+
+  try_job_type = failure_info.failure_type
+  if try_job_type != failure_type.TEST:
+    logging.error('Checking for a test try job but got a %s failure.',
+                  failure_type.GetDescriptionForFailureType(try_job_type))
+    return False
+
+  consistent_failures = start_test_try_job_inputs.consistent_failures
+
+  if (not force and
       waterfall_config.ShouldSkipTestTryJobs(master_name, builder_name)):
     logging.info('Test try jobs on %s, %s are not supported yet.', master_name,
                  builder_name)
+    return False
+
+  if not consistent_failures.consistent_failures:
+    # consistent_failures is empty. Either tests are flaky or task failed.
+    logging.info(
+        'All tests are flaky or tasks failed, no try job will be triggered.')
     return False
 
   return _HasBuildKeyForBuildInfoInFailureResultMap(master_name, builder_name,
                                                     build_number)
 
 
-def NeedANewTestTryJob(master_name,
-                       builder_name,
-                       build_number,
-                       failure_info,
-                       heuristic_result,
-                       force_try_job=False):
-  """Decides if a new test try job is needed.
-
-  A new test try job is needed if:
-  1. It passed preliminary checks in try_job_service.NeedANewWaterfallTryJob,
-  2. It's for a test failure,
-  3. It contains some first failed steps/tests,
-  4. There is no other running or completed try job.
+def GetInformationToStartATestTryJob(start_test_try_job_inputs):
+  """Checks if can start a new test try job and gets parameters to start it.
 
   Returns:
-    A bool to indicate if a new try job is needed.
-    A key to the entity of the try job.
+    A bool to indicate if a new try job is needed and can be started.
+    A dict of parameters to run the try job if a new one is needed.
   """
-  need_new_try_job = try_job_service.NeedANewWaterfallTryJob(
-      master_name, builder_name, build_number, force_try_job)
-
+  need_new_try_job = _NeedANewTestTryJob(start_test_try_job_inputs)
   if not need_new_try_job:
     return False, None
 
-  try_job_type = failure_info['failure_type']
-  if try_job_type != failure_type.TEST:
-    logging.error('Checking for a test try job but got a %s failure.',
-                  failure_type.GetDescriptionForFailureType(try_job_type))
-    return False, None
-
-  need_new_try_job = _NeedANewTestTryJob(master_name, builder_name,
-                                         build_number, force_try_job)
+  master_name, builder_name, build_number = (
+      start_test_try_job_inputs.build_key.GetParts())
+  force = start_test_try_job_inputs.force
+  failure_info = start_test_try_job_inputs.heuristic_result.failure_info
+  heuristic_result = start_test_try_job_inputs.heuristic_result.heuristic_result
+  try_job_type = failure_info.failure_type
+  consistent_failures = start_test_try_job_inputs.consistent_failures
 
   # TODO(chanli): enable the feature to trigger single try job for a group
   # when notification is ready.
@@ -195,36 +227,47 @@ def NeedANewTestTryJob(master_name,
   # TODO(chanli): Add checking for culprits of the group when enabling
   # single try job: add current build to suspected_cl.builds if the try job for
   # this group has already completed.
-  if need_new_try_job:
-    _IsTestFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, try_job_type,
-        failure_info['builds'][str(build_number)]['blame_list'],
-        failure_info['failed_steps'], heuristic_result)
+  _IsTestFailureUniqueAcrossPlatforms(
+      master_name, builder_name, build_number, try_job_type,
+      failure_info.builds[str(build_number)].blame_list,
+      failure_info.failed_steps, heuristic_result)
 
-  try_job_was_created, try_job_key = try_job_service.ReviveOrCreateTryJobEntity(
-      master_name, builder_name, build_number, force_try_job)
-  need_new_try_job = need_new_try_job and try_job_was_created
-  return need_new_try_job, try_job_key
+  try_job_was_created, urlsafe_try_job_key = (
+      try_job_service.ReviveOrCreateTryJobEntity(master_name, builder_name,
+                                                 build_number, force))
+  can_start_new_try_job = need_new_try_job and try_job_was_created
+
+  if not can_start_new_try_job:
+    return False, None
+
+  parameters = GetParametersToScheduleTestTryJob(
+      master_name, builder_name, build_number, failure_info, heuristic_result,
+      urlsafe_try_job_key, consistent_failures)
+  if not parameters.good_revision:
+    # No last_pass in saved in failure_info.
+    return False, None
+
+  return True, parameters
 
 
 def _GetLastPassTest(build_number, failed_steps):
   for step_failure in failed_steps.itervalues():
-    for test_failure in (step_failure.get('tests') or {}).itervalues():
-      if (test_failure['first_failure'] == build_number and
-          test_failure.get('last_pass') is not None):
-        return test_failure['last_pass']
+    for test_failure in (step_failure.tests or {}).itervalues():
+      if (test_failure.first_failure == build_number and
+          test_failure.last_pass is not None):
+        return test_failure.last_pass
   return None
 
 
 def _GetGoodRevisionTest(master_name, builder_name, build_number, failure_info):
-  last_pass = _GetLastPassTest(build_number, failure_info['failed_steps'])
+  last_pass = _GetLastPassTest(build_number, failure_info.failed_steps)
   if last_pass is None:
     logging.warning('Couldn"t start try job for build %s, %s, %d because'
                     ' last_pass is not found.', master_name, builder_name,
                     build_number)
     return None
 
-  return failure_info['builds'][str(last_pass)]['chromium_revision']
+  return failure_info.builds[str(last_pass)].chromium_revision
 
 
 def GetParametersToScheduleTestTryJob(master_name,
@@ -233,19 +276,25 @@ def GetParametersToScheduleTestTryJob(master_name,
                                       failure_info,
                                       heuristic_result,
                                       urlsafe_try_job_key,
+                                      consistent_failures,
                                       force_buildbot=False):
+  """Generates RunTestTryJobParameters to trigger a test try job."""
+  # TODO(crbug/808699):  update this function call when refactor
+  # start_compile_try_job_pipeline.
   parameters = try_job_service.PrepareParametersToScheduleTryJob(
-      master_name, builder_name, build_number, failure_info, heuristic_result,
-      urlsafe_try_job_key, force_buildbot)
+      master_name, builder_name, build_number, failure_info.ToSerializable(),
+      heuristic_result.ToSerializable()
+      if heuristic_result else None, urlsafe_try_job_key, force_buildbot)
 
   parameters['good_revision'] = _GetGoodRevisionTest(master_name, builder_name,
                                                      build_number, failure_info)
 
-  parameters['targeted_tests'] = GetReliableTests(master_name, builder_name,
-                                                  build_number, failure_info)
+  parameters['targeted_tests'] = (
+      consistent_failures.consistent_failures.ToSerializable()
+      if consistent_failures else {})
 
-  parent_mastername = failure_info.get('parent_mastername') or master_name
-  parent_buildername = failure_info.get('parent_buildername') or builder_name
+  parent_mastername = failure_info.parent_mastername or master_name
+  parent_buildername = failure_info.parent_buildername or builder_name
   parameters['dimensions'] = waterfall_config.GetTrybotDimensions(
       parent_mastername, parent_buildername)
   parameters['cache_name'] = swarmbot_util.GetCacheName(parent_mastername,

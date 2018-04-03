@@ -8,6 +8,9 @@ import mock
 
 from common import exceptions
 from common.waterfall import failure_type
+from dto.collect_swarming_task_results_outputs import (
+    CollectSwarmingTaskResultsOutputs)
+from dto.start_try_job_inputs import StartTestTryJobInputs
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from model import analysis_approach_type
@@ -22,6 +25,10 @@ from services import try_job as try_job_service
 from services.parameters import BuildKey
 from services.parameters import IdentifyTestTryJobCulpritParameters
 from services.parameters import RunTestTryJobParameters
+from services.parameters import TestFailedSteps
+from services.parameters import TestFailureInfo
+from services.parameters import TestHeuristicAnalysisOutput
+from services.parameters import TestHeuristicResult
 from services.parameters import TestTryJobAllStepsResult
 from services.parameters import TestTryJobResult
 from services.test_failure import test_failure_analysis
@@ -58,8 +65,38 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
 
+    self.failure_info = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 223,
+        'failed_steps': {},
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
+        },
+        'failure_type': failure_type.TEST
+    }
+    self.start_try_job_params = StartTestTryJobInputs(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=223),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput(
+            failure_info=TestFailureInfo.FromSerializable(self.failure_info),
+            heuristic_result=TestHeuristicResult.FromSerializable({})),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable({
+            'consistent_failures': {
+                's': ['t']
+            }
+        }))
+
   def testGetFailedStepsAndTests(self):
-    failed_steps = {
+    failed_steps = TestFailedSteps.FromSerializable({
         'step_c': {},
         'step_a': {
             'tests': {
@@ -69,7 +106,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             },
         },
         'step_b': {}
-    }
+    })
 
     expected_result = [['step_a', 'test_a'], ['step_a', 'test_b'],
                        ['step_a', 'test_c'], ['step_b', None], ['step_c', None]]
@@ -124,7 +161,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    failed_steps = {}
+    failed_steps = TestFailedSteps.FromSerializable({})
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have zero failed steps.
@@ -143,22 +180,22 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    failed_steps = {
+    failed_steps = TestFailedSteps.FromSerializable({
         'step_a': {
             'current_failure': 3,
             'first_failure': 2,
             'last_pass': 1
         }
-    }
+    })
 
-    heuristic_result = {
+    heuristic_result = TestHeuristicResult.FromSerializable({
         'failures': [{
             'step_name': 'step1',
             'suspected_cls': [{
                 'revision': 'rev1',
             }],
         }]
-    }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
@@ -188,13 +225,13 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    failed_steps = {
+    failed_steps = TestFailedSteps.FromSerializable({
         'step_a': {
             'current_failure': 3,
             'first_failure': 2,
             'last_pass': 1
         }
-    }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
@@ -202,7 +239,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         test_try_job._IsTestFailureUniqueAcrossPlatforms(
             master_name, builder_name, build_number, failure_type.TEST,
-            blame_list, failed_steps, None))
+            blame_list, failed_steps, TestHeuristicResult.FromSerializable({})))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
@@ -212,7 +249,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(
         test_try_job._IsTestFailureUniqueAcrossPlatforms(
             master_name_2, builder_name, build_number, failure_type.TEST,
-            blame_list, failed_steps, None))
+            blame_list, failed_steps, TestHeuristicResult.FromSerializable({})))
     self.assertIsNone(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -224,21 +261,22 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list_1 = ['a']
     blame_list_2 = ['b']
-    failed_steps = {
+    failed_steps = TestFailedSteps.FromSerializable({
         'step_a': {
             'current_failure': 3,
             'first_failure': 2,
             'last_pass': 1
         }
-    }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
     # Observe new group creation.
     self.assertTrue(
         test_try_job._IsTestFailureUniqueAcrossPlatforms(
-            master_name, builder_name, build_number, failure_type.TEST,
-            blame_list_1, failed_steps, None))
+            master_name, builder_name, build_number,
+            failure_type.TEST, blame_list_1, failed_steps,
+            TestHeuristicResult.FromSerializable({})))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
@@ -247,8 +285,9 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     # Observe new group creation.
     self.assertTrue(
         test_try_job._IsTestFailureUniqueAcrossPlatforms(
-            master_name_2, builder_name, build_number, failure_type.TEST,
-            blame_list_2, failed_steps, None))
+            master_name_2, builder_name, build_number,
+            failure_type.TEST, blame_list_2, failed_steps,
+            TestHeuristicResult.FromSerializable({})))
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -259,31 +298,31 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     master_name_2 = 'm2'
 
     blame_list = ['a']
-    failed_steps = {
+    failed_steps = TestFailedSteps.FromSerializable({
         'step_a': {
             'current_failure': 3,
             'first_failure': 2,
             'last_pass': 1
         }
-    }
+    })
 
-    heuristic_result_1 = {
+    heuristic_result_1 = TestHeuristicResult.FromSerializable({
         'failures': [{
             'step_name': 'step1',
             'suspected_cls': [{
                 'revision': 'rev1',
             }],
         }]
-    }
+    })
 
-    heuristic_result_2 = {
+    heuristic_result_2 = TestHeuristicResult.FromSerializable({
         'failures': [{
             'step_name': 'step1',
             'suspected_cls': [{
                 'revision': 'rev2',
             }],
         }]
-    }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
@@ -313,29 +352,30 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    failed_steps_1 = {
+    failed_steps_1 = TestFailedSteps.FromSerializable({
         'step_a': {
             'current_failure': 3,
             'first_failure': 2,
             'last_pass': 1
         }
-    }
+    })
 
-    failed_steps_2 = {
+    failed_steps_2 = TestFailedSteps.FromSerializable({
         'step_b': {
             'current_failure': 3,
             'first_failure': 2,
             'last_pass': 1
         }
-    }
+    })
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
     # Observe new group creation.
     self.assertTrue(
         test_try_job._IsTestFailureUniqueAcrossPlatforms(
-            master_name, builder_name, build_number, failure_type.TEST,
-            blame_list, failed_steps_1, None))
+            master_name, builder_name, build_number,
+            failure_type.TEST, blame_list, failed_steps_1,
+            TestHeuristicResult.FromSerializable({})))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
@@ -344,205 +384,39 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     # Observe new group creation.
     self.assertTrue(
         test_try_job._IsTestFailureUniqueAcrossPlatforms(
-            master_name_2, builder_name, build_number, failure_type.TEST,
-            blame_list, failed_steps_2, None))
+            master_name_2, builder_name, build_number,
+            failure_type.TEST, blame_list, failed_steps_2,
+            TestHeuristicResult.FromSerializable({})))
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
-  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
-  def testBailOutForTestTryJob(self, mock_fn):
+  @mock.patch.object(
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=False)
+  def testNotNeedAWaterfallTryJob(self, mock_fn):
     master_name = 'master2'
     builder_name = 'builder2'
     build_number = 223
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    failure_info = {
-        'master_name': master_name,
-        'builder_name': builder_name,
-        'build_number': build_number,
-        'failed_steps': {
-            'a_test': {}
-        },
-        'failure_type': failure_type.TEST
-    }
-
-    mock_fn.return_value = False
-    expected_try_job_key = WfTryJob.Create(master_name, builder_name,
-                                           build_number).key
-    need_try_job, try_job_key = test_try_job.NeedANewTestTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput.FromSerializable({}),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
+            {}))
+    need_try_job, parameters = test_try_job.GetInformationToStartATestTryJob(
+        params)
 
     self.assertFalse(need_try_job)
-    self.assertEqual(expected_try_job_key, try_job_key)
+    self.assertIsNone(parameters)
+    mock_fn.assert_called_once_with(
+        master_name, builder_name, build_number, False, build_completed=True)
 
-  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
-  def testNotNeedANewTestTryJobIfNotFirstTimeFailure(self, mock_fn):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    failure_info = {
-        'master_name': master_name,
-        'builder_name': builder_name,
-        'build_number': build_number,
-        'failed_steps': {
-            'compile': {
-                'current_failure': 223,
-                'first_failure': 221,
-                'last_pass': 220
-            }
-        },
-        'builds': {
-            '220': {
-                'blame_list': ['220-1', '220-2'],
-                'chromium_revision': '220-2'
-            },
-            '221': {
-                'blame_list': ['221-1', '221-2'],
-                'chromium_revision': '221-2'
-            },
-            '222': {
-                'blame_list': ['222-1'],
-                'chromium_revision': '222-1'
-            },
-            '223': {
-                'blame_list': ['223-1', '223-2', '223-3'],
-                'chromium_revision': '223-3'
-            }
-        },
-        'failure_type': failure_type.TEST
-    }
-
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
-    mock_fn.return_value = False
-    expected_key = WfTryJob.Create(master_name, builder_name, build_number).key
-    need_try_job, try_job_key = test_try_job.NeedANewTestTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
-
-    self.assertFalse(need_try_job)
-    self.assertEqual(expected_key, try_job_key)
-
-  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
-  def testNotNeedANewTestTryJobIfNoNewFailure(self, mock_fn):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    failure_info = {
-        'failed_steps': {
-            'a': {
-                'current_failure': 223,
-                'first_failure': 222,
-                'last_pass': 221,
-                'tests': {
-                    'a.t2': {
-                        'current_failure': 223,
-                        'first_failure': 222,
-                        'last_pass': 221
-                    }
-                }
-            }
-        },
-        'failure_type': failure_type.TEST
-    }
-
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {'a': {'a.t2': 'm/b/222'}}
-    analysis.put()
-
-    mock_fn.return_value = False
-    expected_try_job_key = WfTryJob.Create(master_name, builder_name,
-                                           build_number).key
-
-    need_try_job, try_job_key = test_try_job.NeedANewTestTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
-
-    self.assertFalse(need_try_job)
-    self.assertEqual(expected_try_job_key, try_job_key)
-
-  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
-  def testNeedANewTestTryJobIfTestFailureSwarming(self, mock_fn):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    failure_info = {
-        'failed_steps': {
-            'a': {
-                'current_failure': 223,
-                'first_failure': 222,
-                'last_pass': 221,
-                'tests': {
-                    'a.PRE_t1': {
-                        'current_failure': 223,
-                        'first_failure': 223,
-                        'last_pass': 221,
-                        'base_test_name': 'a.t1'
-                    },
-                    'a.t2': {
-                        'current_failure': 223,
-                        'first_failure': 222,
-                        'last_pass': 221
-                    },
-                    'a.t3': {
-                        'current_failure': 223,
-                        'first_failure': 223,
-                        'last_pass': 222
-                    }
-                }
-            },
-            'b': {
-                'current_failure': 223,
-                'first_failure': 222,
-                'last_pass': 221,
-                'tests': {
-                    'b.t1': {
-                        'current_failure': 223,
-                        'first_failure': 222,
-                        'last_pass': 221
-                    },
-                    'b.t2': {
-                        'current_failure': 223,
-                        'first_failure': 222,
-                        'last_pass': 221
-                    }
-                }
-            }
-        },
-        'builds': {
-            '222': {
-                'blame_list': ['222-1'],
-                'chromium_revision': '222-1'
-            },
-            '223': {
-                'blame_list': ['223-1', '223-2', '223-3'],
-                'chromium_revision': '223-3'
-            }
-        },
-        'failure_type': failure_type.TEST
-    }
-
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {
-        'a': {
-            'a.PRE_t1': 'm/b/223',
-            'a.t2': 'm/b/222',
-            'a.t3': 'm/b/223'
-        },
-        'b': {
-            'b.t1': 'm/b/222',
-            'b.t2': 'm/b/222'
-        }
-    }
-    analysis.put()
-
-    mock_fn.return_value = False
-
-    need_try_job, try_job_key = test_try_job.NeedANewTestTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
-
-    self.assertTrue(need_try_job)
-    self.assertIsNotNone(try_job_key)
-
-  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
-  def testNotNeedANewTestTryJobForOtherType(self, mock_fn):
+  @mock.patch.object(
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=True)
+  def testNotGetInformationToStartATestTryJobForOtherType(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -563,70 +437,207 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         },
         'failure_type': failure_type.UNKNOWN
     }
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput(
+            failure_info=TestFailureInfo.FromSerializable(failure_info),
+            heuristic_result=TestHeuristicResult.FromSerializable({})),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
+            {}))
 
-    mock_fn.return_value = False
-
-    need_try_job, _ = test_try_job.NeedANewTestTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+    need_try_job, parameters = test_try_job.GetInformationToStartATestTryJob(
+        params)
 
     self.assertFalse(need_try_job)
+    self.assertIsNone(parameters)
 
   @mock.patch.object(
-      try_job_service, 'NeedANewWaterfallTryJob', return_value=False)
-  def testNotNeedANewTestTryJob(self, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-
-    need_try_job, try_job_key = test_try_job.NeedANewTestTryJob(
-        master_name, builder_name, build_number, None, None, None)
-
-    self.assertFalse(need_try_job)
-    self.assertIsNone(try_job_key)
-
-  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
-  def testNotNeedANewTryJobIfNoNewFailure(self, mock_fn):
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=True)
+  @mock.patch.object(test_try_job, '_NeedANewTestTryJob', return_value=False)
+  def testNotNeedANewTestTryJob(self, mock_fn, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
     failure_info = {
-        'failed_steps': {
-            '': {
-                'current_failure': 223,
-                'first_failure': 222,
-                'last_pass': 221,
-                'tests': {
-                    'a.t2': {
-                        'current_failure': 223,
-                        'first_failure': 222,
-                        'last_pass': 221
-                    }
-                }
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {},
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
             }
         },
         'failure_type': failure_type.TEST
     }
 
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {'a': {'a.t2': 'm/b/222'}}
-    analysis.put()
+    consistent_failures = CollectSwarmingTaskResultsOutputs.FromSerializable({})
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput(
+            failure_info=TestFailureInfo.FromSerializable(failure_info),
+            heuristic_result=TestHeuristicResult.FromSerializable({})),
+        consistent_failures=consistent_failures)
 
-    mock_fn.return_value = False
-    expected_try_job_key = WfTryJob.Create(master_name, builder_name,
-                                           build_number).key
-
-    need_try_job, try_job_key = test_try_job.NeedANewTestTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+    need_try_job, parameters = test_try_job.GetInformationToStartATestTryJob(
+        params)
 
     self.assertFalse(need_try_job)
-    self.assertEqual(expected_try_job_key, try_job_key)
+    self.assertIsNone(parameters)
+    mock_fn.assert_called_once_with(params)
 
-  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
-  def testNeedANewTryJobIfTestFailureSwarming(self, mock_fn):
+  @mock.patch.object(
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=True)
+  @mock.patch.object(
+      try_job_service, 'ReviveOrCreateTryJobEntity', return_value=(False, None))
+  @mock.patch.object(test_try_job, '_IsTestFailureUniqueAcrossPlatforms')
+  @mock.patch.object(test_try_job, '_NeedANewTestTryJob', return_value=True)
+  def testFailedToReviveOrCreateTryJob(self, mock_fn, mock_unique, mock_rc, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    failure_info = {
+    failure_info_dict = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {},
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
+        },
+        'failure_type': failure_type.TEST
+    }
+
+    failure_info = TestFailureInfo.FromSerializable(failure_info_dict)
+    heuristic_result = TestHeuristicAnalysisOutput(
+        failure_info=failure_info,
+        heuristic_result=TestHeuristicResult.FromSerializable({}))
+    consistent_failures = CollectSwarmingTaskResultsOutputs.FromSerializable({})
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True,
+        force=False,
+        heuristic_result=heuristic_result,
+        consistent_failures=consistent_failures)
+
+    need_try_job, parameters = test_try_job.GetInformationToStartATestTryJob(
+        params)
+
+    self.assertFalse(need_try_job)
+    self.assertIsNone(parameters)
+    mock_fn.assert_called_once_with(params)
+    mock_unique.assert_called_once_with(
+        master_name, builder_name, build_number, failure_type.TEST,
+        failure_info.builds['223'].blame_list, failure_info.failed_steps,
+        heuristic_result.heuristic_result)
+    mock_rc.assert_called_once_with(master_name, builder_name, build_number,
+                                    False)
+
+  @mock.patch.object(
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=True)
+  @mock.patch.object(
+      try_job_service,
+      'ReviveOrCreateTryJobEntity',
+      return_value=(True, 'try_job_key'))
+  @mock.patch.object(test_try_job, '_IsTestFailureUniqueAcrossPlatforms')
+  @mock.patch.object(test_try_job, '_NeedANewTestTryJob', return_value=True)
+  @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
+  def testNoGoodRevision(self, mock_fn, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+
+    failure_info_dict = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': {},
+        'builds': {
+            '222': {
+                'blame_list': ['222-1'],
+                'chromium_revision': '222-1'
+            },
+            '223': {
+                'blame_list': ['223-1', '223-2', '223-3'],
+                'chromium_revision': '223-3'
+            }
+        },
+        'failure_type': failure_type.TEST
+    }
+    failure_info = TestFailureInfo.FromSerializable(failure_info_dict)
+
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput(
+            failure_info=failure_info,
+            heuristic_result=TestHeuristicResult.FromSerializable({})),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
+            {}))
+
+    mock_parameters = RunTestTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision=None,
+        bad_revision='rev2',
+        suspected_revisions=[],
+        force_buildbot=False,
+        dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
+        cache_name='cache',
+        targeted_tests={},
+        urlsafe_try_job_key='urlsafe_try_job_key')
+    mock_fn.return_value = mock_parameters
+
+    need_try_job, parameters = test_try_job.GetInformationToStartATestTryJob(
+        params)
+
+    self.assertFalse(need_try_job)
+    self.assertIsNone(parameters)
+
+  @mock.patch.object(
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=True)
+  @mock.patch.object(
+      try_job_service,
+      'ReviveOrCreateTryJobEntity',
+      return_value=(True, 'try_job_key'))
+  @mock.patch.object(test_try_job, '_IsTestFailureUniqueAcrossPlatforms')
+  @mock.patch.object(test_try_job, '_NeedANewTestTryJob', return_value=True)
+  @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
+  def testNeedANewTryJobIfTestFailureSwarming(self, mock_fn, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    failure_info_dict = {
         'failed_steps': {
             'a': {
                 'current_failure': 223,
@@ -696,180 +707,22 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    mock_fn.return_value = False
+    failure_info = TestFailureInfo.FromSerializable(failure_info_dict)
+    heuristic_result = TestHeuristicAnalysisOutput(
+        failure_info=failure_info,
+        heuristic_result=TestHeuristicResult.FromSerializable({}))
+    consistent_failures = CollectSwarmingTaskResultsOutputs.FromSerializable({})
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=True,
+        force=False,
+        heuristic_result=heuristic_result,
+        consistent_failures=consistent_failures)
 
-    need_try_job, try_job_key = test_try_job.NeedANewTestTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
-
-    self.assertTrue(need_try_job)
-    self.assertIsNotNone(try_job_key)
-
-  def testForceTryJob(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    failure_info = {
-        'failed_steps': {
-            'a': {
-                'current_failure': 223,
-                'first_failure': 223,
-                'last_pass': 222,
-                'tests': {
-                    'a.t2': {
-                        'current_failure': 223,
-                        'first_failure': 223,
-                        'last_pass': 222
-                    }
-                }
-            }
-        },
-        'builds': {
-            '222': {
-                'blame_list': ['222-1'],
-                'chromium_revision': '222-1'
-            },
-            '223': {
-                'blame_list': ['223-1', '223-2', '223-3'],
-                'chromium_revision': '223-3'
-            }
-        },
-        'failure_type': failure_type.TEST
-    }
-
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.compile_results = [['rev', 'failed']]
-    try_job.status = analysis_status.COMPLETED
-    try_job.put()
-
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {'a': {'a.t2': 'm/b/223'}}
-    analysis.put()
-
-    need_try_job, try_job_key = test_try_job.NeedANewTestTryJob(
-        master_name, builder_name, build_number, failure_info, None, True)
-
-    self.assertTrue(need_try_job)
-    self.assertEqual(try_job_key, try_job.key)
-
-  def testGetLastPassTestNoLastPass(self):
-    failed_steps = {
-        'a': {
-            'first_failure': 1,
-            'last_pass': 0,
-            'tests': {
-                'test1': {
-                    'first_failure': 1
-                }
-            }
-        }
-    }
-    self.assertIsNone(test_try_job._GetLastPassTest(1, failed_steps))
-
-  def testGetLastPassTest(self):
-    failed_steps = {
-        'a': {
-            'first_failure': 1,
-            'last_pass': 0,
-            'tests': {
-                'test1': {
-                    'first_failure': 1,
-                    'last_pass': 0
-                }
-            }
-        }
-    }
-    self.assertEqual(0, test_try_job._GetLastPassTest(1, failed_steps))
-
-  def testGetGoodRevisionTest(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    failure_info = {
-        'failed_steps': {
-            'a': {
-                'first_failure': 1,
-                'last_pass': 0,
-                'tests': {
-                    'test1': {
-                        'first_failure': 1,
-                        'last_pass': 0
-                    }
-                }
-            }
-        },
-        'builds': {
-            '0': {
-                'chromium_revision': 'rev1'
-            },
-            '1': {
-                'chromium_revision': 'rev2'
-            }
-        }
-    }
-    self.assertEqual('rev1',
-                     test_try_job._GetGoodRevisionTest(
-                         master_name, builder_name, build_number, failure_info))
-
-  def testNotGetGoodRevisionTtest(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    failure_info = {
-        'failed_steps': {
-            'a': {
-                'first_failure': 1,
-                'last_pass': 0,
-                'tests': {
-                    'test1': {
-                        'first_failure': 1,
-                        'last_pass': 0
-                    }
-                }
-            }
-        },
-        'builds': {
-            '0': {
-                'chromium_revision': 'rev1'
-            },
-            '1': {
-                'chromium_revision': 'rev2'
-            }
-        }
-    }
-    self.assertIsNone(
-        test_try_job._GetGoodRevisionTest(master_name, builder_name,
-                                          build_number, failure_info))
-
-  @mock.patch.object(test_try_job, 'GetReliableTests', return_value={})
-  @mock.patch('services.swarmbot_util.GetCacheName', return_value='cache')
-  def testGetParametersToScheduleTestTryJob(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    failure_info = {
-        'failed_steps': {
-            'a': {
-                'first_failure': 1,
-                'last_pass': 0,
-                'tests': {
-                    'test1': {
-                        'first_failure': 1,
-                        'last_pass': 0
-                    }
-                }
-            }
-        },
-        'builds': {
-            '0': {
-                'chromium_revision': 'rev1'
-            },
-            '1': {
-                'chromium_revision': 'rev2'
-            }
-        }
-    }
-
-    expected_parameters = RunTestTryJobParameters(
+    mock_parameters = RunTestTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -882,10 +735,155 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         cache_name='cache',
         targeted_tests={},
         urlsafe_try_job_key='urlsafe_try_job_key')
+    mock_fn.return_value = mock_parameters
+
+    need_try_job, parameters = test_try_job.GetInformationToStartATestTryJob(
+        params)
+
+    self.assertTrue(need_try_job)
+    self.assertEqual(mock_parameters, parameters)
+    mock_fn.assert_called_once_with(
+        master_name, builder_name, build_number, failure_info,
+        heuristic_result.heuristic_result, 'try_job_key', consistent_failures)
+
+  def testGetLastPassTestNoLastPass(self):
+    failed_steps = TestFailedSteps.FromSerializable({
+        'a': {
+            'first_failure': 1,
+            'last_pass': 0,
+            'tests': {
+                'test1': {
+                    'first_failure': 1
+                }
+            }
+        }
+    })
+    self.assertIsNone(test_try_job._GetLastPassTest(1, failed_steps))
+
+  def testGetLastPassTest(self):
+    failed_steps = TestFailedSteps.FromSerializable({
+        'a': {
+            'first_failure': 1,
+            'last_pass': 0,
+            'tests': {
+                'test1': {
+                    'first_failure': 1,
+                    'last_pass': 0
+                }
+            }
+        }
+    })
+    self.assertEqual(0, test_try_job._GetLastPassTest(1, failed_steps))
+
+  def testGetGoodRevisionTest(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    failure_info = TestFailureInfo.FromSerializable({
+        'failed_steps': {
+            'a': {
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'test1': {
+                        'first_failure': 1,
+                        'last_pass': 0
+                    }
+                }
+            }
+        },
+        'builds': {
+            '0': {
+                'chromium_revision': 'rev1'
+            },
+            '1': {
+                'chromium_revision': 'rev2'
+            }
+        }
+    })
+    self.assertEqual('rev1',
+                     test_try_job._GetGoodRevisionTest(
+                         master_name, builder_name, build_number, failure_info))
+
+  def testNotGetGoodRevisionTest(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    failure_info = TestFailureInfo.FromSerializable({
+        'failed_steps': {
+            'a': {
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'test1': {
+                        'first_failure': 1,
+                        'last_pass': 0
+                    }
+                }
+            }
+        },
+        'builds': {
+            '0': {
+                'chromium_revision': 'rev1'
+            },
+            '1': {
+                'chromium_revision': 'rev2'
+            }
+        }
+    })
+    self.assertIsNone(
+        test_try_job._GetGoodRevisionTest(master_name, builder_name,
+                                          build_number, failure_info))
+
+  @mock.patch.object(test_try_job, 'GetReliableTests', return_value={})
+  @mock.patch('services.swarmbot_util.GetCacheName', return_value='cache')
+  def testGetParametersToScheduleTestTryJob(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    failure_info = TestFailureInfo.FromSerializable({
+        'failed_steps': {
+            'a': {
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'test1': {
+                        'first_failure': 1,
+                        'last_pass': 0
+                    }
+                }
+            }
+        },
+        'builds': {
+            '0': {
+                'chromium_revision': 'rev1'
+            },
+            '1': {
+                'chromium_revision': 'rev2'
+            }
+        }
+    })
+    consistent_failures_dict = {'consistent_failures': {'a': ['test1']}}
+    consistent_failures = CollectSwarmingTaskResultsOutputs.FromSerializable(
+        consistent_failures_dict)
+
+    expected_parameters = RunTestTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision='rev1',
+        bad_revision='rev2',
+        suspected_revisions=[],
+        force_buildbot=False,
+        dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
+        cache_name='cache',
+        targeted_tests={'a': ['test1']},
+        urlsafe_try_job_key='urlsafe_try_job_key')
     self.assertEqual(expected_parameters,
                      test_try_job.GetParametersToScheduleTestTryJob(
                          master_name, builder_name, build_number, failure_info,
-                         None, 'urlsafe_try_job_key'))
+                         None, 'urlsafe_try_job_key', consistent_failures))
 
   def testGetSwarmingTasksResult(self):
     master_name = 'm'
@@ -1350,10 +1348,10 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     test_try_job.UpdateSuspectedCLs(master_name, builder_name, build_number,
                                     culprits,
                                     TestTryJobResult.FromSerializable(result))
-    mock_fn.assert_called_with('chromium', 'rev', None,
-                               analysis_approach_type.TRY_JOB, master_name,
-                               builder_name, build_number, failure_type.TEST,
-                               {'b_test': ['b_test1']}, None)
+    mock_fn.assert_called_once_with(
+        'chromium', 'rev', None, analysis_approach_type.TRY_JOB, master_name,
+        builder_name, build_number, failure_type.TEST, {'b_test': ['b_test1']},
+        None)
 
   def _CreateEntities(self, master_name, builder_name, build_number, try_job_id,
                       try_job_status, test_results):
@@ -2003,3 +2001,74 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     with self.assertRaises(exceptions.RetryException):
       test_try_job.ScheduleTestTryJob(parameters, 'pipeline')
+
+  def testHasBuildKeyForBuildInfoInFailureResultMap(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 225
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {'a': {'a.t2': 'm/b/222', 'a.t3': 'm/b/225'}}
+    analysis.put()
+    self.assertTrue(
+        test_try_job._HasBuildKeyForBuildInfoInFailureResultMap(
+            master_name, builder_name, build_number))
+
+  def testDoesntHaveBuildKeyForBuildInfoInFailureResultMap(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 225
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {'a': {'a.t2': 'm/b/222',}}
+    analysis.put()
+    self.assertFalse(
+        test_try_job._HasBuildKeyForBuildInfoInFailureResultMap(
+            master_name, builder_name, build_number))
+
+  @mock.patch.object(
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=True)
+  @mock.patch.object(
+      waterfall_config, 'ShouldSkipTestTryJobs', return_value=True)
+  def testNotNeedANewTestTryJobShouldSkip(self, *_):
+    self.assertFalse(
+        test_try_job._NeedANewTestTryJob(self.start_try_job_params))
+
+  @mock.patch.object(
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=True)
+  @mock.patch.object(
+      waterfall_config, 'ShouldSkipTestTryJobs', return_value=False)
+  def testNotNeedANewTestTryJobNoConsistentFailure(self, *_):
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=223),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput(
+            failure_info=TestFailureInfo.FromSerializable(self.failure_info),
+            heuristic_result=TestHeuristicResult.FromSerializable({})),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
+            {}))
+    self.assertFalse(test_try_job._NeedANewTestTryJob(params))
+
+  @mock.patch.object(
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=True)
+  def testNotNeedANewTestTryJobIfNoFailureInfo(self, _):
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=223),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput(
+            failure_info=TestFailureInfo.FromSerializable({}),
+            heuristic_result=TestHeuristicResult.FromSerializable({})),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
+            {}))
+    self.assertFalse(test_try_job._NeedANewTestTryJob(params))
+
+  @mock.patch.object(
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=True)
+  @mock.patch.object(
+      test_try_job,
+      '_HasBuildKeyForBuildInfoInFailureResultMap',
+      return_value=True)
+  @mock.patch.object(
+      waterfall_config, 'ShouldSkipTestTryJobs', return_value=False)
+  def testNeedANewTestTryJobNoConsistentFailure(self, *_):
+    self.assertTrue(test_try_job._NeedANewTestTryJob(self.start_try_job_params))

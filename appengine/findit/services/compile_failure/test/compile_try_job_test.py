@@ -383,7 +383,8 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     mock_fn.return_value = False
-    expected_key = WfTryJob.Create(master_name, builder_name, build_number).key
+    expected_key = WfTryJob.Create(master_name, builder_name,
+                                   build_number).key.urlsafe()
     need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
@@ -430,7 +431,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
-    self.assertEqual(try_job_key, try_job.key)
+    self.assertEqual(try_job_key, try_job.key.urlsafe())
 
   @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewCompileTryJobIfExistingOneHasError(self, mock_fn):
@@ -471,7 +472,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
-    self.assertEqual(try_job.key, try_job_key)
+    self.assertEqual(try_job.key.urlsafe(), try_job_key)
 
   @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewTryJobIfExistingOneHasError(self, mock_fn):
@@ -512,7 +513,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
-    self.assertEqual(try_job.key, try_job_key)
+    self.assertEqual(try_job.key.urlsafe(), try_job_key)
 
   @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewTestTryJob(self, mock_fn):
@@ -667,7 +668,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
     expected_try_job_key = WfTryJob.Create(master_name, builder_name,
-                                           build_number).key
+                                           build_number).key.urlsafe()
     need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 

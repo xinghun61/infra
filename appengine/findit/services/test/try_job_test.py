@@ -147,6 +147,15 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                      WfAnalysis.Get(master_name, builder_name,
                                     build_number).failure_group_key)
 
+  def testNotNeedANewWaterfallTryJobIfBuildNotCompleted(self):
+    master_name = 'master3'
+    builder_name = 'builder3'
+    build_number = 225
+
+    self.assertFalse(
+        try_job_service.NeedANewWaterfallTryJob(master_name, builder_name,
+                                                build_number, False, False))
+
   def testNotNeedANewWaterfallTryJobIfBuilderIsNotSupportedYet(self):
     master_name = 'master3'
     builder_name = 'builder3'
@@ -228,8 +237,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                      analysis_2.failure_group_key)
 
   def testGetMatchingFailureGroups(self):
-    self.assertEqual(
-        [], try_job_service.GetMatchingFailureGroups(failure_type.UNKNOWN))
+    self.assertEqual([],
+                     try_job_service.GetMatchingFailureGroups(
+                         failure_type.UNKNOWN))
 
   @mock.patch.object(try_job_service, '_BlameListsIntersection')
   def testGetMatchingGroup(self, mock_fn):
@@ -831,8 +841,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
             })
     }
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False), (None,
-                                                                        None))
+        try_job_service._GetError(build_response, None, False, False),
+        (None, None))
     self.assertEqual(
         try_job_service._GetError({}, None, False, False), (None, None))
 

@@ -5,10 +5,17 @@
 import mock
 
 from common import constants
+from dto.collect_swarming_task_results_inputs import (
+    CollectSwarmingTaskResultsInputs)
+from dto.collect_swarming_task_results_outputs import (
+    CollectSwarmingTaskResultsOutputs)
+from dto.run_swarming_tasks_input import RunSwarmingTasksInput
+from dto.start_try_job_inputs import StartTestTryJobInputs
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
+from services.parameters import BuildKey
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
 from pipelines import report_event_pipeline
@@ -48,34 +55,41 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     heuristic_params = TestHeuristicAnalysisParameters.FromSerializable({
         'failure_info': current_failure_info,
-        'build_completed': False
+        'build_completed': True
     })
-    heuristic_output = {'failure_info': None, 'heuristic_result': None}
+    heuristic_output = TestHeuristicAnalysisOutput.FromSerializable({})
     self.MockSynchronousPipeline(
         analyze_test_failure_pipeline.HeuristicAnalysisForTestPipeline,
-        heuristic_params, TestHeuristicAnalysisOutput.FromSerializable({}))
-    self.MockPipeline(
-        analyze_test_failure_pipeline.TriggerSwarmingTasksPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False
-        ],
-        expected_kwargs={})
-    self.MockPipeline(
-        analyze_test_failure_pipeline.ProcessSwarmingTasksResultPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False
-        ],
-        expected_kwargs={})
-    self.MockPipeline(
+        heuristic_params, heuristic_output)
+
+    build_key = BuildKey(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number)
+
+    run_tasks_inputs = RunSwarmingTasksInput(
+        build_key=build_key, heuristic_result=heuristic_output, force=False)
+    self.MockGeneratorPipeline(
+        analyze_test_failure_pipeline.RunSwarmingTasksPipeline,
+        run_tasks_inputs, None)
+
+    collect_task_results_inputs = CollectSwarmingTaskResultsInputs(
+        build_key=build_key, build_completed=True)
+    consistent_failures = CollectSwarmingTaskResultsOutputs.FromSerializable({})
+    self.MockAsynchronousPipeline(
+        analyze_test_failure_pipeline.CollectSwarmingTaskResultsPipeline,
+        collect_task_results_inputs, consistent_failures)
+
+    start_try_job_inputs = StartTestTryJobInputs(
+        build_key=build_key,
+        build_completed=True,
+        force=False,
+        heuristic_result=heuristic_output,
+        consistent_failures=consistent_failures)
+    self.MockGeneratorPipeline(
         analyze_test_failure_pipeline.StartTestTryJobPipeline,
-        'try_job_result',
-        expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False,
-            False
-        ],
-        expected_kwargs={})
+        start_try_job_inputs, None)
+
     self.MockPipeline(
         analyze_test_failure_pipeline.TriggerFlakeAnalysesPipeline,
         None,
@@ -90,7 +104,7 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         None)
 
     root_pipeline = AnalyzeTestFailurePipeline(
-        master_name, builder_name, build_number, current_failure_info, False,
+        master_name, builder_name, build_number, current_failure_info, True,
         False)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
@@ -113,43 +127,49 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     heuristic_params = TestHeuristicAnalysisParameters.FromSerializable({
         'failure_info': current_failure_info,
-        'build_completed': False
+        'build_completed': True
     })
-    heuristic_output = {'failure_info': None, 'heuristic_result': None}
+    heuristic_output = TestHeuristicAnalysisOutput.FromSerializable({})
     self.MockSynchronousPipeline(
         analyze_test_failure_pipeline.HeuristicAnalysisForTestPipeline,
-        heuristic_params, TestHeuristicAnalysisOutput.FromSerializable({}))
-    self.MockPipeline(
-        analyze_test_failure_pipeline.TriggerSwarmingTasksPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, heuristic_output, True
-        ],
-        expected_kwargs={})
-    self.MockPipeline(
-        analyze_test_failure_pipeline.ProcessSwarmingTasksResultPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False
-        ],
-        expected_kwargs={})
-    self.MockPipeline(
+        heuristic_params, heuristic_output)
+
+    build_key = BuildKey(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number)
+    run_tasks_inputs = RunSwarmingTasksInput(
+        build_key=build_key, heuristic_result=heuristic_output, force=True)
+    self.MockGeneratorPipeline(
+        analyze_test_failure_pipeline.RunSwarmingTasksPipeline,
+        run_tasks_inputs, None)
+
+    collect_task_results_inputs = CollectSwarmingTaskResultsInputs(
+        build_key=build_key, build_completed=True)
+    consistent_failures = CollectSwarmingTaskResultsOutputs.FromSerializable({})
+    self.MockAsynchronousPipeline(
+        analyze_test_failure_pipeline.CollectSwarmingTaskResultsPipeline,
+        collect_task_results_inputs, consistent_failures)
+
+    start_try_job_inputs = StartTestTryJobInputs(
+        build_key=build_key,
+        build_completed=True,
+        force=True,
+        heuristic_result=heuristic_output,
+        consistent_failures=consistent_failures)
+    self.MockGeneratorPipeline(
         analyze_test_failure_pipeline.StartTestTryJobPipeline,
-        'try_job_result',
-        expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False,
-            True
-        ],
-        expected_kwargs={})
+        start_try_job_inputs, None)
+
     self.MockPipeline(
         analyze_test_failure_pipeline.TriggerFlakeAnalysesPipeline,
         None,
         expected_args=[master_name, builder_name, build_number],
         expected_kwargs={})
 
-    root_pipeline = AnalyzeTestFailurePipeline(
-        master_name, builder_name, build_number, current_failure_info, False,
-        True)
+    root_pipeline = AnalyzeTestFailurePipeline(master_name, builder_name,
+                                               build_number,
+                                               current_failure_info, True, True)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)

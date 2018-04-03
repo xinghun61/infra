@@ -6,6 +6,10 @@ import logging
 
 from common import constants
 from common import monitoring
+from dto.collect_swarming_task_results_inputs import (
+    CollectSwarmingTaskResultsInputs)
+from dto.run_swarming_tasks_input import RunSwarmingTasksInput
+from dto.start_try_job_inputs import StartTestTryJobInputs
 from gae_libs import appengine_util
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
@@ -14,18 +18,19 @@ from libs import analysis_status
 from libs import time_util
 from model.wf_analysis import WfAnalysis
 from pipelines import report_event_pipeline
+from pipelines.test_failure.collect_swarming_task_results_pipeline import (
+    CollectSwarmingTaskResultsPipeline)
 from pipelines.test_failure.heuristic_analysis_for_test_pipeline import (
     HeuristicAnalysisForTestPipeline)
+from pipelines.test_failure.run_swarming_tasks_pipeline import (
+    RunSwarmingTasksPipeline)
 from pipelines.test_failure.start_test_try_job_pipeline import (
     StartTestTryJobPipeline)
+from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisParameters
 from waterfall.flake.trigger_flake_analyses_pipeline import (
     TriggerFlakeAnalysesPipeline)
-from waterfall.process_swarming_tasks_result_pipeline import (
-    ProcessSwarmingTasksResultPipeline)
-from waterfall.trigger_swarming_tasks_pipeline import (
-    TriggerSwarmingTasksPipeline)
 
 
 class AnalyzeTestFailurePipeline(BasePipeline):
@@ -123,19 +128,41 @@ class AnalyzeTestFailurePipeline(BasePipeline):
         build_completed=build_completed)
     heuristic_result = yield HeuristicAnalysisForTestPipeline(heuristic_params)
 
+    build_key = BuildKey(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number)
+
     # Try job approach.
     with pipeline.InOrder():
+
+      run_tasks_inputs = pipelines.CreateInputObjectInstance(
+          RunSwarmingTasksInput,
+          build_key=build_key,
+          heuristic_result=heuristic_result,
+          force=force)
       # Swarming rerun.
       # Triggers swarming tasks when first time test failure happens.
       # This pipeline will run before build completes.
-      yield TriggerSwarmingTasksPipeline(master_name, builder_name,
-                                         build_number, heuristic_result, force)
+      yield RunSwarmingTasksPipeline(run_tasks_inputs)
 
-      yield ProcessSwarmingTasksResultPipeline(master_name, builder_name,
-                                               build_number, heuristic_result,
-                                               build_completed)
-      yield StartTestTryJobPipeline(master_name, builder_name, build_number,
-                                    heuristic_result, build_completed, force)
+      collect_task_results_inputs = pipelines.CreateInputObjectInstance(
+          CollectSwarmingTaskResultsInputs,
+          build_key=build_key,
+          build_completed=build_completed)
+      # An async pipeline that queries swarming tasks periodically until all
+      # swarming tasks completes and return consistent failures.
+      consistent_failures = yield CollectSwarmingTaskResultsPipeline(
+          collect_task_results_inputs)
+
+      start_try_job_inputs = pipelines.CreateInputObjectInstance(
+          StartTestTryJobInputs,
+          build_key=build_key,
+          build_completed=build_completed,
+          force=force,
+          heuristic_result=heuristic_result,
+          consistent_failures=consistent_failures)
+      yield StartTestTryJobPipeline(start_try_job_inputs)
 
       if not force:
         # Report event to BQ.

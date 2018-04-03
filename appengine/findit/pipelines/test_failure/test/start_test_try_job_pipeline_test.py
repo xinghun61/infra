@@ -5,6 +5,9 @@
 import mock
 
 from common.waterfall import failure_type
+from dto.collect_swarming_task_results_outputs import (
+    CollectSwarmingTaskResultsOutputs)
+from dto.start_try_job_inputs import StartTestTryJobInputs
 from gae_libs.pipelines import pipeline_handlers
 from model.wf_try_job import WfTryJob
 from pipelines.test_failure import start_test_try_job_pipeline
@@ -13,6 +16,7 @@ from pipelines.test_failure.start_test_try_job_pipeline import (
 from services.parameters import BuildKey
 from services.parameters import IdentifyTestTryJobCulpritParameters
 from services.parameters import RunTestTryJobParameters
+from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestTryJobResult
 from services.test_failure import test_try_job
 from waterfall.test import wf_testcase
@@ -21,15 +25,8 @@ from waterfall.test import wf_testcase
 class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def testNotScheduleTryJobIfBuildNotCompleted(self):
-    heuristic_result = {'failure_info': {}, 'heuristic_result': {}}
-    pipeline = start_test_try_job_pipeline.StartTestTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, False, False)
-    self.assertEqual(list(result), [])
-
-  @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
-  @mock.patch.object(test_try_job, 'NeedANewTestTryJob')
-  def testTestTryJob(self, mock_fn, mock_parameter):
+  @mock.patch.object(test_try_job, 'GetInformationToStartATestTryJob')
+  def testTestTryJob(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -76,12 +73,14 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     bad_revision = 'r2'
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.put()
-    mock_fn.return_value = (True, try_job.key)
-    parameters = RunTestTryJobParameters(
-        build_key=BuildKey(
-            master_name=master_name,
-            builder_name=builder_name,
-            build_number=build_number),
+
+    build_key = BuildKey(
+        master_name=master_name,
+        builder_name=builder_name,
+        build_number=build_number)
+
+    run_test_try_job_parameters = RunTestTryJobParameters(
+        build_key=build_key,
         bad_revision=bad_revision,
         good_revision=good_revision,
         suspected_revisions=[],
@@ -90,11 +89,12 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         cache_name=None,
         force_buildbot=False,
         urlsafe_try_job_key='urlsafe_try_job_key')
-    mock_parameter.return_value = parameters
+
+    mock_fn.return_value = (True, run_test_try_job_parameters)
 
     self.MockAsynchronousPipeline(
-        start_test_try_job_pipeline.RunTestTryJobPipeline, parameters,
-        'try_job_result')
+        start_test_try_job_pipeline.RunTestTryJobPipeline,
+        run_test_try_job_parameters, 'try_job_result')
 
     expected_test_result = {
         'report': {
@@ -164,63 +164,44 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'culprit': None,
     }
     identify_culprit_input = IdentifyTestTryJobCulpritParameters(
-        build_key=BuildKey(
-            master_name=master_name,
-            builder_name=builder_name,
-            build_number=build_number),
+        build_key=build_key,
         result=TestTryJobResult.FromSerializable(expected_test_result))
     self.MockGeneratorPipeline(
         start_test_try_job_pipeline.IdentifyTestTryJobCulpritPipeline,
         identify_culprit_input, False)
 
     heuristic_result = {'failure_info': failure_info, 'heuristic_result': {}}
-    pipeline = StartTestTryJobPipeline('m', 'b', 1, heuristic_result, True,
-                                       False)
+    params = StartTestTryJobInputs(
+        build_key=build_key,
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
+            {}))
+
+    pipeline = StartTestTryJobPipeline(params)
     pipeline.start()
     self.execute_queued_tasks()
+    mock_fn.assert_called_once_with(params)
 
-  @mock.patch.object(test_try_job, 'NeedANewTestTryJob')
+  @mock.patch.object(test_try_job, 'GetInformationToStartATestTryJob')
   @mock.patch.object(start_test_try_job_pipeline, 'RunTestTryJobPipeline')
   def testNotNeedTestTryJob(self, mock_pipeline, mock_fn):
     failure_info = {'failure_type': failure_type.TEST}
     try_job = WfTryJob.Create('m', 'b', 1)
     try_job.put()
-    mock_fn.return_value = (False, try_job.key)
+    mock_fn.return_value = (False, None)
     heuristic_result = {'failure_info': failure_info, 'heuristic_result': {}}
-    pipeline = StartTestTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
-    self.assertEqual(list(result), [])
-    self.assertFalse(mock_pipeline.called)
-
-  @mock.patch.object(test_try_job, 'NeedANewTestTryJob')
-  @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
-  @mock.patch.object(start_test_try_job_pipeline, 'RunTestTryJobPipeline')
-  def testNoTestTryJobBecauseNoGoodRevision(self, mock_pipeline, mock_parameter,
-                                            mock_fn):
-    failure_info = {'failure_type': failure_type.TEST}
-    mock_parameter.return_value = RunTestTryJobParameters(good_revision=None)
-    try_job = WfTryJob.Create('m', 'b', 1)
-    try_job.put()
-    mock_fn.return_value = (True, try_job.key)
-    heuristic_result = {'failure_info': failure_info, 'heuristic_result': {}}
-    pipeline = StartTestTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
-    self.assertEqual(list(result), [])
-    self.assertFalse(mock_pipeline.called)
-
-  @mock.patch.object(test_try_job, 'NeedANewTestTryJob')
-  @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
-  @mock.patch.object(start_test_try_job_pipeline, 'RunTestTryJobPipeline')
-  def testNoTestTryJobBecauseNoTargetedTests(self, mock_pipeline,
-                                             mock_parameter, mock_fn):
-    failure_info = {'failure_type': failure_type.TEST}
-    try_job = WfTryJob.Create('m', 'b', 1)
-    try_job.put()
-    mock_fn.return_value = (True, try_job.key)
-    mock_parameter.return_value = RunTestTryJobParameters(
-        targeted_tests={}, good_revision='rev1')
-    heuristic_result = {'failure_info': failure_info, 'heuristic_result': {}}
-    pipeline = StartTestTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
+    params = StartTestTryJobInputs(
+        build_key=BuildKey(master_name='m', builder_name='b', build_number=1),
+        build_completed=True,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
+            {}))
+    pipeline = StartTestTryJobPipeline(params)
+    result = pipeline.run(params)
     self.assertEqual(list(result), [])
     self.assertFalse(mock_pipeline.called)
