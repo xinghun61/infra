@@ -1,3 +1,22 @@
+# Release Notes sheriff-o-matic 2018-04-03
+
+- 3 commits, 1 bugs affected since  (2018-03-15)
+- 2 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] TA/DA: add client-side event logging for the editor form.](https://chromium-review.googlesource.com/992774) (seanmccullough@chromium.org)
+- [[som] TA/DA: Move gerrit calls to js in the browser.](https://chromium-review.googlesource.com/987210) (seanmccullough@chromium.org)
+- [SoM: Update release notes](https://chromium-review.googlesource.com/964905) (zhangtiff@google.com)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/819407](https://crbug.com/819407)
+
+
 # Release Notes sheriff-o-matic 2018-03-15
 
 - 8 commits, 7 bugs affected since 13c7c43 (2018-02-14T00:47:52Z)
