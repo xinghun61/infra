@@ -252,7 +252,10 @@ def _StartBuildAhead(platform):
     A BuildAheadTryJob entity. In certain conditions it skips triggering a
     build, and in those cases it returns None.
   """
-  chosen_builder = _PickRandomBuilder(_GetSupportedCompileCaches(platform))
+  supported_builders = _GetSupportedCompileCaches(platform)
+  if not supported_builders:
+    return None
+  chosen_builder = _PickRandomBuilder(supported_builders)
   try_bot_cache = chosen_builder['cache_stats']
   master = chosen_builder['master']
   builder = chosen_builder['builder']

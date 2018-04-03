@@ -330,7 +330,7 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(swarmbot_util, 'GetBotsByDimension')
   @mock.patch.object(build_ahead, '_PickRandomBuilder')
   def testStartBuildAhead(self, mock_pick, mock_bots, mock_trigger, mock_old,
-                          _):
+                          mock_supported):
     build_ahead.PLATFORM_DIMENSION_MAP['dummy_platform'] = ['os:dummy']
     dummy_cache = WfTryBotCache.Get('Dummy')
     mock_pick.return_value = {
@@ -399,6 +399,14 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
     mock_old.return_value = False
     _ = build_ahead._StartBuildAhead('dummy_platform')
     self.assertFalse(mock_trigger.called)
+
+    # No supported builders in platform, do not call any methods.
+    mock_supported.return_value = []
+    for mocked_method in (mock_pick, mock_bots, mock_trigger, mock_old):
+      mocked_method.reset_mock()
+    self.assertIsNone(build_ahead._StartBuildAhead('dummy_platform'))
+    for mocked_method in (mock_pick, mock_bots, mock_trigger, mock_old):
+      self.assertFalse(mocked_method.called)
 
   @mock.patch.object(build_ahead, '_UpdateRunningBuilds')
   @mock.patch.object(build_ahead, '_TreeIsOpen')
