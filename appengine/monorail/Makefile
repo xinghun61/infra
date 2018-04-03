@@ -65,9 +65,12 @@ serve_remote_email:
 run: serve
 
 deps:
+	rm -rf bower_components
+
 	bower install
-	npm install
-	ln -sf ../../../crdx/chopsui bower_components/chopsui
+	npm install --no-save
+
+	ln -s ../../../crdx/chopsui bower_components/chopsui
 
 vulcanize: clean_vulcanized
 	$(VULCANIZE_PATH) elements/mr-approval-page/mr-approval-page.html --inline-script \
@@ -86,13 +89,13 @@ clean_vulcanized:
 # the main app-id, but it is still sometimes useful to have a completely
 # separate app-id.  E.g., for testing inbound email, load testing, or using
 # throwaway databases.
-deploy_staging: vulcanize
+deploy_staging: deps vulcanize
 	@echo "---[Staging $(STAGEID)]---"
 	$(GAE_PY) upload -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
 	make clean_vulcanized
 
 # This is our production server that users actually use.
-deploy_prod: vulcanize
+deploy_prod: deps vulcanize
 	@echo "---[Deploying prod instance $(PRODID)]---"
 	$(GAE_PY) upload -A $(PRODID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
 	make clean_vulcanized
