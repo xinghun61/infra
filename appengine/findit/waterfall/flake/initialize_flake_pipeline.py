@@ -172,7 +172,7 @@ def ScheduleAnalysisIfNeeded(
 
     use_new_pipeline = flake_settings.get('use_new_pipeline_for_rerun', False)
 
-    if use_new_pipeline and force:
+    if use_new_pipeline:
       # Initially, only support running the new commit-based flake analysis
       # pipelines on forced reruns by admins.
       # TODO(crbug.com/786518): Remove old pipeline and replace with the new
