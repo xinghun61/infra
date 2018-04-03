@@ -19,6 +19,7 @@ DEPS = [
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/raw_io',
+  'recipe_engine/runtime',
   'recipe_engine/step',
 ]
 
@@ -117,14 +118,17 @@ def RunSteps(api, buildername):
         and hasattr(step_result.raw_io.output_texts, 'get')):
       html_status = step_result.raw_io.output_texts.get('html')
     if botconfig.get('lkgr_status_gs_path') and html_status:
-      api.gsutil.upload(
-        api.raw_io.input_text(html_status),
-        botconfig['lkgr_status_gs_path'],
-        '%s-lkgr-status.html' % botconfig['project'],
-        args=['-a', 'public-read'],
-        metadata={'Content-Type': 'text/html'},
-        link_name='%s-lkgr-status.html' % botconfig['project'],
-      )
+      if api.runtime.is_experimental:
+        api.step('fake HTML status upload', cmd=None)
+      else:
+        api.gsutil.upload(
+          api.raw_io.input_text(html_status),
+          botconfig['lkgr_status_gs_path'],
+          '%s-lkgr-status.html' % botconfig['project'],
+          args=['-a', 'public-read'],
+          metadata={'Content-Type': 'text/html'},
+          link_name='%s-lkgr-status.html' % botconfig['project'],
+        )
 
   # We check out regularly, not only on lkgr update, to catch infra failures
   # on check-out early.
@@ -139,33 +143,32 @@ def RunSteps(api, buildername):
   new_lkgr = step_result.raw_io.output_texts['lkgr_hash']
   if new_lkgr and new_lkgr != current_lkgr:
     with api.context(cwd=checkout_dir.join('workdir')):
-      api.git('push', repo, '%s:%s' % (new_lkgr, ref), name='push lkgr to ref')
+      if api.runtime.is_experimental:
+        api.step('fake lkgr push', cmd=None)
+      else:
+        api.git(
+            'push', repo, '%s:%s' % (new_lkgr, ref), name='push lkgr to ref')
 
 
 def GenTests(api):
-  for buildername, botconfig in BUILDERS.iteritems():
-    yield (
-        api.test(botconfig['project']) +
+  def test_props_and_data(buildername):
+    return (
         api.properties.generic(buildername=buildername) +
         api.properties(path_config='kitchen') +
         api.step_data(
             'read lkgr from ref',
-            api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
-        )
+            api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'))
     )
 
-  webrtc_props = (
-      api.properties.generic(buildername='WebRTC lkgr finder') +
-      api.properties(path_config='kitchen') +
-      api.step_data(
-          'read lkgr from ref',
-          api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
-      )
-  )
+  for buildername, botconfig in BUILDERS.iteritems():
+    yield (
+        api.test(botconfig['project']) +
+        test_props_and_data(buildername)
+    )
 
   yield (
       api.test('webrtc_lkgr_failure') +
-      webrtc_props +
+      test_props_and_data('WebRTC lkgr finder') +
       api.step_data(
           'calculate webrtc lkgr',
           retcode=1
@@ -174,9 +177,15 @@ def GenTests(api):
 
   yield (
       api.test('webrtc_lkgr_stale') +
-      webrtc_props +
+      test_props_and_data('WebRTC lkgr finder') +
       api.step_data(
           'calculate webrtc lkgr',
           retcode=2
       )
+  )
+
+  yield (
+      api.test('v8_experimental') +
+      test_props_and_data('V8 lkgr finder') +
+      api.runtime(is_luci=True, is_experimental=True)
   )
