@@ -25,8 +25,8 @@ PHASE_INPUTS = [
 ParsedTemplate = collections.namedtuple(
     'ParsedTemplate', 'name, members_only, summary, summary_must_be_edited, '
     'content, status, owner_str, labels, field_val_strs, component_paths, '
-    'component_required, owner_defaults_to_member, admin_str, phase_names, '
-    'approvals_by_phase_idx')
+    'component_required, owner_defaults_to_member, admin_str, add_phases, '
+    'phase_names, approvals_by_phase_idx')
 
 
 def ParseTemplateRequest(post_data, config):
@@ -59,6 +59,7 @@ def ParseTemplateRequest(post_data, config):
 
   admin_str = post_data.get('admin_names', '')
 
+  add_phases = post_data.get('add_phases') == 'on'
   phase_names = [post_data.get(phase_input, '') for phase_input in PHASE_INPUTS]
 
   approvals_by_phase_idx = collections.defaultdict(list)
@@ -73,7 +74,8 @@ def ParseTemplateRequest(post_data, config):
   return ParsedTemplate(
       name, members_only, summary, summary_must_be_edited, content, status,
       owner_str, labels, field_val_strs, component_paths, component_required,
-      owner_defaults_to_member, admin_str, phase_names, approvals_by_phase_idx)
+      owner_defaults_to_member, admin_str, add_phases, phase_names,
+      approvals_by_phase_idx)
 
 
 def GetTemplateInfoFromParsed(mr, services, parsed, config):
@@ -103,8 +105,10 @@ def GetTemplateInfoFromParsed(mr, services, parsed, config):
     logging.info('field_value is %r: %r',
                  fv.field_id, tracker_bizobj.GetFieldValue(fv, {}))
 
-  phases = _GetPhasesFromParsed(
-      mr, parsed.phase_names, parsed.approvals_by_phase_idx)
+  phases = []
+  if parsed.add_phases:
+    phases = _GetPhasesFromParsed(
+        mr, parsed.phase_names, parsed.approvals_by_phase_idx)
 
   return admin_ids, owner_id, component_ids, field_values, phases
 
@@ -119,18 +123,19 @@ def _GetPhasesFromParsed(mr, phase_names, approvals_by_phase_idx):
     return phases
 
   for idx in approvals_by_phase_idx:
-    approval_defs = approvals_by_phase_idx[idx]
+    approval_ids = approvals_by_phase_idx[idx]
     phase_name = phase_names[idx]
 
     # Distributing the ranks over a wider range is not necessary since
     # any edits to template phases will cause a complete rewrite
     phase = tracker_pb2.Phase(name=phase_name, rank=idx)
     phases.append(phase)
-    for approval_def in approval_defs:
+    for approval_id in approval_ids:
       av = tracker_pb2.ApprovalValue(
-          approval_id=approval_def.approval_id,
-          approver_ids=approval_def.approver_ids)
-      # TODO(jojwang): monorail:3651, add default sub_field_values
+          approval_id=approval_id)
+      # TODO(jojwang): monorail:3655, add default sub_field_values
+      # TODO(jojwang): monorail:3656, add option for default approvers
+      # per template
       phase.approval_values.append(av)
 
   return phases

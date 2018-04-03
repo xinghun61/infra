@@ -28,11 +28,13 @@
 runOnLoad(function() {
   _onload();
   let phaseNum = 0;
-  [for initial_milestones]
-    document.getElementsByName(`phase_${phaseNum++}`)[0].value = "[initial_milestones.name]";
+  [for initial_phases]
+    document.getElementsByName(`phase_${phaseNum++}`)[0].value = '[format "js"][initial_phases.name][end]';
   [end]
 
-  [# TODO(jojwang): monorail:3576, for editing a milestone, pre-select appropriate approvals]
+  [for prechecked_approvals]
+    document.getElementById("[prechecked_approvals]").checked = "checked"
+  [end]
 
 });
 

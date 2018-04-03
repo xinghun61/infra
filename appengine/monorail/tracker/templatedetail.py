@@ -75,7 +75,8 @@ class TemplateDetail(servlet.Servlet):
       tracker_views.MakeFieldValueView(fd, config, [], [],
                                        fd_id_to_fvs[fd.field_id], {})
       for fd in config.field_defs if not fd.is_deleted]
-    initial_milestones = [tracker_pb2.Milestone()] * 6
+    # TODO(jojwang): monorail:3576, temporary value
+    initial_phases = [tracker_pb2.Phase()] * 6
 
     allow_edit = permissions.CanEditTemplate(
         mr.auth.effective_ids, mr.perms, mr.project, template)
@@ -97,8 +98,11 @@ class TemplateDetail(servlet.Servlet):
         'initial_component_required': template_view.component_required,
         'fields': [view for view in field_views
                    if view.field_def.type_name is not 'APPROVAL_TYPE'],
-        'initial_milestones': initial_milestones,
+        # TODO(jojwang): monorail:3576, temp value
+        'initial_add_phases': ezt.boolean(False),
+        'initial_phases': initial_phases,
         'approvals': [],
+        'prechecked_approvals': [],  # TODO(jojwang): monorail:3576, temp value
         'labels': template.labels,
         'initial_admins': template_view.admin_names,
         }

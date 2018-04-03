@@ -82,6 +82,7 @@ class TemplateHelpers(unittest.TestCase):
     self.assertEqual(parsed.component_paths, [])
     self.assertFalse(parsed.component_required)
     self.assertFalse(parsed.owner_defaults_to_member)
+    self.assertFalse(parsed.add_phases)
     self.assertItemsEqual(parsed.phase_names, ['', '', '', '', '', ''])
     self.assertEqual(parsed.approvals_by_phase_idx, {})
 
@@ -103,6 +104,7 @@ class TemplateHelpers(unittest.TestCase):
         component_required=['on'],
         owner_defaults_to_memeber=['no'],
         admin_names=['jojwang@test.com, annajo@test.com'],
+        add_phases=['on'],
         phase_0=['Canary'],
         phase_1=['Stable-Exp'],
         phase_2=['Stable'],
@@ -126,6 +128,7 @@ class TemplateHelpers(unittest.TestCase):
     self.assertEqual(parsed.component_paths, ['hey', 'hey2', 'he3'])
     self.assertTrue(parsed.component_required)
     self.assertFalse(parsed.owner_defaults_to_member)
+    self.assertTrue(parsed.add_phases)
     self.assertEqual(parsed.admin_str, 'jojwang@test.com, annajo@test.com')
     self.assertItemsEqual(parsed.phase_names,
                           ['Canary', 'Stable-Exp', 'Stable', '', '', 'Oops'])
@@ -137,7 +140,7 @@ class TemplateHelpers(unittest.TestCase):
     parsed = template_helpers.ParsedTemplate(
         'template', True, 'summary', True, 'content', 'Available',
         '1@ex.com', ['label1', 'label1'], {1: ['NO'], 2: ['MOOD']},
-        ['BackEnd'], True, True, '2@ex.com', [], {})
+        ['BackEnd'], True, True, '2@ex.com', False, [], {})
     (admin_ids, owner_id, component_ids,
      field_values, phases) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)
@@ -153,7 +156,7 @@ class TemplateHelpers(unittest.TestCase):
     parsed = template_helpers.ParsedTemplate(
         'template', True, 'summary', True, 'content', 'Available',
         '4@ex.com', ['label1', 'label1'], {1: ['NO'], 2: ['MOOD']},
-        ['BackEnd'], True, True, '2@ex.com', [], {})
+        ['BackEnd'], True, True, '2@ex.com', False, [], {})
     (admin_ids, _owner_id, _component_ids,
      field_values, phases) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)
@@ -169,7 +172,7 @@ class TemplateHelpers(unittest.TestCase):
     self.config.approval_defs.extend([self.ad_3, self.ad_4, self.ad_5])
 
     phase_names = ['Canary', '', 'Stable-Exp', '', '', '']
-    approvals_by_phase_idx = {0: [self.ad_3, self.ad_4], 2: [self.ad_5]}
+    approvals_by_phase_idx = {0: [3, 4], 2: [5]}
 
     phases = template_helpers._GetPhasesFromParsed(
         self.mr, phase_names, approvals_by_phase_idx)

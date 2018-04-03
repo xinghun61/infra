@@ -156,14 +156,19 @@
      </td>
    </tr>
 
+[if-any approvals]
    <tr>
      <th>Launch Gates</th>
      <td colspan="7">
-       <input type="checkbox" name="add_gates" id="cb_add_gates" [if-any allow_edit][else]disabled[end]>
-       <label for="cb_add_gates">Include Gates and Approval Tasks in issue</label>
+       <input type="checkbox" name="add_phases" id="cb_add_phases" [if-any allow_edit][else]disabled[end] [if-any initial_add_phases]checked="checked"[end]>
+       <label for="cb_add_phases">Include Gates and Approval Tasks in issue</label>
        [include "launch-gates-widget.ezt"]
+       <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
+            [if-any errors.phase_approvals][errors.phase_approvals][end]
+       </span>
      </td>
    </tr>
+[end]
 
   [if-any allow_edit]
     <tr>
@@ -192,14 +197,18 @@ runOnLoad(function() {
        '[projectname]', 'issueOptions', CS_env.token, [project.cached_content_timestamp]);
     _onload();
 
-    let addGatesCheckbox = document.getElementById('cb_add_gates');
-    addGatesCheckbox.addEventListener('change', function() {
-      if (this.checked) {
+    let addPhasesCheckbox = document.getElementById('cb_add_phases');
+    addPhasesCheckbox.addEventListener('change', toggleGatesTable);
+    toggleGatesTable();
+
+    function toggleGatesTable() {
+      let addPhases = document.getElementById('cb_add_phases').checked;
+      if (addPhases) {
         $('launch-gates-table').classList.remove('hidden');
       } else{
         $('launch-gates-table').classList.add('hidden');
       }
-    });
+    }
 
     var acobElements = document.getElementsByClassName("acob");
     for (var i = 0; i < acobElements.length; ++i) {

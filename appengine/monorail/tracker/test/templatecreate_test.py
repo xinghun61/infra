@@ -100,6 +100,23 @@ class TemplateCreateTest(unittest.TestCase):
     self.assertEqual(page_data['initial_admins'], '')
 
   def testProcessFormData_Reject(self):
+    fd_1 = tracker_bizobj.MakeFieldDef(
+        1, 789, 'UXApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'Approval for UX review', False)
+    fd_2 = tracker_bizobj.MakeFieldDef(
+        2, 789, 'TestApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'Approval for Test review', False)
+    ad_1 = tracker_pb2.ApprovalDef(approval_id=1)
+    ad_2 = tracker_pb2.ApprovalDef(approval_id=2)
+    config = self.services.config.GetProjectConfig(
+        self.mr.cnxn, self.mr.project_id)
+    config.field_defs.extend([fd_1, fd_2])
+    config.approval_defs.extend([ad_1, ad_2])
+    self.services.config.StoreConfig(self.cnxn, config)
     post_data = fake.PostData(
       name=['sometemplate'],
       members_only=['on'],
@@ -113,7 +130,16 @@ class TemplateCreateTest(unittest.TestCase):
       custom_2=['MOOD'],
       components=['hey, hey2,he3'],
       component_required=['on'],
-      owner_defaults_to_member=['no']
+      owner_defaults_to_member=['no'],
+      add_phases = ['on'],
+      phase_0=['Canary'],
+      phase_1=['Stable-Exp'],
+      phase_2=['Stable'],
+      phase_3=[''],
+      phase_4=[''],
+      phase_5=[''],
+      approval_1=['phase_1'],
+      approval_2=['phase_2']
     )
 
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
@@ -131,7 +157,12 @@ class TemplateCreateTest(unittest.TestCase):
         initial_component_required=ezt.boolean(True),
         initial_admins='',
         labels=['label-One', 'label-Two'],
-        fields=mox.IgnoreArg()
+        fields=mox.IgnoreArg(),
+        initial_add_phases=ezt.boolean(True),
+        initial_phases=[tracker_pb2.Phase(name=name) for
+                        name in ['Canary', 'Stable-Exp', 'Stable', '', '', '']],
+        approvals=mox.IgnoreArg(),
+        prechecked_approvals=['1_phase_1', '2_phase_2'],
         )
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(self.mr, post_data)
@@ -140,6 +171,8 @@ class TemplateCreateTest(unittest.TestCase):
     self.assertEqual('Unknown component he3', self.mr.errors.components)
     self.assertEqual(
         'Template with name sometemplate already exists', self.mr.errors.name)
+    self.assertEqual('Defined gates must have assigned approvals.',
+                     self.mr.errors.phase_approvals)
     self.assertIsNone(url)
 
   def testProcessFormData_Accept(self):
