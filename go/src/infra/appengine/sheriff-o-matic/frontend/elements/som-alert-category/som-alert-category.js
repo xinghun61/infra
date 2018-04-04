@@ -94,6 +94,15 @@ class SomAlertCategory extends Polymer.mixinBehaviors(
     this.$.checkAll.checked = false;
   }
 
+  checkKeys(alertKeys, value) {
+    let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
+    for (let i = 0; i < alerts.length; i++) {
+      if (alertKeys.has(alerts[i].alert.key)) {
+        alerts[i].checked = value;
+      }
+    }
+  }
+
   checkAll(evt) {
     let checked = evt.target.checked;
     let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');

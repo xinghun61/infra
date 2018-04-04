@@ -1048,12 +1048,28 @@ class SomAlertView extends Polymer.mixinBehaviors(
     this._uncheckAll();
   }
 
+  // This opens the bulk ungroup dialog.
   _handleUngroupBulk(evt) {
     let groups = this._checkedAlerts.filter((alert) => {
       return alert && alert.grouped;
     });
 
     this.$.annotations.handleUngroupBulk(groups);
+  }
+
+  // This is called after the user has confirmed the bulk ungroup operation.
+  _handleBulkUngrouped(evt) {
+    let checkedKeys = new Set();
+    for (let i in evt.detail) {
+      checkedKeys.add(evt.detail[i].key);
+    }
+
+    let categories = Polymer.dom(this.root).querySelectorAll(
+      '.alert-category'
+    );
+    for (let i = 0; i < categories.length; i++) {
+      categories[i].checkKeys(checkedKeys, true);
+    }
   }
 
   _hasGroupAll(checkedAlerts) {

@@ -245,12 +245,12 @@
       <h2>Bulk Ungroup</h2>
       <paper-dialog-scrollable id="groupList" class="scrollable">
         <label class="checkbox ungroup-row">
-          <input type="checkbox" on-change="_checkAll" data-checkbox-selector=".ungroup-checkbox" />
+          <input type="checkbox" on-change="_checkAll" data-checkbox-selector=".ungroup-bulk-checkbox" />
           Check/Uncheck All
         </label>
         <template is="dom-repeat" items="[[_ungroupBulkModel]]" as="group">
           <label class="checkbox ungroup-row">
-            <input type="checkbox" class="ungroup-checkbox" checked="{{group.checked::change}}" />
+            <input type="checkbox" class="ungroup-bulk-checkbox" checked="{{group.checked::change}}" />
             [[group.alerts.length]] alerts: [[group.title]]
           </label>
         </template>

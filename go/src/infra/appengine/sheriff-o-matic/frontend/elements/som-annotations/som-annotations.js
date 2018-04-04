@@ -242,7 +242,7 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     })
     Promise.all(promises).then(
         (response) => {
-	  this.$.fileBug.showBugFiledDialog();
+    this.$.fileBug.showBugFiledDialog();
 
           if (this._fileBugCallback) {
             this._fileBugCallback();
@@ -558,27 +558,31 @@ class SomAnnotations extends Polymer.mixinBehaviors(
 
   _ungroupBulk() {
     // TODO(add proper error handling)
+    let ungroupedAlerts = [];
+    let changes = [];
     for (let i in this._ungroupBulkModel) {
       let group = this._ungroupBulkModel[i];
       if (!this._ungroupBulkErrorMessage &&
           group.checked) {
-        let changes = [];
         for (let j in group.alerts) {
-          changes.push(this.sendAnnotation(group.alerts[j].key, 'remove',
+          let alert = group.alerts[j];
+          changes.push(this.sendAnnotation(alert.key, 'remove',
                               {group_id: true}));
+          ungroupedAlerts.push(alert);
         }
 
-        Promise.all(changes).then(resps => {
-          this.$.ungroupBulkDialog.close();
-        }, error => {
-          this._ungroupBulkErrorMessage = error;
-        });
       }
       // TODO(seanmccullough): Figure out why things remain checked.
       group.checked = false;
     }
-  }
 
+    Promise.all(changes).then(resps => {
+      this.$.ungroupBulkDialog.close();
+      this.fire('bulk-ungrouped', ungroupedAlerts);
+    }, error => {
+      this._ungroupBulkErrorMessage = error;
+    });
+  }
 
   _haveSubAlerts(alert) {
     return alert.alerts && alert.alerts.length > 0;

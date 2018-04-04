@@ -93,7 +93,8 @@
         tree="[[tree]]"
         collapse-by-default="[[collapseByDefault]]"
         local-state="{{localState}}"
-        user="[[user]]"></som-annotations>
+        user="[[user]]"
+        on-bulk-ungrouped="_handleBulkUngrouped"></som-annotations>
     <template is="dom-if" if="[[_checkedAlerts.length]]">
       <div id="bulkAlertActions">
         You have selected [[_checkedAlerts.length]] alerts.
