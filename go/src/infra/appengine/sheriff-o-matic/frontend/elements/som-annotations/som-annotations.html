@@ -239,6 +239,32 @@
         </button>
       </div>
     </paper-dialog>
+
+    <paper-dialog id="ungroupBulkDialog" with-backdrop>
+      <iron-a11y-keys keys="enter" on-keys-pressed="_ungroupBulk"></iron-a11y-keys>
+      <h2>Bulk Ungroup</h2>
+      <paper-dialog-scrollable id="groupList" class="scrollable">
+        <label class="checkbox ungroup-row">
+          <input type="checkbox" on-change="_checkAll" data-checkbox-selector=".ungroup-checkbox" />
+          Check/Uncheck All
+        </label>
+        <template is="dom-repeat" items="[[_ungroupBulkModel]]" as="group">
+          <label class="checkbox ungroup-row">
+            <input type="checkbox" class="ungroup-checkbox" checked="{{group.checked::change}}" />
+            [[group.alerts.length]] alerts: [[group.title]]
+          </label>
+        </template>
+      </paper-dialog-scrollable>
+      <div class="error">[[_ungroupBulkErrorMessage]]</div>
+      <div class="buttons">
+        <button dialog-dismiss>
+          Close
+        </button>
+        <button on-tap="_ungroupBulk" class="emphasized">
+          Bulk Ungroup
+        </button>
+      </div>
+    </paper-dialog>
   </template>
   <script src="som-annotations.js"></script>
 </dom-module>

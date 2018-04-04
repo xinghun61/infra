@@ -226,6 +226,12 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     this.$.ungroupDialog.open();
   }
 
+  handleUngroupBulk(groupedAlerts) {
+    this._ungroupBulkModel = groupedAlerts;
+    this._ungroupBulkErrorMessage = '';
+    this.$.ungroupBulkDialog.open();
+  }
+
   ////////////////////// Bugs ///////////////////////////
 
   _linkNewBug() {
@@ -549,6 +555,30 @@ class SomAnnotations extends Polymer.mixinBehaviors(
       }
     }
   }
+
+  _ungroupBulk() {
+    // TODO(add proper error handling)
+    for (let i in this._ungroupBulkModel) {
+      let group = this._ungroupBulkModel[i];
+      if (!this._ungroupBulkErrorMessage &&
+          group.checked) {
+        let changes = [];
+        for (let j in group.alerts) {
+          changes.push(this.sendAnnotation(group.alerts[j].key, 'remove',
+                              {group_id: true}));
+        }
+
+        Promise.all(changes).then(resps => {
+          this.$.ungroupBulkDialog.close();
+        }, error => {
+          this._ungroupBulkErrorMessage = error;
+        });
+      }
+      // TODO(seanmccullough): Figure out why things remain checked.
+      group.checked = false;
+    }
+  }
+
 
   _haveSubAlerts(alert) {
     return alert.alerts && alert.alerts.length > 0;

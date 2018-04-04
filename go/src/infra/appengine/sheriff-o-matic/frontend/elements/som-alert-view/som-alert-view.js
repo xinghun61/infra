@@ -1048,12 +1048,28 @@ class SomAlertView extends Polymer.mixinBehaviors(
     this._uncheckAll();
   }
 
+  _handleUngroupBulk(evt) {
+    let groups = this._checkedAlerts.filter((alert) => {
+      return alert && alert.grouped;
+    });
+
+    this.$.annotations.handleUngroupBulk(groups);
+  }
+
   _hasGroupAll(checkedAlerts) {
     // If more than two of the checked alerts are a group...
     let groups = checkedAlerts.filter((alert) => {
       return alert && alert.grouped;
     });
     return checkedAlerts.length > 1 && groups.length < 2;
+  }
+
+  _hasUngroupAll(checkedAlerts) {
+    // If more than two of the checked alerts are a group...
+    let groups = checkedAlerts.filter((alert) => {
+      return alert && alert.grouped;
+    });
+    return groups.length > 0;
   }
 
   _hasResolved(treeName) {
