@@ -33,7 +33,7 @@ func getTemplateBundle() *templates.Bundle {
 			},
 		},
 		DefaultTemplate: "bootstrap",
-		DefaultArgs: func(c context.Context) (templates.Args, error) {
+		DefaultArgs: func(c context.Context, e *templates.Extra) (templates.Args, error) {
 			return templates.Args{
 				"Title":       "BuildBucket Viewer",
 				"IsAnonymous": auth.CurrentIdentity(c) == identity.AnonymousIdentity,

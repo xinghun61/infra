@@ -18,12 +18,12 @@ import (
 var templateBundle = &templates.Bundle{
 	Loader:    templates.FileSystemLoader("templates"),
 	DebugMode: info.IsDevAppServer,
-	DefaultArgs: func(c context.Context) (templates.Args, error) {
-		loginURL, err := auth.LoginURL(c, "/")
+	DefaultArgs: func(c context.Context, e *templates.Extra) (templates.Args, error) {
+		loginURL, err := auth.LoginURL(c, e.Request.URL.RequestURI())
 		if err != nil {
 			return nil, err
 		}
-		logoutURL, err := auth.LogoutURL(c, "/")
+		logoutURL, err := auth.LogoutURL(c, e.Request.URL.RequestURI())
 		if err != nil {
 			return nil, err
 		}

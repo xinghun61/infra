@@ -15,6 +15,8 @@
 package app
 
 import (
+	"net/http"
+	"net/url"
 	"time"
 
 	"golang.org/x/net/context"
@@ -34,7 +36,11 @@ func testContext() context.Context {
 	c = logging.SetLevel(c, logging.Debug)
 	c = gologger.StdConfig.Use(c)
 	c = testsecrets.Use(c)
-	c = templates.Use(c, prepareTemplates())
+	c = templates.Use(c, prepareTemplates(), &templates.Extra{
+		Request: &http.Request{
+			URL: &url.URL{Path: "/some/path"},
+		},
+	})
 	c, _ = testclock.UseTime(c, time.Date(2016, time.February, 3, 4, 5, 6, 0, time.UTC))
 	datastore.GetTestable(c).AutoIndex(true)
 	return c

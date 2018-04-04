@@ -46,7 +46,7 @@ func TestDashboard(t *testing.T) {
 				Identity: "user:user@example.com",
 			}
 			c = auth.WithState(c, authState)
-			c = templates.Use(c, templateBundle)
+			c = templates.Use(c, templateBundle, nil)
 
 			Convey("not-googler", func() {
 				dashboard(&router.Context{
