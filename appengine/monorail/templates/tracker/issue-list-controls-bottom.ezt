@@ -1,6 +1,6 @@
 <div class="list-foot" style="font-size: small">
 [if-any logged_in_user]
-  <a href="[csv_link]" style="float:right; margin-left: 1em">CSV</a>
+  <a href="[csv_link]&token=[form_token]" style="float:right; margin-left: 1em">CSV</a>
 [end]
 
 [include "../framework/artifact-list-pagination-part.ezt"]

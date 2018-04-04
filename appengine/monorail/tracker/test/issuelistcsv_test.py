@@ -8,6 +8,7 @@
 import unittest
 
 from framework import permissions
+from framework import xsrf
 from services import service_manager
 from testing import testing_helpers
 from tracker import issuelistcsv
@@ -25,4 +26,11 @@ class IssueListCSVTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest()
     mr.auth.user_id = 0
     self.assertRaises(permissions.PermissionException,
+                      self.servlet.GatherPageData, mr)
+
+  def testGatherPageData_XSRFToken(self):
+    """Users cannot download the issue list without a valid token."""
+    mr = testing_helpers.MakeMonorailRequest()
+    mr.auth.user_id = 111L
+    self.assertRaises(xsrf.TokenIncorrect,
                       self.servlet.GatherPageData, mr)
