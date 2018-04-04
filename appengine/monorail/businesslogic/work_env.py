@@ -42,6 +42,7 @@ Responsibilities of the Services layer:
 import logging
 
 from framework import exceptions
+from framework import permissions
 from search import frontendsearchpipeline
 from services import project_svc
 from sitewide import sitewide_helpers
@@ -402,13 +403,25 @@ class WorkEnv(object):
     return issue
 
   def UpdateIssueApprovalStatus(
-      self, issue_id, approval_id, status, setter_id, set_on):
+      self, issue_id, approval_id, new_status, setter_id, set_on):
     """Update an issue's approvalvalue."""
-    # TODO(jojwang): check user has permission to change status
+    approval_value = self.services.issue.GetIssueApproval(
+        self.mr.cnxn, issue_id, approval_id)
+
+    # TODO(jojwang): monorail:3582, OR this with project admin/owners
+    # or check for admin/owner perms inside CanUpdateApprovalStatus
+    if not permissions.CanUpdateApprovalStatus(
+        self.mr.auth.effective_ids, approval_value.approver_ids,
+        approval_value.status, new_status):
+      raise permissions.PermissionException(
+          'User not allowed to make this status update.')
+
     with self.mr.profiler.Phase(
         'updating approvalvalue for issue %r' % issue_id):
       self.services.issue.UpdateIssueApprovalStatus(
-          self.mr.cnxn, issue_id, approval_id, status, setter_id, set_on)
+          self.mr.cnxn, issue_id, approval_id, new_status, setter_id, set_on)
+    # TODO(jojwang): monorail:3588, send notification to devs or approvers
+    # on status change.
     logging.info('updated ApprovalValue %r for issue %r',
                  approval_id, issue_id)
 

@@ -300,24 +300,25 @@ class WorkEnvTest(unittest.TestCase):
 
   def testUpdateIssueApprovalStatus(self):
     """We can update an issue's ApprovalValue status."""
+    self.SignIn()
     av_21 = tracker_pb2.ApprovalValue(approval_id=21)
-    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24, approver_ids=[111L])
     phases = [tracker_pb2.Phase(
         phase_id=1, rank=1, approval_values=[av_21, av_24])]
     issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
                                issue_id=78901, phases=phases)
     self.services.issue.TestAddIssue(issue)
-    new_av_24 = tracker_pb2.ApprovalValue(
-        approval_id=24, status=tracker_pb2.ApprovalStatus.APPROVED,
-        set_on=3456, setter_id=222L)
+
     self.work_env.UpdateIssueApprovalStatus(
-        78901, new_av_24.approval_id, new_av_24.status, new_av_24.setter_id,
-        new_av_24.set_on)
+        78901, 24, tracker_pb2.ApprovalStatus.APPROVED, 111L,
+        3456)
 
     issue = self.services.issue.GetIssue(self.cnxn, 78901)
     phase = issue.phases[0]
     updated_av = tracker_bizobj.FindApprovalValueByID(24, phase.approval_values)
-    self.assertEqual(updated_av, new_av_24)
+    self.assertEqual(updated_av.status, tracker_pb2.ApprovalStatus.APPROVED)
+    self.assertEqual(updated_av.setter_id, 111L)
+    self.assertEqual(updated_av.set_on, 3456)
 
   def testUpdateIssueApprovalApprovers(self):
     """We can update an issue's approval approvers."""

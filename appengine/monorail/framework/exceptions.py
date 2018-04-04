@@ -65,6 +65,11 @@ class InvalidFieldTypeException(Error):
   pass
 
 
+class NoSuchIssueApprovalException(Error):
+  """The requested approval for the issue was not found."""
+  pass
+
+
 class CircularGroupException(Error):
   """Circular nested group exception."""
   pass

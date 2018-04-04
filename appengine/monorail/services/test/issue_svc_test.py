@@ -460,31 +460,6 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
 
-  def testUpdateIssueApprovalStatus(self):
-    av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L, set_on=1234)
-
-    self.services.issue.issue2approvalvalue_tbl.Update(
-        self.cnxn, {'status': 'not_set', 'setter_id': 111L, 'set_on': 1234},
-        approval_id=23, issue_id=78901, commit=False)
-
-    self.mox.ReplayAll()
-    self.services.issue.UpdateIssueApprovalStatus(
-        self.cnxn, 78901, av.approval_id, av.status,
-        av.setter_id, av.set_on, commit=False)
-    self.mox.VerifyAll()
-
-  def testUpdateIssueApprovalApprovers(self):
-    self.services.issue.issueapproval2approver_tbl.Delete(
-        self.cnxn, issue_id=78901, approval_id=23, commit=False)
-    self.services.issue.issueapproval2approver_tbl.InsertRows(
-        self.cnxn, issue_svc.ISSUEAPPROVAL2APPROVER_COLS,
-        [(23, 111, 78901), (23, 222, 78901), (23, 444, 78901)], commit=False)
-
-    self.mox.ReplayAll()
-    self.services.issue.UpdateIssueApprovalApprovers(
-        self.cnxn, 78901, 23, [111, 222, 444], commit=False)
-    self.mox.VerifyAll()
-
   def testGetAllIssuesInProject_NoIssues(self):
     self.SetUpGetHighestLocalID(789, None, None)
     self.mox.ReplayAll()
@@ -1548,6 +1523,61 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.services.issue.SoftDeleteComment(
         self.cnxn, issue_1, comment, 222L, self.services.user)
+    self.mox.VerifyAll()
+
+  ### Approvals
+
+  def testGetIssueApproval(self):
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
+    phases = [tracker_pb2.Phase(
+        phase_id=1, rank=1, approval_values=[av_24])]
+    issue_1 = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        status='Live', issue_id=78901, phases=phases)
+    issue_1.project_name = 'proj'
+    self.services.issue.issue_2lc.CacheItem(78901, issue_1)
+
+    actual_approval_value = self.services.issue.GetIssueApproval(
+        self.cnxn, issue_1.issue_id, av_24.approval_id)
+
+    self.assertEqual(av_24, actual_approval_value)
+
+  def testGetIssueApproval_NoSuchApproval(self):
+    phases = [tracker_pb2.Phase(phase_id=1, rank=1)]
+    issue_1 = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        status='Live', issue_id=78901, phases=phases)
+    issue_1.project_name = 'proj'
+    self.services.issue.issue_2lc.CacheItem(78901, issue_1)
+    self.assertRaises(
+        exceptions.NoSuchIssueApprovalException,
+        self.services.issue.GetIssueApproval,
+        self.cnxn, issue_1.issue_id, 24)
+
+
+  def testUpdateIssueApprovalStatus(self):
+    av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L, set_on=1234)
+
+    self.services.issue.issue2approvalvalue_tbl.Update(
+        self.cnxn, {'status': 'not_set', 'setter_id': 111L, 'set_on': 1234},
+        approval_id=23, issue_id=78901, commit=False)
+
+    self.mox.ReplayAll()
+    self.services.issue.UpdateIssueApprovalStatus(
+        self.cnxn, 78901, av.approval_id, av.status,
+        av.setter_id, av.set_on, commit=False)
+    self.mox.VerifyAll()
+
+  def testUpdateIssueApprovalApprovers(self):
+    self.services.issue.issueapproval2approver_tbl.Delete(
+        self.cnxn, issue_id=78901, approval_id=23, commit=False)
+    self.services.issue.issueapproval2approver_tbl.InsertRows(
+        self.cnxn, issue_svc.ISSUEAPPROVAL2APPROVER_COLS,
+        [(23, 111, 78901), (23, 222, 78901), (23, 444, 78901)], commit=False)
+
+    self.mox.ReplayAll()
+    self.services.issue.UpdateIssueApprovalApprovers(
+        self.cnxn, 78901, 23, [111, 222, 444], commit=False)
     self.mox.VerifyAll()
 
   ### Attachments

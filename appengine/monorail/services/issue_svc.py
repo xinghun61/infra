@@ -1130,37 +1130,6 @@ class IssueService(object):
     if invalidate:
       self.InvalidateIIDs(cnxn, iids)
 
-  def UpdateIssueApprovalStatus(
-      self, cnxn, issue_id, approval_id, status, setter_id, set_on,
-      commit=True):
-    """Update the approvalvalue for the given issue_id's issue."""
-    set_on = set_on or int(time.time())
-    delta = {
-        'status': status.name.lower(),
-        'setter_id': setter_id,
-        'set_on': set_on,
-        }
-    self.issue2approvalvalue_tbl.Update(
-        cnxn, delta, approval_id=approval_id, issue_id=issue_id,
-        commit=False)
-
-    if commit:
-      cnxn.Commit()
-    self.issue_2lc.InvalidateKeys(cnxn, [issue_id])
-
-  def UpdateIssueApprovalApprovers(
-      self, cnxn, issue_id, approval_id, approver_ids, commit=True):
-    """Update the list of approvers allowed to approve an issue's approval."""
-    self.issueapproval2approver_tbl.Delete(
-        cnxn, issue_id=issue_id, approval_id=approval_id, commit=False)
-    self.issueapproval2approver_tbl.InsertRows(
-        cnxn, ISSUEAPPROVAL2APPROVER_COLS, [(approval_id, approver_id, issue_id)
-                                            for approver_id in approver_ids],
-        commit=False)
-    if commit:
-      cnxn.Commit()
-    self.issue_2lc.InvalidateKeys(cnxn, [issue_id])
-
   def _CreateIssuePhases(self, cnxn, issue, commit=True):
     """Insert Issue2[Phase] and [ApprovalValue] rows for the given issue."""
     # NOTE: currently not supporting phase editing.
@@ -2397,6 +2366,49 @@ class IssueService(object):
     if reindex:
       tracker_fulltext.IndexIssues(
           cnxn, [issue], user_service, self, self._config_service)
+
+  ### Approvals
+
+  def GetIssueApproval(self, cnxn, issue_id, approval_id):
+    """Retrieve the specified approval for the specified issue."""
+    issue = self.GetIssue(cnxn, issue_id)
+    for phase in issue.phases:
+      approval = tracker_bizobj.FindApprovalValueByID(
+          approval_id, phase.approval_values)
+      if approval:
+        return approval
+    raise exceptions.NoSuchIssueApprovalException()
+
+  def UpdateIssueApprovalStatus(
+      self, cnxn, issue_id, approval_id, status, setter_id, set_on,
+      commit=True):
+    """Update the approvalvalue for the given issue_id's issue."""
+    set_on = set_on or int(time.time())
+    delta = {
+        'status': status.name.lower(),
+        'setter_id': setter_id,
+        'set_on': set_on,
+        }
+    self.issue2approvalvalue_tbl.Update(
+        cnxn, delta, approval_id=approval_id, issue_id=issue_id,
+        commit=False)
+
+    if commit:
+      cnxn.Commit()
+    self.issue_2lc.InvalidateKeys(cnxn, [issue_id])
+
+  def UpdateIssueApprovalApprovers(
+      self, cnxn, issue_id, approval_id, approver_ids, commit=True):
+    """Update the list of approvers allowed to approve an issue's approval."""
+    self.issueapproval2approver_tbl.Delete(
+        cnxn, issue_id=issue_id, approval_id=approval_id, commit=False)
+    self.issueapproval2approver_tbl.InsertRows(
+        cnxn, ISSUEAPPROVAL2APPROVER_COLS, [(approval_id, approver_id, issue_id)
+                                            for approver_id in approver_ids],
+        commit=False)
+    if commit:
+      cnxn.Commit()
+    self.issue_2lc.InvalidateKeys(cnxn, [issue_id])
 
   ### Attachments
 
