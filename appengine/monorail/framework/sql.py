@@ -35,6 +35,46 @@ DB_CNXN_LATENCY = ts_mon.CumulativeDistributionMetric(
     'Time needed to establish a DB connection.',
     None)
 
+DB_QUERY_LATENCY = ts_mon.CumulativeDistributionMetric(
+    'monorail/sql/db_query_latency',
+    'Time needed to make a DB query.',
+    [ts_mon.StringField('type')])
+
+DB_COMMIT_LATENCY = ts_mon.CumulativeDistributionMetric(
+    'monorail/sql/db_commit_latency',
+    'Time needed to make a DB commit.',
+    None)
+
+DB_ROLLBACK_LATENCY = ts_mon.CumulativeDistributionMetric(
+    'monorail/sql/db_rollback_latency',
+    'Time needed to make a DB rollback.',
+    None)
+
+DB_RETRY_COUNT = ts_mon.CounterMetric(
+    'monorail/sql/db_retry_count',
+    'Count of queries retried.',
+    None)
+
+DB_QUERY_COUNT = ts_mon.CounterMetric(
+    'monorail/sql/db_query_count',
+    'Count of queries sent to the DB.',
+    [ts_mon.StringField('type')])
+
+DB_COMMIT_COUNT = ts_mon.CounterMetric(
+    'monorail/sql/db_commit_count',
+    'Count of commits sent to the DB.',
+    None)
+
+DB_ROLLBACK_COUNT = ts_mon.CounterMetric(
+    'monorail/sql/db_rollback_count',
+    'Count of rollbacks sent to the DB.',
+    None)
+
+DB_RESULT_ROWS = ts_mon.CumulativeDistributionMetric(
+    'monorail/sql/db_result_rows',
+    'Number of results returned by a DB query.',
+    None)
+
 
 @framework_helpers.retry(2, delay=1, backoff=2)
 def MakeConnection(instance, database):
@@ -113,6 +153,7 @@ class MonorailConnection(object):
       logging.exception(e)
       logging.info('retries: %r', retries)
       if retries > 0:
+        DB_RETRY_COUNT.increment()
         self.sql_cnxns = {}  # Drop all old mysql connections and make new.
         return self.Execute(
             stmt_str, stmt_args, shard_id=shard_id, commit=commit,
@@ -136,15 +177,29 @@ class MonorailConnection(object):
                  sql_cnxn, int((time.time() - start_time) * 1000))
     if stmt_str.startswith('INSERT') or stmt_str.startswith('REPLACE'):
       cursor.executemany(stmt_str, stmt_args)
+      duration = (time.time() - start_time) * 1000
+      DB_QUERY_LATENCY.add(duration, {'type': 'write'})
+      DB_QUERY_COUNT.increment({'type': 'write'})
     else:
       cursor.execute(stmt_str, args=stmt_args)
+      duration = (time.time() - start_time) * 1000
+      DB_QUERY_LATENCY.add(duration, {'type': 'read'})
+      DB_QUERY_COUNT.increment({'type': 'read'})
+    DB_RESULT_ROWS.add(cursor.rowcount)
     logging.info('%d rows in %d ms', cursor.rowcount,
-                 int((time.time() - start_time) * 1000))
+                 int(duration))
+
     if commit and not stmt_str.startswith('SELECT'):
       try:
         sql_cnxn.commit()
+        duration = (time.time() - start_time) * 1000
+        DB_COMMIT_LATENCY.add(duration)
+        DB_COMMIT_COUNT.increment()
       except MySQLdb.DatabaseError:
         sql_cnxn.rollback()
+        duration = (time.time() - start_time) * 1000
+        DB_ROLLBACK_LATENCY.add(duration)
+        DB_ROLLBACK_COUNT.increment()
 
     return cursor
 
