@@ -284,11 +284,11 @@ environment. Linux and OSX only.
 &mdash; **def [RunSteps](/recipes/recipes/goma_hello_world.py#43)(api):**
 ### *recipes* / [gsutil\_hello\_world](/recipes/recipes/gsutil_hello_world.py)
 
-[DEPS](/recipes/recipes/gsutil_hello_world.py#8): [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
+[DEPS](/recipes/recipes/gsutil_hello_world.py#8): [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
 
 Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 
-&mdash; **def [RunSteps](/recipes/recipes/gsutil_hello_world.py#19)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/gsutil_hello_world.py#21)(api):**
 ### *recipes* / [infra\_checkout:examples/full](/recipes/recipe_modules/infra_checkout/examples/full.py)
 
 [DEPS](/recipes/recipe_modules/infra_checkout/examples/full.py#5): [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]

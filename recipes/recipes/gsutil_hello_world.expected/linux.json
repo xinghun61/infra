@@ -32,6 +32,17 @@
     ]
   },
   {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/upload_to_google_storage.py",
+      "-b",
+      "luci-playground",
+      "[TMP_BASE]/access_test"
+    ],
+    "name": "upload_to_google_storage"
+  },
+  {
     "name": "$result",
     "recipe_result": null,
     "status_code": 0
