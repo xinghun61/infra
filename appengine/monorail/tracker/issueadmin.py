@@ -429,7 +429,8 @@ def _ParseListPreferences(post_data):
   # Don't allow empty colum spec
   if not default_col_spec:
     default_col_spec = tracker_constants.DEFAULT_COL_SPEC
-  col_spec_words = monorailrequest.ParseColSpec(default_col_spec)
+  col_spec_words = monorailrequest.ParseColSpec(
+      default_col_spec, max_parts=framework_constants.MAX_COL_PARTS)
   col_spec = ' '.join(word for word in col_spec_words)
 
   default_sort_spec = ''

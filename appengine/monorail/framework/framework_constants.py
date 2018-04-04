@@ -53,9 +53,11 @@ NO_VALUE_RE = re.compile(r'^-+$')
 # Used to loosely validate column spec. Mainly guards against malicious input.
 COLSPEC_RE = re.compile(r'^[-.\w\s/]*$', re.UNICODE)
 COLSPEC_COL_RE = re.compile(r'[-.\w/]+', re.UNICODE)
+MAX_COL_PARTS = 25
 
 # Used to loosely validate sort spec. Mainly guards against malicious input.
 SORTSPEC_RE = re.compile(r'^[-.\w\s/]*$', re.UNICODE)
+MAX_SORT_PARTS = 6
 
 # For the artifact search box autosizing when the user types a long query.
 MIN_ARTIFACT_SEARCH_FIELD_SIZE = 38

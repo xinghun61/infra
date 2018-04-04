@@ -187,7 +187,9 @@ class MonorailApiRequest(MonorailRequestBase):
 
     self.query_project_names = self.GetParam('projects')
     self.group_by_spec = self.GetParam('groupby')
+    self.group_by_spec = ' '.join(ParseColSpec(self.group_by_spec))
     self.sort_spec = self.GetParam('sort')
+    self.sort_spec = ' '.join(ParseColSpec(self.sort_spec))
     self.query = self.GetParam('q')
     self.can = self.GetParam('can')
     self.start = self.GetParam('start')
@@ -332,6 +334,7 @@ class MonorailRequest(MonorailRequestBase):
     self.sort_spec = self.GetParam(
         'sort', default_value='',
         antitamper_re=framework_constants.SORTSPEC_RE)
+    self.sort_spec = ' '.join(ParseColSpec(self.sort_spec))
 
     # Note: This is set later in request handling by ComputeColSpec().
     self.col_spec = None
@@ -514,7 +517,8 @@ class MonorailRequest(MonorailRequestBase):
       # If col spec is still empty then default to the global col spec.
       col_spec = tracker_constants.DEFAULT_COL_SPEC
 
-    self.col_spec = ' '.join(ParseColSpec(col_spec))
+    self.col_spec = ' '.join(ParseColSpec(col_spec,
+                             max_parts=framework_constants.MAX_COL_PARTS))
 
   def PrepareForReentry(self, echo_data):
     """Expose the results of form processing as if it was a new GET.
@@ -669,14 +673,30 @@ def _GetViewedEmail(viewed_user_val, cnxn, services):
   return viewed_email
 
 
-def ParseColSpec(col_spec):
+def ParseColSpec(col_spec, max_parts=framework_constants.MAX_SORT_PARTS):
   """Split a string column spec into a list of column names.
+
+  We dedup col parts because an attacker could try to DoS us or guess
+  zero or one result by measuring the time to process a request that
+  has a very long column list.
 
   Args:
     col_spec: a unicode string containing a list of labels.
+    max_parts: optional int maximum number of parts to consider.
 
   Returns:
     A list of the extracted labels. Non-alphanumeric
     characters other than the period will be stripped from the text.
   """
-  return framework_constants.COLSPEC_COL_RE.findall(col_spec)
+  cols = framework_constants.COLSPEC_COL_RE.findall(col_spec)
+  result = []  # List of column headers with no duplicates.
+  seen = set()  # Set of column parts that we have processed so far.
+  for col in cols:
+    parts = []
+    for part in col.split('/'):
+      if part.lower() not in seen and len(seen) < max_parts:
+        parts.append(part)
+        seen.add(part.lower())
+    if parts:
+      result.append('/'.join(parts))
+  return result

@@ -416,6 +416,16 @@ class TestMonorailRequestFunctions(unittest.TestCase):
         parse('\xe7\xaa\xbf\xe8\x8b\xa5\xe7\xb9\xb9 '
               '\xe5\x9f\xba\xe5\x9c\xb0\xe3\x81\xaf'.decode('utf-8')))
 
+  def testParseColSpec_Dedup(self):
+    parse = monorailrequest.ParseColSpec
+    self.assertEqual([], parse(''))
+    self.assertEqual(
+      ['Aa', 'b', 'c/d'],
+      parse(u'Aa Aa AA AA AA b Aa aa c/d d c aA b aa B C/D D/aa/c'))
+    self.assertEqual(
+      ['A', 'b', 'c/d', 'e', 'f'],
+      parse(u'A b c/d e f g h i j a/k l m/c/a n/o'))
+
 
 class TestPermissionLookup(unittest.TestCase):
   OWNER_ID = 1
