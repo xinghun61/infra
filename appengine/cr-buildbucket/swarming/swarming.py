@@ -880,6 +880,11 @@ def _sync_build_in_memory(
   build.result = None
   build.failure_reason = None
   build.cancelation_reason = None
+  build.result_details = {
+    'swarming': {
+      'task_result': task_result,
+    },
+  }
   # error message to include in result_details. Used only if build is complete.
   errmsg = ''
 
@@ -957,11 +962,6 @@ def _sync_build_in_memory(
     build.clear_lease()
     build.start_time = ts('started_ts') or build.start_time
     build.complete_time = ts('completed_ts') or ts('abandoned_ts') or now
-    build.result_details = {
-      'swarming': {
-        'task_result': task_result,
-      },
-    }
     if build_run_result:
       # Do not put entire annotation proto into build entity.
       # It significantly increases egress which signficantly increases the risk

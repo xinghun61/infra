@@ -1722,6 +1722,7 @@ class CronUpdateTest(BaseTest):
     self.assertEqual(build.status, model.BuildStatus.STARTED)
     self.assertIsNotNone(build.lease_key)
     self.assertIsNone(build.complete_time)
+    self.assertIsNotNone(build.result_details)
 
     load_task_result_async.return_value = future({
       'state': 'COMPLETED',
@@ -1733,6 +1734,7 @@ class CronUpdateTest(BaseTest):
     self.assertEqual(build.result, model.BuildResult.SUCCESS)
     self.assertIsNone(build.lease_key)
     self.assertIsNotNone(build.complete_time)
+    self.assertIsNotNone(build.result_details)
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_sync_build_async_no_task(self, load_task_result_async):
