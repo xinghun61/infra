@@ -883,13 +883,14 @@ def _sync_build_in_memory(
   # error message to include in result_details. Used only if build is complete.
   errmsg = ''
 
-  terminal_states = (
+  terminal_states = {
     'EXPIRED',
     'TIMED_OUT',
     'BOT_DIED',
     'CANCELED',
     'COMPLETED',
-  )
+    'KILLED',
+  }
   state = (task_result or {}).get('state')
   if build_run_result_corrupted:
     build.status = model.BuildStatus.COMPLETED
@@ -909,7 +910,7 @@ def _sync_build_in_memory(
     build.status = model.BuildStatus.STARTED
   elif state in terminal_states:
     build.status = model.BuildStatus.COMPLETED
-    if state == 'CANCELED':
+    if state in ('CANCELED', 'KILLED'):
       build.result = model.BuildResult.CANCELED
       build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
     elif state == 'EXPIRED':
