@@ -27,8 +27,7 @@ ARCHIVE_PATH=$(basename ${ARCHIVE_PATH})
 tar -xzf ${ARCHIVE_PATH}
 cd $(get_archive_dir ${ARCHIVE_PATH})
 
-CONFIG_ARGS="\
-  --prefix=${CROSS_PREFIX}"
+CONFIG_ARGS="--prefix=${CROSS_PREFIX}"
 
 # Some libraries automatically assume the host of the current toolchain
 # (cross-compile, since we didn't change it). Most, however, require an explicit

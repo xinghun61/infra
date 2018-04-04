@@ -39,7 +39,7 @@ def _docker_image_exists(system, identifier):
 class Builder(object):
 
   # Tag used for pushed Docker images.
-  DOCKER_IMAGE_TAG = 'v1.1.0'
+  DOCKER_IMAGE_TAG = 'v1.3.0'
 
   # The Docker repository to use.
   DOCKER_REPOSITORY = 'https://gcr.io'
@@ -56,8 +56,11 @@ class Builder(object):
       'perl5_relpath',
       'get_pip_relpath',
       'libffi_relpath', 'libffi_lib_dir',
-      'cffi_relpath', 
+      'cffi_relpath',
       'zlib_relpath',
+      'ncurses_relpath',
+      'boost_relpath',
+      'mysql_relpath',
   ))
 
 
@@ -114,6 +117,9 @@ class Builder(object):
     libffi_relpath = ensure_src('libffi')
     cffi_relpath = ensure_src('cffi')
     zlib_relpath = ensure_src('zlib')
+    mysql_relpath = ensure_src('mysql')
+    boost_relpath = ensure_src('boost')
+    ncurses_relpath = ensure_src('ncurses')
     get_pip_relpath = ensure_src('get-pip')
 
     ucs4 = not dx.platform.wheel_abi or dx.platform.wheel_abi.endswith('mu')
@@ -141,6 +147,9 @@ class Builder(object):
         libffi_lib_dir='libffi-%s' % (SOURCES['libffi'].version,),
         cffi_relpath=cffi_relpath,
         zlib_relpath=zlib_relpath,
+        ncurses_relpath=ncurses_relpath,
+        boost_relpath=boost_relpath,
+        mysql_relpath=mysql_relpath,
     )
 
   def mirror_base_image(self, plat, upload=False):
@@ -380,4 +389,23 @@ SOURCES = {
   ),
 
   'cffi': source.pypi_sdist('cffi', '1.10.0'),
+
+  'mysql': source.remote_archive(
+    name='mysql',
+    version='5.7.21',
+    url='https://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-5.7.21.tar.gz',
+  ),
+
+  'boost': source.remote_archive(
+    name='boost',
+    version='1.59.0',
+    # pylint: disable=line-too-long
+    url='https://downloads.sourceforge.net/project/boost/boost/1.59.0/boost_1_59_0.tar.bz2',
+  ),
+
+  'ncurses': source.remote_archive(
+    name='ncurses',
+    version='6.1',
+    url='http://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz',
+  ),
 }

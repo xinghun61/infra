@@ -175,8 +175,8 @@ def BuildPackageFromSource(system, wheel, src):
       '--no-deps',
       '--only-binary=:all:',
       '--wheel-dir', tdir,
+      '.',
     ]
-    cmd.append('.')
 
     util.check_run(
         system,

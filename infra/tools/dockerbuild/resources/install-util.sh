@@ -12,11 +12,7 @@ set -o pipefail
 #
 # - LOCAL_PREFIX is the prefix to use for host installation.
 # - CROSS_TRIPLE is the cross-compile host triple.
-# - CROSS_PREFIX is the prefix to use for cross-compile installation.
-if \
-  [ -z "${LOCAL_PREFIX}" ] || \
-  [ -z "${CROSS_TRIPLE}" ] || \
-  [ -z "${CROSS_PREFIX}" ]; then
+if [ -z "${LOCAL_PREFIX}" -o -z "${CROSS_TRIPLE}" ]; then
   echo "ERROR: Missing required environment."
   exit 1
 fi
@@ -36,6 +32,12 @@ CROSS_LD=$LD
 CROSS_CFLAGS="$CFLAGS"
 CROSS_LDFLAGS="$LDFLAGS"
 CROSS_PYTHONPATH="$PYTHONPATH"
+CROSS_CMAKE_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE"
+
+CROSS_C_INCLUDE_PATH="$C_INCLUDE_PATH"
+CROSS_CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH"
+CROSS_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+CROSS_LIBRARY_PATH="$LIBRARY_PATH"
 
 toggle_host() {
   AS=
@@ -48,6 +50,12 @@ toggle_host() {
   CFLAGS=
   LDFLAGS=
   PYTHONPATH=
+  CMAKE_TOOLCHAIN_FILE=
+
+  C_INCLUDE_PATH=
+  CPLUS_INCLUDE_PATH=
+  LD_LIBRARY_PATH=
+  LIBRARY_PATH=
 }
 
 toggle_cross() {
@@ -61,6 +69,12 @@ toggle_cross() {
   CFLAGS="${CROSS_CFLAGS}"
   LDFLAGS="${CROSS_LDFLAGS}"
   PYTHONPATH="${CROSS_PYTHONPATH}"
+  CMAKE_TOOLCHAIN_FILE="${CROSS_CMAKE_TOOLCHAIN_FILE}"
+
+  C_INCLUDE_PATH="${CROSS_C_INCLUDE_PATH}"
+  CPLUS_INCLUDE_PATH="${CROSS_CPLUS_INCLUDE_PATH}"
+  LD_LIBRARY_PATH="${CROSS_LD_LIBRARY_PATH}"
+  LIBRARY_PATH="${CROSS_LIBRARY_PATH}"
 }
 
 abspath() {
@@ -70,5 +84,11 @@ abspath() {
 
 get_archive_dir() {
   local ARCHIVE_PATH=$1; shift
-  echo $(tar -tf ${ARCHIVE_PATH} | egrep '^[^/]+/?$' | head -n1)
+  echo $(tar tf ${ARCHIVE_PATH} | head -n1 | sed  's#\(.*\)/.*#\1#')
 }
+
+if [ ! `which nproc` ]; then
+  nproc() {
+    grep processor < /proc/cpuinfo | wc -l
+  }
+fi

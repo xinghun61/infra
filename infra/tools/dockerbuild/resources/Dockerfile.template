@@ -29,6 +29,11 @@ RUN \
   mkdir -p $${CROSS_PREFIX}/lib/python2.7/site-packages/ && \
   mkdir -p $${CROSS_PREFIX}/include/ && \
   ln -s $${CROSS_PREFIX}/lib $${CROSS_PREFIX}/lib64
+# Edit the $CMAKE_TOOLCHAIN_FILE to add $CROSS_PREFIX and `.` to allow local
+# inclusion of boost in mysql.
+RUN \
+  sed -i -r 's#(.*)CMAKE_FIND_ROOT_PATH(.*)[)]#\1CMAKE_FIND_ROOT_PATH\2 '$${CROSS_PREFIX}' .)#' \
+  $CMAKE_TOOLCHAIN_FILE
 
 # Build environment prefix.
 ENV LOCAL_PREFIX="/usr/host"
@@ -41,9 +46,7 @@ COPY ${resources_relpath}/install-util.sh .
 
 # install-00-packages.sh
 COPY ${resources_relpath}/install-00-packages.sh .
-RUN \
-  chmod +x ./install-00-packages.sh \
-&& sync && ./install-00-packages.sh
+RUN ./install-00-packages.sh
 
 # Build system Perl, needed by "cryptography" package.
 WORKDIR $${SETUP_ROOT}/perl
@@ -51,10 +54,7 @@ COPY \
   ${resources_relpath}/install-01-perl.sh \
   ${perl5_relpath} \
   ./
-RUN \
-  chmod +x ./install-01-perl.sh \
-&& sync \
-&& ARCHIVE_PATH=$$(basename ${perl5_relpath}) \
+RUN ARCHIVE_PATH=$$(basename ${perl5_relpath}) \
   ./install-01-perl.sh \
 && rm -rf $${SETUP_ROOT}/perl
 
@@ -62,22 +62,35 @@ RUN \
 #
 # - libffi: Our cross-compiled Python needs to link against this.
 # - zlib: Useful for cross-compiled enviornments.
+# - ncurses: Used for MySQL client library
 WORKDIR $${SETUP_ROOT}/x-lib
+COPY ${resources_relpath}/install-02-cross-lib.sh ./
+
+# These can be slow, so split them up so Docker can do its cachey magick.
+COPY ${zlib_relpath} ./
+RUN ARCHIVE_PATH=$$(basename ${zlib_relpath}) NO_HOST=1 ./install-02-cross-lib.sh
+
+COPY ${libffi_relpath} ./
+RUN ARCHIVE_PATH=$$(basename ${libffi_relpath}) ./install-02-cross-lib.sh
+
+COPY ${resources_relpath}/install-02-ncurses.sh ${ncurses_relpath} ./
+RUN ARCHIVE_PATH=$$(basename ${ncurses_relpath}) ./install-02-ncurses.sh
+
+RUN rm -rf $${SETUP_ROOT}/x-lib
+
+# Build+install cross-compiled MySQL, needed by "MySQL-python" package.
+WORKDIR $${SETUP_ROOT}/mysql
 COPY \
-  ${resources_relpath}/install-02-cross-lib.sh \
-  ${libffi_relpath} \
-  ${zlib_relpath} \
+  ${resources_relpath}/install-05-mysql.sh \
+  ${mysql_relpath} \
+  ${boost_relpath} \
   ./
-RUN \
-  chmod +x ./install-02-cross-lib.sh \
-&& sync && ARCHIVE_PATH=$$(basename ${libffi_relpath}) \
-  ./install-02-cross-lib.sh \
-&& ARCHIVE_PATH=$$(basename ${zlib_relpath}) \
-  NO_HOST=1 \
-  ./install-02-cross-lib.sh \
-&& rm -rf $${SETUP_ROOT}/x-lib
-ENV CFLAGS="-I$${CROSS_PREFIX}/include $$CFLAGS"
-ENV CFLAGS="-I$${CROSS_PREFIX}/lib/${libffi_lib_dir}/include $$CFLAGS"
+RUN ARCHIVE_PATH=$$(basename ${mysql_relpath}) \
+  BOOST_PATH=$$(basename ${boost_relpath}) \
+  ./install-05-mysql.sh \
+&& rm -rf $${SETUP_ROOT}/mysql
+
+ENV PATH=/usr/local/mysql/bin:$${PATH}
 
 # Configure cross-compile LDFLAGS.
 
@@ -88,9 +101,7 @@ COPY \
   ${python27_relpath} \
   ${resources_relpath}/config.site.xcc_python \
   ./
-RUN \
-  chmod +x ./install-03-python.sh \
-&& sync && ARCHIVE_PATH=$$(basename ${python27_relpath}) \
+RUN ARCHIVE_PATH=$$(basename ${python27_relpath}) \
   CROSS_UNICODE=${python27_unicode} \
   CROSS_CONFIG_SITE=config.site.xcc_python \
   ./install-03-python.sh \
@@ -124,9 +135,7 @@ COPY \
   ${resources_relpath}/install-04-cross-cffi.sh \
   ${cffi_relpath} \
   ./
-RUN \
-  chmod +x ./install-04-cross-cffi.sh \
-&& sync && ARCHIVE_PATH=$$(basename ${cffi_relpath}) \
+RUN ARCHIVE_PATH=$$(basename ${cffi_relpath}) \
   ./install-04-cross-cffi.sh \
 && rm -rf $${SETUP_ROOT}/x-cffi
 

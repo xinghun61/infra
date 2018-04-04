@@ -3,13 +3,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Install system Perl into "PREFIX".
+# Build and install a cross-compiled library.
 #
-# This is needed by the "cryptography" package, since the PERL on some of the
-# dockcross images does not meet minimum version requirements.
+# This script runs the standard "./configure", "make", "make install" workflow,
+# which is generically useful for most libraries.
 #
 # This script consumes:
 # - ARCHIVE_PATH is the path to the Perl archive file.
+# - NO_HOST, if set, omits the "--host" argument from the configure script.
 
 # Load our installation utility functions.
 . ${SETUP_ROOT}/install-util.sh
@@ -22,14 +23,23 @@ fi
 ROOT=${PWD}
 
 # Unpack our archive and enter its base directory (whatever it is named).
+ARCHIVE_PATH=$(basename ${ARCHIVE_PATH})
 tar -xzf ${ARCHIVE_PATH}
 cd $(get_archive_dir ${ARCHIVE_PATH})
 
-# Build and install host Perl.
+# Build native programs and back them up
 toggle_host
-
-./Configure \
-  -des \
-  "-Dprefix=${LOCAL_PREFIX}"
+./configure --prefix=${CROSS_PREFIX}
 make -j$(nproc)
+cp -a progs progs.bak
+
+toggle_cross
+./configure --prefix=${CROSS_PREFIX} --host=${CROSS_TRIPLE}
+make -j$(nproc)
+
+# Restore native programs
+rm -rf progs
+mv progs.bak progs
+find progs ! -name '*.*' -exec touch '{}' ';'
+
 make install

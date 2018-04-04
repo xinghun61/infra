@@ -71,6 +71,8 @@ from .wheel_opencv import OpenCVBuilder as OpenCV
 
 from .wheel_infra import InfraBuilder as Infra
 
+from .wheel_mysql import MySQLPythonBuilder as MySQLPython
+
 
 SPECS = {s.spec.tag: s for s in (
   SourceOrPrebuilt('coverage', '4.3.4'),
@@ -282,9 +284,12 @@ SPECS = {s.spec.tag: s for s in (
   ),
 
 
-  SourceOrPrebuilt('MySQL-python', '1.2.5',
-      packaged=[],
-      only_plat=['manylinux-x86', 'manylinux-x64'],
+  MySQLPython('1.2.5',
+      only_plat=[
+        'manylinux-x86', 'manylinux-x64',
+        'linux-arm64', 'linux-armv6',
+        'linux-mips64',
+      ],
   ),
   SourceOrPrebuilt('PyYAML', '3.12',
       packaged=[

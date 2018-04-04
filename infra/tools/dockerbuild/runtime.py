@@ -28,8 +28,7 @@ class MissingToolsError(RuntimeError):
 class System(object):
   """Represents the local system facillities."""
 
-  _Tools = collections.namedtuple('_Tools', (
-      'gcloud', 'cipd'))
+  _Tools = collections.namedtuple('_Tools', ('cipd',))
 
   _Dirs = collections.namedtuple('_Dirs', (
       'root', 'repo', 'bin', 'wheel', 'pkg', 'cipd_cache'))
@@ -58,7 +57,6 @@ class System(object):
                  upload_sources=False, force_source_download=False):
     native_python = native_python or sys.executable
     tools = cls._Tools(
-        gcloud=cls._find_tool('gcloud'),
         cipd=cls._find_tool('cipd'),
     )
     missing_tools = [k for k, v in tools._asdict().iteritems() if not v]
@@ -195,6 +193,4 @@ class System(object):
     return self.run(args, **kwargs)
 
   def docker(self, args, **kwargs):
-    cmd = [self.tools.gcloud, 'docker', '--']
-    cmd += args
-    return self.run(cmd, **kwargs)
+    return self.run(['docker'] + args, **kwargs)
