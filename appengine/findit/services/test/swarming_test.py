@@ -455,9 +455,9 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       swarming,
       'ListSwarmingTasksDataByTags',
-      return_value=[{
+      return_value=[SwarmingTaskData({
           'task_id': 'task_id'
-      }])
+      })])
   @mock.patch.object(swarming_util, 'GetSwarmingTaskRequest')
   def testGetReferredSwarmingTaskRequestInfo(self, mock_get, _):
     request = SwarmingTaskRequest.FromSerializable(_REF_REQUEST)

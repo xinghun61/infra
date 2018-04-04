@@ -14,7 +14,6 @@ from google.appengine.api import app_identity
 from common.waterfall.pubsub_callback import MakeSwarmingPubsubCallback
 from gae_libs import token
 from infra_api_clients.swarming import swarming_util
-from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 from libs import time_util
 from libs.list_of_basestring import ListOfBasestring
 from waterfall import waterfall_config
@@ -38,7 +37,7 @@ def GetReferredSwarmingTaskRequestInfo(master_name, builder_name, build_number,
     raise Exception('Cannot find referred swarming task for %s/%s/%d/%s' %
                     (master_name, builder_name, build_number, step_name))
 
-  ref_task_id = swarming_task_items[0]['task_id']
+  ref_task_id = swarming_task_items[0].task_id
   ref_request = swarming_util.GetSwarmingTaskRequest(SwarmingHost(),
                                                      ref_task_id, http_client)
   return ref_task_id, ref_request
