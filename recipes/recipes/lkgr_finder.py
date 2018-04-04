@@ -81,10 +81,11 @@ def RunSteps(api, buildername):
     'infra.services.lkgr_finder',
     '--project=%s' % botconfig['project'],
     '--verbose',
-    '--email-errors',
     '--read-from-file', api.raw_io.input_text(current_lkgr),
     '--write-to-file', api.raw_io.output_text(name='lkgr_hash'),
   ]
+  if not api.runtime.is_experimental:
+    args.append('--email-errors')
   step_test_data = api.raw_io.test_api.output_text(
       'deadbeef' * 5, name='lkgr_hash')
 

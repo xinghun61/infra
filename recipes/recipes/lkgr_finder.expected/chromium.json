@@ -137,11 +137,11 @@
       "infra.services.lkgr_finder",
       "--project=chromium",
       "--verbose",
-      "--email-errors",
       "--read-from-file",
       "97ab2f7d6e7bab812309e05884bdeeaef11962f7",
       "--write-to-file",
       "/path/to/tmp/",
+      "--email-errors",
       "--html",
       "/path/to/tmp/"
     ],
