@@ -204,3 +204,15 @@ class TemplateHelpers(unittest.TestCase):
         self.mr, phase_names, approvals_by_phase_idx)
     self.assertEqual(self.mr.errors.phase_approvals,
                      'Defined gates must have assigned approvals.')
+
+  def testGetPhasesFromParsed_DupsErrors(self):
+    self.config.field_defs.extend([self.fd_1, self.fd_2])
+    self.config.approval_defs.extend([self.ad_3, self.ad_4, self.ad_5])
+
+    phase_names = ['Canary', 'canary', 'Stable-Exp', '', '', '']
+    approvals_by_phase_idx = {0: [self.ad_3, self.ad_4], 2: [self.ad_5]}
+
+    template_helpers._GetPhasesFromParsed(
+        self.mr, phase_names, approvals_by_phase_idx)
+    self.assertEqual(self.mr.errors.phase_approvals,
+                     'Duplicate gate names.')

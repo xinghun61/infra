@@ -117,6 +117,12 @@ def _GetPhasesFromParsed(mr, phase_names, approvals_by_phase_idx):
   """Get Phase PBs from a parsed phase_names and approvals_by_phase_idx."""
 
   phases = []
+
+  valid_phase_names = [name for name in phase_names if name]
+  if len(valid_phase_names) != len(
+      set(name.lower() for name in valid_phase_names)):
+    mr.errors.phase_approvals = 'Duplicate gate names.'
+    return phases
   valid_phase_idxs = [idx for idx, name in enumerate(phase_names) if name]
   if set(valid_phase_idxs) != set(approvals_by_phase_idx.keys()):
     mr.errors.phase_approvals = 'Defined gates must have assigned approvals.'
