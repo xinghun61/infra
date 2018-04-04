@@ -109,7 +109,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     commit_position = 1000
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
     error = SwarmingTaskError(code=1, message='message')
-    has_valid_artifact = True
     iterations = None
     pass_count = None
     revision = 'r1000'
@@ -119,7 +118,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
-        has_valid_artifact=has_valid_artifact,
         iterations=iterations,
         pass_count=pass_count,
         started_time=started_time,
@@ -139,7 +137,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(revision, data_point.git_hash)
     self.assertIsNone(data_point.pass_rate)
     self.assertIsNone(data_point.elapsed_seconds)
-    self.assertTrue(data_point.has_valid_artifact)
     self.assertEqual(1, data_point.failed_swarming_task_attempts)
     self.assertEqual([task_id], data_point.task_ids)
 
@@ -150,7 +147,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     commit_position = 1000
     completed_time = datetime(2018, 1, 1, 0, 1, 0)
     error = SwarmingTaskError(code=1, message='message')
-    has_valid_artifact = True
     iterations = 100
     pass_count = 50
     revision = 'r1000'
@@ -160,7 +156,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
-        has_valid_artifact=has_valid_artifact,
         iterations=iterations,
         pass_count=pass_count,
         started_time=started_time,
@@ -178,7 +173,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(revision, data_point.git_hash)
     self.assertEqual(.5, data_point.pass_rate)
     self.assertEqual(60, data_point.elapsed_seconds)
-    self.assertTrue(data_point.has_valid_artifact)
     self.assertEqual(0, data_point.failed_swarming_task_attempts)
     self.assertEqual([task_id], data_point.task_ids)
 
@@ -189,7 +183,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     commit_position = 1000
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
     error = None
-    has_valid_artifact = True
     iterations = 100
     pass_count = 60
     revision = 'r1000'
@@ -199,7 +192,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
-        has_valid_artifact=has_valid_artifact,
         iterations=iterations,
         pass_count=pass_count,
         started_time=started_time,
@@ -217,7 +209,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(revision, data_point.git_hash)
     self.assertEqual(0.6, data_point.pass_rate)
     self.assertEqual(3600, data_point.elapsed_seconds)
-    self.assertTrue(data_point.has_valid_artifact)
     self.assertEqual(0, data_point.failed_swarming_task_attempts)
     self.assertEqual([task_id], data_point.task_ids)
 
@@ -229,7 +220,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     failed_swarming_task_attempts = 2
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
     error = SwarmingTaskError(code=1, message='m')
-    has_valid_artifact = True
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = 'task_2'
 
@@ -249,7 +239,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
-        has_valid_artifact=has_valid_artifact,
         iterations=iterations,
         pass_count=pass_count,
         started_time=started_time,
@@ -267,7 +256,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(revision, data_point.git_hash)
     self.assertEqual(0.5, data_point.pass_rate)
     self.assertEqual(1800, data_point.elapsed_seconds)
-    self.assertTrue(data_point.has_valid_artifact)
     self.assertEqual(3, data_point.failed_swarming_task_attempts)
     self.assertEqual(['task_1', 'task_2'], data_point.task_ids)
 
@@ -278,7 +266,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     pass_count = 50
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
     error = SwarmingTaskError(code=1, message='m')
-    has_valid_artifact = True
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = 'task_2'
 
@@ -298,7 +285,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
-        has_valid_artifact=has_valid_artifact,
         iterations=iterations,
         pass_count=pass_count,
         started_time=started_time,
@@ -316,7 +302,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(revision, data_point.git_hash)
     self.assertEqual(0.5, data_point.pass_rate)
     self.assertEqual(3600, data_point.elapsed_seconds)
-    self.assertTrue(data_point.has_valid_artifact)
     self.assertEqual(0, data_point.failed_swarming_task_attempts)
     self.assertEqual(['task_1', 'task_2'], data_point.task_ids)
 
@@ -328,7 +313,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     failed_swarming_task_attempts = 2
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
     error = SwarmingTaskError(code=1, message='m')
-    has_valid_artifact = True
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = None
 
@@ -348,7 +332,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
-        has_valid_artifact=has_valid_artifact,
         iterations=iterations,
         pass_count=pass_count,
         started_time=started_time,
@@ -366,7 +349,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(revision, data_point.git_hash)
     self.assertEqual(0.5, data_point.pass_rate)
     self.assertEqual(1800, data_point.elapsed_seconds)
-    self.assertTrue(data_point.has_valid_artifact)
     self.assertEqual(3, data_point.failed_swarming_task_attempts)
     self.assertEqual(['task_1'], data_point.task_ids)
 
@@ -378,7 +360,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     failed_swarming_task_attempts = 2
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
     error = None
-    has_valid_artifact = True
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = 'task_2'
 
@@ -398,7 +379,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
-        has_valid_artifact=has_valid_artifact,
         iterations=iterations,
         pass_count=pass_count,
         started_time=started_time,
@@ -416,7 +396,6 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(revision, data_point.git_hash)
     self.assertEqual(0.55, data_point.pass_rate)
     self.assertEqual(5400, data_point.elapsed_seconds)
-    self.assertTrue(data_point.has_valid_artifact)
     self.assertEqual(failed_swarming_task_attempts,
                      data_point.failed_swarming_task_attempts)
     self.assertEqual(['task_1', 'task_2'], data_point.task_ids)

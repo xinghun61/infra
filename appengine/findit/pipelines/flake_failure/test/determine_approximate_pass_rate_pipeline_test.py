@@ -66,7 +66,6 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         iterations=iterations,
         completed_time=completed_time,
         started_time=started_time,
-        has_valid_artifact=True,
         task_id='task_id')
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
@@ -82,9 +81,9 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         previous_swarming_task_output=flake_swarming_task_output,
         revision=revision)
 
-    self.MockGeneratorPipeline(RunFlakeSwarmingTaskPipeline,
-                               flake_swarming_task_input,
-                               flake_swarming_task_output)
+    self.MockAsynchronousPipeline(RunFlakeSwarmingTaskPipeline,
+                                  flake_swarming_task_input,
+                                  flake_swarming_task_output)
     self.MockSynchronousPipeline(UpdateFlakeAnalysisDataPointsPipeline,
                                  update_data_points_input, None)
     self.MockGeneratorPipeline(DetermineApproximatePassRatePipelineWrapper,
@@ -107,7 +106,6 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     isolate_sha = 'sha1'
     revision = 'r1000'
     task_id = 'task_id'
-    has_valid_artifact = True
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
 
@@ -121,7 +119,6 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     flake_swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=SwarmingTaskError(code=1, message='error'),
-        has_valid_artifact=has_valid_artifact,
         pass_count=incoming_pass_count,
         iterations=iterations,
         started_time=started_time,
@@ -154,7 +151,6 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     isolate_sha = 'sha1'
     revision = 'r1000'
     task_id = 'task_id'
-    has_valid_artifact = True
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
 
@@ -171,7 +167,6 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         iterations=iterations,
         started_time=started_time,
         completed_time=completed_time,
-        has_valid_artifact=has_valid_artifact,
         task_id=task_id)
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
@@ -199,7 +194,6 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     isolate_sha = 'sha1'
     revision = 'r1000'
     task_id = 'task_id'
-    has_valid_artifact = True
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
 
@@ -216,8 +210,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         iterations=iterations,
         task_id=task_id,
         started_time=started_time,
-        completed_time=completed_time,
-        has_valid_artifact=has_valid_artifact)
+        completed_time=completed_time)
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -261,7 +254,6 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         iterations=iterations,
         started_time=started_time,
         completed_time=completed_time,
-        has_valid_artifact=True,
         task_id='task_id')
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
@@ -311,7 +303,6 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         iterations=iterations_completed,
         started_time=started_time,
         completed_time=completed_time,
-        has_valid_artifact=True,
         task_id='task_id')
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
@@ -334,7 +325,6 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         iterations=expected_iterations,
         completed_time=completed_time,
         started_time=started_time,
-        has_valid_artifact=True,
         task_id='task_id')
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
@@ -350,9 +340,9 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
         previous_swarming_task_output=flake_swarming_task_output,
         revision=revision)
 
-    self.MockGeneratorPipeline(RunFlakeSwarmingTaskPipeline,
-                               flake_swarming_task_input,
-                               flake_swarming_task_output)
+    self.MockAsynchronousPipeline(RunFlakeSwarmingTaskPipeline,
+                                  flake_swarming_task_input,
+                                  flake_swarming_task_output)
     self.MockSynchronousPipeline(UpdateFlakeAnalysisDataPointsPipeline,
                                  update_data_points_input, None)
     self.MockGeneratorPipeline(DetermineApproximatePassRatePipelineWrapper,

@@ -2,58 +2,38 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 
-from gae_libs import pipelines
+from common import exceptions
+from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from model.flake.flake_swarming_task import FlakeSwarmingTask
+from gae_libs.pipelines import pipeline
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskInput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskPipeline)
-from services import step_util
-from waterfall.build_info import BuildInfo
-from waterfall.process_flake_swarming_task_result_pipeline import (
-    ProcessFlakeSwarmingTaskResultPipeline)
-from waterfall.trigger_flake_swarming_task_pipeline import (
-    TriggerFlakeSwarmingTaskPipeline)
+from services.flake_failure import flake_swarming
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
 class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
-  def testRunFlakeSwarmingTaskResultPipeline(self, mocked_builds):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    step_name = 's'
-    test_name = 't'
+  @mock.patch.object(
+      RunFlakeSwarmingTaskPipeline, 'GetCallbackParameters', return_value={})
+  @mock.patch.object(RunFlakeSwarmingTaskPipeline, 'pipeline_id')
+  @mock.patch.object(RunFlakeSwarmingTaskPipeline, 'SaveCallbackParameters')
+  @mock.patch.object(
+      flake_swarming, 'TriggerSwarmingTask', return_value='task_id')
+  def testRunImplSuccessfulRun(self, mock_trigger, mock_save_params,
+                               mocked_pipeline_id, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     commit_position = 1000
     isolate_sha = 'sha1'
     iterations = 50
-    timeout_seconds = 3600
-    pass_count = 25
-    task_id = 'task_id'
-
-    lower_bound_build = BuildInfo(master_name, builder_name, build_number - 1)
-    upper_bound_build = BuildInfo(master_name, builder_name, build_number)
-    mocked_builds.return_value = (lower_bound_build, upper_bound_build)
-
-    mock_swarming_task = FlakeSwarmingTask.Create(
-        master_name, builder_name, build_number, step_name, test_name)
-    mock_swarming_task.error = None
-    mock_swarming_task.has_valid_artifact = True
-    mock_swarming_task.tries = iterations
-    mock_swarming_task.successes = pass_count
-    mock_swarming_task.task_id = task_id
-    mock_swarming_task.put()
-
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.put()
+    timeout_seconds = 1200
 
     run_flake_swarming_task_input = RunFlakeSwarmingTaskInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -62,71 +42,53 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
         iterations=iterations,
         timeout_seconds=timeout_seconds)
 
-    self.MockPipeline(
-        TriggerFlakeSwarmingTaskPipeline,
-        task_id,
-        expected_args=[
-            master_name, builder_name, build_number, step_name, [test_name],
-            isolate_sha
-        ],
-        expected_kwargs={
-            'iterations_to_rerun': iterations,
-            'hard_timeout_seconds': timeout_seconds,
-            'force': True
-        })
-    self.MockPipeline(
-        ProcessFlakeSwarmingTaskResultPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, step_name, task_id,
-            build_number, test_name, analysis.version_number
-        ])
-
+    mocked_pipeline_id.__get__ = mock.Mock(return_value='pipeline-id')
     pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
-    pipeline_job.start()
-    self.execute_queued_tasks()
+    pipeline_job.RunImpl(run_flake_swarming_task_input)
+    mock_trigger.assert_called_once_with(analysis.key.urlsafe(), isolate_sha,
+                                         iterations, timeout_seconds,
+                                         'pipeline-id')
+    mock_save_params.assert_called_once_with({'task_id': 'task_id'})
 
-    pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
-    run_flake_swarming_task_output = pipeline_job.outputs.default.value
-
-    self.assertFalse(pipeline_job.was_aborted)
-    self.assertIsNone(run_flake_swarming_task_output['error'])
-    self.assertTrue(run_flake_swarming_task_output['has_valid_artifact'])
-    self.assertEqual(iterations, run_flake_swarming_task_output['iterations'])
-    self.assertEqual(pass_count, run_flake_swarming_task_output['pass_count'])
-    self.assertEqual(task_id, run_flake_swarming_task_output['task_id'])
-
-  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
-  def testRunFlakeSwarmingTaskResultPipelineWithError(self, mocked_builds):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    step_name = 's'
-    test_name = 't'
+  @mock.patch.object(
+      RunFlakeSwarmingTaskPipeline,
+      'GetCallbackParameters',
+      return_value={
+          'task_id': 'task_id'
+      })
+  @mock.patch.object(
+      flake_swarming, 'TriggerSwarmingTask', return_value='task_id')
+  def testRunImplNotTriggerSameTaskTwice(self, mock_trigger, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     commit_position = 1000
     isolate_sha = 'sha1'
     iterations = 50
-    timeout_seconds = 3600
-    pass_count = 25
-    task_id = 'task_id'
+    timeout_seconds = 1200
 
-    lower_bound_build = BuildInfo(master_name, builder_name, build_number - 1)
-    upper_bound_build = BuildInfo(master_name, builder_name, build_number)
-    mocked_builds.return_value = (lower_bound_build, upper_bound_build)
+    run_flake_swarming_task_input = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
 
-    mock_swarming_task = FlakeSwarmingTask.Create(
-        master_name, builder_name, build_number, step_name, test_name)
-    mock_swarming_task.error = {'code': 1, 'message': 'message'}
-    mock_swarming_task.has_valid_artifact = True
-    mock_swarming_task.tries = iterations
-    mock_swarming_task.successes = pass_count
-    mock_swarming_task.task_id = task_id
-    mock_swarming_task.put()
+    pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
+    pipeline_job.RunImpl(run_flake_swarming_task_input)
+    self.assertFalse(mock_trigger.called)
 
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
+  @mock.patch.object(
+      RunFlakeSwarmingTaskPipeline, 'GetCallbackParameters', return_value={})
+  @mock.patch.object(flake_swarming, 'TriggerSwarmingTask')
+  @mock.patch.object(RunFlakeSwarmingTaskPipeline, 'pipeline_id')
+  def testRunImplTriggerTaskFailed(self, mocked_pipeline_id, mock_trigger, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
     run_flake_swarming_task_input = RunFlakeSwarmingTaskInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
@@ -134,36 +96,124 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
         iterations=iterations,
         timeout_seconds=timeout_seconds)
 
-    self.MockPipeline(
-        TriggerFlakeSwarmingTaskPipeline,
-        task_id,
-        expected_args=[
-            master_name, builder_name, build_number, step_name, [test_name],
-            isolate_sha
-        ],
-        expected_kwargs={
-            'iterations_to_rerun': iterations,
-            'hard_timeout_seconds': timeout_seconds,
-            'force': True
-        })
-    self.MockPipeline(
-        ProcessFlakeSwarmingTaskResultPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, step_name, task_id,
-            build_number, test_name, analysis.version_number
-        ])
+    mock_trigger.return_value = None
+
+    mocked_pipeline_id.__get__ = mock.Mock(return_value='pipeline-id')
+    pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
+    with self.assertRaises(pipeline.Retry):
+      pipeline_job.RunImpl(run_flake_swarming_task_input)
+
+    mock_trigger.assert_called_once_with(analysis.key.urlsafe(), isolate_sha,
+                                         iterations, timeout_seconds,
+                                         'pipeline-id')
+
+  @mock.patch.object(flake_swarming, 'OnSwarmingTaskStateChanged')
+  def testCallbackImplCompleted(self, mocked_output):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
+    run_flake_swarming_task_input = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
+    flake_swarming_task_output = FlakeSwarmingTaskOutput(
+        completed_time=datetime(2018, 4, 1, 0, 1, 0),
+        error=None,
+        iterations=iterations,
+        pass_count=iterations,
+        started_time=datetime(2018, 4, 1, 0, 0, 0),
+        task_id='task_id')
+
+    mocked_output.return_value = flake_swarming_task_output
 
     pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
-    pipeline_job.start()
-    self.execute_queued_tasks()
+    result = pipeline_job.CallbackImpl(None, {'task_id': 'task_id'})
+    self.assertEqual((None, flake_swarming_task_output), result)
 
-    pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
-    run_flake_swarming_task_output = pipeline_job.outputs.default.value
+  @mock.patch.object(
+      flake_swarming, 'OnSwarmingTaskStateChanged', return_value=None)
+  def testCallbackImplRunning(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
 
-    self.assertFalse(pipeline_job.was_aborted)
-    self.assertIsNotNone(run_flake_swarming_task_output['error'])
-    self.assertTrue(run_flake_swarming_task_output['has_valid_artifact'])
-    self.assertEqual(iterations, run_flake_swarming_task_output['iterations'])
-    self.assertEqual(pass_count, run_flake_swarming_task_output['pass_count'])
-    self.assertEqual(task_id, run_flake_swarming_task_output['task_id'])
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
+    run_flake_swarming_task_input = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
+    pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
+    result = pipeline_job.CallbackImpl(None, {'task_id': 'task_id'})
+    self.assertIsNone(result)
+
+  @mock.patch.object(
+      flake_swarming,
+      'OnSwarmingTaskStateChanged',
+      side_effect=exceptions.RetryException('r', 'm'))
+  def testCallbackImplFailedRun(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
+    run_flake_swarming_task_input = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
+    pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
+    result = pipeline_job.CallbackImpl(None, {'task_id': 'task_id'})
+    self.assertEqual(('Error getting swarming task result: m', None), result)
+
+  @mock.patch.object(flake_swarming, 'OnSwarmingTaskTimeout')
+  def testOnTimeout(self, mock_fn):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+    task_id = 'task_id'
+
+    run_flake_swarming_task_input = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
+    pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
+    pipeline_job.OnTimeout(None, {'task_id': task_id})
+    mock_fn.assert_called_once_with(task_id)
+
+  def testTimeoutSeconds(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
+    run_flake_swarming_task_input = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
+    pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
+    self.assertEqual(24 * 60 * 60, pipeline_job.TimeoutSeconds())

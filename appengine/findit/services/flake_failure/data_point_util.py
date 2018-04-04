@@ -6,8 +6,8 @@
 from google.appengine.ext import ndb
 
 from model.flake.master_flake_analysis import DataPoint
-from services.flake_failure import pass_rate_util
 from services.flake_failure import flake_analysis_util
+from services.flake_failure import pass_rate_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -176,7 +176,6 @@ def UpdateAnalysisDataPoints(analysis_urlsafe_key, commit_position, revision,
         commit_position=commit_position,
         elapsed_seconds=elapsed_seconds,
         failed_swarming_task_attempts=failed_swarming_task_attempts,
-        has_valid_artifact=swarming_task_output.has_valid_artifact,
         git_hash=revision,
         iterations=iterations,
         pass_rate=pass_rate,

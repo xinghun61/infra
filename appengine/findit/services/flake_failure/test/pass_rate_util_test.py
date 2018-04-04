@@ -29,7 +29,6 @@ class PassRateUtilTest(WaterfallTestCase):
         pass_count=0,
         started_time=None,
         completed_time=None,
-        has_valid_artifact=True,
         task_id='task_id')
     self.assertEqual(flake_constants.PASS_RATE_TEST_NOT_FOUND,
                      pass_rate_util.GetPassRate(swarming_task_output))
@@ -41,7 +40,6 @@ class PassRateUtilTest(WaterfallTestCase):
         pass_count=4,
         started_time=None,
         completed_time=None,
-        has_valid_artifact=True,
         task_id='task_id')
     self.assertEqual(0.4, pass_rate_util.GetPassRate(swarming_task_output))
 

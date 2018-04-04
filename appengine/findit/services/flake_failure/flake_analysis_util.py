@@ -58,8 +58,7 @@ def CanFailedSwarmingTaskBeSalvaged(task):
   return (task.iterations is not None and task.iterations > 0 and
           task.pass_count is not None and task.pass_count >= 0 and
           task.started_time is not None and task.completed_time is not None and
-          task.completed_time > task.started_time and
-          task.task_id is not None and task.has_valid_artifact is not None)
+          task.completed_time > task.started_time and task.task_id is not None)
 
 
 def CalculateDelaySecondsBetweenRetries(retries, manually_triggered):

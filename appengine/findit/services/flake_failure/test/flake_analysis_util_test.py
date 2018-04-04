@@ -49,14 +49,12 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
     completed_time = datetime(2018, 1, 1)
     started_time = completed_time - timedelta(hours=1)
     error = swarming_task_error.SwarmingTaskError(code=1, message='test')
-    has_valid_artifact = True
     tries = 100
     successes = 50
     task_id = 'task'
     task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
-        has_valid_artifact=has_valid_artifact,
         iterations=tries,
         pass_count=successes,
         started_time=started_time,

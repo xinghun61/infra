@@ -14,7 +14,6 @@ class FlakeSwarmingTaskOutputTest(TestCase):
     task_output = FlakeSwarmingTaskOutput(
         completed_time=None,
         error=None,
-        has_valid_artifact=True,
         iterations=50,
         pass_count=25,
         started_time=None,
@@ -25,7 +24,6 @@ class FlakeSwarmingTaskOutputTest(TestCase):
     task_output = FlakeSwarmingTaskOutput(
         completed_time=datetime(2018, 2, 21, 0, 1, 0),
         error=None,
-        has_valid_artifact=True,
         iterations=50,
         pass_count=25,
         started_time=datetime(2018, 2, 21, 0, 0, 0),

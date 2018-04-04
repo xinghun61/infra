@@ -31,7 +31,6 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
         iterations=10,
         started_time=datetime(2018, 1, 1, 0, 0, 0),
         completed_time=datetime(2018, 1, 1, 1, 0, 0),
-        has_valid_artifact=True,
         task_id='task_id')
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(

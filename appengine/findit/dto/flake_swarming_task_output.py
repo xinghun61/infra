@@ -15,9 +15,6 @@ class FlakeSwarmingTaskOutput(StructuredObject):
   # Any detected error in the task.
   error = SwarmingTaskError
 
-  # Whether or not the task has valid artifacts.
-  has_valid_artifact = bool
-
   # The number of iterations ran.
   iterations = int
 
