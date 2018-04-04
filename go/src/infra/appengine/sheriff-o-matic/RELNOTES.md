@@ -1,3 +1,20 @@
+# Release Notes sheriff-o-matic 2018-04-04
+
+- 3 commits, 1 bugs affected since 7753375 (2018-04-03T19:56:19Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Check ungrouped alerts after doing a bulk ungroup.](https://chromium-review.googlesource.com/996182) (seanmccullough@chromium.org)
+- [[som] Add bulk ungroup feature.](https://chromium-review.googlesource.com/994258) (seanmccullough@chromium.org)
+- [[som] Make buttons hide when hidden](https://chromium-review.googlesource.com/994113) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/783360](https://crbug.com/783360)
+
 # Release Notes sheriff-o-matic 2018-04-03
 
 - 3 commits, 1 bugs affected since  (2018-03-15)
