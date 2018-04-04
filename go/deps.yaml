@@ -151,7 +151,7 @@ import:
   - metadata
 - package: gopkg.in/fsnotify.v1
   version: v1.2.9
-  repo: https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
+  repo: https://chromium.googlesource.com/external/github.com/fsnotify/fsnotify.git
 - package: gopkg.in/natefinch/npipe.v2
   version: v2
   repo: https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
@@ -325,3 +325,6 @@ import:
 - package: golang.org/x/lint
   version: master
   repo: https://go.googlesource.com/lint.git
+- package: golang.org/x/crypto/ssh/terminal
+  version: master
+  repo: https://go.googlesource.com/crypto.git
