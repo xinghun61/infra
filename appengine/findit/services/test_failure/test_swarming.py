@@ -294,6 +294,8 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
   This functions tries to collect swarming task results if all tasks complete.
   Otherwise it will give up what it has collected and return None.
 
+  In the meanwhile it will also updates WfAnalysis about the flaky tests.
+
   Args:
     collect_consistent_failure_inputs (CollectSwarmingTaskResultsInputs): Key to
       a build and if the build has completed.
@@ -312,16 +314,18 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
   master_name, builder_name, build_number = (
       collect_consistent_failure_inputs.build_key.GetParts())
   consistent_failures = {}
+  flake_failures = {}
+  all_tasks_completes = True
 
   for step_name in first_failed_steps:
     task = WfSwarmingTask.Get(master_name, builder_name, build_number,
                               step_name)
     assert task, 'Cannot get WfSwarmingTask entity %s/%s/%d/%s.' % (
         master_name, builder_name, build_number, step_name)
+
     if task.status in [analysis_status.PENDING, analysis_status.RUNNING]:
-      # Task doesn't complete, don't return any information about consistent
-      # failures.
-      return None
+      all_tasks_completes = False
+      break
 
     if task.status == analysis_status.ERROR:
       logging.warning('Swarming task %s/%s/%s/%s completed with error %s.' %
@@ -334,11 +338,20 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
                       (master_name, builder_name, build_number, step_name))
       continue
 
-    if not task.reliable_tests:  # No consistent test failures.
-      continue
+    if task.reliable_tests:
+      consistent_failures[task.canonical_step_name or
+                          step_name] = task.reliable_tests
 
-    consistent_failures[task.canonical_step_name or
-                        step_name] = task.reliable_tests
+    if task.flaky_tests:  # pragma: no branch
+      flake_failures[step_name] = task.flaky_tests
+
+  test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
+      master_name, builder_name, build_number, flake_failures)
+
+  if not all_tasks_completes:
+    # Not all tasks completed, don't return any information about consistent
+    # failures.
+    return None
 
   return (CollectSwarmingTaskResultsOutputs.FromSerializable({
       'consistent_failures': consistent_failures

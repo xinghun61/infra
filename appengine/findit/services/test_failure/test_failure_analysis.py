@@ -9,6 +9,7 @@ from collections import defaultdict
 from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
+from model import result_status
 from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
 from services import ci_failure
@@ -256,6 +257,35 @@ def UpdateAnalysisResultWithFlakeInfo(analysis_result, flaky_failures):
         all_flaked = False
 
   return updated_result, all_flaked
+
+
+@ndb.transactional
+def UpdateAnalysisWithFlakesFoundBySwarmingReruns(master_name, builder_name,
+                                                  build_number, flaky_tests):
+  """Updates WfAnalysis about flaky tests found by swarming reruns.
+
+  Args:
+    master_name(str): Name of the master.
+    builder_name(str): Name of the builder.
+    build_number(int): Number of the build.
+    flaky_tests(dict): A dict of flaky tests.
+  """
+
+  if not flaky_tests:
+    return
+
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  assert analysis
+  if not analysis.result or analysis.flaky_tests == flaky_tests:
+    return
+
+  updated_result, all_flaked = UpdateAnalysisResultWithFlakeInfo(
+      analysis.result, flaky_tests)
+  updated_result_status = result_status.FLAKY if all_flaked else None
+  analysis.UpdateWithNewFindings(
+      updated_result_status=updated_result_status,
+      updated_result=updated_result,
+      flaky_tests=flaky_tests)
 
 
 def GetFirstTimeFailedSteps(master_name, builder_name, build_number):

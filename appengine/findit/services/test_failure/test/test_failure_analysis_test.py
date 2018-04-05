@@ -838,3 +838,111 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             master_name, builder_name, build_number,
             TestFailureInfo.FromSerializable(failure_info), True))
     self.assertEqual(result, expected_result)
+
+  @mock.patch.object(test_failure_analysis, 'UpdateAnalysisResultWithFlakeInfo')
+  def testUpdateAnalysisWithFlakeInfoNoFlaky(self, mock_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 31
+    test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
+        master_name, builder_name, build_number, {})
+    self.assertFalse(mock_fn.called)
+
+  @mock.patch.object(test_failure_analysis, 'UpdateAnalysisResultWithFlakeInfo')
+  def testUpdateAnalysisWithFlakeInfoNoAnalysisResult(self, mock_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 32
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
+    test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
+        master_name, builder_name, build_number, {
+            'a': ['b']
+        })
+    self.assertFalse(mock_fn.called)
+
+  @mock.patch.object(test_failure_analysis, 'UpdateAnalysisResultWithFlakeInfo')
+  def testUpdateAnalysisWithFlakeInfoNoNewFlakes(self, mock_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 33
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.result = {
+        'failures': [{
+            'step_name': 'a',
+            'tests': [{
+                'test_name': 'b'
+            }, {
+                'test_name': 'test2'
+            }]
+        }]
+    }
+    analysis.flaky_tests = {'a': ['b']}
+    analysis.put()
+
+    test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
+        master_name, builder_name, build_number, {
+            'a': ['b']
+        })
+    self.assertFalse(mock_fn.called)
+
+  def testUpdateAnalysisWithFlakeInfo(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 34
+    flaky_tests = {'a_test': ['test1'], 'b_test': ['test1']}
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.result = {
+        'failures': [{
+            'step_name': 'a_test',
+            'tests': [{
+                'test_name': 'test1'
+            }, {
+                'test_name': 'test2'
+            }]
+        }, {
+            'step_name': 'b_test',
+            'tests': [{
+                'test_name': 'test1'
+            }]
+        }, {
+            'step_name': 'c_test',
+            'flaky': True
+        }, {
+            'step_name': 'd_test'
+        }]
+    }
+    analysis.put()
+
+    expected_result = {
+        'failures': [{
+            'step_name':
+                'a_test',
+            'flaky':
+                False,
+            'tests': [{
+                'test_name': 'test1',
+                'flaky': True
+            }, {
+                'test_name': 'test2'
+            }]
+        }, {
+            'step_name': 'b_test',
+            'flaky': True,
+            'tests': [{
+                'test_name': 'test1',
+                'flaky': True
+            }]
+        }, {
+            'step_name': 'c_test',
+            'flaky': True
+        }, {
+            'step_name': 'd_test'
+        }]
+    }
+
+    test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
+        master_name, builder_name, build_number, flaky_tests)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(expected_result, analysis.result)
+    self.assertEqual(flaky_tests, analysis.flaky_tests)

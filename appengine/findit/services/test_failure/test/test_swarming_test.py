@@ -524,7 +524,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
                      test_swarming.GetStepsToCollectSwarmingTaskResults(params))
     self.assertFalse(mock_fn.called)
 
-  def testCollectSwarmingTaskResultsTaskRunning(self):
+  @mock.patch.object(test_failure_analysis,
+                     'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
+  def testCollectSwarmingTaskResultsTaskRunning(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 15
@@ -545,7 +547,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(
         test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
 
-  def testCollectSwarmingTaskResultsError(self):
+  @mock.patch.object(test_failure_analysis,
+                     'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
+  def testCollectSwarmingTaskResultsError(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 15
@@ -599,7 +603,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
             expected_result_json),
         test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
 
-  def testCollectSwarmingTaskResultsNoResult(self):
+  @mock.patch.object(test_failure_analysis,
+                     'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
+  def testCollectSwarmingTaskResultsNoResult(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 16
@@ -620,10 +626,13 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
         CollectSwarmingTaskResultsOutputs.FromSerializable({}),
         test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
 
-  def testCollectSwarmingTaskResultsAllFlaky(self):
+  @mock.patch.object(test_failure_analysis,
+                     'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
+  def testCollectSwarmingTaskResultsAllFlaky(self, mock_update_analysis):
     master_name = 'm'
     builder_name = 'b'
     build_number = 17
+
     params = CollectSwarmingTaskResultsInputs(
         build_key=BuildKey(
             master_name=master_name,
@@ -651,6 +660,10 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         CollectSwarmingTaskResultsOutputs.FromSerializable({}),
         test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
+
+    flake_tests = {'step2': ['TestSuite1.test2', 'TestSuite1.test1']}
+    mock_update_analysis.assert_called_once_with(master_name, builder_name,
+                                                 build_number, flake_tests)
 
   @mock.patch.object(
       test_swarming, 'NeedANewSwarmingTask', side_effect=[True, False])
