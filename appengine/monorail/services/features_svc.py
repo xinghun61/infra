@@ -620,9 +620,6 @@ class FeaturesService(object):
     self.AddIssuesToHotlists(cnxn, hotlist_ids, [issue_tuple], issue_svc,
         chart_svc, commit=commit)
 
-    issue = issue_svc.GetIssues(cnxn, [issue_tuple[0]])
-    chart_svc.StoreIssueSnapshots(cnxn, [issue], commit=commit)
-
   def AddIssuesToHotlists(self, cnxn, hotlist_ids, added_tuples, issue_svc,
                           chart_svc, commit=True):
     """Add the issues given in the added_tuples list to the given hotlists.
@@ -654,8 +651,8 @@ class FeaturesService(object):
       chart_svc: an instance of ChartService.
     """
     self.UpdateHotlistItems(cnxn, hotlist_id, [issue_id], [], commit=commit)
-    issue = issue_svc.GetIssues(cnxn, [issue_id])
-    chart_svc.StoreIssueSnapshots(cnxn, [issue], commit=commit)
+    issues = issue_svc.GetIssues(cnxn, [issue_id])
+    chart_svc.StoreIssueSnapshots(cnxn, issues, commit=commit)
 
   def RemoveIssuesFromHotlist(self, cnxn, hotlist_id, issue_ids, issue_svc,
                               chart_svc, commit=True):
