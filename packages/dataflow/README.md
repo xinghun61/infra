@@ -75,7 +75,7 @@ Running the test will leave behind a directory,
 # Updating the package
 
 Jobs scheduled with the
-[remote_execute_dataflow_workflow](../../recipes/recipes/remove_execute_dataflow_workflow.py)
+[remote_execute_dataflow_workflow](../../recipes/recipes/remote_execute_dataflow_workflow.py)
 recipe use the version of the job at HEAD but the version of the package pinned
 in [bootstrap/deps.pyl](../../bootstrap/deps.pyl). So, if you make a breaking
 change to the package, submit the update first (which will automatically be
