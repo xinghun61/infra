@@ -86,10 +86,10 @@
     'implicit': True,  # Required by pyOpenSSL
   },
   'dataflow': {
-    'version': '0.0.2',
+    'version': '0.0.3',
     'build': '0',
     'repo': 'infra/infra/packages/dataflow',
-    'rev': '894fe71f159591b068e558ad0e22e567604f00f3',
+    'rev': 'af7604adbe8a19e36c71c0ab52e959642d8e3813',
   },
   'dill': {
     'build': '0',
