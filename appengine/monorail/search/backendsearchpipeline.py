@@ -149,7 +149,7 @@ def SearchProjectCan(
     query_ast = ast2ast.PreprocessAST(
         cnxn, query_ast, project_ids, services, harmonized_config)
     logging.info('simplified AST is %r', query_ast)
-    query_left_joins, query_where = ast2select.BuildSQLQuery(query_ast)
+    query_left_joins, query_where, _ = ast2select.BuildSQLQuery(query_ast)
     left_joins.extend(query_left_joins)
     where.extend(query_where)
   except ast2ast.MalformedQuery as e:

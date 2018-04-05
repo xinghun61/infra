@@ -17,6 +17,9 @@ from framework import sql
 from search import search_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
+from search import query2ast
+from search import ast2select
+from search import ast2ast
 
 
 ISSUESNAPSHOT_TABLE_NAME = 'IssueSnapshot'
@@ -52,12 +55,14 @@ class ChartService(object):
     self.issuesnapshot2label_tbl = sql.SQLTableManager(
         ISSUESNAPSHOT2LABEL_TABLE_NAME)
 
-  def QueryIssueSnapshots(self, cnxn, unixtime, effective_ids, project, perms,
-                          group_by=None, label_prefix=None):
+  def QueryIssueSnapshots(self, cnxn, services, unixtime, effective_ids,
+                          project, perms, group_by=None, label_prefix=None,
+                          query=None, canned_query=None):
     """Queries historical issue counts grouped by label or component.
 
     Args:
       cnxn: A MonorailConnection instance.
+      services: A Services instance.
       unixtime: An integer representing the Unix time in seconds.
       effective_ids: The effective User IDs associated with the current user.
       project: A project object representing the current project.
@@ -67,10 +72,27 @@ class ChartService(object):
         be applied.
       label_prefix: Required when group_by is 'label.' Will limit the query to
         only labels with the specified prefix (for example 'Pri').
+      query (str, optional): A query string from the request to apply to
+        the snapshot query.
+      canned_query (str, optional): Derived from the can= query parameter,
+        applied to the query scope.
 
     Returns:
-      A dictionary of: {'2nd dimension or "total"': number of occurences}
+      1. A dict of {'2nd dimension or "total"': number of occurences}.
+      2. A list of any unsupported query conditions in query.
     """
+    if query:
+      project_config = services.config.GetProjectConfig(cnxn,
+          project.project_id)
+      try:
+        query_left_joins, query_where, unsupported_conds = self._QueryToWhere(
+            cnxn, services, project_config, query, canned_query, project)
+      except ast2select.NoPossibleResults:
+        return {}, ['Invalid query.']
+
+    else:
+      unsupported_conds = []
+
     restricted_label_ids = search_helpers.GetPersonalAtRiskLabelIDs(
       cnxn, None, self.config_service, effective_ids, project, perms)
 
@@ -93,7 +115,6 @@ class ChartService(object):
          ' AND I2cc.cc_id IN (%s)' % sql.PlaceHolders(effective_ids),
          effective_ids))
 
-    # TODO(jeffcarp, monorail:3534): Add support for user's query params.
     # TODO(jeffcarp): Handle case where there are issues with no labels.
     where = [
       ('IssueSnapshot.period_start <= %s', [unixtime]),
@@ -154,6 +175,10 @@ class ChartService(object):
     else:
       raise ValueError('`group_by` must be label, component, or None.')
 
+    if query:
+      left_joins.extend(query_left_joins)
+      where.extend(query_where)
+
     promises = []
     for shard_id in range(settings.num_logical_shards):
       thread_where = where + [('IssueSnapshot.shard = %s', [shard_id])]
@@ -176,7 +201,13 @@ class ChartService(object):
         shard_values_dict.setdefault('total', 0)
         shard_values_dict['total'] += shard_values[0][0]
 
-    return shard_values_dict
+    unsupported_field_names = list(set([
+        field.field_name
+        for cond in unsupported_conds
+        for field in cond.field_defs
+    ]))
+
+    return shard_values_dict, unsupported_field_names
 
   def StoreIssueSnapshots(self, cnxn, issues, commit=True):
     """Adds an IssueSnapshot and updates the previous one for each issue."""
@@ -263,3 +294,37 @@ class ChartService(object):
   def _currentTime(self):
     """This is a separate method so it can be mocked by tests."""
     return time.time()
+
+  def _QueryToWhere(self, cnxn, services, project_config, query, canned_query,
+                    project):
+    """Parses a query string into LEFT JOIN and WHERE conditions.
+
+    Args:
+      cnxn: A MonorailConnection instance.
+      services: A Services instance.
+      project_config: The configuration for the given project.
+      query (string): The query to parse.
+      canned_query (string): The supplied canned query.
+      project: The current project.
+
+    Returns:
+      1. A list of LEFT JOIN clauses for the SQL query.
+      2. A list of WHERE clases for the SQL query.
+      3. A list of query conditions that are unsupported with snapshots.
+    """
+    if not query:
+      return [], [], []
+
+    if canned_query:
+      scope = canned_query
+    else:
+      scope = ''
+
+    query_ast = query2ast.ParseUserQuery(query, scope,
+        query2ast.BUILTIN_ISSUE_FIELDS, project_config)
+    query_ast = ast2ast.PreprocessAST(cnxn, query_ast, [project.project_id],
+        services, project_config)
+    left_joins, where, unsupported = ast2select.BuildSQLQuery(query_ast,
+        snapshot_mode=True)
+
+    return left_joins, where, unsupported

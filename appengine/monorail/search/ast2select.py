@@ -42,7 +42,7 @@ NATIVE_SEARCHABLE_FIELDS = {
     }
 
 
-def BuildSQLQuery(query_ast):
+def BuildSQLQuery(query_ast, snapshot_mode=False):
   """Translate the user's query into an SQL query.
 
   Args:
@@ -54,35 +54,41 @@ def BuildSQLQuery(query_ast):
   """
   left_joins = []
   where = []
+  unsupported_conds = []
   # OR-queries are broken down into multiple simpler queries before they
   # are sent to the backends, so we should never see an "OR"..
   assert len(query_ast.conjunctions) == 1, 'OR-query should have been split'
   conj = query_ast.conjunctions[0]
 
   for cond_num, cond in enumerate(conj.conds):
-    cond_left_joins, cond_where = _ProcessCond(cond_num, cond)
+    cond_left_joins, cond_where, unsupported = _ProcessCond(cond_num, cond,
+        snapshot_mode)
     left_joins.extend(cond_left_joins)
     where.extend(cond_where)
+    unsupported_conds.extend(unsupported)
 
-  return left_joins, where
+  return left_joins, where, unsupported_conds
 
 
-def _ProcessBlockedOnIDCond(cond, alias, _user_alias):
+def _ProcessBlockedOnIDCond(cond, alias, _user_alias, snapshot_mode):
   """Convert a blockedon_id=issue_id cond to SQL."""
-  return _ProcessRelatedIDCond(cond, alias, 'blockedon')
+  return _ProcessRelatedIDCond(cond, alias, 'blockedon', snapshot_mode)
 
 
-def _ProcessBlockingIDCond(cond, alias, _user_alias):
+def _ProcessBlockingIDCond(cond, alias, _user_alias, snapshot_mode):
   """Convert a blocking_id:1,2 cond to SQL."""
-  return _ProcessRelatedIDCond(cond, alias, 'blockedon', reverse_relation=True)
+  return _ProcessRelatedIDCond(cond, alias, 'blockedon', reverse_relation=True,
+      snapshot_mode=snapshot_mode)
 
 
-def _ProcessMergedIntoIDCond(cond, alias, _user_alias):
+def _ProcessMergedIntoIDCond(cond, alias, _user_alias, snapshot_mode):
   """Convert a mergedinto:1,2 cond to SQL."""
-  return _ProcessRelatedIDCond(cond, alias, 'mergedinto')
+  return _ProcessRelatedIDCond(cond, alias, 'mergedinto',
+      snapshot_mode=snapshot_mode)
 
 
-def _ProcessRelatedIDCond(cond, alias, kind, reverse_relation=False):
+def _ProcessRelatedIDCond(cond, alias, kind, reverse_relation=False,
+                          snapshot_mode=False):
   """Convert either blocking_id, blockedon_id, or mergedinto_id cond to SQL.
 
   Normally, we query for issue_id values where the dst_issue_id matches the
@@ -90,6 +96,9 @@ def _ProcessRelatedIDCond(cond, alias, kind, reverse_relation=False):
   query for dst_issue_id values where issue_id matches.  This is done for
   blockedon_id.
   """
+  if snapshot_mode:
+    return [], [], [cond]
+
   matching_issue_col = 'issue_id' if reverse_relation else 'dst_issue_id'
   ret_issue_col = 'dst_issue_id' if reverse_relation else 'issue_id'
 
@@ -111,7 +120,7 @@ def _ProcessRelatedIDCond(cond, alias, kind, reverse_relation=False):
 
   where = [_CompareAlreadyJoined(alias, cond.op, ret_issue_col)]
 
-  return [(left_join_str, left_join_args)], where
+  return [(left_join_str, left_join_args)], where, []
 
 
 def _GetFieldTypeAndValues(cond):
@@ -130,41 +139,57 @@ def _GetFieldTypeAndValues(cond):
     return tracker_pb2.FieldTypes.STR_TYPE, cond.str_values
 
 
-def _ProcessOwnerCond(cond, alias, _user_alias):
+def _ProcessOwnerCond(cond, alias, _user_alias, snapshot_mode):
   """Convert an owner:substring cond to SQL."""
-  left_joins = [(
-      'User AS {alias} ON (Issue.owner_id = {alias}.user_id '
-      'OR Issue.derived_owner_id = {alias}.user_id)'.format(alias=alias),
-      [])]
+  if snapshot_mode:
+    left_joins = [(
+        'User AS {alias} ON '
+        'IssueSnapshot.owner_id = {alias}.user_id'.format(alias=alias),
+        [])]
+  else:
+    left_joins = [(
+        'User AS {alias} ON (Issue.owner_id = {alias}.user_id '
+        'OR Issue.derived_owner_id = {alias}.user_id)'.format(alias=alias),
+        [])]
   where = [_Compare(alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE, 'email',
                     cond.str_values)]
 
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessOwnerIDCond(cond, _alias, _user_alias):
+def _ProcessOwnerIDCond(cond, _alias, _user_alias, snapshot_mode):
   """Convert an owner_id=user_id cond to SQL."""
-  field_type, field_values = _GetFieldTypeAndValues(cond)
-  explicit_str, explicit_args = _Compare(
-      'Issue', cond.op, field_type, 'owner_id', field_values)
-  derived_str, derived_args = _Compare(
-      'Issue', cond.op, field_type, 'derived_owner_id', field_values)
-  if cond.op in (ast_pb2.QueryOp.NE, ast_pb2.QueryOp.NOT_TEXT_HAS):
-    where = [(explicit_str, explicit_args), (derived_str, derived_args)]
+  if snapshot_mode:
+    field_type, field_values = _GetFieldTypeAndValues(cond)
+    explicit_str, explicit_args = _Compare(
+        'IssueSnapshot', cond.op, field_type, 'owner_id', field_values)
+    where = [(explicit_str, explicit_args)]
   else:
-    if cond.op == ast_pb2.QueryOp.IS_NOT_DEFINED:
-      op = ' AND '
+    field_type, field_values = _GetFieldTypeAndValues(cond)
+    explicit_str, explicit_args = _Compare(
+        'Issue', cond.op, field_type, 'owner_id', field_values)
+    derived_str, derived_args = _Compare(
+        'Issue', cond.op, field_type, 'derived_owner_id', field_values)
+    if cond.op in (ast_pb2.QueryOp.NE, ast_pb2.QueryOp.NOT_TEXT_HAS):
+      where = [(explicit_str, explicit_args), (derived_str, derived_args)]
     else:
-      op = ' OR '
-    where = [
-        ('(' + explicit_str + op + derived_str + ')',
-         explicit_args + derived_args)]
+      if cond.op == ast_pb2.QueryOp.IS_NOT_DEFINED:
+        op = ' AND '
+      else:
+        op = ' OR '
+      where = [
+          ('(' + explicit_str + op + derived_str + ')',
+           explicit_args + derived_args)]
 
-  return [], where
+  return [], where, []
 
 
-def _ProcessOwnerLastVisitCond(cond, alias, _user_alias):
+def _ProcessOwnerLastVisitCond(cond, alias, _user_alias, snapshot_mode):
   """Convert an ownerlastvisit<timestamp cond to SQL."""
+  # TODO(jeffcarp): It is possible to support this on snapshots.
+  if snapshot_mode:
+    return [], [], [cond]
+
   left_joins = [(
       'User AS {alias} '
       'ON (Issue.owner_id = {alias}.user_id OR '
@@ -172,11 +197,14 @@ def _ProcessOwnerLastVisitCond(cond, alias, _user_alias):
       [])]
   where = [_Compare(alias, cond.op, tracker_pb2.FieldTypes.INT_TYPE,
                     'last_visit_timestamp', cond.int_values)]
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessIsOwnerBouncing(cond, alias, _user_alias):
+def _ProcessIsOwnerBouncing(cond, alias, _user_alias, snapshot_mode):
   """Convert an is:ownerbouncing cond to SQL."""
+  if snapshot_mode:
+    return [], [], [cond]
+
   left_joins = [(
       'User AS {alias} '
       'ON (Issue.owner_id = {alias}.user_id OR '
@@ -189,52 +217,76 @@ def _ProcessIsOwnerBouncing(cond, alias, _user_alias):
 
   where = [_Compare(alias, op, tracker_pb2.FieldTypes.INT_TYPE,
                     'email_bounce_timestamp', [])]
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessReporterCond(cond, alias, _user_alias):
+def _ProcessReporterCond(cond, alias, _user_alias, snapshot_mode):
   """Convert a reporter:substring cond to SQL."""
-  left_joins = [(
-      'User AS {alias} ON Issue.reporter_id = {alias}.user_id'.format(
-          alias=alias), [])]
+  if snapshot_mode:
+    left_joins = [(
+        'User AS {alias} ON IssueSnapshot.reporter_id = {alias}.user_id'.format(
+            alias=alias), [])]
+  else:
+    left_joins = [(
+        'User AS {alias} ON Issue.reporter_id = {alias}.user_id'.format(
+            alias=alias), [])]
   where = [_Compare(alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE, 'email',
                     cond.str_values)]
 
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessReporterIDCond(cond, _alias, _user_alias):
+def _ProcessReporterIDCond(cond, _alias, _user_alias, snapshot_mode):
   """Convert a reporter_ID=user_id cond to SQL."""
   field_type, field_values = _GetFieldTypeAndValues(cond)
-  where = [_Compare(
-      'Issue', cond.op, field_type, 'reporter_id', field_values)]
-  return [], where
+
+  if snapshot_mode:
+    where = [_Compare(
+        'IssueSnapshot', cond.op, field_type, 'reporter_id', field_values)]
+  else:
+    where = [_Compare(
+        'Issue', cond.op, field_type, 'reporter_id', field_values)]
+  return [], where, []
 
 
-def _ProcessCcCond(cond, alias, user_alias):
+def _ProcessCcCond(cond, alias, user_alias, snapshot_mode):
   """Convert a cc:substring cond to SQL."""
   email_cond_str, email_cond_args = _Compare(
       user_alias, ast_pb2.QueryOp.TEXT_HAS, tracker_pb2.FieldTypes.STR_TYPE,
       'email', cond.str_values)
-  # Note: email_cond_str will have parens, if needed.
-  left_joins = [(
-      '(Issue2Cc AS {alias} JOIN User AS {user_alias} '
-      'ON {alias}.cc_id = {user_alias}.user_id AND {email_cond}) '
-      'ON Issue.id = {alias}.issue_id AND '
-      'Issue.shard = {alias}.issue_shard'.format(
-          alias=alias, user_alias=user_alias, email_cond=email_cond_str),
-      email_cond_args)]
+
+  if snapshot_mode:
+    left_joins = [(
+        '(IssueSnapshot2Cc AS {alias} JOIN User AS {user_alias} '
+        'ON {alias}.cc_id = {user_alias}.user_id AND {email_cond}) '
+        'ON IssueSnapshot.id = {alias}.issuesnapshot_id'.format(
+            alias=alias, user_alias=user_alias, email_cond=email_cond_str),
+        email_cond_args)]
+  else:
+    # Note: email_cond_str will have parens, if needed.
+    left_joins = [(
+        '(Issue2Cc AS {alias} JOIN User AS {user_alias} '
+        'ON {alias}.cc_id = {user_alias}.user_id AND {email_cond}) '
+        'ON Issue.id = {alias}.issue_id AND '
+        'Issue.shard = {alias}.issue_shard'.format(
+            alias=alias, user_alias=user_alias, email_cond=email_cond_str),
+        email_cond_args)]
   where = [_CompareAlreadyJoined(user_alias, cond.op, 'email')]
 
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessCcIDCond(cond, alias, _user_alias):
+def _ProcessCcIDCond(cond, alias, _user_alias, snapshot_mode):
   """Convert a cc_id=user_id cond to SQL."""
-  join_str = (
-      'Issue2Cc AS {alias} ON Issue.id = {alias}.issue_id AND '
-      'Issue.shard = {alias}.issue_shard'.format(
-          alias=alias))
+  if snapshot_mode:
+    join_str = (
+        'IssueSnapshot2Cc AS {alias} '
+        'ON IssueSnapshot.id = {alias}.issuesnapshot_id'.format(alias=alias))
+  else:
+    join_str = (
+        'Issue2Cc AS {alias} ON Issue.id = {alias}.issue_id AND '
+        'Issue.shard = {alias}.issue_shard'.format(
+            alias=alias))
   if cond.op in (ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
     left_joins = [(join_str, [])]
   else:
@@ -244,11 +296,14 @@ def _ProcessCcIDCond(cond, alias, _user_alias):
     left_joins = [(join_str + ' AND ' + cond_str, cond_args)]
 
   where = [_CompareAlreadyJoined(alias, cond.op, 'cc_id')]
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessStarredByCond(cond, alias, user_alias):
+def _ProcessStarredByCond(cond, alias, user_alias, snapshot_mode):
   """Convert a starredby:substring cond to SQL."""
+  if snapshot_mode:
+    return [], [], [cond]
+
   email_cond_str, email_cond_args = _Compare(
       user_alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE, 'email',
       cond.str_values)
@@ -261,11 +316,14 @@ def _ProcessStarredByCond(cond, alias, user_alias):
       email_cond_args)]
   where = [_CompareAlreadyJoined(user_alias, cond.op, 'email')]
 
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessStarredByIDCond(cond, alias, _user_alias):
+def _ProcessStarredByIDCond(cond, alias, _user_alias, snapshot_mode):
   """Convert a starredby_id=user_id cond to SQL."""
+  if snapshot_mode:
+    return [], [], [cond]
+
   join_str = 'IssueStar AS {alias} ON Issue.id = {alias}.issue_id'.format(
       alias=alias)
   if cond.op in (ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
@@ -277,11 +335,14 @@ def _ProcessStarredByIDCond(cond, alias, _user_alias):
     left_joins = [(join_str + ' AND ' + cond_str, cond_args)]
 
   where = [_CompareAlreadyJoined(alias, cond.op, 'user_id')]
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessCommentByCond(cond, alias, user_alias):
+def _ProcessCommentByCond(cond, alias, user_alias, snapshot_mode):
   """Convert a commentby:substring cond to SQL."""
+  if snapshot_mode:
+    return [], [], [cond]
+
   email_cond_str, email_cond_args = _Compare(
       user_alias, ast_pb2.QueryOp.TEXT_HAS, tracker_pb2.FieldTypes.STR_TYPE,
       'email', cond.str_values)
@@ -295,11 +356,14 @@ def _ProcessCommentByCond(cond, alias, user_alias):
       email_cond_args)]
   where = [_CompareAlreadyJoined(user_alias, cond.op, 'email')]
 
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessCommentByIDCond(cond, alias, _user_alias):
+def _ProcessCommentByIDCond(cond, alias, _user_alias, snapshot_mode):
   """Convert a commentby_id=user_id cond to SQL."""
+  if snapshot_mode:
+    return [], [], [cond]
+
   field_type, field_values = _GetFieldTypeAndValues(cond)
   commenter_cond_str, commenter_cond_args = _Compare(
       alias, ast_pb2.QueryOp.EQ, field_type, 'commenter_id', field_values)
@@ -311,47 +375,63 @@ def _ProcessCommentByIDCond(cond, alias, _user_alias):
       commenter_cond_args)]
   where = [_CompareAlreadyJoined(alias, cond.op, 'commenter_id')]
 
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessStatusIDCond(cond, _alias, _user_alias):
+def _ProcessStatusIDCond(cond, _alias, _user_alias, snapshot_mode):
   """Convert a status_id=ID cond to SQL."""
   field_type, field_values = _GetFieldTypeAndValues(cond)
-  explicit_str, explicit_args = _Compare(
-      'Issue', cond.op, field_type, 'status_id', field_values)
-  derived_str, derived_args = _Compare(
-      'Issue', cond.op, field_type, 'derived_status_id', field_values)
-  if cond.op in (ast_pb2.QueryOp.IS_NOT_DEFINED, ast_pb2.QueryOp.NE):
-    where = [(explicit_str, explicit_args), (derived_str, derived_args)]
+  if snapshot_mode:
+    explicit_str, explicit_args = _Compare(
+        'IssueSnapshot', cond.op, field_type, 'status_id', field_values)
+    where = [(explicit_str, explicit_args)]
   else:
-    where = [
-        ('(' + explicit_str + ' OR ' + derived_str + ')',
-         explicit_args + derived_args)]
+    explicit_str, explicit_args = _Compare(
+        'Issue', cond.op, field_type, 'status_id', field_values)
+    derived_str, derived_args = _Compare(
+        'Issue', cond.op, field_type, 'derived_status_id', field_values)
+    if cond.op in (ast_pb2.QueryOp.IS_NOT_DEFINED, ast_pb2.QueryOp.NE):
+      where = [(explicit_str, explicit_args), (derived_str, derived_args)]
+    else:
+      where = [
+          ('(' + explicit_str + ' OR ' + derived_str + ')',
+           explicit_args + derived_args)]
 
-  return [], where
+  return [], where, []
 
 
-def _ProcessLabelIDCond(cond, alias, _user_alias):
+def _ProcessLabelIDCond(cond, alias, _user_alias, snapshot_mode):
   """Convert a label_id=ID cond to SQL."""
-  join_str = (
-      'Issue2Label AS {alias} ON Issue.id = {alias}.issue_id AND '
-      'Issue.shard = {alias}.issue_shard'.format(alias=alias))
+  if snapshot_mode:
+    join_str = (
+        'IssueSnapshot2Label AS {alias} '
+        'ON IssueSnapshot.id = {alias}.issuesnapshot_id'.format(alias=alias))
+  else:
+    join_str = (
+        'Issue2Label AS {alias} ON Issue.id = {alias}.issue_id AND '
+        'Issue.shard = {alias}.issue_shard'.format(alias=alias))
+
   field_type, field_values = _GetFieldTypeAndValues(cond)
   if not field_values and cond.op == ast_pb2.QueryOp.NE:
-    return [], []
+    return [], [], []
   cond_str, cond_args = _Compare(
       alias, ast_pb2.QueryOp.EQ, field_type, 'label_id', field_values)
   left_joins = [(join_str + ' AND ' + cond_str, cond_args)]
   where = [_CompareAlreadyJoined(alias, cond.op, 'label_id')]
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessComponentIDCond(cond, alias, _user_alias):
+def _ProcessComponentIDCond(cond, alias, _user_alias, snapshot_mode):
   """Convert a component_id=ID cond to SQL."""
   # This is a built-in field, so it shadows any other fields w/ the same name.
-  join_str = (
-      'Issue2Component AS {alias} ON Issue.id = {alias}.issue_id AND '
-      'Issue.shard = {alias}.issue_shard'.format(alias=alias))
+  if snapshot_mode:
+    join_str = (
+        'IssueSnapshot2Component AS {alias} '
+        'ON IssueSnapshot.id = {alias}.issuesnapshot_id'.format(alias=alias))
+  else:
+    join_str = (
+        'Issue2Component AS {alias} ON Issue.id = {alias}.issue_id AND '
+        'Issue.shard = {alias}.issue_shard'.format(alias=alias))
   if cond.op in (ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
     left_joins = [(join_str, [])]
   else:
@@ -361,11 +441,14 @@ def _ProcessComponentIDCond(cond, alias, _user_alias):
     left_joins = [(join_str + ' AND ' + cond_str, cond_args)]
 
   where = [_CompareAlreadyJoined(alias, cond.op, 'component_id')]
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessCustomFieldCond(cond, alias, user_alias):
+def _ProcessCustomFieldCond(cond, alias, user_alias, snapshot_mode):
   """Convert a custom field cond to SQL."""
+  if snapshot_mode:
+    return [], [], [cond]
+
   # TODO(jrobbins): handle ambiguous field names that map to multiple
   # field definitions, especially for cross-project search.
   field_def = cond.field_defs[0]
@@ -415,11 +498,14 @@ def _ProcessCustomFieldCond(cond, alias, user_alias):
 
   left_joins.append((join_str, join_args))
   where = [_CompareAlreadyJoined(alias, cond.op, 'field_id')]
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessAttachmentCond(cond, alias, _user_alias):
+def _ProcessAttachmentCond(cond, alias, _user_alias, snapshot_mode):
   """Convert has:attachment and -has:attachment cond to SQL."""
+  if snapshot_mode:
+    return [], [], [cond]
+
   if cond.op in (ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
     left_joins = []
     where = [_Compare('Issue', cond.op, tracker_pb2.FieldTypes.INT_TYPE,
@@ -433,26 +519,32 @@ def _ProcessAttachmentCond(cond, alias, _user_alias):
        [False])]
     where = [_Compare(alias, cond.op, field_type, 'filename', cond.str_values)]
 
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessHotlistIDCond(cond, alias, _user_alias):
+def _ProcessHotlistIDCond(cond, alias, _user_alias, snapshot_mode):
   """Convert hotlist_id=IDS cond to SQL."""
-  join_str = (
-    'Hotlist2Issue AS {alias} ON Issue.id = {alias}.issue_id'.format(
-        alias=alias))
+  if snapshot_mode:
+    join_str = (
+      'IssueSnapshot2Hotlist AS {alias} '
+      'ON IssueSnapshot.id = {alias}.issuesnapshot_id'.format(alias=alias))
+  else:
+    join_str = (
+      'Hotlist2Issue AS {alias} ON Issue.id = {alias}.issue_id'.format(
+          alias=alias))
+
   field_type, field_values = _GetFieldTypeAndValues(cond)
   if not field_values and cond.op == ast_pb2.QueryOp.NE:
-    return [], []
+    return [], [], []
   cond_str, cond_args = _Compare(
       alias, ast_pb2.QueryOp.EQ, field_type, 'hotlist_id', field_values)
   left_joins = [(join_str + ' AND ' + cond_str, cond_args)]
   where = [_CompareAlreadyJoined(alias, cond.op, 'hotlist_id')]
 
-  return left_joins, where
+  return left_joins, where, []
 
 
-def _ProcessHotlistCond(cond, alias, _user_alias):
+def _ProcessHotlistCond(cond, alias, _user_alias, snapshot_mode):
   """Convert hotlist=user:hotlist-name to SQL"""
   # hotlist conditions that reach this function definitely have invalid
   # user_name/id/email. This validity was determined in
@@ -465,14 +557,21 @@ def _ProcessHotlistCond(cond, alias, _user_alias):
   hotlist_cond_str, hotlist_cond_args = _Compare(
       alias, ast_pb2.QueryOp.TEXT_HAS, tracker_pb2.FieldTypes.STR_TYPE,
       'name', hotlist_substrings)
-  left_joins = [(
-      '(Hotlist2Issue JOIN Hotlist AS {alias} '
-      'ON Hotlist2Issue.hotlist_id = {alias}.id AND {hotlist_cond}) '
-      'ON Issue.id = Hotlist2Issue.issue_id'.format(
-          alias=alias, hotlist_cond=hotlist_cond_str), hotlist_cond_args)]
+  if snapshot_mode:
+    left_joins = [(
+        '(IssueSnapshot2Hotlist JOIN Hotlist AS {alias} '
+        'ON IssueSnapshot2Hotlist.hotlist_id = {alias}.id AND {hotlist_cond}) '
+        'ON IssueSnapshot.id = IssueSnapshot2Hotlist.issuesnapshot_id'.format(
+            alias=alias, hotlist_cond=hotlist_cond_str), hotlist_cond_args)]
+  else:
+    left_joins = [(
+        '(Hotlist2Issue JOIN Hotlist AS {alias} '
+        'ON Hotlist2Issue.hotlist_id = {alias}.id AND {hotlist_cond}) '
+        'ON Issue.id = Hotlist2Issue.issue_id'.format(
+            alias=alias, hotlist_cond=hotlist_cond_str), hotlist_cond_args)]
   where = [_CompareAlreadyJoined(alias, cond.op, 'name')]
 
-  return left_joins, where
+  return left_joins, where, []
 
 
 _PROCESSORS = {
@@ -500,7 +599,7 @@ _PROCESSORS = {
     }
 
 
-def _ProcessCond(cond_num, cond):
+def _ProcessCond(cond_num, cond, snapshot_mode):
   """Translate one term of the user's search into an SQL query.
 
   Args:
@@ -519,27 +618,33 @@ def _ProcessCond(cond_num, cond):
   assert all(field_def.field_name == fd.field_name for fd in cond.field_defs)
 
   if field_def.field_name in NATIVE_SEARCHABLE_FIELDS:
-    col = NATIVE_SEARCHABLE_FIELDS[field_def.field_name]
-    where = [_Compare(
-        'Issue', cond.op, field_def.field_type, col,
-        cond.str_values or cond.int_values)]
-    return [], where
+    # TODO(jeffcarp): Support local_id search here.
+    if snapshot_mode:
+      return [], [], [cond]
+    else:
+      col = NATIVE_SEARCHABLE_FIELDS[field_def.field_name]
+      where = [_Compare(
+          'Issue', cond.op, field_def.field_type, col,
+          cond.str_values or cond.int_values)]
+      return [], where, []
 
   elif field_def.field_name in _PROCESSORS:
     proc = _PROCESSORS[field_def.field_name]
-    return proc(cond, alias, user_alias)
+    return proc(cond, alias, user_alias, snapshot_mode)
 
   elif field_def.field_id:  # it is a search on a custom field
-    return _ProcessCustomFieldCond(cond, alias, user_alias)
+    return _ProcessCustomFieldCond(cond, alias, user_alias, snapshot_mode)
 
   elif (field_def.field_name in tracker_fulltext.ISSUE_FULLTEXT_FIELDS or
         field_def.field_name == 'any_field'):
-    pass  # handled by full-text search.
+    if snapshot_mode:
+      return [], [], [cond]
+    # This case handled by full-text search.
 
   else:
     logging.error('untranslated search cond %r', cond)
 
-  return [], []
+  return [], [], []
 
 
 def _Compare(alias, op, val_type, col, vals):

@@ -19,8 +19,11 @@ from services import config_svc
 from services import service_manager
 from framework import permissions
 from framework import sql
-from testing import fake
+from proto import ast_pb2
+from proto import tracker_pb2
 from search import search_helpers
+from testing import fake
+from tracker import tracker_bizobj
 
 
 def MakeChartService(my_mox, config):
@@ -42,7 +45,9 @@ class ChartServiceTest(unittest.TestCase):
     self.cnxn = self.mox.CreateMock(sql.MonorailConnection)
     self.services = service_manager.Services()
     self.config_service = fake.ConfigService()
+    self.services.config = self.config_service
     self.services.chart = MakeChartService(self.mox, self.config_service)
+    self.mox.StubOutWithMock(self.services.chart, '_QueryToWhere')
     self.mox.StubOutWithMock(search_helpers, 'GetPersonalAtRiskLabelIDs')
     self.mox.StubOutWithMock(settings, 'num_logical_shards')
     settings.num_logical_shards = 1
@@ -74,9 +79,9 @@ class ChartServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     with self.assertRaises(ValueError):
-      self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-          effective_ids=[10L, 20L], project=project, perms=perms,
-          group_by='rutabaga', label_prefix='rutabaga')
+      self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+          unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+          perms=perms, group_by='rutabaga', label_prefix='rutabaga')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_NoLabelPrefix(self):
@@ -89,9 +94,9 @@ class ChartServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     with self.assertRaises(ValueError):
-      self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-          effective_ids=[10L, 20L], project=project, perms=perms,
-          group_by='label')
+      self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+          unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+          perms=perms, group_by='label')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_Components(self):
@@ -141,9 +146,9 @@ class ChartServiceTest(unittest.TestCase):
     self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
-    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        effective_ids=[10L, 20L], project=project, perms=perms,
-        group_by='component')
+    self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        perms=perms, group_by='component')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_Labels(self):
@@ -194,9 +199,9 @@ class ChartServiceTest(unittest.TestCase):
     self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
-    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        effective_ids=[10L, 20L], project=project, perms=perms,
-        group_by='label', label_prefix='Foo')
+    self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        perms=perms, group_by='label', label_prefix='Foo')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_NoGroupBy(self):
@@ -242,9 +247,9 @@ class ChartServiceTest(unittest.TestCase):
     self._verifySQL(cols, left_joins, where)
 
     self.mox.ReplayAll()
-    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        effective_ids=[10L, 20L], project=project, perms=perms,
-        group_by=None, label_prefix='Foo')
+    self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        perms=perms, group_by=None, label_prefix='Foo')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_LabelsNotLoggedInUser(self):
@@ -290,9 +295,9 @@ class ChartServiceTest(unittest.TestCase):
     self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
-    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        effective_ids=set([]), project=project, perms=perms, group_by='label',
-        label_prefix='Foo')
+    self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+        unixtime=1514764800, effective_ids=set([]), project=project,
+        perms=perms, group_by='label', label_prefix='Foo')
     self.mox.VerifyAll()
 
   def testQueryIssueSnapshots_NoRestrictedLabels(self):
@@ -339,9 +344,9 @@ class ChartServiceTest(unittest.TestCase):
     self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
-    self.services.chart.QueryIssueSnapshots(self.cnxn, unixtime=1514764800,
-        effective_ids=[10L, 20L], project=project, perms=perms,
-        group_by='label', label_prefix='Foo')
+    self.services.chart.QueryIssueSnapshots(self.cnxn, self.services,
+        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        perms=perms, group_by='label', label_prefix='Foo')
     self.mox.VerifyAll()
 
   def SetUpStoreIssueSnapshots(self, store_label, replace_now=None,
@@ -476,3 +481,77 @@ class ChartServiceTest(unittest.TestCase):
     self.services.chart.StoreIssueSnapshots(self.cnxn, [issue_1], commit=False)
     self.services.chart.StoreIssueSnapshots(self.cnxn, [issue_2], commit=False)
     self.mox.VerifyAll()
+
+  def testQueryIssueSnapshots_WithQueryString(self):
+    """Test the query param is parsed and used."""
+    project = fake.Project(project_id=789)
+    perms = permissions.USER_PERMISSIONSET
+    search_helpers.GetPersonalAtRiskLabelIDs(self.cnxn, None,
+      self.config_service, [10L, 20L], project, perms).AndReturn([])
+
+    cols = [
+      'Lab.label',
+      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+    ]
+    left_joins = [
+      ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
+      ('Issue2Cc AS I2cc'
+       ' ON Issue.id = I2cc.issue_id'
+       ' AND I2cc.cc_id IN (%s,%s)', [10L, 20L]),
+      ('IssueSnapshot2Label AS Is2l'
+       ' ON Is2l.issuesnapshot_id = IssueSnapshot.id', []),
+      ('LabelDef AS Lab ON Lab.id = Is2l.label_id', []),
+      ('IssueSnapshot2Label AS Cond0 '
+       'ON IssueSnapshot.id = Cond0.issuesnapshot_id '
+       'AND Cond0.label_id = %s', [15L]),
+    ]
+    where = [
+      ('IssueSnapshot.period_start <= %s', [1514764800]),
+      ('IssueSnapshot.period_end > %s', [1514764800]),
+      ('IssueSnapshot.project_id = %s', [789]),
+      ('IssueSnapshot.is_open = %s', [True]),
+      ('Issue.is_spam = %s', [False]),
+      ('Issue.deleted = %s', [False]),
+      ('(Issue.reporter_id IN (%s,%s)'
+       ' OR Issue.owner_id IN (%s,%s)'
+       ' OR I2cc.cc_id IS NOT NULL)',
+       [10L, 20L, 10L, 20L]
+      ),
+      ('LOWER(Lab.label) LIKE %s', ['foo-%']),
+      ('Cond0.label_id IS NULL', []),
+      ('IssueSnapshot.shard = %s', [0]),
+    ]
+    group_by = ['Lab.label']
+
+    query_left_joins = [(
+        'IssueSnapshot2Label AS Cond0 '
+        'ON IssueSnapshot.id = Cond0.issuesnapshot_id '
+        'AND Cond0.label_id = %s', [15L])]
+    query_where = [('Cond0.label_id IS NULL', [])]
+    unsupported_field_names = ['ownerbouncing']
+
+    unsupported_conds = [
+      ast_pb2.Condition(op=ast_pb2.QueryOp(1), field_defs=[
+        tracker_pb2.FieldDef(field_name='ownerbouncing',
+                             field_type=tracker_pb2.FieldTypes.BOOL_TYPE),
+      ])
+    ]
+
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndReturn((query_left_joins, query_where,
+        unsupported_conds))
+
+    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
+      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+
+    self._verifySQL(cols, left_joins, where, group_by)
+
+    self.mox.ReplayAll()
+    _, unsupported = self.services.chart.QueryIssueSnapshots(self.cnxn,
+        self.services, unixtime=1514764800, effective_ids=[10L, 20L],
+        project=project, perms=perms, group_by='label',
+        query='-label:Performance%20is:ownerbouncing', label_prefix='Foo')
+    self.mox.VerifyAll()
+
+    self.assertEqual(unsupported_field_names, unsupported)

@@ -491,7 +491,8 @@ class WorkEnv(object):
       return self.services.issue_star.LookupStarredItemIDs(
           self.mr.cnxn, self.mr.auth.user_id)
 
-  def SnapshotCountsQuery(self, timestamp, group_by, label_prefix=None):
+  def SnapshotCountsQuery(self, timestamp, group_by, label_prefix=None,
+                          query=None, canned_query=None):
     """Query IssueSnapshots for daily counts.
 
     See chart_svc.QueryIssueSnapshots for more detail on arguments.
@@ -501,15 +502,18 @@ class WorkEnv(object):
       group_by (str): 2nd dimension, see QueryIssueSnapshots for options.
       label_prefix (str): Required for label queries. Only returns results
         with the supplied prefix.
+      query (str, optional): If supplied, will parse & apply query conditions.
+      canned_query (str, optional): Value derived from the can= query parameter.
 
     Returns:
-      A dict of: {name: count} for each item in the second dimension (as
-      defined by group_by).
+      1. A dict of {name: count} for each item in group_by.
+      2. A list of any unsupported query conditions in query.
     """
     with self.mr.profiler.Phase('querying snapshot counts'):
       return self.services.chart.QueryIssueSnapshots(
-          self.mr.cnxn, timestamp, self.mr.auth.effective_ids, self.mr.project,
-          self.mr.perms, group_by=group_by, label_prefix=label_prefix)
+        self.mr.cnxn, self.services, timestamp, self.mr.auth.effective_ids,
+        self.mr.project, self.mr.perms, group_by=group_by,
+        label_prefix=label_prefix, query=query, canned_query=canned_query)
 
   ### User methods
 
