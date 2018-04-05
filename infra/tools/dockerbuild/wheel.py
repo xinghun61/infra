@@ -325,6 +325,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('google-cloud-bigtable', '0.28.1'),
   Universal('google-cloud-core', '0.28.0'),
   Universal('google-cloud-datastore', '1.4.0'),
+  Universal('google-cloud-datastore', '1.6.0'),
   Universal('google-cloud-dns', '0.28.0'),
   Universal('google-cloud-firestore', '0.28.0'),
   Universal('google-cloud-language', '1.0.0'),
