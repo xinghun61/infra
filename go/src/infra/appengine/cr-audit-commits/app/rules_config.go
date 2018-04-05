@@ -16,7 +16,7 @@ type RepoConfig struct { // These are expected to be hard-coded.
 	BaseRepoURL     string
 	GerritURL       string
 	BranchName      string
-	MilestoneNumber int32
+	Metadata        string
 	StartingCommit  string
 	MonorailAPIURL  string // Only intended for release branches
 	MonorailProject string
@@ -74,7 +74,7 @@ var RuleMap = map[string]*RepoConfig{
 		BaseRepoURL:     "https://chromium.googlesource.com/chromium/src.git",
 		GerritURL:       "https://chromium-review.googlesource.com",
 		BranchName:      "refs/branch-heads/3325",
-		MilestoneNumber: 65,
+		Metadata:        "MilestoneNumber:65",
 		StartingCommit:  "1593920eed56dee727e7f78ae5d206052e4ad7e0",
 		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
 		MonorailProject: "chromium",

@@ -30,7 +30,11 @@ func fileBugForReleaseBotViolation(ctx context.Context, cfg *RepoConfig, rc *Rel
 
 func fileBugForMergeApprovalViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error) {
 	components := []string{"Infra>Client>Chrome>Release"}
-	labels := []string{"CommitLog-Audit-Violation", "Merge-Without-Approval", fmt.Sprintf("M-%d", cfg.MilestoneNumber)}
+	milestone, ok := GetToken(ctx, "MilestoneNumber", cfg.Metadata)
+	if !ok {
+		return "", fmt.Errorf("MilestoneNumber not specified in repository configuration")
+	}
+	labels := []string{"CommitLog-Audit-Violation", "Merge-Without-Approval", fmt.Sprintf("M-%s", milestone)}
 	return fileBugForViolation(ctx, cfg, rc, cs, state, components, labels)
 }
 

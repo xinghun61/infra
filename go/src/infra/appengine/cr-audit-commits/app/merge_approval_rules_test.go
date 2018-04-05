@@ -31,10 +31,10 @@ func TestMergeApprovalRules(t *testing.T) {
 			CommitMessage: "Making sure changes committed are approved",
 		}
 		cfg := &RepoConfig{
-			BaseRepoURL:     "https://a.googlesource.com/a.git",
-			GerritURL:       "https://a-review.googlesource.com/",
-			BranchName:      "3325",
-			MilestoneNumber: 65,
+			BaseRepoURL: "https://a.googlesource.com/a.git",
+			GerritURL:   "https://a-review.googlesource.com/",
+			BranchName:  "3325",
+			Metadata:    "MilestoneNumber:65",
 		}
 		ap := &AuditParams{
 			TriggeringAccount: "releasebot@sample.com",

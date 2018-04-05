@@ -14,7 +14,7 @@ import (
 
 const (
 	chromeReleaseBotAcc = "chrome-release-bot@chromium.org"
-	mergeApprovedLabel  = "Merge-Approved-%d"
+	mergeApprovedLabel  = "Merge-Approved-%s"
 )
 
 var chromeTPMs = []string{"cmasso@chromium.org", "govind@chromium.org", "amineer@chromium.org", "abdulsyed@chromium.org",
@@ -53,7 +53,11 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 			continue
 		}
 		vIssue, _ := issueFromID(ctx, ap.RepoCfg, int32(bugNumber), cs)
-		mergeLabel := fmt.Sprintf(mergeApprovedLabel, ap.RepoCfg.MilestoneNumber)
+		milestone, ok := GetToken(ctx, "MilestoneNumber", ap.RepoCfg.Metadata)
+		if !ok {
+			panic("No milestone specified in the repository configuration")
+		}
+		mergeLabel := fmt.Sprintf(mergeApprovedLabel, milestone)
 		if vIssue != nil {
 			// Check if the issue has a merge approval label
 			for _, label := range vIssue.Labels {
