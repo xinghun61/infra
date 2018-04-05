@@ -285,7 +285,14 @@ def GetsFirstFailureAtTestLevel(master_name, builder_name, build_number,
   that has not been analyzed.
 
   But if force is True, this function will return all first time failures in the
-  build and not update analysis.failure_result_map
+  build and not update analysis.failure_result_map.
+
+  Args:
+    master_name(str): Name of the master.
+    builder_name(str): Name of the builder.
+    build_number(int): Number of the build.
+    failure_info(TestFailureInfo): Information about the build failure.
+    force(bool): If the analysis is a forced rerun.
   """
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
@@ -297,9 +304,9 @@ def GetsFirstFailureAtTestLevel(master_name, builder_name, build_number,
   result_steps = defaultdict(list)
   failure_result_map = analysis.failure_result_map
 
-  for failed_step_name, step_failure_details in failure_info[
-      'failed_steps'].iteritems():
-    if not step_failure_details.get('tests'):
+  for failed_step_name, step_failure_details in (
+      failure_info.failed_steps.iteritems()):
+    if not step_failure_details.tests:
       # Not a test type Findit currently handles.
       continue
 
@@ -310,20 +317,20 @@ def GetsFirstFailureAtTestLevel(master_name, builder_name, build_number,
       else:
         failure_result_map[failed_step_name] = {}
 
-    for failed_test_name, test_failure_details in step_failure_details[
-        'tests'].iteritems():
+    for failed_test_name, test_failure_details in (
+        step_failure_details.tests.iteritems()):
       if not force:
         # Updates analysis.failure_result_map only when the analysis runs at the
         # first time.
         task_key = '%s/%s/%s' % (master_name, builder_name,
-                                 test_failure_details['first_failure'])
+                                 test_failure_details.first_failure)
         failure_result_map[failed_step_name][failed_test_name] = task_key
 
-      if test_failure_details['first_failure'] == test_failure_details[
-          'current_failure']:
+      if (test_failure_details.first_failure ==
+          test_failure_details.current_failure):
         # First time failure, add to result_steps.
         result_steps[failed_step_name].append(
-            test_failure_details['base_test_name'])
+            test_failure_details.base_test_name)
 
   if not force:
     analysis.put()

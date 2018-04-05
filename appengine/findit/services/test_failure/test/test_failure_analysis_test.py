@@ -638,7 +638,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   def testGetsFirstFailureAtTestLevelNoAnalysis(self):
     result = (
         test_failure_analysis.GetsFirstFailureAtTestLevel(
-            'm', 'b', 1, {}, False))
+            'm', 'b', 1, TestFailureInfo.FromSerializable({}), False))
     self.assertEqual(result, {})
 
   def testGetsFirstFailureAtTestLevelNoFailureResultMap(self):
@@ -701,7 +701,8 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     result = (
         test_failure_analysis.GetsFirstFailureAtTestLevel(
-            master_name, builder_name, build_number, failure_info, False))
+            master_name, builder_name, build_number,
+            TestFailureInfo.FromSerializable(failure_info), False))
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
     self.assertEqual(result, expected_result)
@@ -767,7 +768,8 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     expected_result = {'abc_test': ['Unittest2.Subtest1']}
     result = (
         test_failure_analysis.GetsFirstFailureAtTestLevel(
-            master_name, builder_name, build_number, failure_info, False))
+            master_name, builder_name, build_number,
+            TestFailureInfo.FromSerializable(failure_info), False))
     self.assertEqual(result, expected_result)
 
   def testGetsFirstFailureAtTestLevelForRerun(self):
@@ -833,5 +835,6 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     result = (
         test_failure_analysis.GetsFirstFailureAtTestLevel(
-            master_name, builder_name, build_number, failure_info, True))
+            master_name, builder_name, build_number,
+            TestFailureInfo.FromSerializable(failure_info), True))
     self.assertEqual(result, expected_result)

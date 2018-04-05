@@ -234,10 +234,12 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 124
     failure_info = {
-        'test': {
-            'last_pass': 122,
-            'current_failure': 123,
-            'first_failure': 123
+        'failed_steps': {
+            'test': {
+                'last_pass': 122,
+                'current_failure': 123,
+                'first_failure': 123
+            }
         }
     }
 
@@ -254,7 +256,18 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     root_pipeline._HandleUnexpectedAborting(True)
 
     heuristic_result = {'failure_info': failure_info, 'heuristic_result': None}
-    mocked_pipeline.assert_called_once_with(
-        master_name, builder_name, build_number, heuristic_result, False, False)
+    expected_pipeline_input = StartTestTryJobInputs(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        build_completed=False,
+        force=False,
+        heuristic_result=TestHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
+            {}))
+
+    mocked_pipeline.assert_called_once_with(expected_pipeline_input)
     mocked_pipeline.assert_has_calls(
         [mock.call().start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)])

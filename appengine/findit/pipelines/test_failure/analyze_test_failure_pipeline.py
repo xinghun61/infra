@@ -8,6 +8,8 @@ from common import constants
 from common import monitoring
 from dto.collect_swarming_task_results_inputs import (
     CollectSwarmingTaskResultsInputs)
+from dto.collect_swarming_task_results_outputs import (
+    CollectSwarmingTaskResultsOutputs)
 from dto.run_swarming_tasks_input import RunSwarmingTasksInput
 from dto.start_try_job_inputs import StartTestTryJobInputs
 from gae_libs import appengine_util
@@ -28,6 +30,7 @@ from pipelines.test_failure.start_test_try_job_pipeline import (
     StartTestTryJobPipeline)
 from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
+from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
 from waterfall.flake.trigger_flake_analyses_pipeline import (
     TriggerFlakeAnalysesPipeline)
@@ -92,9 +95,18 @@ class AnalyzeTestFailurePipeline(BasePipeline):
   def _ContinueTryJobPipeline(self, failure_info):
 
     heuristic_result = {'failure_info': failure_info, 'heuristic_result': None}
-    try_job_pipeline = StartTestTryJobPipeline(
-        self.master_name, self.builder_name, self.build_number,
-        heuristic_result, self.build_completed, self.force)
+    start_try_job_inputs = StartTestTryJobInputs(
+        build_key=BuildKey(
+            master_name=self.master_name,
+            builder_name=self.builder_name,
+            build_number=self.build_number),
+        build_completed=self.build_completed,
+        force=self.force,
+        heuristic_result=TestHeuristicAnalysisOutput.FromSerializable(
+            heuristic_result),
+        consistent_failures=CollectSwarmingTaskResultsOutputs.FromSerializable(
+            {}))
+    try_job_pipeline = StartTestTryJobPipeline(start_try_job_inputs)
     try_job_pipeline.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     try_job_pipeline.start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
