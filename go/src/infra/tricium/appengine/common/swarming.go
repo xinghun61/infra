@@ -33,7 +33,7 @@ type SwarmingAPI interface {
 	// The provided worker isolate is used for the task. At completion,
 	// the swarming service will publish a message, including the provided
 	// user data, to the worker completion pubsub topic.
-	Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error)
+	Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error)
 
 	// Collect collects results for a swarming task with the provided ID.
 	//
@@ -50,7 +50,7 @@ type swarmingServer struct {
 }
 
 // Trigger implements the SwarmingAPI.
-func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error) {
+func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error) {
 	pubsubTopic := topic(c)
 	// Prepare task dimensions.
 	dims := []*swarming.SwarmingRpcsStringPair{}
@@ -108,6 +108,7 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 		Properties:     props,
 		PubsubTopic:    pubsubTopic,
 		PubsubUserdata: pubsubUserdata,
+		Tags:           tags,
 	}).Do()
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to trigger swarming task: %v", err)
@@ -165,7 +166,7 @@ type mockSwarmingAPI struct {
 // Trigger is a mock function for the MockSwarmingAPI.
 //
 // For any testing actually using the return value, create a new mock.
-func (mockSwarmingAPI) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error) {
+func (mockSwarmingAPI) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error) {
 	return "mockmockmock", nil
 }
 

@@ -20,7 +20,7 @@ import (
 type mockSwarmingFailure struct {
 }
 
-func (mockSwarmingFailure) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error) {
+func (mockSwarmingFailure) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error) {
 	return "mockmockmock", nil
 }
 func (mockSwarmingFailure) Collect(c context.Context, serverURL string, taskID string) (string, int64, error) {

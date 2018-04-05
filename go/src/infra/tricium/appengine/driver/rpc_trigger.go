@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
+	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/logging"
 
@@ -18,8 +19,10 @@ import (
 	"google.golang.org/grpc/codes"
 
 	admin "infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
+	"infra/tricium/appengine/common/track"
 )
 
 // DriverServer represents the Tricium pRPC Driver server.
@@ -53,6 +56,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	if err != nil {
 		return fmt.Errorf("unknown worker in workflow, worker: %s", worker.Name)
 	}
+	tags := swarmingTags(c, req.Worker, req.RunId)
 	// TODO(emso): Auth check.
 	// TODO(emso): Runtime type check.
 	workerIsolate, err := isolator.IsolateWorker(c, workflow.IsolateServer, worker, req.IsolatedInputHash)
@@ -69,7 +73,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	userdata := base64.StdEncoding.EncodeToString(b)
 	logging.Infof(c, "[driver] PubSub userdata for trigger: %q", userdata)
 	// Trigger worker.
-	taskID, err := sw.Trigger(c, workflow.SwarmingServer, workflow.IsolateServer, worker, workerIsolate, userdata)
+	taskID, err := sw.Trigger(c, workflow.SwarmingServer, workflow.IsolateServer, worker, workerIsolate, userdata, tags)
 	if err != nil {
 		return fmt.Errorf("failed to call trigger on swarming API: %v", err)
 	}
@@ -86,4 +90,36 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	t := tq.NewPOSTTask("/tracker/internal/worker-launched", nil)
 	t.Payload = b
 	return tq.Add(c, common.TrackerQueue, t)
+}
+
+// swarmingTags generates tags to send when triggering tasks.
+//
+// These tags can be used later when querying tasks, so
+// any attribute of a job that we may want to query or filter
+// by could be added as a tag.
+func swarmingTags(c context.Context, worker string, runID int64) []string {
+	function, platform, err := track.ExtractFunctionPlatform(worker)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "failed to split worker name: %s", worker)
+		return nil
+	}
+	tags := []string{
+		"tricium:1",
+		"function:" + function,
+		"platform:" + platform,
+	}
+	// Add Gerrit details if applicable.
+	request := &track.AnalyzeRequest{ID: runID}
+	if err := ds.Get(c, request); err != nil {
+		logging.WithError(err).Errorf(c, "failed to get request for run ID: %d", runID)
+		return tags
+	}
+	if request.Consumer == tricium.Consumer_GERRIT {
+		tags = append(tags,
+			"gerrit_project:"+request.GerritProject,
+			"gerrit_change:"+request.GerritChange,
+			"gerrit_revision:"+request.GerritRevision,
+		)
+	}
+	return tags
 }
