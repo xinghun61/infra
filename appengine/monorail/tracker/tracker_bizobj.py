@@ -1104,6 +1104,36 @@ def MakeFieldClearedAmendment(field_id, config):
       custom_field_name=fd.field_name)
 
 
+def MakeApprovalStatusAmendment(new_status):
+  """Return an Amendment showing an issue approval's status changed.
+
+  Args:
+    new_status: ApprovalStatus representing the new approval status.
+
+  Returns:
+    A new Amemdnent object.
+  """
+  return MakeAmendment(
+      tracker_pb2.FieldID.CUSTOM, new_status.name.lower(), [], [],
+      custom_field_name='Status')
+
+
+def MakeApprovalApproversAmendment(old_approvers, new_approvers):
+  """Return an Amendment showing an issue approval's approvers changed.
+
+  Args:
+    old_approvers: list of previous approver user_ids.
+    new_approvers: list of strings approver user_ids.
+
+  Returns:
+    A new Amendment object.
+  """
+  added, removed = DiffValueLists(new_approvers, old_approvers)
+  return MakeAmendment(
+      tracker_pb2.FieldID.CUSTOM, '', added, removed,
+      custom_field_name='Approvers')
+
+
 def MakeComponentsAmendment(added_comp_ids, removed_comp_ids, config):
   """Make an Amendment PB for a change to the components."""
   # TODO(jrobbins): record component IDs as ints and display them with

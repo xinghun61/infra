@@ -1251,6 +1251,22 @@ class BizobjTest(unittest.TestCase):
             tracker_pb2.FieldID.CUSTOM, '----', [], [], 'Rabbit'),
         tracker_bizobj.MakeFieldClearedAmendment(1, config))
 
+  def testMakeApprovalStatusAmendment(self):
+    actual_amendment = tracker_bizobj.MakeApprovalStatusAmendment(
+        tracker_pb2.ApprovalStatus.APPROVED)
+    amendment = tracker_pb2.Amendment(
+        field=tracker_pb2.FieldID.CUSTOM, newvalue='approved',
+        custom_field_name='Status')
+    self.assertEqual(amendment, actual_amendment)
+
+  def testMakeApprovalApproversAmendment(self):
+    actual_amendment = tracker_bizobj.MakeApprovalApproversAmendment(
+        [111L, 222L], [111L, 333L])
+    amendment = tracker_pb2.Amendment(
+        field=tracker_pb2.FieldID.CUSTOM, newvalue='', added_user_ids=[333L],
+        removed_user_ids=[222L], custom_field_name='Approvers')
+    self.assertEqual(actual_amendment, amendment)
+
   def testMakeComponentsAmendment_NoChange(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     config.component_defs = [
