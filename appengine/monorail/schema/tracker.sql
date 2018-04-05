@@ -275,68 +275,6 @@ CREATE TABLE Issue2Notify (
 ) ENGINE=INNODB;
 
 
--- TODO(jojwang): monorail:3576 , DROP this table when safe.
-CREATE TABLE Issue2Milestone (
-  id INT NOT NULL AUTO_INCREMENT,
-  issue_id INT NOT NULL,
-  name VARCHAR(255) BINARY NOT NULL,
-  rank SMALLINT UNSIGNED,
-
-  PRIMARY KEY (id, issue_id),
-  FOREIGN KEY (issue_id) REFERENCES Issue(id)
-) ENGINE=INNODB;
-
-
-CREATE TABLE Issue2Phase (
-  id INT NOT NULL AUTO_INCREMENT,
-  issue_id INT NOT NULL,
-  name VARCHAR(255) BINARY NOT NULL,
-  rank SMALLINT UNSIGNED,
-
-  PRIMARY KEY (id, issue_id),
-  FOREIGN KEY (issue_id) REFERENCES Issue(id)
-) ENGINE=INNODB;
-
-
-CREATE TABLE Issue2ApprovalValue (
-  issue_id INT NOT NULL,
-  approval_id INT NOT NULL,
-  phase_id INT NOT NULL,
-  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
-  setter_id INT UNSIGNED,
-  set_on INT,
-
-  PRIMARY KEY (issue_id, approval_id, phase_id),
-  FOREIGN KEY (setter_id) REFERENCES User(user_id),
-  FOREIGN KEY (issue_id) REFERENCES Issue(id),
-  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
-  FOREIGN KEY (phase_id) REFERENCES Issue2Phase(id)
-) ENGINE=INNODB;
-
-
-CREATE TABLE IssueApproval2Approver (
-  issue_id INT NOT NULL,
-  approval_id INT NOT NULL,
-  approver_id INT UNSIGNED NOT NULL,
-
-  PRIMARY KEY (issue_id, approval_id, approver_id),
-  FOREIGN KEY (issue_id) REFERENCES Issue(id),
-  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
-  FOREIGN KEY (approver_id) REFERENCES User(user_id)
-) ENGINE=INNODB;
-
-
-CREATE TABLE IssueApproval2Comment (
-  approval_id INT NOT NULL,
-  comment_id INT NOT NULL,
-
-  PRIMARY KEY (comment_id),
-  INDEX (approval_id),
-  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
-  FOREIGN KEY (comment_id) REFERENCES Comment(id)
-) ENGINE=INNODB;
-
-
 CREATE TABLE IssueVisitHistory (
   issue_id INT NOT NULL,
   user_id INT UNSIGNED NOT NULL,
@@ -899,6 +837,68 @@ CREATE TABLE ApprovalDef2Survey (
 
   FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
   FOREIGN KEY (project_id) REFERENCES Project(project_id)
+) ENGINE=INNODB;
+
+
+-- TODO(jojwang): monorail:3576 , DROP this table when safe.
+CREATE TABLE Issue2Milestone (
+  id INT NOT NULL AUTO_INCREMENT,
+  issue_id INT NOT NULL,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id, issue_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Issue2Phase (
+  id INT NOT NULL AUTO_INCREMENT,
+  issue_id INT NOT NULL,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id, issue_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE Issue2ApprovalValue (
+  issue_id INT NOT NULL,
+  approval_id INT NOT NULL,
+  phase_id INT NOT NULL,
+  status ENUM ('needs_review', 'na', 'review_requested', 'started', 'need_info', 'approved', 'not_approved', 'not_set') DEFAULT 'not_set' NOT NULL,
+  setter_id INT UNSIGNED,
+  set_on INT,
+
+  PRIMARY KEY (issue_id, approval_id, phase_id),
+  FOREIGN KEY (setter_id) REFERENCES User(user_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (phase_id) REFERENCES Issue2Phase(id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE IssueApproval2Approver (
+  issue_id INT NOT NULL,
+  approval_id INT NOT NULL,
+  approver_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (issue_id, approval_id, approver_id),
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (approver_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+
+CREATE TABLE IssueApproval2Comment (
+  approval_id INT NOT NULL,
+  comment_id INT NOT NULL,
+
+  PRIMARY KEY (comment_id),
+  INDEX (approval_id),
+  FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
+  FOREIGN KEY (comment_id) REFERENCES Comment(id)
 ) ENGINE=INNODB;
 
 
