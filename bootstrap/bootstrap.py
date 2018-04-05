@@ -218,7 +218,7 @@ def activate_env(env, manifest, quiet=False):
   execfile(activate_this, dict(__file__=activate_this))
 
   if cur_manifest is None:
-    deps = manifest['deps']
+    deps = manifest.get('deps', {})
     if not quiet:
       print '  Installing deps'
       print_deps(deps, indent=2, with_implicit=False)
