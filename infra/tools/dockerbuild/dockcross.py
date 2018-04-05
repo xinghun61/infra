@@ -298,6 +298,9 @@ class Image(collections.namedtuple('_Image', (
     # paths within the work directory.
     args = []
     if self.docker_image:
+      # Have to handle envvars specially
+      env = kwargs.pop('env', {})
+
       # Build arguments to run within "dockcross" image.
       for i, arg in enumerate(cmd):
         if arg.startswith(work_dir):
@@ -317,6 +320,9 @@ class Image(collections.namedtuple('_Image', (
       if cwd:
         # Change working directory that the image uses.
         run_args.append('-w=%s' % (self.workrel(work_dir, cwd),))
+
+      for k, v in env.iteritems():
+        run_args.extend(['-e', '%s=%r' % (k, v)])
 
       # Run the process within the working directory.
       cwd = work_dir

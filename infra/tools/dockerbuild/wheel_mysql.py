@@ -73,7 +73,10 @@ def _build_mysql(system, wheel, src):
         dx,
         tdir,
         cmd,
-        cwd=build_dir)
+        cwd=build_dir,
+        env={
+          'LDFLAGS': '-lstdc++'
+        })
 
     StageWheelForPackage(system, tdir, wheel)
 

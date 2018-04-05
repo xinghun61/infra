@@ -166,7 +166,7 @@ class Timer(object):
       t.stop()
 
 
-def check_run(system, dx, work_root, cmd, cwd=None):
+def check_run(system, dx, work_root, cmd, cwd=None, env=None):
   """Runs a command |cmd|.
 
   Args:
@@ -180,15 +180,18 @@ def check_run(system, dx, work_root, cmd, cwd=None):
     cwd (str or None): The working directory for the command. If None,
         |work_root| will be used. Otherwise, |cwd| must be a subdirectory of
         |work_root|.
+    env (dict or None): Extra environment variables (will be applied to current
+        env with dict.update)
     """
   if dx is None:
     if cmd[0] == 'python':
       cmd[0] = system.native_python
-    return system.check_run(cmd, cwd=cwd or work_root)
-  return dx.check_run(work_root, cmd, cwd=cwd)
+    return system.check_run(cmd, cwd=cwd or work_root, env=env)
+  return dx.check_run(work_root, cmd, cwd=cwd, env=env)
 
 
-def check_run_script(system, dx, work_root, script, args=None, cwd=None):
+def check_run_script(system, dx, work_root, script, args=None, cwd=None,
+                     env=None):
   """Runs a script, |script|.
 
   An anonymous file will be created under |work_root| holding the specified
@@ -208,6 +211,6 @@ def check_run_script(system, dx, work_root, script, args=None, cwd=None):
   cmd = [fd.name]
   if args:
     cmd.extend(args)
-  return check_run(system, dx, work_root, cmd, cwd=cwd)
+  return check_run(system, dx, work_root, cmd, cwd=cwd, env=env)
 
 
