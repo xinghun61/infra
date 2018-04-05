@@ -30,15 +30,17 @@ def InfraBuilder(name):
   def _local_path(system):
     return os.path.join(os.path.dirname(system.root), 'packages', name)
 
+  version_ref = [None]
   def version_fn(system):
-    pkg_path = os.path.join(os.path.dirname(system.root), 'packages', name)
-    _, version = util.check_run(
-        system,
-        None,
-        '.',
-        ['python', os.path.join(pkg_path, 'setup.py') , '--version']
-    )
-    return version
+    if version_ref[0] is None:
+      pkg_path = os.path.join(os.path.dirname(system.root), 'packages', name)
+      _, version_ref[0] = util.check_run(
+          system,
+          None,
+          '.',
+          ['python', os.path.join(pkg_path, 'setup.py') , '--version']
+      )
+    return version_ref[0]
 
   def build_fn(system, wheel):
     path = _local_path(system)
