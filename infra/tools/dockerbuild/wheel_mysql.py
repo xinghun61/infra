@@ -39,13 +39,24 @@ def _build_mysql(system, wheel, src):
   with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
     build_dir = system.repo.ensure(src, tdir)
 
+    # Adjust site.cfg to have static=True && threadsafe=False.
+    #
+    # Static because we don't want to link in the libmysqlclient.so, and
+    # threadsafe because:
+    #   1) MySQL 5.ancient became threadsafe by default. The threadsafe and
+    #      non-threadsafe libraries are henceforth symlinked together.
+    #   2) MySQL-python has a bug where static&&threadsafe ends up linking
+    #      against the .so file by accident instead of the .a, thus ruining all
+    #      of our fabulous plans.
     with open(os.path.join(build_dir, 'site.cfg'), 'r+b') as f:
       current = f.readlines()
-      f.truncate()
+      f.truncate(0)
       f.seek(0)
       for line in current:
         if line.startswith('static'):
           f.write('static = True\n')
+        elif line.startswith('threadsafe'):
+          f.write('threadsafe = False\n')
         else:
           f.write(line)
 
