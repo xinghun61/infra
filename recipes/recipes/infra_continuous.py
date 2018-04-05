@@ -26,10 +26,8 @@ DEPS = [
 # CIPD packages for. 'native' means "do not cross-compile, build for the host
 # platform". Targeting 'native' will also usually build non-go based packages.
 #
-# If a builder is missing from the mapping, 'native' is assumed for it.
-#
-# If a builder is present, but the list of GOOS-GOARCH for it is empty, it won't
-# be used for building CIPD packages at all.
+# If the builder is not in this set, or the list of GOOS-GOARCH for it is empty,
+# it won't be used for building CIPD packages.
 CIPD_PACKAGE_BUILDERS = {
   # trusty-32 is the primary builder for linux-386.
   'infra-continuous-precise-32': [],
@@ -45,7 +43,6 @@ CIPD_PACKAGE_BUILDERS = {
   'infra-continuous-zesty-64':   ['linux-ppc64', 'linux-ppc64le'],
 
   # 10.13 is the primary builder for darwin-amd64.
-  'infra-continuous-mac-10.9-64':  [],
   'infra-continuous-mac-10.10-64': [],
   'infra-continuous-mac-10.11-64': [],
   'infra-continuous-mac-10.12-64': [],
@@ -54,6 +51,15 @@ CIPD_PACKAGE_BUILDERS = {
   # Windows builders each build and test for their own bitness.
   'infra-continuous-win-32': ['native'],
   'infra-continuous-win-64': ['native'],
+
+  # Internal builders, they use exact same recipe.
+  'infra-internal-continuous-trusty-64': ['native', 'linux-arm', 'linux-arm64'],
+  'infra-internal-continuous-trusty-32': ['native'],
+  'infra-internal-continuous-win-32': ['native'],
+  'infra-internal-continuous-win-64': ['native'],
+  'infra-internal-continuous-mac-10.10-64': [],
+  'infra-internal-continuous-mac-10.11-64': [],
+  'infra-internal-continuous-mac-10.13-64': ['native'],
 }
 
 
@@ -73,7 +79,7 @@ GO_DEPS_BUNDLING_BUILDER = 'infra-continuous-trusty-64'
 
 def get_go_platforms_for_cipd(builder):
   """Yields a list of (GOOS, GOARCH) to build for on the given builder."""
-  for plat in CIPD_PACKAGE_BUILDERS.get(builder, ['native']):
+  for plat in CIPD_PACKAGE_BUILDERS.get(builder, []):
     if plat == 'native':
       yield None, None  # reset GOOS and GOARCH
     else:
@@ -314,7 +320,7 @@ def GenTests(api):
     api.test('infra-internal-continuous') +
     api.properties.git_scheduled(
         path_config='kitchen',
-        buildername='infra-internal-continuous',
+        buildername='infra-internal-continuous-trusty-32',
         buildnumber=123,
         mastername='internal.infra',
         repository=

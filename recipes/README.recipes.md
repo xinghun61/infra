@@ -298,15 +298,15 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 
 [DEPS](/recipes/recipes/infra_continuous.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [infra\_system](#recipe_modules-infra_system), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#167)(api, mastername, buildername, buildnumber):**
+&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#173)(api, mastername, buildername, buildnumber):**
 
-&mdash; **def [build\_cipd\_packages](/recipes/recipes/infra_continuous.py#83)(api, repo, rev, mastername, buildername, buildnumber, goos, goarch):**
+&mdash; **def [build\_cipd\_packages](/recipes/recipes/infra_continuous.py#89)(api, repo, rev, mastername, buildername, buildnumber, goos, goarch):**
 
-&mdash; **def [build\_luci](/recipes/recipes/infra_continuous.py#137)(api):**
+&mdash; **def [build\_luci](/recipes/recipes/infra_continuous.py#143)(api):**
 
-&mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#201)(api, mastername, buildername, buildnumber, project_name, repo_name, rev):**
+&mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#207)(api, mastername, buildername, buildnumber, project_name, repo_name, rev):**
 
-&mdash; **def [get\_go\_platforms\_for\_cipd](/recipes/recipes/infra_continuous.py#74)(builder):**
+&mdash; **def [get\_go\_platforms\_for\_cipd](/recipes/recipes/infra_continuous.py#80)(builder):**
 
 Yields a list of (GOOS, GOARCH) to build for on the given builder.
 ### *recipes* / [infra\_continuous\_luci](/recipes/recipes/infra_continuous_luci.py)
