@@ -53,7 +53,8 @@ class PubSubPipelineCallback(BaseHandler):
       envelope = json.loads(self.request.body)
       auth_token = envelope['message']['attributes']['auth_token']
       message_data = json.loads(base64.b64decode(envelope['message']['data']))
-      user_data = json.loads(message_data['user_data'])
+      user_data = json.loads(
+          message_data.get('user_data') or message_data.get('userdata'))
       pipeline_id = user_data['runner_id']
 
       valid, expired = token.ValidateAuthToken(
