@@ -332,21 +332,20 @@ func (t tableData) StepsPerSec() float64 {
 
 func typeFromExt(s ninjalog.Step) string {
 	target := s.Out
-	if strings.Contains(target, ".mojom") {
-		return "mojo"
-	}
-	if strings.HasSuffix(target, "type_mappings") {
-		return "type_mappings"
-	}
+	target = filepath.Base(target)
+
 	ext := filepath.Ext(target)
-	if ext == "" {
-		return "(no extension found)"
-	}
 	switch ext {
 	case ".pdb", ".dll", ".exe":
 		return "PEFile (linking)"
 	}
-	return ext
+
+	pos := strings.IndexByte(target, '.')
+	if pos == -1 {
+		return "(no extension found)"
+	}
+
+	return target[pos:]
 }
 
 func table(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {

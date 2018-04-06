@@ -5,6 +5,7 @@
 package chromiumbuildstats
 
 import (
+	"ninjalog"
 	"testing"
 )
 
@@ -61,6 +62,45 @@ func TestNinjalogPath(t *testing.T) {
 		if logPath != tc.logPath {
 			// func is not comparable.
 			t.Errorf("%d: ninjalogPath(%q)=%q, _, <nil>; want=%q, _, <nil>", i, tc.reqPath, logPath, tc.logPath)
+		}
+	}
+}
+
+func TestTypeFromExt(t *testing.T) {
+	testCases := []struct {
+		step ninjalog.Step
+		want string
+	}{
+		{
+			step: ninjalog.Step{Out: ""},
+			want: ".",
+		},
+		{
+			step: ninjalog.Step{Out: "gen/chrome/android/chrome_modern_public_apk/chrome_modern_public_apk.proguard.jar"},
+			want: ".proguard.jar",
+		},
+		{
+			step: ninjalog.Step{Out: "headless_browsertests.exe.pdb"},
+			want: "PEFile (linking)",
+		},
+		{
+			step: ninjalog.Step{Out: "headless_browsertests.exe"},
+			want: "PEFile (linking)",
+		},
+		{
+			step: ninjalog.Step{Out: "headless_browsertests"},
+			want: "(no extension found)",
+		},
+		{
+			step: ninjalog.Step{Out: "gen/services/identity/public/mojom/identity_manager.mojom-shared-message-ids.h"},
+			want: ".mojom-shared-message-ids.h",
+		},
+	}
+
+	for _, tc := range testCases {
+		got := typeFromExt(tc.step)
+		if got != tc.want {
+			t.Errorf("typeFromText(%q)=%s; want=%s", tc.step, got, tc.want)
 		}
 	}
 }
