@@ -85,5 +85,7 @@ runOnLoad(function() {
 });
 </script>
 
+<script type="text/javascript" defer src="/static/js/framework/ga.js?version=[app_version]" nonce="[nonce]"></script>
+
  </body>
 </html>

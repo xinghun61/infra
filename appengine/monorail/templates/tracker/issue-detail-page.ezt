@@ -335,3 +335,14 @@ runOnLoad(function() {
 
 
 [include "../framework/master-footer.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  if (typeof(ClientLogger) === "function") {
+    let l = new ClientLogger("issues");
+    if (l.started("new-issue")) {
+      l.logEnd("new-issue");
+    }
+  }
+});
+</script>

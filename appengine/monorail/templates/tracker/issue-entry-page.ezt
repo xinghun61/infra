@@ -417,3 +417,15 @@ runOnLoad(function() {
 
 [include "field-value-widgets-js.ezt"]
 [include "../framework/master-footer.ezt"]
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  if (typeof(ClientLogger) === "function") {
+    let l = new ClientLogger("issues");
+    l.logStart("new-issue", "user-time");
+    window.addEventListener('submit', function() {
+      l.logStart("new-issue", "server-time");
+    });
+  }
+});
+</script>
