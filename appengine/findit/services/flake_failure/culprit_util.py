@@ -9,12 +9,26 @@ import textwrap
 from google.appengine.ext import ndb
 
 from infra_api_clients.codereview import codereview_util
+
+from common.waterfall import failure_type
 from libs import analysis_status
+from libs import time_util
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from services import culprit_action
+from services import gerrit
 from services.flake_failure import data_point_util
 from services.flake_failure import pass_rate_util
+from services.parameters import CreateRevertCLParameters
+from services.parameters import SubmitRevertCLParameters
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
+
+# TODO(crbug.com/828464): Make this configurable.
+_AUTO_REVERT_LIMIT = 4
+
+# TODO(crbug.com/828480): make this configurable.
+_IS_AUTO_REVERT_ENABLED = False
 
 _NOTIFICATION_MESSAGE_TEMPLATE = textwrap.dedent("""
 Findit (https://goo.gl/kROfz5) identified this CL at revision {} as the culprit
@@ -23,6 +37,123 @@ https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key={}
 
 If the results are correct, please either revert this CL, disable, or fix the
 flaky test.""")
+
+
+def AbortCreateAndSubmitRevert(parameters, runner_id):
+  """Sets the proper fields for an autorevert abort."""
+  analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
+  assert analysis
+  culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+  assert culprit
+
+  changed = False
+
+  if culprit.revert_pipeline_id == runner_id:
+    if (culprit.revert_status and
+        culprit.revert_status != analysis_status.COMPLETED):
+      culprit.revert_status = analysis_status.ERROR
+      changed = True
+
+  if culprit.submit_revert_pipeline_id == runner_id:
+    if (culprit.revert_submission_status and
+        culprit.revert_submission_status != analysis_status.COMPLETED):
+      culprit.revert_submission_status = analysis_status.ERROR
+      changed = True
+
+  if changed:
+    culprit.revert_pipeline_id = None
+    culprit.submit_revert_pipeline_id = None
+    culprit.put()
+
+
+def IsAutorevertEnabled():  # pragma: no cover
+  return _IS_AUTO_REVERT_ENABLED
+
+
+def CreateAndSubmitRevert(parameters, runner_id):
+  """Wraps the creation and submission of autoreverts for flaky tests."""
+  analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
+  assert analysis
+  culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+  assert culprit
+
+  if not IsAutorevertEnabled():
+    analysis.LogInfo('Autorevert for flaky tests is not enabled.')
+    return False
+
+  if not UnderLimitForAutorevert():
+    analysis.LogInfo('Not autoreverting since limit has been reached.')
+    return False
+
+  # Verify the conditions for revert are satisfied.
+  if not CanRevertForAnalysis(analysis):
+    analysis.LogInfo('Not reverting: CanRevertForAnalysis returned false.')
+    return False
+
+  # Create the revert, and check if it succeeded. If it succeeded, then
+  # continue on and submit it.
+  revert_culprit_parameters = CreateRevertCLParameters(
+      cl_key=culprit.key.urlsafe(),
+      build_id=parameters.build_id,
+      failure_type=failure_type.FLAKY_TEST)
+  revert_status = culprit_action.RevertCulprit(revert_culprit_parameters,
+                                               runner_id)
+  if revert_status != gerrit.CREATED_BY_FINDIT:
+    analysis.LogInfo(
+        'Not reverting: RevertCulprit wasn\'t able to create a revert.')
+    return False
+
+  submit_revert_paramters = SubmitRevertCLParameters(
+      cl_key=culprit.key.urlsafe(),
+      revert_status=revert_status,
+      failure_type=failure_type.FLAKY_TEST)
+  submit_revert_status = culprit_action.CommitRevert(submit_revert_paramters,
+                                                     runner_id)
+  if submit_revert_status != gerrit.COMMITTED:
+    analysis.LogInfo(
+        'Not reverting: CommitRevert wasn\'t able to submit the revert')
+    return False
+
+  analysis.Update(
+      has_created_autorevert=True,
+      has_submitted_autorevert=True,
+      autorevert_submission_time=time_util.GetUTCNow())
+  return True
+
+
+def UnderLimitForAutorevert():
+  """Returns True if currently under the limit for autoreverts."""
+  query = MasterFlakeAnalysis.query(
+      MasterFlakeAnalysis.autorevert_submission_time >=
+      time_util.GetMostRecentUTCMidnight(),
+      MasterFlakeAnalysis.has_submitted_autorevert == True)
+  return query.count(_AUTO_REVERT_LIMIT) < _AUTO_REVERT_LIMIT
+
+
+def CanRevertForAnalysis(analysis):
+  """Returns True if the analysis can be reverted, false otherwise.
+
+  Several conditions must be satisfied for this to happen:
+  1. Analysis must have been completed with no errors.
+  2. Findit must have filed a bug for this (implies test is still flaky).
+  3. The test must be newly-added.
+  4. The commit must have happened in the last 24 hours.
+  """
+  culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+  assert culprit
+
+  last_24_hours = gerrit.WasCulpritCommittedWithinTime(culprit.repo_name,
+                                                       culprit.repo_name)
+
+  return bool(last_24_hours and analysis.status == analysis_status.COMPLETED and
+              analysis.try_job_status == analysis_status.COMPLETED and
+              analysis.confidence_in_suspected_build == 1.0 and
+              analysis.FindMatchingDataPointWithCommitPosition(
+                  culprit.commit_position - 1) is not None and
+              analysis.FindMatchingDataPointWithCommitPosition(
+                  culprit.commit_position - 1).pass_rate ==
+              flake_constants.PASS_RATE_TEST_NOT_FOUND and
+              analysis.has_filed_bug)
 
 
 def CulpritAddedNewFlakyTest(analysis, culprit_commit_position):

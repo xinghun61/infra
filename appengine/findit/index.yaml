@@ -170,6 +170,11 @@ indexes:
   - name: request_time
     direction: desc
 
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: has_submitted_autorevert
+  - name: autorevert_submission_time
+
 # For query on tree closures.
 - kind: TreeClosure
   properties:

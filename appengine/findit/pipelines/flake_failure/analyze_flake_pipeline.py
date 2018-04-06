@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from common import monitoring
+from common.waterfall import failure_type
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs.pipelines import GeneratorPipeline
@@ -13,6 +14,10 @@ from libs import analysis_status
 from libs import time_util
 from libs.structured_object import StructuredObject
 from pipelines.delay_pipeline import DelayPipeline
+from pipelines.flake_failure.create_and_submit_revert_pipeline import (
+    CreateAndSubmitRevertInput)
+from pipelines.flake_failure.create_and_submit_revert_pipeline import (
+    CreateAndSubmitRevertPipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
@@ -38,10 +43,12 @@ from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugInput)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugPipeline)
+from services import gerrit
 from services import swarmed_test_util
 from services.flake_failure import commit_position_util
 from services.flake_failure import confidence_score_util
 from services.flake_failure import flake_analysis_util
+from waterfall import build_util
 
 
 class AnalyzeFlakeInput(StructuredObject):
@@ -127,18 +134,28 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
       test_location = swarmed_test_util.GetTestLocation(
           culprit_data_point.GetSwarmingTaskId(), analysis.test_name)
 
+      # Data needed for reverts.
+      build_id = build_util.CreateBuildId(analysis.master_name,
+                                          analysis.builder_name,
+                                          culprit_data_point.build_number)
+
       # Log a Monorail bug and notify the culprit review about findings.
       with pipeline.InOrder():
         create_bug_input = self.CreateInputObjectInstance(
             CreateBugForFlakePipelineInputObject,
             analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
             test_location=test_location)
+        create_and_submit_revert_input = self.CreateInputObjectInstance(
+            CreateAndSubmitRevertInput,
+            analysis_urlsafe_key=analysis.key.urlsafe(),
+            build_id=build_id)
         monorail_bug_input = self.CreateInputObjectInstance(
             UpdateMonorailBugInput, analysis_urlsafe_key=analysis_urlsafe_key)
         notify_culprit_input = self.CreateInputObjectInstance(
             NotifyCulpritInput, analysis_urlsafe_key=analysis_urlsafe_key)
 
         yield CreateBugForFlakePipeline(create_bug_input)
+        yield CreateAndSubmitRevertPipeline(create_and_submit_revert_input)
         yield UpdateMonorailBugPipeline(monorail_bug_input)
         yield NotifyCulpritPipeline(notify_culprit_input)
         return

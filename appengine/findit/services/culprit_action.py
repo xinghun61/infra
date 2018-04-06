@@ -120,7 +120,7 @@ def RevertCulprit(parameters, analysis_id):
 
   if _CanCreateRevertForCulprit(parameters, analysis_id):
     return gerrit.RevertCulprit(
-        repo_name, revision, build_id, parameters.failure_type,
+        parameters.cl_key, build_id, parameters.failure_type,
         GetSampleFailedStepName(repo_name, revision, build_id))
   return gerrit.SKIPPED
 

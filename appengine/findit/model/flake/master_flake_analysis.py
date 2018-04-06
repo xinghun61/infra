@@ -602,4 +602,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   has_created_autorevert = ndb.BooleanProperty(default=False, indexed=False)
 
   # Track if this analysis has submitted a revert cl for a test.
-  has_submitted_autorevert = ndb.BooleanProperty(default=False, indexed=False)
+  has_submitted_autorevert = ndb.BooleanProperty(default=False, indexed=True)
+
+  # Track the time the autorevert has been submitted.
+  autorevert_submission_time = ndb.DateTimeProperty(indexed=True)

@@ -26,6 +26,7 @@ from libs import analysis_status as status
 from libs import time_util
 from model import entity_util
 from model.base_suspected_cl import RevertCL
+from model.flake.flake_culprit import FlakeCulprit
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot
@@ -52,14 +53,14 @@ _SURVEY_LINK = 'https://goo.gl/forms/iPQbwFyo98N9tJ7o1'
 
 
 @ndb.transactional
-def _UpdateCulprit(repo_name,
-                   revision,
+def _UpdateCulprit(culprit_urlsafe_key,
                    revert_status=None,
                    revert_cl=None,
                    skip_revert_reason=None,
                    revert_submission_status=None):
   """Updates culprit entity."""
-  culprit = WfSuspectedCL.Get(repo_name, revision)
+  culprit = ndb.Key(urlsafe=culprit_urlsafe_key).get()
+  assert culprit
 
   culprit.should_be_reverted = True
 
@@ -171,13 +172,43 @@ def _IsCulpritARevert(cl_info):
   return bool(cl_info.revert_of)
 
 
-def RevertCulprit(repo_name, revision, build_id, build_failure_type,
-                  sample_step_name):
+def _GenerateRevertReasonForFailure(build_id, commit_position, revision,
+                                    culprit, sample_step_name):
+  sample_build = build_id.split('/')
+  sample_build_url = buildbot.CreateBuildUrl(*sample_build)
+  return textwrap.dedent("""
+      Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
+      culprit for failures in the build cycles as shown on:
+      https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
+      Sample Failed Build: %s\n
+      Sample Failed Step: %s""") % (commit_position or revision,
+                                    culprit.key.urlsafe(), sample_build_url,
+                                    sample_step_name)
+
+
+def _GenerateRevertReasonForFlake(build_id, commit_position, revision, culprit,
+                                  sample_step_name):
+  analysis = ndb.Key(urlsafe=culprit.flake_analysis_urlsafe_keys[-1]).get()
+  assert analysis
+
+  sample_build = build_id.split('/')
+  sample_build_url = buildbot.CreateBuildUrl(*sample_build)
+  return textwrap.dedent("""
+      Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
+      culprit for flakes in the build cycles as shown on:
+      https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key=%s\n
+      Sample Failed Build: %s\n
+      Sample Failed Step: %s\n
+      Sample Failed test: %s""") % (commit_position or revision,
+                                    culprit.key.urlsafe(), sample_build_url,
+                                    sample_step_name, analysis.test_name)
+
+
+def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
   """Creates a revert of a culprit and adds reviewers.
 
   Args:
-    repo_name (str): Name of the repo.
-    revision (str): revision of the culprit.
+    urlsafe_key (str): Key to the ndb model.
     build_id (str): Id of the sample failed build.
     build_failure_type (int): Failure type: compile, test or flake.
     sample_step_name (str): Sample failed step in the failed build.
@@ -186,7 +217,9 @@ def RevertCulprit(repo_name, revision, build_id, build_failure_type,
     Status of this reverting.
   """
 
-  culprit = _UpdateCulprit(repo_name, revision)
+  culprit = _UpdateCulprit(urlsafe_key)
+  repo_name = culprit.repo_name
+  revision = culprit.revision
   # 0. Gets information about this culprit.
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
 
@@ -198,27 +231,24 @@ def RevertCulprit(repo_name, revision, build_id, build_failure_type,
 
   if not codereview or not culprit_change_id:  # pragma: no cover
     logging.error('Failed to get change id for %s/%s' % (repo_name, revision))
-    _UpdateCulprit(repo_name, revision, revert_status=status.ERROR)
+    _UpdateCulprit(urlsafe_key, revert_status=status.ERROR)
     return ERROR
 
   culprit_cl_info = codereview.GetClDetails(culprit_change_id)
   if not culprit_cl_info:  # pragma: no cover
     logging.error('Failed to get cl_info for %s/%s' % (repo_name, revision))
-    _UpdateCulprit(repo_name, revision, revert_status=status.ERROR)
+    _UpdateCulprit(urlsafe_key, revert_status=status.ERROR)
     return ERROR
 
   # Checks if the culprit is a revert. If yes, bail out.
   if _IsCulpritARevert(culprit_cl_info):
     _UpdateCulprit(
-        repo_name,
-        revision,
-        status.SKIPPED,
-        skip_revert_reason=CULPRIT_IS_A_REVERT)
+        urlsafe_key, status.SKIPPED, skip_revert_reason=CULPRIT_IS_A_REVERT)
     return SKIPPED
 
   if culprit_cl_info.auto_revert_off:
     _UpdateCulprit(
-        repo_name, revision, status.SKIPPED, skip_revert_reason=AUTO_REVERT_OFF)
+        urlsafe_key, status.SKIPPED, skip_revert_reason=AUTO_REVERT_OFF)
     return SKIPPED
 
   # 1. Checks if a revert CL by sheriff has been created.
@@ -229,7 +259,7 @@ def RevertCulprit(repo_name, revision, build_id, build_failure_type,
     # be None.
     logging.error('Failed to find patchset_id for %s/%s' % (repo_name,
                                                             revision))
-    _UpdateCulprit(repo_name, revision, revert_status=status.ERROR)
+    _UpdateCulprit(urlsafe_key, revert_status=status.ERROR)
     return ERROR
 
   findit_revert = None
@@ -241,8 +271,7 @@ def RevertCulprit(repo_name, revision, build_id, build_failure_type,
   if reverts and not findit_revert:
     # Sheriff(s) created the revert CL(s).
     _UpdateCulprit(
-        repo_name,
-        revision,
+        urlsafe_key,
         revert_status=status.SKIPPED,
         skip_revert_reason=REVERTED_BY_SHERIFF)
     return CREATED_BY_SHERIFF
@@ -255,23 +284,21 @@ def RevertCulprit(repo_name, revision, build_id, build_failure_type,
   # TODO (chanli): Better handle cases where 2 analyses are trying to revert
   # at the same time.
   if not revert_change_id:
-    sample_build = build_id.split('/')
-    sample_build_url = buildbot.CreateBuildUrl(*sample_build)
-    revert_reason = textwrap.dedent("""
-        Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
-        culprit for failures in the build cycles as shown on:
-        https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
-        Sample Failed Build: %s\n
-        Sample Failed Step: %s""") % (culprit_commit_position or revision,
-                                      culprit.key.urlsafe(), sample_build_url,
-                                      sample_step_name)
+    if type(culprit) is FlakeCulprit:
+      revert_reason = _GenerateRevertReasonForFlake(
+          build_id, culprit_commit_position, revision, culprit,
+          sample_step_name)
+    else:
+      revert_reason = _GenerateRevertReasonForFailure(
+          build_id, culprit_commit_position, revision, culprit,
+          sample_step_name)
 
     revert_change_id = codereview.CreateRevert(
         revert_reason, culprit_change_id,
         culprit_cl_info.GetPatchsetIdByRevision(revision))
 
     if not revert_change_id:  # pragma: no cover
-      _UpdateCulprit(repo_name, revision, status.ERROR)
+      _UpdateCulprit(urlsafe_key, status.ERROR)
       logging.error('Revert for culprit %s/%s failed.' % (repo_name, revision))
       return ERROR
 
@@ -280,7 +307,7 @@ def RevertCulprit(repo_name, revision, build_id, build_failure_type,
     revert_cl = RevertCL()
     revert_cl.revert_cl_url = codereview.GetCodeReviewUrl(revert_change_id)
     revert_cl.created_time = time_util.GetUTCNow()
-    _UpdateCulprit(repo_name, revision, None, revert_cl=revert_cl)
+    _UpdateCulprit(urlsafe_key, None, revert_cl=revert_cl)
 
   # 3. Add reviewers.
   # If Findit cannot commit the revert, add sheriffs as reviewers and ask them
@@ -294,15 +321,37 @@ def RevertCulprit(repo_name, revision, build_id, build_failure_type,
     success = _AddReviewers(revision, culprit.key.urlsafe(), codereview,
                             revert_change_id, False)
     if not success:  # pragma: no cover
-      _UpdateCulprit(repo_name, revision, status.ERROR)
+      _UpdateCulprit(urlsafe_key, status.ERROR)
       logging.error('Failed to add reviewers for revert of'
                     ' culprit %s/%s' % (repo_name, revision))
       return ERROR
-  _UpdateCulprit(repo_name, revision, revert_status=status.COMPLETED)
+  _UpdateCulprit(urlsafe_key, revert_status=status.COMPLETED)
   return CREATED_BY_FINDIT
 
 
 ###################### Functions to commit a revert. ######################
+
+
+def GetCommitTime(repo_name, revision):
+  """Returns the time that the culprit was committed."""
+  # TODO(crbug.com/829920): Refactor this to use gitiles.
+  culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
+  culprit_change_id = culprit_info['review_change_id']
+  culprit_host = culprit_info['review_server_host']
+
+  codereview = codereview_util.GetCodeReviewForReview(culprit_host)
+  culprit_cl_info = codereview.GetClDetails(culprit_change_id)
+  culprit_commit = culprit_cl_info.GetCommitInfoByRevision(revision)
+
+  return culprit_commit.timestamp
+
+
+def WasCulpritCommittedWithinTime(repo_name, revision,
+                                  time=timedelta(hours=24)):
+  """Returns True if the culprit was committed within the time given."""
+  culprit_commit_time = GetCommitTime(repo_name, revision)
+
+  return time_util.GetUTCNow() - culprit_commit_time < time
 
 
 def _CulpritWasAutoCommitted(culprit_info):
@@ -311,7 +360,7 @@ def _CulpritWasAutoCommitted(culprit_info):
           author_email in constants.NO_AUTO_COMMIT_REVERT_ACCOUNTS)
 
 
-def _CanAutoCommitRevertByGerrit(repo_name, revision):
+def _CanAutoCommitRevertByGerrit(culprit_urlsafe_key):
   """Checks if the revert can be auto-committed by gerrit.
 
   The revert should be auto-committed if:
@@ -324,8 +373,11 @@ def _CanAutoCommitRevertByGerrit(repo_name, revision):
       'culprit_commit_limit_hours', _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS)
 
   # Gets Culprit information.
-  culprit = WfSuspectedCL.Get(repo_name, revision)
+  culprit = entity_util.GetEntityFromUrlsafeKey(culprit_urlsafe_key)
   assert culprit
+
+  repo_name = culprit.repo_name
+  revision = culprit.revision
 
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
 
@@ -334,24 +386,21 @@ def _CanAutoCommitRevertByGerrit(repo_name, revision):
   if _CulpritWasAutoCommitted(culprit_info):
     return False
 
-  culprit_change_id = culprit_info['review_change_id']
   culprit_host = culprit_info['review_server_host']
   # Makes sure codereview is Gerrit, as only Gerrit is supported at the moment.
   if not codereview_util.IsCodeReviewGerrit(culprit_host):
-    _UpdateCulprit(repo_name, revision, revert_submission_status=status.SKIPPED)
+    _UpdateCulprit(
+        culprit.key.urlsafe(), revert_submission_status=status.SKIPPED)
     return False
+
   # Makes sure the culprit landed less than x hours ago (default: 24 hours).
   # Bail otherwise.
-  codereview = codereview_util.GetCodeReviewForReview(culprit_host)
-  culprit_cl_info = codereview.GetClDetails(culprit_change_id)
-  culprit_commit = culprit_cl_info.GetCommitInfoByRevision(revision)
-  culprit_commit_time = culprit_commit.timestamp
-
-  if time_util.GetUTCNow() - culprit_commit_time > timedelta(
-      hours=culprit_commit_limit_hours):
+  if not WasCulpritCommittedWithinTime(
+      repo_name, revision, time=timedelta(hours=culprit_commit_limit_hours)):
     logging.info('Culprit %s/%s was committed over %d hours ago, stop auto '
                  'commit.' % (repo_name, revision, culprit_commit_limit_hours))
-    _UpdateCulprit(repo_name, revision, revert_submission_status=status.SKIPPED)
+    _UpdateCulprit(
+        culprit.key.urlsafe(), revert_submission_status=status.SKIPPED)
     return False
 
   return True
@@ -367,7 +416,7 @@ def CommitRevert(pipeline_input):
   repo_name = culprit.repo_name
   revision = culprit.revision
 
-  if not _CanAutoCommitRevertByGerrit(repo_name, revision):
+  if not _CanAutoCommitRevertByGerrit(culprit.key.urlsafe()):
     return SKIPPED
 
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
@@ -382,11 +431,11 @@ def CommitRevert(pipeline_input):
     _AddReviewers(revision, culprit.key.urlsafe(), codereview, revert_change_id,
                   True)
     _UpdateCulprit(
-        repo_name, revision, revert_submission_status=status.COMPLETED)
+        culprit.key.urlsafe(), revert_submission_status=status.COMPLETED)
   else:
     _AddReviewers(revision, culprit.key.urlsafe(), codereview, revert_change_id,
                   False)
-    _UpdateCulprit(repo_name, revision, revert_submission_status=status.ERROR)
+    _UpdateCulprit(culprit.key.urlsafe(), revert_submission_status=status.ERROR)
   return COMMITTED if committed else ERROR
 
 

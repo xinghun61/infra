@@ -17,6 +17,10 @@ from pipelines.delay_pipeline import DelayPipeline
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from pipelines.flake_failure.analyze_flake_pipeline import (
     AnalyzeFlakePipeline)
+from pipelines.flake_failure.create_and_submit_revert_pipeline import (
+    CreateAndSubmitRevertInput)
+from pipelines.flake_failure.create_and_submit_revert_pipeline import (
+    CreateAndSubmitRevertPipeline)
 from pipelines.flake_failure.analyze_flake_pipeline import (
     RecursiveAnalyzeFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
@@ -81,6 +85,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulprit(
       self, mocked_test_location, mocked_confidence, mocked_culprit,
       mocked_revision):
+    build_id = 'm/b/None'
     culprit_commit_position = 999
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -114,12 +119,16 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     expected_create_bug_input = CreateBugForFlakePipelineInputObject(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         test_location=test_location)
+    expected_create_and_submit_revert_input = CreateAndSubmitRevertInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
     expected_update_bug_input = UpdateMonorailBugInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
     expected_notify_culprit_input = NotifyCulpritInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
     self.MockGeneratorPipeline(CreateBugForFlakePipeline,
                                expected_create_bug_input, None)
+    self.MockGeneratorPipeline(CreateAndSubmitRevertPipeline,
+                               expected_create_and_submit_revert_input, True)
     self.MockGeneratorPipeline(UpdateMonorailBugPipeline,
                                expected_update_bug_input, None)
     self.MockGeneratorPipeline(NotifyCulpritPipeline,

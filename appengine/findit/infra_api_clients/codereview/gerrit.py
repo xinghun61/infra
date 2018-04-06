@@ -99,6 +99,7 @@ class Gerrit(codereview.CodeReview):
         self._GetRevisedCLDescription(original_cl_description))
     revert_cl_description += self._GetCQFlagsOrExplanation(
         original_cl_commit_timestamp)
+    # TODO(crbug.com/828476): Support custom bug id.
     revert_cl_description += self._GetBugLine(original_cl_description)
     revert_cl_description += self._GetCQTryBotLine(original_cl_description)
     # Strips the break lines at the end of description to make sure no empty
@@ -141,7 +142,9 @@ class Gerrit(codereview.CodeReview):
     parts = ['changes', change_id, 'revert']
     revert_cl_description = self._GenerateRevertCLDescription(change_id, reason)
     reverting_change = self._Post(
-        parts, body={'message': revert_cl_description})
+        parts, body={
+            'message': revert_cl_description
+        })
     try:
       return reverting_change['change_id']
     except (TypeError, KeyError):

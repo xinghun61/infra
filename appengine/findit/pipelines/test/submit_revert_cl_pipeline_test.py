@@ -51,6 +51,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
+  @mock.patch.object(gerrit, 'WasCulpritCommittedWithinTime', return_value=True)
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
   @mock.patch.object(gerrit, '_AddReviewers', return_value=True)
