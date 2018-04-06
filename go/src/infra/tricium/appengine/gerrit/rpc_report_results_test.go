@@ -6,7 +6,6 @@ package gerrit
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -22,8 +21,8 @@ func TestReportResultsRequest(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		functionName := "Lint"
-
+		// Add request -> run -> function -> worker to datastore.
+		functionName := "MyLinter"
 		request := &track.AnalyzeRequest{
 			GitRepo: "https://chromium-review.googlesource.com",
 			GitRef:  "refs/changes/88/508788/1",
@@ -34,53 +33,59 @@ func TestReportResultsRequest(t *testing.T) {
 		So(ds.Put(ctx, run), ShouldBeNil)
 		runKey := ds.KeyForObj(ctx, run)
 		So(ds.Put(ctx, &track.FunctionRun{
-			ID:     functionName,
+			ID:     "MyLinter",
 			Parent: runKey,
 		}), ShouldBeNil)
-		analyzerKey := ds.NewKey(ctx, "FunctionRun", functionName, 0, runKey)
+		analyzerKey := ds.NewKey(ctx, "FunctionRun", "MyLinter", 0, runKey)
 		So(ds.Put(ctx, &track.FunctionRunResult{
 			ID:          1,
 			Parent:      analyzerKey,
-			Name:        functionName,
+			Name:        "MyLinter",
 			NumComments: 2,
 		}), ShouldBeNil)
-		workerName := functionName + "_UBUNTU"
+		workerName := "MyLinter_UBUNTU"
 		So(ds.Put(ctx, &track.WorkerRun{
 			ID:     workerName,
 			Parent: analyzerKey,
 		}), ShouldBeNil)
-		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
-		json1, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too long\"}", functionName))
-		So(err, ShouldBeNil)
-		json2, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too short\"}", functionName))
-		So(err, ShouldBeNil)
-		results := []*track.Comment{
-			{
-				Parent:  workerKey,
-				Comment: json1,
-			},
-			{
-				Parent:  workerKey,
-				Comment: json2,
-			},
-			{
-				Parent:  workerKey,
-				Comment: json2,
-			},
-		}
-		So(ds.Put(ctx, results), ShouldBeNil)
-		So(ds.Put(ctx, &track.CommentSelection{ID: 1, Parent: ds.KeyForObj(ctx, results[0]), Included: true}), ShouldBeNil)
-		So(ds.Put(ctx, &track.CommentSelection{ID: 1, Parent: ds.KeyForObj(ctx, results[1]), Included: true}), ShouldBeNil)
-		So(ds.Put(ctx, &track.CommentSelection{ID: 1, Parent: ds.KeyForObj(ctx, results[2]), Included: false}), ShouldBeNil)
 
-		Convey("Report results request", func() {
+		// Add example Comment and associated CommentSelection entities.
+		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
+		json1, err := json.Marshal("{\"category\":\"L\",\"message\":\"Line too long\"}")
+		json2, err := json.Marshal("{\"category\":\"L\",\"message\":\"Line too short\"}")
+		So(err, ShouldBeNil)
+		comments := []*track.Comment{
+			{Parent: workerKey, Comment: json1},
+			{Parent: workerKey, Comment: json2},
+			{Parent: workerKey, Comment: json2},
+		}
+		So(ds.Put(ctx, comments), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{
+			ID:       1,
+			Parent:   ds.KeyForObj(ctx, comments[0]),
+			Included: true,
+		}), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{
+			ID: 1, Parent: ds.KeyForObj(ctx, comments[1]),
+			Included: true,
+		}), ShouldBeNil)
+		// The third comment added is not "included" when reporting
+		// comments.
+		So(ds.Put(ctx, &track.CommentSelection{
+			ID:       1,
+			Parent:   ds.KeyForObj(ctx, comments[2]),
+			Included: false,
+		}), ShouldBeNil)
+
+		Convey("Reports only included comments", func() {
 			mock := &mockRestAPI{}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
-				Analyzer: functionName,
+				Analyzer: "MyLinter",
 			}, mock)
 			So(err, ShouldBeNil)
-			So(len(mock.LastComments), ShouldEqual, len(results)-1) // only include the two selected comments
+			// This only includes the two selected comments.
+			So(len(mock.LastComments), ShouldEqual, len(comments)-1)
 		})
 
 		Convey("Does not report results when reporting is disabled", func() {
@@ -92,7 +97,52 @@ func TestReportResultsRequest(t *testing.T) {
 				Analyzer: functionName,
 			}, mock)
 			So(err, ShouldBeNil)
-			So(len(mock.LastComments), ShouldEqual, 0) // only include the two selected comments
+			So(len(mock.LastComments), ShouldEqual, 0)
+		})
+
+		// Put more comments in until the number of included comments
+		// has reached the maximum comment number threshold.
+		for len(comments) < maxComments+1 {
+			comment := &track.Comment{Parent: workerKey, Comment: json1}
+			comments = append(comments, comment)
+			So(ds.Put(ctx, comment), ShouldBeNil)
+			So(ds.Put(ctx, &track.CommentSelection{
+				ID:       1,
+				Parent:   ds.KeyForObj(ctx, comment),
+				Included: true,
+			}), ShouldBeNil)
+		}
+		So(len(comments), ShouldEqual, maxComments+1)
+
+		Convey("Reports when number of comments is at maximum", func() {
+			mock := &mockRestAPI{}
+			err := reportResults(ctx, &admin.ReportResultsRequest{
+				RunId:    run.ID,
+				Analyzer: functionName,
+			}, mock)
+			So(err, ShouldBeNil)
+			So(len(mock.LastComments), ShouldEqual, maxComments)
+		})
+
+		// Put one more comment in;
+		comment := &track.Comment{Parent: workerKey, Comment: json1}
+		comments = append(comments, comment)
+		So(ds.Put(ctx, comment), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{
+			ID:       1,
+			Parent:   ds.KeyForObj(ctx, comment),
+			Included: true,
+		}), ShouldBeNil)
+		So(len(comments), ShouldEqual, maxComments+2)
+
+		Convey("Does not report when number of comments exceeds maximum", func() {
+			mock := &mockRestAPI{}
+			err := reportResults(ctx, &admin.ReportResultsRequest{
+				RunId:    run.ID,
+				Analyzer: functionName,
+			}, mock)
+			So(err, ShouldBeNil)
+			So(len(mock.LastComments), ShouldEqual, 0)
 		})
 	})
 }

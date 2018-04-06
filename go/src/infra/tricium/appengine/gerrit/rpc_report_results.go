@@ -20,6 +20,10 @@ import (
 	"infra/tricium/appengine/common/track"
 )
 
+const (
+	maxComments = 50
+)
+
 // ReportResults processes one report results request.
 func (r *gerritReporter) ReportResults(c context.Context, req *admin.ReportResultsRequest) (*admin.ReportResultsResponse, error) {
 	logging.Debugf(c, "[gerrit-reporter] ReportResults request (run ID: %d)", req.RunId)
@@ -73,6 +77,10 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 	}
 	if request.GerritReportingDisabled {
 		logging.Infof(c, "Gerrit reporting disabled, not reporting results (run ID: %s, project: %s)", req.RunId, request.Project)
+		return nil
+	}
+	if len(comments) > maxComments {
+		logging.Infof(c, "Too many comments (%d), not reporting results (run ID: %s)", len(comments), req.RunId)
 		return nil
 	}
 	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GerritRevision, req.RunId, comments)
