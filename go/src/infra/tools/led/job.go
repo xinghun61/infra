@@ -86,14 +86,18 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 					}
 					ret.S.KitchenArgs.RepositoryURL = ""
 					ret.S.KitchenArgs.Revision = ""
-				}
-				if cipdRecipe, ok := ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir]; ok {
+				} else if cipdRecipe, ok := ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir]; ok {
 					pkgname, vers := "", ""
 					for pkgname, vers = range cipdRecipe {
 						break
 					}
 					delete(ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir], pkgname)
 					ret.U.RecipeCIPDSource = &RecipeCIPDSource{pkgname, vers}
+				} else if iso := ret.S.SwarmingTask.Properties.InputsRef.Isolated; iso != "" {
+					// TODO(iannucci): actually seperate recipe files from the isolated
+					// instead of assuming the whole thing is recipes.
+					ret.U.RecipeIsolatedHash = iso
+					ret.S.SwarmingTask.Properties.InputsRef.Isolated = ""
 				}
 
 				ret.U.RecipeName = ret.S.KitchenArgs.RecipeName
