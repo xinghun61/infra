@@ -215,6 +215,7 @@ class ServletRegistry(object):
         urls.NOTIFY_ISSUE_CHANGE_TASK: notify.NotifyIssueChangeTask,
         urls.NOTIFY_BLOCKING_CHANGE_TASK: notify.NotifyBlockingChangeTask,
         urls.NOTIFY_BULK_CHANGE_TASK: notify.NotifyBulkChangeTask,
+        urls.NOTIFY_APPROVAL_CHANGE_TASK: notify.NotifyApprovalChangeTask,
         urls.OUTBOUND_EMAIL_TASK: notify.OutboundEmailTask,
         urls.SPAM_DATA_EXPORT_TASK: spammodel.TrainingDataExportTask,
         urls.DATE_ACTION_CRON: dateaction.DateActionCron,

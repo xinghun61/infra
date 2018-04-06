@@ -734,6 +734,36 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     return subject, body
 
 
+class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
+  """JSON servlet that notifies appropriate users after an approval change."""
+
+  _EMAIL_TEMPLATE = 'tracker/approval-change-notification-email.ezt'
+
+  def HandleRequest(self, mr):
+    """Process the task to notify users after an approval change.
+
+    Args:
+      mr: common information parsed from the HTTP request.
+
+    Returns:
+      Results dictionary in JSON format which is useful just for debugging.
+      The main goal is the side-effect of sending emails.
+    """
+
+    issue_id = mr.GetPositiveIntParam('issue_id')
+    hostport = mr.GetParam('hostport')
+
+    params = dict(
+        temporary='',
+        hostport=hostport,
+        issue_id=issue_id
+        )
+    return {
+        'params': params,
+        'notified': [],
+        }
+
+
 class OutboundEmailTask(jsonfeed.InternalTask):
   """JSON servlet that sends one email."""
 
