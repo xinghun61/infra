@@ -81,6 +81,18 @@ runOnLoad(function() {
     ga('set', 'location', 'A user page URL');
   [end]
 
+  const pathname = window.location.pathname;
+
+  // Don't track individual issue detail pages; track them all together.
+  if (pathname.endsWith('/issues/detail')) {
+    ga('set', 'title', 'Issue Detail');
+  }
+
+  // Don't track individual search terms; track all lists together.
+  if (pathname.endsWith('/issues/list')) {
+    ga('set', 'title', 'Issue List');
+  }
+
   ga('send', 'pageview');
 });
 </script>
