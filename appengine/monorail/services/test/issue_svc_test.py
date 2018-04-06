@@ -1537,10 +1537,11 @@ class IssueServiceTest(unittest.TestCase):
     issue_1.project_name = 'proj'
     self.services.issue.issue_2lc.CacheItem(78901, issue_1)
 
-    actual_approval_value = self.services.issue.GetIssueApproval(
+    issue, actual_approval_value = self.services.issue.GetIssueApproval(
         self.cnxn, issue_1.issue_id, av_24.approval_id)
 
     self.assertEqual(av_24, actual_approval_value)
+    self.assertEqual(issue, issue_1)
 
   def testGetIssueApproval_NoSuchApproval(self):
     phases = [tracker_pb2.Phase(phase_id=1, rank=1)]

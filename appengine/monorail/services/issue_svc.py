@@ -2369,14 +2369,14 @@ class IssueService(object):
 
   ### Approvals
 
-  def GetIssueApproval(self, cnxn, issue_id, approval_id):
+  def GetIssueApproval(self, cnxn, issue_id, approval_id, use_cache=True):
     """Retrieve the specified approval for the specified issue."""
-    issue = self.GetIssue(cnxn, issue_id)
+    issue = self.GetIssue(cnxn, issue_id, use_cache=use_cache)
     for phase in issue.phases:
       approval = tracker_bizobj.FindApprovalValueByID(
           approval_id, phase.approval_values)
       if approval:
-        return approval
+        return issue, approval
     raise exceptions.NoSuchIssueApprovalException()
 
   def UpdateIssueApprovalStatus(

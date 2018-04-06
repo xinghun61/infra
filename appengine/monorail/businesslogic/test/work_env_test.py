@@ -310,8 +310,7 @@ class WorkEnvTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue)
 
     self.work_env.UpdateIssueApprovalStatus(
-        78901, 24, tracker_pb2.ApprovalStatus.APPROVED, 111L,
-        3456)
+        78901, 24, tracker_pb2.ApprovalStatus.APPROVED,3456)
 
     issue = self.services.issue.GetIssue(self.cnxn, 78901)
     phase = issue.phases[0]
@@ -319,22 +318,29 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(updated_av.status, tracker_pb2.ApprovalStatus.APPROVED)
     self.assertEqual(updated_av.setter_id, 111L)
     self.assertEqual(updated_av.set_on, 3456)
+    amendment_comment = self.services.issue.GetCommentsForIssue(self.cnxn, 78901)[-1]
+    self.assertEqual(amendment_comment.approval_id, 24)
+    self.assertEqual(amendment_comment.amendments[-1].custom_field_name, 'Status')
 
   def testUpdateIssueApprovalApprovers(self):
     """We can update an issue's approval approvers."""
-    av_23 = tracker_pb2.ApprovalValue(approval_id=23, approver_ids=[555])
+    self.SignIn()
+    av_23 = tracker_pb2.ApprovalValue(approval_id=23, approver_ids=[111L, 555L])
     phases = [tracker_pb2.Phase(
         phase_id=1, rank=1, approval_values=[av_23])]
     issue = fake.MakeTestIssue(789, 1, 'summary', 'Avialable', 111L,
                                issue_id=78901, phases=phases)
     self.services.issue.TestAddIssue(issue)
 
-    self.work_env.UpdateIssueApprovalApprovers(78901, 23, [111, 222, 444])
+    self.work_env.UpdateIssueApprovalApprovers(78901, 23, [111L, 222L, 444L])
 
     issue = self.services.issue.GetIssue(self.cnxn, 78901)
     phase = issue.phases[0]
     updated_av = tracker_bizobj.FindApprovalValueByID(23, phase.approval_values)
     self.assertItemsEqual([111, 222, 444], updated_av.approver_ids)
+    amendment_comment = self.services.issue.GetCommentsForIssue(self.cnxn, 78901)[-1]
+    self.assertEqual(amendment_comment.approval_id, 23)
+    self.assertEqual(amendment_comment.amendments[-1].custom_field_name, 'Approvers')
 
   # FUTURE: testUpdateIssue()
 

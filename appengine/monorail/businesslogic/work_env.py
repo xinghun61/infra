@@ -46,6 +46,7 @@ from framework import permissions
 from search import frontendsearchpipeline
 from services import project_svc
 from sitewide import sitewide_helpers
+from tracker import tracker_bizobj
 from proto import project_pb2
 
 
@@ -403,13 +404,11 @@ class WorkEnv(object):
     return issue
 
   def UpdateIssueApprovalStatus(
-      self, issue_id, approval_id, new_status, setter_id, set_on):
+      self, issue_id, approval_id, new_status, set_on):
     """Update an issue's approvalvalue."""
-    approval_value = self.services.issue.GetIssueApproval(
+    issue, approval_value = self.services.issue.GetIssueApproval(
         self.mr.cnxn, issue_id, approval_id)
 
-    # TODO(jojwang): monorail:3582, OR this with project admin/owners
-    # or check for admin/owner perms inside CanUpdateApprovalStatus
     if not permissions.CanUpdateApprovalStatus(
         self.mr.auth.effective_ids, approval_value.approver_ids,
         approval_value.status, new_status):
@@ -419,7 +418,11 @@ class WorkEnv(object):
     with self.mr.profiler.Phase(
         'updating approvalvalue for issue %r' % issue_id):
       self.services.issue.UpdateIssueApprovalStatus(
-          self.mr.cnxn, issue_id, approval_id, new_status, setter_id, set_on)
+          self.mr.cnxn, issue_id, approval_id, new_status, self.mr.auth.user_id, set_on)
+      status_amendment = tracker_bizobj.MakeApprovalStatusAmendment(new_status)
+      self.services.issue.CreateIssueComment(
+          self.mr.cnxn, issue, self.mr.auth.user_id, '', amendments=[status_amendment],
+          approval_id=approval_id)
     # TODO(jojwang): monorail:3588, send notification to devs or approvers
     # on status change.
     logging.info('updated ApprovalValue %r for issue %r',
@@ -427,11 +430,26 @@ class WorkEnv(object):
 
   def UpdateIssueApprovalApprovers(self, issue_id, approval_id, approver_ids):
     """Update an issue's approval approvers."""
+    issue, approval_value = self.services.issue.GetIssueApproval(
+        self.mr.cnxn, issue_id, approval_id)
+
+    # TODO(jojwang): monorail:3582, OR this with project admin/owners
+    # or check for admin/owner perms inside CanUpdateApprovers
+    if not permissions.CanUpdateApprovers(
+        self.mr.auth.effective_ids, approval_value.approver_ids):
+      raise permissions.PermissionException(
+          'User not allowed to modify approvers of this approval.')
+
     with self.mr.profiler.Phase(
         'updating approvers for issue %r, approval %r' % (
             issue_id, approval_id)):
       self.services.issue.UpdateIssueApprovalApprovers(
           self.mr.cnxn, issue_id, approval_id, approver_ids)
+      approver_amendment = tracker_bizobj.MakeApprovalApproversAmendment(
+          approval_value.approver_ids, approver_ids)
+      self.services.issue.CreateIssueComment(
+          self.mr.cnxn, issue, self.mr.auth.user_id, '',
+          amendments=[approver_amendment], approval_id=approval_id)
     logging.info('updated approvers to %r' % approver_ids)
 
   # FUTURE: UpdateIssue()

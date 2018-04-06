@@ -1397,13 +1397,13 @@ class IssueService(object):
     self.comments_by_iid[issue.issue_id][0].content = marked_description
     return issue.local_id
 
-  def GetIssueApproval(self, cnxn, issue_id, approval_id):
-    issue = self.GetIssue(cnxn, issue_id)
+  def GetIssueApproval(self, cnxn, issue_id, approval_id, use_cache=True):
+    issue = self.GetIssue(cnxn, issue_id, use_cache=use_cache)
     for phase in issue.phases:
       approval = tracker_bizobj.FindApprovalValueByID(
           approval_id, phase.approval_values)
       if approval:
-        return approval
+        return issue, approval
     raise exceptions.NoSuchIssueApprovalException()
 
   def UpdateIssueApprovalStatus(
