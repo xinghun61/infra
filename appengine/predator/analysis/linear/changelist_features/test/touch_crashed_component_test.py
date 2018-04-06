@@ -5,6 +5,7 @@
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.component_classifier import Component
 from analysis.component_classifier import ComponentClassifier
+from analysis.crash_match import CrashedComponent
 from analysis.crash_report import CrashReport
 from analysis.linear.changelist_features.touch_crashed_component import (
     TouchCrashedComponentFeature)
@@ -123,3 +124,19 @@ class TouchCrashedComponentFeatureTest(AnalysisTestCase):
     frame = StackFrame(0, 'src/', 'func', 'bad_dir/f.cc',
                        'src/bad_dir/f.cc', [2, 3], 'h://repo')
     self.assertIsNone(feature.CrashedGroupFactory(frame))
+
+  def testReplacePath(self):
+    """Tests feature can still match components with files after file move."""
+    components = [Component('new_comp', ['src/dep/b/new_dir'], '', 'team')]
+    # Only construct the classifier once, rather than making a new one every
+    # time we call a method on it.
+    classifier = ComponentClassifier(components, 3, _MOCK_REPO_TO_DEP_PATH)
+    feature = TouchCrashedComponentFeature(
+        classifier, options={'replace_path': {'a/old_dir': 'b/new_dir'}})
+
+    match_func = feature.GetMatchFunction('src/dep')
+    self.assertTrue(
+        match_func(CrashedComponent('new_comp'),
+                   FileChangeInfo(ChangeType.MODIFY, 'a/old_dir/f.cc',
+                                  'a/old_dir/f.cc')))
+

@@ -63,12 +63,14 @@ class PredatorForClusterfuzz(PredatorApp):
     top_frame_index_feature = TopFrameIndexFeature()
     touch_crashed_file_feature = TouchCrashedFileFeature()
 
-    blacklist_directories = config.feature_options['TouchCrashedDirectory']
     meta_feature = WrapperMetaFeature(
-        [TouchCrashedFileMetaFeature([min_distance_feature,
-                                      top_frame_index_feature,
-                                      touch_crashed_file_feature]),
-         TouchCrashedDirectoryFeature(options=blacklist_directories),
+        [TouchCrashedFileMetaFeature(
+            [min_distance_feature,
+             top_frame_index_feature,
+             touch_crashed_file_feature],
+            options=config.feature_options.get('TouchCrashedFileMetaFeature')),
+         TouchCrashedDirectoryFeature(
+             options=config.feature_options['TouchCrashedDirectory']),
          TouchCrashedComponentFeature(
              self._component_classifier,
              options=config.feature_options['TouchCrashedComponent']),

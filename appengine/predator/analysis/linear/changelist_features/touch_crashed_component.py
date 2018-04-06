@@ -24,6 +24,10 @@ class TouchCrashedComponentFeature(Feature):
     self._component_classifier = component_classifier
     blacklist = options.get('blacklist', []) if options else []
     self._blacklist = [component.lower() for component in blacklist]
+    self._path_mappings = []
+    if options and 'replace_path' in options:
+      self._path_mappings.append(
+          crash_util.ReplacePath(options['replace_path']))
 
   @property
   def name(self):
@@ -50,8 +54,10 @@ class TouchCrashedComponentFeature(Feature):
       Returns:
         Boolean indicating whether it is a match or not.
       """
-      touched_component = self._component_classifier.ClassifyTouchedFile(
-          dep_path, touched_file)
+      path = os.path.join(dep_path, touched_file.changed_path)
+      touched_component = self._component_classifier.ClassifyFilePath(
+          crash_util.MapPath(path, self._path_mappings))
+
       return crashed_component.value == touched_component
 
     return Match

@@ -5,6 +5,7 @@
 import unittest
 
 from analysis.analysis_testcase import AnalysisTestCase
+from analysis.crash_match import CrashedDirectory
 from analysis.crash_report import CrashReport
 from analysis.linear.changelist_features.touch_crashed_directory import (
     TouchCrashedDirectoryBaseFeature)
@@ -149,6 +150,18 @@ class TouchCrashedDirectoryBaseFeatureTest(AnalysisTestCase):
     frame = StackFrame(0, 'src/', 'func', 'bad_dir/f.cc',
                        'src/bad_dir/f.cc', [2, 3], 'h://repo')
     self.assertIsNone(feature.CrashedGroupFactory(frame))
+
+  def testFilePathMatchAfterFileRename(self):
+    """Tests the feature can match old file with new file after file name."""
+    feature = TouchCrashedDirectoryBaseFeature(
+        options={'replace_path': {'old/dir': 'new/dir'}})
+
+    self.assertTrue(
+        feature.Match(CrashedDirectory('new/dir/a'),
+                      FileChangeInfo(ChangeType.MODIFY, 'old/dir/a/FileName.cc',
+                                     'old/dir/a/FileName.cc')))
+
+
 
 class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
   """Tests ``TouchCrashedDirectoryFeature``."""

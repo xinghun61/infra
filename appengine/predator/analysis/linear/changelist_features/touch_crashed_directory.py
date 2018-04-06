@@ -36,6 +36,10 @@ class TouchCrashedDirectoryBaseFeature(Feature):  # pylint: disable=W0223
     blacklist = options.get('blacklist', []) if options else []
     self._blacklist = [directory.lower() for directory in blacklist]
     self._level = level
+    self._path_mappings = []
+    if options and 'replace_path' in options:
+      self._path_mappings.append(
+          crash_util.ReplacePath(options['replace_path']))
 
   def GetCrashedDirectory(self, file_path):
     file_parts = file_path.split('/')
@@ -71,7 +75,8 @@ class TouchCrashedDirectoryBaseFeature(Feature):  # pylint: disable=W0223
     if not self._include_test_files and _IsTestFile(touched_file.new_path):
       return False
 
-    return touched_file.new_path.startswith(crashed_directory.value + '/')
+    path = crash_util.MapPath(touched_file.new_path, self._path_mappings)
+    return path.startswith(crashed_directory.value + '/')
 
   def __call__(self, report):
     """

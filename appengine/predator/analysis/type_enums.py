@@ -44,3 +44,8 @@ class LogLevel(object):
   INFO = 'info'
   WARNING = 'warning'
   ERROR = 'error'
+
+
+class RenameType(object):
+  CAPITAL_TO_UNDERSCORE = 'capital_to_underscore'
+  UNDERSCORE_TO_CAPITAL = 'underscore_to_capital'

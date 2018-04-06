@@ -30,7 +30,7 @@ class TouchCrashedFileMetaFeature(MetaFeature):
   ``TouchCrashedFileFeature``.
   """
 
-  def __init__(self, features, include_renamed_paths=False):
+  def __init__(self, features, include_renamed_paths=False, options=None):
     """
     Args:
       features (list of ``Feature``): List of features relating to a touched
@@ -42,6 +42,26 @@ class TouchCrashedFileMetaFeature(MetaFeature):
     super(TouchCrashedFileMetaFeature, self).__init__({
         feature.name: feature for feature in features})
     self._include_renamed_paths = include_renamed_paths
+    # Notice that the order does matter, since we are doing file mapping one
+    # by one, so the next mapping is performed over the previous mapping result.
+    self._path_mappings = []
+    if options:
+      # Rename the touched file name from old naming convention to new
+      # convention if set.
+      if 'change_naming_convention' in options:
+        self._path_mappings.append(
+            crash_util.ChangeNamingConvention(
+                options['change_naming_convention']))
+
+      if 'change_file_extension' in options:
+        self._path_mappings.append(crash_util.ChangeFileExtension(
+            options['change_file_extension']))
+
+      # Mapping the touched file path from old directory to new directory
+      # if set.
+      if 'replace_path' in options:
+        self._path_mappings.append(crash_util.ReplacePath(
+            options['replace_path']))
 
   def CrashedGroupFactory(self, frame):
     """Factory function to create ``CrashedFile``."""
@@ -60,6 +80,9 @@ class TouchCrashedFileMetaFeature(MetaFeature):
     if (self._include_renamed_paths and
         touched_file.change_type == ChangeType.RENAME):
       paths.append(touched_file.old_path)
+
+    paths = [crash_util.MapPath(path, self._path_mappings)
+             for path in paths]
     return any(crash_util.IsSameFilePath(crashed_file.value, path)
                for path in paths)
 

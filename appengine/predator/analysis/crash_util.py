@@ -7,6 +7,104 @@ import re
 
 from analysis.crash_match import CrashMatch
 from analysis.crash_match import FrameInfo
+from analysis.type_enums import RenameType
+
+
+class PathMapping(object):
+  """Performs mapping from one path to another."""
+
+  def __call__(self, path):
+    raise NotImplementedError()
+
+
+class ReplacePath(PathMapping):
+  """Mapping files from old pathes to new pathes."""
+
+  def __init__(self, old_to_new_path_mappings):
+    """Mapping files from old directories to new directories.
+
+    Args:
+      old_to_new_path_mappings (dict): dict from old dirs to new dirs.
+      For example:
+      {'third_party/WebKit/Source': 'third_party/blink/renderer'},
+    """
+    self.old_to_new_path_mappings = old_to_new_path_mappings
+
+  def __call__(self, path):
+    for old_path, new_path in self.old_to_new_path_mappings.iteritems():
+      path = path.replace(old_path, new_path)
+
+    return path
+
+
+class ChangeNamingConvention(PathMapping):
+
+  def __init__(self, path_pattern_to_rename_type):
+    """Rename files that have certain path pattern based on rename type.
+
+    Args:
+      path_pattern_to_rename_type (dict): dict from regex patterns of the path
+      to the rename type. The rename type can be:
+      'capital_to_underscore', 'underscore_to_capital'
+
+      For example:
+      {'third_party/WebKit/Source': 'capital_to_underscore'}
+    """
+    self.path_regex_to_rename_type = {
+        re.compile(path_pattern): rename_type
+        for path_pattern, rename_type in path_pattern_to_rename_type.iteritems()
+    }
+
+  def __call__(self, path):
+    for path_regex, rename_type in self.path_regex_to_rename_type.iteritems():
+      match = path_regex.match(path)
+      if match:
+        path_parts = path.split('/')
+        path_parts[-1] = RenameFileName(path_parts[-1], rename_type)
+        return '/'.join(path_parts)
+
+    return path
+
+
+class ChangeFileExtension(PathMapping):
+
+  def __init__(self, path_pattern_to_extension_mapping):
+    """Changes file types for pathes with certain pattern.
+
+    path_pattern_to_extension_mapping (dict): from regex patterns to
+    file type mappings.
+    """
+    self.path_regex_to_extension_mapping = {
+        re.compile(path_pattern): extension_mapping
+        for path_pattern, extension_mapping
+        in path_pattern_to_extension_mapping.iteritems()
+    }
+
+  def __call__(self, path):
+    for path_regex, extension_mapping in (
+        self.path_regex_to_extension_mapping.iteritems()):
+      match = path_regex.match(path)
+      if match:
+        path_parts = path.split('/')
+        path_parts[-1] = MapFileExtension(path_parts[-1], extension_mapping)
+        return '/'.join(path_parts)
+
+    return path
+
+
+def MapPath(path, path_mappings):
+  """Maps path into a new path through path_mappings.
+
+  Note that the order in path_mappings matters, different order might end up
+  different result.
+  """
+  if not path or not path_mappings:
+    return path
+
+  for path_mapping in path_mappings:
+    path = path_mapping(path)
+
+  return path
 
 
 def IsSameFilePath(path_1, path_2):
@@ -58,6 +156,37 @@ def IsSameFilePath(path_1, path_2):
                           part in parts_count_1 if part in path_parts_2])
 
   return total_same_parts >= min(3, min(len(path_parts_1), len(path_parts_2)))
+
+
+def RenameFileName(file_name, rename_type):
+  """Rename file_name according to file rename type."""
+  if rename_type == RenameType.CAPITAL_TO_UNDERSCORE:
+    new_name_chars = []
+    for i, c in enumerate(file_name):
+      if c.isupper() and i != 0:
+        new_name_chars.append('_')
+
+      new_name_chars.append(c.lower())
+    return ''.join(new_name_chars)
+
+  elif rename_type == RenameType.UNDERSCORE_TO_CAPITAL:
+    # If there is only one word, for example: 'abc', we convert the first
+    # charactor to capital, which means 'Abc'.
+    words = file_name.split('_')
+    words = [word[0].upper() + word[1:] for word in words] if words else []
+    return ''.join(words)
+
+  return file_name
+
+
+def MapFileExtension(file_name, extension_mapping):
+  """Changes the file extension based on extension_mapping."""
+  name_parts = file_name.rsplit('.', 1)
+  if len(name_parts) == 1:
+    return file_name
+
+  name_parts[-1] = extension_mapping.get(name_parts[-1], name_parts[-1])
+  return '.'.join(name_parts)
 
 
 def IndexFramesWithCrashedGroup(stacktrace, crashed_group_factory,

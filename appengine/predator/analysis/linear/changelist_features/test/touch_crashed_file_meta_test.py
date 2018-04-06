@@ -6,6 +6,7 @@ import mock
 import unittest
 
 from analysis.analysis_testcase import AnalysisTestCase
+from analysis.crash_match import CrashedFile
 from analysis.crash_report import CrashReport
 from analysis.linear.changelist_features.min_distance import Distance
 from analysis.linear.changelist_features.min_distance import MinDistanceFeature
@@ -102,3 +103,37 @@ class TouchCrashedFileMetaFeatureTest(AnalysisTestCase):
     feature_values = feature_without_flag(report)(self._GetMockSuspect())
     self.assertEqual(0, feature_values['TouchCrashedFile'].value)
 
+  def testFilePathMatchAfterReplacePath(self):
+    """Tests the feature can match old file with new file after file move."""
+    feature = TouchCrashedFileMetaFeature(
+        [TouchCrashedFileFeature()],
+        options={'replace_path': {'old/dir': 'new/dir'}})
+
+    self.assertTrue(
+        feature.Match(CrashedFile('new/dir/a/file.cc'),
+                      FileChangeInfo(ChangeType.MODIFY, 'old/dir/a/file.cc',
+                                     'old/dir/a/file.cc')))
+
+  def testFilePathMatchAfterChangeNamingConvention(self):
+    """Tests the feature can match old file with new file after file name."""
+    feature = TouchCrashedFileMetaFeature(
+        [TouchCrashedFileFeature()],
+        options={'change_naming_convention':
+                 {'dir/a': 'capital_to_underscore'}})
+
+    self.assertTrue(
+        feature.Match(CrashedFile('dir/a/file_name.cc'),
+                      FileChangeInfo(ChangeType.MODIFY, 'dir/a/FileName.cc',
+                                     'dir/a/FileName.cc')))
+
+  def testFilePathMatchAfterChangeFileExtension(self):
+    """Tests feature can match old file with new file after extension change."""
+    feature = TouchCrashedFileMetaFeature(
+        [TouchCrashedFileFeature()],
+        options={'change_file_extension':
+                 {'dir/a': {'cpp': 'cc'}}})
+
+    self.assertTrue(
+        feature.Match(CrashedFile('dir/a/file_name.cc'),
+                      FileChangeInfo(ChangeType.MODIFY, 'dir/a/file_name.cpp',
+                                     'dir/a/file_name.cpp')))

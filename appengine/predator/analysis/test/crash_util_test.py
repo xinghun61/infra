@@ -13,6 +13,7 @@ from analysis.stacktrace import ProfilerStackFrame
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import Stacktrace
 from analysis.suspect import Suspect
+from analysis.type_enums import RenameType
 from libs.deps.dependency import Dependency
 from libs.gitiles.change_log import ChangeLog
 
@@ -156,3 +157,71 @@ class CrashUtilTest(AnalysisTestCase):
 
     c = 'no_parenthese'
     self.assertEqual(crash_util.FilterStackFrameFunction(c), c)
+
+  def testRenameFileName(self):
+    """Tests ``RenameFileName`` function."""
+    self.assertEqual (
+        crash_util.RenameFileName('UpperFileName.cpp',
+                                  RenameType.CAPITAL_TO_UNDERSCORE),
+        'upper_file_name.cpp')
+
+    self.assertEqual (
+        crash_util.RenameFileName('AbcAbcAbc.cpp',
+                                  RenameType.CAPITAL_TO_UNDERSCORE),
+        'abc_abc_abc.cpp')
+
+    self.assertEqual (
+        crash_util.RenameFileName('underscore_file_name.cpp',
+                                  RenameType.UNDERSCORE_TO_CAPITAL),
+        'UnderscoreFileName.cpp')
+
+    self.assertEqual (
+        crash_util.RenameFileName('UpperFileName.cpp', None),
+        'UpperFileName.cpp')
+
+  def testMapPath(self):
+    self.assertEqual(crash_util.MapPath('', []), '')
+    self.assertEqual(crash_util.MapPath(None, []), None)
+
+    change_naming_convention = crash_util.ChangeNamingConvention({'a/old_dir':
+                                                     'capital_to_underscore'})
+    replace_path = crash_util.ReplacePath({'a/old_dir': 'b/new_dir'})
+    self.assertEqual(
+        crash_util.MapPath('a/old_dir/ClassName.cpp',
+                           [change_naming_convention, replace_path]),
+        'b/new_dir/class_name.cpp'
+    )
+
+
+class ChangeNamingConventionTest(AnalysisTestCase):
+
+  def testCall(self):
+    change_naming_convention = crash_util.ChangeNamingConvention(
+        {'a/b': 'capital_to_underscore'})
+    self.assertEqual(change_naming_convention('a/b/ClassBlaBla.cpp'),
+                     'a/b/class_bla_bla.cpp')
+    self.assertEqual(change_naming_convention('a/ClassBlaBla.cpp'),
+                     'a/ClassBlaBla.cpp')
+
+
+class ReplacePathTest(AnalysisTestCase):
+
+  def testCall(self):
+    replace_path = crash_util.ReplacePath({'a/old_dir': 'b/new_dir'})
+    self.assertEqual(replace_path('a/old_dir/ClassBlaBla.cpp'),
+                                  'b/new_dir/ClassBlaBla.cpp')
+    self.assertEqual(replace_path('a/ClassBlaBla.cpp'), 'a/ClassBlaBla.cpp')
+
+
+class ChangeFileExtension(AnalysisTestCase):
+
+  def testCall(self):
+    change_file_extension = crash_util.ChangeFileExtension(
+        {'a/b': {'cpp': 'cc'}})
+    self.assertEqual(change_file_extension('a/b/ClassBlaBla.cpp'),
+                                           'a/b/ClassBlaBla.cc')
+
+    self.assertEqual(change_file_extension('a/ClassBlaBla.cpp'),
+                                           'a/ClassBlaBla.cpp')
+    self.assertEqual(change_file_extension('a/b/ClassBlaBla'),
+                                           'a/b/ClassBlaBla')
