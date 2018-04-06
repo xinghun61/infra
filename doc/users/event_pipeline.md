@@ -105,10 +105,6 @@ Python: use
 How you instrument your code to add event logging depends on your needs, and
 there are a couple of options.
 
-_We strongly advise against using the raw Google Cloud APIs for BigQuery because
-they have some rough edges and failure modes that our chrome infra libs address
-for you._
-
 If you don’t need transactional integrity, and prefer a simpler configuration,
 use [bq.Uploader](https://godoc.org/go.chromium.org/luci/common/bq#Uploader)
 This should be your default choice if you’re just starting out.
@@ -170,17 +166,11 @@ can also be helpful.
 
 ### From Python GAE:
 
-First, check the status of [crbug.com/813238](https://crbug.com/813238). If it
-is resolved:
-
-1. Use infra_libs.bigquery via Vpython (spec should be similar to that of
-   [upload_goma_logs.vpython](https://codesearch.chromium.org/chromium/build/scripts/slave/upload_goma_logs.py.vpython?q=upload_goma_logs.&sq=package:chromium&l=1))
-2. Please update this documentation. :)
-
-Otherwise, infra_libs (and google-cloud-bigquery) won't be available to you due
-to some dependency issues and you will have to workaround that. See [an
-example](https://codesearch.chromium.org/chromium/infra/appengine/findit/services/bigquery_helper.py)
-in Findit.
+1. Use [message_to_dict](https://chromium.googlesource.com/infra/infra/+/fe875b1417d5d6a73999462b1001a2852ef6efb9/packages/infra_libs/infra_libs/bigquery/helper.py#24)
+   function to convert a protobuf message to a dict.
+2. Use [BigQuery REST API](https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll)
+   to insert rows.
+3. Don't forget to include insert ids in the request!
 
 # (Optional Step) Writing a Dataflow workflow
 
