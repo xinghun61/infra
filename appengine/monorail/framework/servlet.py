@@ -17,6 +17,7 @@ Summary of page classes:
   _ContextDebugItem: displays page_data elements for on-page debugging.
 """
 
+import gc
 import httplib
 import json
 import logging
@@ -56,11 +57,22 @@ from search import query2ast
 from services import secrets_svc
 from tracker import tracker_views
 
+from infra_libs import ts_mon
+
 NONCE_LENGTH = 32
 
 if not settings.unit_test_mode:
   import MySQLdb
 
+GC_COUNT = ts_mon.CumulativeDistributionMetric(
+    'monorail/servlet/gc_count',
+    'Count of objects in each generation tracked by the GC',
+    [ts_mon.IntegerField('generation')])
+
+GC_EVENT_REQUEST = ts_mon.CounterMetric(
+    'monorail/servlet/gc_event_request',
+    'Counts of requests that triggered at least one GC event',
+    [ts_mon.IntegerField('generation')])
 
 class MethodNotSupportedError(NotImplementedError):
   """An exception class for indicating that the method is not supported.
@@ -149,6 +161,11 @@ class Servlet(webapp2.RequestHandler):
     handler_start_time = time.time()
 
     logging.info('\n\n\nRequest handler: %r', self)
+    count0, count1, count2 = gc.get_count()
+    logging.info('gc counts: %d %d %d', count0, count1, count2)
+    GC_COUNT.add(count0, {'generation': 0})
+    GC_COUNT.add(count1, {'generation': 1})
+    GC_COUNT.add(count2, {'generation': 2})
 
     self.mr = monorailrequest.MonorailRequest()
 
@@ -228,6 +245,16 @@ class Servlet(webapp2.RequestHandler):
     total_processing_time = time.time() - handler_start_time
     logging.warn('Processed request in %d ms',
                  int(total_processing_time * 1000))
+
+    end_count0, end_count1, end_count2 = gc.get_count()
+    logging.info('gc counts: %d %d %d', end_count0, end_count1, end_count2)
+    if end_count0 < count0:
+      GC_EVENT_REQUEST.increment({'generation': 0})
+    if end_count1 < count1:
+      GC_EVENT_REQUEST.increment({'generation': 1})
+    if end_count2 < count2:
+      GC_EVENT_REQUEST.increment({'generation': 2})
+
     if settings.enable_profiler_logging:
       self.mr.profiler.LogStats()
 
