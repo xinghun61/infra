@@ -47,6 +47,7 @@ class BuilderMessage(messages.Message):
   name = messages.StringField(1)
   category = messages.StringField(2)
   properties_json = messages.StringField(3)
+  swarming_dimensions = messages.StringField(4, repeated=True)
 
 
 class BucketMessage(messages.Message):
@@ -112,6 +113,7 @@ class SwarmbucketApi(remote.Service):
             category=builder.category,
             properties_json=json.dumps(
                 swarmingcfg.read_properties(builder.recipe)),
+            swarming_dimensions=[str(b) for b in builder.dimensions],
           )
           for builder in bucket.swarming.builders
         ],

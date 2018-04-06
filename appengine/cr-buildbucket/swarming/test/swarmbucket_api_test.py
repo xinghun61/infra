@@ -51,6 +51,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             properties: "foo:bar"
             properties_j: "baz:1"
           }
+          dimensions: "foo:bar"
+          dimensions: "baz:baz"
         }
         builders {
           name: "win_chromium_rel_ng"
@@ -138,7 +140,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             {
               'name': 'linux_chromium_rel_ng',
               'category': 'Chromium',
-              'properties_json': json.dumps({'foo': 'bar', 'baz': 1})
+              'properties_json': json.dumps({'foo': 'bar', 'baz': 1}),
+              'swarming_dimensions': ['foo:bar', 'baz:baz'],
             },
             {
               'name': 'win_chromium_rel_ng',
@@ -221,7 +224,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             },
           ],
         },
-        'dimensions': [],
+        'dimensions': [
+          {'key': 'baz', 'value': 'baz'},
+          {'key': 'foo', 'value': 'bar'},
+        ],
         'caches': [
           {
             'path': 'cache/builder',
