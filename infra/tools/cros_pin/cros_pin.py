@@ -18,8 +18,7 @@ CHROMITE_REPOSITORY = 'https://chromium.googlesource.com/chromiumos/chromite'
 # branch.
 DEFAULT_STABLE_COUNT = 2
 # This is needed for lakitu. Lakitu has 36 week stable cycle.
-# TODO(sawlani) change this once LTS milestone is defined.
-BASE_LTS_MILESTONE = 63
+BASE_LTS_MILESTONE = 65
 # Every 4th milestone will be LTS starting from BASE_LTS_MILESTONE.
 NEXT_LTS_MILESTONE_MODULO = 4
 
