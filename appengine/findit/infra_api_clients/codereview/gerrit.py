@@ -54,12 +54,19 @@ class Gerrit(codereview.CodeReview):
       return self.HTTP_CLIENT.Post(url, data=payload, headers=headers)
     raise NotImplementedError()  # pragma: no cover
 
-  def _GetBugLine(self, description):
+  def _GetBugLine(self, description, bug_id=None):
     bug_line_pattern = re.compile('^\s*((BUGS?|ISSUE)\s*[=:]\s*.*)$',
                                   re.IGNORECASE)
     for line in reversed(description.splitlines()):
       if bug_line_pattern.match(line):
+        if bug_id is not None:
+          return line.strip() + ', {}\n'.format(bug_id)
         return line.strip() + '\n'
+
+    # Nothing was found, return the bug_id if it was specified else an empty
+    # string.
+    if bug_id is not None:
+      return 'Bug: {}\n'.format(bug_id)
     return ''
 
   def _GetCQTryBotLine(self, description):
@@ -82,7 +89,7 @@ class Gerrit(codereview.CodeReview):
       )
     return 'No-Presubmit: true\nNo-Tree-Checks: true\nNo-Try: true\n'
 
-  def _GenerateRevertCLDescription(self, change_id, revert_reason):
+  def _GenerateRevertCLDescription(self, change_id, revert_reason, bug_id=None):
     original_cl_info = self.GetClDetails(change_id)
     original_cl_subject = original_cl_info.subject
     original_cl_change_id = original_cl_info.change_id
@@ -99,8 +106,11 @@ class Gerrit(codereview.CodeReview):
         self._GetRevisedCLDescription(original_cl_description))
     revert_cl_description += self._GetCQFlagsOrExplanation(
         original_cl_commit_timestamp)
-    # TODO(crbug.com/828476): Support custom bug id.
-    revert_cl_description += self._GetBugLine(original_cl_description)
+
+    # Add the bug id from the culprit change, and append a custom bug id if
+    # it is provided.
+    revert_cl_description += self._GetBugLine(original_cl_description, bug_id=bug_id)
+
     revert_cl_description += self._GetCQTryBotLine(original_cl_description)
     # Strips the break lines at the end of description to make sure no empty
     # lines between footers in this generated description and added footers by
@@ -138,13 +148,21 @@ class Gerrit(codereview.CodeReview):
     result = self._SetReview(change_id, message, should_email)
     return result is not None  # A successful post will return an empty dict.
 
-  def CreateRevert(self, reason, change_id, patchset_id=None):
+  def CreateRevert(self,
+                   reason,
+                   change_id,
+                   patchset_id=None,
+                   footer=None,
+                   bug_id=None):
     parts = ['changes', change_id, 'revert']
-    revert_cl_description = self._GenerateRevertCLDescription(change_id, reason)
-    reverting_change = self._Post(
-        parts, body={
-            'message': revert_cl_description
-        })
+    revert_cl_description = self._GenerateRevertCLDescription(
+        change_id, reason, bug_id=bug_id)
+    body = {'message': revert_cl_description}
+
+    # If a footer is provided, then append it.
+    if footer is not None:
+      body['message'] += '\n{}'.format(footer)
+    reverting_change = self._Post(parts, body=body)
     try:
       return reverting_change['change_id']
     except (TypeError, KeyError):

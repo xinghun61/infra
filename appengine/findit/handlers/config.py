@@ -325,6 +325,7 @@ _CONFIG_SPEC = {  # yapf: disable
     }),
     'builders_to_trybots': (dict, True, _ValidateTrybotMapping),
     'check_flake_settings': (dict, True, {
+        'autorevert_enabled': bool,
         'create_monorail_bug': bool,
         'minimum_confidence_score_to_run_tryjobs': float,
         'minimum_confidence_to_create_bug': float,

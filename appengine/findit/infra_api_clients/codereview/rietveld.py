@@ -121,7 +121,12 @@ class Rietveld(codereview.CodeReview):
     return status_code == 200 and content == 'OK'
 
   # Signature differs. Make patchset id required here - pylint: disable=W0222
-  def CreateRevert(self, reason, change_id, patchset_id):
+  def CreateRevert(self,
+                   reason,
+                   change_id,
+                   patchset_id=None,
+                   footer=None,
+                   bug_id=None):
     url_path = '/api/%s/%s/revert' % (change_id, patchset_id)
     form_fields = {
         'revert_reason': reason,

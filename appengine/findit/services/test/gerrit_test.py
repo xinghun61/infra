@@ -115,7 +115,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         Sample Failed Step: %s""") % (commit_position, culprit.key.urlsafe(),
                                       buildbot.CreateBuildUrl('m', 'b', '1'),
                                       sample_failed_step)
-    mock_gerrit.assert_called_once_with(reason, self.review_change_id, '20001')
+    mock_gerrit.assert_called_once_with(
+        reason, self.review_change_id, '20001', bug_id=None, footer=None)
 
     culprit_link = (
         'https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
@@ -186,6 +187,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, 's', test_name)
+    analysis.bug_id = 1
     analysis.put()
 
     culprit = FlakeCulprit.Create(repo_name, revision, commit_position)
@@ -212,7 +214,12 @@ class GerritTest(wf_testcase.WaterfallTestCase):
                                     culprit.key.urlsafe(),
                                     buildbot.CreateBuildUrl('m', 'b', '1'),
                                     sample_failed_step, test_name)
-    mock_gerrit.assert_called_once_with(reason, self.review_change_id, '20001')
+    mock_gerrit.assert_called_once_with(
+        reason,
+        self.review_change_id,
+        '20001',
+        bug_id=1,
+        footer='Flaky step name: s\nFlaky test name: t')
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)

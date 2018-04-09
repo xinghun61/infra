@@ -144,6 +144,7 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
         'max_stable_in_a_row': 0,
         'iterations_to_rerun': 100,
     },
+    'autorevert_enabled': True,
     'create_monorail_bug': True,
     'new_flake_bugs_per_day': 2,
     'update_monorail_bug': True,

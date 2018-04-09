@@ -64,7 +64,12 @@ class CodeReview(object):  # pragma: no cover.
     """
     raise NotImplementedError()
 
-  def CreateRevert(self, reason, change_id, patchset_id=None):
+  def CreateRevert(self,
+                   reason,
+                   change_id,
+                   patchset_id=None,
+                   footer=None,
+                   bug_id=None):
     """Creates a revert CL for the given issue and patchset.
 
     Args:

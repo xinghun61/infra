@@ -66,8 +66,9 @@ def AbortCreateAndSubmitRevert(parameters, runner_id):
     culprit.put()
 
 
-def IsAutorevertEnabled():  # pragma: no cover
-  return _IS_AUTO_REVERT_ENABLED
+def IsAutorevertEnabled():
+  check_flake_settings = waterfall_config.GetCheckFlakeSettings()
+  return check_flake_settings.get('autorevert_enabled', _IS_AUTO_REVERT_ENABLED)
 
 
 def CreateAndSubmitRevert(parameters, runner_id):
