@@ -81,6 +81,12 @@ runOnLoad(function() {
     ga('set', 'location', 'A user page URL');
   [end]
 
+  [if-any logged_in_user]
+    ga('set', 'dimension1', 'Logged in');
+  [else]
+    ga('set', 'dimension1', 'Not logged in');
+  [end]
+
   const pathname = window.location.pathname;
 
   // Don't track individual issue detail pages; track them all together.
