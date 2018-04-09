@@ -111,17 +111,15 @@ func TestPollBasicBehavior(t *testing.T) {
 				{
 					Name: "playground",
 					GerritDetails: &tricium.GerritDetails{
-						Host:             host,
-						Project:          "project/tricium-gerrit",
-						WhitelistedGroup: []string{"*"},
+						Host:    host,
+						Project: "project/tricium-gerrit",
 					},
 				},
 				{
 					Name: "infra",
 					GerritDetails: &tricium.GerritDetails{
-						Host:             host,
-						Project:          "infra/infra",
-						WhitelistedGroup: []string{"*"},
+						Host:    host,
+						Project: "infra/infra",
 					},
 				},
 				{
@@ -366,9 +364,11 @@ func TestPollWhitelistBehavior(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		noWhitelistProject := "no-whitelist-project"
-		whitelistProject := "whitelist-group-project"
-		whitelistGroup := "whitelist-group-name"
+		var (
+			noWhitelistProject = "no-whitelist-project"
+			whitelistProject   = "whitelist-group-project"
+			whitelistGroup     = "whitelist-group-name"
+		)
 
 		now := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		ctx, tc := testclock.UseTime(ctx, now)
@@ -396,9 +396,6 @@ func TestPollWhitelistBehavior(t *testing.T) {
 						WhitelistedGroup: []string{whitelistGroup},
 					},
 				},
-				{
-					Name: "non-gerrit-project",
-				},
 			},
 		}
 		sc, err := cp.GetServiceConfig(ctx)
@@ -412,7 +409,7 @@ func TestPollWhitelistBehavior(t *testing.T) {
 			}
 		}
 
-		Convey("Poll with a change in a project with no whitelisted groups", func() {
+		Convey("No whitelisted groups means all changes are analyzed", func() {
 			api := &mockPollRestAPI{}
 			lastChangeTs := tc.Now().UTC()
 			files := map[string]*gr.FileInfo{
@@ -434,8 +431,35 @@ func TestPollWhitelistBehavior(t *testing.T) {
 			So(poll(ctx, api, cp), ShouldBeNil)
 			tc.Add(time.Second)
 			So(poll(ctx, api, cp), ShouldBeNil)
+			Convey("Enqueues an analyze request", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 1)
+			})
+		})
+
+		Convey("Poll with a change by a whitelisted user", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := tc.Now().UTC()
+			files := map[string]*gr.FileInfo{
+				"README.md": {Status: fileStatusAdded},
+			}
+			revisions := map[string]gr.RevisionInfo{
+				"abcdef": {Files: files},
+			}
+			api.addChanges(host, whitelistProject, []gr.ChangeInfo{
+				{
+					ID:              "project~branch~Ideadc0de",
+					Project:         whitelistProject,
+					CurrentRevision: "abcdef",
+					Updated:         gr.TimeStamp(lastChangeTs),
+					Revisions:       revisions,
+					Owner:           &gr.AccountInfo{Email: "whitelisteduser@example.com"},
+				},
+			})
+			So(poll(ctx, api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(poll(ctx, api, cp), ShouldBeNil)
 			Convey("Does not enqueue analyze requests", func() {
-				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 1)
 			})
 		})
 
