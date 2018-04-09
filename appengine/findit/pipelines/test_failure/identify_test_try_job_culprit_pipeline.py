@@ -6,7 +6,6 @@ from gae_libs.pipelines import GeneratorPipeline
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
 from services import consistent_failure_culprits
-from services import git
 from services.parameters import BuildKey
 from services.parameters import CulpritActionParameters
 from services.parameters import IdentifyTestTryJobCulpritParameters

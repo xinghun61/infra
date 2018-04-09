@@ -14,6 +14,7 @@ from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
 from pipelines.test_failure.identify_test_try_job_culprit_pipeline import (
     IdentifyTestTryJobCulpritPipeline)
 from model.wf_suspected_cl import WfSuspectedCL
+from services import consistent_failure_culprits
 from services.parameters import BuildKey
 from services.parameters import CulpritActionParameters
 from services.parameters import IdentifyTestTryJobCulpritParameters
@@ -25,112 +26,13 @@ from waterfall.test import wf_testcase
 class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  # TODO(crbug.com/827691): Deflake this test.
+  @mock.patch.object(consistent_failure_culprits,
+                     'GetWfSuspectedClKeysFromCLInfo')
   @mock.patch.object(test_try_job, 'IdentifyTestTryJobCulprits')
-  def disabled_testIdentifyCulpritForTestTryJobSuccess(self, mock_fn):
+  def testIdentifyCulpritForTestTryJobSuccess(self, mock_fn, mock_fn2):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
-    try_job_id = '1'
-
-    test_result = {
-        'report': {
-            'result': {
-                'rev0': {
-                    'a_test': {
-                        'status': 'passed',
-                        'valid': True,
-                        'pass_fail_counts': {
-                            'a_test1': {
-                                'pass_count': 20,
-                                'fail_count': 0
-                            }
-                        }
-                    },
-                    'b_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['b_test1'],
-                        'pass_fail_counts': {
-                            'b_test1': {
-                                'pass_count': 0,
-                                'fail_count': 20
-                            }
-                        }
-                    }
-                },
-                'rev1': {
-                    'a_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['a_test1'],
-                        'pass_fail_counts': {
-                            'a_test1': {
-                                'pass_count': 0,
-                                'fail_count': 20
-                            }
-                        }
-                    },
-                    'b_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['b_test1'],
-                        'pass_fail_counts': {
-                            'b_test1': {
-                                'pass_count': 0,
-                                'fail_count': 20
-                            }
-                        }
-                    }
-                },
-                'rev2': {
-                    'a_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['a_test1', 'a_test2'],
-                        'pass_fail_counts': {
-                            'a_test1': {
-                                'pass_count': 0,
-                                'fail_count': 0
-                            },
-                            'b_test1': {
-                                'pass_count': 0,
-                                'fail_count': 0
-                            }
-                        }
-                    },
-                    'b_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['b_test1'],
-                        'pass_fail_counts': {
-                            'b_test1': {
-                                'pass_count': 0,
-                                'fail_count': 0
-                            }
-                        }
-                    }
-                }
-            },
-            'culprits': {
-                'a_test': {
-                    'a_test1': 'rev1',
-                    'a_test2': 'rev2'
-                },
-            },
-            'flakes': {
-                'b_test': ['b_test1']
-            }
-        },
-        'url': 'url',
-        'try_job_id': try_job_id,
-        'culprit': {
-            'a_test': {
-                'a_test1': 'rev1',
-                'a_test2': 'rev2'
-            },
-        }
-    }
 
     repo_name = 'chromium'
     revision = 'rev2'
@@ -152,10 +54,13 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             'repo_name': repo_name
         }
     }
-    mock_fn.return_value = culprits_result, ListOfBasestring()
+    mock_fn.return_value = culprits_result, ListOfBasestring.FromSerializable(
+        [])
 
     culprits = DictOfBasestring()
     culprits['rev2'] = culprit.key.urlsafe()
+    mock_fn2.return_value = culprits
+
     self.MockGeneratorPipeline(
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=CulpritActionParameters(
@@ -172,10 +77,11 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             master_name=master_name,
             builder_name=builder_name,
             build_number=build_number),
-        result=TestTryJobResult.FromSerializable(test_result))
+        result=TestTryJobResult.FromSerializable({}))
     pipeline = IdentifyTestTryJobCulpritPipeline(parameters)
     pipeline.start()
     self.execute_queued_tasks()
+    mock_fn.assert_called_once_with(parameters)
 
   def testReturnNoneIfNoTryJob(self):
     master_name = 'm'
