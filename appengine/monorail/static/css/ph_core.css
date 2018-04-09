@@ -916,6 +916,7 @@ html>body .goog-inline-block {
     font-size: inherit !important;
     font-weight: inherit !important;
     display: inline !important;
+    background: inherit !important;
     border: none !important;
     padding: 0 !important;
     margin: 0 !important;
