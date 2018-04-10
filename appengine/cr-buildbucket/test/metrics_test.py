@@ -133,6 +133,7 @@ class MetricsTest(testing.AppengineTestCase):
   def test_update_global_metrics(
       self, set_build_count_metric_async, set_build_latency,
       get_buckets_async):
+    set_build_count_metric_async.return_value = future(None)
     get_buckets_async.return_value = future([
       project_config_pb2.Bucket(name='x')
     ])

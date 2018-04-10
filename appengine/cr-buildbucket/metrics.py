@@ -39,6 +39,9 @@ _BUILD_FIELDS = {
 _METRIC_PREFIX_PROD = 'buildbucket/builds/'
 _METRIC_PREFIX_EXPERIMENTAL = 'buildbucket/builds-experimental/'
 
+# Maximum number of concurrent counting queries.
+_CONCURRENT_COUNTING_QUERY_LIMIT = 100
+
 
 def _default_field_value(name):
   return _BUILD_FIELDS[name][2]()
@@ -248,7 +251,12 @@ def set_build_count_metric_async(bucket, builder, status, experimental):
       model.Build.status == status,
       model.Build.experimental == experimental,
   )
-  value = yield q.count_async()
+  try:
+    value = yield q.count_async()
+  except:  # pragma: no cover
+    logging.exception('failed to count builds with query %s', q)
+    return
+
   fields = {
     'bucket': bucket,
     'builder': builder,
@@ -299,15 +307,27 @@ def update_global_metrics():
       set_build_latency(LEASE_LATENCY_SEC, b.name, True),
       set_build_latency(START_LATENCY_SEC, b.name, False),
     ])
+  for f in futures:
+    f.check_success()
 
+
+  # Collect a list of counting queries.
+  count_query_queue = []
   for key in model.Builder.query().iter(keys_only=True):
     _, bucket, builder = key.id().split(':', 2)
     for status in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED):
       for experimental in (False, True):
-        futures.append(set_build_count_metric_async(
-            bucket, builder, status, experimental))
+        count_query_queue.append((bucket, builder, status, experimental))
 
-  for f in futures:
-    f.check_success()
+  # Process counting queries with _CONCURRENT_COUNTING_QUERY_LIMIT workers.
+
+  @ndb.tasklet
+  def worker():
+    while count_query_queue:
+      item = count_query_queue.pop()
+      yield set_build_count_metric_async(*item)
+
+  for w in [worker() for _ in xrange(_CONCURRENT_COUNTING_QUERY_LIMIT)]:
+    w.check_success()
 
   logging.info('global metric computation took %s', utils.utcnow() - start)
