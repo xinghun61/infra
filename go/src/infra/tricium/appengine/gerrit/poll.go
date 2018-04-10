@@ -317,7 +317,8 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 	owners := map[string]bool{}
 	var tasks []*tq.Task
 	for _, c := range changes {
-		if len(gerritDetails.WhitelistedGroup) != 0 {
+		// TODO(qyearsley): Remove special case for "*" after removing it from configs.
+		if len(gerritDetails.WhitelistedGroup) != 0 && gerritDetails.WhitelistedGroup[0] != "*" {
 			whitelisted, ok := owners[c.Owner.Email]
 			if !ok {
 				ident, err := identity.MakeIdentity("user:" + c.Owner.Email)
