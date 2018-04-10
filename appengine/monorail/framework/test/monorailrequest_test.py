@@ -94,21 +94,21 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.assertEqual(notice_id, value)
 
   def testGetIntListParam_NoParam(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(self.services)
     mr.ParseRequest(webapp2.Request.blank('servlet'), self.services)
     self.assertEquals(mr.GetIntListParam('ids'), None)
     self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
                       ['test'])
 
   def testGetIntListParam_OneValue(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(self.services)
     mr.ParseRequest(webapp2.Request.blank('servlet?ids=11'), self.services)
     self.assertEquals(mr.GetIntListParam('ids'), [11])
     self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
                       [11])
 
   def testGetIntListParam_MultiValue(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(self.services)
     mr.ParseRequest(
         webapp2.Request.blank('servlet?ids=21,22,23'), self.services)
     self.assertEquals(mr.GetIntListParam('ids'), [21, 22, 23])
@@ -116,20 +116,20 @@ class MonorailRequestUnitTest(unittest.TestCase):
                       [21, 22, 23])
 
   def testGetIntListParam_BogusValue(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(self.services)
     with self.assertRaises(exceptions.InputException):
       mr.ParseRequest(
           webapp2.Request.blank('servlet?ids=not_an_int'), self.services)
 
   def testGetIntListParam_Malformed(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(self.services)
     with self.assertRaises(exceptions.InputException):
       mr.ParseRequest(
           webapp2.Request.blank('servlet?ids=31,32,,'), self.services)
 
   def testDefaultValuesNoUrl(self):
     """If request has no param, default param values should be used."""
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(self.services)
     mr.ParseRequest(webapp2.Request.blank('servlet'), self.services)
     self.assertEquals(mr.GetParam('r', 3), 3)
     self.assertEquals(mr.GetIntParam('r', 3), 3)
@@ -139,7 +139,7 @@ class MonorailRequestUnitTest(unittest.TestCase):
   def _MRWithMockRequest(
       self, path, headers=None, *mr_args, **mr_kwargs):
     request = webapp2.Request.blank(path, headers=headers)
-    mr = monorailrequest.MonorailRequest(*mr_args, **mr_kwargs)
+    mr = monorailrequest.MonorailRequest(self.services, *mr_args, **mr_kwargs)
     mr.ParseRequest(request, self.services)
     return mr
 
@@ -296,26 +296,26 @@ class CalcDefaultQueryTest(unittest.TestCase):
     self.config = tracker_pb2.ProjectIssueConfig()
 
   def testIssueListURL_NotDefaultCan(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(None)
     mr.query = None
     mr.can = 1
     self.assertEqual('', mr._CalcDefaultQuery())
 
   def testIssueListURL_NoProject(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(None)
     mr.query = None
     mr.can = 2
     self.assertEqual('', mr._CalcDefaultQuery())
 
   def testIssueListURL_NoConfig(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(None)
     mr.query = None
     mr.can = 2
     mr.project = self.project
     self.assertEqual('', mr._CalcDefaultQuery())
 
   def testIssueListURL_NotCustomized(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(None)
     mr.query = None
     mr.can = 2
     mr.project = self.project
@@ -323,7 +323,7 @@ class CalcDefaultQueryTest(unittest.TestCase):
     self.assertEqual('', mr._CalcDefaultQuery())
 
   def testIssueListURL_Customized_Nonmember(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(None)
     mr.query = None
     mr.can = 2
     mr.project = self.project
@@ -338,7 +338,7 @@ class CalcDefaultQueryTest(unittest.TestCase):
     self.assertEqual('', mr._CalcDefaultQuery())
 
   def testIssueListURL_Customized_Member(self):
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(None)
     mr.query = None
     mr.can = 2
     mr.project = self.project
@@ -467,9 +467,10 @@ class TestPermissionLookup(unittest.TestCase):
     self.mox.ReplayAll()
 
     request = webapp2.Request.blank('/p/' + project_name)
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(self.services)
     with mr.profiler.Phase('parse user info'):
       mr.ParseRequest(request, self.services)
+      print 'mr.auth is %r' % mr.auth
     return mr
 
   def testOwnerPermissions_Live(self):

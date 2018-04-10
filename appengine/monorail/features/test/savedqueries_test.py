@@ -20,12 +20,12 @@ class SavedQueriesTest(unittest.TestCase):
     self.services = service_manager.Services(
         user=fake.UserService())
     self.servlet = savedqueries.SavedQueries(
-    		'req', 'res', services=self.services)
+        'req', 'res', services=self.services)
     self.services.user.TestAddUser('a@example.com', 111L)
 
   def testAssertBasePermission(self):
     """Only permit site admins and users viewing themselves."""
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(self.services)
     mr.viewed_user_auth.user_id = 111L
     mr.auth.user_id = 222L
 

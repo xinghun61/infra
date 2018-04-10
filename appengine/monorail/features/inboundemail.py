@@ -27,7 +27,7 @@ from framework import authdata
 from framework import emailfmt
 from framework import exceptions
 from framework import framework_constants
-from framework import monorailrequest
+from framework import monorailcontext
 from framework import permissions
 from framework import sql
 from framework import template_helpers
@@ -168,10 +168,9 @@ class InboundEmail(webapp2.RequestHandler):
     try:
       auth = authdata.AuthData.FromEmail(
           cnxn, author_addr, self.services, autocreate=is_alert)
-      author_id = auth.user_id
     except exceptions.NoSuchUserException:
-      author_id = None
-    if not author_id:
+      auth = None
+    if not auth or not auth.user_id:
       return _MakeErrorMessageReplyTask(
           project_addr, error_addr, self._templates['no_account'])
 
@@ -186,20 +185,20 @@ class InboundEmail(webapp2.RequestHandler):
 
     # If the email is an alert, switch to the alert handling path.
     if is_alert:
-        self.ProcessAlert(cnxn, project, project_addr, from_addr, author_addr,
-            author_id, subject, body, incident_id, labels=labels)
+        self.ProcessAlert(cnxn, project, project_addr, from_addr, auth,
+            subject, body, incident_id, labels=labels)
         return None
 
     # This email is a response to an email about a comment.
     self.ProcessIssueReply(
-        cnxn, project, local_id, project_addr, from_addr, author_id,
+        cnxn, project, local_id, project_addr, from_addr, auth.user_id,
         auth.effective_ids, perms, body)
 
     return None
 
   def ProcessAlert(
-      self, cnxn, project, project_addr, from_addr, author_addr,
-      author_id, subject, body, incident_id, owner_email=None, labels=None):
+      self, cnxn, project, project_addr, from_addr, auth,
+      subject, body, incident_id, owner_email=None, labels=None):
     """Examine an an alert issue email and create an issue based on the email.
 
     Args:
@@ -208,9 +207,8 @@ class InboundEmail(webapp2.RequestHandler):
       project_addr: string email address the alert email was sent to.
       from_addr: string email address of the user who sent the alert email
           to our server.
-      author_addr: string email address of the user who will file the
-          alert issue.
-      author_id: int user ID of user who will file the alert issue.
+      auth: AuthData object with user_id and email address of the user who
+          will file the alert issue.
       body: string email body text of the reply email.
       incident_id: string containing an optional unique incident used to
           de-dupe alert issues.
@@ -243,15 +241,14 @@ class InboundEmail(webapp2.RequestHandler):
     components = ['Infra']
 
     formatted_body = 'Filed by %s on behalf of %s\n\n%s' % (
-        author_addr, from_addr, body)
+        auth.email, from_addr, body)
 
     # Lookup components.
     config = self.services.config.GetProjectConfig(cnxn, project.project_id)
     component_ids = tracker_helpers.LookupComponentIDs(components, config)
 
-    mr = monorailrequest.MonorailRequestBase(
-        services=self.services, user_id=author_id, cnxn=cnxn)
-    with work_env.WorkEnv(mr, self.services) as we:
+    mc = monorailcontext.MonorailContext(self.services, auth=auth, cnxn=cnxn)
+    with work_env.WorkEnv(mc, self.services) as we:
       updated_issue = None
       owner_id = None
       if owner_email:
@@ -285,7 +282,7 @@ class InboundEmail(webapp2.RequestHandler):
             updated_issue = latest_issue
             # Find all comments on the issue by the current user.
             comments = self.services.issue.GetComments(cnxn,
-                issue_id=[updated_issue.issue_id], commenter_id=[author_id])
+                issue_id=[updated_issue.issue_id], commenter_id=[auth.user_id])
 
             # Timestamp for 24 hours ago in seconds from epoch.
             yesterday = int(time.time()) - 24 * 60 * 60
@@ -299,7 +296,7 @@ class InboundEmail(webapp2.RequestHandler):
 
             # Add a reply to the existing issue for this incident.
             self.services.issue.CreateIssueComment(
-                cnxn, updated_issue, author_id, formatted_body)
+                cnxn, updated_issue, auth.user_id, formatted_body)
 
       if not updated_issue:
         updated_issue = we.CreateIssue(
@@ -309,8 +306,9 @@ class InboundEmail(webapp2.RequestHandler):
       # Update issue using commands.
       lines = body.strip().split('\n')
       uia = commitlogcommands.UpdateIssueAction(updated_issue.local_id)
-      commands_found = uia.Parse(cnxn, project.project_name, author_id, lines,
-                self.services, strip_quoted_lines=True)
+      commands_found = uia.Parse(
+          cnxn, project.project_name, auth.user_id, lines,
+          self.services, strip_quoted_lines=True)
 
       if commands_found:
         uia.Run(cnxn, self.services, allow_edit=True)

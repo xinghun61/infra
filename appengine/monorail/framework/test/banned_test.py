@@ -17,11 +17,13 @@ from testing import testing_helpers
 
 class BannedTest(unittest.TestCase):
 
-  def testAssertBasePermission(self):
-    servlet = banned.Banned(
-        'request', 'response', services=service_manager.Services())
+  def setUp(self):
+    self.services = service_manager.Services()
 
-    mr = monorailrequest.MonorailRequest()
+  def testAssertBasePermission(self):
+    servlet = banned.Banned('request', 'response', services=self.services)
+
+    mr = monorailrequest.MonorailRequest(self.services)
     mr.auth.user_id = 0L  # Anon user cannot see banned page.
     with self.assertRaises(webapp2.HTTPException) as cm:
       servlet.AssertBasePermission(mr)
@@ -37,8 +39,7 @@ class BannedTest(unittest.TestCase):
     servlet.AssertBasePermission(mr)
 
   def testGatherPageData(self):
-    servlet = banned.Banned(
-        'request', 'response', services=service_manager.Services())
+    servlet = banned.Banned('request', 'response', services=self.services)
     self.assertNotEquals(servlet.template, None)
 
     _request, mr = testing_helpers.GetRequestObjects()

@@ -220,9 +220,10 @@ class InboundEmailTest(unittest.TestCase):
     self.inbound.IsWhitelisted('user@malicious.com').AndReturn(False)
 
     self.mox.ReplayAll()
+    auth = authdata.AuthData(user_id=111L, email='user@example.com')
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@malicious.com',
-        'user@example.com', 111L, 'issue title', 'issue body', 'incident')
+        auth, 'issue title', 'issue body', 'incident')
 
     self.mox.VerifyAll()
     self.assertIsNone(ret)
@@ -246,9 +247,10 @@ class InboundEmailTest(unittest.TestCase):
 
     self.mox.ReplayAll()
 
+    auth = authdata.AuthData(user_id=111L, email='user@example.com')
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@google.com',
-        'user@example.com', 111L, 'issue title', 'issue body', 'incident-1')
+        auth, 'issue title', 'issue body', 'incident-1')
 
     self.mox.VerifyAll()
     self.assertIsNone(ret)
@@ -308,9 +310,10 @@ class InboundEmailTest(unittest.TestCase):
 
     self.mox.ReplayAll()
 
+    auth = authdata.AuthData(user_id=111L, email='user@example.com')
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@google.com',
-        'user@example.com', 111L, 'issue title', 'issue body', 'incident-1')
+        auth, 'issue title', 'issue body', 'incident-1')
 
     self.mox.VerifyAll()
     self.assertIsNone(ret)
@@ -345,9 +348,10 @@ class InboundEmailTest(unittest.TestCase):
 
       self.mox.ReplayAll()
 
+      auth = authdata.AuthData(user_id=111L, email='user@example.com')
       ret = self.inbound.ProcessAlert(
           self.cnxn, self.project, self.project_addr, 'user@google.com',
-          'user@example.com', 111L, 'issue title', 'issue body', 'incident-1')
+          auth, 'issue title', 'issue body', 'incident-1')
 
       self.mox.VerifyAll()
       self.assertIsNone(ret)

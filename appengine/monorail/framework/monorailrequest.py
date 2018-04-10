@@ -30,6 +30,7 @@ from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_views
+from framework import monorailcontext
 from framework import permissions
 from framework import profiler
 from framework import sql
@@ -42,44 +43,22 @@ from tracker import tracker_constants
 _HOSTPORT_RE = re.compile('^[-a-z0-9.]+(:\d+)?$', re.I)
 
 
-class MonorailRequestBase(object):
+# TODO(jrobbins): Stop extending MonorailContext and change whole servlet
+# framework to pass around separate objects for mc and mr.
+class MonorailRequestBase(monorailcontext.MonorailContext):
   """A base class with common attributes for internal and external requests."""
 
-  def __init__(
-      self, services=None, user_id=None, user_email=None, cnxn=None):
-    self.cnxn = cnxn or sql.MonorailConnection()
-    self.profiler = profiler.Profiler()
-    if user_id:
-      assert services
-      self.auth = authdata.AuthData.FromUserID(self.cnxn, user_id, services)
-    elif user_email:
-      assert services
-      self.auth = authdata.AuthData.FromEmail(self.cnxn, user_email, services)
-    else:
-      self.auth = authdata.AuthData()
+  def __init__(self, services, requester=None, cnxn=None):
+    super(MonorailRequestBase, self).__init__(
+        services, cnxn=cnxn, requester=requester)
 
     self.project_name = None
     self.project = None
     self.config = None
-    self.warnings = []
-    self.errors = template_helpers.EZTError()
-    self.perms = None
-
-  def LookupLoggedInUserPerms(self):
-    """Once we have the user and project, calculate their permissions."""
-    with self.profiler.Phase('looking up signed in user permissions'):
-      self.perms = permissions.GetPermissions(
-          self.auth.user_pb, self.auth.effective_ids, self.project)
 
   @property
   def project_id(self):
     return self.project.project_id if self.project else None
-
-  def CleanUp(self):
-    """Close the database connection so that the app does not run out."""
-    if self.cnxn:
-      self.cnxn.Close()
-      self.cnxn = None
 
 
 class MonorailApiRequest(MonorailRequestBase):
@@ -87,13 +66,13 @@ class MonorailApiRequest(MonorailRequestBase):
 
   # pylint: disable=attribute-defined-outside-init
   def __init__(self, request, services, cnxn=None):
-    requester = (
+    requester_object = (
         endpoints.get_current_user() or
         oauth.get_current_user(
             framework_constants.OAUTH_SCOPE))
-    requester_email = requester.email().lower()
+    requester = requester_object.email().lower()
     super(MonorailApiRequest, self).__init__(
-        services=services, user_email=requester_email, cnxn=cnxn)
+        services, requester=requester, cnxn=cnxn)
     self.me_user_id = self.auth.user_id
     self.viewed_username = None
     self.viewed_user_auth = None
@@ -130,7 +109,7 @@ class MonorailApiRequest(MonorailRequestBase):
     if hasattr(request, 'userId'):
       self.viewed_username = request.userId.lower()
       if self.viewed_username == 'me':
-        self.viewed_username = requester_email
+        self.viewed_username = requester
       self.viewed_user_auth = authdata.AuthData.FromEmail(
           self.cnxn, self.viewed_username, services)
     elif hasattr(request, 'groupName'):
@@ -140,7 +119,7 @@ class MonorailApiRequest(MonorailRequestBase):
             self.cnxn, self.viewed_username, services)
       except exceptions.NoSuchUserException:
         self.viewed_user_auth = None
-    self.LookupLoggedInUserPerms()
+    self.LookupLoggedInUserPerms(self.project)
 
     # Build q.
     if hasattr(request, 'q') and request.q:
@@ -226,9 +205,10 @@ class MonorailRequest(MonorailRequestBase):
   """
 
   # pylint: disable=attribute-defined-outside-init
-  def __init__(self, params=None):
+  def __init__(self, services, params=None):
     """Initialize the MonorailRequest object."""
-    super(MonorailRequest, self).__init__()
+    # Note: mr starts off assuming anon until ParseRequest() is called.
+    super(MonorailRequest, self).__init__(services)
     self.form_overrides = {}
     if params:
       self.form_overrides.update(params)
@@ -486,12 +466,11 @@ class MonorailRequest(MonorailRequestBase):
 
   def _LookupLoggedInUser(self, services):
     """Get information about the signed-in user (if any) from the request."""
-    with self.profiler.Phase('get user info, if any'):
-      self.auth = authdata.AuthData.FromRequest(self.cnxn, services)
+    self.auth = authdata.AuthData.FromRequest(self.cnxn, services)
     self.me_user_id = (self.GetIntParam('me') or
                        self.viewed_user_auth.user_id or self.auth.user_id)
 
-    self.LookupLoggedInUserPerms()
+    self.LookupLoggedInUserPerms(self.project)
 
   def ComputeColSpec(self, config):
     """Set col_spec based on param, default in the config, or site default."""

@@ -88,8 +88,8 @@ def GetRequestObjects(
 
   request = webapp2.Request.blank(path, headers=headers, POST=post_items)
   mr = fake.MonorailRequest(
-      user_info=user_info, project=project, perms=perms, params=params,
-      hotlist=hotlist)
+      services, user_info=user_info, project=project, perms=perms,
+      params=params, hotlist=hotlist)
   mr.ParseRequest(
       request, services, do_user_lookups=False)
   mr.auth.user_pb = user_pb2.MakeUser(0)

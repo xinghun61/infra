@@ -208,7 +208,7 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
         hostport, project, issue.local_id, seq_num=comment.sequence)
 
     # TODO(jrobbins): avoid the need to make a MonorailRequest object.
-    mr = monorailrequest.MonorailRequest()
+    mr = monorailrequest.MonorailRequest(self.services)
     mr.project_name = project.project_name
     mr.project = project
 

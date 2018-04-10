@@ -9,8 +9,8 @@ import unittest
 
 import mox
 
-from api import monorailcontext
 from framework import authdata
+from framework import monorailcontext
 from framework import permissions
 from framework import profiler
 from framework import template_helpers
@@ -60,7 +60,7 @@ class MonorailContextTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     mc = monorailcontext.MonorailContext(self.services, requester=requester)
-    mc.CalcPerms(self.project)
+    mc.LookupLoggedInUserPerms(self.project)
     self.assertEqual(mock_cnxn, mc.cnxn)
     self.assertEqual(requester, mc.auth.email)
     self.assertEqual(permissions.USER_PERMISSIONSET, mc.perms)

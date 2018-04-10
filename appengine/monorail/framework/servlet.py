@@ -167,7 +167,7 @@ class Servlet(webapp2.RequestHandler):
     GC_COUNT.add(count1, {'generation': 1})
     GC_COUNT.add(count2, {'generation': 2})
 
-    self.mr = monorailrequest.MonorailRequest()
+    self.mr = monorailrequest.MonorailRequest(self.services)
 
     self.ratelimiter.CheckStart(self.request)
     self.response.headers.add('Strict-Transport-Security',

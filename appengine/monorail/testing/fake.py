@@ -148,7 +148,7 @@ class MonorailConnection(object):
 class MonorailRequest(monorailrequest.MonorailRequest):
   """Subclass of MonorailRequest suitable for testing."""
 
-  def __init__(self, user_info=None, project=None, perms=None,
+  def __init__(self, services, user_info=None, project=None, perms=None,
                hotlist=None, **kwargs):
     """Construct a test MonorailRequest.
 
@@ -157,12 +157,13 @@ class MonorailRequest(monorailrequest.MonorailRequest):
     project, and permissions info.
 
     Args:
+      services: connections to backends.
       user_info: a dict of user attributes to set on a MonorailRequest object.
         For example, "user_id: 5" causes self.auth.user_id=5.
       project: the Project pb for this request.
       perms: a PermissionSet for this request.
     """
-    super(MonorailRequest, self).__init__(**kwargs)
+    super(MonorailRequest, self).__init__(services, **kwargs)
 
     if user_info is not None:
       for key in user_info:

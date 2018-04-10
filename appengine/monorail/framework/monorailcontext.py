@@ -3,7 +3,7 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-"""Context object and hold utility objects.
+"""Context object to hold utility objects used during request processing.
 """
 
 import logging
@@ -15,21 +15,20 @@ from framework import sql
 from framework import template_helpers
 
 
-# TODO(jrobbins): Backport this class to framework directory as base class for
-# UI and v1 API context objects.
 class MonorailContext(object):
   """Context with objects used in request handling mechanics.
 
   Attrributes:
     cnxn: MonorailConnection to the SQL DB.
     auth: AuthData object that identifies the account making the request.
-    perms: PermissionSet for the requesting user, set by CalcPerms().
+    perms: PermissionSet for requesting user, set by LookupLoggedInUserPerms().
     profiler: Profiler object.
     warnings: A list of warnings to present to the user.
     errors: A list of errors to present to the user.
 
   Unlike MonorailRequest, this object does not parse any part of the request,
-  retrieve any business objects, or check any permissions.
+  retrieve any business objects (other than the User PB for the requesting
+  user), or check any permissions.
   """
 
   def __init__(
@@ -46,15 +45,15 @@ class MonorailContext(object):
     self.cnxn = cnxn or sql.MonorailConnection()
     self.auth = auth or authdata.AuthData.FromEmail(
         self.cnxn, requester, services, autocreate=True)
-    self.perms = perms  # Usually None until CalcPerms() is called.
+    self.perms = perms  # Usually None until LookupLoggedInUserPerms() called.
     self.profiler = profiler.Profiler()
 
     # TODO(jrobbins): make self.errors not be UI-centric.
     self.warnings = []
     self.errors = template_helpers.EZTError()
 
-  def CalcPerms(self, project):
-    """Look up perms for the user making a request in an optional project."""
+  def LookupLoggedInUserPerms(self, project):
+    """Look up perms for user making a request in project (can be None)."""
     with self.profiler.Phase('looking up signed in user permissions'):
       self.perms = self.perms or permissions.GetPermissions(
           self.auth.user_pb, self.auth.effective_ids, project)
@@ -67,5 +66,5 @@ class MonorailContext(object):
 
   def __repr__(self):
     """Return a string more useful for debugging."""
-    return 'MonorailContext(cnxn=%r, auth=%r, perms=%r)' % (
-        self.cnxn, self.auth, self.perms)
+    return '%s(cnxn=%r, auth=%r, perms=%r)' % (
+        self.__class__.__name__, self.cnxn, self.auth, self.perms)

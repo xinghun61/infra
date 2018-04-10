@@ -13,9 +13,9 @@ from components.prpc import context
 from components.prpc import server
 
 from api import issues_servicer
-from api import monorailcontext
 from api.api_proto import issues_pb2
 from framework import authdata
+from framework import monorailcontext
 from testing import fake
 from services import service_manager
 

@@ -16,9 +16,9 @@ from google.protobuf import json_format
 
 import settings
 from api import monorail_servicer
-from api import monorailcontext
 from framework import authdata
 from framework import exceptions
+from framework import monorailcontext
 from framework import permissions
 from framework import ratelimiter
 from services import config_svc

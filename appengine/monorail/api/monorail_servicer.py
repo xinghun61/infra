@@ -14,9 +14,9 @@ from components.prpc import server
 from infra_libs import ts_mon
 
 import settings
-from api import monorailcontext
 from framework import exceptions
 from framework import framework_bizobj
+from framework import monorailcontext
 from framework import ratelimiter
 from framework import permissions
 
@@ -76,7 +76,7 @@ class MonorailServicer(object):
       mc = monorailcontext.MonorailContext(
           self.services, cnxn=cnxn, requester=requester, auth=auth, perms=perms)
       if not perms:
-        mc.CalcPerms(self.GetRequestProject(mc.cnxn, request))
+        mc.LookupLoggedInUserPerms(self.GetRequestProject(mc.cnxn, request))
       self.AssertBaseChecks(mc, request)
       response = do_method(mc, request)
 

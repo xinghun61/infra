@@ -170,7 +170,7 @@ class RevealEmailsToMembersTest(unittest.TestCase):
     project.contributor_ids.append(888L)
     user = user_pb2.User()
     user.is_site_admin = False
-    self.mr = monorailrequest.MonorailRequest()
+    self.mr = monorailrequest.MonorailRequest(None)
     self.mr.project = project
     self.mr.auth.user_pb = user
 

@@ -31,7 +31,7 @@ class ComponentHelpersTest(unittest.TestCase):
     self.services.user.TestAddUser('a@example.com', 111L)
     self.services.user.TestAddUser('b@example.com', 222L)
     self.services.user.TestAddUser('c@example.com', 333L)
-    self.mr = fake.MonorailRequest()
+    self.mr = fake.MonorailRequest(self.services)
     self.mr.cnxn = fake.MonorailConnection()
 
   def testParseComponentRequest_Empty(self):
