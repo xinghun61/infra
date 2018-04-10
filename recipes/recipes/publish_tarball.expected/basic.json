@@ -634,6 +634,50 @@
   {
     "cmd": [
       "find",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/blink/manual_tests",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.gn*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
+      "-delete"
+    ],
+    "name": "prune third_party/blink/manual_tests"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/blink/perf_tests",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.gn*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
+      "-delete"
+    ],
+    "name": "prune third_party/blink/perf_tests"
+  },
+  {
+    "cmd": [
+      "find",
       "[TMP_BASE]/tmp_tmp_3/src/third_party/chromite",
       "-type",
       "f",

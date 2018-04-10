@@ -380,13 +380,13 @@ Returns file size if file exists, else None
 
 [DEPS](/recipes/recipes/publish_tarball.py#11): [build/chromium][build/recipe_modules/chromium], [build/trigger][build/recipe_modules/trigger], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [omahaproxy](#recipe_modules-omahaproxy), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/publish_tarball.py#169)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/publish_tarball.py#171)(api):**
 
 &emsp; **@contextlib.contextmanager**<br>&mdash; **def [copytree\_checkout](/recipes/recipes/publish_tarball.py#76)(api):**
 
 &emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_lite\_tarball](/recipes/recipes/publish_tarball.py#87)(api, version):**
 
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_nacl\_tarball](/recipes/recipes/publish_tarball.py#145)(api, version):**
+&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_nacl\_tarball](/recipes/recipes/publish_tarball.py#147)(api, version):**
 
 &emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_tarball](/recipes/recipes/publish_tarball.py#44)(api, args, source, destination):**
 

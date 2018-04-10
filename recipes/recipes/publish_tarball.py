@@ -99,6 +99,8 @@ def export_lite_tarball(api, version):
       'third_party/WebKit/ManualTests',
       'third_party/WebKit/PerformanceTests',
       'third_party/android_platform',
+      'third_party/blink/manual_tests',
+      'third_party/blink/perf_tests',
       'third_party/chromite',
       'third_party/closure_compiler',
       'third_party/freetype',
