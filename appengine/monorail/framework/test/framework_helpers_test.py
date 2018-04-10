@@ -257,6 +257,26 @@ class UrlFormattingTest(unittest.TestCase):
     url = framework_helpers.FormatAbsoluteURL(mr, path, include_project=False)
     self.assertEqual(url, 'http://www.test.com/some/path')
 
+  def testIssueCommentURL(self):
+    hostport = 'port.someplex.com'
+    proj = project_pb2.Project()
+    proj.project_name = 'proj'
+
+    url = 'https://port.someplex.com/p/proj/issues/detail?id=2'
+    actual_url = framework_helpers.IssueCommentURL(
+        hostport, proj, 2)
+    self.assertEqual(actual_url, url)
+
+    url = 'https://port.someplex.com/p/proj/issues/approval?id=2'
+    actual_url = framework_helpers.IssueCommentURL(
+        hostport, proj, 2, is_approval=True)
+    self.assertEqual(actual_url, url)
+
+    url = 'https://port.someplex.com/p/proj/issues/detail?id=2#c2'
+    actual_url = framework_helpers.IssueCommentURL(
+        hostport, proj, 2, seq_num=2)
+    self.assertEqual(actual_url, url)
+
 
 class WordWrapSuperLongLinesTest(unittest.TestCase):
 
