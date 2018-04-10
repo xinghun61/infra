@@ -43,6 +43,7 @@ from framework import urls
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from tracker import tracker_views
+from proto import tracker_pb2
 
 
 # TODO(jrobbins): Remove seq_num after all callers are updated.
@@ -762,6 +763,23 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
         'params': params,
         'notified': [],
         }
+
+  def _GetApprovalEmailRecipients(self, approval_value, amendment, issue):
+    recipient_ids = []
+    # TODO(jojwang) monorail:3588, whenever adding owner_id also
+    # add TL and PM ids
+    if amendment.custom_field_name is 'Status':
+      if approval_value.status is tracker_pb2.ApprovalStatus.REVIEW_REQUESTED:
+        recipient_ids = approval_value.approver_ids
+      else:
+        recipient_ids.extend([issue.owner_id])
+
+    elif amendment.custom_field_name is 'Approvers':
+      recipient_ids.extend(approval_value.approver_ids)
+      recipient_ids.append(issue.owner_id)
+      recipient_ids.extend(amendment.removed_user_ids)
+
+    return list(set(recipient_ids))
 
 
 class OutboundEmailTask(jsonfeed.InternalTask):

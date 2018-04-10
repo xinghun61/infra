@@ -6,6 +6,7 @@
 """Tests for notify.py."""
 
 import json
+import logging
 import os
 import unittest
 import urllib
@@ -347,6 +348,50 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         services=self.services)
     result = task.HandleRequest(mr)
     self.assertEquals(1, len(result['notified']))
+
+  def testNotifyApprovalChangeTask_Normal(self):
+    # TODO(jojwang) monorail:3588, finish this integration test
+    # when HandleRequest is finished.
+    task = notify.NotifyApprovalChangeTask(
+        request=None, response=None, services=self.services)
+    params ={
+        'issue_id': 12345001,
+    }
+    mr = testing_helpers.MakeMonorailRequest(
+        user_info={'user_id': 1},
+        params=params,
+        method='POST',
+        services=self.services)
+    result = task.HandleRequest(mr)
+    self.assertEquals(0, len(result['notified']))
+
+  def testNotifyApprovalChangeTask_GetApprovalEmailRecipients(self):
+    task = notify.NotifyApprovalChangeTask(
+        request=None, response=None, services=self.services)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L)
+    approval_value = tracker_pb2.ApprovalValue(
+        approver_ids=[222L, 333L],
+        status=tracker_pb2.ApprovalStatus.APPROVED)
+
+    amendment = tracker_bizobj.MakeApprovalStatusAmendment(
+        tracker_pb2.ApprovalStatus.APPROVED)
+    rids = task._GetApprovalEmailRecipients(
+        approval_value, amendment, issue)
+    self.assertItemsEqual(rids, [111L])
+
+    approval_value.status = tracker_pb2.ApprovalStatus.REVIEW_REQUESTED
+    amendment = tracker_bizobj.MakeApprovalStatusAmendment(
+        tracker_pb2.ApprovalStatus.REVIEW_REQUESTED)
+    rids = task._GetApprovalEmailRecipients(
+        approval_value, amendment, issue)
+    self.assertItemsEqual(rids, [222L, 333L])
+
+    approval_value.approver_ids = [333L, 555L]
+    amendment = tracker_bizobj.MakeApprovalApproversAmendment(
+        [222L], [555L])
+    rids = task._GetApprovalEmailRecipients(
+        approval_value, amendment, issue)
+    self.assertItemsEqual(rids, [111L, 222L, 333L, 555L])
 
   def testOutboundEmailTask_Normal(self):
     """We can send an email."""
