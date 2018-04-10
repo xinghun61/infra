@@ -1,1 +1,17 @@
-Issue Approval updates
+[approval_url]
+[commenter.display_name] made the following updates:
+[is amendment.field_name "Status"]
+Status: [amendment.newvalue]
+
+Please check the issue and take appropriate action.
+
+[end]
+
+[is amendment.field_name "Approvers"]
+Approvers: [amendment.newvalue]
+
+
+You are receiving this message because you are listed as the TL/PM
+on this issue or you are/were listed as an approver for this
+issue's approval.
+[end]

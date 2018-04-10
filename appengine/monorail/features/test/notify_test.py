@@ -350,12 +350,31 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.assertEquals(1, len(result['notified']))
 
   def testNotifyApprovalChangeTask_Normal(self):
-    # TODO(jojwang) monorail:3588, finish this integration test
-    # when HandleRequest is finished.
+    self.services.user.TestAddUser('approver_old@example.com', 7)
+    self.services.user.TestAddUser('approver_new@example.com', 8)
+    self.services.user.TestAddUser('approver_still@example.com', 9)
+    canary_phase = tracker_pb2.Phase(
+        name='Canary', phase_id=1, rank=1,
+        approval_values=[tracker_pb2.ApprovalValue(approval_id=3, approver_ids=[8, 9])])
+    approval_issue = MakeTestIssue(
+        project_id=12345, local_id=2, owner_id=2, reporter_id=1,
+        is_spam=True)
+    approval_issue.phases = [canary_phase]
+    self.services.issue.TestAddIssue(approval_issue)
+
+    amend = tracker_bizobj.MakeApprovalApproversAmendment([7, 9], [8, 9])
+
+    comment = tracker_pb2.IssueComment(
+        project_id=12345, user_id=9, issue_id=approval_issue.issue_id, amendments=[amend])
+    self.services.issue.TestAddComment(comment, approval_issue.local_id)
+
     task = notify.NotifyApprovalChangeTask(
         request=None, response=None, services=self.services)
-    params ={
-        'issue_id': 12345001,
+    params = {
+        'send_email': 1,
+        'issue_id': approval_issue.issue_id,
+        'approval_id': 3,
+        'comment_id': comment.id,
     }
     mr = testing_helpers.MakeMonorailRequest(
         user_info={'user_id': 1},
@@ -363,7 +382,10 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         method='POST',
         services=self.services)
     result = task.HandleRequest(mr)
-    self.assertEquals(0, len(result['notified']))
+    self.assertTrue('Approvers: -approver' in result['tasks'][0]['body'])
+    self.assertItemsEqual(
+        ['user@example.com', 'approver_old@example.com', 'approver_new@example.com'],
+        result['notified'])
 
   def testNotifyApprovalChangeTask_GetApprovalEmailRecipients(self):
     task = notify.NotifyApprovalChangeTask(
@@ -390,8 +412,8 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     amendment = tracker_bizobj.MakeApprovalApproversAmendment(
         [222L], [555L])
     rids = task._GetApprovalEmailRecipients(
-        approval_value, amendment, issue)
-    self.assertItemsEqual(rids, [111L, 222L, 333L, 555L])
+        approval_value, amendment, issue, omit_ids=[444L, 333L])
+    self.assertItemsEqual(rids, [111L, 222L, 555L])
 
   def testOutboundEmailTask_Normal(self):
     """We can send an email."""

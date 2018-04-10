@@ -45,6 +45,11 @@ class NoSuchCommentException(Error):
   pass
 
 
+class NoSuchAmendmentException(Error):
+  """The requested amendment was not found."""
+  pass
+
+
 class NoSuchComponentException(Error):
   """No component with the specified name exists."""
   pass

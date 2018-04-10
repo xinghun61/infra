@@ -735,6 +735,9 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     return subject, body
 
 
+# For now, this class will not be used to send approval comment notifications
+# TODO(jojwang): monorail:3588, it might make sense for this class to handle
+# sending comment notifications for approval custom_subfield changes.
 class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
   """JSON servlet that notifies appropriate users after an approval change."""
 
@@ -751,7 +754,10 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
       The main goal is the side-effect of sending emails.
     """
 
+    send_email = bool(mr.GetIntParam('send_email'))
     issue_id = mr.GetPositiveIntParam('issue_id')
+    approval_id = mr.GetPositiveIntParam('approval_id')
+    comment_id = mr.GetPositiveIntParam('comment_id')
     hostport = mr.GetParam('hostport')
 
     params = dict(
@@ -759,12 +765,84 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
         hostport=hostport,
         issue_id=issue_id
         )
+    logging.info('approval change params are %r', params)
+
+    issue, approval_value = self.services.issue.GetIssueApproval(
+        mr.cnxn, issue_id, approval_id, use_cache=False)
+    project = self.services.project.GetProject(mr.cnxn, issue.project_id)
+
+    # TODO(jojwang): monorail:3588, currently one approver/status change
+    # creates one comment with one amendment and no content. If this changes,
+    # this will have to be redone.
+    try:
+      comment = self.services.issue.GetCommentsByID(
+          mr.cnxn, [comment_id], collections.defaultdict(int))[0]
+    except IndexError:
+      raise exceptions.NoSuchCommentException()
+
+    # TODO(jojwang): monorail:3263, inform TLs and PMs, iterate over user_type
+    # custom fields with notify_on == ANY_COMMENT
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user, [issue.owner_id], approval_value.approver_ids,
+        tracker_bizobj.UsersInvolvedInComment(comment))
+
+    tasks = []
+    if send_email:
+      tasks = self._MakeApprovalEmailTasks(
+          mr.cnxn, hostport, issue, project, approval_value, comment, users_by_id)
+
+    notified = notify_helpers.AddAllEmailTasks(tasks)
+
     return {
         'params': params,
-        'notified': [],
+        'notified': notified,
+        'tasks': tasks,
         }
 
-  def _GetApprovalEmailRecipients(self, approval_value, amendment, issue):
+  def _MakeApprovalEmailTasks(
+      self, cnxn, hostport, issue, project, approval_value, comment, users_by_id):
+    """Formulate emails to be sent."""
+
+    # TODO(jojwang): monorail:3588, get approval_url
+    approval_url = ''
+
+    # TODO(jojwang): monorail:3588, currently one approver/status change
+    # creates one comment with one amendment and no content. If this changes,
+    # this will have to be redone.
+    try:
+      amendment = comment.amendments[0]
+    except IndexError:
+      raise exceptions.NoSuchAmendmentException()
+
+    commenter_view = users_by_id[comment.user_id]
+    email_data = {
+        'amendment': tracker_views.AmendmentView(
+            amendment, users_by_id, project.project_name),
+        'approval_url': approval_url,
+        'commenter': commenter_view,
+        }
+    subject = 'issue %s in %s: %s' % (
+        issue.local_id, project.project_name, issue.summary)
+    email_body = self.email_template.GetResponse(email_data)
+    body = notify_helpers._TruncateBody(email_body)
+
+    recipient_ids = self._GetApprovalEmailRecipients(
+        approval_value, amendment, issue, omit_ids=[comment.user_id])
+
+    email_tasks = []
+    for rid in recipient_ids:
+      # TODO(jojwang): monorail:3588, add reveal_addr based on
+      # recipient member status
+      from_addr = emailfmt.FormatFromAddr(
+          project, commenter_view=commenter_view, can_reply_to=False)
+      dest_email = users_by_id[rid].email
+      email_tasks.append(
+          dict(from_addr=from_addr, to=dest_email, subject=subject, body=body)
+      )
+
+    return email_tasks
+
+  def _GetApprovalEmailRecipients(self, approval_value, amendment, issue, omit_ids=None):
     recipient_ids = []
     # TODO(jojwang) monorail:3588, whenever adding owner_id also
     # add TL and PM ids
@@ -778,6 +856,9 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
       recipient_ids.extend(approval_value.approver_ids)
       recipient_ids.append(issue.owner_id)
       recipient_ids.extend(amendment.removed_user_ids)
+
+    if omit_ids:
+      recipient_ids = [rid for rid in recipient_ids if rid not in omit_ids]
 
     return list(set(recipient_ids))
 
