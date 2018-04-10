@@ -166,6 +166,8 @@ class ChangelistClassifierTest(AppengineTestCase):
     """Tests that ``__call__`` method finds suspects."""
     suspect1 = Suspect(DUMMY_CHANGELOG1, 'src/')
     suspect2 = Suspect(DUMMY_CHANGELOG2, 'src/')
+    suspect1.confidence = 2.0
+    suspect2.confidence = 1.0
 
     mock_generate_suspects.return_value = [suspect1, suspect2]
     mock_rank_suspects.side_effect = lambda report, suspects: [suspects[0]]
@@ -300,3 +302,8 @@ class ChangelistClassifierTest(AppengineTestCase):
         self.changelist_classifier._FilterSuspects([suspect1, suspect2],
                                                    [MockFilter]),
         [suspect1])
+
+    self.assertListEqual(
+        self.changelist_classifier._FilterSuspects([suspect1, suspect2],
+                                                   []),
+        [suspect1, suspect2])

@@ -37,15 +37,25 @@ class FilterLessLikelySuspects(SuspectFilter):
   of the most likely suspect.
 
   Note, the pass-in ``suspects`` must have their confidence computed.
+
+  The default value 0.01 for lower_threshold is chosen by experience, it depends
+  on how confidence we want to be, in this case, as long as the only suspect is
+  greater than 0.0, we can return the result, so 0.01 and 0.0001 doesn't really
+  matter (if we later have features that returns value less than 0.01, it might
+  matter, but that's not the case for now.)
   """
-  def __init__(self, probability_ratio):
+  def __init__(self, probability_ratio, lower_threshold=0.01):
     if probability_ratio < 0:
       raise ValueError('Probability ratio should be non-negative.')
 
     self.ratio = math.log(
         float(probability_ratio)) if probability_ratio > 0 else -float('inf')
+    self.lower_threshold = lower_threshold
 
   def __call__(self, suspects):
+    if len(suspects) == 1:
+      return suspects if suspects[0].confidence > self.lower_threshold else []
+
     confidences = [suspect.confidence for suspect in suspects]
     max_score = max(confidences)
     min_score = max(min(confidences), 0.0)

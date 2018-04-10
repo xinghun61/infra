@@ -180,7 +180,7 @@ class ChangelistClassifier(object):
   @staticmethod
   def _FilterSuspects(suspects, suspect_filters):
     """Filters suspects using ``suspect_filters``."""
-    if not suspects or len(suspects) == 1 or not suspect_filters:
+    if not suspects or not suspect_filters:
       return suspects
 
     for suspect_filter in suspect_filters:

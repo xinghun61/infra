@@ -49,6 +49,16 @@ class FilterLessLikelySuspectsTest(AnalysisTestCase):
                                                        suspect3]),
         [suspect1, suspect2])
 
+  def testFilterSuspectWithLessConfidenceThanLowerThreshold(self):
+    """Tests filter suspect if it is with lower confidence than threshold."""
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+
+    suspect.confidence = 2
+    self.assertListEqual(
+        suspect_filters.FilterLessLikelySuspects(0.5, lower_threshold=5)(
+            [suspect]),
+        [])
+
 
 class FilterIgnoredRevisionsTest(AnalysisTestCase):
   """Tests ``FilterIgnoredRevisions`` class."""
