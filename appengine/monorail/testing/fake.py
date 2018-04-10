@@ -1330,6 +1330,11 @@ class IssueService(object):
         comments.append(comment)
     return comments
 
+  def GetCommentsByID(self, cnxn, comment_ids, _sequences):
+    """Return all IssueComment PBs by comment ids."""
+    comments = [self.comments_by_cid[cid] for cid in comment_ids]
+    return comments
+
   def GetIssueIDsReportedByUser(self, cnxn, user_id):
     """Get all issues created by a user"""
     ids = []
