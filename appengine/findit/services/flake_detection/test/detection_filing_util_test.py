@@ -310,7 +310,7 @@ class DetectionFilingUtilTest(wf_testcase.WaterfallTestCase):
     flake = Flake()
     flake.put()
 
-    detection_filing_util.CheckAndFileBugForDetectedFlake(flake.key.urlsafe())
+    detection_filing_util.CheckAndFileBugForDetectedFlake(flake)
     create_bug_fn.assert_called_with(flake, 10, old_bug_id=None)
 
   @mock.patch.object(
@@ -343,7 +343,7 @@ class DetectionFilingUtilTest(wf_testcase.WaterfallTestCase):
 
     has_existing_bug_fn.side_effect = remove_flake_issue_side_effect
 
-    detection_filing_util.CheckAndFileBugForDetectedFlake(flake.key.urlsafe())
+    detection_filing_util.CheckAndFileBugForDetectedFlake(flake)
     create_bug_fn.assert_called_with(flake, 10, old_bug_id=issue_id)
 
   @mock.patch.object(
@@ -370,7 +370,7 @@ class DetectionFilingUtilTest(wf_testcase.WaterfallTestCase):
     flake.flake_issue.issue_id = issue_id
     flake.put()
 
-    detection_filing_util.CheckAndFileBugForDetectedFlake(flake.key.urlsafe())
+    detection_filing_util.CheckAndFileBugForDetectedFlake(flake)
     update_bug_fn.assert_called_with(flake, 10)
 
   @mock.patch.object(
@@ -390,7 +390,7 @@ class DetectionFilingUtilTest(wf_testcase.WaterfallTestCase):
       self, limit_reached_fn, *_):
     flake = Flake()
     flake.put()
-    detection_filing_util.CheckAndFileBugForDetectedFlake(flake.key.urlsafe())
+    detection_filing_util.CheckAndFileBugForDetectedFlake(flake)
     limit_reached_fn.assert_called()
 
   @mock.patch.object(detection_filing_util, 'UpdateFlakeWithExistingBug')
@@ -410,7 +410,7 @@ class DetectionFilingUtilTest(wf_testcase.WaterfallTestCase):
       self, enough_occurrences_fn, *_):
     flake = Flake()
     flake.put()
-    detection_filing_util.CheckAndFileBugForDetectedFlake(flake.key.urlsafe())
+    detection_filing_util.CheckAndFileBugForDetectedFlake(flake)
     enough_occurrences_fn.assert_called_with(flake)
 
   @mock.patch.object(
@@ -430,5 +430,5 @@ class DetectionFilingUtilTest(wf_testcase.WaterfallTestCase):
       self, has_existing_bug_been_updated_fn, *_):
     flake = Flake()
     flake.put()
-    detection_filing_util.CheckAndFileBugForDetectedFlake(flake.key.urlsafe())
+    detection_filing_util.CheckAndFileBugForDetectedFlake(flake)
     has_existing_bug_been_updated_fn.assert_called_with(flake)

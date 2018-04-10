@@ -111,15 +111,12 @@ def HasExistingFlakeBugBeenUpdated(flake):
   return False
 
 
-def CheckAndFileBugForDetectedFlake(flake_urlsafe_key):
+def CheckAndFileBugForDetectedFlake(flake):
   """Checks conditions for flake detection bug updated/filing.
 
   Args:
-    flake_urlsafe_key (str): The parent Flake to examine.
+    flake (model.flake.detection.Flake): The parent Flake to examine.
   """
-  flake = ndb.Key(urlsafe=flake_urlsafe_key).get()
-  assert flake
-
   if HasFlakeDetectionUpdateLimitBeenReached():
     logging.info('Not filing because update limit has been reached.')
     return

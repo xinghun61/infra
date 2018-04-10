@@ -205,3 +205,9 @@ indexes:
     - name: is_root_pipeline
     - name: start_time
       direction: desc
+
+# Flake detection
+- kind: FlakeOccurrence
+  ancestor: yes
+  properties:
+  - name: time_reported

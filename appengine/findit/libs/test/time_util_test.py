@@ -13,9 +13,9 @@ from libs import time_util
 class TimeUtilTest(unittest.TestCase):
 
   def testConvertToTimestamp(self):
-    self.assertEqual(
-        1490918400,
-        time_util.ConvertToTimestamp(datetime(2017, 03, 31, 0, 0, 0)))
+    self.assertEqual(1490918400,
+                     time_util.ConvertToTimestamp(
+                         datetime(2017, 03, 31, 0, 0, 0)))
 
   def testRemoveMicrosecondsFromDelta(self):
     date1 = datetime(2016, 5, 1, 1, 1, 1, 1)
@@ -71,6 +71,11 @@ class TimeUtilTest(unittest.TestCase):
     self.assertEqual(iso_time_datetime.isoformat(), iso_time_str)
     self.assertEqual(iso_time_datetime,
                      time_util.DatetimeFromString(iso_time_datetime))
+
+    bq_time_str = '	2018-03-27 08:39:00 UTC'
+    bq_time_datetime = datetime(2018, 3, 27, 8, 39)
+    self.assertEqual(bq_time_datetime,
+                     time_util.DatetimeFromString(bq_time_str))
     with self.assertRaises(ValueError):
       time_util.DatetimeFromString('Yesterday, at 5 o\'clock')
 
@@ -88,15 +93,17 @@ class TimeUtilTest(unittest.TestCase):
       'GetMostRecentUTCMidnight',
       return_value=datetime(2017, 3, 19, 0, 0, 0))
   def testGetStartEndDates(self, _):
-    self.assertEqual((datetime(2017, 3, 18, 0, 0, 0), datetime(
-        2017, 3, 20, 0, 0, 0)), time_util.GetStartEndDates(None, None))
+    self.assertEqual(
+        (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
+        time_util.GetStartEndDates(None, None))
     self.assertEqual((None, datetime(2017, 3, 20, 0, 0, 0)),
                      time_util.GetStartEndDates(None, '2017-03-19'))
-    self.assertEqual((datetime(2017, 3, 18, 0, 0, 0), datetime(
-        2017, 3, 20, 0, 0, 0)), time_util.GetStartEndDates('2017-03-18', None))
-    self.assertEqual((datetime(2017, 3, 15, 0, 0, 0), datetime(
-        2017, 3, 16, 0, 0, 0)),
-                     time_util.GetStartEndDates('2017-03-15', '2017-03-16'))
+    self.assertEqual(
+        (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
+        time_util.GetStartEndDates('2017-03-18', None))
+    self.assertEqual(
+        (datetime(2017, 3, 15, 0, 0, 0), datetime(2017, 3, 16, 0, 0, 0)),
+        time_util.GetStartEndDates('2017-03-15', '2017-03-16'))
 
   @mock.patch.object(
       time_util,

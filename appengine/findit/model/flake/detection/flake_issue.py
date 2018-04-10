@@ -20,4 +20,4 @@ class FlakeIssue(ndb.Model):
     Doesn't update the last_updated_time which is updated internally by Findit.
     """
     assert issue.id
-    self.issue_id = issue.id
+    self.issue_id = str(issue.id)

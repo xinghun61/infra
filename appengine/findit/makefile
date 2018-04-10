@@ -9,7 +9,7 @@ STAGING_APPID := "findit-for-me-staging"
 # Should come with infra repository, if this step fails run
 # ...$ gclient sync
 PROTOC := "../../cipd/protoc"
-MODULES := default waterfall-frontend waterfall-backend
+MODULES := default waterfall-frontend waterfall-backend flake-detection-backend
 LOCAL_VERSION := `$(INFRAPYTHON) $(GAE_PY) version`
 LOCAL_HASH := `git rev-parse --short HEAD`
 REMOTE_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID)`

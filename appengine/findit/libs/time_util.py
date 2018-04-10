@@ -61,10 +61,14 @@ def DatetimeFromString(date):
     return None
   if not date or isinstance(date, datetime):
     return date
+
+  # Strip bad characters.
+  date = date.strip('\t\n ')
   valid_formats = [
       '%Y-%m-%d %H:%M:%S.%f %Z',
       '%Y-%m-%d %H:%M:%S.%f000',
       '%Y-%m-%d %H:%M:%S.%f',
+      '%Y-%m-%d %H:%M:%S %Z',
       '%Y-%m-%d %H:%M:%S',
       '%Y-%m-%dT%H:%M:%S.%f',
       '%Y-%m-%dT%H:%M:%S',
