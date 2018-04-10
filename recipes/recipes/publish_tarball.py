@@ -96,11 +96,7 @@ def export_lite_tarball(api, version):
       'ios',
       'native_client',
       'native_client_sdk',
-      'third_party/WebKit/ManualTests',
-      'third_party/WebKit/PerformanceTests',
       'third_party/android_platform',
-      'third_party/blink/manual_tests',
-      'third_party/blink/perf_tests',
       'third_party/chromite',
       'third_party/closure_compiler',
       'third_party/freetype',
@@ -112,6 +108,14 @@ def export_lite_tarball(api, version):
       'third_party/yasm',
       'tools/win',
     ]
+    directories += ([
+        'third_party/WebKit/ManualTests',
+        'third_party/WebKit/PerformanceTests',
+    ] if [int(x) for x in version.split('.')] < [67, 0, 3392, 0] else [
+        'third_party/blink/manual_tests',
+        'third_party/blink/perf_tests',
+
+    ])
     for directory in directories:
       try:
         api.step('prune %s' % directory, [

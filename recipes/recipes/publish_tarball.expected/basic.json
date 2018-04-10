@@ -568,50 +568,6 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/ManualTests",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "name": "prune third_party/WebKit/ManualTests"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/PerformanceTests",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "name": "prune third_party/WebKit/PerformanceTests"
-  },
-  {
-    "cmd": [
-      "find",
       "[TMP_BASE]/tmp_tmp_3/src/third_party/android_platform",
       "-type",
       "f",
@@ -630,50 +586,6 @@
       "-delete"
     ],
     "name": "prune third_party/android_platform"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/blink/manual_tests",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "name": "prune third_party/blink/manual_tests"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/blink/perf_tests",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "name": "prune third_party/blink/perf_tests"
   },
   {
     "cmd": [
@@ -894,6 +806,50 @@
       "-delete"
     ],
     "name": "prune tools/win"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/ManualTests",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.gn*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
+      "-delete"
+    ],
+    "name": "prune third_party/WebKit/ManualTests"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/PerformanceTests",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.gn*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
+      "-delete"
+    ],
+    "name": "prune third_party/WebKit/PerformanceTests"
   },
   {
     "cmd": [
