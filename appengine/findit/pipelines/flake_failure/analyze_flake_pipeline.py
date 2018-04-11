@@ -5,11 +5,13 @@
 from google.appengine.ext import ndb
 
 from common import monitoring
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
+from infra_api_clients import crrev
 from libs import analysis_status
 from libs import time_util
 from libs.structured_object import StructuredObject
@@ -45,7 +47,6 @@ from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugPipeline)
 from services import gerrit
 from services import swarmed_test_util
-from services.flake_failure import commit_position_util
 from services.flake_failure import confidence_score_util
 from services.flake_failure import flake_analysis_util
 from waterfall import build_util
@@ -92,9 +93,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
     if analysis.request_time:
       monitoring.pipeline_times.increment_by(
           int((time_util.GetUTCNow() - analysis.request_time).total_seconds()),
-          {
-              'type': 'flake'
-          })
+          {'type': 'flake'})
 
     commit_position_parameters = parameters.analyze_commit_position_parameters
     commit_position_to_analyze = commit_position_parameters.next_commit_position
@@ -112,9 +111,10 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
         return
 
       # Create a FlakeCulprit.
-      culprit_revision = commit_position_util.GetRevisionFromCommitPosition(
-          analysis.master_name, analysis.builder_name, analysis.step_name,
-          culprit_commit_position)
+      commit_info = crrev.RedirectByCommitPosition(FinditHttpClient(),
+                                                   culprit_commit_position)
+      assert commit_info is not None, 'No info: r%d' % culprit_commit_position
+      culprit_revision = commit_info['git_sha']
       culprit = flake_analysis_util.UpdateCulprit(
           analysis_urlsafe_key, culprit_revision, culprit_commit_position)
       confidence_score = confidence_score_util.CalculateCulpritConfidenceScore(
@@ -160,9 +160,10 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
         yield NotifyCulpritPipeline(notify_culprit_input)
         return
 
-    revision_to_analyze = commit_position_util.GetRevisionFromCommitPosition(
-        analysis.master_name, analysis.builder_name, analysis.step_name,
-        commit_position_to_analyze)
+    commit_info = crrev.RedirectByCommitPosition(FinditHttpClient(),
+                                                 commit_position_to_analyze)
+    assert commit_info is not None, 'No info: r%d' % commit_position_to_analyze
+    revision_to_analyze = commit_info['git_sha']
 
     # Check for bot availability. If this is a user rerun or the maximum retries
     # have been reached, continue regardless of bot availability.

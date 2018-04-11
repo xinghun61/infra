@@ -9,6 +9,7 @@ from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from dto.test_location import TestLocation
 from gae_libs.pipeline_wrapper import pipeline_handlers
+from infra_api_clients import crrev
 from libs import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
@@ -49,7 +50,6 @@ from pipelines.flake_failure.update_monorail_bug_pipeline import (
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugPipeline)
 from services import swarmed_test_util
-from services.flake_failure import commit_position_util
 from services.flake_failure import confidence_score_util
 from services.flake_failure import flake_analysis_util
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -78,7 +78,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertIsNone(analysis.culprit_urlsafe_key)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
-  @mock.patch.object(commit_position_util, 'GetRevisionFromCommitPosition')
+  @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
   @mock.patch.object(swarmed_test_util, 'GetTestLocation')
@@ -102,7 +102,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
 
     test_location = TestLocation(file='f', line=123)
     mocked_test_location.return_value = test_location
-    mocked_revision.return_value = culprit_revision
+    mocked_revision.return_value = {'git_sha': culprit_revision}
     mocked_confidence.return_value = confidence_score
     mocked_culprit.return_value = culprit
 
@@ -142,10 +142,11 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(mocked_culprit.called)
     self.assertEqual(confidence_score, analysis.confidence_in_culprit)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
+    mocked_revision.assert_called_once_with(mock.ANY, 999)
 
   @mock.patch.object(
       flake_analysis_util, 'CanStartAnalysisImmediately', return_value=True)
-  @mock.patch.object(commit_position_util, 'GetRevisionFromCommitPosition')
+  @mock.patch.object(crrev, 'RedirectByCommitPosition')
   def testAnalyzeFlakePipelineCanStartAnalysisImmediately(
       self, mocked_revision, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -165,7 +166,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         waterfall_buildername='b',
         waterfall_mastername='w')
 
-    mocked_revision.return_value = start_revision
+    mocked_revision.return_value = {'git_sha': start_revision}
 
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -220,10 +221,11 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
     pipeline_job.start()
     self.execute_queued_tasks()
+    mocked_revision.assert_called_once_with(mock.ANY, 1000)
 
   @mock.patch.object(
       flake_analysis_util, 'CanStartAnalysisImmediately', return_value=False)
-  @mock.patch.object(commit_position_util, 'GetRevisionFromCommitPosition')
+  @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'CalculateDelaySecondsBetweenRetries')
   def testAnalyzeFlakePipelineStartTaskAfterDelay(self, mocked_delay,
                                                   mocked_revision, _):
@@ -245,7 +247,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         waterfall_buildername='b',
         waterfall_mastername='w')
 
-    mocked_revision.return_value = start_revision
+    mocked_revision.return_value = {'git_sha': start_revision}
     mocked_delay.return_value = delay
 
     analyze_flake_input = AnalyzeFlakeInput(
@@ -276,6 +278,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
     pipeline_job.start()
     self.execute_queued_tasks()
+    mocked_revision.assert_called_once_with(mock.ANY, 1000)
 
   @mock.patch.object(flake_analysis_util, 'ReportError')
   def testOnAbort(self, mocked_error):
