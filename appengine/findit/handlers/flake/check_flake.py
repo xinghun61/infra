@@ -198,9 +198,9 @@ def _GetLastAttemptedSwarmingTaskDetails(analysis):
   swarming_task_id = analysis.last_attempted_swarming_task_id
   build_number = analysis.last_attempted_build_number
 
-  task_id = (
-      swarming_task_id if swarming_task_id and
-      swarming_task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION) else None)
+  task_id = (swarming_task_id if swarming_task_id and
+             swarming_task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION) else
+             None)
 
   return {'task_id': task_id, 'build_number': build_number}
 
@@ -506,18 +506,10 @@ class CheckFlake(BaseHandler):
     regression_range_confidence = AsPercentString(regression_range_confidence)
     culprit_confidence = AsPercentString(culprit_confidence)
 
-    # TODO(crbug.com/789289): Culprit status value should be correct.
-    culprit_status = (
-        analysis_status.STATUS_TO_DESCRIPTION.get(analysis.try_job_status) or
-        '')
-
-    if not culprit_status:
-      if analysis.status == analysis_status.RUNNING:
-        culprit_status = 'pending'
-      elif analysis.status == analysis_status.ERROR:
-        culprit_status = 'skipped'
-      else:
-        culprit_status = 'error'
+    status = analysis.status
+    if (analysis.try_job_status == analysis_status.ERROR or
+        analysis.heuristic_analysis_status == analysis_status.ERROR):
+      status = analysis_status.ERROR
 
     # Just use utc now when request_time is missing, but don't save it.
     if not analysis.request_time:
@@ -527,9 +519,8 @@ class CheckFlake(BaseHandler):
     if not analysis.end_time:
       analysis.end_time = time_util.GetUTCNow()
 
-    analysis_complete = (
-        analysis.status != analysis_status.RUNNING and
-        analysis.try_job_status != analysis_status.RUNNING)
+    analysis_complete = (analysis.status != analysis_status.RUNNING and
+                         analysis.try_job_status != analysis_status.RUNNING)
 
     data = {
         'key':
@@ -537,8 +528,6 @@ class CheckFlake(BaseHandler):
         'build_number':
             analysis.build_number,
         'pass_rates': [],
-        'try_job_status':
-            analysis_status.STATUS_TO_DESCRIPTION.get(analysis.try_job_status),
         'last_attempted_swarming_task':
             _GetLastAttemptedSwarmingTaskDetails(analysis),
         'last_attempted_try_job':
@@ -585,8 +574,6 @@ class CheckFlake(BaseHandler):
             analysis.step_name,
         'test_name':
             analysis.test_name,
-        'analysis_status':
-            analysis.status_description,
         'regression_range_upper': (suspected_flake.get('commit_position', '') or
                                    suspected_flake.get('git_hash', '') or ''),
         'regression_range_lower': (
@@ -594,8 +581,6 @@ class CheckFlake(BaseHandler):
             suspected_flake.get('lower_bound_git_hash', '') or ''),
         'regression_range_confidence':
             regression_range_confidence,
-        'culprit_analysis_status':
-            culprit_status,
         'culprit_url':
             culprit.get('url', ''),
         'culprit_text':
@@ -603,7 +588,9 @@ class CheckFlake(BaseHandler):
         'culprit_confidence':
             culprit_confidence,
         'bug_id':
-            str(analysis.bug_id) if analysis.bug_id else ''
+            str(analysis.bug_id) if analysis.bug_id else '',
+        'status':
+            analysis_status.STATUS_TO_DESCRIPTION.get(status).lower()
     }
 
     if (auth_util.IsCurrentUserAdmin() and analysis.completed and

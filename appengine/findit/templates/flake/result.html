@@ -155,8 +155,6 @@
     }
 
     var findit = {};
-    findit.buildLevelAnalysisStatus = '{{ analysis_status }}';
-    findit.culpritAnalysisStatus = '{{ try_job_status }}';
     findit.analysisKey = '{{ key }}';
     findit.masterName = '{{ master_name }}';
     findit.builderName = '{{ builder_name }}';
@@ -440,9 +438,6 @@
     $(function () {
       document.getElementById('app').userInfo = {{ (user_info or { }) | tojson | safe }};
 
-      $('#build_level_analysis_status').attr('class', (findit.buildLevelAnalysisStatus || '').toLowerCase());
-      $('#culprit_analysis_status').attr('class', (findit.culpritAnalysisStatus || '').toLowerCase());
-
       DrawFlakeTrend();
 
       $('input[name=triage-radio-button]').on('change', function () {
@@ -465,12 +460,11 @@
                      step-name="{{step_name}}"
                      test-name="{{test_name}}">
     </flake-test-info>
-    <flake-analysis-info regression-range-analysis-status="{{analysis_status}}"
+    <flake-analysis-info status="{{status}}"
                          regression-range-upper="{{regression_range_upper}}"
                          regression-range-lower="{{regression_range_lower}}"
                          regression-range-confidence="{{regression_range_confidence}}"
                          heuristic-analysis-results="{{suspected_culprits|tojson}}"
-                         culprit-analysis-status="{{culprit_analysis_status}}"
                          culprit-url="{{culprit_url}}"
                          culprit-text="{{culprit_text}}"
                          culprit-confidence="{{culprit_confidence}}"

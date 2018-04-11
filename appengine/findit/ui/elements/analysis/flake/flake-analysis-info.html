@@ -79,27 +79,25 @@
       <div slot="expandable-card-content">
         <table>
           <tr>
-            <td class="description">Regression range analysis</td>
+            <td class="description">Regression Range</td>
             <td class="data">
-              <span class$="[[_regressionRangeStatus]]">&nbsp;&nbsp;&nbsp;</span>
-              <template is="dom-if" if="[[!shouldShowRegressionRange(_regressionRangeStatus, regressionRangeLower, regressionRangeUpper)]]">
-                <span>
-                  [[_regressionRangeStatus]]
-                </span>
-              </template>
-
-              <template is="dom-if" if="[[shouldShowRegressionRange(_regressionRangeStatus, regressionRangeLower, regressionRangeUpper)]]">
+              <template is="dom-if" if="[[shouldShowRegressionRange(status, regressionRangeLower, regressionRangeUpper)]]">
+              <span class$="[[status]]">&nbsp;&nbsp;&nbsp;</span>
                 <a href$="[[_regressionRangeUrl]]">[[_regressionRangeText]]</a>
                 <template is="dom-if" if="[[regressionRangeConfidence]]">
                   (Confidence [[regressionRangeConfidence]]%)
                 </template>
               </template>
+              <template is="dom-if" if="[[!shouldShowRegressionRange(status, regressionRangeLower, regressionRangeUpper)]]">
+              n/a
+              </template>
             </td>
           </tr>
 
+          <!-- Show heuristic analysis results. -->
           <template is="dom-if" if="[[hasHeuristicAnalysisResults(heuristicAnalysisResults)]]">
             <tr>
-              <td class="description">Heuristic analysis</td>
+              <td class="description">Heuristic Analysis</td>
               <td class="data">
                 <ul>
                   <template is="dom-repeat" items="{{heuristicAnalysisResults}}">
@@ -110,30 +108,20 @@
             </tr>
           </template>
 
-          <!-- If we've found a regression range, we should show the culprit status. -->
-          <template is="dom-if" if="[[isRegressionAnalysisComplete(_regressionRangeStatus)]]">
+          <!-- Show culprit information. -->
+          <template is="dom-if" if="[[isCulpritFound(status, culpritUrl)]]">
             <tr>
-              <td class="description">Culprit analysis</td>
+              <td class="description">Culprit</td>
               <td class="data">
-                <!-- If no culprit is found yet, just show the status. -->
-                <template is="dom-if" if="[[!isCulpritFound(_culpritAnalysisStatus, culpritUrl)]]">
-                  <span class$="[[_culpritAnalysisStatus]]">&nbsp;&nbsp;&nbsp;</span>
-                  <span>
-                    [[_culpritAnalysisStatus]]
-                  </span>
-                </template>
-
-                <!-- If there's a culprit, show that. -->
-                <template is="dom-if" if="[[isCulpritFound(_culpritAnalysisStatus, culpritUrl)]]">
-                  <a href$="[[culpritUrl]]">[[culpritText]]</a>
-                  <template is="dom-if" if="[[culpritConfidence]]">
-                    (Confidence [[culpritConfidence]]%)
-                  </template>
+                <a href$="[[culpritUrl]]">[[culpritText]]</a>
+                <template is="dom-if" if="[[culpritConfidence]]">
+                  (Confidence [[culpritConfidence]]%)
                 </template>
               </td>
             </tr>
           </template>
 
+          <!-- Show bug information and link. -->
           <template is="dom-if" if="[[bugId]]">
             <tr>
               <td class="description">Bug</td>
@@ -143,7 +131,8 @@
             </tr>
           </template>
 
-          <template is="dom-if" if="[[analysisError(_regressionRangeStatus, _culpritAnalysisStatus)]]">
+          <!-- Show error description. -->
+          <template is="dom-if" if="[[hasError(status)]]">
             <tr>
               <td class="description">Error</td>
               <td class="data">[[error]]</td>
@@ -161,14 +150,13 @@
         is: 'flake-analysis-info',
 
         properties: {
-          regressionRangeAnalysisStatus: String,
+          status: String,
           regressionRangeConfidence: String,
           regressionRangeUpper: String,
           regressionRangeLower: String,
 
           heuristicAnalysisResults: Array,
 
-          culpritAnalysisStatus: String,
           culpritUrl: String,
           culpritText: String,
           culpritConfidence: String,
@@ -179,12 +167,7 @@
 
           _header: {
             type: String,
-            computed: 'computeHeader(regressionRangeAnalysisStatus, culpritAnalysisStatus, culpritUrl, culpritText, bugId)'
-          },
-
-          _regressionRangeStatus: {
-            type: String,
-            computed: 'computeRegressionRangeStatus(regressionRangeAnalysisStatus)'
+            computed: 'computeHeader(status, culpritUrl, culpritText, bugId)'
           },
 
           _regressionRangeUrl: {
@@ -197,32 +180,23 @@
             computed: 'computeRegressionRangeText(regressionRangeLower, regressionRangeUpper)'
           },
 
-          _culpritAnalysisStatus: {
-            type: String,
-            computed: 'computeCulpritAnalysisStatus(culpritAnalysisStatus)'
-          },
-
         },
 
         // Computed properties.
-        computeHeader: function (regressionRangeAnalysisStatus, culpritAnalysisStatus, culpritUrl, culpritText, bugId) {
-          var status = "";
+        computeHeader: function (status, culpritUrl, culpritText, bugId) {
           var extraInfo = "";
-
-          var regressionStatus = regressionRangeAnalysisStatus.toLowerCase();
-          var culpritStatus = culpritAnalysisStatus.toLowerCase();
+          var result = "";
+          status = status.toLowerCase();
 
           // Regression is finished, but culprit isn't done.
-          if (regressionStatus === "completed" && culpritStatus !== "running" &&
-              culpritStatus !== "pending" && culpritStatus !== "error") {
-            status = "Analysis complete.";
-          } else if (regressionStatus === "pending") {
-            status = "Analysis pending.";
-          // Regression is complete, and culprit analysis is running or pending.
-          } else if (regressionStatus !== "error" && culpritStatus !== "error"){
-            status = "Analysis running.";
+          if (status === "completed") {
+            result = "Analysis complete.";
+          } else if (status === "pending") {
+            result = "Analysis pending.";
+          } else if (status === "error"){
+            result = "Analysis ended in error.";
           } else {
-            status = "Analysis ended in error.";
+            result = "Analysis running.";
           }
 
           // Add extra information
@@ -237,15 +211,12 @@
           }
 
           if (extraInfo) {
-            status = status + " " + extraInfo;
+            result = result + " " + extraInfo;
           }
 
-          return status;
+          return result;
         },
 
-        computeRegressionRangeStatus: function (regressionRangeAnalysisStatus) {
-          return regressionRangeAnalysisStatus.toLowerCase();
-        },
 
         computeRegressionRangeUrl: function (regressionRangeLower, regressionRangeUpper) {
           if (!regressionRangeLower || !regressionRangeUpper)
@@ -253,42 +224,33 @@
           return "https://crrev.com/" + regressionRangeLower + ".." + regressionRangeUpper + "?pretty=fuller";
         },
 
-        // TODO(crbug.com/786484): Use commit position here as it's more readable.
         computeRegressionRangeText: function (regressionRangeLower, regressionRangeUpper) {
           if (!regressionRangeLower || !regressionRangeUpper)
             return 'None';
-          return regressionRangeLower.substring(0, 5) +
+          return regressionRangeLower +
             '...' +
-            regressionRangeUpper.substring(0, 5);
+            regressionRangeUpper;
         },
 
-        computeCulpritAnalysisStatus: function (culpritAnalysisStatus) {
-          return culpritAnalysisStatus.toLowerCase();
-        },
-
-        // Computed bindings
-        isRegressionAnalysisComplete: function (status) {
-          return status == 'completed';
-        },
-
-        analysisError: function(regressionStatus, culpritStatus) {
-          return regressionStatus == 'error' || culpritStatus == 'error';
-        },
-
+        // TODO(crbug.com/831675): Show regression range as analysis runs.
         regressionRangeFound: function(regressionRangeLower, regressionRangeUpper) {
           return regressionRangeLower && regressionRangeUpper;
         },
 
         shouldShowRegressionRange: function(status, regressionRangeLower, regressionRangeUpper) {
-          return this.isRegressionAnalysisComplete(status) && this.regressionRangeFound(regressionRangeLower, regressionRangeUpper);
+          return status.toLowerCase() === 'completed' && this.regressionRangeFound(regressionRangeLower, regressionRangeUpper);
         },
 
         isCulpritFound: function (status, culpritUrl) {
-          return status == 'completed' && culpritUrl;
+          return status.toLowerCase() == 'completed' && culpritUrl;
         },
 
         hasHeuristicAnalysisResults: function(heuristicAnalysisResults) {
           return heuristicAnalysisResults && heuristicAnalysisResults.length > 0;
+        },
+
+        hasError: function(status){
+          return status.toLowerCase() === 'error';
         },
 
       });

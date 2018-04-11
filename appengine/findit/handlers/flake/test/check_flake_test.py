@@ -302,10 +302,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/flake',
-        params={
-            'key': analysis.key.urlsafe(),
-            'format': 'json'
-        })
+        params={'key': analysis.key.urlsafe(),
+                'format': 'json'})
 
     expected_check_flake_result = {
         'key':
@@ -313,8 +311,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'pass_rates': [[
             12345, 0.9, '1', 100, 'git_hash_2', 12344, 'git_hash_1'
         ]],
-        'analysis_status':
-            STATUS_TO_DESCRIPTION.get(analysis.status),
         'master_name':
             master_name,
         'builder_name':
@@ -362,8 +358,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'show_admin_options':
             False,
         'culprit': {},
-        'try_job_status':
-            'Running',
         'last_attempted_swarming_task': {
             'task_id': None,
             'build_number': None
@@ -375,8 +369,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             False,
         'bug_id':
             '',
-        'culprit_analysis_status':
-            'Running',
         'culprit_confidence':
             '',
         'culprit_text':
@@ -513,10 +505,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/flake',
-        params={
-            'key': analysis.key.urlsafe(),
-            'format': 'json'
-        })
+        params={'key': analysis.key.urlsafe(),
+                'format': 'json'})
 
     expected_check_flake_result = {
         'key':
@@ -524,8 +514,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'pass_rates': [[
             12345, 0.9, '1', 100, 'git_hash_2', 12344, 'git_hash_1'
         ]],
-        'analysis_status':
-            STATUS_TO_DESCRIPTION.get(analysis.status),
         'master_name':
             master_name,
         'builder_name':
@@ -566,8 +554,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'show_admin_options':
             False,
         'culprit': {},
-        'try_job_status':
-            None,
         'last_attempted_swarming_task': {
             'task_id': None,
             'build_number': None
@@ -579,8 +565,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             False,
         'bug_id':
             '',
-        'culprit_analysis_status':
-            'pending',
         'culprit_confidence':
             '',
         'culprit_text':
@@ -633,8 +617,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'xsrf_token':
                 'abc',
         },
-        status=400,
-    )
+        status=400,)
     self.assertEqual(
         ('Flake analysis is not supported for "s/t". Either '
          'the test type is not supported or the test is not swarmed yet.'),
@@ -676,10 +659,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/flake',
-        params={
-            'key': analysis.key.urlsafe(),
-            'format': 'json'
-        })
+        params={'key': analysis.key.urlsafe(),
+                'format': 'json'})
 
     # Because TriagedResult uses auto_now=True, a direct dict comparison will
     # always fail. Instead only compare the relevant fields for trige_history.
@@ -1053,11 +1034,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.test_app.post(
         '/waterfall/flake',
-        params={
-            'key': analysis.key.urlsafe(),
-            'cancel': '1',
-            'format': 'json'
-        })
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'})
     self.assertEqual(original_key, analysis.key)
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
@@ -1087,11 +1066,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.test_app.post(
         '/waterfall/flake',
-        params={
-            'key': analysis.key.urlsafe(),
-            'cancel': '1',
-            'format': 'json'
-        })
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'})
     self.assertEqual(original_key, analysis.key)
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertEqual(analysis_status.ERROR, analysis.try_job_status)
