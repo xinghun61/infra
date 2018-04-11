@@ -46,7 +46,8 @@ class HotlistsJsonFeed(jsonfeed.JsonFeed):
 
       recently_visited_hids = self.services.user.GetRecentlyVisitedHotlists(
           mr.cnxn, mr.auth.user_id)
-      recently_visited_hotlists, _ = self.services.features.GetHotlistsByID(
+      (recently_visited_hotlists,
+          missed_ids) = self.services.features.GetHotlistsByID(
           mr.cnxn, [hid for hid in recently_visited_hids])
 
     hotlists_dict = {
@@ -67,7 +68,8 @@ class HotlistsJsonFeed(jsonfeed.JsonFeed):
                                   mr.cnxn, recently_visited_hotlists[hid],
                                   self.services.user)) for
                              hid in recently_visited_hids if
-                             recently_visited_hotlists[hid] not in user_hotlists
+                             hid not in missed_ids
+                             and recently_visited_hotlists[hid] not in user_hotlists
                              and hid not in user_starred_hids],
         'user': mr.auth.email
         }
