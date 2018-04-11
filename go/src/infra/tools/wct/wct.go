@@ -18,15 +18,20 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/fedesog/webdriver"
+	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/runner"
+
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
 )
 
 var (
-	chromedriverBin = flag.String("chromedriver", "", "location of chromedriver binary. Install from https://sites.google.com/a/chromium.org/chromedriver/downloads")
-	baseDir         = flag.String("base", "", "location of elements to test")
-	persist         = flag.Bool("persist", false, "keep server running")
+	chromeBin  = flag.String("chrome", "", "location of chrome binary")
+	userDir    = flag.String("dir", "/tmp/", "user directory")
+	debugPort  = flag.String("debug-port", "9222", "chrome debugger port")
+	baseDir    = flag.String("base", "", "location of elements to test")
+	persist    = flag.Bool("persist", false, "keep server running")
+	timeoutSec = flag.Int("timeout", 60, "timeout seconds")
 )
 
 const (
@@ -61,8 +66,8 @@ func main() {
 	ctx = gologger.StdConfig.Use(ctx)
 	logging.SetLevel(ctx, logging.Debug)
 
-	if *chromedriverBin == "" {
-		logging.Errorf(ctx, "chromedriver flag must be set")
+	if *chromeBin == "" {
+		logging.Errorf(ctx, "chrome flag must be set")
 		os.Exit(-1)
 	}
 
@@ -72,26 +77,6 @@ func main() {
 	// inherently flaky, so we should upstream a fix PR to this chromedriver lib.
 	rand.Seed(time.Now().UTC().UnixNano())
 	var err error
-	chromeDriver := webdriver.NewChromeDriver(*chromedriverBin)
-	for i := 0; i < maxPortAttempts; i++ {
-		chromeDriver.Port = rand.Intn(portRange) + portMin
-		err = chromeDriver.Start()
-		if err == nil {
-			break
-		}
-		logging.Errorf(ctx, "attempting to start chromedriver located at %q on port %d: %v", *chromedriverBin, chromeDriver.Port, err)
-	}
-	if err != nil {
-		logging.Errorf(ctx, "starting chromedriver located at %q: on port %d (last attempt): %v", *chromedriverBin, chromeDriver.Port, err)
-		os.Exit(-1)
-	}
-
-	desired := webdriver.Capabilities{"Platform": "Linux"}
-	session, err := chromeDriver.NewSession(desired, desired)
-	if err != nil {
-		logging.Errorf(ctx, "starting chromedriver session: %v", err)
-		os.Exit(-1)
-	}
 
 	http.HandleFunc("/wct-monkeypatch.js", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./monkeypatch.js")
@@ -127,12 +112,7 @@ func main() {
 		}
 
 		if !*persist {
-			session.Delete()
-			chromeDriver.Stop()
-			doneCh <- true
-			if req.Failures > 0 {
-				os.Exit(-1)
-			}
+			doneCh <- req.Failures > 0
 		}
 	})
 
@@ -153,9 +133,44 @@ func main() {
 	addr := <-addrCh
 	testURL := fmt.Sprintf("http://%s/test/?wct=go", addr)
 
-	err = session.Url(testURL)
+	ctxt, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create chrome instance
+	c, err := chromedp.New(ctxt, chromedp.WithRunnerOptions(runner.Path(*chromeBin)))
 	if err != nil {
-		logging.Errorf(ctx, "opening url for session: %v", err)
+		logging.Errorf(ctx, "error creating chrome instance: %v", err)
+		os.Exit(1)
 	}
-	<-doneCh
+
+	err = c.Run(ctxt, chromedp.Tasks{
+		chromedp.Navigate(testURL),
+	})
+	if err != nil {
+		logging.Errorf(ctx, "error running chromedp tasks: %v", err)
+		os.Exit(1)
+	}
+
+	select {
+	case errors := <-doneCh:
+		err = c.Shutdown(ctxt)
+		if err != nil {
+			logging.Errorf(ctx, "error shutting down chrome: %v", err)
+		}
+
+		err = c.Wait()
+		if err != nil {
+			logging.Errorf(ctx, "error waiting for chrome to finish: %v", err)
+		}
+
+		if errors {
+			logging.Errorf(ctx, "FAILED\n")
+			os.Exit(1)
+		} else {
+			logging.Infof(ctx, "PASSED\n")
+		}
+	case <-time.After(time.Duration(*timeoutSec) * time.Second):
+		logging.Errorf(ctx, "TIMED OUT\n")
+		os.Exit(1)
+	}
 }

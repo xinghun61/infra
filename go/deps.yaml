@@ -328,3 +328,29 @@ import:
 - package: golang.org/x/crypto/ssh/terminal
   version: master
   repo: https://go.googlesource.com/crypto.git
+- package: github.com/chromedp/cdproto
+  repo: https://chromium.googlesource.com/external/github.com/chromedp/cdproto.git
+  version: master
+  subpackages:
+  - ...
+- package: github.com/chromedp/chromedp
+  repo: https://chromium.googlesource.com/external/github.com/chromedp/chromedp.git
+  version: master
+- package: github.com/disintegration/imaging
+  repo: https://chromium.googlesource.com/external/github.com/disintegration/imaging.git
+  version: master
+- package: github.com/gorilla/websocket
+  repo: https://chromium.googlesource.com/external/github.com/gorilla/websocket.git
+  version: master
+- package: github.com/knq/sysutil
+  repo: https://chromium.googlesource.com/external/github.com/knq/sysutil.git
+  version: master
+- package: github.com/mailru/easyjson
+  repo: https://chromium.googlesource.com/external/github.com/mailru/easyjson.git
+  version: master
+- package: golang.org/x/image
+  repo: https://chromium.googlesource.com/external/github.com/golang/image.git
+  version: master
+  subpackages:
+  - bmp
+  - tiff
