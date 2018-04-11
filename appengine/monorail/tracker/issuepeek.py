@@ -12,7 +12,7 @@ from third_party import ezt
 import settings
 from businesslogic import work_env
 from features import commands
-from features import notify
+from features import send_notifications
 from framework import authdata
 from framework import exceptions
 from framework import framework_bizobj
@@ -307,7 +307,7 @@ class IssuePeek(servlet.Servlet):
         cmnts = self.services.issue.GetCommentsForIssue(
             mr.cnxn, issue.issue_id)
         seq_num = len(cmnts) - 1
-        notify.PrepareAndSendIssueChangeNotification(
+        send_notifications.PrepareAndSendIssueChangeNotification(
             issue.issue_id, mr.request.host, mr.auth.user_id, seq_num,
             send_email=send_email, old_owner_id=old_owner_id,
             comment_id=comment_pb.id)

@@ -17,7 +17,7 @@ import time
 from third_party import ezt
 
 from features import filterrules_helpers
-from features import notify
+from features import send_notifications
 from framework import actionlimit
 from framework import exceptions
 from framework import framework_constants
@@ -384,7 +384,7 @@ class IssueBulkEdit(servlet.Servlet):
           iids_actually_changed = [
               issue.issue_id for issue in editable_issues]
 
-        notify.SendIssueBulkChangeNotification(
+        send_notifications.SendIssueBulkChangeNotification(
             iids_actually_changed, mr.request.host,
             old_owner_ids, parsed.comment,
             reporter_id, combined_amendments, send_email, users_by_id)

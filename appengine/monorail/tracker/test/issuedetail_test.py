@@ -13,7 +13,7 @@ import unittest
 import settings
 from proto import features_pb2
 from features import hotlist_views
-from features import notify
+from features import send_notifications
 from framework import authdata
 from framework import framework_views
 from framework import permissions
@@ -440,8 +440,8 @@ class IssueDetailFunctionsTest(unittest.TestCase):
 
   def testProcessFormData_NonMembersCantEdit(self):
     """Non-members can comment, but never affect issue fields."""
-    orig_prepsend = notify.PrepareAndSendIssueChangeNotification
-    notify.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
+    orig_prepsend = send_notifications.PrepareAndSendIssueChangeNotification
+    send_notifications.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
 
     local_id_1 = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
@@ -493,12 +493,12 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         self.cnxn, self.project.project_id, local_id_2)
     self.assertEqual(local_id_1, updated_issue_2.merged_into)
 
-    notify.PrepareAndSendIssueChangeNotification = orig_prepsend
+    send_notifications.PrepareAndSendIssueChangeNotification = orig_prepsend
 
   def testProcessFormData_NewMemberExistingFormOnlyAddsComment(self):
     """Non-member had a form open, then become a member, then submitted."""
-    orig_prepsend = notify.PrepareAndSendIssueChangeNotification
-    notify.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
+    orig_prepsend = send_notifications.PrepareAndSendIssueChangeNotification
+    send_notifications.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
 
     self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
@@ -548,12 +548,12 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         self.cnxn, self.project.project_id, local_id_2)
     self.assertEqual('summary_2', updated_issue_2.summary)
 
-    notify.PrepareAndSendIssueChangeNotification = orig_prepsend
+    send_notifications.PrepareAndSendIssueChangeNotification = orig_prepsend
 
   def testProcessFormData_DuplicateAddsACommentToTarget(self):
     """Marking issue 2 as dup of 1 adds a comment to 1."""
-    orig_prepsend = notify.PrepareAndSendIssueChangeNotification
-    notify.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
+    orig_prepsend = send_notifications.PrepareAndSendIssueChangeNotification
+    send_notifications.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
     orig_get_starrers = tracker_helpers.GetNewIssueStarrers
     tracker_helpers.GetNewIssueStarrers = lambda *args, **kwargs: []
 
@@ -611,7 +611,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         self.cnxn, issue_1.issue_id)
     self.assertEqual(2, len(comments_1))
 
-    notify.PrepareAndSendIssueChangeNotification = orig_prepsend
+    send_notifications.PrepareAndSendIssueChangeNotification = orig_prepsend
     tracker_helpers.GetNewIssueStarrers = orig_get_starrers
 
     # TODO(jrobbins): add more unit tests for other aspects of ProcessForm.

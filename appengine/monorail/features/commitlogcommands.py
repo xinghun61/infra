@@ -17,7 +17,7 @@ import logging
 import re
 
 from features import commands
-from features import notify
+from features import send_notifications
 from framework import emailfmt
 from framework import exceptions
 from framework import framework_bizobj
@@ -174,7 +174,7 @@ class UpdateIssueAction(IssueAction):
       # deployed the change that switches to comment_id.
       cmnts = services.issue.GetCommentsForIssue(cnxn, issue.issue_id)
       seq_num = len(cmnts) - 1
-      notify.PrepareAndSendIssueChangeNotification(
+      send_notifications.PrepareAndSendIssueChangeNotification(
           issue.issue_id, self.hostport,
           self.commenter_id, seq_num, old_owner_id=old_owner_id,
           comment_id=comment_pb.id)

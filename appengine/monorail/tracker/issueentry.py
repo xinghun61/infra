@@ -12,7 +12,7 @@ import time
 
 from businesslogic import work_env
 from features import hotlist_helpers
-from features import notify
+from features import send_notifications
 from framework import actionlimit
 from framework import framework_bizobj
 from framework import framework_constants
@@ -335,10 +335,10 @@ class IssueEntry(servlet.Servlet):
     # TODO(jrobbins): Convert this to using comment_id and remove
     # seq_num parameter.
     seq_num = 0
-    notify.PrepareAndSendIssueChangeNotification(
+    send_notifications.PrepareAndSendIssueChangeNotification(
         issue.issue_id, mr.request.host, reporter_id, seq_num)
 
-    notify.PrepareAndSendIssueBlockingNotification(
+    send_notifications.PrepareAndSendIssueBlockingNotification(
         issue.issue_id, mr.request.host, parsed.blocked_on.iids, reporter_id)
 
     # format a redirect url

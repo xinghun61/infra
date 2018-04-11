@@ -29,7 +29,7 @@ from protorpc import remote
 import settings
 from businesslogic import work_env
 from features import filterrules_helpers
-from features import notify
+from features import send_notifications
 from framework import actionlimit
 from framework import exceptions
 from framework import framework_constants
@@ -549,7 +549,7 @@ class MonorailApi(remote.Service):
       merge_into_issue_cmnts = self._services.issue.GetCommentsForIssue(
           mar.cnxn, merge_into_issue.issue_id)
       merge_seq_num = len(merge_into_issue_cmnts) - 1
-      notify.PrepareAndSendIssueChangeNotification(
+      send_notifications.PrepareAndSendIssueChangeNotification(
           merge_into_issue.issue_id, framework_helpers.GetHostPort(),
           mar.auth.user_id, merge_seq_num, send_email=True,
           comment_id=merge_comment_pb.id)
@@ -569,7 +569,7 @@ class MonorailApi(remote.Service):
       # TODO(jrobbins): Remove the seq parameter after we have
       # deployed the change that switches to comment_id.  However,
       # we need seq for the response protobuffer.
-      notify.PrepareAndSendIssueChangeNotification(
+      send_notifications.PrepareAndSendIssueChangeNotification(
           issue.issue_id, framework_helpers.GetHostPort(),
           comment.user_id, seq, send_email=True, old_owner_id=old_owner_id,
           comment_id=comment.id)
@@ -732,7 +732,7 @@ class MonorailApi(remote.Service):
         # TODO(jrobbins): Convert this to using comment_id and remove
         # seq_num parameter.
         seq_num = 0
-        notify.PrepareAndSendIssueChangeNotification(
+        send_notifications.PrepareAndSendIssueChangeNotification(
             new_issue.issue_id, framework_helpers.GetHostPort(),
             new_issue.reporter_id, seq_num)
 

@@ -10,7 +10,7 @@ import unittest
 import mox
 
 from features import commitlogcommands
-from features import notify
+from features import send_notifications
 from proto import tracker_pb2
 from services import service_manager
 from testing import fake
@@ -72,8 +72,8 @@ class InboundEmailTest(unittest.TestCase):
     self.mox.StubOutWithMock(self.services.issue, 'GetCommentsForIssue')
     self.services.issue.GetCommentsForIssue(
         self.cnxn, self.issue.issue_id).AndReturn(comments)
-    self.mox.StubOutWithMock(notify, 'PrepareAndSendIssueChangeNotification')
-    notify.PrepareAndSendIssueChangeNotification(
+    self.mox.StubOutWithMock(send_notifications, 'PrepareAndSendIssueChangeNotification')
+    send_notifications.PrepareAndSendIssueChangeNotification(
         self.issue.issue_id, 80, 101, len(comments) - 1,
         old_owner_id=self.issue.owner_id, comment_id=1)
     self.mox.ReplayAll()

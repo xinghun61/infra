@@ -20,7 +20,7 @@ from third_party import ezt
 import settings
 from businesslogic import work_env
 from features import features_bizobj
-from features import notify
+from features import send_notifications
 from features import hotlist_helpers
 from features import hotlist_views
 from framework import actionlimit
@@ -784,7 +784,7 @@ class IssueDetail(issuepeek.IssuePeek):
       # deployed the change that switches to comment_id.
       cmnts = self.services.issue.GetCommentsForIssue(mr.cnxn, issue.issue_id)
       seq_num = len(cmnts) - 1
-      notify.PrepareAndSendIssueChangeNotification(
+      send_notifications.PrepareAndSendIssueChangeNotification(
           issue.issue_id, mr.request.host, reporter_id, seq_num,
           send_email=send_email, old_owner_id=old_owner_id,
           comment_id=comment_pb.id)
@@ -795,7 +795,7 @@ class IssueDetail(issuepeek.IssuePeek):
       cmnts = self.services.issue.GetCommentsForIssue(
           mr.cnxn, merge_into_issue.issue_id)
       merge_seq_num = len(cmnts) - 1
-      notify.PrepareAndSendIssueChangeNotification(
+      send_notifications.PrepareAndSendIssueChangeNotification(
           merge_into_issue.issue_id, mr.request.host, reporter_id,
           merge_seq_num, send_email=send_email, comment_id=merge_comment_pb.id)
 
@@ -804,7 +804,7 @@ class IssueDetail(issuepeek.IssuePeek):
       blockers_added, blockers_removed = framework_helpers.ComputeListDeltas(
           orig_blocked_on, blocked_on_iids)
       delta_blockers = blockers_added + blockers_removed
-      notify.PrepareAndSendIssueBlockingNotification(
+      send_notifications.PrepareAndSendIssueBlockingNotification(
           issue.issue_id, mr.request.host,
           delta_blockers, reporter_id, send_email=send_email)
       # We don't send notification emails to newly blocked issues: either they
