@@ -136,6 +136,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
       'buckets': [
         {
           'name': 'luci.chromium.try',
+          'swarming_hostname': 'swarming.example.com',
           'builders': [
             {
               'name': 'linux_chromium_rel_ng',

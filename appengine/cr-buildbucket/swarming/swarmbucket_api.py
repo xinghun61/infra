@@ -54,6 +54,7 @@ class BucketMessage(messages.Message):
   # Bucket name. Unique per buildbucket instance.
   name = messages.StringField(1)
   builders = messages.MessageField(BuilderMessage, 2, repeated=True)
+  swarming_hostname = messages.StringField(3)
 
 
 class GetBuildersResponseMessage(messages.Message):
@@ -117,6 +118,7 @@ class SwarmbucketApi(remote.Service):
           )
           for builder in bucket.swarming.builders
         ],
+        swarming_hostname=bucket.swarming.hostname,
       ))
     return res
 
