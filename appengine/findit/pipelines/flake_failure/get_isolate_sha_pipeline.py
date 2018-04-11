@@ -99,7 +99,8 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
     commit_position = parameters.commit_position
 
     _, earliest_containing_build = step_util.GetValidBoundingBuildsForStep(
-        master_name, builder_name, step_name, None, None, commit_position)
+        master_name, builder_name, step_name, None, analysis.build_number,
+        commit_position)
 
     assert earliest_containing_build
     assert earliest_containing_build.commit_position >= commit_position

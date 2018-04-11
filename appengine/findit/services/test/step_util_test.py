@@ -21,6 +21,11 @@ def _MockedGetBuildInfo(master_name, builder_name, build_number):
 
 class StepUtilTest(wf_testcase.WaterfallTestCase):
 
+  def testGetLowerBoundBuildNumber(self):
+    self.assertEqual(5, step_util._GetLowerBoundBuildNumber(5, 100))
+    self.assertEqual(0, step_util._GetLowerBoundBuildNumber(None, 100, 200))
+    self.assertEqual(100, step_util._GetLowerBoundBuildNumber(None, 600, 500))
+
   @mock.patch.object(
       swarming, 'CanFindSwarmingTaskFromBuildForAStep', return_value=True)
   @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
@@ -29,16 +34,6 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
         'm', 'b', 's', 0, 100, 30)
     self.assertEqual(1, lower_bound.build_number)
     self.assertEqual(2, upper_bound.build_number)
-
-  @mock.patch.object(
-      swarming, 'CanFindSwarmingTaskFromBuildForAStep', return_value=True)
-  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
-  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=100)
-  def testGetValidBoundingBuildsForStepNoLowerUpperBounds(self, *_):
-    lower_bound, upper_bound = step_util.GetValidBoundingBuildsForStep(
-        'm', 'b', 's', None, None, 70)
-    self.assertEqual(5, lower_bound.build_number)
-    self.assertEqual(6, upper_bound.build_number)
 
   @mock.patch.object(
       swarming, 'CanFindSwarmingTaskFromBuildForAStep', return_value=True)
@@ -83,23 +78,3 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertIsNone(lower_bound)
     self.assertIsNone(upper_bound)
-
-  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
-  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=10)
-  @mock.patch.object(swarming, 'CanFindSwarmingTaskFromBuildForAStep')
-  def testGetValidBoundingBuildsForStep(self, mock_fn, *_):
-    # Original lower_bound and upper_bound should be 3 and 4, but no tasks
-    # found on those builds, so lower_bound-1, upper_bound+1.
-    mock_fn.side_effect = [False, True, False, True]
-    lower_bound, upper_bound = step_util.GetValidBoundingBuildsForStep(
-        'm', 'b', 's', None, None, 45)
-
-    self.assertEqual(2, lower_bound.build_number)
-    self.assertEqual(5, upper_bound.build_number)
-
-  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
-  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
-  def testGetValidBoundingBuildsForStepNoLatestBuild(self, *_):
-    self.assertEqual((None, None),
-                     step_util.GetValidBoundingBuildsForStep(
-                         'm', 'b', 's', None, None, 50))

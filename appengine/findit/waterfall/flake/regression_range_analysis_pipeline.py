@@ -169,6 +169,9 @@ def _GetEarliestContainingBuildNumber(commit_position, master_flake_analysis):
   if lower_bound is not None and lower_bound == upper_bound:
     return lower_bound
 
+  # In case the upper bound is None, fall back to detected build number.
+  upper_bound = upper_bound or master_flake_analysis.build_number
+
   _, upper_bound_build = step_util.GetValidBoundingBuildsForStep(
       master_name, builder_name, master_flake_analysis.step_name, lower_bound,
       upper_bound, commit_position)

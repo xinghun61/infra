@@ -7,8 +7,8 @@ import logging
 
 from common.findit_http_client import FinditHttpClient
 from services import swarming
-from waterfall import buildbot
 from waterfall import build_util
+from waterfall import buildbot
 
 
 # TODO(crbug/804617): Modify this function to use new LUCI API when ready.
@@ -40,6 +40,27 @@ def _GetCandidateBounds(master_name, builder_name, upper_bound, lower_bound,
       # Go right.
       lower_bound = candidate_build_number
   return upper_bound, lower_bound
+
+
+def _GetLowerBoundBuildNumber(
+    lower_bound_build_number,
+    upper_bound_build_number,
+    # The default window is the number of builds
+    # Findit will look back for an analysis.
+    default_build_number_window_size=500):
+  """Determines the lowest bound build number relative to an upper bound.
+
+  Args:
+    lower_bound_build_number (int): An optional int to return directly.
+    upper_bound_build)number (int): A non-optional int to use as a reference
+        point.
+    default_build_number_window_size (int): A fallback window to use to
+        determine the lower bound.
+  """
+  if lower_bound_build_number is not None:
+    return lower_bound_build_number
+
+  return max(upper_bound_build_number - default_build_number_window_size, 0)
 
 
 # TODO(crbug/804617): Modify this function to use new LUCI API when ready.
@@ -74,23 +95,7 @@ def GetValidBoundingBuildsForStep(
   """
   http_client = FinditHttpClient()
 
-  lower_bound_build_number = lower_bound_build_number or 0
-  _, earliest_build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                                   lower_bound_build_number)
-  assert earliest_build_info
-  assert earliest_build_info.commit_position is not None
-
-  if requested_commit_position <= earliest_build_info.commit_position:
-    if not swarming.CanFindSwarmingTaskFromBuildForAStep(
-        http_client, master_name, builder_name, lower_bound_build_number,
-        step_name):
-      # Cannot find valid artifact in earliest_build for the step.
-      return None, None
-    return None, earliest_build_info
-
-  if upper_bound_build_number is None:
-    upper_bound_build_number = build_util.GetLatestBuildNumber(
-        master_name, builder_name)
+  assert upper_bound_build_number is not None, 'upper_bound can\'t be None'
 
   if upper_bound_build_number is None:
     logging.error('Failed to detect latest build number')
@@ -98,8 +103,30 @@ def GetValidBoundingBuildsForStep(
 
   _, latest_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                  upper_bound_build_number)
-  assert latest_build_info
+  assert latest_build_info, 'Couldn\'t find build info for %s/%s/%s' % (
+      master_name, builder_name, upper_bound_build_number)
   assert latest_build_info.commit_position is not None
+
+  lower_bound_build_number = _GetLowerBoundBuildNumber(lower_bound_build_number,
+                                                       upper_bound_build_number)
+
+  _, earliest_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                   lower_bound_build_number)
+
+  assert earliest_build_info, 'Couldn\'t find build info for %s/%s/%s' % (
+      master_name, builder_name, lower_bound_build_number)
+  assert earliest_build_info.commit_position is not None
+  assert (latest_build_info.commit_position >=
+          earliest_build_info.commit_position)
+
+  if requested_commit_position <= earliest_build_info.commit_position:
+    if not swarming.CanFindSwarmingTaskFromBuildForAStep(
+        http_client, master_name, builder_name, lower_bound_build_number,
+        step_name):
+      # TODO(crbug.com/831828): Support newly added test steps for this case.
+      # Cannot find valid artifact in earliest_build for the step.
+      return None, None
+    return None, earliest_build_info
 
   if requested_commit_position >= latest_build_info.commit_position:
     if not swarming.CanFindSwarmingTaskFromBuildForAStep(
