@@ -110,124 +110,12 @@ class TestBuildEvent(SendingEventBaseTest):
        '--build-event-build-name', 'whatever'])
     self.assertTrue(common.send_build_event(args))
 
-  def test_send_build_event_smoke_missing_goma_file(self):
-    args = get_arguments(
-      ['--event-mon-service-name', 'thing',
-       '--build-event-type', 'BUILD',
-       '--build-event-hostname', 'foo.bar.dns',
-       '--build-event-build-name', 'whatever',
-       '--build-event-goma-stats-path',
-           os.path.join(DATA_DIR, 'this-file-does-not-exist')])
-    with self.assertRaises(IOError):
-      common.send_build_event(args)
-
 
 class TestInputModesFile(unittest.TestCase):
   # Test the various ways to pass information to send_monitoring_event
   # TODO(pgervais): test precedence order.
   def tearDown(self):
     event_mon.close()
-
-  def test_send_build_event_with_goma_stats(self):
-    # Write a file to avoid mocks
-    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
-      outfile = os.path.join(tmpdir, 'out.bin')
-      args = get_arguments(
-        ['--event-mon-run-type', 'file',
-         '--event-mon-output-file', outfile,
-         '--event-mon-service-name', 'thing',
-         '--build-event-type', 'BUILD',
-         '--build-event-hostname', 'foo.bar.dns',
-         '--build-event-build-name', 'whatever',
-         '--build-event-goma-stats-path',
-         os.path.join(DATA_DIR, 'goma_stats.bin')])
-      self.assertEquals(args.event_mon_run_type, 'file')
-      event_mon.process_argparse_options(args)
-      self.assertTrue(common.send_build_event(args))
-
-      # Now open the resulting file and check what was written
-      with open(outfile, 'rb') as f:
-        request = LogRequestLite.FromString(f.read())
-
-    self.assertEqual(len(request.log_event), 1)
-    event = ChromeInfraEvent.FromString(request.log_event[0].source_extension)
-    self.assertEqual(event.build_event.goma_stats.request_stats.total, 10)
-    self.assertEqual(event.build_event.goma_stats.request_stats.success, 9)
-    self.assertEqual(event.build_event.goma_stats.request_stats.failure, 1)
-    self.assertEqual(event.build_event.host_name, 'foo.bar.dns')
-
-  def test_send_build_event_with_goma_error_unknown(self):
-    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
-      outfile = os.path.join(tmpdir, 'out.bin')
-      args = get_arguments(
-        ['--event-mon-run-type', 'file',
-         '--event-mon-output-file', outfile,
-         '--event-mon-service-name', 'thing',
-         '--build-event-type', 'BUILD',
-         '--build-event-hostname', 'foo.bar.dns',
-         '--build-event-build-name', 'whatever',
-         '--build-event-goma-error', 'GOMA_ERROR_UNKNOWN'])
-      self.assertEquals(args.event_mon_run_type, 'file')
-      event_mon.process_argparse_options(args)
-      self.assertTrue(common.send_build_event(args))
-
-      # Now open the resulting file and check what was written
-      with open(outfile, 'rb') as f:
-        request = LogRequestLite.FromString(f.read())
-
-    self.assertEqual(len(request.log_event), 1)
-    event = ChromeInfraEvent.FromString(request.log_event[0].source_extension)
-    self.assertEqual(event.build_event.goma_error,
-                     BuildEvent.GOMA_ERROR_UNKNOWN)
-    self.assertEqual(event.build_event.host_name, 'foo.bar.dns')
-
-  def test_send_build_event_with_goma_error_crashed(self):
-    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
-      outfile = os.path.join(tmpdir, 'out.bin')
-      args = get_arguments(
-        ['--event-mon-run-type', 'file',
-         '--event-mon-output-file', outfile,
-         '--event-mon-service-name', 'thing',
-         '--build-event-type', 'BUILD',
-         '--build-event-hostname', 'foo.bar.dns',
-         '--build-event-build-name', 'whatever',
-         '--build-event-goma-error', 'GOMA_ERROR_CRASHED',
-         '--build-event-goma-crash-report-id-path',
-         os.path.join(DATA_DIR, 'goma_error_report.txt')])
-      self.assertEquals(args.event_mon_run_type, 'file')
-      event_mon.process_argparse_options(args)
-      self.assertTrue(common.send_build_event(args))
-
-      # Now open the resulting file and check what was written
-      with open(outfile, 'rb') as f:
-        request = LogRequestLite.FromString(f.read())
-
-    self.assertEqual(len(request.log_event), 1)
-    event = ChromeInfraEvent.FromString(request.log_event[0].source_extension)
-    self.assertEqual(event.build_event.goma_error,
-                     BuildEvent.GOMA_ERROR_CRASHED)
-    self.assertEqual(event.build_event.goma_crash_report_id,
-                     '0123456789abcdef0')
-    self.assertEqual(event.build_event.host_name, 'foo.bar.dns')
-
-  def test_send_build_event_with_non_existing_goma_error_report(self):
-    # Write a file to avoid mocks
-    with infra_libs.temporary_directory(prefix='common_test-') as tmpdir:
-      outfile = os.path.join(tmpdir, 'out.bin')
-      args = get_arguments(
-        ['--event-mon-run-type', 'file',
-         '--event-mon-output-file', outfile,
-         '--event-mon-service-name', 'thing',
-         '--build-event-type', 'BUILD',
-         '--build-event-hostname', 'foo.bar.dns',
-         '--build-event-build-name', 'whatever',
-         '--build-event-goma-error', 'GOMA_ERROR_CRASHED',
-         '--build-event-goma-crash-report-id-path',
-         os.path.join(DATA_DIR, 'this-file-does-not-exist')])
-      self.assertEquals(args.event_mon_run_type, 'file')
-      event_mon.process_argparse_options(args)
-      with self.assertRaises(IOError):
-        common.send_build_event(args)
 
   # The default event used below (build-foo-builder.bin) has been generated by:
   # ./run.py infra.tools.send_monitoring_event \

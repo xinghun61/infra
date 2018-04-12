@@ -15,7 +15,6 @@ import infra_libs.logs
 
 from infra_libs.event_mon.protos.log_request_lite_pb2 import LogRequestLite
 from infra_libs.event_mon.protos.chrome_infra_log_pb2 import ChromeInfraEvent
-from infra_libs.event_mon.protos.goma_stats_pb2 import GomaStats
 
 LOGGER = logging.getLogger(__name__)
 
@@ -117,17 +116,6 @@ def add_argparse_options(parser):
                            'FAIL_TYPE_COMPILE')
   build_group.add_argument('--build-event-head-revision-git-hash',
                            help='Revision fetched from the Git repository')
-
-  build_group.add_argument('--build-event-goma-stats-path',
-                           metavar='FILENAME',
-                           help='File containing a serialized GomaStats '
-                           'protobuf.')
-  build_group.add_argument('--build-event-goma-error',
-                           choices=event_mon.GOMA_ERROR_TYPES,
-                           help='Reason for no GomaStats protobuf.')
-  build_group.add_argument('--build-event-goma-crash-report-id-path',
-                           metavar='FILENAME',
-                           help='File containing a crash report id.')
 
   # Read events from file
   file_group = parser.add_argument_group('Read events from file')
@@ -275,26 +263,6 @@ def send_service_event(args):
 
 def send_build_event(args):
   """Entry point when --build-event-type is passed."""
-  goma_stats = None
-  if args.build_event_goma_stats_path:
-    try:
-      with open(args.build_event_goma_stats_path, 'rb') as f:
-        goma_stats = GomaStats.FromString(f.read())
-    except Exception:
-      LOGGER.exception('Failure when reading/parsing file %s',
-                       args.build_event_goma_stats_path)
-      raise
-
-  goma_crash_report_id = None
-  if args.build_event_goma_crash_report_id_path:
-    try:
-      with open(args.build_event_goma_crash_report_id_path, 'r') as f:
-        goma_crash_report_id = f.read().strip()
-    except Exception:  # pragma: no cover
-      LOGGER.exception('Failure when reading/parsing file %s',
-                       args.build_event_goma_crash_report_id_path)
-      raise
-
   return bool(event_mon.send_build_event(
     args.build_event_type,
     args.build_event_hostname,
@@ -312,10 +280,7 @@ def send_build_event(args):
     fail_type=args.build_event_fail_type,
     head_revision_git_hash=args.build_event_head_revision_git_hash,
     timestamp_kind=args.event_mon_timestamp_kind,
-    event_timestamp=args.event_mon_event_timestamp,
-    goma_stats=goma_stats,
-    goma_error=args.build_event_goma_error,
-    goma_crash_report_id=goma_crash_report_id))
+    event_timestamp=args.event_mon_event_timestamp))
 
 
 def send_events_from_file(args):
