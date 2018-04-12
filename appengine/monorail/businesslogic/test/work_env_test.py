@@ -7,12 +7,14 @@
 
 import logging
 import unittest
+from mock import patch
 
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
 
 from businesslogic import work_env
 from framework import exceptions
+from features import send_notifications
 from proto import project_pb2
 from proto import tracker_pb2
 from services import service_manager
@@ -298,9 +300,12 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetIssueByLocalID(789, 1)
 
-  def testUpdateIssueApprovalStatus(self):
+  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification',
+         autospec=True)
+  def testUpdateIssueApprovalStatus(self, mockPrepareAndSend):
     """We can update an issue's ApprovalValue status."""
     self.SignIn()
+
     av_21 = tracker_pb2.ApprovalValue(approval_id=21)
     av_24 = tracker_pb2.ApprovalValue(approval_id=24, approver_ids=[111L])
     phases = [tracker_pb2.Phase(
@@ -322,9 +327,12 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(amendment_comment.approval_id, 24)
     self.assertEqual(amendment_comment.amendments[-1].custom_field_name, 'Status')
 
-  def testUpdateIssueApprovalApprovers(self):
+  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification',
+         autospect=True)
+  def testUpdateIssueApprovalApprovers(self, mockPrepareAndSend):
     """We can update an issue's approval approvers."""
     self.SignIn()
+
     av_23 = tracker_pb2.ApprovalValue(approval_id=23, approver_ids=[111L, 555L])
     phases = [tracker_pb2.Phase(
         phase_id=1, rank=1, approval_values=[av_23])]

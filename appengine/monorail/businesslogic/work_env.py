@@ -41,6 +41,7 @@ Responsibilities of the Services layer:
 
 import logging
 
+from features import send_notifications
 from framework import exceptions
 from framework import permissions
 from search import frontendsearchpipeline
@@ -420,11 +421,11 @@ class WorkEnv(object):
       self.services.issue.UpdateIssueApprovalStatus(
           self.mr.cnxn, issue_id, approval_id, new_status, self.mr.auth.user_id, set_on)
       status_amendment = tracker_bizobj.MakeApprovalStatusAmendment(new_status)
-      self.services.issue.CreateIssueComment(
+      comment = self.services.issue.CreateIssueComment(
           self.mr.cnxn, issue, self.mr.auth.user_id, '', amendments=[status_amendment],
           approval_id=approval_id)
-    # TODO(jojwang): monorail:3588, send notification to devs or approvers
-    # on status change.
+      send_notifications.PrepareAndSendApprovalChangeNotification(
+          issue.issue_id, approval_value.approval_id, self.mr.request.host, comment.id)
     logging.info('updated ApprovalValue %r for issue %r',
                  approval_id, issue_id)
 
@@ -447,9 +448,11 @@ class WorkEnv(object):
           self.mr.cnxn, issue_id, approval_id, approver_ids)
       approver_amendment = tracker_bizobj.MakeApprovalApproversAmendment(
           approval_value.approver_ids, approver_ids)
-      self.services.issue.CreateIssueComment(
+      comment = self.services.issue.CreateIssueComment(
           self.mr.cnxn, issue, self.mr.auth.user_id, '',
           amendments=[approver_amendment], approval_id=approval_id)
+      send_notifications.PrepareAndSendApprovalChangeNotification(
+          issue.issue_id, approval_value.approval_id, self.mr.request.host, comment.id)
     logging.info('updated approvers to %r' % approver_ids)
 
   # FUTURE: UpdateIssue()

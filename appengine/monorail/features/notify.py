@@ -738,8 +738,8 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
       self, cnxn, hostport, issue, project, approval_value, comment, users_by_id):
     """Formulate emails to be sent."""
 
-    # TODO(jojwang): monorail:3588, get approval_url
-    approval_url = ''
+    approval_url = framework_helpers.IssueCommentURL(
+        hostport, project, issue.local_id, is_approval=True)
 
     # TODO(jojwang): monorail:3588, currently one approver/status change
     # creates one comment with one amendment and no content. If this changes,
