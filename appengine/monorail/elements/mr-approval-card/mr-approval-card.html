@@ -1,0 +1,108 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+
+<dom-module id="mr-approval-card">
+  <template>
+    <style>
+      :host {
+        width: 100%;
+        background-color: white;
+        font-size: 85%;
+      }
+      .card-section {
+        padding: 0.5em 16px;
+      }
+      h2 {
+        margin: 0;
+        font-size: 130%;
+        color: hsl(0, 0%, 13%);
+        background-color: hsl(204, 85%, 75%);
+        font-weight: normal;
+        padding: 0.75em 16px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+      }
+      h2 chops-button {
+        font-size: 70%;
+        color: var(--paper-indigo-900);
+        background: white;
+        border-radius: 8px;
+        text-transform: uppercase;
+        padding: 0.25em 8px;
+        margin: 0;
+        margin-left: auto;
+      }
+      h2 chops-button iron-icon {
+        margin-right: 4px;
+      }
+      h3 {
+        font-weight: normal;
+        color: var(--paper-indigo-500);
+        font-size: 130%;
+        margin: 0;
+      }
+      iron-icon.status-icon {
+        --iron-icon-fill-color: green;
+        margin-right: 16px;
+      }
+    </style>
+      <h2 on-click="toggleCard">
+        <iron-icon class="status-icon" icon="done" slot="item-icon"></iron-icon>
+        [[teamTitle]]
+        <chops-button on-click="editData" class="no-toggle">
+          <iron-icon icon="create"></iron-icon>
+          Edit
+        </chops-button>
+      </h2>
+      <iron-collapse id="cardCollapse">
+        <div class="card-section">
+          <template is="dom-repeat" items="[[users]]" as="user">
+            <p>
+              <b>[[user.name]]:</b>
+              <template is="dom-repeat" items="[[user.values]]">
+                <a href="[[item]]">[[item]]</a>
+              </template>
+            </p>
+          </template>
+          <template is="dom-repeat" items="[[labels]]" as="label">
+            <p>
+              <b>[[label.name]]:</b>
+              <template is="dom-repeat" items="[[label.values]]">
+                [[item]],
+              </template>
+            </p>
+          </template>
+          <template is="dom-repeat" items="[[urls]]" as="link">
+            <p>
+              <b>[[link.name]]:</b>
+              <template is="dom-repeat" items="[[link.values]]">
+                <a href="[[item]]">[[item]]</a>
+              </template>
+            </p>
+          </template>
+        </div>
+        <div class="card-section survey">
+          <template is="dom-repeat" items="[[_surveyLines]]" as="line">
+            <br />[[line]]
+          </template>
+        </div>
+        <div class="card-section">
+          <h3>Approval Comments</h3>
+          <mr-compact-comments comments="[[approvalComments]]"></mr-compact-comments>
+        </div>
+      </iron-collapse>
+      <paper-dialog id="editDialog">
+        <h2>Edit [[teamTitle]] approval information here</h2>
+        <p>Edits to this specific approval's survey responses and custom fields
+          can be made here</p>
+        <p>Only the listed approvers will be able to change the Status between 'Approved'
+          and 'NotApproved'.</p>
+      </paper-dialog>
+  </template>
+  <script src="./mr-approval-card.js"></script>
+<dom-module>

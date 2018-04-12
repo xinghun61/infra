@@ -1,0 +1,80 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+
+<dom-module id="mr-metadata">
+  <template>
+    <style>
+      :host {
+        width: 200px;
+        background: white;
+        font-size: 85%;
+      }
+      h2 {
+        margin: 0;
+        font-size: 150%;
+        color: white;
+        background-color: hsl(220, 55%, 48%);
+        font-weight: normal;
+        padding: 0.5em 16px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .card-section {
+        padding: 0.25em 16px;
+      }
+    </style>
+    <h2>
+      Issue [[id]]
+      <iron-icon icon="star"></iron-icon>
+    </h2>
+    <div class="card-section">
+      <template is="dom-repeat" items="[[users]]" as="user">
+        <p>
+          <b>[[user.name]]:</b>
+          <template is="dom-repeat" items="[[user.values]]">
+            <a href="[[item]]">[[item]]</a>
+          </template>
+        </p>
+      </template>
+      <template is="dom-repeat" items="[[labels]]" as="label">
+        <p>
+          <b>[[label.name]]:</b>
+          <template is="dom-repeat" items="[[label.values]]">
+            [[item]],
+          </template>
+        </p>
+      </template>
+
+      <template is="dom-repeat" items="[[links]]" as="link">
+        <p>
+          <b>[[link.name]]:</b>
+          <template is="dom-repeat" items="[[link.values]]">
+            <a href="[[item]]">[[item]]</a>
+          </template>
+        </p>
+      </template>
+
+      <template is="dom-repeat" items="[[strings]]" as="string">
+        <p>
+          <b>[[string.name]]:</b>
+          <template is="dom-repeat" items="[[string.values]]">
+            [[item]]
+          </template>
+        </p>
+      </template>
+
+      <template is="dom-repeat" items="[[ints]]" as="int">
+        <p>
+          <b>[[int.name]]:</b>
+          <template is="dom-repeat" items="[[int.values]]">
+            [[item]]
+          </template>
+        </p>
+      </template>
+    </div>
+  </template>
+  <script src="./mr-metadata.js"></script>
+<dom-module>

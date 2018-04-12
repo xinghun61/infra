@@ -1,0 +1,74 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="mr-launch-overview">
+  <template>
+    <style>
+      :host {
+        width: 100%;
+        display: flex;
+        flex-flow: column;
+        justify-content: center;
+      }
+      h3 {
+        margin: 0;
+        font-size: 120%;
+        color: white;
+        background-color: hsl(220, 55%, 48%);
+        font-weight: normal;
+        padding: 0.75em 16px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+      }
+      h3:hover {
+        background-color: hsl(220, 60%, 50%);
+      }
+      h3:active {
+        background-color: hsl(220, 60%, 55%);
+      }
+      paper-card {
+        background: white;
+        width: 100%;
+        font-size: 80%;
+        margin: 0;
+        margin-bottom: 1em;
+      }
+      iron-icon.status-icon {
+        margin-right: 16px;
+        --iron-icon-fill-color: green;
+      }
+      .card-section {
+        padding: 0.25em 16px;
+      }
+      .approval {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        flex-direction: row;
+        padding: 0.25em 0;
+      }
+    </style>
+    <template is="dom-repeat" items="[[gates]]" as="gate">
+      <paper-card elevation=0>
+        <h3 value$="[[index]]" on-click="_handleGateFocus">
+          Gate: [[gate.gateName]]
+        </h3>
+        <div class="card-section">
+          <template is="dom-repeat" items="[[gate.approvals]]" as="approval">
+            <div class="approval">
+              <iron-icon class="status-icon" icon="done" slot="item-icon"></iron-icon>
+              [[approval.title]]
+              [[approval.approvers]]
+            </div>
+          </template>
+          <template is="dom-if" if="[[!gate.approvals.length]]">
+            No tasks for this gate
+          </template>
+        </div>
+      </paper-card>
+    </template>
+  </template>
+  <script src="./mr-launch-overview.js"></script>
+<dom-module>

@@ -1,0 +1,30 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../mr-approval-card/mr-approval-card.html">
+
+<dom-module id="mr-gate">
+  <template>
+    <style>
+      :host {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      mr-approval-card {
+        margin-top: 1em;
+      }
+    </style>
+    <template is="dom-if" if="[[!approvals.length]]">
+      <p>No tasks for this gate</p>
+    </template>
+    <template is="dom-repeat" items="[[approvals]]">
+      <mr-approval-card team-title="[[item.title]]"
+                     approval-comments="[[item.comments]]"
+                     survey="[[item.survey]]"
+                     urls="[[item.urls]]"
+                     labels="[[item.labels]]"
+                     users="[[item.users]]"></mr-approval-card>
+    </template>
+  </template>
+  <script src="./mr-gate.js"></script>
+<dom-module>

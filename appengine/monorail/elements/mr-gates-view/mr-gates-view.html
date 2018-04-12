@@ -1,0 +1,57 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/chopsui/chops-button.html">
+
+<link rel="import" href="../mr-gates-view/mr-gate.html">
+
+
+<dom-module id="mr-gates-view">
+  <template>
+    <style>
+      :host {
+        display: flex;
+        flex-direction: column;
+      }
+      .navigation {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .gate-name {
+        font-size: 1.5em;
+        text-decoration: underline;
+      }
+      .gate-nav-button {
+        margin: 0;
+        height: 30px;
+        font-size: 20px;
+        background-color: hsl(207, 100%, 38%);
+        color: white;
+        width: 90px;
+      }
+      .gate-nav-button[disabled] {
+         opacity: 0.4;
+      }
+      mr-gate {
+        width: 100%;
+      }
+      mr-gate[hidden] {
+        display: none;
+      }
+    </style>
+    <div class="navigation">
+      <chops-button class="gate-nav-button" id="prevBtn" on-click="previous" disabled="[[_prevDisabled]]">
+        &lt; Prev
+      </chops-button>
+      <div class="gate-name"><b>Gate: [[currentGateName]]</b></div>
+      <chops-button class="gate-nav-button" id="nextBtn" on-click="next" disabled="[[_nextDisabled]]">
+        Next &gt;
+      </chops-button>
+    </div>
+    <template is="dom-repeat" items="[[gates]]" as="gate">
+      <mr-gate id$="gate[[index]]" approvals="[[gate.approvals]]" hidden$="[[_computeGateHidden(currentGateIndex, index)]]"></mr-gate>
+    </template>
+  </template>
+  <script src="./mr-gates-view.js"></script>
+<dom-module>

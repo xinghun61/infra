@@ -1,0 +1,90 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/chopsui/chops-button.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+
+<link rel="import" href="../mr-compact-comments/mr-compact-comments.html">
+
+<dom-module id="mr-issue-details">
+  <template>
+    <style>
+      :host {
+        width: 650px;
+        font-size: 85%;
+        background-color: white;
+        padding: 0;
+        padding-bottom: 1em;
+      }
+      button.toggle {
+        background: none;
+        color: grey;
+        border: 0;
+        border-bottom: thin dotted hsl(0, 0%, 83%);
+        width: 100%;
+        padding: 0.5em 0;
+        text-align: left;
+      }
+      button.toggle:hover {
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .card-comment {
+        border-bottom: thin dotted hsl(0, 0%, 83%);
+        font-size: 90%;
+        padding: 1em 0;
+      }
+      .card-section {
+        padding: 0.25em 16px;
+      }
+      h2 {
+        margin-top: 0;
+        font-size: 150%;
+        color: white;
+        background-color: var(--paper-indigo-500);
+        font-weight: normal;
+        padding: 0.5em 16px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      h2 chops-button {
+        font-size: 70%;
+        color: var(--paper-indigo-900);
+        background: white;
+        border-radius: 8px;
+        text-transform: uppercase;
+      }
+      h2 chops-button iron-icon {
+        margin-right: 4px;
+      }
+      h3 {
+        font-weight: normal;
+        color: var(--paper-indigo-500);
+        font-size: 130%;
+      }
+    </style>
+    <h2 class="issue-header">
+      [[summary]]
+      <chops-button on-click="editData" raised="true">
+        <iron-icon icon="create"></iron-icon>
+        Edit
+      </chops-button>
+    </h2>
+    <div class="card-section">
+      [[description]]
+    </div>
+    <div class="card-section">
+      <h3>Issue Comments</h3>
+      <mr-compact-comments comments="[[comments]]"></mr-compact-comments>
+    </div>
+    <paper-dialog id="editDialog">
+      <h3>Edit general information here</h3>
+      <p>When the viewer has permission to edit information, the edit button will be shown</p>
+      <p>Without editing permission, users will only see the data w/out the edit button</p>
+    </paper-dialog>
+  </template>
+  <script src="./mr-issue-details.js"></script>
+<dom-module>

@@ -3,17 +3,73 @@
 <link rel="import" href="../../bower_components/chopsui/chops-header.html">
 <link rel="import" href="../../bower_components/chopsui/chops-login.html">
 
+<link rel="import" href="../mr-gates-view/mr-gates-view.html">
+<link rel="import" href="../mr-issue-details/mr-issue-details.html">
+<link rel="import" href="../mr-launch-overview/mr-launch-overview.html">
+<link rel="import" href="../mr-issue-details/mr-metadata.html">
+
 <dom-module id="mr-approval-page">
   <template>
     <style>
       chops-header {
-        background-color: #BBDEFB;
+        --chops-header-text-color: #fff;
+        background-color: hsl(235, 66%, 30%);
+      }
+      chops-header a {
+        color: #fff;
+        text-decoration: none;
+      }
+      .container {
+        box-sizing: border-box;
+        margin: 0 auto;
+        max-width: 1280px;
+        padding: 0.5em 16px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      .container-item {
+        margin: 8px 0;
+        flex-grow: 0;
+        flex-shrink: 0;
+      }
+      mr-metadata, mr-launch-overview {
+        width: 19%;
+      }
+      mr-issue-details {
+        width: 60%;
+      }
+      mr-gates-view {
+        width: 60%;
+        padding: 16px 20%;
+      }
+      @media (max-width: 1280px) {
+        .container {
+          padding: 0.5em 8px;
+        }
+      }
+      @media (max-width: 840px) {
+        .container-item {
+          width: 100%;
+        }
+
+        mr-gates-view {
+          padding: 16px 0;
+        }
       }
     </style>
     <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
       <span slot="subheader">&gt; <a href="#">Feature Launch Issue</a></span>
       <chops-login logout-url="/" user="test@chromium.org"></chops-login>
     </chops-header>
+    <div class="container">
+      <mr-metadata class="container-item"></mr-metadata>
+      <mr-issue-details class="container-item"></mr-issue-details>
+      <mr-launch-overview class="container-item" gates="[[gates]]" on-gate-selected="_onGateSelected"></mr-launch-overview>
+      <mr-gates-view class="container-item" gates="[[gates]]" current-gate-index="{{currentGateIndex}}"></mr-gates-view>
+    </div>
   </template>
-  <script src="../../elements/mr-approval-page/mr-approval-page.js"></script>
+  <script src="./mr-approval-page.js"></script>
 </dom-module>

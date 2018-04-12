@@ -4,7 +4,6 @@
   <template>
     <style>
       :host {
-        --chops-header-text-color: inherit;
         color: var(--chops-header-text-color);
         box-sizing: border-box;
         background: #dce5f8;
@@ -23,11 +22,11 @@
         align-items: center;
         @apply --chops-header-title-theme;
       }
-      #headerTitle a {
+      a {
         color: var(--chops-header-text-color);
         text-decoration: none;
       }
-      #headerTitle a:hover {
+      a:hover {
         text-decoration: underline;
       }
       #headerTitle img {

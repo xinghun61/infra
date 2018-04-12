@@ -1,0 +1,45 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
+
+<dom-module id="mr-compact-comments">
+  <template>
+    <style>
+      button.toggle {
+        background: none;
+        color: hsl(0, 0%, 45%);
+        border: 0;
+        border-bottom: thin dotted hsl(0, 0%, 83%);
+        width: 100%;
+        padding: 0.5em 0;
+        text-align: left;
+      }
+      button.toggle:hover {
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      button.toggle[hidden], .card-comment[hidden] {
+        display: none;
+      }
+      .card-comment {
+        border-bottom: thin dotted hsl(0, 0%, 83%);
+        font-size: 90%;
+        padding: 1em 0;
+      }
+      .comment-header {
+        color: hsl(0, 0%, 45%);
+      }
+    </style>
+    <button on-click="toggleComments" class="toggle" hidden$="[[_hideToggle]]">
+      Toggle [[_commentsHiddenCount]] older comments collapsed by default.
+    </button>
+    <template is="dom-repeat" items="[[comments]]" as="comment">
+      <div class="card-comment" hidden$=[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]>
+        <div class="comment-header">Comment [[index]] by [[comment.user]]</div>
+        [[comment.content]]
+      </div>
+    </template>
+    <paper-textarea label="Add a comment"></paper-textarea>
+  </template>
+  <script src="./mr-compact-comments.js"></script>
+<dom-module>
