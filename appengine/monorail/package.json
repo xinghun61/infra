@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "polymer monorail skeleton",
   "directories": {},
-  "dependencies": {
-    "vulcanize": "~1.14.8"
-  },
   "devDependencies": {
-    "crisper": "~2.0.2"
+    "crisper": "~2.0.2",
+    "eslint": "^4.19.1",
+    "eslint-config-google": "^0.9.1",
+    "vulcanize": "~1.14.8"
   },
   "scripts": {},
   "author": "",
