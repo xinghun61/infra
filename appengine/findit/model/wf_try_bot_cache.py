@@ -89,6 +89,10 @@ class WfTryBotCache(ndb.Model):
           full_build_commit_positions={},
           checked_out_commit_positions={})
       result.put()
+    if result.full_build_commit_positions is None:
+      # Back-fill this newly added property with the default empty value.
+      result.full_build_commit_positions = {}
+      result.put()
     return result
 
   def AddBot(self, bot_id, checked_out_cp, cached_cp, dimensions=None):

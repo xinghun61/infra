@@ -5,6 +5,8 @@
 import mock
 import random
 
+from google.appengine.ext import ndb
+
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from model.build_ahead_try_job import BuildAheadTryJob
@@ -244,8 +246,13 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
     android_bot = {'master': 'dummy', 'builder': 'Android Builder'}
     mock_builders.return_value = [linux_bot, chrome_bot, android_bot]
 
-    linux_cache = WfTryBotCache.Get(
-        swarmbot_util.GetCacheName(linux_bot['master'], linux_bot['builder']))
+    linux_cache_name = swarmbot_util.GetCacheName(linux_bot['master'],
+                                                  linux_bot['builder'])
+    # Save linux_cache missing a column to test the code that back-fills it.
+    WfTryBotCache(
+        key=ndb.Key('WfTryBotCache', linux_cache_name),
+        recent_bots=[]).put()
+    linux_cache = WfTryBotCache.Get(linux_cache_name)
     chrome_cache = WfTryBotCache.Get(
         swarmbot_util.GetCacheName(chrome_bot['master'], chrome_bot['builder']))
     android_cache = WfTryBotCache.Get(
