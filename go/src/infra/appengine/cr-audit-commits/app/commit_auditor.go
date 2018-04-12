@@ -13,10 +13,6 @@ import (
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/common/tsmon/distribution"
-	"go.chromium.org/luci/common/tsmon/field"
-	"go.chromium.org/luci/common/tsmon/metric"
-	"go.chromium.org/luci/common/tsmon/types"
 	"go.chromium.org/luci/server/router"
 )
 
@@ -50,34 +46,6 @@ type workerParams struct {
 
 	clients *Clients
 }
-
-var (
-	// AuditedCommits counts commits that have been scanned by this
-	// handler.
-	//
-	// The valid values for the result field are:
-	//   - passed: the audit found no problems with the commit,
-	//   - violation: the audit found one or more policy violations,
-	//   - failed: the audit failed to complete due to errors.
-	AuditedCommits = metric.NewCounter(
-		"cr_audit_commits/audited",
-		"Commits that have been audited by the audit app",
-		&types.MetricMetadata{Units: "Commit"},
-		field.String("result"),
-		field.String("repo"),
-	)
-
-	// PerCommitAuditDuration keeps track of how long it takes to run all
-	// the rules for a given commit.
-	PerCommitAuditDuration = metric.NewCumulativeDistribution(
-		"cr_audit_commits/per_commit_audit_duration",
-		"Time it takes to apply all rules to a single commit",
-		&types.MetricMetadata{Units: types.Milliseconds},
-		distribution.DefaultBucketer,
-		field.String("result"),
-		field.String("repo"),
-	)
-)
 
 // CommitAuditor is a handler meant to be periodically run to get all commits
 // designated by the CommitScanner handler as needing to be audited.

@@ -16,22 +16,7 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/git"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
-	"go.chromium.org/luci/common/tsmon/field"
-	"go.chromium.org/luci/common/tsmon/metric"
-	"go.chromium.org/luci/common/tsmon/types"
 	"go.chromium.org/luci/server/router"
-)
-
-var (
-	// ScannedCommits counts commits that have been scanned by this
-	// handler.
-	ScannedCommits = metric.NewCounter(
-		"cr_audit_commits/scanned",
-		"Commits that have been scanned by the audit app",
-		&types.MetricMetadata{Units: "Commit"},
-		field.Bool("relevant"),
-		field.String("repo"),
-	)
 )
 
 // CommitScanner is a handler function that gets the list of new commits and

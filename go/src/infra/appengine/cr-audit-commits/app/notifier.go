@@ -12,23 +12,7 @@ import (
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/common/tsmon/field"
-	"go.chromium.org/luci/common/tsmon/metric"
-	"go.chromium.org/luci/common/tsmon/types"
 	"go.chromium.org/luci/server/router"
-)
-
-var (
-	// NotificationFailures counts when the app fails to notify about a
-	// detected violation or repeated audit failure. Any one of these
-	// requires immediate attention.
-	NotificationFailures = metric.NewCounter(
-		"cr_audit_commits/notification_failure",
-		"Audit app failed to file a bug to notify about a detected violation or audit failure",
-		&types.MetricMetadata{Units: "Failure"},
-		field.String("type"), // Violation or AuditFailure.
-		field.String("repo"),
-	)
 )
 
 // NotificationFunc is a type that needs to be implemented by functions
