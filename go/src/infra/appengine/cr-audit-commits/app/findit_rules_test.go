@@ -241,6 +241,19 @@ func TestFinditRules(t *testing.T) {
 			So(rr.Message, ShouldContainSubstring, "not found in changes for build")
 
 		})
+		Convey("Culprit not in build - flake", func() {
+			fakeBuild := &buildbot.Build{}
+			fakeBuild.SourceStamp.Changes = []buildbot.Change{
+				{Revision: "dummy"},
+			}
+			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
+				"https://ci/fake/build": fakeBuild,
+			}}
+			rc.CommitMessage = rc.CommitMessage + "\nFlaky test name: dummy_test"
+			rr := CulpritInBuild(ctx, ap, rc, testClients)
+			So(rr.RuleResultStatus, ShouldEqual, ruleSkipped)
+
+		})
 		Convey("Failed build is compile failure Pass", func() {
 			fakeBuild := &buildbot.Build{}
 			fakeUpdateStep := buildbot.Step{}
@@ -278,6 +291,46 @@ func TestFinditRules(t *testing.T) {
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "does not have an expected failure")
 			So(rr.Message, ShouldContainSubstring, "compile")
+		})
+		Convey("Failed build is flaky failure Pass", func() {
+			fakeBuild := &buildbot.Build{}
+			fakeUpdateStep := buildbot.Step{}
+			fakeUpdateStep.Name = "update_scripts"
+			fakeUpdateStep.Results = []interface{}{0.0, 0}
+
+			fakeDummyStep := buildbot.Step{}
+			fakeDummyStep.Name = "dummy_step"
+			fakeDummyStep.Results = []interface{}{2.0, 0}
+			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeDummyStep}
+
+			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
+				"https://ci/fake/build": fakeBuild,
+			}}
+			rc.CommitMessage = rc.CommitMessage + "\nSample Failed Step: dummy_step\nFlaky test name: dummy_test"
+			rr := FailedBuildIsAppropriateFailure(ctx, ap, rc, testClients)
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+		})
+		Convey("Failed build is flaky failure Fail", func() {
+			fakeBuild := &buildbot.Build{}
+			// This Step fails, but the rule shouldn't care.
+			fakeUpdateStep := buildbot.Step{}
+			fakeUpdateStep.Name = "update_scripts"
+			fakeUpdateStep.Results = []interface{}{2.0, 0}
+
+			// This dummy step had warnings but did not fail.
+			fakeDummyStep := buildbot.Step{}
+			fakeDummyStep.Name = "dummy_step"
+			fakeDummyStep.Results = []interface{}{1.0, 0}
+			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeDummyStep}
+
+			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
+				"https://ci/fake/build": fakeBuild,
+			}}
+			rc.CommitMessage = rc.CommitMessage + "\nSample Failed Step: dummy_step\nFlaky test name: dummy_test"
+			rr := FailedBuildIsAppropriateFailure(ctx, ap, rc, testClients)
+			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
+			So(rr.Message, ShouldContainSubstring, "does not have an expected failure")
+			So(rr.Message, ShouldContainSubstring, "dummy_step")
 		})
 		Convey("RevertOfCulprit Pass", func() {
 			rc.CommitMessage = "This reverts commit badc0de\n" + rc.CommitMessage

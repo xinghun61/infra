@@ -191,6 +191,12 @@ func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs
 	result := &RuleResult{}
 	result.RuleName = "CulpritInBuild"
 
+	if isFlakeRevert(rc.CommitMessage) {
+		// Bypass this rule for reverts of culprits of flake failures.
+		result.RuleResultStatus = ruleSkipped
+		return result
+	}
+
 	_, culprit := getRevertAndCulpritChanges(ctx, ap, rc, cs)
 	if culprit == nil {
 		panic(fmt.Errorf("Commit %q does not appear to be a revert according to gerrit",

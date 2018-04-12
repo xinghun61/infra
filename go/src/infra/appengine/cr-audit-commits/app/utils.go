@@ -33,6 +33,7 @@ const (
 	emailScope        = "https://www.googleapis.com/auth/userinfo.email"
 	failedBuildPrefix = "Sample Failed Build:"
 	failedStepPrefix  = "Sample Failed Step:"
+	flakyTestPrefix   = "Flaky test name:"
 	bugIDRegex        = "^(?i)Bug(:|=)(.*)"
 )
 
@@ -84,6 +85,13 @@ func failedBuildFromCommitMessage(m string) (string, error) {
 
 func failedStepFromCommitMessage(m string) (string, error) {
 	return findPrefixLine(m, failedStepPrefix)
+}
+
+// isFlakeRevert determines if a commit is a revert due to flake by the contents
+// of the given commit message.
+func isFlakeRevert(m string) bool {
+	_, err := findPrefixLine(m, flakyTestPrefix)
+	return err == nil
 }
 
 func bugIDFromCommitMessage(m string) (string, error) {
