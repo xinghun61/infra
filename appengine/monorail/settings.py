@@ -57,6 +57,9 @@ send_noreply_email_as = 'monorail+noreply@chromium.org'
 db_database_name = 'monorail'
 db_replica_prefix = 'replica-'
 
+# The default connection pool size for mysql connections.
+db_cnxn_pool_size = 5
+
 # The number of logical database shards used.  Each replica is complete copy
 # of the master, so any replica DB can answer queries about any logical shard.
 num_logical_shards = 10

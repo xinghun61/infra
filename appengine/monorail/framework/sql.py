@@ -20,6 +20,83 @@ from framework import framework_helpers
 
 from infra_libs import ts_mon
 
+from Queue import Queue
+
+
+class ConnectionPool(object):
+  """Manage a set of database connections such that they may be re-used.
+  """
+
+  def __init__(self, poolsize=1):
+    self.poolsize = poolsize
+    self.queues = {}
+
+  @framework_helpers.retry(3, delay=0.1, backoff=2)
+  def get(self, instance, database):
+    """Retun a database connection, or throw an exception if none can
+    be made.
+    """
+    key = instance + '/' + database
+
+    if not key in self.queues:
+      queue = Queue(self.poolsize)
+      self.queues[key] = queue
+
+    queue = self.queues[key]
+
+    if queue.empty():
+      cnxn = cnxn_ctor(instance, database)
+    else:
+      cnxn = queue.get()
+      # Make sure the connection is still good.
+      cnxn.ping()
+      cnxn.commit()
+
+    return cnxn
+
+  def release(self, cnxn):
+    if not cnxn.pool_key in self.queues:
+      raise BaseException('unknown pool key: %s' % cnxn.pool_key)
+
+    q = self.queues[cnxn.pool_key]
+    if q.full():
+      cnxn.close()
+    else:
+      q.put(cnxn)
+
+
+@framework_helpers.retry(2, delay=1, backoff=2)
+def cnxn_ctor(instance, database):
+  logging.info('About to connect to SQL instance %r db %r', instance, database)
+  if settings.unit_test_mode:
+    raise ValueError('unit tests should not need real database connections')
+  try:
+    if settings.dev_mode:
+      start_time = time.time()
+      cnxn = MySQLdb.connect(
+        host='127.0.0.1', port=3306, db=database, user='root', charset='utf8')
+    else:
+      start_time = time.time()
+      cnxn = MySQLdb.connect(
+        unix_socket='/cloudsql/' + instance, db=database, user='root',
+        charset='utf8')
+    duration = int((time.time() - start_time) * 1000)
+    DB_CNXN_LATENCY.add(duration)
+    CONNECTION_COUNT.increment({'success': True})
+  except MySQLdb.OperationalError:
+    CONNECTION_COUNT.increment({'success': False})
+    raise
+  cnxn.pool_key = instance + '/' + database
+  cnxn.is_bad = False
+  return cnxn
+
+# One connection pool per database instance (master, replicas are each an
+# instance). We'll have four connections per instance because we fetch
+# issue comments, stars, spam verdicts and spam verdict history in parallel
+# with promises.
+cnxn_pool = ConnectionPool(settings.db_cnxn_pool_size)
+
+
 # MonorailConnection maintains a dictionary of connections to SQL databases.
 # Each is identified by an int shard ID.
 # And there is one connection to the master DB identified by key MASTER_CNXN.
@@ -76,30 +153,6 @@ DB_RESULT_ROWS = ts_mon.CumulativeDistributionMetric(
     None)
 
 
-@framework_helpers.retry(2, delay=1, backoff=2)
-def MakeConnection(instance, database):
-  logging.info('About to connect to SQL instance %r db %r', instance, database)
-  if settings.unit_test_mode:
-    raise ValueError('unit tests should not need real database connections')
-  try:
-    if settings.dev_mode:
-      start_time = time.time()
-      cnxn = MySQLdb.connect(
-        host='127.0.0.1', port=3306, db=database, user='root', charset='utf8')
-    else:
-      start_time = time.time()
-      cnxn = MySQLdb.connect(
-        unix_socket='/cloudsql/' + instance, db=database, user='root',
-        charset='utf8')
-    duration = int((time.time() - start_time) * 1000)
-    DB_CNXN_LATENCY.add(duration)
-    CONNECTION_COUNT.increment({'success': True})
-  except MySQLdb.OperationalError:
-    CONNECTION_COUNT.increment({'success': False})
-    raise
-  return cnxn
-
-
 def RandomShardID():
   """Return a random shard ID to load balance across replicas."""
   return random.randint(0, settings.num_logical_shards - 1)
@@ -119,7 +172,7 @@ class MonorailConnection(object):
   def GetMasterConnection(self):
     """Return a connection to the master SQL DB."""
     if MASTER_CNXN not in self.sql_cnxns:
-      self.sql_cnxns[MASTER_CNXN] = MakeConnection(
+      self.sql_cnxns[MASTER_CNXN] = cnxn_pool.get(
           settings.db_instance, settings.db_database_name)
       logging.info(
           'created a master connection %r', self.sql_cnxns[MASTER_CNXN])
@@ -132,7 +185,7 @@ class MonorailConnection(object):
       physical_shard_id = shard_id % settings.num_logical_shards
       shard_instance_name = (
           settings.physical_db_name_format % physical_shard_id)
-      self.sql_cnxns[shard_id] = MakeConnection(
+      self.sql_cnxns[shard_id] = cnxn_pool.get(
           shard_instance_name, settings.db_database_name)
       logging.info('created a replica connection for shard %d', shard_id)
 
@@ -216,7 +269,7 @@ class MonorailConnection(object):
     """Safely close any connections that are still open."""
     for sql_cnxn in self.sql_cnxns.itervalues():
       try:
-        sql_cnxn.close()
+        cnxn_pool.release(sql_cnxn)
       except MySQLdb.DatabaseError:
         # This might happen if the cnxn is somehow already closed.
         logging.exception('ProgrammingError when trying to close cnxn')

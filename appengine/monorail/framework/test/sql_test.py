@@ -22,6 +22,8 @@ class MockSQLCnxn(object):
     self.result_rows = None
     self.rowcount = 0
     self.lastrowid = None
+    self.pool_key = instance + '/' + database
+    self.is_bad = False
 
   def execute(self, stmt_str, args=None):
     self.last_executed = stmt_str % tuple(args or [])
@@ -47,8 +49,93 @@ class MockSQLCnxn(object):
   def close(self):
     pass
 
+  def ping(self):
+    if self.is_bad:
+      raise BaseException('connection error!')
 
-sql.MakeConnection = MockSQLCnxn
+
+sql.cnxn_ctor = MockSQLCnxn
+
+
+class ConnectionPoolingTest(unittest.TestCase):
+
+  def testGet(self):
+    pool_size = 2
+    num_dbs = 2
+    p = sql.ConnectionPool(pool_size)
+
+    for i in range(num_dbs):
+      for _ in range(pool_size):
+        c = p.get('test', 'db%d' % i)
+        self.assertIsNotNone(c)
+        p.release(c)
+
+    cnxn1 = p.get('test', 'db0')
+    q = p.queues[cnxn1.pool_key]
+    self.assertIs(q.qsize(), 0)
+
+    p.release(cnxn1)
+    self.assertIs(q.qsize(), pool_size - 1)
+    self.assertIs(q.full(), False)
+    self.assertIs(q.empty(), False)
+
+    cnxn2 = p.get('test', 'db0')
+    q = p.queues[cnxn2.pool_key]
+    self.assertIs(q.qsize(), 0)
+    self.assertIs(q.full(), False)
+    self.assertIs(q.empty(), True)
+
+  def testGetAndReturnPooledCnxn(self):
+    p = sql.ConnectionPool(2)
+
+    cnxn1 = p.get('test', 'db1')
+    self.assertIs(len(p.queues), 1)
+
+    cnxn2 = p.get('test', 'db2')
+    self.assertIs(len(p.queues), 2)
+
+    # Should use the existing pool.
+    cnxn3 = p.get('test', 'db1')
+    self.assertIs(len(p.queues), 2)
+
+    p.release(cnxn3)
+    p.release(cnxn2)
+
+    cnxn1.is_bad = True
+    p.release(cnxn1)
+    # cnxn1 should not be returned from the pool if we
+    # ask for a connection to its database.
+
+    cnxn4 = p.get('test', 'db1')
+
+    self.assertIsNot(cnxn1, cnxn4)
+    self.assertIs(len(p.queues), 2)
+    self.assertIs(cnxn4.is_bad, False)
+
+  def testGetAndReturnPooledCnxn_badCnxn(self):
+    p = sql.ConnectionPool(2)
+
+    cnxn1 = p.get('test', 'db1')
+    cnxn2 = p.get('test', 'db2')
+    cnxn3 = p.get('test', 'db1')
+
+    cnxn3.is_bad = True
+
+    p.release(cnxn3)
+    q = p.queues[cnxn3.pool_key]
+    self.assertIs(q.qsize(), 1)
+
+    with self.assertRaises(BaseException):
+      cnxn3 = p.get('test', 'db1')
+
+    q = p.queues[cnxn2.pool_key]
+    self.assertIs(q.qsize(), 0)
+    p.release(cnxn2)
+    self.assertIs(q.qsize(), 1)
+
+    p.release(cnxn1)
+    q = p.queues[cnxn1.pool_key]
+    self.assertIs(q.qsize(), 1)
 
 
 class MonorailConnectionTest(unittest.TestCase):
