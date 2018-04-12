@@ -69,6 +69,9 @@ def GetValidBoundingBuildsForStep(
     upper_bound_build_number, requested_commit_position):
   """Finds the two builds immediately before and after a commit position.
 
+  TODO (lijeffrey): use case in regression_range_analysis_pipeline.py is not
+  verified to be supported yet because that feature is not fully supported.
+
   The builds should also have useful artifacts for the step. Meaning:
   - The build completed without exception, or
   - The build completed the step without exception but exceptioned out later.
@@ -92,14 +95,13 @@ def GetValidBoundingBuildsForStep(
         If the requested commit is after the upper bound, returns
         (BuildInfo, None). The calling code should check for the returned builds
         and decide what to do accordingly.
+        If a given commit position is included in the blame list of either
+        boundary build, that boundary build is returned as both the lower and
+        upper bound build.
   """
   http_client = FinditHttpClient()
 
   assert upper_bound_build_number is not None, 'upper_bound can\'t be None'
-
-  if upper_bound_build_number is None:
-    logging.error('Failed to detect latest build number')
-    return None, None
 
   _, latest_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                  upper_bound_build_number)
@@ -126,7 +128,10 @@ def GetValidBoundingBuildsForStep(
       # TODO(crbug.com/831828): Support newly added test steps for this case.
       # Cannot find valid artifact in earliest_build for the step.
       return None, None
-    return None, earliest_build_info
+    if requested_commit_position == earliest_build_info.commit_position:
+      return earliest_build_info, earliest_build_info
+    else:
+      return None, earliest_build_info
 
   if requested_commit_position >= latest_build_info.commit_position:
     if not swarming.CanFindSwarmingTaskFromBuildForAStep(
@@ -134,7 +139,10 @@ def GetValidBoundingBuildsForStep(
         step_name):
       # Cannot find valid artifact in latest_build for the step.
       return None, None
-    return latest_build_info, None
+    if latest_build_info.commit_position == requested_commit_position:
+      return latest_build_info, latest_build_info
+    else:
+      return latest_build_info, None
 
   # Gets candidata builds.
   upper_bound, lower_bound = _GetCandidateBounds(

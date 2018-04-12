@@ -78,3 +78,26 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertIsNone(lower_bound)
     self.assertIsNone(upper_bound)
+
+  @mock.patch.object(
+      swarming, 'CanFindSwarmingTaskFromBuildForAStep', return_value=True)
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
+  def testGetValidBoundingBuildsForStepCommitRightAtUpperBound(self, *_):
+    upper_bound_build_number = 4
+    lower_bound, upper_bound = step_util.GetValidBoundingBuildsForStep(
+        'm', 'b', 's', None, upper_bound_build_number, 50)
+
+    self.assertEqual(50, lower_bound.commit_position)
+    self.assertEqual(50, upper_bound.commit_position)
+
+  @mock.patch.object(
+      swarming, 'CanFindSwarmingTaskFromBuildForAStep', return_value=True)
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
+  def testGetValidBoundingBuildsForStepCommitRightAtLowerBound(self, *_):
+    upper_bound_build_number = 4
+    lower_bound_build_number = 1
+    lower_bound, upper_bound = step_util.GetValidBoundingBuildsForStep(
+        'm', 'b', 's', lower_bound_build_number, upper_bound_build_number, 20)
+
+    self.assertEqual(20, lower_bound.commit_position)
+    self.assertEqual(20, upper_bound.commit_position)

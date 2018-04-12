@@ -45,7 +45,7 @@ def GetNextCommitPositionFromBuildRange(analysis, build_range,
     (int): The commit position of either the upper bound build, lower bound
         build, or the originally-requested commit position itself.
   """
-  assert (build_range.lower < requested_commit_position and
+  assert (build_range.lower <= requested_commit_position and
           requested_commit_position <= build_range.upper)
 
   if not analysis.FindMatchingDataPointWithCommitPosition(build_range.upper):
