@@ -16,6 +16,12 @@ import (
 	"infra/monorail"
 )
 
+func fileBugForAutoRollViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error) {
+	components := []string{"Infra>Audit>AutoRoller"}
+	labels := []string{"CommitLog-Audit-Violation"}
+	return fileBugForViolation(ctx, cfg, rc, cs, state, components, labels)
+}
+
 func fileBugForFinditViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error) {
 	components := []string{"Tools>Test>Findit>Autorevert"}
 	labels := []string{"CommitLog-Audit-Violation"}

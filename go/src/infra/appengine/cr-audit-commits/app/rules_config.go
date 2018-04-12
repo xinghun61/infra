@@ -48,6 +48,13 @@ var RuleMap = map[string]*RepoConfig{
 		MonorailProject: "chromium",
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
 		Rules: map[string]RuleSet{
+			"autoroll-rules-skia": AccountRules{
+				Account: "skia-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com",
+				Funcs: []RuleFunc{
+					OnlyModifiesDEPSFile,
+				},
+				notificationFunction: fileBugForAutoRollViolation,
+			},
 			"findit-rules": AccountRules{
 				Account: "findit-for-me@appspot.gserviceaccount.com",
 				Funcs: []RuleFunc{
