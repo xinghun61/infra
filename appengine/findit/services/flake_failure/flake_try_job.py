@@ -255,8 +255,11 @@ def CreateTryJobData(build_id, try_job_key, urlsafe_analysis_key, runner_id):
 
 def UpdateTryJob(master_name, builder_name, canonical_step_name, test_name,
                  git_hash, build_id):
-  try_job = FlakeTryJob.Get(master_name, builder_name, canonical_step_name,
-                            test_name, git_hash)
+  try_job = (
+      FlakeTryJob.Get(master_name, builder_name, canonical_step_name, test_name,
+                      git_hash) or
+      FlakeTryJob.Create(master_name, builder_name, canonical_step_name,
+                         test_name, git_hash))
   try_job.flake_results.append({'try_job_id': build_id})
   try_job.try_job_ids.append(build_id)
   try_job.put()
