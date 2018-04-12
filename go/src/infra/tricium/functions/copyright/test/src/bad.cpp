@@ -4,5 +4,4 @@
 // found in the LICENSE file.
 
 // The above copyright statement is for testing purposes.
-
 int main() {}
