@@ -810,50 +810,6 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/ManualTests",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "name": "prune third_party/WebKit/ManualTests"
-  },
-  {
-    "cmd": [
-      "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/PerformanceTests",
-      "-type",
-      "f",
-      "!",
-      "-iname",
-      "*.gyp*",
-      "!",
-      "-iname",
-      "*.gn*",
-      "!",
-      "-iname",
-      "*.isolate*",
-      "!",
-      "-iname",
-      "*.grd*",
-      "-delete"
-    ],
-    "name": "prune third_party/WebKit/PerformanceTests"
-  },
-  {
-    "cmd": [
-      "find",
       "[TMP_BASE]/tmp_tmp_3/src",
       "-depth",
       "-type",
