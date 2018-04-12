@@ -15,6 +15,7 @@ import (
 )
 
 func TestCreateEvent(t *testing.T) {
+	var nilTime *float64
 
 	Convey("create events", t, func() {
 		ctx := context.Background()
@@ -32,6 +33,8 @@ func TestCreateEvent(t *testing.T) {
 				"path": &model.FullTestLeaf{
 					Actual:   []string{"PASS"},
 					Expected: []string{"PASS"},
+					Runtime:  nilTime,
+					Runtimes: []*float64{nilTime, nilTime},
 				},
 				"other/path": &model.FullTestLeaf{
 					Actual:   []string{"IMAGE+TEXT"},
@@ -88,5 +91,4 @@ func TestCreateEvent(t *testing.T) {
 			So(evt, ShouldBeIn, expected)
 		}
 	})
-
 }
