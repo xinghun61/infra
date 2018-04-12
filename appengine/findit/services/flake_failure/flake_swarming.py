@@ -21,6 +21,42 @@ from services import test_results
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
 
 
+def _GetPassFailForTestStatuses(test_statuses):
+  """Gets the total number of passes and fails for the given tests.
+
+  PRE_ test runs count for the fails only whereas regular test runs count for
+  both pass and fail.
+
+  Args:
+    test_statuses (dict): Mapping of test_name to total_run, SUCCESS. This
+      Dict should only contain one test and it's PRE_ test. Ex:
+      {
+        '...PRE_test': {'total_run': 100, 'SUCCESS': 100},
+        '...test': {'total_run: 100, 'SUCCESS': 50}
+      }
+
+  Returns:
+    (int, int) Pass, fail counts.
+  """
+  # Note that the arguements should only contain information about one test.
+  p = 0
+  f = 0
+
+  for test_name, iteration_info in test_statuses.iteritems():
+    total_runs = iteration_info.get('total_run', 0)
+    passes = iteration_info.get('SUCCESS', 0)
+    assert total_runs >= passes
+
+    # For PRE_ runs, only count the failures.
+    if 'PRE_' in test_name:
+      f += total_runs - passes
+    else:
+      p += passes
+      f += total_runs - passes
+
+  return p, f
+
+
 def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error):
   """Returns swarming task results as a FlakeswarmingTaskOutput object."""
   assert task_data
@@ -28,15 +64,16 @@ def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error):
   if output_json:
     # Use whatever's available in output_json.
     test_statuses = test_results.GetTestsRunStatuses(output_json)
+    test_name = next(
+        (test for test in test_statuses.keys() if 'PRE_' not in test), None)
 
-    # There should be exactly 1 test that was run.
-    assert len(test_statuses.keys()) == 1
+    # Get the pass/fail numbers from test results
+    passes, fails = _GetPassFailForTestStatuses(test_statuses)
+    tries = passes + fails
+    successes = passes
 
-    test_name = test_statuses.keys()[0]
-    tries = test_statuses.get(test_name, {}).get('total_run', 0)
-    successes = test_statuses.get(test_name, {}).get('SUCCESS', 0)
-
-    if tries == 0 and test_results.DoesTestExist(output_json, test_name):
+    if tries == 0 and test_name is not None and test_results.DoesTestExist(
+        output_json, test_name):
       # The test exists, but something went wrong prevnting even a single test
       # from being processed which counts as an error.
       error = error or SwarmingTaskError.GenerateError(

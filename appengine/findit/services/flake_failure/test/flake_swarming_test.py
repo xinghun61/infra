@@ -168,6 +168,111 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
                          task_data, 'content', None))
 
+  @mock.patch.object(test_results, 'GetTestsRunStatuses')
+  def testParseFlakeSwarmingTaskOutputWithPrerun(self, mocked_test_statuses):
+    iterations = 50
+    pass_count = 25
+    pre_iterations = 100
+    pre_pass_count = 25
+    test_name = 't'
+    task_data = {
+        'created_ts': '2018-04-02T18:32:06.538220',
+        'started_ts': '2018-04-02T19:32:06.538220',
+        'completed_ts': '2018-04-02T20:32:06.538220',
+        'task_id': 'task_id'
+    }
+    test_statuses = {
+        test_name: {
+            'total_run': iterations,
+            'SUCCESS': pass_count,
+        },
+        'PRE_' + test_name: {
+            'total_run': pre_iterations,
+            'SUCCESS': pre_pass_count,
+        },
+    }
+
+    mocked_test_statuses.return_value = test_statuses
+    expected_result = FlakeSwarmingTaskOutput(
+        task_id='task_id',
+        started_time=datetime(2018, 4, 2, 19, 32, 6, 538220),
+        completed_time=datetime(2018, 4, 2, 20, 32, 6, 538220),
+        iterations=iterations + pre_iterations - pre_pass_count,
+        error=None,
+        pass_count=pass_count)
+
+    self.assertEqual(expected_result,
+                     flake_swarming._ParseFlakeSwarmingTaskOutput(
+                         task_data, 'content', None))
+
+  @mock.patch.object(test_results, 'GetTestsRunStatuses')
+  def testParseFlakeSwarmingTaskOutputWithOnlyPrerun(self,
+                                                     mocked_test_statuses):
+    pre_iterations = 100
+    pre_pass_count = 25
+    test_name = 't'
+    task_data = {
+        'created_ts': '2018-04-02T18:32:06.538220',
+        'started_ts': '2018-04-02T19:32:06.538220',
+        'completed_ts': '2018-04-02T20:32:06.538220',
+        'task_id': 'task_id'
+    }
+    test_statuses = {
+        'PRE_' + test_name: {
+            'total_run': pre_iterations,
+            'SUCCESS': pre_pass_count,
+        },
+    }
+
+    mocked_test_statuses.return_value = test_statuses
+    expected_result = FlakeSwarmingTaskOutput(
+        task_id='task_id',
+        started_time=datetime(2018, 4, 2, 19, 32, 6, 538220),
+        completed_time=datetime(2018, 4, 2, 20, 32, 6, 538220),
+        iterations=pre_iterations - pre_pass_count,
+        error=None,
+        pass_count=0)
+
+    self.assertEqual(expected_result,
+                     flake_swarming._ParseFlakeSwarmingTaskOutput(
+                         task_data, 'content', None))
+
+  @mock.patch.object(test_results, 'GetTestsRunStatuses')
+  def testParseFlakeSwarmingTaskOutputWithOnlyTwoPreruns(
+      self, mocked_test_statuses):
+    pre_iterations = 100
+    pre_pass_count = 25
+    test_name = 't'
+    task_data = {
+        'created_ts': '2018-04-02T18:32:06.538220',
+        'started_ts': '2018-04-02T19:32:06.538220',
+        'completed_ts': '2018-04-02T20:32:06.538220',
+        'task_id': 'task_id'
+    }
+    test_statuses = {
+        'PRE_' + test_name: {
+            'total_run': pre_iterations,
+            'SUCCESS': pre_pass_count,
+        },
+        'PRE_PRE_' + test_name: {
+            'total_run': 0,
+            'SUCCESS': 0,
+        },
+    }
+
+    mocked_test_statuses.return_value = test_statuses
+    expected_result = FlakeSwarmingTaskOutput(
+        task_id='task_id',
+        started_time=datetime(2018, 4, 2, 19, 32, 6, 538220),
+        completed_time=datetime(2018, 4, 2, 20, 32, 6, 538220),
+        iterations=pre_iterations - pre_pass_count,
+        error=None,
+        pass_count=0)
+
+    self.assertEqual(expected_result,
+                     flake_swarming._ParseFlakeSwarmingTaskOutput(
+                         task_data, 'content', None))
+
   @mock.patch.object(swarmed_test_util, 'GetSwarmingTaskDataAndResult')
   def testOnSwarmingTaskTimeoutNoData(self, mocked_result):
     error = SwarmingTaskError(code=1000, message='Unknown error')
@@ -260,8 +365,11 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
         created_ts=None,
         name='findit/ref_task_id/ref_task_id/2018-03-15 00:00:00 000000',
         tags=ListOfBasestring.FromSerializable([
-            'ref_master:m', 'ref_buildername:b', 'ref_buildnumber:4',
-            'ref_stepname:s', 'ref_name:test',
+            'ref_master:m',
+            'ref_buildername:b',
+            'ref_buildnumber:4',
+            'ref_stepname:s',
+            'ref_name:test',
             'purpose:identify-regression-range',
         ]),
         pubsub_topic='projects/app-id/topics/swarming',
@@ -326,8 +434,11 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
         created_ts=None,
         name='findit/ref_task_id/ref_task_id/2018-03-15 00:00:00 000000',
         tags=ListOfBasestring.FromSerializable([
-            'ref_master:m', 'ref_buildername:b', 'ref_buildnumber:4',
-            'ref_stepname:s', 'ref_name:test',
+            'ref_master:m',
+            'ref_buildername:b',
+            'ref_buildnumber:4',
+            'ref_stepname:s',
+            'ref_name:test',
             'purpose:identify-regression-range',
         ]),
         pubsub_topic='projects/app-id/topics/swarming',
