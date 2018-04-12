@@ -3,6 +3,11 @@
 package: infra/testing/wct/${platform}
 description: Support for running web-component-tester.
 # TODO: Basic project that has nothing besides WCT, instead of using SoM.
-root: ../../go/src/infra/appengine/sheriff-o-matic
+platforms:
+  - linux-amd64
+root: ../../go/bin
+go_packages:
+  - infra/tools/wct
 data:
-  - dir: node_modules
+  - file: wct
+  - version_file: .versions/wct.cipd_version

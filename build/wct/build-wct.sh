@@ -3,12 +3,6 @@
 # It requires npm to be installed and that's not available on builders by
 # default.
 
-# Make sure node_modules directory exists.
-pushd .
-cd ../../go/src/infra/appengine/sheriff-o-matic
-npm install
-popd
-
 # Make sure we build the package from scratch.
 rm -f wct.cipd
 

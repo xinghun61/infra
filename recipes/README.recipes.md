@@ -213,7 +213,7 @@ WCTApi provides support for running Web Component Tests
 
 &mdash; **def [install](/recipes/recipe_modules/wct/api.py#14)(self):**
 
-&mdash; **def [run](/recipes/recipe_modules/wct/api.py#26)(self, root):**
+&mdash; **def [run](/recipes/recipe_modules/wct/api.py#29)(self, root):**
 ## Recipes
 
 ### *recipes* / [build\_conda\_cipd\_pkg](/recipes/recipes/build_conda_cipd_pkg.py)
@@ -440,9 +440,9 @@ the permission to schedule a Dataflow job for your project.
 &mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#50)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
 ### *recipes* / [sheriff-o-matic-wct](/recipes/recipes/sheriff-o-matic-wct.py)
 
-[DEPS](/recipes/recipes/sheriff-o-matic-wct.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [wct](#recipe_modules-wct), [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/sheriff-o-matic-wct.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [wct](#recipe_modules-wct), [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/sheriff-o-matic-wct.py#15)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/sheriff-o-matic-wct.py#14)(api):**
 ### *recipes* / [sync\_submodules](/recipes/recipes/sync_submodules.py)
 
 [DEPS](/recipes/recipes/sync_submodules.py#7): [sync\_submodules](#recipe_modules-sync_submodules), [recipe\_engine/properties][recipe_engine/recipe_modules/properties]

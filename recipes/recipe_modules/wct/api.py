@@ -16,10 +16,13 @@ class WCTApi(recipe_api.RecipeApi):
     wct_package_name = 'infra/testing/wct/%s' % self.m.cipd.platform_suffix()
     node_package_name = ('infra/nodejs/nodejs/%s' %
         self.m.cipd.platform_suffix())
+    chrome_package_name = ('dart/browsers/chrome/%s' %
+        self.m.cipd.platform_suffix())
 
     packages = {
       wct_package_name: 'prod',
       node_package_name: 'node_version:4.5.0',
+      chrome_package_name: 'b6b434ed592da55513d813b2cfb3422008fb280d',
     }
     self.m.cipd.ensure(cipd_root, packages)
 
@@ -29,12 +32,20 @@ class WCTApi(recipe_api.RecipeApi):
 
     wct_root = self.m.path['start_dir'].join('packages')
     node_path = self.m.path['start_dir'].join('packages', 'bin')
+    chrome_bin = self.m.path['start_dir'].join('packages', 'chrome', 'chrome')
+
     env = {
       'PATH': self.m.path.pathsep.join([str(node_path), '%(PATH)s'])
     }
-    wct_bin = wct_root.join('node_modules', 'web-component-tester', 'bin',
-        'wct')
+
+    wct_bin = wct_root.join('wct')
+
     with self.m.context(env=env):
-      self.m.step('Run WCT', ['xvfb-run', '-a', wct_bin, 'test', '--root', root,
-          '--verbose', '--simpleOutput', '--browsers', 'chrome'])
+      self.m.step('Install bower', [node_path.join('npm'), 'install', '-g',
+          'bower'])
+    with self.m.context(env=env, cwd=root):
+      self.m.step('Install bower packages', ['bower', 'install'])
+    with self.m.context(env=env):
+      self.m.step('Run WCT', ['xvfb-run', '-a', wct_bin, '--base', root,
+          '--chrome', chrome_bin])
 

@@ -82,9 +82,9 @@
       "cipd.bat",
       "ensure",
       "-root",
-      "[START_DIR]\\infra",
+      "[START_DIR]\\packages",
       "-ensure-file",
-      "infra/testing/sheriff-o-matic/bower_components/windows-386 0816e3e92d47f643d6cabca716d241d0ce6cc6fd",
+      "dart/browsers/chrome/windows-386 b6b434ed592da55513d813b2cfb3422008fb280d\ninfra/nodejs/nodejs/windows-386 node_version:4.5.0\ninfra/testing/wct/windows-386 prod",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -93,29 +93,9 @@
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"0816e3e92d47f643d6cabca716d241d0ce6cc6fd\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/testing/sheriff-o-matic/bower_components/windows-386\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "cipd.bat",
-      "ensure",
-      "-root",
-      "[START_DIR]\\packages",
-      "-ensure-file",
-      "infra/nodejs/nodejs/windows-386 node_version:4.5.0\ninfra/testing/wct/windows-386 prod",
-      "-json-output",
-      "/path/to/tmp/json"
-    ],
-    "name": "ensure_installed (2)",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"b6b434ed592da55513d813b2cfb3422008fb280d\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"dart/browsers/chrome/windows-386\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-node_version:4.5\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/nodejs/nodejs/windows-386\"@@@",

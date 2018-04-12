@@ -4,7 +4,6 @@
 
 DEPS = [
   'depot_tools/bot_update',
-  'depot_tools/cipd',
   'depot_tools/gclient',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -19,18 +18,10 @@ def RunSteps(api):
   api.bot_update.ensure_checkout()
   api.gclient.runhooks()
 
-  # Install bower_components bundle.
-  bower_package_name = ('infra/testing/sheriff-o-matic/bower_components/%s' %
-      api.cipd.platform_suffix())
-  packages = {
-    bower_package_name: '0816e3e92d47f643d6cabca716d241d0ce6cc6fd',
-  }
-  # This overlays the bower_components dir directly over the checkout.
-  api.cipd.ensure(api.path['checkout'].join(''), packages)
-
   api.wct.install()
   test_path = api.path['checkout'].join(
-      'go', 'src', 'infra', 'appengine', 'sheriff-o-matic')
+      'go', 'src', 'infra', 'appengine', 'sheriff-o-matic', 'frontend')
+
   api.wct.run(test_path)
 
 def GenTests(api):

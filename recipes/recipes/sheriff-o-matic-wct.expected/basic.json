@@ -82,9 +82,9 @@
       "cipd",
       "ensure",
       "-root",
-      "[START_DIR]/infra",
+      "[START_DIR]/packages",
       "-ensure-file",
-      "infra/testing/sheriff-o-matic/bower_components/linux-amd64 0816e3e92d47f643d6cabca716d241d0ce6cc6fd",
+      "dart/browsers/chrome/linux-amd64 b6b434ed592da55513d813b2cfb3422008fb280d\ninfra/nodejs/nodejs/linux-amd64 node_version:4.5.0\ninfra/testing/wct/linux-amd64 prod",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -93,29 +93,9 @@
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"0816e3e92d47f643d6cabca716d241d0ce6cc6fd\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/testing/sheriff-o-matic/bower_components/linux-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "cipd",
-      "ensure",
-      "-root",
-      "[START_DIR]/packages",
-      "-ensure-file",
-      "infra/nodejs/nodejs/linux-amd64 node_version:4.5.0\ninfra/testing/wct/linux-amd64 prod",
-      "-json-output",
-      "/path/to/tmp/json"
-    ],
-    "name": "ensure_installed (2)",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"b6b434ed592da55513d813b2cfb3422008fb280d\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"dart/browsers/chrome/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-node_version:4.5\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/nodejs/nodejs/linux-amd64\"@@@",
@@ -131,16 +111,36 @@
   },
   {
     "cmd": [
+      "[START_DIR]/packages/bin/npm",
+      "install",
+      "-g",
+      "bower"
+    ],
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "Install bower"
+  },
+  {
+    "cmd": [
+      "bower",
+      "install"
+    ],
+    "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "Install bower packages"
+  },
+  {
+    "cmd": [
       "xvfb-run",
       "-a",
-      "[START_DIR]/packages/node_modules/web-component-tester/bin/wct",
-      "test",
-      "--root",
-      "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic",
-      "--verbose",
-      "--simpleOutput",
-      "--browsers",
-      "chrome"
+      "[START_DIR]/packages/wct",
+      "--base",
+      "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
+      "--chrome",
+      "[START_DIR]/packages/chrome/chrome"
     ],
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
