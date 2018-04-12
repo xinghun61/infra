@@ -65,16 +65,15 @@ class GetIsolateShaForBuildPipeline(SynchronousPipeline):
         parameters.build_number, parameters.step_name, FinditHttpClient())
 
 
-# TODO(crbug.com/822466): Investigate a way to extract values from futures
-# without needing to create dedicated pipelines.
 class GetIsolateShaForTryJobPipeline(SynchronousPipeline):
   input_type = GetIsolateShaForTryJobParameters
   output_type = basestring
 
   def RunImpl(self, parameters):
     isolated_tests = parameters.try_job_result.report.isolated_tests
-    step_name = parameters.step_name
-    return isolated_tests.get(step_name)
+    assert len(isolated_tests) == 1, (
+        'Expecting only one isolate target, but got %d' % len(isolated_tests))
+    return isolated_tests.values()[0]
 
 
 class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
