@@ -101,20 +101,27 @@ def GetValidBoundingBuildsForStep(
   """
   http_client = FinditHttpClient()
 
+  logging.debug('GetBoundingBuildsForStep being called for %s/%s/%s with build '
+  'number bounds (%d, %d) at commit position %d', master_name, builder_name,
+  step_name, lower_bound_build_number or -1, upper_bound_build_number or -1,
+  requested_commit_position)
+
   assert upper_bound_build_number is not None, 'upper_bound can\'t be None'
 
   _, latest_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                  upper_bound_build_number)
+  logging.debug('latest_build_info: %r', latest_build_info)
   assert latest_build_info, 'Couldn\'t find build info for %s/%s/%s' % (
       master_name, builder_name, upper_bound_build_number)
   assert latest_build_info.commit_position is not None
 
   lower_bound_build_number = _GetLowerBoundBuildNumber(lower_bound_build_number,
                                                        upper_bound_build_number)
+  logging.info('Found lower_bound_build_number to be %d.', lower_bound_build_number)
 
   _, earliest_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                    lower_bound_build_number)
-
+  logging.debug('earliest_build_info: %r', earliest_build_info)
   assert earliest_build_info, 'Couldn\'t find build info for %s/%s/%s' % (
       master_name, builder_name, lower_bound_build_number)
   assert earliest_build_info.commit_position is not None
