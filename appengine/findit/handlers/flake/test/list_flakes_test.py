@@ -186,14 +186,14 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/list-flakes',
-        params={'step_name': self.step_name1,
-                'format': 'json'})
+        params={
+            'step_name': self.step_name1,
+            'format': 'json'
+        })
     expected_result = {
         'cursor':
             '',
         'master_flake_analyses': [{
-            'build_analysis_status':
-                'Completed',
             'build_number':
                 self.build_number1,
             'builder_name':
@@ -219,8 +219,8 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                 None,
             'test_name':
                 self.test_name1,
-            'try_job_status':
-                None,
+            'status':
+                'Completed',
         }],
         'prev_cursor':
             '',
@@ -269,12 +269,12 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/list-flakes',
-        params={'format': 'json',
-                'direction': 'previous'})
+        params={
+            'format': 'json',
+            'direction': 'previous'
+        })
     expected_result = {
         'master_flake_analyses': [{
-            'build_analysis_status':
-                'Completed',
             'build_number':
                 self.build_number1,
             'builder_name':
@@ -300,8 +300,8 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                 None,
             'test_name':
                 self.test_name1,
-            'try_job_status':
-                None
+            'status':
+                'Completed'
         }],
         'cursor':
             self.cursor,

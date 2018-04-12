@@ -104,9 +104,17 @@ class ListFlakes(BaseHandler):
         culprit = ndb.Key(culprit_key.pairs()[0][0],
                           culprit_key.pairs()[0][1]).get()
 
+      status = master_flake_analysis.status
+      if (master_flake_analysis.try_job_status == analysis_status.ERROR or
+          master_flake_analysis.heuristic_analysis_status ==
+          analysis_status.ERROR):
+        status = analysis_status.ERROR
+
+      timestamp = (
+          time_util.ConvertToTimestamp(master_flake_analysis.request_time)
+          if master_flake_analysis.request_time else 'None')
+
       data['master_flake_analyses'].append({
-          'build_analysis_status':
-              master_flake_analysis.status_description,
           'build_number':
               master_flake_analysis.build_number,
           'builder_name':
@@ -123,9 +131,8 @@ class ListFlakes(BaseHandler):
               master_flake_analysis.key.urlsafe(),
           'master_name':
               master_flake_analysis.master_name,
-          'request_utc_timestamp': (
-              time_util.ConvertToTimestamp(master_flake_analysis.request_time)
-              if master_flake_analysis.request_time else 'None'),
+          'request_utc_timestamp':
+              timestamp,
           'result_status':
               result_status.RESULT_STATUS_TO_DESCRIPTION.get(
                   master_flake_analysis.result_status),
@@ -135,9 +142,8 @@ class ListFlakes(BaseHandler):
               master_flake_analysis.suspected_flake_build_number,
           'test_name':
               master_flake_analysis.test_name,
-          'try_job_status':
-              analysis_status.STATUS_TO_DESCRIPTION.get(
-                  master_flake_analysis.try_job_status),
+          'status':
+              analysis_status.STATUS_TO_DESCRIPTION.get(status),
       })
 
     return {'template': 'flake/dashboard.html', 'data': data}

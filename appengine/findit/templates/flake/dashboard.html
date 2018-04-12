@@ -240,10 +240,7 @@
             <a href="/waterfall/flake?key={{ analysis.key }}" target="_blank">{{ analysis.test_name }}</a>
           </td>
           <td>
-            <span class={{ analysis.build_analysis_status.lower() }}>{{ analysis.build_analysis_status }}</span> /
-            {% if analysis.try_job_status %}
-              <span class={{ analysis.try_job_status.lower() }}>{{ analysis.try_job_status }}</span>
-            {% endif %}
+            <span class={{ analysis.status.lower() }}>{{ analysis.status }}</span>
           </td>
           <td>
             {% if analysis.suspected_build %}
