@@ -1,0 +1,61 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/ui/elements/components/expandable-card.html">
+
+
+<dom-module id="flake-occurrence">
+  <template>
+    <style>
+      td {
+        padding: 2px;
+        padding-right: 10px;
+      }
+
+      td:last-child {
+        padding-right: 0px;
+      }
+    </style>
+    <expandable-card>
+      <div slot="expandable-card-header" class="header">
+        Flake occurrence ([[occurrence_json.flake_type]]) on [[occurrence_json.builder_name]]
+      </div>
+      <div slot="expandable-card-content">
+        <table>
+          <tr>
+              <td>flake_type</td>
+              <td>[[occurrence_json.flake_type]]</td>
+          </tr>
+
+          <tr>
+            <!-- TODO(crbug.com/831708) display local times. -->
+            <td>time_reported</td>
+            <td>[[occurrence_json.time_reported]]</td>
+          </tr>
+
+          <tr>
+            <td>build_id</td>
+            <td>
+              <a href="https://cr-buildbucket.appspot.com/b/[[occurrence_json.build_id]]">
+                [[occurrence_json.master_name]]/[[occurrence_json.builder_name]]/[[occurrence_json.build_number]]
+              </a>
+            </td>
+          </tr>
+          </table>
+        </div>
+    </expandable-card>
+  </template>
+  <script>
+    (function () {
+      "use strict";
+
+      Polymer({
+        is: "flake-occurrence",
+        properties: {
+          // Json serialization of the FlakeOccurrence model.
+          occurrence_json: {
+            type: Object
+          },
+        }
+      });
+    })();
+  </script>
+</dom-module>

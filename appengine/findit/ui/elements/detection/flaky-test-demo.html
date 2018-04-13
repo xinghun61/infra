@@ -1,0 +1,26 @@
+<!doctype html>
+
+<head>
+  <head>
+      <link rel="import" href="/ui/elements/detection/flaky-test.html">
+  </head>
+</head>
+<flaky-test flake_json='{
+  "flake_issue": {
+  "issue_id": "619528",
+  "last_updated_time": "2018-03-29 21:19:53.550140"},
+  "occurrences": [
+    {
+      "master_name": "chromium.master",
+      "builder_name": "chromium.builder",
+      "build_number": 100,
+      "build_id": 10000,
+      "time_reported": "2018-01-01",
+      "flake_type": "CQ_FALSE_REJECTION"
+    }
+  ],
+  "project_id": "chromium",
+  "step_name": "content_browsertests ",
+  "test_name": "AccessibilityFullscreenBrowserTest.InsideIFrame"
+  }'>
+</flaky-test>

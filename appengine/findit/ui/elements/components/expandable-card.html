@@ -24,7 +24,6 @@
       }
 
       paper-button {
-        display: inline-block;
         width: 100%;
 
         text-transform: none;
@@ -40,10 +39,20 @@
 
       #header {
         background-color: #f1f1f1;
+        margin: auto;
+        text-align: left;
       }
 
       #header::slotted(*) {
         float: left;
+      }
+
+      .header-content {
+        width: 80%;
+      }
+
+      .header-button {
+        width: 20%;
       }
 
       #header paper-icon-button {
@@ -57,17 +66,21 @@
     <paper-card id="card">
       <paper-button noink id="header" on-tap="toggleShowMore">
         <!-- Header content will be displayed always. -->
-        <slot name="expandable-card-header"></slot>
+        <div class="header-content">
+          <slot name="expandable-card-header"></slot>
+        </div>
 
-        <!-- Button to expand and show more. -->
-        <template is="dom-if" if="[[!showMore]]">
-          <paper-icon-button icon="add"></paper-icon-button>
-        </template>
+        <div class="header-button">
+          <!-- Button to expand and show more. -->
+          <template is="dom-if" if="[[!showMore]]">
+            <paper-icon-button icon="add"></paper-icon-button>
+          </template>
 
-        <!-- Button to collapse and show less. -->
-        <template is="dom-if" if="[[showMore]]">
-          <paper-icon-button icon="remove"></paper-icon-button>
-        </template>
+          <!-- Button to collapse and show less. -->
+          <template is="dom-if" if="[[showMore]]">
+            <paper-icon-button icon="remove"></paper-icon-button>
+          </template>
+        </div>
       </paper-button>
 
       <div id="content">

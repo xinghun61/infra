@@ -1,0 +1,62 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/ui/elements/detection/flake-occurrence.html">
+
+
+<dom-module id="flaky-test">
+  <template>
+    <style>
+      td {
+        padding: 2px;
+        padding-right: 10px;
+      }
+
+      td:last-child {
+        padding-right: 0px;
+      }
+    </style>
+    <table>
+        <tr>
+            <td>step name</td>
+            <td>[[flake_json.step_name]]</td>
+        </tr>
+
+        <tr>
+          <td>test name</td>
+          <td>[[flake_json.test_name]]</td>
+        </tr>
+
+        <template is="dom-if" if="[[hasBug([[flake_json]])]]">
+          <tr>
+              <td>bug</td>
+              <td>
+                <a href="https://bugs.chromium.org/p/[[flake_json.project_id]]/[[flake_json.flake_issue.issue_id]]">[[flake_json.flake_issue.issue_id]]</a>
+              </td>
+          </tr>
+        </template>
+    </table>
+
+    <template is="dom-repeat" items="{{flake_json.occurrences}}">
+      <flake-occurrence occurrence_json={{item}}></flake-occurrence>
+    </template>
+  </template>
+  <script>
+    (function () {
+      "use strict";
+
+      Polymer({
+        is: "flaky-test",
+        properties: {
+          // Json serialization of the Flake model.
+          flake_json: {
+            type: Object
+          },
+        },
+
+        hasBug: function(flake) {
+          return (flake.flake_issue != null &&
+          flake.flake_issue.issue_id != null);
+        }
+      });
+    })();
+  </script>
+</dom-module>
