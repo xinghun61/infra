@@ -11,7 +11,11 @@
   </tr>
   [for approvals]
     <tr>
-      <td>[approvals.field_name]</td>
+      <td nowrap><b>[approvals.field_name]</b>
+        <br>
+        <span><input id="[approvals.field_id]_required" name="approval_[approvals.field_id]_required" type="checkbox">
+        <label for="[approvals.field_id]_required">Require review</label></span>
+      </td>
       <td><input name="approval_[approvals.field_id]" value="omit" type="radio" checked="checked"></td>
       <td><input id="[approvals.field_id]_phase_0" name="approval_[approvals.field_id]" value="phase_0" type="radio"></td>
       <td><input id="[approvals.field_id]_phase_1" name="approval_[approvals.field_id]" value="phase_1" type="radio"></td>
@@ -34,6 +38,10 @@ runOnLoad(function() {
 
   [for prechecked_approvals]
     document.getElementById("[prechecked_approvals]").checked = "checked"
+  [end]
+
+  [for required_approval_ids]
+    document.getElementById("[required_approval_ids]_required").checked = "checked"
   [end]
 
 });

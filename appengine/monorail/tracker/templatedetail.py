@@ -80,10 +80,13 @@ class TemplateDetail(servlet.Servlet):
     # TODO(jojwang): monorail:3576, replace this sort by adding order_by
     # when fetching phases at config_svc:488
     initial_phases.sort(key=lambda phase: phase.rank)
+    required_approval_ids = []
     prechecked_approvals = []
     for idx, phase in enumerate(initial_phases):
       for av in phase.approval_values:
         prechecked_approvals.append('%d_phase_%d' % (av.approval_id, idx))
+        if av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW:
+          required_approval_ids.append(av.approval_id)
     initial_phases.extend([tracker_pb2.Phase()] * (6 - len(template.phases)))
 
     allow_edit = permissions.CanEditTemplate(
@@ -111,6 +114,7 @@ class TemplateDetail(servlet.Servlet):
         'approvals': [view for view in field_views
                       if view.field_def.type_name is 'APPROVAL_TYPE'],
         'prechecked_approvals': prechecked_approvals,
+        'required_approval_ids': required_approval_ids,
         'labels': template.labels,
         'initial_admins': template_view.admin_names,
         }
@@ -182,7 +186,8 @@ class TemplateDetail(servlet.Servlet):
                           parsed.phase_names],
           approvals=[view for view in field_views
                      if view.field_def.type_name is 'APPROVAL_TYPE'],
-          prechecked_approvals=prechecked_approvals
+          prechecked_approvals=prechecked_approvals,
+          required_approval_ids=parsed.required_approval_ids
       )
       return
 

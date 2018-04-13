@@ -85,6 +85,7 @@ class TemplateHelpers(unittest.TestCase):
     self.assertFalse(parsed.add_phases)
     self.assertItemsEqual(parsed.phase_names, ['', '', '', '', '', ''])
     self.assertEqual(parsed.approvals_by_phase_idx, {})
+    self.assertEqual(parsed.required_approval_ids, [])
 
   def testParseTemplateRequest_Normal(self):
     self.config.field_defs.extend([self.fd_1, self.fd_2])
@@ -112,7 +113,11 @@ class TemplateHelpers(unittest.TestCase):
         phase_4=[''],
         phase_5=['Oops'],
         approval_3=['phase_2'],
-        approval_4=['phase_2']
+        approval_4=['phase_2'],
+        approval_3_required=['on'],
+        approval_4_required=['not-on'],
+        # ignore required cb for omitted approvals
+        approval_5_required=['on']
     )
 
     parsed = template_helpers.ParseTemplateRequest(post_data, self.config)
@@ -133,6 +138,7 @@ class TemplateHelpers(unittest.TestCase):
     self.assertItemsEqual(parsed.phase_names,
                           ['Canary', 'Stable-Exp', 'Stable', '', '', 'Oops'])
     self.assertEqual(parsed.approvals_by_phase_idx, {2:[3, 4]})
+    self.assertEqual(parsed.required_approval_ids, [3])
 
   def testGetTemplateInfoFromParsed_Normal(self):
     self.config.field_defs.extend([self.fd_1, self.fd_2])
@@ -140,7 +146,7 @@ class TemplateHelpers(unittest.TestCase):
     parsed = template_helpers.ParsedTemplate(
         'template', True, 'summary', True, 'content', 'Available',
         '1@ex.com', ['label1', 'label1'], {1: ['NO'], 2: ['MOOD']},
-        ['BackEnd'], True, True, '2@ex.com', False, [], {})
+        ['BackEnd'], True, True, '2@ex.com', False, [], {}, [])
     (admin_ids, owner_id, component_ids,
      field_values, phases) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)
@@ -156,7 +162,7 @@ class TemplateHelpers(unittest.TestCase):
     parsed = template_helpers.ParsedTemplate(
         'template', True, 'summary', True, 'content', 'Available',
         '4@ex.com', ['label1', 'label1'], {1: ['NO'], 2: ['MOOD']},
-        ['BackEnd'], True, True, '2@ex.com', False, [], {})
+        ['BackEnd'], True, True, '2@ex.com', False, [], {}, [])
     (admin_ids, _owner_id, _component_ids,
      field_values, phases) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)
@@ -173,46 +179,48 @@ class TemplateHelpers(unittest.TestCase):
 
     phase_names = ['Canary', '', 'Stable-Exp', '', '', '']
     approvals_by_phase_idx = {0: [3, 4], 2: [5]}
+    required_approval_ids = [3, 5]
 
     phases = template_helpers._GetPhasesFromParsed(
-        self.mr, phase_names, approvals_by_phase_idx)
+        self.mr, phase_names, approvals_by_phase_idx, required_approval_ids)
     self.assertEqual(len(phases), 2)
 
     canary = tracker_bizobj.FindPhase('canary', phases)
     self.assertEqual(canary.rank, 0)
-    self.assertIsNotNone(
-        tracker_bizobj.FindApprovalValueByID(3, canary.approval_values))
-    self.assertIsNotNone(
-        tracker_bizobj.FindApprovalValueByID(4, canary.approval_values))
-
+    av_3 = tracker_bizobj.FindApprovalValueByID(3, canary.approval_values)
+    self.assertEqual(av_3.status, tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
+    av_4 = tracker_bizobj.FindApprovalValueByID(4, canary.approval_values)
+    self.assertEqual(av_4.status, tracker_pb2.ApprovalStatus.NOT_SET)
 
     stable_exp = tracker_bizobj.FindPhase('stable-exp', phases)
     self.assertEqual(stable_exp.rank, 2)
-    self.assertIsNotNone(
-        tracker_bizobj.FindApprovalValueByID(5, stable_exp.approval_values))
+    av_5 = tracker_bizobj.FindApprovalValueByID(5, stable_exp.approval_values)
+    self.assertEqual(av_5.status, tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
 
     self.assertIsNone(self.mr.errors.phase_approvals)
 
   def testGetPhasesFromParsed_Errors(self):
     self.config.field_defs.extend([self.fd_1, self.fd_2])
     self.config.approval_defs.extend([self.ad_3, self.ad_4, self.ad_5])
+    required_approval_ids = []
 
     phase_names = ['Canary', 'Extra', 'Stable-Exp', '', '', '']
     approvals_by_phase_idx = {0: [self.ad_3, self.ad_4], 2: [self.ad_5]}
 
     template_helpers._GetPhasesFromParsed(
-        self.mr, phase_names, approvals_by_phase_idx)
+        self.mr, phase_names, approvals_by_phase_idx, required_approval_ids)
     self.assertEqual(self.mr.errors.phase_approvals,
                      'Defined gates must have assigned approvals.')
 
   def testGetPhasesFromParsed_DupsErrors(self):
     self.config.field_defs.extend([self.fd_1, self.fd_2])
     self.config.approval_defs.extend([self.ad_3, self.ad_4, self.ad_5])
+    required_approval_ids = []
 
     phase_names = ['Canary', 'canary', 'Stable-Exp', '', '', '']
     approvals_by_phase_idx = {0: [self.ad_3, self.ad_4], 2: [self.ad_5]}
 
     template_helpers._GetPhasesFromParsed(
-        self.mr, phase_names, approvals_by_phase_idx)
+        self.mr, phase_names, approvals_by_phase_idx, required_approval_ids)
     self.assertEqual(self.mr.errors.phase_approvals,
                      'Duplicate gate names.')

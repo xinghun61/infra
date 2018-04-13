@@ -26,7 +26,7 @@ ParsedTemplate = collections.namedtuple(
     'ParsedTemplate', 'name, members_only, summary, summary_must_be_edited, '
     'content, status, owner_str, labels, field_val_strs, component_paths, '
     'component_required, owner_defaults_to_member, admin_str, add_phases, '
-    'phase_names, approvals_by_phase_idx')
+    'phase_names, approvals_by_phase_idx, required_approval_ids')
 
 
 def ParseTemplateRequest(post_data, config):
@@ -62,12 +62,16 @@ def ParseTemplateRequest(post_data, config):
   add_phases = post_data.get('add_phases') == 'on'
   phase_names = [post_data.get(phase_input, '') for phase_input in PHASE_INPUTS]
 
+  required_approval_ids = []
   approvals_by_phase_idx = collections.defaultdict(list)
   for approval_def in config.approval_defs:
     phase_num = post_data.get('approval_%d' % approval_def.approval_id, '')
     try:
       idx = PHASE_INPUTS.index(phase_num)
       approvals_by_phase_idx[idx].append(approval_def.approval_id)
+      required_name = 'approval_%d_required' % approval_def.approval_id
+      if (post_data.get(required_name) == 'on'):
+        required_approval_ids.append(approval_def.approval_id)
     except ValueError:
       logging.info('approval %d was omitted' % approval_def.approval_id)
 
@@ -75,7 +79,7 @@ def ParseTemplateRequest(post_data, config):
       name, members_only, summary, summary_must_be_edited, content, status,
       owner_str, labels, field_val_strs, component_paths, component_required,
       owner_defaults_to_member, admin_str, add_phases, phase_names,
-      approvals_by_phase_idx)
+      approvals_by_phase_idx, required_approval_ids)
 
 
 def GetTemplateInfoFromParsed(mr, services, parsed, config):
@@ -108,12 +112,13 @@ def GetTemplateInfoFromParsed(mr, services, parsed, config):
   phases = []
   if parsed.add_phases:
     phases = _GetPhasesFromParsed(
-        mr, parsed.phase_names, parsed.approvals_by_phase_idx)
+        mr, parsed.phase_names, parsed.approvals_by_phase_idx,
+        parsed.required_approval_ids)
 
   return admin_ids, owner_id, component_ids, field_values, phases
 
 
-def _GetPhasesFromParsed(mr, phase_names, approvals_by_phase_idx):
+def _GetPhasesFromParsed(mr, phase_names, approvals_by_phase_idx, required_approval_ids):
   """Get Phase PBs from a parsed phase_names and approvals_by_phase_idx."""
 
   phases = []
@@ -139,6 +144,8 @@ def _GetPhasesFromParsed(mr, phase_names, approvals_by_phase_idx):
     for approval_id in approval_ids:
       av = tracker_pb2.ApprovalValue(
           approval_id=approval_id)
+      if approval_id in required_approval_ids:
+        av.status = tracker_pb2.ApprovalStatus.NEEDS_REVIEW
       # TODO(jojwang): monorail:3655, add default sub_field_values
       # TODO(jojwang): monorail:3656, add option for default approvers
       # per template

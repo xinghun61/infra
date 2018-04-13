@@ -81,6 +81,7 @@ class TemplateCreate(servlet.Servlet):
         'approvals': [view for view in field_views
                    if view.field_def.type_name is "APPROVAL_TYPE"],
         'prechecked_approvals': [],
+        'required_approval_ids': [],
         }
 
   def ProcessFormData(self, mr, post_data):
@@ -142,7 +143,8 @@ class TemplateCreate(servlet.Servlet):
                           parsed.phase_names],
           approvals=[view for view in field_views
                      if view.field_def.type_name is 'APPROVAL_TYPE'],
-          prechecked_approvals=prechecked_approvals
+          prechecked_approvals=prechecked_approvals,
+          required_approval_ids=parsed.required_approval_ids
       )
       return
 

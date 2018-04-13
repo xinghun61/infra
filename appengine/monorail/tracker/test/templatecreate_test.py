@@ -161,6 +161,7 @@ class TemplateCreateTest(unittest.TestCase):
                         name in ['Canary', 'Stable-Exp', 'Stable', '', '', '']],
         approvals=mox.IgnoreArg(),
         prechecked_approvals=['2_phase_1', '3_phase_2'],
+        required_approval_ids=[]
         )
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(self.mr, post_data)
@@ -230,16 +231,22 @@ class TemplateCreateTest(unittest.TestCase):
       phase_4=[''],
       phase_5=[''],
       approval_2=['phase_0'],
-      approval_3=['phase_1'])
+      approval_3=['phase_1'],
+      approval_3_required=['on']
+    )
 
     url = self.servlet.ProcessFormData(self.mr, post_data)
     template = tracker_bizobj.FindIssueTemplate('secondtemplate', self.config)
     canary_phase = tracker_bizobj.FindPhase('canary', template.phases)
     self.assertEqual(canary_phase.rank, 0)
     self.assertEqual(canary_phase.approval_values[0].approval_id, 2)
+    self.assertEqual(canary_phase.approval_values[0].status,
+                     tracker_pb2.ApprovalStatus.NOT_SET)
 
     stable_phase = tracker_bizobj.FindPhase('stable', template.phases)
     self.assertEqual(stable_phase.rank, 1)
     self.assertEqual(stable_phase.approval_values[0].approval_id, 3)
+    self.assertEqual(stable_phase.approval_values[0].status,
+                     tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
 
     self.assertTrue('/adminTemplates?saved=1&ts' in url)
