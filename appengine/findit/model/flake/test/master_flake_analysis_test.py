@@ -334,13 +334,13 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertEqual(analysis_status.RUNNING, analysis.status)
     self.assertEqual(start_time, analysis.start_time)
 
-  def testUpdateSuspectedBuildIDExistingSuspectedBuild(self):
+  def testUpdateSuspectedBuildExistingSuspectedBuild(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(commit_position=100),
         DataPoint.Create(commit_position=90),
     ]
-    analysis.suspected_flake_build_id = '123'
+    analysis.suspected_flake_build_number = 123
     analysis.Save()
 
     lower_bound_build = BuildInfo('m', 'b', 123)
@@ -348,11 +348,11 @@ class MasterFlakeAnalysisTest(TestCase):
     upper_bound_build = BuildInfo('m', 'b', 124)
     upper_bound_build.commit_position = 110
 
-    analysis.UpdateSuspectedBuildID(lower_bound_build, upper_bound_build)
+    analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
 
-    self.assertEqual('123', analysis.suspected_flake_build_id)
+    self.assertEqual(123, analysis.suspected_flake_build_number)
 
-  def testUpdateSuspectedBuildIDRegressionRangeTooWide(self):
+  def testUpdateSuspectedBuildRegressionRangeTooWide(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(commit_position=100),
@@ -365,11 +365,11 @@ class MasterFlakeAnalysisTest(TestCase):
     upper_bound_build = BuildInfo('m', 'b', 123)
     upper_bound_build.commit_position = 100
 
-    analysis.UpdateSuspectedBuildID(lower_bound_build, upper_bound_build)
+    analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
 
-    self.assertIsNone(analysis.suspected_flake_build_id)
+    self.assertIsNone(analysis.suspected_flake_build_number)
 
-  def testUpdateSuspectedBuildID(self):
+  def testUpdateSuspectedBuild(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(commit_position=100),
@@ -382,9 +382,9 @@ class MasterFlakeAnalysisTest(TestCase):
     upper_bound_build = BuildInfo('m', 'b', 123)
     upper_bound_build.commit_position = 100
 
-    analysis.UpdateSuspectedBuildID(lower_bound_build, upper_bound_build)
+    analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
 
-    self.assertEqual('123', analysis.suspected_flake_build_id)
+    self.assertEqual(123, analysis.suspected_flake_build_number)
 
   def testRemoveDataPointWithBuildNumber(self):
     data_points = [
@@ -489,14 +489,14 @@ class MasterFlakeAnalysisTest(TestCase):
 
   def testCanRunHeuristicAnalysisAlreadyRan(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.suspected_flake_build_id = '123'
+    analysis.suspected_flake_build_number = 123
     analysis.heuristic_analysis_status = analysis_status.COMPLETED
 
     self.assertFalse(analysis.CanRunHeuristicAnalysis())
 
   def testCanRunHeuristicAnalysisNotYetRan(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.suspected_flake_build_id = '123'
+    analysis.suspected_flake_build_number = 123
     analysis.heuristic_analysis_status = analysis_status.PENDING
 
     self.assertTrue(analysis.CanRunHeuristicAnalysis())

@@ -250,7 +250,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
         analysis_status.ERROR
     ]
 
-    return (self.suspected_flake_build_id is not None and
+    return (self.suspected_flake_build_number is not None and
             self.heuristic_analysis_status not in already_run_statuses)
 
   def UpdateTriageResult(self,
@@ -425,8 +425,8 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       self.Update(
           start_time=time_util.GetUTCNow(), status=analysis_status.RUNNING)
 
-  def UpdateSuspectedBuildID(self, lower_bound_build, upper_bound_build):
-    """Sets the suspected build ID if appropriate.
+  def UpdateSuspectedBuild(self, lower_bound_build, upper_bound_build):
+    """Sets the suspected build number if appropriate.
 
       A suspected build cycle can be set when a regression range is identified
       and spans at most a single build cycle.
@@ -442,10 +442,10 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     upper_bound = upper_bound_build.commit_position
     assert upper_bound > lower_bound
 
-    if (self.suspected_flake_build_id is None and
+    if (self.suspected_flake_build_number is None and
         self.FindMatchingDataPointWithCommitPosition(lower_bound) and
         self.FindMatchingDataPointWithCommitPosition(upper_bound)):
-      self.Update(suspected_flake_build_id=str(upper_bound_build.build_number))
+      self.Update(suspected_flake_build_number=upper_bound_build.build_number)
 
   def Update(self, **kwargs):
     """Updates fields according to what's specified in kwargs.

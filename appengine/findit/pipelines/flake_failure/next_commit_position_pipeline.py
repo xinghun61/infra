@@ -58,7 +58,7 @@ class NextCommitPositionPipeline(SynchronousPipeline):
     # A suspected build id is available when there is a regression range that
     # spans a single build cycle. During this time, bisect is preferred to
     # exponential search.
-    use_bisect = analysis.suspected_flake_build_id is not None
+    use_bisect = analysis.suspected_flake_build_number is not None
 
     calculated_next_commit_position, culprit_commit_position = (
         lookback_algorithm.GetNextCommitPosition(data_points, use_bisect))
@@ -87,7 +87,7 @@ class NextCommitPositionPipeline(SynchronousPipeline):
             analysis.build_number, calculated_next_commit_position))
 
     # Update the analysis' suspected build cycle if identified.
-    analysis.UpdateSuspectedBuildID(lower_bound_build, upper_bound_build)
+    analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
 
     # Run heuristic analysis if eligible and not yet already done.
     if analysis.CanRunHeuristicAnalysis():  # pragma: no cover.
