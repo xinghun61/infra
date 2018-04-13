@@ -21,7 +21,9 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 
 
 def ToJson(data):
-  return json.dumps(data, sort_keys=True)  # Sort by key to keep order on UI.
+  # Sort by key to keep order on UI.
+  # Use default str so it can serialize datetimes.
+  return json.dumps(data, sort_keys=True, default=str)
 
 
 JINJA_ENVIRONMENT.filters['tojson'] = ToJson
@@ -133,7 +135,7 @@ class BaseHandler(webapp2.RequestHandler):
 
     def _DumpJson(data):
       if not pretty_format:
-        return json.dumps(data)
+        return json.dumps(data, default=str)
 
       def _Compare(key, value):
         length_value = 1
@@ -146,7 +148,7 @@ class BaseHandler(webapp2.RequestHandler):
       # Order the dictionary so that simple and small data comes first.
       ordered_data = collections.OrderedDict(
           sorted(data.iteritems(), key=lambda (k, v): _Compare(k, v)))
-      return json.dumps(ordered_data, indent=2)
+      return json.dumps(ordered_data, indent=2, default=str)
 
     if response_format == 'html' and template is not None:
       content_type = 'text/html'

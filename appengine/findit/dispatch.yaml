@@ -5,6 +5,9 @@ dispatch:
   - url: "*/build-failure"
     module: waterfall-frontend
 
+  - url: "*/flake/detection/ui/*"
+    module: waterfall-frontend
+
   - url: "*/list-analyses"
     module: waterfall-frontend
 
@@ -20,5 +23,5 @@ dispatch:
   - url: "*/waterfall/*"
     module: waterfall-frontend
 
-  - url: "*/flake-detection/cron/*"
+  - url: "*/flake/detection/cron/*"
     module: flake-detection-backend

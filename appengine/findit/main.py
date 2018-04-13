@@ -44,6 +44,7 @@ from handlers.flake import flake_culprit
 from handlers.flake import list_flakes
 from handlers.flake import triage_flake_analysis
 from handlers.flake.detection import detect_cq_flakes
+from handlers.flake.detection import test_flake
 
 # Default module.
 default_web_pages_handler_mappings = [
@@ -80,6 +81,7 @@ gae_ts_mon.initialize(pipeline_backend_application)
 waterfall_frontend_web_pages_handler_mappings = [
     ('/', home.Home),
     ('/build-failure', build_failure.BuildFailure),
+    ('/flake/detection/ui/test-flake', test_flake.TestFlake),
     ('/list-analyses', list_analyses.ListAnalyses),
     ('/pubsub/swarmingpush', swarming_push.SwarmingPush),
     ('/pubsub/tryjobpush', try_job_push.TryJobPush),
@@ -138,7 +140,7 @@ gae_ts_mon.initialize(waterfall_backend_web_application)
 
 # "flake-detection-backend" module.
 flake_detection_backend_web_pages_handler_mappings = [
-    ('/flake-detection/cron/detect-cq-flakes', detect_cq_flakes.DetectCqFlakes)
+    ('/flake/detection/cron/detect-cq-flakes', detect_cq_flakes.DetectCqFlakes)
 ]
 flake_detection_backend_web_application = webapp2.WSGIApplication(
     flake_detection_backend_web_pages_handler_mappings, debug=False)
