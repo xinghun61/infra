@@ -98,7 +98,7 @@ MODERATE_SPAM = 'ModerateSpam'
 
 RESTRICTED_APPROVAL_STATUSES = [
     tracker_pb2.ApprovalStatus.NA, tracker_pb2.ApprovalStatus.REVIEW_STARTED,
-    tracker_pb2.ApprovalStatus.APPROVED, tracker_pb2.ApprovalStatus.NEEDS_REVIEW,
+    tracker_pb2.ApprovalStatus.APPROVED,
     tracker_pb2.ApprovalStatus.NOT_APPROVED]
 
 STANDARD_ADMIN_PERMISSIONS = [
