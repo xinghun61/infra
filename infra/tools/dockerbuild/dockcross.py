@@ -299,7 +299,7 @@ class Image(collections.namedtuple('_Image', (
     args = []
     if self.docker_image:
       # Have to handle envvars specially
-      env = kwargs.pop('env', {})
+      env = kwargs.pop('env', None) or {}
 
       # Build arguments to run within "dockcross" image.
       for i, arg in enumerate(cmd):
