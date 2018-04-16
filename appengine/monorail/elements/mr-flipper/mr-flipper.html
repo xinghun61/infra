@@ -1,0 +1,98 @@
+<!-- TODO(jeffcarp): add tests for this component -->
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="mr-flipper">
+  <template>
+    <style>
+      .pagination {
+        text-align: center;
+        display: flex;
+      }
+      .pagination div {
+        flex: 1;
+        white-space: nowrap;
+      }
+      .hidden {
+        visibility: hidden;
+      }
+      @media (max-width: 960px) {
+        .pagination {
+          display: block;
+        }
+      }
+    </style>
+
+    <div class="pagination">
+      <div class$="[[ _urlClasses(prevUrl) ]]">
+        <a href$="{{ prevUrl }}" title="Prev">&lsaquo; Prev</a>
+      </div>
+      <div class$="[[ _urlClasses(showCounts) ]]">
+        {{ current }} of {{ totalCount }}
+      </div>
+      <div class$="[[ _urlClasses(nextUrl) ]]">
+        <a href$="[[ nextUrl ]]" title="Next">Next &rsaquo;</a>
+      </div>
+    </div>
+  </template>
+  <script>
+    'use strict';
+
+    class MrFlipper extends Polymer.Element {
+      static get is() { return 'mr-flipper'; }
+
+      static get properties() {
+        return {
+          current: Number,
+          totalCount: Number,
+          prevUrl: {
+            type: String,
+            value: null,
+          },
+          nextUrl: {
+            type: String,
+            value: null,
+          },
+          showCounts: {
+            type: Boolean,
+            value: false,
+          },
+        };
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this.fetchFlipperData();
+      }
+
+      fetchFlipperData() {
+        fetch(`detail/flipper${location.search}`, {
+          credentials: 'include',
+          method: 'GET',
+        }).then((res) => res.text())
+          .then((rawDataStr) => {
+            // Strip XSSI prefix.
+            const data = JSON.parse(rawDataStr.substr(5));
+            // Add one since we display cardinal number in UI.
+            this.current = data.cur_index + 1;
+            this.totalCount = data.total_count;
+            if (data.prev_url) {
+              this.prevUrl = data.prev_url;
+            }
+            if (data.next_url) {
+              this.nextUrl = data.next_url;
+            }
+            if (this.current && this.totalCount) {
+              this.showCounts = true;
+            }
+          }
+        );
+      }
+
+      _urlClasses(url) {
+        return url ? '' : 'hidden';
+      }
+    }
+
+    customElements.define(MrFlipper.is, MrFlipper);
+  </script>
+</dom-module>

@@ -60,6 +60,11 @@ class InvalidComponentNameException(Error):
   pass
 
 
+class InvalidHotlistException(Error):
+  """The specified hotlist is invalid."""
+  pass
+
+
 class NoSuchFieldDefException(Error):
   """No field def for specified project exists."""
   pass

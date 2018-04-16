@@ -233,6 +233,9 @@ class ServletRegistry(object):
         urls.ISSUE_LIST_CSV: issuelistcsv.IssueListCsv,
         urls.ISSUE_REINDEX: issuereindex.IssueReindex,
         urls.ISSUE_DETAIL: issuedetail.IssueDetail,
+        urls.ISSUE_DETAIL_FLIPPER_NEXT: issuedetail.FlipperNext,
+        urls.ISSUE_DETAIL_FLIPPER_PREV: issuedetail.FlipperPrev,
+        urls.ISSUE_DETAIL_FLIPPER_INDEX: issuedetail.FlipperIndex,
         urls.ISSUE_COMMENT_DELETION_JSON: issuedetail.IssueCommentDeletion,
         urls.ISSUE_ATTACHMENT_DELETION_JSON:
             issueattachment.IssueAttachmentDeletion,

@@ -94,36 +94,6 @@ class IssueDetail(issuepeek.IssuePeek):
         'delete_form_token': delete_form_token,
      }
 
-  def _GetFlipper(self, mr, issue):
-    """Decides which flipper class to use.
-
-    Args:
-      mr: commonly used info parsed from the request.
-      issue: the issue of the current page.
-
-    Returns:
-      The appropriate _Flipper object
-    """
-    # do not assign self.hotlist_id to hotlist_id until we are
-    # sure the hotlist/issue pair is valid.
-    # pylint: disable=attribute-defined-outside-init
-    self.hotlist_id = None
-    hotlist_id = mr.GetIntParam('hotlist_id')
-    if hotlist_id:
-      try:
-        hotlist = self.services.features.GetHotlist(
-            mr.cnxn, hotlist_id)
-      except features_svc.NoSuchHotlistException:
-        pass
-      else:
-        if (features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id) and
-            permissions.CanViewHotlist(mr.auth.effective_ids, hotlist)):
-          self.hotlist_id = hotlist_id
-          return _HotlistFlipper(mr, self.services, issue, hotlist)
-
-    # if not hotlist/hotlist_id return a _TrackerFlipper
-    return _TrackerFlipper(mr, self.services, issue)
-
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page.
 
@@ -257,13 +227,23 @@ class IssueDetail(issuepeek.IssuePeek):
 
     # Check whether to allow attachments from the details page
     allow_attachments = tracker_helpers.IsUnderSoftAttachmentQuota(mr.project)
-    flipper = self._GetFlipper(mr, issue)
-    if flipper.is_hotlist_flipper:
-      mr.ComputeColSpec(flipper.hotlist)
+
+    hotlist_id = mr.GetIntParam('hotlist_id', None)
+    hotlist = None
+    if hotlist_id:
+      try:
+        hotlist = self.services.features.GetHotlist(mr.cnxn, hotlist_id)
+      except features_svc.NoSuchHotlistException:
+        pass
+
+    if hotlist:
+      mr.ComputeColSpec(hotlist)
     else:
       mr.ComputeColSpec(config)
+
     back_to_list_url = _ComputeBackToListURL(
-        mr, issue, config, self.hotlist_id, self.services)
+        mr, issue, config, hotlist, self.services)
+
     restrict_to_known = config.restrict_to_known
     field_name_set = {fd.field_name.lower() for fd in config.field_defs
                       if not fd.is_deleted}  # TODO(jrobbins): restrictions
@@ -352,8 +332,7 @@ class IssueDetail(issuepeek.IssuePeek):
             len(comment_views), issue.star_count)),
         'link_rel_canonical': framework_helpers.FormatCanonicalURL(mr, ['id']),
 
-        'flipper': flipper,
-        'flipper_hotlist_id': self.hotlist_id,
+        'flipper_hotlist_id': hotlist_id,
         'cmnt_pagination': cmnt_pagination,
         'searchtip': 'You can jump to any issue by number',
         'starred': ezt.boolean(starred),
@@ -692,6 +671,14 @@ class IssueDetail(issuepeek.IssuePeek):
     field_helpers.ValidateCustomFields(
         mr, self.services, field_values, config, mr.errors)
 
+    hotlist_id = post_data.get('hotlist_id')
+    if hotlist_id:
+      hotlist_id = int(hotlist_id)
+
+    # Generate redirect URLs before applying issue changes.
+    with work_env.WorkEnv(mr, self.services) as we:
+      redirect_issue = _GetRedirectIssue(we, issue, hotlist_id)
+
     orig_blocked_on = issue.blocked_on_iids
     if not mr.errors.AnyErrors():
       with work_env.WorkEnv(mr, self.services) as we:
@@ -814,8 +801,8 @@ class IssueDetail(issuepeek.IssuePeek):
     after_issue_update = _DetermineAndSetAfterIssueUpdate(
         self.services, mr, post_data)
     return _Redirect(
-        mr, post_data, issue.local_id, config,
-        moved_to_project_name_and_local_id,
+        mr, self.services, post_data, issue.local_id, config, issue,
+        redirect_issue, hotlist_id, moved_to_project_name_and_local_id,
         copied_to_project_name_and_local_id, after_issue_update)
 
   def HandleCopyOrMove(self, cnxn, mr, dest_project, issue, send_email, move):
@@ -897,15 +884,20 @@ def _DetermineAndSetAfterIssueUpdate(services, mr, post_data):
 
 
 def _Redirect(
-    mr, post_data, local_id, config, moved_to_project_name_and_local_id,
-    copied_to_project_name_and_local_id, after_issue_update):
+    mr, services, post_data, local_id, config, issue, redirect_issue, hotlist_id,
+    moved_to_project_name_and_local_id, copied_to_project_name_and_local_id,
+    after_issue_update):
   """Prepare a redirect URL for the issuedetail servlets.
 
   Args:
     mr: common information parsed from the HTTP request.
+    services: A request services object.
     post_data: The post_data dict for the current request.
     local_id: int Issue ID for the current request.
     config: The ProjectIssueConfig pb for the current request.
+    issue: The currently viewed issue.
+    redirect_issue: The next issue to redirect to, if any.
+    hotlist_id: The current hotlist, if any.
     moved_to_project_name_and_local_id: tuple containing the project name the
       issue was moved to and the local id in that project.
     copied_to_project_name_and_local_id: tuple containing the project name the
@@ -924,10 +916,14 @@ def _Redirect(
   mr.num = int(post_data['num'])
   mr.local_id = local_id
 
-  # format a redirect url
-  next_id = post_data.get('next_id', '')
-  next_project = post_data.get('next_project', '')
-  hotlist_id = post_data.get('hotlist_id', None)
+  if redirect_issue:
+    next_id = redirect_issue.local_id
+    next_project = redirect_issue.project_name
+  else:
+    next_id = None
+    next_project = None
+
+  # Format a redirect url.
   url = _ChooseNextPage(
       mr, local_id, config, moved_to_project_name_and_local_id,
       copied_to_project_name_and_local_id, after_issue_update, next_id,
@@ -936,17 +932,32 @@ def _Redirect(
   return url
 
 
-def _ComputeBackToListURL(mr, issue, config, hotlist_id, services):
-  """Construct a URL to return the user to the place that they came from."""
-  if hotlist_id:
-    hotlist = services.features.GetHotlistByID(mr.cnxn, hotlist_id)
-    return hotlist_helpers.GetURLOfHotlist(mr.cnxn, hotlist, services.user)
-  back_to_list_url = None
-  if not tracker_constants.JUMP_RE.match(mr.query):
-    back_to_list_url = tracker_helpers.FormatIssueListURL(
-        mr, config, cursor='%s:%d' % (issue.project_name, issue.local_id))
+def _GetRedirectIssue(we, current_issue, hotlist_id=None):
+  """Get the next issue for current_issue.
 
-  return back_to_list_url
+  Args:
+    we: A WorkEnv instance.
+    current_issue: The issue from which to look.
+    hotlsit_id (optional): The current hotlist.
+
+  Returns:
+    The next issue if found, else None.
+  """
+  hotlist = None
+  if hotlist_id:
+    try:
+      hotlist = we.services.features.GetHotlist(we.mr.cnxn, hotlist_id)
+    except features_svc.NoSuchHotlistException:
+      pass
+
+  next_issue = None
+  try:
+    next_issue = GetAdjacentIssue(we, current_issue,
+        hotlist=hotlist, next_issue=True)
+  except exceptions.NoSuchIssueException:
+    pass
+
+  return next_issue
 
 
 def _FieldEditPermitted(
@@ -1110,147 +1121,6 @@ class SetStarForm(jsonfeed.JsonFeed):
     return {
         'starred': bool(mr.starred),
         }
-
-
-def _ShouldShowFlipper(mr, services):
-  """Return True if we should show the flipper."""
-
-  # Check if the user entered a specific issue ID of an existing issue.
-  if tracker_constants.JUMP_RE.match(mr.query):
-    return False
-
-  # Check if the user came directly to an issue without specifying any
-  # query or sort.  E.g., through crbug.com.  Generating the issue ref
-  # list can be too expensive in projects that have a large number of
-  # issues.  The all and open issues cans are broad queries, other
-  # canned queries should be narrow enough to not need this special
-  # treatment.
-  if (not mr.query and not mr.sort_spec and
-      mr.can in [tracker_constants.ALL_ISSUES_CAN,
-                 tracker_constants.OPEN_ISSUES_CAN]):
-    num_issues_in_project = services.issue.GetHighestLocalID(
-        mr.cnxn, mr.project_id)
-    if num_issues_in_project > settings.threshold_to_suppress_prev_next:
-      return False
-
-  return True
-
-
-class _Flipper(object):
-  """Helper class for user to flip among issues within a context."""
-
-  def __init__(self, services):
-    """Store info for issue flipper widget (prev & next navigation).
-
-    Args:
-      services: connections to backend services.
-    """
-    self.services = services
-    self.is_hotlist_flipper = False
-
-  def AssignFlipperValues(self, mr, prev_iid, cur_index, next_iid, total_count):
-    # pylint: disable=attribute-defined-outside-init
-    if cur_index is None or total_count == 1:
-      # The user probably edited the URL, or bookmarked an issue
-      # in a search context that no longer matches the issue.
-      self.show = ezt.boolean(False)
-    else:
-      self.show = True
-      self.current = cur_index + 1
-      self.total_count = total_count
-      self.next_id = None
-      self.next_project_name = None
-      self.prev_url = ''
-      self.next_url = ''
-      self.next_project = ''
-
-      if prev_iid:
-        prev_issue = self.services.issue.GetIssue(mr.cnxn, prev_iid)
-        prev_path = '/p/%s%s' % (prev_issue.project_name, urls.ISSUE_DETAIL)
-        self.prev_url = framework_helpers.FormatURL(
-            mr, prev_path, id=prev_issue.local_id)
-
-      if next_iid:
-        next_issue = self.services.issue.GetIssue(mr.cnxn, next_iid)
-        self.next_id = next_issue.local_id
-        self.next_project_name = next_issue.project_name
-        next_path = '/p/%s%s' % (next_issue.project_name, urls.ISSUE_DETAIL)
-        self.next_url = framework_helpers.FormatURL(
-            mr, next_path, id=next_issue.local_id)
-        self.next_project = next_issue.project_name
-
-  def DebugString(self):
-    """Return a string representation useful in debugging."""
-    if self.show:
-      return 'on %s of %s; prev_url:%s; next_url:%s' % (
-          self.current, self.total_count, self.prev_url, self.next_url)
-    else:
-      return 'invisible flipper(show=%s)' % self.show
-
-
-class _HotlistFlipper(_Flipper):
-  """Helper class for user to flip among issues within a hotlist."""
-
-  def __init__(self, mr, services, current_issue, hotlist):
-    """Store info for a hotlist's issue flipper widget (prev & next nav.)
-
-    Args:
-      mr: commonly used info parsed from the request.
-      services: connections to backend services.
-      current_issue: the currently viewed issue.
-      hotlist: the hotlist this flipper is flipping through.
-    """
-    super(_HotlistFlipper, self).__init__(services)
-    self.hotlist = hotlist
-    self.is_hotlist_flipper = True
-
-    issues_list = self.services.issue.GetIssues(
-        mr.cnxn,
-        [item.issue_id for item in self.hotlist.items])
-    project_ids = hotlist_helpers.GetAllProjectsOfIssues(
-        [issue for issue in issues_list])
-    config_list = hotlist_helpers.GetAllConfigsOfProjects(
-        mr.cnxn, project_ids, services)
-    harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
-
-    (sorted_issues, _hotlist_issues_context,
-     _users) = hotlist_helpers.GetSortedHotlistIssues(
-         mr, self.hotlist.items, issues_list, harmonized_config,
-         services)
-
-    (prev_iid, cur_index,
-     next_iid) = features_bizobj.DetermineHotlistIssuePosition(
-         current_issue, [issue.issue_id for issue in sorted_issues])
-
-    logging.info('prev_iid, cur_index, next_iid is %r %r %r',
-                 prev_iid, cur_index, next_iid)
-
-    self.AssignFlipperValues(
-        mr, prev_iid, cur_index, next_iid, len(sorted_issues))
-
-
-class _TrackerFlipper(_Flipper):
-  """Helper class for user to flip among issues within a search result."""
-
-  def __init__(self, mr, services, issue):
-    """Store info for issue flipper widget (prev & next navigation).
-
-    Args:
-      mr: commonly used info parsed from the request.
-      services: connections to backend services.
-    """
-    super(_TrackerFlipper, self).__init__(services)
-    if not _ShouldShowFlipper(mr, services):
-      self.show = ezt.boolean(False)
-      return
-
-    with work_env.WorkEnv(mr, services) as we:
-      (prev_iid, cur_index, next_iid, total_count,
-       ) = we.FindIssuePositionInSearch(issue)
-      logging.info('prev_iid, cur_index, next_iid is %r %r %r',
-                   prev_iid, cur_index, next_iid)
-      self.AssignFlipperValues(
-          mr, prev_iid, cur_index, next_iid, total_count)
 
 
 class IssueCommentDeletion(servlet.Servlet):
@@ -1464,3 +1334,145 @@ def _GetBinnedHotlistViews(visible_hotlist_views, involved_users):
 
   return (user_issue_hotlist_views, involved_users_issue_hotlist_views,
           remaining_issue_hotlist_views)
+
+def _ComputeBackToListURL(mr, issue, config, hotlist, services):
+  """Construct a URL to return the user to the place that they came from."""
+  if hotlist:
+    return hotlist_helpers.GetURLOfHotlist(mr.cnxn, hotlist, services.user)
+  back_to_list_url = None
+  if not tracker_constants.JUMP_RE.match(mr.query):
+    back_to_list_url = tracker_helpers.FormatIssueListURL(
+        mr, config, cursor='%s:%d' % (issue.project_name, issue.local_id))
+
+  return back_to_list_url
+
+
+class FlipperRedirectBase(servlet.Servlet):
+
+  def get(self, project_name=None, viewed_username=None, hotlist_id=None):
+    with work_env.WorkEnv(self.mr, self.services) as we:
+      hotlist_id = self.mr.GetIntParam('hotlist_id')
+      current_issue = we.GetIssueByLocalID(self.mr.project_id, self.mr.local_id,
+                                   use_cache=False)
+      hotlist = None
+      if hotlist_id:
+        try:
+          hotlist = self.services.features.GetHotlist(self.mr.cnxn, hotlist_id)
+        except features_svc.NoSuchHotlistException:
+          pass
+
+      try:
+        adj_issue = GetAdjacentIssue(we, current_issue,
+            hotlist=hotlist, next_issue=self.next_handler)
+        path = '/p/%s%s' % (adj_issue.project_name, urls.ISSUE_DETAIL)
+        url = framework_helpers.FormatURL(self.mr, path, id=adj_issue.local_id)
+      except exceptions.NoSuchIssueException:
+        config = we.GetProjectConfig(self.mr.project_id)
+        url = _ComputeBackToListURL(self.mr, current_issue, config,
+                                                 hotlist, self.services)
+      self.redirect(url)
+
+
+class FlipperNext(FlipperRedirectBase):
+  next_handler = True
+
+
+class FlipperPrev(FlipperRedirectBase):
+  next_handler = False
+
+
+class FlipperIndex(jsonfeed.JsonFeed):
+  """Return a JSON object of an issue's index in search.
+
+  This is a distinct JSON endpoint because it can be expensive to compute.
+  """
+  CHECK_SECURITY_TOKEN = False
+
+  def HandleRequest(self, mr):
+    hotlist_id = mr.GetIntParam('hotlist_id')
+    with work_env.WorkEnv(mr, self.services) as we:
+      if not _ShouldShowFlipper(mr, self.services):
+        return {}
+      issue = we.GetIssueByLocalID(mr.project_id, mr.local_id, use_cache=False)
+      if hotlist_id:
+        hotlist = self.services.features.GetHotlist(mr.cnxn, hotlist_id)
+
+        if not features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id):
+          raise exceptions.InvalidHotlistException()
+
+        if not permissions.CanViewHotlist(mr.auth.effective_ids, hotlist):
+          raise permissions.PermissionException()
+
+        (prev_iid, cur_index, next_iid, total_count
+            ) = we.GetIssuePositionInHotlist(issue, hotlist)
+      else:
+        (prev_iid, cur_index, next_iid, total_count
+            ) = we.FindIssuePositionInSearch(issue)
+
+    prev_url = None
+    next_url = None
+
+    if prev_iid:
+      prev_issue = we.services.issue.GetIssue(mr.cnxn, prev_iid)
+      path = '/p/%s%s' % (prev_issue.project_name, urls.ISSUE_DETAIL)
+      prev_url = framework_helpers.FormatURL(mr, path, id=prev_issue.local_id)
+
+    if next_iid:
+      next_issue = we.services.issue.GetIssue(mr.cnxn, next_iid)
+      path = '/p/%s%s' % (next_issue.project_name, urls.ISSUE_DETAIL)
+      next_url = framework_helpers.FormatURL(mr, path, id=next_issue.local_id)
+
+    return {
+      'prev_iid': prev_iid,
+      'prev_url': prev_url,
+      'cur_index': cur_index,
+      'next_iid': next_iid,
+      'next_url': next_url,
+      'total_count': total_count,
+    }
+
+
+def _ShouldShowFlipper(mr, services):
+  """Return True if we should show the flipper."""
+
+  # Check if the user entered a specific issue ID of an existing issue.
+  if tracker_constants.JUMP_RE.match(mr.query):
+    return False
+
+  # Check if the user came directly to an issue without specifying any
+  # query or sort.  E.g., through crbug.com.  Generating the issue ref
+  # list can be too expensive in projects that have a large number of
+  # issues.  The all and open issues cans are broad queries, other
+  # canned queries should be narrow enough to not need this special
+  # treatment.
+  if (not mr.query and not mr.sort_spec and
+      mr.can in [tracker_constants.ALL_ISSUES_CAN,
+                 tracker_constants.OPEN_ISSUES_CAN]):
+    num_issues_in_project = services.issue.GetHighestLocalID(
+        mr.cnxn, mr.project_id)
+    if num_issues_in_project > settings.threshold_to_suppress_prev_next:
+      return False
+
+  return True
+
+
+def GetAdjacentIssue(work_env, issue, hotlist=None, next_issue=False):
+  """Compute next or previous issue given params of current issue.
+
+  Args:
+    work_env: A WorkEnv instance.
+    issue: The current issue (from which to compute prev/next).
+    hotlist (optional): The current hotlist.
+    next_issue (bool): If True, return next, issue, else return previous issue.
+
+  Returns:
+    The adjacent issue.
+  """
+  if hotlist:
+    (prev_iid, cur_index, next_iid, total_count
+        ) = work_env.GetIssuePositionInHotlist(issue, hotlist)
+  else:
+    (prev_iid, cur_index, next_iid, total_count
+        ) = work_env.FindIssuePositionInSearch(issue)
+  iid = next_iid if next_issue else prev_iid
+  return work_env.services.issue.GetIssue(work_env.mr.cnxn, iid)

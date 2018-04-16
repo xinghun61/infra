@@ -82,12 +82,7 @@
     <h1 class="not_styled_as_heading"><span class="h3" style="padding-left:4px">[issue.summary]</span></h1>
   </td>
   <td class="issueheader">
-    [if-any flipper.show]
-     <div class="pagination">
-     [if-any flipper.prev_url]<a href="[flipper.prev_url]" title="Prev">&lsaquo; Prev</a>[else][end]
-      [flipper.current] of [flipper.total_count]
-     [if-any flipper.next_url]<a href="[flipper.next_url]" title="Next">Next &rsaquo;</a>[else][end]
-    </div>[end]
+    <mr-flipper />
   </td>
  </tr>
  <tr>
@@ -156,7 +151,7 @@
  <input type="hidden" name="mode" value="">
  <input type="hidden" name="id" value="[issue.local_id]">
  <input type="hidden" name="token" value="[delComment_form_token]">
-<input type="hidden" name="hotlist_id" value="[if-any flipper.is_hotlist_flipper][flipper_hotlist_id][end]">
+ <input type="hidden" name="hotlist_id" value="[flipper_hotlist_id]">
 </form>
 
 [# Form used to flag/unflag comments as spam.]
@@ -323,15 +318,23 @@ runOnLoad(function() {
 <script type="text/javascript" defer src="/static/third_party/js/kibbles-1.3.3.comp.js" nonce="[nonce]"></script>
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
+  // TODO(jeffcarp): Update prev/next URLs once flipper index has loaded.
   _setupKibblesOnDetailPage(
    [if-any back_to_list_url]'[format "js"][back_to_list_url][end]'[else]'[project_home_url]/issues/list'[end],
    '[project_home_url]/issues/entry',
-   '[if-any flipper.show][if-any flipper.prev_url][format "js"][flipper.prev_url][end][end][end]',
-   '[if-any flipper.show][if-any flipper.next_url][format "js"][flipper.next_url][end][end][end]',
+   `[project_home_url]/issues/detail/previous${location.search}`,
+   `[project_home_url]/issues/detail/next${location.search}`,
    '[projectname]', [issue.local_id],
    [user_can_comment], [user_can_star], '[set_star_token]');
 });
 </script>
+
+[if-any dev_mode]
+  <link rel="import" href="/elements/mr-flipper/mr-flipper.html?version=[app_version]" nonce="[nonce]">
+[else]
+  <link rel="import" href="/elements/mr-flipper/mr-flipper.vulcanized.html?version=[app_version]" nonce="[nonce]">
+  <script src="/elements/mr-flipper/mr-flipper.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
+[end]
 
 
 [include "../framework/master-footer.ezt"]

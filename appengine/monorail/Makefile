@@ -81,6 +81,10 @@ vulcanize: clean_vulcanized
 	| $(CRISPER_PATH) \
 		--html elements/bar-chart.vulcanized.html \
 		--js elements/bar-chart.vulcanized.js --only-split
+	$(VULCANIZE_PATH) elements/mr-flipper/mr-flipper.html --inline-script \
+	| $(CRISPER_PATH) \
+		--html elements/mr-flipper/mr-flipper.vulcanized.html \
+		--js elements/mr-flipper/mr-flipper.vulcanized.js --only-split
 
 clean_vulcanized:
 	find . -name "*.vulcanized.*" -delete

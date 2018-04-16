@@ -42,6 +42,8 @@ Responsibilities of the Services layer:
 import logging
 
 from features import send_notifications
+from features import features_bizobj
+from features import hotlist_helpers
 from framework import exceptions
 from framework import permissions
 from search import frontendsearchpipeline
@@ -465,6 +467,30 @@ class WorkEnv(object):
       self.services.issue.SoftDeleteIssue(
           self.mr.cnxn, issue.project_id, issue.local_id, delete,
           self.services.user)
+
+  def GetIssuePositionInHotlist(self, current_issue, hotlist):
+    """Get index info of an issue within a hotlist.
+
+    Args:
+      current_issue: the currently viewed issue.
+      hotlist: the hotlist this flipper is flipping through.
+    """
+    issues_list = self.services.issue.GetIssues(self.mr.cnxn,
+        [item.issue_id for item in hotlist.items])
+    project_ids = hotlist_helpers.GetAllProjectsOfIssues(
+        [issue for issue in issues_list])
+    config_list = hotlist_helpers.GetAllConfigsOfProjects(
+        self.mr.cnxn, project_ids, self.services)
+    harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
+    (sorted_issues, _hotlist_issues_context,
+     _users) = hotlist_helpers.GetSortedHotlistIssues(
+         self.mr, hotlist.items, issues_list, harmonized_config,
+         self.services)
+    (prev_iid, cur_index,
+     next_iid) = features_bizobj.DetermineHotlistIssuePosition(
+         current_issue, [issue.issue_id for issue in sorted_issues])
+    total_count = len(sorted_issues)
+    return prev_iid, cur_index, next_iid, total_count
 
   # FUTURE: GetIssuePermissionsForUser()
 

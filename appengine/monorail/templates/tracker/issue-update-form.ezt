@@ -228,9 +228,7 @@
         <option value="1" [is after_issue_update "1"]selected=selected[end]>Stay on this issue</option>
         <option value="2" [is after_issue_update "2"]selected=selected[end]>Go to next issue</option>
        </select>
-       <input type="hidden" name="next_id" value="[if-any flipper.show][flipper.next_id][else][end]">
-       <input type="hidden" name="next_project" value="[if-any flipper.show][flipper.next_project][else][end]">
-       <input type="hidden" name="hotlist_id" value="[if-any flipper.is_hotlist_flipper][flipper_hotlist_id][else][end]">
+       <input type="hidden" name="hotlist_id" value="[flipper_hotlist_id]">
       [end]
 
       [if-any page_perms.EditIssue]
