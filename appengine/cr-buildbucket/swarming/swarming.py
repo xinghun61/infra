@@ -42,6 +42,7 @@ from components import net
 from components import utils
 from components.config import validation
 from google.appengine.api import app_identity
+from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.protobuf import json_format
@@ -1102,9 +1103,18 @@ class SubNotify(webapp2.RequestHandler):
     return hostname, created_time, task_id, build_id
 
   def post(self):
-    msg = (self.request.json or {}).get('message', {})
+    msg = self.request.json['message']
     logging.info('Received message: %r', msg)
 
+    # Try not to process same message more than once.
+    nc = 'swarming-pubsub-msg-id'
+    if memcache.get(msg['messageId'], namespace=nc):
+      logging.info('seen this message before, ignoring')
+    else:
+      self._process_msg(msg)
+    memcache.set(msg['messageId'], 1, namespace=nc, time=10*60)
+
+  def _process_msg(self, msg):
     hostname, created_time, task_id, build_id = self.unpack_msg(msg)
     task_url = 'https://%s/task?id=%s' % (hostname, task_id)
 

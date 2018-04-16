@@ -1464,6 +1464,7 @@ class SubNotifyTest(BaseTest):
   def test_unpack_msg(self):
     self.assertEqual(
       self.handler.unpack_msg({
+        'messageId': '1',
         'data': b64json({
           'task_id': 'deadbeef',
           'userdata': json.dumps({
@@ -1545,6 +1546,7 @@ class SubNotifyTest(BaseTest):
 
     self.handler.request = mock.Mock(json={
       'message': {
+        'messageId': '1',
         'data': b64json({
           'task_id': 'deadbeef',
           'userdata': json.dumps({
@@ -1579,6 +1581,7 @@ class SubNotifyTest(BaseTest):
 
     self.handler.request = mock.Mock(json={
       'message': {
+        'messageId': '1',
         'data': b64json({
           'task_id': 'deadbeef',
           'userdata': json.dumps({
@@ -1606,6 +1609,7 @@ class SubNotifyTest(BaseTest):
 
     self.handler.request = mock.Mock(json={
       'message': {
+        'messageId': '1',
         'data': b64json({
           'task_id': 'deadbeefffffffffff',
           'userdata': json.dumps({
@@ -1623,6 +1627,7 @@ class SubNotifyTest(BaseTest):
   def test_post_without_task_id(self):
     self.handler.request = mock.Mock(json={
       'message': {
+        'messageId': '1',
         'data': b64json({
           'userdata': json.dumps({
             'build_id': 1L,
@@ -1638,6 +1643,7 @@ class SubNotifyTest(BaseTest):
   def test_post_without_build_id(self):
     self.handler.request = mock.Mock(json={
       'message': {
+        'messageId': '1',
         'data': b64json({
           'task_id': 'deadbeef',
           'userdata': json.dumps({
@@ -1662,6 +1668,7 @@ class SubNotifyTest(BaseTest):
     }
     self.handler.request = mock.Mock(json={
       'message': {
+        'messageId': '1',
         'data': b64json(msg_data)
       }
     })
@@ -1682,6 +1689,20 @@ class SubNotifyTest(BaseTest):
     with self.assertRaises(err):
       yield
     self.assertTrue(self.handler.bad_message)
+
+  @mock.patch('swarming.swarming.SubNotify._process_msg', autospec=True)
+  def test_dedup_messages(self, _process_msg):
+    self.handler.request = mock.Mock(json={
+      'message': {
+        'messageId': '1',
+        'data': b64json({}),
+      }
+    })
+
+    self.handler.post()
+    self.handler.post()
+
+    self.assertEquals(_process_msg.call_count, 1)
 
 
 class CronUpdateTest(BaseTest):
