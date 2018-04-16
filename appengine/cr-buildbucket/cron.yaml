@@ -34,7 +34,7 @@ cron:
 - description: update builds associated with swarming tasks
   target: backend
   url: /internal/cron/swarming/update_builds
-  schedule: every 10 minutes
+  schedule: every 1 minutes
 
 
 ### bq export
