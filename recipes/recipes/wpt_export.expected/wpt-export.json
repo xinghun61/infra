@@ -176,7 +176,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-export",
+      "[START_DIR]/src/third_party/blink/tools/wpt_export.py",
       "--credentials-json",
       "/creds/json/wpt-export.json"
     ],

@@ -35,7 +35,7 @@ def RunSteps(api):
           name='set git config user.name')
   api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
           name='set git config user.email')
-  blink_dir = api.path['checkout'].join('third_party', 'WebKit')
+  blink_dir = api.path['checkout'].join('third_party', 'blink')
 
   @contextlib.contextmanager
   def new_branch(name):
@@ -51,7 +51,7 @@ def RunSteps(api):
       delete_branch(name)
 
   with new_branch('update_wpt'):
-    script = blink_dir.join('Tools', 'Scripts', 'wpt-import')
+    script = blink_dir.join('tools', 'wpt_import.py')
     args = [
       '--auto-update',
       '--auto-file-bugs',

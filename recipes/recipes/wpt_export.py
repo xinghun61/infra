@@ -36,8 +36,8 @@ def RunSteps(api):
           'blink-w3c-test-autoroller@chromium.org',
           name='set git config user.email')
 
-  script = api.path['checkout'].join('third_party', 'WebKit', 'Tools',
-                                     'Scripts', 'wpt-export')
+  script = api.path['checkout'].join('third_party', 'blink', 'tools',
+                                     'wpt_export.py')
   args = [
     '--credentials-json',
     '/creds/json/wpt-export.json',

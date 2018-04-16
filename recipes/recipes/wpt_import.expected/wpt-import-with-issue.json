@@ -208,7 +208,7 @@
     "cmd": [
       "vpython",
       "-u",
-      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-import",
+      "[START_DIR]/src/third_party/blink/tools/wpt_import.py",
       "--auto-update",
       "--auto-file-bugs",
       "--auth-refresh-token-json",
@@ -218,7 +218,7 @@
       "--monorail-auth-json",
       "/creds/service_accounts/service-account-wpt-monorail-api.json"
     ],
-    "cwd": "[START_DIR]/src/third_party/WebKit",
+    "cwd": "[START_DIR]/src/third_party/blink",
     "name": "Import changes from WPT to Chromium"
   },
   {
