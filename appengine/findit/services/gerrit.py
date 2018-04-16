@@ -149,8 +149,8 @@ def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
     message = textwrap.dedent("""
         Sheriffs, CL owner or CL reviewers:
         Please confirm this revert if it is correct.
-        If it is a false positive, please revert and report it
-        at %s.
+        If it is a false positive, please reland the original CL and report this
+        false positive at %s.
 
         For more information about Findit auto-revert: %s.
 
