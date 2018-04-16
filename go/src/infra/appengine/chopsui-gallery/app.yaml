@@ -21,6 +21,10 @@ handlers:
   static_dir: bower_components
   secure: always
 
+- url: /docs
+  static_dir: docs
+  secure: always
+
 - url: /.*
   script: _go_app
   secure: always
