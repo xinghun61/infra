@@ -1,0 +1,29 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/mr-approval-page/mr-approval-page.html">
+<test-fixture id="basic">
+  <template>
+    <mr-approval-page></mr-approval-page>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('renders basic', function(done) {
+     flush(() => {
+       assert.isDefined(element, 'element is undefined');
+       done();
+      });
+    });
+  });
+})();
+</script>

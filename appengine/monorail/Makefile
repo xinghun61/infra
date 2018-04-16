@@ -89,6 +89,13 @@ vulcanize: clean_vulcanized
 clean_vulcanized:
 	find . -name "*.vulcanized.*" -delete
 
+wct: deps
+	xvfb-run go run ../../go/src/infra/tools/wct/wct.go -base=. -prefix=elements/test/ -chrome=google-chrome
+
+wct_debug: deps
+	go run ../../go/src/infra/tools/wct/wct.go -base=. -prefix=elements/test/ -chrome=google-chrome -persist -timeout 1000000
+
+
 # AppEngine apps can be tested locally and in non-default versions upload to
 # the main app-id, but it is still sometimes useful to have a completely
 # separate app-id.  E.g., for testing inbound email, load testing, or using
