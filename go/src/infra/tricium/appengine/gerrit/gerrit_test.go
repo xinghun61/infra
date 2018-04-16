@@ -15,20 +15,6 @@ import (
 	trit "infra/tricium/appengine/common/testing"
 )
 
-func TestPatchSetNumber(t *testing.T) {
-	Convey("patchSetNumber extracts patch set number", t, func() {
-		So(patchSetNumber("refs/changes/45/12345/7"), ShouldEqual, "7")
-		So(patchSetNumber("refs/changes/45/12345/12"), ShouldEqual, "12")
-	})
-	Convey("patchSetNumber given invalid input returns empty string", t, func() {
-		So(patchSetNumber("foorefs/changes/45/12345/7bar"), ShouldEqual, "")
-		So(patchSetNumber("refs/changes/45/12345"), ShouldEqual, "")
-		So(patchSetNumber("refs/changes/45/12345"), ShouldEqual, "")
-		So(patchSetNumber("refs/changes/45/12345/"), ShouldEqual, "")
-		So(patchSetNumber(""), ShouldEqual, "")
-	})
-}
-
 func TestComposeChangesQueryURL(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		host := "chromium-review.googlesource.com"

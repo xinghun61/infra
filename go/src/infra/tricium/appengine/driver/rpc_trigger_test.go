@@ -73,12 +73,12 @@ func TestHelperFunctions(t *testing.T) {
 			ID:             1,
 			Project:        "my-luci-config-project-id",
 			GitRepo:        "http://my-gerrit.com/my-project",
-			GitRef:         "refs/changes/97/97/1",
+			GitRef:         "refs/changes/97/597/2",
 			Paths:          []string{"README.md"},
 			Consumer:       tricium.Consumer_GERRIT,
 			GerritProject:  "my-project",
 			GerritChange:   "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
-			GerritRevision: "refs/changes/97/97/1",
+			GerritRevision: "refs/changes/97/597/2",
 		}), ShouldBeNil)
 
 		So(ds.Put(ctx, &track.AnalyzeRequest{
@@ -96,7 +96,8 @@ func TestHelperFunctions(t *testing.T) {
 				"platform:UBUNTU",
 				"gerrit_project:my-project",
 				"gerrit_change:my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
-				"gerrit_revision:refs/changes/97/97/1",
+				"gerrit_cl_number:597",
+				"gerrit_patch_set:2",
 			})
 
 		})

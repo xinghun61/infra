@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -23,6 +22,7 @@ import (
 	"golang.org/x/net/context"
 
 	"infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -201,7 +201,7 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 		return fmt.Errorf("failed to marshal ReviewInput: %v", err)
 	}
 	logging.Debugf(c, "[gerrit] JSON body: %s", data)
-	url := fmt.Sprintf("https://%s/a/changes/%s/revisions/%s/review", host, change, patchSetNumber(revision))
+	url := fmt.Sprintf("https://%s/a/changes/%s/revisions/%s/review", host, change, common.PatchSetNumber(revision))
 	logging.Infof(c, "Using Gerrit Set Review URL: %s", url)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
@@ -226,18 +226,6 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 		return fmt.Errorf("failed to connect to Gerrit, code: %d, %v", resp.StatusCode, err)
 	}
 	return nil
-}
-
-// patchSetNumber extracts the patch set number from a Gerrit revision ref.
-//
-// In the case of invalid input, this returns an empty string.
-func patchSetNumber(revision string) string {
-	re := regexp.MustCompile("^refs/changes/[0-9]+/[0-9]+/([0-9]+)$")
-	matches := re.FindStringSubmatch(revision)
-	if matches == nil {
-		return ""
-	}
-	return matches[1]
 }
 
 // mockRestAPI mocks the GerritAPI interface for testing.

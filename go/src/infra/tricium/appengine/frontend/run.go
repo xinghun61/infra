@@ -6,10 +6,8 @@ package frontend
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -96,7 +94,7 @@ func fetchRunInfo(c context.Context, request *track.AnalyzeRequest) (*runInfo, e
 		Received:  request.Received,
 		GitRepo:   request.GitRepo,
 		GitRef:    request.GitRef,
-		GerritURL: gerritURL(request.GerritHost, request.GerritRevision),
+		GerritURL: common.GerritURL(request.GerritHost, request.GerritRevision),
 		Paths:     request.Paths,
 		Functions: functionMap,
 	}, nil
@@ -151,10 +149,4 @@ func fetchWorkerInfoMap(c context.Context, runID int64) (map[string]*workerInfo,
 		}
 	}
 	return workerMap, nil
-}
-
-func gerritURL(host, revision string) string {
-	revision = strings.TrimPrefix(revision, "refs/changes/")
-	revision = strings.TrimLeft(revision, "0123456789")
-	return fmt.Sprintf("%s/c%s", host, revision)
 }
