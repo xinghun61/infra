@@ -12,7 +12,14 @@ _CHROMIUM_REPO = 'https://chromium.googlesource.com/chromium/src/'
 _HYPER_BLAME_IGNORE_REVISIONS_PATH = '.git-blame-ignore-revs'
 
 _ROBOT_AUTHOR_REGEXS = [re.compile(r'.*-deps-roller@chromium.org'),
-                        re.compile(r'blink-reformat@chromium.org')]
+                        re.compile(r'blink-reformat@chromium.org'),
+                        re.compile(r'v8-autoroll@chromium.org'),
+                        re.compile(r'blink-w3c-test-autoroller@chromium.org'),
+                        re.compile(r'chromeos-commit-bot@chromium.org'),
+                        re.compile(r'ios-autoroll@chromium.org'),
+                        re.compile(r'chrome-release-bot@chromium.org'),
+                        re.compile(r'.*-chromium-autoroll@skia-buildbots.google'
+                                   r'.com.iam.gserviceaccount.com')]
 
 
 class SuspectFilter(object):
