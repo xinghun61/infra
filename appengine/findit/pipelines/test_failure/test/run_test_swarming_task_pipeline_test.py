@@ -60,6 +60,16 @@ class RunTestSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     with self.assertRaises(pipeline.Retry):
       p.RunImpl(self.pipeline_input)
 
+  @mock.patch.object(test_swarming, 'OnSwarmingTaskStateChanged')
+  @mock.patch.object(RunTestSwarmingTaskPipeline, 'pipeline_id')
+  def testCallbackImplNoTaskID(self, mocked_pipeline_id, mock_fn):
+    mocked_pipeline_id.__get__ = mock.Mock(return_value='pipeline-id')
+    p = RunTestSwarmingTaskPipeline(self.pipeline_input)
+    result = p.CallbackImpl(self.pipeline_input, {})
+    self.assertEqual(('Task_id not found for pipeline pipeline-id', None),
+                     result)
+    self.assertFalse(mock_fn.called)
+
   @mock.patch.object(
       test_swarming, 'OnSwarmingTaskStateChanged', return_value=True)
   def testCallbackImplCompleted(self, _):

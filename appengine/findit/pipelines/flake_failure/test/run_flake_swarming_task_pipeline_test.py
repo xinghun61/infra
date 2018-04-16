@@ -108,6 +108,17 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
                                          'pipeline-id')
 
   @mock.patch.object(flake_swarming, 'OnSwarmingTaskStateChanged')
+  @mock.patch.object(RunFlakeSwarmingTaskPipeline, 'pipeline_id')
+  def testCallbackImplNoTaskID(self, mocked_pipeline_id, mock_fn):
+    mocked_pipeline_id.__get__ = mock.Mock(return_value='pipeline-id')
+    pipeline_input = RunFlakeSwarmingTaskInput.FromSerializable({})
+    p = RunFlakeSwarmingTaskPipeline(pipeline_input)
+    result = p.CallbackImpl(pipeline_input, {})
+    self.assertEqual(('Task_id not found for pipeline pipeline-id', None),
+                     result)
+    self.assertFalse(mock_fn.called)
+
+  @mock.patch.object(flake_swarming, 'OnSwarmingTaskStateChanged')
   def testCallbackImplCompleted(self, mocked_output):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()

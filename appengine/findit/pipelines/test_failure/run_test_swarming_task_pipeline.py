@@ -49,6 +49,10 @@ class RunTestSwarmingTaskPipeline(AsynchronousPipeline):
 
   def CallbackImpl(self, run_swarming_task_params, parameters):
     """Updates the WfSwarmingTask entity with status from swarming."""
+    if not parameters.get('task_id'):
+      # Task_id is not saved in callback parameters yet, retries the callback.
+      return 'Task_id not found for pipeline %s' % self.pipeline_id, None
+
     task_id = parameters['task_id']
     try:
       pipeline_completed = test_swarming.OnSwarmingTaskStateChanged(

@@ -62,6 +62,10 @@ class RunFlakeSwarmingTaskPipeline(AsynchronousPipeline):
 
   def CallbackImpl(self, _, callback_parameters):
     """Returns the results of the swarming task."""
+    if not callback_parameters.get('task_id'):
+      # Task_id is not saved in callback parameters yet, retries the callback.
+      return 'Task_id not found for pipeline %s' % self.pipeline_id, None
+
     task_id = callback_parameters['task_id']
     try:
       results = flake_swarming.OnSwarmingTaskStateChanged(task_id)

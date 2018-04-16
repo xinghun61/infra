@@ -49,6 +49,11 @@ class RunCompileTryJobPipeline(AsynchronousPipeline):
 
   def CallbackImpl(self, _run_try_job_params, parameters):
     """Updates the TryJobData entity with status from Buildbucket."""
+    if not parameters.get('try_job_id'):
+      # Try_job_id is not saved in callback parameters yet,
+      # retries the callback.
+      return 'Try_job_id not found for pipeline %s' % self.pipeline_id, None
+
     try_job_id = parameters['try_job_id']
     build_json = json.loads(parameters['build_json'])
     try:

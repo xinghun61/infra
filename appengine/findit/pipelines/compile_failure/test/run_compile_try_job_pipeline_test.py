@@ -114,6 +114,19 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_input, 'pipeline-id')
     self.assertFalse(mocked_SaveCallbackParameters.called)
 
+  @mock.patch.object(compile_try_job, 'OnTryJobStateChanged')
+  @mock.patch.object(RunCompileTryJobPipeline, 'pipeline_id')
+  def testCallbackImplNoTryJobID(
+        self, mocked_pipeline_id, mocked_OnTryJobStateChanged):
+    mocked_pipeline_id.__get__ = mock.Mock(return_value='pipeline-id')
+    pipeline_input = self._CreateRunCompileTryJobParameters()
+    p = RunCompileTryJobPipeline(pipeline_input)
+    returned_value = p.CallbackImpl(
+        pipeline_input, {'build_json': '{"k":"v"}'})
+    self.assertEqual(('Try_job_id not found for pipeline pipeline-id', None),
+                     returned_value)
+    self.assertFalse(mocked_OnTryJobStateChanged.called)
+
   @mock.patch.object(
       compile_try_job, 'OnTryJobStateChanged', return_value='dummy')
   def testCallbackImplCompletedRun(self, mocked_OnTryJobStateChanged):
@@ -148,3 +161,8 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(('Error on updating try-job result: m', None),
                      returned_value)
     mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'})
+
+  def testTimeoutSeconds(self):
+    pipeline_input = self._CreateRunCompileTryJobParameters()
+    p = RunCompileTryJobPipeline(pipeline_input)
+    self.assertEqual(36000, p.TimeoutSeconds())
