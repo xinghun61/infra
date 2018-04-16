@@ -19,6 +19,7 @@ import time
 import settings
 from framework import exceptions
 from framework import framework_bizobj
+from framework import framework_constants
 from framework import permissions
 from framework import sql
 from services import caches
@@ -44,6 +45,8 @@ USER2PROJECT_COLS = ['project_id', 'user_id', 'role_name']
 EXTRAPERM_COLS = ['project_id', 'user_id', 'perm']
 MEMBERNOTES_COLS = ['project_id', 'user_id', 'notes']
 AUTOCOMPLETEEXCLUSION_COLS = ['project_id', 'user_id']
+
+RECENT_ACTIVITY_THRESHOLD = framework_constants.SECS_PER_HOUR
 
 
 class ProjectTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -475,7 +478,9 @@ class ProjectService(object):
   def UpdateRecentActivity(self, cnxn, project_id, now=None):
     """Set the project's recent_activity to the current time."""
     now = now or int(time.time())
-    self.UpdateProject(cnxn, project_id, recent_activity=now)
+    project = self.GetProject(cnxn, project_id)
+    if now > project.recent_activity + RECENT_ACTIVITY_THRESHOLD:
+      self.UpdateProject(cnxn, project_id, recent_activity=now)
 
   ### Roles and extra perms
 

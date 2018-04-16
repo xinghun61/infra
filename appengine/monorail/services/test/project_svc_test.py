@@ -12,6 +12,7 @@ import mox
 
 from google.appengine.ext import testbed
 
+from framework import framework_constants
 from framework import sql
 from proto import project_pb2
 from proto import user_pb2
@@ -405,11 +406,22 @@ class ProjectServiceTest(unittest.TestCase):
         self.cnxn, 123, self.config_service)
     self.mox.VerifyAll()
 
-  def testUpdateRecentActivity(self):
-    delta = {'recent_activity_timestamp': NOW}
+  def testUpdateRecentActivity_SignificantlyLaterActivity(self):
+    activity_time = NOW + framework_constants.SECS_PER_HOUR * 3
+    delta = {'recent_activity_timestamp': activity_time}
+    self.SetUpGetProjects()
     self.SetUpUpdateProject(234, delta)
     self.mox.ReplayAll()
-    self.project_service.UpdateRecentActivity(self.cnxn, 234, now=NOW)
+    self.project_service.UpdateRecentActivity(self.cnxn, 234, now=activity_time)
+    self.mox.VerifyAll()
+
+  def testUpdateRecentActivity_NotSignificant(self):
+    activity_time = NOW + 123
+    delta = {'recent_activity_timestamp': activity_time}
+    self.SetUpGetProjects()
+    # ProjectUpdate is not called.
+    self.mox.ReplayAll()
+    self.project_service.UpdateRecentActivity(self.cnxn, 234, now=activity_time)
     self.mox.VerifyAll()
 
   def SetUpGetUserRolesInAllProjects(self):
