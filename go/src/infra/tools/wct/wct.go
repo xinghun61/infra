@@ -30,6 +30,7 @@ var (
 	userDir    = flag.String("dir", "/tmp/", "user directory")
 	debugPort  = flag.String("debug-port", "9222", "chrome debugger port")
 	baseDir    = flag.String("base", "", "location of elements to test")
+	pathPrefix = flag.String("prefix", "test/", "path prefix for test runner URL")
 	persist    = flag.Bool("persist", false, "keep server running")
 	timeoutSec = flag.Int("timeout", 60, "timeout seconds")
 )
@@ -131,7 +132,7 @@ func main() {
 	}()
 
 	addr := <-addrCh
-	testURL := fmt.Sprintf("http://%s/test/?wct=go", addr)
+	testURL := fmt.Sprintf("http://%s/%s?wct=go", addr, *pathPrefix)
 
 	ctxt, cancel := context.WithCancel(context.Background())
 	defer cancel()
