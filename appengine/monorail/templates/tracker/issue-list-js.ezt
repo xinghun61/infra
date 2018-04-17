@@ -70,6 +70,25 @@ runOnLoad(function() {
   if (resultsTableHead) {
     resultsTableHead.addEventListener("click", _handleHeaderClick);
   }
+
+  if (typeof(ClientLogger) == "function") {
+    let cl = new ClientLogger("issues");
+    if (cl.started("issue-search")) {
+      cl.logPause("issue-search", "computer-time");
+      cl.logResume("issue-search", "user-time");
+
+      // Now we want to listen for clicks on any issue search result.
+      let logResultClick = function() {
+        cl.logPause("issue-search", "user-time");
+        cl.logResume("issue-search", "computer-time");
+      }
+
+      let links = document.querySelectorAll("#resultstable tbody .id a");
+      for (let i = 0; i < links.length; i++) {
+        links[[]i].addEventListener("click", logResultClick);
+      }
+    }
+  }
 });
 </script>
 

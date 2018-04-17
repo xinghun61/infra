@@ -82,6 +82,52 @@ class ClientLogger {
     this.logEvent(`${eventName}-start`, eventLabel);
   }
 
+  // Pause the stopwatch for this event.
+  logPause(eventName, eventLabel) {
+    if (!eventLabel) {
+      throw `logPause called for event with no label: ${eventName}`;
+    }
+
+    const startEvent = this.startedEvents[eventName];
+
+    if (!startEvent) {
+      throw `logPause called for event with no logStart: ${eventName}`;
+    }
+
+    let elapsed = new Date().getTime() - startEvent.time;
+    if (!startEvent.elapsed) {
+      startEvent.elapsed = {
+        eventLabel: 0
+      };
+    }
+
+    // Save accumulated time.
+    startEvent.elapsed[eventLabel] += elapsed;
+
+    // Reset the start time.
+    startEvent.labels[eventLabel] = new Date().getTime();
+    sessionStorage[`ClientLogger.${this.category}.started`] =
+        JSON.stringify(this.startedEvents);
+  }
+
+  // Resume the stopwatch for this event.
+  logResume(eventName, eventLabel) {
+    if (!eventLabel) {
+      throw `logResume called for event with no label: ${eventName}`;
+    }
+
+    const startEvent = this.startedEvents[eventName];
+
+    if (!startEvent) {
+      throw `logResume called for event with no logStart: ${eventName}`;
+    }
+
+    startEvent.time = new Date().getTime();
+
+    sessionStorage[`ClientLogger.${this.category}.started`] =
+        JSON.stringify(this.startedEvents);
+  }
+
   logEnd(eventName, eventLabel) {
     const startEvent = this.startedEvents[eventName];
 
@@ -90,6 +136,9 @@ class ClientLogger {
     }
 
     let elapsed = new Date().getTime() - startEvent.time;
+    if (startEvent.elapsed && startEvent.elapsed[eventLabel]) {
+      elapsed += startEvent.elapsed[eventLabel];
+    }
 
     // If they've specified a label, report the elapsed since the start
     // of that label.

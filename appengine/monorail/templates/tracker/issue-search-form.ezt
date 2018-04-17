@@ -93,5 +93,26 @@ runOnLoad(function() {
 
   if ($("can"))
     $("can").addEventListener("change", scopeChange);
+
+  if (typeof(ClientLogger) == "function") {
+    let searchq = document.querySelector("#searchq");
+    searchq.addEventListener("focus", function() {
+      let cl = new ClientLogger("issues");
+      cl.logStart("query-edit", "user-time");
+      cl.logStart("issue-search", "user-time");
+    });
+
+    searchq.addEventListener("blur", function() {
+      let cl = new ClientLogger("issues");
+      cl.logEnd("query-edit");
+    });
+
+    searchq.form.addEventListener("submit", function() {
+      let cl = new ClientLogger("issues");
+      cl.logEnd("query-edit");
+      cl.logPause("issue-search", "user-time");
+      cl.logStart("issue-search", "computer-time");
+    });
+  }
 });
 </script>
