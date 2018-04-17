@@ -152,8 +152,8 @@ def _build_to_v2(bid, build, build_ann):
     return None, False
 
   if build.status != model.BuildStatus.COMPLETED:
-    logging.error('skipping build %d: not complete', bid)
-    return None, False
+    logging.error('skipping build: not complete\n%d', bid)
+    return None, True
 
   try:
     build_v2 = v2.build_to_v2_partial(build)
