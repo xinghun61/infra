@@ -48,7 +48,12 @@ def _GetSuspectedFlakeInfo(analysis):
     return {}
 
   data_point = analysis.GetDataPointOfSuspectedBuild()
-  assert data_point
+
+  if not data_point:  # Workaround for analyses by the new pipeline.
+    return {
+        'confidence': analysis.confidence_in_suspected_build,
+        'build_number': analysis.suspected_flake_build_number,
+    }
 
   return {
       'confidence':
