@@ -195,15 +195,43 @@ func TestSupportsConfig(t *testing.T) {
 
 func TestLookupImplForPlatform(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		platform := Platform_LINUX
-		a := &Function{Impls: []*Impl{{ProvidesForPlatform: platform}}}
+		implForLinux := &Impl{ProvidesForPlatform: Platform_LINUX}
+		implForMac := &Impl{ProvidesForPlatform: Platform_MAC}
+		analyzer := &Function{
+			Impls: []*Impl{
+				implForLinux,
+				implForMac,
+			},
+		}
 		Convey("Impl for known platform is returned", func() {
-			i := LookupImplForPlatform(a, platform)
-			So(i, ShouldNotBeNil)
+			i := LookupImplForPlatform(analyzer, Platform_LINUX)
+			So(i, ShouldEqual, implForLinux)
+		})
+		Convey("Impl for any platform returns first", func() {
+			// In this case, there is no implementation in
+			// the list that is explicitly for any platform;
+			// we return the first implementation.
+			i := LookupImplForPlatform(analyzer, Platform_ANY)
+			So(i, ShouldEqual, implForLinux)
 		})
 		Convey("Impl for unknown platform returns nil", func() {
-			i := LookupImplForPlatform(a, Platform_WINDOWS)
+			i := LookupImplForPlatform(analyzer, Platform_WINDOWS)
 			So(i, ShouldBeNil)
+		})
+
+		implForAny := &Impl{ProvidesForPlatform: Platform_ANY}
+		analyzer = &Function{
+			Impls: []*Impl{
+				implForLinux,
+				implForAny,
+			},
+		}
+		Convey("Impl for 'any' platform is used if present", func() {
+			// In this case, there is an implementation in
+			// the list that is explicitly for any platform;
+			// we return the 'any' implementation.
+			i := LookupImplForPlatform(analyzer, Platform_ANY)
+			So(i, ShouldEqual, implForAny)
 		})
 	})
 }

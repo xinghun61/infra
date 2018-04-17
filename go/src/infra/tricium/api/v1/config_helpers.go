@@ -91,6 +91,9 @@ func LookupImplForPlatform(f *Function, platform Platform_Name) *Impl {
 			return i
 		}
 	}
+	if platform == Platform_ANY && len(f.Impls) != 0 {
+		return f.Impls[0]
+	}
 	return nil
 }
 
