@@ -6,13 +6,17 @@ import mock
 import unittest
 import urllib
 
-from dto.test_location import TestLocation
+from libs.test_results.gtest_test_results import GtestTestResults
+from libs.test_results import test_results_util
 from services import monorail_util
 from services import swarmed_test_util
 from services import swarming
-from services import test_results
+
+_GTEST_RESULTS = GtestTestResults(None)
+
 
 class MonorailHelperTest(unittest.TestCase):
+
   @mock.patch.object(
       monorail_util, 'GetGTestComponent', return_value='component')
   @mock.patch.object(swarming, 'GetIsolatedDataForStep')
@@ -26,9 +30,9 @@ class MonorailHelperTest(unittest.TestCase):
     test_name = 't'
 
     self.assertEqual('component',
-                     monorail_util.GetComponent(
-                         None, master_name, builder_name, build_number,
-                         step_name, test_name))
+                     monorail_util.GetComponent(None, master_name, builder_name,
+                                                build_number, step_name,
+                                                test_name))
     isolate_fn.assert_called_with(master_name, builder_name, build_number,
                                   step_name, None)
     results_fn.assert_called()
@@ -48,9 +52,9 @@ class MonorailHelperTest(unittest.TestCase):
     test_name = 't'
 
     self.assertEqual(None,
-                     monorail_util.GetComponent(
-                         None, master_name, builder_name, build_number,
-                         step_name, test_name))
+                     monorail_util.GetComponent(None, master_name, builder_name,
+                                                build_number, step_name,
+                                                test_name))
     isolate_fn.assert_called_with(master_name, builder_name, build_number,
                                   step_name, None)
     results_fn.assert_not_called()
@@ -64,7 +68,7 @@ class MonorailHelperTest(unittest.TestCase):
       'RetrieveShardedTestResultsFromIsolatedServer',
       return_value=None)
   def testGetComponentGTestNoResults(self, results_fn, isolate_fn,
-                                         get_component_fn):
+                                     get_component_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -72,18 +76,16 @@ class MonorailHelperTest(unittest.TestCase):
     test_name = 't'
 
     self.assertEqual(None,
-                     monorail_util.GetComponent(
-                         None, master_name, builder_name, build_number,
-                         step_name, test_name))
+                     monorail_util.GetComponent(None, master_name, builder_name,
+                                                build_number, step_name,
+                                                test_name))
     isolate_fn.assert_called_with(master_name, builder_name, build_number,
                                   step_name, None)
     results_fn.assert_called()
     get_component_fn.assert_not_called()
 
   @mock.patch.object(
-      monorail_util,
-      'GetNearestComponentForPath',
-      return_value='component')
+      monorail_util, 'GetNearestComponentForPath', return_value='component')
   def testGetComponentLayoutTest(self, get_component_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -92,42 +94,41 @@ class MonorailHelperTest(unittest.TestCase):
     test_name = 't'
 
     self.assertEqual('component',
-                     monorail_util.GetComponent(
-                         None, master_name, builder_name, build_number,
-                         step_name, test_name))
+                     monorail_util.GetComponent(None, master_name, builder_name,
+                                                build_number, step_name,
+                                                test_name))
     get_component_fn.assert_called_with(
         'third_party/WebKit/LayoutTests/' + test_name)
 
-  @mock.patch.object(test_results, 'GetTestLocation')
   @mock.patch.object(
-      monorail_util,
-      'GetNearestComponentForPath',
-      return_value='chromium>foo')
-  def testGetGTestComponent(self, get_component_fn, get_location_fn):
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
+  @mock.patch.object(_GTEST_RESULTS, 'GetTestLocation')
+  @mock.patch.object(
+      monorail_util, 'GetNearestComponentForPath', return_value='chromium>foo')
+  def testGetGTestComponent(self, get_component_fn, get_location_fn, _):
     test_name = 'test'
     results = {'foo': 'bar'}
 
-    get_location_fn.return_value = TestLocation(file='foo/bar.cc', line=1), None
+    get_location_fn.return_value = {'file': 'foo/bar.cc', 'line': 1}, None
     self.assertEqual('chromium>foo',
-                     monorail_util.GetGTestComponent(
-                         test_name, results))
-    get_location_fn.assert_called_with(results, test_name)
+                     monorail_util.GetGTestComponent(test_name, results))
+    get_location_fn.assert_called_with(test_name)
     get_component_fn.assert_called_with('foo/bar.cc')
 
-  @mock.patch.object(test_results, 'GetTestLocation')
+  @mock.patch.object(_GTEST_RESULTS, 'GetTestLocation')
   @mock.patch.object(
-      monorail_util,
-      'GetNearestComponentForPath',
-      return_value='chromium>foo')
-  def testGetGTestComponentNoLocation(self, get_component_fn, get_location_fn):
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
+  @mock.patch.object(
+      monorail_util, 'GetNearestComponentForPath', return_value='chromium>foo')
+  def testGetGTestComponentNoLocation(self, get_component_fn,
+                                      get_result_object_fn, get_location_fn):
     test_name = 'test'
     results = {'foo': 'bar'}
 
     get_location_fn.return_value = None, None
-    self.assertEqual(None,
-                     monorail_util.GetGTestComponent(
-                         test_name, results))
-    get_location_fn.assert_called_with(results, test_name)
+    self.assertEqual(None, monorail_util.GetGTestComponent(test_name, results))
+    get_result_object_fn.assert_called_once_with(results)
+    get_location_fn.assert_called_with(test_name)
     get_component_fn.assert_not_called()
 
   @mock.patch.object(urllib, 'urlopen')
@@ -153,5 +154,4 @@ class MonorailHelperTest(unittest.TestCase):
                                  '}'
                                  '}')
     url_fn.return_value = read_fn
-    self.assertEqual(None,
-                     monorail_util.GetNearestComponentForPath(path))
+    self.assertEqual(None, monorail_util.GetNearestComponentForPath(path))

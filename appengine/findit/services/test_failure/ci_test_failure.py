@@ -9,10 +9,10 @@ import logging
 from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
+from libs.test_results import test_results_util
 from model.wf_step import WfStep
 from services import swarmed_test_util
 from services import swarming
-from services import test_results
 from services.parameters import FailedTest
 from services.parameters import FailedTests
 from services.parameters import IsolatedDataList
@@ -23,8 +23,9 @@ _NON_FAILURE_STATUSES = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
 def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
   """Parses the json data and saves all the reliable failures to the step."""
 
+  test_results = test_results_util.GetTestResultObject(json_data)
   failed_test_log, reliable_failed_tests = (
-      test_results.GetFailedTestsInformation(json_data))
+      test_results.GetFailedTestsInformation()) if test_results else ({}, {})
   if failed_step:
     failed_step.tests = failed_step.tests or FailedTests.FromSerializable({})
 
@@ -60,7 +61,7 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
   result_log = swarmed_test_util.RetrieveShardedTestResultsFromIsolatedServer(
       list_isolated_data, http_client)
 
-  if not test_results.IsTestResultsValid(result_log):
+  if not test_results_util.IsTestResultsValid(result_log):
     return False
 
   step = WfStep.Get(master_name, builder_name, build_number, step_name)
@@ -87,7 +88,7 @@ def _GetSameStepFromBuild(master_name, builder_name, build_number, step_name,
   result_log = swarmed_test_util.RetrieveShardedTestResultsFromIsolatedServer(
       step_isolated_data, http_client)
 
-  if not test_results.IsTestResultsValid(result_log):
+  if not test_results_util.IsTestResultsValid(result_log):
     return None
 
   step = WfStep.Create(master_name, builder_name, build_number, step_name)

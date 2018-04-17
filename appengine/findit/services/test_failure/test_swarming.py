@@ -15,12 +15,12 @@ from dto.swarming_task_error import SwarmingTaskError
 from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from libs import time_util
+from libs.test_results import test_results_util
 from model.wf_swarming_task import WfSwarmingTask
 from services import constants
 from services import monitoring
 from services import swarmed_test_util
 from services import swarming
-from services import test_results
 from services.test_failure import test_failure_analysis
 from waterfall import waterfall_config
 
@@ -164,8 +164,9 @@ def OnSwarmingTaskTimeout(run_swarming_task_params, task_id):
   error = SwarmingTaskError.GenerateError(swarming_task_error.RUNNER_TIMEOUT)
 
   data, output_json, _ = swarmed_test_util.GetSwarmingTaskDataAndResult(task_id)
-  if output_json and test_results.IsTestResultsValid(output_json):
-    tests_statuses = test_results.GetTestsRunStatuses(output_json)
+  if output_json and test_results_util.IsTestResultsValid(output_json):
+    tests_statuses = test_results_util.GetTestResultObject(
+        output_json).GetTestsRunStatuses()
     _UpdateSwarmingTaskEntity(
         master_name,
         builder_name,
@@ -214,7 +215,8 @@ def OnSwarmingTaskError(master_name,
 
 def OnSwarmingTaskCompleted(master_name, builder_name, build_number, step_name,
                             data, output_json):
-  tests_statuses = test_results.GetTestsRunStatuses(output_json)
+  test_results = test_results_util.GetTestResultObject(output_json)
+  tests_statuses = test_results.GetTestsRunStatuses() if test_results else {}
   _UpdateSwarmingTaskEntity(
       master_name,
       builder_name,
@@ -244,7 +246,7 @@ def OnSwarmingTaskStateChanged(run_swarming_task_parameters, task_id):
 
   task_state = data['state']
   if (task_state == constants.STATE_COMPLETED and output_json and
-      test_results.IsTestResultsValid(output_json)):
+      test_results_util.IsTestResultsValid(output_json)):
     return OnSwarmingTaskCompleted(master_name, builder_name, build_number,
                                    step_name, data, output_json)
   elif task_state in constants.STATE_NOT_STOP:

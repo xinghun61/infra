@@ -6,8 +6,6 @@ from datetime import datetime
 import json
 import mock
 
-from google.appengine.ext import ndb
-
 from dto import swarming_task_error
 from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto.swarming_task_error import SwarmingTaskError
@@ -18,11 +16,12 @@ from infra_api_clients.swarming.swarming_task_request import (
 from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 from infra_api_clients.swarming import swarming_util
 from libs.list_of_basestring import ListOfBasestring
+from libs.test_results import test_results_util
+from libs.test_results.gtest_test_results import GtestTestResults
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services import constants
 from services import swarmed_test_util
 from services import swarming
-from services import test_results
 from services.flake_failure import flake_swarming
 from waterfall.test import wf_testcase
 
@@ -85,6 +84,8 @@ _SAMPLE_REQUEST_JSON = {
         }),
 }
 
+_GTEST_RESULT = GtestTestResults(None)
+
 
 class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
 
@@ -109,10 +110,12 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
                          task_data, None, error))
 
-  @mock.patch.object(test_results, 'GetTestsRunStatuses')
-  @mock.patch.object(test_results, 'DoesTestExist', return_value=True)
-  def testParseFlakeSwarmingTaskOutputUndetectedError(self, _,
-                                                      mocked_test_statuses):
+  @mock.patch.object(_GTEST_RESULT, 'DoesTestExist', return_value=True)
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULT)
+  @mock.patch.object(_GTEST_RESULT, 'GetTestsRunStatuses')
+  def testParseFlakeSwarmingTaskOutputUndetectedError(self,
+                                                      mocked_test_statuses, *_):
     test_name = 't'
     task_data = {
         'created_ts': '2018-04-02T18:32:06.538220',
@@ -137,8 +140,10 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
                          task_data, {'bla': 'bla'}, None))
 
-  @mock.patch.object(test_results, 'GetTestsRunStatuses')
-  def testParseFlakeSwarmingTaskOutput(self, mocked_test_statuses):
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULT)
+  @mock.patch.object(_GTEST_RESULT, 'GetTestsRunStatuses')
+  def testParseFlakeSwarmingTaskOutput(self, mocked_test_statuses, _):
     iterations = 50
     pass_count = 25
     test_name = 't'
@@ -168,8 +173,10 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
                          task_data, 'content', None))
 
-  @mock.patch.object(test_results, 'GetTestsRunStatuses')
-  def testParseFlakeSwarmingTaskOutputWithPrerun(self, mocked_test_statuses):
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULT)
+  @mock.patch.object(_GTEST_RESULT, 'GetTestsRunStatuses')
+  def testParseFlakeSwarmingTaskOutputWithPrerun(self, mocked_test_statuses, _):
     iterations = 50
     pass_count = 25
     pre_iterations = 100
@@ -205,9 +212,11 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
                          task_data, 'content', None))
 
-  @mock.patch.object(test_results, 'GetTestsRunStatuses')
-  def testParseFlakeSwarmingTaskOutputWithOnlyPrerun(self,
-                                                     mocked_test_statuses):
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULT)
+  @mock.patch.object(_GTEST_RESULT, 'GetTestsRunStatuses')
+  def testParseFlakeSwarmingTaskOutputWithOnlyPrerun(self, mocked_test_statuses,
+                                                     _):
     pre_iterations = 100
     pre_pass_count = 25
     test_name = 't'
@@ -237,9 +246,11 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
                          task_data, 'content', None))
 
-  @mock.patch.object(test_results, 'GetTestsRunStatuses')
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULT)
+  @mock.patch.object(_GTEST_RESULT, 'GetTestsRunStatuses')
   def testParseFlakeSwarmingTaskOutputWithOnlyTwoPreruns(
-      self, mocked_test_statuses):
+      self, mocked_test_statuses, _):
     pre_iterations = 100
     pre_pass_count = 25
     test_name = 't'

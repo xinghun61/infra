@@ -5,9 +5,9 @@
 import logging
 
 from common.findit_http_client import FinditHttpClient
+from libs.test_results import test_results_util
 from services import swarmed_test_util
 from services import swarming
-from services import test_results
 from waterfall import buildbot
 from waterfall import build_util
 
@@ -137,8 +137,8 @@ def FindMatchingWaterfallStep(build_step, test_name):
     task_id = metadata['swarm_task_ids'][0]
     output = swarmed_test_util.GetTestResultForSwarmingTask(
         task_id, http_client)
-    if output and test_results.IsTestResultsValid(output):
+    if output:
       # Guess from the format.
       build_step.supported = (
-          test_results.IsTestResultsValid(output) and
+          test_results_util.IsTestResultsValid(output) and
           test_name in output.get('all_tests', []))

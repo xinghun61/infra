@@ -8,11 +8,11 @@ from common import exceptions
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
 from libs import time_util
+from libs.test_results import test_results_util
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from services import swarmed_test_util
-from services import test_results
 from services import try_job as try_job_service
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
@@ -96,7 +96,8 @@ def GetSwarmingTaskIdForTryJob(report, revision, step_name, test_name):
   for task_id in task_ids:
     output_json = swarmed_test_util.GetTestResultForSwarmingTask(
         task_id, http_client)
-    if output_json and test_results.IsTestResultUseful(output_json):
+    test_results = test_results_util.GetTestResultObject(output_json)
+    if output_json and test_results and test_results.IsTestResultUseful():
       return task_id
 
   return None

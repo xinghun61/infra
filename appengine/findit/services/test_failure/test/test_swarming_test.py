@@ -20,6 +20,8 @@ from dto.swarming_task_error import SwarmingTaskError
 from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
+from libs.test_results.gtest_test_results import GtestTestResults
+from libs.test_results import test_results_util
 from model.wf_swarming_task import WfSwarmingTask
 from services import constants
 from services.parameters import BuildKey
@@ -28,7 +30,6 @@ from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicResult
 from services import swarmed_test_util
 from services import swarming
-from services import test_results
 from services.test_failure import test_failure_analysis
 from services.test_failure import test_swarming
 from waterfall.test import wf_testcase
@@ -91,6 +92,8 @@ _SAMPLE_REQUEST_JSON = {
             'runner_id': 'runner_id'
         }),
 }
+
+_GTEST_RESULTS = GtestTestResults(None)
 
 
 class TestSwarmingTest(wf_testcase.WaterfallTestCase):
@@ -241,8 +244,10 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(task.task_id, task_id)
 
   @mock.patch.object(
-      test_results, 'GetTestsRunStatuses', return_value='tests_statuses')
-  @mock.patch.object(test_results, 'IsTestResultsValid', return_value=True)
+      _GTEST_RESULTS, 'GetTestsRunStatuses', return_value='tests_statuses')
+  @mock.patch.object(test_results_util, 'IsTestResultsValid', return_value=True)
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
   @mock.patch.object(
       swarmed_test_util,
       'GetSwarmingTaskDataAndResult',
@@ -306,8 +311,10 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     }, swarming_task.error)
 
   @mock.patch.object(
-      test_results, 'GetTestsRunStatuses', return_value='tests_statuses')
-  def testOnSwarmingTaskCompleted(self, _):
+      _GTEST_RESULTS, 'GetTestsRunStatuses', return_value='tests_statuses')
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
+  def testOnSwarmingTaskCompleted(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 13
@@ -339,7 +346,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
         datetime.datetime(2015, 7, 30, 18, 15, 16, 743220),
         swarming_task.completed_time)
 
-  @mock.patch.object(test_results, 'IsTestResultsValid', return_value=True)
+  @mock.patch.object(test_results_util, 'IsTestResultsValid', return_value=True)
   @mock.patch.object(
       swarmed_test_util,
       'GetSwarmingTaskDataAndResult',

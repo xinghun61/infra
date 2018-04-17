@@ -5,8 +5,8 @@
 from dto import swarming_task_error
 from dto.swarming_task_error import SwarmingTaskError
 from libs import analysis_status
+from libs.test_results import test_results_util
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from services import test_results
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
 
@@ -55,7 +55,8 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     flake_swarming_task.successes = successes
     flake_swarming_task.put()
 
-    if tries == 0 and test_results.DoesTestExist(output_json, test_name):
+    test_results = test_results_util.GetTestResultObject(output_json)
+    if tries == 0 and test_results and test_results.DoesTestExist(test_name):
       # The test exists, but something went wrong preventing even a single test
       # result from being processed.
       flake_swarming_task.error = SwarmingTaskError.GenerateError(

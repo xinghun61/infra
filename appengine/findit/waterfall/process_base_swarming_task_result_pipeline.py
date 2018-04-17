@@ -17,10 +17,10 @@ from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
+from libs.test_results import test_results_util
 from services import constants as service_constants
 from services import swarmed_test_util
 from services import swarming
-from services import test_results
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK_EXCEPTION
@@ -51,8 +51,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     Returns:
       tests_statuses (dict): A dict of different statuses for each test.
     """
-
-    return test_results.GetTestsRunStatuses(output_json)
+    test_results = test_results_util.GetTestResultObject(output_json)
+    return test_results.GetTestsRunStatuses() if test_results else {}
 
   def _GetSwarmingTask(self):
     # Get the appropriate kind of Swarming Task (Wf or Flake).
@@ -233,7 +233,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           error = error or SwarmingTaskError.GenerateError(
               swarming_task_error.NO_OUTPUT_JSON).ToSerializable()
 
-        if not test_results.IsTestResultsValid(output_json):
+        if not test_results_util.IsTestResultsValid(output_json):
           error = error or SwarmingTaskError.GenerateError(
               swarming_task_error.UNRECOGNIZABLE).ToSerializable()
 

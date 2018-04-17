@@ -11,15 +11,17 @@ import json
 import urllib
 import logging
 
-from services import test_results
+from dto.test_location import TestLocation
+from libs.test_results import test_results_util
+from services import constants
 from services import swarming
 from services import swarmed_test_util
-
 
 _COMPONENT_LINK = (
     'https://storage.googleapis.com/chromium-owners/component_map_subdirs.json')
 
 _COMPONENT_PATH_REGEX = r'[\/][A-Za-z\._-]+$'
+
 
 def GetComponent(http_client, master_name, builder_name, build_number,
                  step_name, test_name):
@@ -54,12 +56,15 @@ def GetComponent(http_client, master_name, builder_name, build_number,
 
 def GetGTestComponent(test_name, results):
   """Given a gtest test_name and results, return the component of the test."""
-  location, err = test_results.GetTestLocation(results, test_name)
+  test_results = test_results_util.GetTestResultObject(results)
+  location, err = test_results.GetTestLocation(test_name) if test_results else (
+      None, constants.WRONG_FORMAT_LOG)
   if not location:
     logging.info('No location found for %s with error %s.', test_name, err)
     return None
 
-  return GetNearestComponentForPath(location.file.replace('../../', ''))
+  return GetNearestComponentForPath(
+      TestLocation.FromSerializable(location).file.replace('../../', ''))
 
 
 def GetNearestComponentForPath(path):

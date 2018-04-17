@@ -13,7 +13,7 @@ import base64
 from collections import defaultdict
 import cStringIO
 
-from dto.test_location import TestLocation
+from libs.test_results.base_test_results import BaseTestResults
 from services import constants
 
 _PRE_TEST_PREFIX = 'PRE_'
@@ -25,64 +25,30 @@ RESULTS_INVALID = 10
 _NON_FAILURE_STATUSES = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
 
 
-def IsTestResultsInExpectedFormat(test_results_json):
-  """Checks if the log can be parsed by gtest.
+def _RemoveAllPrefixesFromTestName(test):
+  """Removes prefixes from test names.
 
   Args:
-    test_results_json (dict): It should be in below format:
-    {
-        'all_tests': ['test1',
-                      'test2',
-                      ...],
-        'per_iteration_data': [
-            {
-                'test1': [
-                  {
-                      'status': 'SUCCESS',
-                      'output_snippet': 'output',
-                      ...
-                  }
-                ],
-                'test2': [
-                    {},
-                    {},
-                    ...
-                ]
-            }
-        ]
-    }
+    test (str): A test's name, eg: 'suite1.PRE_test1'.
 
+  Returns:
+    base_test (str): A base test name, eg: 'suite1.test1'.
   """
-  return (isinstance(test_results_json, dict) and
-          isinstance(test_results_json.get('all_tests'), list) and
-          isinstance(test_results_json.get('per_iteration_data'), list) and all(
-              isinstance(i, dict)
-              for i in test_results_json.get('per_iteration_data')))
+  test_name_start = max(test.find('.'), 0)
+  if test_name_start == 0:
+    return test
 
-
-class GtestResults(object):
-
-  def RemoveAllPrefixes(self, test):
-    """Removes prefixes from test names.
-
-    Args:
-      test (str): A test's name, eg: 'suite1.PRE_test1'.
-
-    Returns:
-      base_test (str): A base test name, eg: 'suite1.test1'.
-    """
-    test_name_start = max(test.find('.'), 0)
-    if test_name_start == 0:
-      return test
-
-    test_suite = test[:test_name_start]
-    test_name = test[test_name_start + 1:]
+  test_suite = test[:test_name_start]
+  test_name = test[test_name_start + 1:]
+  pre_position = test_name.find(_PRE_TEST_PREFIX)
+  while pre_position == 0:
+    test_name = test_name[len(_PRE_TEST_PREFIX):]
     pre_position = test_name.find(_PRE_TEST_PREFIX)
-    while pre_position == 0:
-      test_name = test_name[len(_PRE_TEST_PREFIX):]
-      pre_position = test_name.find(_PRE_TEST_PREFIX)
-    base_test = '%s.%s' % (test_suite, test_name)
-    return base_test
+  base_test = '%s.%s' % (test_suite, test_name)
+  return base_test
+
+
+class GtestTestResults(BaseTestResults):
 
   # TODO(crbug/805732): Get rid of repeated decode/encode operations.
   def ConcatenateTestLog(self, string1, string2):
@@ -108,11 +74,8 @@ class GtestResults(object):
     else:
       return base64.b64encode(str1 + str2)
 
-  def GetConsistentTestFailureLog(self, test_results_json):
+  def GetConsistentTestFailureLog(self):
     """Analyzes the archived gtest json results and extract reliable failures.
-
-    Args:
-      test_results_json (dict): A JSON file for failed step log.
 
     Returns:
       A string contains the names of reliable test failures and related
@@ -123,7 +86,7 @@ class GtestResults(object):
       return 'flaky' as result.
     """
     sio = cStringIO.StringIO()
-    for iteration in test_results_json['per_iteration_data']:
+    for iteration in self.test_results_json['per_iteration_data']:
       for test_name in iteration.keys():
         is_reliable_failure = True
 
@@ -145,45 +108,31 @@ class GtestResults(object):
 
     return failed_test_log
 
-  def DoesTestExist(self, test_results_json, test_name):
+  def DoesTestExist(self, test_name):
     """Determines whether test_name is in test_results_json's 'all_tests' field.
 
     Args:
-      test_results_json (dict): A gtest's json output in the format:
-          {
-              'all_tests': [(str)],
-              ...,
-          }
       test_name (str): The name of the test to check.
 
     Returns:
       True if the test exists according to test_results_json, False otherwise.
     """
-    return test_name in (test_results_json.get('all_tests') or [])
+    return test_name in (self.test_results_json.get('all_tests') or [])
 
-  def IsTestEnabled(self, test_results_json, test_name):
+  def IsTestEnabled(self, test_name):
     """Returns True if the test is enabled, False otherwise."""
-    if not test_results_json:
+    if not self.test_results_json:
       return False
 
-    all_tests = test_results_json.get('all_tests', [])
-    disabled_tests = test_results_json.get('disabled_tests', [])
+    all_tests = self.test_results_json.get('all_tests', [])
+    disabled_tests = self.test_results_json.get('disabled_tests', [])
 
     # Checks if one test was enabled by checking the test results.
     # If the disabled tests array is empty, we assume the test is enabled.
     return test_name in all_tests and test_name not in disabled_tests
 
-  def _MergeListsOfDicts(self, merged, shard):
-    output = []
-    for i in xrange(max(len(merged), len(shard))):
-      merged_dict = merged[i] if i < len(merged) else {}
-      shard_dict = shard[i] if i < len(shard) else {}
-      output_dict = merged_dict.copy()
-      output_dict.update(shard_dict)
-      output.append(output_dict)
-    return output
-
-  def GetMergedTestResults(self, shard_results):
+  @staticmethod
+  def GetMergedTestResults(shard_results):
     """Merges the shards into one.
 
     Args:
@@ -217,21 +166,32 @@ class GtestResults(object):
     if len(shard_results) == 1:
       return shard_results[0]
 
+    def MergeListsOfDicts(merged, shard):
+      """Merges the ith dict each list into one dict."""
+      output = []
+      for i in xrange(max(len(merged), len(shard))):
+        merged_dict = merged[i] if i < len(merged) else {}
+        shard_dict = shard[i] if i < len(shard) else {}
+        output_dict = merged_dict.copy()
+        output_dict.update(shard_dict)
+        output.append(output_dict)
+      return output
+
     merged_results = {'all_tests': set(), 'per_iteration_data': []}
     for shard_result in shard_results:
       merged_results['all_tests'].update(shard_result.get('all_tests', []))
-      merged_results['per_iteration_data'] = self._MergeListsOfDicts(
+      merged_results['per_iteration_data'] = MergeListsOfDicts(
           merged_results['per_iteration_data'],
           shard_result.get('per_iteration_data', []))
     merged_results['all_tests'] = sorted(merged_results['all_tests'])
     return merged_results
 
-  def GetFailedTestsInformation(self, test_results_json):
+  def GetFailedTestsInformation(self):
     """Parses the json data to get all the reliable failures' information."""
     failed_test_log = {}
     reliable_failed_tests = {}
 
-    for iteration in (test_results_json.get('per_iteration_data') or []):
+    for iteration in (self.test_results_json.get('per_iteration_data') or []):
       for test_name in iteration.keys():
 
         if (any(test['status'] in _NON_FAILURE_STATUSES
@@ -246,18 +206,19 @@ class GtestResults(object):
         for test in iteration[test_name]:
           failed_test_log[test_name] = self.ConcatenateTestLog(
               failed_test_log[test_name], test.get('output_snippet_base64', ''))
-        reliable_failed_tests[test_name] = self.RemoveAllPrefixes(test_name)
+        reliable_failed_tests[test_name] = _RemoveAllPrefixesFromTestName(
+            test_name)
 
     return failed_test_log, reliable_failed_tests
 
-  def IsTestResultUseful(self, test_results_json):
+  def IsTestResultUseful(self):
     """Checks if the log contains useful information."""
     # If this task doesn't have result, per_iteration_data will look like
     # [{}, {}, ...]
-    return test_results_json and any(
-        test_results_json.get('per_iteration_data') or [])
+    return self.test_results_json and any(
+        self.test_results_json.get('per_iteration_data') or [])
 
-  def GetTestsRunStatuses(self, test_results_json):
+  def GetTestsRunStatuses(self):
     """Parses test results and gets accumulated test run statuses.
 
       Args:
@@ -267,8 +228,8 @@ class GtestResults(object):
       tests_statuses (dict): A dict of different statuses for each test.
     """
     tests_statuses = defaultdict(lambda: defaultdict(int))
-    if test_results_json:
-      for iteration in test_results_json.get('per_iteration_data'):
+    if self.test_results_json:
+      for iteration in self.test_results_json.get('per_iteration_data'):
         for test_name, tests in iteration.iteritems():
           tests_statuses[test_name]['total_run'] += len(tests)
           for test in tests:
@@ -276,9 +237,9 @@ class GtestResults(object):
 
     return tests_statuses
 
-  def GetTestLocation(self, test_results_json, test_name):
+  def GetTestLocation(self, test_name):
     """Gets test location for a specific test."""
-    test_locations = test_results_json.get('test_locations')
+    test_locations = self.test_results_json.get('test_locations')
 
     if not test_locations:
       error_str = 'test_locations not found.'
@@ -289,4 +250,40 @@ class GtestResults(object):
     if not test_location:
       error_str = 'test_location not found for %s.' % test_name
       return None, error_str
-    return TestLocation.FromSerializable(test_location), None
+    return test_location, None
+
+  @staticmethod
+  def IsTestResultsInExpectedFormat(test_results_json):
+    """Checks if the log can be parsed by gtest.
+
+    Args:
+      test_results_json (dict): It should be in below format:
+      {
+          'all_tests': ['test1',
+                        'test2',
+                        ...],
+          'per_iteration_data': [
+              {
+                  'test1': [
+                    {
+                        'status': 'SUCCESS',
+                        'output_snippet': 'output',
+                        ...
+                    }
+                  ],
+                  'test2': [
+                      {},
+                      {},
+                      ...
+                  ]
+              }
+          ]
+      }
+
+    """
+    return (isinstance(test_results_json, dict) and
+            isinstance(test_results_json.get('all_tests'), list) and
+            isinstance(test_results_json.get('per_iteration_data'), list) and
+            all(
+                isinstance(i, dict)
+                for i in test_results_json.get('per_iteration_data')))

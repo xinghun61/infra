@@ -12,11 +12,12 @@ from google.appengine.ext import ndb
 from common.findit_http_client import FinditHttpClient
 from dto import swarming_task_error
 from dto.swarming_task_error import SwarmingTaskError
+from dto.test_location import TestLocation
 from infra_api_clients.swarming import swarming_util
+from libs.test_results import test_results_util
 from services import isolate
 from services import constants
 from services import swarming
-from services import test_results
 from waterfall import waterfall_config
 
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
@@ -87,19 +88,21 @@ def GetTestLocation(task_id, test_name):
 
   """
   test_results_log = GetTestResultForSwarmingTask(task_id, _FINDIT_HTTP_CLIENT)
-  test_location, error = test_results.GetTestLocation(test_results_log,
-                                                      test_name)
+  test_results = test_results_util.GetTestResultObject(test_results_log)
+  test_location, error = test_results.GetTestLocation(
+      test_name) if test_results else (None, constants.WRONG_FORMAT_LOG)
   if error:
     logging.error('Failed to get test location for task %s: %s', task_id, error)
     return None
-  return test_location
+  return TestLocation.FromSerializable(test_location or {})
 
 
 def IsTestEnabled(test_name, task_id):
   """Returns True if the test is enabled, False otherwise."""
   # Get the isolated outputs from the test that was just run.
   test_results_log = GetTestResultForSwarmingTask(task_id, _FINDIT_HTTP_CLIENT)
-  return test_results.IsTestEnabled(test_results_log, test_name)
+  return test_results_util.GetTestResultObject(test_results_log).IsTestEnabled(
+      test_name)
 
 
 def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
@@ -116,7 +119,9 @@ def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
   if not shard_results:
     return []
 
-  return test_results.GetMergedTestResults(shard_results)
+  test_results = test_results_util.GetTestResultObject(shard_results[0])
+  return test_results.GetMergedTestResults(
+      shard_results) if test_results else None
 
 
 def GetTaskIdFromSwarmingTaskEntity(urlsafe_task_key):

@@ -11,11 +11,11 @@ import base64
 import json
 import logging
 
+from libs.test_results import test_results_util
 from model.wf_step import WfStep
 from services import extract_signal
 from services import constants
 from services import swarmed_test_util
-from services import test_results
 from waterfall import extractors
 from waterfall.failure_signal import FailureSignal
 
@@ -50,8 +50,10 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
           swarmed_test_util.RetrieveShardedTestResultsFromIsolatedServer(
               list_isolated_data, http_client))
       if merged_test_results:
-        failure_log = test_results.GetConsistentTestFailureLog(
+        test_results = test_results_util.GetTestResultObject(
             merged_test_results)
+        failure_log = test_results.GetConsistentTestFailureLog(
+        ) if test_results else constants.WRONG_FORMAT_LOG
 
       if not merged_test_results or failure_log in [
           constants.INVALID_FAILURE_LOG, constants.WRONG_FORMAT_LOG

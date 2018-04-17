@@ -38,6 +38,7 @@ from gae_libs import token
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
+from libs.test_results import test_results_util
 from model import result_status
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_analysis import WfAnalysis
@@ -48,7 +49,6 @@ from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_try_job_data import WfTryJobData
 from services import monitoring
 from services import swarmbot_util
-from services import test_results
 from waterfall import buildbot
 from waterfall import build_util
 from waterfall import waterfall_config
@@ -93,13 +93,13 @@ def _GetSuspectedCLsWithFailures(heuristic_result):
       for test in failure['tests']:
         for suspected_cl in test.get('suspected_cls') or []:
           suspected_cls_with_failures.append([
-              test_results.RemoveSuffixFromStepName(failure['step_name']),
+              test_results_util.RemoveSuffixFromStepName(failure['step_name']),
               suspected_cl['revision'], test['test_name']
           ])
     else:
       for suspected_cl in failure['suspected_cls']:
         suspected_cls_with_failures.append([
-            test_results.RemoveSuffixFromStepName(failure['step_name']),
+            test_results_util.RemoveSuffixFromStepName(failure['step_name']),
             suspected_cl['revision'], None
         ])
 

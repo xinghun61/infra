@@ -8,6 +8,8 @@ from common import exceptions
 from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.testcase import TestCase
 from libs.list_of_basestring import ListOfBasestring
+from libs.test_results.gtest_test_results import GtestTestResults
+from libs.test_results import test_results_util
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
@@ -15,11 +17,12 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from services import swarmed_test_util
-from services import test_results
 from services import try_job as try_job_service
 from services.flake_failure import flake_try_job
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
+
+_GTEST_RESULTS = GtestTestResults(None)
 
 
 class FlakeTryJobServiceTest(TestCase):
@@ -50,8 +53,11 @@ class FlakeTryJobServiceTest(TestCase):
             }
         }, 'r'))
 
+  @mock.patch.object(_GTEST_RESULTS, 'IsTestResultUseful', return_value=False)
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
   @mock.patch.object(swarmed_test_util, 'GetTestResultForSwarmingTask')
-  def testGetSwarmingTaskIdForTryJobNotFoundTaskWithResult(self, mock_fn):
+  def testGetSwarmingTaskIdForTryJobNotFoundTaskWithResult(self, mock_fn, *_):
     output_json = {'per_iteration_data': [{}, {}]}
     mock_fn.return_result = output_json
 
@@ -187,9 +193,11 @@ class FlakeTryJobServiceTest(TestCase):
         }, 'wrong_tests'))
 
   @mock.patch.object(
-      test_results, 'IsTestResultUseful', side_effect=[False, True])
+      _GTEST_RESULTS, 'IsTestResultUseful', side_effect=[False, True])
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
   @mock.patch.object(swarmed_test_util, 'GetTestResultForSwarmingTask')
-  def testGetSwarmingTaskIdForTryJob(self, mock_fn, _):
+  def testGetSwarmingTaskIdForTryJob(self, mock_fn, *_):
     output_json_1 = {'per_iteration_data': [{}, {}]}
     output_json_2 = {'per_iteration_data': [{'Test.One': 'log for Test.One'}]}
     mock_fn.side_effect = [output_json_1, output_json_2]
