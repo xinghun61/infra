@@ -198,9 +198,9 @@ def _GetLastAttemptedSwarmingTaskDetails(analysis):
   swarming_task_id = analysis.last_attempted_swarming_task_id
   build_number = analysis.last_attempted_build_number
 
-  task_id = (swarming_task_id if swarming_task_id and
-             swarming_task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION) else
-             None)
+  task_id = (
+      swarming_task_id if swarming_task_id and
+      swarming_task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION) else None)
 
   return {'task_id': task_id, 'build_number': build_number}
 
@@ -519,14 +519,13 @@ class CheckFlake(BaseHandler):
     if not analysis.end_time:
       analysis.end_time = time_util.GetUTCNow()
 
-    analysis_complete = (analysis.status != analysis_status.RUNNING and
-                         analysis.try_job_status != analysis_status.RUNNING)
+    analysis_complete = (
+        analysis.status != analysis_status.RUNNING and
+        analysis.try_job_status != analysis_status.RUNNING)
 
     data = {
         'key':
             analysis.key.urlsafe(),
-        'build_number':
-            analysis.build_number,
         'pass_rates': [],
         'last_attempted_swarming_task':
             _GetLastAttemptedSwarmingTaskDetails(analysis),
@@ -567,13 +566,15 @@ class CheckFlake(BaseHandler):
 
         # new ui stuff
         'master_name':
-            analysis.master_name,
+            analysis.original_master_name,
         'builder_name':
-            analysis.builder_name,
+            analysis.original_builder_name,
+        'build_number':
+            analysis.original_build_number,
         'step_name':
-            analysis.step_name,
+            analysis.original_step_name,
         'test_name':
-            analysis.test_name,
+            analysis.original_test_name,
         'regression_range_upper': (suspected_flake.get('commit_position', '') or
                                    suspected_flake.get('git_hash', '') or ''),
         'regression_range_lower': (

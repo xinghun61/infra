@@ -56,13 +56,8 @@
       <div slot="expandable-card-content">
         <table>
           <tr>
-            <td class="description">Master</td>
-            <td class="data selectable">[[masterName]]</td>
-          </tr>
-
-          <tr>
-            <td class="description">Builder</td>
-            <td class="data selectable">[[builderName]]</td>
+            <td class="description">Occurrence</td>
+            <td class="data selectable"><a href="https://ci.chromium.org/buildbot/[[masterName]]/[[builderName]]/[[buildNumber]]">[[masterName]]/[[builderName]]/[[buildNumber]]</a></td>
           </tr>
 
           <tr>
@@ -89,6 +84,7 @@
         properties: {
           masterName: String,
           builderName: String,
+          buildNumber: Number,
           stepName: String,
           testName: String,
 

@@ -10,11 +10,12 @@
   <link rel="import" href="/ui/elements/findit-app.html">
   <style type="text/css">
     .truncated {
-      max-width: 320px;
+      max-width: 600px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     .previous, .next {
       color: #0645AD;
       background: none;
@@ -67,7 +68,15 @@
       }
       var localDate = new Date(0);
       localDate.setUTCSeconds(unixTimestamp);
-      return localDate.toLocaleString();
+      return (localDate.getFullYear() +
+              "-" +
+              ("0" + (localDate.getMonth() + 1)).slice(-2) +
+              "-" +
+              ("0" + localDate.getDate()).slice(-2) +
+              " " +
+              ("0" + localDate.getHours()).slice(-2) +
+              ":" +
+              ("0" + localDate.getMinutes()).slice(-2));
     }
 
     function getParameters() {
@@ -158,6 +167,10 @@
         displayMessage(400);  // Explanation of Analysis Status.
       });
 
+      $('.finding-info').click(function() {
+        displayMessage(500);  // Explanation of Analysis Findings.
+      });
+
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
     });
   </script>
@@ -197,19 +210,15 @@
       <button class="next">Next</button>
     </div>
     <br>
+    <!-- TODO(https://crbug.com/833679): make this a polymer element. -->
     <table>
       <thead>
         <tr>
           <th>Request Time</th>
-          <th>Build</th>
-          <th>Step</th>
-          <th>Test</th>
-          <th>
-            Analysis Status (<a class="analysis-status-info" href="javascript:">?</a>)<br>
-            Regression Range / Culprit
-          </th>
-          <th>Regressed Build / Culprit (Confidence)</th>
-          <th>Culprit Notified</th>
+          <th>Build of Flake Occurrence</th>
+          <th>Flaky Test</th>
+          <th>Status (<a class="analysis-status-info" href="javascript:">?</a>)</th>
+          <th>Findings (<a class="finding-info" href="javascript:">?</a>)</th>
           <th>Bug ID</th>
           <th>
             <select id="result_status">
@@ -231,37 +240,43 @@
             <div class="timestamp">{{ analysis.request_utc_timestamp or '' }}</div>
           </td>
           <td>
-            {{ analysis.master_name }}, {{ analysis.builder_name }}, {{ analysis.build_number }}
+            <a href="https://ci.chromium.org/buildbot/{{analysis.master_name}}/{{analysis.builder_name}}/{{analysis.build_number}}">{{ analysis.master_name }}/ {{ analysis.builder_name }}/ {{ analysis.build_number }}</a>
           </td>
-          <td class="truncated" title="{{ analysis.step_name }}">
-            {{ analysis.step_name }}
-          </td>
-          <td class="truncated" title="{{ analysis.test_name }}">
-            <a href="/waterfall/flake?key={{ analysis.key }}" target="_blank">{{ analysis.test_name }}</a>
+          <td>
+            <div>
+              Step: {{ analysis.step_name }}
+              <br>
+              <div class="truncated">
+                Test: <a href="/waterfall/flake?key={{ analysis.key }}" target="_blank">{{ analysis.test_name }}</a>
+              </div>
+            </div>
           </td>
           <td>
             <span class={{ analysis.status.lower() }}>{{ analysis.status }}</span>
           </td>
           <td>
             {% if analysis.suspected_build %}
-              Build: <a href="https://luci-milo.appspot.com/buildbot/{{ analysis.master_name }}/{{ analysis.builder_name }}/{{ analysis.suspected_build }}" target="_blank">{{ analysis.suspected_build }}</a>
+              Regression: build <a href="https://luci-milo.appspot.com/buildbot/{{ analysis.master_name }}/{{ analysis.builder_name }}/{{ analysis.suspected_build }}" target="_blank">{{ analysis.suspected_build }}</a>
               {% if analysis.confidence_in_suspected_build %}
                 ({{ '%0.1f%%' % (analysis.confidence_in_suspected_build * 100) }})
               {% endif %}
-               /
+              <br>
             {% endif %}
             {% if analysis.culprit %}
-              {{ analysis.culprit.repo_name }}: <a href={{ analysis.culprit.url }} target="_blank">{{ analysis.culprit.commit_position }}</a>
+              Culprit: <a href={{ analysis.culprit.url }} target="_blank">r{{ analysis.culprit.commit_position }}</a>
               {% if analysis.confidence_in_culprit %}
-                ({{ '%0.1f%%' % (analysis.confidence_in_culprit * 100) }})
+                (
+                  {{ '%0.1f%%' % (analysis.confidence_in_culprit * 100) }}
+                  ,
+                  <a href="https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key={{ analysis.culprit.key }}" target="_blank">
+                    {% if analysis.culprit and analysis.culprit.cr_notified %}
+                      notified
+                    {% else %}
+                      unnotified
+                    {% endif %}
+                  </a>
+                )
               {% endif %}
-            {% endif %}
-          </td>
-          <td>
-            {% if analysis.culprit %}
-              <a href="https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key={{ analysis.culprit.key }}" target="_blank">
-                {{ analysis.culprit.cr_notified }}
-              </a>
             {% endif %}
           </td>
           <td>

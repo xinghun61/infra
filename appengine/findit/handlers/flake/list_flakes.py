@@ -115,10 +115,16 @@ class ListFlakes(BaseHandler):
           if master_flake_analysis.request_time else 'None')
 
       data['master_flake_analyses'].append({
-          'build_number':
-              master_flake_analysis.build_number,
+          'master_name':
+              master_flake_analysis.original_master_name,
           'builder_name':
-              master_flake_analysis.builder_name,
+              master_flake_analysis.original_builder_name,
+          'build_number':
+              master_flake_analysis.original_build_number,
+          'step_name':
+              master_flake_analysis.original_step_name,
+          'test_name':
+              master_flake_analysis.original_test_name,
           'bug_id':
               master_flake_analysis.bug_id,
           'confidence_in_culprit':
@@ -129,19 +135,13 @@ class ListFlakes(BaseHandler):
               culprit.to_dict() if culprit else {},
           'key':
               master_flake_analysis.key.urlsafe(),
-          'master_name':
-              master_flake_analysis.master_name,
           'request_utc_timestamp':
               timestamp,
           'result_status':
               result_status.RESULT_STATUS_TO_DESCRIPTION.get(
                   master_flake_analysis.result_status),
-          'step_name':
-              master_flake_analysis.step_name,
           'suspected_build':
               master_flake_analysis.suspected_flake_build_number,
-          'test_name':
-              master_flake_analysis.test_name,
           'status':
               analysis_status.STATUS_TO_DESCRIPTION.get(status),
       })

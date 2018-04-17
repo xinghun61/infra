@@ -89,6 +89,20 @@
             </ul>
           </div>
         </template>
+        <template is="dom-if" if="[[_isPredefinedMessage(_message, 500)]]">
+          <div>
+            <h3>Regression</h3>
+            A waterfall build that contains the culprit followed by a confidence score [0%, 100%].
+            <br>
+            For a CQ flake, it is the latest build of the matching Waterfall builder upon flake report.
+          </div>
+          <div>
+            <h3>Culprit</h3>
+            The commit that makes the test flaky followed by a confidence score [0%, 100%].
+            <br>
+            If the confidence score is high enough, the Gerrit CL will be notified.
+          </div>
+        </template>
         <template is="dom-if" if="[[_isCustomizedMessage(_message)]]">
           <template is="dom-if" if="[[!_message.preFormat]]">
             <div style="text-align: center">
@@ -115,6 +129,7 @@
         200: 'Score Explanation',
         300: 'Choose a range or point to analyze',
         400: 'Analysis Status',
+        500: 'Flake Analysis Findings',
       };
 
       Polymer({

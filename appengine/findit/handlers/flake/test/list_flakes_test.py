@@ -40,6 +40,11 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                                         culprit_urlsafe_key=None):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
+    analysis.original_step_name = step_name
+    analysis.original_test_name = test_name
     analysis.request_time = request_time
     analysis.status = analysis_status.COMPLETED
     analysis.result_status = status_code
