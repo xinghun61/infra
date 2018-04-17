@@ -68,7 +68,7 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Create('m', 'b', 1)
     try_job.put()
 
-    mock_fn.return_value = True, try_job.key
+    mock_fn.return_value = True, try_job.key.urlsafe()
     parameters = {
         'build_key': {
             'master_name': master_name,
@@ -158,7 +158,7 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Create('m', 'b', 1)
     try_job.put()
 
-    mock_fn.return_value = True, try_job.key
+    mock_fn.return_value = True, try_job.key.urlsafe()
     parameters = {
         'build_key': {
             'master_name': master_name,
@@ -223,7 +223,7 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_parameter.return_value = RunCompileTryJobParameters(good_revision=None)
     try_job = WfTryJob.Create('m', 'b', 1)
     try_job.put()
-    mock_fn.return_value = (True, try_job.key)
+    mock_fn.return_value = (True, try_job.key.urlsafe())
     failure_info = {'failure_type': failure_type.COMPILE}
     heuristic_result = {
         'failure_info': failure_info,

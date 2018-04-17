@@ -25,12 +25,11 @@ class StartCompileTryJobPipeline(BasePipeline):
     failure_info = heuristic_result.get('failure_info')
     signals = heuristic_result.get('signals')
     heuristic_result = heuristic_result.get('heuristic_result')
-    need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
+    need_try_job, urlsafe_try_job_key = compile_try_job.NeedANewCompileTryJob(
         master_name, builder_name, build_number, failure_info, signals,
         heuristic_result, force_try_job)
     if not need_try_job:
       return
-    urlsafe_try_job_key = try_job_key.urlsafe()
 
     parameters = compile_try_job.GetParametersToScheduleCompileTryJob(
         master_name, builder_name, build_number, failure_info, signals,
