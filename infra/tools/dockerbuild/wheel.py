@@ -284,6 +284,14 @@ SPECS = {s.spec.tag: s for s in (
   ),
 
 
+  SourceOrPrebuilt('lazy-object-proxy', '1.3.1',
+      packaged=[
+        'manylinux-x86',
+        'manylinux-x64',
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
   MySQLPython('1.2.5',
       only_plat=[
         'manylinux-x86', 'manylinux-x64',
@@ -301,13 +309,16 @@ SPECS = {s.spec.tag: s for s in (
       packaged=[],
       only_plat=['manylinux-x86', 'manylinux-x64'],
   ),
-
+  SourceOrPrebuilt('wrapt', '1.10.11',
+      packaged=[],
+  ),
 
   Universal('appdirs', '1.4.3'),
   UniversalSource('apache-beam', '2.0.0'),
   UniversalSource('Appium_Python_Client', '0.24',
                    pypi_name='Appium-Python-Client'),
   Universal('asn1crypto', '0.22.0'),
+  Universal('astroid', '1.6.3'),
   Universal('astunparse', '1.5.0'),
   Universal('boto', '2.48.0'),
   Universal('cachetools', '2.0.1'),
@@ -349,7 +360,9 @@ SPECS = {s.spec.tag: s for s in (
   Universal('idna', '2.5'),
   UniversalSource('inotify_simple', '1.1.7'),
   Universal('ipaddress', '1.0.18', pyversions=['py2']),
+  Universal('isort', '4.3.4'),
   Universal('json5', '0.6.0'),
+  Universal('mccabe', '0.6.1'),
   Universal('mock', '2.0.0'),
   UniversalSource('mox', '0.5.3'),
   UniversalSource('oauth2client', '3.0.0'),
@@ -367,6 +380,7 @@ SPECS = {s.spec.tag: s for s in (
   UniversalSource('pyftpdlib', '1.0.0'),
   UniversalSource('pyftpdlib', '1.5.3'),
   Universal('pyopenssl', '17.2.0'),
+  Universal('pylint', '1.8.4'),
   Universal('pyparsing', '2.2.0'),
   Universal('pyserial', '3.4'),
   Universal('requests', '2.13.0'),
@@ -376,6 +390,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('smmap2', '2.0.3'),
   Universal('six', '1.10.0'),
   UniversalSource('tlslite', '0.4.9'),
+  Universal('typing', '3.6.4'),
   Universal('uritemplate', '3.0.0'),
   Universal('urllib3', '1.22'),
 
