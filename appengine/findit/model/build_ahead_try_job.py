@@ -48,6 +48,7 @@ class BuildAheadTryJob(ndb.Model):
   def MarkComplete(self, metadata):
     self.running = False
     self.last_buildbucket_response = metadata
+    self.put()
 
   @property
   def BuildId(self):

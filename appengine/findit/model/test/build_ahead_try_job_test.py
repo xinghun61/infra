@@ -27,7 +27,6 @@ class BuildAheadTryJobTest(TestCase):
 
     try_job_before = BuildAheadTryJob.Create(build_id, platform, cache_name)
     try_job_before.MarkComplete(dummy_metadata)
-    try_job_before.put()
 
     try_job_after = BuildAheadTryJob.Get(build_id)
     self.assertEqual(dummy_metadata, try_job_after.last_buildbucket_response)
