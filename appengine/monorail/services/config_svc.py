@@ -986,6 +986,10 @@ class ConfigService(object):
       cnxn, template_id=template_ids, commit=False)
     self.template2fieldvalue_tbl.Delete(
       cnxn, template_id=template_ids, commit=False)
+    self.template2approvalvalue_tbl.Delete(
+        cnxn, template_id=template_ids, commit=False)
+    self.template2phase_tbl.Delete(
+        cnxn, template_id=template_ids, commit=False)
     self.template_tbl.Delete(
       cnxn, project_id=config.project_id, commit=False)
 
@@ -1021,6 +1025,8 @@ class ConfigService(object):
     template2component_rows = []
     template2admin_rows = []
     template2fieldvalue_rows = []
+    template2phase_rows = []
+    template2approvalvalue_rows = []
     for template in config.templates:
       for label in template.labels:
         if label:
@@ -1033,6 +1039,12 @@ class ConfigService(object):
         template2fieldvalue_rows.append(
             (template.template_id, fv.field_id, fv.int_value, fv.str_value,
              fv.user_id or None, fv.date_value, fv.url_value))
+      for phase in template.phases:
+        template2phase_rows.append(
+            (phase.phase_id, template.template_id, phase.name, phase.rank))
+        for av in phase.approval_values:
+          template2approvalvalue_rows.append(
+              (av.approval_id, template.template_id, phase.phase_id, av.status.name.lower()))
 
     self.template2label_tbl.InsertRows(
         cnxn, TEMPLATE2LABEL_COLS, template2label_rows, ignore=True,
@@ -1043,6 +1055,10 @@ class ConfigService(object):
         cnxn, TEMPLATE2ADMIN_COLS, template2admin_rows, commit=False)
     self.template2fieldvalue_tbl.InsertRows(
         cnxn, TEMPLATE2FIELDVALUE_COLS, template2fieldvalue_rows, commit=False)
+    self.template2phase_tbl.InsertRows(
+        cnxn, TEMPLATE2PHASE_COLS, template2phase_rows, commit=False)
+    self.template2approvalvalue_tbl.InsertRows(
+        cnxn, TEMPLATE2APPROVALVALUE_COLS, template2approvalvalue_rows, commit=False)
 
   def _UpdateWellKnownLabels(self, cnxn, config):
     """Update the labels part of a project's issue configuration.
@@ -1782,4 +1798,3 @@ class ConfigService(object):
     memcache.delete_multi(
         [str(project_id)], key_prefix='field_rows:',
         namespace=settings.memcache_namespace)
-

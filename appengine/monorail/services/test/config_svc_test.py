@@ -778,7 +778,8 @@ class ConfigServiceTest(unittest.TestCase):
     self.cnxn.Commit()
 
   def SetUpUpdateTemplates_Default(
-      self, project_id, component_rows=None, admin_rows=None, fv_rows=None):
+      self, project_id, component_rows=None, admin_rows=None, fv_rows=None,
+      phase_rows=None, av_rows=None):
     """Replay for UpdateTemplates.
 
     template_tbl and template2label_tbl are based on DEFAULT_TEMPLATES
@@ -799,6 +800,10 @@ class ConfigServiceTest(unittest.TestCase):
       self.cnxn, template_id=[], commit=False)
     self.config_service.template2fieldvalue_tbl.Delete(
       self.cnxn, template_id=[], commit=False)
+    self.config_service.template2phase_tbl.Delete(
+        self.cnxn, template_id=[], commit=False)
+    self.config_service.template2approvalvalue_tbl.Delete(
+        self.cnxn, template_id=[], commit=False)
     self.config_service.template_tbl.Delete(
       self.cnxn, project_id=project_id, commit=False)
 
@@ -831,6 +836,8 @@ class ConfigServiceTest(unittest.TestCase):
     template2component_rows = component_rows or []
     template2admin_rows = admin_rows or []
     template2fieldvalue_rows = fv_rows or []
+    template2phase_rows = phase_rows or []
+    template2approvalvalue_rows = av_rows or []
 
     self.config_service.template2label_tbl.InsertRows(
         self.cnxn, config_svc.TEMPLATE2LABEL_COLS, template2label_rows,
@@ -844,6 +851,12 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.template2fieldvalue_tbl.InsertRows(
         self.cnxn, config_svc.TEMPLATE2FIELDVALUE_COLS,
         template2fieldvalue_rows, commit=False)
+    self.config_service.template2phase_tbl.InsertRows(
+        self.cnxn, config_svc.TEMPLATE2PHASE_COLS,
+        template2phase_rows, commit=False)
+    self.config_service.template2approvalvalue_tbl.InsertRows(
+        self.cnxn, config_svc.TEMPLATE2APPROVALVALUE_COLS,
+        template2approvalvalue_rows, commit=False)
 
   def SetUpUpdateWellKnownLabels_Default(self, project_id):
     by_id = {
