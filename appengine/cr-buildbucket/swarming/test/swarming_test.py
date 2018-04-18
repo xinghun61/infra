@@ -507,6 +507,10 @@ class SwarmingTest(BaseTest):
         'recipe_repository:https://example.com/repo',
       ],
       'properties': {
+        'env': [{
+          'key': 'BUILDBUCKET_EXPERIMENTAL',
+          'value': 'FALSE',
+        }],
         'execution_timeout_secs': '3600',
         'extra_args': [
           'cook',
@@ -636,6 +640,12 @@ class SwarmingTest(BaseTest):
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
     self.assertEqual(actual_task_def['priority'], '216')
+    self.assertIn(
+        {
+          'key': 'BUILDBUCKET_EXPERIMENTAL',
+          'value': 'TRUE',
+        },
+        actual_task_def['properties']['env'])
 
   def test_create_task_async_for_non_swarming_bucket(self):
     self.bucket_cfg.ClearField('swarming')
@@ -734,6 +744,10 @@ class SwarmingTest(BaseTest):
         'recipe_repository:https://example.com/repo',
       ],
       'properties': {
+        'env': [{
+          'key': 'BUILDBUCKET_EXPERIMENTAL',
+          'value': 'FALSE',
+        }],
         'execution_timeout_secs': '3600',
         'extra_args': [
           'cook',

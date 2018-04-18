@@ -531,6 +531,11 @@ def _create_task_def_async(
 
   task_properties = task.setdefault('properties', {})
 
+  task_properties.setdefault('env', []).append({
+    'key': 'BUILDBUCKET_EXPERIMENTAL',
+    'value': str(build.experimental).upper(),
+  })
+
   (task_properties
     .setdefault('cipd_input', {})
     .setdefault('packages', [])

@@ -182,6 +182,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
       'expiration_secs': '3600',
 
       'properties': {
+        'env': [{
+          'key': 'BUILDBUCKET_EXPERIMENTAL',
+          'value': 'FALSE',
+        }],
         'extra_args': [
           'cook',
           '-repository', 'https://example.com',
