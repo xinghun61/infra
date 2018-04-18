@@ -1,0 +1,50 @@
+[
+  [
+    "before",
+    {
+      "refs/heads/master": [
+        [
+          "3a89cd63cdf88ceeee389ae80835f09ed3ce036a",
+          [
+            "initial commit"
+          ]
+        ]
+      ]
+    },
+    {}
+  ],
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "WARNING: Dropping submodule \"abc/def\", because it is outside the working directory \"fount/\"",
+      "INFO: Running ('git', 'push', 'origin', '02d8bd1e7d0304dcae880eae67666448d63eea60:refs/heads/master')"
+    ]
+  },
+  [
+    "after",
+    {
+      "refs/heads/master": [
+        [
+          "3a89cd63cdf88ceeee389ae80835f09ed3ce036a",
+          [
+            "initial commit"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "02d8bd1e7d0304dcae880eae67666448d63eea60",
+          [
+            "initial commit",
+            "",
+            "Cr-Mirrored-Commit: 3a89cd63cdf88ceeee389ae80835f09ed3ce036a"
+          ]
+        ]
+      ]
+    },
+    "[submodule \"foo\"]\n\tpath = foo\n\turl = https://chromoium.googlesource.com/xyz/bar\n",
+    "GitLink(10803d79ece6d8752be370163d342030a816cb8f)"
+  ]
+]

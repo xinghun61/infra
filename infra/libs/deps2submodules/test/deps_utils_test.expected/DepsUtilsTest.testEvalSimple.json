@@ -1,0 +1,14 @@
+{
+  "deps": {
+    "fount/src": "https://chromium.googlesource.com/chromium/src"
+  },
+  "deps_os": {},
+  "hooks": [],
+  "include_rules": [],
+  "recursedeps": [],
+  "skip_child_includes": [],
+  "use_relative_paths": false,
+  "vars": {
+    "src": "https://chromium.googlesource.com/chromium/src"
+  }
+}

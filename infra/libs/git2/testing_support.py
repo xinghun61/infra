@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import collections
+import os
 import tempfile
 
 from infra.libs import git2
@@ -33,7 +34,7 @@ class GitEntry(object):
       - (content, mode) - (str, int) - Produces a GitFile with the specified
         mode.
     """
-    # TODO(iannucci): Implement links, commits, etc.
+    # TODO(iannucci): Implement commits, etc.
     if isinstance(spec, GitEntry):
       return spec
 
@@ -63,14 +64,20 @@ class GitEntry(object):
 
       # since we did a recursive ls-tree, the only thing we should see are
       # blobs.
-      assert typ == 'blob', 'Cannot handle anything but blobs and trees!'
+      if mode == GitLink.mode:
+        val = GitLink(hsh)
+      elif typ == 'blob':
+        # TODO: more formal, structured code for manipulating Git file modes
+        # https://goo.gl/821hzW
+        val = (repo.run('cat-file', 'blob', hsh), int(mode[2:], 8))
+      else:  # pragma: no cover
+        raise Exception('Unregocnized Git object mode/type: %s/%s', mode, typ)
 
       subspec = spec
       pieces = path.split('/')
       for subpath in pieces[:-1]:
         subspec = subspec.setdefault(subpath, {})
-      subspec[pieces[-1]] = (repo.run('cat-file', 'blob', hsh),
-                             int(mode[1:], 8))
+      subspec[pieces[-1]] = val
     return spec
 
   @staticmethod
@@ -146,6 +153,30 @@ class GitTree(GitEntry):
       return repo.run('mktree', '-z', stdin=tf).strip()
 
 
+class GitLink(GitEntry):
+  # TODO: add tests for this new class
+  typ = 'commit'
+  mode = '160000'
+
+  def __init__(self, sha1):
+    super(GitLink, self).__init__()
+    self.sha1 = sha1
+
+  def intern(self, repo):
+    return self.sha1
+
+  def __repr__(self):
+    return 'GitLink(%s)' % self.sha1
+
+  def __eq__(self, other):
+    return (self is other) or (
+        isinstance(other, GitLink) and self.sha1 == other.sha1
+    )
+
+  def __ne__(self, other):  # pragma: no cover
+    return not (self == other)
+
+
 class TestRef(git2.Ref):
   """A testing version of git2.Ref."""
 
@@ -210,7 +241,9 @@ class TestRepo(git2.Repo):
       # making an empty bare Repo in this mode, we set it so that reify()
       # doesn't attempt to clone from the url (which is set to the bogus
       # 'local test repo' string).
-      self._repo_path = tempfile.mkdtemp(dir=remote_repos_dir)
+      subdir = tempfile.mkdtemp(dir=remote_repos_dir)
+      self._repo_path = os.path.join(subdir, short_name)
+      os.mkdir(self._repo_path)
       self.run('init', '--bare')
 
     self._clock = clock

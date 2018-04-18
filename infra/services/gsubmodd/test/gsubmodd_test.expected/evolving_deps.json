@@ -1,0 +1,136 @@
+[
+  [
+    "before",
+    {
+      "refs/heads/master": [
+        [
+          "ba96e6cce6befc922b66c0aea17b42c62b6f40d2",
+          [
+            "second"
+          ]
+        ],
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {}
+  ],
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "INFO: Running ('git', 'push', 'origin', '466ad86d835ab22594b859226bde99527814a929:refs/heads/master')"
+    ]
+  },
+  [
+    "during",
+    {
+      "refs/heads/master": [
+        [
+          "ba96e6cce6befc922b66c0aea17b42c62b6f40d2",
+          [
+            "second"
+          ]
+        ],
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "466ad86d835ab22594b859226bde99527814a929",
+          [
+            "second",
+            "",
+            "Cr-Mirrored-Commit: ba96e6cce6befc922b66c0aea17b42c62b6f40d2"
+          ]
+        ],
+        [
+          "a998ea85d411309e9b4541531e1b0ef79e96344a",
+          [
+            "first",
+            "",
+            "Cr-Mirrored-Commit: 69f5a0e5e23176ac53b19886a1cebec09f001012"
+          ]
+        ]
+      ]
+    },
+    "[submodule \"foo\"]\n\tpath = foo\n\turl = https://itdoesntmatter.com/xyzzy/foo\n",
+    [
+      "GitLink(10803d79ece6d8752be370163d342030a816cb8f)"
+    ]
+  ],
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "INFO: starting with tree 'aea5bb0607548572b727ccff5734b3ccd91d4554'",
+      "INFO: Running ('git', 'push', 'origin', '42e6d7cd3b8ddfc4cbee84b0d0189eb112e0b15d:refs/heads/master')"
+    ]
+  },
+  [
+    "after",
+    {
+      "refs/heads/master": [
+        [
+          "58f01c64a5fc67ba7a116498c0e0bfc90b993c9b",
+          [
+            "third"
+          ]
+        ],
+        [
+          "ba96e6cce6befc922b66c0aea17b42c62b6f40d2",
+          [
+            "second"
+          ]
+        ],
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "42e6d7cd3b8ddfc4cbee84b0d0189eb112e0b15d",
+          [
+            "third",
+            "",
+            "Cr-Mirrored-Commit: 58f01c64a5fc67ba7a116498c0e0bfc90b993c9b"
+          ]
+        ],
+        [
+          "466ad86d835ab22594b859226bde99527814a929",
+          [
+            "second",
+            "",
+            "Cr-Mirrored-Commit: ba96e6cce6befc922b66c0aea17b42c62b6f40d2"
+          ]
+        ],
+        [
+          "a998ea85d411309e9b4541531e1b0ef79e96344a",
+          [
+            "first",
+            "",
+            "Cr-Mirrored-Commit: 69f5a0e5e23176ac53b19886a1cebec09f001012"
+          ]
+        ]
+      ]
+    },
+    "[submodule \"bar\"]\n\tpath = bar\n\turl = https://chromium.googlesource.com/bar\n[submodule \"foo\"]\n\tpath = foo\n\turl = https://itdoesntmatter.com/xyzzy/foo\n",
+    [
+      "GitLink(4ebc8aea50e0a67e000ba29a30809d0a7b9b2666)",
+      "GitLink(05c319264387a6c782f10c5e27e602ee36f98d0f)"
+    ]
+  ]
+]

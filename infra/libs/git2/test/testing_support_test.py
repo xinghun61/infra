@@ -7,6 +7,7 @@ from collections import OrderedDict as OD
 from infra.libs.git2 import testing_support
 from infra.libs.git2.test import test_util
 from infra.libs.git2.testing_support import GitFile
+from infra.libs.git2.testing_support import GitLink
 from infra.libs.git2.testing_support import TestClock
 from infra.libs.git2.testing_support import TestRepo
 
@@ -130,10 +131,12 @@ class TestTestRepo(test_util.TestBasis):
   def testSpecFor(self):
     r = TestRepo('foo', TestClock())
     ref = r['refs/heads/master']
+    sha1 = 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
     spec = {
       'cool_file': ('whazzap', 0755),  # executable
       'subdir': {
-        'crazy times': ('this is awesome', 0644)
+        'crazy times': ('this is awesome', 0644),
+        'dependency': GitLink(sha1),
       }
     }
     c = ref.make_full_tree_commit('Initial Commit', spec)
@@ -142,7 +145,8 @@ class TestTestRepo(test_util.TestBasis):
     # can take a raw tree hash too
     self.assertEquals(
       r.spec_for(r.run('rev-parse', '%s:subdir' % c.hsh).strip()), {
-        'crazy times': ('this is awesome', 0644)
+        'crazy times': ('this is awesome', 0644),
+        'dependency': GitLink(sha1)
       }
     )
 

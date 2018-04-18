@@ -5,6 +5,13 @@
 
 """Read DEPS and use the information to update git submodules"""
 
+# CAUTION: this module has been cloned to a new version under
+# infra/libs, with the expectation that callers of this original
+# version will be migrated to use the new version (and eventually
+# remove this old version).
+#
+# TODO(crbug/834373): do so.
+
 import argparse
 import collections
 import logging

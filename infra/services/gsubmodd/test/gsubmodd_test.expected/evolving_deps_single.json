@@ -1,0 +1,72 @@
+[
+  [
+    "before",
+    {
+      "refs/heads/master": [
+        [
+          "c9e1dd919901efb3048a6dac0b3af96cafa96578",
+          [
+            "second"
+          ]
+        ],
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {}
+  ],
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "INFO: Running ('git', 'push', 'origin', 'de6858101760b05780e9a1753292110279b51671:refs/heads/master')"
+    ]
+  },
+  [
+    "after",
+    {
+      "refs/heads/master": [
+        [
+          "c9e1dd919901efb3048a6dac0b3af96cafa96578",
+          [
+            "second"
+          ]
+        ],
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "de6858101760b05780e9a1753292110279b51671",
+          [
+            "second",
+            "",
+            "Cr-Mirrored-Commit: c9e1dd919901efb3048a6dac0b3af96cafa96578"
+          ]
+        ],
+        [
+          "a998ea85d411309e9b4541531e1b0ef79e96344a",
+          [
+            "first",
+            "",
+            "Cr-Mirrored-Commit: 69f5a0e5e23176ac53b19886a1cebec09f001012"
+          ]
+        ]
+      ]
+    },
+    "[submodule \"bar\"]\n\tpath = bar\n\turl = https://chromium.googlesource.com/bar\n[submodule \"foo\"]\n\tpath = foo\n\turl = https://itdoesntmatter.com/xyzzy/foo\n",
+    [
+      "GitLink(4ebc8aea50e0a67e000ba29a30809d0a7b9b2666)",
+      "GitLink(05c319264387a6c782f10c5e27e602ee36f98d0f)"
+    ]
+  ]
+]

@@ -1,0 +1,4 @@
+[
+  "[submodule \"a\"]\n\tpath = a\n\turl = https://example.com/xyz/a\n[submodule \"b\"]\n\tpath = b\n\turl = https://example.com/xyz/b\n",
+  "100644 blob a619fa80f29acccd33a22969a835d1785fcf1f49\t.gitmodules\n160000 commit deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\ta\n160000 commit cafebabecafebabecafebabecafebabecafebabe\tb\n"
+]

@@ -1,0 +1,64 @@
+[
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "INFO: Running ('git', 'push', 'origin', 'a998ea85d411309e9b4541531e1b0ef79e96344a:refs/heads/master')"
+    ]
+  },
+  [
+    "first",
+    {
+      "refs/heads/master": [
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "a998ea85d411309e9b4541531e1b0ef79e96344a",
+          [
+            "first",
+            "",
+            "Cr-Mirrored-Commit: 69f5a0e5e23176ac53b19886a1cebec09f001012"
+          ]
+        ]
+      ]
+    }
+  ],
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "INFO: starting with tree '77c38fb079921da53996f8249ab4512f8f828836'"
+    ]
+  },
+  [
+    "should be no difference",
+    {
+      "refs/heads/master": [
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "a998ea85d411309e9b4541531e1b0ef79e96344a",
+          [
+            "first",
+            "",
+            "Cr-Mirrored-Commit: 69f5a0e5e23176ac53b19886a1cebec09f001012"
+          ]
+        ]
+      ]
+    }
+  ]
+]

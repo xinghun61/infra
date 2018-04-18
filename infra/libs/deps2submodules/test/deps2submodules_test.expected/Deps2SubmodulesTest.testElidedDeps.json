@@ -1,0 +1,13 @@
+[
+  [
+    "[submodule \"foo/bar\"]",
+    "\tpath = foo/bar",
+    "\turl = https://chromium.googlesource.com/xyz/abc"
+  ],
+  {
+    "foo/bar": [
+      "https://chromium.googlesource.com/xyz/abc",
+      "41d25f51c301c5eee3737998b0d86573e4e91b90"
+    ]
+  }
+]

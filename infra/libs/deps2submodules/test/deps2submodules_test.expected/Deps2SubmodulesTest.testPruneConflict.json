@@ -1,0 +1,20 @@
+[
+  [
+    "[submodule \"foo/bar\"]",
+    "\tpath = foo/bar",
+    "\turl = https://chromium.googlesource.com/xyz/pqr",
+    "[submodule \"quux\"]",
+    "\tpath = quux",
+    "\turl = https://chromium.googlesource.com/xyz/abc"
+  ],
+  {
+    "foo/bar": [
+      "https://chromium.googlesource.com/xyz/pqr",
+      "41d25f51c301c5eee3737998b0d86573e4e91b90"
+    ],
+    "quux": [
+      "https://chromium.googlesource.com/xyz/abc",
+      "db1a5a09f7ddd42f3ce395a761725516593fc4ff"
+    ]
+  }
+]

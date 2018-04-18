@@ -1,0 +1,20 @@
+[
+  [
+    "[submodule \"foo\"]",
+    "\tpath = foo",
+    "\turl = https://chromium.googlesource.com/xyz/bar",
+    "[submodule \"out\"]",
+    "\tpath = out",
+    "\turl = https://chromium.googlesource.com/chromium/src/out"
+  ],
+  {
+    "foo": [
+      "https://chromium.googlesource.com/xyz/bar",
+      "10803d79ece6d8752be370163d342030a816cb8f"
+    ],
+    "out": [
+      "https://chromium.googlesource.com/chromium/src/out",
+      "e5e08ac07d8a3530de282fbf99472c4c7625f949"
+    ]
+  }
+]

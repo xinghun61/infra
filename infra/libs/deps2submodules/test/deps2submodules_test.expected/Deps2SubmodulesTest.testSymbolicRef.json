@@ -1,0 +1,49 @@
+[
+  [
+    [
+      "[submodule \"another\"]",
+      "\tpath = another",
+      "\turl = https://chromium.googlesource.com/xyz/def",
+      "[submodule \"one\"]",
+      "\tpath = one",
+      "\turl = https://chromium.googlesource.com/xyz/abc"
+    ],
+    {
+      "another": [
+        "https://chromium.googlesource.com/xyz/def",
+        "2a2337d1d2e5bfffa670a91f2231d5c428dfaadd"
+      ],
+      "one": [
+        "https://chromium.googlesource.com/xyz/abc",
+        "cc103db39df46ec8fdce463279180d948ff6e81e"
+      ]
+    }
+  ],
+  [
+    [
+      "[submodule \"another\"]",
+      "\tpath = another",
+      "\turl = https://chromium.googlesource.com/xyz/def",
+      "[submodule \"one\"]",
+      "\tpath = one",
+      "\turl = https://chromium.googlesource.com/xyz/abc",
+      "[submodule \"yet/another\"]",
+      "\tpath = yet/another",
+      "\turl = https://chromium.googlesource.com/xyz/pqr"
+    ],
+    {
+      "another": [
+        "https://chromium.googlesource.com/xyz/def",
+        "2a2337d1d2e5bfffa670a91f2231d5c428dfaadd"
+      ],
+      "one": [
+        "https://chromium.googlesource.com/xyz/abc",
+        "cc103db39df46ec8fdce463279180d948ff6e81e"
+      ],
+      "yet/another": [
+        "https://chromium.googlesource.com/xyz/pqr",
+        "a0cde59caf0889feb56aac1abd6eb5732ff0ddb8"
+      ]
+    }
+  ]
+]

@@ -1,0 +1,59 @@
+[
+  [
+    "before",
+    {
+      "refs/heads/master": [
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "1da0d4fbfbe76ff7b075a6c9d74a85a2afdac046",
+          [
+            "unrelated commit",
+            "",
+            "Cr-Mirrored-Commit: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+          ]
+        ]
+      ]
+    }
+  ],
+  "reify_submodules() call failed",
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "ERROR: Mirrored commit deadbeefdeadbeefdeadbeefdeadbeefdeadbeef (from synth. commit '1da0d4fbfbe76ff7b075a6c9d74a85a2afdac046') does not exist"
+    ]
+  },
+  [
+    "after",
+    {
+      "refs/heads/master": [
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "1da0d4fbfbe76ff7b075a6c9d74a85a2afdac046",
+          [
+            "unrelated commit",
+            "",
+            "Cr-Mirrored-Commit: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+          ]
+        ]
+      ]
+    }
+  ]
+]

@@ -1,0 +1,55 @@
+[
+  [
+    "before",
+    {
+      "refs/heads/master": [
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "c91b8c7111df00763ccfbe798fe664e8f97c6f87",
+          [
+            "zeroth"
+          ]
+        ]
+      ]
+    }
+  ],
+  "reify_submodules() call failed",
+  {
+    "log output": [
+      "INFO: Running ('git', 'fetch')",
+      "ERROR: No footers for synthesized commit 'c91b8c7111df00763ccfbe798fe664e8f97c6f87'"
+    ]
+  },
+  [
+    "after",
+    {
+      "refs/heads/master": [
+        [
+          "69f5a0e5e23176ac53b19886a1cebec09f001012",
+          [
+            "first"
+          ]
+        ]
+      ]
+    },
+    {
+      "refs/heads/master": [
+        [
+          "c91b8c7111df00763ccfbe798fe664e8f97c6f87",
+          [
+            "zeroth"
+          ]
+        ]
+      ]
+    }
+  ]
+]
