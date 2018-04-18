@@ -1,20 +1,5 @@
 <script>
     LinkifyBehavior = {
-      _miloify: function(url) {
-        let u = new URL(url);
-        if (u.hostname.includes('build.chromium.org')) {
-          u.hostname = 'ci.chromium.org';
-          u.pathname = u.pathname.replace('/p/', '/buildbot/');
-          u.pathname = u.pathname.replace('/i/', '/buildbot/');
-          u.pathname = u.pathname.replace('/builders/', '/');
-          u.pathname = u.pathname.replace('/builds/', '/');
-        }
-        if (u.hostname !== 'go') {
-          u.protocol = 'https:';
-        }
-        return u.toString();
-      },
-
       _uberify: function(url) {
         let u = new URL(url);
         if (u.hostname.includes('build.chromium.org')) {
@@ -30,8 +15,6 @@
       _linkify: function(linkStyle, url) {
         if (linkStyle === 'uber') {
           return this._uberify(url);
-        } else if (linkStyle == 'milo') {
-          return this._miloify(url);
         }
         return url;
       }

@@ -326,8 +326,8 @@ func (a *Analyzer) builderAlerts(ctx context.Context, tree string, master *messa
 	}
 	elapsed := a.Now().Sub(lastUpdated.Time())
 	links := []messages.Link{
-		{Title: "Builder", Href: client.BuilderURL(master, builderName).String()},
-		{Title: "Last build", Href: client.BuildURL(master, builderName, lastBuild.Number).String()},
+		{Title: "Builder", Href: client.BuilderURLDeprecated(master, builderName).String()},
+		{Title: "Last build", Href: client.BuildURL(lastBuild.ViewPath)},
 		{Title: "Last build step", Href: client.StepURL(master, builderName, lastStep, lastBuild.Number).String()},
 	}
 
@@ -622,7 +622,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 				// If Findit analysis is still running, result.FirstKnownFailedBuildNumber may be empty.
 				buildNumberInURL = result.BuildNumber
 			}
-			buildURL := client.BuildURL(master, builderName, buildNumberInURL).String()
+			buildURL := client.BuildURLDeprecated(master, builderName, buildNumberInURL).String()
 			mergedBF.FinditURL = fmt.Sprintf("https://findit-for-me.appspot.com/waterfall/build-failure?url=%s", buildURL)
 		}
 
@@ -763,7 +763,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 						Builders: []messages.AlertedBuilder{
 							{
 								Name:          failure.Build.BuilderName,
-								URL:           client.BuilderURL(failure.Master, failure.Build.BuilderName).String(),
+								URL:           client.BuilderURL(failure.Build.ViewPath),
 								StartTime:     failure.Build.Times[0],
 								FirstFailure:  failure.Build.Number,
 								LatestFailure: failure.Build.Number,
@@ -877,7 +877,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 				Builders: []messages.AlertedBuilder{
 					{
 						Name:          failure.Build.BuilderName,
-						URL:           client.BuilderURL(failure.Master, failure.Build.BuilderName).String(),
+						URL:           client.BuilderURL(failure.Build.ViewPath),
 						StartTime:     failure.Build.Times[0],
 						FirstFailure:  failure.Build.Number,
 						LatestFailure: failure.Build.Number,

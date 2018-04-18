@@ -58,6 +58,7 @@ type Build struct {
 	Text             []string        `json:"text"`
 	Times            []EpochTime     `json:"times"`
 	Finished         bool            `json:"finished"`
+	ViewPath         string          `json:"view_path"`
 }
 
 // Slave is an automatically generated type.

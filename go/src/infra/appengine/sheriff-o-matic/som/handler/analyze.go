@@ -120,7 +120,7 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 
 	treeCfgs, ok := trees[tree]
 	if !ok {
-		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("unrecoginzed tree: %s", tree))
+		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("unrecognized tree: %s", tree))
 		return nil, nil
 	}
 

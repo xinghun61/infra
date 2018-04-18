@@ -115,13 +115,13 @@ func TestMasterAlerts(t *testing.T) {
 			t: time.Unix(100, 0).Add(20 * time.Minute),
 			want: []messages.Alert{
 				{
-					Key:       "stale master: https://build.chromium.org/p/fake.master",
-					Title:     "Stale https://build.chromium.org/p/fake.master master data",
+					Key:       "stale master: https://ci.chromium.org/p/fake.master",
+					Title:     "Stale https://ci.chromium.org/p/fake.master master data",
 					Type:      messages.AlertStaleMaster,
 					Severity:  messages.StaleMaster,
 					Body:      "0h 20m elapsed since last update.",
 					Time:      messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
-					Links:     []messages.Link{{Title: "Master", Href: urlParse("https://build.chromium.org/p/fake.master", t).String()}},
+					Links:     []messages.Link{{Title: "Master", Href: urlParse("https://ci.chromium.org/p/fake.master", t).String()}},
 					StartTime: messages.EpochTime(100),
 				},
 			},
@@ -143,7 +143,7 @@ func TestMasterAlerts(t *testing.T) {
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
-		got := a.MasterAlerts(ctx, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, &test.be)
+		got := a.MasterAlerts(ctx, &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/"+test.master, t)}, &test.be)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed. Got %+v, want: %+v\nDiff: %v", test.name, got, test.want,
 				ansidiff.Diff(got, test.want))
@@ -163,13 +163,13 @@ func TestBuilderAlerts(t *testing.T) {
 	}{
 		{
 			name:         "Empty",
-			url:          "https://build.chromium.org/p/fake.master/json",
+			url:          "https://ci.chromium.org/p/fake.master/json",
 			wantBuilders: []messages.Alert{},
 			wantMasters:  []messages.Alert{},
 		},
 		{
 			name: "No Builders",
-			url:  "https://build.chromium.org/p/fake.master/json",
+			url:  "https://ci.chromium.org/p/fake.master/json",
 			be: messages.BuildExtract{
 				CreatedTimestamp: messages.EpochTime(100),
 			},
@@ -179,7 +179,7 @@ func TestBuilderAlerts(t *testing.T) {
 		},
 		{
 			name: "No Alerts",
-			url:  "https://build.chromium.org/p/fake.master/json",
+			url:  "https://ci.chromium.org/p/fake.master/json",
 			be: messages.BuildExtract{
 				CreatedTimestamp: messages.EpochTime(100),
 				Builders: map[string]messages.Builder{
@@ -260,9 +260,9 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 						Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
 						Severity:  messages.HungBuilder,
 						Links: []messages.Link{
-							{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder", t).String()},
-							{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1", t).String()},
-							{Title: "Last build step", Href: urlParse("https://build.chromium.org/p/fake.master/builders/hung.builder/builds/1/steps/fake_step", t).String()},
+							{Title: "Builder", Href: urlParse("https://ci.chromium.org/p/fake.master/builders/hung.builder", t).String()},
+							{Title: "Last build", Href: urlParse("https://ci.chromium.org/p/fake.master/builders/hung.builder/1", t).String()},
+							{Title: "Last build step", Href: urlParse("https://ci.chromium.org/p/fake.master/builders/hung.builder/builds/1/steps/fake_step", t).String()},
 						},
 					},
 				},
@@ -312,9 +312,9 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 						Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour).Add(time.Second)),
 						Severity:  messages.OfflineBuilder,
 						Links: []messages.Link{
-							{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/offline.builder", t).String()},
-							{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/offline.builder/builds/1", t).String()},
-							{Title: "Last build step", Href: urlParse("https://build.chromium.org/p/fake.master/builders/offline.builder/builds/1/steps/fake_step", t).String()},
+							{Title: "Builder", Href: urlParse("https://ci.chromium.org/p/fake.master/builders/offline.builder", t).String()},
+							{Title: "Last build", Href: urlParse("https://ci.chromium.org/p/fake.master/builders/offline.builder/1", t).String()},
+							{Title: "Last build step", Href: urlParse("https://ci.chromium.org/p/fake.master/builders/offline.builder/builds/1/steps/fake_step", t).String()},
 						},
 					},
 				},
@@ -364,9 +364,9 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 						Time:      messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
 						Severity:  messages.IdleBuilder,
 						Links: []messages.Link{
-							{Title: "Builder", Href: urlParse("https://build.chromium.org/p/fake.master/builders/idle.builder", t).String()},
-							{Title: "Last build", Href: urlParse("https://build.chromium.org/p/fake.master/builders/idle.builder/builds/1", t).String()},
-							{Title: "Last build step", Href: urlParse("https://build.chromium.org/p/fake.master/builders/idle.builder/builds/1/steps/fake_step", t).String()},
+							{Title: "Builder", Href: urlParse("https://ci.chromium.org/p/fake.master/builders/idle.builder", t).String()},
+							{Title: "Last build", Href: urlParse("https://ci.chromium.org/p/fake.master/builders/idle.builder/1", t).String()},
+							{Title: "Last build step", Href: urlParse("https://ci.chromium.org/p/fake.master/builders/idle.builder/builds/1/steps/fake_step", t).String()},
 						},
 					},
 				},
@@ -385,7 +385,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 					Builds: test.builds,
 				})
 
-				gotAlerts, gotErrs := a.builderAlerts(ctx, "tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
+				gotAlerts, gotErrs := a.builderAlerts(ctx, "tree", &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
 				So(gotAlerts, ShouldResemble, test.wantAlerts)
 				So(gotErrs, ShouldResemble, test.wantErrs)
 			})
@@ -448,7 +448,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								{
 									Name:   "fake.builder",
 									Master: "fake.master",
-									URL:    urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:    urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									Count:  1,
 								},
 							},
@@ -478,7 +478,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					Step("fake_step").Results(2).BuilderFaker,
 				finditData: []*messages.FinditResult{
 					{
-						MasterURL:   "https://build.chromium.org/p/fake.master",
+						MasterURL:   "https://ci.chromium.org/p/fake.master",
 						BuilderName: "fake.builder",
 						BuildNumber: 123,
 						StepName:    "fake_step",
@@ -500,7 +500,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 							Builders: []messages.AlertedBuilder{
 								{
 									Name:          "fake.builder",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									Master:        "fake.master",
 									FirstFailure:  123,
 									LatestFailure: 123,
@@ -518,7 +518,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 									Positions: []string{"refs/heads/master@{#291569}"},
 								},
 							},
-							FinditURL:   "https://findit-for-me.appspot.com/waterfall/build-failure?url=https://build.chromium.org/p/fake.master/builders/fake.builder/builds/123",
+							FinditURL:   "https://findit-for-me.appspot.com/waterfall/build-failure?url=https://ci.chromium.org/p/fake.master/builders/fake.builder/builds/123",
 							HasFindings: false,
 							IsFinished:  false,
 							IsSupported: true,
@@ -537,7 +537,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					Step("fake_step").Results(2).BuilderFaker,
 				finditData: []*messages.FinditResult{
 					{
-						MasterURL:                   "https://build.chromium.org/p/fake.master",
+						MasterURL:                   "https://ci.chromium.org/p/fake.master",
 						BuilderName:                 "fake.builder",
 						BuildNumber:                 0,
 						FirstKnownFailedBuildNumber: 0,
@@ -571,7 +571,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 							Builders: []messages.AlertedBuilder{
 								{
 									Name:   "fake.builder",
-									URL:    urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:    urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									Master: "fake.master",
 									Count:  1,
 								},
@@ -606,7 +606,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								},
 							},
 							FinditStatus: "FINISHED",
-							FinditURL:    "https://findit-for-me.appspot.com/waterfall/build-failure?url=https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0",
+							FinditURL:    "https://findit-for-me.appspot.com/waterfall/build-failure?url=https://ci.chromium.org/p/fake.master/builders/fake.builder/builds/0",
 							HasFindings:  true,
 							IsFinished:   true,
 							IsSupported:  true,
@@ -637,7 +637,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								{
 									Name:   "fake.builder",
 									Master: "fake.master",
-									URL:    urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:    urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									Count:  1,
 								},
 							},
@@ -664,11 +664,11 @@ func TestBuilderStepAlerts(t *testing.T) {
 				recentBuilds: []int64{0},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
-					Step("fake_step").Results(2).BuildFaker.
+					Step("fake_step").Results(2).BuildFaker.ViewPath("/p/fake.master/builders/fake.builder/1").
 					Step("other_step").Results(2).BuilderFaker,
 				finditData: []*messages.FinditResult{
 					{
-						MasterURL:                   "https://build.chromium.org/p/fake.master",
+						MasterURL:                   "https://ci.chromium.org/p/fake.master",
 						BuilderName:                 "fake.builder",
 						BuildNumber:                 0,
 						FirstKnownFailedBuildNumber: 0,
@@ -701,7 +701,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								{
 									Name:   "fake.builder",
 									Master: "fake.master",
-									URL:    urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:    urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									Count:  1,
 								},
 							},
@@ -733,7 +733,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								},
 							},
 							FinditStatus: "FINISHED",
-							FinditURL:    "https://findit-for-me.appspot.com/waterfall/build-failure?url=https://build.chromium.org/p/fake.master/builders/fake.builder/builds/0",
+							FinditURL:    "https://findit-for-me.appspot.com/waterfall/build-failure?url=https://ci.chromium.org/p/fake.master/builders/fake.builder/builds/0",
 							HasFindings:  true,
 							IsFinished:   true,
 							IsSupported:  true,
@@ -750,7 +750,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								{
 									Name:   "fake.builder",
 									Master: "fake.master",
-									URL:    urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:    urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									Count:  1,
 								},
 							},
@@ -799,7 +799,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  0,
 									LatestFailure: 3,
 									Count:         4,
@@ -836,7 +836,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					Build(1).Times(2, 3).IncludeChanges("http://test", "refs/heads/master@{#291570}").
 					Step("fake_step").Results(2).BuilderFaker.
 					Build(2).Times(4, 5).IncludeChanges("http://test", "refs/heads/master@{#291570}").
-					Step("fake_step").Results(2).BuildFaker.
+					Step("fake_step").Results(2).BuildFaker.ViewPath("/p/fake.master/builders/fake.builder/1").
 					Step("other_step").Results(2).BuilderFaker,
 				buildsAtFault: []int{2, 2},
 				stepsAtFault:  []string{"other_step", "fake_step"},
@@ -854,7 +854,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									StartTime:     messages.EpochTime(4),
 									FirstFailure:  2,
 									LatestFailure: 2,
@@ -886,7 +886,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  0,
 									LatestFailure: 2,
 									Count:         3,
@@ -919,7 +919,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				recentBuilds: []int64{0, 1, 2},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
-					Step("fake_step").Results(2).BuildFaker.
+					Step("fake_step").Results(2).BuildFaker.ViewPath("/p/fake.master/builders/fake.builder/1").
 					Step("other_step").Results(2).BuilderFaker.
 					Build(1).Times(2, 3).IncludeChanges("http://test", "refs/heads/master@{#291570}").
 					Step("fake_step").Results(2).BuilderFaker.
@@ -940,7 +940,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  0,
 									LatestFailure: 2,
 									Count:         3,
@@ -1000,7 +1000,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  4,
 									LatestFailure: 5,
 									LatestPassing: 3,
@@ -1059,7 +1059,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				}
 				test.wantAlerts = newAlerts
 
-				gotAlerts, gotErrs := a.builderStepAlerts(ctx, test.tree, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
+				gotAlerts, gotErrs := a.builderStepAlerts(ctx, test.tree, &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
 
 				sort.Sort(sortAlerts(gotAlerts))
 				sort.Sort(sortAlerts(test.wantAlerts))
@@ -1102,14 +1102,15 @@ func TestStepFailures(t *testing.T) {
 				builder:  "fake.builder",
 				buildNum: 0,
 				bCache: analyzertest.NewBuilderFaker("stepCheck.master", "fake.builder").
-					Build(0).Step("ok_step").Results(0).BuildFaker.
+					Build(0).Step("ok_step").Results(0).BuildFaker.ViewPath("/p/stepCheck.master/builders/fake.builder/1").
 					Step("broken_step").Results(3).BuilderFaker.Builds,
 				want: []*messages.BuildStep{
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/stepCheck.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/stepCheck.master", t)},
 						Build: &messages.Build{
 							Master:      "stepCheck.master",
 							BuilderName: "fake.builder",
+							ViewPath:    "/p/stepCheck.master/builders/fake.builder/1",
 							Steps: []messages.Step{
 								{
 									Name:       "ok_step",
@@ -1142,7 +1143,7 @@ func TestStepFailures(t *testing.T) {
 			Convey(test.name, func() {
 				mc.BuildValue = test.b
 				mc.BCache = test.bCache
-				got, err := a.stepFailures(ctx, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.buildNum)
+				got, err := a.stepFailures(ctx, &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/"+test.master, t)}, test.builder, test.buildNum)
 				So(got, ShouldResemble, test.want)
 				So(err, ShouldResemble, test.wantErr)
 			})
@@ -1168,24 +1169,26 @@ func TestStepFailureAlerts(t *testing.T) {
 				name: "single failure",
 				failures: []*messages.BuildStep{
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      2,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name: "steps",
 						},
 					},
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      42,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name: "fake_tests",
@@ -1205,7 +1208,7 @@ func TestStepFailureAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  42,
 									LatestFailure: 42,
 									Count:         1,
@@ -1215,12 +1218,13 @@ func TestStepFailureAlerts(t *testing.T) {
 								Raw: &fakeReasonRaw{},
 							},
 							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 								Build: &messages.Build{
 									Master:      "fake.master",
 									BuilderName: "fake.builder",
 									Number:      42,
 									Times:       []messages.EpochTime{0, 1},
+									ViewPath:    "/p/fake.master/builders/fake.builder/1",
 								},
 								Step: &messages.Step{
 									Name: "fake_tests",
@@ -1234,24 +1238,26 @@ func TestStepFailureAlerts(t *testing.T) {
 				name: "single failure (step links)",
 				failures: []*messages.BuildStep{
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      2,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name: "steps",
 						},
 					},
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      42,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name: "fake_tests",
@@ -1273,7 +1279,7 @@ func TestStepFailureAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  42,
 									LatestFailure: 42,
 									Count:         1,
@@ -1283,12 +1289,13 @@ func TestStepFailureAlerts(t *testing.T) {
 								Raw: &fakeReasonRaw{},
 							},
 							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 								Build: &messages.Build{
 									Master:      "fake.master",
 									BuilderName: "fake.builder",
 									Number:      42,
 									Times:       []messages.EpochTime{0, 1},
+									ViewPath:    "/p/fake.master/builders/fake.builder/1",
 								},
 								Step: &messages.Step{
 									Name: "fake_tests",
@@ -1311,24 +1318,26 @@ func TestStepFailureAlerts(t *testing.T) {
 				name: "single failure (blacklisted step links)",
 				failures: []*messages.BuildStep{
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      2,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name: "steps",
 						},
 					},
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      42,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name: "fake_tests",
@@ -1351,7 +1360,7 @@ func TestStepFailureAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  42,
 									LatestFailure: 42,
 									Count:         1,
@@ -1361,12 +1370,13 @@ func TestStepFailureAlerts(t *testing.T) {
 								Raw: &fakeReasonRaw{},
 							},
 							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 								Build: &messages.Build{
 									Master:      "fake.master",
 									BuilderName: "fake.builder",
 									Number:      42,
 									Times:       []messages.EpochTime{0, 1},
+									ViewPath:    "/p/fake.master/builders/fake.builder/1",
 								},
 								Step: &messages.Step{
 									Name: "fake_tests",
@@ -1383,24 +1393,26 @@ func TestStepFailureAlerts(t *testing.T) {
 				name: "single failure (weird test suite name)",
 				failures: []*messages.BuildStep{
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      2,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name: "steps",
 						},
 					},
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      42,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name: "fake_tests on Intel GPU on Linux on Ubuntu-12.04",
@@ -1420,7 +1432,7 @@ func TestStepFailureAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  42,
 									LatestFailure: 42,
 									Count:         1,
@@ -1430,12 +1442,13 @@ func TestStepFailureAlerts(t *testing.T) {
 								Raw: &fakeReasonRaw{},
 							},
 							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 								Build: &messages.Build{
 									Master:      "fake.master",
 									BuilderName: "fake.builder",
 									Number:      42,
 									Times:       []messages.EpochTime{0, 1},
+									ViewPath:    "/p/fake.master/builders/fake.builder/1",
 								},
 								Step: &messages.Step{
 									Name: "fake_tests on Intel GPU on Linux on Ubuntu-12.04",
@@ -1449,24 +1462,26 @@ func TestStepFailureAlerts(t *testing.T) {
 				name: "single infra failure",
 				failures: []*messages.BuildStep{
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      2,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name: "steps",
 						},
 					},
 					{
-						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 						Build: &messages.Build{
 							Master:      "fake.master",
 							BuilderName: "fake.builder",
 							Number:      42,
 							Times:       []messages.EpochTime{0, 1},
+							ViewPath:    "/p/fake.master/builders/fake.builder/1",
 						},
 						Step: &messages.Step{
 							Name:    "fake_tests",
@@ -1488,7 +1503,7 @@ func TestStepFailureAlerts(t *testing.T) {
 								{
 									Name:          "fake.builder",
 									Master:        "fake.master",
-									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									URL:           urlParse("https://ci.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  42,
 									LatestFailure: 42,
 								},
@@ -1497,12 +1512,13 @@ func TestStepFailureAlerts(t *testing.T) {
 								Raw: &fakeReasonRaw{},
 							},
 							StepAtFault: &messages.BuildStep{
-								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)},
 								Build: &messages.Build{
 									Master:      "fake.master",
 									BuilderName: "fake.builder",
 									Number:      42,
 									Times:       []messages.EpochTime{0, 1},
+									ViewPath:    "/p/fake.master/builders/fake.builder/1",
 								},
 								Step: &messages.Step{
 									Name:    "fake_tests",
@@ -1678,7 +1694,7 @@ func TestWouldCloseTree(t *testing.T) {
 		gkr := NewGatekeeperRules(ctx, []*messages.GatekeeperConfig{
 			{
 				Masters: map[string][]messages.MasterConfig{
-					"https://build.chromium.org/p/fake.master": {{
+					"https://ci.chromium.org/p/fake.master": {{
 						Builders: map[string]messages.BuilderConfig{
 							"fake.builder": {
 								ClosingSteps: []string{"*"},
@@ -1693,13 +1709,13 @@ func TestWouldCloseTree(t *testing.T) {
 				messages.TreeMasterConfig{
 					Masters: map[messages.MasterLocation][]string{
 						{URL: *urlParse(
-							"https://build.chromium.org/p/fake.master", t)}: {"fake.builder", "other.builder"},
+							"https://ci.chromium.org/p/fake.master", t)}: {"fake.builder", "other.builder"},
 					},
 				},
 			},
 		})
 
-		loc := &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)}
+		loc := &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master", t)}
 		So(gkr.WouldCloseTree(ctx, loc, "fake.builder", "fake.step"), ShouldEqual, true)
 		So(gkr.WouldCloseTree(ctx, loc, "other.builder", "fake.step"), ShouldEqual, false)
 	})
@@ -1728,7 +1744,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"https://build.chromium.org/p/fake.master": {{
+				"https://ci.chromium.org/p/fake.master": {{
 					ExcludedBuilders: []string{"fake.builder"},
 				}},
 			}},
@@ -1741,7 +1757,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"https://build.chromium.org/p/fake.master": {{
+				"https://ci.chromium.org/p/fake.master": {{
 					ExcludedSteps: []string{"fake_step"},
 				}},
 			}},
@@ -1754,7 +1770,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"https://build.chromium.org/p/fake.master": {{
+				"https://ci.chromium.org/p/fake.master": {{
 					Builders: map[string]messages.BuilderConfig{
 						"fake.builder": {
 							ExcludedSteps: []string{"fake_step"},
@@ -1771,7 +1787,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"https://build.chromium.org/p/fake.master": {{
+				"https://ci.chromium.org/p/fake.master": {{
 					ExcludedBuilders: []string{"*"},
 				}},
 			}},
@@ -1784,7 +1800,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"https://build.chromium.org/p/fake.master": {{
+				"https://ci.chromium.org/p/fake.master": {{
 					Builders: map[string]messages.BuilderConfig{
 						"*": {},
 					},
@@ -1795,7 +1811,7 @@ func TestExcludeFailure(t *testing.T) {
 					messages.TreeMasterConfig{
 						Masters: map[messages.MasterLocation][]string{
 							{URL: *urlParse(
-								"https://build.chromium.org/p/fake.master", t)}: {"other.builder"},
+								"https://ci.chromium.org/p/fake.master", t)}: {"other.builder"},
 						},
 					},
 				},
@@ -1809,7 +1825,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"https://build.chromium.org/p/fake.master": {{
+				"https://ci.chromium.org/p/fake.master": {{
 					Builders: map[string]messages.BuilderConfig{
 						"*": {},
 					},
@@ -1820,7 +1836,7 @@ func TestExcludeFailure(t *testing.T) {
 					messages.TreeMasterConfig{
 						Masters: map[messages.MasterLocation][]string{
 							{URL: *urlParse(
-								"https://build.chromium.org/p/fake.master", t)}: {"fake.builder"},
+								"https://ci.chromium.org/p/fake.master", t)}: {"fake.builder"},
 						},
 					},
 				},
@@ -1834,7 +1850,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
-				"https://build.chromium.org/p/fake.master": {{
+				"https://ci.chromium.org/p/fake.master": {{
 					Builders: map[string]messages.BuilderConfig{
 						"*": {},
 					},
@@ -1845,7 +1861,7 @@ func TestExcludeFailure(t *testing.T) {
 					messages.TreeMasterConfig{
 						Masters: map[messages.MasterLocation][]string{
 							{URL: *urlParse(
-								"https://build.chromium.org/p/fake.master", t)}: {"*"},
+								"https://ci.chromium.org/p/fake.master", t)}: {"*"},
 						},
 					},
 				},
@@ -1859,7 +1875,7 @@ func TestExcludeFailure(t *testing.T) {
 	a := newTestAnalyzer(0, 10)
 	for _, test := range tests {
 		a.Gatekeeper = NewGatekeeperRules(ctx, []*messages.GatekeeperConfig{&test.gk}, test.gkt)
-		got := a.Gatekeeper.ExcludeFailure(ctx, test.tree, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.step)
+		got := a.Gatekeeper.ExcludeFailure(ctx, test.tree, &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/"+test.master, t)}, test.builder, test.step)
 		if got != test.want {
 			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)
 		}

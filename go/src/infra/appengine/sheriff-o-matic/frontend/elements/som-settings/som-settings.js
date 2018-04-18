@@ -23,8 +23,8 @@ class SomSettings extends Polymer.Element {
     };
   }
 
-  _initializeUber(evt) {
-    evt.target.value = 'uber';
+  _initializeLinkStyle(evt) {
+    evt.target.value = 'milo';
   }
 }
 

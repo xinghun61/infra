@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +37,9 @@ const (
 	maxRetries = 3
 	// FYI https://github.com/golang/go/issues/9405 in Go 1.4
 	// http timeout errors are logged as "use of closed network connection"
-	timeout = 5 * time.Second
+	timeout    = 5 * time.Second
+	miloScheme = "https"
+	miloHost   = "ci.chromium.org"
 
 	clientReaderKey = contextKey("infra-client-reader")
 
@@ -61,29 +64,56 @@ func WithReader(ctx context.Context, r readerType) context.Context {
 	return context.WithValue(ctx, clientReaderKey, r)
 }
 
-// GetReader returns the current client.Reader for the context, or nil.
-func GetReader(ctx context.Context) readerType {
+// getReader returns the current client.Reader for the context, or nil.
+func getReader(ctx context.Context) readerType {
 	if reader, ok := ctx.Value(clientReaderKey).(readerType); ok {
 		return reader
 	}
 	return nil
 }
 
-// BuilderURL returns the builder URL for the given master and builder.
-func BuilderURL(master *messages.MasterLocation, builder string) *url.URL {
+// BuilderURLDeprecated returns the builder URL for the given master and builder.
+// TODO(zhangtiff): Delete in favor of using BuilderURL().
+func BuilderURLDeprecated(master *messages.MasterLocation, builder string) *url.URL {
 	newURL := master.URL
 	newURL.Path += fmt.Sprintf("/builders/%s", builder)
 	return &newURL
 }
 
-// BuildURL returns the build URL for the given master, builder and build number.
-func BuildURL(master *messages.MasterLocation, builder string, buildNum int64) *url.URL {
+// BuildURLDeprecated returns the build URL for the given master, builder and build
+// number.
+// TODO(zhangtiff): This should be deprecated.
+func BuildURLDeprecated(master *messages.MasterLocation, builder string, buildNum int64) *url.URL {
 	newURL := master.URL
 	newURL.Path += fmt.Sprintf("/builders/%s/builds/%d", builder, buildNum)
 	return &newURL
 }
 
+// BuilderURL returns the builder URL for the given master and builder.
+func BuilderURL(viewPath string) string {
+	URL := &url.URL{
+		Scheme: miloScheme,
+		Host:   miloHost,
+	}
+
+	r := regexp.MustCompile("/\\d+/?$")
+	URL.Path = r.ReplaceAllString(viewPath, "")
+	return URL.String()
+}
+
+// BuildURL returns the build URL given a viewPath
+func BuildURL(viewPath string) string {
+	URL := &url.URL{
+		Scheme: miloScheme,
+		Host:   miloHost,
+	}
+	URL.Path = viewPath
+	return URL.String()
+}
+
 // StepURL returns the step URL for the given master, builder, step and build number.
+// NOTE: This cannot be deprecated yet because Milo still uses build.chromium.org
+// pages for steps.
 func StepURL(master *messages.MasterLocation, builder, step string, buildNum int64) *url.URL {
 	newURL := master.URL
 	newURL.Path += fmt.Sprintf("/builders/%s/builds/%d/steps/%s",
@@ -113,30 +143,30 @@ type Writer interface {
 }
 
 // Build fetches the build summary for master, builder and buildNum
-// from build.chromium.org.
+// from ci.chromium.org.
 func Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	return GetReader(ctx).Build(ctx, master, builder, buildNum)
+	return getReader(ctx).Build(ctx, master, builder, buildNum)
 }
 
 // BuildExtract fetches build information for master from CBE.
 func BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
-	return GetReader(ctx).BuildExtract(ctx, master)
+	return getReader(ctx).BuildExtract(ctx, master)
 }
 
 // StdioForStep fetches the standard output for a given build step, and an error if any
 // occurred.
 func StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
-	return GetReader(ctx).StdioForStep(ctx, master, builder, step, buildNum)
+	return getReader(ctx).StdioForStep(ctx, master, builder, step, buildNum)
 }
 
 // CrbugItems fetches a list of open issues from crbug matching the given label.
 func CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error) {
-	return GetReader(ctx).CrbugItems(ctx, label)
+	return getReader(ctx).CrbugItems(ctx, label)
 }
 
 // Findit fetches items from the findit service, which identifies possible culprit CLs for a failed build.
 func Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
-	return GetReader(ctx).Findit(ctx, master, builder, buildNum, failedSteps)
+	return getReader(ctx).Findit(ctx, master, builder, buildNum, failedSteps)
 }
 
 type trackingHTTPClient struct {
@@ -200,23 +230,22 @@ func newReader(ctx context.Context, httpClient *http.Client) (*reader, error) {
 	return r, nil
 }
 
-// NewReader returns a new default reader implementation, which will read data from various chrome infra
-// data sources.
-func NewReader(ctx context.Context) (readerType, error) {
-	return newReader(ctx, http.DefaultClient)
-}
-
 func cacheKeyForBuild(master *messages.MasterLocation, builder string, number int64) string {
 	return filepath.FromSlash(
 		fmt.Sprintf("%s/%s/%d.json", url.QueryEscape(master.String()), url.QueryEscape(builder), number))
 }
 
 func (r *reader) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
-	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, buildNum, step)
+	URL := &url.URL{
+		Scheme: miloScheme,
+		Host:   miloHost,
+	}
+
+	URL.Path = fmt.Sprintf("/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, buildNum, step)
 
 	expvars.Add("StdioForStep", 1)
 	defer expvars.Add("StdioForStep", -1)
-	res, _, err := r.hc.getText(ctx, URL)
+	res, _, err := r.hc.getText(ctx, URL.String())
 	return strings.Split(res, "\n"), err
 }
 

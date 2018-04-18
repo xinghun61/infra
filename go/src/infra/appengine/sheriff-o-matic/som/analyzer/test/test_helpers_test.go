@@ -58,6 +58,7 @@ func TestBuilderFaker(t *testing.T) {
 		BuilderName: "fake.builder",
 		Number:      0,
 		Times:       []messages.EpochTime{0, 1},
+		ViewPath:    "/p/fake.master/builders/fake.builder/0",
 		Steps: []messages.Step{
 			{
 				Name:       "fake_step",
@@ -89,12 +90,12 @@ func TestBuilderFaker(t *testing.T) {
 	buildSteps := StepsAtFault(bf, []int{0, 0}, []string{"fake_step", "other step"})
 	expectedSteps := []messages.BuildStep{
 		{
-			Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master")},
+			Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master")},
 			Build:  expected,
 			Step:   &expected.Steps[0],
 		},
 		{
-			Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master")},
+			Master: &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/fake.master")},
 			Build:  expected,
 			Step:   &expected.Steps[1],
 		},

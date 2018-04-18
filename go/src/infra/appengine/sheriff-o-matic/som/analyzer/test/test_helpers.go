@@ -53,7 +53,10 @@ func (f *BuilderFaker) Build(buildNum int) *BuildFaker {
 	path := fmt.Sprintf("%s/%s/%d", f.MasterName, f.BuilderName, buildNum)
 	b, ok := f.Builds[path]
 	if !ok {
-		b = &messages.Build{Number: int64(buildNum)}
+		b = &messages.Build{
+			Number:   int64(buildNum),
+			ViewPath: fmt.Sprintf("/p/%s/builders/%s/%d", f.MasterName, f.BuilderName, buildNum),
+		}
 		f.Builds[path] = b
 	}
 	b.Master = f.MasterName
@@ -86,7 +89,7 @@ func StepsAtFault(f *BuilderFaker, builds []int, stepNames []string) []messages.
 			if step.Name == stepName {
 				buildSteps = append(buildSteps, messages.BuildStep{
 					Step:   &step,
-					Master: &messages.MasterLocation{URL: *urlParse(fmt.Sprintf("https://build.chromium.org/p/%s", f.MasterName))},
+					Master: &messages.MasterLocation{URL: *urlParse(fmt.Sprintf("https://ci.chromium.org/p/%s", f.MasterName))},
 					Build:  f.Builds[path],
 				})
 				found = true
@@ -112,6 +115,12 @@ func (f *BuildFaker) Times(time ...int) *BuildFaker {
 	for _, t := range time {
 		f.Build.Times = append(f.Build.Times, messages.EpochTime(t))
 	}
+	return f
+}
+
+// ViewPath updated ViewPath property for BuildFaker.
+func (f *BuildFaker) ViewPath(path string) *BuildFaker {
+	f.Build.ViewPath = path
 	return f
 }
 
