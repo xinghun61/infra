@@ -90,6 +90,7 @@ class MailTemplate(object):
         'reason': build_status['reason'],
         'revision': str(latest_revision),
         'buildnumber': str(build_status['number']),
+        'steps': us_steps,
     }
 
     return text_content, html_content, subject
