@@ -135,12 +135,6 @@ func GetUncachedBugsHandler(ctx *router.Context) {
 func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 	q := fmt.Sprintf("label=%s", label)
 
-	// We may eventually want to make this an option that's configurable per bug
-	// queue.
-	if label == "infra-troopers" {
-		q = fmt.Sprintf("%s -has:owner", q)
-	}
-
 	res, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
 	if err != nil {
 		return nil, err

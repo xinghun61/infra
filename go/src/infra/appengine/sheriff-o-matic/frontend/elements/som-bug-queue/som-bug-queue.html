@@ -65,13 +65,8 @@
     <div id="main" hidden$="[[_hideBugQueue]]">
       <h2>
         <span>
-          <span hidden$="[[_isTrooperQueue]]">
-            [[treeDisplayName]] Bug Queue
-            (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)
-          </span>
-          <span hidden$="[[!_isTrooperQueue]]">
-            Trooper Queue (<a href="https://goto.google.com/trooper-queue" target="_blank">View in Monorail</a>)
-          </span>
+          [[treeDisplayName]] Bug Queue
+          (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)
           (<a href$="https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=[[bugQueueLabel]]" target="_blank">Add Bug</a>)
         </span>
 
@@ -93,12 +88,6 @@
         <div class="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
           Error fetching bug queue: [[_bugQueueJsonError.error]]
         </div>
-        <template is="dom-if" if="[[_isTrooperQueue]]">
-          <div class="error" hidden$="[[_haveNoErrors(_uncachedBugsJsonError)]]">
-            Error fetching uncached bugs. Bugs displayed may be stale or incomplete:
-            [[_uncachedBugsJsonError.error]]
-          </div>
-        </template>
         <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
         <div id="noBugs" hidden$="[[!_showNoBugs]]">No bugs in the queue!</div>
         <template is="dom-repeat" items="[[_bugsByPriority]]" as="bucket">

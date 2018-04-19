@@ -46,11 +46,6 @@ class SomBugQueue extends Polymer.Element {
         value: true,
         computed: '_computeHideBugQueue(bugQueueLabel)',
       },
-      _isTrooperQueue: {
-        type: Boolean,
-        value: false,
-        computed: '_computeIsTrooperQueue(bugQueueLabel)',
-      },
       _showNoBugs: {
         type: Boolean,
         value: false,
@@ -94,9 +89,6 @@ class SomBugQueue extends Polymer.Element {
     }
 
     let requests = [this.$.bugQueueAjax.generateRequest()];
-    if (this._isTrooperQueue) {
-      requests.push(this.$.uncachedBugsAjax.generateRequest());
-    }
 
     let promises = requests.map((r) => {
       return r.completes;
@@ -160,10 +152,6 @@ class SomBugQueue extends Polymer.Element {
     // No loading or empty message is shown unless a bug queue exists.
     return !bugQueueLabel || bugQueueLabel === '' ||
            bugQueueLabel === 'Performance-Sheriff-BotHealth';
-  }
-
-  _computeIsTrooperQueue(bugQueueLabel) {
-    return bugQueueLabel === 'infra-troopers';
   }
 
   _computePriority(bug) {

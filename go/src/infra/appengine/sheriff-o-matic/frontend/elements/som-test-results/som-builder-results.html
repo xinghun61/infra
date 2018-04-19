@@ -80,8 +80,10 @@
       }
 
       _getRenderedObjects(results) {
+        if (!results) return [];
         let renderedObjects = [];
         results.forEach(result => {
+          if (!result.test_actual) return;
           let results = new Set();
           result.test_actual.forEach((res) => { results.add(res); });
           // TODO(seanmccullough): Firgure out test-results' color scheme.

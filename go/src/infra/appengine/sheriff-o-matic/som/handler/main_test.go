@@ -221,59 +221,6 @@ func TestMain(t *testing.T) {
 						// TODO(seanmccullough): Remove all of the POST /alerts handling
 						// code and tests except for whatever chromeos needs.
 					})
-
-					Convey("trooper alerts", func() {
-						ta := datastore.GetTestable(c)
-
-						datastore.Put(c, &model.Tree{
-							Name: "chromium",
-						})
-
-						alertsSummary := &messages.AlertsSummary{
-							Timestamp: 1,
-							Alerts: []messages.Alert{
-								{
-									Type: messages.AlertOfflineBuilder,
-								},
-							},
-						}
-						asBytes, err := json.Marshal(alertsSummary.Alerts[0])
-						So(err, ShouldBeNil)
-
-						datastore.Put(c, &model.AlertJSON{
-							ID:       "1",
-							Tree:     datastore.MakeKey(c, "Tree", "chromium"),
-							Date:     time.Unix(1, 0).UTC(),
-							Contents: asBytes,
-						})
-						ta.CatchupIndexes()
-
-						GetAlertsHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makeGetRequest(),
-							Params:  makeParams("tree", "trooper"),
-						})
-
-						_, err = ioutil.ReadAll(w.Body)
-						So(err, ShouldBeNil)
-						So(w.Code, ShouldEqual, 200)
-					})
-
-					Convey("getSwarmingAlerts", func() {
-						// HACK:
-						oldOAClient := getOAuthClient
-						getOAuthClient = func(c context.Context) (*http.Client, error) {
-							return &http.Client{}, nil
-						}
-
-						swarmingBasePath = "http://fakeurl"
-
-						sa := getSwarmingAlerts(c)
-
-						getOAuthClient = oldOAClient
-						So(sa.Error, ShouldNotBeNil)
-					})
 				})
 
 				Convey("POST", func() {
@@ -1289,18 +1236,6 @@ func TestMain(t *testing.T) {
 						Writer:  w,
 						Request: makeGetRequest(),
 						Params:  makeParams("tree", "chromium"),
-					})
-					_, err := ioutil.ReadAll(w.Body)
-					So(err, ShouldBeNil)
-					So(w.Code, ShouldEqual, 200)
-				})
-
-				Convey("trooper restarts", func() {
-					GetRestartingMastersHandler(&router.Context{
-						Context: c,
-						Writer:  w,
-						Request: makeGetRequest(),
-						Params:  makeParams("tree", "trooper"),
 					})
 					_, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)

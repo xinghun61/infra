@@ -49,26 +49,6 @@
       });
     });
 
-    test('renders actions for trooper failures on /trooper ', function(done) {
-      element.alert = {
-        type: AlertTypes.IdleBuilder,
-        severity: AlertSeverity.IdleBuilder,
-        title: 'test title',
-        body: 'test body',
-        links: [],
-      };
-      element.treeName = 'trooper';
-
-      flush(function () {
-        assert.equal(
-            'test title',
-            element.$$('#alertTitle').textContent.trim());
-        expect(element.$.linkBug).to.be.visible;
-        expect(element.$.snooze).to.be.visible;
-        done();
-      });
-    });
-
     test('snooze hides snooze button', function() {
       element.annotation = {
         snoozed: false,

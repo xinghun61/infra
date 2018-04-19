@@ -75,21 +75,15 @@
     `This category describes alerts which don't have a severity assigned to them.`,
   ];
 
-  let AlertTypeBehavior = {
-    properties: {
-      // These alert types are to be handled by Troopers rather than Sheriffs.
-      trooperAlertTypes: {
-        type: Array,
-        value: [
-          AlertTypes.InfraFailure,
-          AlertTypes.StaleMaster,
-          AlertTypes.OfflineBuilder,
-          AlertTypes.HungBuilder,
-          AlertTypes.IdleBuilder,
-        ],
-      },
-    },
+  const TrooperAlertTypes = [
+    AlertTypes.InfraFailure,
+    AlertTypes.StaleMaster,
+    AlertTypes.OfflineBuilder,
+    AlertTypes.HungBuilder,
+    AlertTypes.IdleBuilder,
+  ];
 
+  let AlertTypeBehavior = {
     getSeverityTooltip: function(alertType) {
       if (alertType in SeverityTooltips) {
         return SeverityTooltips[alertType];
@@ -98,7 +92,7 @@
     },
 
     isTrooperAlertType: function(alertType) {
-      return this.trooperAlertTypes.indexOf(alertType) != -1;
+      return TrooperAlertTypes.indexOf(alertType) != -1;
     },
   };
 </script>

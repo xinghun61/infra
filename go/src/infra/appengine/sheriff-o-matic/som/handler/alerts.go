@@ -46,18 +46,6 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 
 	tree := p.ByName("tree")
 
-	if tree == "trooper" {
-		data, err := getTrooperAlerts(c)
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-		return
-	}
-
 	var q *datastore.Query
 	alertResults := []*model.AlertJSON{}
 	revisionSummaryResults := []*model.RevisionSummaryJSON{}
@@ -506,16 +494,6 @@ func getRestartingMasters(c context.Context, treeName string) (map[string]master
 			}
 		}
 		return nil
-	}
-
-	// For troopers, just display all of the pending restarts.
-	if treeName == "trooper" {
-		for masterName, states := range ms.MasterStates {
-			if err := filter(masterName, states); err != nil {
-				return nil, err
-			}
-		}
-		return ret, nil
 	}
 
 	// For specific trees, filter to master specified in the config.

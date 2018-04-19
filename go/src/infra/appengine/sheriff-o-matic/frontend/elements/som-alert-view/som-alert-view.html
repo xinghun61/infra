@@ -17,9 +17,7 @@
 <link rel="import" href="../../elements/som-alert-category/som-alert-category.html">
 <link rel="import" href="../../elements/som-annotations/som-annotations.html">
 <link rel="import" href="../../elements/som-bug-queue/som-bug-queue.html">
-<link rel="import" href="../../elements/som-master-restarts/som-master-restarts.html">
 <link rel="import" href="../../elements/som-examine/som-examine.html">
-<link rel="import" href="../../elements/som-swarming-bots/som-swarming-bots.html">
 <link rel="import" href="../../elements/som-log-diff/som-log-diff.html">
 
 
@@ -112,8 +110,7 @@
       <div id="alertListPage">
         <div id="notifications" class="page-section">
           <som-tree-status tree-name="[[tree.name]]" id="treeStatus"></som-tree-status>
-          <som-master-restarts tree-name="[[tree.name]]" id="masterRestarts"></som-master-restarts>
-          <div class="notification" hidden$="[[_isTrooperPage]]">
+          <div class="notification">
             Start at the top and try to clear all the alerts. For additional guidance, see:
             <span hidden$="[[!tree.help_link]]">
               <a href$="[[tree.help_link]]" target="_blank">[[tree.display_name]] Help</a>
@@ -122,16 +119,6 @@
               <a href="/help-som">The Help Page</a>
             </span>
           </div>
-         <div class="notification" hidden$="[[!_isTrooperPage]]">
-            Troopers, don't forget to check <a href="https://goto.google.com/trooper-pagers" target="_blank">go/trooper-pagers</a>
-            as well.
-            For additional guidance, see: <a href="https://goto.google.com/trooper" target="_blank">The Trooper Playbook</a>
-          </div>
-        </div>
-        <div id="swarmingBots" class="page-section">
-          <template is="dom-if" if="[[_showSwarmingAlerts]]">
-            <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
-          </template>
         </div>
         <div id="alertsList" class="page-section">
           <div id="fetchAlertsError" hidden$=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
@@ -152,13 +139,13 @@
             <som-alert-category
                 id="alertCategory[[index]]"
                 class="alert-category"
-                category-title="[[_getCategoryTitle(cat, _isTrooperPage, trees)]]"
-                alerts="[[_alertItemsWithCategory(_alerts, cat, _isTrooperPage)]]"
+                category-title="[[_getCategoryTitle(cat,trees)]]"
+                alerts="[[_alertItemsWithCategory(_alerts,cat)]]"
                 annotations="[[annotations]]"
                 tooltip="[[getSeverityTooltip(cat)]]"
                 tree-name="[[tree.name]]"
                 collapse-by-default="[[collapseByDefault]]"
-                is-infra-failures-section="[[_isInfraFailuresSection(cat, _isTrooperPage)]]"
+                is-infra-failures-section="[[_isInfraFailuresSection(cat)]]"
                 is-resolved-section="[[_isResolvedSection(cat)]]"
                 link-style="[[linkStyle]]"
                 on-annotation-change="_handleAnnotation"

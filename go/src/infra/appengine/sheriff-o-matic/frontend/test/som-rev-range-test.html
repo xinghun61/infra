@@ -33,7 +33,8 @@
       };
 
       flush( () => {
-        assert.equal('chromium:\n      \n      398901 - 398946\n      ' +
+        assert.equal('Regression ranges:\n        \n        \n          ' +
+            'chromium:\n      \n      398901 - 398946\n      ' +
             '\n        Click to see more information.',
             element.shadowRoot.querySelector('div').textContent.trim());
         assert.equal(false, element.$.loadingMessage.hidden);

@@ -71,7 +71,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
       _bugs: Array,
       _categories: {
         type: Array,
-        computed: '_computeCategories(_alerts, _isTrooperPage)',
+        computed: '_computeCategories(_alerts)',
       },
       _checkedAlerts: {
         type: Array,
@@ -110,25 +110,10 @@ class SomAlertView extends Polymer.mixinBehaviors(
               _fetchAlertsError, tree)`,
         value: true,
       },
-      _isTrooperPage: {
-        type: Boolean,
-        computed: '_computeIsTrooperPage(tree.name)',
-        value: false,
-      },
       _pageTitleCount: {
         type: Number,
-        computed: '_computePageTitleCount(_alerts, _bugs, _isTrooperPage)',
+        computed: '_computePageTitleCount(_alerts, _bugs)',
         observer: '_pageTitleCountChanged',
-      },
-      _showSwarmingAlerts: {
-        type: Boolean,
-        computed: '_computeShowSwarmingAlerts(_swarmingAlerts, _isTrooperPage)',
-      },
-      _swarmingAlerts: {
-        type: Object,
-        value: function() {
-          return {};
-        },
       },
       _sections: {
         type: Object,
@@ -136,8 +121,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
           // The order the sections appear in the array is the order they
           // appear on the page.
           'default': ['notifications', 'bugQueue', 'alertsList'],
-          'trooper':
-              ['notifications', 'bugQueue', 'swarmingBots', 'alertsList']
         },
       },
       trees: {
@@ -188,10 +171,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
 
   ////////////////////// Alerts and path ///////////////////////////
 
-  _computeIsTrooperPage(treeName) {
-    return treeName === 'trooper';
-  }
-
   _pageTitleCountChanged(count) {
     if (count > 0) {
       document.title = '(' + count + ') Sheriff-o-Matic';
@@ -200,10 +179,8 @@ class SomAlertView extends Polymer.mixinBehaviors(
     }
   }
 
-  _computePageTitleCount(alerts, bugs, isTrooperPage) {
-    if (isTrooperPage && bugs) {
-      return bugs.length;
-    } else if (!isTrooperPage && alerts) {
+  _computePageTitleCount(alerts, bugs) {
+    if (alerts) {
       let count = 0;
       for (let i in alerts) {
         if (!alerts[i].resolved) {
@@ -213,11 +190,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
       return count;
     }
     return 0;
-  }
-
-  _computeShowSwarmingAlerts(swarming, isTrooperPage) {
-    return isTrooperPage && swarming &&
-           (swarming.dead || swarming.quarantined);
   }
 
   _treeChanged(tree) {
@@ -240,7 +212,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
       return [];
 
     if (tree.alert_streams && tree.alert_streams.length > 0) {
-      return tree.alert_streams
+      return tree.alert_streams;
     }
 
     return [tree.name];
@@ -386,7 +358,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
 
     allAlerts = this._sortAlerts(allAlerts, annotations);
     allAlerts = this._filterUngroupedResolved(allAlerts);
-
     return allAlerts;
   }
 
@@ -631,9 +602,9 @@ class SomAlertView extends Polymer.mixinBehaviors(
 
         // 7 is the severity for offline builders. Note that we want these to
         // appear above infra failures.
-        if (a.severity == 7) {
+        if (a.severity == AlertSeverity.OfflineBuilder) {
           return 1;
-        } else if (b.severity == 7) {
+        } else if (b.severity == AlertSeverity.OfflineBuilder) {
           return -1;
         }
         return a.severity - b.severity;
@@ -910,7 +881,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
 
   ////////////////////// Alert Categories ///////////////////////////
 
-  _alertItemsWithCategory(alerts, category, isTrooperPage) {
+  _alertItemsWithCategory(alerts, category) {
     return alerts.filter(function(alert) {
       if (category == AlertSeverity.Resolved) {
         return alert.resolved;
@@ -918,9 +889,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
         return false;
       }
 
-      if (isTrooperPage) {
-        return alert.tree == category;
-      } else if (category == AlertSeverity.InfraFailure) {
+      if (category == AlertSeverity.InfraFailure) {
         // Put trooperable alerts into "Infra failures" on sheriff views
         return this.isTrooperAlertType(alert.type) ||
                alert.severity == category;
@@ -929,17 +898,14 @@ class SomAlertView extends Polymer.mixinBehaviors(
     }, this);
   }
 
-  _computeCategories(alerts, isTrooperPage) {
+  _computeCategories(alerts) {
     let categories = [];
     alerts.forEach(function(alert) {
       let cat = alert.severity;
       if (alert.resolved) {
         cat = AlertSeverity.Resolved;
-      } else if (isTrooperPage) {
-        cat = alert.tree;
       } else if (this.isTrooperAlertType(alert.type)) {
-        // When not on /trooper, collapse all of the trooper alerts into
-        // the "Infra failures" category.
+        // Collapse all trooper alerts into the "Infra failures" category.
         cat = AlertSeverity.InfraFailure;
       }
       if (!categories.includes(cat)) {
@@ -950,13 +916,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
     return categories;
   }
 
-  _getCategoryTitle(category, isTrooperPage, trees) {
-    if (isTrooperPage) {
-      if (category in trees) {
-        category = trees[category].display_name;
-      }
-      return category + ' infra failures';
-    }
+  _getCategoryTitle(category, trees) {
     return {
       0: 'Tree closers',
       1: 'Stale masters',
@@ -978,8 +938,8 @@ class SomAlertView extends Polymer.mixinBehaviors(
     }[category];
   }
 
-  _isInfraFailuresSection(category, isTrooperPage) {
-    return !isTrooperPage && category === AlertSeverity.InfraFailure;
+  _isInfraFailuresSection(category) {
+    return category === AlertSeverity.InfraFailure;
   }
 
   _isResolvedSection(category) {

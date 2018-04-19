@@ -13,11 +13,6 @@ class SomDrawer extends Polymer.Element {
   static get properties() {
     return {
       _defaultTree: String,
-      _isTrooperPage: {
-        type: Boolean,
-        computed: '_computeIsTrooperPage(tree.name)',
-        value: false,
-      },
       path: {
         type: String,
         notify: true,
@@ -88,10 +83,6 @@ class SomDrawer extends Polymer.Element {
   _refreshAsync() {
     this._refresh();
     this.async(this._refreshAsync, drawerRefreshDelayMs);
-  }
-
-  _computeIsTrooperPage(treeName) {
-    return treeName === 'trooper';
   }
 
   // Gets current tree sheriffs from file at:

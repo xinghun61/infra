@@ -52,17 +52,6 @@
         done();
       });
     });
-
-    test('computes tree groups for troopers', function() {
-      // Without display name.
-      assert.equal(element._getCategoryTitle('chromium', true, {}),
-          'chromium infra failures');
-
-      // With display name.
-      let trees = {'chromium': {'display_name': 'Chrome'}};
-      assert.equal(element._getCategoryTitle('chromium', true, trees),
-          'Chrome infra failures');
-    });
   });
 
   suite('alert streams', function() {
