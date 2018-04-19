@@ -126,6 +126,9 @@ def ParseDEPSContent(deps_content, keys=('deps', 'deps_os')):
       if isinstance(dep_content, dict):
         if dep_content.get('url'):
           deps[dep_path] = dep_content['url']
+          if dep_content.get('revision'):
+            # The revision is separate from the url, join them.
+            deps[dep_path] += '@' + dep_content['revision']
         else:  # Should be cipd packages, ignore.
           del deps[dep_path]
 

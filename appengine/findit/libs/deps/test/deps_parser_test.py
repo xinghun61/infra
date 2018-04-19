@@ -72,6 +72,10 @@ class DepsParserTest(unittest.TestCase):
                   'url': 'https://cr-internal_repo@1234',
                   'condition': 'checkout_src_internal',
               },
+              'src/dep': {
+                  'url': '{cr_repo}/dep.git',
+                  'revision': 'deadbeef',
+              },
               'a-cipd-package': {
                   'packages': [
                     {
@@ -86,7 +90,8 @@ class DepsParserTest(unittest.TestCase):
         keys=['deps'])
     expected_deps = {
         'depA': 'https://cr.repo/a.git@1',
-        'src-internal': 'https://cr-internal_repo@1234'
+        'src-internal': 'https://cr-internal_repo@1234',
+        'src/dep': 'https://cr.repo/dep.git@deadbeef',
     }
     self.assertEqual(1, len(result))
     self.assertEqual(expected_deps, result[0])
