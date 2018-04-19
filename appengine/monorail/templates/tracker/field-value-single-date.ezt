@@ -11,7 +11,8 @@
            [end]
            [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
-           style="text-align:right; width:12em" class="multivalued customfield">
+           style="text-align:right; width:12em" class="multivalued customfield"
+           aria-labelledby="[fields.field_id]_label">
 [end]
 
 
@@ -23,11 +24,13 @@
            [end]
            [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
-           style="text-align:right; width:12em" class="multivalued customfield">
+           style="text-align:right; width:12em" class="multivalued customfield"
+           aria-labelledby="[fields.field_id]_label">
   [else]
     <span>
       <input type="date" disabled="disabled" value="[fields.values.val]"
-             style="text-align:right; width: 12em" class="multivalued customfield">
+             style="text-align:right; width: 12em" class="multivalued customfield"
+             aria-labelledby="[fields.field_id]_label">
       <u class="removeMultiFieldValueWidget">X</u>
     </span>
   [end]
@@ -35,5 +38,6 @@
 
 [for fields.derived_values]
   <input type="date" disabled="disabled" value="[fields.derived_values.val]"
-         style="font-style:italic; text-align:right; width:12em" class="multivalued">
+         style="font-style:italic; text-align:right; width:12em" class="multivalued"
+	 aria-labelledby="[fields.field_id]_label">
 [end]

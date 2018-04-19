@@ -12,10 +12,10 @@
   <input type="hidden" name="token" value="[form_token]">
   <input type="hidden" name="template_name" value="[template_name]">
   <input type="hidden" name="star" id="star_input" value="1">
-  <table cellpadding="0" cellspacing="0" border="0">
+  <table cellpadding="0" cellspacing="0" border="0" role="presentation">
    <tr><td>
 
-    <table cellspacing="0" cellpadding="3" border="0" class="rowmajor vt">
+    <table cellspacing="0" cellpadding="3" border="0" class="rowmajor vt" role="presentation">
      [if-any offer_templates]
       <tr><th><label for="template_name">Template:</label></th>
        <td><select name="template_name" id="template_name" data-project-name="[projectname]" ignore-dirty>
@@ -127,7 +127,7 @@
         [if-any fields.applicable]
          [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
          <tr [if-any fields.display][else]class="ifExpand"[define any_fields_to_reveal]Yes[end][end]>
-          <th>[fields.field_name]:</th>
+          <th id="[fields.field_id]_label">[fields.field_name]:</th>
           <td colspan="2">
             [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool "" fields.field_def.is_required_bool]
             <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
@@ -172,7 +172,7 @@
         </td>
        </tr>
 
-       <tr [if-any page_perms.EditIssue][else]style="display:none;"[end] class="ifExpand"><th><label for="hotlists">Hotlists:</label></th>
+       <tr [if-any page_perms.EditIssue][else]style="display:none;"[end] class="ifExpand"><th><label for="hotlistsenter">Hotlists:</label></th>
         <td class="inplace" colspan="2">
          <input type="text" name="hotlists" autocomplete="off" id="hotlistsenter" value="[initial_hotlists]" />
          [if-any errors.hotlists]

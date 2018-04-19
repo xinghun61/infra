@@ -9,7 +9,8 @@
            [is arg0 "hidden"][else]
              [if-any arg1]required="required"[end]
            [end]
-           style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off">
+           style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off"
+           aria-labelledby="[fields.field_id]_label">
 [end]
 
 
@@ -19,11 +20,13 @@
            [is arg0 "hidden"][else]
              [if-any arg1]required="required"[end]
            [end]
-           style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off">
+           style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off"
+           aria-labelledby="[fields.field_id]_label">
   [else]
     <span>
       <input type="text" disabled="disabled" value="[fields.values.val]"
-             style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off">
+             style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off"
+             aria-labelledby="[fields.field_id]_label">
       <a href="#" class="removeMultiFieldValueWidget">X</a>
     </span>
   [end]
@@ -31,5 +34,6 @@
 
 [for fields.derived_values]
   <input type="text" disabled="disabled" value="[fields.derived_values.val]"
-         style="font-style:italic; width:12em" class="multivalued">
+         style="font-style:italic; width:12em" class="multivalued"
+         aria-labelledby="[fields.field_id]_label">
 [end]

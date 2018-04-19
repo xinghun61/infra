@@ -8,7 +8,7 @@
   [# There could be more than one if this field used to be multi-valued.]
   [for fields.values]
       <select name="custom_[fields.field_id]" id="[arg0]_custom_[fields.field_id]"
-              class="custom_field_value_menu">
+              class="custom_field_value_menu" aria-labelledby="[fields.field_id]_label">
           [define show_no_value_choice]No[end]
           [# Non-required fields can have any value removed.]
           [if-any fields.field_def.is_required_bool][else]
@@ -64,7 +64,7 @@
 [else][# No current values, just give all choices.]
 
    <select name="custom_[fields.field_id]" id="[arg0]_custom_[fields.field_id]"
-           class="custom_field_value_menu">
+           class="custom_field_value_menu" aria-labelledby="[fields.field_id]_label">
        [if-any fields.field_def.is_required_bool]
          <option value="" disabled="disabled" selected="selected">Select value&hellip;</option>
        [else]
@@ -73,7 +73,7 @@
        [for fields.field_def.choices]
          <option value="[fields.field_def.choices.name]">
            [fields.field_def.choices.name]
-	   [if-any fields.field_def.choices.docstring]= [fields.field_def.choices.docstring][end]
+           [if-any fields.field_def.choices.docstring]= [fields.field_def.choices.docstring][end]
          </option>
        [end]
    </select><br>

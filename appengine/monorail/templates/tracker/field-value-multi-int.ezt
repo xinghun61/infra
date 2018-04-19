@@ -8,7 +8,8 @@
                [if-any arg1]required="required"[end]
              [end]
            [end]
-           style="text-align:right; width:12em" class="multivalued customfield">
+           style="text-align:right; width:12em" class="multivalued customfield"
+           aria-labelledby="[fields.field_id]_label">
     [if-index fields.values first][else]
       <u class="removeMultiFieldValueWidget">X</u>
     [end]
@@ -25,12 +26,14 @@
            [is arg0 "hidden"][else]
              [if-any arg1]required="required"[end]
            [end]
-           style="text-align:right; width:12em" class="multivalued customfield">
+           style="text-align:right; width:12em" class="multivalued customfield"
+           aria-labelledby="[fields.field_id]_label">
     <u class="addMultiFieldValueWidget" data-field-type="[fields.field_id]" data-field-type="int"
        data-validate-1="[fields.field_def.min_value]" data-validate-2="[fields.field_def.max_value]">Add a value</u>
 [end]
 
 [for fields.derived_values]
   <input type="number" disabled="disabled" value="[fields.derived_values.val]"
-         style="font-style:italic; text-align:right; width:12em" class="multivalued">
+         style="font-style:italic; text-align:right; width:12em" class="multivalued"
+         aria-labelledby="[fields.field_id]_label">
 [end]

@@ -10,7 +10,7 @@
          [is arg0 "hidden"][else]
            [if-any arg1]required="required"[end]
          [end]
-         style="width: 12em">
+         style="width: 12em" aria-labelledby="[fields.field_id]_label">
 [end]
 
 [for fields.values]
@@ -20,11 +20,11 @@
            [is arg0 "hidden"][else]
              [if-any arg1]required="required"[end]
            [end]
-           style="width: 12em"><br>
+           style="width: 12em" aria-labelledby="[fields.field_id]_label"><br>
   [else]
     <span>
       <input disabled="disabled" value="[fields.values.val]"
-             class="multivalued" style="width: 12em">
+             class="multivalued" style="width: 12em" aria-labelledby="[fields.field_id]_label">
       <a href="#" class="removeMultiFieldValueWidget">X</a>
     </span>
   [end]

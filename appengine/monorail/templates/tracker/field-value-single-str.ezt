@@ -10,7 +10,8 @@
              [if-any arg1]required="required"[end]
            [end]
            [# TODO(jrobbins): validation]
-           class="multivalued customfield" style="width: 12em">
+           class="multivalued customfield" style="width: 12em"
+           aria-labelledby="[fields.field_id]_label">
 [end]
 
 
@@ -22,11 +23,12 @@
              [if-any arg1]required="required"[end]
            [end]
            [# TODO(jrobbins): validation]
-           style="width: 12em"><br>
+           style="width: 12em"
+           aria-labelledby="[fields.field_id]_label"><br>
   [else]
     <span>
       <input disabled="disabled" value="[fields.values.val]"
-             class="multivalued" style="width: 12em">
+             class="multivalued" style="width: 12em" aria-labelledby="[fields.field_id]_label">
       <a href="#" class="removeMultiFieldValueWidget">X</a>
     </span>
   [end]
@@ -34,5 +36,6 @@
 
 [for fields.derived_values]
   <input disabled="disabled" value="[fields.derived_values.val]"
-         style="font-style:italic" class="multivalued" style="width: 12em"><br>
+         style="font-style:italic" class="multivalued" style="width: 12em"
+         aria-labelledby="[fields.field_id]_label"><br>
 [end]
