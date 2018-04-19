@@ -4,7 +4,7 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 application: monorail-staging
-module: besearch
+service: besearch
 version: 2013-03-18
 runtime: python27
 api_version: 1
