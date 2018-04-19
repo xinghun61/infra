@@ -3,6 +3,8 @@
 Tricium is a code analysis pipeline for Chromium, and a platform for analyzers
 that produce comments for code review.
 
+Original public design doc: https://bit.ly/tricium-early-design
+
 **Contact**:
 
 *   Questions and discussion: `tricium-dev@google.com`.
