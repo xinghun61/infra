@@ -56,15 +56,6 @@ class Phase(messages.Message):
   rank = messages.IntegerField(4)
 
 
-# TODO(jojwang): monorail:3576, delete this class when safe.
-class Milestone(messages.Message):
-  """Holds a single launch review milestone. (Not a project milestone)"""
-  milestone_id = messages.IntegerField(1)
-  name = messages.StringField(2)
-  approval_values = messages.MessageField(ApprovalValue, 3, repeated=True)
-  rank = messages.IntegerField(4)
-
-
 class DanglingIssueRef(messages.Message):
   """Holds a reference to an issue still on Google Codesite."""
   project = messages.StringField(1, required=True)
@@ -176,8 +167,6 @@ class Issue(messages.Message):
   # loaded from the DB in the same request handler (not via the cache).
   assume_stale = messages.BooleanField(57, default=True)
 
-  # TODO(jojwang): monorail:3576, delete milestones when safe.
-  milestones = messages.MessageField(Milestone, 58, repeated=True)
   phases = messages.MessageField(Phase, 59, repeated=True)
 
 
@@ -452,8 +441,6 @@ class TemplateDef(messages.Message):
   # Components.
   component_ids = messages.IntegerField(43, repeated=True)
   component_required = messages.BooleanField(44, default=False)
-  # TODO(jojwang): monorail:3576, delete milestones when safe.
-  milestones = messages.MessageField(Milestone, 45, repeated=True)
   phases = messages.MessageField(Phase, 46, repeated=True)
 
 

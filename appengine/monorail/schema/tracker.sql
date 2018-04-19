@@ -489,18 +489,6 @@ CREATE TABLE Template2Component (
 ) ENGINE=INNODB;
 
 
--- TODO(jojwang): monorail:3576, DROP this table when safe.
-CREATE TABLE Template2Milestone (
-  id INT NOT NULL AUTO_INCREMENT,
-  template_id INT NOT NULL,
-  name VARCHAR(255) BINARY NOT NULL,
-  rank SMALLINT UNSIGNED,
-
-  PRIMARY KEY (id, template_id),
-  FOREIGN KEY (template_id) REFERENCES Template(id)
-) ENGINE=INNODB;
-
-
 CREATE TABLE Template2Phase (
   id INT NOT NULL AUTO_INCREMENT,
   template_id INT NOT NULL,
@@ -837,18 +825,6 @@ CREATE TABLE ApprovalDef2Survey (
 
   FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
   FOREIGN KEY (project_id) REFERENCES Project(project_id)
-) ENGINE=INNODB;
-
-
--- TODO(jojwang): monorail:3576 , DROP this table when safe.
-CREATE TABLE Issue2Milestone (
-  id INT NOT NULL AUTO_INCREMENT,
-  issue_id INT NOT NULL,
-  name VARCHAR(255) BINARY NOT NULL,
-  rank SMALLINT UNSIGNED,
-
-  PRIMARY KEY (id, issue_id),
-  FOREIGN KEY (issue_id) REFERENCES Issue(id)
 ) ENGINE=INNODB;
 
 

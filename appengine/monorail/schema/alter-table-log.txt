@@ -1459,7 +1459,10 @@ CREATE INDEX IF NOT EXISTS phase_id ON Template2ApprovalValue (phase_id);
 ALTER TABLE Template2ApprovalValue ADD FOREIGN KEY (phase_id) REFERENCES Template2Phase(id);
 
 ================================================================
-Upcoming:
-TODO(jojwang): drop milestone_id from Issue2ApprovalValue.
-TODO(jojwang): drop milestone_id from Template2ApprovalValue.
+2018-04-18: Drop all milestone schema.
 
+ALTER TABLE Template2ApprovalValue DROP COLUMN milestone_id;
+ALTER TABLE Issue2ApprovalValue DROP COLUMN milestone_id;
+
+DROP TABLE Template2Milestone;
+DROP TABLE Issue2Milestone;
