@@ -208,17 +208,15 @@ BUILD_COUNT_EXPERIMENTAL = gae_ts_mon.GaugeMetric(
     'Number of pending/running experimental builds',
     _build_fields('bucket', 'builder', 'status'))
 
-LEASE_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
-    'buildbucket/builds/never_leased_duration',
-    'Duration between a build is created and it is leased for the first time',
+MAX_AGE_NEVER_LEASED = gae_ts_mon.FloatMetric(
+    'buildbucket/builds/max_age_never_leased',
+    'Age of the oldest SCHEDULED build that was never leased.',
     _build_fields('bucket'),
-    bucketer=BUCKETER_24_HR,
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
-START_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
-    'buildbucket/builds/start_latency',
-    'Duration of a build remaining in SCHEDULED state, i.e. not starting.',
+MAX_AGE_SCHEDULED = gae_ts_mon.FloatMetric(
+    'buildbucket/builds/max_age_scheduled',
+    'Age of the oldest SCHEDULED build.',
     _build_fields('bucket'),
-    bucketer=BUCKETER_48_HR,
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
 SEQUENCE_NUMBER_GEN_DURATION_MS = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/sequence_number/gen_duration',
@@ -267,7 +265,7 @@ def set_build_count_metric_async(bucket, builder, status, experimental):
 
 
 @ndb.tasklet
-def set_build_latency(metric_sec, bucket, must_be_never_leased):
+def set_build_latency(max_metric_sec, bucket, must_be_never_leased):
   q = model.Build.query(
       model.Build.bucket == bucket,
       model.Build.status == model.BuildStatus.SCHEDULED,
@@ -279,20 +277,21 @@ def set_build_latency(metric_sec, bucket, must_be_never_leased):
     # Reuse the index that has never_leased
     q = q.filter(model.Build.never_leased.IN((True, False)))
 
-  now = utils.utcnow()
-  dist = gae_ts_mon.Distribution(gae_ts_mon.GeometricBucketer())
-  for e in q.iter(projection=[model.Build.create_time]):
-    latency = (now - e.create_time).total_seconds()
-    dist.add(latency)
-  if dist.count == 0:  # pragma: no cover
-    dist.add(0)
-  metric_sec.set(dist, {'bucket': bucket}, target_fields=GLOBAL_TARGET_FIELDS)
+  q = q.order(model.Build.create_time)
+  oldest_build = yield q.fetch_async(1, projection=[model.Build.create_time])
+
+  if oldest_build:
+    max_latency = (utils.utcnow() - oldest_build[0].create_time).total_seconds()
+  else:
+    max_latency = 0
+  max_metric_sec.set(
+      max_latency, {'bucket': bucket}, target_fields=GLOBAL_TARGET_FIELDS)
 
 
 # Metrics that are per-app rather than per-instance.
 GLOBAL_METRICS = [
-  LEASE_LATENCY_SEC,
-  START_LATENCY_SEC,
+  MAX_AGE_NEVER_LEASED,
+  MAX_AGE_SCHEDULED,
   BUILD_COUNT_PROD,
   BUILD_COUNT_EXPERIMENTAL,
 ]
@@ -304,8 +303,8 @@ def update_global_metrics():
   futures = []
   for b in config.get_buckets_async().get_result():
     futures.extend([
-      set_build_latency(LEASE_LATENCY_SEC, b.name, True),
-      set_build_latency(START_LATENCY_SEC, b.name, False),
+      set_build_latency(MAX_AGE_NEVER_LEASED, b.name, True),
+      set_build_latency(MAX_AGE_SCHEDULED, b.name, False),
     ])
   for f in futures:
     f.check_success()

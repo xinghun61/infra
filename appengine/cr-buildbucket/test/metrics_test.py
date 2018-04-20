@@ -78,13 +78,19 @@ class MetricsTest(testing.AppengineTestCase):
           status=model.BuildStatus.SCHEDULED,
           never_leased=True,
           create_time=datetime.datetime(2014, 1, 1),
-          experimental=True,
+          experimental=True,  # should be ignored by both metrics
       ),
       model.Build(
           bucket='chromium',
           status=model.BuildStatus.SCHEDULED,
           never_leased=True,
           create_time=datetime.datetime(2015, 1, 1),
+      ),
+      model.Build(
+          bucket='chromium',
+          status=model.BuildStatus.SCHEDULED,
+          never_leased=False,
+          create_time=datetime.datetime(2014, 12, 31),
       ),
       model.Build(
           bucket='chromium',
@@ -105,7 +111,8 @@ class MetricsTest(testing.AppengineTestCase):
       model.Build(
           bucket='chromium',
           status=model.BuildStatus.SCHEDULED,
-          create_time=datetime.datetime(2015, 1, 3),
+          create_time=datetime.datetime(2014, 1, 3),
+          # never_leased is None, so this should be ignored by both metrics.
       ),
       model.Build(
           bucket='v8',
@@ -115,17 +122,31 @@ class MetricsTest(testing.AppengineTestCase):
       ),
     ])
     metrics.set_build_latency(
-        metrics.LEASE_LATENCY_SEC, 'chromium', True).get_result()
+        metrics.MAX_AGE_NEVER_LEASED, 'chromium', True).get_result()
     metrics.set_build_latency(
-        metrics.START_LATENCY_SEC, 'chromium', False).get_result()
-    dist = metrics.LEASE_LATENCY_SEC.get(
+        metrics.MAX_AGE_SCHEDULED, 'chromium', False).get_result()
+    max_lease = metrics.MAX_AGE_NEVER_LEASED.get(
         {'bucket': 'chromium'},
         target_fields=metrics.GLOBAL_TARGET_FIELDS)
-    self.assertEquals(dist.sum, 4.0 * 24 * 3600)  # 4 days
-    dist = metrics.START_LATENCY_SEC.get(
+    self.assertEqual(max_lease, 3 * 24 * 3600)
+    max_start = metrics.MAX_AGE_SCHEDULED.get(
         {'bucket': 'chromium'},
         target_fields=metrics.GLOBAL_TARGET_FIELDS)
-    self.assertEquals(dist.sum, 4.0 * 24 * 3600)  # 4 days
+    self.assertEqual(max_start, 4 * 24 * 3600)
+
+  def test_set_build_lease_latency_no_pending_builds(self):
+    metrics.set_build_latency(
+        metrics.MAX_AGE_NEVER_LEASED, 'chromium', True).get_result()
+    metrics.set_build_latency(
+        metrics.MAX_AGE_SCHEDULED, 'chromium', False).get_result()
+    max_lease = metrics.MAX_AGE_NEVER_LEASED.get(
+        {'bucket': 'chromium'},
+        target_fields=metrics.GLOBAL_TARGET_FIELDS)
+    self.assertEqual(max_lease, 0)
+    max_start = metrics.MAX_AGE_SCHEDULED.get(
+        {'bucket': 'chromium'},
+        target_fields=metrics.GLOBAL_TARGET_FIELDS)
+    self.assertEqual(max_start, 0)
 
   @mock.patch('config.get_buckets_async', autospec=True)
   @mock.patch('metrics.set_build_latency', autospec=True)
@@ -143,10 +164,8 @@ class MetricsTest(testing.AppengineTestCase):
 
     metrics.update_global_metrics()
 
-    set_build_latency.assert_any_call(
-        metrics.LEASE_LATENCY_SEC, 'x', True)
-    set_build_latency.assert_any_call(
-        metrics.START_LATENCY_SEC, 'x', False)
+    set_build_latency.assert_any_call(metrics.MAX_AGE_NEVER_LEASED, 'x', True)
+    set_build_latency.assert_any_call(metrics.MAX_AGE_SCHEDULED, 'x', False)
 
     set_build_count_metric_async.assert_any_call(
         'luci.chromium.try', 'release', model.BuildStatus.SCHEDULED, False)
