@@ -22,6 +22,7 @@ from infra_libs.ts_mon.protos import metrics_pb2
 try: # pragma: no cover
   from oauth2client import gce
 except ImportError: # pragma: no cover
+  # Try oauth2client 3.0.0 location.
   from oauth2client.contrib import gce
 from oauth2client.client import GoogleCredentials
 from oauth2client.file import Storage
@@ -57,7 +58,11 @@ class GCECredentials(CredentialFactory):
 class AppengineCredentials(CredentialFactory):
   def create(self, scopes):  # pragma: no cover
     # This import doesn't work outside appengine, so delay it until it's used.
-    from oauth2client import appengine
+    try: # pragma: no cover
+      from oauth2client import appengine
+    except ImportError: # pragma: no cover
+      # Try oauth2client 3.0.0 location.
+      from oauth2client.contrib import appengine
     return appengine.AppAssertionCredentials(scopes)
 
 
