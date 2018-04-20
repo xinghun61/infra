@@ -311,7 +311,7 @@ func loadConfig(rc *router.Context) (*RepoConfig, *RepoState, error) {
 	if !ok {
 		return nil, nil, fmt.Errorf("Unknown or missing config %s", rs.ConfigName)
 	}
-	return cfg, rs, nil
+	return cfg.SetConcreteRef(ctx, rs), rs, nil
 }
 
 func initializeClients(ctx context.Context, cfg *RepoConfig) (*Clients, error) {

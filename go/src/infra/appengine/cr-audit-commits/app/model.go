@@ -106,7 +106,8 @@ func (rs RuleStatus) ColorCode() string {
 	}
 }
 
-// RepoState contains the state for each ref we audit.
+// RepoState contains the state for each ref we audit. Including
+// parameters applicable to dynamically configured refs.
 type RepoState struct {
 	// RepoURL is expected to point to a branch e.g.
 	// https://chromium.googlesource.com/chromium/src.git/+/master
@@ -120,6 +121,10 @@ type RepoState struct {
 	// this git ref. Note that each ref can only be matched to one such
 	// configuration.
 	ConfigName string
+
+	// These are overriden in the repo config differently for each ref.
+	Metadata   string
+	BranchName string
 }
 
 // RelevantCommit points to a node in a linked list of commits that have

@@ -10,6 +10,22 @@ import (
 	"go.chromium.org/luci/common/proto/git"
 )
 
+// DynamicRefFunc is a functype for functions that match a RepoConfig with a
+// dynamically determined ref.
+//
+// It is expected to receive the generic RepoConfig as hardcoded in RulesMap,
+// passed by value to prevent the implementation from modifying it.
+// It is expected to return a slice of references to RepoConfigs, where each
+// matches a ref to audit, and its values BranchName and Metadata have been
+// modified accordingly.
+//
+// Note that for changes to any other field of RepoConfig made by functions
+// implementing this interface to persist and apply to audits, the Scheduler
+// needs to be modified to save them to the RepoState, and the SetConcreteRef
+// function below needs to be modified to set them in the copy of RepoConfig to
+// be passed to the scan/audit/notify functions.
+type DynamicRefFunc func(context.Context, RepoConfig) ([]*RepoConfig, error)
+
 // RepoConfig represents the hard-coded config for a monitored repo and a
 // pointer to the entity representing its datastore-persisted state.
 type RepoConfig struct { // These are expected to be hard-coded.
@@ -22,8 +38,9 @@ type RepoConfig struct { // These are expected to be hard-coded.
 	MonorailProject string
 	// Do not use "AuditFailure" as a key in this map, it may cause a clash
 	// with the notification state for failed audits.
-	Rules         map[string]RuleSet
-	NotifierEmail string
+	Rules              map[string]RuleSet
+	NotifierEmail      string
+	DynamicRefFunction DynamicRefFunc
 }
 
 // RepoURL composes the url of the repository by appending the branch.
@@ -34,6 +51,20 @@ func (rc *RepoConfig) RepoURL() string {
 // LinkToCommit composes a url to a specific commit
 func (rc *RepoConfig) LinkToCommit(commit string) string {
 	return rc.BaseRepoURL + "/+/" + commit
+}
+
+// SetConcreteRef returns a copy of the repoconfig modified to account for
+// dynamic refs.
+func (rc *RepoConfig) SetConcreteRef(ctx context.Context, rs *RepoState) *RepoConfig {
+	// Make a copy.
+	result := *rc
+	if rs.BranchName != "" {
+		result.BranchName = rs.BranchName
+	}
+	if rs.Metadata != "" {
+		result.Metadata = rs.Metadata
+	}
+	return &result
 }
 
 // RuleMap maps each monitored repository to a list of account/rules structs.
@@ -77,12 +108,9 @@ var RuleMap = map[string]*RepoConfig{
 			},
 		},
 	},
-	"chromium-src-3325": {
+	"chromium-src-release-branches": {
 		BaseRepoURL:     "https://chromium.googlesource.com/chromium/src.git",
 		GerritURL:       "https://chromium-review.googlesource.com",
-		BranchName:      "refs/branch-heads/3325",
-		Metadata:        "MilestoneNumber:65",
-		StartingCommit:  "1593920eed56dee727e7f78ae5d206052e4ad7e0",
 		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
 		MonorailProject: "chromium",
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
@@ -95,6 +123,7 @@ var RuleMap = map[string]*RepoConfig{
 				notificationFunction: fileBugForMergeApprovalViolation,
 			},
 		},
+		DynamicRefFunction: ReleaseConfig,
 	},
 }
 
@@ -154,3 +183,20 @@ type AuditParams struct {
 //
 // Rules should return a reference to a RuleResult
 type RuleFunc func(context.Context, *AuditParams, *RelevantCommit, *Clients) *RuleResult
+
+// ReleaseConfig is the skeleton of a function to get the ref and milestone
+// dynamically.
+func ReleaseConfig(ctx context.Context, cfg RepoConfig) ([]*RepoConfig, error) {
+	var err error
+	concreteConfigs := []*RepoConfig{&cfg}
+	// Here you would call chromiumdash and populate these with values parsed from
+	// its response.
+	//
+	// ------------------
+	// OMAHAPROXY||CHROMIUMDASH MAGIC
+	// ------------------
+	concreteConfigs[0].BranchName = "refs/branch-heads/3325"
+	concreteConfigs[0].StartingCommit = "1593920eed56dee727e7f78ae5d206052e4ad7e0"
+	concreteConfigs[0].Metadata, err = SetToken(ctx, "MilestoneNumber", "65", concreteConfigs[0].Metadata)
+	return concreteConfigs, err
+}
