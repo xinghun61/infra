@@ -193,8 +193,8 @@
 runOnLoad(function() {
 
   [if-any allow_edit]
-    _fetchOptions(
-       '[projectname]', 'issueOptions', CS_env.token, [project.cached_content_timestamp]);
+    _fetchOptions('[projectname]', CS_env.token,
+      [project.cached_content_timestamp]);
     _onload();
 
     let addPhasesCheckbox = document.getElementById('cb_add_phases');

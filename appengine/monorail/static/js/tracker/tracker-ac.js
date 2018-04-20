@@ -114,14 +114,6 @@ var TKR_userAutocompleteStores = [];
 var TKR_restrict_to_known;
 
 /**
- * This keeps track of the type of autocomplete feed that will be displayed.
- * The type determines which search operators are offered to the user. E.g.,
- * "filename:" only makes sense for downloads.
- */
-// TODO(jrobbins): remove, this seems unneeded now.
-var TKR_autoCompleteFeedName;
-
-/**
  * This substitute function should be used for multi-valued autocomplete fields
  * that are delimited by commas. When we insert an autocomplete value, replace
  * an entire search term. Add a comma and a space after it if it is a complete
@@ -277,15 +269,15 @@ function TKR_addACItem(items, docDict, item, docStr) {
  * Adds a group of three items related to a date field.
  */
 function TKR_addACDateItems(items, docDict, fieldName, humanReadable) {
-    var today = new Date();
-    var todayStr = (today.getFullYear() + '-' + (today.getMonth() + 1) + '-' +
-		    today.getDate());
-    TKR_addACItem(items, docDict, fieldName + '>today-1',
-		  humanReadable + ' within the last N days');
-    TKR_addACItem(items, docDict, fieldName + '>' + todayStr,
-		  humanReadable + ' after the specified date');
-    TKR_addACItem(items, docDict, fieldName + '<today-1',
-		  humanReadable + ' more than N days ago');
+  var today = new Date();
+  var todayStr = (today.getFullYear() + '-' + (today.getMonth() + 1) + '-' +
+    today.getDate());
+  TKR_addACItem(items, docDict, fieldName + '>today-1',
+    humanReadable + ' within the last N days');
+  TKR_addACItem(items, docDict, fieldName + '>' + todayStr,
+    humanReadable + ' after the specified date');
+  TKR_addACItem(items, docDict, fieldName + '<today-1',
+    humanReadable + ' more than N days ago');
 }
 
 /**
@@ -1068,18 +1060,14 @@ function TKR_setUpProjectStore(projects, multiValue) {
  * could be long, and most of the time, the user will only view an
  * issue not edit it.
  * @param {string} projectName The name of the current project.
- * @param {string} feedName The name of the feed to fetch.
  * @param {string} token The user's url-command-attack-prevention token.
  * @param {number} cct The project's cached-content-timestamp.
  * @param {Object} opt_args Key=value pairs.
  */
-function TKR_fetchOptions(projectName, feedName, token, cct, opt_args) {
-  TKR_autoCompleteFeedName = feedName;
+function TKR_fetchOptions(projectName, token, cct, opt_args) {
   TKR_optionsXmlHttp = XH_XmlHttpCreate();
   var projectPart = projectName ? '/p/' + projectName : '/hosting';
-  TKR_optionsURL = (
-      projectPart + '/feeds/' + feedName + '?' +
-      'token=' + token);
+  TKR_optionsURL = `${projectPart}/feeds/issueOptions?token=${token}`;
   for (var arg in opt_args) {
     TKR_optionsURL += '&' + arg + '=' + encodeURIComponent(opt_args[arg]);
   }

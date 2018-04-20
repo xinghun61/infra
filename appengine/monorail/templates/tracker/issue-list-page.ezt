@@ -70,20 +70,19 @@ runOnLoad(function() {
 [if-any projectname]
  <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-   _fetchOptions(
-     '[projectname]', 'issueOptions',
-     CS_env.token, [project.cached_content_timestamp]);
+  _fetchOptions('[projectname]', CS_env.token,
+    [project.cached_content_timestamp]);
 
-   var stars = document.getElementsByClassName("star");
-   for (var i = 0; i < stars.length; ++i) {
-     var star = stars[[]i];
-     star.addEventListener("click", function (event) {
-         var projectName = event.target.getAttribute("data-project-name");
-         var localID = event.target.getAttribute("data-local-id");
-         _TKR_toggleStar(event.target, projectName, localID, null, null, "[set_star_token]");
-         [# TODO: _TKR_syncStarIcons() when issue peek is re-implemented.]
-     });
-   }
+  var stars = document.getElementsByClassName("star");
+  for (var i = 0; i < stars.length; ++i) {
+    var star = stars[[]i];
+    star.addEventListener("click", function (event) {
+        var projectName = event.target.getAttribute("data-project-name");
+        var localID = event.target.getAttribute("data-local-id");
+        _TKR_toggleStar(event.target, projectName, localID, null, null, "[set_star_token]");
+        [# TODO: _TKR_syncStarIcons() when issue peek is re-implemented.]
+    });
+  }
 });
 </script>
 [end]

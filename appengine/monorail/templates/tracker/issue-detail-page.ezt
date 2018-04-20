@@ -168,8 +168,8 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _fetchOptions('[projectname]', 'issueOptions',
-                CS_env.token, [project.cached_content_timestamp]);
+  _fetchOptions('[projectname]', CS_env.token,
+    [project.cached_content_timestamp]);
   _fetchUserProjects(false);
 
   _onload();

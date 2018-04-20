@@ -346,8 +346,8 @@ runOnLoad(function() {
    function _clearOnFirstEvent(){}
   [end]
 
-  _fetchOptions("[projectname]", "issueOptions",
-                CS_env.token, [project.cached_content_timestamp]);
+  _fetchOptions("[projectname]", CS_env.token,
+    [project.cached_content_timestamp]);
   [if-any page_perms.EditIssue page_perms.EditIssueStatus page_perms.EditIssueOwner page_perms.EditIssueCc]
     setTimeout(_forceProperTableWidth, 100);
   [end]
