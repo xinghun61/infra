@@ -1,4 +1,4 @@
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
 <link rel="import" href="../mr-approval-card/mr-approval-card.html">
 
 <dom-module id="mr-gate">
@@ -15,7 +15,7 @@
       }
     </style>
     <template is="dom-if" if="[[!approvals.length]]">
-      <p>No tasks for this gate</p>
+      <p>No tasks for these approvals</p>
     </template>
     <template is="dom-repeat" items="[[approvals]]">
       <mr-approval-card team-title="[[item.title]]"

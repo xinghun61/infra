@@ -17,19 +17,6 @@ class MrMetadata extends Polymer.Element {
         type: Number,
         value: 1111,
       },
-      labels: {
-        type: Array,
-        value: [
-          {
-            name: 'M-Target',
-            values: ['66-Dev', '66-Beta', '66-Stable'],
-          },
-          {
-            name: 'M-Approved',
-            values: ['66-Dev'],
-          },
-        ],
-      },
       links: {
         type: Array,
         value: [{name: 'DesignDoc', values: ['go/design-doc']}],

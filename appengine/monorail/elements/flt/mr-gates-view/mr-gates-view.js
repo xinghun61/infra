@@ -25,9 +25,9 @@ class MrGatesView extends Polymer.Element {
         notify: true,
         observer: '_gateChanged',
       },
-      currentGateName: {
-        type: String,
-        computed: '_computeCurrentGateName(currentGateIndex)',
+      currentGate: {
+        type: Object,
+        computed: '_computeCurrentGate(gates, currentGateIndex)',
       },
       _nextDisabled: {
         type: Boolean,
@@ -48,8 +48,8 @@ class MrGatesView extends Polymer.Element {
     this.currentGateIndex++;
   }
 
-  _computeCurrentGateName(idx) {
-    return this.gates[idx].gateName;
+  _computeCurrentGate(gates, idx) {
+    return gates[idx];
   }
 
   _computeGateHidden(currentGateIndex, index) {

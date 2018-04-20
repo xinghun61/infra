@@ -1,4 +1,4 @@
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
 
 <dom-module id="mr-launch-overview">
   <template>
@@ -11,7 +11,7 @@
       }
       h3 {
         margin: 0;
-        font-size: 120%;
+        font-size: 105%;
         color: white;
         background-color: hsl(220, 55%, 48%);
         font-weight: normal;
@@ -53,7 +53,7 @@
     <template is="dom-repeat" items="[[gates]]" as="gate">
       <paper-card elevation=0>
         <h3 value$="[[index]]" on-click="_handleGateFocus">
-          Gate: [[gate.gateName]]
+          Approvals: [[gate.gateName]] - [[gate.milestone]]
         </h3>
         <div class="card-section">
           <template is="dom-repeat" items="[[gate.approvals]]" as="approval">

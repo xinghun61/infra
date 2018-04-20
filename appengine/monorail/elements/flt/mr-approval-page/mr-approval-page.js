@@ -18,6 +18,7 @@ class MrApprovalPage extends Polymer.Element {
         value: [
           {
             gateName: 'Beta',
+            milestone: 'Approved 66',
             approvals: [
               {
                 title: 'Privacy',
@@ -90,6 +91,7 @@ class MrApprovalPage extends Polymer.Element {
           },
           {
             gateName: 'Stable Exp',
+            milestone: 'Target 66',
             approvals: [
               {
                 title: 'Test',
@@ -180,6 +182,7 @@ class MrApprovalPage extends Polymer.Element {
           },
           {
             gateName: 'Stable',
+            milestone: 'Target 66',
             approvals: [
               {
                 title: 'Leadership',

@@ -73,10 +73,10 @@ deps:
 	ln -s ../../../crdx/chopsui bower_components/chopsui
 
 vulcanize: clean_vulcanized
-	$(VULCANIZE_PATH) elements/mr-approval-page/mr-approval-page.html --inline-script \
+	$(VULCANIZE_PATH) elements/flt/mr-approval-page/mr-approval-page.html --inline-script \
 	| $(CRISPER_PATH) \
-		--html elements/mr-approval-page/mr-approval-page.vulcanized.html \
-		--js elements/mr-approval-page/mr-approval-page.vulcanized.js --only-split
+		--html elements/flt/mr-approval-page/mr-approval-page.vulcanized.html \
+		--js elements/flt/mr-approval-page/mr-approval-page.vulcanized.js --only-split
 	$(VULCANIZE_PATH) elements/bar-chart.html --inline-script \
 	| $(CRISPER_PATH) \
 		--html elements/bar-chart.vulcanized.html \

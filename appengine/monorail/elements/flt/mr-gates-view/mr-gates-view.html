@@ -1,6 +1,6 @@
-<link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../../bower_components/chopsui/chops-button.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-button.html">
 
 <link rel="import" href="../mr-gates-view/mr-gate.html">
 
@@ -44,7 +44,7 @@
       <chops-button class="gate-nav-button" id="prevBtn" on-click="previous" disabled="[[_prevDisabled]]">
         &lt; Prev
       </chops-button>
-      <div class="gate-name"><b>Gate: [[currentGateName]]</b></div>
+      <div class="gate-name"><b>Approvals: [[currentGate.gateName]] - [[currentGate.milestone]]</b></div>
       <chops-button class="gate-nav-button" id="nextBtn" on-click="next" disabled="[[_nextDisabled]]">
         Next &gt;
       </chops-button>
