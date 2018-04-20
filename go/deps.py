@@ -73,6 +73,7 @@ VENDORED_TOOLS = [
 # like that.
 PACKAGES_TO_VENDOR_COMPLETELY = [
   'github.com/smartystreets/goconvey',  # needs *.css etc for Web UI
+  'github.com/google/skylark',          # needs *.sky files
 ]
 
 

@@ -354,3 +354,6 @@ import:
   subpackages:
   - bmp
   - tiff
+- package: github.com/google/skylark
+  repo: https://chromium.googlesource.com/external/github.com/google/skylark.git
+  version: master
