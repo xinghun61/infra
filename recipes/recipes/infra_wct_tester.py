@@ -19,10 +19,15 @@ def RunSteps(api):
   api.gclient.runhooks()
 
   api.wct.install()
-  test_path = api.path['checkout'].join(
-      'go', 'src', 'infra', 'appengine', 'sheriff-o-matic', 'frontend')
 
-  api.wct.run(test_path)
+  monorail_test_path = api.path['checkout'].join(
+      'appengine', 'monorail')
+  api.wct.run(monorail_test_path, 'elements/test', 'Monorail WCT Tests')
+
+  som_test_path = api.path['checkout'].join(
+      'go', 'src', 'infra', 'appengine', 'sheriff-o-matic', 'frontend')
+  api.wct.run(som_test_path, 'test/', 'SoM WCT Tests')
+
 
 def GenTests(api):
   yield api.test('basic')

@@ -4,7 +4,7 @@
 # default.
 
 # Make sure we build the package from scratch.
-rm -f wct.cipd
+rm -f wct.cipd || true
 
 # Build wct CIPD package (without uploading it)
 cipd pkg-build -pkg-def wct.yaml -pkg-var platform:linux-amd64 -out wct.cipd

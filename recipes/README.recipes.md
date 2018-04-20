@@ -28,6 +28,7 @@
   * [infra_continuous_luci](#recipes-infra_continuous_luci) &mdash; Builds and tests infra.
   * [infra_repo_trybot](#recipes-infra_repo_trybot)
   * [infra_system:examples/full](#recipes-infra_system_examples_full)
+  * [infra_wct_tester](#recipes-infra_wct_tester)
   * [isolate_go_perf](#recipes-isolate_go_perf)
   * [lkgr_finder](#recipes-lkgr_finder)
   * [luci_check](#recipes-luci_check)
@@ -42,7 +43,6 @@
   * [recipe_simulation](#recipes-recipe_simulation) &mdash; A continuous builder which runs recipe tests.
   * [recipes_py_continuous](#recipes-recipes_py_continuous)
   * [remote_execute_dataflow_workflow](#recipes-remote_execute_dataflow_workflow) &mdash; This recipe is used to execute Dataflow workflows.
-  * [sheriff-o-matic-wct](#recipes-sheriff-o-matic-wct)
   * [sync_submodules](#recipes-sync_submodules)
   * [third_party_packages](#recipes-third_party_packages) &mdash; This recipe builds and packages third party software, such as Git.
   * [third_party_packages:examples/cmake](#recipes-third_party_packages_examples_cmake) &mdash; Recipe for 'cmake' building.
@@ -213,7 +213,7 @@ WCTApi provides support for running Web Component Tests
 
 &mdash; **def [install](/recipes/recipe_modules/wct/api.py#14)(self):**
 
-&mdash; **def [run](/recipes/recipe_modules/wct/api.py#29)(self, root):**
+&mdash; **def [run](/recipes/recipe_modules/wct/api.py#29)(self, root, prefix='test/', step_name='Run WCT tests'):**
 ## Recipes
 
 ### *recipes* / [build\_conda\_cipd\_pkg](/recipes/recipes/build_conda_cipd_pkg.py)
@@ -329,6 +329,11 @@ staging and prod environments.
 [DEPS](/recipes/recipe_modules/infra_system/examples/full.py#5): [infra\_system](#recipe_modules-infra_system), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 &mdash; **def [RunSteps](/recipes/recipe_modules/infra_system/examples/full.py#13)(api):**
+### *recipes* / [infra\_wct\_tester](/recipes/recipes/infra_wct_tester.py)
+
+[DEPS](/recipes/recipes/infra_wct_tester.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [wct](#recipe_modules-wct), [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+&mdash; **def [RunSteps](/recipes/recipes/infra_wct_tester.py#14)(api):**
 ### *recipes* / [isolate\_go\_perf](/recipes/recipes/isolate_go_perf.py)
 
 [DEPS](/recipes/recipes/isolate_go_perf.py#5): [build/perf\_dashboard][build/recipe_modules/perf_dashboard], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
@@ -438,11 +443,6 @@ This recipe uses the dataflow-launcher service account. That account must have
 the permission to schedule a Dataflow job for your project.
 
 &mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#50)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
-### *recipes* / [sheriff-o-matic-wct](/recipes/recipes/sheriff-o-matic-wct.py)
-
-[DEPS](/recipes/recipes/sheriff-o-matic-wct.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [wct](#recipe_modules-wct), [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
-
-&mdash; **def [RunSteps](/recipes/recipes/sheriff-o-matic-wct.py#14)(api):**
 ### *recipes* / [sync\_submodules](/recipes/recipes/sync_submodules.py)
 
 [DEPS](/recipes/recipes/sync_submodules.py#7): [sync\_submodules](#recipe_modules-sync_submodules), [recipe\_engine/properties][recipe_engine/recipe_modules/properties]

@@ -69,7 +69,7 @@ func main() {
 
 	if *chromeBin == "" {
 		logging.Errorf(ctx, "chrome flag must be set")
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	// The chromedriver lib won't let us force it to pick a random port, or
@@ -137,8 +137,26 @@ func main() {
 	ctxt, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Create chrome instance
-	c, err := chromedp.New(ctxt, chromedp.WithRunnerOptions(runner.Path(*chromeBin)))
+	var c *chromedp.CDP
+	var debugPort int
+
+	var nilLogger = func(string, ...interface{}) {
+		// The cleans up stdout. Otherwise the chrome instance is way too verbose.
+		return
+	}
+
+	// Create chrome instance. Try to grab a random debug port.
+	for i := 0; i < maxPortAttempts; i++ {
+		debugPort = rand.Intn(portRange) + portMin
+		logging.Infof(ctx, "attempting to start chrome with debug port %d", debugPort)
+		c, err = chromedp.New(ctxt, chromedp.WithLogf(nilLogger),
+			chromedp.WithRunnerOptions(runner.Path(*chromeBin), runner.NoSandbox, runner.Port(debugPort)))
+		if err == nil {
+			break
+		}
+		logging.Errorf(ctx, "attempting to start chrome with debug port %d: %v", debugPort, err)
+	}
+
 	if err != nil {
 		logging.Errorf(ctx, "error creating chrome instance: %v", err)
 		os.Exit(1)

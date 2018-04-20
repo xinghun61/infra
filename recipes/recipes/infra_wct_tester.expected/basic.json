@@ -111,6 +111,16 @@
   },
   {
     "cmd": [
+      "[START_DIR]/packages/chrome/chrome",
+      "--version"
+    ],
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "Print chrome version"
+  },
+  {
+    "cmd": [
       "[START_DIR]/packages/bin/npm",
       "install",
       "-g",
@@ -126,7 +136,7 @@
       "bower",
       "install"
     ],
-    "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
+    "cwd": "[START_DIR]/infra/appengine/monorail",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
@@ -138,14 +148,66 @@
       "-a",
       "[START_DIR]/packages/wct",
       "--base",
-      "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
+      "[START_DIR]/infra/appengine/monorail",
       "--chrome",
-      "[START_DIR]/packages/chrome/chrome"
+      "[START_DIR]/packages/chrome/chrome",
+      "--prefix",
+      "elements/test"
     ],
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "Run WCT"
+    "name": "Monorail WCT Tests"
+  },
+  {
+    "cmd": [
+      "[START_DIR]/packages/chrome/chrome",
+      "--version"
+    ],
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "Print chrome version (2)"
+  },
+  {
+    "cmd": [
+      "[START_DIR]/packages/bin/npm",
+      "install",
+      "-g",
+      "bower"
+    ],
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "Install bower (2)"
+  },
+  {
+    "cmd": [
+      "bower",
+      "install"
+    ],
+    "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "Install bower packages (2)"
+  },
+  {
+    "cmd": [
+      "xvfb-run",
+      "-a",
+      "[START_DIR]/packages/wct",
+      "--base",
+      "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
+      "--chrome",
+      "[START_DIR]/packages/chrome/chrome",
+      "--prefix",
+      "test/"
+    ],
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "SoM WCT Tests"
   },
   {
     "name": "$result",

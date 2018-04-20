@@ -26,7 +26,7 @@ class WCTApi(recipe_api.RecipeApi):
     }
     self.m.cipd.ensure(cipd_root, packages)
 
-  def run(self, root):
+  def run(self, root, prefix='test/', step_name='Run WCT tests'):
     if not self.m.platform.is_linux:
       raise recipe_api.StepFailure('WCT only runs on Linux.')
 
@@ -41,11 +41,14 @@ class WCTApi(recipe_api.RecipeApi):
     wct_bin = wct_root.join('wct')
 
     with self.m.context(env=env):
+      self.m.step('Print chrome version', [chrome_bin, '--version'])
+
+    with self.m.context(env=env):
       self.m.step('Install bower', [node_path.join('npm'), 'install', '-g',
           'bower'])
     with self.m.context(env=env, cwd=root):
       self.m.step('Install bower packages', ['bower', 'install'])
     with self.m.context(env=env):
-      self.m.step('Run WCT', ['xvfb-run', '-a', wct_bin, '--base', root,
-          '--chrome', chrome_bin])
+      self.m.step(step_name, ['xvfb-run', '-a', wct_bin, '--base', root,
+          '--chrome', chrome_bin, '--prefix', prefix])
 
