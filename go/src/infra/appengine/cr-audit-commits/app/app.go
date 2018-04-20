@@ -28,9 +28,9 @@ func init() {
 
 	r.GET("/", templatesmw, index)
 
-	r.GET("/_cron/commitscanner", basemw.Extend(gaemiddleware.RequireCron), CommitScanner)
+	r.GET("/_task/auditor", basemw.Extend(gaemiddleware.RequireTaskQueue("default")), Auditor)
 
-	r.GET("/_cron/commitauditor", basemw.Extend(gaemiddleware.RequireCron), CommitAuditor)
+	r.GET("/_cron/scheduler", basemw.Extend(gaemiddleware.RequireCron), Scheduler)
 
 	r.GET("/admin/smoketest", basemw, SmokeTest)
 

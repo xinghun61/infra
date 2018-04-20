@@ -15,6 +15,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/logging"
@@ -54,6 +55,9 @@ type miloClientInterface interface {
 // accept a list of scopes to make this function usable for communicating for
 // different systems.
 func getAuthenticatedHTTPClient(ctx context.Context, scopes ...string) (*http.Client, error) {
+	if testClients != nil {
+		return testClients.httpClient, nil
+	}
 	var t http.RoundTripper
 	var err error
 	if len(scopes) > 0 {
@@ -288,16 +292,26 @@ func (c *Clients) ConnectAll(ctx context.Context, cfg *RepoConfig) error {
 	return nil
 }
 
-func loadConfig(rc *router.Context) (*RepoConfig, string, error) {
+// loadConfig finds the repo config and repo state matching the git ref given
+// as the "refUrl" parameter in the http request bound to the router context.
+//
+// If the given ref matches a configuration set to dynamic refs, this function
+// calls the config's method to populate the concrete ref parameters and returns
+// the result of that method.
+func loadConfig(rc *router.Context) (*RepoConfig, *RepoState, error) {
 	ctx, req := rc.Context, rc.Request
-	repo := req.FormValue("repo")
-	cfg, hasConfig := RuleMap[repo]
-	if !hasConfig {
-		logging.Errorf(ctx, "No audit rules defined for %s", repo)
-		return nil, "", fmt.Errorf("No audit rules defined for %s", repo)
+	ref := req.FormValue("refUrl")
+	rs := &RepoState{RepoURL: ref}
+	err := ds.Get(ctx, rs)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return cfg, repo, nil
+	cfg, ok := RuleMap[rs.ConfigName]
+	if !ok {
+		return nil, nil, fmt.Errorf("Unknown or missing config %s", rs.ConfigName)
+	}
+	return cfg, rs, nil
 }
 
 func initializeClients(ctx context.Context, cfg *RepoConfig) (*Clients, error) {

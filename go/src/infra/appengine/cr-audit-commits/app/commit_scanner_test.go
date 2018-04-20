@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/impl/memory"
-	"go.chromium.org/gae/service/datastore"
+	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/proto/git"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
 	"go.chromium.org/luci/server/router"
@@ -42,223 +43,138 @@ func mustGitilesTime(v string) *google_protobuf.Timestamp {
 	return r
 }
 
+func dummyNotifier(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error) {
+	return "NotificationSent", nil
+}
+
 func TestCommitScanner(t *testing.T) {
 
 	Convey("CommitScanner handler test", t, func() {
 		ctx := memory.Use(context.Background())
 
-		scannerPath := "/_cron/commitscanner"
+		auditorPath := "/_task/auditor"
 
 		withTestingContext := func(c *router.Context, next router.Handler) {
 			c.Context = ctx
-			datastore.GetTestable(ctx).CatchupIndexes()
+			ds.GetTestable(ctx).CatchupIndexes()
 			next(c)
 		}
 
 		r := router.New()
-		r.GET(scannerPath, router.NewMiddlewareChain(withTestingContext), CommitScanner)
+		r.GET(auditorPath, router.NewMiddlewareChain(withTestingContext), Auditor)
 		srv := httptest.NewServer(r)
 		client := &http.Client{}
 		testClients = &Clients{}
-		Convey("Unknown Repo", func() {
-			resp, err := client.Get(srv.URL + scannerPath + "?repo=unknown")
+		Convey("Unknown Ref", func() {
+			resp, err := client.Get(srv.URL + auditorPath + "?refUrl=unknown")
 			So(err, ShouldBeNil)
 			So(resp.StatusCode, ShouldEqual, 400)
 
 		})
-		Convey("New Repo", func() {
-			RuleMap["new-repo"] = &RepoConfig{
-				BaseRepoURL:    "https://new.googlesource.com/new.git",
-				GerritURL:      "https://new-review.googlesource.com",
-				BranchName:     "master",
+		Convey("Dummy Repo", func() {
+			RuleMap["dummy-repo"] = &RepoConfig{
+				BaseRepoURL:    "https://dummy.googlesource.com/dummy.git",
+				GerritURL:      "https://dummy-review.googlesource.com",
+				BranchName:     "refs/heads/master",
 				StartingCommit: "000000",
 				Rules: map[string]RuleSet{"rules": AccountRules{
-					Account: "new@test.com",
+					Account: "dummy@test.com",
 					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 						return &RuleResult{"Dummy rule", rulePassed, "", ""}
 					}},
-					notificationFunction: fileBugForFinditViolation,
+					notificationFunction: dummyNotifier,
 				}},
 			}
-			Convey("No revisions", func() {
-				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
-				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
-					return gitilesMockClient, nil
-				}
-				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-					Project:  "new",
-					Treeish:  "master",
-					Ancestor: "000000",
-					PageSize: 6000,
-				}).Return(&gitilespb.LogResponse{}, nil)
-				resp, err := client.Get(srv.URL + scannerPath + "?repo=new-repo")
-				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldEqual, 200)
-				rs := &RepoState{RepoURL: "https://new.googlesource.com/new.git/+/master"}
-				err = datastore.Get(ctx, rs)
-				So(err, ShouldBeNil)
-				So(rs.LastKnownCommit, ShouldEqual, "000000")
-			})
-			Convey("No interesting revisions", func() {
-				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
-				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
-					return gitilesMockClient, nil
-				}
-				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-					Project:  "new",
-					Treeish:  "master",
-					Ancestor: "000000",
-					PageSize: 6000,
-				}).Return(&gitilespb.LogResponse{
-					Log: []*git.Commit{{Id: "abcdef000123123"}},
-				}, nil)
-				resp, err := client.Get(srv.URL + scannerPath + "?repo=new-repo")
-				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldEqual, 200)
-				rs := &RepoState{RepoURL: "https://new.googlesource.com/new.git/+/master"}
-				err = datastore.Get(ctx, rs)
-				So(err, ShouldBeNil)
-				So(rs.LastKnownCommit, ShouldEqual, "abcdef000123123")
-			})
-			Convey("Interesting revisions", func() {
-				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
-				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
-					return gitilesMockClient, nil
-				}
-				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-					Project:  "new",
-					Treeish:  "master",
-					Ancestor: "000000",
-					PageSize: 6000,
-				}).Return(&gitilespb.LogResponse{
-					Log: []*git.Commit{
-						{Id: "deadbeef"},
-						{
-							Id: "c001c0de",
-							Author: &git.Commit_User{
-								Email: "new@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-							Committer: &git.Commit_User{
-								Email: "new@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-						},
-						{
-							Id: "006a006a",
-							Author: &git.Commit_User{
-								Email: "new@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-							Committer: &git.Commit_User{
-								Email: "new@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-						},
-					},
-				}, nil)
-				resp, err := client.Get(srv.URL + scannerPath + "?repo=new-repo")
-				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldEqual, 200)
-				rs := &RepoState{RepoURL: "https://new.googlesource.com/new.git/+/master"}
-				err = datastore.Get(ctx, rs)
-				So(err, ShouldBeNil)
-				So(rs.LastKnownCommit, ShouldEqual, "deadbeef")
-				So(rs.LastRelevantCommit, ShouldEqual, "c001c0de")
-				rc := &RelevantCommit{
-					RepoStateKey: datastore.KeyForObj(ctx, rs),
-					CommitHash:   "c001c0de",
-				}
-				err = datastore.Get(ctx, rc)
-				So(err, ShouldBeNil)
-				So(rc.PreviousRelevantCommit, ShouldEqual, "006a006a")
-			})
-		})
-		Convey("Old Repo", func() {
-			RuleMap["old-repo"] = &RepoConfig{
-				BaseRepoURL:    "https://old.googlesource.com/old.git",
-				GerritURL:      "https://old-review.googlesource.com",
-				BranchName:     "master",
-				StartingCommit: "000000",
-				Rules: map[string]RuleSet{"rules": AccountRules{
-					Account: "old@test.com",
-					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, "", ""}
-					}},
-					notificationFunction: fileBugForFinditViolation,
-				}},
+			escapedRepoURL := url.QueryEscape("https://dummy.googlesource.com/dummy.git/+/refs/heads/master")
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
 			}
-			datastore.Put(ctx, &RepoState{
-				RepoURL:            "https://old.googlesource.com/old.git/+/master",
-				LastKnownCommit:    "123456",
-				LastRelevantCommit: "999999",
+			Convey("Test scanning", func() {
+				ds.Put(ctx, &RepoState{
+					RepoURL:            "https://dummy.googlesource.com/dummy.git/+/refs/heads/master",
+					ConfigName:         "dummy-repo",
+					LastKnownCommit:    "123456",
+					LastRelevantCommit: "999999",
+				})
+
+				Convey("No revisions", func() {
+					gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+						Project:  "dummy",
+						Treeish:  "refs/heads/master",
+						Ancestor: "123456",
+						PageSize: 6000,
+					}).Return(&gitilespb.LogResponse{
+						Log: []*git.Commit{},
+					}, nil)
+					resp, err := client.Get(srv.URL + auditorPath + "?refUrl=" + escapedRepoURL)
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, 200)
+					rs := &RepoState{RepoURL: "https://dummy.googlesource.com/dummy.git/+/refs/heads/master"}
+					err = ds.Get(ctx, rs)
+					So(err, ShouldBeNil)
+					So(rs.LastKnownCommit, ShouldEqual, "123456")
+					So(rs.LastRelevantCommit, ShouldEqual, "999999")
+				})
+				Convey("No interesting revisions", func() {
+					gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+						Project:  "dummy",
+						Treeish:  "refs/heads/master",
+						Ancestor: "123456",
+						PageSize: 6000,
+					}).Return(&gitilespb.LogResponse{
+						Log: []*git.Commit{{Id: "abcdef000123123"}},
+					}, nil)
+					resp, err := client.Get(srv.URL + auditorPath + "?refUrl=" + escapedRepoURL)
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, 200)
+					rs := &RepoState{RepoURL: "https://dummy.googlesource.com/dummy.git/+/refs/heads/master"}
+					err = ds.Get(ctx, rs)
+					So(err, ShouldBeNil)
+					So(rs.LastKnownCommit, ShouldEqual, "abcdef000123123")
+					So(rs.LastRelevantCommit, ShouldEqual, "999999")
+				})
+				Convey("Interesting revisions", func() {
+					gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+						Project:  "dummy",
+						Treeish:  "refs/heads/master",
+						Ancestor: "123456",
+						PageSize: 6000,
+					}).Return(&gitilespb.LogResponse{
+						Log: []*git.Commit{
+							{Id: "deadbeef"},
+							{
+								Id: "c001c0de",
+								Author: &git.Commit_User{
+									Email: "dummy@test.com",
+									Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
+								},
+								Committer: &git.Commit_User{
+									Email: "dummy@test.com",
+									Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
+								},
+							},
+						},
+					}, nil)
+					resp, err := client.Get(srv.URL + auditorPath + "?refUrl=" + escapedRepoURL)
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, 200)
+					rs := &RepoState{RepoURL: "https://dummy.googlesource.com/dummy.git/+/refs/heads/master"}
+					err = ds.Get(ctx, rs)
+					So(err, ShouldBeNil)
+					So(rs.LastKnownCommit, ShouldEqual, "deadbeef")
+					So(rs.LastRelevantCommit, ShouldEqual, "c001c0de")
+					rc := &RelevantCommit{
+						RepoStateKey: ds.KeyForObj(ctx, rs),
+						CommitHash:   "c001c0de",
+					}
+					err = ds.Get(ctx, rc)
+					So(err, ShouldBeNil)
+					So(rc.PreviousRelevantCommit, ShouldEqual, "999999")
+				})
 			})
 
-			Convey("No interesting revisions", func() {
-				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
-				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
-					return gitilesMockClient, nil
-				}
-				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-					Project:  "old",
-					Treeish:  "master",
-					Ancestor: "123456",
-					PageSize: 6000,
-				}).Return(&gitilespb.LogResponse{
-					Log: []*git.Commit{{Id: "abcdef000123123"}},
-				}, nil)
-				resp, err := client.Get(srv.URL + scannerPath + "?repo=old-repo")
-				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldEqual, 200)
-				rs := &RepoState{RepoURL: "https://old.googlesource.com/old.git/+/master"}
-				err = datastore.Get(ctx, rs)
-				So(err, ShouldBeNil)
-				So(rs.LastKnownCommit, ShouldEqual, "abcdef000123123")
-				So(rs.LastRelevantCommit, ShouldEqual, "999999")
-			})
-			Convey("Interesting revisions", func() {
-				gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
-				testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
-					return gitilesMockClient, nil
-				}
-				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-					Project:  "old",
-					Treeish:  "master",
-					Ancestor: "123456",
-					PageSize: 6000,
-				}).Return(&gitilespb.LogResponse{
-					Log: []*git.Commit{
-						{Id: "deadbeef"},
-						{
-							Id: "c001c0de",
-							Author: &git.Commit_User{
-								Email: "old@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-							Committer: &git.Commit_User{
-								Email: "old@test.com",
-								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
-							},
-						},
-					},
-				}, nil)
-				resp, err := client.Get(srv.URL + scannerPath + "?repo=old-repo")
-				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldEqual, 200)
-				rs := &RepoState{RepoURL: "https://old.googlesource.com/old.git/+/master"}
-				err = datastore.Get(ctx, rs)
-				So(err, ShouldBeNil)
-				So(rs.LastKnownCommit, ShouldEqual, "deadbeef")
-				So(rs.LastRelevantCommit, ShouldEqual, "c001c0de")
-				rc := &RelevantCommit{
-					RepoStateKey: datastore.KeyForObj(ctx, rs),
-					CommitHash:   "c001c0de",
-				}
-				err = datastore.Get(ctx, rc)
-				So(err, ShouldBeNil)
-				So(rc.PreviousRelevantCommit, ShouldEqual, "999999")
-			})
+			srv.Close()
 		})
-		srv.Close()
 	})
 }

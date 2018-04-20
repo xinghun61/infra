@@ -106,7 +106,7 @@ func (rs RuleStatus) ColorCode() string {
 	}
 }
 
-// RepoState contains the state for each repository we audit.
+// RepoState contains the state for each ref we audit.
 type RepoState struct {
 	// RepoURL is expected to point to a branch e.g.
 	// https://chromium.googlesource.com/chromium/src.git/+/master
@@ -116,6 +116,10 @@ type RepoState struct {
 	LastKnownCommitTime    time.Time
 	LastRelevantCommit     string
 	LastRelevantCommitTime time.Time
+	// This is the key of the configuration in RuleMap that applies to
+	// this git ref. Note that each ref can only be matched to one such
+	// configuration.
+	ConfigName string
 }
 
 // RelevantCommit points to a node in a linked list of commits that have

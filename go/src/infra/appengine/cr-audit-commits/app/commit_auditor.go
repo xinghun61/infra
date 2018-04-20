@@ -5,15 +5,12 @@
 package crauditcommits
 
 import (
-	"fmt"
-	"net/http"
 	"time"
 
 	"golang.org/x/net/context"
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/server/router"
 )
 
 const (
@@ -47,42 +44,16 @@ type workerParams struct {
 	clients *Clients
 }
 
-// CommitAuditor is a handler meant to be periodically run to get all commits
-// designated by the CommitScanner handler as needing to be audited.
+// performScheduledAudits queries the datastore for commits that need to be
+// audited, spawns a pool of goroutines and sends jobs to perform each audit
+// to the pool. When it's done, it returns a map of commit hash to the commit
+// entity.
 //
-// It expects the 'repo' form parameter to contain the name of a configured
-// repository.
-//
-// Using a pool of worker goroutines it will execute a list of rules, gather the
-// results and update the RelevantCommit entries in the datastore inside a
-// transaction.
-func CommitAuditor(rc *router.Context) {
-	outerCtx, resp := rc.Context, rc.Writer
-
-	// Create a derived context with a 5 minute timeout s.t. we have enough
-	// time to save results for at least some of the audited commits,
-	// considering that cron jobs have a hard timeout of 10 minutes.
-	ctx, cancelInnerCtx := context.WithTimeout(outerCtx, time.Minute*time.Duration(5))
-	defer cancelInnerCtx()
-
-	cfg, repo, err := loadConfig(rc)
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
-	}
-
-	cs, err := initializeClients(ctx, cfg)
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
-	}
-
-	repoState := &RepoState{RepoURL: cfg.RepoURL()}
-	if err := ds.Get(ctx, repoState); err != nil {
-		http.Error(resp, fmt.Sprintf("The specified repository %s is not configured", repo), 400)
-		return
-	}
-
+// if the context expires while auditing, this function will return the partial
+// results along with the appropriate error for the caller to handle persisting
+// the partial results and thus avoid duplicating work.
+func performScheduledAudits(ctx context.Context, cfg *RepoConfig, repoState *RepoState, cs *Clients) (map[string]*RelevantCommit, error) {
+	auditedCommits := make(map[string]*RelevantCommit)
 	cfgk := ds.KeyForObj(ctx, repoState)
 
 	ap := AuditParams{
@@ -98,12 +69,11 @@ func CommitAuditor(rc *router.Context) {
 	// number of workers for the load.
 	nCommits, err := ds.Count(ctx, cq)
 	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
+		return auditedCommits, err
 	}
 	if nCommits == 0 {
 		logging.Infof(ctx, "No relevant commits to audit")
-		return
+		return auditedCommits, nil
 	}
 	logging.Infof(ctx, "Auditing %d commits", nCommits)
 
@@ -116,7 +86,14 @@ func CommitAuditor(rc *router.Context) {
 	}
 
 	logging.Infof(ctx, "Starting %d workers", nWorkers)
-	startAuditWorkers(ctx, ap, wp, nWorkers, repo)
+	wp.jobs = make(chan *RelevantCommit, nWorkers*CommitsPerWorker)
+	wp.audited = make(chan *RelevantCommit, nWorkers*CommitsPerWorker)
+	wp.workerFinished = make(chan bool, nWorkers)
+	wp.finishedCleanly = make(chan bool, nWorkers)
+	for i := 0; i < nWorkers; i++ {
+		go audit(ctx, i, ap, wp, repoState.ConfigName)
+	}
+
 	// Send audit jobs to workers.
 	ds.Run(ctx, cq, func(rc *RelevantCommit) {
 		logging.Infof(ctx, "Sending %s to worker pool", rc.CommitHash)
@@ -128,31 +105,42 @@ func CommitAuditor(rc *router.Context) {
 	for i := 0; i < nWorkers; i++ {
 		<-wp.workerFinished
 	}
-	// We will read the relevant commits into this slice before modifying
-	// them, to ensure that we don't overwrite changes that may have been
-	// saved to the datastore between the time the query `cq` above ran and
-	// the beginning of the transaction below.
-	originalCommits := []*RelevantCommit{}
 	// Read results into a map.
-	auditedCommits := make(map[string]*RelevantCommit)
 	close(wp.audited)
 	for auditedCommit := range wp.audited {
 		auditedCommits[auditedCommit.CommitHash] = auditedCommit
-		originalCommits = append(originalCommits, &RelevantCommit{CommitHash: auditedCommit.CommitHash, RepoStateKey: auditedCommit.RepoStateKey})
 	}
 
 	select {
 	case <-ctx.Done():
-		logging.Warningf(outerCtx, "The audit jobs' context timed out after 5 minutes")
+		// If the context expired, let the caller know by passing this.
+		return auditedCommits, context.DeadlineExceeded
 	default:
-		logging.Infof(ctx, "Audit completed in time")
+		return auditedCommits, nil
+	}
+}
+
+// saveAuditedCommits transactionally saves the records for the commits that
+// were audited.
+func saveAuditedCommits(ctx context.Context, auditedCommits map[string]*RelevantCommit, cfg *RepoConfig, repoState *RepoState) error {
+	// We will read the relevant commits into this slice before modifying
+	// them, to ensure that we don't overwrite changes that may have been
+	// saved to the datastore between the time the query in performScheduled
+	// audits ran and the beginning of the transaction below; as may have
+	// happened if two runs of the Audit handler ran in parallel.
+	originalCommits := []*RelevantCommit{}
+	for _, auditedCommit := range auditedCommits {
+		originalCommits = append(originalCommits, &RelevantCommit{
+			CommitHash:   auditedCommit.CommitHash,
+			RepoStateKey: auditedCommit.RepoStateKey,
+		})
 	}
 
 	// We save all the results produced by the workers in a single
 	// transaction. We do it this way because there is rate limit of 1 QPS
 	// in a single entity group. (All relevant commits for a single repo
 	// are contained in a single entity group)
-	err = ds.RunInTransaction(outerCtx, func(ctx context.Context) error {
+	return ds.RunInTransaction(ctx, func(ctx context.Context) error {
 		commitsToPut := make([]*RelevantCommit, 0, len(auditedCommits))
 		if err := ds.Get(ctx, originalCommits); err != nil {
 			return err
@@ -173,33 +161,14 @@ func CommitAuditor(rc *router.Context) {
 		}
 		for _, c := range commitsToPut {
 			if c.Status != auditScheduled {
-				AuditedCommits.Add(ctx, 1, c.Status.ToShortString(), repo)
+				AuditedCommits.Add(ctx, 1, c.Status.ToShortString(), repoState.ConfigName)
 			}
 		}
 		return nil
 	}, nil)
-
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-	} else if len(wp.finishedCleanly) != nWorkers {
-		http.Error(resp, "At least one of the audit workers did not finish cleanly", 500)
-	}
-
-	ViolationNotifier(rc)
 }
 
-// Initialize the channels and spawn the goroutines.
-func startAuditWorkers(ctx context.Context, ap AuditParams, wp *workerParams, nWorkers int, repo string) {
-	wp.jobs = make(chan *RelevantCommit, nWorkers*CommitsPerWorker)
-	wp.audited = make(chan *RelevantCommit, nWorkers*CommitsPerWorker)
-	wp.workerFinished = make(chan bool, nWorkers)
-	wp.finishedCleanly = make(chan bool, nWorkers)
-	for i := 0; i < nWorkers; i++ {
-		go audit(ctx, i, ap, wp, repo)
-	}
-}
-
-// This is the main goroutine for each auditing goroutine.
+// This is the main goroutine for each worker.
 func audit(ctx context.Context, n int, ap AuditParams, wp *workerParams, repo string) {
 	defer func() { wp.workerFinished <- true }()
 	for job := range wp.jobs {

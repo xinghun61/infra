@@ -1,12 +1,12 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 package crauditcommits
 
 import (
-	"fmt"
 	"net/http"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -19,52 +19,28 @@ import (
 	"go.chromium.org/luci/server/router"
 )
 
-// CommitScanner is a handler function that gets the list of new commits and
-// if they are eithered authored or committed by an account defined in RuleMap
-// (see rules.go), records details about them and schedules detailed audits.
+// Auditor is the main entry point for scanning the commits on a given ref and
+// auditing those that are relevant to the configuration.
 //
-// It expects the 'repo' parameter containing the name of a configured repo
-// e.g. "chromium-src-master"
+// It scans the ref in the repo and creates entries for relevant commits,
+// executes the audit functions on such commits, and calls notification
+// functions when appropriate.
 //
-// The handler uses this url as a key to retrieve the state of the last run
-// from the datastore and resume the git log from the last known commit.
-//
-// Returns 200 http status if no errors occur.
-func CommitScanner(rc *router.Context) {
-	// TODO(crbug.com/806108): Refactor these handlers to return errors if
-	// appropriate and handle them in a wrapper that logs errors and gives
-	// the corresponding http status code.
-	ctx, resp, req := rc.Context, rc.Writer, rc.Request
-	repo := req.FormValue("repo")
-	rev := ""
-	// Supported repositories are those present as keys in RuleMap.
-	// see rules_config.go.
-	cfg, hasConfig := RuleMap[repo]
-	if !hasConfig {
-		http.Error(resp, fmt.Sprintf("No audit rules defined for %s", repo), 400)
-		return
-	}
-	repoState := &RepoState{RepoURL: cfg.RepoURL()}
-	switch err := ds.Get(ctx, repoState); err {
-	case ds.ErrNoSuchEntity:
-		// This is the first time the scanner runs, use the hard-coded
-		// starting commit.
-		rev = cfg.StartingCommit
-		repoState = &RepoState{
-			RepoURL:         cfg.RepoURL(),
-			LastKnownCommit: rev,
-		}
-	case nil:
-		rev = repoState.LastKnownCommit
-		if rev == "" {
-			rev = cfg.StartingCommit
-		}
-		if rev == "" {
-			http.Error(resp, fmt.Sprintf("The specified repository %s is missing a starting revision", repo), 400)
-			return
-		}
-	default:
-		http.Error(resp, err.Error(), 500)
+// This is expected to run every 5 minutes and for that reason, it has designed
+// to stop 4 minutes 30 seconds and save any partial progress.
+func Auditor(rc *router.Context) {
+	outerCtx, resp := rc.Context, rc.Writer
+
+	// Create a derived context with a 4:30 timeout s.t. we have enough
+	// time to save results for at least some of the audited commits,
+	// considering that a run of this handler will be scheduled every 5
+	// minutes.
+	ctx, cancelInnerCtx := context.WithTimeout(outerCtx, time.Second*time.Duration(4*60+30))
+	defer cancelInnerCtx()
+
+	cfg, repoState, err := loadConfig(rc)
+	if err != nil {
+		http.Error(resp, err.Error(), 400)
 		return
 	}
 
@@ -74,29 +50,83 @@ func CommitScanner(rc *router.Context) {
 		return
 	}
 
-	host, project, err := gitiles.ParseRepoURL(cfg.BaseRepoURL)
+	fl, err := getCommitLog(ctx, cfg, repoState, cs)
 	if err != nil {
 		http.Error(resp, err.Error(), 500)
 		return
 	}
 
+	// Iterate over the log, creating relevantCommit entries as appropriate
+	// and updating repoState. If the context expires during this process,
+	// save the repoState and bail.
+	err = scanCommits(ctx, fl, cfg, repoState)
+	if err != nil && err != context.DeadlineExceeded {
+		logging.WithError(err).Errorf(ctx, "Could not save new relevant commit")
+		http.Error(resp, err.Error(), 500)
+		return
+	}
+	// Save progress with an unexpired context.
+	if putErr := ds.Put(outerCtx, repoState); putErr != nil {
+		logging.WithError(putErr).Errorf(outerCtx, "Could not save last known/interesting commits")
+		http.Error(resp, putErr.Error(), 500)
+		return
+	}
+	if err == context.DeadlineExceeded {
+		// If the context has expired do not proceed with auditing.
+		return
+	}
+
+	// Send the relevant commits to workers to be audited, note that this
+	// doesn't persist the changes, because we want to persist them together
+	// in a single transaction for efficiency.
+	//
+	// If the context expires while performing the audits, save the commits
+	// that were audited and bail.
+	auditedCommits, err := performScheduledAudits(ctx, cfg, repoState, cs)
+	if err != nil && err != context.DeadlineExceeded {
+		http.Error(resp, err.Error(), 500)
+		return
+	}
+	if putErr := saveAuditedCommits(outerCtx, auditedCommits, cfg, repoState); putErr != nil {
+		http.Error(resp, err.Error(), 500)
+		return
+	}
+	if err == context.DeadlineExceeded {
+		// If the context has expired do not proceed with notifications.
+		return
+	}
+
+	err = notifyAboutViolations(ctx, cfg, repoState, cs)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
+		return
+	}
+
+}
+
+// getCommitLog gets from gitiles a list from the last known commit to the tip
+// of the ref in chronological (as per git parentage) order.
+func getCommitLog(ctx context.Context, cfg *RepoConfig, repoState *RepoState, cs *Clients) ([]*git.Commit, error) {
+
+	host, project, err := gitiles.ParseRepoURL(cfg.BaseRepoURL)
+	if err != nil {
+		return []*git.Commit{}, err
+	}
 	logReq := gitilespb.LogRequest{
 		Project:  project,
-		Ancestor: rev,
+		Ancestor: repoState.LastKnownCommit,
 		Treeish:  cfg.BranchName,
 	}
 
 	gc, err := cs.NewGitilesClient(host)
 	if err != nil {
 		logging.WithError(err).Errorf(ctx, "Could not create new gitiles client")
-		http.Error(resp, err.Error(), 500)
-		return
+		return []*git.Commit{}, err
 	}
 	fl, err := gitiles.PagingLog(ctx, gc, logReq, 6000)
 	if err != nil {
-		logging.WithError(err).Errorf(ctx, "Could not get gitiles log from revision %s", rev)
-		http.Error(resp, err.Error(), 500)
-		return
+		logging.WithError(err).Errorf(ctx, "Could not get gitiles log from revision %s", repoState.LastKnownCommit)
+		return []*git.Commit{}, err
 	}
 	// Reverse the log to get revisions after `rev` time-ascending order.
 	for i, j := 0, len(fl)-1; i < j; i, j = i+1, j-1 {
@@ -104,22 +134,26 @@ func CommitScanner(rc *router.Context) {
 	}
 
 	// Make sure the log reaches the last known commit.
-	if len(fl) > 0 && rev != "" && len(fl[0].Parents) > 0 && fl[0].Parents[0] != rev {
+	if len(fl) > 0 && repoState.LastKnownCommit != "" && len(fl[0].Parents) > 0 && fl[0].Parents[0] != repoState.LastKnownCommit {
 		panic("There is a gap between the last known commit and the beginning of the forward log")
-
 	}
-	// TODO(robertocn): Make sure that we break out of this for loop if we
-	// reach a deadline of ~5 mins (Since cron job have a 10 minute
-	// deadline). Use the context for this.
+	return fl, nil
+}
+
+// scanCommits iterates over the list of commits in the given log, decides if
+// each is relevant to any of the configured rulesets and creates records for
+// each that is. Also updates the record for the ref, but does not persist it,
+// this is instead done by Auditor after this function is executed. This is left
+// to the handler in case the context given to this function expires before
+// reaching the end of the log.
+func scanCommits(ctx context.Context, fl []*git.Commit, cfg *RepoConfig, repoState *RepoState) error {
 	for _, commit := range fl {
 		relevant := false
 		for _, ruleSet := range cfg.Rules {
 			if ruleSet.MatchesCommit(commit) {
 				n, err := saveNewRelevantCommit(ctx, repoState, commit)
 				if err != nil {
-					logging.WithError(err).Errorf(ctx, "Could not save new relevant commit")
-					http.Error(resp, err.Error(), 500)
-					return
+					return err
 				}
 				repoState.LastRelevantCommit = n.CommitHash
 				repoState.LastRelevantCommitTime = n.CommitTime
@@ -129,21 +163,16 @@ func CommitScanner(rc *router.Context) {
 				break
 			}
 		}
-		ScannedCommits.Add(ctx, 1, relevant, repo)
+		ScannedCommits.Add(ctx, 1, relevant, repoState.ConfigName)
 		repoState.LastKnownCommit = commit.Id
 		// Ignore possible error, this time is used for display purposes only.
 		if commit.Committer != nil {
 			ct, _ := ptypes.Timestamp(commit.Committer.Time)
 			repoState.LastKnownCommitTime = ct
 		}
+
 	}
-	// If this Put or the one in saveNewRelevantCommit fail, we risk
-	// auditing the same commit twice.
-	if err := ds.Put(ctx, repoState); err != nil {
-		logging.WithError(err).Errorf(ctx, "Could not save last known/interesting commits")
-		http.Error(resp, err.Error(), 500)
-		return
-	}
+	return nil
 }
 
 func saveNewRelevantCommit(ctx context.Context, state *RepoState, commit *git.Commit) (*RelevantCommit, error) {

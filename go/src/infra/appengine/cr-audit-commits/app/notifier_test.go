@@ -6,8 +6,6 @@ package crauditcommits
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -17,7 +15,6 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/gae/service/user"
-	"go.chromium.org/luci/server/router"
 
 	"infra/monorail"
 )
@@ -36,50 +33,11 @@ func TestNotifier(t *testing.T) {
 	Convey("ViolationNotifier handler test", t, func() {
 		ctx := memory.UseWithAppID(context.Background(), "cr-audit-commits-test")
 
-		notifierPath := "/_cron/violationnotifier"
-
-		withTestingContext := func(c *router.Context, next router.Handler) {
-			c.Context = ctx
-			ds.GetTestable(ctx).CatchupIndexes()
-			next(c)
-		}
 		user.GetTestable(ctx).Login("notifier@cr-audit-commits-test.appspotmail.com", "", false)
 
-		r := router.New()
-		r.GET(notifierPath, router.NewMiddlewareChain(withTestingContext), ViolationNotifier)
-		srv := httptest.NewServer(r)
-		client := &http.Client{}
 		testClients = &Clients{}
-		Convey("Unknown Repo", func() {
-			resp, err := client.Get(srv.URL + notifierPath + "?repo=unknown")
-			So(err, ShouldBeNil)
-			So(resp.StatusCode, ShouldEqual, 500)
-
-		})
-		Convey("New Repo", func() {
-			RuleMap["new-repo"] = &RepoConfig{
-				BaseRepoURL:     "https://new.googlesource.com/new.git",
-				GerritURL:       "https://new-review.googlesource.com",
-				BranchName:      "master",
-				StartingCommit:  "000000",
-				MonorailAPIURL:  "https://monorail-fake.appspot.com/_ah/api/monorail/v1",
-				MonorailProject: "fakeproject",
-				Rules: map[string]RuleSet{"rules": AccountRules{
-					Account: "new@test.com",
-					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return &RuleResult{"Dummy rule", rulePassed, "", ""}
-					}},
-					notificationFunction: fileBugForFinditViolation,
-				}},
-			}
-			Convey("Should fail", func() {
-				resp, err := client.Get(srv.URL + notifierPath + "?repo=new-repo")
-				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldNotEqual, 200)
-			})
-		})
 		Convey("Existing Repo", func() {
-			RuleMap["old-repo"] = &RepoConfig{
+			cfg := &RepoConfig{
 				BaseRepoURL:     "https://old.googlesource.com/old.git",
 				GerritURL:       "https://old-review.googlesource.com",
 				BranchName:      "master",
@@ -95,6 +53,7 @@ func TestNotifier(t *testing.T) {
 					notificationFunction: fileBugForFinditViolation,
 				}},
 			}
+			RuleMap["old-repo"] = cfg
 			repoState := &RepoState{
 				RepoURL:            "https://old.googlesource.com/old.git/+/master",
 				LastKnownCommit:    "123456",
@@ -106,9 +65,8 @@ func TestNotifier(t *testing.T) {
 				testClients.monorail = mockMonorailClient{
 					e: fmt.Errorf("Monorail was called even though there were no failed audits"),
 				}
-				resp, err := client.Get(srv.URL + notifierPath + "?repo=old-repo")
+				err := notifyAboutViolations(ctx, cfg, repoState, testClients)
 				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldEqual, 200)
 			})
 			Convey("No failed audits", func() {
 				rsk := ds.KeyForObj(ctx, repoState)
@@ -127,9 +85,8 @@ func TestNotifier(t *testing.T) {
 				err := ds.Put(ctx, rc)
 				So(err, ShouldBeNil)
 
-				resp, err := client.Get(srv.URL + notifierPath + "?repo=old-repo")
+				err = notifyAboutViolations(ctx, cfg, repoState, testClients)
 				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldEqual, 200)
 				rc = &RelevantCommit{
 					RepoStateKey: rsk,
 					CommitHash:   "600dc0de",
@@ -161,9 +118,8 @@ func TestNotifier(t *testing.T) {
 				err := ds.Put(ctx, rc)
 				So(err, ShouldBeNil)
 
-				resp, err := client.Get(srv.URL + notifierPath + "?repo=old-repo")
+				err = notifyAboutViolations(ctx, cfg, repoState, testClients)
 				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldEqual, 200)
 				rc = &RelevantCommit{
 					RepoStateKey: rsk,
 					CommitHash:   "badc0de",
@@ -198,9 +154,8 @@ func TestNotifier(t *testing.T) {
 				err := ds.Put(ctx, rc)
 				So(err, ShouldBeNil)
 
-				resp, err := client.Get(srv.URL + notifierPath + "?repo=old-repo")
+				err = notifyAboutViolations(ctx, cfg, repoState, testClients)
 				So(err, ShouldBeNil)
-				So(resp.StatusCode, ShouldEqual, 200)
 				rc = &RelevantCommit{
 					RepoStateKey: rsk,
 					CommitHash:   "b00b00",
@@ -212,7 +167,7 @@ func TestNotifier(t *testing.T) {
 			})
 		})
 		Convey("Failed audits - email only", func() {
-			RuleMap["old-repo-email"] = &RepoConfig{
+			cfg := &RepoConfig{
 				BaseRepoURL:     "https://old.googlesource.com/old-email.git",
 				GerritURL:       "https://old-review.googlesource.com",
 				BranchName:      "master",
@@ -228,6 +183,7 @@ func TestNotifier(t *testing.T) {
 					notificationFunction: sendEmailForFinditViolation,
 				}},
 			}
+			RuleMap["old-repo-email"] = cfg
 			repoState := &RepoState{
 				RepoURL:            "https://old.googlesource.com/old-email.git/+/master",
 				LastKnownCommit:    "123456",
@@ -247,9 +203,8 @@ func TestNotifier(t *testing.T) {
 			err := ds.Put(ctx, rc)
 			So(err, ShouldBeNil)
 
-			resp, err := client.Get(srv.URL + notifierPath + "?repo=old-repo-email")
+			err = notifyAboutViolations(ctx, cfg, repoState, testClients)
 			So(err, ShouldBeNil)
-			So(resp.StatusCode, ShouldEqual, 200)
 			rc = &RelevantCommit{
 				RepoStateKey: rsk,
 				CommitHash:   "badc0de",

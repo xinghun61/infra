@@ -58,4 +58,13 @@ var (
 		field.String("type"), // Violation or AuditFailure.
 		field.String("repo"),
 	)
+
+	// RefAuditsDue counts events when audit jobs are to be scheduled for
+	// each configured ref.
+	RefAuditsDue = metric.NewCounter(
+		"cr_audit_commits/ref_audits_due",
+		"Audits that are due to be scheduled by the audit app",
+		&types.MetricMetadata{Units: "Task"},
+		field.Bool("scheduled"), // False if failed to be scheduled.
+	)
 )

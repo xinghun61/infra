@@ -15,7 +15,12 @@ func TestRulesConfig(t *testing.T) {
 	t.Parallel()
 	Convey("Ensure RuleMap keys are valid", t, func() {
 		for k := range RuleMap {
+			// This is a special value.
 			So(k, ShouldNotEqual, "AuditFailure")
+			// ":" is used to separate config name from concrete ref
+			// when accepting ref patterns.
+			So(k, ShouldNotContainSubstring, ":")
+
 		}
 	})
 	Convey("AccountRules", t, func() {

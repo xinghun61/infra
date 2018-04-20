@@ -6,13 +6,11 @@ package crauditcommits
 
 import (
 	"fmt"
-	"net/http"
 
 	"golang.org/x/net/context"
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/server/router"
 )
 
 // NotificationFunc is a type that needs to be implemented by functions
@@ -33,43 +31,24 @@ import (
 // understood by the NotificationFunc itself, and should exclude colons (`:`).
 type NotificationFunc func(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error)
 
-// ViolationNotifier is handler meant to notify about violations to audit
+// notifyAboutViolations is meant to notify about violations to audit
 // policies by calling the notification functions registered for each ruleSet
 // that matches a commit in the auditCompletedWithViolation status.
-//
-// Note that this is called directly by the commit auditor handler instead of
-// being an endpoint, as this reduces the latency between the detection of the
-// violation and the notification.
-func ViolationNotifier(rc *router.Context) {
-	ctx, resp := rc.Context, rc.Writer
-	cfg, repo, err := loadConfig(rc)
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
-	}
-
-	cs, err := initializeClients(ctx, cfg)
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
-	}
-
-	repoState := &RepoState{RepoURL: cfg.RepoURL()}
-	if err := ds.Get(ctx, repoState); err != nil {
-		http.Error(resp, fmt.Sprintf("The specified repository %s is not configured", repo), 400)
-		return
-	}
+func notifyAboutViolations(ctx context.Context, cfg *RepoConfig, repoState *RepoState, cs *Clients) error {
 
 	cfgk := ds.KeyForObj(ctx, repoState)
 
 	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditCompletedWithViolation).Eq("NotifiedAll", false)
-	ds.Run(ctx, cq, func(rc *RelevantCommit) {
+	err := ds.Run(ctx, cq, func(rc *RelevantCommit) error {
 		errors := []error{}
+		var err error
 		for ruleSetName, ruleSet := range cfg.Rules {
 			if ruleSet.MatchesRelevantCommit(rc) {
 				state := rc.GetNotificationState(ruleSetName)
 				state, err = ruleSet.NotificationFunction()(ctx, cfg, rc, cs, state)
-				if err != nil {
+				if err == context.DeadlineExceeded {
+					return err
+				} else if err != nil {
 					errors = append(errors, err)
 				}
 				rc.SetNotificationState(ruleSetName, state)
@@ -81,17 +60,16 @@ func ViolationNotifier(rc *router.Context) {
 		for _, e := range errors {
 			logging.WithError(e).Errorf(ctx, "Failed notification for detected violation on %s.",
 				cfg.LinkToCommit(rc.CommitHash))
-			NotificationFailures.Add(ctx, 1, "Violation", repo)
+			NotificationFailures.Add(ctx, 1, "Violation", repoState.ConfigName)
 		}
-
-		if err = ds.Put(ctx, rc); err != nil {
-			http.Error(resp, err.Error(), 500)
-			return
-		}
+		return ds.Put(ctx, rc)
 	})
+	if err != nil {
+		return err
+	}
 
 	cq = ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditFailed).Eq("NotifiedAll", false)
-	ds.Run(ctx, cq, func(rc *RelevantCommit) {
+	return ds.Run(ctx, cq, func(rc *RelevantCommit) error {
 		err := reportAuditFailure(ctx, cfg, rc, cs)
 
 		if err == nil {
@@ -100,17 +78,18 @@ func ViolationNotifier(rc *router.Context) {
 			if err != nil {
 				logging.WithError(err).Errorf(ctx, "Failed to save notification state for failed audit on %s.",
 					cfg.LinkToCommit(rc.CommitHash))
-				NotificationFailures.Add(ctx, 1, "AuditFailure", repo)
+				NotificationFailures.Add(ctx, 1, "AuditFailure", repoState.ConfigName)
 			}
 		} else {
 			logging.WithError(err).Errorf(ctx, "Failed to file bug for audit failure on %s.", cfg.LinkToCommit(rc.CommitHash))
-			NotificationFailures.Add(ctx, 1, "AuditFailure", repo)
+			NotificationFailures.Add(ctx, 1, "AuditFailure", repoState.ConfigName)
 		}
+		return nil
 	})
 }
 
 // reportAuditFailure is meant to file a bug about a revision that has
-// repeatedly failed to be audited. i.e. one ore more rules panic on each run.
+// repeatedly failed to be audited. i.e. one or more rules panic on each run.
 //
 // This does not necessarily mean that a policy has been violated, but only
 // that the audit app has not been able to determine whether one exists. One
