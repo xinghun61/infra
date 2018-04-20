@@ -38,8 +38,11 @@ class RunFlakeSwarmingTaskPipeline(AsynchronousPipeline):
   def TimeoutSeconds(self):
     return 24 * 60 * 60  # 24 hours. This will enable a timeout callback.
 
-  def OnTimeout(self, _, callback_parameters):
-    task_id = callback_parameters['task_id']
+  def OnTimeout(self, pipeline_parameters, callback_parameters):
+    # TODO(crbug.com/835066): Capture metrics for pipeline timeouts.
+    super(RunFlakeSwarmingTaskPipeline, self).OnTimeout(pipeline_parameters,
+                                                        pipeline_parameters)
+    task_id = callback_parameters.get('task_id')
     return flake_swarming.OnSwarmingTaskTimeout(task_id)
 
   def RunImpl(self, pipeline_parameters):

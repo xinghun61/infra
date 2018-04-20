@@ -25,7 +25,10 @@ class RunTestSwarmingTaskPipeline(AsynchronousPipeline):
     return timeout_hours * 60 * 60
 
   def OnTimeout(self, run_swarming_task_params, parameters):
-    task_id = parameters['task_id']
+    # TODO(crbug.com/835066): Capture metrics for pipeline timeouts.
+    super(RunTestSwarmingTaskPipeline, self).OnTimeout(run_swarming_task_params,
+                                                       parameters)
+    task_id = parameters.get('task_id')
     test_swarming.OnSwarmingTaskTimeout(run_swarming_task_params, task_id)
 
   def RunImpl(self, run_swarming_task_params):

@@ -4,9 +4,6 @@
 
 import json
 import logging
-import time
-
-from google.appengine.api import taskqueue
 
 from common import exceptions
 from common.waterfall import failure_type
@@ -28,8 +25,10 @@ class RunCompileTryJobPipeline(AsynchronousPipeline):
   def TimeoutSeconds(self):
     return 10 * 60 * 60  # 10 hours. This will enable a timeout callback.
 
-  def OnTimeout(self, _arg, parameters):
-    try_job_id = parameters['try_job_id']
+  def OnTimeout(self, arg, parameters):
+    # TODO(crbug.com/835066): Capture metrics for pipeline timeouts.
+    super(RunCompileTryJobPipeline, self).OnTimeout(arg, parameters)
+    try_job_id = parameters.get('try_job_id')
     try_job.OnTryJobTimeout(try_job_id, failure_type.COMPILE)
 
   def RunImpl(self, run_try_job_params):

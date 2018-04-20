@@ -102,7 +102,6 @@ import pipeline as pipeline
 from pipeline import handlers as pipeline_handlers
 from pipeline import status_ui as pipeline_status_ui
 
-from gae_libs import token
 from libs.structured_object import StructuredObject
 
 _UNDEFINED_TYPE = object()
@@ -141,10 +140,9 @@ def _ValidateType(parameter_type, parameter_name):
   """
   assert type(parameter_type) == types.TypeType, (
       '%s must be defined with a class or a type' % parameter_name)
-  assert any(issubclass(parameter_type, t)
-             for t in _SUPPORTED_TYPES), ('%s must be in supported types: %r.' %
-                                          (parameter_name,
-                                           _SUPPORTED_TYPE_NAMES))
+  assert any(issubclass(parameter_type, t) for t in _SUPPORTED_TYPES), (
+      '%s must be in supported types: %r.' % (parameter_name,
+                                              _SUPPORTED_TYPE_NAMES))
 
 
 def _ConvertInputObjectToPipelineParameters(input_type, args, kwargs):
@@ -375,7 +373,8 @@ class AsynchronousPipeline(BasePipeline):
       parameters (dict): A mapping from names to string values of the saved
           parameters.
     """
-    pass
+    logging.error('{}.OnTimeout called with {} after {} seconds'.format(
+        type(self).__name__, parameters, self.TimeoutSeconds()))
 
   def ScheduleCallbackTask(self, name=None, countdown=None, parameters=None):
     """Schedules a task to run the callback in the same target and queue.
@@ -420,7 +419,8 @@ class AsynchronousPipeline(BasePipeline):
     result = self.RunImpl(arg)
     if result is not None:
       logging.warning('%s.RunImpl should return nothing, but got a %s',
-                      self.__class__.__name__, type(result).__name__)
+                      self.__class__.__name__,
+                      type(result).__name__)
 
   def callback(self, **external_parameters):
     callback_info = _AEPipelineCallbackInfo.GetOrCreate(self.pipeline_id)

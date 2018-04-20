@@ -9,12 +9,12 @@ import mock
 from dto import swarming_task_error
 from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto.swarming_task_error import SwarmingTaskError
+from infra_api_clients.swarming import swarming_util
 from infra_api_clients.swarming.swarming_task_request import (
     SwarmingTaskInputsRef)
 from infra_api_clients.swarming.swarming_task_request import (
     SwarmingTaskProperties)
 from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
-from infra_api_clients.swarming import swarming_util
 from libs.list_of_basestring import ListOfBasestring
 from libs.test_results import test_results_util
 from libs.test_results.gtest_test_results import GtestTestResults
@@ -135,6 +135,35 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
         iterations=None,
         error=SwarmingTaskError(code=1000, message='Unknown error'),
         pass_count=None)
+
+    self.assertEqual(expected_result,
+                     flake_swarming._ParseFlakeSwarmingTaskOutput(
+                         task_data, {'bla': 'bla'}, None))
+
+  @mock.patch.object(_GTEST_RESULT, 'DoesTestExist', return_value=True)
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULT)
+  @mock.patch.object(_GTEST_RESULT, 'GetTestsRunStatuses')
+  def testParseFlakeSwarmingTaskOutputRunningTask(self, mocked_test_statuses,
+                                                  *_):
+    test_name = 't'
+    task_data = {
+        'created_ts': '2018-04-02T18:32:06.538220',
+        'started_ts': '2018-04-02T19:32:06.538220',
+        'task_id': 'task_id'
+    }
+
+    test_statuses = {test_name: {'total_run': 1, 'SUCCESS': 0}}
+
+    mocked_test_statuses.return_value = test_statuses
+
+    expected_result = FlakeSwarmingTaskOutput(
+        task_id='task_id',
+        started_time=datetime(2018, 4, 2, 19, 32, 6, 538220),
+        completed_time=None,
+        iterations=1,
+        error=None,
+        pass_count=0)
 
     self.assertEqual(expected_result,
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
@@ -283,6 +312,23 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_result,
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
                          task_data, 'content', None))
+
+  @mock.patch.object(swarmed_test_util, 'GetSwarmingTaskDataAndResult')
+  def testOnSwarmingTaskTimeoutNoTaskId(self, mocked_result):
+    error = SwarmingTaskError(
+        code=350, message='Runner to run swarming task timed out')
+    mocked_result.return_value = None, None, error
+
+    expected_result = FlakeSwarmingTaskOutput(
+        task_id=None,
+        started_time=None,
+        completed_time=None,
+        iterations=None,
+        error=error,
+        pass_count=None)
+
+    self.assertEqual(expected_result,
+                     flake_swarming.OnSwarmingTaskTimeout(None))
 
   @mock.patch.object(swarmed_test_util, 'GetSwarmingTaskDataAndResult')
   def testOnSwarmingTaskTimeoutNoData(self, mocked_result):

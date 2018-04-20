@@ -72,8 +72,9 @@ def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error):
     tries = passes + fails
     successes = passes
 
-    if tries == 0 and test_name is not None and test_results_util.GetTestResultObject(
-        output_json).DoesTestExist(test_name):
+    if (tries == 0 and test_name is not None and
+        test_results_util.GetTestResultObject(output_json).DoesTestExist(
+            test_name)):
       # The test exists, but something went wrong prevnting even a single test
       # from being processed which counts as an error.
       error = error or SwarmingTaskError.GenerateError(
@@ -82,20 +83,22 @@ def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error):
       successes = None
 
     return FlakeSwarmingTaskOutput(
-        completed_time=time_util.DatetimeFromString(task_data['completed_ts']),
+        completed_time=time_util.DatetimeFromString(
+            task_data.get('completed_ts')),
         error=error,
         iterations=tries,
         pass_count=successes,
-        started_time=time_util.DatetimeFromString(task_data['started_ts']),
+        started_time=time_util.DatetimeFromString(task_data.get('started_ts')),
         task_id=task_data['task_id'])
   else:
     return FlakeSwarmingTaskOutput(
-        completed_time=time_util.DatetimeFromString(task_data['completed_ts']),
+        completed_time=time_util.DatetimeFromString(
+            task_data.get('completed_ts')),
         error=error or
         SwarmingTaskError.GenerateError(code=swarming_task_error.UNKNOWN),
         iterations=None,
         pass_count=None,
-        started_time=time_util.DatetimeFromString(task_data['started_ts']),
+        started_time=time_util.DatetimeFromString(task_data.get('started_ts')),
         task_id=task_data['task_id'])
 
 
@@ -103,6 +106,11 @@ def OnSwarmingTaskTimeout(task_id):
   """To be called when waiting for a swarming task times out."""
   timeout_error = SwarmingTaskError.GenerateError(
       swarming_task_error.RUNNER_TIMEOUT)
+
+  if not task_id:
+    # The pipeline timedout without successfully triggering a task.
+    return OnSwarmingTaskError(None, timeout_error)
+
   task_data, output_json, error = (
       swarmed_test_util.GetSwarmingTaskDataAndResult(task_id))
 
