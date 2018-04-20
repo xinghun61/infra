@@ -198,11 +198,21 @@ def is_swarming_config(cfg):
 
 @ndb.non_transactional
 @ndb.tasklet
-def get_buckets_async():
-  """Returns a list of project_config_pb2.Bucket objects."""
-  buckets = yield Bucket.query().fetch_async()
+def get_buckets_async(names=None):
+  """Returns a list of project_config_pb2.Bucket objects.
+
+  If names is None, returns all buckets.
+  Otherwise returns only specified buckets, in the same order as names.
+  If a bucket doesn't exist, the corresponding element of the returned list
+  will be None.
+  """
+  if names is None:
+    buckets = yield Bucket.query().fetch_async()
+  else:
+    buckets = yield ndb.get_multi_async([ndb.Key(Bucket, n) for n in names])
   raise ndb.Return([
-    parse_binary_bucket_config(b.config_content_binary) for b in buckets
+    parse_binary_bucket_config(b.config_content_binary) if b else None
+    for b in buckets
   ])
 
 

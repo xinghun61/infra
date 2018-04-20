@@ -208,6 +208,35 @@ class ConfigTest(testing.AppengineTestCase):
     ]
     self.assertEqual(actual, expected)
 
+  def test_get_buckets_async_with_names(self):
+    config.Bucket(
+        id='master.tryserver.chromium.linux',
+        project_id='chromium',
+        revision='deadbeef',
+        config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+        config_content_binary=text_to_binary(
+            MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT)).put()
+    config.Bucket(
+        id='master.tryserver.chromium.win',
+        project_id='chromium',
+        revision='deadbeef',
+        config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
+        config_content_binary=text_to_binary(
+            MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT)).put()
+    actual = config.get_buckets_async(
+        ['master.tryserver.chromium.linux']).get_result()
+    expected = [
+      project_config_pb2.Bucket(
+          name='master.tryserver.chromium.linux',
+          acls=[
+            project_config_pb2.Acl(
+                role=project_config_pb2.Acl.READER, group='all'),
+            project_config_pb2.Acl(
+                role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
+          ]),
+    ]
+    self.assertEqual(actual, expected)
+
   @mock.patch('components.config.get_project_configs', autospec=True)
   def test_cron_update_buckets(self, get_project_configs):
     chromium_buildbucket_cfg = parse_cfg('''

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import datetime
 import json
 
@@ -153,6 +154,61 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         }
       ]
     })
+
+  def test_get_builders_with_bucket_filtering(self):
+    # Add a second bucket with a different name.
+    other_bucket = '''
+      name: "luci.other.try"
+      acls {
+        role: SCHEDULER
+        group: "all"
+      }
+      swarming {
+        hostname: "swarming.example.com"
+        builders {
+          name: "a"
+        }
+      }
+    '''
+    config.Bucket(
+        id='luci.other.try',
+        project_id='other',
+        revision='deadbeef',
+        config_content=other_bucket,
+        config_content_binary=config_test.text_to_binary(other_bucket),
+    ).put()
+
+    req = {
+      'bucket': ['luci.chromium.try'],
+    }
+    resp = self.call_api('get_builders', req).json_body
+    self.assertEqual(resp, {
+      'buckets': [
+        {
+          'name': 'luci.chromium.try',
+          'swarming_hostname': 'swarming.example.com',
+          'builders': [
+            {
+              'name': 'linux_chromium_rel_ng',
+              'category': 'Chromium',
+              'properties_json': json.dumps({'foo': 'bar', 'baz': 1}),
+              'swarming_dimensions': ['foo:bar', 'baz:baz'],
+            },
+            {
+              'name': 'win_chromium_rel_ng',
+              'category': 'Chromium',
+              'properties_json': json.dumps({})
+            },
+          ]
+        }
+      ]
+    })
+
+  def test_get_builders_with_bucket_filtering_limit(self):
+    req = {
+      'bucket': ['luci.chromium.try'] * 200,
+    }
+    self.call_api('get_builders', req, status=400)
 
   def test_get_task_def(self):
     req = {

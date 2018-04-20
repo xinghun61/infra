@@ -88,23 +88,33 @@ class SwarmbucketApi(remote.Service):
   """API specific to swarmbucket."""
 
   @swarmbucket_api_method(
-      message_types.VoidMessage,
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          bucket=messages.StringField(1, repeated=True),
+      ),
       GetBuildersResponseMessage,
       path='builders', http_method='GET')
-  def get_builders(self, _request):
+  def get_builders(self, request):
     """Returns defined swarmbucket builders.
 
-    Can be used by code review tool to discover builders.
+    Can be used to discover builders.
     """
-    buckets = config.get_buckets_async().get_result()
-    available = acl.get_available_buckets()
-    if available is not None:  # pragma: no branch
-      available = set(available)
-      buckets = [b for b in buckets if b.name in available]
+    if request.bucket:
+      if len(request.bucket) > 100:
+        raise endpoints.BadRequestException(
+            'Number of buckets cannot be greater than 100')
+      # Buckets were specified explicitly.
+      # Filter out inaccessible ones.
+      bucket_names = [b for b in request.bucket if acl.can_access_bucket(b)]
+    else:
+      # Buckets were not specified explicitly.
+      # Use the available ones.
+      bucket_names = acl.get_available_buckets()
+      # bucket_names is None => all buckets are available.
 
     res = GetBuildersResponseMessage()
-    for bucket in buckets:
-      if not bucket.swarming.builders:
+    for bucket in config.get_buckets_async(bucket_names).get_result():
+      if not bucket or not bucket.swarming.builders:
         continue
       res.buckets.append(BucketMessage(
         name=bucket.name,
