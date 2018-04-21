@@ -48,6 +48,8 @@ from tracker import tracker_helpers
 # in under that amount of time, we don't bother logging it.
 FAIL_FAST_LIMIT_SEC = 0.1
 
+DELAY_BETWEEN_RPC_COMPLETION_POLLS = 0.04  # 40 milliseconds
+
 # The choices help balance the cost of choosing samples vs. the cost of
 # selecting issues that are in a range bounded by neighboring samples.
 # Preferred chunk size parameters were determined by experimentation.
@@ -577,7 +579,7 @@ def _FinishBackendSearch(rpc_tuples):
     active_rpcs = [rpc for (_time, _shard_key, rpc) in rpc_tuples]
     # Wait for any active RPC to complete.  It's callback function will
     # automatically be called.
-    finished_rpc = apiproxy_stub_map.UserRPC.wait_any(active_rpcs)
+    finished_rpc = real_wait_any(active_rpcs)
     # Figure out which rpc_tuple finished and remove it from our list.
     for rpc_tuple in rpc_tuples:
       _time, _shard_key, rpc = rpc_tuple
@@ -587,6 +589,26 @@ def _FinishBackendSearch(rpc_tuples):
     else:
       raise ValueError('We somehow finished an RPC that is not in rpc_tuples')
 
+
+def real_wait_any(active_rpcs):
+  """Work around the blocking nature of wait_any().
+
+  wait_any() checks for any finished RPCs, and returns one if found.
+  If no RPC is finished, it simply blocks on the last RPC in the list.
+  This is not the desired behavior because we are not able to detect
+  FAST-FAIL RPC results and retry them if wait_any() is blocked on a
+  request that is taking a long time to do actual work.
+
+  Instead, we do the same check, without blocking on any individual RPC.
+  """
+  if settings.dev_mode:
+    # The development server has very different code for RPCs than the
+    # code used in the hosted environment.
+    return apiproxy_stub_map.UserRPC.wait_any(active_rpcs)
+  while True:
+    finished, _ = apiproxy_stub_map.UserRPC._UserRPC__check_one(active_rpcs)
+    if finished: return finished
+    time.sleep(DELAY_BETWEEN_RPC_COMPLETION_POLLS)
 
 def _GetProjectTimestamps(query_project_ids, needed_shard_keys):
   """Get a dict of modified_ts values for all specified project-shards."""
