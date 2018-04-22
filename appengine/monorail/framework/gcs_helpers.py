@@ -75,6 +75,10 @@ def StoreObjectInGCS(
     thumb_content = None
     try:
       thumb_content = images.resize(content, thumb_width, thumb_height)
+    except images.LargeImageError:
+      # Don't log the whole exception because we don't need to see
+      # this on the Cloud Error Reporting page.
+      logging.info('Got LargeImageError on image with %d bytes', len(content))
     except Exception, e:
       # Do not raise exception for incorrectly formed images.
       # See https://bugs.chromium.org/p/monorail/issues/detail?id=597 for more
