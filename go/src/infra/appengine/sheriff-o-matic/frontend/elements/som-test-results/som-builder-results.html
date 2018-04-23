@@ -83,9 +83,9 @@
         if (!results) return [];
         let renderedObjects = [];
         results.forEach(result => {
-          if (!result.test_actual) return;
+          if (!result.actual) return;
           let results = new Set();
-          result.test_actual.forEach((res) => { results.add(res); });
+          result.actual.forEach((res) => { results.add(res); });
           // TODO(seanmccullough): Firgure out test-results' color scheme.
           // It currently makes no sense to me, but I imagine users have
           // internalized over the years. We shouldn't surprise them
@@ -100,7 +100,7 @@
           } else if (results.has('CRASH')) {
             color = 'crash';
           }
-          let toolTip = result.test_actual.join(' ');
+          let toolTip = result.actual.join(' ');
           toolTip += '\n' + 'Build: ' + result.build_number + '\n' +
               'Commit position: ' + result.revision;
           let object = {
@@ -108,7 +108,7 @@
             toolTip: toolTip,
             link: 'https://ci.chromium.org/buildbot/' + this.masterName +
                 '/' + this.builderResults.builder_name + '/' + result.build_number,
-            text: result.test_actual.length || '?',
+            text: result.actual.length || '?',
           };
           renderedObjects.push(object);
         });

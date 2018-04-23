@@ -21,19 +21,19 @@
         builder_name:'some-builder',
         total_failures: 2,
         results: [
-          {build_number: 1, actual: [2], expected: [2]},
-          {build_number: 2, actual: [1], expected: [2]},
-          {build_number: 3, actual: [1], expected: [2]},
+          {build_number: 1, actual: ['PASS'], expected: ['PASS']},
+          {build_number: 2, actual: ['FAIL'], expected: ['PASS']},
+          {build_number: 3, actual: ['FAIL'], expected: ['PASS']},
         ],
       };
     });
 
     test('test getRenderedObjects', function(done) {
       flush(function() {
-        let renderedOBjects = element._getRenderedObjects(element.builderResults.results);
-        assert.equal(renderedOBjects[0].colorClass, 'green');
-        assert.equal(renderedOBjects[1].colorClass, 'red');
-        assert.equal(renderedOBjects[2].colorClass, 'red');
+        let renderedObjects = element._getRenderedObjects(element.builderResults.results);
+        assert.equal(renderedObjects[0].colorClass, 'pass');
+        assert.equal(renderedObjects[1].colorClass, 'fail');
+        assert.equal(renderedObjects[2].colorClass, 'fail');
         done();
       });
     });

@@ -33,10 +33,8 @@
       };
 
       flush( () => {
-        assert.equal('Regression ranges:\n        \n        \n          ' +
-            'chromium:\n      \n      398901 - 398946\n      ' +
-            '\n        Click to see more information.',
-            element.shadowRoot.querySelector('div').textContent.trim());
+        assert.notEqual(-1,
+            element.shadowRoot.querySelector('div').textContent.trim().indexOf('398901 - 398946'));
         assert.equal(false, element.$.loadingMessage.hidden);
         assert.equal(false, element.$.collapse.opened);
         done();
@@ -83,7 +81,7 @@
             + 'chromium:\n        \n        398901 - 398946'
             + '\n        \n          Click to see less information.',
             element.shadowRoot.querySelector('div').textContent.trim());
-        assert.equal('fa3d958d\n          \n          (dcastagna):\n          '
+        assert.equal('(dcastagna):\n          '
             + 'gl: Test YV12 buffer drm import.',
             element.shadowRoot.querySelector('.commit').textContent.trim());
         assert.equal(true, element.$.collapse.opened);
