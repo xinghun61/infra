@@ -140,22 +140,24 @@ func checkWorkerDeps(w *admin.Worker, m map[string]*admin.Worker, visited map[st
 	return nil
 }
 
-// includeFunction checks if the provided function should be included based on
-// the provided paths.
+// includeFunction checks if an analyzer should be included based on paths.
 //
 // The paths are checked against the path filters included for the function. If
-// there are no path filters, or no paths, then the function is included
+// there are no path filters or no paths, then the function is included
 // without further checking. With both paths and path filters, there needs to
 // be at least one path match for the function to be included.
 //
-// Note that path filters are only provided for analyzers.
+// The path filter only applies to the last part of the path.
+//
+// Also, path filters are only provided for analyzers; analyzer functions are
+// always includeded regardless of path matching.
 func includeFunction(f *tricium.Function, paths []string) (bool, error) {
-	if f.Type == tricium.Function_ISOLATOR || len(paths) == 0 || f.PathFilters == nil || len(f.PathFilters) == 0 {
+	if f.Type == tricium.Function_ISOLATOR || len(paths) == 0 || len(f.PathFilters) == 0 {
 		return true, nil
 	}
 	for _, p := range paths {
 		for _, filter := range f.PathFilters {
-			ok, err := filepath.Match(filter, p)
+			ok, err := filepath.Match(filter, filepath.Base(p))
 			if err != nil {
 				return false, fmt.Errorf("failed to check path filter %s for path %s", filter, p)
 			}

@@ -65,6 +65,7 @@ type Function struct {
 	// Path filters for this function.
 	//
 	// Applicable when this function is an analyzer. Defined as a glob.
+	// The path filters only apply to the last part of the path.
 	PathFilters []string `protobuf:"bytes,5,rep,name=path_filters,json=pathFilters" json:"path_filters,omitempty"`
 	// Email address of the owner of this function.
 	//

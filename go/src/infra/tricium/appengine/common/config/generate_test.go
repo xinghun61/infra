@@ -242,45 +242,48 @@ func TestFollowWorkerDeps(t *testing.T) {
 }
 
 func TestIncludeFunction(t *testing.T) {
-	Convey("Test Environment", t, func() {
-		Convey("No paths means function is included", func() {
-			ok, err := includeFunction(&tricium.Function{
-				Type: tricium.Function_ANALYZER,
-			}, nil)
-			So(err, ShouldBeNil)
-			So(ok, ShouldBeTrue)
-		})
-		Convey("No file paths means function is included", func() {
-			ok, err := includeFunction(&tricium.Function{
-				Type: tricium.Function_ANALYZER,
-			}, []string{"README.md"})
-			So(err, ShouldBeNil)
-			So(ok, ShouldBeTrue)
-		})
-		Convey("Analyzer function is included when path matches filter", func() {
-			ok, err := includeFunction(&tricium.Function{
-				Type:        tricium.Function_ANALYZER,
-				PathFilters: []string{"*.md"},
-			}, []string{"README.md"})
-			So(err, ShouldBeNil)
-			So(ok, ShouldBeTrue)
-		})
-		Convey("Analyzer function is not included when there is no match", func() {
-			ok, err := includeFunction(&tricium.Function{
-				Type:        tricium.Function_ANALYZER,
-				PathFilters: []string{"*.md"},
-			}, []string{"file.cpp"})
-			So(err, ShouldBeNil)
-			So(ok, ShouldBeFalse)
-		})
-		Convey("Isolator function is included regardless of path match", func() {
-			ok, err := includeFunction(&tricium.Function{
-				Type:        tricium.Function_ISOLATOR,
-				PathFilters: []string{"*.md"},
-			}, []string{"file.cpp"})
-			So(err, ShouldBeNil)
-			So(ok, ShouldBeTrue)
-		})
+	Convey("No paths means function is included", t, func() {
+		ok, err := includeFunction(&tricium.Function{
+			Type:        tricium.Function_ANALYZER,
+			PathFilters: []string{"*.cc", "*.cpp"},
+		}, nil)
+		So(err, ShouldBeNil)
+		So(ok, ShouldBeTrue)
+	})
+
+	Convey("No path filters means function is included", t, func() {
+		ok, err := includeFunction(&tricium.Function{
+			Type: tricium.Function_ANALYZER,
+		}, []string{"README.md", "path/foo.cc"})
+		So(err, ShouldBeNil)
+		So(ok, ShouldBeTrue)
+	})
+
+	Convey("Analyzer is included when any path matches filter", t, func() {
+		ok, err := includeFunction(&tricium.Function{
+			Type:        tricium.Function_ANALYZER,
+			PathFilters: []string{"*.cc", "*.cpp"},
+		}, []string{"README.md", "path/foo.cc"})
+		So(err, ShouldBeNil)
+		So(ok, ShouldBeTrue)
+	})
+
+	Convey("Analyzer function is not included when there is no match", t, func() {
+		ok, err := includeFunction(&tricium.Function{
+			Type:        tricium.Function_ANALYZER,
+			PathFilters: []string{"*.cc", "*.cpp"},
+		}, []string{"README.md", "whitespace.txt"})
+		So(err, ShouldBeNil)
+		So(ok, ShouldBeFalse)
+	})
+
+	Convey("Isolator function is included regardless of path match", t, func() {
+		ok, err := includeFunction(&tricium.Function{
+			Type:        tricium.Function_ISOLATOR,
+			PathFilters: []string{"*.cc", "*.cpp"},
+		}, []string{"README.md", "whitespace.txt"})
+		So(err, ShouldBeNil)
+		So(ok, ShouldBeTrue)
 	})
 }
 
