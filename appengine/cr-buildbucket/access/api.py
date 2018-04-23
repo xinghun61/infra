@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from google.protobuf import duration_pb2
 
 from components import auth
@@ -35,17 +37,23 @@ class AccessServicer(object):
 
   def PermittedActions(self, request, _context):
     """Returns a set of permitted actions for the requested resources."""
+    logging.debug(
+        'Received request from %s for: %s',
+        auth.get_current_identity(),
+        request)
     if request.resource_kind != 'bucket':
       return access_pb2.PermittedActionsResponse()
     roles = {
       bucket: acl.get_role_async(bucket)
       for bucket in request.resource_ids
     }
+    permitted = {
+      bucket: create_resource_permissions(role.get_result())
+      for bucket, role in roles.iteritems()
+    }
+    logging.debug('Permitted: %s', permitted)
     return access_pb2.PermittedActionsResponse(
-        permitted={
-          bucket: create_resource_permissions(role.get_result())
-          for bucket, role in roles.iteritems()
-        },
+        permitted=permitted,
         validity_duration=duration_pb2.Duration(seconds=10),
     )
 
