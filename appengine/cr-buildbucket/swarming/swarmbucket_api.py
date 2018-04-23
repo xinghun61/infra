@@ -169,6 +169,13 @@ class SwarmbucketApi(remote.Service):
     """Sets the build number that will be used for the next build."""
     if not acl.can_set_next_number(request.bucket):
       raise endpoints.ForbiddenException('access denied')
+    _, bucket = config.get_bucket(request.bucket)
+
+    if not any(b.name == request.builder for b in bucket.swarming.builders):
+      raise endpoints.BadRequestException(
+          'builder "%s" not found in bucket "%s"' % (
+              request.builder, request.bucket))
+
     seq_name = sequence.builder_seq_name(request.bucket, request.builder)
     try:
       sequence.set_next(seq_name, request.next_number)

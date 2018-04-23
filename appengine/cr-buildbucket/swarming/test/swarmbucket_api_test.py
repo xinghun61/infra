@@ -9,7 +9,9 @@ import json
 from components import auth
 from components import auth_testing
 from testing_utils import testing
+import mock
 
+from proto import project_config_pb2
 from test import config_test
 from swarming import swarmbucket_api
 from test.test_util import future
@@ -345,7 +347,17 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
     self.call_api('get_task_def', req, status=403)
 
-  def test_set_next_build_number(self):
+  @mock.patch('config.get_bucket', autospec=True)
+  def test_set_next_build_number(self, get_bucket_cfg):
+    get_bucket_cfg.return_value = ('project', project_config_pb2.Bucket(
+        name='a',
+        swarming=project_config_pb2.Swarming(
+            builders=[
+              project_config_pb2.Builder(name='b'),
+            ],
+        ),
+    ))
+
     seq = sequence.NumberSequence(id='a/b', next_number=10)
     seq.put()
     req = {
@@ -364,3 +376,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     req['next_number'] = 10
     self.call_api('set_next_build_number', req, status=400)
     self.assertEqual(seq.key.get().next_number, 20)
+
+    req['builder'] = 'does not exist'
+    self.call_api('set_next_build_number', req, status=400)
