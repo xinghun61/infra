@@ -14,11 +14,9 @@ import (
 // modified by the audited CL is ``DEPS``.
 func OnlyModifiesDEPSFile(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{
-		Message: fmt.Sprintf("The automated account %s was expected to only modify %s on the automated commit %s"+
-			" but it seems to have modified other files.", ap.TriggeringAccount, "DEPS", rc.CommitHash),
+		RuleName:         "OnlyModifiesDEPSFile",
+		RuleResultStatus: ruleFailed,
 	}
-	result.RuleName = "OnlyModifiesDEPSFile"
-	result.RuleResultStatus = ruleFailed
 
 	ok, err := onlyModifies(ctx, ap, rc, cs, "DEPS")
 	if err != nil {
@@ -26,6 +24,9 @@ func OnlyModifiesDEPSFile(ctx context.Context, ap *AuditParams, rc *RelevantComm
 	}
 	if ok {
 		result.RuleResultStatus = rulePassed
+	} else {
+		result.Message = fmt.Sprintf("The automated account %s was expected to only modify %s on the automated commit %s"+
+			" but it seems to have modified other files.", ap.TriggeringAccount, "DEPS", rc.CommitHash)
 	}
 	return result
 }
