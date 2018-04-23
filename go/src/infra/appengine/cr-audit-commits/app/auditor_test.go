@@ -47,7 +47,7 @@ func dummyNotifier(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs 
 	return "NotificationSent", nil
 }
 
-func TestCommitScanner(t *testing.T) {
+func TestAuditor(t *testing.T) {
 
 	Convey("CommitScanner handler test", t, func() {
 		ctx := memory.Use(context.Background())
@@ -173,7 +173,97 @@ func TestCommitScanner(t *testing.T) {
 					So(rc.PreviousRelevantCommit, ShouldEqual, "999999")
 				})
 			})
+			Convey("Test auditing", func() {
+				repoState := &RepoState{
+					ConfigName:         "dummy-repo",
+					RepoURL:            "https://dummy.googlesource.com/dummy.git/+/refs/heads/master",
+					LastKnownCommit:    "222222",
+					LastRelevantCommit: "222222",
+				}
+				err := ds.Put(ctx, repoState)
+				rsk := ds.KeyForObj(ctx, repoState)
 
+				So(err, ShouldBeNil)
+				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+					Project:  "dummy",
+					Treeish:  "refs/heads/master",
+					Ancestor: "222222",
+					PageSize: 6000,
+				}).Return(&gitilespb.LogResponse{
+					Log: []*git.Commit{},
+				}, nil)
+
+				Convey("No commits", func() {
+					resp, err := client.Get(srv.URL + auditorPath + "?refUrl=" + escapedRepoURL)
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, 200)
+				})
+				Convey("With commits", func() {
+					for i := 0; i < 10; i++ {
+						rc := &RelevantCommit{
+							RepoStateKey:  rsk,
+							CommitHash:    fmt.Sprintf("%02d%02d%02d", i, i, i),
+							Status:        auditScheduled,
+							AuthorAccount: "dummy@test.com",
+						}
+						err := ds.Put(ctx, rc)
+						So(err, ShouldBeNil)
+					}
+					Convey("All pass", func() {
+						resp, err := client.Get(srv.URL + auditorPath + "?refUrl=" + escapedRepoURL)
+						So(err, ShouldBeNil)
+						So(resp.StatusCode, ShouldEqual, 200)
+						for i := 0; i < 10; i++ {
+							rc := &RelevantCommit{
+								RepoStateKey: rsk,
+								CommitHash:   fmt.Sprintf("%02d%02d%02d", i, i, i),
+							}
+							err := ds.Get(ctx, rc)
+							So(err, ShouldBeNil)
+							So(rc.Status, ShouldEqual, auditCompleted)
+						}
+					})
+					Convey("Some fail", func() {
+						RuleMap["dummy-repo"].Rules["rules"].(AccountRules).Funcs[0] = func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+							return &RuleResult{"Dummy rule", ruleFailed, "", ""}
+						}
+						resp, err := client.Get(srv.URL + auditorPath + "?refUrl=" + escapedRepoURL)
+						So(err, ShouldBeNil)
+						So(resp.StatusCode, ShouldEqual, 200)
+						for i := 0; i < 10; i++ {
+							rc := &RelevantCommit{
+								RepoStateKey: rsk,
+								CommitHash:   fmt.Sprintf("%02d%02d%02d", i, i, i),
+							}
+							err := ds.Get(ctx, rc)
+							So(err, ShouldBeNil)
+							So(rc.Status, ShouldEqual, auditCompletedWithViolation)
+						}
+					})
+					Convey("Some panic", func() {
+						RuleMap["dummy-repo"].Rules["rules"].(AccountRules).Funcs[0] = func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+							if rc.Status == auditScheduled {
+								panic("This always panics")
+							}
+							return &RuleResult{"Dummy rule", ruleFailed, "", ""}
+						}
+						resp, err := client.Get(srv.URL + auditorPath + "?refUrl=" + escapedRepoURL)
+						So(err, ShouldBeNil)
+						So(resp.StatusCode, ShouldEqual, 200)
+						for i := 0; i < 10; i++ {
+							rc := &RelevantCommit{
+								RepoStateKey: rsk,
+								CommitHash:   fmt.Sprintf("%02d%02d%02d", i, i, i),
+							}
+							err := ds.Get(ctx, rc)
+							So(err, ShouldBeNil)
+							So(rc.Status, ShouldEqual, auditScheduled)
+							So(rc.Retries, ShouldEqual, 1)
+						}
+					})
+
+				})
+			})
 			srv.Close()
 		})
 	})

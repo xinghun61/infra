@@ -120,54 +120,6 @@ func performScheduledAudits(ctx context.Context, cfg *RepoConfig, repoState *Rep
 	}
 }
 
-// saveAuditedCommits transactionally saves the records for the commits that
-// were audited.
-func saveAuditedCommits(ctx context.Context, auditedCommits map[string]*RelevantCommit, cfg *RepoConfig, repoState *RepoState) error {
-	// We will read the relevant commits into this slice before modifying
-	// them, to ensure that we don't overwrite changes that may have been
-	// saved to the datastore between the time the query in performScheduled
-	// audits ran and the beginning of the transaction below; as may have
-	// happened if two runs of the Audit handler ran in parallel.
-	originalCommits := []*RelevantCommit{}
-	for _, auditedCommit := range auditedCommits {
-		originalCommits = append(originalCommits, &RelevantCommit{
-			CommitHash:   auditedCommit.CommitHash,
-			RepoStateKey: auditedCommit.RepoStateKey,
-		})
-	}
-
-	// We save all the results produced by the workers in a single
-	// transaction. We do it this way because there is rate limit of 1 QPS
-	// in a single entity group. (All relevant commits for a single repo
-	// are contained in a single entity group)
-	return ds.RunInTransaction(ctx, func(ctx context.Context) error {
-		commitsToPut := make([]*RelevantCommit, 0, len(auditedCommits))
-		if err := ds.Get(ctx, originalCommits); err != nil {
-			return err
-		}
-		for _, currentCommit := range originalCommits {
-			if auditedCommit, ok := auditedCommits[currentCommit.CommitHash]; ok {
-				// Only save those that are still in the
-				// auditScheduled state in the datastore to
-				// avoid racing a possible parallel run of
-				// this handler.
-				if currentCommit.Status == auditScheduled {
-					commitsToPut = append(commitsToPut, auditedCommit)
-				}
-			}
-		}
-		if err := ds.Put(ctx, commitsToPut); err != nil {
-			return err
-		}
-		for _, c := range commitsToPut {
-			if c.Status != auditScheduled {
-				AuditedCommits.Add(ctx, 1, c.Status.ToShortString(), repoState.ConfigName)
-			}
-		}
-		return nil
-	}, nil)
-}
-
 // This is the main goroutine for each worker.
 func audit(ctx context.Context, n int, ap AuditParams, wp *workerParams, repo string) {
 	defer func() { wp.workerFinished <- true }()

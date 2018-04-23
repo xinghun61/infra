@@ -5,6 +5,7 @@
 package crauditcommits
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -201,4 +202,140 @@ func saveNewRelevantCommit(ctx context.Context, state *RepoState, commit *git.Co
 	logging.Infof(ctx, "saved %s", rc)
 
 	return rc, nil
+}
+
+// saveAuditedCommits transactionally saves the records for the commits that
+// were audited.
+func saveAuditedCommits(ctx context.Context, auditedCommits map[string]*RelevantCommit, cfg *RepoConfig, repoState *RepoState) error {
+	// We will read the relevant commits into this slice before modifying
+	// them, to ensure that we don't overwrite changes that may have been
+	// saved to the datastore between the time the query in performScheduled
+	// audits ran and the beginning of the transaction below; as may have
+	// happened if two runs of the Audit handler ran in parallel.
+	originalCommits := []*RelevantCommit{}
+	for _, auditedCommit := range auditedCommits {
+		originalCommits = append(originalCommits, &RelevantCommit{
+			CommitHash:   auditedCommit.CommitHash,
+			RepoStateKey: auditedCommit.RepoStateKey,
+		})
+	}
+
+	// We save all the results produced by the workers in a single
+	// transaction. We do it this way because there is rate limit of 1 QPS
+	// in a single entity group. (All relevant commits for a single repo
+	// are contained in a single entity group)
+	return ds.RunInTransaction(ctx, func(ctx context.Context) error {
+		commitsToPut := make([]*RelevantCommit, 0, len(auditedCommits))
+		if err := ds.Get(ctx, originalCommits); err != nil {
+			return err
+		}
+		for _, currentCommit := range originalCommits {
+			if auditedCommit, ok := auditedCommits[currentCommit.CommitHash]; ok {
+				// Only save those that are still in the
+				// auditScheduled state in the datastore to
+				// avoid racing a possible parallel run of
+				// this handler.
+				if currentCommit.Status == auditScheduled {
+					commitsToPut = append(commitsToPut, auditedCommit)
+				}
+			}
+		}
+		if err := ds.Put(ctx, commitsToPut); err != nil {
+			return err
+		}
+		for _, c := range commitsToPut {
+			if c.Status != auditScheduled {
+				AuditedCommits.Add(ctx, 1, c.Status.ToShortString(), repoState.ConfigName)
+			}
+		}
+		return nil
+	}, nil)
+}
+
+// notifyAboutViolations is meant to notify about violations to audit
+// policies by calling the notification functions registered for each ruleSet
+// that matches a commit in the auditCompletedWithViolation status.
+func notifyAboutViolations(ctx context.Context, cfg *RepoConfig, repoState *RepoState, cs *Clients) error {
+
+	cfgk := ds.KeyForObj(ctx, repoState)
+
+	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditCompletedWithViolation).Eq("NotifiedAll", false)
+	err := ds.Run(ctx, cq, func(rc *RelevantCommit) error {
+		errors := []error{}
+		var err error
+		for ruleSetName, ruleSet := range cfg.Rules {
+			if ruleSet.MatchesRelevantCommit(rc) {
+				state := rc.GetNotificationState(ruleSetName)
+				state, err = ruleSet.NotificationFunction()(ctx, cfg, rc, cs, state)
+				if err == context.DeadlineExceeded {
+					return err
+				} else if err != nil {
+					errors = append(errors, err)
+				}
+				rc.SetNotificationState(ruleSetName, state)
+			}
+		}
+		if len(errors) == 0 {
+			rc.NotifiedAll = true
+		}
+		for _, e := range errors {
+			logging.WithError(e).Errorf(ctx, "Failed notification for detected violation on %s.",
+				cfg.LinkToCommit(rc.CommitHash))
+			NotificationFailures.Add(ctx, 1, "Violation", repoState.ConfigName)
+		}
+		err = ds.Put(ctx, rc)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	cq = ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditFailed).Eq("NotifiedAll", false)
+	return ds.Run(ctx, cq, func(rc *RelevantCommit) error {
+		err := reportAuditFailure(ctx, cfg, rc, cs)
+
+		if err == nil {
+			rc.NotifiedAll = true
+			err = ds.Put(ctx, rc)
+			if err != nil {
+				logging.WithError(err).Errorf(ctx, "Failed to save notification state for failed audit on %s.",
+					cfg.LinkToCommit(rc.CommitHash))
+				NotificationFailures.Add(ctx, 1, "AuditFailure", repoState.ConfigName)
+			}
+		} else {
+			logging.WithError(err).Errorf(ctx, "Failed to file bug for audit failure on %s.", cfg.LinkToCommit(rc.CommitHash))
+			NotificationFailures.Add(ctx, 1, "AuditFailure", repoState.ConfigName)
+		}
+		return nil
+	})
+}
+
+// reportAuditFailure is meant to file a bug about a revision that has
+// repeatedly failed to be audited. i.e. one or more rules panic on each run.
+//
+// This does not necessarily mean that a policy has been violated, but only
+// that the audit app has not been able to determine whether one exists. One
+// such failure could be due to a bug in one of the rules or an error in one of
+// the services we depend on (monorail, gitiles, gerrit, milo).
+func reportAuditFailure(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients) error {
+	summary := fmt.Sprintf("Audit on %q failed over %d times", rc.CommitHash, rc.Retries)
+	description := fmt.Sprintf("commit %s has caused the audit process to fail repeatedly, "+
+		"please audit by hand and don't close this bug until the root cause of the failure has been "+
+		"identified and resolved.", cfg.LinkToCommit(rc.CommitHash))
+
+	var err error
+	// Route any failure to audit to Findit's team as they own this tool.
+	// TODO(crbug.com/798842): Use a custom component for this.
+	issueID := int32(0)
+	issueID, err = postIssue(ctx, cfg, summary, description, cs, []string{"Tools>Test>Findit>Autorevert"}, []string{"AuditFailure"})
+	if err == nil {
+		rc.SetNotificationState("AuditFailure", fmt.Sprintf("BUG=%d", issueID))
+		// Do not sent further notifications for this commit. This needs
+		// to be audited by hand.
+		rc.NotifiedAll = true
+	}
+	return err
 }

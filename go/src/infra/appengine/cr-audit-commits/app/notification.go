@@ -16,6 +16,24 @@ import (
 	"infra/monorail"
 )
 
+// NotificationFunc is a type that needs to be implemented by functions
+// intended to notify about violations in rules.
+// The notification function is expected to determine if there is a violation
+// by checking the results of calling .GetViolations() on the RelevantCommit
+// and not just blindly send a notification.
+//
+// The state parameter is expected to be used to keep the state between retries
+// to avoid duplicating notifications, its value will be either the empty string
+// or the first element of the return value of a previous call to this function
+// for the same commit.
+//
+// e.g. Return ('notificationSent', nil) if everything goes well, and if the
+// incoming state already equals 'notificationSent', then don't send the
+// notification, as that would indicate that a previous call already took care
+// of that. The state string is a short freeform string that only needs to be
+// understood by the NotificationFunc itself, and should exclude colons (`:`).
+type NotificationFunc func(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error)
+
 func fileBugForAutoRollViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error) {
 	components := []string{"Infra>Audit>AutoRoller"}
 	labels := []string{"CommitLog-Audit-Violation"}
