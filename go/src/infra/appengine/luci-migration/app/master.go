@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
-	"strings"
 
 	"golang.org/x/net/context"
 
@@ -59,7 +58,7 @@ func handleMasterPage(c *router.Context) error {
 		return err
 	}
 
-	if strings.ToLower(c.Request.FormValue("format")) == "json" {
+	if respondWithJSON(c.Request) {
 		c.Writer.Header().Add("Content-Type", "application/json")
 
 		builders := map[string]interface{}{}

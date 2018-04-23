@@ -90,7 +90,7 @@ func handleBuilderPage(c *router.Context) error {
 		return err
 	}
 
-	if strings.ToLower(c.Request.FormValue("format")) == "json" {
+	if respondWithJSON(c.Request) {
 		c.Writer.Header().Add("Content-Type", "application/json")
 		return json.NewEncoder(c.Writer).Encode(map[string]interface{}{
 			"luci_is_prod": viewModel.Builder.LUCIIsProd,

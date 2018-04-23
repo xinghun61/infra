@@ -242,23 +242,64 @@ func init() {
 	r.POST("/internal/task/analyze-builder/*ignored", mwBase, taskHandler(handleAnalyzeBuilder))
 	r.POST("/internal/task/notify/*ignored", mwBase, taskHandler(handleNotifyOnBuilderChange))
 
-	mwHTML := mwBase.Extend(
+	mwFrontend := mwBase.Extend(
+		corsMiddleware,
 		templates.WithTemplates(prepareTemplates()),
 		auth.Authenticate(
 			server.UsersAPIAuthMethod{},
 			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
 		),
 	)
-	mwMasterRoute := mwHTML.Extend(checkMasterAccess)
+	mwMasterRoute := mwFrontend.Extend(checkMasterAccess)
 	// All POST forms must be protected with XSRF token.
 
-	r.GET("/", mwHTML, errHandler(handleIndexPage))
+	r.GET("/", mwFrontend, errHandler(handleIndexPage))
 	r.GET("/masters/:master/", mwMasterRoute, errHandler(handleMasterPage))
+	r.OPTIONS("/masters/:master/", mwMasterRoute, okHandler)
 	r.GET("/masters/:master/builders/:builder/", mwMasterRoute, errHandler(handleBuilderPage))
 	r.POST("/masters/:master/builders/:builder/", mwMasterRoute.Extend(xsrf.WithTokenCheck), errHandler(handleBuilderPagePost))
+	r.OPTIONS("/masters/:master/builders/:builder/", mwMasterRoute, okHandler)
 	r.GET("/masters/:master/builders/:builder/changes", mwMasterRoute, errHandler(handleBuilderUpdatesPage))
 
 	http.DefaultServeMux.Handle("/", r)
+}
+
+func respondWithJSON(r *http.Request) bool {
+	return strings.ToLower(r.FormValue("format")) == "json"
+}
+
+func okHandler(c *router.Context) {
+	c.Writer.WriteHeader(http.StatusOK)
+}
+
+func corsMiddleware(c *router.Context, next router.Handler) {
+	defer next(c)
+
+	// Apply it only if JSON response is requested.
+	if !respondWithJSON(c.Request) {
+		return
+	}
+
+	// Allow CORS requests only from Gerrit and localhost.
+	const originHeader = "Origin"
+	origin := c.Request.Header.Get(originHeader)
+	switch {
+	case strings.HasPrefix(origin, "http://localhost:"):
+	case strings.HasSuffix(origin, ".googlesource.com"):
+	default:
+		return
+	}
+
+	h := c.Writer.Header()
+	h.Add("Access-Control-Allow-Origin", origin)
+	h.Add("Vary", originHeader)
+	h.Add("Access-Control-Allow-Credentials", "true")
+
+	if c.Request.Method == "OPTIONS" {
+		h.Add("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, User-Agent")
+		h.Add("Access-Control-Allow-Methods", "OPTIONS, GET")
+		h.Add("Access-Control-Max-Age", "600") // 10min
+	}
 }
 
 // checkMasterAccess checks access to the master.
