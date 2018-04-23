@@ -206,8 +206,10 @@ def can(bucket, action):
   return can_async(bucket, action).get_result()
 
 
-def get_available_buckets():
-  """Returns buckets available to the current identity.
+def get_acessible_buckets():
+  """Returns buckets accessible to the current identity.
+
+  A bucket is accessible if the requester has ACCESS_BUCKET permission.
 
   Results are memcached for 10 minutes per identity.
 

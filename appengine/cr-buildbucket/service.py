@@ -846,7 +846,7 @@ def _query_search(q):
   - if bool(buckets), permissions are checked.
   """
   if not q.buckets:
-    q.buckets = acl.get_available_buckets()
+    q.buckets = acl.get_acessible_buckets()
     if q.buckets is not None and len(q.buckets) == 0:
       return [], None
   # (buckets is None) means the requester has access to all buckets.
