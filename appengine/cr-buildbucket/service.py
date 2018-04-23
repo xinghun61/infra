@@ -21,6 +21,7 @@ from protorpc import messages
 from components import auth
 from components import net
 from components import utils
+import gae_ts_mon
 
 from proto import project_config_pb2
 import acl
@@ -42,6 +43,14 @@ RESERVED_TAG_KEYS = {'build_address', 'swarming_tag', 'swarming_dimension'}
 BUILDER_PARAMETER = swarming.BUILDER_PARAMETER
 
 validate_bucket_name = errors.validate_bucket_name
+
+# A cumlative counter of access denied errors in peek() method.
+# This metric exists because defining it on the buildbucket server is easier
+# than modifying Buildbot. It is very specific intentionally.
+PEEK_ACCESS_DENIED_ERROR_COUNTER = gae_ts_mon.CounterMetric(
+    'buildbucket/peek_access_denied_errors',
+    'Number of errors in peek API',
+    [gae_ts_mon.StringField('bucket')])
 
 
 def validate_lease_key(lease_key):
@@ -666,7 +675,7 @@ def _fetch_page(query, page_size, start_cursor, predicate=None):
   return entities, curs_str
 
 
-def _check_search_acls(buckets):
+def _check_search_acls(buckets, inc_metric=None):
   if not buckets:
     raise errors.InvalidInputError('No buckets specified')
   for bucket in buckets:
@@ -674,6 +683,8 @@ def _check_search_acls(buckets):
 
   for bucket in buckets:
     if not acl.can_search_builds(bucket):
+      if inc_metric:
+        inc_metric.increment(fields={'bucket': bucket})
       raise acl.current_identity_cannot('search builds in bucket %s', bucket)
 
 
@@ -1101,7 +1112,7 @@ def peek(buckets, max_builds=None, start_cursor=None):
         None if there are no more builds.
   """
   buckets = sorted(set(buckets))
-  _check_search_acls(buckets)
+  _check_search_acls(buckets, inc_metric=PEEK_ACCESS_DENIED_ERROR_COUNTER)
   max_builds = fix_max_builds(max_builds)
 
   # Prune any buckets that are paused.
