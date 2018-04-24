@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 
 from google.appengine.api import app_identity
 from google.appengine.api import images
+from google.appengine.api import memcache
 from google.appengine.api import urlfetch
 from third_party import cloudstorage
 from third_party.cloudstorage import errors
@@ -38,6 +39,9 @@ DEFAULT_THUMB_HEIGHT = 200
 LOGO_THUMB_WIDTH = 110
 LOGO_THUMB_HEIGHT = 30
 MAX_ATTACH_SIZE_TO_COPY = 10 * 1024 * 1024  # 10 MB
+# GCS signatures are valid for one hour by default, but cache them for
+# 50 minutes just to be on the safe side.
+GCS_SIG_TTL = 60 * 50
 
 
 def _Now():
@@ -111,26 +115,38 @@ def StoreLogoInGCS(file_name, content, project_id):
 
 def SignUrl(bucket, object_id):
   try:
-    result = ('https://www.googleapis.com/storage/v1/b/'
-        '{bucket}/o/{object_id}?access_token={token}&alt=media')
+    cache_key = 'gcs-object-url-%s' % object_id
+
+    cached = memcache.get(key=cache_key)
+    if cached is not None:
+      return cached
 
     if IS_DEV_APPSERVER:
-      result = '/_ah/gcs{resource}?{querystring}'
+      attachment_url = '/_ah/gcs/%s%s' % (bucket, object_id)
+    else:
+      result = ('https://www.googleapis.com/storage/v1/b/'
+          '{bucket}/o/{object_id}?access_token={token}&alt=media')
 
-    scopes = ['https://www.googleapis.com/auth/devstorage.read_only']
 
-    if object_id[0] == '/':
-      object_id = object_id[1:]
+      scopes = ['https://www.googleapis.com/auth/devstorage.read_only']
 
-    url = result.format(
+      if object_id[0] == '/':
+        object_id = object_id[1:]
+
+      url = result.format(
           bucket=bucket,
           object_id=urllib.quote_plus(object_id),
           token=app_identity.get_access_token(scopes)[0])
 
-    resp = urlfetch.fetch(url, follow_redirects=False)
+      resp = urlfetch.fetch(url, follow_redirects=False)
 
-    redir = resp.headers["Location"]
-    return redir
+      attachment_url = resp.headers["Location"]
+
+    if not memcache.set(key=cache_key, value=attachment_url, time=GCS_SIG_TTL):
+      logging.error('Could not cache gcs url %s for %s', attachment_url,
+          object_id)
+
+    return attachment_url
 
   except Exception as e:
     logging.exception(e)
