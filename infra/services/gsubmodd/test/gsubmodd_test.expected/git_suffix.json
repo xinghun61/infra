@@ -16,6 +16,7 @@
   {
     "log output": [
       "INFO: Running ('git', 'fetch')",
+      "INFO: at commit ce6579c7f65d29de2860243c4ebb88cea2e4ef6d",
       "INFO: Running ('git', 'push', 'origin', 'f17a5a04751faa9503107182b12beaff21340e70:refs/heads/master')"
     ]
   },

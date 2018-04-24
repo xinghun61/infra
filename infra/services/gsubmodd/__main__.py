@@ -58,7 +58,7 @@ def parse_args(args):  # pragma: no cover
   logs.process_argparse_options(opts)
   loop_opts = outer_loop.process_argparse_options(opts)
 
-  return Options(repo, opts.target, loop_opts,
+  return Options(repo, opts.target_repo, loop_opts,
                  opts.dry_run, opts.interval, opts.limit, opts.extra_submodule)
 
 

@@ -22,6 +22,8 @@
   {
     "log output": [
       "INFO: Running ('git', 'fetch')",
+      "INFO: at commit 69f5a0e5e23176ac53b19886a1cebec09f001012",
+      "INFO: at commit ba96e6cce6befc922b66c0aea17b42c62b6f40d2",
       "INFO: Running ('git', 'push', 'origin', '466ad86d835ab22594b859226bde99527814a929:refs/heads/master')"
     ]
   },
@@ -72,6 +74,7 @@
     "log output": [
       "INFO: Running ('git', 'fetch')",
       "INFO: starting with tree 'aea5bb0607548572b727ccff5734b3ccd91d4554'",
+      "INFO: at commit 58f01c64a5fc67ba7a116498c0e0bfc90b993c9b",
       "INFO: Running ('git', 'push', 'origin', '42e6d7cd3b8ddfc4cbee84b0d0189eb112e0b15d:refs/heads/master')"
     ]
   },

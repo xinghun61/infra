@@ -16,6 +16,7 @@
   {
     "log output": [
       "INFO: Running ('git', 'fetch')",
+      "INFO: at commit 3a89cd63cdf88ceeee389ae80835f09ed3ce036a",
       "WARNING: Dropping submodule \"abc/def\", because it is outside the working directory \"fount/\"",
       "INFO: Running ('git', 'push', 'origin', '02d8bd1e7d0304dcae880eae67666448d63eea60:refs/heads/master')"
     ]

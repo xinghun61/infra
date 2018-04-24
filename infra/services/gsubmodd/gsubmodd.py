@@ -79,7 +79,7 @@ def reify_submodules(origin_repo, target,
   commits = origin_repo[processed.hsh].to(origin_repo[REF_NAME],
                                           '', first_parent=True)
   for commit in itertools.islice(commits, limit):
-    LOGGER.debug("at commit %s" % commit.hsh)
+    LOGGER.info("at commit %s" % commit.hsh)
     original_tree = commit.data.to_dict()['tree']
 
     deps_info = origin_repo.run('ls-tree', commit.hsh, '--', 'DEPS').split()
