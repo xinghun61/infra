@@ -1,3 +1,26 @@
+# Release Notes sheriff-o-matic 2018-04-24
+
+- 4 commits, 2 bugs affected since ff8691c (2018-04-04T21:38:55Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [[som] Make WCT tests pass again.](https://chromium-review.googlesource.com/1024235) (seanmccullough@chromium.org)
+- [SoM: Delete trooper page.](https://chromium-review.googlesource.com/1018528) (zhangtiff@google.com)
+- [SoM: Fix most broken milo links.](https://chromium-review.googlesource.com/1017900) (zhangtiff@google.com)
+- [[som] Update frontend/Makefile and wct.go](https://chromium-review.googlesource.com/1014501) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/824898](https://crbug.com/824898)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/822024](https://crbug.com/822024)
+
+
 # Release Notes sheriff-o-matic 2018-04-04
 
 - 3 commits, 1 bugs affected since 7753375 (2018-04-03T19:56:19Z)
