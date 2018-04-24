@@ -841,6 +841,11 @@ function ac_updateCompletionList(show) {
       }
     }
 
+    // If no choice is selected, then select the first item, if desired.
+    if (ac_selected < 0 && ac_store && ac_store.autoselectFirstRow()) {
+      ac_selected = 0;
+    }
+
     var headerCount= 0;
     for (var i = 0; i < Math.min(ac_max_options, ac_completions.length); ++i) {
       if (ac_completions[i].heading) {
