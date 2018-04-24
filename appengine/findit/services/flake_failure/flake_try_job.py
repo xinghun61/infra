@@ -7,6 +7,7 @@ from google.appengine.ext import ndb
 from common import exceptions
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
+from dto.flake_try_job_result import FlakeTryJobResult
 from libs import time_util
 from libs.test_results import test_results_util
 from model.flake.flake_try_job import FlakeTryJob
@@ -155,6 +156,24 @@ def IsTryJobResultAtRevisionValidForStep(result_at_revision, step_name):
   return result_at_revision[step_name]['valid']
 
 
+def OnTryJobStateChanged(try_job_id, build_json):
+  """Updates TryJobData entity with new build state.
+
+  Args:
+    try_job_id (str): The build id of the try job.
+    build_json (dict): The up-to-date build info.
+
+  Returns:
+    FlakeTryJobResult if the try job has completed; otherwise None.
+  """
+  result = try_job_service.OnTryJobStateChanged(
+      try_job_id, failure_type.FLAKY_TEST, build_json)
+
+  if result is not None:
+    result = FlakeTryJobResult.FromSerializable(result)
+  return result
+
+
 def UpdateAnalysisDataPointsWithTryJobResult(analysis, try_job, commit_position,
                                              revision):
   """Updates an analysis with a try job's results.
@@ -256,11 +275,10 @@ def CreateTryJobData(build_id, try_job_key, urlsafe_analysis_key, runner_id):
 
 def UpdateTryJob(master_name, builder_name, canonical_step_name, test_name,
                  git_hash, build_id):
-  try_job = (
-      FlakeTryJob.Get(master_name, builder_name, canonical_step_name, test_name,
-                      git_hash) or
-      FlakeTryJob.Create(master_name, builder_name, canonical_step_name,
-                         test_name, git_hash))
+  try_job = GetTryJob(master_name, builder_name, canonical_step_name, test_name,
+                      git_hash)
+  assert try_job
+
   try_job.flake_results.append({'try_job_id': build_id})
   try_job.try_job_ids.append(build_id)
   try_job.put()

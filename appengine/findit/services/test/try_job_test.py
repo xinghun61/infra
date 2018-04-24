@@ -24,6 +24,7 @@ from libs import analysis_status
 from libs import time_util
 from model import result_status
 from model.flake.flake_try_job import FlakeTryJob
+from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup
@@ -1116,6 +1117,26 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
     new_params = try_job_service._GetUpdatedParams(parames, error_count=1)
     self.assertEqual(1, new_params['error_count'])
+
+  def testGetTryJobDataFlake(self):
+    try_job_id = 'try_job_id'
+    try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'r1000')
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
+    self.assertIsNotNone(
+        try_job_service._GetTryJobData(failure_type.FLAKY_TEST, try_job_id))
+
+  def testGetTryJobDataWaterfall(self):
+    try_job_id = 'try_job_id'
+    try_job = WfTryJob.Create('m', 'b', 123)
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
+    self.assertIsNotNone(
+        try_job_service._GetTryJobData(failure_type.COMPILE, try_job_id))
 
   def testOnTryJobStateChangedWhenScheduled(self):
     try_job = WfTryJob.Create('m', 'b', 1)

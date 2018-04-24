@@ -5,11 +5,14 @@ from datetime import datetime
 import mock
 
 from common import exceptions
+from common.waterfall import failure_type
+from dto.flake_try_job_report import FlakeTryJobReport
+from dto.flake_try_job_result import FlakeTryJobResult
 from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.testcase import TestCase
 from libs.list_of_basestring import ListOfBasestring
-from libs.test_results.gtest_test_results import GtestTestResults
 from libs.test_results import test_results_util
+from libs.test_results.gtest_test_results import GtestTestResults
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
@@ -473,3 +476,46 @@ class FlakeTryJobServiceTest(TestCase):
     self.assertIsNotNone(
         flake_try_job.GetTryJob(master_name, builder_name, step_name, test_name,
                                 revision))
+
+  @mock.patch.object(try_job_service, 'OnTryJobStateChanged')
+  def testOnTryJobStatechangedNoResult(self, mocked_changed):
+    try_job_id = 'try_job_id'
+    build_json = {}
+
+    mocked_changed.return_value = None
+
+    result = flake_try_job.OnTryJobStateChanged(try_job_id, build_json)
+
+    mocked_changed.assert_called_once_with(try_job_id, failure_type.FLAKY_TEST,
+                                           build_json)
+
+    self.assertIsNone(result)
+
+  @mock.patch.object(try_job_service, 'OnTryJobStateChanged')
+  def testOnTryJobStatechanged(self, mocked_changed):
+    try_job_id = 'try_job_id'
+    build_json = {}
+
+    mocked_changed.return_value = {
+        'report': {},
+        'url': 'url',
+        'try_job_id': try_job_id,
+    }
+
+    expected_result = FlakeTryJobResult(
+        report=FlakeTryJobReport(
+            previously_checked_out_revision=None,
+            previously_cached_revision=None,
+            result=None,
+            isolated_tests=None,
+            last_checked_out_revision=None,
+            metadata=None),
+        url='url',
+        try_job_id=try_job_id)
+
+    result = flake_try_job.OnTryJobStateChanged(try_job_id, build_json)
+
+    mocked_changed.assert_called_once_with(try_job_id, failure_type.FLAKY_TEST,
+                                           build_json)
+
+    self.assertEqual(expected_result, result)

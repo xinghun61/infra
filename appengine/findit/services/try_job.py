@@ -44,13 +44,13 @@ from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup
-from model.wf_try_job import WfTryJob
 from model.wf_try_bot_cache import WfTryBotCache
+from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import monitoring
 from services import swarmbot_util
-from waterfall import buildbot
 from waterfall import build_util
+from waterfall import buildbot
 from waterfall import waterfall_config
 
 UNKNOWN = 'UNKNOWN'
@@ -549,7 +549,7 @@ def UpdateTryJobMetadata(try_job_data,
     try_job_data.end_time = time_util.MicrosecondsToDatetime(
         buildbucket_build.end_time)
 
-    if (try_job_type is not None and try_job_type != failure_type.FLAKY_TEST):
+    if try_job_type is not None and try_job_type != failure_type.FLAKY_TEST:
       if report:
         try_job_data.number_of_commits_analyzed = len(report.get('result', {}))
         try_job_data.regression_range_size = report.get(
@@ -719,6 +719,12 @@ def _GetUpdatedParams(params, **kwargs):
   return new_params
 
 
+def _GetTryJobData(try_job_type, try_job_id):
+  if try_job_type == failure_type.FLAKY_TEST:
+    return FlakeTryJobData.Get(try_job_id)
+  return WfTryJobData.Get(try_job_id)
+
+
 def OnTryJobStateChanged(try_job_id, job_type, build_json):
   """Updates TryJobData entity with new build state.
 
@@ -731,11 +737,9 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
     A dict representing the original report from the try job if it is completed,
     otherwise None.
   """
-  # TODO(lijeffrey): set try job type for flaky test in FlakeTryJobData.
-  assert job_type != failure_type.FLAKY_TEST, 'Flaky test job not supported yet'
-
   build = BuildbucketBuild(build_json)
-  try_job_data = WfTryJobData.Get(try_job_id)
+  try_job_data = _GetTryJobData(job_type, try_job_id)
+
   assert try_job_data, 'TryJobData was not created unexpectedly.'
 
   parameters = {
@@ -756,10 +760,7 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
 
 def OnTryJobTimeout(try_job_id, job_type):
   """Updates TryJobData entity when try job doesn't complete in time."""
-  # TODO(lijeffrey): set try job type for flaky test in FlakeTryJobData.
-  assert job_type != failure_type.FLAKY_TEST, 'Flaky test job not supported yet'
-
-  try_job_data = WfTryJobData.Get(try_job_id)
+  try_job_data = _GetTryJobData(job_type, try_job_id)
   UpdateTryJobMetadata(
       try_job_data,
       failure_type.GetFailureTypeForDescription(try_job_data.try_job_type),
