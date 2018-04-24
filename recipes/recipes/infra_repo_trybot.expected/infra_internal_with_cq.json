@@ -3,6 +3,21 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/infra_internal_gclient_with_go"
+    ],
+    "infra_step": true,
+    "name": "ensure builder dir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_PACKAGE_REPO[depot_tools]/gerrit_client.py",
       "changes",
       "--host",
@@ -14,6 +29,7 @@
       "-p",
       "change=456789"
     ],
+    "cwd": "[CACHE]/infra_internal_gclient_with_go",
     "env": {
       "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -67,6 +83,7 @@
       "--revision",
       "infra_internal@HEAD"
     ],
+    "cwd": "[CACHE]/infra_internal_gclient_with_go",
     "env_prefixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -124,7 +141,7 @@
       "-m",
       "Committed patch"
     ],
-    "cwd": "[START_DIR]/infra_internal",
+    "cwd": "[CACHE]/infra_internal_gclient_with_go/infra_internal",
     "infra_step": true,
     "name": "commit git patch"
   },
@@ -135,7 +152,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[START_DIR]/infra_internal",
+    "cwd": "[CACHE]/infra_internal_gclient_with_go",
     "env": {
       "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -149,7 +166,7 @@
       "HEAD",
       "HEAD~"
     ],
-    "cwd": "[START_DIR]/infra_internal",
+    "cwd": "[CACHE]/infra_internal_gclient_with_go/infra_internal",
     "infra_step": true,
     "name": "get change list",
     "stdout": "/path/to/tmp/",
@@ -165,7 +182,7 @@
       "test.py",
       "test"
     ],
-    "cwd": "[START_DIR]/infra_internal",
+    "cwd": "[CACHE]/infra_internal_gclient_with_go/infra_internal",
     "name": "python tests"
   },
   {
@@ -176,12 +193,31 @@
       "test",
       "infra_internal/services/cq"
     ],
-    "cwd": "[START_DIR]/infra_internal",
+    "cwd": "[CACHE]/infra_internal_gclient_with_go/infra_internal",
     "name": "python cq tests"
   },
   {
-    "cmd": [],
-    "name": "skipping Go tests"
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
+      "go",
+      "version"
+    ],
+    "cwd": "[CACHE]/infra_internal_gclient_with_go",
+    "infra_step": true,
+    "name": "init infra go env"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
+      "python",
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/test.py"
+    ],
+    "cwd": "[CACHE]/infra_internal_gclient_with_go",
+    "name": "go tests"
   },
   {
     "cmd": [],
