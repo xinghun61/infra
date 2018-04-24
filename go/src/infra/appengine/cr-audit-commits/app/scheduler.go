@@ -35,7 +35,7 @@ func Scheduler(rc *router.Context) {
 			refConfigs = []*RepoConfig{config}
 		}
 		for _, refConfig := range refConfigs {
-			state := RepoState{RepoURL: refConfig.RepoURL()}
+			state := &RepoState{RepoURL: refConfig.RepoURL()}
 			err = ds.Get(ctx, state)
 			switch err {
 			case ds.ErrNoSuchEntity:
