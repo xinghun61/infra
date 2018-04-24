@@ -57,6 +57,7 @@ from . import isolate
 import config
 import errors
 import events
+import gae_ts_mon
 import model
 import protoutil
 
@@ -66,6 +67,14 @@ PARAM_PROPERTIES = 'properties'
 PARAM_SWARMING = 'swarming'
 PARAM_CHANGES = 'changes'
 BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
+
+
+BUILD_RUN_RESULT_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
+    'buildbucket/build_run_result_size',
+    'Size of the build result JSON file fetched from isolate',
+    [gae_ts_mon.StringField('bucket'), gae_ts_mon.StringField('builder')],
+    units=gae_ts_mon.MetricsDataUnits.KILOBYTES)
+
 
 # The default percentage of builds that use canary swarming task template.
 # This number is relatively high so we treat canary seriously and that we have
@@ -821,7 +830,7 @@ def _load_task_result_async(hostname, task_id):  # pragma: no cover
 
 
 @ndb.tasklet
-def _load_build_run_result_async(task_result):
+def _load_build_run_result_async(task_result, bucket, builder):
   """Fetches BUILD_RUN_RESULT_FILENAME from swarming task output.
 
   Logs errors.
@@ -860,6 +869,11 @@ def _load_build_run_result_async(task_result):
   result_entry = isolated['files'].get(BUILD_RUN_RESULT_FILENAME)
   if not result_entry:
     raise ndb.Return(None, False)
+
+  BUILD_RUN_RESULT_SIZE_METRIC.add(result_entry['s']/1024, {
+    'bucket': bucket,
+    'builder': builder,
+  })
 
   result_loc = isolated_loc._replace(digest=result_entry['h'])
   build_result = yield fetch_json_async(result_loc)
@@ -1019,13 +1033,13 @@ def _extract_build_annotations(build_key, build_run_result):
 
 
 @ndb.tasklet
-def _sync_build_async(build_id, task_result):
+def _sync_build_async(build_id, task_result, bucket, builder):
   """Syncs Build entity in the datastore with the swarming task."""
   build_run_result = None
   build_run_result_corrupted = False
   if task_result:
     build_run_result, build_run_result_corrupted = yield (
-        _load_build_run_result_async(task_result))
+        _load_build_run_result_async(task_result, bucket, builder))
 
   build_annotations = _extract_build_annotations(
       ndb.Key(model.Build, build_id), build_run_result)
@@ -1148,7 +1162,9 @@ class SubNotify(webapp2.RequestHandler):
 
     # Update build.
     result = _load_task_result_async(hostname, task_id).get_result()
-    _sync_build_async(build_id, result).get_result()
+    _sync_build_async(
+        build_id, result, build.bucket, build.parameters[BUILDER_PARAMETER],
+    ).get_result()
 
   def stop(self, msg, *args, **kwargs):
     """Logs error and stops request processing.
@@ -1189,7 +1205,9 @@ class CronUpdateBuilds(webapp2.RequestHandler):
       logging.error(
           'Task %s/%s referenced by build %s is not found',
           build.swarming_hostname, build.swarming_task_id, build.key.id())
-    yield _sync_build_async(build.key.id(), result)
+    yield _sync_build_async(
+        build.key.id(), result, build.bucket,
+        build.parameters[BUILDER_PARAMETER])
 
   @decorators.require_cronjob
   def get(self):  # pragma: no cover
