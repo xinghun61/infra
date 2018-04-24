@@ -152,6 +152,11 @@ SPECS = {s.spec.tag: s for s in (
       },
   ),
 
+  SourceOrPrebuilt('pyasn', '1.6.0b1', packaged=(),
+      only_plat=['manylinux-x64']),
+  Prebuilt('pynacl', '1.2.1', ['manylinux-x64', 'mac-x64']),
+  Prebuilt('bcrypt', '3.1.4', ['manylinux-x64', 'mac-x64']),
+
   OpenCV('opencv_python', '2.4.13.2', '1.11.3',
       only_plat=['manylinux-x86', 'manylinux-x64']),
 
@@ -320,10 +325,12 @@ SPECS = {s.spec.tag: s for s in (
   Universal('asn1crypto', '0.22.0'),
   Universal('astroid', '1.6.3'),
   Universal('astunparse', '1.5.0'),
+  UniversalSource('backport_ipaddress', '0.1', pyversions=['py2']),
   Universal('boto', '2.48.0'),
   Universal('cachetools', '2.0.1'),
   Universal('Django', '1.9'),
   Universal('enum34', '1.1.6', pyversions=['py2', 'py3']),
+  Universal('fabric', '1.14.0'),
   Universal('funcsigs', '1.0.2'),
   UniversalSource('future', '0.15.2'),
   Universal('futures', '3.1.1'),
@@ -369,6 +376,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('oauth2client', '4.0.0'),
   Universal('oauth2client', '4.1.2'),
   Universal('packaging', '16.8'),
+  Universal('paramiko', '2.4.1'),
   UniversalSource('PeakUtils', '1.0.3'),
   Universal('pbr', '3.0.0'),
   Universal('ply', '3.11'),
