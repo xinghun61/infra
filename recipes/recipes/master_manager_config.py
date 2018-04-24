@@ -6,6 +6,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/infra_paths',
+  'infra_checkout',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -16,18 +17,19 @@ DEPS = [
 
 
 def RunSteps(api):
-  api.gclient.set_config('infradata_master_manager')
-  api.bot_update.ensure_checkout(
-      patch_root='infra-data-master-manager')
-  api.gclient.runhooks()
-
+  patch_root = 'infra-data-master-manager'
+  co = api.infra_checkout.checkout(
+      gclient_config_name='infradata_master_manager',
+      patch_root=patch_root,
+      internal=True)
+  co.gclient_runhooks()
   api.python('master manager configuration test',
-             api.path['start_dir'].join('infra', 'run.py'),
+             co.path.join('infra', 'run.py'),
              ['infra.services.master_manager_launcher',
               '--verify',
               '--ts-mon-endpoint=none',
               '--json-file',
-             api.path['start_dir'].join(
+             co.path.join(
                  'infra-data-master-manager',
                  'desired_master_state.json')])
 
