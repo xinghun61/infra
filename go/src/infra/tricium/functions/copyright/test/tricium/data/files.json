@@ -1,3 +1,3 @@
 {
-	"paths":["src/good.cpp","src/bad.cpp","src/missing.cpp", "src/old.cpp"]
+	"paths":["src/good.cpp", "src/good_mit.cpp", "src/bad.cpp","src/missing.cpp", "src/old.cpp"]
 }

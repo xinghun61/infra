@@ -13,8 +13,12 @@ import (
 
 func TestCheckMissingCopyright(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		Convey("Correct copyright", func() {
+		Convey("Correct BSD copyright", func() {
 			path := "test/src/good.cpp"
+			So(checkCopyright(path), ShouldBeNil)
+		})
+		Convey("Correct MIT copyright", func() {
+			path := "test/src/good_mit.cpp"
 			So(checkCopyright(path), ShouldBeNil)
 		})
 		Convey("Incorrect copyright", func() {
@@ -23,7 +27,7 @@ func TestCheckMissingCopyright(t *testing.T) {
 			So(c, ShouldNotBeNil)
 			So(c, ShouldResemble, &tricium.Data_Comment{
 				Category: "Copyright/Incorrect",
-				Message:  "Incorrect copyright statement",
+				Message:  "Incorrect copyright statement.\nUse the following for BSD:\nCopyright <year> The <group> Authors. All rights reserved.\nUse of this source code is governed by a BSD-style license that can be\nfound in the LICENSE file.\n\nOr the following for MIT: 20[0-9][0-9] The [A-Za-z]* Authors.\nUse of this source code is governed by a MIT-style\nlicense that can be found in the LICENSE file or at\nhttps://opensource.org/licenses/MIT",
 				Path:     path,
 				Url:      "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 			})
@@ -34,7 +38,7 @@ func TestCheckMissingCopyright(t *testing.T) {
 			So(c, ShouldNotBeNil)
 			So(c, ShouldResemble, &tricium.Data_Comment{
 				Category: "Copyright/Missing",
-				Message:  "Missing copyright statement",
+				Message:  "Missing copyright statement.\nUse the following for BSD:\nCopyright <year> The <group> Authors. All rights reserved.\nUse of this source code is governed by a BSD-style license that can be\nfound in the LICENSE file.\n\nOr the following for MIT: 20[0-9][0-9] The [A-Za-z]* Authors.\nUse of this source code is governed by a MIT-style\nlicense that can be found in the LICENSE file or at\nhttps://opensource.org/licenses/MIT",
 				Path:     path,
 				Url:      "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 			})
