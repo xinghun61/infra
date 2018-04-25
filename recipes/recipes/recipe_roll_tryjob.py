@@ -7,7 +7,6 @@ from recipe_engine.recipe_api import Property
 
 DEPS = [
   'build/luci_config',
-  'build/puppet_service_account',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
@@ -34,16 +33,6 @@ PROPERTIES = {
       kind=str,
       help=('Project that includes |upstream_project| in recipes.cfg to be '
             'tested with upstream patch')),
-
-  # To generate an auth token for running locally, run
-  #   infra/cipd/luci-auth token
-  'auth_token': Property(default=None),
-  'service_account': Property(
-      default=None, kind=str,
-      help='The name of the service account to use when running on a bot. For '
-           'example, if you use "recipe-roll-tester", this recipe will try '
-           'to use the /creds/service_accounts/service-account-'
-           'recipe-roll-tester.json service account')
 }
 
 
@@ -82,22 +71,17 @@ def _checkout_project(
         gclient_config=gclient_config, patch=patch, manifest_name=name)
 
 
-def RunSteps(
-    api, upstream_project, downstream_project, auth_token, service_account):
+def RunSteps(api, upstream_project, downstream_project):
   workdir_base = api.path['cache'].join('recipe_roll_tryjob')
   upstream_workdir = workdir_base.join(upstream_project)
   downstream_workdir = workdir_base.join(downstream_project)
   engine_workdir = workdir_base.join('recipe_engine')
 
   api.luci_config.set_config('basic')
-  # TODO(tandrii): only support LUCI bots.
-  if service_account:
-    assert not api.runtime.is_luci
-    auth_token = api.puppet_service_account.get_access_token(service_account)
-  if api.runtime.is_luci:
-    auth_token = api.service_account.default().get_access_token()
-  if auth_token:
-    api.luci_config.c.auth_token = auth_token
+  # If you are running this recipe locally and fail to access internal repos,
+  # do "$ luci-auth login ...".
+  api.luci_config.c.auth_token = (
+      api.service_account.default().get_access_token())
 
   project_data = api.luci_config.get_projects()
 
@@ -282,14 +266,6 @@ def GenTests(api):
     api.properties.generic(
         upstream_project='recipe_engine',
         downstream_project='depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools'))
-  )
-  yield (
-    api.test('basic_on_bbot_deprecated') +
-    api.properties.generic(
-        upstream_project='recipe_engine',
-        downstream_project='depot_tools',
-        service_account='recipe-roll-tester') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools'))
   )
 
