@@ -29,8 +29,8 @@ var (
 	commentRegexp    = regexp.MustCompile(`^[ \t\n\r\v\f]*[#|\/\/|\/\*|\*|;].*`)
 	whitespaceRegexp = regexp.MustCompile(`^[ \t\n\r\v\f]*$`)
 	// Expected copyright statements (any year or author accepted).
-	bsdCopyrightRegexp = regexp.MustCompile(`Copyright 20[0-9][0-9] The [A-Za-z]* Authors\. All rights reserved. Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.`)
-	mitCopyrightRegexp = regexp.MustCompile(`Copyright 20[0-9][0-9] The [A-Za-z]* Authors\.  Use of this source code is governed by a MIT-style license that can be found in the LICENSE file or at https://opensource.org/licenses/MIT`)
+	bsdCopyrightRegexp = regexp.MustCompile(`Copyright 20[0-9][0-9] The [A-Za-z]* Authors\. All rights reserved\. Use of this source code is governed by a BSD-style license that can be found in the LICENSE file\.`)
+	mitCopyrightRegexp = regexp.MustCompile(`Copyright 20[0-9][0-9] The [A-Za-z]* Authors Use of this source code is governed by a MIT-style license that can be found in the LICENSE file or at https:\/\/opensource\.org\/licenses\/MIT`)
 
 	// Old-style copyright with (c).
 	oldCopyrightRegexp = regexp.MustCompile(`Copyright \(c\) 20[0-9][0-9] The [A-Za-z]* Authors. All rights reserved. Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.`)
@@ -90,38 +90,29 @@ func checkCopyright(path string) *tricium.Data_Comment {
 			log.Fatalf("Failed to close file: %v, path: %s", err, path)
 		}
 	}()
-	header, endLine, endChar := getFileHeader(path, file)
+	header := getFileHeader(path, file)
 	if whitespaceRegexp.MatchString(header) {
-		return missingCopyrightComment(path, endLine, endChar)
+		return missingCopyrightComment(path)
 	} else if oldCopyrightRegexp.MatchString(header) {
-		return oldCopyrightComment(path, endLine, endChar)
+		return oldCopyrightComment(path)
 	} else if !bsdCopyrightRegexp.MatchString(header) && !mitCopyrightRegexp.MatchString(header) {
-		return incorrectCopyrightComment(path, endLine, endChar)
+		fmt.Printf("%s\n", header)
+		return incorrectCopyrightComment(path)
 	}
 	return nil
 }
 
-func getFileHeader(path string, file *os.File) (string, int, int) {
+func getFileHeader(path string, file *os.File) string {
 	scanner := bufio.NewScanner(file)
 	var header bytes.Buffer
-	line := 0
-	lastLineLen := 0
 	// While line is comment/whitespace
 	for scanner.Scan() {
-		line++
 		text := scanner.Text()
 
 		// If it's not a comment or whitespace, we've gone past the file header and don't care.
 		if !whitespaceRegexp.MatchString(text) && !commentRegexp.MatchString(text) {
-			// If the first line isn't a comment, highlight that line.
-			if line == 1 {
-				return header.String(), line, len(text)
-			}
-			// Otherwise, provide the end of the last line involved in the header.
-			return header.String(), line - 1, lastLineLen
+			return header.String()
 		}
-
-		lastLineLen = len(text)
 
 		// Remove any pre and post whitespace, and comment symbol.
 		text = strings.TrimRight(text, " \t\n\r\v\f")
@@ -129,47 +120,49 @@ func getFileHeader(path string, file *os.File) (string, int, int) {
 
 		// Add line to header string.
 		header.WriteString(text)
-		header.WriteString(" ")
+		if text != "" {
+			header.WriteString(" ")
+		}
 
 		if err := scanner.Err(); err != nil {
 			log.Fatalf("Failed to read file: %v, path: %s", err, path)
 		}
 	}
-	return header.String(), line - 1, lastLineLen
+	return header.String()
 }
 
-func missingCopyrightComment(path string, endLine, endChar int) *tricium.Data_Comment {
+func missingCopyrightComment(path string) *tricium.Data_Comment {
 	return &tricium.Data_Comment{
 		Category:  fmt.Sprintf("%s/%s", category, "Missing"),
-		Message:   "Missing copyright statement.\nUse the following for BSD:\nCopyright <year> The <group> Authors. All rights reserved.\nUse of this source code is governed by a BSD-style license that can be\nfound in the LICENSE file.\n\nOr the following for MIT: 20[0-9][0-9] The [A-Za-z]* Authors.\nUse of this source code is governed by a MIT-style\nlicense that can be found in the LICENSE file or at\nhttps://opensource.org/licenses/MIT",
+		Message:   "Missing copyright statement.\nUse the following for BSD:\nCopyright <year> The <group> Authors. All rights reserved.\nUse of this source code is governed by a BSD-style license that can be\nfound in the LICENSE file.\n\nOr the following for MIT: Copyright <year> The <group> Authors\n\nUse of this source code is governed by a MIT-style\nlicense that can be found in the LICENSE file or at\nhttps://opensource.org/licenses/MIT",
 		Path:      path,
 		StartLine: int32(1),
-		EndLine:   int32(endLine),
-		EndChar:   int32(endChar),
+		EndLine:   int32(1),
+		EndChar:   int32(1),
 		Url:       "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 	}
 }
 
-func incorrectCopyrightComment(path string, endLine, endChar int) *tricium.Data_Comment {
+func incorrectCopyrightComment(path string) *tricium.Data_Comment {
 	return &tricium.Data_Comment{
 		Category:  fmt.Sprintf("%s/%s", category, "Incorrect"),
-		Message:   "Incorrect copyright statement.\nUse the following for BSD:\nCopyright <year> The <group> Authors. All rights reserved.\nUse of this source code is governed by a BSD-style license that can be\nfound in the LICENSE file.\n\nOr the following for MIT: 20[0-9][0-9] The [A-Za-z]* Authors.\nUse of this source code is governed by a MIT-style\nlicense that can be found in the LICENSE file or at\nhttps://opensource.org/licenses/MIT",
+		Message:   "Incorrect copyright statement.\nUse the following for BSD:\nCopyright <year> The <group> Authors. All rights reserved.\nUse of this source code is governed by a BSD-style license that can be\nfound in the LICENSE file.\n\nOr the following for MIT: Copyright <year> The <group> Authors\n\nUse of this source code is governed by a MIT-style\nlicense that can be found in the LICENSE file or at\nhttps://opensource.org/licenses/MIT",
 		Path:      path,
 		StartLine: int32(1),
-		EndLine:   int32(endLine),
-		EndChar:   int32(endChar),
+		EndLine:   int32(1),
+		EndChar:   int32(1),
 		Url:       "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 	}
 }
 
-func oldCopyrightComment(path string, endLine, endChar int) *tricium.Data_Comment {
+func oldCopyrightComment(path string) *tricium.Data_Comment {
 	return &tricium.Data_Comment{
 		Category:  fmt.Sprintf("%s/%s", category, "OutOfDate"),
 		Message:   "Out of date copyright statement (omit the (c) to update)",
 		Path:      path,
 		StartLine: int32(1),
-		EndLine:   int32(endLine),
-		EndChar:   int32(endChar),
+		EndLine:   int32(1),
+		EndChar:   int32(1),
 		Url:       "https://chromium.googlesource.com/chromium/src/+/master/styleguide/c++/c++.md#file-headers",
 	}
 }
