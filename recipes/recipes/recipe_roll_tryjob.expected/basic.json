@@ -3,12 +3,10 @@
     "cmd": [
       "luci-auth",
       "token",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-recipe-roll-tester.json",
       "-lifetime",
       "600s"
     ],
-    "name": "get access token for service-account-recipe-roll-tester.json",
+    "name": "get access token for default account",
     "stdout": "/path/to/tmp/"
   },
   {
@@ -63,7 +61,7 @@
       "recipe_engine@HEAD"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -144,7 +142,7 @@
       "depot_tools@HEAD"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -265,7 +263,7 @@
       "recipe_engine@88cacb3086f508cc2e4c620a968149db53e34e35"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -346,7 +344,7 @@
       "depot_tools@59bbfb4465019d8ed83bfe88fef566922953452a"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]

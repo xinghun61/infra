@@ -19,6 +19,8 @@ DEPS = [
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/raw_io',
+  'recipe_engine/runtime',
+  'recipe_engine/service_account',
   'recipe_engine/step',
 ]
 
@@ -88,8 +90,12 @@ def RunSteps(
   engine_workdir = workdir_base.join('recipe_engine')
 
   api.luci_config.set_config('basic')
+  # TODO(tandrii): only support LUCI bots.
   if service_account:
+    assert not api.runtime.is_luci
     auth_token = api.puppet_service_account.get_access_token(service_account)
+  if api.runtime.is_luci:
+    auth_token = api.service_account.default().get_access_token()
   if auth_token:
     api.luci_config.c.auth_token = auth_token
 
@@ -268,8 +274,18 @@ def RunSteps(
 
 
 def GenTests(api):
+  def test(name):
+    return api.test(name) + api.runtime(is_luci=True, is_experimental=False)
+
   yield (
-    api.test('basic') +
+    test('basic') +
+    api.properties.generic(
+        upstream_project='recipe_engine',
+        downstream_project='depot_tools') +
+    api.luci_config.get_projects(('recipe_engine', 'depot_tools'))
+  )
+  yield (
+    api.test('basic_on_bbot_deprecated') +
     api.properties.generic(
         upstream_project='recipe_engine',
         downstream_project='depot_tools',
@@ -278,7 +294,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('without_patch_test_fail') +
+    test('without_patch_test_fail') +
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
@@ -286,7 +302,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('without_patch_train_fail') +
+    test('without_patch_train_fail') +
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
@@ -294,7 +310,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('with_patch_test_fail') +
+    test('with_patch_test_fail') +
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
@@ -302,7 +318,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('with_patch_train_fail') +
+    test('with_patch_train_fail') +
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
@@ -310,7 +326,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('diff_test_fail') +
+    test('diff_test_fail') +
     api.properties.tryserver(
         upstream_project='recipe_engine',
         downstream_project='depot_tools',
@@ -326,7 +342,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('diff_test_fail_ack') +
+    test('diff_test_fail_ack') +
     api.properties.tryserver(
         upstream_project='recipe_engine',
         downstream_project='depot_tools',
@@ -344,7 +360,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('diff_train_fail') +
+    test('diff_train_fail') +
     api.properties.tryserver(
         upstream_project='recipe_engine',
         downstream_project='depot_tools',
@@ -363,7 +379,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('diff_train_fail_ack') +
+    test('diff_train_fail_ack') +
     api.properties.tryserver(
         upstream_project='recipe_engine',
         downstream_project='depot_tools',
@@ -382,7 +398,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('diff_train_fail_ack_engine_checkout') +
+    test('diff_train_fail_ack_engine_checkout') +
     api.properties.tryserver(
         upstream_project='depot_tools',
         downstream_project='build',
@@ -401,7 +417,7 @@ def GenTests(api):
   )
 
   yield (
-    api.test('bypass') +
+    test('bypass') +
     api.properties.tryserver(
         upstream_project='recipe_engine',
         downstream_project='depot_tools',

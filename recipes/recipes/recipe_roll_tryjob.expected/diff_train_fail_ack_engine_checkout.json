@@ -1,6 +1,16 @@
 [
   {
     "cmd": [
+      "luci-auth",
+      "token",
+      "-lifetime",
+      "600s"
+    ],
+    "name": "get access token for default account",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
       "vpython",
       "-u",
       "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
@@ -9,7 +19,9 @@
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/json"
+      "/path/to/tmp/json",
+      "--headers-json",
+      "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
     ],
     "name": "Get luci-config projects"
   },
@@ -94,7 +106,7 @@
       "depot_tools@HEAD"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -220,7 +232,7 @@
       "build@HEAD"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/build",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -360,7 +372,7 @@
       "recipe_engine@HEAD"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -485,7 +497,7 @@
       "depot_tools@59bbfb4465019d8ed83bfe88fef566922953452a"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -566,7 +578,7 @@
       "build@80754af91bfb6d1073585b046fe0a474ce868509"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/build",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -706,7 +718,7 @@
       "recipe_engine@HEAD"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
