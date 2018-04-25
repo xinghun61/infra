@@ -5,6 +5,7 @@
 
 """Unit tests for the framework_helpers module."""
 
+import mock
 import unittest
 import uuid
 
@@ -12,6 +13,8 @@ import mox
 
 from google.appengine.api import app_identity
 from google.appengine.api import images
+from google.appengine.api import urlfetch
+from google.appengine.ext import testbed
 from third_party import cloudstorage
 
 from framework import filecontent
@@ -24,10 +27,14 @@ class GcsHelpersTest(unittest.TestCase):
 
   def setUp(self):
     self.mox = mox.Mox()
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_memcache_stub()
 
   def tearDown(self):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
+    self.testbed.deactivate()
 
   def testDeleteObjectFromGCS(self):
     object_id = 'aaaaa'
@@ -137,3 +144,40 @@ class GcsHelpersTest(unittest.TestCase):
     ret_id = gcs_helpers.StoreLogoInGCS(file_name, content, project_id)
     self.mox.VerifyAll()
     self.assertEquals(object_id, ret_id)
+
+  @mock.patch('google.appengine.api.urlfetch.fetch')
+  def testFetchSignedURL_Success(self, mock_fetch):
+    mock_fetch.return_value = testing_helpers.Blank(
+        headers={'Location': 'signed url'})
+    actual = gcs_helpers._FetchSignedURL('signing req url')
+    mock_fetch.assert_called_with('signing req url', follow_redirects=False)
+    self.assertEquals('signed url', actual)
+
+  @mock.patch('google.appengine.api.urlfetch.fetch')
+  def testFetchSignedURL_UnderpopulatedResult(self, mock_fetch):
+    mock_fetch.return_value = testing_helpers.Blank(headers={})
+    self.assertRaises(
+        KeyError, gcs_helpers._FetchSignedURL, 'signing req url')
+
+  @mock.patch('google.appengine.api.urlfetch.fetch')
+  def testFetchSignedURL_DownloadError(self, mock_fetch):
+    mock_fetch.side_effect = urlfetch.DownloadError
+    self.assertRaises(
+        urlfetch.DownloadError,
+        gcs_helpers._FetchSignedURL, 'signing req url')
+
+  @mock.patch('framework.gcs_helpers._FetchSignedURL')
+  def testSignUrl_Success(self, mock_FetchSignedURL):
+    with mock.patch(
+        'google.appengine.api.app_identity.get_access_token') as gat:
+      gat.return_value = ['token']
+      mock_FetchSignedURL.return_value = 'signed url'
+      signed_url = gcs_helpers.SignUrl('bucket', '/object')
+      self.assertEquals('signed url', signed_url)
+
+  @mock.patch('framework.gcs_helpers._FetchSignedURL')
+  def testSignUrl_DownloadError(self, mock_FetchSignedURL):
+    mock_FetchSignedURL.side_effect = urlfetch.DownloadError
+    self.assertEquals(
+        '/missing-gcs-url',
+        gcs_helpers.SignUrl('bucket', '/object'))

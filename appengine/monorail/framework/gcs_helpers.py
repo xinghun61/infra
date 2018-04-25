@@ -23,6 +23,7 @@ from third_party.cloudstorage import errors
 
 from framework import filecontent
 from framework import framework_constants
+from framework import framework_helpers
 
 
 ATTACHMENT_TTL = timedelta(seconds=30)
@@ -113,10 +114,26 @@ def StoreLogoInGCS(file_name, content, project_id):
       thumb_height=LOGO_THUMB_HEIGHT)
 
 
+@framework_helpers.retry(3, delay=0.25, backoff=1.25)
+def _FetchSignedURL(url):
+  """Request that devstorage API signs a GCS content URL."""
+  resp = urlfetch.fetch(url, follow_redirects=False)
+  redir = resp.headers["Location"]
+  return redir
+
+
 def SignUrl(bucket, object_id):
+  """Get a signed URL to download a GCS object.
+
+  Args:
+    bucket: string name of the GCS bucket.
+    object_id: string object ID of the file within that bucket.
+
+  Returns:
+    A signed URL, or '/mising-gcs-url' if signing failed.
+  """
   try:
     cache_key = 'gcs-object-url-%s' % object_id
-
     cached = memcache.get(key=cache_key)
     if cached is not None:
       return cached
@@ -126,21 +143,14 @@ def SignUrl(bucket, object_id):
     else:
       result = ('https://www.googleapis.com/storage/v1/b/'
           '{bucket}/o/{object_id}?access_token={token}&alt=media')
-
-
       scopes = ['https://www.googleapis.com/auth/devstorage.read_only']
-
       if object_id[0] == '/':
         object_id = object_id[1:]
-
       url = result.format(
           bucket=bucket,
           object_id=urllib.quote_plus(object_id),
           token=app_identity.get_access_token(scopes)[0])
-
-      resp = urlfetch.fetch(url, follow_redirects=False)
-
-      attachment_url = resp.headers["Location"]
+      attachment_url = _FetchSignedURL(url)
 
     if not memcache.set(key=cache_key, value=attachment_url, time=GCS_SIG_TTL):
       logging.error('Could not cache gcs url %s for %s', attachment_url,
