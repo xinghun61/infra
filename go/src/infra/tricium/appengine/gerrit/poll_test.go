@@ -241,7 +241,7 @@ func TestPollBasicBehavior(t *testing.T) {
 			})
 		})
 
-		Convey("Poll with changes that include deleted files", func() {
+		Convey("Poll with changes that include deleted and binary files", func() {
 			api := &mockPollRestAPI{}
 			lastChangeTs := tc.Now().UTC()
 			// Fill up with one change per project.
@@ -249,6 +249,7 @@ func TestPollBasicBehavior(t *testing.T) {
 				files := map[string]*gr.FileInfo{
 					"changed.txt": {Status: fileStatusModified},
 					"deleted.txt": {Status: fileStatusDeleted},
+					"binary.png":  {Status: fileStatusModified, Binary: true},
 				}
 				revisions := map[string]gr.RevisionInfo{
 					"abcdef": {Files: files},

@@ -355,7 +355,14 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 		}
 		var paths []string
 		for k, v := range c.Revisions[c.CurrentRevision].Files {
-			if v.Status != fileStatusDeleted {
+			// In general, most analyzers won't need to read binary
+			// files, and deleted files cannot be checked out by
+			// GitFileIsolator.
+			// TODO(qyearsley): Enable inclusion of binary files once
+			// the metadata about whether the file is text or binary
+			// is included in the FILES data type (https://crbug.com/836548).
+			// The non-inclusion of binary files is meant to be temporary.
+			if v.Status != fileStatusDeleted && !v.Binary {
 				paths = append(paths, k)
 			}
 		}
