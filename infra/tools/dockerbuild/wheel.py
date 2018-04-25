@@ -75,7 +75,17 @@ from .wheel_mysql import MySQLPythonBuilder as MySQLPython
 
 
 SPECS = {s.spec.tag: s for s in (
+  SourceOrPrebuilt('bcrypt', '3.1.4',
+      packaged=[
+        'mac-x64',
+        'manylinux-x86',
+        'manylinux-x64',
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
   SourceOrPrebuilt('coverage', '4.3.4'),
+  SourceOrPrebuilt('coverage', '4.5.1'),
   SourceOrPrebuilt('cffi', '1.10.0',
     arch_map={
       'mac-x64': 'macosx_10_6_intel',
@@ -135,6 +145,16 @@ SPECS = {s.spec.tag: s for s in (
       packaged=['windows-x86', 'windows-x64'],
   ),
 
+  SourceOrPrebuilt('PyNaCl', '1.2.1',
+      packaged=[
+        'mac-x64',
+        'manylinux-x86',
+        'manylinux-x64',
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
+
   Prebuilt('pypiwin32', '219',
       ['windows-x86', 'windows-x64'],
   ),
@@ -155,7 +175,6 @@ SPECS = {s.spec.tag: s for s in (
   SourceOrPrebuilt('pyasn', '1.6.0b1', packaged=(),
       only_plat=['manylinux-x64']),
   Prebuilt('pynacl', '1.2.1', ['manylinux-x64', 'mac-x64']),
-  Prebuilt('bcrypt', '3.1.4', ['manylinux-x64', 'mac-x64']),
 
   OpenCV('opencv_python', '2.4.13.2', '1.11.3',
       only_plat=['manylinux-x86', 'manylinux-x64']),
@@ -204,6 +223,12 @@ SPECS = {s.spec.tag: s for s in (
   SourceOrPrebuilt('crcmod', '1.7', packaged=()),
   SourceOrPrebuilt('grpcio', '1.4.0'),
   SourceOrPrebuilt('scan-build', '2.0.8', packaged=()),
+  SourceOrPrebuilt('scandir', '1.7',
+      packaged=[
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
 
   SourceOrPrebuilt('simplejson', '3.13.2',
       packaged=[
@@ -310,12 +335,14 @@ SPECS = {s.spec.tag: s for s in (
         'windows-x64',
       ],
   ),
-  SourceOrPrebuilt('SQLAlchemy', '1.2.5',
-      packaged=[],
+  SourceOrPrebuilt('SQLAlchemy', '1.2.5', packaged=(),
       only_plat=['manylinux-x86', 'manylinux-x64'],
   ),
-  SourceOrPrebuilt('wrapt', '1.10.11',
-      packaged=[],
+  SourceOrPrebuilt('subprocess32', '3.2.7', packaged=(),
+      only_plat=['manylinux-x86', 'manylinux-x64'],
+  ),
+  SourceOrPrebuilt('wrapt', '1.10.11', packaged=(),
+      only_plat=['manylinux-x86', 'manylinux-x64'],
   ),
 
   Universal('appdirs', '1.4.3'),
@@ -325,10 +352,13 @@ SPECS = {s.spec.tag: s for s in (
   Universal('asn1crypto', '0.22.0'),
   Universal('astroid', '1.6.3'),
   Universal('astunparse', '1.5.0'),
+  Universal('attrs', '17.4.0'),
   UniversalSource('backport_ipaddress', '0.1', pyversions=['py2']),
   Universal('backports.functools_lru_cache', '1.5'),
   Universal('boto', '2.48.0'),
   Universal('cachetools', '2.0.1'),
+  Universal('contextlib2', '0.5.5'),
+  UniversalSource('Django', '1.5.1'),
   Universal('Django', '1.9'),
   Universal('enum34', '1.1.6', pyversions=['py2', 'py3']),
   Universal('fabric', '1.14.0'),
@@ -372,6 +402,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('json5', '0.6.0'),
   Universal('mccabe', '0.6.1'),
   Universal('mock', '2.0.0'),
+  Universal('more-itertools', '4.1.0'),
   UniversalSource('mox', '0.5.3'),
   UniversalSource('oauth2client', '3.0.0'),
   Universal('oauth2client', '4.0.0'),
@@ -382,6 +413,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('pbr', '3.0.0'),
   Universal('ply', '3.11'),
   Universal('protobuf', '3.2.0'),
+  Universal('py', '1.5.3'),
   Universal('pyasn1', '0.2.3'),
   Universal('pyasn1_modules', '0.0.8'),
   UniversalSource('pycparser', '2.17'),
@@ -392,6 +424,8 @@ SPECS = {s.spec.tag: s for s in (
   Universal('pylint', '1.8.4'),
   Universal('pyparsing', '2.2.0'),
   Universal('pyserial', '3.4'),
+  Universal('pytest', '3.5.0'),
+  Universal('pytest-cov', '2.5.1'),
   Universal('requests', '2.13.0'),
   Universal('rsa', '3.4.2'),
   Universal('selenium', '3.4.1'),
