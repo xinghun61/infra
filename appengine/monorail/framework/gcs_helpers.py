@@ -40,9 +40,9 @@ DEFAULT_THUMB_HEIGHT = 200
 LOGO_THUMB_WIDTH = 110
 LOGO_THUMB_HEIGHT = 30
 MAX_ATTACH_SIZE_TO_COPY = 10 * 1024 * 1024  # 10 MB
-# GCS signatures are valid for one hour by default, but cache them for
-# 50 minutes just to be on the safe side.
-GCS_SIG_TTL = 60 * 50
+# GCS signatures are valid for 10 minutes by default, but cache them for
+# 5 minutes just to be on the safe side.
+GCS_SIG_TTL = 60 * 5
 
 
 def _Now():
