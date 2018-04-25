@@ -9,8 +9,9 @@ Please describe your issue.
 END
 
 components: "Infra>Client>Chrome"
-cc: "sergeyberezin@chromium.org"
+cc: "jbudorick@chromium.org"
 cc: "shenghuazhang@chromium.org"
+cc: "huangml@chromium.org"
 type: Bug
 pri: P2
 labels: "OS-iOS"
