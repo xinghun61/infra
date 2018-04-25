@@ -58,7 +58,7 @@ class IssueattachmentTest(unittest.TestCase):
     services.issue.TestAddComment(self.comment, self.issue.local_id)
     self.attachment = tracker_pb2.Attachment(
         attachment_id=54321, filename='hello.txt', filesize=23432,
-        mimetype='text/plain', gcs_object_id='/pid/attachments/hello.txt')
+        mimetype='text/plain', gcs_object_id='/pid/attachments/object_id')
     services.issue.TestAddAttachment(
         self.attachment, self.comment.id, self.issue.issue_id)
     self.orig_sign_attachment_id = tracker_helpers.SignAttachmentID
@@ -119,8 +119,13 @@ class IssueattachmentTest(unittest.TestCase):
     self.mox.StubOutWithMock(gcs_helpers, 'MaybeCreateDownload')
     gcs_helpers.MaybeCreateDownload(
         'app_default_bucket',
-        '/pid/attachments/hello.txt',
+        '/pid/attachments/object_id',
         self.attachment.filename).AndReturn(True)
+    self.mox.StubOutWithMock(gcs_helpers, 'SignUrl')
+    gcs_helpers.SignUrl(
+        'app_default_bucket',
+        '/pid/attachments/object_id-download'
+        ).AndReturn('googleusercontent.com/...-download...')
     self.mox.StubOutWithMock(self.servlet, 'redirect')
     path = '/p/proj/issues/attachment?aid=%s&signed_aid=signed_%d' % (
         aid, aid)
@@ -141,8 +146,13 @@ class IssueattachmentTest(unittest.TestCase):
     self.mox.StubOutWithMock(gcs_helpers, 'MaybeCreateDownload')
     gcs_helpers.MaybeCreateDownload(
         'app_default_bucket',
-        '/pid/attachments/hello.txt',
+        '/pid/attachments/object_id',
         self.attachment.filename).AndReturn(False)
+    self.mox.StubOutWithMock(gcs_helpers, 'SignUrl')
+    gcs_helpers.SignUrl(
+        'app_default_bucket',
+        '/pid/attachments/object_id'
+        ).AndReturn('googleusercontent.com/...')
     self.mox.StubOutWithMock(self.servlet, 'redirect')
     _request, mr = testing_helpers.GetRequestObjects(
         project=self.project, path=path,
@@ -163,8 +173,13 @@ class IssueattachmentTest(unittest.TestCase):
     self.mox.StubOutWithMock(gcs_helpers, 'MaybeCreateDownload')
     gcs_helpers.MaybeCreateDownload(
         'app_default_bucket',
-        '/pid/attachments/hello.txt',
+        '/pid/attachments/object_id',
         safe_filename).AndReturn(True)
+    self.mox.StubOutWithMock(gcs_helpers, 'SignUrl')
+    gcs_helpers.SignUrl(
+        'app_default_bucket',
+        '/pid/attachments/object_id-download'
+        ).AndReturn('googleusercontent.com/...-download...')
     self.mox.StubOutWithMock(self.servlet, 'redirect')
     _request, mr = testing_helpers.GetRequestObjects(
         project=self.project,
