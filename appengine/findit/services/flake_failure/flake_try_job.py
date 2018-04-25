@@ -323,12 +323,16 @@ def ScheduleFlakeTryJob(parameters, runner_id):
   tryserver_mastername, tryserver_buildername = (
       waterfall_config.GetFlakeTrybot(master_name, builder_name))
 
+  # TODO(crbug.com/787096): assert dimensions exists once full migration to LUCI
+  # is complete.
+  dimensions = (
+      parameters.dimensions.ToSerializable() if parameters.dimensions else [])
+
   build_id, error = try_job_service.TriggerTryJob(
       master_name, builder_name, tryserver_mastername, tryserver_buildername,
       properties, {},
-      failure_type.GetDescriptionForFailureType(
-          failure_type.FLAKY_TEST), parameters.flake_cache_name,
-      parameters.dimensions.ToSerializable(), runner_id)
+      failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
+      parameters.flake_cache_name, dimensions, runner_id)
 
   if error:
     raise exceptions.RetryException(error.message, error.reason)
