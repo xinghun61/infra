@@ -58,7 +58,7 @@ class TemplateDetailTest(unittest.TestCase):
         1, 789, 'UXReview', tracker_pb2.FieldTypes.STR_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action',
-        'Approval for UX review', False)
+        'Approval for UX review', False, approval_id=2)
     self.fd_2 =  tracker_bizobj.MakeFieldDef(
         2, 789, 'UXReview', tracker_pb2.FieldTypes.STR_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
@@ -158,6 +158,7 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertEqual(len(page_data['approvals']), 2)
     self.assertItemsEqual(page_data['prechecked_approvals'],
                           ['3_phase_0', '4_phase_1'])
+    self.assertTrue(page_data['approval_subfields_present'])
 
   def testProcessFormData_Reject(self):
     post_data = fake.PostData(

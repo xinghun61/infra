@@ -75,6 +75,9 @@ class TemplateDetail(servlet.Servlet):
       tracker_views.MakeFieldValueView(fd, config, [], [],
                                        fd_id_to_fvs[fd.field_id], {})
       for fd in config.field_defs if not fd.is_deleted]
+    approval_subfields_present = False
+    if any(fv.field_def.is_approval_subfield for fv in field_views):
+      approval_subfields_present = True
 
     initial_phases = template.phases[:]
     # TODO(jojwang): monorail:3576, replace this sort by adding order_by
@@ -117,6 +120,7 @@ class TemplateDetail(servlet.Servlet):
         'required_approval_ids': required_approval_ids,
         'labels': template.labels,
         'initial_admins': template_view.admin_names,
+        'approval_subfields_present': ezt.boolean(approval_subfields_present),
         }
 
   def ProcessFormData(self, mr, post_data):

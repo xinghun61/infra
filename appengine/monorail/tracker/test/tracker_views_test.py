@@ -539,7 +539,7 @@ class FieldDefViewTest(unittest.TestCase):
     self.assertEqual(99, view.max_value)
     self.assertEqual('no_action', view.date_action_str)
     self.assertEqual(view.approval_id, 1)
-    self.assertEqual(view.is_approval_sub_field, ezt.boolean(True))
+    self.assertEqual(view.is_approval_subfield, ezt.boolean(True))
     self.assertEqual(view.approvers, [])
     self.assertEqual(view.survey, None)
 

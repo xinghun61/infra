@@ -120,8 +120,8 @@
 
   [for fields]
     [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
-    [# TODO(jojwang): monorail:3241, un-suppress showing approval types in templates]
-    [if-any fields.field_def.approval_id][else]
+    [# approval subfields are shown below, not here]
+    [if-any fields.field_def.is_approval_subfield][else]
       <tr>
         <th>[fields.field_name]:</th>
         <td colspan="2">
@@ -156,19 +156,41 @@
      </td>
    </tr>
 
-[if-any approvals]
-   <tr>
-     <th>Launch Gates</th>
-     <td colspan="7">
-       <input type="checkbox" name="add_phases" id="cb_add_phases" [if-any allow_edit][else]disabled[end] [if-any initial_add_phases]checked="checked"[end]>
-       <label for="cb_add_phases">Include Gates and Approval Tasks in issue</label>
-       [include "launch-gates-widget.ezt"]
-       <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
-            [if-any errors.phase_approvals][errors.phase_approvals][end]
-       </span>
-     </td>
-   </tr>
-[end]
+  [if-any approvals]
+     <tr>
+       <th>Launch Gates:</th>
+       <td colspan="7">
+         <input type="checkbox" name="add_phases" id="cb_add_phases" [if-any allow_edit][else]disabled[end] [if-any initial_add_phases]checked="checked"[end]>
+         <label for="cb_add_phases">Include Gates and Approval Tasks in issue</label>
+         [include "launch-gates-widget.ezt"]
+         <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
+              [if-any errors.phase_approvals][errors.phase_approvals][end]
+         </span>
+       </td>
+     </tr>
+  [end]
+
+  [if-any approval_subfields_present]
+    <tr id="subfield-row">
+      <th>Approval subfields:</th>
+      <td colspan="2">
+        [for fields]
+          [if-any fields.field_def.is_approval_subfield]
+            [fields.field_def.parent_approval_name]-[fields.field_name]:
+            [if-any allow_edit]
+              [include "field-value-widgets.ezt" False "tmpl" False]
+            [else]
+              [for fields.values]
+                [fields.values.val]
+              [end]
+            [end]
+          <br>
+          [end]
+        [end]
+      <td>
+    </tr>
+  [end]
+
 
   [if-any allow_edit]
     <tr>
@@ -198,17 +220,7 @@ runOnLoad(function() {
     _onload();
 
     let addPhasesCheckbox = document.getElementById('cb_add_phases');
-    addPhasesCheckbox.addEventListener('change', toggleGatesTable);
-    toggleGatesTable();
-
-    function toggleGatesTable() {
-      let addPhases = document.getElementById('cb_add_phases').checked;
-      if (addPhases) {
-        $('launch-gates-table').classList.remove('hidden');
-      } else{
-        $('launch-gates-table').classList.add('hidden');
-      }
-    }
+    addPhasesCheckbox.addEventListener('change', toggleGatesView);
 
     var acobElements = document.getElementsByClassName("acob");
     for (var i = 0; i < acobElements.length; ++i) {
@@ -225,6 +237,19 @@ runOnLoad(function() {
       labelInput.disabled = true;
     });
   [end]
+
+  toggleGatesView();
+  function toggleGatesView() {
+    let addPhases = document.getElementById('cb_add_phases').checked;
+    let subfieldRow = $('subfield-row');
+    if (addPhases) {
+      $('launch-gates-table').classList.remove('hidden');
+      subfieldRow && subfieldRow.classList.remove('hidden');
+    } else{
+      $('launch-gates-table').classList.add('hidden');
+      subfieldRow && subfieldRow.classList.add('hidden');
+    }
+  }
 
 });
 </script>

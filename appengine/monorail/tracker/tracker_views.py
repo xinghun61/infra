@@ -769,11 +769,11 @@ class FieldDefView(template_helpers.PBProxy):
                      for admin_id in field_def.admin_ids]
 
     if field_def.approval_id:
-      self.is_approval_sub_field = ezt.boolean(True)
+      self.is_approval_subfield = ezt.boolean(True)
       self.parent_approval_name = tracker_bizobj.FindFieldDefByID(
           field_def.approval_id, config).field_name
     else:
-      self.is_approval_sub_field = ezt.boolean(False)
+      self.is_approval_subfield = ezt.boolean(False)
 
 
 class IssueTemplateView(template_helpers.PBProxy):

@@ -224,7 +224,7 @@
     </tr>
   [end]
 
-  [if-any field_def.is_approval_sub_field]
+  [if-any field_def.is_approval_subfield]
     <tr>
       <th>Parent Approval:</th>
       <td>

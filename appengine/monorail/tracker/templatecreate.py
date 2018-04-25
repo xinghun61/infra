@@ -58,6 +58,10 @@ class TemplateCreate(servlet.Servlet):
     field_views = [
       tracker_views.MakeFieldValueView(fd, config, [], [], [], {})
       for fd in config.field_defs if not fd.is_deleted]
+    approval_subfields_present = False
+    if any(fv.field_def.is_approval_subfield for fv in field_views):
+      approval_subfields_present = True
+
     initial_phases = [tracker_pb2.Phase()] * 6
     return {
         'admin_tab_mode': self._PROCESS_SUBTAB,
@@ -82,6 +86,7 @@ class TemplateCreate(servlet.Servlet):
                    if view.field_def.type_name is "APPROVAL_TYPE"],
         'prechecked_approvals': [],
         'required_approval_ids': [],
+        'approval_subfields_present': ezt.boolean(approval_subfields_present),
         }
 
   def ProcessFormData(self, mr, post_data):
