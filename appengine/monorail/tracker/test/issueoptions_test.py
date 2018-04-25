@@ -5,12 +5,14 @@
 
 """Unittests for the issueoptions JSON feed."""
 
+import mock
 import unittest
 
 import webapp2
 
 from framework import permissions
 from proto import project_pb2
+from proto import tracker_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -46,7 +48,9 @@ class IssueOptionsJSONTest(unittest.TestCase):
     self.project.owner_ids.extend([111L])
     self.project.committer_ids.extend([222L])
     self.project.contributor_ids.extend([333L])
-    self.servlet = issueoptions.IssueOptionsJSON(
+    self.servlet = issueoptions.IssueStatusLabelOptionsJSON(
+        'req', webapp2.Response(), services=services)
+    self.members_servlet = issueoptions.IssueMembersOptionsJSON(
         'req', webapp2.Response(), services=services)
 
     # Fake hotlists
@@ -58,23 +62,25 @@ class IssueOptionsJSONTest(unittest.TestCase):
 
     self.services = services
 
-  def RunHandleRequest(self, logged_in_user_id, perms, effective_ids=None):
+  def RunHandleRequest(self, servlet, logged_in_user_id, perms,
+                       effective_ids=None):
     mr = testing_helpers.MakeMonorailRequest(project=self.project, perms=perms)
     mr.auth.user_id = logged_in_user_id
     if effective_ids:
       mr.auth.effective_ids = effective_ids
-    json_data = self.servlet.HandleRequest(mr)
+    json_data = servlet.HandleRequest(mr)
     return json_data
 
-  def RunAndGetMemberEmails(
-      self, logged_in_user_id, perms, effective_ids=None):
-    json_data = self.RunHandleRequest(
+  def RunAndGetMemberEmails(self, servlet, logged_in_user_id, perms,
+                            effective_ids=None):
+    json_data = self.RunHandleRequest(servlet,
         logged_in_user_id, perms, effective_ids=effective_ids)
     member_emails = [member['name'] for member in json_data['members']]
     return member_emails
 
   def VerifyMembersInFeeds(self, logged_in_user_id, perms, expected_visible):
-    member_emails = self.RunAndGetMemberEmails(logged_in_user_id, perms)
+    member_emails = self.RunAndGetMemberEmails(self.members_servlet,
+        logged_in_user_id, perms)
     if expected_visible:
       self.assertEqual(
           ['user_111@domain.com', 'user_222@domain.com',
@@ -106,7 +112,7 @@ class IssueOptionsJSONTest(unittest.TestCase):
 
   def testHandleRequest_MemberIsGroup(self):
     self.project.contributor_ids.extend([999L])
-    json_data = self.RunHandleRequest(
+    json_data = self.RunHandleRequest(self.members_servlet,
         999L, permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET)
     for member in json_data['members']:
       if member['name'] == 'group999@googlegroups.com':
@@ -117,17 +123,18 @@ class IssueOptionsJSONTest(unittest.TestCase):
   def testHandleRequest_AcExclusion(self):
     self.project.contributor_ids.extend([666L])
 
-    member_emails = self.RunAndGetMemberEmails(
+    member_emails = self.RunAndGetMemberEmails(self.members_servlet,
         666L, permissions.OWNER_ACTIVE_PERMISSIONSET)
     self.assertIn('user_666@domain.com', member_emails)
 
     self.services.project.ac_exclusion_ids[self.project.project_id] = [666L]
-    member_emails = self.RunAndGetMemberEmails(
+    member_emails = self.RunAndGetMemberEmails(self.members_servlet,
         666L, permissions.OWNER_ACTIVE_PERMISSIONSET)
     self.assertNotIn('user_666@domain.com', member_emails)
 
   def testHandleRequest_Hotlists(self):
-    json_data = self.RunHandleRequest(111L, permissions.USER_PERMISSIONSET)
+    json_data = self.RunHandleRequest(self.servlet,
+      111L, permissions.USER_PERMISSIONSET)
     self.assertListEqual(json_data['hotlists'],
                          [{'ref_str': 'name_111', 'summary': ''}])
 
@@ -137,7 +144,7 @@ class IssueOptionsJSONTest(unittest.TestCase):
 
     # User 111 can see 444 because they are both in the same user group,
     # and he can see 555 because of the project-is-a-member-of-group rule.
-    member_emails = self.RunAndGetMemberEmails(
+    member_emails = self.RunAndGetMemberEmails(self.members_servlet,
         111L, permissions.OWNER_ACTIVE_PERMISSIONSET,
         effective_ids={111L, 999L})
     self.assertIn('user_444@domain.com', member_emails)
@@ -145,7 +152,7 @@ class IssueOptionsJSONTest(unittest.TestCase):
 
     # User 333 can see 555 because 555 is in a user group that includes
     # proj@monorail.com.
-    member_emails = self.RunAndGetMemberEmails(
+    member_emails = self.RunAndGetMemberEmails(self.members_servlet,
         333L, permissions.OWNER_ACTIVE_PERMISSIONSET)
     self.assertTrue('user_555@domain.com' in member_emails)
 
@@ -153,7 +160,7 @@ class IssueOptionsJSONTest(unittest.TestCase):
 
     # User 111 can see 444 and 555, hub-and-spoke does not limit
     # project owners.
-    member_emails = self.RunAndGetMemberEmails(
+    member_emails = self.RunAndGetMemberEmails(self.members_servlet,
         111L, permissions.OWNER_ACTIVE_PERMISSIONSET,
         effective_ids={111L, 999L})
     self.assertTrue('user_444@domain.com' in member_emails)
@@ -163,17 +170,100 @@ class IssueOptionsJSONTest(unittest.TestCase):
     # member-of-group rule does not exend to contributors when
     # hub-and-spoke is set.  In that mode, contributors are not
     # supposed to know about all the other users.
-    member_emails = self.RunAndGetMemberEmails(
+    member_emails = self.RunAndGetMemberEmails(self.members_servlet,
         333L, permissions.OWNER_ACTIVE_PERMISSIONSET)
     self.assertTrue('user_555@domain.com' in member_emails)
 
   def testHandleRequest_RestrictionLabels(self):
-    json_data = self.RunHandleRequest(
+    json_data = self.RunHandleRequest(self.servlet,
         111L, permissions.OWNER_ACTIVE_PERMISSIONSET)
     labels = [lab['name'] for lab in json_data['labels']]
     self.assertIn('Restrict-View-EditIssue', labels)
     self.assertIn('Restrict-AddIssueComment-EditIssue', labels)
     self.assertIn('Restrict-View-CoreTeam', labels)
+
+
+class GetOptionsTest(unittest.TestCase):
+
+  def setUp(self):
+    self.services = service_manager.Services(
+        project=fake.ProjectService(),
+        config=fake.ConfigService(),
+        issue=fake.IssueService(),
+        user=fake.UserService(),
+        features=fake.FeaturesService(),
+        usergroup=fake.UserGroupService())
+    self.cnxn = None
+    self.config = tracker_pb2.ProjectIssueConfig()
+    self.services.config.StoreConfig(self.cnxn, self.config)
+    self.config = self.services.config.GetProjectConfig(None, 789)
+    self.project = self.services.project.TestAddProject('proj')
+    self.mr = testing_helpers.MakeMonorailRequest(project=self.project)
+
+  def testGetStatusOptions(self):
+    self.config.well_known_statuses= [
+      tracker_pb2.StatusDef(status='status1', means_open=True,
+          status_docstring='docstring1'),
+      tracker_pb2.StatusDef(status='status2', means_open=False,
+          status_docstring='docstring2'),
+    ]
+    actual_open, actual_closed = issueoptions.GetStatusOptions(self.config)
+    expected_open = [{'doc': 'docstring1', 'name': 'status1'}]
+    expected_closed = [{'doc': 'docstring2', 'name': 'status2'}]
+    self.assertEqual(expected_open, actual_open)
+    self.assertEqual(expected_closed, actual_closed)
+
+  def testGetComponentOptions(self):
+    self.config.component_defs = [
+      tracker_pb2.ComponentDef(component_id=123, project_id=789, path='Path',
+          docstring='docstring', admin_ids=[111L], cc_ids=[], deprecated=False,
+          label_ids=[])
+    ]
+    actual = issueoptions.GetComponentOptions(self.config)
+    expected = [{'doc': 'docstring', 'name': 'Path'}]
+    self.assertEqual(expected, actual)
+
+  @mock.patch('tracker.tracker_helpers.LabelsNotMaskedByFields')
+  def testGetLabelOptions(self, mockLabelsNotMaskedByFields):
+    mockLabelsNotMaskedByFields.return_value = []
+    custom_permissions = []
+    actual = issueoptions.GetLabelOptions(self.mr, self.config, custom_permissions)
+    expected = [
+      {'doc': 'Only users who can edit the issue may access it',
+       'name': 'Restrict-View-EditIssue'},
+      {'doc': 'Only users who can edit the issue may add comments',
+       'name': 'Restrict-AddIssueComment-EditIssue'},
+      {'doc': 'Custom permission CoreTeam is needed to access',
+       'name': 'Restrict-View-CoreTeam'}
+    ]
+    self.assertEqual(expected, actual)
+
+  @mock.patch('testing.fake.FeaturesService.GetHotlistsByUserID')
+  def testGetHotlistOptions(self, mockGetHotlistsByUserID):
+    fake_hotlist = fake.Hotlist(hotlist_name='hotlist-1', hotlist_id=1)
+    mockGetHotlistsByUserID.return_value = [fake_hotlist]
+    actual = issueoptions.GetHotlistOptions(self.mr, self.services)
+    expected = [{'ref_str': 'hotlist-1', 'summary': ''}]
+    self.assertEqual(expected, actual)
+
+  def testGetFieldOptions(self):
+    self.config.field_defs = [
+      tracker_pb2.FieldDef(field_id=1, project_id=789, field_name='FieldName',
+          field_type=tracker_pb2.FieldTypes.INT_TYPE)
+    ]
+    actual = issueoptions.GetFieldOptions(self.mr, self.services, self.config,
+        [], [])
+    expected =  [{
+      'choices': [],
+     'docstring': None,
+     'field_id': 1,
+     'field_name': 'FieldName',
+     'field_type': 2,
+     'is_multivalued': False,
+     'is_required': False,
+     'needs_perm': None
+    }]
+    self.assertEqual(expected, actual)
 
 
 class FilterMemberDataTest(unittest.TestCase):

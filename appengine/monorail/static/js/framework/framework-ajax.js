@@ -124,6 +124,26 @@ function CS_parseJSON(xhr) {
 }
 
 
+/**
+ * Promise-based version of CS_parseJSON using the fetch API.
+ *
+ * Sends a GET request to a JSON endpoint then strips the XSSI prefix off
+ * of the response before resolving the promise.
+ *
+ * Args:
+ *   url (string): The URL to fetch.
+ * Returns:
+ *   A promise, resolved when the request returns. Also be sure to call
+ *   .catch() on the promise (or wrap in a try/catch if using async/await)
+ *   if you don't want errors to halt script execution.
+ */
+function CS_fetch(url) {
+  return fetch(url, {credentials: 'same-origin'})
+    .then((res) => res.text())
+    .then((rawResponse) => JSON.parse(rawResponse.substr(5)));
+}
+
+
 function isTokenExpired(opt_tokenExpiresSec) {
   var expiresSec = opt_tokenExpiresSec || CS_env.tokenExpiresSec;
   var tokenExpiresDate = new Date(expiresSec * 1000);

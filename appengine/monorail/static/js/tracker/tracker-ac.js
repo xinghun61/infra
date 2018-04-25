@@ -594,7 +594,7 @@ function TKR_setUpCustomPermissionsStore(customPermissions) {
  * @param {Array} memberDefs An array of definitions of the project
  * members.  Each definition has a name and docstring.
  */
-function TKR_setUpMemberStore(memberDefs, indMemerDefs) {
+function TKR_setUpMemberStore(memberDefs, indMemberDefs) {
   var memberWords = [];
   var indMemberWords = [];
   var docdict = {};
@@ -632,7 +632,7 @@ function TKR_setUpMemberStore(memberDefs, indMemerDefs) {
   };
 
   TKR_ownerStore.completions = function(prefix, tofilter) {
-    var fullList = TKR_fullComplete(prefix, indMemerDefs);
+    var fullList = TKR_fullComplete(prefix, indMemberDefs);
     if (fullList) return fullList;
     return _AC_SimpleStore.prototype.completions.call(this, prefix, tofilter);
   };
@@ -933,12 +933,6 @@ function TKR_setUpAutoCompleteStore(choices) {
 var TKR_optionsXmlHttp = undefined;
 
 /**
- * URL used to fetch autocomplete options from the server, WITHOUT the
- * project's cache content timestamp.
- */
-var TKR_optionsURL = undefined;
-
-/**
  * Contact the server to fetch the set of autocomplete options for the
  * projects the user is contributor/member/owner of.
  * If multiValue is set to true then the projectStore is configured to
@@ -1065,69 +1059,54 @@ function TKR_setUpProjectStore(projects, multiValue) {
  * @param {Object} opt_args Key=value pairs.
  */
 function TKR_fetchOptions(projectName, token, cct, opt_args) {
-  TKR_optionsXmlHttp = XH_XmlHttpCreate();
-  var projectPart = projectName ? '/p/' + projectName : '/hosting';
-  TKR_optionsURL = `${projectPart}/feeds/issueOptions?token=${token}`;
-  for (var arg in opt_args) {
-    TKR_optionsURL += '&' + arg + '=' + encodeURIComponent(opt_args[arg]);
+  const projectPart = projectName ? '/p/' + projectName : '/hosting';
+  let optionsURL = `${projectPart}/feeds/issueOptions?token=${token}`;
+  // TODO(jeffcarp): Construct this using URLSearchParams once browser compatible.
+  for (let arg in opt_args) {
+    optionsURL += '&' + arg + '=' + encodeURIComponent(opt_args[arg]);
   }
+  optionsURL += `&cct=${cct}`;
 
-  XH_XmlHttpGET(
-      TKR_optionsXmlHttp, TKR_optionsURL + '&cct=' + cct,
-      TKR_issueOptionsFeedCallback);
-}
-
-
-/**
- * The communication with the server has made some progress.  If it is
- * done, then process the response.
- */
-function TKR_issueOptionsFeedCallback() {
-  if (TKR_optionsXmlHttp.readyState == 4) {
-    if (TKR_optionsXmlHttp.status == 200) {
-      TKR_gotIssueOptionsFeed(TKR_optionsXmlHttp);
-    }
+  let membersURL = `${projectPart}/feeds/issueOptionsMembers?token=${token}`;
+  for (let arg in opt_args) {
+    membersURL += '&' + arg + '=' + encodeURIComponent(opt_args[arg]);
   }
-}
+  membersURL += `&cct=${cct}`;
 
+  const statusesLabelsPromise = CS_fetch(optionsURL);
+  const membersPromise = CS_fetch(membersURL);
 
-/**
- * The server has sent the list of all options.  Parse them and then set up each
- * of the label stores.
- * @param {Object} xhr The JSON response object the server.  The response JSON
- * consists of one large dictionary with four items: open statuses,
- * closed statuses, issue labels, and project members.
- */
-function TKR_gotIssueOptionsFeed(xhr) {
-  var json_data = null;
-  try {
-    json_data = CS_parseJSON(xhr);
-  }
-  catch (e) {
-    return null;
-  }
-  indMemerDefs = []
-  for (var i = 0; i < json_data.members.length; i++) {
-    var member = json_data.members[i];
-    if(!member.is_group) {
-      indMemerDefs.push(member);
-    }
-  }
-  TKR_setUpHotlistsStore(json_data.hotlists);
-  TKR_setUpStatusStore(json_data.open, json_data.closed);
-  TKR_setUpSearchStore(
-      json_data.labels, json_data.members, json_data.open, json_data.closed,
-      json_data.components, json_data.fields, indMemerDefs);
-  TKR_setUpQuickEditStore(
-      json_data.labels, json_data.members, json_data.open, json_data.closed,
-      indMemerDefs);
-  TKR_setUpLabelStore(json_data.labels);
-  TKR_setUpComponentStore(json_data.components);
-  TKR_setUpMemberStore(json_data.members, indMemerDefs);
-  TKR_setUpUserAutocompleteStores(json_data.fields, json_data.members);
-  TKR_setUpCustomPermissionsStore(json_data.custom_permissions);
-  TKR_exclPrefixes = json_data.excl_prefixes;
-  TKR_prepLabelAC(TKR_labelFieldIDPrefix);
-  TKR_prepOwnerField(json_data.members);
-  TKR_restrict_to_known = json_data.strict;
+  statusesLabelsPromise.then((jsonData) => {
+    TKR_setUpHotlistsStore(jsonData.hotlists);
+    TKR_setUpStatusStore(jsonData.open, jsonData.closed);
+    TKR_setUpLabelStore(jsonData.labels);
+    TKR_setUpComponentStore(jsonData.components);
+    TKR_setUpCustomPermissionsStore(jsonData.custom_permissions);
+    TKR_exclPrefixes = jsonData.excl_prefixes;
+    TKR_prepLabelAC(TKR_labelFieldIDPrefix);
+    TKR_restrict_to_known = jsonData.strict;
+  });
+
+  membersPromise.then((jsonData) => {
+    const indMemberDefs = jsonData.members.filter(m => !m.is_group);
+    TKR_setUpMemberStore(jsonData.members, indMemberDefs);
+    TKR_prepOwnerField(jsonData.members);
+    TKR_setUpUserAutocompleteStores(jsonData.fields, jsonData.members);
+  });
+
+  Promise.all([statusesLabelsPromise, membersPromise]).then(datas => {
+    // Merge both result objects.
+    let jsonData = datas[0];
+    Object.assign(jsonData, datas[1]);
+
+    const indMemberDefs = jsonData.members.filter(m => !m.is_group);
+    /* QuickEdit is not yet in Monorail. crbug.com/monorail/1926
+    TKR_setUpQuickEditStore(
+       jsonData.labels, jsonData.members, jsonData.open, jsonData.closed,
+       indMemberDefs);
+    */
+    TKR_setUpSearchStore(
+        jsonData.labels, jsonData.members, jsonData.open, jsonData.closed,
+       jsonData.components, jsonData.fields, indMemberDefs);
+  });
 }
