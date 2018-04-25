@@ -36,9 +36,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     with mock.patch.object(
         waterfall_config,
         'GetCheckFlakeSettings',
-        return_value={
-            'autorevert_enabled': True
-        }):
+        return_value={'autorevert_enabled': True}):
       self.assertTrue(culprit_util.IsAutorevertEnabled())
 
   def testAbortCreateAndSubmitRevertNothingMatchesNothingChanged(self):
@@ -392,7 +390,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         confidence_in_suspected_build=1.0,
         has_filed_bug=True)
     self.assertTrue(culprit_util.CanRevertForAnalysis(analysis))
-    mock_time_fn.assert_called_once()
+    mock_time_fn.assert_called_with('chromium', 'r13')
 
   def testNewlyAddedTest(self):
     culprit_commit_position = 11
@@ -430,15 +428,15 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         culprit_util.HasSeriesOfFullyStablePointsPrecedingCulprit(analysis))
 
   def testIsConfiguredToNotifyCulpritsFalse(self):
-    self.UpdateUnitTestConfigSettings('action_settings', {
-        'cr_notification_should_notify_flake_culprit': False
-    })
+    self.UpdateUnitTestConfigSettings(
+        'action_settings',
+        {'cr_notification_should_notify_flake_culprit': False})
     self.assertFalse(culprit_util.IsConfiguredToNotifyCulprits())
 
   def testIsConfiguredToNotifyCulpritsTrue(self):
-    self.UpdateUnitTestConfigSettings('action_settings', {
-        'cr_notification_should_notify_flake_culprit': True
-    })
+    self.UpdateUnitTestConfigSettings(
+        'action_settings',
+        {'cr_notification_should_notify_flake_culprit': True})
     self.assertTrue(culprit_util.IsConfiguredToNotifyCulprits())
 
   def testPrepareCulpritForSendingNotificationAlreadySent(self):

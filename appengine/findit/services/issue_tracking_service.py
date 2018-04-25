@@ -32,7 +32,6 @@ _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE = 'summary:{} is:open'
 
 _COMMENT_FOOTER = textwrap.dedent("""
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
-Flake Analyzer is in beta.
 Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness""")
 
 # Comment for culprit template.

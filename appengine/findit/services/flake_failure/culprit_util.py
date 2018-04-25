@@ -144,7 +144,7 @@ def CanRevertForAnalysis(analysis):
   assert culprit
 
   last_24_hours = gerrit.WasCulpritCommittedWithinTime(culprit.repo_name,
-                                                       culprit.repo_name)
+                                                       culprit.revision)
 
   return bool(last_24_hours and analysis.status == analysis_status.COMPLETED and
               analysis.try_job_status == analysis_status.COMPLETED and
