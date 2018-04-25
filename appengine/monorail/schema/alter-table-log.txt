@@ -1466,3 +1466,9 @@ ALTER TABLE Issue2ApprovalValue DROP COLUMN milestone_id;
 
 DROP TABLE Template2Milestone;
 DROP TABLE Issue2Milestone;
+
+================================================================
+2018-04-25: Add phase_id to X2ApprovalValue tables' primary keys.
+
+ALTER TABLE Template2ApprovalValue DROP PRIMARY KEY, ADD PRIMARY KEY(approval_id, template_id, phase_id);
+ALTER TABLE Issue2ApprovalValue DROP PRIMARY KEY, ADD PRIMARY KEY(issue_id, approval_id, phase_id);
