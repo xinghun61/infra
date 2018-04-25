@@ -176,7 +176,10 @@ recompute_derived_fields_in_worker = True
 search_limit_per_shard = 10 * 1000  # This is more than all open in chromium.
 
 # The GAE search feature is slow, so don't request too many results.
-fulltext_limit_per_shard = 1 * 1000
+# This limit is approximately the most results that we can get from
+# the fulltext engine in 1s.  If we reach this limit in any shard,
+# the user will see a message explaining that results were capped.
+fulltext_limit_per_shard = 1 * 2000
 
 # Retrieve at most this many issues from the DB when showing an issue grid.
 max_issues_in_grid = 6000

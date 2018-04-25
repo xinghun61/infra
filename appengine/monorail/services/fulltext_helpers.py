@@ -105,7 +105,7 @@ def ComprehensiveSearch(fulltext_query, index_name):
   ids = [int(result.doc_id) for result in response]
 
   remaining_iterations = int(
-      settings.fulltext_limit_per_shard - 1 / _SEARCH_RESULT_CHUNK_SIZE)
+      (settings.fulltext_limit_per_shard - 1) / _SEARCH_RESULT_CHUNK_SIZE)
   for _ in range(remaining_iterations):
     if not response.cursor:
       break
