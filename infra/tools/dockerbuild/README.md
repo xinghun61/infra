@@ -162,6 +162,22 @@ sudo usermod -a -G docker $USER
 
 You need to restart your shell for this to take effect.
 
+### Got permission denied while trying to upload CIPD package...
+
+Upload rights are restricted to troopers and members of
+[`vpython-wheels-uploaders`](
+https://chrome-infra-auth.appspot.com/auth/groups/vpython-wheels-uploaders)
+
+First, make sure you are logged into cipd with your @google.com account.
+
+```bash
+cipd auth-info
+cipd auth-login
+```
+
+Second, file http://crbug.com/ ticket in Infra>Platform>Admin component to add
+you to this group.
+
 ### Error response from daemon: squash is only supported with experimental mode
 
 Fix: Run docker in experimental mode (yes, this is a hack):
