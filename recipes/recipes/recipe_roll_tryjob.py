@@ -81,7 +81,7 @@ def RunSteps(api, upstream_project, downstream_project):
   # If you are running this recipe locally and fail to access internal repos,
   # do "$ luci-auth login ...".
   api.luci_config.c.auth_token = (
-      api.service_account.default().get_access_token(lifetime_sec=180))
+      api.service_account.default().get_access_token())
 
   project_data = api.luci_config.get_projects()
 
