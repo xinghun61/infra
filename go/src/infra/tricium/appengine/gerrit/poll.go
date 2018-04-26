@@ -83,18 +83,20 @@ func (c byUpdatedTime) Less(i, j int) bool { return c[i].Updated.Time().Before(c
 // will check for existing active runs for a change before moving tasks further
 // along the pipeline.
 func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
-	sc, err := cp.GetServiceConfig(c)
+	projects, err := cp.GetAllProjectConfigs(c)
 	if err != nil {
 		return fmt.Errorf("failed to get service config: %v", err)
 	}
 	var ops []func() error
-	for _, pd := range sc.Projects {
-		triciumProject := pd.GetName()
-		details := pd.GetGerritDetails()
-		if details != nil {
-			ops = append(ops, func() error {
-				return pollProject(c, triciumProject, details, gerrit)
-			})
+
+	for name, pc := range projects {
+		name := name // Make a separate variable for use in the closure below
+		for _, repo := range pc.Repos {
+			if details := repo.GetGerritDetails(); details != nil {
+				ops = append(ops, func() error {
+					return pollProject(c, name, details, gerrit)
+				})
+			}
 		}
 	}
 	return common.RunInParallel(ops)

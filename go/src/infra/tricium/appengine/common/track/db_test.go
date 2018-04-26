@@ -52,6 +52,10 @@ func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*trici
 	return &tricium.ProjectConfig{}, nil
 }
 
+func (*mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*tricium.ProjectConfig, error) {
+	return nil, nil // not used in this test
+}
+
 func TestFetchRecentRequests(t *testing.T) {
 	Convey("Test Environment", t, func() {
 

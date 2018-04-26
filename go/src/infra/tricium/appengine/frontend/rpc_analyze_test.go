@@ -67,6 +67,13 @@ func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*trici
 	}, nil
 }
 
+func (*mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*tricium.ProjectConfig, error) {
+	// TODO(qyearsley): When Analyze is changed to use repo details from
+	// project configs, update this method to return the example repo
+	// details currently returned by GetServiceConfig.
+	return nil, nil // not used in this test
+}
+
 func TestAnalyze(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		tt := &trit.Testing{}

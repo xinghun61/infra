@@ -12,6 +12,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/config"
 	"go.chromium.org/luci/config/server/cfgclient"
 	"go.chromium.org/luci/config/server/cfgclient/textproto"
@@ -24,17 +25,18 @@ import (
 )
 
 // ProviderAPI supplies Tricium service and project configs.
+//
+// For of the functions below, the local dev server will use
+// locally checked in config files under "devcfg/".
 type ProviderAPI interface {
 	// GetServiceConfig loads the service config from luci-config.
-	//
-	// The Tricium dev server is used for a the local dev server together with
-	// local checked in config files under 'devcfg/'.
 	GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error)
 
-	// GetProjectConfig loads the project config for the provided project from luci-config.
-	//
-	// Local checked in files are used on the dev server.
+	// GetProjectConfig loads one project config for the provided project.
 	GetProjectConfig(c context.Context, project string) (*tricium.ProjectConfig, error)
+
+	// GetAllProjectConfigs fetches a map of project names to project configs.
+	GetAllProjectConfigs(c context.Context) (map[string]*tricium.ProjectConfig, error)
 }
 
 // LuciConfigServer supplies Tricium configs stored in luci-config.
@@ -46,12 +48,9 @@ type luciConfigServer struct {
 // GetServiceConfig implements the ProviderAPI.
 func (luciConfigServer) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
 	ret := &tricium.ServiceConfig{}
-	service := common.TriciumDevServer
-	if !appengine.IsDevAppServer() {
-		service = info.AppID(c)
-	}
-	if err := cfgclient.Get(c, cfgclient.AsService, config.Set(fmt.Sprintf("services/%s", service)),
-		"service.cfg", textproto.Message(ret), nil); err != nil {
+	cs := config.Set("services/" + serviceName(c))
+	if err := cfgclient.Get(c, cfgclient.AsService, cs, "service.cfg",
+		textproto.Message(ret), nil); err != nil {
 		return nil, fmt.Errorf("failed to get service config: %v", err)
 	}
 	return ret, nil
@@ -59,36 +58,61 @@ func (luciConfigServer) GetServiceConfig(c context.Context) (*tricium.ServiceCon
 
 // GetProjectConfig implements the ProviderAPI.
 func (luciConfigServer) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
-	service := common.TriciumDevServer
-	if !appengine.IsDevAppServer() {
-		service = info.AppID(c)
-	}
 	ret := &tricium.ProjectConfig{}
-	if err := cfgclient.Get(c, cfgclient.AsService, config.Set(fmt.Sprintf("projects/%s", p)),
-		fmt.Sprintf("%s.cfg", service), textproto.Message(ret), nil); err != nil {
+	cs := config.Set("projects/" + p)
+	if err := cfgclient.Get(c, cfgclient.AsService, cs, serviceName(c)+".cfg",
+		textproto.Message(ret), nil); err != nil {
 		return nil, fmt.Errorf("failed to get project config: %v", err)
 	}
 	return ret, nil
 }
 
-// MockProvider mocks the ProviderAPI interface.
-var MockProvider mockProvider
-
-type mockProvider struct {
+// GetAllProjectConfigs implements the ProviderAPI.
+func (luciConfigServer) GetAllProjectConfigs(c context.Context) (map[string]*tricium.ProjectConfig, error) {
+	var meta []*config.Meta
+	var configs []*tricium.ProjectConfig
+	if err := cfgclient.Projects(c, cfgclient.AsService, serviceName(c)+".cfg",
+		textproto.Slice(&configs), &meta); err != nil {
+		return nil, fmt.Errorf("failed to get all project configs: %v", err)
+	}
+	logging.Infof(c, "%d project configs fetched", len(configs))
+	if len(meta) != len(configs) {
+		return nil, fmt.Errorf("meta length (%d) doesn't match configs length", len(meta))
+	}
+	ret := make(map[string]*tricium.ProjectConfig, len(configs))
+	for i, cfg := range configs {
+		ret[meta[i].ConfigSet.Project()] = cfg
+	}
+	return ret, nil
 }
 
-// GetServiceConfig is part of the mock ProviderAPI interface.
+func serviceName(c context.Context) string {
+	if appengine.IsDevAppServer() {
+		return common.TriciumDevServer
+	}
+	return info.AppID(c)
+}
+
+// MockProvider mocks the ProviderAPI interface.
 //
-// Tests using the return value should implement their own mock.
+// Tests using the return values should implement their own mock.
+var MockProvider mockProvider
+
+type mockProvider struct{}
+
+// GetServiceConfig is part of the mock ProviderAPI interface.
 func (mockProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
 	return &tricium.ServiceConfig{}, nil
 }
 
 // GetProjectConfig is part of the mock ProviderAPI interface.
-//
-// Tests using the return value should implement their own mock.
 func (mockProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
 	return &tricium.ProjectConfig{}, nil
+}
+
+// GetAllProjectConfigs is part of the mock ProviderAPI interface.
+func (mockProvider) GetAllProjectConfigs(c context.Context) (map[string]*tricium.ProjectConfig, error) {
+	return map[string]*tricium.ProjectConfig{}, nil
 }
 
 // Workflow config entry for storing in datastore.

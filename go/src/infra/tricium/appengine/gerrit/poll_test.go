@@ -6,6 +6,7 @@ package gerrit
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -79,15 +80,20 @@ func (m *mockPollRestAPI) addChanges(host, project string, c []gr.ChangeInfo) {
 }
 
 type mockConfigProvider struct {
-	Projects []*tricium.ProjectDetails
+	Projects map[string]*tricium.ProjectConfig
 }
 
-func (m *mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
-	return &tricium.ServiceConfig{Projects: m.Projects}, nil
+func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
+	return nil, nil // not used by the poller
 }
 
 func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
 	return nil, nil // not used by the poller
+}
+
+// GetAllProjectConfigs implements the ProviderAPI.
+func (m *mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*tricium.ProjectConfig, error) {
+	return m.Projects, nil
 }
 
 func numEnqueuedAnalyzeRequests(ctx context.Context) int {
@@ -107,34 +113,43 @@ func TestPollBasicBehavior(t *testing.T) {
 		})
 
 		cp := &mockConfigProvider{
-			Projects: []*tricium.ProjectDetails{
-				{
+			Projects: map[string]*tricium.ProjectConfig{
+				"playground": {
 					Name: "playground",
-					GerritDetails: &tricium.GerritDetails{
-						Host:    host,
-						Project: "project/tricium-gerrit",
+					Repos: []*tricium.RepoDetails{
+						{
+							GerritDetails: &tricium.GerritDetails{
+								Host:    host,
+								Project: "project/tricium-gerrit",
+							},
+						},
 					},
 				},
-				{
+				"infra": {
 					Name: "infra",
-					GerritDetails: &tricium.GerritDetails{
-						Host:    host,
-						Project: "infra/infra",
+					Repos: []*tricium.RepoDetails{
+						{
+							GerritDetails: &tricium.GerritDetails{
+								Host:    host,
+								Project: "infra/infra",
+							},
+						},
 					},
 				},
-				{
+				"non-gerrit": {
 					Name: "non-gerrit",
 				},
 			},
 		}
-		sc, err := cp.GetServiceConfig(ctx)
+		projects, err := cp.GetAllProjectConfigs(ctx)
 		So(err, ShouldBeNil)
 
 		var gerritProjects []*tricium.GerritDetails
-		for _, pd := range sc.Projects {
-			gd := pd.GetGerritDetails()
-			if gd != nil {
-				gerritProjects = append(gerritProjects, gd)
+		for _, pc := range projects {
+			for _, repo := range pc.Repos {
+				if gd := repo.GetGerritDetails(); gd != nil {
+					gerritProjects = append(gerritProjects, gd)
+				}
 			}
 		}
 		So(len(gerritProjects), ShouldEqual, 2)
@@ -230,6 +245,19 @@ func TestPollBasicBehavior(t *testing.T) {
 			})
 			Convey("Enqueues analyze requests", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, len(gerritProjects))
+				tasks := tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]
+				projects := make([]string, len(tasks))
+				for _, task := range tasks {
+					//So(len(projects), ShouldEqual, i)
+					ar := &tricium.AnalyzeRequest{}
+					So(proto.Unmarshal(task.Payload, ar), ShouldBeNil)
+					projects = append(projects, ar.Project)
+				}
+				// TODO(qyearsley): Find out why there are two empty analyze requests
+				// with null projects added first.
+				sort.Strings(projects)
+				So(projects, ShouldResemble, []string{"", "", "infra", "playground"})
+
 			})
 			Convey("Adds change tracking entities", func() {
 				for _, gd := range gerritProjects {
@@ -381,40 +409,54 @@ func TestPollWhitelistBehavior(t *testing.T) {
 		})
 
 		cp := &mockConfigProvider{
-			Projects: []*tricium.ProjectDetails{
-				{
+			Projects: map[string]*tricium.ProjectConfig{
+				noWhitelistProject: {
 					Name: noWhitelistProject,
-					GerritDetails: &tricium.GerritDetails{
-						Host:    host,
-						Project: noWhitelistProject,
+					Repos: []*tricium.RepoDetails{
+						{
+							GerritDetails: &tricium.GerritDetails{
+								Host:    host,
+								Project: noWhitelistProject,
+							},
+						},
 					},
 				},
-				{
+				whitelistProject: {
 					Name: whitelistProject,
-					GerritDetails: &tricium.GerritDetails{
-						Host:             host,
-						Project:          whitelistProject,
-						WhitelistedGroup: []string{whitelistGroup},
+					Repos: []*tricium.RepoDetails{
+						{
+							GerritDetails: &tricium.GerritDetails{
+								Host:             host,
+								Project:          whitelistProject,
+								WhitelistedGroup: []string{whitelistGroup},
+							},
+						},
 					},
 				},
-				{
+				"star-project": {
 					Name: "star-project",
-					GerritDetails: &tricium.GerritDetails{
-						Host:             host,
-						Project:          "star-project",
-						WhitelistedGroup: []string{"*"},
+					Repos: []*tricium.RepoDetails{
+						{
+							GerritDetails: &tricium.GerritDetails{
+								Host:             host,
+								Project:          "star-project",
+								WhitelistedGroup: []string{"*"},
+							},
+						},
 					},
 				},
 			},
 		}
-		sc, err := cp.GetServiceConfig(ctx)
+
+		projects, err := cp.GetAllProjectConfigs(ctx)
 		So(err, ShouldBeNil)
 
 		var gerritProjects []*tricium.GerritDetails
-		for _, pd := range sc.Projects {
-			gd := pd.GetGerritDetails()
-			if gd != nil {
-				gerritProjects = append(gerritProjects, gd)
+		for _, pc := range projects {
+			for _, repo := range pc.Repos {
+				if gd := repo.GetGerritDetails(); gd != nil {
+					gerritProjects = append(gerritProjects, gd)
+				}
 			}
 		}
 
