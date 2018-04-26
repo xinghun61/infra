@@ -4,7 +4,7 @@
       "luci-auth",
       "token",
       "-lifetime",
-      "600s"
+      "180s"
     ],
     "name": "get access token for default account",
     "stdout": "/path/to/tmp/"
