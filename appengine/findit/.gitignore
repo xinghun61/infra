@@ -5,7 +5,8 @@
 util_scripts/tmp
 
 # Polymer
-third_party/bower_components
+# Ignore node_modules to make uploaded server code is smaller.
+node_modules
 
 # Project files
 .idea/*
