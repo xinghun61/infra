@@ -6,9 +6,15 @@ import logging
 
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
+from services import swarmed_test_util
+from waterfall import extractor_util
 from waterfall.flake import flake_constants
+
+_FINDIT_HTTP_CLIENT = FinditHttpClient()
 
 
 def GenerateSuspectedRanges(suspected_revisions, revision_range):
@@ -61,6 +67,36 @@ def GetSuspectedRevisions(git_blame, revision_range):
       set(region.revision for region in git_blame) & set(revision_range))
 
 
+def IdentifySuspectedRevisions(analysis):
+  """Identifies revisions to have introduced flakiness.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The MasterFlakeAnalysis entity to perform
+        heuristic analysis on.
+
+  Returns:
+    (list): A list of revisions in chronological order suspected to have
+        introduced test flakiness.
+  """
+  suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
+  assert suspected_data_point
+
+  test_location = swarmed_test_util.GetTestLocation(
+      suspected_data_point.GetSwarmingTaskId(), analysis.test_name)
+  if not test_location:
+    analysis.LogWarning('Failed to get test location. Heuristic results will '
+                        'not be available.')
+    return []
+
+  normalized_file_path = extractor_util.NormalizeFilePath(test_location.file)
+  git_repo = CachedGitilesRepository(
+      _FINDIT_HTTP_CLIENT, flake_constants.CHROMIUM_GIT_REPOSITORY_URL)
+  git_blame = git_repo.GetBlame(normalized_file_path,
+                                suspected_data_point.git_hash)
+
+  return GetSuspectedRevisions(git_blame, suspected_data_point.blame_list)
+
+
 def ListCommitPositionsFromSuspectedRanges(revisions_to_commits,
                                            suspected_ranges):
   """Generates an ordered list of commit positions (ints) from suspected_ranges.
@@ -97,10 +133,22 @@ def ListCommitPositionsFromSuspectedRanges(revisions_to_commits,
   return sorted(list(commit_positions))
 
 
+def RunHeuristicAnalysis(analysis):
+  """Performs heuristic analysis on a MasterFlakeAnalysis.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis to run heuristic results on.
+        Results are saved to the analysis itself as a list of FlakeCulprit
+        urlsafe keys.
+  """
+  suspected_revisions = IdentifySuspectedRevisions(analysis)
+  SaveFlakeCulpritsForSuspectedRevisions(analysis.key.urlsafe(),
+                                         suspected_revisions)
+
+
 # pylint: disable=E1120
 @ndb.transactional(xg=True)
-def SaveFlakeCulpritsForSuspectedRevisions(http_client,
-                                           analysis_urlsafe_key,
+def SaveFlakeCulpritsForSuspectedRevisions(analysis_urlsafe_key,
                                            suspected_revisions,
                                            repo_name='chromium'):
   """Saves each suspect to the datastore as a FlakeCulprit.
@@ -120,8 +168,6 @@ def SaveFlakeCulpritsForSuspectedRevisions(http_client,
   suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
   assert suspected_build_point
 
-  new_suspects_identified = False
-
   for revision in suspected_revisions:
     commit_position = suspected_build_point.GetCommitPosition(revision)
     suspect = (
@@ -130,7 +176,7 @@ def SaveFlakeCulpritsForSuspectedRevisions(http_client,
 
     if suspect.url is None:
       git_repo = CachedGitilesRepository(
-          http_client, flake_constants.CHROMIUM_GIT_REPOSITORY_URL)
+          _FINDIT_HTTP_CLIENT, flake_constants.CHROMIUM_GIT_REPOSITORY_URL)
       change_log = git_repo.GetChangeLog(revision)
 
       if change_log:
@@ -143,8 +189,7 @@ def SaveFlakeCulpritsForSuspectedRevisions(http_client,
     # Save each culprit to the analysis' list of heuristic culprits.
     suspect_urlsafe_key = suspect.key.urlsafe()
     if suspect_urlsafe_key not in analysis.suspect_urlsafe_keys:
-      new_suspects_identified = True
       analysis.suspect_urlsafe_keys.append(suspect_urlsafe_key)
 
-  if new_suspects_identified:
-    analysis.put()
+  analysis.heuristic_analysis_status = analysis_status.COMPLETED
+  analysis.put()

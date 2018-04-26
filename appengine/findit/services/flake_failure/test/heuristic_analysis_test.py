@@ -15,6 +15,7 @@ from libs.gitiles.change_log import ChangeLog
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from services import swarmed_test_util
 from services.flake_failure import heuristic_analysis
 from waterfall.test import wf_testcase
 
@@ -123,7 +124,7 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
         code_review_url='url')
 
     heuristic_analysis.SaveFlakeCulpritsForSuspectedRevisions(
-        None, analysis.key.urlsafe(), suspected_revisions)
+        analysis.key.urlsafe(), suspected_revisions)
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
@@ -156,7 +157,7 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
 
     mocked_fn.return_value = None
     heuristic_analysis.SaveFlakeCulpritsForSuspectedRevisions(
-        None, analysis.key.urlsafe(), suspected_revisions)
+        analysis.key.urlsafe(), suspected_revisions)
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
@@ -195,9 +196,56 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
 
     mocked_fn.return_value = None
     heuristic_analysis.SaveFlakeCulpritsForSuspectedRevisions(
-        None, analysis.key.urlsafe(), suspected_revisions)
+        analysis.key.urlsafe(), suspected_revisions)
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
     self.assertIn(suspect.key.urlsafe(), analysis.suspect_urlsafe_keys)
+
+  @mock.patch.object(swarmed_test_util, 'GetTestLocation')
+  @mock.patch.object(CachedGitilesRepository, 'GetBlame')
+  def testIdentifySuspectedRanges(self, mock_blame, mock_test_location):
+    mock_blame.return_value = [Blame('r1000', 'a/b.cc')]
+    mock_test_location.return_value = TestLocation(file='a/b.cc', line=1)
+    suspected_revision = 'r1000'
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=123, git_hash='r1000', blame_list=[suspected_revision])
+    ]
+    analysis.suspected_flake_build_number = 123
+    analysis.Save()
+
+    self.assertEqual([suspected_revision],
+                     heuristic_analysis.IdentifySuspectedRevisions(analysis))
+
+  @mock.patch.object(swarmed_test_util, 'GetTestLocation', return_value=None)
+  def testIdentifysuspectedRangesNoTestLocation(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(build_number=123, git_hash='r1000', blame_list=['r1'])
+    ]
+    analysis.suspected_flake_build_number = 123
+    analysis.Save()
+
+    self.assertEqual([],
+                     heuristic_analysis.IdentifySuspectedRevisions(analysis))
+
+  @mock.patch.object(heuristic_analysis, 'IdentifySuspectedRevisions')
+  @mock.patch.object(heuristic_analysis,
+                     'SaveFlakeCulpritsForSuspectedRevisions')
+  def testRunHeuristicAnalysis(self, mock_save, mock_revisions):
+    mock_revisions.return_value = ['r1', 'r2']
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 321, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(pass_rate=0.5, commit_position=1000, build_number=100)
+    ]
+    analysis.suspected_flake_build_id = '100'
+    analysis.Save()
+
+    heuristic_analysis.RunHeuristicAnalysis(analysis)
+
+    mock_revisions.assert_called_once_with(analysis)
+    mock_save.assert_called_once_with(analysis.key.urlsafe(), ['r1', 'r2'])

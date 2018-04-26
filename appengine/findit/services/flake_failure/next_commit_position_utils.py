@@ -2,6 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from google.appengine.ext import ndb
+
+from services.flake_failure import pass_rate_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -59,3 +62,63 @@ def GetNextCommitPositionFromBuildRange(analysis, build_range,
   # Both the earlier and later builds have already been analyzed.
   # Use the requested commit position directly.
   return requested_commit_position
+
+
+def GetNextCommitPositionFromHeuristicResults(analysis_urlsafe_key):
+  """Returns a commit position based on heuristic results.
+
+    Checks an analysis for suspect_urlsafe_keys, which each correspond to a
+    commit position. This function will consider both these commit positions
+    and their 1-previous positions, depending on what has already been run and
+    whether or not they are already flaky. Each suspect_urlsafe_key is expected
+    to be in chronological order.
+
+  Args:
+    analysis_urlsafe_key (str): The url-safe key to a MasterFlakeAnalsyis.
+
+  Returns:
+    (int): A suggested commit position based on heuristic results, or None if
+        not applicable.
+  """
+  analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
+  assert analysis
+
+  suspect_urlsafe_keys = analysis.suspect_urlsafe_keys
+
+  if not suspect_urlsafe_keys:
+    # No heuristic results.
+    return None
+
+  # Suspects are expected to be in chronological order.
+  for suspect_urlsafe_key in suspect_urlsafe_keys:
+    # Go through each suspect to see if they have already been analyzed.
+    # For each suspect, check the previous commit position prior to it to verify
+    # it is stable, and the suspect itself to verify it is flaky.
+    suspect = ndb.Key(urlsafe=suspect_urlsafe_key).get()
+    assert suspect
+    assert suspect.commit_position is not None
+
+    previous_commit_position_data_point = (
+        analysis.FindMatchingDataPointWithCommitPosition(
+            suspect.commit_position - 1))
+
+    if not previous_commit_position_data_point:
+      # Return the commit position right before the suspect, for the caller to
+      # verify is stable.
+      return suspect.commit_position - 1
+
+    if not pass_rate_util.IsStableDefaultThresholds(
+        previous_commit_position_data_point.pass_rate):
+      # The test is already confirmed to be flaky before any of the heuristic
+      # results.
+      return None
+
+    suspected_data_point = analysis.FindMatchingDataPointWithCommitPosition(
+        suspect.commit_position)
+
+    # Suspect is not yet run. Return it next.
+    if suspected_data_point is None:
+      return suspect.commit_position
+
+  # Heuristic results and their 1-previous commit positions have all been run.
+  return None

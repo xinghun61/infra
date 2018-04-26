@@ -8,9 +8,9 @@ from dto.int_range import IntRange
 from gae_libs.pipelines import SynchronousPipeline
 from libs.structured_object import StructuredObject
 from services import step_util
+from services.flake_failure import heuristic_analysis
 from services.flake_failure import lookback_algorithm
 from services.flake_failure import next_commit_position_utils
-from waterfall import build_util
 
 
 class NextCommitPositionInput(StructuredObject):
@@ -78,6 +78,17 @@ class NextCommitPositionPipeline(SynchronousPipeline):
       return NextCommitPositionOutput(
           next_commit_position=None, culprit_commit_position=None)
 
+    # Try the analysis' heuristic results first, if any.
+    next_commit_position = (
+        next_commit_position_utils.GetNextCommitPositionFromHeuristicResults(
+            analysis_urlsafe_key))
+
+    if next_commit_position is not None:
+      # Heuristic results are available and should be tried first.
+      return NextCommitPositionOutput(
+          next_commit_position=next_commit_position,
+          culprit_commit_position=None)
+
     # Round off the next calculated commit position to the nearest builds on
     # both sides.
     # Use the detected build_number as the upper bound.
@@ -89,11 +100,21 @@ class NextCommitPositionPipeline(SynchronousPipeline):
     # Update the analysis' suspected build cycle if identified.
     analysis.UpdateSuspectedBuild(lower_bound_build, upper_bound_build)
 
-    # Run heuristic analysis if eligible and not yet already done.
-    if analysis.CanRunHeuristicAnalysis():  # pragma: no cover.
-      # TODO(crbug.com/798228): Run heuristic analysis and consider results
-      # first before falling back to the lookback algorithm's suggestions.
-      pass
+    # When identifying the neighboring builds of the requested commit position,
+    # heuristic analysis may become eligible if the neighboring builds are
+    # adjacent to one another.
+    if analysis.CanRunHeuristicAnalysis():
+      # Run heuristic analysis if eligible and not yet already done.
+      heuristic_analysis.RunHeuristicAnalysis(analysis)
+
+      # Try the newly computed heuristic results if any were identified.
+      next_commit_position = (
+          next_commit_position_utils.GetNextCommitPositionFromHeuristicResults(
+              analysis_urlsafe_key))
+      if next_commit_position is not None:
+        return NextCommitPositionOutput(
+            next_commit_position=next_commit_position,
+            culprit_commit_position=None)
 
     # Pick the commit position of the returned neighboring builds that has not
     # yet been analyzed if possible, or the commit position itself when not.

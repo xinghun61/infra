@@ -4,7 +4,6 @@
 
 import base64
 import logging
-import math
 
 from google.appengine.ext import ndb
 
@@ -18,8 +17,6 @@ from model import triage_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.base_triaged_model import TriagedModel
-from model.flake.flake_swarming_task import FlakeSwarmingTaskData
-from waterfall.build_info import BuildInfo
 
 
 class DataPoint(ndb.Model):
@@ -305,6 +302,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     self.last_attempted_build_number = None
     self.last_attempted_swarming_task_id = None
     self.last_attempted_revision = None
+    self.heuristic_analysis_status = None
 
     # Reset booleans that track the actions taken by this analysis.
     self.has_filed_bug = False
@@ -520,9 +518,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   #     'upper_flake_threshold': 0.98
   # }
   algorithm_parameters = ndb.JsonProperty(indexed=False)
-
-  # The ID of the build flakiness was suspected to have been introduced in.
-  suspected_flake_build_id = ndb.StringProperty(indexed=False)
 
   # The suspected build number to have introduced the flakiness.
   # TODO(crbug.com/799324): Remove once build numbers are deprecated in LUCI.
