@@ -34,10 +34,10 @@ def RunSteps(api, project_under_test, auth_with_account):
     api.luci_config.c.auth_token = api.puppet_service_account.get_access_token(
         auth_with_account)
 
-  root_dir = api.path['start_dir']
-  cache_dir = root_dir.join('_cache_dir')
-
-  c = api.gclient.make_config(CACHE_DIR=cache_dir)
+  safe_project_name = ''.join(
+      c if c.isalnum() else '_' for c in project_under_test)
+  root_dir = api.path['cache'].join('builder', safe_project_name)
+  c = api.gclient.make_config()
   soln = c.solutions.add()
   soln.name = project_under_test
   soln.url = api.luci_config.get_project_metadata(

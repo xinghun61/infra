@@ -34,13 +34,13 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[START_DIR]/_cache_dir'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://repo.repo/build'}]",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'build', 'url': 'https://repo.repo/build'}]",
       "--patch_root",
       "build",
       "--revision_mapping_file",
       "{}",
       "--git-cache-dir",
-      "[START_DIR]/_cache_dir",
+      "[CACHE]/git",
       "--cleanup-dir",
       "[CLEANUP]/bot_update",
       "--output_json",
@@ -48,6 +48,7 @@
       "--revision",
       "build@HEAD"
     ],
+    "cwd": "[CACHE]/builder/build",
     "env_prefixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -94,7 +95,7 @@
   },
   {
     "cmd": [
-      "[START_DIR]/build/foobar/recipes.py",
+      "[CACHE]/builder/build/build/foobar/recipes.py",
       "--use-bootstrap",
       "test",
       "run"
