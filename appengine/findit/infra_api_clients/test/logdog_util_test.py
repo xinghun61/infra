@@ -184,7 +184,32 @@ class LogDogUtilTest(unittest.TestCase):
                                                    self.http_client)
     self.assertIsNone(step)
 
-  def testGetLogLocationFromBuildbucketBuildSwarming(self):
+  def testGetQueryParametersForAnnotationForBuildbotBuild(self):
+    log_location = ('logdog://logs.chromium.org/chromium/bb/m/b/1/+/recipes/'
+                   'annotations')
+    host, project, path = logdog_util._GetQueryParametersForAnnotation(
+        log_location)
+    self.assertEqual('logs.chromium.org', host)
+    self.assertEqual('chromium', project)
+    self.assertEqual('bb/m/b/1/+/recipes/annotations', path)
+
+  def testGetQueryParametersForAnnotationForLUCIBuild(self):
+    log_location = ('logdog://logs.chromium.org/chromium/buildbucket/cr-bui'
+                   'ldbucket.appspot.com/8948240770002521488/+/annotations')
+    host, project, path = logdog_util._GetQueryParametersForAnnotation(
+        log_location)
+    self.assertEqual('logs.chromium.org', host)
+    self.assertEqual('chromium', project)
+    self.assertEqual('buildbucket/cr-buildbucket.appspot.com/8948240'
+                     '770002521488/+/annotations', path)
+
+  def testGetQueryParametersForAnnotationNone(self):
+    host, project, path = logdog_util._GetQueryParametersForAnnotation(None)
+    self.assertIsNone(host)
+    self.assertIsNone(project)
+    self.assertIsNone(path)
+
+  def testGetLogLocationFromBuildbucketBuildFromTag(self):
     build = {
         'tags': [
             'build_type:test',
@@ -199,34 +224,12 @@ class LogDogUtilTest(unittest.TestCase):
                 }
             }),
     }
-    host, project, path = logdog_util._GetLogLocationFromBuildbucketBuild(build)
-    self.assertEqual('logdog.com', host)
-    self.assertEqual('project', project)
-    self.assertEqual('path', path)
-
-  def testGetLogLocationFromBuildbucketBuildBuildbot(self):
-    build = {
-        'result_details_json':
-            json.dumps({
-                'properties': {
-                    'log_location': 'logdog://logdog.com/project/path'
-                }
-            }),
-    }
-    host, project, path = logdog_util._GetLogLocationFromBuildbucketBuild(build)
-    self.assertEqual('logdog.com', host)
-    self.assertEqual('project', project)
-    self.assertEqual('path', path)
-
-  def testGetLogLocationFromBuildbucketBuildNone(self):
-    host, project, path = logdog_util._GetLogLocationFromBuildbucketBuild({})
-    self.assertIsNone(host)
-    self.assertIsNone(project)
-    self.assertIsNone(path)
+    self.assertEqual('logdog://logdog.com/project/path',
+                     logdog_util.GetLogLocationFromBuildbucketBuild(build))
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   @mock.patch.object(logdog_util, '_GetLog')
-  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild')
+  @mock.patch.object(logdog_util, '_GetQueryParametersForAnnotation')
   def testGetStepLogForBuild(self, mock_location, mock_log, mock_data):
     mock_location.return_value = 'host', 'project', 'path'
     mock_data.return_value = (200, self._GenerateTailRes())
@@ -237,9 +240,8 @@ class LogDogUtilTest(unittest.TestCase):
   @mock.patch.object(logdog_util, '_GetLog')
   def testGetStepLogLegacy(self, mock_log, mock_data):
     mock_data.return_value = (200, self._GenerateTailRes())
-    logdog_util.GetStepLogLegacy(self.master_name, self.builder_name,
-                                 self.build_number, 'step', 'stdout',
-                                 self.http_client)
+    logdog_util.GetStepLogLegacy('logdog://logdog.com/project/path', 'step',
+                                 'stdout', self.http_client)
     self.assertTrue(mock_log.called)
 
   def testGetLogNoAnnotations(self):

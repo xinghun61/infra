@@ -21,8 +21,8 @@ class WfBuild(BaseBuildModel):
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover
-    return WfBuild(key=WfBuild._CreateKey(master_name, builder_name,
-                                          build_number))
+    return WfBuild(
+        key=WfBuild._CreateKey(master_name, builder_name, build_number))
 
   @staticmethod
   def Get(master_name, builder_name, build_number):  # pragma: no cover
@@ -34,3 +34,4 @@ class WfBuild(BaseBuildModel):
   start_time = ndb.DateTimeProperty(indexed=False)
   completed = ndb.BooleanProperty(default=False, indexed=False)
   result = ndb.IntegerProperty(indexed=False)
+  log_location = ndb.StringProperty(indexed=False)

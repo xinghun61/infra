@@ -22,7 +22,6 @@ sys.path.insert(0, third_party)
 google.__path__.insert(0, os.path.join(third_party, 'google'))
 from logdog import annotations_pb2
 
-_BUILDBOT_LOGDOG_REQUEST_PATH = 'bb/%s/%s/%s/+/%s'
 _LOGDOG_ENDPOINT = 'https://%s/prpc/logdog.Logs'
 _LOGDOG_TAIL_ENDPOINT = '%s/Tail' % _LOGDOG_ENDPOINT
 _LOGDOG_GET_ENDPOINT = '%s/Get' % _LOGDOG_ENDPOINT
@@ -157,28 +156,37 @@ def _GetStreamForStep(step_name, data, log_type='stdout'):
   return None
 
 
-def _GetLogLocationFromBuildbucketBuild(buildbucket_build):
+def GetLogLocationFromBuildbucketBuild(buildbucket_build):
   """Gets the path to the logdog annotations.
 
   Args:
     buildbucket_build (dict): The build as retrieved by the buildbucket client.
   Returns:
+    log_location of the build.
+  """
+  # The log location is a property on buildbot builds and a tag on swarming
+  # builds.
+  # First check the tags.
+  for tag in buildbucket_build.get('tags', []):
+    if tag.startswith('swarming_tag:log_location:logdog:'):
+      return tag.split(':', 2)[2]
+
+  # Then try to get it from properties.
+  result_details = json.loads(
+      buildbucket_build.get('result_details_json', '{}'))
+  return result_details.get('properties', {}).get('log_location')
+
+
+def _GetQueryParametersForAnnotation(log_location):
+  """Gets the path to the logdog annotations.
+
+  Args:
+    log_location (str): The log location for the build.
+  Returns:
     The (host, project, path) triad that identifies the location of the
     annotations proto.
   """
   host = project = path = None
-  # The log location is a property on buildbot builds and a tag on swarming
-  # builds.
-  result_details = json.loads(
-      buildbucket_build.get('result_details_json', '{}'))
-  # First try to get it from properties,
-  log_location = result_details.get('properties', {}).get('log_location')
-
-  # then check the tags.
-  if not log_location:
-    for tag in buildbucket_build.get('tags', []):
-      if tag.startswith('swarming_tag:log_location:logdog:'):
-        log_location = tag.split(':', 2)[2]
   if log_location:
     # logdog://luci-logdog.appspot.com/chromium/...
     _logdog, _, host, project, path = log_location.split('/', 4)
@@ -202,17 +210,13 @@ def _GetLog(annotations, step_name, log_type, http_client):
 
 
 def GetStepLogForBuild(buildbucket_build, step_name, log_type, http_client):
-  host, project, path = _GetLogLocationFromBuildbucketBuild(buildbucket_build)
+  log_location = GetLogLocationFromBuildbucketBuild(buildbucket_build)
+  host, project, path = _GetQueryParametersForAnnotation(log_location)
   annotations = _GetAnnotationsProtoForPath(host, project, path, http_client)
   return _GetLog(annotations, step_name, log_type, http_client)
 
 
-def GetStepLogLegacy(master_name, builder_name, build_number, step_name,
-                     log_type, http_client):
-  host = 'luci-logdog.appspot.com'
-  project = 'chromium'
-  path = _BUILDBOT_LOGDOG_REQUEST_PATH % (master_name,
-                                          _ProcessStringForLogDog(builder_name),
-                                          build_number, 'recipes/annotations')
+def GetStepLogLegacy(log_location, step_name, log_type, http_client):
+  host, project, path = _GetQueryParametersForAnnotation(log_location)
   annotations = _GetAnnotationsProtoForPath(host, project, path, http_client)
   return _GetLog(annotations, step_name, log_type, http_client)

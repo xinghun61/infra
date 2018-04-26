@@ -81,7 +81,9 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
     self.assertFalse(build_util._BuildDataNeedUpdating(build))
 
-  def testGetBuildDataNotDownloadAgain(self):
+  @mock.patch.object(
+      build_util, '_GetLogLocationForBuild', return_value='location')
+  def testGetBuildDataNotDownloadAgain(self, mock_location):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -97,12 +99,15 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     expected_build_data = 'dummy'
 
     self.assertEqual(expected_build_data, build.data)
+    mock_location.assert_has_called_once_with(expected_build_data)
 
+  @mock.patch.object(
+      build_util, '_GetLogLocationForBuild', return_value='location')
   @mock.patch.object(
       buildbot,
       'GetBuildDataFromMilo',
       return_value=(200, 'Test get build data from build master'))
-  def testGetBuildDataFromMilo(self, _):
+  def testGetBuildDataFromMilo(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -115,10 +120,12 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_build_data, build.data)
 
   @mock.patch.object(
+      build_util, '_GetLogLocationForBuild', return_value='location')
+  @mock.patch.object(
       buildbot,
       'GetBuildDataFromMilo',
       return_value=(200, 'Test get build data from milo'))
-  def testDownloadBuildDataSourceFromBM(self, _):
+  def testDownloadBuildDataSourceFromBM(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -130,10 +137,12 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(build.data, 'Test get build data from milo')
 
   @mock.patch.object(
+      build_util, '_GetLogLocationForBuild', return_value='location')
+  @mock.patch.object(
       buildbot,
       'GetBuildDataFromMilo',
       return_value=(200, 'Test get build data from milo updated'))
-  def testDownloadBuildDataSourceFromBMUpateBuildData(self, _):
+  def testDownloadBuildDataSourceFromBMUpateBuildData(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -388,3 +397,77 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
       self.assertEqual([],
                        self._PreviousBuilds(master_name, builder_name,
                                             build_number))
+
+  def testGetLogLocationForBuildNoneData(self):
+    self.assertIsNone(build_util._GetLogLocationForBuild(None))
+
+  def testGetLogLocationForBuildNoUsefulInfo(self):
+    data_json = {
+        'properties': [[
+            'others', 'other_property', 'Annotation(LogDog Bootstrap)'
+        ]]
+    }
+    self.assertIsNone(build_util._GetLogLocationForBuild(json.dumps(data_json)))
+
+  def testGetLogLocationForBuildForBuildbotBuild(self):
+    location = ('logdog://logs.chromium.org/chromium/bb/m/b/1/+/recipes/'
+               'annotations')
+    data_json = {
+        'properties': [[
+            'log_location', location, 'Annotation(LogDog Bootstrap)'
+        ]]
+    }
+    self.assertEqual(location,
+                     build_util._GetLogLocationForBuild(json.dumps(data_json)))
+
+  @mock.patch.object(
+      buildbucket_client, 'GetTryJobs', return_value=[('error', None)])
+  def testGetLogLocationForBuildForLUCIBuildNoBuildbucketBuild(self, _):
+    data_json = {
+        'properties': [[
+            'buildbucket', {
+                'hostname': 'cr-buildbucket.appspot.com',
+                'build': {
+                    'created_ts':
+                        1524589900472560,
+                    'tags': ['builder:Linux Builder (dbg)',],
+                    'bucket':
+                        'luci.chromium.ci',
+                    'created_by':
+                        'user:luci-scheduler@appspot.gserviceaccount.com',
+                    'project':
+                        'chromium',
+                    'id':
+                        '8948345336480880560'
+                }
+            }, 'setup_build'
+        ]]
+    }
+
+    self.assertIsNone(build_util._GetLogLocationForBuild(json.dumps(data_json)))
+
+  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
+  def testGetLogLocationForBuildForLUCIBuild(self, _):
+    data_json = {
+        'properties': [[
+            'buildbucket', {
+                'hostname': 'cr-buildbucket.appspot.com',
+                'build': {
+                    'created_ts':
+                        1524589900472560,
+                    'tags': ['builder:Linux Builder (dbg)',],
+                    'bucket':
+                        'luci.chromium.ci',
+                    'created_by':
+                        'user:luci-scheduler@appspot.gserviceaccount.com',
+                    'project':
+                        'chromium',
+                    'id':
+                        '8948345336480880560'
+                }
+            }, 'setup_build'
+        ]]
+    }
+
+    self.assertEqual('logdog://host/project/path',
+                     build_util._GetLogLocationForBuild(json.dumps(data_json)))

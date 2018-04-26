@@ -24,6 +24,44 @@ def _BuildDataNeedUpdating(build):
       (time_util.GetUTCNow() - build.last_crawled_time).total_seconds() >= 300))
 
 
+def _GetLogLocationForBuild(build_data):
+  """Gets log location for a build.
+
+  For a LUCI build, we can get buildbucket_id of the build from buildbucket
+  property and then get log location from buildbucket API.
+
+  For a buildbot build, we can get log location directly from log_location
+  property.
+
+  Each property would look like a list like:
+    [property_name, property_content, annotation]
+  """
+  if not build_data:
+    return None
+
+  data_json = json.loads(build_data)
+  properties = data_json.get('properties', [])
+  buildbucket = None
+  for property in properties:
+    if property[0] == 'log_location':
+      return property[1]
+
+    if property[0] == 'buildbucket':
+      buildbucket = property[1]
+
+  if not isinstance(buildbucket, dict):
+    return None
+
+  buildbucket_id = buildbucket.get('build', {}).get('id')
+  error, build = buildbucket_client.GetTryJobs([buildbucket_id])[0]
+  if error:
+    logging.exception(
+        'Error retrieving buildbucket build id: %s' % buildbucket_id)
+    return None
+
+  return logdog_util.GetLogLocationFromBuildbucketBuild(build.response)
+
+
 def DownloadBuildData(master_name, builder_name, build_number):
   """Downloads build data and returns a WfBuild instance."""
   build = WfBuild.Get(master_name, builder_name, build_number)
@@ -37,6 +75,7 @@ def DownloadBuildData(master_name, builder_name, build_number):
     status_code, build.data = buildbot.GetBuildDataFromMilo(
         master_name, builder_name, build_number, HTTP_CLIENT_NO_404_ERROR)
     build.last_crawled_time = time_util.GetUTCNow()
+    build.log_location = _GetLogLocationForBuild(build.data)
     build.put()
 
   return status_code, build
@@ -206,8 +245,10 @@ def GetWaterfallBuildStepLog(master_name,
                              log_type='stdout'):
   """Returns sepcific log of the specified step."""
 
-  data = logdog_util.GetStepLogLegacy(master_name, builder_name, build_number,
-                                      full_step_name, log_type, http_client)
+  _, build = DownloadBuildData(master_name, builder_name, build_number)
+
+  data = logdog_util.GetStepLogLegacy(build.log_location, full_step_name,
+                                      log_type, http_client)
 
   return _ReturnStepLog(data, log_type)
 
