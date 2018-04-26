@@ -322,6 +322,7 @@ SPECS = {s.spec.tag: s for s in (
         'windows-x64',
       ],
   ),
+  SourceOrPrebuilt('MarkupSafe', '1.0', packaged=()),
   MySQLPython('1.2.5',
       only_plat=[
         'manylinux-x86', 'manylinux-x64',
@@ -401,6 +402,7 @@ SPECS = {s.spec.tag: s for s in (
   UniversalSource('inotify_simple', '1.1.7'),
   Universal('ipaddress', '1.0.18', pyversions=['py2']),
   Universal('isort', '4.3.4'),
+  Universal('Jinja2', '2.10'),
   Universal('json5', '0.6.0'),
   Universal('mccabe', '0.6.1'),
   Universal('mock', '2.0.0'),
