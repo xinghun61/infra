@@ -85,7 +85,9 @@ SPECS = {s.spec.tag: s for s in (
       ],
   ),
   SourceOrPrebuilt('coverage', '4.3.4'),
-  SourceOrPrebuilt('coverage', '4.5.1'),
+  SourceOrPrebuilt('coverage', '4.5.1',
+      skip_plat=['mac-x64'],
+  ),
   SourceOrPrebuilt('cffi', '1.10.0',
     arch_map={
       'mac-x64': 'macosx_10_6_intel',
@@ -143,16 +145,6 @@ SPECS = {s.spec.tag: s for s in (
         ]),
       },
       packaged=['windows-x86', 'windows-x64'],
-  ),
-
-  SourceOrPrebuilt('PyNaCl', '1.2.1',
-      packaged=[
-        'mac-x64',
-        'manylinux-x86',
-        'manylinux-x64',
-        'windows-x86',
-        'windows-x64',
-      ],
   ),
 
   Prebuilt('pypiwin32', '219',
@@ -220,14 +212,26 @@ SPECS = {s.spec.tag: s for s in (
       ],
   ),
 
-  SourceOrPrebuilt('crcmod', '1.7', packaged=()),
+  SourceOrPrebuilt('crcmod', '1.7', packaged=(),
+      skip_plat=[
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
   SourceOrPrebuilt('grpcio', '1.4.0'),
-  SourceOrPrebuilt('scan-build', '2.0.8', packaged=()),
+  SourceOrPrebuilt('scan-build', '2.0.8', packaged=(),
+      skip_plat=[
+        'mac-x64',
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
   SourceOrPrebuilt('scandir', '1.7',
       packaged=[
         'windows-x86',
         'windows-x64',
       ],
+      skip_plat=['mac-x64'],
   ),
 
   SourceOrPrebuilt('simplejson', '3.13.2',
@@ -322,7 +326,9 @@ SPECS = {s.spec.tag: s for s in (
         'windows-x64',
       ],
   ),
-  SourceOrPrebuilt('MarkupSafe', '1.0', packaged=()),
+  SourceOrPrebuilt('MarkupSafe', '1.0', packaged=(),
+      only_plat=platform.ALL_LINUX,
+  ),
   MySQLPython('1.2.5',
       only_plat=[
         'manylinux-x86', 'manylinux-x64',
@@ -339,8 +345,12 @@ SPECS = {s.spec.tag: s for s in (
   SourceOrPrebuilt('SQLAlchemy', '1.2.5', packaged=(),
       only_plat=['manylinux-x86', 'manylinux-x64'],
   ),
-  SourceOrPrebuilt('subprocess32', '3.2.7', packaged=(),
-      only_plat=['manylinux-x86', 'manylinux-x64'],
+  SourceOrPrebuilt('subprocess32', '3.5.0rc1',
+      packaged=['mac-x64'],
+      skip_plat=[
+        'windows-x86',
+        'windows-x64',
+      ],
   ),
   SourceOrPrebuilt('wrapt', '1.10.11', packaged=(),
       only_plat=['manylinux-x86', 'manylinux-x64'],
