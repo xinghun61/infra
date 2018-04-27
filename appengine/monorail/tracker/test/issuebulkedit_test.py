@@ -237,13 +237,14 @@ class IssueBulkEditTest(unittest.TestCase):
     tracker_fulltext.IndexIssues = DoNothing
     tracker_fulltext.UnindexIssues = DoNothing
 
-  def VerifyIssueUpdated(self, project_id, local_id):
+  def GetFirstAmendment(self, project_id, local_id):
     issue = self.services.issue.GetIssueByLocalID(
         self.cnxn, project_id, local_id)
     issue_id = issue.issue_id
     comments = self.services.issue.GetCommentsForIssue(self.cnxn, issue_id)
     last_comment = comments[-1]
-    return last_comment.amendments[0].newvalue == 'Updated'
+    first_amendment = last_comment.amendments[0]
+    return first_amendment.field, first_amendment.newvalue
 
   def testProcessFormData_CustomFields(self):
     """Test PFD processes edits to custom fields."""
@@ -267,7 +268,9 @@ class IssueBulkEditTest(unittest.TestCase):
         q=[''], colspec=[''], sort=[''], groupby=[''], start=[0], num=[100])
     self._MockMethods()
     self.servlet.ProcessFormData(mr, post_data)
-    self.assertTrue(self.VerifyIssueUpdated(789, local_id_1))
+    self.assertEqual(
+        (tracker_pb2.FieldID.CUSTOM, '111'),
+        self.GetFirstAmendment(789, local_id_1))
 
   def testProcessFormData_DuplicateStatus_MergeSameIssue(self):
     """Test PFD processes null/cleared status values."""
@@ -375,10 +378,12 @@ class IssueBulkEditTest(unittest.TestCase):
     self.servlet.ProcessFormData(mr, post_data)
 
     # Verify both source issues were updated.
-    self.assertTrue(
-        self.VerifyIssueUpdated(self.project.project_id, local_id_1))
-    self.assertTrue(
-        self.VerifyIssueUpdated(self.project.project_id, local_id_2))
+    self.assertEquals(
+        (tracker_pb2.FieldID.STATUS, 'Duplicate'),
+        self.GetFirstAmendment(self.project.project_id, local_id_1))
+    self.assertEquals(
+        (tracker_pb2.FieldID.STATUS, 'Duplicate'),
+        self.GetFirstAmendment(self.project.project_id, local_id_2))
 
     # Verify that the merge into issue was updated with a comment.
     comments = self.services.issue.GetCommentsForIssue(
@@ -414,7 +419,9 @@ class IssueBulkEditTest(unittest.TestCase):
         q=[''], colspec=[''], sort=[''], groupby=[''], start=[0], num=[100])
     self._MockMethods()
     self.servlet.ProcessFormData(mr, post_data)
-    self.assertTrue(self.VerifyIssueUpdated(789, local_id_1))
+    self.assertEquals(
+        (tracker_pb2.FieldID.STATUS, ''),
+        self.GetFirstAmendment(789, local_id_1))
 
   def testProcessFormData_InvalidOwner(self):
     """Test PFD rejects invalid owner emails."""

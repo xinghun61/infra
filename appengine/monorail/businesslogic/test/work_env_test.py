@@ -356,7 +356,27 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(amendment_comment.approval_id, 23)
     self.assertEqual(amendment_comment.amendments[-1].custom_field_name, 'Approvers')
 
-  # FUTURE: testUpdateIssue()
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_Normal(self, fake_pasicn):
+    """We can update an issue."""
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta(
+        owner_id=222L, summary='New summary', cc_ids_add=[333L])
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, 'Getting started')
+
+    self.assertEqual(222L, issue.owner_id)
+    self.assertEqual('New summary', issue.summary)
+    self.assertEqual([333L], issue.cc_ids)
+    self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    fake_pasicn.assert_called_with(
+        issue.issue_id, 'testing-app.appspot.com', 111L, 0, send_email=True,
+        old_owner_id=111L, comment_id=comment_pb.id)
 
   def testDeleteIssue(self):
     """We can mark and unmark an issue as deleted."""

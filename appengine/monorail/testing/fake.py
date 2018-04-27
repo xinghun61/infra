@@ -1578,20 +1578,8 @@ class IssueService(object):
       iids_to_invalidate=None, rules=None, predicate_asts=None,
       is_description=False, timestamp=None):
     # Return a bogus amendments list if any of the fields changed
-    amendments = []
-    comment_pb = tracker_pb2.IssueComment()
-    if (delta.status is not None or delta.owner_id is not None or
-        delta.cc_ids_add or delta.cc_ids_remove or
-        delta.labels_add or delta.labels_remove or
-        delta.field_vals_add or delta.field_vals_remove or delta.fields_clear or
-        delta.blocked_on_add or delta.blocked_on_remove or
-        delta.blocking_add or delta.blocking_remove or
-        delta.merged_into is not None or delta.summary is not None):
-      amendments.append(tracker_bizobj.MakeStatusAmendment(
-          'Updated', issue.status))
-
-    if delta.merged_into is not None:
-      issue.merged_into = delta.merged_into
+    amendments, _ = tracker_bizobj.ApplyIssueDelta(
+        cnxn, self, issue, delta, config)
 
     if not amendments and (not comment or not comment.strip()):
       return [], None

@@ -486,7 +486,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         }
     resp = self.call_api('issues_comments_insert', self.request).json_body
     self.assertEqual('requester@example.com', resp['author']['name'])
-    self.assertEqual('Updated', resp['updates']['status'])
+    self.assertEqual('Started', resp['updates']['status'])
     self.assertEqual(0, issue1.merged_into)
 
   def testIssuesCommentsInsert_Amendments_NoPerms(self):
@@ -549,7 +549,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         }
     resp = self.call_api('issues_comments_insert', self.request).json_body
     self.assertEqual('requester@example.com', resp['author']['name'])
-    self.assertEqual('Updated', resp['updates']['status'])
+    self.assertEqual('Duplicate', resp['updates']['status'])
     self.assertEqual(issue2.issue_id, issue1.merged_into)
     issue2_comments = self.services.issue.GetCommentsForIssue(
       'cnxn', issue2.issue_id)
@@ -573,7 +573,9 @@ class MonorailApiTest(testing.EndpointsTestCase):
         'fieldValues': [{'fieldName': 'Field_int', 'fieldValue': '11'},
                         {'fieldName': 'Field_enum', 'fieldValue': 'str'}]}
     resp = self.call_api('issues_comments_insert', self.request).json_body
-    self.assertEqual('Updated', resp['updates']['status'])
+    self.assertEqual(
+        {'fieldName': 'Field_int', 'fieldValue': '11'},
+        resp['updates']['fieldValues'][0])
 
   def testIssuesCommentsInsert_IsDescription(self):
     """Add a new issue description."""

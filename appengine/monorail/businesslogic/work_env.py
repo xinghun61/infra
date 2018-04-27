@@ -14,7 +14,8 @@ handlers.
 Responsibilities of request handers (legacy UI and external API) and associated
 frameworks:
 + API: check oauth client whitelist
-+ Create a MonorailRequest object:
++ Rate-limiting
++ Create a MonorailContext (or MonorailRequest) object:
   - Parse the request, including syntaxtic validation, e.g, non-negative ints
   - Authenticate the requesting user
 + Call the WorkEnvironment to perform the requested action
@@ -23,7 +24,6 @@ frameworks:
 + Render the result business objects as UI HTML or API response protobufs.
 
 Responsibilities of WorkEnv:
-+ Rate-limiting and spam-fighting
 + Most monitoring, profiling, and logging
 + Apply business rules:
   - Check permissions
@@ -45,6 +45,7 @@ from features import send_notifications
 from features import features_bizobj
 from features import hotlist_helpers
 from framework import exceptions
+from framework import framework_helpers
 from framework import permissions
 from search import frontendsearchpipeline
 from services import project_svc
@@ -460,9 +461,41 @@ class WorkEnv(object):
           issue.issue_id, approval_value.approval_id, self.mr.request.host, comment.id)
     logging.info('updated approvers to %r' % approver_ids)
 
-  # FUTURE: UpdateIssue()
-  def UpdateIssue(self, issue, delta, comment):
-    pass
+  def UpdateIssue(self, issue, delta, comment_content, send_email=True):
+    """Update an issue, TODO: iff the signed in user may edit it.
+
+    Args:
+      issue: Existing Issue PB for the issue to be modified.
+      delta: IssueDelta object containing all the changes to be made.
+      comment_content: string content of the user's comment.
+      send_email: set to False to suppress email notifications.
+
+    Returns:
+      Nothing.
+    """
+    config = self.GetProjectConfig(issue.project_id)
+    old_owner_id = tracker_bizobj.GetOwnerId(issue)
+
+    with self.mr.profiler.Phase('Updating issue %r' % (issue.issue_id)):
+      amendments, comment_pb = self.services.issue.DeltaUpdateIssue(
+          self.mr.cnxn, self.services, self.mr.auth.user_id, issue.project_id,
+          config, issue, delta, comment=comment_content)
+
+    with self.mr.profiler.Phase('Following up after issue update'):
+      # TODO(jrobbins): side effects of setting merged_into.
+      self.services.project.UpdateRecentActivity(
+          self.mr.cnxn, issue.project_id)
+      self.services.issue.EnqueueIssuesForIndexing(self.mr.cnxn,
+          [issue.issue_id])
+
+    with self.mr.profiler.Phase('Generating notifications'):
+      hostport = framework_helpers.GetHostPort()
+      reporter_id = self.mr.auth.user_id
+      seq_num = 0  # TODO(jrobbins): delete.  Only comment_id is used.
+      send_notifications.PrepareAndSendIssueChangeNotification(
+          issue.issue_id, hostport, reporter_id, seq_num,
+          send_email=send_email, old_owner_id=old_owner_id,
+          comment_id=comment_pb.id)
 
   def DeleteIssue(self, issue, delete):
     """Mark or unmark the given issue as deleted."""
