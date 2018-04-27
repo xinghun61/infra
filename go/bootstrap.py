@@ -118,6 +118,7 @@ LAYOUT = Layout(
         'go.chromium.org/luci/grpc/cmd/...',
         'infra/cmd/...',
         'infra/tools/cloudsqlhelper',
+        'github.com/golang/mock/mockgen'
     ],
     go_paths=None,
     preserve_gopath=False,
