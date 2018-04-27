@@ -47,19 +47,25 @@ service Tricium {
 message AnalyzeRequest {
   // Name of the project hosting the paths listed in the request. The name
   // should map to the project name as it is connected to Tricium.
+  // This is used to get the project config, which determines how Tricium
+  // will behave for this request.
   string project = 1;
+
+  // Projects can have multiple associated repositories, so to unambiguously
+  // specify a patch we also need to know which repository to look at.
+  string git_repo = 2;
 
   // Git ref in the git repo for the project. Note that if gerrit_details
   // is given, then this will also be present as the Revision. For patch
   // number 7 of CL 12345, this will look like "refs/changes/45/12345/7".
   // Regardless of whether gerrit_details is given, this ref will be used when
   // checking out files.
-  string git_ref = 2;
+  string git_ref = 3;
 
   // Paths to analyze in the project. Listed from the root of the Git
   // repository.
   // TODO(emso): document path separators or add listing of path segments.
-  repeated string paths = 3;
+  repeated string paths = 4;
 
   // Consumer to send progress updates and results to.
   //
@@ -69,10 +75,10 @@ message AnalyzeRequest {
   //
   // Note that progress and results can be accessed via the Tricium
   // API regardless of whether a consumer has been included in the request.
-  Consumer consumer = 4;
+  Consumer consumer = 5;
 
   // Gerrit details for a Gerrit consumer.
-  GerritConsumerDetails gerrit_details = 5;
+  GerritConsumerDetails gerrit_details = 6;
 }
 
 message AnalyzeResponse {

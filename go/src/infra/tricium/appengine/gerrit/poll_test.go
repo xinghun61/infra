@@ -118,6 +118,9 @@ func TestPollBasicBehavior(t *testing.T) {
 					Name: "playground",
 					Repos: []*tricium.RepoDetails{
 						{
+							GitDetails: &tricium.GitRepoDetails{
+								Repository: "https://repo-host.com/playground",
+							},
 							GerritDetails: &tricium.GerritDetails{
 								Host:    host,
 								Project: "project/tricium-gerrit",
@@ -129,6 +132,9 @@ func TestPollBasicBehavior(t *testing.T) {
 					Name: "infra",
 					Repos: []*tricium.RepoDetails{
 						{
+							GitDetails: &tricium.GitRepoDetails{
+								Repository: "https://repo-host.com/infra",
+							},
 							GerritDetails: &tricium.GerritDetails{
 								Host:    host,
 								Project: "infra/infra",
@@ -414,6 +420,9 @@ func TestPollWhitelistBehavior(t *testing.T) {
 					Name: noWhitelistProject,
 					Repos: []*tricium.RepoDetails{
 						{
+							GitDetails: &tricium.GitRepoDetails{
+								Repository: "https://repo-host.com/no-whitelist",
+							},
 							GerritDetails: &tricium.GerritDetails{
 								Host:    host,
 								Project: noWhitelistProject,
@@ -425,6 +434,9 @@ func TestPollWhitelistBehavior(t *testing.T) {
 					Name: whitelistProject,
 					Repos: []*tricium.RepoDetails{
 						{
+							GitDetails: &tricium.GitRepoDetails{
+								Repository: "https://repo-host.com/whitelist",
+							},
 							GerritDetails: &tricium.GerritDetails{
 								Host:             host,
 								Project:          whitelistProject,
@@ -437,6 +449,9 @@ func TestPollWhitelistBehavior(t *testing.T) {
 					Name: "star-project",
 					Repos: []*tricium.RepoDetails{
 						{
+							GitDetails: &tricium.GitRepoDetails{
+								Repository: "https://repo-host.com/star-project",
+							},
 							GerritDetails: &tricium.GerritDetails{
 								Host:             host,
 								Project:          "star-project",

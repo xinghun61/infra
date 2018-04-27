@@ -92,9 +92,9 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 	for name, pc := range projects {
 		name := name // Make a separate variable for use in the closure below
 		for _, repo := range pc.Repos {
-			if details := repo.GetGerritDetails(); details != nil {
+			if repo.GerritDetails != nil && repo.GitDetails != nil {
 				ops = append(ops, func() error {
-					return pollProject(c, name, details, gerrit)
+					return pollProject(c, name, repo, gerrit)
 				})
 			}
 		}
@@ -109,7 +109,9 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 // change in the last poll is used in the next poll, as the value of 'after'
 // in the query string. If no previous poll has been logged, then a time
 // corresponding to zero is used (time.Time{}).
-func pollProject(c context.Context, triciumProject string, gerritDetails *tricium.GerritDetails, gerrit API) error {
+func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDetails, gerrit API) error {
+	gerritDetails := repo.GerritDetails
+
 	// Get last poll data for the given host/project.
 	p := &Project{ID: gerritProjectID(gerritDetails.Host, gerritDetails.Project)}
 	if err := ds.Get(c, p); err != nil {
@@ -235,7 +237,7 @@ func pollProject(c context.Context, triciumProject string, gerritDetails *triciu
 	//
 	// Running after the transaction because each seen change will result in one
 	// enqueued task and there is a limit on the number of action in a transaction.
-	return enqueueAnalyzeRequests(c, triciumProject, gerritDetails, diff)
+	return enqueueAnalyzeRequests(c, triciumProject, repo, diff)
 }
 
 // extractUpdates extracts change updates.
@@ -311,7 +313,7 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 }
 
 // enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
-func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDetails *tricium.GerritDetails, changes []gr.ChangeInfo) error {
+func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tricium.RepoDetails, changes []gr.ChangeInfo) error {
 	logging.Debugf(ctx, "Enqueue Analyze requests for %d changes", len(changes))
 	if len(changes) == 0 {
 		return nil
@@ -320,8 +322,9 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 	var tasks []*tq.Task
 	for _, c := range changes {
 		// TODO(qyearsley): Remove special case for "*" after removing it from configs.
-		if len(gerritDetails.WhitelistedGroup) != 0 && gerritDetails.WhitelistedGroup[0] != "*" {
-			whitelisted, ok := owners[c.Owner.Email]
+		whitelist := repo.GerritDetails.WhitelistedGroup
+		if len(whitelist) != 0 && whitelist[0] != "*" {
+			isWhitelisted, ok := owners[c.Owner.Email]
 			if !ok {
 				ident, err := identity.MakeIdentity("user:" + c.Owner.Email)
 				if err != nil {
@@ -342,16 +345,16 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 					logging.Errorf(ctx, "Failed to check auth, nil authdb in State")
 					continue
 				}
-				authOK, err := db.IsMember(ctx, ident, gerritDetails.WhitelistedGroup)
+				authOK, err := db.IsMember(ctx, ident, whitelist)
 				if err != nil {
 					logging.Errorf(ctx, "Failed to check auth for %s, err: %v", c.Owner.Email, err)
 				}
-				whitelisted = authOK
-				owners[c.Owner.Email] = whitelisted
+				isWhitelisted = authOK
+				owners[c.Owner.Email] = isWhitelisted
 			}
-			if !whitelisted {
+			if !isWhitelisted {
 				logging.Infof(ctx, "Owner is not whitelisted, not triggering Analyze (owner: %s, project: %s)",
-					c.Owner.Email, gerritDetails.Project)
+					c.Owner.Email, repo.GerritDetails.Project)
 				continue
 			}
 		}
@@ -377,12 +380,13 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDe
 		sort.Strings(paths)
 		req := &tricium.AnalyzeRequest{
 			Project:  triciumProject,
+			GitRepo:  repo.GitDetails.Repository,
 			GitRef:   c.Revisions[c.CurrentRevision].Ref,
 			Paths:    paths,
 			Consumer: tricium.Consumer_GERRIT,
 			GerritDetails: &tricium.GerritConsumerDetails{
-				Host:     gerritDetails.Host,
-				Project:  gerritDetails.Project,
+				Host:     repo.GerritDetails.Host,
+				Project:  repo.GerritDetails.Project,
 				Change:   c.ID,
 				Revision: c.Revisions[c.CurrentRevision].Ref,
 			},
