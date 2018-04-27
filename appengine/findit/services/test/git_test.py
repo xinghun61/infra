@@ -3,13 +3,14 @@
 # found in the LICENSE file.
 
 from collections import namedtuple
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
+import mock
 
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs import time_util
-from model.wf_suspected_cl import WfSuspectedCL
 from services import git
 from services.parameters import CompileFailureInfo
 from waterfall.test import wf_testcase
@@ -229,6 +230,22 @@ class GitTest(wf_testcase.WaterfallTestCase):
         }
     }
     self.assertEqual(expected_culprits, git.GetCLInfo(failed_revisions))
+
+  @mock.patch.object(
+      CachedGitilesRepository,
+      'GetCommitsBetweenRevisions',
+      return_value=['r4', 'r3', 'r2', 'r1'])
+  def testGetCommitsBetweenRevisionsInOrderAscending(self, _):
+    self.assertEqual(['r1', 'r2', 'r3', 'r4'],
+                     git.GetCommitsBetweenRevisionsInOrder('r0', 'r4', True))
+
+  @mock.patch.object(
+      CachedGitilesRepository,
+      'GetCommitsBetweenRevisions',
+      return_value=['r4', 'r3', 'r2', 'r1'])
+  def testGetCommitsBetweenRevisionsInOrderDescending(self, _):
+    self.assertEqual(['r4', 'r3', 'r2', 'r1'],
+                     git.GetCommitsBetweenRevisionsInOrder('r0', 'r4', False))
 
   def testCountRecentCommitsFew(self):
     self.mock(

@@ -12,11 +12,10 @@ It has functions to:
 import datetime
 
 from common.findit_http_client import FinditHttpClient
-from dto.dict_of_basestring import DictOfBasestring
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import time_util
-from model.base_suspected_cl import BaseSuspectedCL
-from model.wf_suspected_cl import WfSuspectedCL
+
+_CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'
 
 
 def GetGitBlame(repo_url, revision, touched_file_path):
@@ -45,8 +44,7 @@ def PullChangeLogs(failure_info):
       ...
     }
   """
-  git_repo = CachedGitilesRepository(
-      FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
+  git_repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
 
   change_logs = {}
   builds = failure_info.builds or {}
@@ -63,8 +61,7 @@ def PullChangeLogs(failure_info):
 
 def GetCLInfo(revisions):
   """Gets commit_positions and review urls for revisions."""
-  git_repo = CachedGitilesRepository(
-      FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
+  git_repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
   cls = {}
   # TODO(crbug/767759): remove hard-coded 'chromium' when DEPS file parsing is
   # supported.
@@ -77,6 +74,29 @@ def GetCLInfo(revisions):
           change_log.code_review_url or change_log.commit_url)
       cls[revision]['author'] = change_log.author.email
   return cls
+
+
+def GetCommitsBetweenRevisionsInOrder(start_revision,
+                                      end_revision,
+                                      ascending=True):
+  """Gets the revisions between start_revision and end_revision.
+
+  Args:
+    start_revision (str): The revision for which to get changes after. This
+        revision is not included in the returned list.
+    end_revision (str): The last revision in the range to return.
+    ascending (bool): Whether the commits should be in chronological order.
+
+  Returns:
+    A list of revisions sorted in order chronologically.
+  """
+  repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
+  commits = repo.GetCommitsBetweenRevisions(start_revision, end_revision)
+
+  if ascending:
+    commits.reverse()
+  return commits
+
 
 def CountRecentCommits(repo_url,
                        ref='refs/heads/master',

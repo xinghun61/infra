@@ -11,7 +11,10 @@ from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto.swarming_task_error import SwarmingTaskError
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from services import git
+from services import step_util
 from services.flake_failure import data_point_util
+from waterfall.build_info import BuildInfo
 from waterfall.flake import flake_constants
 from waterfall.test import wf_testcase
 
@@ -102,10 +105,14 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     data_point_util.UpdateFailedSwarmingTaskAttempts(data_point)
     self.assertEqual(2, data_point.failed_swarming_task_attempts)
 
-  def testUpdateAnalysisDataPointsNewDataPointWithError(self):
+  @mock.patch.object(git, 'GetCommitsBetweenRevisionsInOrder')
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
+  def testUpdateAnalysisDataPointsNewDataPointWithError(self, mocked_builds,
+                                                        mocked_blame_list):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
+    blame_list = ['r999', 'r1000']
     commit_position = 1000
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
     error = SwarmingTaskError(code=1, message='message')
@@ -115,6 +122,16 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = 'task_id'
 
+    lower_bound_build = BuildInfo('m', 'b', 122)
+    lower_bound_build.commit_position = 998
+    lower_bound_build.chromium_revision = 'r998'
+    upper_bound_build = BuildInfo('m', 'b', 123)
+    upper_bound_build.commit_position = 1000
+    upper_bound_build.chromium_revision = 'r1000'
+
+    mocked_blame_list.return_value = blame_list
+    mocked_builds.return_value = (lower_bound_build, upper_bound_build)
+
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
@@ -122,17 +139,16 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
         pass_count=pass_count,
         started_time=started_time,
         task_id=task_id)
-    print swarming_task_output
 
     data_point_util.UpdateAnalysisDataPoints(
         analysis.key.urlsafe(), commit_position, revision, swarming_task_output)
-    print swarming_task_output
 
     analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
     data_points = analysis.data_points
     data_point = data_points[0]
 
     self.assertEqual(1, len(data_points))
+    self.assertEqual(blame_list, data_point.blame_list)
     self.assertEqual(commit_position, data_point.commit_position)
     self.assertEqual(revision, data_point.git_hash)
     self.assertIsNone(data_point.pass_rate)
@@ -140,10 +156,14 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(1, data_point.failed_swarming_task_attempts)
     self.assertEqual([task_id], data_point.task_ids)
 
-  def testUpdateAnalysisDataPointsNewDataPointWithErrorButSalvagable(self):
+  @mock.patch.object(git, 'GetCommitsBetweenRevisionsInOrder')
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
+  def testUpdateAnalysisDataPointsNewDataPointWithErrorButSalvagable(
+      self, mocked_builds, mocked_blame_list):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
+    blame_list = ['r999', 'r1000']
     commit_position = 1000
     completed_time = datetime(2018, 1, 1, 0, 1, 0)
     error = SwarmingTaskError(code=1, message='message')
@@ -153,6 +173,16 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = 'task_id'
 
+    lower_bound_build = BuildInfo('m', 'b', 122)
+    lower_bound_build.commit_position = 998
+    lower_bound_build.chromium_revision = 'r998'
+    upper_bound_build = BuildInfo('m', 'b', 123)
+    upper_bound_build.commit_position = 1000
+    upper_bound_build.chromium_revision = 'r1000'
+
+    mocked_blame_list.return_value = blame_list
+    mocked_builds.return_value = (lower_bound_build, upper_bound_build)
+
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
@@ -169,6 +199,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     data_point = data_points[0]
 
     self.assertEqual(1, len(data_points))
+    self.assertEqual(blame_list, data_point.blame_list)
     self.assertEqual(commit_position, data_point.commit_position)
     self.assertEqual(revision, data_point.git_hash)
     self.assertEqual(.5, data_point.pass_rate)
@@ -176,10 +207,14 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0, data_point.failed_swarming_task_attempts)
     self.assertEqual([task_id], data_point.task_ids)
 
-  def testUpdateAnalysisDataPointsNewDataPointNoError(self):
+  @mock.patch.object(git, 'GetCommitsBetweenRevisionsInOrder')
+  @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
+  def testUpdateAnalysisDataPointsNewDataPointNoError(self, mocked_builds,
+                                                      mocked_blame_list):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
+    blame_list = ['r999', 'r1000']
     commit_position = 1000
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
     error = None
@@ -189,6 +224,16 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     task_id = 'task_id'
 
+    lower_bound_build = BuildInfo('m', 'b', 122)
+    lower_bound_build.commit_position = 998
+    lower_bound_build.chromium_revision = 'r998'
+    upper_bound_build = BuildInfo('m', 'b', 123)
+    upper_bound_build.commit_position = 1000
+    upper_bound_build.chromium_revision = 'r1000'
+
+    mocked_blame_list.return_value = blame_list
+    mocked_builds.return_value = (lower_bound_build, upper_bound_build)
+
     swarming_task_output = FlakeSwarmingTaskOutput(
         completed_time=completed_time,
         error=error,
@@ -205,6 +250,7 @@ class DataPointUtilTest(wf_testcase.WaterfallTestCase):
     data_point = data_points[0]
 
     self.assertEqual(1, len(data_points))
+    self.assertEqual(blame_list, data_point.blame_list)
     self.assertEqual(commit_position, data_point.commit_position)
     self.assertEqual(revision, data_point.git_hash)
     self.assertEqual(0.6, data_point.pass_rate)
