@@ -69,13 +69,20 @@ def DownloadBuildData(master_name, builder_name, build_number):
     build = WfBuild.Create(master_name, builder_name, build_number)
 
   status_code = None
+  build_updated = False
   # Cache the data to avoid pulling from master again.
   if _BuildDataNeedUpdating(build):
     # Retrieve build data from milo.
     status_code, build.data = buildbot.GetBuildDataFromMilo(
         master_name, builder_name, build_number, HTTP_CLIENT_NO_404_ERROR)
     build.last_crawled_time = time_util.GetUTCNow()
+    build_updated = True
+
+  if build.data and not build.log_location:
     build.log_location = _GetLogLocationForBuild(build.data)
+    build_updated = True
+
+  if build_updated:
     build.put()
 
   return status_code, build

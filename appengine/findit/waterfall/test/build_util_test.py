@@ -92,6 +92,7 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build.data = 'dummy'
     build.completed = False
     build.last_crawled_time = self._TimeBeforeNowBySeconds(60)
+    build.log_location = 'location'
     build.put()
 
     build_util.DownloadBuildData(master_name, builder_name, build_number)
@@ -411,7 +412,7 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGetLogLocationForBuildForBuildbotBuild(self):
     location = ('logdog://logs.chromium.org/chromium/bb/m/b/1/+/recipes/'
-               'annotations')
+                'annotations')
     data_json = {
         'properties': [[
             'log_location', location, 'Annotation(LogDog Bootstrap)'

@@ -218,5 +218,9 @@ def GetStepLogForBuild(buildbucket_build, step_name, log_type, http_client):
 
 def GetStepLogLegacy(log_location, step_name, log_type, http_client):
   host, project, path = _GetQueryParametersForAnnotation(log_location)
+  if not host:
+    logging.error('Failed to get log_location info for logdog stream.')
+    return None
+
   annotations = _GetAnnotationsProtoForPath(host, project, path, http_client)
   return _GetLog(annotations, step_name, log_type, http_client)

@@ -186,7 +186,7 @@ class LogDogUtilTest(unittest.TestCase):
 
   def testGetQueryParametersForAnnotationForBuildbotBuild(self):
     log_location = ('logdog://logs.chromium.org/chromium/bb/m/b/1/+/recipes/'
-                   'annotations')
+                    'annotations')
     host, project, path = logdog_util._GetQueryParametersForAnnotation(
         log_location)
     self.assertEqual('logs.chromium.org', host)
@@ -195,7 +195,7 @@ class LogDogUtilTest(unittest.TestCase):
 
   def testGetQueryParametersForAnnotationForLUCIBuild(self):
     log_location = ('logdog://logs.chromium.org/chromium/buildbucket/cr-bui'
-                   'ldbucket.appspot.com/8948240770002521488/+/annotations')
+                    'ldbucket.appspot.com/8948240770002521488/+/annotations')
     host, project, path = logdog_util._GetQueryParametersForAnnotation(
         log_location)
     self.assertEqual('logs.chromium.org', host)
@@ -243,6 +243,10 @@ class LogDogUtilTest(unittest.TestCase):
     logdog_util.GetStepLogLegacy('logdog://logdog.com/project/path', 'step',
                                  'stdout', self.http_client)
     self.assertTrue(mock_log.called)
+
+  def testGetStepLogLegacyNoLogLocation(self):
+    self.assertIsNone(
+        logdog_util.GetStepLogLegacy(None, 'step', 'stdout', self.http_client))
 
   def testGetLogNoAnnotations(self):
     self.assertIsNone(
