@@ -377,7 +377,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('enum34', '1.1.6', pyversions=['py2', 'py3']),
   Universal('fabric', '1.14.0'),
   Universal('funcsigs', '1.0.2'),
-  UniversalSource('future', '0.15.2'),
+  UniversalSource('future', '0.16.0'),
   Universal('futures', '3.1.1'),
   Universal('gitdb2', '2.0.3'),
   Universal('GitPython', '2.1.9'),
