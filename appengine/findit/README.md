@@ -12,6 +12,20 @@ Note:
 2. For Windows, you may have to read the contents of the makefile to learn how
    to run all of the commands manually.
 
+# How to set up Polymer?
+  Install nodejs and npm.
+
+  If you must install nodejs system-wide you could use
+  `sudo apt-get install nodejs-legacy npm` but be aware that the version of
+  nodejs that this will get you tends to be old.
+
+  Get polymer:
+  `npm install -g bower`
+  And install it inside findit:
+  `cd $SRC_ROOT/infra/appengine/findit/third_party && bower install && cd -`
+
+  (Or you can also use `make polymer-install`)
+
 # How to run Findit locally?
 
 From command line, run:

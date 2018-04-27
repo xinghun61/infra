@@ -29,7 +29,8 @@ help:
 	@echo
 	@echo "To format code use \`make format\`"
 	@echo "To run tests use \`make test\`"
-	@echo "To run findit locally use \`make run\`"
+	@echo "To run findit locally use \`make run\`, if needed, run " \
+	      "\`make polymer-install\` first."
 
 
 ##### App Engine ###
@@ -70,10 +71,10 @@ deploy-prod: _deploy
 	@echo "Thanks,"
 	@echo "Released by $(USER)@"
 
-deploy-staging: test
+deploy-staging: test polymer-check
 	@$(INFRAPYTHON) $(GAE_PY) upload -A $(STAGING_APPID);
 
-_deploy: test
+_deploy: test polymer-check
 	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID);
 
 migrate:
@@ -107,11 +108,36 @@ test:
 	$(INFRAPYTHON) ../../test.py test appengine/findit \
 	  --html-report $(TMPDIR)/coverage
 
+
+##### POLYMER ###
+# TODO(crbug.com/743146): Use versioned polymer.
+polymer-check: polymer-install
+	@set -e
+	@if [ ! -d third_party/bower_components ]; then \
+	false; \
+	fi
+
+NPM := $(shell command -v npm 2> /dev/null)
+BOWER := $(shell command -v bower 2> /dev/null)
+
+polymer-install: clean
+ifndef NPM
+	@echo "Please add ../../cipd/bin to the PATH in .bashrc" && false
+endif
+ifndef BOWER
+	npm install -g bower
+endif
+	cd third_party && bower install
+
+clean:
+	@-rm -rf third_party/bower_components
+
+
 ##### TMP ###
 TMPDIR := $(shell mkdir -p .tmp 2> /dev/null && realpath .tmp)
 ifndef TMPDIR
 TMPDIR :=  $(shell mktemp -d)
 endif
 
-.PHONY: _deploy test update \
+.PHONY: _deploy test polymer-install update clean polymer-check \
         help migrate deploy-prod deploy-staging

@@ -4,10 +4,8 @@
   <template>
     <style>
       a, span {
-        text-decoration: none;
         color: #fff;
       }
-
       a:hover {
         color: black;
       }
@@ -31,49 +29,45 @@
   <script src="../js/common.js"></script>
 
   <script>
-    (function() {
-      'use strict';
+   (function() {
+     'use strict';
 
-      Polymer({
-        is: 'auth-login',
+     Polymer({
+       is: 'auth-login',
 
-        properties: {
-          isAdmin: {
-            type: Boolean,
-            value: false,
-          },
-          email: {
-            type: String,
-            value: undefined,
-          },
-          loginUrl: {
-            type: String,
-            value:undefined,
-          },
-          logoutUrl: {
-            type: String,
-            value:undefined,
-          },
-          loginRequired: {
-            type: Boolean,
-            value: false,
-          },
-        },
+       properties: {
+         isAdmin: {
+           type: Boolean,
+           value: false,
+         },
+         email: {
+           type: String,
+           value: undefined,
+         },
+         loginUrl: {
+           type: String,
+           value:undefined,
+         },
+         logoutUrl: {
+           type: String,
+           value:undefined,
+         },
+         loginRequired: {
+           type: Boolean,
+           value: false,
+         },
+       },
 
-        observers: [
-          'checkPermission(email, loginRequired)',
-        ],
+       observers: [
+         'checkPermission(email, loginRequired)',
+       ],
 
-        checkPermission: function(email, loginRequired) {
-          // In Polymer 2.0 and above, observers need to check for undefined
-          // arguments. Refer "Update Observers" section at
-          // https://www.polymer-project.org/2.0/docs/upgrade
-          if (email === undefined) return;
-          if ((!email || !email.endsWith('@google.com')) && loginRequired) {
-            displayMessage(100);  // Permission.
-          }
-        },
-      });
-    })();
+       checkPermission: function(email, loginRequired) {
+         if ((!email || !email.endsWith('@google.com')) && loginRequired) {
+           displayMessage(100);  // Permission.
+         }
+       },
+     });
+   })();
   </script>
 </dom-module>
