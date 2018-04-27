@@ -242,6 +242,12 @@ class WorkEnvTest(unittest.TestCase):
         self.cnxn, actual_issue.issue_id)
     self.assertEqual('desc', actual_comments[0].content)
 
+    # Verify that an indexing task was enqueued for this issue:
+    self.assertTrue(self.services.issue.enqueue_issues_called)
+    self.assertEqual(1, len(self.services.issue.enqueued_issues))
+    self.assertEqual(actual_issue.issue_id,
+        self.services.issue.enqueued_issues[0])
+
   def testListIssues_Normal(self):
     """We can do a query that generates some results."""
     pass  # TODO(jrobbins): add unit test

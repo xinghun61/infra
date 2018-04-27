@@ -334,11 +334,14 @@ class WorkEnv(object):
           self.mr.cnxn, self.services, project_id, summary, status,
           owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
           marked_description, blocked_on=blocked_on, blocking=blocking,
-          attachments=attachments, phases=phases)
+          attachments=attachments, index_now=False, phases=phases)
       logging.info('created issue %r in project %r', new_local_id, project_id)
       self.services.project.UpdateRecentActivity(self.mr.cnxn, project_id)
       new_issue = self.services.issue.GetIssueByLocalID(
           self.mr.cnxn, project_id, new_local_id)
+      self.services.issue.EnqueueIssuesForIndexing(self.mr.cnxn,
+          [new_issue.issue_id])
+
       return new_issue
 
   def ListIssues(self):
