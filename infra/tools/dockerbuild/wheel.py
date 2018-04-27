@@ -371,6 +371,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('contextlib2', '0.5.5'),
   Universal('cheroot', '6.2.4'),
   Universal('CherryPy', '14.2.0'),
+  UniversalSource('configparser', '3.5.0'),
   UniversalSource('Django', '1.5.1'),
   Universal('Django', '1.9'),
   Universal('enum34', '1.1.6', pyversions=['py2', 'py3']),
