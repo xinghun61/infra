@@ -10,8 +10,8 @@ from protorpc import messages
 
 class PBProxyExample(messages.Message):
   """A simple protocol buffer to test template_helpers.PBProxy."""
-  foo = messages.StringField(1)
-  bar = messages.BooleanField(2, default=False)
+  nickname = messages.StringField(1)
+  invited = messages.BooleanField(2, default=False)
 
 
 class PBProxyNested(messages.Message):

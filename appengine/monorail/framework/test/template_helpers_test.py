@@ -29,30 +29,30 @@ class HelpersUnitTest(unittest.TestCase):
     """Checks that PBProxy wraps protobuf objects as expected."""
     # check that protobuf fields are accessible in ".attribute" form
     pbe = pbproxy_test_pb2.PBProxyExample()
-    pbe.foo = 'foo'
-    pbe.bar = False
+    pbe.nickname = 'foo'
+    pbe.invited = False
     pbep = template_helpers.PBProxy(pbe)
-    self.assertEqual(pbep.foo, 'foo')
+    self.assertEqual(pbep.nickname, 'foo')
     # _bool suffix converts protobuf field 'bar' to None (EZT boolean false)
-    self.assertEqual(pbep.bar_bool, None)
+    self.assertEqual(pbep.invited_bool, None)
 
     # check that a new field can be added to the PBProxy
     pbep.baz = 'bif'
     self.assertEqual(pbep.baz, 'bif')
 
     # check that a PBProxy-local field can hide a protobuf field
-    pbep.foo = 'local foo'
-    self.assertEqual(pbep.foo, 'local foo')
+    pbep.nickname = 'local foo'
+    self.assertEqual(pbep.nickname, 'local foo')
 
     # check that a nested protobuf is recursively wrapped with a PBProxy
     pbn = pbproxy_test_pb2.PBProxyNested()
     pbn.nested = pbproxy_test_pb2.PBProxyExample()
-    pbn.nested.foo = 'bar'
-    pbn.nested.bar = True
+    pbn.nested.nickname = 'bar'
+    pbn.nested.invited = True
     pbnp = template_helpers.PBProxy(pbn)
-    self.assertEqual(pbnp.nested.foo, 'bar')
+    self.assertEqual(pbnp.nested.nickname, 'bar')
     # _bool suffix converts protobuf field 'bar' to 'yes' (EZT boolean true)
-    self.assertEqual(pbnp.nested.bar_bool, 'yes')
+    self.assertEqual(pbnp.nested.invited_bool, 'yes')
 
     # check that 'repeated' lists of items produce a list of strings
     pbn.multiple_strings.append('1')
@@ -62,16 +62,16 @@ class HelpersUnitTest(unittest.TestCase):
     # check that 'repeated' messages produce lists of PBProxy instances
     pbe1 = pbproxy_test_pb2.PBProxyExample()
     pbn.multiple_pbes.append(pbe1)
-    pbe1.foo = '1'
-    pbe1.bar = True
+    pbe1.nickname = '1'
+    pbe1.invited = True
     pbe2 = pbproxy_test_pb2.PBProxyExample()
     pbn.multiple_pbes.append(pbe2)
-    pbe2.foo = '2'
-    pbe2.bar = False
-    self.assertEqual(pbnp.multiple_pbes[0].foo, '1')
-    self.assertEqual(pbnp.multiple_pbes[0].bar_bool, 'yes')
-    self.assertEqual(pbnp.multiple_pbes[1].foo, '2')
-    self.assertEqual(pbnp.multiple_pbes[1].bar_bool, None)
+    pbe2.nickname = '2'
+    pbe2.invited = False
+    self.assertEqual(pbnp.multiple_pbes[0].nickname, '1')
+    self.assertEqual(pbnp.multiple_pbes[0].invited_bool, 'yes')
+    self.assertEqual(pbnp.multiple_pbes[1].nickname, '2')
+    self.assertEqual(pbnp.multiple_pbes[1].invited_bool, None)
 
   def testFitTextMethods(self):
     """Tests both FitUnsafeText with an eye on i18n."""

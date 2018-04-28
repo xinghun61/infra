@@ -67,8 +67,6 @@ class InboundEmailTest(unittest.TestCase):
     self.assertIsNone(self.uia.inbound_message)
 
   def setupAndCallRun(self, allow_edit):
-    comments = ['comment 1', 'comment 2', 'comment 3']
-
     self.mox.StubOutWithMock(
         send_notifications, 'PrepareAndSendIssueChangeNotification')
     send_notifications.PrepareAndSendIssueChangeNotification(

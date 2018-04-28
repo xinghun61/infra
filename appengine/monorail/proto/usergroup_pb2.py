@@ -35,12 +35,12 @@ class UserGroupSettings(messages.Message):
 
 
 def MakeSettings(who_can_view_members_str, ext_group_type_str=None,
-                 last_sync_time=0, friend_projects=[]):
+                 last_sync_time=0, friend_projects=None):
   """Create and return a new user record in RAM."""
   settings = UserGroupSettings(
       who_can_view_members=MemberVisibility(who_can_view_members_str.upper()))
   if ext_group_type_str:
     settings.ext_group_type = GroupType(ext_group_type_str.upper())
   settings.last_sync_time = last_sync_time
-  settings.friend_projects = friend_projects
+  settings.friend_projects = friend_projects or []
   return settings

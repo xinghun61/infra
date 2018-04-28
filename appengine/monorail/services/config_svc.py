@@ -1044,7 +1044,8 @@ class ConfigService(object):
             (phase.phase_id, template.template_id, phase.name, phase.rank))
         for av in phase.approval_values:
           template2approvalvalue_rows.append(
-              (av.approval_id, template.template_id, phase.phase_id, av.status.name.lower()))
+              (av.approval_id, template.template_id, phase.phase_id,
+               av.status.name.lower()))
 
     self.template2label_tbl.InsertRows(
         cnxn, TEMPLATE2LABEL_COLS, template2label_rows, ignore=True,
@@ -1058,7 +1059,8 @@ class ConfigService(object):
     self.template2phase_tbl.InsertRows(
         cnxn, TEMPLATE2PHASE_COLS, template2phase_rows, commit=False)
     self.template2approvalvalue_tbl.InsertRows(
-        cnxn, TEMPLATE2APPROVALVALUE_COLS, template2approvalvalue_rows, commit=False)
+        cnxn, TEMPLATE2APPROVALVALUE_COLS, template2approvalvalue_rows,
+        commit=False)
 
   def _UpdateWellKnownLabels(self, cnxn, config):
     """Update the labels part of a project's issue configuration.

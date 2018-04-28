@@ -417,7 +417,6 @@ class ProjectServiceTest(unittest.TestCase):
 
   def testUpdateRecentActivity_NotSignificant(self):
     activity_time = NOW + 123
-    delta = {'recent_activity_timestamp': activity_time}
     self.SetUpGetProjects()
     # ProjectUpdate is not called.
     self.mox.ReplayAll()

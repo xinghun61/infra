@@ -259,7 +259,8 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.user.TestAddUser('approver_still@example.com', 9)
     canary_phase = tracker_pb2.Phase(
         name='Canary', phase_id=1, rank=1,
-        approval_values=[tracker_pb2.ApprovalValue(approval_id=3, approver_ids=[8, 9])])
+        approval_values=[
+          tracker_pb2.ApprovalValue(approval_id=3, approver_ids=[8, 9])])
     approval_issue = MakeTestIssue(
         project_id=12345, local_id=2, owner_id=2, reporter_id=1,
         is_spam=True)
@@ -269,7 +270,8 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     amend = tracker_bizobj.MakeApprovalApproversAmendment([7, 9], [8, 9])
 
     comment = tracker_pb2.IssueComment(
-        project_id=12345, user_id=9, issue_id=approval_issue.issue_id, amendments=[amend])
+        project_id=12345, user_id=9, issue_id=approval_issue.issue_id,
+        amendments=[amend])
     self.services.issue.TestAddComment(comment, approval_issue.local_id)
 
     task = notify.NotifyApprovalChangeTask(
@@ -288,7 +290,8 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     result = task.HandleRequest(mr)
     self.assertTrue('Approvers: -approver' in result['tasks'][0]['body'])
     self.assertItemsEqual(
-        ['user@example.com', 'approver_old@example.com', 'approver_new@example.com'],
+        ['user@example.com', 'approver_old@example.com',
+         'approver_new@example.com'],
         result['notified'])
 
   def testNotifyApprovalChangeTask_GetApprovalEmailRecipients(self):

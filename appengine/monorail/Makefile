@@ -18,6 +18,8 @@ BACKEND_MODULES?= besearch
 VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
 CRISPER_PATH = ./node_modules/crisper/bin/crisper
 
+PY_DIRS = api,features,framework,project,proto,search,services,sitewide,testing,tracker
+
 default: help
 
 check:
@@ -95,6 +97,9 @@ wct: deps
 wct_debug: deps
 	go run ../../go/src/infra/tools/wct/wct.go -base=. -prefix=elements/test/ -chrome=google-chrome -persist -timeout 1000000
 
+
+pylint:
+	pylint -f parseable *py {$(PY_DIRS)}{/,/test/}*py
 
 # AppEngine apps can be tested locally and in non-default versions upload to
 # the main app-id, but it is still sometimes useful to have a completely

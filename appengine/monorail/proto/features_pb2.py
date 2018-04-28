@@ -43,7 +43,8 @@ class Hotlist(messages.Message):
   items = messages.MessageField(HotlistItem, 10, repeated=True)
 
   # The default columns to show on hotlist issues page
-  default_col_spec = messages.StringField(11, default=features_constants.DEFAULT_COL_SPEC)
+  default_col_spec = messages.StringField(
+      11, default=features_constants.DEFAULT_COL_SPEC)
 
 def MakeHotlist(name, hotlist_item_fields=None, **kwargs):
   """Returns a hotlist protocol buffer with the given attributes.
@@ -67,7 +68,8 @@ def MakeHotlist(name, hotlist_item_fields=None, **kwargs):
 ADDED_TS_FEATURE_LAUNCH_TS = 1484350000  # Jan 13, 2017
 
 
-def MakeHotlistItem(issue_id, rank=None, adder_id=None, date_added=None, note=None):
+def MakeHotlistItem(
+    issue_id, rank=None, adder_id=None, date_added=None, note=None):
   item = Hotlist.HotlistItem(
       issue_id=issue_id,
       date_added=date_added or ADDED_TS_FEATURE_LAUNCH_TS)

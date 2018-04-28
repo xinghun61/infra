@@ -607,7 +607,8 @@ def real_wait_any(active_rpcs):
     return apiproxy_stub_map.UserRPC.wait_any(active_rpcs)
   while True:
     finished, _ = apiproxy_stub_map.UserRPC._UserRPC__check_one(active_rpcs)
-    if finished: return finished
+    if finished:
+      return finished
     time.sleep(DELAY_BETWEEN_RPC_COMPLETION_POLLS)
 
 def _GetProjectTimestamps(query_project_ids, needed_shard_keys):

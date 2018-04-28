@@ -718,13 +718,14 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     # TODO(jojwang): monorail:3263, inform TLs and PMs, iterate over user_type
     # custom fields with notify_on == ANY_COMMENT
     users_by_id = framework_views.MakeAllUserViews(
-        mr.cnxn, self.services.user, [issue.owner_id], approval_value.approver_ids,
+        mr.cnxn, self.services.user, [issue.owner_id],
+        approval_value.approver_ids,
         tracker_bizobj.UsersInvolvedInComment(comment))
 
     tasks = []
     if send_email:
       tasks = self._MakeApprovalEmailTasks(
-          mr.cnxn, hostport, issue, project, approval_value, comment, users_by_id)
+          hostport, issue, project, approval_value, comment, users_by_id)
 
     notified = notify_helpers.AddAllEmailTasks(tasks)
 
@@ -735,7 +736,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
         }
 
   def _MakeApprovalEmailTasks(
-      self, cnxn, hostport, issue, project, approval_value, comment, users_by_id):
+      self, hostport, issue, project, approval_value, comment, users_by_id):
     """Formulate emails to be sent."""
 
     approval_url = framework_helpers.IssueCommentURL(
@@ -777,7 +778,8 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
 
     return email_tasks
 
-  def _GetApprovalEmailRecipients(self, approval_value, amendment, issue, omit_ids=None):
+  def _GetApprovalEmailRecipients(
+      self, approval_value, amendment, issue, omit_ids=None):
     recipient_ids = []
     # TODO(jojwang) monorail:3588, whenever adding owner_id also
     # add TL and PM ids

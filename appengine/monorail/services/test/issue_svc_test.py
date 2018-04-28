@@ -57,6 +57,8 @@ class TestableIssueTwoLevelCache(issue_svc.IssueTwoLevelCache):
 
   def __init__(self, issue_list):
     cache_manager = fake.CacheManager()
+    super(TestableIssueTwoLevelCache, self).__init__(
+        cache_manager, None, None, None)
     self.cache = caches.RamCache(cache_manager, 'issue')
     self.memcache_prefix = 'issue:'
     self.pb_class = tracker_pb2.Issue
