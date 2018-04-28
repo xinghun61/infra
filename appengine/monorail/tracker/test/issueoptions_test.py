@@ -226,8 +226,8 @@ class GetOptionsTest(unittest.TestCase):
   @mock.patch('tracker.tracker_helpers.LabelsNotMaskedByFields')
   def testGetLabelOptions(self, mockLabelsNotMaskedByFields):
     mockLabelsNotMaskedByFields.return_value = []
-    custom_permissions = []
-    actual = issueoptions.GetLabelOptions(self.mr, self.config, custom_permissions)
+    custom_perms = []
+    actual = issueoptions.GetLabelOptions(self.mr, self.config, custom_perms)
     expected = [
       {'doc': 'Only users who can edit the issue may access it',
        'name': 'Restrict-View-EditIssue'},

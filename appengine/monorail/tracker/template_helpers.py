@@ -118,7 +118,8 @@ def GetTemplateInfoFromParsed(mr, services, parsed, config):
   return admin_ids, owner_id, component_ids, field_values, phases
 
 
-def _GetPhasesFromParsed(mr, phase_names, approvals_by_phase_idx, required_approval_ids):
+def _GetPhasesFromParsed(
+    mr, phase_names, approvals_by_phase_idx, required_approval_ids):
   """Get Phase PBs from a parsed phase_names and approvals_by_phase_idx."""
 
   phases = []

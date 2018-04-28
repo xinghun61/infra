@@ -796,8 +796,8 @@ class IssueDetail(issuepeek.IssuePeek):
     after_issue_update = _DetermineAndSetAfterIssueUpdate(
         self.services, mr, post_data)
     return _Redirect(
-        mr, self.services, post_data, issue.local_id, config, issue,
-        redirect_issue, hotlist_id, moved_to_project_name_and_local_id,
+        mr, post_data, issue.local_id, config, redirect_issue, hotlist_id,
+        moved_to_project_name_and_local_id,
         copied_to_project_name_and_local_id, after_issue_update)
 
   def HandleCopyOrMove(self, cnxn, mr, dest_project, issue, send_email, move):
@@ -879,18 +879,16 @@ def _DetermineAndSetAfterIssueUpdate(services, mr, post_data):
 
 
 def _Redirect(
-    mr, services, post_data, local_id, config, issue, redirect_issue, hotlist_id,
-    moved_to_project_name_and_local_id, copied_to_project_name_and_local_id,
-    after_issue_update):
+    mr, post_data, local_id, config, redirect_issue,
+    hotlist_id, moved_to_project_name_and_local_id,
+    copied_to_project_name_and_local_id, after_issue_update):
   """Prepare a redirect URL for the issuedetail servlets.
 
   Args:
     mr: common information parsed from the HTTP request.
-    services: A request services object.
     post_data: The post_data dict for the current request.
     local_id: int Issue ID for the current request.
     config: The ProjectIssueConfig pb for the current request.
-    issue: The currently viewed issue.
     redirect_issue: The next issue to redirect to, if any.
     hotlist_id: The current hotlist, if any.
     moved_to_project_name_and_local_id: tuple containing the project name the
@@ -1344,6 +1342,8 @@ def _ComputeBackToListURL(mr, issue, config, hotlist, services):
 
 class FlipperRedirectBase(servlet.Servlet):
 
+  # pylint: disable=arguments-differ
+  # pylint: disable=unused-arguments
   def get(self, project_name=None, viewed_username=None, hotlist_id=None):
     with work_env.WorkEnv(self.mr, self.services) as we:
       hotlist_id = self.mr.GetIntParam('hotlist_id')
@@ -1451,11 +1451,11 @@ def _ShouldShowFlipper(mr, services):
   return True
 
 
-def GetAdjacentIssue(work_env, issue, hotlist=None, next_issue=False):
+def GetAdjacentIssue(we, issue, hotlist=None, next_issue=False):
   """Compute next or previous issue given params of current issue.
 
   Args:
-    work_env: A WorkEnv instance.
+    we: A WorkEnv instance.
     issue: The current issue (from which to compute prev/next).
     hotlist (optional): The current hotlist.
     next_issue (bool): If True, return next, issue, else return previous issue.
@@ -1464,10 +1464,10 @@ def GetAdjacentIssue(work_env, issue, hotlist=None, next_issue=False):
     The adjacent issue.
   """
   if hotlist:
-    (prev_iid, cur_index, next_iid, total_count
-        ) = work_env.GetIssuePositionInHotlist(issue, hotlist)
+    (prev_iid, _cur_index, next_iid, _total_count
+        ) = we.GetIssuePositionInHotlist(issue, hotlist)
   else:
-    (prev_iid, cur_index, next_iid, total_count
-        ) = work_env.FindIssuePositionInSearch(issue)
+    (prev_iid, _cur_index, next_iid, _total_count
+        ) = we.FindIssuePositionInSearch(issue)
   iid = next_iid if next_issue else prev_iid
-  return work_env.services.issue.GetIssue(work_env.mr.cnxn, iid)
+  return we.GetIssue(iid)

@@ -408,6 +408,7 @@ class LogoView(template_helpers.PBProxy):
   """Wrapper class to make it easier to display project logos via EZT."""
 
   def __init__(self, project_pb):
+    super(LogoView, self).__init__(None)
     if (not project_pb or
         not project_pb.logo_gcs_id or
         not project_pb.logo_file_name):
