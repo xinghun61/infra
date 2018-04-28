@@ -29,6 +29,7 @@ from services import git
 from services import swarmbot_util
 from services import try_job as try_job_service
 from services.parameters import RunTestTryJobParameters
+from services.parameters import TestTryJobResult
 from services.test_failure import ci_test_failure
 from services.test_failure import test_failure_analysis
 from waterfall import build_util
@@ -575,3 +576,20 @@ def ScheduleTestTryJob(parameters, notification_id):
       runner_id=notification_id)
 
   return build_id
+
+
+def OnTryJobStateChanged(try_job_id, build_json):
+  """Updates TryJobData entity with new build state.
+
+  Args:
+    try_job_id (str): The build id of the try job.
+    build_json (dict): The up-to-date build info.
+
+  Returns:
+    CompileTryJobResult if the try job has completed; otherwise None.
+  """
+  result = try_job_service.OnTryJobStateChanged(
+      try_job_id, failure_type.COMPILE, build_json)
+  if result is not None:
+    result = TestTryJobResult.FromSerializable(result)
+  return result

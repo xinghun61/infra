@@ -2,11 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
-import logging
 import mock
-
-from google.appengine.api import taskqueue
 
 from common import exceptions
 from common.waterfall import failure_type
@@ -88,7 +84,9 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       RunCompileTryJobPipeline,
       'GetCallbackParameters',
-      return_value={'try_job_id': 'job_id'})
+      return_value={
+          'try_job_id': 'job_id'
+      })
   @mock.patch.object(compile_try_job, 'ScheduleCompileTryJob')
   def testRunImplNotTriggerSameJobTwice(self, mocked_ScheduleCompileTryJob, _):
     pipeline_input = self._CreateRunCompileTryJobParameters()
@@ -116,13 +114,12 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(compile_try_job, 'OnTryJobStateChanged')
   @mock.patch.object(RunCompileTryJobPipeline, 'pipeline_id')
-  def testCallbackImplNoTryJobID(
-        self, mocked_pipeline_id, mocked_OnTryJobStateChanged):
+  def testCallbackImplNoTryJobID(self, mocked_pipeline_id,
+                                 mocked_OnTryJobStateChanged):
     mocked_pipeline_id.__get__ = mock.Mock(return_value='pipeline-id')
     pipeline_input = self._CreateRunCompileTryJobParameters()
     p = RunCompileTryJobPipeline(pipeline_input)
-    returned_value = p.CallbackImpl(
-        pipeline_input, {'build_json': '{"k":"v"}'})
+    returned_value = p.CallbackImpl(pipeline_input, {'build_json': '{"k":"v"}'})
     self.assertEqual(('Try_job_id not found for pipeline pipeline-id', None),
                      returned_value)
     self.assertFalse(mocked_OnTryJobStateChanged.called)
@@ -132,9 +129,10 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testCallbackImplCompletedRun(self, mocked_OnTryJobStateChanged):
     pipeline_input = self._CreateRunCompileTryJobParameters()
     p = RunCompileTryJobPipeline(pipeline_input)
-    returned_value = p.CallbackImpl(
-        pipeline_input, {'try_job_id': 'job-id',
-                         'build_json': '{"k":"v"}'})
+    returned_value = p.CallbackImpl(pipeline_input, {
+        'try_job_id': 'job-id',
+        'build_json': '{"k":"v"}'
+    })
     self.assertEqual((None, 'dummy'), returned_value)
     mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'})
 
@@ -142,9 +140,10 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testCallbackImplNotCompletedRun(self, mocked_OnTryJobStateChanged):
     pipeline_input = self._CreateRunCompileTryJobParameters()
     p = RunCompileTryJobPipeline(pipeline_input)
-    returned_value = p.CallbackImpl(
-        pipeline_input, {'try_job_id': 'job-id',
-                         'build_json': '{"k":"v"}'})
+    returned_value = p.CallbackImpl(pipeline_input, {
+        'try_job_id': 'job-id',
+        'build_json': '{"k":"v"}'
+    })
     self.assertIsNone(returned_value)
     mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'})
 
@@ -155,9 +154,10 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testCallbackImplFailedRun(self, mocked_OnTryJobStateChanged):
     pipeline_input = self._CreateRunCompileTryJobParameters()
     p = RunCompileTryJobPipeline(pipeline_input)
-    returned_value = p.CallbackImpl(
-        pipeline_input, {'try_job_id': 'job-id',
-                         'build_json': '{"k":"v"}'})
+    returned_value = p.CallbackImpl(pipeline_input, {
+        'try_job_id': 'job-id',
+        'build_json': '{"k":"v"}'
+    })
     self.assertEqual(('Error on updating try-job result: m', None),
                      returned_value)
     mocked_OnTryJobStateChanged.assert_called_once_with('job-id', {'k': 'v'})

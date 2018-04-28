@@ -338,7 +338,7 @@ def TriggerTryJob(master_name,
                   cache_name,
                   dimensions,
                   runner_id,
-                  use_new_pubsub=False):
+                  use_new_pubsub=True):
   """Triggers a try job through Buildbucket.
 
   Args:
