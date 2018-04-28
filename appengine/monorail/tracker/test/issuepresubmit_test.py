@@ -30,7 +30,7 @@ class IssuePresubmitTest(unittest.TestCase):
     self.cnxn = 'fake cnxn'
     self.servlet = issuepresubmit.IssuePresubmitJSON(
         'req', 'res', services=self.services)
-    self.local_id_1 = self.services.issue.CreateIssue(
+    self.local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services,
         789, 'summary', 'status', 111L, [], [], [], [], 111L,
         'The screen is just dark when I press power on')

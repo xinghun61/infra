@@ -327,23 +327,25 @@ class WorkEnv(object):
       phases: list of Milestone PBs.
 
     Returns:
-      The newly created Issue.
+      A tuple (newly created Issue, Comment PB for the description).
     """
     with self.mr.profiler.Phase('creating issue in project %r' % project_id):
       reporter_id = self.mr.auth.user_id
-      new_local_id = self.services.issue.CreateIssue(
+      new_local_id, comment = self.services.issue.CreateIssue(
           self.mr.cnxn, self.services, project_id, summary, status,
           owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
           marked_description, blocked_on=blocked_on, blocking=blocking,
           attachments=attachments, index_now=False, phases=phases)
       logging.info('created issue %r in project %r', new_local_id, project_id)
+
+    with self.mr.profiler.Phase('following up after issue creation'):
       self.services.project.UpdateRecentActivity(self.mr.cnxn, project_id)
       new_issue = self.services.issue.GetIssueByLocalID(
           self.mr.cnxn, project_id, new_local_id)
       self.services.issue.EnqueueIssuesForIndexing(self.mr.cnxn,
           [new_issue.issue_id])
 
-      return new_issue
+    return new_issue, comment
 
   def ListIssues(self):
     """Do an issue search using info in mr and return a pipeline object."""
@@ -491,9 +493,8 @@ class WorkEnv(object):
     with self.mr.profiler.Phase('Generating notifications'):
       hostport = framework_helpers.GetHostPort()
       reporter_id = self.mr.auth.user_id
-      seq_num = 0  # TODO(jrobbins): delete.  Only comment_id is used.
       send_notifications.PrepareAndSendIssueChangeNotification(
-          issue.issue_id, hostport, reporter_id, seq_num,
+          issue.issue_id, hostport, reporter_id,
           send_email=send_email, old_owner_id=old_owner_id,
           comment_id=comment_pb.id)
 

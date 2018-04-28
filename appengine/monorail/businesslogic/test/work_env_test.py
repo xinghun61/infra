@@ -228,7 +228,7 @@ class WorkEnvTest(unittest.TestCase):
     """We can create an issue."""
     self.SignIn(user_id=111L)
     with self.work_env as we:
-      actual_issue = we.CreateIssue(
+      actual_issue, comment = we.CreateIssue(
           789, 'sum', 'New', 222L, [333L], ['Hot'], [], [], 'desc')
     self.assertEqual(789, actual_issue.project_id)
     self.assertEqual('sum', actual_issue.summary)
@@ -238,9 +238,10 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual([333L], actual_issue.cc_ids)
     self.assertEqual([], actual_issue.field_values)
     self.assertEqual([], actual_issue.component_ids)
-    actual_comments = self.services.issue.GetCommentsForIssue(
+    self.assertEqual('desc', comment.content)
+    loaded_comments = self.services.issue.GetCommentsForIssue(
         self.cnxn, actual_issue.issue_id)
-    self.assertEqual('desc', actual_comments[0].content)
+    self.assertEqual('desc', loaded_comments[0].content)
 
     # Verify that an indexing task was enqueued for this issue:
     self.assertTrue(self.services.issue.enqueue_issues_called)
@@ -375,7 +376,7 @@ class WorkEnvTest(unittest.TestCase):
     comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
     comment_pb = comments[-1]
     fake_pasicn.assert_called_with(
-        issue.issue_id, 'testing-app.appspot.com', 111L, 0, send_email=True,
+        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
         old_owner_id=111L, comment_id=comment_pb.id)
 
   def testDeleteIssue(self):

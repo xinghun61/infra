@@ -285,14 +285,15 @@ class IssueEntry(servlet.Servlet):
           for wkp in config.templates:
             if wkp.name == parsed.template_name:
               template_content = wkp.content
-          marked_comment = tracker_helpers.MarkupDescriptionOnInput(
+          marked_description = tracker_helpers.MarkupDescriptionOnInput(
               parsed.comment, template_content)
           has_star = 'star' in post_data and post_data['star'] == '1'
 
-          issue = we.CreateIssue(
+          issue, comment = we.CreateIssue(
               mr.project_id, parsed.summary, parsed.status,
               parsed.users.owner_id, parsed.users.cc_ids, labels, field_values,
-              component_ids, marked_comment, blocked_on=parsed.blocked_on.iids,
+              component_ids, marked_description,
+              blocked_on=parsed.blocked_on.iids,
               blocking=parsed.blocking.iids, attachments=parsed.attachments)
 
           if has_star:
@@ -331,12 +332,8 @@ class IssueEntry(servlet.Servlet):
           component_required=ezt.boolean(component_required))
       return
 
-    # Initial description is comment 0.
-    # TODO(jrobbins): Convert this to using comment_id and remove
-    # seq_num parameter.
-    seq_num = 0
     send_notifications.PrepareAndSendIssueChangeNotification(
-        issue.issue_id, mr.request.host, reporter_id, seq_num)
+        issue.issue_id, mr.request.host, reporter_id, comment_id=comment.id)
 
     send_notifications.PrepareAndSendIssueBlockingNotification(
         issue.issue_id, mr.request.host, parsed.blocked_on.iids, reporter_id)

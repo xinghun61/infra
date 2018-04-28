@@ -302,13 +302,8 @@ class IssuePeek(servlet.Servlet):
 
     if send_email:
       if amendments or comment.strip():
-        # TODO(jrobbins): Remove the seq_num parameter after we have
-        # deployed the change that switches to comment_id.
-        cmnts = self.services.issue.GetCommentsForIssue(
-            mr.cnxn, issue.issue_id)
-        seq_num = len(cmnts) - 1
         send_notifications.PrepareAndSendIssueChangeNotification(
-            issue.issue_id, mr.request.host, mr.auth.user_id, seq_num,
+            issue.issue_id, mr.request.host, mr.auth.user_id,
             send_email=send_email, old_owner_id=old_owner_id,
             comment_id=comment_pb.id)
 

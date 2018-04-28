@@ -386,7 +386,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesModified(set())
 
     self.mox.ReplayAll()
-    actual_local_id = self.services.issue.CreateIssue(
+    actual_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
         'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
         index_now=False, timestamp=self.now, phases=[phase])
@@ -406,7 +406,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesModified(set(), modified_timestamp=self.now)
 
     self.mox.ReplayAll()
-    actual_local_id = self.services.issue.CreateIssue(
+    actual_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
         'New', 111L, [], [',', '', ' ', ', '], [], [], 111L, 'content',
         index_now=False, timestamp=self.now)
@@ -432,7 +432,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesModified(set())
 
     self.mox.ReplayAll()
-    actual_local_id = self.services.issue.CreateIssue(
+    actual_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
         'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
         index_now=False, timestamp=self.now)
@@ -453,7 +453,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesModified(set())
 
     self.mox.ReplayAll()
-    actual_local_id = self.services.issue.CreateIssue(
+    actual_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
         'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
         index_now=False, timestamp=self.now)

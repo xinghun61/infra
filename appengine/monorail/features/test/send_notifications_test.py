@@ -34,7 +34,6 @@ class SendNotificationTest(unittest.TestCase):
         issue_id=78901,
         hostport='testbed-test.appspotmail.com',
         commenter_id=1,
-        seq_num=0,
         old_owner_id=2,
         send_email=True)
 

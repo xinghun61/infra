@@ -170,11 +170,6 @@ class UpdateIssueAction(IssueAction):
                  self.project.project_name, issue.local_id, amendments)
 
     if amendments or self.description:  # Avoid completely empty comments.
-      # TODO(jrobbins): Remove the seq_num parameter after we have
-      # deployed the change that switches to comment_id.
-      cmnts = services.issue.GetCommentsForIssue(cnxn, issue.issue_id)
-      seq_num = len(cmnts) - 1
       send_notifications.PrepareAndSendIssueChangeNotification(
-          issue.issue_id, self.hostport,
-          self.commenter_id, seq_num, old_owner_id=old_owner_id,
-          comment_id=comment_pb.id)
+          issue.issue_id, self.hostport, self.commenter_id,
+          old_owner_id=old_owner_id, comment_id=comment_pb.id)

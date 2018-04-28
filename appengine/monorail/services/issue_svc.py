@@ -544,7 +544,8 @@ class IssueService(object):
       phases: list of Phase PBs, if any.
 
     Returns:
-      The integer local ID of the new issue.
+      A tuple (the integer local ID of the new issue, Comment PB for the
+      issue description).
     """
     config = self._config_service.GetProjectConfig(cnxn, project_id)
     iids_to_invalidate = set()
@@ -659,7 +660,7 @@ class IssueService(object):
       tracker_fulltext.IndexIssues(
           cnxn, [issue], services.user, self, self._config_service)
 
-    return issue.local_id
+    return issue.local_id, comment
 
   def AllocateNewLocalIDs(self, cnxn, issues):
     # Filter to just the issues that need new local IDs.

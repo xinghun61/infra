@@ -1400,8 +1400,9 @@ class IssueService(object):
     issue.issue_id = project_id * 1000000 + issue.local_id
 
     self.TestAddIssue(issue)
-    self.comments_by_iid[issue.issue_id][0].content = marked_description
-    return issue.local_id
+    comment = self.comments_by_iid[issue.issue_id][0]
+    comment.content = marked_description
+    return issue.local_id, comment
 
   def GetIssueApproval(self, cnxn, issue_id, approval_id, use_cache=True):
     issue = self.GetIssue(cnxn, issue_id, use_cache=use_cache)

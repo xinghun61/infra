@@ -31,7 +31,7 @@ class FlagSpamFormTest(unittest.TestCase):
         'req', 'res', services=self.services)
 
   def checkVerdictPerms(self, perms, expected):
-    local_id_1 = self.services.issue.CreateIssue(
+    local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
 
@@ -66,7 +66,7 @@ class FlagSpamFormTest(unittest.TestCase):
     self.checkVerdictPerms(permissions.USER_PERMISSIONSET, False)
 
   def testProcessFormData_PermissionOwner(self):
-    local_id_1 = self.services.issue.CreateIssue(
+    local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
 
@@ -86,7 +86,7 @@ class FlagSpamFormTest(unittest.TestCase):
 
 
   def testProcessFormData_Comment(self):
-    local_id_1 = self.services.issue.CreateIssue(
+    local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
 

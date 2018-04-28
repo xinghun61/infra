@@ -544,15 +544,9 @@ class MonorailApi(remote.Service):
           merge_into_issue.issue_id, merge_into_project, new_starrers)
       merge_comment_pb = tracker_helpers.MergeCCsAndAddComment(
         self._services, mar, issue, merge_into_project, merge_into_issue)
-      # TODO(jrobbins): Remove the merge_seq_num parameter after we have
-      # deployed the change that switches to comment_id.
-      merge_into_issue_cmnts = self._services.issue.GetCommentsForIssue(
-          mar.cnxn, merge_into_issue.issue_id)
-      merge_seq_num = len(merge_into_issue_cmnts) - 1
       send_notifications.PrepareAndSendIssueChangeNotification(
           merge_into_issue.issue_id, framework_helpers.GetHostPort(),
-          mar.auth.user_id, merge_seq_num, send_email=True,
-          comment_id=merge_comment_pb.id)
+          mar.auth.user_id, send_email=True, comment_id=merge_comment_pb.id)
 
     tracker_fulltext.IndexIssues(
         mar.cnxn, [issue], self._services.user, self._services.issue,
@@ -566,12 +560,9 @@ class MonorailApi(remote.Service):
     seq = len(cmnts) - 1
 
     if request.sendEmail:
-      # TODO(jrobbins): Remove the seq parameter after we have
-      # deployed the change that switches to comment_id.  However,
-      # we need seq for the response protobuffer.
       send_notifications.PrepareAndSendIssueChangeNotification(
           issue.issue_id, framework_helpers.GetHostPort(),
-          comment.user_id, seq, send_email=True, old_owner_id=old_owner_id,
+          comment.user_id, send_email=True, old_owner_id=old_owner_id,
           comment_id=comment.id)
 
     can_delete = permissions.CanDelete(
@@ -718,7 +709,7 @@ class MonorailApi(remote.Service):
         raise endpoints.BadRequestException(
             'Invalid field values: %s' % mar.errors.custom_fields)
 
-      new_issue = we.CreateIssue(
+      new_issue, comment = we.CreateIssue(
           mar.project_id, request.summary, request.status, owner_id,
           cc_ids, request.labels + fields_labels, fields_add,
           comp_ids, request.description,
@@ -729,12 +720,9 @@ class MonorailApi(remote.Service):
       we.StarIssue(new_issue, True)
 
       if request.sendEmail:
-        # TODO(jrobbins): Convert this to using comment_id and remove
-        # seq_num parameter.
-        seq_num = 0
         send_notifications.PrepareAndSendIssueChangeNotification(
             new_issue.issue_id, framework_helpers.GetHostPort(),
-            new_issue.reporter_id, seq_num)
+            new_issue.reporter_id, comment_id=comment.id)
 
     return api_pb2_v1_helpers.convert_issue(
         api_pb2_v1.IssuesGetInsertResponse, new_issue, mar, self._services)

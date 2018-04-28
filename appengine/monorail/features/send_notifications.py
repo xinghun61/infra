@@ -15,29 +15,25 @@ from framework import urls
 from tracker import tracker_bizobj
 
 
-# TODO(jrobbins): Remove seq_num after all callers are updated.
 def PrepareAndSendIssueChangeNotification(
-    issue_id, hostport, commenter_id, seq_num,
-    send_email=True, old_owner_id=framework_constants.NO_USER_SPECIFIED,
-    comment_id=None):
+    issue_id, hostport, commenter_id, send_email=True,
+    old_owner_id=framework_constants.NO_USER_SPECIFIED, comment_id=None):
   """Create a task to notify users that an issue has changed.
 
   Args:
     issue_id: int ID of the issue that was changed.
     hostport: string domain name and port number from the HTTP request.
     commenter_id: int user ID of the user who made the comment.
-    seq_num: int index into the comments of the new comment.
     send_email: True if email notifications should be sent.
     old_owner_id: optional user ID of owner before the current change took
       effect. They will also be notified.
+    comment_id: int Comment ID of the comment that was entered.
 
   Returns nothing.
   """
   params = dict(
-      issue_id=issue_id, commenter_id=commenter_id, seq=seq_num,
+      issue_id=issue_id, commenter_id=commenter_id, comment_id=comment_id,
       hostport=hostport, old_owner_id=old_owner_id, send_email=int(send_email))
-  if comment_id:  # Only set if non-none otherwise it will be string 'None'.
-      params['comment_id'] = comment_id
   logging.info('adding notify task with params %r', params)
   taskqueue.add(url=urls.NOTIFY_ISSUE_CHANGE_TASK + '.do', params=params)
 

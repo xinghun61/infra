@@ -299,7 +299,7 @@ class InboundEmail(webapp2.RequestHandler):
                 cnxn, updated_issue, auth.user_id, formatted_body)
 
       if not updated_issue:
-        updated_issue = we.CreateIssue(
+        updated_issue, _ = we.CreateIssue(
             project.project_id, subject, status, owner_id,
             cc_ids, labels, field_values, component_ids, formatted_body)
 

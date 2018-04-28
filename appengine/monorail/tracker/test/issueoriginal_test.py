@@ -47,7 +47,7 @@ class IssueOriginalTest(unittest.TestCase):
     summary = 'System wont boot'
     status = 'New'
     cnxn = 'fake connection'
-    self.local_id_1 = self.services.issue.CreateIssue(
+    self.local_id_1, _ = self.services.issue.CreateIssue(
         cnxn, self.services,
         789, summary, status, 111L, [], [], [], [], 111L,
         'The screen is just dark when I press power on')

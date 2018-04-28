@@ -373,7 +373,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
 
   def testProcessFormData_NoPermission(self):
     """Anonymous users and users without ADD_ISSUE_COMMENT cannot comment."""
-    local_id_1 = self.services.issue.CreateIssue(
+    local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
     _, mr = testing_helpers.GetRequestObjects(
@@ -392,10 +392,10 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     orig_prepsend = send_notifications.PrepareAndSendIssueChangeNotification
     send_notifications.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
 
-    local_id_1 = self.services.issue.CreateIssue(
+    local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
-    local_id_2 = self.services.issue.CreateIssue(
+    local_id_2, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_2', 'status', 111L, [], [], [], [], 111L, 'description_2')
 
@@ -454,7 +454,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
-    local_id_2 = self.services.issue.CreateIssue(
+    local_id_2, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_2', 'status', 111L, [], [], [], [], 111L, 'description_2')
 
@@ -511,13 +511,13 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     orig_get_starrers = tracker_helpers.GetNewIssueStarrers
     tracker_helpers.GetNewIssueStarrers = lambda *args, **kwargs: []
 
-    local_id_1 = self.services.issue.CreateIssue(
+    local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'New', 111L, [], [], [], [], 111L, 'description_1')
     issue_1 = self.services.issue.GetIssueByLocalID(
         self.cnxn, self.project.project_id, local_id_1)
     issue_1.project_name = 'proj'
-    local_id_2 = self.services.issue.CreateIssue(
+    local_id_2, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_2', 'New', 111L, [], [], [], [], 111L, 'description_2')
     issue_2 = self.services.issue.GetIssueByLocalID(
@@ -665,7 +665,7 @@ class SetStarFormTest(unittest.TestCase):
 
   def testAssertBasePermission_NormalIssue(self):
     """Only allow users with SET_STAR."""
-    local_id_1 = self.services.issue.CreateIssue(
+    local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
     _, mr = testing_helpers.GetRequestObjects(
@@ -682,7 +682,7 @@ class SetStarFormTest(unittest.TestCase):
 
   def testAssertBasePermission_RestrictedIssue(self):
     """Only allow users with SET_STAR and who can view the issue."""
-    local_id_1 = self.services.issue.CreateIssue(
+    local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], ['Restrict-View-Leet'],
         [], [], 111L, 'description_1')
@@ -716,7 +716,7 @@ class IssueCommentDeletionTest(unittest.TestCase):
 
   def testProcessFormData_Permission(self):
     """Permit users who can delete."""
-    local_id_1 = self.services.issue.CreateIssue(
+    local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
     _, mr = testing_helpers.GetRequestObjects(
@@ -753,7 +753,7 @@ class ModuleFunctionsTest(unittest.TestCase):
     # Project p1; issue i1 in p1; user u1 owns i1; ui1 is an *involved* user.
     self.services.user.TestAddUser('u1', 111L)
     project = self.services.project.TestAddProject('p1')
-    issue_local_id = self.services.issue.CreateIssue(
+    issue_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, project_id=project.project_id,
         summary='summary', status='Open', owner_id=111L, cc_ids=[], labels=[],
         field_values=[], component_ids=[], reporter_id=111L,
@@ -1012,7 +1012,7 @@ class ShouldShowFlipperTest(unittest.TestCase):
     mr.project = self.project
 
     for idx in range(create_issues):
-      _local_id = services.issue.CreateIssue(
+      _local_id, _ = services.issue.CreateIssue(
           self.cnxn, services, self.project.project_id,
           'summary_%d' % idx, 'status', 111L, [], [], [], [], 111L,
           'description_%d' % idx)
