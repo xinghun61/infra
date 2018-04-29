@@ -67,7 +67,10 @@ class Profiler(object):
 
   def LogStats(self):
     """Log sufficiently-long phases and subphases, for debugging purposes."""
-    self.top_phase.LogStats()
+    self.top_phase.End()
+    lines = ['Stats:']
+    self.top_phase.AccumulateStatLines(self.top_phase.elapsed_seconds, lines)
+    logging.info('\n'.join(lines))
 
 
 class _Phase(object):
@@ -93,7 +96,7 @@ class _Phase(object):
   def End(self):
     """Record the time between the start and end of this (sub)phase."""
     self.elapsed_seconds = time.time() - self.start
-    self.ms = str(int(self.elapsed_seconds * 1000))
+    self.ms = int(self.elapsed_seconds * 1000)
     for sub in self.subphases:
       if sub.elapsed_seconds is None:
         logging.warn('issue3182: subphase is %r', sub and sub.name)
@@ -101,9 +104,12 @@ class _Phase(object):
     self.uncategorized_ms = int((self.elapsed_seconds - categorized) * 1000)
     return self.parent
 
-  def LogStats(self):
-    # Phases that took longer than 30ms are interesting.
-    if self.elapsed_seconds > 0.03:
-      logging.info('%5s: %s', self.ms, self.name)
-      for subphase in self.subphases:
-        subphase.LogStats()
+  def AccumulateStatLines(self, total_seconds, lines, indent=''):
+    # Only phases that took longer than 30ms are interesting.
+    if self.ms <= 30:
+      return
+
+    percent = self.elapsed_seconds / total_seconds * 100
+    lines.append('%s%5d ms (%2d%%): %s' % (indent, self.ms, percent, self.name))
+    for subphase in self.subphases:
+      subphase.AccumulateStatLines(total_seconds, lines, indent=indent + '   ')

@@ -224,7 +224,7 @@ backend_deadline = 45
 backend_retries = 3
 
 # Do various extra logging at INFO level.
-enable_profiler_logging = False
+enable_profiler_logging = True
 
 # Mail sending domain.  Normally set this to None and it will be computed
 # automatically from your AppEngine APP_ID. But, it can be overridden below.
