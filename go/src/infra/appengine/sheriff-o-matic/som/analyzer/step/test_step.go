@@ -259,12 +259,16 @@ func unexpectedFailures(testResults *model.FullResult) []string {
 
 	for testName, res := range testResults.Tests.Flatten(delim) {
 		if res.Unexpected != nil && *res.Unexpected {
+			hasPass := false
 			for _, act := range res.Actual {
 				if act == "PASS" {
+					hasPass = true
 					break
 				}
 			}
-			failedTests = append(failedTests, testName)
+			if !hasPass {
+				failedTests = append(failedTests, testName)
+			}
 		}
 	}
 	return failedTests

@@ -490,6 +490,26 @@ func TestUnexpected(t *testing.T) {
 			So(unexpectedFailures(r), ShouldResemble, []string{"foo"})
 		})
 
+		Convey("jbudorik's case", func() {
+			r := &model.FullResult{
+				Tests: model.FullTest{
+					"/a/fetch-event-respond-with-readable-stream-chunk.https.html": &model.FullTestLeaf{
+						Actual:     []string{"PASS"},
+						Bugs:       []string{"crbug.com/807954"},
+						Expected:   []string{"CRASH"},
+						Unexpected: &tptr,
+					},
+					"/b/fetch-event-respond-with-readable-stream-chunk.https.html": &model.FullTestLeaf{
+						Actual:     []string{"PASS"},
+						Bugs:       []string{"crbug.com/807954"},
+						Expected:   []string{"CRASH"},
+						Unexpected: &tptr,
+					},
+				},
+			}
+
+			So(unexpectedFailures(r), ShouldResemble, []string{})
+		})
 	})
 }
 
