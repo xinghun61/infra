@@ -78,7 +78,8 @@ def build_component_dataset(issue, csv_file):
                                                 'Issue2Component.component_id',
                                                 [])],
                                         where=[('(deprecated = %s OR deprecated'
-                                                ' IS NULL)', [False])],
+                                                ' IS NULL)', [False]),
+                                                ('is_deleted = %s', [False])],
                                         group_by=['issue_id'],
                                         shard_id=shard_id,
                                         issue_id=issue_list)
