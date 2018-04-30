@@ -7,6 +7,7 @@
 
 import time
 import unittest
+from mock import patch
 
 from framework import permissions
 from project import projectadminadvanced
@@ -29,11 +30,6 @@ class ProjectAdminAdvancedTest(unittest.TestCase):
     self.project = services.project.TestAddProject('proj')
     self.mr = testing_helpers.MakeMonorailRequest(
         project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
-    self.orig_time_function = time.time
-    time.time = lambda: NOW
-
-  def tearDown(self):
-    time.time = self.orig_time_function
 
   def testAssertBasePermission(self):
     # Signed-out users cannot edit the project
@@ -109,7 +105,9 @@ class ProjectAdminAdvancedTest(unittest.TestCase):
     self.assertEqual(50, ezt_item.used_percent)
     self.assertEqual('attachments', ezt_item.field_name)
 
-  def testProcessFormData_NotDeleted(self):
+  @patch('time.time')
+  def testProcessFormData_NotDeleted(self, mock_time):
+    mock_time.return_value = NOW
     self.mr.project_name = 'proj'
     post_data = fake.PostData()
     next_url = self.servlet.ProcessFormData(self.mr, post_data)

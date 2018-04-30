@@ -7,6 +7,7 @@
 
 import logging
 import unittest
+from mock import patch
 
 from google.appengine.ext import testbed
 
@@ -167,23 +168,17 @@ class IssueAttachmentTextTest(unittest.TestCase):
 
     self.assertEqual(None, page_data['code_reviews'])
 
-  def testGatherPageData_HugeFile(self):
+  @patch('framework.filecontent.DecodeFileContents')
+  def testGatherPageData_HugeFile(self, mock_DecodeFileContents):
     _request, mr = testing_helpers.GetRequestObjects(
         project=self.project,
         path='/p/proj/issues/attachmentText?id=1&aid=1234',
         perms=permissions.READ_ONLY_PERMISSIONSET)
+    mock_DecodeFileContents.return_value = (
+        'too large text', False, True)
 
-    def _MockDecodeFileContents(_content):
-      return 'too large text', False, True
+    page_data = self.servlet.GatherPageData(mr)
 
-    orig_decode = filecontent.DecodeFileContents
-    filecontent.DecodeFileContents = _MockDecodeFileContents
-    try:
-      page_data = self.servlet.GatherPageData(mr)
-    finally:
-      filecontent.DecodeFileContents = orig_decode
-
-    filecontent.DecodeFileContents = orig_decode
     self.assertEqual(ezt.boolean(False), page_data['should_prettify'])
     self.assertEqual(ezt.boolean(False), page_data['is_binary'])
     self.assertEqual(ezt.boolean(True), page_data['too_large'])

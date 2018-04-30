@@ -9,6 +9,7 @@
 import logging
 import time
 import unittest
+from mock import patch
 
 import mox
 
@@ -324,8 +325,8 @@ class IssueServiceTest(unittest.TestCase):
         self.services.chart, self.mox)
     self.services.spam = self.mox.CreateMock(spam_svc.SpamService)
     self.now = int(time.time())
-    self.orig_index_issues = tracker_fulltext.IndexIssues
-    tracker_fulltext.IndexIssues = lambda *args: None
+    self.patcher = patch('services.tracker_fulltext.IndexIssues')
+    self.patcher.start()
     self.mox.StubOutWithMock(self.services.chart, 'StoreIssueSnapshots')
 
   def classifierResult(self, score, failed_open=False):
@@ -336,7 +337,7 @@ class IssueServiceTest(unittest.TestCase):
     self.testbed.deactivate()
     self.mox.UnsetStubs()
     self.mox.ResetAll()
-    tracker_fulltext.IndexIssues = self.orig_index_issues
+    self.patcher.stop()
 
   ### Issue ID lookups
 

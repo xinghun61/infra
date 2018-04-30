@@ -307,8 +307,7 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetIssueByLocalID(789, 1)
 
-  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification',
-         autospec=True)
+  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
   def testUpdateIssueApprovalStatus(self, mockPrepareAndSend):
     """We can update an issue's ApprovalValue status."""
     self.SignIn()
@@ -330,12 +329,13 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(updated_av.status, tracker_pb2.ApprovalStatus.APPROVED)
     self.assertEqual(updated_av.setter_id, 111L)
     self.assertEqual(updated_av.set_on, 3456)
-    amendment_comment = self.services.issue.GetCommentsForIssue(self.cnxn, 78901)[-1]
+    amendment_comment = self.services.issue.GetCommentsForIssue(
+        self.cnxn, 78901)[-1]
     self.assertEqual(amendment_comment.approval_id, 24)
-    self.assertEqual(amendment_comment.amendments[-1].custom_field_name, 'Status')
+    self.assertEqual(
+        amendment_comment.amendments[-1].custom_field_name, 'Status')
 
-  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification',
-         autospect=True)
+  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
   def testUpdateIssueApprovalApprovers(self, mockPrepareAndSend):
     """We can update an issue's approval approvers."""
     self.SignIn()
@@ -353,9 +353,11 @@ class WorkEnvTest(unittest.TestCase):
     phase = issue.phases[0]
     updated_av = tracker_bizobj.FindApprovalValueByID(23, phase.approval_values)
     self.assertItemsEqual([111, 222, 444], updated_av.approver_ids)
-    amendment_comment = self.services.issue.GetCommentsForIssue(self.cnxn, 78901)[-1]
+    amendment_comment = self.services.issue.GetCommentsForIssue(
+        self.cnxn, 78901)[-1]
     self.assertEqual(amendment_comment.approval_id, 23)
-    self.assertEqual(amendment_comment.amendments[-1].custom_field_name, 'Approvers')
+    self.assertEqual(
+        amendment_comment.amendments[-1].custom_field_name, 'Approvers')
 
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Normal(self, fake_pasicn):

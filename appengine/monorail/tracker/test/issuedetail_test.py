@@ -387,11 +387,10 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.assertRaises(permissions.PermissionException,
                       self.servlet.ProcessFormData, mr, {})
 
-  def testProcessFormData_NonMembersCantEdit(self):
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testProcessFormData_NonMembersCantEdit(self, mock_prepsend):
     """Non-members can comment, but never affect issue fields."""
-    orig_prepsend = send_notifications.PrepareAndSendIssueChangeNotification
-    send_notifications.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
-
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
@@ -443,14 +442,13 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         self.cnxn, self.project.project_id, local_id_2)
     self.assertEqual(local_id_1, updated_issue_2.merged_into)
 
-    send_notifications.PrepareAndSendIssueChangeNotification = orig_prepsend
     self.assertIs(issuedetail.GetAdjacentIssue.called, True)
 
-  def testProcessFormData_NewMemberExistingFormOnlyAddsComment(self):
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testProcessFormData_NewMemberExistingFormOnlyAddsComment(
+      self, mock_prepsend):
     """Non-member had a form open, then become a member, then submitted."""
-    orig_prepsend = send_notifications.PrepareAndSendIssueChangeNotification
-    send_notifications.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
-
     self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
@@ -502,15 +500,13 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         self.cnxn, self.project.project_id, local_id_2)
     self.assertEqual('summary_2', updated_issue_2.summary)
 
-    send_notifications.PrepareAndSendIssueChangeNotification = orig_prepsend
-
-  def testProcessFormData_DuplicateAddsACommentToTarget(self):
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch(
+      'tracker.tracker_helpers.GetNewIssueStarrers')
+  def testProcessFormData_DuplicateAddsACommentToTarget(
+      self, mock_getstarrers, mock_prepsend):
     """Marking issue 2 as dup of 1 adds a comment to 1."""
-    orig_prepsend = send_notifications.PrepareAndSendIssueChangeNotification
-    send_notifications.PrepareAndSendIssueChangeNotification = lambda *args, **kwargs: None
-    orig_get_starrers = tracker_helpers.GetNewIssueStarrers
-    tracker_helpers.GetNewIssueStarrers = lambda *args, **kwargs: []
-
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'New', 111L, [], [], [], [], 111L, 'description_1')
@@ -566,17 +562,12 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         self.cnxn, issue_1.issue_id)
     self.assertEqual(2, len(comments_1))
 
-    send_notifications.PrepareAndSendIssueChangeNotification = orig_prepsend
-
     self.assertIs(issuedetail.GetAdjacentIssue.called, True)
-
-    tracker_helpers.GetNewIssueStarrers = orig_get_starrers
 
     # TODO(jrobbins): add more unit tests for other aspects of ProcessForm.
 
-  def testHandleCopyOrMove_Copy_SameProject(self):
-    old_index_issues = tracker_fulltext.IndexIssues
-    tracker_fulltext.IndexIssues = lambda *args, **kw: None
+  @mock.patch('services.tracker_fulltext.IndexIssues')
+  def testHandleCopyOrMove_Copy_SameProject(self, mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': 222L},
         path='/p/proj/issues/detail.do?id=1',
@@ -588,7 +579,6 @@ class IssueDetailFunctionsTest(unittest.TestCase):
 
     self.servlet.HandleCopyOrMove(
         'cnxn', mr, self.project, self.issue, False, False)
-    tracker_fulltext.IndexIssues = old_index_issues
 
     copied_issue = self.services.issue.GetIssueByLocalID(
         'cnxn', self.project.project_id, 2)
@@ -596,9 +586,8 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.assertEqual(self.issue.summary, copied_issue.summary)
     self.assertEqual(copied_issue.reporter_id, 222L)
 
-  def testHandleCopyOrMove_Copy_DifferentProject(self):
-    old_index_issues = tracker_fulltext.IndexIssues
-    tracker_fulltext.IndexIssues = lambda *args, **kw: None
+  @mock.patch('services.tracker_fulltext.IndexIssues')
+  def testHandleCopyOrMove_Copy_DifferentProject(self, mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': 222L},
         path='/p/proj/issues/detail.do?id=1',
@@ -612,7 +601,6 @@ class IssueDetailFunctionsTest(unittest.TestCase):
 
     self.servlet.HandleCopyOrMove(
         'cnxn', mr, dest_project, self.issue, False, False)
-    tracker_fulltext.IndexIssues = old_index_issues
 
     copied_issue = self.services.issue.GetIssueByLocalID(
         'cnxn', dest_project.project_id, 1)
@@ -621,11 +609,10 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.assertEqual(self.issue.summary, copied_issue.summary)
     self.assertEqual(copied_issue.reporter_id, 222L)
 
-  def testHandleCopyOrMove_Move_DifferentProject(self):
-    old_index_issues = tracker_fulltext.IndexIssues
-    tracker_fulltext.IndexIssues = lambda *args, **kw: None
-    old_unindex_issues = tracker_fulltext.UnindexIssues
-    tracker_fulltext.UnindexIssues = lambda *args, **kw: None
+  @mock.patch('services.tracker_fulltext.IndexIssues')
+  @mock.patch('services.tracker_fulltext.UnindexIssues')
+  def testHandleCopyOrMove_Move_DifferentProject(
+      self, mock_unindexissues, mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': 222L},
         path='/p/proj/issues/detail.do?id=1',
@@ -639,8 +626,6 @@ class IssueDetailFunctionsTest(unittest.TestCase):
 
     self.servlet.HandleCopyOrMove(
         'cnxn', mr, dest_project, self.issue, False, True)
-    tracker_fulltext.IndexIssues = old_index_issues
-    tracker_fulltext.UnindexIssues = old_unindex_issues
 
     moved_issue = self.services.issue.GetIssueByLocalID(
         'cnxn', dest_project.project_id, 1)
