@@ -127,7 +127,7 @@ func finalizeInstallLegacy(ctx context.Context, xcodeAppPath, packageInstallerOn
 }
 
 func finalizeInstall(ctx context.Context, xcodeAppPath, xcodeVersion, packageInstallerOnBots string) error {
-	if xcodeVersion <= "8E3004b" {
+	if xcodeVersion <= "8e3004b" {
 		return finalizeInstallLegacy(ctx, xcodeAppPath, packageInstallerOnBots)
 	}
 	err := RunCommand(ctx, "sudo", "/usr/bin/xcodebuild", "-runFirstLaunch")
