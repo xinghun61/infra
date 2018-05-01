@@ -302,12 +302,23 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
     repo (GitWrapper): repository in which the revision occurs.
 
   Returns:
-    A dict of the following form:
-    ``build_history =
-    {master: {builder: [(revision, status, build_num), ...]}}``, and a list of
-    revisions: ``revisions = [revision, ...]``, with revisions and
-    ``build_history[master][builder]`` sorted by their revkeys.
+    A 2-tuple of (build_history, revisions), where:
 
+    ```
+    build_history := {
+      master: {
+        builder: [(revision, status, build_num), ...],
+        ...,
+      },
+      ...
+    }
+    ```
+
+    and
+
+    ```
+    revisions := [revision, ...]
+    ```
   """
   build_history = {}
   revisions = set()
@@ -329,23 +340,21 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
           continue
         if 'exception' in txt and 'slave' in txt and 'lost' in txt:
           continue
-        revision = None
-        for prop in this_build_data.get('properties', []):
-          # Revision fallthrough:
-          # * If there is a got_src_revision, we probably want to use that,
-          #   because otherwise it wouldn't be specified.
-          # * If we're in Git and there's a got_revision_git, might as well
-          #   use that since it is guaranteed to be the righ type.
-          # * Finally, just use the default got_revision.
-          if prop[0] == 'got_src_revision':
-            revision = prop[1]
-            break
-          if prop[0] == 'got_revision_git':
-            revision = prop[1]
-            break
-          if prop[0] == 'got_revision':
-            revision = prop[1]
-            break
+        this_build_properties = {
+          prop[0]: prop[1]
+          for prop in this_build_data.get('properties', [])
+        }
+        # Revision fallthrough:
+        revision = (
+            # * If there is a got_src_revision, we probably want to use that,
+            #   because otherwise it wouldn't be specified.
+            this_build_properties.get('got_src_revision')
+            # * If we're in Git and there's a got_revision_git, might as well
+            #   use that since it is guaranteed to be the righ type.
+            or this_build_properties.get('got_revision_git')
+            # * Finally, just use the default got_revision.
+            or this_build_properties.get('got_revision')
+            or None)
         status = EvaluateBuildData(this_build_data)
         if revision is None:
           if status is STATUS.FAILURE or status is STATUS.RUNNING:

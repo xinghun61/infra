@@ -71,6 +71,45 @@ class FetchBuilderJsonTest(unittest.TestCase):
     self.assertEquals(build_data['master1']['builder2'], None)
 
 
+class CollateRevisionHistoryTest(unittest.TestCase):
+
+  def testGotRevisionAndSrcRevision(self):
+    build_data = {
+      'master1': {
+        'builder1': {
+          '1': {
+            'currentStep': None,
+            'properties': sorted([
+              ('got_revision',
+               '89abcdef0123456789abcdef0123456789abcdef',
+               'Annotation(bot_update)'),
+              ('got_src_revision',
+               '0123456789abcdef0123456789abcdef01234567',
+               'Annotation(bot_update)'),
+            ]),
+          },
+        }
+      }
+    }
+
+    lkgr_builders = {
+      'master1': {
+        'builders': ['builder1'],
+      },
+    }
+
+    repo = mock.MagicMock()
+    def mock_repo_sort(history, keyfunc=None):
+      return sorted(history, key=keyfunc)
+    repo.sort = mock.MagicMock(side_effect=mock_repo_sort)
+
+    actual_build_history, _ = lkgr_lib.CollateRevisionHistory(
+        build_data, lkgr_builders, repo)
+    self.assertEquals(
+        '0123456789abcdef0123456789abcdef01234567',
+        actual_build_history['master1']['builder1'][0][0])
+
+
 class FindLKGRCandidateTest(unittest.TestCase):
 
   def setUp(self):
