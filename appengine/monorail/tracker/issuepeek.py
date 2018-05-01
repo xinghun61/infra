@@ -72,8 +72,10 @@ class IssuePeek(servlet.Servlet):
     if mr.local_id is None:
       self.abort(404, 'no issue specified')
     with work_env.WorkEnv(mr, self.services) as we:
+      # Signed in users could edit the issue, so it must be fresh.
+      use_cache = not mr.auth.user_id
       issue = we.GetIssueByLocalID(
-          mr.project_id, mr.local_id, use_cache=False)
+          mr.project_id, mr.local_id, use_cache=use_cache)
 
       # We give no explanation of missing issues on the peek page.
       if issue.deleted:

@@ -109,8 +109,10 @@ class IssueDetail(issuepeek.IssuePeek):
       if mr.local_id is None:
         return self._GetMissingIssuePageData(mr, issue_not_specified=True)
       try:
+        # Signed in users could edit the issue, so it must be fresh.
+        use_cache = not mr.auth.user_id
         issue = we.GetIssueByLocalID(
-            mr.project_id, mr.local_id, use_cache=False)
+            mr.project_id, mr.local_id, use_cache=use_cache)
       except exceptions.NoSuchIssueException:
         issue = None
 
