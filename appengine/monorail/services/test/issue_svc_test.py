@@ -46,7 +46,7 @@ def MakeIssueService(project_service, config_service, cache_manager,
       'issue2fieldvalue_tbl', 'issuerelation_tbl', 'danglingrelation_tbl',
       'issueformerlocations_tbl', 'comment_tbl', 'commentcontent_tbl',
       'issueupdate_tbl', 'attachment_tbl', 'reindexqueue_tbl',
-      'localidcounter_tbl', 'issue2phase_tbl', 'issue2approvalvalue_tbl',
+      'localidcounter_tbl', 'issuephasedef_tbl', 'issue2approvalvalue_tbl',
       'issueapproval2approver_tbl', 'issueapproval2comment_tbl']:
     setattr(issue_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
@@ -169,11 +169,11 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.dangling_relation_rows = [
         (78901, 'codesite', 5001, 'blocking'),
         (78901, 'codesite', 5002, 'blockedon')]
-    self.phase_rows = [(1, 78901, 'Canary', 1), (2, 78901, 'Stable', 11)]
+    self.phase_rows = [(1, 'Canary', 1), (2, 'Stable', 11)]
     self.approvalvalue_rows = [(21, 78901, 1, 'needs_review', None, None),
-                               (22, 78901, 1, 'not_set', None, None)]
+                               (22, 78901, 2, 'not_set', None, None)]
     self.av_approver_rows = [
-        (22, 111, 78901), (22, 222, 78901), (22, 333, 78901)]
+        (21, 111, 78901), (21, 222, 78901), (21, 333, 78901)]
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -189,12 +189,11 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual(ms_id, 1)
 
   def testUnpackPhase(self):
-    phase, issue_id = self.issue_2lc._UnpackPhase(
+    phase = self.issue_2lc._UnpackPhase(
         self.phase_rows[0])
     self.assertEqual(phase.name, 'Canary')
     self.assertEqual(phase.phase_id, 1)
     self.assertEqual(phase.rank, 1)
-    self.assertEqual(issue_id, 78901)
 
   def testDeserializeIssues_Empty(self):
     issue_dict = self.issue_2lc._DeserializeIssues(
@@ -211,12 +210,14 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     issue = issue_dict[78901]
     self.assertEqual(len(issue.phases), 2)
     canary_phase = tracker_bizobj.FindPhaseByID(1, issue.phases)
-    self.assertEqual(len(canary_phase.approval_values), 2)
-    av_22 = tracker_bizobj.FindApprovalValueByID(
-        22, canary_phase.approval_values)
-    self.assertItemsEqual(av_22.approver_ids, [111, 222, 333])
+    self.assertEqual(len(canary_phase.approval_values), 1)
+    av_21 = tracker_bizobj.FindApprovalValueByID(
+        21, canary_phase.approval_values)
+    self.assertItemsEqual(av_21.approver_ids, [111, 222, 333])
     stable_phase = tracker_bizobj.FindPhaseByID(2, issue.phases)
-    self.assertEqual(len(stable_phase.approval_values), 0)
+    self.assertEqual(len(stable_phase.approval_values), 1)
+    self.assertIsNotNone(tracker_bizobj.FindApprovalValueByID(
+        22, stable_phase.approval_values))
 
   def testDeserializeIssues_UnexpectedLabel(self):
     unexpected_label_rows = [
@@ -266,9 +267,9 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.issue_service.issue2fieldvalue_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUE2FIELDVALUE_COLS, shard_id=shard_id,
         issue_id=issue_ids).AndReturn(self.fieldvalue_rows)
-    self.issue_service.issue2phase_tbl.Select(
-        self.cnxn, cols=issue_svc.ISSUE2PHASE_COLS,
-        issue_id=issue_ids).AndReturn(self.phase_rows)
+    self.issue_service.issuephasedef_tbl.Select(
+        self.cnxn, cols=issue_svc.ISSUEPHASEDEF_COLS,
+        id=[1, 2]).AndReturn(self.phase_rows)
     self.issue_service.issue2approvalvalue_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUE2APPROVALVALUE_COLS,
         issue_id=issue_ids).AndReturn(self.approvalvalue_rows)
@@ -375,7 +376,7 @@ class IssueServiceTest(unittest.TestCase):
     approval_values = [av_23, av_24]
     phase = tracker_pb2.Phase(
         name='Canary', approval_values=approval_values, rank=11)
-    phase_row = (78901, 'Canary', 11)
+    phase_row = ('Canary', 11)
     av_rows = [(23, 78901, 1, 'needs_review', None, None),
                (24, 78901, 1, 'not_set', None, None)]
     self.SetUpAllocateNextLocalID(789, None, None)
@@ -673,9 +674,9 @@ class IssueServiceTest(unittest.TestCase):
 
   def SetUpCreateIssuePhases(self, phase_row=None, av_rows=None):
     if phase_row:
-      (issue_id, name, rank) = phase_row
-      self.services.issue.issue2phase_tbl.InsertRow(
-          self.cnxn, issue_id=issue_id, name=name,
+      (name, rank) = phase_row
+      self.services.issue.issuephasedef_tbl.InsertRow(
+          self.cnxn, name=name,
           rank=rank, commit=False).AndReturn(1)
       av_rows=av_rows or []
       self.services.issue.issue2approvalvalue_tbl.InsertRows(

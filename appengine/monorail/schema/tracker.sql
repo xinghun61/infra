@@ -827,7 +827,7 @@ CREATE TABLE ApprovalDef2Survey (
   FOREIGN KEY (project_id) REFERENCES Project(project_id)
 ) ENGINE=INNODB;
 
-
+-- TODO(jojwang):monorail:3774, delete this table
 CREATE TABLE Issue2Phase (
   id INT NOT NULL AUTO_INCREMENT,
   issue_id INT NOT NULL,
@@ -838,6 +838,13 @@ CREATE TABLE Issue2Phase (
   FOREIGN KEY (issue_id) REFERENCES Issue(id)
 ) ENGINE=INNODB;
 
+CREATE TABLE IssuePhaseDef (
+  id INT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id)
+) ENGINE=INNODB;
 
 CREATE TABLE Issue2ApprovalValue (
   issue_id INT NOT NULL,
@@ -851,7 +858,7 @@ CREATE TABLE Issue2ApprovalValue (
   FOREIGN KEY (setter_id) REFERENCES User(user_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
-  FOREIGN KEY (phase_id) REFERENCES Issue2Phase(id)
+  FOREIGN KEY (phase_id) REFERENCES IssuePhaseDef(id)
 ) ENGINE=INNODB;
 
 

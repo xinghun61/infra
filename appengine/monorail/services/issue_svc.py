@@ -61,7 +61,7 @@ ISSUESNAPSHOT_TABLE_NAME = 'IssueSnapshot'
 ISSUESNAPSHOT2CC_TABLE_NAME = 'IssueSnapshot2Cc'
 ISSUESNAPSHOT2COMPONENT_TABLE_NAME = 'IssueSnapshot2Component'
 ISSUESNAPSHOT2LABEL_TABLE_NAME = 'IssueSnapshot2Label'
-ISSUE2PHASE_TABLE_NAME = 'Issue2Phase'
+ISSUEPHASEDEF_TABLE_NAME = 'IssuePhaseDef'
 ISSUE2APPROVALVALUE_TABLE_NAME = 'Issue2ApprovalValue'
 ISSUEAPPROVAL2APPROVER_TABLE_NAME = 'IssueApproval2Approver'
 ISSUEAPPROVAL2COMMENT_TABLE_NAME = 'IssueApproval2Comment'
@@ -109,7 +109,7 @@ ISSUESNAPSHOT_COLS = ['id', 'issue_id', 'shard', 'project_id', 'local_id',
 ISSUESNAPSHOT2CC_COLS = ['issuesnapshot_id', 'cc_id']
 ISSUESNAPSHOT2COMPONENT_COLS = ['issuesnapshot_id', 'component_id']
 ISSUESNAPSHOT2LABEL_COLS = ['issuesnapshot_id', 'label_id']
-ISSUE2PHASE_COLS = ['id', 'issue_id', 'name', 'rank']
+ISSUEPHASEDEF_COLS = ['id', 'name', 'rank']
 ISSUE2APPROVALVALUE_COLS = ['approval_id', 'issue_id', 'phase_id',
                             'status', 'setter_id', 'set_on']
 ISSUEAPPROVAL2APPROVER_COLS = ['approval_id', 'approver_id', 'issue_id']
@@ -235,10 +235,10 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
 
   def _UnpackPhase(self, phase_row):
     """Construct a Phase PB from a DB row."""
-    (phase_id, issue_id, name, rank) = phase_row
+    (phase_id, name, rank) = phase_row
     phase = tracker_pb2.Phase(
         phase_id=phase_id, name=name, rank=rank)
-    return phase, issue_id
+    return phase
 
   def _DeserializeIssues(
       self, cnxn, issue_rows, summary_rows, label_rows, component_rows,
@@ -299,10 +299,18 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       av.approver_ids = approvers_dict[av.approval_id, issue_id]
       phase_avs_dict[phase_id, issue_id].append(av)
 
+    phases_by_id = {}
     for phase_row in phase_rows:
-      phase, issue_id = self._UnpackPhase(phase_row)
-      phase.approval_values = phase_avs_dict[phase.phase_id, issue_id]
-      results_dict[issue_id].phases.append(phase)
+      phase = self._UnpackPhase(phase_row)
+      phases_by_id[phase.phase_id] = phase
+
+    for (phase_id, issue_id), avs in phase_avs_dict.iteritems():
+      try:
+        phase = phases_by_id[phase_id]
+        phase.approval_values = avs
+        results_dict[issue_id].phases.append(phase)
+      except KeyError:
+        logging.error('Approval value tied to missing phase: %r', phase_id)
 
     for issue_id, dst_issue_id, kind, rank in relation_rows:
       src_issue = results_dict.get(issue_id)
@@ -359,10 +367,11 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
     fieldvalue_rows = self.issue_service.issue2fieldvalue_tbl.Select(
         cnxn, cols=ISSUE2FIELDVALUE_COLS, shard_id=shard_id,
         issue_id=issue_ids)
-    phase_rows = self.issue_service.issue2phase_tbl.Select(
-        cnxn, cols=ISSUE2PHASE_COLS, issue_id=issue_ids)
     approvalvalue_rows = self.issue_service.issue2approvalvalue_tbl.Select(
         cnxn, cols=ISSUE2APPROVALVALUE_COLS, issue_id=issue_ids)
+    phase_ids = [av_row[2] for av_row in approvalvalue_rows]
+    phase_rows = self.issue_service.issuephasedef_tbl.Select(
+        cnxn, cols=ISSUEPHASEDEF_COLS, id=list(set(phase_ids)))
     av_approver_rows = self.issue_service.issueapproval2approver_tbl.Select(
         cnxn, cols=ISSUEAPPROVAL2APPROVER_COLS, issue_id=issue_ids)
     if issue_ids:
@@ -431,7 +440,7 @@ class IssueService(object):
         ISSUESNAPSHOT2COMPONENT_TABLE_NAME)
     self.issuesnapshot2label_tbl = sql.SQLTableManager(
         ISSUESNAPSHOT2LABEL_TABLE_NAME)
-    self.issue2phase_tbl = sql.SQLTableManager(ISSUE2PHASE_TABLE_NAME)
+    self.issuephasedef_tbl = sql.SQLTableManager(ISSUEPHASEDEF_TABLE_NAME)
     self.issue2approvalvalue_tbl = sql.SQLTableManager(
         ISSUE2APPROVALVALUE_TABLE_NAME)
     self.issueapproval2approver_tbl = sql.SQLTableManager(
@@ -1136,9 +1145,8 @@ class IssueService(object):
     # NOTE: currently not supporting phase editing.
     # only editing approvalvalues within phases.
     for phase in issue.phases:
-      phase_id = self.issue2phase_tbl.InsertRow(
-          cnxn, issue_id=issue.issue_id, name=phase.name,
-          rank=phase.rank, commit=commit)
+      phase_id = self.issuephasedef_tbl.InsertRow(
+          cnxn, name=phase.name, rank=phase.rank, commit=commit)
       av_rows =  [(av.approval_id, issue.issue_id, phase_id,
                    av.status.name.lower(), av.setter_id, av.set_on)
                   for av in phase.approval_values]
