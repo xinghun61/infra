@@ -410,6 +410,10 @@ class IssueService(object):
       'monorail/issue_svc/spam_label',
       'Issues created, broken down by spam label.',
       [ts_mon.StringField('type')])
+  replication_lag_retries = ts_mon.CounterMetric(
+      'monorail/issue_svc/replication_lag_retries',
+      'Counts times that loading comments from a replica failed',
+      [])
 
   def __init__(self, project_service, config_service, cache_manager,
       chart_service):
@@ -2078,11 +2082,26 @@ class IssueService(object):
       A list of the IssueComment protocol buffers for the description
       and comments on this issue.
     """
+    # Try loading issue comments from a random shard to reduce load on
+    # master DB.
     shard_id = sql.RandomShardID()
     order_by = [('created ASC', [])]
     comment_rows = self.comment_tbl.Select(
         cnxn, cols=COMMENT_COLS, order_by=order_by, id=comment_ids,
         shard_id=shard_id)
+
+    # If any expected rows are missing, it may be due to DB replication
+    # lag.  So, try again on the master DB.
+    if len(comment_rows) < len(comment_ids):
+      self.replication_lag_retries.increment()
+      logging.info('issue3755: expected %d, but got %d rows from shard %d',
+                   len(comment_ids), len(comment_rows), shard_id)
+      shard_id = None  # Will use Master DB.
+      comment_rows = self.comment_tbl.Select(
+          cnxn, cols=COMMENT_COLS, order_by=order_by, id=comment_ids,
+          shard_id=shard_id)
+      logging.info('Retry got %d comment rows from master', len(comment_rows))
+
     comment_ids = [row[0] for row in comment_rows]
     commentcontent_ids = [row[-1] for row in comment_rows]
     content_rows = self.commentcontent_tbl.Select(
@@ -2093,7 +2112,8 @@ class IssueService(object):
     attachment_rows = self.attachment_tbl.Select(
         cnxn, cols=ATTACHMENT_COLS, comment_id=comment_ids, shard_id=shard_id)
     approval_rows = self.issueapproval2comment_tbl.Select(
-        cnxn, cols=ISSUEAPPROVAL2COMMENT_COLS, comment_id=comment_ids)
+        cnxn, cols=ISSUEAPPROVAL2COMMENT_COLS, comment_id=comment_ids,
+        shard_id=shard_id)
 
     comments = self._DeserializeComments(
         comment_rows, content_rows, amendment_rows, attachment_rows,
@@ -2106,11 +2126,11 @@ class IssueService(object):
 
   def GetAbbrCommentsForIssue(self, cnxn, issue_id):
     """Get all abbreviated comments for the specified issue."""
-    shard_id = sql.RandomShardID()
+    # Abbreviated comment rows are always loaded from the master so
+    # that they never suffer from replication lag.
     order_by = [('created ASC', [])]
     comment_rows = self.comment_tbl.Select(
-        cnxn, cols=ABBR_COMMENT_COLS, issue_id=[issue_id], order_by=order_by,
-        shard_id=shard_id)
+        cnxn, cols=ABBR_COMMENT_COLS, issue_id=issue_id, order_by=order_by)
 
     return comment_rows
 

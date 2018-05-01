@@ -9,7 +9,7 @@
 import logging
 import time
 import unittest
-from mock import patch
+from mock import patch, Mock, ANY
 
 import mox
 
@@ -1276,6 +1276,85 @@ class IssueServiceTest(unittest.TestCase):
         approval_rows)
     self.assertEqual(2, len(comments))
 
+  def MockTheRestOfGetCommentsByID(self, comment_ids):
+    self.services.issue.commentcontent_tbl.Select = Mock(
+        return_value=[
+            (cid + 5000, 'content', None) for cid in comment_ids])
+    self.services.issue.issueupdate_tbl.Select = Mock(
+        return_value=[])
+    self.services.issue.attachment_tbl.Select = Mock(
+        return_value=[])
+    self.services.issue.issueapproval2comment_tbl.Select = Mock(
+        return_value=[])
+
+  def testGetCommentsByID_Normal(self):
+    """We can load comments by comment_ids."""
+    comment_ids = [101001, 101002, 101003]
+    self.services.issue.comment_tbl.Select = Mock(
+        return_value=[
+            (cid, cid - cid % 100, self.now, 789, 111L,
+             None, False, False, cid + 5000)
+            for cid in comment_ids])
+    self.MockTheRestOfGetCommentsByID(comment_ids)
+
+    comments = self.services.issue.GetCommentsByID(
+        self.cnxn, comment_ids, [0, 1, 2])
+
+    self.services.issue.comment_tbl.Select.assert_called_with(
+        self.cnxn, cols=issue_svc.COMMENT_COLS,
+        order_by=[('created ASC', [])],
+        id=comment_ids, shard_id=ANY)
+
+    self.assertEqual(3, len(comments))
+
+  def testGetCommentsByID_ReplicationLag(self):
+    """If not all comments are on the replica, we try the master."""
+    comment_ids = [101001, 101002, 101003]
+    replica_comment_ids = comment_ids[:-1]
+
+    return_value_1 = [
+      (cid, cid - cid % 100, self.now, 789, 111L,
+       None, False, False, cid + 5000)
+      for cid in replica_comment_ids]
+    return_value_2 = [
+      (cid, cid - cid % 100, self.now, 789, 111L,
+       None, False, False, cid + 5000)
+      for cid in comment_ids]
+    return_values = [return_value_1, return_value_2]
+    self.services.issue.comment_tbl.Select = Mock(
+        side_effect=lambda *_args, **_kwargs: return_values.pop(0))
+
+    self.MockTheRestOfGetCommentsByID(comment_ids)
+
+    comments = self.services.issue.GetCommentsByID(
+        self.cnxn, comment_ids, [0, 1, 2])
+
+    self.services.issue.comment_tbl.Select.assert_called_with(
+        self.cnxn, cols=issue_svc.COMMENT_COLS,
+        order_by=[('created ASC', [])],
+        id=comment_ids, shard_id=ANY)
+    self.services.issue.comment_tbl.Select.assert_called_with(
+        self.cnxn, cols=issue_svc.COMMENT_COLS,
+        order_by=[('created ASC', [])],
+        id=comment_ids, shard_id=None)
+    self.assertEqual(3, len(comments))
+
+  def testGetAbbrCommentsForIssue(self):
+    """Retrieve abbreviated rows for the comments on an issue."""
+    issue_id = 100001
+    self.services.issue.comment_tbl.Select = Mock(
+        return_value=[
+            (101001, 111L, None, True),
+            (101002, 222L, None, False),
+            (101003, 111L, None, False)])
+
+    abbr_comments = self.services.issue.GetAbbrCommentsForIssue(
+        self.cnxn, issue_id)
+
+    self.services.issue.comment_tbl.Select.assert_called_once_with(
+        self.cnxn, cols=issue_svc.ABBR_COMMENT_COLS,
+        issue_id=issue_id, order_by=[('created ASC', [])])
+    self.assertEqual(3, len(abbr_comments))
 
   def SetUpGetComments(self, issue_ids):
     # Assumes one comment per issue.

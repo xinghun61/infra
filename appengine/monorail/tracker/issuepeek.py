@@ -86,7 +86,7 @@ class IssuePeek(servlet.Servlet):
           we.IsIssueStarred, issue, cnxn=star_cnxn)
 
       config = we.GetProjectConfig(mr.project_id)
-      comments = we.GetCommentsForIssue(mr.cnxn, issue.issue_id)
+      comments = we.ListIssueComments(issue)
 
     descriptions, visible_comments, cmnt_pagination = PaginateComments(
         mr, issue, comments, config)
