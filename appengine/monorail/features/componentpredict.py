@@ -18,6 +18,7 @@ from framework import sql
 from framework import jsonfeed
 from framework import framework_helpers
 from services import ml_helpers
+from tracker import tracker_bizobj
 
 
 class ComponentPredict(jsonfeed.JsonFeed):
@@ -50,12 +51,29 @@ class ComponentPredict(jsonfeed.JsonFeed):
 
 
   def Predict(self, instance, ml_engine, model_name, trainer_name):
+    """High-level method that takes an input and returns the model's prediction.
 
+    Args:
+      instance (list): A single sample on which to make a prediction
+        (output from GenerateFeaturesRaw).
+      ml_engine: An ML Engine API instance.
+      model_name (str): The hosted model to call.
+      trainer_name (str): The name of the trainer that generated this
+        model. Used to fetch component ID to index mapping.
+
+    Returns:
+      A dict: {'components': []}. The list will either be empty or contain
+      one ComponentDef representing the top predicted component.
+    """
+    components = []
     best_score_index = self.GetPrediction(instance, ml_engine, model_name)
-
     component_id = self.GetComponentID(trainer_name, best_score_index)
+    config = self.services.config.GetProjectConfig(self.mr.cnxn, self.mr.project_id)
+    component = tracker_bizobj.FindComponentDefByID(component_id, config)
+    if component:
+      components.append(component)
 
-    return {'components': [self.GetComponent(component_id)]}
+    return {'components': components}
 
 
   @framework_helpers.retry(3)
@@ -121,20 +139,6 @@ class ComponentPredict(jsonfeed.JsonFeed):
     gcs_file.close()
 
     return component_id
-
-
-  def GetComponent(self, component_id):
-
-    con = sql.MonorailConnection()
-
-    component_table = sql.SQLTableManager('ComponentDef')
-
-    component_name = component_table.SelectValue(
-        con,
-        col='path',
-        where=[('id = %s', [str(component_id)])])
-
-    return component_name
 
 
   def HandleRequest(self, mr):
