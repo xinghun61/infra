@@ -1345,7 +1345,7 @@ def _ComputeBackToListURL(mr, issue, config, hotlist, services):
 class FlipperRedirectBase(servlet.Servlet):
 
   # pylint: disable=arguments-differ
-  # pylint: disable=unused-arguments
+  # pylint: disable=unused-argument
   def get(self, project_name=None, viewed_username=None, hotlist_id=None):
     with work_env.WorkEnv(self.mr, self.services) as we:
       hotlist_id = self.mr.GetIntParam('hotlist_id')

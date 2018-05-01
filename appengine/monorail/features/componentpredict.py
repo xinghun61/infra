@@ -68,7 +68,8 @@ class ComponentPredict(jsonfeed.JsonFeed):
     components = []
     best_score_index = self.GetPrediction(instance, ml_engine, model_name)
     component_id = self.GetComponentID(trainer_name, best_score_index)
-    config = self.services.config.GetProjectConfig(self.mr.cnxn, self.mr.project_id)
+    config = self.services.config.GetProjectConfig(
+        self.mr.cnxn, self.mr.project_id)
     component = tracker_bizobj.FindComponentDefByID(component_id, config)
     if component:
       components.append(component)

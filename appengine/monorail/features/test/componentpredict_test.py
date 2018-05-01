@@ -27,22 +27,22 @@ class ComponentPredictTest(unittest.TestCase):
         user=fake.UserService())
     self.project = fake.Project(project_name='proj')
     self.services.user.TestAddUser('test@example.com', 111L)
-    self.servlet = componentpredict.ComponentPredict('req', 'res',
-        services=self.services)
-    self.servlet.mr = testing_helpers.MakeMonorailRequest(path='/',
-        project=self.project, method='GET')
+    self.servlet = componentpredict.ComponentPredict(
+        'req', 'res', services=self.services)
+    self.servlet.mr = testing_helpers.MakeMonorailRequest(
+        path='/', project=self.project, method='GET')
 
   @patch('features.componentpredict.ComponentPredict.GetPrediction')
   @patch('features.componentpredict.ComponentPredict.GetComponentID')
   def testPredict_Normal(self, mockGetComponentID, _mockGetPrediction):
     """Test normal case when predicted component exists."""
-    component_id = self.services.config.CreateComponentDef(cnxn=None,
-        project_id=self.project.project_id, path='Ruta>Baga', docstring='',
-        deprecated=False, admin_ids=[], cc_ids=[], created=None, creator_id=None,
-        label_ids=[])
+    component_id = self.services.config.CreateComponentDef(
+        cnxn=None, project_id=self.project.project_id, path='Ruta>Baga',
+        docstring='', deprecated=False, admin_ids=[], cc_ids=[], created=None,
+        creator_id=None, label_ids=[])
     mockGetComponentID.return_value = component_id
-    actual = self.servlet.Predict(instance={}, ml_engine=None, model_name='a',
-        trainer_name='b')
+    actual = self.servlet.Predict(
+        instance={}, ml_engine=None, model_name='a', trainer_name='b')
     self.assertEqual(1, len(actual['components']))
     self.assertEqual(345, actual['components'][0].component_id)
     self.assertEqual('Ruta>Baga', actual['components'][0].path)

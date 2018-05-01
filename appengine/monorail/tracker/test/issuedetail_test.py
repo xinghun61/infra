@@ -389,7 +389,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
-  def testProcessFormData_NonMembersCantEdit(self, mock_prepsend):
+  def testProcessFormData_NonMembersCantEdit(self, _mock_prepsend):
     """Non-members can comment, but never affect issue fields."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
@@ -447,7 +447,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testProcessFormData_NewMemberExistingFormOnlyAddsComment(
-      self, mock_prepsend):
+      self, _mock_prepsend):
     """Non-member had a form open, then become a member, then submitted."""
     self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
@@ -505,7 +505,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
   @mock.patch(
       'tracker.tracker_helpers.GetNewIssueStarrers')
   def testProcessFormData_DuplicateAddsACommentToTarget(
-      self, mock_getstarrers, mock_prepsend):
+      self, _mock_getstarrers, _mock_prepsend):
     """Marking issue 2 as dup of 1 adds a comment to 1."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
@@ -567,7 +567,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     # TODO(jrobbins): add more unit tests for other aspects of ProcessForm.
 
   @mock.patch('services.tracker_fulltext.IndexIssues')
-  def testHandleCopyOrMove_Copy_SameProject(self, mock_indexissues):
+  def testHandleCopyOrMove_Copy_SameProject(self, _mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': 222L},
         path='/p/proj/issues/detail.do?id=1',
@@ -587,7 +587,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.assertEqual(copied_issue.reporter_id, 222L)
 
   @mock.patch('services.tracker_fulltext.IndexIssues')
-  def testHandleCopyOrMove_Copy_DifferentProject(self, mock_indexissues):
+  def testHandleCopyOrMove_Copy_DifferentProject(self, _mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': 222L},
         path='/p/proj/issues/detail.do?id=1',
@@ -612,7 +612,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
   @mock.patch('services.tracker_fulltext.IndexIssues')
   @mock.patch('services.tracker_fulltext.UnindexIssues')
   def testHandleCopyOrMove_Move_DifferentProject(
-      self, mock_unindexissues, mock_indexissues):
+      self, _mock_unindexissues, _mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': 222L},
         path='/p/proj/issues/detail.do?id=1',
@@ -853,7 +853,8 @@ class GetAdjacentIssueTest(unittest.TestCase):
     self.services.issue.TestAddIssue(prev_issue)
 
     with self.work_env as we:
-      we.FindIssuePositionInSearch = mock.Mock(return_value=[78901, 1, 78903, 3])
+      we.FindIssuePositionInSearch = mock.Mock(
+          return_value=[78901, 1, 78903, 3])
 
       actual_issue = issuedetail.GetAdjacentIssue(we, cur_issue)
       self.assertEqual(prev_issue, actual_issue)
@@ -868,9 +869,11 @@ class GetAdjacentIssueTest(unittest.TestCase):
     self.services.issue.TestAddIssue(prev_issue)
 
     with self.work_env as we:
-      we.FindIssuePositionInSearch = mock.Mock(return_value=[78901, 1, 78903, 3])
+      we.FindIssuePositionInSearch = mock.Mock(
+          return_value=[78901, 1, 78903, 3])
 
-      actual_issue = issuedetail.GetAdjacentIssue(we, cur_issue, next_issue=True)
+      actual_issue = issuedetail.GetAdjacentIssue(
+          we, cur_issue, next_issue=True)
       self.assertEqual(next_issue, actual_issue)
       we.FindIssuePositionInSearch.assert_called_once_with(cur_issue)
 
@@ -881,7 +884,8 @@ class GetAdjacentIssueTest(unittest.TestCase):
     self.services.issue.TestAddIssue(prev_issue)
 
     with self.work_env as we:
-      we.FindIssuePositionInSearch = mock.Mock(return_value=[78901, 1, 78903, 3])
+      we.FindIssuePositionInSearch = mock.Mock(
+          return_value=[78901, 1, 78903, 3])
 
       with self.assertRaises(exceptions.NoSuchIssueException):
         issuedetail.GetAdjacentIssue(we, cur_issue, next_issue=True)

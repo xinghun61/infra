@@ -51,26 +51,28 @@ class HotlistsJsonFeed(jsonfeed.JsonFeed):
           mr.cnxn, [hid for hid in recently_visited_hids])
 
     hotlists_dict = {
-        'ownerof': [(h.name, hotlist_helpers.GetURLOfHotlist(
-            mr.cnxn, h, self.services.user)) for
-                    h in user_hotlists if mr.auth.user_id in h.owner_ids],
-        'editorof': [(h.name, hotlist_helpers.GetURLOfHotlist(
-            mr.cnxn, h, self.services.user)) for
-                     h in user_hotlists if mr.auth.user_id in h.editor_ids],
-        'starred_hotlists': [(h.name, hotlist_helpers.GetURLOfHotlist(
-            mr.cnxn, h, self.services.user)) for
-                             h in user_starred_hotlists.values() if
-                             permissions.CanViewHotlist(
-                                 mr.auth.effective_ids, h) and
-                             h not in user_hotlists],
-        'visited_hotlists': [(recently_visited_hotlists[hid].name,
-                              hotlist_helpers.GetURLOfHotlist(
-                                  mr.cnxn, recently_visited_hotlists[hid],
-                                  self.services.user)) for
-                             hid in recently_visited_hids if
-                             hid not in missed_ids
-                             and recently_visited_hotlists[hid] not in user_hotlists
-                             and hid not in user_starred_hids],
-        'user': mr.auth.email
+        'ownerof': [
+            (h.name, hotlist_helpers.GetURLOfHotlist(
+                mr.cnxn, h, self.services.user))
+            for h in user_hotlists if mr.auth.user_id in h.owner_ids],
+        'editorof': [
+            (h.name, hotlist_helpers.GetURLOfHotlist(
+                mr.cnxn, h, self.services.user))
+            for h in user_hotlists if mr.auth.user_id in h.editor_ids],
+        'starred_hotlists': [
+            (h.name, hotlist_helpers.GetURLOfHotlist(
+                mr.cnxn, h, self.services.user))
+            for h in user_starred_hotlists.values()
+            if (permissions.CanViewHotlist(mr.auth.effective_ids, h) and
+                h not in user_hotlists)],
+        'visited_hotlists': [
+            (recently_visited_hotlists[hid].name,
+             hotlist_helpers.GetURLOfHotlist(
+                mr.cnxn, recently_visited_hotlists[hid], self.services.user))
+            for hid in recently_visited_hids
+            if (hid not in missed_ids and
+                recently_visited_hotlists[hid] not in user_hotlists and
+                hid not in user_starred_hids)],
+        'user': mr.auth.email,
         }
     return hotlists_dict
