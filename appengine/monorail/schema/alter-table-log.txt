@@ -1488,4 +1488,9 @@ ALTER TABLE Issue2ApprovalValue DROP FOREIGN KEY Issue2ApprovalValue_ibfk_4;
 ALTER TABLE Issue2ApprovalValue ADD FOREIGN KEY (phase_id) REFERENCES IssuePhaseDef(id);
 
 ===================================================================
+2018-5-01: Add is_phase_field to FieldDef.
+
+ALTER TABLE FieldDef ADD COLUMN is_phase_field BOOLEAN DEFAULT FALSE;
+
+===================================================================
 TODO(jojwang): monorail:3774, Drop Issue2Phase table

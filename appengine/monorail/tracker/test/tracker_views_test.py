@@ -515,7 +515,7 @@ class FieldDefViewTest(unittest.TestCase):
     self.approval_fd = tracker_bizobj.MakeFieldDef(
         1, 789, 'LaunchApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
         None, True, True, False, 3, 99, None, False, None, None,
-        None, 'no_action', 'descriptive docstring', False, None)
+        None, 'no_action', 'descriptive docstring', False, None, False)
 
     self.approval_def = tracker_pb2.ApprovalDef(
         approval_id=1, approver_ids=[111L], survey='question?')
@@ -523,7 +523,7 @@ class FieldDefViewTest(unittest.TestCase):
     self.field_def = tracker_bizobj.MakeFieldDef(
         2, 789, 'AffectedUsers', tracker_pb2.FieldTypes.INT_TYPE, None,
         None, True, True, False, 3, 99, None, False, None, None,
-        None, 'no_action', 'descriptive docstring', False, 1)
+        None, 'no_action', 'descriptive docstring', False, 1, False)
 
   def testFieldDefView_Normal(self):
     config = _MakeConfig()

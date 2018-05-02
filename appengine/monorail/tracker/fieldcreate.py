@@ -153,6 +153,8 @@ class FieldCreate(servlet.Servlet):
           parsed.parent_approval_name, config)
       if approval_fd:
         approval_id = approval_fd.field_id
+    # TODO(jojwang):monorail:3774, get is_phase_field from parsed
+    is_phase_field = False
     field_id = self.services.config.CreateFieldDef(
         mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
         parsed.applicable_type, parsed.applicable_predicate,
@@ -160,7 +162,7 @@ class FieldCreate(servlet.Servlet):
         parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
         parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
         parsed.date_action_str, parsed.field_docstring, admin_ids,
-        approval_id=approval_id)
+        approval_id, is_phase_field)
     if parsed.field_type_str == 'approval_type':
       revised_approvals = field_helpers.ReviseApprovals(
           field_id, approver_ids, parsed.survey, config)

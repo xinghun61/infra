@@ -361,6 +361,9 @@ class FieldDef(messages.Message):
   # field_id of the approval this FieldDef belongs to
   approval_id = messages.IntegerField(21)
 
+  # These fields should only be associated with issue phases
+  is_phase_field = messages.BooleanField(22, default=False)
+
 
 class ComponentDef(messages.Message):
   """This stores info about a component in a project."""

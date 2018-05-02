@@ -283,15 +283,18 @@ class BizobjTest(unittest.TestCase):
         None, None, None, 'no_action', 'Some field', False)
     self.assertEqual(1, fd.field_id)
     self.assertEqual(None, fd.approval_id)
+    self.assertFalse(fd.is_phase_field)
 
   def testMakeFieldDef_Full(self):
     fd = tracker_bizobj.MakeFieldDef(
         1, 789, 'Size', tracker_pb2.FieldTypes.INT_TYPE, None, None,
         False, False, False, 1, 100, None, False,
-        None, None, None, 'no_action', 'Some field', False, approval_id=4)
+        None, None, None, 'no_action', 'Some field', False, approval_id=4,
+        is_phase_field=True)
     self.assertEqual(1, fd.min_value)
     self.assertEqual(100, fd.max_value)
     self.assertEqual(4, fd.approval_id)
+    self.assertTrue(fd.is_phase_field)
 
     fd = tracker_bizobj.MakeFieldDef(
         1, 789, 'Size', tracker_pb2.FieldTypes.STR_TYPE, None, None,

@@ -198,8 +198,8 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
                           (2, 789, 2, 'UX', 'doc', False)]
     self.fielddef_rows = [(1, 789, None, 'Field', 'INT_TYPE',
                            'Defect', '', False, False, False,
-                           1, 99, None, '', '',
-                           None, 'NEVER', 'no_action', 'doc', False, None)]
+                           1, 99, None, '', '', None, 'NEVER', 'no_action',
+                           'doc', False, None, False)]
     self.approvaldef2approver_rows = [(2, 101, 789), (2, 102, 789)]
     self.approvaldef2survey_rows = [(2, 'Q1\nQ2\nQ3', 789)]
     self.fielddef2admin_rows = []
@@ -1015,7 +1015,8 @@ class ConfigServiceTest(unittest.TestCase):
         min_value=1, max_value=100, regex=None,
         needs_member=None, needs_perm=None,
         grants_perm=None, notify_on='never', date_action='no_action',
-        docstring='doc', approval_id=None, commit=False).AndReturn(1)
+        docstring='doc', approval_id=None, is_phase_field=False,
+        commit=False).AndReturn(1)
     self.config_service.fielddef2admin_tbl.InsertRows(
         self.cnxn, config_svc.FIELDDEF2ADMIN_COLS, [], commit=False)
     self.cnxn.Commit()

@@ -218,7 +218,7 @@ def MakeFieldDef(
     field_id, project_id, field_name, field_type_int, applic_type, applic_pred,
     is_required, is_niche, is_multivalued, min_value, max_value, regex,
     needs_member, needs_perm, grants_perm, notify_on, date_action, docstring,
-    is_deleted, approval_id=None):
+    is_deleted, approval_id=None, is_phase_field=False):
   """Make a FieldDef PB for the given FieldDef table row tuple."""
   if isinstance(date_action, basestring):
     date_action = date_action.upper()
@@ -231,7 +231,8 @@ def MakeFieldDef(
       applicable_predicate=applic_pred or '',
       needs_member=bool(needs_member), grants_perm=grants_perm or '',
       notify_on=tracker_pb2.NotifyTriggers(notify_on or 0),
-      date_action=tracker_pb2.DateAction(date_action or 0))
+      date_action=tracker_pb2.DateAction(date_action or 0),
+      is_phase_field=is_phase_field)
   if min_value is not None:
     fd.min_value = min_value
   if max_value is not None:

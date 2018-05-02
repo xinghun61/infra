@@ -125,6 +125,7 @@ CREATE TABLE FieldDef (
   docstring TEXT,
   is_deleted BOOLEAN,  -- If true, reap this field def after all values reaped.
   approval_id INT,
+  is_phase_field BOOLEAN DEFAULT FALSE,
 
   PRIMARY KEY (id),
   UNIQUE KEY (project_id, field_name),
