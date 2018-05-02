@@ -425,6 +425,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('packaging', '16.8'),
   Universal('paramiko', '2.4.1'),
   UniversalSource('PeakUtils', '1.0.3'),
+  Universal('pluggy', '0.6.0'),
   Universal('pbr', '3.0.0'),
   Universal('ply', '3.11'),
   Universal('portend', '2.2'),
