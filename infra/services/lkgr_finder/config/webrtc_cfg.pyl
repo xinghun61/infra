@@ -25,8 +25,9 @@
         'Win10 Tester',
         'Win7 Tester',
         'Win8 Tester',
-        'ios-device',
-        'ios-simulator',
+        # TODO(phoglund): re-enable when http://crbug.com/838854 is fixed.
+        # 'ios-device',
+        # 'ios-simulator',
       ],
     },
     'client.webrtc': {
