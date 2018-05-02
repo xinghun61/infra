@@ -34,7 +34,7 @@ func TestInstallXcode(t *testing.T) {
 		Convey("for accepted license, mac", func() {
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(s.Calls, ShouldHaveLength, 3)
+			So(s.Calls, ShouldHaveLength, 5)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
 				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
@@ -51,25 +51,66 @@ func TestInstallXcode(t *testing.T) {
 			So(s.Calls[2].Args, ShouldResemble, []string{
 				"-R", "u+w", "testdata/Xcode-old.app",
 			})
+
+			So(s.Calls[3].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[3].Args, ShouldResemble, []string{"-status"})
+
+			So(s.Calls[4].Executable, ShouldEqual, "sudo")
+			So(s.Calls[4].Args, ShouldResemble, []string{
+				"/usr/sbin/DevToolsSecurity",
+				"-enable",
+			})
 		})
 
-		Convey("for already installed package", func() {
+		Convey("for already installed package with Developer mode enabled", func() {
 			s.ReturnError = []error{errors.Reason("already installed").Err()}
+			s.ReturnOutput = []string{
+				"",
+				"Developer mode is currently enabled.",
+			}
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(s.Calls, ShouldHaveLength, 1)
+			So(s.Calls, ShouldHaveLength, 2)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
 				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
 			})
 			So(s.Calls[0].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
+
+			So(s.Calls[1].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[1].Args, ShouldResemble, []string{"-status"})
+		})
+
+		Convey("for already installed package with Developer mode disabled", func() {
+			s.ReturnError = []error{errors.Reason("already installed").Err()}
+			s.ReturnOutput = []string{
+				"",
+				"Developer mode is currently disabled.",
+			}
+			err := installXcode(ctx, installArgs)
+			So(err, ShouldBeNil)
+			So(s.Calls, ShouldHaveLength, 3)
+			So(s.Calls[0].Executable, ShouldEqual, "cipd")
+			So(s.Calls[0].Args, ShouldResemble, []string{
+				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
+			})
+			So(s.Calls[0].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
+
+			So(s.Calls[1].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[1].Args, ShouldResemble, []string{"-status"})
+
+			So(s.Calls[2].Executable, ShouldEqual, "sudo")
+			So(s.Calls[2].Args, ShouldResemble, []string{
+				"/usr/sbin/DevToolsSecurity",
+				"-enable",
+			})
 		})
 
 		Convey("with a service account", func() {
 			installArgs.serviceAccountJSON = "test/service-account.json"
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(s.Calls, ShouldHaveLength, 3)
+			So(s.Calls, ShouldHaveLength, 5)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
 				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
@@ -88,17 +129,27 @@ func TestInstallXcode(t *testing.T) {
 			So(s.Calls[2].Args, ShouldResemble, []string{
 				"-R", "u+w", "testdata/Xcode-old.app",
 			})
+
+			So(s.Calls[3].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[3].Args, ShouldResemble, []string{"-status"})
+
+			So(s.Calls[4].Executable, ShouldEqual, "sudo")
+			So(s.Calls[4].Args, ShouldResemble, []string{"/usr/sbin/DevToolsSecurity", "-enable"})
 		})
 
 		Convey("for new license, ios", func() {
 			s.ReturnError = []error{errors.Reason("already installed").Err()}
-			s.ReturnOutput = []string{"", "old/xcode/path"}
+			s.ReturnOutput = []string{
+				"",
+				"old/xcode/path",
+				"Developer mode is currently disabled.",
+			}
 
 			installArgs.xcodeAppPath = "testdata/Xcode-new.app"
 			installArgs.kind = iosKind
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(len(s.Calls), ShouldEqual, 6)
+			So(len(s.Calls), ShouldEqual, 8)
 
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
@@ -120,8 +171,14 @@ func TestInstallXcode(t *testing.T) {
 			So(s.Calls[4].Executable, ShouldEqual, "sudo")
 			So(s.Calls[4].Args, ShouldResemble, []string{"/usr/bin/xcodebuild", "-runFirstLaunch"})
 
-			So(s.Calls[5].Executable, ShouldEqual, "sudo")
-			So(s.Calls[5].Args, ShouldResemble, []string{"/usr/bin/xcode-select", "-s", "old/xcode/path"})
+			So(s.Calls[5].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[5].Args, ShouldResemble, []string{"-status"})
+
+			So(s.Calls[6].Executable, ShouldEqual, "sudo")
+			So(s.Calls[6].Args, ShouldResemble, []string{"/usr/sbin/DevToolsSecurity", "-enable"})
+
+			So(s.Calls[7].Executable, ShouldEqual, "sudo")
+			So(s.Calls[7].Args, ShouldResemble, []string{"/usr/bin/xcode-select", "-s", "old/xcode/path"})
 
 		})
 
@@ -133,7 +190,7 @@ func TestInstallXcode(t *testing.T) {
 			installArgs.xcodeVersion = "8e1234"
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(len(s.Calls), ShouldEqual, 8)
+			So(len(s.Calls), ShouldEqual, 10)
 
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
@@ -168,8 +225,14 @@ func TestInstallXcode(t *testing.T) {
 				filepath.Join("testdata", "Xcode-legacy.app", "Contents", "Resources", "Packages", "XcodeSystemResources.pkg"),
 			})
 
-			So(s.Calls[7].Executable, ShouldEqual, "sudo")
-			So(s.Calls[7].Args, ShouldResemble, []string{"/usr/bin/xcode-select", "-s", "old/xcode/path"})
+			So(s.Calls[7].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[7].Args, ShouldResemble, []string{"-status"})
+
+			So(s.Calls[8].Executable, ShouldEqual, "sudo")
+			So(s.Calls[8].Args, ShouldResemble, []string{"/usr/sbin/DevToolsSecurity", "-enable"})
+
+			So(s.Calls[9].Executable, ShouldEqual, "sudo")
+			So(s.Calls[9].Args, ShouldResemble, []string{"/usr/bin/xcode-select", "-s", "old/xcode/path"})
 
 		})
 
@@ -182,7 +245,7 @@ func TestInstallXcode(t *testing.T) {
 			installArgs.packageInstallerOnBots = "nonexistent"
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(len(s.Calls), ShouldEqual, 8)
+			So(len(s.Calls), ShouldEqual, 10)
 
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
@@ -220,8 +283,14 @@ func TestInstallXcode(t *testing.T) {
 				"-target", "/",
 			})
 
-			So(s.Calls[7].Executable, ShouldEqual, "sudo")
-			So(s.Calls[7].Args, ShouldResemble, []string{"/usr/bin/xcode-select", "-s", "old/xcode/path"})
+			So(s.Calls[7].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[7].Args, ShouldResemble, []string{"-status"})
+
+			So(s.Calls[8].Executable, ShouldEqual, "sudo")
+			So(s.Calls[8].Args, ShouldResemble, []string{"/usr/sbin/DevToolsSecurity", "-enable"})
+
+			So(s.Calls[9].Executable, ShouldEqual, "sudo")
+			So(s.Calls[9].Args, ShouldResemble, []string{"/usr/bin/xcode-select", "-s", "old/xcode/path"})
 
 		})
 	})

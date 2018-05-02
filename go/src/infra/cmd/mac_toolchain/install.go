@@ -137,6 +137,20 @@ func finalizeInstall(ctx context.Context, xcodeAppPath, xcodeVersion, packageIns
 	return nil
 }
 
+func enableDeveloperMode(ctx context.Context) error {
+	out, err := RunOutput(ctx, "/usr/sbin/DevToolsSecurity", "-status")
+	if err != nil {
+		return errors.Annotate(err, "failed to run /usr/sbin/DevToolsSecurity -status").Err()
+	}
+	if out != "Developer mode is currently enabled." {
+		err = RunCommand(ctx, "sudo", "/usr/sbin/DevToolsSecurity", "-enable")
+		if err != nil {
+			return errors.Annotate(err, "failed to run sudo /usr/sbin/DevToolsSecurity -enable").Err()
+		}
+	}
+	return nil
+}
+
 // InstallArgs are the parameters for installXcode() to keep them manageable.
 type InstallArgs struct {
 	xcodeVersion           string
@@ -170,5 +184,5 @@ func installXcode(ctx context.Context, args InstallArgs) error {
 			return err
 		}
 	}
-	return nil
+	return enableDeveloperMode(ctx)
 }
