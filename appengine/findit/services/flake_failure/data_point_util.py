@@ -97,7 +97,6 @@ def UpdateFailedSwarmingTaskAttempts(data_point):
   data_point.put()
 
 
-@ndb.transactional(xg=True)
 def UpdateAnalysisDataPoints(analysis_urlsafe_key, commit_position, revision,
                              swarming_task_output):
   """Updates an analysis' data points with the output of a swarming taks.
