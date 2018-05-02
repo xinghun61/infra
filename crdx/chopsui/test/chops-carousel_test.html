@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<link rel="import" href="../chops-carousel.html">
+<script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+<script src="../../web-component-tester/browser.js"></script>
+
+<test-fixture id="chops-carousel-test">
+  <template>
+    <chops-carousel></chops-carousel>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('chops-carousel', function() {
+    let element;
+    setup(function() {
+      element = fixture('chops-carousel-test');
+    });
+
+    test('clicking next image advances carousel', function(done) {
+      element.images = ['1.test', '2.jpg', '3.png'];
+      element.focusedIndex = 0;
+
+      assert.equal(element._focusedImage, '1.test');
+      expect(element.$.carouselNav).be.visible;
+
+      element.$.nextImage.click();
+
+      flush(() => {
+        assert.equal(element._focusedImage, '2.jpg');
+        done();
+      });
+    });
+  });
+</script>
