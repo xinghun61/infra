@@ -39,8 +39,8 @@ _BUILD_FIELDS = {
 _METRIC_PREFIX_PROD = 'buildbucket/builds/'
 _METRIC_PREFIX_EXPERIMENTAL = 'buildbucket/builds-experimental/'
 
-# Maximum number of concurrent counting queries.
-_CONCURRENT_COUNTING_QUERY_LIMIT = 100
+# Maximum number of concurrent counting/latency queries.
+_CONCURRENT_QUERY_LIMIT = 100
 
 
 def _default_field_value(name):
@@ -211,12 +211,12 @@ BUILD_COUNT_EXPERIMENTAL = gae_ts_mon.GaugeMetric(
 MAX_AGE_NEVER_LEASED = gae_ts_mon.FloatMetric(
     'buildbucket/builds/max_age_never_leased',
     'Age of the oldest SCHEDULED build that was never leased.',
-    _build_fields('bucket'),
+    _build_fields('bucket', 'builder'),
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
 MAX_AGE_SCHEDULED = gae_ts_mon.FloatMetric(
     'buildbucket/builds/max_age_scheduled',
     'Age of the oldest SCHEDULED build.',
-    _build_fields('bucket'),
+    _build_fields('bucket', 'builder'),
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
 SEQUENCE_NUMBER_GEN_DURATION_MS = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/sequence_number/gen_duration',
@@ -265,9 +265,10 @@ def set_build_count_metric_async(bucket, builder, status, experimental):
 
 
 @ndb.tasklet
-def set_build_latency(max_metric_sec, bucket, must_be_never_leased):
+def set_build_latency(max_metric_sec, bucket, builder, must_be_never_leased):
   q = model.Build.query(
       model.Build.bucket == bucket,
+      model.Build.tags == 'builder:%s' % builder,
       model.Build.status == model.BuildStatus.SCHEDULED,
       model.Build.experimental == False,
   )
@@ -285,7 +286,8 @@ def set_build_latency(max_metric_sec, bucket, must_be_never_leased):
   else:
     max_latency = 0
   max_metric_sec.set(
-      max_latency, {'bucket': bucket}, target_fields=GLOBAL_TARGET_FIELDS)
+      max_latency, {'bucket': bucket, 'builder': builder},
+      target_fields=GLOBAL_TARGET_FIELDS)
 
 
 # Metrics that are per-app rather than per-instance.
@@ -300,33 +302,32 @@ GLOBAL_METRICS = [
 def update_global_metrics():
   """Updates the metrics in GLOBAL_METRICS."""
   start = utils.utcnow()
-  futures = []
-  for b in config.get_buckets_async().get_result():
-    futures.extend([
-      set_build_latency(MAX_AGE_NEVER_LEASED, b.name, True),
-      set_build_latency(MAX_AGE_SCHEDULED, b.name, False),
-    ])
-  for f in futures:
-    f.check_success()
 
-
-  # Collect a list of counting queries.
+  # Collect a list of counting/latency queries.
   count_query_queue = []
+  latency_query_queue = []
   for key in model.Builder.query().iter(keys_only=True):
     _, bucket, builder = key.id().split(':', 2)
+    latency_query_queue.extend([
+      (MAX_AGE_NEVER_LEASED, bucket, builder, True),
+      (MAX_AGE_SCHEDULED, bucket, builder, False),
+    ])
     for status in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED):
       for experimental in (False, True):
         count_query_queue.append((bucket, builder, status, experimental))
 
-  # Process counting queries with _CONCURRENT_COUNTING_QUERY_LIMIT workers.
+  # Process counting/latency queries with _CONCURRENT_QUERY_LIMIT workers.
 
   @ndb.tasklet
   def worker():
     while count_query_queue:
       item = count_query_queue.pop()
       yield set_build_count_metric_async(*item)
+    while latency_query_queue:
+      item = latency_query_queue.pop()
+      yield set_build_latency(*item)
 
-  for w in [worker() for _ in xrange(_CONCURRENT_COUNTING_QUERY_LIMIT)]:
+  for w in [worker() for _ in xrange(_CONCURRENT_QUERY_LIMIT)]:
     w.check_success()
 
   logging.info('global metric computation took %s', utils.utcnow() - start)
