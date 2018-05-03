@@ -42,7 +42,6 @@ func TestStatusPage(t *testing.T) {
 		r.GET(statusPath, templatesmw, Status)
 		srv := httptest.NewServer(r)
 		client := &http.Client{}
-		testClients = &Clients{}
 		Convey("Invalid Repo", func() {
 			resp, err := client.Get(srv.URL + statusPath + "?repo=unknown")
 			So(err, ShouldBeNil)

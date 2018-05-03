@@ -20,6 +20,9 @@ import (
 	"go.chromium.org/luci/server/router"
 )
 
+// Tests can put mock clients here, prod code will ignore this global.
+var auditorTestClients *Clients
+
 // Auditor is the main entry point for scanning the commits on a given ref and
 // auditing those that are relevant to the configuration.
 //
@@ -45,10 +48,21 @@ func Auditor(rc *router.Context) {
 		return
 	}
 
-	cs, err := initializeClients(ctx, cfg)
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
+	var cs *Clients
+	if auditorTestClients != nil {
+		cs = auditorTestClients
+	} else {
+		httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope, emailScope)
+		if err != nil {
+			http.Error(resp, err.Error(), 500)
+			return
+		}
+
+		cs, err = initializeClients(ctx, cfg, httpClient)
+		if err != nil {
+			http.Error(resp, err.Error(), 500)
+			return
+		}
 	}
 
 	fl, err := getCommitLog(ctx, cfg, repoState, cs)

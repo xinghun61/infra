@@ -44,7 +44,7 @@ func TestAutoRollRules(t *testing.T) {
 			TriggeringAccount: "releasebot@sample.com",
 			RepoCfg:           cfg,
 		}
-		testClients = &Clients{}
+		testClients := &Clients{}
 
 		Convey("Only modifies DEPS", func() {
 			// Inject gitiles log response

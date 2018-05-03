@@ -72,20 +72,25 @@ var RuleMap = map[string]*RepoConfig{
 	"chromium-src-master": {
 		BaseRepoURL: "https://chromium.googlesource.com/chromium/src.git",
 		GerritURL:   "https://chromium-review.googlesource.com",
-		BranchName:  "master",
+		BranchName:  "refs/heads/master",
 		// No special meaning, ToT as of the time this line was added.
 		StartingCommit:  "bafa682dc0ce1dde367ba44f31f8ec1ad07e569e",
 		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
 		MonorailProject: "chromium",
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
 		Rules: map[string]RuleSet{
-			"autoroll-rules-skia": AccountRules{
-				Account: "skia-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com",
-				Funcs: []RuleFunc{
-					OnlyModifiesDEPSFile,
-				},
-				notificationFunction: fileBugForAutoRollViolation,
-			},
+			"autoroll-rules-afdo":         AutoRollRulesAFDOVersion("afdo-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-angle":        AutoRollRulesDEPS("angle-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-catapult":     AutoRollRulesDEPS("catapult-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-chromite":     AutoRollRulesDEPS("chromite-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-depot-tools":  AutoRollRulesDEPS("depot-tools-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-fuchsia-sdk":  AutoRollRulesFuchsiaSDKVersion("fuchsia-sdk-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-ios-internal": AutoRollRulesDEPS("ios-internal-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-nacl":         AutoRollRulesDEPS("nacl-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-pdfium":       AutoRollRulesDEPS("pdfium-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-skia":         AutoRollRulesDEPS("skia-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-src-internal": AutoRollRulesDEPS("src-internal-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-webrtc":       AutoRollRulesDEPS("webrtc-chromium-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 			"findit-rules": AccountRules{
 				Account: "findit-for-me@appspot.gserviceaccount.com",
 				Funcs: []RuleFunc{
@@ -124,6 +129,21 @@ var RuleMap = map[string]*RepoConfig{
 			},
 		},
 		DynamicRefFunction: ReleaseConfig,
+	},
+	"skia-master": {
+		BaseRepoURL: "https://skia.googlesource.com/skia.git",
+		GerritURL:   "https://skia-review.googlesource.com",
+		BranchName:  "refs/heads/master",
+		// No special meaning, ToT as of the time this line was added.
+		StartingCommit:  "82a33425166aacd0726bdd283c6de749420819a8",
+		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
+		MonorailProject: "chromium",
+		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
+		Rules: map[string]RuleSet{
+			"autoroll-rules-angle":       AutoRollRulesDEPS("angle-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-skcms":       AutoRollRulesSKCMS("skcms-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-swiftshader": AutoRollRulesDEPS("swiftshader-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+		},
 	},
 }
 

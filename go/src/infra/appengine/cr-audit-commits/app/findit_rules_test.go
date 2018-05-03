@@ -76,7 +76,7 @@ func TestFinditRules(t *testing.T) {
 		pr := map[string]bool{
 			"revertcid": true,
 		}
-		testClients = &Clients{}
+		testClients := &Clients{}
 		testClients.gerrit = &mockGerritClient{q: q, pr: pr}
 
 		Convey("Culprit age Pass", func() {

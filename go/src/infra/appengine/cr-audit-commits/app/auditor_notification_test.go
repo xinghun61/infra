@@ -35,7 +35,7 @@ func TestNotifier(t *testing.T) {
 
 		user.GetTestable(ctx).Login("notifier@cr-audit-commits-test.appspotmail.com", "", false)
 
-		testClients = &Clients{}
+		testClients := &Clients{}
 		Convey("Existing Repo", func() {
 			cfg := &RepoConfig{
 				BaseRepoURL:     "https://old.googlesource.com/old.git",

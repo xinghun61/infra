@@ -64,7 +64,7 @@ func TestAuditor(t *testing.T) {
 		r.GET(auditorPath, router.NewMiddlewareChain(withTestingContext), Auditor)
 		srv := httptest.NewServer(r)
 		client := &http.Client{}
-		testClients = &Clients{}
+		auditorTestClients = &Clients{}
 		Convey("Unknown Ref", func() {
 			resp, err := client.Get(srv.URL + auditorPath + "?refUrl=unknown")
 			So(err, ShouldBeNil)
@@ -87,7 +87,7 @@ func TestAuditor(t *testing.T) {
 			}
 			escapedRepoURL := url.QueryEscape("https://dummy.googlesource.com/dummy.git/+/refs/heads/master")
 			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
-			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+			auditorTestClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
 				return gitilesMockClient, nil
 			}
 			Convey("Test scanning", func() {

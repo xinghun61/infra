@@ -40,7 +40,7 @@ func TestMergeApprovalRules(t *testing.T) {
 			TriggeringAccount: "releasebot@sample.com",
 			RepoCfg:           cfg,
 		}
-		testClients = &Clients{}
+		testClients := &Clients{}
 		testClients.monorail = mockMonorailClient{
 			il: &monorail.IssuesListResponse{
 				Items: []*monorail.Issue{

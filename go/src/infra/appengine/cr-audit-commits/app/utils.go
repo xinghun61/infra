@@ -38,9 +38,6 @@ const (
 	bugIDRegex        = "^(?i)Bug(:|=)(.*)"
 )
 
-// Tests can put mock clients here, prod code will ignore this global.
-var testClients *Clients
-
 type gerritClientInterface interface {
 	ChangeDetails(context.Context, string, gerrit.ChangeDetailsParams) (*gerrit.Change, error)
 	ChangeQuery(context.Context, gerrit.ChangeQueryParams) ([]*gerrit.Change, bool, error)
@@ -55,9 +52,6 @@ type miloClientInterface interface {
 // accept a list of scopes to make this function usable for communicating for
 // different systems.
 func getAuthenticatedHTTPClient(ctx context.Context, scopes ...string) (*http.Client, error) {
-	if testClients != nil {
-		return testClients.httpClient, nil
-	}
 	var t http.RoundTripper
 	var err error
 	if len(scopes) > 0 {
@@ -270,12 +264,9 @@ func (c *Clients) NewGitilesClient(host string) (gitilespb.GitilesClient, error)
 
 // ConnectAll creates the clients so the rules can use them, also sets
 // necessary values in the context for the clients to talk to production.
-func (c *Clients) ConnectAll(ctx context.Context, cfg *RepoConfig) error {
+func (c *Clients) ConnectAll(ctx context.Context, cfg *RepoConfig, client *http.Client) error {
 	var err error
-	c.httpClient, err = getAuthenticatedHTTPClient(ctx, gerritScope, emailScope)
-	if err != nil {
-		return err
-	}
+	c.httpClient = client
 
 	c.gerrit, err = gerrit.NewClient(c.httpClient, cfg.GerritURL)
 	if err != nil {
@@ -314,12 +305,9 @@ func loadConfig(rc *router.Context) (*RepoConfig, *RepoState, error) {
 	return cfg.SetConcreteRef(ctx, rs), rs, nil
 }
 
-func initializeClients(ctx context.Context, cfg *RepoConfig) (*Clients, error) {
-	if testClients != nil {
-		return testClients, nil
-	}
+func initializeClients(ctx context.Context, cfg *RepoConfig, client *http.Client) (*Clients, error) {
 	cs := &Clients{}
-	err := cs.ConnectAll(ctx, cfg)
+	err := cs.ConnectAll(ctx, cfg, client)
 	if err != nil {
 		logging.WithError(err).Errorf(ctx, "Could not create external clients")
 		return nil, fmt.Errorf("Could not create external clients")

@@ -5,28 +5,77 @@
 package crauditcommits
 
 import (
-	"fmt"
-
 	"golang.org/x/net/context"
 )
+
+// AutoRollRulesAFDOVersion returns an AccountRules instance for an account
+// which should only modify ``chrome/android/profiles/newest.txt``.
+func AutoRollRulesAFDOVersion(account string) AccountRules {
+	return AccountRules{
+		Account: account,
+		Funcs: []RuleFunc{
+			OnlyModifiesAFDOVersion,
+		},
+		notificationFunction: fileBugForAutoRollViolation,
+	}
+}
+
+// AutoRollRulesDEPS returns an AccountRules instance for an account which should
+// only modify the ``DEPS`` file.
+func AutoRollRulesDEPS(account string) AccountRules {
+	return AccountRules{
+		Account: account,
+		Funcs: []RuleFunc{
+			OnlyModifiesDEPSFile,
+		},
+		notificationFunction: fileBugForAutoRollViolation,
+	}
+}
+
+// AutoRollRulesFuchsiaSDKVersion returns an AccountRules instance for an
+// account which should only modifiy ``build/fuchsia/sdk.sha1``.
+func AutoRollRulesFuchsiaSDKVersion(account string) AccountRules {
+	return AccountRules{
+		Account: account,
+		Funcs: []RuleFunc{
+			OnlyModifiesFuchsiaSDKVersion,
+		},
+		notificationFunction: fileBugForAutoRollViolation,
+	}
+}
+
+// AutoRollRulesSKCMS returns an AccountRules instance for an account which
+// should only modify ``third_party/skcms``.
+func AutoRollRulesSKCMS(account string) AccountRules {
+	return AccountRules{
+		Account: account,
+		Funcs: []RuleFunc{
+			OnlyModifiesSKCMS,
+		},
+		notificationFunction: fileBugForAutoRollViolation,
+	}
+}
 
 // OnlyModifiesDEPSFile is a RuleFunc that verifies that the only file
 // modified by the audited CL is ``DEPS``.
 func OnlyModifiesDEPSFile(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-	result := &RuleResult{
-		RuleName:         "OnlyModifiesDEPSFile",
-		RuleResultStatus: ruleFailed,
-	}
+	return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesDEPSFile", "DEPS")
+}
 
-	ok, err := onlyModifies(ctx, ap, rc, cs, "DEPS")
-	if err != nil {
-		panic(err)
-	}
-	if ok {
-		result.RuleResultStatus = rulePassed
-	} else {
-		result.Message = fmt.Sprintf("The automated account %s was expected to only modify %s on the automated commit %s"+
-			" but it seems to have modified other files.", ap.TriggeringAccount, "DEPS", rc.CommitHash)
-	}
-	return result
+// OnlyModifiesAFDOVersion is a RuleFunc which verifies that the only file
+// modified by the audited CL is ``chrome/android/profiles/newest.txt``.
+func OnlyModifiesAFDOVersion(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesAFDOVersion", "chrome/android/profiles/newest.txt")
+}
+
+// OnlyModifiesFuchsiaSDKVersion is a RuleFunc which verifies that the only file
+// modified by the audited CL is ``build/fuchsia/sdk.sha1``.
+func OnlyModifiesFuchsiaSDKVersion(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesFuchsiaSDKVersion", "build/fuchsia/sdk.sha1")
+}
+
+// OnlyModifiesSKCMS is a RuleFunc which verifies that the audited CL only
+// modifies files in the ``third_party/skcms`` directory.
+func OnlyModifiesSKCMS(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	return OnlyModifiesDirRule(ctx, ap, rc, cs, "OnlyModifiesSKCMS", "third_party/skcms")
 }
