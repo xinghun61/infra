@@ -730,7 +730,7 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
 
   Args:
     try_job_id (str): The build id of the try job.
-    job_type (int): The type of the try job, either TEST or COMPILE.
+    job_type (int): The type of the try job, either COMPILE, FLAKE, or TEST.
     build_json (dict): The up-to-date build info.
 
   Returns:
@@ -743,12 +743,9 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
   assert try_job_data, 'TryJobData was not created unexpectedly.'
 
   parameters = {
-      'try_job_id':
-          try_job_id,
-      'try_job_type':
-          failure_type.GetFailureTypeForDescription(try_job_data.try_job_type),
-      'urlsafe_try_job_key':
-          try_job_data.try_job_key.urlsafe(),
+      'try_job_id': try_job_id,
+      'try_job_type': job_type,
+      'urlsafe_try_job_key': try_job_data.try_job_key.urlsafe(),
   }
   if build.status == BuildbucketBuild.COMPLETED:
     return OnTryJobCompleted(parameters, try_job_data, build, error=None)
@@ -761,10 +758,7 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
 def OnTryJobTimeout(try_job_id, job_type):
   """Updates TryJobData entity when try job doesn't complete in time."""
   try_job_data = _GetTryJobData(job_type, try_job_id)
-  UpdateTryJobMetadata(
-      try_job_data,
-      failure_type.GetFailureTypeForDescription(try_job_data.try_job_type),
-      timed_out=True)
+  UpdateTryJobMetadata(try_job_data, job_type, timed_out=True)
 
 
 def OnGetTryJobError(params, try_job_data, build, error):
