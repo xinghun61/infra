@@ -1,4 +1,4 @@
-From b137f1ff7179aabb8c9fea225a0e17c1ab8ad629 Mon Sep 17 00:00:00 2001
+From 24368daf79341c3d14b41368f19abe19c45f9c7d Mon Sep 17 00:00:00 2001
 From: Dan Jacques <dnj@chromium.org>
 Date: Wed, 14 Jun 2017 08:36:47 -0700
 Subject: [PATCH 2/2] Infra-specific extensions.
@@ -9,10 +9,10 @@ Subject: [PATCH 2/2] Infra-specific extensions.
  2 files changed, 15 insertions(+)
 
 diff --git a/Makefile b/Makefile
-index ccfd5d55d..89a2737f3 100644
+index 2d74cc634..0eb7ae444 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -1693,6 +1693,12 @@ ifdef NO_INSTALL_HARDLINKS
+@@ -1717,6 +1717,12 @@ ifdef NO_INSTALL_HARDLINKS
  	export NO_INSTALL_HARDLINKS
  endif
  
@@ -46,5 +46,5 @@ index f745fcbf9..a7484ad7e 100644
  
  
 -- 
-2.14.1.chromium11
+2.17.0.441.gb46fe60e1d-goog
 
