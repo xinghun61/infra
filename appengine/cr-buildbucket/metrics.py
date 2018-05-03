@@ -24,17 +24,17 @@ GLOBAL_TARGET_FIELDS = {
 _SOURCE_TAG = 0   # read field the value from a tag
 _SOURCE_ATTR = 1  # read field the value from an attr
 # tuple item meanings are: value source, gae_ts_mon field type, value type.
-_TAG_FIELD = (_SOURCE_TAG, gae_ts_mon.StringField, str)
+_TAG_STR_FIELD = (_SOURCE_TAG, gae_ts_mon.StringField, str)
+_ATTR_STR_FIELD = (_SOURCE_ATTR, gae_ts_mon.StringField, str)
 _BUILD_FIELDS = {
-  'bucket': (_SOURCE_ATTR, gae_ts_mon.StringField, str),
-  'builder': _TAG_FIELD,
+  'bucket': _ATTR_STR_FIELD,
+  'builder': _TAG_STR_FIELD,
   'canary': (_SOURCE_ATTR, gae_ts_mon.BooleanField, bool),
-  'cancelation_reason': (_SOURCE_ATTR, gae_ts_mon.StringField, str),
-  'failure_reason': (_SOURCE_ATTR, gae_ts_mon.StringField, str),
-  'never_leased': (_SOURCE_ATTR, gae_ts_mon.BooleanField, bool),
-  'result': (_SOURCE_ATTR, gae_ts_mon.StringField, str),
-  'status': (_SOURCE_ATTR, gae_ts_mon.StringField, str),
-  'user_agent': _TAG_FIELD,
+  'cancelation_reason': _ATTR_STR_FIELD,
+  'failure_reason': _ATTR_STR_FIELD,
+  'result': _ATTR_STR_FIELD,
+  'status': _ATTR_STR_FIELD,
+  'user_agent': _TAG_STR_FIELD,
 }
 _METRIC_PREFIX_PROD = 'buildbucket/builds/'
 _METRIC_PREFIX_EXPERIMENTAL = 'buildbucket/builds-experimental/'
@@ -208,10 +208,15 @@ BUILD_COUNT_EXPERIMENTAL = gae_ts_mon.GaugeMetric(
     'Number of pending/running experimental builds',
     _build_fields('bucket', 'builder', 'status'))
 
+MAX_AGE_NEVER_LEASED = gae_ts_mon.FloatMetric(
+    'buildbucket/builds/max_age_never_leased',
+    'Age of the oldest SCHEDULED build that was never leased.',
+    _build_fields('bucket', 'builder'),
+    units=gae_ts_mon.MetricsDataUnits.SECONDS)
 MAX_AGE_SCHEDULED = gae_ts_mon.FloatMetric(
     'buildbucket/builds/max_age_scheduled',
     'Age of the oldest SCHEDULED build.',
-    _build_fields('bucket', 'builder', 'never_leased'),
+    _build_fields('bucket', 'builder'),
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
 SEQUENCE_NUMBER_GEN_DURATION_MS = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/sequence_number/gen_duration',
@@ -260,7 +265,7 @@ def set_build_count_metric_async(bucket, builder, status, experimental):
 
 
 @ndb.tasklet
-def set_build_latency(bucket, builder, must_be_never_leased):
+def set_build_latency(max_metric_sec, bucket, builder, must_be_never_leased):
   q = model.Build.query(
       model.Build.bucket == bucket,
       model.Build.tags == 'builder:%s' % builder,
@@ -277,19 +282,17 @@ def set_build_latency(bucket, builder, must_be_never_leased):
   oldest_build = yield q.fetch_async(1, projection=[model.Build.create_time])
 
   if oldest_build:
-    max_age = (utils.utcnow() - oldest_build[0].create_time).total_seconds()
+    max_latency = (utils.utcnow() - oldest_build[0].create_time).total_seconds()
   else:
-    max_age = 0
-  fields = {
-    'bucket': bucket,
-    'builder': builder,
-    'never_leased': must_be_never_leased,
-  }
-  MAX_AGE_SCHEDULED.set(max_age, fields, target_fields=GLOBAL_TARGET_FIELDS)
+    max_latency = 0
+  max_metric_sec.set(
+      max_latency, {'bucket': bucket, 'builder': builder},
+      target_fields=GLOBAL_TARGET_FIELDS)
 
 
 # Metrics that are per-app rather than per-instance.
 GLOBAL_METRICS = [
+  MAX_AGE_NEVER_LEASED,
   MAX_AGE_SCHEDULED,
   BUILD_COUNT_PROD,
   BUILD_COUNT_EXPERIMENTAL,
@@ -306,8 +309,8 @@ def update_global_metrics():
   for key in model.Builder.query().iter(keys_only=True):
     _, bucket, builder = key.id().split(':', 2)
     latency_query_queue.extend([
-      (bucket, builder, True),
-      (bucket, builder, False),
+      (MAX_AGE_NEVER_LEASED, bucket, builder, True),
+      (MAX_AGE_SCHEDULED, bucket, builder, False),
     ])
     for status in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED):
       for experimental in (False, True):
