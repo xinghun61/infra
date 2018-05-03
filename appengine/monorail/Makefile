@@ -34,10 +34,6 @@ help:
 test:
 	../../test.py test appengine/monorail
 
-test_polymer:
-	bower install
-	polymer test polymer-test
-
 test_no_coverage:
 	../../test.py test appengine/monorail --no-coverage
 
