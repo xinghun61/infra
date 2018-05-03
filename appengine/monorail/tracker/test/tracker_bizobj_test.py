@@ -304,6 +304,19 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual('EditIssue', fd.needs_perm)
     self.assertEqual(4, fd.approval_id)
 
+  def testMakeFieldDef_IntBools(self):
+    fd = tracker_bizobj.MakeFieldDef(
+        1, 789, 'Size', tracker_pb2.FieldTypes.INT_TYPE, None, None,
+        0, 0, 0, 1, 100, None, 0,
+        None, None, None, 'no_action', 'Some field', 0, approval_id=4,
+        is_phase_field=1)
+    self.assertFalse(fd.is_required)
+    self.assertFalse(fd.is_niche)
+    self.assertFalse(fd.is_multivalued)
+    self.assertFalse(fd.needs_member)
+    self.assertFalse(fd.is_deleted)
+    self.assertTrue(fd.is_phase_field)
+
   def testMakeFieldValue(self):
     # Only the first value counts.
     fv = tracker_bizobj.MakeFieldValue(1, 42, 'yay', 111L, None, None, True)
@@ -311,6 +324,7 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(42, fv.int_value)
     self.assertIsNone(fv.str_value)
     self.assertEqual(None, fv.user_id)
+    self.assertEqual(None, fv.phase_id)
 
     fv = tracker_bizobj.MakeFieldValue(1, None, 'yay', 111L, None, None, True)
     self.assertEqual('yay', fv.str_value)
@@ -326,9 +340,10 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(True, fv.derived)
 
     fv = tracker_bizobj.MakeFieldValue(
-        1, None, None, None, None, 'www.google.com', True)
+        1, None, None, None, None, 'www.google.com', True, phase_id=1)
     self.assertEqual('www.google.com', fv.url_value)
     self.assertEqual(True, fv.derived)
+    self.assertEqual(1, fv.phase_id)
 
     with self.assertRaises(ValueError):
       tracker_bizobj.MakeFieldValue(1, None, None, None, None, None, True)

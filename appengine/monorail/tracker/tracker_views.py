@@ -86,6 +86,7 @@ class IssueView(template_helpers.PBProxy):
             fd, config, issue.labels, issue.derived_labels, issue.field_values,
             users_by_id)
         # TODO(jrobbins): field-level view restrictions, display options
+        # TODO(jojwang): monorail:3447, add phase_id to FieldValueView
         for fd in config.field_defs
         if not fd.is_deleted]
     self.fields = sorted(

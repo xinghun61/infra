@@ -815,17 +815,21 @@ class IssueServiceTest(unittest.TestCase):
     fv3 = tracker_bizobj.MakeFieldValue(347, 0, '', 0L, 1234567890, None, True)
     issue.field_values.append(fv3)
     fv4 = tracker_bizobj.MakeFieldValue(
-        348, 0, '', 0L, None, 'www.google.com', True)
+        348, 0, '', 0L, None, 'www.google.com', True, phase_id=14)
     issue.field_values.append(fv4)
     self.SetUpUpdateIssuesFields(issue2fieldvalue_rows=[
         (issue.issue_id, fv1.field_id, fv1.int_value, fv1.str_value,
-         None, fv1.date_value, fv1.url_value, fv1.derived, issue_shard),
+         None, fv1.date_value, fv1.url_value, fv1.derived, None,
+         issue_shard),
         (issue.issue_id, fv2.field_id, fv2.int_value, fv2.str_value,
-         None, fv2.date_value, fv2.url_value, fv2.derived, issue_shard),
+         None, fv2.date_value, fv2.url_value, fv2.derived, None,
+         issue_shard),
         (issue.issue_id, fv3.field_id, fv3.int_value, fv3.str_value,
-         None, fv3.date_value, fv3.url_value, fv3.derived, issue_shard),
+         None, fv3.date_value, fv3.url_value, fv3.derived, None,
+         issue_shard),
         (issue.issue_id, fv4.field_id, fv4.int_value, fv4.str_value,
-         None, fv4.date_value, fv4.url_value, fv4.derived, issue_shard),
+         None, fv4.date_value, fv4.url_value, fv4.derived, 14,
+         issue_shard),
         ])
     self.mox.ReplayAll()
     self.services.issue._UpdateIssuesFields(self.cnxn, [issue], commit=False)

@@ -232,7 +232,7 @@ def MakeFieldDef(
       needs_member=bool(needs_member), grants_perm=grants_perm or '',
       notify_on=tracker_pb2.NotifyTriggers(notify_on or 0),
       date_action=tracker_pb2.DateAction(date_action or 0),
-      is_phase_field=is_phase_field)
+      is_phase_field=bool(is_phase_field))
   if min_value is not None:
     fd.min_value = min_value
   if max_value is not None:
@@ -247,9 +247,12 @@ def MakeFieldDef(
 
 
 def MakeFieldValue(
-    field_id, int_value, str_value, user_id, date_value, url_value, derived):
+    field_id, int_value, str_value, user_id, date_value, url_value, derived,
+    phase_id=None):
   """Make a FieldValue based on the given information."""
   fv = tracker_pb2.FieldValue(field_id=field_id, derived=derived)
+  if phase_id is not None:
+    fv.phase_id = phase_id
   if int_value is not None:
     fv.int_value = int_value
   elif str_value is not None:

@@ -80,7 +80,7 @@ ISSUE2CC_COLS = ['issue_id', 'cc_id', 'derived']
 ISSUE2NOTIFY_COLS = ['issue_id', 'email']
 ISSUE2FIELDVALUE_COLS = [
     'issue_id', 'field_id', 'int_value', 'str_value', 'user_id', 'date_value',
-    'url_value', 'derived']
+    'url_value', 'derived', 'phase_id']
 # Explicitly specify column 'Comment.id' to allow joins on other tables that
 # have an 'id' column.
 COMMENT_COLS = [
@@ -219,10 +219,10 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
   def _UnpackFieldValue(self, fv_row):
     """Construct a field value object from a DB row."""
     (issue_id, field_id, int_value, str_value, user_id, date_value, url_value,
-     derived) = fv_row
+     derived, phase_id) = fv_row
     fv = tracker_bizobj.MakeFieldValue(
         field_id, int_value, str_value, user_id, date_value, url_value,
-        bool(derived))
+        bool(derived), phase_id=phase_id)
     return fv, issue_id
 
   def _UnpackApprovalValue(self, av_row):
@@ -1038,7 +1038,7 @@ class IssueService(object):
         fieldvalue_rows.append(
             (issue.issue_id, fv.field_id, fv.int_value, fv.str_value,
              fv.user_id or None, fv.date_value, fv.url_value, fv.derived,
-             issue_shard))
+             fv.phase_id or None, issue_shard))
 
     self.issue2fieldvalue_tbl.Delete(
         cnxn, issue_id=[issue.issue_id for issue in issues], commit=False)

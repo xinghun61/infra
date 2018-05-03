@@ -25,6 +25,9 @@ class FieldValue(messages.Message):
 
   derived = messages.BooleanField(5, default=False)
 
+  # None if field is not a phse field.
+  phase_id = messages.IntegerField(8)
+
 
 class ApprovalStatus(messages.Enum):
   """Statuses that an approval field could be set to."""
