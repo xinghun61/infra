@@ -6,7 +6,6 @@ from google.appengine.ext import ndb
 
 from common import monitoring
 from common.findit_http_client import FinditHttpClient
-from common.waterfall import failure_type
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs.pipelines import GeneratorPipeline
@@ -45,7 +44,6 @@ from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugInput)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugPipeline)
-from services import gerrit
 from services import swarmed_test_util
 from services.flake_failure import confidence_score_util
 from services.flake_failure import flake_analysis_util
@@ -93,7 +91,9 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
     if analysis.request_time:
       monitoring.pipeline_times.increment_by(
           int((time_util.GetUTCNow() - analysis.request_time).total_seconds()),
-          {'type': 'flake'})
+          {
+              'type': 'flake'
+          })
 
     commit_position_parameters = parameters.analyze_commit_position_parameters
     commit_position_to_analyze = commit_position_parameters.next_commit_position
@@ -184,7 +184,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
             analysis_urlsafe_key=analysis_urlsafe_key,
             commit_position=commit_position_to_analyze,
             revision=revision_to_analyze)
-        isolate_sha = yield GetIsolateShaForCommitPositionPipeline(
+        get_sha_output = yield GetIsolateShaForCommitPositionPipeline(
             get_isolate_sha_input)
 
         # Determine approximate pass rate at the commit position/isolate sha.
@@ -192,9 +192,10 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
             DetermineApproximatePassRateInput,
             analysis_urlsafe_key=analysis_urlsafe_key,
             commit_position=commit_position_to_analyze,
-            isolate_sha=isolate_sha,
+            get_isolate_sha_output=get_sha_output,
             previous_swarming_task_output=None,
-            revision=revision_to_analyze)
+            revision=revision_to_analyze,
+        )
         yield DetermineApproximatePassRatePipeline(
             determine_approximate_pass_rate_input)
 

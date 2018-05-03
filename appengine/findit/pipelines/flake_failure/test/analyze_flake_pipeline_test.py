@@ -36,6 +36,8 @@ from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionParameters)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionPipeline)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaOutput)
 from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionInput)
 from pipelines.flake_failure.next_commit_position_pipeline import (
@@ -156,6 +158,11 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     start_revision = 'r1000'
     isolate_sha = 'sha1'
     next_commit_position = 999
+    build_url = 'url'
+    try_job_url = None
+
+    get_sha_output = GetIsolateShaOutput(
+        isolate_sha=isolate_sha, build_url=build_url, try_job_url=try_job_url)
 
     step_metadata = StepMetadata(
         canonical_step_name='s',
@@ -186,7 +193,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     expected_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=start_commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=get_sha_output,
         previous_swarming_task_output=None,
         revision=start_revision)
 
@@ -206,7 +213,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         step_metadata=step_metadata)
 
     self.MockGeneratorPipeline(GetIsolateShaForCommitPositionPipeline,
-                               expected_isolate_sha_input, isolate_sha)
+                               expected_isolate_sha_input, get_sha_output)
 
     self.MockGeneratorPipeline(DetermineApproximatePassRatePipeline,
                                expected_pass_rate_input, None)

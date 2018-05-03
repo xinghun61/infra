@@ -1,12 +1,9 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
-"""Updates a flake analysis' data points with incoming pass rate information."""
-
+# found in the LICENSE f
+"""Pipeline input for UpdateFlakeAnalysisDataPointPipeline."""
 from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
-from gae_libs.pipelines import GeneratorPipeline
 from libs.structured_object import StructuredObject
-from services.flake_failure import data_point_util
 
 
 class UpdateFlakeAnalysisDataPointsInput(StructuredObject):
@@ -30,13 +27,3 @@ class UpdateFlakeAnalysisDataPointsInput(StructuredObject):
 
   # The results of the flake swarming task to update data points with.
   swarming_task_output = FlakeSwarmingTaskOutput
-
-
-class UpdateFlakeAnalysisDataPointsPipeline(GeneratorPipeline):
-  """Updates a MasterFlakeAnalysis' data points with swarming task results."""
-
-  input_type = UpdateFlakeAnalysisDataPointsInput
-
-  def RunImpl(self, parameters):
-    """Creates or updates existing data points with swarming task results."""
-    data_point_util.UpdateAnalysisDataPoints(parameters)

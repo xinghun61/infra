@@ -20,6 +20,7 @@ from services import swarmbot_util
 from services import swarming
 from services.flake_failure import flake_try_job
 from waterfall import build_util
+from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
@@ -46,6 +47,10 @@ class GetIsolateShaForBuildParameters(StructuredObject):
   # The build number whose to query for a pre-detrermined sha.
   build_number = int
 
+  # The url to the build page corresponding to master_name, builder_name
+  # build_number.
+  url = basestring
+
   # The name of the step to query for a pre-determined sha.
   step_name = basestring
 
@@ -55,31 +60,49 @@ class GetIsolateShaForTryJobParameters(StructuredObject):
   step_name = basestring
 
 
+class GetIsolateShaOutput(StructuredObject):
+  # The isolate sha of the build artifacts.
+  isolate_sha = basestring
+
+  # The url to the build whose existing artifacts were used, if any. Should be
+  # mutually exclusive with try_job_url.
+  build_url = basestring
+
+  # The url to the try job page that produced compiled artifacts. Should be
+  # mutually exclusive with build_url.
+  try_job_url = basestring
+
+
 class GetIsolateShaForBuildPipeline(SynchronousPipeline):
   input_type = GetIsolateShaForBuildParameters
-  output_type = basestring
+  output_type = GetIsolateShaOutput
 
   def RunImpl(self, parameters):
-    return swarming.GetIsolatedShaForStep(
+    isolate_sha = swarming.GetIsolatedShaForStep(
         parameters.master_name, parameters.builder_name,
         parameters.build_number, parameters.step_name, FinditHttpClient())
+    return GetIsolateShaOutput(
+        isolate_sha=isolate_sha, build_url=parameters.url, try_job_url=None)
 
 
 class GetIsolateShaForTryJobPipeline(SynchronousPipeline):
   input_type = GetIsolateShaForTryJobParameters
-  output_type = basestring
+  output_type = GetIsolateShaOutput
 
   def RunImpl(self, parameters):
     isolated_tests = parameters.try_job_result.report.isolated_tests
     assert len(isolated_tests) == 1, (
-        'Expecting only one isolate target, but got %d' % len(isolated_tests))
-    return isolated_tests.values()[0]
+        'Expecting only one isolate target, but got {}'.format(
+            len(isolated_tests)))
+    return GetIsolateShaOutput(
+        isolate_sha=isolated_tests.values()[0],
+        build_url=None,
+        try_job_url=parameters.try_job_result.url)
 
 
 class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
 
   input_type = GetIsolateShaForCommitPositionParameters
-  output_type = basestring
 
   def RunImpl(self, parameters):
     """Determines the Isolated sha to run in swarming given a commit position.
@@ -111,7 +134,9 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
           master_name=master_name,
           builder_name=builder_name,
           build_number=earliest_containing_build.build_number,
-          step_name=step_name)
+          step_name=step_name,
+          url=buildbot.CreateBuildUrl(master_name, builder_name,
+                                      earliest_containing_build.build_number))
       yield GetIsolateShaForBuildPipeline(get_build_sha_parameters)
     else:
       # The requested commit position needs to be compiled.

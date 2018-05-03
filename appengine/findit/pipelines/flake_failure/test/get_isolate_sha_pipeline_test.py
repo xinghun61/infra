@@ -24,6 +24,8 @@ from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForTryJobParameters)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForTryJobPipeline)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaOutput)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
@@ -32,6 +34,7 @@ from services import step_util
 from services import swarming
 from services import swarmbot_util
 from waterfall import build_util
+from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.build_info import BuildInfo
 from waterfall.test.wf_testcase import WaterfallTestCase
@@ -46,11 +49,15 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     builder_name = 'b'
     build_number = 100
     step_name = 's'
+    url = 'url'
+    sha = 'sha1'
+    mocked_get_isolate_sha.return_value = sha
 
     get_build_sha_parameters = GetIsolateShaForBuildParameters(
         master_name=master_name,
         builder_name=builder_name,
         build_number=build_number,
+        url=url,
         step_name=step_name)
 
     pipeline_job = GetIsolateShaForBuildPipeline(get_build_sha_parameters)
@@ -62,6 +69,11 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
   def testGetIsolateShaForTryJobPipeline(self):
     step_name = 'interactive_ui_tests'
     expected_sha = 'ddd3e494ed97366f99453e5a8321b77449f26a58'
+    url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.findit/'
+           'findit_variable/1391')
+    expected_output = GetIsolateShaOutput(
+        isolate_sha=expected_sha, build_url=None,
+        try_job_url=url).ToSerializable()
 
     try_job_result = FlakeTryJobResult.FromSerializable({
         'report': {
@@ -85,11 +97,8 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
                 None,
             'metadata': {}
         },
-        'url': (
-            'https://ci.chromium.org/p/chromium/builders/luci.chromium.findit/'
-            'findit_variable/1391'),
-        'try_job_id':
-            '8951342990533358272'
+        'url': url,
+        'try_job_id': '8951342990533358272'
     })
 
     get_try_job_sha_parameters = GetIsolateShaForTryJobParameters(
@@ -100,13 +109,14 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
 
     pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
-    returned_sha = pipeline_job.outputs.default.value
+    pipeline_output = pipeline_job.outputs.default.value
 
-    self.assertEqual(expected_sha, returned_sha)
+    self.assertEqual(expected_output, pipeline_output)
 
   @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
+  @mock.patch.object(buildbot, 'CreateBuildUrl')
   def testGetIsolateShaForCommitPositionPipelineBuildLevel(
-      self, mocked_build_info):
+      self, mocked_url, mocked_build_info):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -115,6 +125,11 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     requested_commit_position = 1000
     requested_revision = 'r1000'
     expected_sha = 'sha1'
+    build_url = 'url'
+    mocked_url.return_value = build_url
+
+    expected_output = GetIsolateShaOutput(
+        isolate_sha=expected_sha, build_url=build_url, try_job_url=None)
 
     build = BuildInfo(master_name, builder_name, build_number)
     build.commit_position = requested_commit_position
@@ -128,6 +143,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
         master_name=master_name,
         builder_name=builder_name,
         build_number=build_number,
+        url=build_url,
         step_name=step_name)
 
     get_sha_input = GetIsolateShaForCommitPositionParameters(
@@ -136,11 +152,16 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
         revision=requested_revision)
 
     self.MockSynchronousPipeline(GetIsolateShaForBuildPipeline,
-                                 get_build_sha_parameters, expected_sha)
+                                 get_build_sha_parameters, expected_output)
 
     pipeline_job = GetIsolateShaForCommitPositionPipeline(get_sha_input)
     pipeline_job.start()
     self.execute_queued_tasks()
+
+    pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
+    pipeline_output = pipeline_job.outputs.default.value
+
+    self.assertEqual(expected_output.ToSerializable(), pipeline_output)
 
   @mock.patch.object(waterfall_config, 'GetTrybotDimensions')
   @mock.patch.object(swarmbot_util, 'GetCacheName')

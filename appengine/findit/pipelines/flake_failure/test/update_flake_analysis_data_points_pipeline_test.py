@@ -35,13 +35,15 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(WaterfallTestCase):
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
+        build_url='url',
         commit_position=commit_position,
         revision=revision,
-        swarming_task_output=swarming_task_output)
+        swarming_task_output=swarming_task_output,
+        try_job_url=None)
 
     pipeline_job = UpdateFlakeAnalysisDataPointsPipeline(
         update_data_points_input)
     pipeline_job.start()
     self.execute_queued_tasks()
 
-    mocked_update.assert_called_once()
+    mocked_update.assert_called_once_with(update_data_points_input)

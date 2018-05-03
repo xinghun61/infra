@@ -34,7 +34,9 @@ class NextBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.PENDING
-    analysis.data_points = [DataPoint.Create(build_number, pass_rate)]
+    analysis.data_points = [
+        DataPoint.Create(build_number=build_number, pass_rate=pass_rate)
+    ]
     analysis.put()
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
@@ -66,7 +68,9 @@ class NextBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.algorithm_parameters['swarming_rerun'][
         'max_iterations_to_rerun'] = 100
-    analysis.data_points = [DataPoint.Create(build_number, pass_rate)]
+    analysis.data_points = [
+        DataPoint.Create(build_number=build_number, pass_rate=pass_rate)
+    ]
     analysis.put()
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
@@ -99,7 +103,9 @@ class NextBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.algorithm_parameters['swarming_rerun'][
         'max_iterations_to_rerun'] = 100
-    analysis.data_points = [DataPoint.Create(build_number, pass_rate)]
+    analysis.data_points = [
+        DataPoint.Create(build_number=build_number, pass_rate=pass_rate)
+    ]
     analysis.put()
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
@@ -136,7 +142,9 @@ class NextBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.algorithm_parameters['swarming_rerun'][
         'max_iterations_to_rerun'] = 100
-    analysis.data_points = [DataPoint.Create(build_number, pass_rate)]
+    analysis.data_points = [
+        DataPoint.Create(build_number=build_number, pass_rate=pass_rate)
+    ]
     analysis.put()
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,

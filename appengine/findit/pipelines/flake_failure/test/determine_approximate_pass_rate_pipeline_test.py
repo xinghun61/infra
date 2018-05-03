@@ -20,6 +20,8 @@ from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     UpdateFlakeAnalysisDataPointsInput)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaOutput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskInput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
@@ -45,11 +47,16 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     revision = 'r1000'
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    build_url = 'url'
+    try_job_url = None
+
+    isolate_sha_output = GetIsolateShaOutput(
+        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=isolate_sha_output,
         previous_swarming_task_output=None,
         revision=revision)
 
@@ -70,14 +77,16 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
+        build_url=build_url,
         commit_position=commit_position,
         revision=revision,
-        swarming_task_output=flake_swarming_task_output)
+        swarming_task_output=flake_swarming_task_output,
+        try_job_url=try_job_url)
 
     recursive_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=isolate_sha_output,
         previous_swarming_task_output=flake_swarming_task_output,
         revision=revision)
 
@@ -108,6 +117,11 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     task_id = 'task_id'
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    build_url = 'url'
+    try_job_url = None
+
+    isolate_sha_output = GetIsolateShaOutput(
+        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
@@ -127,9 +141,10 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=isolate_sha_output,
         previous_swarming_task_output=flake_swarming_task_output,
-        revision=revision)
+        revision=revision,
+    )
 
     pipeline_job = DetermineApproximatePassRatePipeline(
         determine_approximate_pass_rate_input)
@@ -153,6 +168,11 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     task_id = 'task_id'
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    build_url = None
+    try_job_url = 'url'
+
+    isolate_sha_output = GetIsolateShaOutput(
+        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
@@ -172,7 +192,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=isolate_sha_output,
         previous_swarming_task_output=flake_swarming_task_output,
         revision=revision)
 
@@ -196,6 +216,11 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     task_id = 'task_id'
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    build_url = 'url'
+    try_job_url = None
+
+    isolate_sha_output = GetIsolateShaOutput(
+        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
@@ -215,9 +240,10 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=isolate_sha_output,
         previous_swarming_task_output=flake_swarming_task_output,
-        revision=revision)
+        revision=revision,
+    )
 
     pipeline_job = DetermineApproximatePassRatePipeline(
         determine_approximate_pass_rate_input)
@@ -241,6 +267,9 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
 
+    isolate_sha_output = GetIsolateShaOutput(
+        build_url=None, isolate_sha=isolate_sha, try_job_url='url')
+
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(
@@ -259,7 +288,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=isolate_sha_output,
         previous_swarming_task_output=flake_swarming_task_output,
         revision=revision)
 
@@ -286,6 +315,11 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     timeout_seconds = 3600
     started_time = datetime(2018, 1, 1, 0, 0, 0)
     completed_time = datetime(2018, 1, 1, 1, 0, 0)
+    build_url = None
+    try_job_url = 'url'
+
+    isolate_sha_output = GetIsolateShaOutput(
+        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
@@ -308,7 +342,7 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=isolate_sha_output,
         previous_swarming_task_output=flake_swarming_task_output,
         revision=revision)
 
@@ -329,14 +363,16 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
 
     update_data_points_input = UpdateFlakeAnalysisDataPointsInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
+        build_url=build_url,
         commit_position=commit_position,
         revision=revision,
-        swarming_task_output=flake_swarming_task_output)
+        swarming_task_output=flake_swarming_task_output,
+        try_job_url=try_job_url)
 
     recursive_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=isolate_sha_output,
         previous_swarming_task_output=flake_swarming_task_output,
         revision=revision)
 
@@ -359,11 +395,16 @@ class DetermineApproximatePassRatePipelineTest(WaterfallTestCase):
     commit_position = 1000
     isolate_sha = 'sha1'
     revision = 'r1000'
+    build_url = None
+    try_job_url = 'url'
+
+    isolate_sha_output = GetIsolateShaOutput(
+        build_url=build_url, isolate_sha=isolate_sha, try_job_url=try_job_url)
 
     determine_approximate_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=commit_position,
-        isolate_sha=isolate_sha,
+        get_isolate_sha_output=isolate_sha_output,
         previous_swarming_task_output=None,
         revision=revision)
 

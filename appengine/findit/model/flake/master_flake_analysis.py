@@ -26,6 +26,10 @@ class DataPoint(ndb.Model):
   # analysis at the build level.
   build_number = ndb.IntegerProperty(indexed=False)
 
+  # The url to the build page of the build whose artifacts were used to generate
+  # This data point.
+  build_url = ndb.StringProperty(indexed=False)
+
   # The pass rate of the test when run against this commit.
   # -1 means that the test doesn't exist at this commit/build.
   pass_rate = ndb.FloatProperty(indexed=False)
@@ -38,6 +42,9 @@ class DataPoint(ndb.Model):
 
   # The git hash of this data point.
   git_hash = ndb.StringProperty(indexed=False)
+
+  # TODO(crbug.com/839620): Deprecate previous_build_commit_position,
+  # previous_build_git_hash, and blame_list.
 
   # The commit position of the build preceding this one. Only relevant if this
   # data point is generated at the build level.
@@ -71,6 +78,7 @@ class DataPoint(ndb.Model):
 
   @staticmethod
   def Create(build_number=None,
+             build_url=None,
              pass_rate=None,
              task_ids=None,
              commit_position=None,
@@ -84,6 +92,7 @@ class DataPoint(ndb.Model):
              elapsed_seconds=0,
              failed_swarming_task_attempts=0):
     data_point = DataPoint()
+    data_point.build_url = build_url
     data_point.build_number = build_number
     data_point.pass_rate = pass_rate
     task_ids = task_ids or []

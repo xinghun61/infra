@@ -8,6 +8,8 @@ from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaOutput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskInput)
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
@@ -28,8 +30,8 @@ class DetermineApproximatePassRateInput(StructuredObject):
   # The commit position being analyzed.
   commit_position = int
 
-  # The isolate sha corresponding to the commit_position.
-  isolate_sha = basestring
+  # The isolate sha and other fields corresponding to the commit_position.
+  get_isolate_sha_output = GetIsolateShaOutput
 
   # The output of the last swarming task that was run.
   previous_swarming_task_output = FlakeSwarmingTaskOutput
@@ -50,7 +52,7 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
     assert analysis
 
     commit_position = parameters.commit_position
-    isolate_sha = parameters.isolate_sha
+    get_isolate_sha_output = parameters.get_isolate_sha_output
     previous_swarming_task_output = parameters.previous_swarming_task_output
 
     # Extract pass rate and iterations already-completed up to this point.
@@ -126,7 +128,7 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
           RunFlakeSwarmingTaskInput,
           analysis_urlsafe_key=analysis_urlsafe_key,
           commit_position=commit_position,
-          isolate_sha=isolate_sha,
+          isolate_sha=get_isolate_sha_output.isolate_sha,
           iterations=iterations_for_task,
           timeout_seconds=time_for_task_seconds)
 
@@ -138,6 +140,8 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
           analysis_urlsafe_key=analysis_urlsafe_key,
           commit_position=commit_position,
           revision=parameters.revision,
+          build_url=get_isolate_sha_output.build_url,
+          try_job_url=get_isolate_sha_output.try_job_url,
           swarming_task_output=swarming_task_output)
 
       yield UpdateFlakeAnalysisDataPointsPipeline(
@@ -147,7 +151,7 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
           DetermineApproximatePassRateInput,
           analysis_urlsafe_key=analysis_urlsafe_key,
           commit_position=commit_position,
-          isolate_sha=isolate_sha,
+          get_isolate_sha_output=get_isolate_sha_output,
           previous_swarming_task_output=swarming_task_output,
           revision=parameters.revision)
 
