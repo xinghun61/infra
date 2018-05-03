@@ -8,10 +8,7 @@ from testing_utils import testing
 
 from common.waterfall import pubsub_callback
 
-_DUMMY_CONFIG = {
-    'pubsub_topic': 'projects/findit-for-me/topics/jobs',
-    'pubsub_swarming_topic': 'projects/findit-for-me/topics/swarm'
-}
+_DUMMY_CONFIG = {'pubsub_swarming_topic': 'projects/findit-for-me/topics/swarm'}
 
 
 class PubsubCallbackTest(testing.AppengineTestCase):
@@ -27,41 +24,9 @@ class PubsubCallbackTest(testing.AppengineTestCase):
       pubsub_callback.waterfall_config,
       'GetTryJobSettings',
       return_value=_DUMMY_CONFIG)
-  def testGetTryJobTopic(self, _):
-    self.assertEqual(_DUMMY_CONFIG['pubsub_topic'],
-                     pubsub_callback.GetTryJobTopic())
-
-  @mock.patch.object(
-      pubsub_callback.waterfall_config,
-      'GetTryJobSettings',
-      return_value=_DUMMY_CONFIG)
   def testGetSwarmingTopic(self, _):
     self.assertEqual(_DUMMY_CONFIG['pubsub_swarming_topic'],
                      pubsub_callback.GetSwarmingTopic())
-
-  @mock.patch.object(
-      pubsub_callback.token, 'GenerateAuthToken', return_value='token')
-  @mock.patch.object(
-      pubsub_callback.waterfall_config,
-      'GetTryJobSettings',
-      return_value=_DUMMY_CONFIG)
-  def testMakeTryJobPubsubCallback(self, *_):
-    notification_id = 'pipeline_id'
-    expected_value = {
-        'topic':
-            _DUMMY_CONFIG['pubsub_topic'],
-        'auth_token':
-            'token',
-        'user_data':
-            json.dumps(
-                {
-                    'Message-Type': 'BuildbucketStatusChange',
-                    'Notification-Id': notification_id
-                },
-                sort_keys=True)
-    }
-    callback_info = pubsub_callback.MakeTryJobPubsubCallback(notification_id)
-    self.assertDictEqual(expected_value, callback_info.ToRequestParameter())
 
   @mock.patch.object(
       pubsub_callback.token, 'GenerateAuthToken', return_value='token')

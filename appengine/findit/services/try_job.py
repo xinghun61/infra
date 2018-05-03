@@ -30,7 +30,6 @@ from common.findit_http_client import FinditHttpClient
 from common.findit_http_client import HttpClientMetricsInterceptor
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
-from common.waterfall import pubsub_callback
 from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from common.waterfall.buildbucket_client import PubSubCallback
@@ -310,35 +309,24 @@ def GetBuildProperties(pipeline_input, try_job_type):
   return properties
 
 
-def CreatePubSubCallback(runner_id, use_new_pubsub):
+def CreatePubSubCallback(runner_id):
   """Returns the PubSubCallback instance for the given runner id.
 
   Args:
     runner_id (str): The identifier of the runner to trigger a try job.
-    use_new_pubsub (bool): Set as False to use the legacy PubSub topic.
 
   Returns:
     A PubSubCallback instance to be used in the try job.
   """
-  if not use_new_pubsub:
-    return pubsub_callback.MakeTryJobPubsubCallback(runner_id)
   topic = 'projects/%s/topics/build-change' % app_identity.get_application_id()
   auth_token = token.GenerateAuthToken('pubsub', 'buildbucket', runner_id)
   user_data = {'runner_id': runner_id}
   return PubSubCallback(topic, auth_token, user_data)
 
 
-def TriggerTryJob(master_name,
-                  builder_name,
-                  tryserver_mastername,
-                  tryserver_buildername,
-                  properties,
-                  additional_parameters,
-                  try_job_type,
-                  cache_name,
-                  dimensions,
-                  runner_id,
-                  use_new_pubsub=True):
+def TriggerTryJob(master_name, builder_name, tryserver_mastername,
+                  tryserver_buildername, properties, additional_parameters,
+                  try_job_type, cache_name, dimensions, runner_id):
   """Triggers a try job through Buildbucket.
 
   Args:
@@ -354,7 +342,6 @@ def TriggerTryJob(master_name,
     dimensions ([str]): The bot dimensions used to allocate a Swarming bot.
     runner_id (str): The id of the runner to trigger this try job. One runner
       could trigger only one try job.
-    use_new_pubsub (bool): Set as true to use the new PubSub topic and callback.
   """
 
   # Certain parts of the recipe depend on the 'mastername' property being set
@@ -375,7 +362,7 @@ def TriggerTryJob(master_name,
   try_job = buildbucket_client.TryJob(
       tryserver_mastername, tryserver_buildername, properties, [],
       additional_parameters, cache_name, dimensions,
-      CreatePubSubCallback(runner_id, use_new_pubsub))
+      CreatePubSubCallback(runner_id))
   # This is a no-op if the tryjob is not on swarmbucket.
   swarmbot_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
   error, build = buildbucket_client.TriggerTryJobs([try_job])[0]

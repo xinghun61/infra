@@ -2072,3 +2072,19 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
       waterfall_config, 'ShouldSkipTestTryJobs', return_value=False)
   def testNeedANewTestTryJobNoConsistentFailure(self, *_):
     self.assertTrue(test_try_job._NeedANewTestTryJob(self.start_try_job_params))
+
+  @mock.patch.object(try_job_service, 'OnTryJobStateChanged', return_value={})
+  def testOnTryJobStateChanged(self, mock_fn):
+    try_job_id = '1'
+    build_json = {}
+    self.assertEqual(
+        TestTryJobResult.FromSerializable({}),
+        test_try_job.OnTryJobStateChanged(try_job_id, build_json))
+    mock_fn.assert_called_once_with(try_job_id, failure_type.TEST, build_json)
+
+  @mock.patch.object(try_job_service, 'OnTryJobStateChanged', return_value=None)
+  def testOnTryJobStateChangedNoneResult(self, mock_fn):
+    try_job_id = '1'
+    build_json = {}
+    self.assertIsNone(test_try_job.OnTryJobStateChanged(try_job_id, build_json))
+    mock_fn.assert_called_once_with(try_job_id, failure_type.TEST, build_json)

@@ -36,7 +36,6 @@ from handlers import swarming_push
 from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
 from handlers import try_job_pubsub_pipeline_callback
-from handlers import try_job_push
 from handlers import version
 from handlers.flake import analyze_regression_range
 from handlers.flake import check_flake
@@ -84,7 +83,6 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/flake/detection/ui/test-flake', test_flake.TestFlake),
     ('/list-analyses', list_analyses.ListAnalyses),
     ('/pubsub/swarmingpush', swarming_push.SwarmingPush),
-    ('/pubsub/tryjobpush', try_job_push.TryJobPush),
     ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
     ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/change-auto-revert-setting',

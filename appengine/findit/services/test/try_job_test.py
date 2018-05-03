@@ -502,7 +502,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(app_identity, 'get_application_id', return_value='app-id')
   @mock.patch.object(token, 'GenerateAuthToken', return_value='secret')
   def testCreatePubSubCallbackForNewPubSubTopic(self, *_):
-    result = try_job_service.CreatePubSubCallback('id', True)
+    result = try_job_service.CreatePubSubCallback('id')
     self.assertDictEqual({'runner_id': 'id'}, result.user_data)
     self.assertEqual('secret', result.auth_token)
     self.assertEqual('projects/app-id/topics/build-change', result.topic)

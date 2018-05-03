@@ -586,10 +586,10 @@ def OnTryJobStateChanged(try_job_id, build_json):
     build_json (dict): The up-to-date build info.
 
   Returns:
-    CompileTryJobResult if the try job has completed; otherwise None.
+    TestTryJobResult if the try job has completed; otherwise None.
   """
-  result = try_job_service.OnTryJobStateChanged(
-      try_job_id, failure_type.COMPILE, build_json)
+  result = try_job_service.OnTryJobStateChanged(try_job_id, failure_type.TEST,
+                                                build_json)
   if result is not None:
     result = TestTryJobResult.FromSerializable(result)
   return result

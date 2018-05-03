@@ -28,9 +28,8 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock_select.stop()
     super(ScheduleFlakeTryJobPipelineTest, self).tearDown()
 
-  @mock.patch.object(token, 'GenerateAuthToken', return_value='auth_token')
-  @mock.patch.object(try_job_service, 'buildbucket_client')
-  def testScheduleFlakeTryJob(self, mock_module, *_):
+  @mock.patch.object(try_job_service, 'TriggerTryJob')
+  def testScheduleFlakeTryJob(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -48,22 +47,14 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     build.put()
-    response = {
-        'build': {
-            'id': build_id,
-            'url': url,
-            'status': 'SCHEDULED',
-        }
-    }
-    results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
-    mock_module.TriggerTryJobs.return_value = results
+    mock_fn.return_value = (build_id, None)
 
     FlakeTryJob.Create(master_name, builder_name, step_name, test_name,
                        git_hash).put()
 
     try_job_pipeline = ScheduleFlakeTryJobPipeline()
-    try_job_id = try_job_pipeline.run(master_name, builder_name, step_name,
-                                      test_name, git_hash,
+    try_job_id = try_job_pipeline.run(master_name, builder_name,
+                                      step_name, test_name, git_hash,
                                       analysis_key.urlsafe(), None, None)
 
     try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,

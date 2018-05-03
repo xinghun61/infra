@@ -230,8 +230,9 @@ def CompileFailureIsFlaky(result):
     return False
 
   try_job_result = result.report.result
-  sub_ranges = (result.report.metadata.get('sub_ranges') or []
-                if result.report.metadata else [])
+  sub_ranges = (
+      result.report.metadata.get('sub_ranges') or []
+      if result.report.metadata else [])
 
   if (not try_job_result or  # There is some issue with try job, cannot decide.
       not sub_ranges or  # Missing range information.
@@ -353,17 +354,10 @@ def ScheduleCompileTryJob(parameters, runner_id):
                                           parameters.force_buildbot))
 
   build_id, error = try_job_service.TriggerTryJob(
-      master_name,
-      builder_name,
-      tryserver_mastername,
-      tryserver_buildername,
-      properties,
-      additional_parameters,
+      master_name, builder_name, tryserver_mastername, tryserver_buildername,
+      properties, additional_parameters,
       failure_type.GetDescriptionForFailureType(failure_type.COMPILE),
-      parameters.cache_name,
-      parameters.dimensions,
-      runner_id,
-      use_new_pubsub=True)
+      parameters.cache_name, parameters.dimensions, runner_id)
 
   if error:
     raise exceptions.RetryException(error.reason, error.message)
