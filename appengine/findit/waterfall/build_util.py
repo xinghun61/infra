@@ -40,7 +40,7 @@ def _GetLogLocationForBuild(build_data):
     return None
 
   data_json = json.loads(build_data)
-  properties = data_json.get('properties', [])
+  properties = data_json.get('properties') or []
   buildbucket = None
   for property in properties:
     if property[0] == 'log_location':
