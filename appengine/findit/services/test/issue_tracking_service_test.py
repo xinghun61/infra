@@ -49,39 +49,33 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue('longstanding' in comment, comment)
 
   def testGetMinimumConfidenceToFileBugs(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'minimum_confidence_to_create_bugs': 0.9
-    })
+    self.UpdateUnitTestConfigSettings(
+        'check_flake_settings', {'minimum_confidence_to_create_bugs': 0.9})
     self.assertEqual(0.9,
                      issue_tracking_service.GetMinimumConfidenceToFileBugs())
 
   def testGetMinimumConfidenceToUpdateBugs(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'minimum_confidence_to_update_cr': 0.8
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'minimum_confidence_to_update_cr': 0.8})
     self.assertEqual(0.8,
                      issue_tracking_service.GetMinimumConfidenceToUpdateBugs())
 
   def testIsBugFilingEnabled(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'create_monorail_bug': False
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'create_monorail_bug': False})
     self.assertFalse(issue_tracking_service.IsBugFilingEnabled())
 
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'create_monorail_bug': True
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'create_monorail_bug': True})
     self.assertTrue(issue_tracking_service.IsBugFilingEnabled())
 
   def testIsBugUpdatingEnabled(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'update_monorail_bug': False
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'update_monorail_bug': False})
     self.assertFalse(issue_tracking_service.IsBugUpdatingEnabled())
 
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'update_monorail_bug': True
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'update_monorail_bug': True})
     self.assertTrue(issue_tracking_service.IsBugUpdatingEnabled())
 
   @mock.patch.object(
@@ -936,9 +930,9 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
                      issue_tracking_service.GetPriorityLabelForConfidence(1.0))
     self.assertEqual('Pri-1',
                      issue_tracking_service.GetPriorityLabelForConfidence(.98))
-    self.assertEqual('Pri-3',
+    self.assertEqual('Pri-1',
                      issue_tracking_service.GetPriorityLabelForConfidence(.9))
-    self.assertEqual('Pri-3',
+    self.assertEqual('Pri-1',
                      issue_tracking_service.GetPriorityLabelForConfidence(.85))
 
   @mock.patch.object(issue_tracking_service, 'UpdateBug')

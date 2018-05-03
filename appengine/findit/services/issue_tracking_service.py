@@ -372,10 +372,8 @@ def GetPriorityLabelForConfidence(confidence):
   assert confidence <= 1.0
   assert confidence >= 0.0
 
-  if confidence >= .98:
-    return 'Pri-1'
-  else:
-    return 'Pri-3'
+  # Default to P1 for all findings of flakiness.
+  return 'Pri-1'
 
 
 def CreateBugForFlakeAnalyzer(test_name, subject, description,
