@@ -14,15 +14,123 @@ from waterfall import build_util
 from waterfall.build_info import BuildInfo
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
-from waterfall.test import (process_base_swarming_task_result_pipeline_test as
-                            base_test)
 from waterfall.test import wf_testcase
+
+
+_ISOLATED_SERVER = 'https://isolateserver.appspot.com'
+
+_SAMPLE_FAILURE_LOG = {
+    'all_tests': [
+        'TestSuite1.test1',
+        'TestSuite1.test2',
+        'TestSuite1.test3',
+    ],
+    'per_iteration_data': [{
+        'TestSuite1.test1': [{
+            'status': 'SUCCESS',
+            'other_info': 'N/A'
+        }],
+        'TestSuite1.test2': [{
+            'status': 'FAILURE',
+            'other_info': 'N/A'
+        }, {
+            'status': 'FAILURE',
+            'other_info': 'N/A'
+        }, {
+            'status': 'SUCCESS',
+            'other_info': 'N/A'
+        }],
+        'TestSuite1.test3': [{
+            'status': 'FAILURE',
+            'other_info': 'N/A'
+        }, {
+            'status': 'FAILURE',
+            'other_info': 'N/A'
+        }, {
+            'status': 'FAILURE',
+            'other_info': 'N/A'
+        }]
+    }, {
+        'TestSuite1.test1': [{
+            'status': 'SUCCESS',
+            'other_info': 'N/A'
+        }],
+        'TestSuite1.test2': [{
+            'status': 'SUCCESS',
+            'other_info': 'N/A'
+        }],
+        'TestSuite1.test3': [{
+            'status': 'FAILURE',
+            'other_info': 'N/A'
+        }, {
+            'status': 'FAILURE',
+            'other_info': 'N/A'
+        }, {
+            'status': 'FAILURE',
+            'other_info': 'N/A'
+        }]
+    }]
+}
+
+_SWARMING_TASK_RESULTS = {
+    'task_id1': {
+        'state': 'COMPLETED',
+        'tags': ['priority:25', 'ref_name:abc_tests'],
+        'outputs_ref': {
+            'isolatedserver': _ISOLATED_SERVER,
+            'namespace': 'default-gzip',
+            'isolated': 'shard1_isolated'
+        },
+        'created_ts': '2016-02-10T18:32:06.538220',
+        'started_ts': '2016-02-10T18:32:09.090550',
+        'completed_ts': '2016-02-10T18:33:09'
+    },
+    'task_id2': {
+        'state': 'TIMED_OUT',
+        'outputs_ref': None
+    },
+    'task_id3': {
+        'state': 'COMPLETED',
+    },
+    'task_id5': {
+        'state': 'COMPLETED',
+        'outputs_ref': {
+            'isolatedserver': _ISOLATED_SERVER,
+            'namespace': 'default-gzip',
+            'isolated': 'shard5_isolated'
+        },
+    },
+    'task_id6': {
+        'state': 'BOT_DIED',
+        'outputs_ref': {
+            'isolatedserver': _ISOLATED_SERVER,
+            'namespace': 'default-gzip',
+            'isolated': 'shard5_isolated'
+        },
+    },
+}
+
+_EXPECTED_TESTS_STATUS = {
+    'TestSuite1.test1': {
+        'total_run': 2,
+        'SUCCESS': 2
+    },
+    'TestSuite1.test2': {
+        'total_run': 4,
+        'SUCCESS': 2,
+        'FAILURE': 2
+    },
+    'TestSuite1.test3': {
+        'total_run': 6,
+        'FAILURE': 6
+    },
+}
 
 
 class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   def _MockedGetSwarmingTaskResultById(self, _host, task_id, _):
-    return base_test._SWARMING_TASK_RESULTS[task_id], None
+    return _SWARMING_TASK_RESULTS[task_id], None
 
   def setUp(self):
     super(ProcessFlakeSwarmingTaskResultPipelineTest, self).setUp()
@@ -53,8 +161,8 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
     tests_statuses = (
         ProcessFlakeSwarmingTaskResultPipeline._CheckTestsRunStatuses(
-            self.pipeline, base_test._SAMPLE_FAILURE_LOG, *call_params))
-    self.assertEqual(base_test._EXPECTED_TESTS_STATUS, tests_statuses)
+            self.pipeline, _SAMPLE_FAILURE_LOG, *call_params))
+    self.assertEqual(_EXPECTED_TESTS_STATUS, tests_statuses)
 
   def testCheckTestsRunStatusesTestExistsNoRunData(self):
     failure_log = {'per_iteration_data': [{}], 'all_tests': [self.test_name]}
@@ -80,7 +188,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       swarmed_test_util,
       'GetOutputJsonByOutputsRef',
-      return_value=(base_test._SAMPLE_FAILURE_LOG, None))
+      return_value=(_SAMPLE_FAILURE_LOG, None))
   @mock.patch.object(
       build_util, 'GetBuildInfo', return_value=BuildInfo('m', 'b', 123))
   def testProcessFlakeSwarmingTaskResultPipeline(self, *_):
@@ -114,7 +222,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                                  self.test_name)
 
     self.assertEqual(analysis_status.COMPLETED, task.status)
-    self.assertEqual(base_test._EXPECTED_TESTS_STATUS, task.tests_statuses)
+    self.assertEqual(_EXPECTED_TESTS_STATUS, task.tests_statuses)
 
     self.assertEqual(
         datetime.datetime(2016, 2, 10, 18, 32, 6, 538220), task.created_time)
