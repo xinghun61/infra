@@ -542,6 +542,7 @@ class FieldDefViewTest(unittest.TestCase):
     self.assertEqual(view.is_approval_subfield, ezt.boolean(True))
     self.assertEqual(view.approvers, [])
     self.assertEqual(view.survey, None)
+    self.assertIsNone(view.is_phase_field)
 
   def testFieldDefView_Approval(self):
     config = _MakeConfig()

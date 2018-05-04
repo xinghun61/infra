@@ -77,6 +77,7 @@ class FieldCreate(servlet.Servlet):
         'initial_approvers': '',
         'initial_survey': '',
         'approval_names': approval_names,
+        'initial_is_phase_field': ezt.boolean(False),
         }
 
   def ProcessFormData(self, mr, post_data):
@@ -141,6 +142,7 @@ class FieldCreate(servlet.Servlet):
           initial_choices=parsed.choices_text,
           initial_approvers=parsed.approvers_str,
           initial_survey=parsed.survey,
+          initial_is_phase_field=parsed.is_phase_field,
           initial_admins=admin_str,
       )
       return
@@ -153,8 +155,6 @@ class FieldCreate(servlet.Servlet):
           parsed.parent_approval_name, config)
       if approval_fd:
         approval_id = approval_fd.field_id
-    # TODO(jojwang):monorail:3774, get is_phase_field from parsed
-    is_phase_field = False
     field_id = self.services.config.CreateFieldDef(
         mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
         parsed.applicable_type, parsed.applicable_predicate,
@@ -162,7 +162,7 @@ class FieldCreate(servlet.Servlet):
         parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
         parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
         parsed.date_action_str, parsed.field_docstring, admin_ids,
-        approval_id, is_phase_field)
+        approval_id, parsed.is_phase_field)
     if parsed.field_type_str == 'approval_type':
       revised_approvals = field_helpers.ReviseApprovals(
           field_id, approver_ids, parsed.survey, config)

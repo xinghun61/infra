@@ -55,6 +55,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual('', parsed.approvers_str)
     self.assertEqual('', parsed.survey)
     self.assertEqual('', parsed.parent_approval_name)
+    self.assertFalse(parsed.is_phase_field)
 
   def testParseFieldDefRequest_Normal(self):
     post_data = fake.PostData(
@@ -74,7 +75,8 @@ class FieldHelpersTest(unittest.TestCase):
         applicable_type=['Defect'],
         approver_names=['approver@chromium.org'],
         survey=['Are there UX changes?'],
-        parent_approval_name=['UIReview']
+        parent_approval_name=['UIReview'],
+        is_phase_field=['on'],
     )
     parsed = field_helpers.ParseFieldDefRequest(post_data, self.config)
     self.assertEqual('somefield', parsed.field_name)
@@ -104,6 +106,16 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual('approver@chromium.org', parsed.approvers_str)
     self.assertEqual('Are there UX changes?', parsed.survey)
     self.assertEqual('UIReview', parsed.parent_approval_name)
+    self.assertTrue(parsed.is_phase_field)
+
+  def testParseFieldDefRequest_PreventPhaseApprovals(self):
+    post_data = fake.PostData(
+        field_type=['approval_type'],
+        is_phase_field=['on'],
+    )
+    parsed = field_helpers.ParseFieldDefRequest(post_data, self.config)
+    self.assertEqual('approval_type', parsed.field_type_str)
+    self.assertFalse(parsed.is_phase_field)
 
   def testParseChoicesIntoWellKnownLabels_NewFieldDef(self):
     choices_text = 'Hot = Lots of activity\nCold = Not much activity'
@@ -440,7 +452,7 @@ class FieldHelpersTest(unittest.TestCase):
         is_multivalued=True, field_docstring='updated doc', choices_text='',
         applicable_type='Launch', applicable_predicate='', revised_labels=[],
         date_action_str='ping_participants', approvers_str='', survey='',
-        parent_approval_name='')
+        parent_approval_name='', is_phase_field=False)
 
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None,

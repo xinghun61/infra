@@ -118,7 +118,8 @@ class FieldCreateTest(unittest.TestCase):
         field_type=['approval_type'],
         approver_names=['doesnotexist@chromium.org'],
         admin_names=[''],
-        parent_approval_name=['UIApproval'])
+        parent_approval_name=['UIApproval'],
+        is_phase_field=['on'])
 
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
@@ -138,6 +139,7 @@ class FieldCreateTest(unittest.TestCase):
         initial_approvers=post_data.get('approver_names', ''),
         initial_parent_approval_name=post_data.get('parent_approval_name', ''),
         initial_survey=post_data.get('survey', ''),
+        initial_is_phase_field=False,
         initial_admins=post_data.get('admin_names')
     )
     self.mox.ReplayAll()

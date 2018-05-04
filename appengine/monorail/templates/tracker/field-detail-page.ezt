@@ -43,6 +43,13 @@
     <td>[field_def.type_name]</td>
   </tr>
 
+  <tr>
+    <th>Issue Gate field:</th>
+    <td>
+      [if-any field_def.is_phase_field]Yes[else]No[end]
+    </td>
+  </tr>
+
   [is field_def.field_name "Type"][else]
   <tr>
     <th>Applicable:</th>

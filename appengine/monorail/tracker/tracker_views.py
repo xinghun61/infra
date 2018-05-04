@@ -777,6 +777,8 @@ class FieldDefView(template_helpers.PBProxy):
     else:
       self.is_approval_subfield = ezt.boolean(False)
 
+    self.is_phase_field = ezt.boolean(field_def.is_phase_field)
+
 
 class IssueTemplateView(template_helpers.PBProxy):
   """Wrapper class to make it easier to display an issue template via EZT."""

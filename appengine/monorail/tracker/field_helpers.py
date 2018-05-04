@@ -30,7 +30,7 @@ ParsedFieldDef = collections.namedtuple(
     'needs_member, needs_perm, grants_perm, notify_on, is_required, '
     'is_niche, importance, is_multivalued, field_docstring, choices_text, '
     'applicable_type, applicable_predicate, revised_labels, date_action_str, '
-    'approvers_str, survey, parent_approval_name')
+    'approvers_str, survey, parent_approval_name, is_phase_field')
 
 
 def ParseFieldDefRequest(post_data, config):
@@ -71,13 +71,17 @@ def ParseFieldDefRequest(post_data, config):
   approvers_str = post_data.get('approver_names', '')
   survey = post_data.get('survey', '')
   parent_approval_name = post_data.get('parent_approval_name', '')
+  # TODO(jojwang): monorail:3774, remove enum_type condition when
+  # phases can have labels.
+  is_phase_field = ('is_phase_field' in post_data) and (
+      field_type_str != 'approval_type' and 'enum_type')
 
   return ParsedFieldDef(
       field_name, field_type_str, min_value, max_value, regex,
       needs_member, needs_perm, grants_perm, notify_on, is_required, is_niche,
       importance, is_multivalued, field_docstring, choices_text,
       applicable_type, applicable_predicate, revised_labels, date_action_str,
-      approvers_str, survey, parent_approval_name)
+      approvers_str, survey, parent_approval_name, is_phase_field)
 
 
 def _ParseChoicesIntoWellKnownLabels(choices_text, field_name, config):
