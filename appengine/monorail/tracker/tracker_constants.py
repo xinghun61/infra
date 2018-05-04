@@ -34,7 +34,7 @@ RESERVED_PREFIXES = [
 
 # The columns are useless in the grid view, so don't offer them.
 NOT_USED_IN_GRID_AXES = [
-    'Summary', 'ID', 'Opened', 'Closed', 'Modified',
+    'Summary', 'ID', 'Opened', 'Closed', 'Modified', 'Cc',
     'OwnerModified', 'StatusModified', 'ComponentModified',
     'OwnerLastVisit', 'AllLabels']
 

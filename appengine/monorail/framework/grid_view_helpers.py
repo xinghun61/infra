@@ -361,6 +361,18 @@ def GetGridViewData(
 
   grid_x_attr = (mr.x or config.default_x_attr or '--').lower()
   grid_y_attr = (mr.y or config.default_y_attr or '--').lower()
+
+  # Prevent the user from using an axis that we don't support.
+  for bad_axis in tracker_constants.NOT_USED_IN_GRID_AXES:
+    lower_bad_axis = bad_axis.lower()
+    if grid_x_attr == lower_bad_axis:
+      grid_x_attr = '--'
+    if grid_y_attr == lower_bad_axis:
+      grid_y_attr = '--'
+  # Using the same attribute on both X and Y is not useful.
+  if grid_x_attr == grid_y_attr:
+    grid_x_attr = '--'
+
   all_label_values = {}
   for art in results:
     all_label_values[art.local_id] = (
