@@ -283,16 +283,20 @@ func (c *Clients) ConnectAll(ctx context.Context, cfg *RepoConfig, client *http.
 	return nil
 }
 
-// loadConfig finds the repo config and repo state matching the git ref given
+// loadConfigFromContext finds the repo config and repo state matching the git ref given
 // as the "refUrl" parameter in the http request bound to the router context.
 //
 // If the given ref matches a configuration set to dynamic refs, this function
 // calls the config's method to populate the concrete ref parameters and returns
 // the result of that method.
-func loadConfig(rc *router.Context) (*RepoConfig, *RepoState, error) {
+func loadConfigFromContext(rc *router.Context) (*RepoConfig, *RepoState, error) {
 	ctx, req := rc.Context, rc.Request
-	ref := req.FormValue("refUrl")
-	rs := &RepoState{RepoURL: ref}
+	refURL := req.FormValue("refUrl")
+	return loadConfig(ctx, refURL)
+}
+
+func loadConfig(ctx context.Context, refURL string) (*RepoConfig, *RepoState, error) {
+	rs := &RepoState{RepoURL: refURL}
 	err := ds.Get(ctx, rs)
 	if err != nil {
 		return nil, nil, err

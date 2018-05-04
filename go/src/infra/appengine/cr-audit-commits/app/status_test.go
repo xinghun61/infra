@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -43,7 +44,7 @@ func TestStatusPage(t *testing.T) {
 		srv := httptest.NewServer(r)
 		client := &http.Client{}
 		Convey("Invalid Repo", func() {
-			resp, err := client.Get(srv.URL + statusPath + "?repo=unknown")
+			resp, err := client.Get(srv.URL + statusPath + "?refUrl=unknown")
 			So(err, ShouldBeNil)
 			defer resp.Body.Close()
 			b, err := ioutil.ReadAll(resp.Body)
@@ -69,10 +70,12 @@ func TestStatusPage(t *testing.T) {
 					RepoURL:            "https://new.googlesource.com/new.git/+/master",
 					LastRelevantCommit: "",
 					LastKnownCommit:    "000000",
+					ConfigName:         "new-repo",
 				}
 				err := ds.Put(ctx, rs)
 				So(err, ShouldBeNil)
-				resp, err := client.Get(srv.URL + statusPath + "?repo=new-repo")
+				resp, err := client.Get(srv.URL + statusPath + "?refUrl=" + url.QueryEscape(
+					"https://new.googlesource.com/new.git/+/master"))
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)
 				// There is a link to the last scanned rev
@@ -83,9 +86,10 @@ func TestStatusPage(t *testing.T) {
 			})
 			Convey("Some interesting revisions", func() {
 				rs := &RepoState{
-					RepoURL:            RuleMap["new-repo"].RepoURL(),
+					RepoURL:            "https://new.googlesource.com/new.git/+/master",
 					LastRelevantCommit: "111111",
 					LastKnownCommit:    "121212",
+					ConfigName:         "new-repo",
 				}
 				err := ds.Put(ctx, rs)
 				So(err, ShouldBeNil)
@@ -110,7 +114,8 @@ func TestStatusPage(t *testing.T) {
 					err := ds.Put(ctx, relevantCommit)
 					So(err, ShouldBeNil)
 				}
-				resp, err := client.Get(srv.URL + statusPath + "?repo=new-repo&n=11")
+				resp, err := client.Get(srv.URL + statusPath + "?refUrl=" + url.QueryEscape(
+					"https://new.googlesource.com/new.git/+/master") + "&n=11")
 				So(err, ShouldBeNil)
 				defer resp.Body.Close()
 				b, err := ioutil.ReadAll(resp.Body)

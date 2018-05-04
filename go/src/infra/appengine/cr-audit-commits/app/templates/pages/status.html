@@ -65,24 +65,22 @@
     <h3>Monitored Repositories</h3>
     <table>
       <tr>
-        <th> Name (URL) </th>
-        <th> Previous Alerts </th>
-        <th> Status </th>
+        <th> Repository </th>
+        <th> Link to Audit Status </th>
       </tr>
-      {{range $k, $v := .RuleMap}}
+      {{range $rs := .RepoStates}}
         <tr>
-          <td>{{$k}} (<a href="{{$v.RepoURL}}">Link to Repository</a>)</td>
-          <td><a href="https://bugs.chromium.org/p/{{$v.MonorailProject}}/issues/list?can=1&q=reporter%3Acr-audit-commits%40appspot.gserviceaccount.com">Monorail link</a></td>
-          <td><a href="/view/status?repo={{$k}}"> Status for {{$k}}</a></td>
+          <td><a href="{{$rs.RepoURL}}">{{$rs.RepoURL}}</a></td>
+          <td><a href="/view/status?refUrl={{$rs.RepoURL}}"> Audit Status </a></td>
         </tr>
       {{end}}
     </table>
   </div>
 
-  {{if (or .RepoName .Commits)}}
+  {{if (or .RefUrl .Commits)}}
     <div class="section">
-      {{if .RepoName}}
-        <h3>Status for {{.RepoName}}</h3>
+      {{if .RefUrl}}
+        <h3>Status for {{.RefUrl}}</h3>
         <table>
           <tr>
 
@@ -104,13 +102,19 @@
                 {{end}}
               </td>
             {{end}}
+            <td>
+              Previous alerts:
+              <a href="https://bugs.chromium.org/p/{{.RepoConfig.MonorailProject}}/issues/list?can=1&q=reporter%3Acr-audit-commits%40appspot.gserviceaccount.com">
+                Monorail link
+              </a>
+            </td>
 
           </tr>
         </table>
       {{end}}
 
       {{if .Commits}}
-        <h3>Most recent audited commits for {{.RepoName}}</h3>
+        <h3>Most recent audited commits</h3>
         <table>
           <tr>
             <th>Commit</th>

@@ -42,7 +42,7 @@ func Auditor(rc *router.Context) {
 	ctx, cancelInnerCtx := context.WithTimeout(outerCtx, time.Second*time.Duration(4*60+30))
 	defer cancelInnerCtx()
 
-	cfg, repoState, err := loadConfig(rc)
+	cfg, repoState, err := loadConfigFromContext(rc)
 	if err != nil {
 		http.Error(resp, err.Error(), 400)
 		return

@@ -21,27 +21,19 @@ import (
 // the monitored repositories.
 func Status(rctx *router.Context) {
 	ctx, req, resp := rctx.Context, rctx.Request, rctx.Writer
-	repoName := req.FormValue("repo")
-	if repoName == "" {
-		repoName = "chromium-src-master"
+	refURL := req.FormValue("refUrl")
+	if refURL == "" {
+		refURL = "https://chromium.googlesource.com/chromium/src.git/+/master"
 	}
-
-	cfg, hasConfig := RuleMap[repoName]
-	if !hasConfig {
+	cfg, repoState, err := loadConfig(ctx, refURL)
+	if err != nil {
 		args := templates.Args{
 			"RuleMap": RuleMap,
-			"Error":   fmt.Sprintf("Unknown repository %s", repoName),
+			"Error":   fmt.Sprintf("Unknown repository %s", refURL),
 		}
 		templates.MustRender(ctx, resp, "pages/status.html", args)
 		return
 	}
-	repoState := &RepoState{RepoURL: cfg.RepoURL()}
-	err := ds.Get(ctx, repoState)
-	if err != nil {
-		handleError(ctx, err, repoName, cfg, repoState, resp)
-		return
-	}
-
 	nCommits := 10
 	n := req.FormValue("n")
 	if n != "" {
@@ -61,15 +53,22 @@ func Status(rctx *router.Context) {
 
 		err = ds.Get(ctx, rc)
 		if err != nil {
-			handleError(ctx, err, repoName, cfg, repoState, resp)
+			handleError(ctx, err, refURL, repoState, resp)
 			return
 		}
 
 		commits, err = lastXRelevantCommits(ctx, rc, nCommits)
 		if err != nil {
-			handleError(ctx, err, repoName, cfg, repoState, resp)
+			handleError(ctx, err, refURL, repoState, resp)
 			return
 		}
+	}
+
+	allRepoStates := &[]*RepoState{}
+	err = ds.GetAll(ctx, ds.NewQuery("RepoState").Order("-LastRelevantCommitTime").Limit(5), allRepoStates)
+	if err != nil {
+		handleError(ctx, err, refURL, repoState, resp)
+		return
 	}
 	args := templates.Args{
 		"Commits":          commits,
@@ -77,15 +76,15 @@ func Status(rctx *router.Context) {
 		"LastRelevantTime": repoState.LastRelevantCommitTime,
 		"LastScanned":      repoState.LastKnownCommit,
 		"LastScannedTime":  repoState.LastKnownCommitTime,
-		"RepoName":         repoName,
+		"RefUrl":           refURL,
 		"RepoConfig":       cfg,
-		"RuleMap":          RuleMap,
+		"RepoStates":       allRepoStates,
 	}
 	templates.MustRender(ctx, resp, "pages/status.html", args)
 }
 
-func handleError(ctx context.Context, err error, repoName string, cfg *RepoConfig, repoState *RepoState, resp http.ResponseWriter) {
-	logging.WithError(err).Errorf(ctx, "Getting status of repo %s(%s), for revision %s", repoName, cfg.RepoURL(), repoState.LastRelevantCommit)
+func handleError(ctx context.Context, err error, refURL string, repoState *RepoState, resp http.ResponseWriter) {
+	logging.WithError(err).Errorf(ctx, "Getting status of repo %s, for revision %s", refURL, repoState.LastRelevantCommit)
 	http.Error(resp, "Getting status failed. See log for details.", 500)
 }
 
