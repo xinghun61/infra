@@ -72,6 +72,18 @@ class LookbackAlgorithmTest(TestCase):
         (19, None),
         lookback_algorithm._DetermineNextCommitPosition(data_points))
 
+  def testLookbackAlgorithmRestartExponentialLandsOnExistingDataPoint(self):
+    data_points = [
+        DataPoint.Create(commit_position=100, pass_rate=0.5),
+        DataPoint.Create(commit_position=32, pass_rate=0.5),
+        DataPoint.Create(commit_position=20, pass_rate=0.5),
+        DataPoint.Create(commit_position=4, pass_rate=1.0),
+    ]
+
+    self.assertEqual(
+        (19, None),
+        lookback_algorithm._DetermineNextCommitPosition(data_points))
+
   def testLookbackAlgorithmBisectWhenTestDoesNotExist(self):
     data_points = [
         DataPoint.Create(commit_position=100, pass_rate=0.5),

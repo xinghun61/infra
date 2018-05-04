@@ -372,8 +372,8 @@ class MasterFlakeAnalysisTest(TestCase):
   def testUpdateSuspectedBuild(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(commit_position=100),
-        DataPoint.Create(commit_position=90),
+        DataPoint.Create(commit_position=100, pass_rate=0.4),
+        DataPoint.Create(commit_position=90, pass_rate=1.0),
     ]
     analysis.Save()
 

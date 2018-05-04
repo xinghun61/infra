@@ -86,6 +86,7 @@ def _DetermineNextCommitPosition(data_points):
             previous_data_point,  # Upper bound.
             current_data_point,  # Lower bound.
         ]
+
         return _Bisect(bisect_data_points)
       else:
         # No flaky region has been identified, no findings.
@@ -119,16 +120,15 @@ def _DetermineNextCommitPosition(data_points):
               previous_data_point.commit_position)
           next_step_size = _NextHighestSquare(step_size)
 
-          if (previous_data_point.commit_position - next_step_size <
+          if (previous_data_point.commit_position - next_step_size <=
               commit_position):
             # Also restart the exponential lookback step size from 1 in case the
-            # quadratic step size is too large and runs beyond the lower bound
-            # of the regression range.
+            # quadratic step size is too large and runs to or beyond the lower
+            # bound of the regression range.
             next_step_size = 1
 
         next_commit_position = (
             previous_data_point.commit_position - next_step_size)
-
         return next_commit_position, None
       else:
         # Stable/not reproducible.

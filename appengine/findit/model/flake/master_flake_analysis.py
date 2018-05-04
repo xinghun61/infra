@@ -17,6 +17,7 @@ from model import triage_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.base_triaged_model import TriagedModel
+from services.flake_failure import pass_rate_util
 
 
 class DataPoint(ndb.Model):
@@ -449,9 +450,19 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     upper_bound = upper_bound_build.commit_position
     assert upper_bound > lower_bound
 
-    if (self.suspected_flake_build_number is None and
-        self.FindMatchingDataPointWithCommitPosition(lower_bound) and
-        self.FindMatchingDataPointWithCommitPosition(upper_bound)):
+    lower_bound_data_point = self.FindMatchingDataPointWithCommitPosition(
+        lower_bound)
+    upper_bound_data_point = self.FindMatchingDataPointWithCommitPosition(
+        upper_bound)
+
+    if (self.suspected_flake_build_number is None and lower_bound_data_point and
+        upper_bound_data_point):
+      assert pass_rate_util.IsStableDefaultThresholds(
+          lower_bound_data_point.pass_rate), (
+              'Lower bound build must be stable in order to have a suspect')
+      assert not pass_rate_util.IsStableDefaultThresholds(
+          upper_bound_data_point.pass_rate), (
+              'Upper bound build must be flaky in order to have a suspect')
       self.Update(suspected_flake_build_number=upper_bound_build.build_number)
 
   def Update(self, **kwargs):
