@@ -1231,8 +1231,9 @@ def AmendmentLinks(amendment, users_by_id, project_name):
   Returns:
     A list of dicts with 'value' and 'url' keys. 'url' may be None.
   """
-  # Display both old and new summary
-  if amendment.field == tracker_pb2.FieldID.SUMMARY:
+  # Display both old and new summary, status
+  if (amendment.field == tracker_pb2.FieldID.SUMMARY or
+      amendment.field == tracker_pb2.FieldID.STATUS):
     result = amendment.newvalue
     if amendment.oldvalue:
       result += ' (was: %s)' % amendment.oldvalue
