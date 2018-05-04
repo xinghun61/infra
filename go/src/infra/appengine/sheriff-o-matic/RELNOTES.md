@@ -1,12 +1,14 @@
-# Release Notes sheriff-o-matic 2018-05-02
+# Release Notes sheriff-o-matic 2018-05-04
 
-- 2 commits, 1 bugs affected since 7475df8 (2018-04-24T23:46:52Z)
+- 4 commits, 2 bugs affected since 7475df8 ()
 - 2 Authors:
-  - seanmccullough@chromium.org
   - zhangtiff@google.com
+  - seanmccullough@chromium.org
 
 ## Changes in this release
 
+- [[som] Update bower package locks](https://chromium-review.googlesource.com/1040111) (seanmccullough@chromium.org)
+- [[som] Update RELNOTES.md for release.](https://chromium-review.googlesource.com/1039781) (seanmccullough@chromium.org)
 - [[som] Handle unexpected PASSes correctly. Do no alert on them.](https://chromium-review.googlesource.com/1036466) (seanmccullough@chromium.org)
 - [SoM: Update release notes.](https://chromium-review.googlesource.com/1026932) (zhangtiff@google.com)
 
@@ -14,6 +16,7 @@
 ## Bugs updated, by author
 - seanmccullough@chromium.org:
   -  [https://crbug.com/838252](https://crbug.com/838252)
+  -  [https://crbug.com/838960](https://crbug.com/838960)
 
 
 # Release Notes sheriff-o-matic 2018-04-24
