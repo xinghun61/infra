@@ -28,7 +28,10 @@ import urllib
 from third_party import ezt
 from third_party import httpagentparser
 
+from google.appengine.api import app_identity
 from google.appengine.api import users
+from googleapiclient import discovery
+from oauth2client.client import GoogleCredentials
 
 import webapp2
 
@@ -73,6 +76,17 @@ GC_EVENT_REQUEST = ts_mon.CounterMetric(
     'monorail/servlet/gc_event_request',
     'Counts of requests that triggered at least one GC event',
     [])
+
+# TODO(seanmccullough): Move this to services? Or context?
+trace_service = None
+if app_identity.get_application_id() != 'testing-app':
+  logging.warning('app id: %s', app_identity.get_application_id())
+  try:
+    credentials = GoogleCredentials.get_application_default()
+    trace_service = discovery.build('cloudtrace', 'v1', credentials=credentials)
+  except Exception as e:
+    logging.warning('could not get trace service: %s', e)
+
 
 class MethodNotSupportedError(NotImplementedError):
   """An exception class for indicating that the method is not supported.
@@ -173,6 +187,11 @@ class Servlet(webapp2.RequestHandler):
     self.response.headers.add('Strict-Transport-Security',
         'max-age=31536000; includeSubDomains')
 
+    if 'X-Cloud-Trace-Context' in self.request.headers:
+      self.mr.profiler.trace_context = self.request.headers.get('X-Cloud-Trace-Context')
+    if trace_service is not None:
+      self.mr.profiler.trace_service = trace_service
+
     if self.services.cache_manager:
       # TODO(jrobbins): don't do this step if invalidation_timestep was
       # passed via the request and matches our last timestep
@@ -253,6 +272,7 @@ class Servlet(webapp2.RequestHandler):
 
     if settings.enable_profiler_logging:
       self.mr.profiler.LogStats()
+    self.mr.profiler.ReportTrace()
 
   def _AddHelpDebugPageData(self, page_data):
     with self.mr.profiler.Phase('help and debug data'):

@@ -17,11 +17,15 @@ On-page debugging and performance info is useful because it makes it easier
 to explore performance interactively.
 """
 
+import datetime
 import logging
+import random
 import threading
 import time
 
 from contextlib import contextmanager
+
+from google.appengine.api import app_identity
 
 
 class Profiler(object):
@@ -35,12 +39,15 @@ class Profiler(object):
   _COLORS = ['900', '090', '009', '360', '306', '036',
              '630', '630', '063', '333']
 
-  def __init__(self):
+  def __init__(self, opt_trace_context=None, opt_trace_service=None):
     """Each request processing profile begins with an empty list of phases."""
     self.top_phase = _Phase('overall profile', -1, None)
     self.current_phase = self.top_phase
     self.next_color = 0
     self.original_thread_id = threading.current_thread().ident
+    self.trace_context = opt_trace_context
+    self.trace_service = opt_trace_service
+    self.project_id = app_identity.get_application_id()
 
   def StartPhase(self, name='unspecified phase'):
     """Begin a (sub)phase by pushing a new phase onto a stack."""
@@ -72,6 +79,30 @@ class Profiler(object):
     self.top_phase.AccumulateStatLines(self.top_phase.elapsed_seconds, lines)
     logging.info('\n'.join(lines))
 
+  def ReportTrace(self):
+    """Send a profile trace to Google Cloud Tracing."""
+    self.top_phase.End()
+    spans = self.top_phase.SpanJson()
+    if not self.trace_service or not self.trace_context:
+      logging.info('would have sent trace: %s', spans)
+      return
+
+    trace_id, root_span_id = self.trace_context.split(';')[0].split('/')
+    traces_body = {
+      'projectId': self.project_id,
+      'traceId': trace_id,
+      'spans': spans,
+    }
+    body = {
+      'traces': [traces_body]
+    }
+
+    # TODO(seanmccullough): Do this async so it doesn't
+    # delay the response to the browser.
+    request = self.trace_service.projects().patchTraces(
+        projectId=self.project_id, body=body)
+    res = request.execute()
+
 
 class _Phase(object):
   """A _Phase instance represents a period of time during request processing."""
@@ -88,6 +119,9 @@ class _Phase(object):
     self.parent = parent
     if self.parent is not None:
       self.parent._RegisterSubphase(self)
+
+    self.id = str(random.getrandbits(64))
+
 
   def _RegisterSubphase(self, subphase):
     """Add a subphase to this phase."""
@@ -113,3 +147,25 @@ class _Phase(object):
     lines.append('%s%5d ms (%2d%%): %s' % (indent, self.ms, percent, self.name))
     for subphase in self.subphases:
       subphase.AccumulateStatLines(total_seconds, lines, indent=indent + '   ')
+
+  def SpanJson(self):
+    """Return a json representation of this phase as a GCP Cloud Trace object.
+    """
+    endTime = self.start + self.elapsed_seconds
+
+    span = {
+      'kind': 'RPC_SERVER',
+      'name': self.name,
+      'spanId': self.id,
+      'startTime': datetime.datetime.fromtimestamp(self.start).isoformat() + 'Z',
+      'endTime': datetime.datetime.fromtimestamp(endTime).isoformat() + 'Z',
+    }
+
+    if self.parent is not None and self.parent.id is not None:
+      span['parentSpanId'] = self.parent.id
+
+    spans = [span]
+    for s in self.subphases:
+      spans.extend(s.SpanJson())
+
+    return spans

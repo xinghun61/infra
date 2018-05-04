@@ -10,6 +10,29 @@ import unittest
 from framework import profiler
 
 
+class MockPatchResponse(object):
+  def execute(self):
+    pass
+
+
+class MockCloudTraceProjects(object):
+  def __init__(self):
+    self.patch_response = MockPatchResponse()
+
+  def patchTraces(self, projectId, body):
+    self.project_id = projectId
+    self.body = body
+    return self.patch_response
+
+
+class MockCloudTraceApi(object):
+  def __init__(self):
+    self.mock_projects = MockCloudTraceProjects()
+
+  def projects(self):
+    return self.mock_projects
+
+
 class ProfilerTest(unittest.TestCase):
 
   def testTopLevelPhase(self):
@@ -42,3 +65,63 @@ class ProfilerTest(unittest.TestCase):
       self.assertEquals(prof.current_phase.name, 'overall profile')
       self.assertEquals(
           prof.top_phase.subphases[0].subphases[1].name, 'baz')
+
+  def testSpanJson(self):
+    mock_trace_api = MockCloudTraceApi()
+    mock_trace_context = '1234/5678;xxxxx'
+
+    prof = profiler.Profiler(mock_trace_context, mock_trace_api)
+    with prof.Phase('foo'):
+      with prof.Phase('bar'):
+        pass
+      with prof.Phase('baz'):
+        pass
+
+    # Shouldn't this be automatic?
+    prof.current_phase.End()
+
+    self.assertEquals(prof.current_phase.name, 'overall profile')
+    self.assertEquals(
+        prof.top_phase.subphases[0].subphases[1].name, 'baz')
+    span_json = prof.top_phase.SpanJson()
+    self.assertEquals(len(span_json), 4)
+
+    for span in span_json:
+      self.assertTrue(span['endTime'] > span['startTime'])
+
+    span1, span2, span3, span4 = span_json
+
+    self.assertEquals(span1['name'], 'overall profile')
+    self.assertEquals(span2['name'], 'foo')
+    self.assertEquals(span3['name'], 'bar')
+    self.assertEquals(span4['name'], 'baz')
+
+    self.assertTrue(span1['startTime'] < span2['startTime'])
+    self.assertTrue(span1['startTime'] < span3['startTime'])
+    self.assertTrue(span1['startTime'] < span4['startTime'])
+
+    self.assertTrue(span1['endTime'] > span2['endTime'])
+    self.assertTrue(span1['endTime'] > span3['endTime'])
+    self.assertTrue(span1['endTime'] > span4['endTime'])
+
+
+  def testReportCloudTrace(self):
+    mock_trace_api = MockCloudTraceApi()
+    mock_trace_context = '1234/5678;xxxxx'
+
+    prof = profiler.Profiler(mock_trace_context, mock_trace_api)
+    with prof.Phase('foo'):
+      with prof.Phase('bar'):
+        pass
+      with prof.Phase('baz'):
+        pass
+
+    # Shouldn't this be automatic?
+    prof.current_phase.End()
+
+    self.assertEquals(prof.current_phase.name, 'overall profile')
+    self.assertEquals(
+        prof.top_phase.subphases[0].subphases[1].name, 'baz')
+
+    prof.ReportTrace()
+    self.assertEquals(mock_trace_api.mock_projects.project_id, 'testing-app')
