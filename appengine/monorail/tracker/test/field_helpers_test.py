@@ -445,7 +445,8 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, 4, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False,
+        approval_id=3)
 
     new_fd = field_helpers.ReviseFieldDefFromParsed(parsed_field_def, fd)
     # assert INT fields
@@ -468,3 +469,5 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual(new_fd.applicable_type, 'Launch')
     self.assertEqual(new_fd.docstring, 'updated doc')
     self.assertTrue(new_fd.is_multivalued)
+    self.assertEqual(new_fd.approval_id, 3)
+    self.assertFalse(new_fd.is_phase_field)

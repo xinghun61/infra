@@ -108,6 +108,8 @@
     <td>
       Min value: <input type="number" name="min_value" style="text-align:right; width: 4em">
       Max value: <input type="number" name="max_value" style="text-align:right; width: 4em"><br>
+      <span class="fielderror" style="margin-left: 1em">
+          [if-any errors.min_value][errors.min_value][end]</span><br>
     </td>
   </tr>
 

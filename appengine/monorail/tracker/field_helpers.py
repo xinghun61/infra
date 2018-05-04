@@ -295,4 +295,5 @@ def ReviseFieldDefFromParsed(parsed, old_fd):
       parsed.is_niche, parsed.is_multivalued, parsed.min_value,
       parsed.max_value, parsed.regex, parsed.needs_member, parsed.needs_perm,
       parsed.grants_perm, parsed.notify_on, date_action, parsed.field_docstring,
-      False)
+      False, approval_id=old_fd.approval_id or None,
+      is_phase_field=old_fd.is_phase_field)
