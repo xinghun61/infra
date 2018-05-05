@@ -43,4 +43,9 @@ libraries:
   version: 1.4
 
 skip_files:
-  - node_modules/
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+- node_modules/

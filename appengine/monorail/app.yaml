@@ -79,7 +79,12 @@ libraries:
   version: 1.9
 
 includes:
-  - gae_ts_mon
+- gae_ts_mon
 
 skip_files:
-  - node_modules/
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+- node_modules/
