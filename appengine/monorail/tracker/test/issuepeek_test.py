@@ -9,6 +9,7 @@ import unittest
 
 from google.appengine.ext import testbed
 
+from framework import framework_constants
 from framework import permissions
 from proto import tracker_pb2
 from services import service_manager
@@ -90,8 +91,8 @@ class IssuePeekTest(unittest.TestCase):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L)
     issuecomment_list = [tracker_pb2.IssueComment()]
-    # 500 comments, none deleted.
-    for _ in range(500):
+    # full page of comments, none deleted.
+    for _ in range(framework_constants.DEFAULT_COMMENTS_PER_PAGE):
       issuecomment_list.append(tracker_pb2.IssueComment())
     description, visible_comments, pagination = issuepeek.PaginateComments(
         mr, issue, issuecomment_list, config)
@@ -99,7 +100,7 @@ class IssuePeekTest(unittest.TestCase):
     self.assertEqual(issuecomment_list[1:], visible_comments)
     self.assertFalse(pagination.visible)
 
-    # 501 comments, none deleted.
+    # One comment on second page, none deleted.
     issuecomment_list.append(tracker_pb2.IssueComment())
     description, visible_comments, pagination = issuepeek.PaginateComments(
         mr, issue, issuecomment_list, config)
@@ -107,9 +108,9 @@ class IssuePeekTest(unittest.TestCase):
     self.assertEqual(issuecomment_list[2:], visible_comments)
     self.assertTrue(pagination.visible)
     self.assertEqual(2, pagination.last)
-    self.assertEqual(501, pagination.start)
+    self.assertEqual(framework_constants.DEFAULT_COMMENTS_PER_PAGE + 1, pagination.start)
 
-    # 501 comments, 1 of them deleted.
+    # One comment on second page, 1 of them deleted.
     issuecomment_list[1].deleted_by = 123
     description, visible_comments, pagination = issuepeek.PaginateComments(
         mr, issue, issuecomment_list, config)

@@ -77,9 +77,8 @@ IDENTIFIER_DOCSTRING_RE = re.compile(
 MAX_LABELS = 24
 
 # Default number of comments to display on an artifact detail page at one time.
-# Other comments will be paginated. This happens to be the same as the max
-# set by the --max_comments_per_page flag.
-DEFAULT_COMMENTS_PER_PAGE = 500
+# Other comments will be paginated.
+DEFAULT_COMMENTS_PER_PAGE = 100
 
 # Content type to use when serving JSON.
 CONTENT_TYPE_JSON = 'application/x-javascript; charset=UTF-8'
