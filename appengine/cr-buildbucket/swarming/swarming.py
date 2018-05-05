@@ -66,9 +66,12 @@ BUILDER_PARAMETER = 'builder_name'
 PARAM_PROPERTIES = 'properties'
 PARAM_SWARMING = 'swarming'
 PARAM_CHANGES = 'changes'
+
 BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
-
-
+BUILD_RUN_RESULT_CORRUPTED = 'corrupted'
+BUILD_RUN_RESULT_MAX_SIZE_MB = 1
+BUILD_RUN_RESULT_MAX_SIZE = BUILD_RUN_RESULT_MAX_SIZE_MB * (1 << 20)
+BUILD_RUN_RESULT_TOO_LARGE = '>= %d MB' % BUILD_RUN_RESULT_MAX_SIZE_MB
 BUILD_RUN_RESULT_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/build_run_result_size',
     'Size of the build result JSON file fetched from isolate',
@@ -105,10 +108,6 @@ class TemplateNotFound(Error):
 
 class CanaryTemplateNotFound(TemplateNotFound):
   """Raised when canary template is explicitly requested, but not found."""
-
-
-class BuildResultFileCorruptedError(Error):
-  """Raised when build result file or its containing isolate is corrupted."""
 
 
 @ndb.tasklet
@@ -835,18 +834,19 @@ def _load_build_run_result_async(task_result, bucket, builder):
 
   Logs errors.
 
-  Returns (build_run_result dict, corrupted bool).
+  Returns (build_run_result dict, error_string), where error_string is None
+  if there is no error.
   """
   outputs_ref = task_result.get('outputs_ref')
   if not outputs_ref:
-    raise ndb.Return(None, False)
+    raise ndb.Return(None, None)
 
   server_prefix = 'https://'
   if not outputs_ref['isolatedserver'].startswith(server_prefix):
     logging.error(
         'Bad isolatedserver %r read from task %s',
         outputs_ref['isolatedserver'], task_result['id'])
-    raise ndb.Return(None, True)
+    raise ndb.Return(None, BUILD_RUN_RESULT_CORRUPTED)
 
   hostname = outputs_ref['isolatedserver'][len(server_prefix):]
 
@@ -863,25 +863,28 @@ def _load_build_run_result_async(task_result, bucket, builder):
       hostname, outputs_ref['namespace'], outputs_ref['isolated'])
   isolated = yield fetch_json_async(isolated_loc)
   if isolated is None:
-    raise ndb.Return(None, True)
+    raise ndb.Return(None, BUILD_RUN_RESULT_CORRUPTED)
 
   # Assume the isolated file format
   result_entry = isolated['files'].get(BUILD_RUN_RESULT_FILENAME)
   if not result_entry:
-    raise ndb.Return(None, False)
+    raise ndb.Return(None, None)
 
-  BUILD_RUN_RESULT_SIZE_METRIC.add(result_entry['s']/1024, {
+  result_size = int(result_entry['s'])
+  if result_size >= BUILD_RUN_RESULT_MAX_SIZE:
+    raise ndb.Return(None, BUILD_RUN_RESULT_TOO_LARGE)
+  BUILD_RUN_RESULT_SIZE_METRIC.add(result_size >> 10, {
     'bucket': bucket,
     'builder': builder,
   })
 
   result_loc = isolated_loc._replace(digest=result_entry['h'])
   build_result = yield fetch_json_async(result_loc)
-  raise ndb.Return(build_result, build_result is None)
+  raise ndb.Return(build_result, None if build_result else BUILD_RUN_RESULT_CORRUPTED)
 
 
 def _sync_build_in_memory(
-    build, task_result, build_run_result, build_run_result_corrupted):
+    build, task_result, build_run_result, build_run_result_error):
   """Syncs buildbucket |build| state with swarming task |result|."""
   # Task result docs:
   # https://github.com/luci/luci-py/blob/985821e9f13da2c93cb149d9e1159c68c72d58da/appengine/swarming/server/task_result.py#L239
@@ -917,11 +920,12 @@ def _sync_build_in_memory(
     'KILLED',
   }
   state = (task_result or {}).get('state')
-  if build_run_result_corrupted:
+  if build_run_result_error:
     build.status = model.BuildStatus.COMPLETED
     build.result = model.BuildResult.FAILURE
     build.failure_reason = model.FailureReason.INFRA_FAILURE
-    errmsg = 'build_run_result.json returned by the swarming task is corrupted.'
+    errmsg = '%s returned by the swarming task is bad: %s.' % (
+        BUILD_RUN_RESULT_FILENAME, build_run_result_error)
   elif state is None:
     build.status = model.BuildStatus.COMPLETED
     build.result = model.BuildResult.FAILURE
@@ -1036,9 +1040,9 @@ def _extract_build_annotations(build_key, build_run_result):
 def _sync_build_async(build_id, task_result, bucket, builder):
   """Syncs Build entity in the datastore with the swarming task."""
   build_run_result = None
-  build_run_result_corrupted = False
+  build_run_result_error = False
   if task_result:
-    build_run_result, build_run_result_corrupted = yield (
+    build_run_result, build_run_result_error = yield (
         _load_build_run_result_async(task_result, bucket, builder))
 
   build_annotations = _extract_build_annotations(
@@ -1050,7 +1054,7 @@ def _sync_build_async(build_id, task_result, bucket, builder):
     if not build:  # pragma: no cover
       raise ndb.Return(None)
     made_change = _sync_build_in_memory(
-        build, task_result, build_run_result, build_run_result_corrupted)
+        build, task_result, build_run_result, build_run_result_error)
     if not made_change:
       raise ndb.Return(None)
 

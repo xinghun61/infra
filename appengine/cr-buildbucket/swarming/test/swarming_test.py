@@ -1094,7 +1094,7 @@ class SwarmingTest(BaseTest):
     )
     ann_url = 'logdog://url'
 
-    load_build_run_result_async.return_value = future((None, False))
+    load_build_run_result_async.return_value = future((None, None))
     cases = [
       {
         'task_result': None,
@@ -1203,7 +1203,7 @@ class SwarmingTest(BaseTest):
           'started_ts': '2018-01-29T21:15:02.649750',
           'completed_ts': '2018-01-30T00:15:18.162860',
         },
-        'build_run_result_corrupted': True,
+        'build_run_result_error': swarming.BUILD_RUN_RESULT_CORRUPTED,
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
@@ -1291,7 +1291,7 @@ class SwarmingTest(BaseTest):
 
       load_build_run_result_async.return_value = future((
           case.get('build_run_result'),
-          case.get('build_run_result_corrupted', False),
+          case.get('build_run_result_error', None),
       ))
       swarming._sync_build_async(
           1, case['task_result'], 'luci.chromium.ci', 'linux-rel').get_result()
@@ -1320,7 +1320,7 @@ class SwarmingTest(BaseTest):
     self.assertEqual(
         swarming._load_build_run_result_async(
             {}, 'luci.chromium.ci', 'linux-rel').get_result(),
-        (None, False),
+        (None, None),
     )
 
     expected = {
@@ -1338,7 +1338,7 @@ class SwarmingTest(BaseTest):
       # build-run-result.json
       future(json.dumps(expected)),
     ]
-    actual, corrupted = swarming._load_build_run_result_async(
+    actual, error = swarming._load_build_run_result_async(
         {
           'id': 'taskid',
           'outputs_ref': {
@@ -1349,7 +1349,7 @@ class SwarmingTest(BaseTest):
         },
         'luci.chromium.ci',
         'linux-rel').get_result()
-    self.assertFalse(corrupted)
+    self.assertIsNone(error)
     self.assertEqual(expected, actual)
     fetch_isolate_async.assert_any_call(isolate.Location(
         'isolate.example.com', 'default-gzip', 'badcoffee',
@@ -1359,14 +1359,16 @@ class SwarmingTest(BaseTest):
     ))
 
   @mock.patch('swarming.isolate.fetch_async')
-  def test_load_build_run_result_async_no_result(self, fetch_isolate_async):
-    # isolated only, without the result
+  def test_load_build_run_result_async_too_large(self, fetch_isolate_async):
     fetch_isolate_async.return_value = future(json.dumps({
       'files': {
-        'soemthing_else.txt': {'h': 'deadbeef', 's': 2048},
+        swarming.BUILD_RUN_RESULT_FILENAME: {
+          'h': 'deadbeef',
+          's': 1 + (1 << 20),
+        },
       },
     }))
-    actual, corrupted = swarming._load_build_run_result_async(
+    actual, error = swarming._load_build_run_result_async(
         {
           'id': 'taskid',
           'outputs_ref': {
@@ -1377,11 +1379,33 @@ class SwarmingTest(BaseTest):
         },
         'luci.chromium.ci',
         'linux-rel').get_result()
-    self.assertFalse(corrupted)
+    self.assertEqual(error, swarming.BUILD_RUN_RESULT_TOO_LARGE)
+    self.assertIsNone(actual)
+
+  @mock.patch('swarming.isolate.fetch_async')
+  def test_load_build_run_result_async_no_result(self, fetch_isolate_async):
+    # isolated only, without the result
+    fetch_isolate_async.return_value = future(json.dumps({
+      'files': {
+        'soemthing_else.txt': {'h': 'deadbeef', 's': 2048},
+      },
+    }))
+    actual, error = swarming._load_build_run_result_async(
+        {
+          'id': 'taskid',
+          'outputs_ref': {
+            'isolatedserver': 'https://isolate.example.com',
+            'namespace': 'default-gzip',
+            'isolated': 'badcoffee',
+          },
+        },
+        'luci.chromium.ci',
+        'linux-rel').get_result()
+    self.assertIsNone(error)
     self.assertIsNone(actual)
 
   def test_load_build_run_result_async_non_https_server(self):
-    run_result, corrupted = swarming._load_build_run_result_async(
+    run_result, error = swarming._load_build_run_result_async(
         {
           'id': 'taskid',
           'outputs_ref': {
@@ -1392,13 +1416,13 @@ class SwarmingTest(BaseTest):
         },
         'luci.chromium.ci',
         'linux-rel').get_result()
-    self.assertTrue(corrupted)
+    self.assertEqual(error, swarming.BUILD_RUN_RESULT_CORRUPTED)
     self.assertIsNone(run_result)
 
   @mock.patch('swarming.isolate.fetch_async')
   def test_load_build_run_result_invalid_json(self, fetch_isolate_async):
     fetch_isolate_async.return_value = future('{"incomplete_json')
-    run_result, corrupted = swarming._load_build_run_result_async(
+    run_result, error = swarming._load_build_run_result_async(
         {
           'id': 'taskid',
           'outputs_ref': {
@@ -1409,7 +1433,7 @@ class SwarmingTest(BaseTest):
         },
         'luci.chromium.ci',
         'linux-rel').get_result()
-    self.assertTrue(corrupted)
+    self.assertEqual(error, swarming.BUILD_RUN_RESULT_CORRUPTED)
     self.assertIsNone(run_result)
 
   @mock.patch('swarming.isolate.fetch_async')
