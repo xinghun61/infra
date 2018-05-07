@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 """Functions to assist in operations on DataPoint objects."""
 
+import numpy as np
+
 from google.appengine.ext import ndb
 
 from model.flake.master_flake_analysis import DataPoint
@@ -53,8 +55,7 @@ def HasSeriesOfFullyStablePointsPrecedingCommitPosition(
 
     if pass_rate_util.IsFullyStable(data_point.pass_rate):
       # Only 100% passing or 100% failing can count towards fully-stable.
-      if pass_rate_util.ArePassRatesEqual(data_point.pass_rate,
-                                          previous_data_point.pass_rate):
+      if np.isclose(data_point.pass_rate, previous_data_point.pass_rate):
         # Must be the same type of fully-stable in order to count towards the
         # series.
         fully_stable_data_points_in_a_row += 1

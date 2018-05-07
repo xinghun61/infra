@@ -13,11 +13,6 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class PassRateUtilTest(WaterfallTestCase):
 
-  def testArePassRatesEqual(self):
-    self.assertTrue(pass_rate_util.ArePassRatesEqual(0.1, 0.1))
-    self.assertTrue(pass_rate_util.ArePassRatesEqual(-1, -1))
-    self.assertFalse(pass_rate_util.ArePassRatesEqual(1.0, 0.0))
-
   def testCalculateNewPassRate(self):
     self.assertEqual(0.75, pass_rate_util.CalculateNewPassRate(
         1.0, 10, 0.5, 10))

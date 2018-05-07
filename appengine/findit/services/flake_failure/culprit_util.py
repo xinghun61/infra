@@ -4,6 +4,7 @@
 """Functions to assist in notifying flake culprits."""
 
 import logging
+import numpy as np
 import textwrap
 
 from google.appengine.ext import ndb
@@ -12,7 +13,6 @@ from infra_api_clients.codereview import codereview_util
 
 from common.waterfall import failure_type
 from libs import analysis_status
-from libs import floating_point_util
 from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services import culprit_action
@@ -152,10 +152,10 @@ def CanRevertForAnalysis(analysis):
   return bool(
       analysis.status == analysis_status.COMPLETED and
       analysis.has_filed_bug and
-      floating_point_util.AlmostEquals(analysis.confidence_in_culprit, 1.0) and
-      previous_data_point is not None and floating_point_util.AlmostEquals(
-          previous_data_point.pass_rate,
-          flake_constants.PASS_RATE_TEST_NOT_FOUND) and
+      np.isclose(analysis.confidence_in_culprit, 1.0) and
+      previous_data_point is not None and
+      np.isclose(previous_data_point.pass_rate,
+                 flake_constants.PASS_RATE_TEST_NOT_FOUND) and
       gerrit.WasCulpritCommittedWithinTime(culprit.repo_name, culprit.revision))
 
 
