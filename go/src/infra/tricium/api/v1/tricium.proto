@@ -53,6 +53,7 @@ message AnalyzeRequest {
 
   // Projects can have multiple associated repositories, so to unambiguously
   // specify a patch we also need to know which repository to look at.
+  // DEPRECATED
   string git_repo = 2;
 
   // Git ref in the git repo for the project. Note that if gerrit_details
@@ -60,6 +61,7 @@ message AnalyzeRequest {
   // number 7 of CL 12345, this will look like "refs/changes/45/12345/7".
   // Regardless of whether gerrit_details is given, this ref will be used when
   // checking out files.
+  // DEPRECATED
   string git_ref = 3;
 
   // Paths to analyze in the project. Listed from the root of the Git
@@ -75,10 +77,60 @@ message AnalyzeRequest {
   //
   // Note that progress and results can be accessed via the Tricium
   // API regardless of whether a consumer has been included in the request.
+  // DEPRECATED
   Consumer consumer = 5;
 
   // Gerrit details for a Gerrit consumer.
+  // DEPRECATED
   GerritConsumerDetails gerrit_details = 6;
+
+  oneof source {
+    GerritRevision gerrit_revision = 7;
+    GitCommit git_commit = 8;
+  }
+}
+
+// Information uniquely identifying a Gerrit patch set, including
+// the git details needed to fetch from this patch set.
+message GerritRevision {
+  // Gerrit host.
+  //
+  // This value must not include the URL schema and is assumed to not include
+  // literal string "##", since this string is used internally as a separator.
+  // The schema is assumed to be "https".
+  string host = 1;
+
+  // Gerrit project name.
+  //
+  // This value is assumed to not include "##".
+  string project = 2;
+
+  // Gerrit change ID.
+  //
+  // This value should be of the form "<project>~<branch>~<Change-Id>", where
+  // <Change-Id> is a Change-Id footer string, and not a legacy change ID
+  // number. Note that "refs/heads/" can be omitted from the branch.
+  //
+  // Example: "myProject~master~I8473b95934b5732ac55d26311a706c9c2bde9940"
+  string change = 3;
+
+  // The full URL to the Git repository for this project, e.g. on Gitiles.
+  string git_url = 4;
+
+  // Gerrit change revision ref string.
+  //
+  // This value should be the fetch URL for a revision of a change. Note that
+  // the last number of a change revision ref is the corresponding patch set.
+  string git_ref = 5;
+}
+
+message GitCommit {
+  // Full repository URL, including schema, host and path.
+  string url = 1;
+
+  // A git commit-ish, such as a refname like "refs/heads/master".
+  // This can also be a tag or git commit hash.
+  string ref = 2;
 }
 
 message AnalyzeResponse {
@@ -93,6 +145,7 @@ message ProgressRequest {
   //
   // This field must be provided, unless a consumer is provided below.
   // If nothing else is provided, then all known progress for the run is returned.
+  // DEPRECATED, will be one choice in "source", below
   string run_id = 1;
 
   // An optional function name.
@@ -117,10 +170,19 @@ message ProgressRequest {
   // when looking up progress information and the run ID can be excluded.
   //
   // Note that if a run ID is listed and a consumer. Then the run ID will be used.
+  // DEPRECATED
   Consumer consumer = 4;
 
   // Gerrit details for the Gerrit consumer.
+  // DEPRECATED, will be replaced with GerritRevision.
   GerritConsumerDetails gerrit_details = 5;
+
+  // The information that's used to look up the run. If this request is for a
+  // particular Gerrit revision, then that can be provided; otherwise the run
+  // ID can be used.
+  oneof source {
+    GerritRevision gerrit_revision = 6;
+  }
 }
 
 message ProgressResponse {

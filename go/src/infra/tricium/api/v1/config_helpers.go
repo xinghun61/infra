@@ -14,6 +14,9 @@ import (
 )
 
 // ProjectIsKnown checks if the provided project is known to the Tricium service.
+//
+// DEPRECATED, will be removed with Projects is removed from ServiceConfig,
+// see https://crbug.com/824558.
 func ProjectIsKnown(sc *ServiceConfig, project string) bool {
 	for _, p := range sc.Projects {
 		if p.Name == project {
@@ -26,6 +29,9 @@ func ProjectIsKnown(sc *ServiceConfig, project string) bool {
 // LookupProjectDetails lookups up the project details entry for the provided project.
 //
 // Unknown projects results in nil.
+//
+// DEPRECATED, will be removed with Projects is removed from ServiceConfig,
+// see https://crbug.com/824558.
 func LookupProjectDetails(sc *ServiceConfig, project string) *ProjectDetails {
 	for _, p := range sc.Projects {
 		if p.Name == project {
@@ -33,6 +39,44 @@ func LookupProjectDetails(sc *ServiceConfig, project string) *ProjectDetails {
 		}
 	}
 	return nil
+}
+
+// LookupRepoDetails gets corresponding RepoDetails for the
+// repo that matches the given AnalyzeRequest.
+//
+// Returns nil if no such repo is found.
+func LookupRepoDetails(pc *ProjectConfig, request *AnalyzeRequest) *RepoDetails {
+	requestURL := urlFromRequest(request)
+	if requestURL == "" {
+		return nil
+	}
+	for _, repo := range pc.Repos {
+		repoURL := urlFromRepo(repo)
+		if requestURL == repoURL {
+			return repo
+		}
+	}
+	return nil
+}
+
+func urlFromRequest(request *AnalyzeRequest) string {
+	if revision := request.GetGerritRevision(); revision != nil {
+		return revision.GitUrl
+	}
+	if commit := request.GetGitCommit(); commit != nil {
+		return commit.Url
+	}
+	return ""
+}
+
+func urlFromRepo(repo *RepoDetails) string {
+	if project := repo.GetGerritProject(); project != nil {
+		return project.GitUrl
+	}
+	if repo := repo.GetGitRepo(); repo != nil {
+		return repo.Url
+	}
+	return ""
 }
 
 // CanRequest checks the current user can make service requests for the project.

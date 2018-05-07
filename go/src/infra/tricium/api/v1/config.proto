@@ -108,23 +108,37 @@ message ProjectConfig {
 }
 
 // Repository details for a project.
+// DEPRECATED, see https://crbug.com/824558
 message RepoDetails {
   // Supported kinds of repositories.
+  // DEPRECATED, see https://crbug.com/824558
   enum Kind {
     GIT = 0;
   }
 
+  // DEPRECATED, see https://crbug.com/824558
   Kind kind = 1;
 
   // If repository kind is GIT then provide Git details.
+  // DEPRECATED, see https://crbug.com/824558
   GitRepoDetails git_details = 2;
 
   // If there is an associated Gerrit project, details can be added here.
   // By adding GerritDetails, Gerrit polling is enabled.
+  // DEPRECATED, see https://crbug.com/824558
   GerritDetails gerrit_details = 3;
+
+  // Could be renamed to kind when the above kind is removed.
+  oneof source {
+    GerritProject gerrit_project = 4;
+    GitRepo git_repo = 5;
+  }
+
+  // TODO(crbug.com/824558): add disable_reporting and whitelisted_group
 }
 
 // Git repository details.
+// DEPRECATED, see https://crbug.com/824558
 message GitRepoDetails {
   // URL to repository.
   string repository = 1;
@@ -134,6 +148,7 @@ message GitRepoDetails {
 }
 
 // Gerrit details for a project.
+// DEPRECATED, see https://crbug.com/824558
 message GerritDetails {
   // The Gerrit host to connect to.
   //
@@ -159,6 +174,25 @@ message GerritDetails {
   //
   // Note that no presence of this field effectively blacklists all groups.
   repeated string whitelisted_group = 4;
+}
+
+// Specifies a Gerrit project and its corresponding git repo.
+message GerritProject {
+  // The Gerrit host to connect to.
+  //
+  // Value must not include the schema part; it will be assumed to be "https".
+  string host = 1;
+
+  // Gerrit project name.
+  string project = 2;
+
+  // Full URL for the corresponding git repo.
+  string git_url = 3;
+}
+
+message GitRepo {
+  // Full repository url, including schema.
+  string url = 3;
 }
 
 // Access control rules.

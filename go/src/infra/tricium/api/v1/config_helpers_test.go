@@ -53,6 +53,66 @@ func TestLookupProjectDetails(t *testing.T) {
 	})
 }
 
+func TestLookupRepoDetails(t *testing.T) {
+
+	pc := &ProjectConfig{
+		Repos: []*RepoDetails{
+			{
+				Source: &RepoDetails_GitRepo{
+					GitRepo: &GitRepo{
+						Url: "https://github.com/google/gitiles.git",
+					},
+				},
+			},
+			{
+				Source: &RepoDetails_GerritProject{
+					GerritProject: &GerritProject{
+						Host:    "chromium.googlesource.com",
+						Project: "infra/infra",
+						GitUrl:  "https://chromium.googlesource.com/infra/infra.git",
+					},
+				},
+			},
+		},
+	}
+
+	Convey("Matches GerritProject when URL matches", t, func() {
+		request := &AnalyzeRequest{
+			Source: &AnalyzeRequest_GerritRevision{
+				GerritRevision: &GerritRevision{
+					GitUrl: "https://chromium.googlesource.com/infra/infra.git",
+					GitRef: "refs/changes/97/12397/1",
+				},
+			},
+		}
+		So(LookupRepoDetails(pc, request), ShouldEqual, pc.Repos[1])
+	})
+
+	Convey("Matches GitRepo when URL matches", t, func() {
+		request := &AnalyzeRequest{
+			Source: &AnalyzeRequest_GitCommit{
+				GitCommit: &GitCommit{
+					Url: "https://github.com/google/gitiles.git",
+					Ref: "refs/heads/master",
+				},
+			},
+		}
+		So(LookupRepoDetails(pc, request), ShouldEqual, pc.Repos[0])
+	})
+
+	Convey("Returns nil when no repo is found", t, func() {
+		request := &AnalyzeRequest{
+			Source: &AnalyzeRequest_GerritRevision{
+				GerritRevision: &GerritRevision{
+					GitUrl: "https://foo.googlesource.com/bar",
+					GitRef: "refs/changes/97/197/2",
+				},
+			},
+		}
+		So(LookupRepoDetails(pc, request), ShouldBeNil)
+	})
+}
+
 func TestCanRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		ctx := memory.Use(memlogger.Use(context.Background()))
