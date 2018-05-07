@@ -1,20 +1,25 @@
-From f65bc98e9d3cd01422013607ee2d8efccd35f1d7 Mon Sep 17 00:00:00 2001
-From: Takuto Ikuta <tikuta@google.com>
-Date: Wed, 7 Mar 2018 13:12:00 +0900
-Subject: [PATCH 3/3] fetch-pack.c: use oidset to check existence of loose
- object
+From 024aa4696c788eb1b07be53331f770605696ffba Mon Sep 17 00:00:00 2001
+From: Takuto Ikuta <tikuta@chromium.org>
+Date: Wed, 14 Mar 2018 15:32:42 +0900
+Subject: [PATCH] fetch-pack.c: use oidset to check existence of loose object
 
-In repository having large number of refs, lstat for non-existing loose
-objects makes `git fetch` slow.
+When fetching from a repository with large number of refs, because to
+check existence of each refs in local repository to packed and loose
+objects, 'git fetch' ends up doing a lot of lstat(2) to non-existing
+loose form, which makes it slow.
 
-This patch stores existing loose objects in hashmap beforehand and use
-it to check existence instead of using lstat.
+Instead of making as many lstat(2) calls as the refs the remote side
+advertised to see if these objects exist in the loose form, first
+enumerate all the existing loose objects in hashmap beforehand and use
+it to check existence of them if the number of refs is larger than the
+number of loose objects.
 
-With this patch, the number of lstat calls in `git fetch` is reduced
-from 411412 to 13794 for chromium repository.
+With this patch, the number of lstat(2) calls in `git fetch` is reduced
+from 411412 to 13794 for chromium repository, it has more than 480000
+remote refs.
 
-I took time stat of `git fetch` disabling quickfetch for chromium
-repository 3 time on linux with SSD.
+I took time stat of `git fetch` when fetch-pack happens for chromium
+repository 3 times on linux with SSD.
 * with this patch
 8.105s
 8.309s
@@ -27,7 +32,7 @@ avg: 8.018s
 12.227s
 avg: 11.896s
 
-On my MacBook Air which has slower lstat.
+On my MacBook Air which has slower lstat(2).
 * with this patch
 14.501s
 
@@ -37,71 +42,95 @@ On my MacBook Air which has slower lstat.
 `git fetch` on slow disk will be improved largely.
 
 Signed-off-by: Takuto Ikuta <tikuta@chromium.org>
+Signed-off-by: Junio C Hamano <gitster@pobox.com>
 ---
  cache.h      |  2 ++
- fetch-pack.c | 22 +++++++++++++++++++---
+ fetch-pack.c | 45 ++++++++++++++++++++++++++++++++++++++++++---
  sha1_file.c  |  3 +++
- 3 files changed, 24 insertions(+), 3 deletions(-)
+ 3 files changed, 47 insertions(+), 3 deletions(-)
 
 diff --git a/cache.h b/cache.h
-index a61b2d3f0..3d0c9404e 100644
+index d06932ed0..6a72f54d7 100644
 --- a/cache.h
 +++ b/cache.h
-@@ -1777,6 +1777,8 @@ struct object_info {
+@@ -1773,6 +1773,8 @@ struct object_info {
  #define OBJECT_INFO_SKIP_CACHED 4
  /* Do not retry packed storage after checking packed and loose storage */
  #define OBJECT_INFO_QUICK 8
 +/* Do not check loose object */
-+#define OBJECT_INFO_SKIP_LOOSE 16
++#define OBJECT_INFO_IGNORE_LOOSE 16
  extern int sha1_object_info_extended(const unsigned char *, struct object_info *, unsigned flags);
  
  /*
 diff --git a/fetch-pack.c b/fetch-pack.c
-index 1d6117565..0b8c66543 100644
+index d97461296..2ea358861 100644
 --- a/fetch-pack.c
 +++ b/fetch-pack.c
-@@ -711,6 +711,15 @@ static void mark_alternate_complete(struct object *obj)
+@@ -711,6 +711,28 @@ static void mark_alternate_complete(struct object *obj)
  	mark_complete(&obj->oid);
  }
  
++struct loose_object_iter {
++	struct oidset *loose_object_set;
++	struct ref *refs;
++};
++
++/*
++ *  If the number of refs is not larger than the number of loose objects,
++ *  this function stops inserting.
++ */
 +static int add_loose_objects_to_set(const struct object_id *oid,
 +				    const char *path,
 +				    void *data)
 +{
-+	struct oidset* set = (struct oidset*)(data);
-+	oidset_insert(set, oid);
++	struct loose_object_iter *iter = data;
++	oidset_insert(iter->loose_object_set, oid);
++	if (iter->refs == NULL)
++		return 1;
++
++	iter->refs = iter->refs->next;
 +	return 0;
 +}
 +
  static int everything_local(struct fetch_pack_args *args,
  			    struct ref **refs,
  			    struct ref **sought, int nr_sought)
-@@ -719,16 +728,21 @@ static int everything_local(struct fetch_pack_args *args,
+@@ -719,16 +741,31 @@ static int everything_local(struct fetch_pack_args *args,
  	int retval;
  	int old_save_commit_buffer = save_commit_buffer;
  	timestamp_t cutoff = 0;
 +	struct oidset loose_oid_set = OIDSET_INIT;
++	int use_oidset = 0;
++	struct loose_object_iter iter = {&loose_oid_set, *refs};
 +
-+	for_each_loose_object(add_loose_objects_to_set, &loose_oid_set, 0);
++	/* Enumerate all loose objects or know refs are not so many. */
++	use_oidset = !for_each_loose_object(add_loose_objects_to_set,
++					    &iter, 0);
  
  	save_commit_buffer = 0;
  
  	for (ref = *refs; ref; ref = ref->next) {
  		struct object *o;
-+		unsigned int flag = OBJECT_INFO_QUICK;
++		unsigned int flags = OBJECT_INFO_QUICK;
  
 -		if (!has_object_file_with_flags(&ref->old_oid,
 -						OBJECT_INFO_QUICK))
 -			continue;
-+		if (!oidset_contains(&loose_oid_set, &ref->old_oid))
-+			flag |= OBJECT_INFO_SKIP_LOOSE;
++		if (use_oidset &&
++		    !oidset_contains(&loose_oid_set, &ref->old_oid)) {
++			/*
++			 * I know this does not exist in the loose form,
++			 * so check if it exists in a non-loose form.
++			 */
++			flags |= OBJECT_INFO_IGNORE_LOOSE;
++		}
  
-+		if (!has_object_file_with_flags(&ref->old_oid, flag))
++		if (!has_object_file_with_flags(&ref->old_oid, flags))
 +			continue;
  		o = parse_object(&ref->old_oid);
  		if (!o)
  			continue;
-@@ -744,6 +758,8 @@ static int everything_local(struct fetch_pack_args *args,
+@@ -744,6 +781,8 @@ static int everything_local(struct fetch_pack_args *args,
  		}
  	}
  
@@ -111,14 +140,14 @@ index 1d6117565..0b8c66543 100644
  		if (!args->deepen) {
  			for_each_ref(mark_complete_oid, NULL);
 diff --git a/sha1_file.c b/sha1_file.c
-index cc0f43ea8..82aa9b879 100644
+index 1b94f39c4..c0a197947 100644
 --- a/sha1_file.c
 +++ b/sha1_file.c
 @@ -1262,6 +1262,9 @@ int sha1_object_info_extended(const unsigned char *sha1, struct object_info *oi,
  		if (find_pack_entry(real, &e))
  			break;
  
-+		if (flags & OBJECT_INFO_SKIP_LOOSE)
++		if (flags & OBJECT_INFO_IGNORE_LOOSE)
 +			return -1;
 +
  		/* Most likely it's a loose object. */

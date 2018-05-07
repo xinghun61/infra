@@ -52,13 +52,13 @@
       "search",
       "infra/git/linux-386",
       "-tag",
-      "version:2.12.2.2.chromium13",
+      "version:2.12.2.2.chromium14",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/git/linux-386 version:2.12.2.2.chromium13",
+    "name": "cipd search infra/git/linux-386 version:2.12.2.2.chromium14",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -612,7 +612,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "v2.12.2.2.chromium13",
+      "v2.12.2.2.chromium14",
       "[START_DIR]/git/checkout/version"
     ],
     "cwd": "[START_DIR]/git/checkout",
@@ -739,7 +739,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:2.12.2.2.chromium13"
+      "version:2.12.2.2.chromium14"
     ],
     "name": "register infra/git/linux-386",
     "~followup_annotations": [

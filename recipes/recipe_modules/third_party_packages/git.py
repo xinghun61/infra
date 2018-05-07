@@ -15,7 +15,7 @@ PACKAGE_PREFIX = 'infra/git/'
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium13'
+PACKAGE_VERSION_SUFFIX = '.chromium14'
 
 
 # A regex for a name of the release asset to package, available at

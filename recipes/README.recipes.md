@@ -29,7 +29,6 @@
   * [infra_repo_trybot](#recipes-infra_repo_trybot)
   * [infra_system:examples/full](#recipes-infra_system_examples_full)
   * [infra_wct_tester](#recipes-infra_wct_tester)
-  * [isolate_go_perf](#recipes-isolate_go_perf)
   * [lkgr_finder](#recipes-lkgr_finder)
   * [luci_check](#recipes-luci_check)
   * [luci_gae](#recipes-luci_gae)
@@ -339,23 +338,6 @@ staging and prod environments.
 [DEPS](/recipes/recipes/infra_wct_tester.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [wct](#recipe_modules-wct), [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 &mdash; **def [RunSteps](/recipes/recipes/infra_wct_tester.py#14)(api):**
-### *recipes* / [isolate\_go\_perf](/recipes/recipes/isolate_go_perf.py)
-
-[DEPS](/recipes/recipes/isolate_go_perf.py#5): [build/perf\_dashboard][build/recipe_modules/perf_dashboard], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
-
-&mdash; **def [RunSteps](/recipes/recipes/isolate_go_perf.py#31)(api):**
-
-&mdash; **def [build\_isolate](/recipes/recipes/isolate_go_perf.py#75)(api):**
-
-&mdash; **def [download\_test\_data](/recipes/recipes/isolate_go_perf.py#100)(api):**
-
-&mdash; **def [get\_file\_size](/recipes/recipes/isolate_go_perf.py#139)(api, name, path):**
-
-Returns file size if file exists, else None
-
-&mdash; **def [post\_to\_perf\_dashboard](/recipes/recipes/isolate_go_perf.py#114)(api, taken_seconds, revision, tstamp_iso_str, tstamp_unix):**
-
-&mdash; **def [upload\_isolate](/recipes/recipes/isolate_go_perf.py#87)(api, isolate):**
 ### *recipes* / [lkgr\_finder](/recipes/recipes/lkgr_finder.py)
 
 [DEPS](/recipes/recipes/lkgr_finder.py#8): [build/chromium\_checkout][build/recipe_modules/chromium_checkout], [build/v8][build/recipe_modules/v8], [build/webrtc][build/recipe_modules/webrtc], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -587,7 +569,6 @@ Runs a step which adds a link to the current CL if there is one.
 [build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/0cf9f42424b46ae44b51c2d9eee20336f5499231/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
 [build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/0cf9f42424b46ae44b51c2d9eee20336f5499231/scripts/slave/README.recipes.md#recipe_modules-goma
 [build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/0cf9f42424b46ae44b51c2d9eee20336f5499231/scripts/slave/README.recipes.md#recipe_modules-luci_config
-[build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/0cf9f42424b46ae44b51c2d9eee20336f5499231/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
 [build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/0cf9f42424b46ae44b51c2d9eee20336f5499231/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
 [build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/0cf9f42424b46ae44b51c2d9eee20336f5499231/scripts/slave/README.recipes.md#recipe_modules-trigger
 [build/recipe_modules/v8]: https://chromium.googlesource.com/chromium/tools/build.git/+/0cf9f42424b46ae44b51c2d9eee20336f5499231/scripts/slave/README.recipes.md#recipe_modules-v8

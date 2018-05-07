@@ -52,11 +52,11 @@
       "search",
       "infra/git/linux-amd64",
       "-tag",
-      "version:2.12.2.2.chromium13",
+      "version:2.12.2.2.chromium14",
       "-json-output",
       "/path/to/tmp/json"
     ],
-    "name": "cipd search infra/git/linux-amd64 version:2.12.2.2.chromium13",
+    "name": "cipd search infra/git/linux-amd64 version:2.12.2.2.chromium14",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
@@ -613,7 +613,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "v2.12.2.2.chromium13",
+      "v2.12.2.2.chromium14",
       "[START_DIR]/git/checkout/version"
     ],
     "cwd": "[START_DIR]/git/checkout",
