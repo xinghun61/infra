@@ -53,19 +53,3 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
     monitoring.OnSwarmingTaskStatusChange('operation', 'category')
     parameters = {'operation': 'operation', 'category': 'category'}
     mock_common_monitoring.assert_called_once_with(parameters)
-
-  @mock.patch.object(common_monitoring.issues, 'increment')
-  def testOnIssueChange(self, mock_common_monitoring):
-    monitoring.OnIssueChange('operation', 'category')
-    parameters = {'operation': 'operation', 'category': 'category'}
-    mock_common_monitoring.assert_called_once_with(parameters)
-
-  @mock.patch.object(common_monitoring.flake_analyses, 'increment')
-  def testOnFlakeCulprit(self, mock_common_monitoring):
-    monitoring.OnFlakeCulprit('result', 'action_taken', 'reason')
-    parameters = {
-        'result': 'result',
-        'action_taken': 'action_taken',
-        'reason': 'reason'
-    }
-    mock_common_monitoring.assert_called_once_with(parameters)
