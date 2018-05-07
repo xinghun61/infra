@@ -53,6 +53,19 @@ def read_properties(recipe):
   return result
 
 
+def parse_dimensions(strings):
+  """Parses dimension strings to a map."""
+  return dict(s.split(':', 1) for s in strings)
+
+
+def format_dimensions(dictionary):
+  """Formats a dictionary of dimensions to a list of strings.
+
+  Opposite of parse_dimensions.
+  """
+  return sorted(['%s:%s' % (k, v) for k, v in dictionary.iteritems()])
+
+
 def merge_recipe(r1, r2):
   """Merges Recipe message r2 into r1.
 
@@ -72,30 +85,19 @@ def merge_recipe(r1, r2):
   ]
 
 
-def merge_dimensions(d1, d2):
-  """Merges dimensions. Values in d2 overwrite values in d1.
-
-  Expects dimensions to be valid.
-
-  If a dimensions value in d2 is empty, it is excluded from the result.
-  """
-  parse = lambda d: dict(a.split(':', 1) for a in d)
-  dims = parse(d1)
-  dims.update(parse(d2))
-  return sorted('%s:%s' % (k, v) for k, v in dims.iteritems() if v)
-
-
 def merge_builder(b1, b2):
   """Merges Builder message b2 into b1. Expects messages to be valid."""
   assert not b2.mixins, 'do not merge unflattened builders'
-  dims = merge_dimensions(b1.dimensions, b2.dimensions)
+
+  dims = parse_dimensions(b1.dimensions)
+  dims.update(parse_dimensions(b2.dimensions))
   recipe = None
   if b1.HasField('recipe') or b2.HasField('recipe'):  # pragma: no branch
     recipe = copy.deepcopy(b1.recipe)
     merge_recipe(recipe, b2.recipe)
 
   b1.MergeFrom(b2)
-  b1.dimensions[:] = dims
+  b1.dimensions[:] = format_dimensions(dims)
   b1.swarming_tags[:] = sorted(set(b1.swarming_tags))
 
   caches = [

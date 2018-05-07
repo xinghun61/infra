@@ -189,6 +189,9 @@ class SwarmingTest(BaseTest):
             },
           ],
         },
+        'dimensions': [
+          {'key': 'in-template-key', 'value': 'in-template-value'},
+        ],
       },
       'numerical_value_for_coverage_in_format_obj': 42,
     }
@@ -342,22 +345,24 @@ class SwarmingTest(BaseTest):
     )
 
     task_def = swarming.prepare_task_def_async(build).get_result()
-    self.assertEqual(task_def['properties']['dimensions'], sorted([
+    self.assertEqual(task_def['properties']['dimensions'], [
       {'key': 'builder', 'value': 'linux_chromium_rel_ng'},
       {'key': 'cores', 'value': '8'},
+      {'key': 'in-template-key', 'value': 'in-template-value'},
       {'key': 'os', 'value': 'Ubuntu'},
       {'key': 'pool', 'value': 'Chrome'},
-    ]))
+    ])
 
     # But don't override if "builder" dimension is already set.
     builder_cfg.dimensions.append('builder:custom')
     task_def = swarming.prepare_task_def_async(build).get_result()
-    self.assertEqual(task_def['properties']['dimensions'], sorted([
+    self.assertEqual(task_def['properties']['dimensions'], [
       {'key': 'builder', 'value': 'custom'},
       {'key': 'cores', 'value': '8'},
+      {'key': 'in-template-key', 'value': 'in-template-value'},
       {'key': 'os', 'value': 'Ubuntu'},
       {'key': 'pool', 'value': 'Chrome'},
-    ]))
+    ])
 
   def test_is_migrating_builder_prod_async_no_master_name(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
@@ -462,6 +467,7 @@ class SwarmingTest(BaseTest):
           'execution_timeout_secs': 1800,
           'dimensions': [
             {'key': 'cores', 'value': '8'},
+            {'key': 'in-template-key', 'value': 'in-template-value'},
             {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
           ],
@@ -543,11 +549,12 @@ class SwarmingTest(BaseTest):
           }, sort_keys=True),
           '-logdog-project', 'chromium',
         ],
-        'dimensions': sorted([
+        'dimensions': [
           {'key': 'cores', 'value': '8'},
+          {'key': 'in-template-key', 'value': 'in-template-value'},
           {'key': 'os', 'value': 'Ubuntu'},
           {'key': 'pool', 'value': 'Chrome'},
-        ]),
+        ],
         'caches': [
           {'path': 'cache/a', 'name': 'a'},
           {'path': 'cache/builder', 'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
@@ -584,6 +591,7 @@ class SwarmingTest(BaseTest):
       'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
       'builder:linux_chromium_rel_ng',
       'swarming_dimension:cores:8',
+      'swarming_dimension:in-template-key:in-template-value',
       'swarming_dimension:os:Ubuntu',
       'swarming_dimension:pool:Chrome',
       'swarming_hostname:chromium-swarm.appspot.com',
@@ -702,6 +710,7 @@ class SwarmingTest(BaseTest):
           'execution_timeout_secs': 1800,
           'dimensions': [
             {'key': 'cores', 'value': '8'},
+            {'key': 'in-template-key', 'value': 'in-template-value'},
             {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
           ],
@@ -776,11 +785,12 @@ class SwarmingTest(BaseTest):
           }, sort_keys=True),
           '-logdog-project', 'chromium',
         ],
-        'dimensions': sorted([
+        'dimensions': [
           {'key': 'cores', 'value': '8'},
+          {'key': 'in-template-key', 'value': 'in-template-value'},
           {'key': 'os', 'value': 'Ubuntu'},
           {'key': 'pool', 'value': 'Chrome'},
-        ]),
+        ],
         'caches': [
           {'path': 'cache/a', 'name': 'a'},
           {'path': 'cache/builder', 'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
@@ -816,6 +826,7 @@ class SwarmingTest(BaseTest):
     self.assertEqual(set(build.tags), {
       'builder:linux_chromium_rel_ng',
       'swarming_dimension:cores:8',
+      'swarming_dimension:in-template-key:in-template-value',
       'swarming_dimension:os:Ubuntu',
       'swarming_dimension:pool:Chrome',
       'swarming_hostname:chromium-swarm.appspot.com',
@@ -856,6 +867,7 @@ class SwarmingTest(BaseTest):
           'execution_timeout_secs': 1800,
           'dimensions': [
             {'key': 'cores', 'value': '8'},
+            {'key': 'in-template-key', 'value': 'in-template-value'},
             {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
           ],
@@ -904,6 +916,7 @@ class SwarmingTest(BaseTest):
           'execution_timeout_secs': 1800,
           'dimensions': [
             {'key': 'cores', 'value': '16'},
+            {'key': 'in-template-key', 'value': 'in-template-value'},
             {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
           ],
@@ -1042,6 +1055,7 @@ class SwarmingTest(BaseTest):
         'properties': {
           'dimensions': [
             {'key': 'cores', 'value': '16'},
+            {'key': 'in-template-key', 'value': 'in-template-value'},
             {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
           ],

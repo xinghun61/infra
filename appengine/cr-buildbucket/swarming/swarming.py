@@ -552,16 +552,19 @@ def _create_task_def_async(
   if builder_cfg.expiration_secs > 0:
     task['expiration_secs'] = str(builder_cfg.expiration_secs)
 
-  dimensions = list(builder_cfg.dimensions)
+  dimensions = swarmingcfg_module.parse_dimensions(builder_cfg.dimensions)
   if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
-      all(not dim.startswith('builder:') for dim in dimensions)):
-    dimensions.append('builder:' + builder_cfg.name)
-
-  task_properties['dimensions'] = _to_swarming_dimensions(
-      swarmingcfg_module.merge_dimensions(
-          dimensions,
-          task_properties.get('dimensions', []),
-      ))
+      'builder' not in dimensions):
+    dimensions['builder'] = builder_cfg.name
+  dimensions.update({
+    d['key']: d['value']
+    for d in task_properties.get('dimensions', [])
+  })
+  task_properties['dimensions'] = [
+    {'key': k, 'value': v}
+    for k, v in sorted(dimensions.iteritems())
+    if v
+  ]
 
   _add_named_caches(builder_cfg, task_properties)
 
@@ -579,15 +582,6 @@ def _create_task_def_async(
       'swarming_hostname': build.swarming_hostname,
     }, sort_keys=True)
   raise ndb.Return(task)
-
-
-def _to_swarming_dimensions(dims):
-  """Converts dimensions from buildbucket format to swarming format."""
-  return [
-    {'key': key, 'value': value}
-    for key, value in
-    (s.split(':', 1) for s in sorted(dims))
-  ]
 
 
 def _add_named_caches(builder_cfg, task_properties):

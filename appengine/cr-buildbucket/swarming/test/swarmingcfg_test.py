@@ -577,6 +577,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         swarming_tags: "buildertag:yes"
         swarming_tags: "commontag:yes"
         dimensions: "cores:8"
+        dimensions: "cpu:"
         dimensions: "os:Linux"
         dimensions: "pool:Chrome"
         priority: 108
@@ -690,7 +691,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         '''
           name: "builder"
           dimensions: "d1:base"
-          dimensions: "d2:first"
+          dimensions: "d2:"
           dimensions: "d3:second"
           swarming_tags: "t1:base"
           swarming_tags: "t2:base"
