@@ -12,6 +12,7 @@ from infra_api_clients.codereview import codereview_util
 
 from common.waterfall import failure_type
 from libs import analysis_status
+from libs import floating_point_util
 from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services import culprit_action
@@ -138,23 +139,24 @@ def CanRevertForAnalysis(analysis):
   1. Analysis must have been completed with no errors.
   2. Findit must have filed a bug for this (implies test is still flaky).
   3. The test must be newly-added.
-  4. The commit must have happened in the last 24 hours.
+  4. The commit must have happened in the last 24 hours. This is to reduce the
+     likelyhood that other changes have landed since the culprit that may depend
+     on it such that reverting it would introduce further breakages.
   """
   culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
   assert culprit
 
-  last_24_hours = gerrit.WasCulpritCommittedWithinTime(culprit.repo_name,
-                                                       culprit.revision)
+  previous_data_point = analysis.FindMatchingDataPointWithCommitPosition(
+      culprit.commit_position - 1)
 
-  return bool(last_24_hours and analysis.status == analysis_status.COMPLETED and
-              analysis.try_job_status == analysis_status.COMPLETED and
-              analysis.confidence_in_suspected_build == 1.0 and
-              analysis.FindMatchingDataPointWithCommitPosition(
-                  culprit.commit_position - 1) is not None and
-              analysis.FindMatchingDataPointWithCommitPosition(
-                  culprit.commit_position - 1).pass_rate ==
-              flake_constants.PASS_RATE_TEST_NOT_FOUND and
-              analysis.has_filed_bug)
+  return bool(
+      analysis.status == analysis_status.COMPLETED and
+      analysis.has_filed_bug and
+      floating_point_util.AlmostEquals(analysis.confidence_in_culprit, 1.0) and
+      previous_data_point is not None and floating_point_util.AlmostEquals(
+          previous_data_point.pass_rate,
+          flake_constants.PASS_RATE_TEST_NOT_FOUND) and
+      gerrit.WasCulpritCommittedWithinTime(culprit.repo_name, culprit.revision))
 
 
 def CulpritAddedNewFlakyTest(analysis, culprit_commit_position):
