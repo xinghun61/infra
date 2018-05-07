@@ -894,6 +894,20 @@ class BizobjTest(unittest.TestCase):
         set([0L, 111L, 222L, 333L, 444L, 555L]),
         tracker_bizobj.UsersInvolvedInIssues([issue1, issue2]))
 
+  def testUsersInvolvedInTemplate_Empty(self):
+    template = tracker_bizobj.MakeIssueTemplate(
+        'A report', 'Something went wrong', 'New', None, 'Look out!',
+        ['Priority-High'], [], [], [])
+    self.assertEqual(set(), tracker_bizobj.UsersInvolvedInTemplate(template))
+
+  def testUsersInvolvedInTempalte_Normal(self):
+    template = tracker_bizobj.MakeIssueTemplate(
+        'A report', 'Something went wrong', 'New', 111L, 'Look out!',
+        ['Priority-High'], [], [333L, 444L], [])
+    self.assertEqual(
+        set([111L, 333L, 444L]),
+        tracker_bizobj.UsersInvolvedInTemplate(template))
+
   def testMakeIssueDelta_AllSpecified(self):
     added_fv = tracker_bizobj.MakeFieldValue(
       1, None, 'added str', None, None, None, False)

@@ -728,6 +728,16 @@ def UsersInvolvedInIssues(issues):
   return result
 
 
+def UsersInvolvedInTemplate(template):
+  """Return a set of all user IDs referenced in the template."""
+  result = set(
+    template.admin_ids +
+    [fv.user_id for fv in template.field_values if fv.user_id])
+  if template.owner_id:
+    result.add(template.owner_id)
+  return result
+
+
 def MakeIssueDelta(
     status, owner_id, cc_ids_add, cc_ids_remove, comp_ids_add, comp_ids_remove,
     labels_add, labels_remove, field_vals_add, field_vals_remove, fields_clear,

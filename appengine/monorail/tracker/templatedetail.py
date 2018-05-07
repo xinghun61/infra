@@ -14,6 +14,7 @@ from third_party import ezt
 from framework import authdata
 from framework import framework_bizobj
 from framework import framework_helpers
+from framework import framework_views
 from framework import servlet
 from framework import urls
 from framework import permissions
@@ -70,10 +71,19 @@ class TemplateDetail(servlet.Servlet):
     fd_id_to_fvs = collections.defaultdict(list)
     for fv in template.field_values:
       fd_id_to_fvs[fv.field_id].append(fv)
-
+    with mr.profiler.Phase('making user views'):
+      users_involved = tracker_bizobj.UsersInvolvedInTemplate(template)
+      users_by_id = framework_views.MakeAllUserViews(
+          mr.cnxn, self.services.user, users_involved)
+      framework_views.RevealAllEmailsToMembers(mr, users_by_id)
+    field_name_set = {fd.field_name.lower() for fd in config.field_defs
+                      if not fd.is_deleted}
+    non_masked_labels = tracker_bizobj.NonMaskedLabels(
+        template.labels, field_name_set)
     field_views = [
-      tracker_views.MakeFieldValueView(fd, config, [], [],
-                                       fd_id_to_fvs[fd.field_id], {})
+      tracker_views.MakeFieldValueView(
+          fd, config, template.labels, [], fd_id_to_fvs[fd.field_id],
+          users_by_id)
       for fd in config.field_defs if not fd.is_deleted]
     approval_subfields_present = False
     if any(fv.field_def.is_approval_subfield for fv in field_views):
@@ -118,7 +128,7 @@ class TemplateDetail(servlet.Servlet):
                       if view.field_def.type_name is 'APPROVAL_TYPE'],
         'prechecked_approvals': prechecked_approvals,
         'required_approval_ids': required_approval_ids,
-        'labels': template.labels,
+        'labels': non_masked_labels,
         'initial_admins': template_view.admin_names,
         'approval_subfields_present': ezt.boolean(approval_subfields_present),
         }
@@ -136,6 +146,8 @@ class TemplateDetail(servlet.Servlet):
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     parsed = template_helpers.ParseTemplateRequest(post_data, config)
+    field_helpers.ShiftEnumFieldsIntoLabels(
+        parsed.labels, [], parsed.field_val_strs, [], config)
     template = tracker_bizobj.FindIssueTemplate(parsed.name, config)
     allow_edit = permissions.CanEditTemplate(
         mr.auth.effective_ids, mr.perms, mr.project, template)

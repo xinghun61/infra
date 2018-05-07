@@ -102,6 +102,8 @@ class TemplateCreate(servlet.Servlet):
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     parsed = template_helpers.ParseTemplateRequest(post_data, config)
+    field_helpers.ShiftEnumFieldsIntoLabels(
+        parsed.labels, [], parsed.field_val_strs, [], config)
 
     if not parsed.name:
       mr.errors.name = 'Please provide a template name'
