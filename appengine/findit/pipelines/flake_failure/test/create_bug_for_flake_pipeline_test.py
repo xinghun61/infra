@@ -485,5 +485,5 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
         'Regression range: https://crrev.com/prev_hash..hash?pretty=fuller' in
         body)
     self.assertTrue(
-        'If this result was incorrect, apply the label Findit-Incorrect-Result'
+        'If this result was incorrect, apply the label Test-Findit-Wrong'
         in body)

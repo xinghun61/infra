@@ -27,7 +27,7 @@ _BODY_TEMPLATE = ('Findit has detected a flake at test {}.\n\n'
                   'Regression range: {}\n\n'
                   'Analysis: {}\n\n'
                   'If this result was incorrect, apply the label '
-                  'Findit-Incorrect-Result, mark the bug as Untriaged and the '
+                  'Test-Findit-Wrong, mark the bug as Untriaged and the '
                   'component Tools>Test>Findit>Flakiness.')
 
 # TODO(crbug.com/783335): Allow these values to be configurable.
