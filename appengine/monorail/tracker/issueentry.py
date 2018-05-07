@@ -137,13 +137,8 @@ class IssueEntry(servlet.Servlet):
 
     field_user_views = tracker_views.MakeFieldUserViews(
         mr.cnxn, wkp, self.services.user)
-    field_views = [
-        tracker_views.MakeFieldValueView(
-            fd, config, link_or_template_labels, [], wkp.field_values,
-            field_user_views)
-        # TODO(jrobbins): field-level view restrictions, display options
-        for fd in config.field_defs
-        if not fd.is_deleted]
+    field_views = tracker_views.MakeAllFieldValueViews(
+        config, link_or_template_labels, [], wkp.field_values, field_user_views)
 
     page_data = {
         'issue_tab_mode': 'issueEntry',

@@ -81,16 +81,9 @@ class IssueView(template_helpers.PBProxy):
          if tracker_bizobj.FindComponentDefByID(component_id, config)],
         key=lambda cvv: cvv.path)
 
-    self.fields = [
-        MakeFieldValueView(
-            fd, config, issue.labels, issue.derived_labels, issue.field_values,
-            users_by_id)
-        # TODO(jrobbins): field-level view restrictions, display options
-        # TODO(jojwang): monorail:3447, add phase_id to FieldValueView
-        for fd in config.field_defs
-        if not fd.is_deleted]
-    self.fields = sorted(
-        self.fields, key=lambda f: (f.applicable_type, f.field_name))
+    self.fields = MakeAllFieldValueViews(
+        config, issue.labels, issue.derived_labels, issue.field_values,
+        users_by_id)
 
     field_names = [fd.field_name.lower() for fd in config.field_defs
                    if not fd.is_deleted]  # TODO(jrobbins): restricts
@@ -621,43 +614,68 @@ class FieldValueView(object):
         (self.applicable and not fd.is_niche))
 
 
-def MakeFieldValueView(
-    fd, config, labels, derived_labels, field_values, users_by_id):
-  """Return a view on the issue's field value."""
+def _PrecomputeInfoForValueViews(labels, derived_labels, field_values, config):
+  """Organize issue values into datastructures used to make FieldValueViews."""
+  field_values_by_id = collections.defaultdict(list)
+  for fv in field_values:
+    field_values_by_id[fv.field_id].append(fv)
+  labels_by_prefix = tracker_bizobj.LabelsByPrefix(labels)
+  der_labels_by_prefix = tracker_bizobj.LabelsByPrefix(derived_labels)
+  label_docs = {wkl.label.lower(): wkl.label_docstring
+                for wkl in config.well_known_labels}
+  return labels_by_prefix, der_labels_by_prefix, field_values_by_id, label_docs
+
+
+def MakeAllFieldValueViews(
+    config, labels, derived_labels, field_values, users_by_id):
+  """Return a list of FieldValues, each containing values from the issue."""
+  precomp_view_info = _PrecomputeInfoForValueViews(
+      labels, derived_labels, field_values, config)
+  field_value_views = [
+      _MakeFieldValueView(fd, config, precomp_view_info, users_by_id)
+      # TODO(jrobbins): field-level view restrictions, display options
+      # TODO(jojwang): monorail:3447, add phase_id to FieldValueView
+      for fd in config.field_defs
+      if not fd.is_deleted]
+  field_value_views = sorted(
+      field_value_views, key=lambda f: (f.applicable_type, f.field_name))
+  return field_value_views
+
+
+def _MakeFieldValueView(fd, config, precomp_view_info, users_by_id):
+  """Return a FieldValueView with all values from the issue for that field."""
+  (labels_by_prefix, der_labels_by_prefix, field_values_by_id,
+   label_docs) = precomp_view_info
+
   field_name_lower = fd.field_name.lower()
   values = []
   derived_values = []
 
   if fd.field_type == tracker_pb2.FieldTypes.ENUM_TYPE:
-    label_docs = {wkl.label: wkl.label_docstring
-                  for wkl in config.well_known_labels}
     values = _ConvertLabelsToFieldValues(
-        labels, field_name_lower, label_docs)
+        labels_by_prefix.get(field_name_lower, []),
+        field_name_lower, label_docs)
     derived_values = _ConvertLabelsToFieldValues(
-        derived_labels, field_name_lower, label_docs)
+        der_labels_by_prefix.get(field_name_lower, []),
+        field_name_lower, label_docs)
   else:
-    values = FindFieldValues(
-        [fv for fv in field_values if not fv.derived],
-        fd.field_id, users_by_id)
-    derived_values = FindFieldValues(
-        [fv for fv in field_values if fv.derived],
-        fd.field_id, users_by_id)
+    values = _MakeFieldValueItems(
+        [fv for fv in field_values_by_id.get(fd.field_id, []) if not fv.derived],
+        users_by_id)
+    derived_values = _MakeFieldValueItems(
+        [fv for fv in field_values_by_id.get(fd.field_id, []) if fv.derived],
+        users_by_id)
 
-  issue_types = set()
-  for lab in list(derived_labels) + list(labels):
-    if lab.lower().startswith('type-'):
-      issue_types.add(lab.split('-', 1)[1].lower())
+  issue_types = (labels_by_prefix.get('type', []) +
+                 der_labels_by_prefix.get('type', []))
 
   return FieldValueView(fd, config, values, derived_values, issue_types)
 
 
-def FindFieldValues(field_values, field_id, users_by_id):
-  """Accumulate appropriate int, string, or user values in the given fields."""
+def _MakeFieldValueItems(field_values, users_by_id):
+  """Make appropriate int, string, or user values in the given fields."""
   result = []
   for fv in field_values:
-    if fv.field_id != field_id:
-      continue
-
     val = tracker_bizobj.GetFieldValue(fv, users_by_id)
     result.append(template_helpers.EZTItem(
         val=val, docstring=val, idx=len(result)))
@@ -680,25 +698,23 @@ def MakeBounceFieldValueViews(field_vals, config):
   return field_value_views
 
 
-def _ConvertLabelsToFieldValues(labels, field_name_lower, label_docs):
+def _ConvertLabelsToFieldValues(label_values, field_name_lower, label_docs):
   """Iterate through the given labels and pull out values for the field.
 
   Args:
-    labels: a list of label strings.
+    label_values: a list of label strings for the given field.
     field_name_lower: lowercase string name of the custom field.
-    label_docs: {label: docstring} for well-known labels in the project.
+    label_docs: {lower_label: docstring} for well-known labels in the project.
 
   Returns:
     A list of EZT items with val and docstring fields.  One item is included
     for each label that matches the given field name.
   """
   values = []
-  field_delim = field_name_lower + '-'
-  for idx, lab in enumerate(labels):
-    if lab.lower().startswith(field_delim):
-      val = lab[len(field_delim):]
-      values.append(template_helpers.EZTItem(
-          val=val, docstring=label_docs.get(lab, ''), idx=idx))
+  for idx, lab_val in enumerate(label_values):
+    full_label_lower = '%s-%s' % (field_name_lower, lab_val.lower())
+    values.append(template_helpers.EZTItem(
+        val=lab_val, docstring=label_docs.get(full_label_lower, ''), idx=idx))
 
   return values
 
@@ -836,13 +852,8 @@ class IssueTemplateView(template_helpers.PBProxy):
           val=tracker_bizobj.GetFieldValue(fv, field_user_views),
           idx=len(self.field_values)))
 
-    self.complete_field_values = [
-        MakeFieldValueView(
-            fd, config, template.labels, [], template.field_values,
-            field_user_views)
-        # TODO(jrobbins): field-level view restrictions, display options
-        for fd in config.field_defs
-        if not fd.is_deleted]
+    self.complete_field_values = MakeAllFieldValueViews(
+        config, template.labels, [], template.field_values, field_user_views)
 
     # Templates only display and edit the first value of multi-valued fields, so
     # expose a single value, if any.

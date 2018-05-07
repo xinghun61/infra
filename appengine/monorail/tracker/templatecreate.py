@@ -55,9 +55,8 @@ class TemplateCreate(servlet.Servlet):
     """
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    field_views = [
-      tracker_views.MakeFieldValueView(fd, config, [], [], [], {})
-      for fd in config.field_defs if not fd.is_deleted]
+    field_views = tracker_views.MakeAllFieldValueViews(
+        config, [], [], [], {})
     approval_subfields_present = False
     if any(fv.field_def.is_approval_subfield for fv in field_views):
       approval_subfields_present = True
@@ -115,14 +114,8 @@ class TemplateCreate(servlet.Servlet):
          mr, self.services, parsed, config)
 
     if mr.errors.AnyErrors():
-      fd_id_to_fvs = collections.defaultdict(list)
-      for fv in field_values:
-        fd_id_to_fvs[fv.field_id].append(fv)
-
-      field_views = [
-          tracker_views.MakeFieldValueView(fd, config, [], [],
-                                           fd_id_to_fvs[fd.field_id], {})
-          for fd in config.field_defs if not fd.is_deleted]
+      field_views = tracker_views.MakeAllFieldValueViews(
+          config, [], [], field_values, {})
       prechecked_approvals = []
       for phs_idx, approval_ids in parsed.approvals_by_phase_idx.iteritems():
         prechecked_approvals.extend(['%d_phase_%d' % (approval_id, phs_idx)

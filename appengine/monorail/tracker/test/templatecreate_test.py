@@ -94,8 +94,10 @@ class TemplateCreateTest(unittest.TestCase):
         self.servlet.AssertBasePermission, self.mr)
 
   def testGatherPageData(self):
-    fv = tracker_views.MakeFieldValueView(
-        self.fd_1, self.config, [], [], [], {})
+    precomp_view_info = tracker_views._PrecomputeInfoForValueViews(
+        [], [], [], self.config)
+    fv = tracker_views._MakeFieldValueView(
+        self.fd_1, self.config, precomp_view_info, {})
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual(self.servlet.PROCESS_TAB_TEMPLATES,
                      page_data['admin_tab_mode'])

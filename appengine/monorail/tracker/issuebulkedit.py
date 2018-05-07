@@ -95,13 +95,8 @@ class IssueBulkEdit(servlet.Servlet):
           if lab.lower().startswith('type-')}
       type_label_set &= new_type_set
 
-    field_views = [
-        tracker_views.MakeFieldValueView(
-            fd, config, type_label_set, [], [], {})
-        # TODO(jrobbins): field-level view restrictions, display options
-        # TODO(jrobbins): custom fields in templates supply values to view.
-        for fd in config.field_defs
-        if not fd.is_deleted]
+    field_views = tracker_views.MakeAllFieldValueViews(
+        config, type_label_set, [], [], {})
     # Explicitly set all field views to not required. We do not want to force
     # users to have to set it for issues missing required fields.
     # See https://bugs.chromium.org/p/monorail/issues/detail?id=500 for more

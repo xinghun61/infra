@@ -464,6 +464,7 @@ class ComponentValueTest(unittest.TestCase):
 class FieldValueViewTest(unittest.TestCase):
   pass  # TODO(jrobbins): write tests
 
+
 class FieldValueViewTest_Applicability(unittest.TestCase):
   pass  # TODO(jrobbins): write tests
 
@@ -472,7 +473,7 @@ class MakeFieldValueViewTest(unittest.TestCase):
   pass  # TODO(jrobbins): write tests
 
 
-class FindFieldValuesTest(unittest.TestCase):
+class MakeFieldValueItemsTest(unittest.TestCase):
   pass  # TODO(jrobbins): write tests
 
 
@@ -489,19 +490,18 @@ class ConvertLabelsToFieldValuesTest(unittest.TestCase):
 
   def testConvertLabelsToFieldValues_NoMatch(self):
     result = tracker_views._ConvertLabelsToFieldValues(
-        ['Pri-3', 'M-44', 'Security', 'Via-Wizard'], 'opsys', {})
+        [], 'opsys', {})
     self.assertEqual([], result)
 
   def testConvertLabelsToFieldValues_HasMatch(self):
     result = tracker_views._ConvertLabelsToFieldValues(
-        ['Pri-3', 'M-44', 'Security', 'OpSys-OSX'], 'opsys', {})
+        ['OSX'], 'opsys', {})
     self.assertEqual(1, len(result))
     self.assertEqual('OSX', result[0].val)
     self.assertEqual('', result[0].docstring)
 
     result = tracker_views._ConvertLabelsToFieldValues(
-        ['Pri-3', 'M-44', 'Security', 'OpSys-OSX', 'OpSys-All'],
-         'opsys', {'OpSys-All': 'Happens everywhere'})
+        ['OSX', 'All'], 'opsys', {'opsys-all': 'Happens everywhere'})
     self.assertEqual(2, len(result))
     self.assertEqual('OSX', result[0].val)
     self.assertEqual('', result[0].docstring)

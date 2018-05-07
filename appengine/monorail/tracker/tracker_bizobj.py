@@ -10,6 +10,7 @@ users care about in the issue tracker: e.g., issues, and the issue
 tracker configuration.
 """
 
+import collections
 import logging
 
 from framework import exceptions
@@ -184,6 +185,17 @@ def GetGrantedPerms(issue, effective_ids, config):
         granted_perms.add(field_def.grants_perm.lower())
 
   return granted_perms
+
+
+def LabelsByPrefix(labels):
+  """Convert a list of key-value labels into {lower_prefix: [value, ...]}."""
+  label_values_by_prefix = collections.defaultdict(list)
+  for lab in labels:
+    if '-' not in lab:
+      continue
+    prefix, value = lab.split('-', 1)
+    label_values_by_prefix[prefix.lower()].append(value)
+  return label_values_by_prefix
 
 
 def LabelIsMaskedByField(label, field_names):

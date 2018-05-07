@@ -68,9 +68,6 @@ class TemplateDetail(servlet.Servlet):
     template = tracker_bizobj.FindIssueTemplate(mr.template_name, config)
     template_view = tracker_views.IssueTemplateView(
         mr, template, self.services.user, config)
-    fd_id_to_fvs = collections.defaultdict(list)
-    for fv in template.field_values:
-      fd_id_to_fvs[fv.field_id].append(fv)
     with mr.profiler.Phase('making user views'):
       users_involved = tracker_bizobj.UsersInvolvedInTemplate(template)
       users_by_id = framework_views.MakeAllUserViews(
@@ -80,11 +77,9 @@ class TemplateDetail(servlet.Servlet):
                       if not fd.is_deleted}
     non_masked_labels = tracker_bizobj.NonMaskedLabels(
         template.labels, field_name_set)
-    field_views = [
-      tracker_views.MakeFieldValueView(
-          fd, config, template.labels, [], fd_id_to_fvs[fd.field_id],
-          users_by_id)
-      for fd in config.field_defs if not fd.is_deleted]
+
+    field_views = tracker_views.MakeAllFieldValueViews(
+      config, template.labels, [], template.field_values, users_by_id)
     approval_subfields_present = False
     if any(fv.field_def.is_approval_subfield for fv in field_views):
       approval_subfields_present = True
@@ -166,14 +161,8 @@ class TemplateDetail(servlet.Servlet):
          mr, self.services, parsed, config)
 
     if mr.errors.AnyErrors():
-      fd_id_to_fvs = collections.defaultdict(list)
-      for fv in field_values:
-        fd_id_to_fvs[fv.field_id].append(fv)
-
-      field_views = [
-          tracker_views.MakeFieldValueView(fd, config, [], [],
-                                           fd_id_to_fvs[fd.field_id], {})
-          for fd in config.field_defs if not fd.is_deleted]
+      field_views = tracker_views.MakeAllFieldValueViews(
+          config, [], [], field_values, {})
 
       prechecked_approvals = []
       for phs_idx, approval_ids in parsed.approvals_by_phase_idx.iteritems():
