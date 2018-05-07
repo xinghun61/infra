@@ -49,3 +49,15 @@ def OnSwarmingTaskStatusChange(operation, category):
       'operation': operation,
       'category': category
   })
+
+
+def OnIssueChange(operation, category):
+  monitoring.issues.increment({'category': category, 'operation': operation})
+
+
+def OnFlakeCulprit(result, action_taken, reason):
+  monitoring.flake_analyses.increment({
+      'result': result,
+      'action_taken': action_taken,
+      'reason': reason,
+  })
