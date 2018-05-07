@@ -9,6 +9,7 @@ import (
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/sync/parallel"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -16,7 +17,6 @@ import (
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
-	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
 	"infra/tricium/appengine/common/track"
 )
@@ -60,9 +60,10 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 			return fmt.Errorf("failed to store WorkflowRun entity (run ID: %d): %v", req.RunId, err)
 		}
 		runKey := ds.KeyForObj(c, workflowRun)
-		ops := []func() error{
+		return parallel.FanOutIn(func(taskC chan<- func() error) {
+
 			// Update AnalyzeRequestResult to RUNNING.
-			func() error {
+			taskC <- func() error {
 				r := &track.AnalyzeRequestResult{
 					ID:     1,
 					Parent: requestKey,
@@ -72,9 +73,10 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 					return fmt.Errorf("failed to mark request as launched: %v", err)
 				}
 				return nil
-			},
+			}
+
 			// Update WorkflowRun state to RUNNING.
-			func() error {
+			taskC <- func() error {
 				r := &track.WorkflowRunResult{
 					ID:     1,
 					Parent: runKey,
@@ -84,9 +86,10 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 					return fmt.Errorf("failed to mark workflow as launched: %v", err)
 				}
 				return nil
-			},
+			}
+
 			// Store Function and WorkerRun entities for tracking.
-			func() error {
+			taskC <- func() error {
 				entities := make([]interface{}, 0, len(fw))
 				for _, v := range fw {
 					v.Function.Parent = runKey
@@ -120,9 +123,8 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 					return fmt.Errorf("failed to store function and worker entities: %v", err)
 				}
 				return nil
-			},
-		}
-		return common.RunInParallel(ops)
+			}
+		})
 	}, nil); err != nil {
 		return err
 	}

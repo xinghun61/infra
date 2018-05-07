@@ -14,6 +14,7 @@ import (
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/sync/parallel"
 
 	"golang.org/x/net/context"
 
@@ -177,18 +178,20 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		if err := ds.Put(c, request); err != nil {
 			return fmt.Errorf("failed to store AnalyzeRequest entity: %v", err)
 		}
-		// Operations to run in parallel in the below transaction.
-		ops := []func() error{
+		// We can do a few things in parallel when starting an analyze request.
+		return parallel.FanOutIn(func(taskC chan<- func() error) {
+
 			// Add AnalyzeRequestResult entity for request status tracking.
-			func() error {
+			taskC <- func() error {
 				requestRes.Parent = ds.KeyForObj(c, request)
 				if err := ds.Put(c, requestRes); err != nil {
 					return fmt.Errorf("failed to store AnalyzeRequestResult entity: %v", err)
 				}
 				return nil
-			},
+			}
+
 			// Launch workflow, enqueue launch request.
-			func() error {
+			taskC <- func() error {
 				lr.RunId = request.ID
 				t := tq.NewPOSTTask("/launcher/internal/launch", nil)
 				b, err := proto.Marshal(lr)
@@ -197,9 +200,10 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 				}
 				t.Payload = b
 				return tq.Add(c, common.LauncherQueue, t)
-			},
+			}
+
 			// Map Gerrit change ID to run ID.
-			func() error {
+			taskC <- func() error {
 				// Nothing to do if there isn't a Gerrit consumer.
 				if req.Consumer != tricium.Consumer_GERRIT {
 					return nil
@@ -212,9 +216,8 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 					return fmt.Errorf("failed to store GerritChangeIDtoRunID entity: %v", err)
 				}
 				return nil
-			},
-		}
-		return common.RunInParallel(ops)
+			}
+		})
 	}, &ds.TransactionOptions{XG: true})
 	if err != nil {
 		return "", fmt.Errorf("failed to track and launch request: %v", err)

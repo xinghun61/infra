@@ -16,6 +16,7 @@ import (
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/server/auth"
 
 	gr "golang.org/x/build/gerrit"
@@ -87,19 +88,19 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 	if err != nil {
 		return fmt.Errorf("failed to get service config: %v", err)
 	}
-	var ops []func() error
 
-	for name, pc := range projects {
-		name := name // Make a separate variable for use in the closure below
-		for _, repo := range pc.Repos {
-			if repo.GerritDetails != nil && repo.GitDetails != nil {
-				ops = append(ops, func() error {
-					return pollProject(c, name, repo, gerrit)
-				})
+	return parallel.FanOutIn(func(taskC chan<- func() error) {
+		for name, pc := range projects {
+			name := name // Make a separate variable for use in the closure below
+			for _, repo := range pc.Repos {
+				if repo.GerritDetails != nil && repo.GitDetails != nil {
+					taskC <- func() error {
+						return pollProject(c, name, repo, gerrit)
+					}
+				}
 			}
 		}
-	}
-	return common.RunInParallel(ops)
+	})
 }
 
 // pollProject polls for changes for one Gerrit project.
@@ -191,16 +192,17 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 
 	// Store updated tracking data.
 	if err := ds.RunInTransaction(c, func(c context.Context) error {
-		ops := []func() error{
+		return parallel.FanOutIn(func(taskC chan<- func() error) {
 			// Update existing changes and add new ones.
-			func() error {
+			taskC <- func() error {
 				if len(uchanges) == 0 {
 					return nil
 				}
 				return ds.Put(c, uchanges)
-			},
+			}
+
 			// Delete removed changes.
-			func() error {
+			taskC <- func() error {
 				if len(dchanges) == 0 {
 					return nil
 				}
@@ -217,17 +219,17 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 					}
 				}
 				return nil
-			},
+			}
+
 			// Update poll timestamp.
-			func() error {
+			taskC <- func() error {
 				p.LastPoll = changes[0].Updated.Time()
 				if err := ds.Put(c, p); err != nil {
 					return fmt.Errorf("failed to update last poll timestamp: %v", err)
 				}
 				return nil
-			},
-		}
-		return common.RunInParallel(ops)
+			}
+		})
 	}, &ds.TransactionOptions{XG: true}); err != nil {
 		return err
 	}

@@ -9,6 +9,7 @@ import (
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/sync/parallel"
 
 	"golang.org/x/net/context"
 
@@ -16,7 +17,6 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/admin/v1"
-	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -39,18 +39,19 @@ func (r *gerritReporter) ReportResults(c context.Context, req *admin.ReportResul
 func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit API) error {
 	request := &track.AnalyzeRequest{ID: req.RunId}
 	var comments []*track.Comment
-	ops := []func() error{
+	err := parallel.FanOutIn(func(taskC chan<- func() error) {
 		// Get Git details.
-		func() error {
+		taskC <- func() error {
 			// The Git repo and ref in the service request should correspond to the Gerrit
 			// repo for the project. This request is typically done by the Gerrit poller.
 			if err := ds.Get(c, request); err != nil {
 				return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %d): %v", req.RunId, err)
 			}
 			return nil
-		},
+		}
+
 		// Get comments.
-		func() error {
+		taskC <- func() error {
 			requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 			runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
 			analyzerKey := ds.NewKey(c, "FunctionRun", req.Analyzer, 0, runKey)
@@ -70,9 +71,9 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 				}
 			}
 			return nil
-		},
-	}
-	if err := common.RunInParallel(ops); err != nil {
+		}
+	})
+	if err != nil {
 		return err
 	}
 	if request.GerritReportingDisabled {
