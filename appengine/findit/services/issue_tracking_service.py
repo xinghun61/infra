@@ -13,13 +13,13 @@ import textwrap
 from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
-from common import monitoring
 from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
 from monorail_api import CustomizedField
 from monorail_api import IssueTrackerAPI
 from monorail_api import Issue
+from services import monitoring
 
 from model.flake import master_flake_analysis
 from model.flake.detection.flake_issue import FlakeIssue
@@ -209,55 +209,37 @@ def ShouldUpdateBugForAnalysis(analysis):
   if not analysis.bug_id:
     analysis.LogInfo('bug=%s' % analysis.bug_id)
     if analysis.culprit_urlsafe_key:
-      monitoring.flake_analyses.increment({
-          'result': 'culprit-identified',
-          'action_taken': 'none',
-          'reason': 'no-bug-to-update',
-      })
+      monitoring.OnFlakeCulprit('culprit-identified', 'none',
+                                'no-bug-to-update')
     else:
-      monitoring.flake_analyses.increment({
-          'result': 'culprit-not-identified',
-          'action_taken': 'none',
-          'reason': 'no-bug-to-update',
-      })
+      monitoring.OnFlakeCulprit('culprit-not-identified', 'none',
+                                'no-bug-to-update')
     return False
 
   if len(analysis.data_points) < 2:
     analysis.LogInfo('%d data points' % len(analysis.data_points))
-    monitoring.flake_analyses.increment({
-        'result': 'culprit-not-identified',
-        'action_taken': 'none',
-        'reason': 'insufficient-datapoints',
-    })
+    monitoring.OnFlakeCulprit('culprit-identified', 'none',
+                              'insufficient-datapoints')
     return False
 
   if not IsBugUpdatingEnabled():
     analysis.LogInfo('update_monorail_bug not set or is False')
     if analysis.culprit_urlsafe_key:
-      monitoring.flake_analyses.increment({
-          # There is a culprit, but updating bugs is disabled.
-          'result': 'culprit-identified',
-          'action_taken': 'none',
-          'reason': 'update-bug-disabled',
-      })
+      # There is a culprit, but updating bugs is disabled.
+      monitoring.OnFlakeCulprit('culprit-identified', 'none',
+                                'update-bug-disabled')
     else:
       analysis.LogInfo('No culprit to update bugs with')
-      monitoring.flake_analyses.increment({
-          # There is a culprit, but updating bugs is disabled.
-          'result': 'culprit-not-identified',
-          'action_taken': 'none',
-          'reason': 'update-bug-disabled',
-      })
+      # There is no culprit, but updating bugs is disabled.
+      monitoring.OnFlakeCulprit('culprit-not-identified', 'none',
+                                'update-bug-disabled')
     return False
 
   if (analysis.culprit_urlsafe_key and not HasSufficientConfidenceInCulprit(
       analysis, GetMinimumConfidenceToUpdateBugs())):
-    monitoring.flake_analyses.increment({
-        # There is a culprit, but insufficient confidence.
-        'result': 'culprit-identified',
-        'action_taken': 'none',
-        'reason': 'insufficient-confidence',
-    })
+    # There is a culprit, but insufficient confidence.
+    monitoring.OnFlakeCulprit('culprit-identified', 'none',
+                              'insufficient-confidence')
     return False
 
   return True
@@ -409,8 +391,12 @@ def CreateBugForFlakeAnalyzer(test_name, subject, description,
       'components': ['Tests>Flaky'],
       'fieldValues': [CustomizedField('Flaky-Test', test_name)]
   })
+  issue_id = CreateBug(issue)
 
-  return CreateBug(issue)
+  if issue_id > 0:
+    monitoring.OnIssueChange('created', 'flake')
+
+  return issue_id
 
 
 def CreateBug(issue, project_id='chromium'):
@@ -530,7 +516,9 @@ def CreateBugForDetectedFlake(flake,
       'fieldValues': [CustomizedField('Flaky-Test', flake.test_name)]
   })
 
-  CreateBug(issue, flake.project_id)
+  issue_id = CreateBug(issue, flake.project_id)
+  if issue_id > 0:
+    monitoring.OnIssueChange('created', 'flake')
   flake.flake_issue = FlakeIssue()
   flake.flake_issue.FromMonorailIssue(issue)
   flake.flake_issue.last_updated_time = time_util.GetUTCNow()
