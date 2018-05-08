@@ -52,11 +52,11 @@
       "search",
       "infra/git/linux-amd64",
       "-tag",
-      "version:2.12.2.2.chromium14",
+      "version:2.12.2.2.chromium15",
       "-json-output",
       "/path/to/tmp/json"
     ],
-    "name": "cipd search infra/git/linux-amd64 version:2.12.2.2.chromium14",
+    "name": "cipd search infra/git/linux-amd64 version:2.12.2.2.chromium15",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
@@ -158,7 +158,8 @@
       "user.email=third_party_packages@example.com",
       "am",
       "RECIPE_MODULE[infra::third_party_packages]/resources/git/patches/0001-exec_cmd-self-resolution-and-relative-pathing.patch",
-      "RECIPE_MODULE[infra::third_party_packages]/resources/git/patches/0002-Infra-specific-extensions.patch"
+      "RECIPE_MODULE[infra::third_party_packages]/resources/git/patches/0002-Infra-specific-extensions.patch",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/git/patches/0003-fetch-pack.c-use-oidset-to-check-existence-of-loose-.patch"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
@@ -613,7 +614,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "v2.12.2.2.chromium14",
+      "v2.12.2.2.chromium15",
       "[START_DIR]/git/checkout/version"
     ],
     "cwd": "[START_DIR]/git/checkout",

@@ -15,7 +15,7 @@ PACKAGE_PREFIX = 'infra/git/'
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium14'
+PACKAGE_VERSION_SUFFIX = '.chromium15'
 
 
 # A regex for a name of the release asset to package, available at
@@ -48,6 +48,9 @@ class GitApi(util.ModuleShim):
       patches = [self.resource('git', 'patches').join(x) for x in (
           '0001-exec_cmd-self-resolution-and-relative-pathing.patch',
           '0002-Infra-specific-extensions.patch',
+          # TODO(tandrii, tikuta): remove this for release once git 2.18.0 is
+          # released, because patch below is included in 2.18.0.
+          '0003-fetch-pack.c-use-oidset-to-check-existence-of-loose-.patch',
       )]
       self.m.git(*[
           '-c', 'user.name=third_party_packages',
