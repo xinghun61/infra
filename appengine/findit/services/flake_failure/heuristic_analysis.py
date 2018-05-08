@@ -16,6 +16,9 @@ from waterfall.flake import flake_constants
 
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
 
+# TODO(crbug.com/839620): blame_list, build_number, etc. are deprecated. Data
+# should instead be passed in memory rather than stored to the data points.
+
 
 def GenerateSuspectedRanges(suspected_revisions, revision_range):
   """Generates a list of revision tuples.
@@ -79,7 +82,8 @@ def IdentifySuspectedRevisions(analysis):
         introduced test flakiness.
   """
   suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
-  assert suspected_data_point
+  if not suspected_data_point:
+    return []
 
   test_location = swarmed_test_util.GetTestLocation(
       suspected_data_point.GetSwarmingTaskId(), analysis.test_name)
@@ -166,7 +170,13 @@ def SaveFlakeCulpritsForSuspectedRevisions(analysis_urlsafe_key,
   assert analysis
 
   suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
-  assert suspected_build_point
+  if not suspected_build_point:
+    analysis.LogWarning(
+        'Skipping heuristic analysis due to suspeted build point being '
+        'unavailable')
+    analysis.heuristic_analysis_status = analysis_status.SKIPPED
+    analysis.put()
+    return
 
   for revision in suspected_revisions:
     commit_position = suspected_build_point.GetCommitPosition(revision)
