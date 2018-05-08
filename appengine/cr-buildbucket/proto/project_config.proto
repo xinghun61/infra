@@ -299,7 +299,6 @@ message Swarming {
   string url_format = 2;
 
   // Defines default values for builders.
-  // Cannot be used in buckets that use builder mixins.
   Builder builder_defaults = 3;
 
   // Configuration for each builder.
