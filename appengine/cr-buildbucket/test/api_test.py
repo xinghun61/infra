@@ -84,6 +84,11 @@ class ApiTests(object):
       resp['build']['parameters_json'], '{"buildername": "linux_rel"}')
 
   @mock.patch('service.get', autospec=True)
+  def test_get_auth_error(self, get):
+    get.side_effect = auth.AuthorizationError
+    self.expect_error('get', {'id': 1}, 'BUILD_NOT_FOUND')
+
+  @mock.patch('service.get', autospec=True)
   def test_get_nonexistent_build(self, get):
     get.return_value = None
     self.expect_error('get', {'id': 1}, 'BUILD_NOT_FOUND')
@@ -721,11 +726,6 @@ class ApiTests(object):
   def test_lease_expired_error(self):
     # pylint: disable=no-value-for-parameter
     self.error_test(errors.LeaseExpiredError, 'LEASE_EXPIRED')
-
-  @mock.patch('service.get', autospec=True)
-  def test_auth_error(self, get):
-    get.side_effect = auth.AuthorizationError
-    self.call_api('get', {'id': 123}, status=403)
 
   ####### BACKFILL_TAG_INDEX ###################################################
 

@@ -213,7 +213,10 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def get(self, request):
     """Returns a build by id."""
-    build = service.get(request.id)
+    try:
+      build = service.get(request.id)
+    except auth.AuthorizationError:
+      build = None
     if build is None:
       raise errors.BuildNotFoundError()
     return build_to_response_message(build)
