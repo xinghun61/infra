@@ -53,15 +53,8 @@ def CreateNewSwarmingTaskRequest(runner_id, ref_task_id, ref_request,
                                  master_name, builder_name, build_number,
                                  step_name, tests, iterations):
   new_request = swarming.CreateNewSwarmingTaskRequestTemplate(
-      runner_id,
-      ref_task_id,
-      ref_request,
-      master_name,
-      builder_name,
-      step_name,
-      tests,
-      iterations,
-      use_new_pubsub=True)
+      runner_id, ref_task_id, ref_request, master_name, builder_name, step_name,
+      tests, iterations)
 
   # Add additional tags.
   new_request.tags.append('ref_task_id:%s' % ref_task_id)

@@ -21,8 +21,6 @@ from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
-from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
-from waterfall.trigger_base_swarming_task_pipeline import NO_TASK_EXCEPTION
 
 
 def _GetSuspectedFlakeInfo(analysis):
@@ -203,9 +201,7 @@ def _GetLastAttemptedSwarmingTaskDetails(analysis):
   swarming_task_id = analysis.last_attempted_swarming_task_id
   build_number = analysis.last_attempted_build_number
 
-  task_id = (
-      swarming_task_id if swarming_task_id and
-      swarming_task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION) else None)
+  task_id = swarming_task_id if swarming_task_id else None
 
   return {'task_id': task_id, 'build_number': build_number}
 

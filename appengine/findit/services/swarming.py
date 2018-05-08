@@ -11,12 +11,13 @@ import logging
 
 from google.appengine.api import app_identity
 
-from common.waterfall.pubsub_callback import MakeSwarmingPubsubCallback
 from gae_libs import token
 from infra_api_clients.swarming import swarming_util
 from libs import time_util
 from libs.list_of_basestring import ListOfBasestring
 from waterfall import waterfall_config
+
+_PUBSUB_TOPIC = 'projects/%s/topics/swarming'
 
 
 def SwarmingHost():
@@ -43,34 +44,16 @@ def GetReferredSwarmingTaskRequestInfo(master_name, builder_name, build_number,
   return ref_task_id, ref_request
 
 
-def _UpdateRequestWithPubSubCallback(request, runner_id, use_new_pubsub):
-  if not use_new_pubsub:
-    _pubsub_callback = MakeSwarmingPubsubCallback(runner_id)
-  else:
-    _pubsub_callback = {
-        'topic':
-            'projects/%s/topics/swarming' % app_identity.get_application_id(),
-        'auth_token':
-            token.GenerateAuthToken('pubsub', 'swarming', runner_id),
-        'user_data':
-            json.dumps({
-                'runner_id': runner_id
-            })
-    }
-  request.pubsub_topic = _pubsub_callback.get('topic')
-  request.pubsub_auth_token = _pubsub_callback.get('auth_token')
-  request.pubsub_userdata = _pubsub_callback.get('user_data')
+def _UpdateRequestWithPubSubCallback(request, runner_id):
+  request.pubsub_topic = _PUBSUB_TOPIC % app_identity.get_application_id()
+  request.pubsub_auth_token = token.GenerateAuthToken('pubsub', 'swarming',
+                                                      runner_id)
+  request.pubsub_userdata = json.dumps({'runner_id': runner_id})
 
 
-def CreateNewSwarmingTaskRequestTemplate(runner_id,
-                                         ref_task_id,
-                                         ref_request,
-                                         master_name,
-                                         builder_name,
-                                         step_name,
-                                         tests,
-                                         iterations,
-                                         use_new_pubsub=False):
+def CreateNewSwarmingTaskRequestTemplate(runner_id, ref_task_id, ref_request,
+                                         master_name, builder_name, step_name,
+                                         tests, iterations):
   """Returns a SwarmingTaskRequest instance to run the given tests only.
 
   Args:
@@ -81,7 +64,6 @@ def CreateNewSwarmingTaskRequestTemplate(runner_id,
     step_name (str): The name of a failed step in the build.
     tests (list): A list of tests in the step that we want to rerun in task.
     iterations (int): Number of iterations each test should run.
-    use_new_pubsub (bool): Set as true to use the new PubSub topic and callback.
   """
   # Make a copy of the referred request and drop or overwrite some fields.
   new_request = copy.deepcopy(ref_request)
@@ -90,7 +72,7 @@ def CreateNewSwarmingTaskRequestTemplate(runner_id,
   new_request.parent_task_id = ''
   new_request.user = ''
 
-  _UpdateRequestWithPubSubCallback(new_request, runner_id, use_new_pubsub)
+  _UpdateRequestWithPubSubCallback(new_request, runner_id)
 
   # To force a fresh re-run and ignore cached result of any equivalent run.
   new_request.properties.idempotent = False

@@ -159,14 +159,8 @@ def CreateNewSwarmingTaskRequest(
   """Creates a SwarmingTaskRequest to trigger against specified parameters."""
   # Create swarming task request template.
   new_request = swarming.CreateNewSwarmingTaskRequestTemplate(
-      runner_id,
-      ref_task_id,
-      ref_request,
-      master_name,
-      builder_name,
-      step_name, [test_name],
-      iterations,
-      use_new_pubsub=True)
+      runner_id, ref_task_id, ref_request, master_name, builder_name, step_name,
+      [test_name], iterations)
 
   # Point the inputs to the specified binaries.
   new_request.properties.inputs_ref.isolated = isolate_sha

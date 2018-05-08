@@ -8,7 +8,6 @@ import mock
 
 from google.appengine.api import app_identity
 
-from common.waterfall import pubsub_callback
 from gae_libs import token
 from infra_api_clients.swarming import swarming_util
 from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
@@ -467,97 +466,10 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('task_id', task_id)
     self.assertEqual(request, ref_request)
 
-  @mock.patch.object(token, 'GenerateAuthToken', return_value='auth_token')
-  @mock.patch.object(
-      time_util, 'GetUTCNow', return_value=datetime(2018, 03, 15, 0, 0, 0))
-  @mock.patch.object(
-      pubsub_callback,
-      'GetSwarmingTopic',
-      return_value='projects/findit-for-me/topics/swarm')
-  def testCreateNewSwarmingTaskRequestTemplateTemplateFlake(self, *_):
-    ref_task_id = 'ref_task_id'
-    master_name = 'm'
-    builder_name = 'b'
-    step_name = 'a_tests on platform'
-    tests = ['a.b', 'a.c']
-    iterations = 100
-
-    ref_request = SwarmingTaskRequest.FromSerializable(_REF_REQUEST)
-
-    new_request = swarming.CreateNewSwarmingTaskRequestTemplate(
-        'runner_id', ref_task_id, ref_request, master_name, builder_name,
-        step_name, tests, iterations)
-
-    expected_new_request_json = {
-        'expiration_secs':
-            '72000',
-        'name':
-            'findit/ref_task_id/ref_task_id/2018-03-15 00:00:00 000000',
-        'parent_task_id':
-            '',
-        'priority':
-            '150',
-        'properties': {
-            'command':
-                'cmd',
-            'dimensions': [{
-                'key': 'k',
-                'value': 'v'
-            }],
-            'env': [{
-                'key': 'a',
-                'value': '1'
-            },],
-            'execution_timeout_secs':
-                '3600',
-            'extra_args': [
-                '--flag=value',
-                '--gtest_filter=a.b:a.c',
-                '--gtest_repeat=%d' % iterations,
-                '--test-launcher-retry-limit=0',
-                '--gtest_also_run_disabled_tests',
-            ],
-            'grace_period_secs':
-                '30',
-            'idempotent':
-                False,
-            'inputs_ref': {
-                'isolatedserver': 'isolatedserver',
-            },
-            'io_timeout_secs':
-                '1200',
-        },
-        'tags': [
-            'ref_master:%s' % master_name,
-            'ref_buildername:%s' % builder_name,
-            'ref_stepname:%s' % step_name, 'ref_name:a_tests', 'findit:1',
-            'project:Chromium', 'purpose:post-commit'
-        ],
-        'user':
-            '',
-        'pubsub_auth_token':
-            'auth_token',
-        'pubsub_topic':
-            'projects/findit-for-me/topics/swarm',
-        'pubsub_userdata':
-            json.dumps({
-                'Message-Type': 'SwarmingTaskStatusChange',
-                'Notification-Id': 'runner_id'
-            }),
-    }
-
-    self.assertEqual(
-        SwarmingTaskRequest.FromSerializable(expected_new_request_json),
-        new_request)
-
   @mock.patch.object(app_identity, 'get_application_id', return_value='app-id')
   @mock.patch.object(token, 'GenerateAuthToken', return_value='auth_token')
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 03, 15, 0, 0, 0))
-  @mock.patch.object(
-      pubsub_callback,
-      'GetSwarmingTopic',
-      return_value='projects/findit-for-me/topics/swarm')
   def testCreateNewSwarmingTaskRequestTemplate(self, *_):
     ref_task_id = 'ref_task_id'
     master_name = 'm'
@@ -567,15 +479,9 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
     iterations = 100
 
     new_request = swarming.CreateNewSwarmingTaskRequestTemplate(
-        'runner_id',
-        ref_task_id,
-        SwarmingTaskRequest.FromSerializable(_REF_REQUEST),
-        master_name,
-        builder_name,
-        step_name,
-        tests,
-        iterations,
-        use_new_pubsub=True)
+        'runner_id', ref_task_id,
+        SwarmingTaskRequest.FromSerializable(_REF_REQUEST), master_name,
+        builder_name, step_name, tests, iterations)
 
     expected_new_request_json = {
         'expiration_secs':

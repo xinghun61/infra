@@ -8,8 +8,6 @@ import mock
 import webapp2
 
 from common.waterfall import buildbucket_client
-from common.waterfall import pubsub_callback
-from gae_libs import token
 from handlers import periodic_bot_update
 from services import swarmbot_util
 from waterfall.test import wf_testcase
@@ -24,17 +22,19 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(periodic_bot_update, '_TriggerUpdateJobs')
   def testHandleGet(self, mock_fn):
-    mock_fn.return_value = [(None, buildbucket_client.BuildbucketBuild({
-        'id': '1',
-        'url': 'url',
-        'status': 'SCHEDULED',
-    })), (buildbucket_client.BuildbucketError({
-        'reason': 'Fake reason',
-        'message': 'Fake message'
-    }), None)]
+    mock_fn.return_value = [(None,
+                             buildbucket_client.BuildbucketBuild({
+                                 'id': '1',
+                                 'url': 'url',
+                                 'status': 'SCHEDULED',
+                             })), (buildbucket_client.BuildbucketError({
+                                 'reason': 'Fake reason',
+                                 'message': 'Fake message'
+                             }), None)]
     response = self.test_app.get(
         '/periodic-bot-update',
-        headers={'X-AppEngine-Cron': 'true'},)
+        headers={'X-AppEngine-Cron': 'true'},
+    )
     self.assertEqual(200, response.status_int)
     self.assertIsInstance(response.json_body, dict)
     self.assertIn('builds', response.json_body)

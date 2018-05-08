@@ -32,7 +32,6 @@ from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
 from handlers import step_by_step_comparison
 from handlers import swarming_pubsub_pipeline_callback
-from handlers import swarming_push
 from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
 from handlers import try_job_pubsub_pipeline_callback
@@ -82,7 +81,6 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/build-failure', build_failure.BuildFailure),
     ('/flake/detection/ui/test-flake', test_flake.TestFlake),
     ('/list-analyses', list_analyses.ListAnalyses),
-    ('/pubsub/swarmingpush', swarming_push.SwarmingPush),
     ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
     ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/change-auto-revert-setting',

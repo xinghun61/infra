@@ -154,16 +154,9 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
 
     mock_ref.assert_called_once_with(master_name, builder_name, build_number,
                                      step_name, None)
-    mock_create.assert_called_once_with(
-        'runner_id',
-        'task_id',
-        'ref_request',
-        master_name,
-        builder_name,
-        step_name,
-        tests,
-        10,
-        use_new_pubsub=True)
+    mock_create.assert_called_once_with('runner_id', 'task_id', 'ref_request',
+                                        master_name, builder_name, step_name,
+                                        tests, 10)
     mock_trigger.assert_called_once_with('chromium-swarm.appspot.com',
                                          new_request, None)
 
