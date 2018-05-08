@@ -660,7 +660,8 @@ def _MakeFieldValueView(fd, config, precomp_view_info, users_by_id):
         field_name_lower, label_docs)
   else:
     values = _MakeFieldValueItems(
-        [fv for fv in field_values_by_id.get(fd.field_id, []) if not fv.derived],
+        [fv for fv in field_values_by_id.get(
+            fd.field_id, []) if not fv.derived],
         users_by_id)
     derived_values = _MakeFieldValueItems(
         [fv for fv in field_values_by_id.get(fd.field_id, []) if fv.derived],

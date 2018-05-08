@@ -389,7 +389,8 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
           mr.cnxn, issue.issue_id)
       named_ids = set()  # users named in user-value fields that notify.
       for fd in config.field_defs:
-        named_ids.update(notify_reasons.ComputeNamedUserIDsToNotify(issue, fd))
+        named_ids.update(notify_reasons.ComputeNamedUserIDsToNotify(
+            issue.field_values, fd))
       direct, indirect = self.services.usergroup.ExpandAnyUserGroups(
           mr.cnxn, list(issue.cc_ids) + list(issue.derived_cc_ids) +
           [issue.owner_id, old_owner_id, issue.derived_owner_id] +
@@ -453,7 +454,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
       # users named in user-value fields that notify.
       for fd in config.field_defs:
         issue_participants.update(
-            notify_reasons.ComputeNamedUserIDsToNotify(issue, fd))
+            notify_reasons.ComputeNamedUserIDsToNotify(issue.field_values, fd))
       for user_id in ids_in_issues[issue.local_id]:
         # TODO(jrobbins): implement batch GetUser() for speed.
         if not user_id:
@@ -705,6 +706,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     issue, approval_value = self.services.issue.GetIssueApproval(
         mr.cnxn, issue_id, approval_id, use_cache=False)
     project = self.services.project.GetProject(mr.cnxn, issue.project_id)
+    config = self.services.config.GetProjectConfig(mr.cnxn, issue.project_id)
 
     # TODO(jojwang): monorail:3588, currently one approver/status change
     # creates one comment with one amendment and no content. If this changes,
@@ -715,17 +717,21 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     except IndexError:
       raise exceptions.NoSuchCommentException()
 
-    # TODO(jojwang): monorail:3263, inform TLs and PMs, iterate over user_type
-    # custom fields with notify_on == ANY_COMMENT
+    field_user_ids = set()
+    for fd in config.field_defs:
+      field_user_ids.update(notify_reasons.ComputeNamedUserIDsToNotify(
+          approval_value.field_values, fd))
     users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user, [issue.owner_id],
         approval_value.approver_ids,
-        tracker_bizobj.UsersInvolvedInComment(comment))
+        tracker_bizobj.UsersInvolvedInComment(comment),
+        list(field_user_ids))
 
     tasks = []
     if send_email:
       tasks = self._MakeApprovalEmailTasks(
-          hostport, issue, project, approval_value, comment, users_by_id)
+          hostport, issue, project, approval_value, comment, users_by_id,
+          list(field_user_ids))
 
     notified = notify_helpers.AddAllEmailTasks(tasks)
 
@@ -736,7 +742,8 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
         }
 
   def _MakeApprovalEmailTasks(
-      self, hostport, issue, project, approval_value, comment, users_by_id):
+      self, hostport, issue, project, approval_value, comment, users_by_id,
+      user_ids_from_fields):
     """Formulate emails to be sent."""
 
     approval_url = framework_helpers.IssueCommentURL(
@@ -763,7 +770,8 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     body = notify_helpers._TruncateBody(email_body)
 
     recipient_ids = self._GetApprovalEmailRecipients(
-        approval_value, amendment, issue, omit_ids=[comment.user_id])
+        approval_value, amendment, issue, user_ids_from_fields,
+        omit_ids=[comment.user_id])
 
     email_tasks = []
     for rid in recipient_ids:
@@ -779,19 +787,20 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     return email_tasks
 
   def _GetApprovalEmailRecipients(
-      self, approval_value, amendment, issue, omit_ids=None):
+      self, approval_value, amendment, issue, user_ids_from_fields,
+      omit_ids=None):
     recipient_ids = []
-    # TODO(jojwang) monorail:3588, whenever adding owner_id also
-    # add TL and PM ids
     if amendment.custom_field_name is 'Status':
       if approval_value.status is tracker_pb2.ApprovalStatus.REVIEW_REQUESTED:
         recipient_ids = approval_value.approver_ids
       else:
         recipient_ids.extend([issue.owner_id])
+        recipient_ids.extend(user_ids_from_fields)
 
     elif amendment.custom_field_name is 'Approvers':
       recipient_ids.extend(approval_value.approver_ids)
       recipient_ids.append(issue.owner_id)
+      recipient_ids.extend(user_ids_from_fields)
       recipient_ids.extend(amendment.removed_user_ids)
 
     if omit_ids:

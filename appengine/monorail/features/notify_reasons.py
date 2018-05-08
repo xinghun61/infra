@@ -254,7 +254,7 @@ def ComputeCustomFieldAddrPerms(
   """Check the reasons to notify users named in custom fields."""
   group_reason_list = []
   for fd in config.field_defs:
-    named_user_ids = ComputeNamedUserIDsToNotify(issue, fd)
+    named_user_ids = ComputeNamedUserIDsToNotify(issue.field_values, fd)
     if named_user_ids:
       named_addr_perms = ComputeIssueChangeAddressPermList(
           cnxn, named_user_ids, project, issue, services, omit_addrs,
@@ -265,11 +265,11 @@ def ComputeCustomFieldAddrPerms(
   return group_reason_list
 
 
-def ComputeNamedUserIDsToNotify(issue, fd):
+def ComputeNamedUserIDsToNotify(field_values, fd):
   """Give a list of user IDs to notify because they're in a field."""
   if (fd.field_type == tracker_pb2.FieldTypes.USER_TYPE and
       fd.notify_on == tracker_pb2.NotifyTriggers.ANY_COMMENT):
-    return [fv.user_id for fv in issue.field_values
+    return [fv.user_id for fv in field_values
             if fv.field_id == fd.field_id]
 
   return []

@@ -305,22 +305,22 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     amendment = tracker_bizobj.MakeApprovalStatusAmendment(
         tracker_pb2.ApprovalStatus.APPROVED)
     rids = task._GetApprovalEmailRecipients(
-        approval_value, amendment, issue)
-    self.assertItemsEqual(rids, [111L])
+        approval_value, amendment, issue, [777L, 888L])
+    self.assertItemsEqual(rids, [111L, 777L, 888L])
 
     approval_value.status = tracker_pb2.ApprovalStatus.REVIEW_REQUESTED
     amendment = tracker_bizobj.MakeApprovalStatusAmendment(
         tracker_pb2.ApprovalStatus.REVIEW_REQUESTED)
     rids = task._GetApprovalEmailRecipients(
-        approval_value, amendment, issue)
+        approval_value, amendment, issue, [777L, 888L])
     self.assertItemsEqual(rids, [222L, 333L])
 
     approval_value.approver_ids = [333L, 555L]
     amendment = tracker_bizobj.MakeApprovalApproversAmendment(
         [222L], [555L])
     rids = task._GetApprovalEmailRecipients(
-        approval_value, amendment, issue, omit_ids=[444L, 333L])
-    self.assertItemsEqual(rids, [111L, 222L, 555L])
+        approval_value, amendment, issue, [777L], omit_ids=[444L, 333L])
+    self.assertItemsEqual(rids, [111L, 222L, 555L, 777L])
 
   def testOutboundEmailTask_Normal(self):
     """We can send an email."""
