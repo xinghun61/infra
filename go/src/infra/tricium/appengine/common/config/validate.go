@@ -43,7 +43,7 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 			functions[s.Function] = f
 			res.Functions = append(res.Functions, f)
 		}
-		if err := tricium.IsFunctionValid(functions[s.Function], sc); err != nil {
+		if err := tricium.ValidateFunction(functions[s.Function], sc); err != nil {
 			return nil, fmt.Errorf("function is not valid: %v", err)
 		}
 		if !tricium.SupportsPlatform(functions[s.Function], s.Platform) {
@@ -78,7 +78,7 @@ func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.
 	}
 	res := &tricium.Function{Name: function}
 	if sa != nil {
-		if err := tricium.IsFunctionValid(sa, sc); err != nil {
+		if err := tricium.ValidateFunction(sa, sc); err != nil {
 			return nil, fmt.Errorf("invalid service function config for %s: %v", function, err)
 		}
 		if sa.GetNeeds() == tricium.Data_NONE || sa.GetProvides() == tricium.Data_NONE {
@@ -120,7 +120,7 @@ func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.
 			pa.Needs = sa.Needs
 			pa.Provides = sa.Provides
 		}
-		if err := tricium.IsFunctionValid(pa, sc); err != nil {
+		if err := tricium.ValidateFunction(pa, sc); err != nil {
 			return nil, fmt.Errorf("invalid project function config for %s: %v", function, err)
 		}
 		if pa.GetPathFilters() != nil {

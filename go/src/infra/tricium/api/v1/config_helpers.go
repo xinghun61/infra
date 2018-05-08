@@ -193,12 +193,12 @@ func GetRecipeCmd(sc *ServiceConfig, platform Platform_Name) (*Cmd, error) {
 	}, nil
 }
 
-// IsFunctionValid checks if the function config entry is valid.
+// ValidateFunction checks if the function config entry is valid.
 //
 // A valid function config entry has a name, valid deps and valid impl entries.
 // Note that there are more requirements for a function config to be fully
-// valid in a merged config, for instance, data dependencies are required.
-func IsFunctionValid(f *Function, sc *ServiceConfig) error {
+// valid in a merged config; for instance, data dependencies are required.
+func ValidateFunction(f *Function, sc *ServiceConfig) error {
 	switch f.GetType() {
 	case Function_NONE:
 		return errors.New("missing type in function config")
@@ -230,8 +230,7 @@ func IsFunctionValid(f *Function, sc *ServiceConfig) error {
 		if err != nil {
 			return errors.New("function has impl that provides unknown data type")
 		}
-		ok, err := IsImplValid(i, sc, needs, provides)
-		if !ok {
+		if err = validateImpl(i, sc, needs, provides); err != nil {
 			return fmt.Errorf("invalid impl for function %s: %v", f.Name, err)
 		}
 		if i.ProvidesForPlatform == Platform_ANY {
@@ -245,41 +244,38 @@ func IsFunctionValid(f *Function, sc *ServiceConfig) error {
 	return nil
 }
 
-// IsImplValid checks if the impl entry is valid.
+// validateImpl checks if the Function Impl entry is valid.
 //
-// A valid impl entry has a valid runtime platform, one with a runtime,
-// specifies platforms for data-dependencies when needed, has a cmd or recipe
-// based implementation, and a deadline.
-//
-// TODO(qyearsley): for consistency with isFunctionValid, this could be changed
-// to return only an error, and return nil if valid.
-func IsImplValid(i *Impl, sc *ServiceConfig, needs *Data_TypeDetails, provides *Data_TypeDetails) (bool, error) {
+// A valid Impl entry has a valid runtime platform, specifies platforms for
+// data dependencies if necessary, has a cmd or recipe, and has a deadline.
+func validateImpl(i *Impl, sc *ServiceConfig, needs *Data_TypeDetails, provides *Data_TypeDetails) error {
 	if i.GetRuntimePlatform() == Platform_ANY {
-		return false, errors.New("must provide runtime platform for impl")
+		return errors.New("must provide runtime platform for impl")
 	}
 	runtime := LookupPlatform(sc, i.GetRuntimePlatform())
 	if runtime == nil {
-		return false, fmt.Errorf("impl using unknown runtime platform: %v", i.RuntimePlatform)
+		return fmt.Errorf("impl using unknown runtime platform: %v", i.RuntimePlatform)
 	}
 	if !runtime.GetHasRuntime() {
-		return false, errors.New("must provide a runtime platform that has a runtime")
+		return errors.New("must provide a runtime platform that has a runtime")
 	}
 	if needs.GetIsPlatformSpecific() && i.GetNeedsForPlatform() == Platform_ANY {
-		return false, errors.New("must specify platform for needed platform-specific data type")
+		return errors.New("must specify platform for needed platform-specific data type")
 	}
 	if provides.GetIsPlatformSpecific() && i.GetProvidesForPlatform() == Platform_ANY {
-		return false, errors.New("must specify platform for provided platform-specific data type")
+		return errors.New("must specify platform for provided platform-specific data type")
 	}
 	if i.GetCmd() == nil && i.GetRecipe() == nil {
-		return false, errors.New("must include either command or recipe in impl")
+		return errors.New("must include either command or recipe in impl")
 	}
 	if i.GetDeadline() == 0 {
-		return false, errors.New("missing deadline")
+		return errors.New("missing deadline")
 	}
-	return true, nil
+	return nil
 }
 
-// LookupDataTypeDetails looks up data type details for a given type from the provided service config.
+// LookupDataTypeDetails looks up data type details for a given type from the
+// provided service config.
 func LookupDataTypeDetails(sc *ServiceConfig, dt Data_Type) (*Data_TypeDetails, error) {
 	for _, d := range sc.GetDataDetails() {
 		if d.Type == dt {
