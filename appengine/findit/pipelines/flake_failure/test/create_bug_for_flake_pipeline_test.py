@@ -17,12 +17,21 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
+from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
+    DetermineApproximatePassRateInput)
+from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
+    DetermineApproximatePassRatePipeline)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaOutput)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaForCommitPositionParameters)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaForCommitPositionPipeline)
 from services import issue_tracking_service
 from services import swarmed_test_util
 from services import swarming
 from waterfall import build_util
-from waterfall.flake.analyze_flake_for_build_number_pipeline import (
-    AnalyzeFlakeForBuildNumberPipeline)
+from waterfall.build_info import BuildInfo
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -31,26 +40,39 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   @mock.patch.object(swarmed_test_util, 'IsTestEnabled', return_value=True)
-  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
+  @mock.patch.object(build_util, 'GetLatestBuildNumber')
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
-  def testCreateBugForFlakePipeline(self, should_file_fn, list_swarming_fn, *_):
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testCreateBugForFlakePipeline(self, mocked_build_info, should_file_fn,
+                                    list_swarming_fn, latest_build_number, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
+    recent_build_number = 200
+    recent_commit_position = 2000
     step_name = 's'
     test_name = 't'
+    recent_revision = 'r2000'
 
     list_swarming_fn.return_value = [SwarmingTaskData({'task_id': 'id'})]
+    latest_build_number.return_value = recent_build_number
+
+    recent_build_info = BuildInfo(master_name, builder_name,
+                                  recent_build_number)
+    recent_build_info.commit_position = recent_commit_position
+    recent_build_info.chromium_revision = recent_revision
+    mocked_build_info.return_value = recent_build_info
 
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.data_points = [
-        DataPoint.Create(build_number=100, task_ids=['task_id'])
+        DataPoint.Create(
+            commit_position=100, task_ids=['task_id'], pass_rate=0.9),
+        DataPoint.Create(commit_position=99, pass_rate=1.0)
     ]
-    analysis.suspected_flake_build_number = 100
     analysis.Save()
 
     # Create a flake analysis request with no bug.
@@ -61,17 +83,38 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         test_location=TestLocation(file='foo/bar', line=1))
+
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
 
-    self.MockPipeline(
-        AnalyzeFlakeForBuildNumberPipeline,
-        True,
-        expected_args=[analysis.key.urlsafe(), 200, 30, 3600, True])
+    expected_isolate_sha_input = GetIsolateShaForCommitPositionParameters(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=recent_commit_position,
+        revision=recent_revision)
+
+    get_sha_output = GetIsolateShaOutput(
+        isolate_sha='sha1', build_url='url', try_job_url=None)
+
+    expected_pass_rate_input = DetermineApproximatePassRateInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=recent_commit_position,
+        get_isolate_sha_output=get_sha_output,
+        previous_swarming_task_output=None,
+        revision=recent_revision)
+
+    self.MockGeneratorPipeline(GetIsolateShaForCommitPositionPipeline,
+                               expected_isolate_sha_input, get_sha_output)
+
+    self.MockGeneratorPipeline(DetermineApproximatePassRatePipeline,
+                               expected_pass_rate_input, None)
+
+    self.MockGeneratorPipeline(DetermineApproximatePassRatePipeline,
+                               expected_pass_rate_input, None)
 
     expected_input_object = CreateInputObjectInstance(
         create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        most_recent_build_number=200)
+        commit_position=recent_commit_position)
+
     self.MockGeneratorPipeline(
         create_bug_for_flake_pipeline._CreateBugIfStillFlaky,
         expected_input_object, True)
@@ -157,60 +200,6 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
     self.assertTrue(should_file_fn.called)
     self.assertTrue(test_enabled_fn.called)
-
-  @mock.patch.object(swarmed_test_util, 'IsTestEnabled', return_value=True)
-  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
-  @mock.patch.object(
-      issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
-  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
-  @mock.patch.object(
-      issue_tracking_service, 'CreateBugForFlakeAnalyzer',
-      return_value=123)  # 123 is the bug_number.
-  def testCreateBugForFlakePipelineEndToEnd(
-      self, create_bug_fn, list_swarming_fn, should_file_fn, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-
-    list_swarming_fn.return_value = [SwarmingTaskData({'task_id': 'id'})]
-
-    # Create a flake analysis with no bug.
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.data_points = [
-        DataPoint.Create(build_number=200, pass_rate=.5),
-        DataPoint.Create(build_number=100, pass_rate=.5, task_ids=['task_id'])
-    ]
-    analysis.suspected_flake_build_number = 100
-    analysis.confidence_in_culprit = 1.0
-    analysis.Save()
-
-    # Create a flake analysis request with no bug.
-    request = FlakeAnalysisRequest.Create(test_name, False, None)
-    request.Save()
-
-    create_bug_input = CreateInputObjectInstance(
-        CreateBugForFlakePipelineInputObject,
-        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        test_location=TestLocation(file='/foo/bar', line=1))
-    pipeline_job = CreateBugForFlakePipeline(create_bug_input)
-
-    self.MockPipeline(
-        AnalyzeFlakeForBuildNumberPipeline,
-        True,
-        expected_args=[analysis.key.urlsafe(), 200, 30, 3600, True])
-
-    pipeline_job.start()
-    self.execute_queued_tasks()
-
-    self.assertTrue(should_file_fn.called)
-    self.assertTrue(create_bug_fn.called)
-    self.assertTrue(analysis.has_attempted_filing)
-    self.assertTrue(analysis.has_filed_bug)
 
   @mock.patch.object(
       issue_tracking_service,
@@ -328,13 +317,16 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
+    recent_commit_position = 200
 
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.data_points = [DataPoint.Create(build_number=200, pass_rate=.5)]
+    analysis.data_points = [
+        DataPoint.Create(commit_position=recent_commit_position, pass_rate=.5)
+    ]
     analysis.confidence_in_culprit = 1.0
     analysis.Save()
 
@@ -345,7 +337,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        most_recent_build_number=200)
+        commit_position=recent_commit_position)
     pipeline_job = create_bug_for_flake_pipeline._CreateBugIfStillFlaky(
         create_bug_input)
     pipeline_job.start()
@@ -363,6 +355,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
+    recent_commit_position = 1000
 
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -378,7 +371,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        most_recent_build_number=200)
+        commit_position=recent_commit_position)
     pipeline_job = create_bug_for_flake_pipeline._CreateBugIfStillFlaky(
         create_bug_input)
     pipeline_job.start()
@@ -396,6 +389,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
+    recent_commit_position = 1000
 
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -411,7 +405,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        most_recent_build_number=200)
+        commit_position=recent_commit_position)
     pipeline_job = create_bug_for_flake_pipeline._CreateBugIfStillFlaky(
         create_bug_input)
     pipeline_job.start()
@@ -428,13 +422,16 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
+    recent_commit_position = 200
 
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.data_points = [DataPoint.Create(build_number=200, pass_rate=.5)]
+    analysis.data_points = [
+        DataPoint.Create(commit_position=recent_commit_position, pass_rate=.5)
+    ]
     analysis.confidence_in_culprit = 1.0
     analysis.Save()
 
@@ -445,7 +442,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         create_bug_for_flake_pipeline._CreateBugIfStillFlakyInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        most_recent_build_number=200)
+        commit_position=recent_commit_position)
     pipeline_job = create_bug_for_flake_pipeline._CreateBugIfStillFlaky(
         create_bug_input)
     pipeline_job.start()
@@ -485,5 +482,5 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
         'Regression range: https://crrev.com/prev_hash..hash?pretty=fuller' in
         body)
     self.assertTrue(
-        'If this result was incorrect, apply the label Test-Findit-Wrong'
-        in body)
+        'If this result was incorrect, apply the label Test-Findit-Wrong' in
+        body)

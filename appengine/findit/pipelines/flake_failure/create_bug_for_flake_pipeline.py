@@ -12,13 +12,19 @@ from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
+    DetermineApproximatePassRateInput)
+from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
+    DetermineApproximatePassRatePipeline)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaForCommitPositionParameters)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaForCommitPositionPipeline)
 from services import issue_tracking_service
 from services import swarmed_test_util
 from services import swarming
 from waterfall import build_util
 from waterfall.flake import triggering_sources
-from waterfall.flake.analyze_flake_for_build_number_pipeline import (
-    AnalyzeFlakeForBuildNumberPipeline)
 from waterfall.flake.lookback_algorithm import IsFullyStable
 
 _SUBJECT_TEMPLATE = '{} is Flaky'
@@ -53,7 +59,8 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
     in MasterFlakeAnalysis before a filing is attempted `has_attemped_filing`
     in the event in a retry this pipeline will be abandoned entirely.
     """
-    analysis = ndb.Key(urlsafe=input_object.analysis_urlsafe_key).get()
+    analysis_urlsafe_key = input_object.analysis_urlsafe_key
+    analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
 
     if not issue_tracking_service.ShouldFileBugForAnalysis(analysis):
@@ -66,6 +73,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
 
     most_recent_build_number = build_util.GetLatestBuildNumber(
         analysis.master_name, analysis.builder_name)
+
     if not most_recent_build_number:
       analysis.LogInfo('Bug not failed because latest build number not found.')
       return
@@ -82,15 +90,43 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
       analysis.LogInfo('Bug not filed because test was fixed or disabled.')
       return
 
-    analysis_pipeline = yield AnalyzeFlakeForBuildNumberPipeline(
-        input_object.analysis_urlsafe_key, most_recent_build_number,
-        _ITERATIONS_TO_CONFIRM_FLAKE, _ITERATIONS_TO_CONFIRM_FLAKE_TIMEOUT,
-        True)
+    most_recent_build_info = build_util.GetBuildInfo(
+        analysis.master_name, analysis.builder_name, most_recent_build_number)
+
+    if (not most_recent_build_info or
+        most_recent_build_info.commit_position is None):
+      analysis.LogInfo(
+          'Bug not filed because no recent build\'s commit position')
+      return
+
+    most_recent_commit_position = most_recent_build_info.commit_position
+
+    # Get the isolate sha of the recent build.
+    get_isolate_sha_input = self.CreateInputObjectInstance(
+        GetIsolateShaForCommitPositionParameters,
+        analysis_urlsafe_key=analysis_urlsafe_key,
+        commit_position=most_recent_commit_position,
+        revision=most_recent_build_info.chromium_revision)
+    get_sha_output = yield GetIsolateShaForCommitPositionPipeline(
+        get_isolate_sha_input)
+
+    # Determine approximate pass rate at the commit position/isolate sha.
+    determine_approximate_pass_rate_input = self.CreateInputObjectInstance(
+        DetermineApproximatePassRateInput,
+        analysis_urlsafe_key=analysis_urlsafe_key,
+        commit_position=most_recent_commit_position,
+        get_isolate_sha_output=get_sha_output,
+        previous_swarming_task_output=None,
+        revision=most_recent_build_info.chromium_revision,
+    )
+    analysis_pipeline = yield DetermineApproximatePassRatePipeline(
+        determine_approximate_pass_rate_input)
+
     with pipeline.After(analysis_pipeline):
       next_input_object = pipelines.CreateInputObjectInstance(
           _CreateBugIfStillFlakyInputObject,
           analysis_urlsafe_key=input_object.analysis_urlsafe_key,
-          most_recent_build_number=most_recent_build_number)
+          commit_position=most_recent_commit_position)
       yield _CreateBugIfStillFlaky(next_input_object)
 
 
@@ -126,7 +162,7 @@ def _GenerateSubjectAndBodyForBug(analysis):
 
 class _CreateBugIfStillFlakyInputObject(StructuredObject):
   analysis_urlsafe_key = unicode
-  most_recent_build_number = int
+  commit_position = int
 
 
 class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
@@ -136,8 +172,8 @@ class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
     analysis = ndb.Key(urlsafe=input_object.analysis_urlsafe_key).get()
     assert analysis
 
-    data_point = analysis.FindMatchingDataPointWithBuildNumber(
-        input_object.most_recent_build_number)
+    data_point = analysis.FindMatchingDataPointWithCommitPosition(
+        input_object.commit_position)
 
     # If we're out of bounds of the lower or upper flake threshold, this test
     # is stable (either passing or failing consistently).
