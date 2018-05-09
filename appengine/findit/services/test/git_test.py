@@ -8,9 +8,9 @@ from datetime import timedelta
 import mock
 
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs import time_util
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
-from libs import time_util
 from services import git
 from services.parameters import CompileFailureInfo
 from waterfall.test import wf_testcase
@@ -230,6 +230,22 @@ class GitTest(wf_testcase.WaterfallTestCase):
         }
     }
     self.assertEqual(expected_culprits, git.GetCLInfo(failed_revisions))
+
+  @mock.patch.object(git, 'GetCLInfo')
+  def testGetCommitPositionFromRevision(self, mocked_cl_info):
+    requested_revision = 'r1'
+    expected_commit_position = 1000
+    mocked_cl_info.return_value = {
+        requested_revision: {
+            'revision': requested_revision,
+            'repo_name': 'chromium',
+            'commit_position': expected_commit_position,
+            'url': 'url',
+            'author': 'author@abc.com'
+        }
+    }
+    self.assertEqual(expected_commit_position,
+                     git.GetCommitPositionFromRevision(requested_revision))
 
   @mock.patch.object(
       CachedGitilesRepository,

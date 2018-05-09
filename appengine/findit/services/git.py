@@ -59,6 +59,7 @@ def PullChangeLogs(failure_info):
   return change_logs
 
 
+# TODO(crbug.com/841581): Convert return value to DTO.
 def GetCLInfo(revisions):
   """Gets commit_positions and review urls for revisions."""
   git_repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
@@ -74,6 +75,11 @@ def GetCLInfo(revisions):
           change_log.code_review_url or change_log.commit_url)
       cls[revision]['author'] = change_log.author.email
   return cls
+
+
+def GetCommitPositionFromRevision(revision):
+  """Returns the corresponding commit position given a git revision."""
+  return GetCLInfo([revision]).get(revision, {}).get('commit_position')
 
 
 def GetCommitsBetweenRevisionsInOrder(start_revision,
