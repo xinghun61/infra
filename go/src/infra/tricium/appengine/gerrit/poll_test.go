@@ -126,6 +126,15 @@ func TestPollBasicBehavior(t *testing.T) {
 								Project: "project/tricium-gerrit",
 							},
 						},
+						{
+							GitDetails: &tricium.GitRepoDetails{
+								Repository: "https://repo-host.com/demo",
+							},
+							GerritDetails: &tricium.GerritDetails{
+								Host:    host,
+								Project: "project/tricium-gerrit/demo",
+							},
+						},
 					},
 				},
 				"infra": {
@@ -158,7 +167,7 @@ func TestPollBasicBehavior(t *testing.T) {
 				}
 			}
 		}
-		So(len(gerritProjects), ShouldEqual, 2)
+		So(len(gerritProjects), ShouldEqual, 3)
 
 		Convey("First poll, no changes", func() {
 			api := &mockPollRestAPI{}
@@ -249,20 +258,25 @@ func TestPollBasicBehavior(t *testing.T) {
 					So(lastChangeTs.Equal(p.LastPoll), ShouldBeTrue)
 				}
 			})
-			Convey("Enqueues analyze requests", func() {
+			Convey("Enqueues analyze requests for each project/repo", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, len(gerritProjects))
 				tasks := tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]
-				projects := make([]string, len(tasks))
+				var projects []string
+				var repos []string
 				for _, task := range tasks {
-					//So(len(projects), ShouldEqual, i)
 					ar := &tricium.AnalyzeRequest{}
 					So(proto.Unmarshal(task.Payload, ar), ShouldBeNil)
 					projects = append(projects, ar.Project)
+					repos = append(repos, ar.GitRepo)
 				}
-				// TODO(qyearsley): Find out why there are two empty analyze requests
-				// with null projects added first.
 				sort.Strings(projects)
-				So(projects, ShouldResemble, []string{"", "", "infra", "playground"})
+				So(projects, ShouldResemble, []string{"infra", "playground", "playground"})
+				sort.Strings(repos)
+				So(repos, ShouldResemble, []string{
+					"https://repo-host.com/demo",
+					"https://repo-host.com/infra",
+					"https://repo-host.com/playground",
+				})
 
 			})
 			Convey("Adds change tracking entities", func() {

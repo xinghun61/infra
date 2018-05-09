@@ -93,6 +93,7 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 		for name, pc := range projects {
 			name := name // Make a separate variable for use in the closure below
 			for _, repo := range pc.Repos {
+				repo := repo // Again, a new variable for the closure below
 				if repo.GerritDetails != nil && repo.GitDetails != nil {
 					taskC <- func() error {
 						return pollProject(c, name, repo, gerrit)
