@@ -272,7 +272,9 @@ class Servlet(webapp2.RequestHandler):
 
     if settings.enable_profiler_logging:
       self.mr.profiler.LogStats()
-    self.mr.profiler.ReportTrace()
+
+    if False: # TODO(seanmccullough): Use sampling to stay under quota.
+      self.mr.profiler.ReportTrace()
 
   def _AddHelpDebugPageData(self, page_data):
     with self.mr.profiler.Phase('help and debug data'):
