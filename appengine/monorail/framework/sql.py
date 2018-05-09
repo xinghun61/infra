@@ -274,6 +274,7 @@ class MonorailConnection(object):
     """Safely close any connections that are still open."""
     for sql_cnxn in self.sql_cnxns.itervalues():
       try:
+        sql_cnxn.commit()
         cnxn_pool.release(sql_cnxn)
       except MySQLdb.DatabaseError:
         # This might happen if the cnxn is somehow already closed.
