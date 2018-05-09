@@ -219,6 +219,12 @@ def build_main(api, mastername, buildername, buildnumber, project_name,
           args.append('--no-coverage')
         api.python('infra python tests', 'test.py', args)
 
+      # Validate ccompute configs.
+      if api.platform.is_linux and project_name == 'infra_internal':
+        api.python(
+            'ccompute config test',
+            'ccompute/scripts/ccompute_config.py', ['test'])
+
     # This downloads Go third parties, so that the next step doesn't have junk
     # output in it.
     api.python(

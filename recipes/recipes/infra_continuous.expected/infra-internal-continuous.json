@@ -102,6 +102,21 @@
     "cmd": [
       "python",
       "-u",
+      "ccompute/scripts/ccompute_config.py",
+      "test"
+    ],
+    "cwd": "[START_DIR]/infra_internal",
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "name": "ccompute config test"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "[START_DIR]/infra_internal/go/env.py",
       "go",
       "version"
