@@ -67,12 +67,21 @@ class ComponentPredict(jsonfeed.JsonFeed):
     """
     components = []
     best_score_index = self.GetPrediction(instance, ml_engine, model_name)
-    component_id = self.GetComponentID(trainer_name, best_score_index)
     config = self.services.config.GetProjectConfig(
         self.mr.cnxn, self.mr.project_id)
-    component = tracker_bizobj.FindComponentDefByID(component_id, config)
+
+    # Add dummy component for local testing.
+    if settings.dev_mode:
+      if len(config.component_defs):
+        component = config.component_defs[0]
+      else:
+        component = None
+    else:
+      component_id = self.GetComponentID(trainer_name, best_score_index)
+      component = tracker_bizobj.FindComponentDefByID(component_id, config)
+
     if component:
-      components.append(component)
+      components.append(component.path)
 
     return {'components': components}
 
@@ -134,10 +143,14 @@ class ComponentPredict(jsonfeed.JsonFeed):
     logging.info('Index component mapping opened')
 
     component_index = json.load(gcs_file)
-
     component_id = component_index[str(index)]
 
     gcs_file.close()
+
+    # Component IDs are stored in GCS as strings but represented in the app
+    # as longs.
+    if component_id:
+      component_id = long(component_id)
 
     return component_id
 

@@ -852,7 +852,7 @@ class ConfigService(object):
   def __init__(self, user_id=None):
     self.project_configs = {}
     self.next_field_id = 123
-    self.next_component_id = 345
+    self.next_component_id = 345L
     self.next_template_id = 23
     self.expunged_configs = []
     self.component_ids_to_templates = {}

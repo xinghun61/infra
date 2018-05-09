@@ -5,9 +5,12 @@
 
 """Unit tests for component prediction endpoints."""
 
-from mock import Mock, patch
+import json
 import sys
 import unittest
+
+from mock import Mock, patch
+from StringIO import StringIO
 
 from proto import tracker_pb2
 from services import service_manager
@@ -44,8 +47,7 @@ class ComponentPredictTest(unittest.TestCase):
     actual = self.servlet.Predict(
         instance={}, ml_engine=None, model_name='a', trainer_name='b')
     self.assertEqual(1, len(actual['components']))
-    self.assertEqual(345, actual['components'][0].component_id)
-    self.assertEqual('Ruta>Baga', actual['components'][0].path)
+    self.assertEqual('Ruta>Baga', actual['components'][0])
 
   @patch('features.componentpredict.ComponentPredict.GetPrediction')
   @patch('features.componentpredict.ComponentPredict.GetComponentID')
@@ -57,3 +59,17 @@ class ComponentPredictTest(unittest.TestCase):
     actual = self.servlet.Predict(instance={}, ml_engine=None, model_name='a',
         trainer_name='b')
     self.assertEqual(0, len(actual['components']))
+
+  @patch('cloudstorage.open')
+  def testGetComponentID(self, mockCloudstorageOpen):
+    """Important: must convert IDs stored as strings to longs."""
+    mock_file = StringIO(json.dumps({
+      '321': '987',
+      '123': '789',
+    }))
+    mockCloudstorageOpen.return_value = mock_file
+
+    component_id = self.servlet.GetComponentID(trainer_name='trainer',
+        index=123)
+    self.assertIsInstance(component_id, long)
+    self.assertEqual(789, component_id)
