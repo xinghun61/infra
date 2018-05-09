@@ -259,7 +259,7 @@ runOnLoad(function() {
     choices_row.style.display = (new_type == 'enum_type') ? '' : 'none';
     // TODO(jojwang): monorail:3774, remove this when phases can have labels.
     document.getElementById(
-        'phase_row').style.display = (new_type == 'enum_type') ? 'none' : '';
+        'phase_row').style.display = (new_type == 'enum_type') ? 'none': '';
 
     var int_row = document.getElementById('int_row');
     int_row.style.display = (new_type == 'int_type') ? '' : 'none';

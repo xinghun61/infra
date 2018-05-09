@@ -594,10 +594,10 @@ class FieldValueView(object):
     if applicable is not None:
       self.applicable = ezt.boolean(applicable)
     else:
-      # Note: We don't show approval types, approval sub fields, or
-      # phase fields in ezt issue pages.
+      # Note: We don't show approval types or approval sub fields
+      # in ezt issue pages
       if (fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE or
-          fd.approval_id or fd.is_phase_field):
+          fd.approval_id):
         self.applicable = ezt.boolean(False)
       else:
         # A field is applicable to a given issue if it (a) applies to all,

@@ -121,7 +121,7 @@
   [for fields]
     [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
     [# approval subfields are shown below, not here]
-    [if-any fields.field_def.is_approval_subfield][else][if-any fields.field_def.is_phase_field][else]
+    [if-any fields.field_def.is_approval_subfield][else]
       <tr>
         <th>[fields.field_name]:</th>
         <td colspan="2">
@@ -134,7 +134,7 @@
           [end]
         </td>
       <tr>
-    [end][end]
+    [end]
   [end]
 
   <tr>

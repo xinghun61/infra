@@ -74,7 +74,7 @@ def ParseFieldDefRequest(post_data, config):
   # TODO(jojwang): monorail:3774, remove enum_type condition when
   # phases can have labels.
   is_phase_field = ('is_phase_field' in post_data) and (
-      field_type_str not in ['approval_type', 'enum_type'])
+      field_type_str != 'approval_type' and 'enum_type')
 
   return ParsedFieldDef(
       field_name, field_type_str, min_value, max_value, regex,

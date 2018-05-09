@@ -12,9 +12,9 @@
     <input type="hidden" name="cc" value="[initial_cc]">
     <input type="hidden" name="components" value="[initial_components]">
     [for fields]
-      [is fields.field_def.type_name "APPROVAL_TYPE"][else][if-any fields.field_def.approval_id][else][if-any fields.field_def.is_phase_field][else]
+      [is fields.field_def.type_name "APPROVAL_TYPE"][else][if-any fields.field_def.approval_id][else]
         [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool "hidden" fields.field_def.is_required_bool]
-      [end][end][end]
+      [end][end]
     [end]
     [include "label-fields.ezt" "" "hidden"]
     <input type="hidden" name="blocked_on" value="[initial_blocked_on]">
