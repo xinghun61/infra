@@ -1,28 +1,26 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Converts proto messages from JSONPB."""
 
 from google.protobuf import descriptor
 
-
 SCALAR_TYPES = {
-  descriptor.FieldDescriptor.TYPE_BOOL,
-  descriptor.FieldDescriptor.TYPE_BYTES,
-  descriptor.FieldDescriptor.TYPE_DOUBLE,
-  descriptor.FieldDescriptor.TYPE_FIXED32,
-  descriptor.FieldDescriptor.TYPE_FIXED64,
-  descriptor.FieldDescriptor.TYPE_FLOAT,
-  descriptor.FieldDescriptor.TYPE_INT32,
-  descriptor.FieldDescriptor.TYPE_INT64,
-  descriptor.FieldDescriptor.TYPE_SFIXED32,
-  descriptor.FieldDescriptor.TYPE_SFIXED64,
-  descriptor.FieldDescriptor.TYPE_SINT32,
-  descriptor.FieldDescriptor.TYPE_SINT64,
-  descriptor.FieldDescriptor.TYPE_STRING,
-  descriptor.FieldDescriptor.TYPE_UINT32,
-  descriptor.FieldDescriptor.TYPE_UINT64,
+    descriptor.FieldDescriptor.TYPE_BOOL,
+    descriptor.FieldDescriptor.TYPE_BYTES,
+    descriptor.FieldDescriptor.TYPE_DOUBLE,
+    descriptor.FieldDescriptor.TYPE_FIXED32,
+    descriptor.FieldDescriptor.TYPE_FIXED64,
+    descriptor.FieldDescriptor.TYPE_FLOAT,
+    descriptor.FieldDescriptor.TYPE_INT32,
+    descriptor.FieldDescriptor.TYPE_INT64,
+    descriptor.FieldDescriptor.TYPE_SFIXED32,
+    descriptor.FieldDescriptor.TYPE_SFIXED64,
+    descriptor.FieldDescriptor.TYPE_SINT32,
+    descriptor.FieldDescriptor.TYPE_SINT64,
+    descriptor.FieldDescriptor.TYPE_STRING,
+    descriptor.FieldDescriptor.TYPE_UINT32,
+    descriptor.FieldDescriptor.TYPE_UINT64,
 }
 
 

@@ -13,20 +13,25 @@ import protoutil
 
 
 class ProtoUtilTest(testing.AppengineTestCase):
+
   def test_unmarshal_dict(self):
     msg = project_config_pb2.Swarming()
     data = {
-      'builder_defaults': {
-        'dimensions': ['a:a', 'b:b'],
-        'execution_timeout_secs': 600,
-        'recipe': {
-          'name': 'trybot',
+        'builder_defaults': {
+            'dimensions': ['a:a', 'b:b'],
+            'execution_timeout_secs': 600,
+            'recipe': {
+                'name': 'trybot',
+            },
         },
-      },
-      'builders': [
-        {'name': 'debug'},
-        {'name': 'release'},
-      ],
+        'builders': [
+            {
+                'name': 'debug'
+            },
+            {
+                'name': 'release'
+            },
+        ],
     }
     protoutil.merge_dict(data, msg)
     self.assertEqual(msg.builder_defaults.dimensions, ['a:a', 'b:b'])

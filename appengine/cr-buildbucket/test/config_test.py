@@ -7,7 +7,6 @@ import logging
 
 from components import utils
 
-
 utils.fix_protobuf_package()
 
 from components import config as config_component
@@ -22,9 +21,7 @@ from proto import service_config_pb2
 from swarming import swarmingcfg
 import config
 
-
-LUCI_CHROMIUM_TRY_CONFIG_TEXT = (
-'''name: "luci.chromium.try"
+LUCI_CHROMIUM_TRY_CONFIG_TEXT = ('''name: "luci.chromium.try"
 acls {
   group: "all"
 }
@@ -41,8 +38,7 @@ swarming {
 }
 ''')
 
-LUCI_DART_TRY_CONFIG_TEXT = (
-'''name: "luci.dart.try"
+LUCI_DART_TRY_CONFIG_TEXT = ('''name: "luci.dart.try"
 swarming {
   builders {
     name: "release"
@@ -56,7 +52,7 @@ swarming {
 ''')
 
 MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT = (
-'''name: "master.tryserver.chromium.linux"
+    '''name: "master.tryserver.chromium.linux"
 acls {
   group: "all"
 }
@@ -67,7 +63,7 @@ acls {
 ''')
 
 MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT = (
-'''name: "master.tryserver.chromium.win"
+    '''name: "master.tryserver.chromium.win"
 acls {
   group: "all"
 }
@@ -78,7 +74,7 @@ acls {
 ''')
 
 MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT = (
-'''name: "master.tryserver.chromium.mac"
+    '''name: "master.tryserver.chromium.mac"
 acls {
   group: "all"
 }
@@ -88,21 +84,20 @@ acls {
 }
 ''')
 
-MASTER_TRYSERVER_V8_CONFIG_TEXT = (
-'''name: "master.tryserver.v8"
+MASTER_TRYSERVER_V8_CONFIG_TEXT = ('''name: "master.tryserver.v8"
 acls {
   role: WRITER
   group: "v8-team"
 }
 ''')
 
-MASTER_TRYSERVER_TEST_CONFIG_TEXT = (
-'''name: "master.tryserver.test"
+MASTER_TRYSERVER_TEST_CONFIG_TEXT = ('''name: "master.tryserver.test"
 acls {
   role: WRITER
   identity: "user:root@google.com"
 }
 ''')
+
 
 def parse_cfg(text):
   cfg = project_config_pb2.BuildbucketCfg()
@@ -121,6 +116,7 @@ def errmsg(text):
 
 
 class ConfigTest(testing.AppengineTestCase):
+
   def test_get_bucket(self):
     config.Bucket(
         id='master.tryserver.chromium.linux',
@@ -137,10 +133,11 @@ class ConfigTest(testing.AppengineTestCase):
         project_config_pb2.Bucket(
             name='master.tryserver.chromium.linux',
             acls=[
-              project_config_pb2.Acl(
-                  role=project_config_pb2.Acl.READER, group='all'),
-              project_config_pb2.Acl(
-                  role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.READER, group='all'),
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.SCHEDULER,
+                    group='tryjob-access'),
             ]),
     )
 
@@ -163,10 +160,11 @@ class ConfigTest(testing.AppengineTestCase):
         project_config_pb2.Bucket(
             name='master.tryserver.chromium.linux',
             acls=[
-              project_config_pb2.Acl(
-                  role=project_config_pb2.Acl.READER, group='all'),
-              project_config_pb2.Acl(
-                  role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.READER, group='all'),
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.SCHEDULER,
+                    group='tryjob-access'),
             ]),
     )
 
@@ -189,22 +187,24 @@ class ConfigTest(testing.AppengineTestCase):
             MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT)).put()
     actual = config.get_buckets_async().get_result()
     expected = [
-      project_config_pb2.Bucket(
-          name='master.tryserver.chromium.linux',
-          acls=[
-            project_config_pb2.Acl(
-                role=project_config_pb2.Acl.READER, group='all'),
-            project_config_pb2.Acl(
-                role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
-          ]),
-      project_config_pb2.Bucket(
-          name='master.tryserver.chromium.win',
-          acls=[
-            project_config_pb2.Acl(
-                role=project_config_pb2.Acl.READER, group='all'),
-            project_config_pb2.Acl(
-                role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
-          ]),
+        project_config_pb2.Bucket(
+            name='master.tryserver.chromium.linux',
+            acls=[
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.READER, group='all'),
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.SCHEDULER,
+                    group='tryjob-access'),
+            ]),
+        project_config_pb2.Bucket(
+            name='master.tryserver.chromium.win',
+            acls=[
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.READER, group='all'),
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.SCHEDULER,
+                    group='tryjob-access'),
+            ]),
     ]
     self.assertEqual(actual, expected)
 
@@ -226,14 +226,15 @@ class ConfigTest(testing.AppengineTestCase):
     actual = config.get_buckets_async(
         ['master.tryserver.chromium.linux']).get_result()
     expected = [
-      project_config_pb2.Bucket(
-          name='master.tryserver.chromium.linux',
-          acls=[
-            project_config_pb2.Acl(
-                role=project_config_pb2.Acl.READER, group='all'),
-            project_config_pb2.Acl(
-                role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
-          ]),
+        project_config_pb2.Bucket(
+            name='master.tryserver.chromium.linux',
+            acls=[
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.READER, group='all'),
+                project_config_pb2.Acl(
+                    role=project_config_pb2.Acl.SCHEDULER,
+                    group='tryjob-access'),
+            ]),
     ]
     self.assertEqual(actual, expected)
 
@@ -333,10 +334,10 @@ class ConfigTest(testing.AppengineTestCase):
       ''')
 
     get_project_configs.return_value = {
-      'chromium': ('deadbeef', chromium_buildbucket_cfg, None),
-      'dart': ('deadbeef', dart_buildbucket_cfg, None),
-      'v8': (None, v8_buildbucket_cfg, None),
-      'test': ('babe', test_buildbucket_cfg, None),
+        'chromium': ('deadbeef', chromium_buildbucket_cfg, None),
+        'dart': ('deadbeef', dart_buildbucket_cfg, None),
+        'v8': (None, v8_buildbucket_cfg, None),
+        'test': ('babe', test_buildbucket_cfg, None),
     }
 
     config.cron_update_buckets()
@@ -344,59 +345,58 @@ class ConfigTest(testing.AppengineTestCase):
     actual = config.Bucket.query().fetch()
     actual = sorted(actual, key=lambda b: b.key)
     expected = [
-      config.Bucket(
-          id='luci.chromium.try',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='chromium',
-          revision='deadbeef',
-          config_content=LUCI_CHROMIUM_TRY_CONFIG_TEXT,
-          config_content_binary=text_to_binary(
-              LUCI_CHROMIUM_TRY_CONFIG_TEXT),
-      ),
-      config.Bucket(
-          id='luci.dart.try',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='dart',
-          revision='deadbeef',
-          config_content=LUCI_DART_TRY_CONFIG_TEXT,
-          config_content_binary=text_to_binary(
-              LUCI_DART_TRY_CONFIG_TEXT),
-      ),
-      config.Bucket(
-          id='master.tryserver.chromium.linux',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='chromium',
-          revision='deadbeef',
-          config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-          config_content_binary=text_to_binary(
-              MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
-      ),
-      config.Bucket(
-          id='master.tryserver.chromium.win',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='chromium',
-          revision='deadbeef',
-          config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
-          config_content_binary=text_to_binary(
-              MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT),
-      ),
-      config.Bucket(
-          id='master.tryserver.test',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='test',
-          revision='babe',
-          config_content=MASTER_TRYSERVER_TEST_CONFIG_TEXT,
-          config_content_binary=text_to_binary(
-              MASTER_TRYSERVER_TEST_CONFIG_TEXT),
-      ),
-      config.Bucket(
-          id='master.tryserver.v8',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='v8',
-          revision='sha1:cfc761d7a953a72ddea8f3d4c9a28e69777ca22c',
-          config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
-          config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
-      ),
+        config.Bucket(
+            id='luci.chromium.try',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='chromium',
+            revision='deadbeef',
+            config_content=LUCI_CHROMIUM_TRY_CONFIG_TEXT,
+            config_content_binary=text_to_binary(LUCI_CHROMIUM_TRY_CONFIG_TEXT),
+        ),
+        config.Bucket(
+            id='luci.dart.try',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='dart',
+            revision='deadbeef',
+            config_content=LUCI_DART_TRY_CONFIG_TEXT,
+            config_content_binary=text_to_binary(LUCI_DART_TRY_CONFIG_TEXT),
+        ),
+        config.Bucket(
+            id='master.tryserver.chromium.linux',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='chromium',
+            revision='deadbeef',
+            config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+            config_content_binary=text_to_binary(
+                MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
+        ),
+        config.Bucket(
+            id='master.tryserver.chromium.win',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='chromium',
+            revision='deadbeef',
+            config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
+            config_content_binary=text_to_binary(
+                MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT),
+        ),
+        config.Bucket(
+            id='master.tryserver.test',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='test',
+            revision='babe',
+            config_content=MASTER_TRYSERVER_TEST_CONFIG_TEXT,
+            config_content_binary=text_to_binary(
+                MASTER_TRYSERVER_TEST_CONFIG_TEXT),
+        ),
+        config.Bucket(
+            id='master.tryserver.v8',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='v8',
+            revision='sha1:cfc761d7a953a72ddea8f3d4c9a28e69777ca22c',
+            config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
+            config_content_binary=text_to_binary(
+                MASTER_TRYSERVER_V8_CONFIG_TEXT),
+        ),
     ]
     self.assertEqual(actual, expected)
 
@@ -446,8 +446,8 @@ class ConfigTest(testing.AppengineTestCase):
       }
       ''')
     get_project_configs.return_value = {
-      'chromium': ('new!', chromium_buildbucket_cfg, None),
-      'v8': ('deadbeef', v8_buildbucket_cfg, None),
+        'chromium': ('new!', chromium_buildbucket_cfg, None),
+        'v8': ('deadbeef', v8_buildbucket_cfg, None),
     }
 
     config.Bucket(
@@ -485,32 +485,33 @@ class ConfigTest(testing.AppengineTestCase):
     actual = config.Bucket.query().fetch()
     actual = sorted(actual, key=lambda b: b.key.id())
     expected = [
-      config.Bucket(
-          id='master.tryserver.chromium.linux',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='chromium',
-          revision='new!',
-          config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-          config_content_binary=text_to_binary(
-              MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
-      ),
-      config.Bucket(
-          id='master.tryserver.chromium.mac',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='chromium',
-          revision='new!',
-          config_content=MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT,
-          config_content_binary=text_to_binary(
-              MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT),
-      ),
-      config.Bucket(
-          id='master.tryserver.v8',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='v8',
-          revision='deadbeef',
-          config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
-          config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
-      ),
+        config.Bucket(
+            id='master.tryserver.chromium.linux',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='chromium',
+            revision='new!',
+            config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+            config_content_binary=text_to_binary(
+                MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
+        ),
+        config.Bucket(
+            id='master.tryserver.chromium.mac',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='chromium',
+            revision='new!',
+            config_content=MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT,
+            config_content_binary=text_to_binary(
+                MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT),
+        ),
+        config.Bucket(
+            id='master.tryserver.v8',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='v8',
+            revision='deadbeef',
+            config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
+            config_content_binary=text_to_binary(
+                MASTER_TRYSERVER_V8_CONFIG_TEXT),
+        ),
     ]
     self.assertEqual(actual, expected)
 
@@ -527,7 +528,8 @@ class ConfigTest(testing.AppengineTestCase):
     bucket.put()
 
     get_project_configs.return_value = {
-      'chromium': ('new!', None, config_component.ConfigFormatError('broken!')),
+        'chromium': ('new!', None,
+                     config_component.ConfigFormatError('broken!')),
     }
 
     config.cron_update_buckets()
@@ -541,7 +543,7 @@ class ConfigTest(testing.AppengineTestCase):
   def test_cron_update_buckets_change_reservation(self, get_project_configs):
     buildbucket_cfg = parse_cfg('''buckets{ name: "bucket" }''')
     get_project_configs.return_value = {
-      'bar': ('deadbeef', buildbucket_cfg, None),
+        'bar': ('deadbeef', buildbucket_cfg, None),
     }
 
     config.Bucket(
@@ -556,14 +558,14 @@ class ConfigTest(testing.AppengineTestCase):
 
     actual = config.Bucket.query().fetch()
     expected = [
-      config.Bucket(
-          id='bucket',
-          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id='bar',
-          revision='deadbeef',
-          config_content='name: "bucket"\n',
-          config_content_binary=text_to_binary('name: "bucket"\n'),
-      )
+        config.Bucket(
+            id='bucket',
+            entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id='bar',
+            revision='deadbeef',
+            config_content='name: "bucket"\n',
+            config_content_binary=text_to_binary('name: "bucket"\n'),
+        )
     ]
     self.assertEqual(actual, expected)
 
@@ -574,7 +576,8 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertEqual(expected_messages, ctx.result().messages)
 
   def test_validate_buildbucket_cfg_success(self):
-    self.cfg_validation_test(parse_cfg('''
+    self.cfg_validation_test(
+        parse_cfg('''
       acl_sets {
         name: "public"
         acls {
@@ -658,12 +661,13 @@ class ConfigTest(testing.AppengineTestCase):
         cfg.buckets[0].swarming.builders[0],
         cfg.buckets[0].swarming.builder_defaults,
         {
-          'm': cfg.builder_mixins[0],
+            'm': cfg.builder_mixins[0],
         },
     )
 
   def test_validate_buildbucket_cfg_fail(self):
-    self.cfg_validation_test(parse_cfg('''
+    self.cfg_validation_test(
+        parse_cfg('''
       acl_sets {}
       acl_sets {
         name: "^"
@@ -696,46 +700,38 @@ class ConfigTest(testing.AppengineTestCase):
       }
       buckets {}
       buckets { name: "luci.x" }
-      '''),
-        [
-          errmsg('ACL set #1 (): name is unspecified'),
-          errmsg(
-              'ACL set #2 (^): invalid name "^" does not match regex '
-              '\'^[a-z0-9_]+$\''),
-          errmsg('ACL set #2 (^): acl #1: group or identity must be set'),
-          errmsg('ACL set #4 (a): duplicate name "a"'),
-          errmsg(
-              'Bucket a: acl #1: either group or identity must be set, '
-              'not both'),
-          errmsg('Bucket a: acl #2: group or identity must be set'),
-          errmsg(
-              'Bucket a: undefined ACL set "does_not_exist". '
-              'It must be defined in the same file'),
-          errmsg('Bucket b: acl #1: Identity has invalid format: ldap'),
-          errmsg('Bucket b: acl #2: invalid group: ;%:'),
-          errmsg('Bucket #3: invalid name: Bucket not specified'),
-          errmsg(
-              'Bucket luci.x: invalid name: Bucket must start with '
-              '"luci.chromium." because it starts with "luci." and is defined '
-              'in the chromium project'),
-        ]
-    )
+      '''), [
+            errmsg('ACL set #1 (): name is unspecified'),
+            errmsg('ACL set #2 (^): invalid name "^" does not match regex '
+                   '\'^[a-z0-9_]+$\''),
+            errmsg('ACL set #2 (^): acl #1: group or identity must be set'),
+            errmsg('ACL set #4 (a): duplicate name "a"'),
+            errmsg('Bucket a: acl #1: either group or identity must be set, '
+                   'not both'),
+            errmsg('Bucket a: acl #2: group or identity must be set'),
+            errmsg('Bucket a: undefined ACL set "does_not_exist". '
+                   'It must be defined in the same file'),
+            errmsg('Bucket b: acl #1: Identity has invalid format: ldap'),
+            errmsg('Bucket b: acl #2: invalid group: ;%:'),
+            errmsg('Bucket #3: invalid name: Bucket not specified'),
+            errmsg(
+                'Bucket luci.x: invalid name: Bucket must start with '
+                '"luci.chromium." because it starts with "luci." and is defined '
+                'in the chromium project'),
+        ])
 
   def test_validate_buildbucket_cfg_unsorted(self):
-    self.cfg_validation_test(parse_cfg('''
+    self.cfg_validation_test(
+        parse_cfg('''
       buckets { name: "c" }
       buckets { name: "b" }
       buckets { name: "a" }
-      '''),
-        [
-          validation_context.Message(
-              severity=logging.WARNING,
-              text='Bucket b: out of order'),
-          validation_context.Message(
-              severity=logging.WARNING,
-              text='Bucket a: out of order'),
-        ]
-    )
+      '''), [
+            validation_context.Message(
+                severity=logging.WARNING, text='Bucket b: out of order'),
+            validation_context.Message(
+                severity=logging.WARNING, text='Bucket a: out of order'),
+        ])
 
   def test_validate_buildbucket_cfg_duplicate_names(self):
     config.Bucket(
@@ -752,25 +748,20 @@ class ConfigTest(testing.AppengineTestCase):
           buckets { name: "a" }
           buckets { name: "master.tryserver.chromium.linux" }
           buckets { name: "master.tryserver.v8" }
-      '''),
-        [
-          errmsg('Bucket a: duplicate bucket name'),
-          errmsg(
-              'Bucket master.tryserver.v8: '
-              'this name is already reserved by another project'),
-        ]
-    )
+      '''), [
+            errmsg('Bucket a: duplicate bucket name'),
+            errmsg('Bucket master.tryserver.v8: '
+                   'this name is already reserved by another project'),
+        ])
 
   @mock.patch('components.config.get_config_set_location', autospec=True)
   def test_get_buildbucket_cfg_url(self, get_config_set_location):
     get_config_set_location.return_value = (
-      'https://chromium.googlesource.com/chromium/src/+/infra/config')
+        'https://chromium.googlesource.com/chromium/src/+/infra/config')
 
     url = config.get_buildbucket_cfg_url('chromium')
-    self.assertEqual(
-        url,
-        ('https://chromium.googlesource.com/chromium/src/+/'
-         'refs/heads/infra/config/testbed-test.cfg'))
+    self.assertEqual(url, ('https://chromium.googlesource.com/chromium/src/+/'
+                           'refs/heads/infra/config/testbed-test.cfg'))
 
   def test_is_swarming_config(self):
     cfg = project_config_pb2.Bucket()

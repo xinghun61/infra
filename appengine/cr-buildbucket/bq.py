@@ -1,7 +1,6 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Implements export of builds from datastore to BigQuery."""
 
 import datetime
@@ -29,9 +28,7 @@ import v2
 # Mocked in tests.
 @ndb.tasklet
 def enqueue_pull_task_async(queue, payload):  # pragma: no cover
-  task = taskqueue.Task(
-      payload=payload,
-      method='PULL')
+  task = taskqueue.Task(payload=payload, method='PULL')
   # Cannot just return add_async's return value because it is
   # a non-Future object and does not play nice with `yield fut1, fut2` construct
   yield task.add_async(queue_name=queue, transactional=True)
@@ -44,9 +41,11 @@ def enqueue_bq_export_async(build):  # pragma: no cover
   assert build
   assert build.status == model.BuildStatus.COMPLETED
 
-  yield enqueue_pull_task_async(
-      'bq-export-experimental' if build.experimental else 'bq-export-prod',
-      json.dumps({'id': build.key.id()}))
+  yield enqueue_pull_task_async('bq-export-experimental'
+                                if build.experimental else 'bq-export-prod',
+                                json.dumps({
+                                    'id': build.key.id()
+                                }))
 
 
 class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
@@ -133,13 +132,11 @@ def _process_pull_task_batch(queue_name, dataset):
     logging.warning('will retry builds %r later', sorted(ids_to_retry))
 
   done_tasks = [
-    t
-    for bid, t in zip(build_ids, tasks)
-    if bid not in ids_to_retry
+      t for bid, t in zip(build_ids, tasks) if bid not in ids_to_retry
   ]
   q.delete_tasks(done_tasks)
-  logging.info(
-      'inserted %d rows, processed %d tasks', row_count, len(done_tasks))
+  logging.info('inserted %d rows, processed %d tasks', row_count,
+               len(done_tasks))
 
 
 def _build_to_v2(bid, build, build_ann):
@@ -175,13 +172,11 @@ def _build_to_v2(bid, build, build_ann):
     return build_v2, False
 
   except v2.errors.UnsupportedBuild as ex:
-    logging.warning(
-        'skipping build %d: not supported by v2 conversion: %s',
-        bid, ex)
+    logging.warning('skipping build %d: not supported by v2 conversion: %s',
+                    bid, ex)
     return None, False
   except Exception:
-    logging.exception(
-        'failed to convert build to v2\nBuild id: %d', bid)
+    logging.exception('failed to convert build to v2\nBuild id: %d', bid)
     return None, True
 
 
@@ -196,25 +191,23 @@ def _export_builds(dataset, v2_builds, deadline):
   # https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
   logging.info('sending %d rows', len(v2_builds))
   res = net.json_request(
-      url=(
-        ('https://www.googleapis.com/bigquery/v2/'
-          'projects/%s/datasets/%s/tables/%s/insertAll') % (
-          app_identity.get_application_id(), dataset, table_name)
-        ),
+      url=(('https://www.googleapis.com/bigquery/v2/'
+            'projects/%s/datasets/%s/tables/%s/insertAll') %
+           (app_identity.get_application_id(), dataset, table_name)),
       method='POST',
       payload={
-        'kind': 'bigquery#tableDataInsertAllRequest',
-        # Do not fail entire request because of one bad build.
-        # We handle invalid rows below.
-        'skipInvalidRows': True,
-        'ignoreUnknownValues': False,
-        'rows': [
-          {
-            'insertId': str(b.id),
-            'json': bqh.message_to_dict(b),
-          }
-          for b in v2_builds
-        ],
+          'kind':
+              'bigquery#tableDataInsertAllRequest',
+          # Do not fail entire request because of one bad build.
+          # We handle invalid rows below.
+          'skipInvalidRows':
+              True,
+          'ignoreUnknownValues':
+              False,
+          'rows': [{
+              'insertId': str(b.id),
+              'json': bqh.message_to_dict(b),
+          } for b in v2_builds],
       },
       scopes=bqh.INSERT_ROWS_SCOPE,
       # deadline parameter here is duration in seconds.
@@ -225,9 +218,7 @@ def _export_builds(dataset, v2_builds, deadline):
   for err in res.get('insertErrors', []):
     b = v2_builds[err['index']]
     failed_ids.append(b.id)
-    logging.error(
-        'failed to insert row for build %d: %r',
-        b.id, err['errors'])
+    logging.error('failed to insert row for build %d: %r', b.id, err['errors'])
   return failed_ids
 
 
@@ -243,5 +234,5 @@ def parse_logdog_url(url):
   project = full_path[0]
   plus_pos = full_path.index('+')
   stream_prefix = '/'.join(full_path[1:plus_pos])
-  stream_name = '/'.join(full_path[plus_pos+1:])
+  stream_name = '/'.join(full_path[plus_pos + 1:])
   return u.netloc, project, stream_prefix, stream_name

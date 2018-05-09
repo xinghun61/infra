@@ -23,7 +23,6 @@ from proto import step_pb2
 from v2 import steps
 from test import test_util
 
-
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 

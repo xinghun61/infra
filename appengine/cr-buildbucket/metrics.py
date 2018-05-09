@@ -13,28 +13,27 @@ import gae_ts_mon
 import config
 import model
 
-
 # Override default target fields for app-global metrics.
 GLOBAL_TARGET_FIELDS = {
-  'job_name': '',  # module name
-  'hostname': '',  # version
-  'task_num': 0,  # instance ID
+    'job_name': '',  # module name
+    'hostname': '',  # version
+    'task_num': 0,  # instance ID
 }
 
-_SOURCE_TAG = 0   # read field the value from a tag
+_SOURCE_TAG = 0  # read field the value from a tag
 _SOURCE_ATTR = 1  # read field the value from an attr
 # tuple item meanings are: value source, gae_ts_mon field type, value type.
 _TAG_STR_FIELD = (_SOURCE_TAG, gae_ts_mon.StringField, str)
 _ATTR_STR_FIELD = (_SOURCE_ATTR, gae_ts_mon.StringField, str)
 _BUILD_FIELDS = {
-  'bucket': _ATTR_STR_FIELD,
-  'builder': _TAG_STR_FIELD,
-  'canary': (_SOURCE_ATTR, gae_ts_mon.BooleanField, bool),
-  'cancelation_reason': _ATTR_STR_FIELD,
-  'failure_reason': _ATTR_STR_FIELD,
-  'result': _ATTR_STR_FIELD,
-  'status': _ATTR_STR_FIELD,
-  'user_agent': _TAG_STR_FIELD,
+    'bucket': _ATTR_STR_FIELD,
+    'builder': _TAG_STR_FIELD,
+    'canary': (_SOURCE_ATTR, gae_ts_mon.BooleanField, bool),
+    'cancelation_reason': _ATTR_STR_FIELD,
+    'failure_reason': _ATTR_STR_FIELD,
+    'result': _ATTR_STR_FIELD,
+    'status': _ATTR_STR_FIELD,
+    'user_agent': _TAG_STR_FIELD,
 }
 _METRIC_PREFIX_PROD = 'buildbucket/builds/'
 _METRIC_PREFIX_EXPERIMENTAL = 'buildbucket/builds-experimental/'
@@ -47,10 +46,10 @@ def _default_field_value(name):
   return _BUILD_FIELDS[name][2]()
 
 
-BUCKETER_24_HR = gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.05)
-BUCKETER_48_HR = gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.053)
-BUCKETER_5_SEC = gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.0374)
-BUCKETER_1K = gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.031)
+BUCKETER_24_HR = gae_ts_mon.GeometricBucketer(growth_factor=10**0.05)
+BUCKETER_48_HR = gae_ts_mon.GeometricBucketer(growth_factor=10**0.053)
+BUCKETER_5_SEC = gae_ts_mon.GeometricBucketer(growth_factor=10**0.0374)
+BUCKETER_1K = gae_ts_mon.GeometricBucketer(growth_factor=10**0.031)
 
 
 def _fields_for(build, field_names):
@@ -77,7 +76,7 @@ def _fields_for(build, field_names):
 def _fields_for_fn(fields):
   assert all(f.name in _BUILD_FIELDS for f in fields)
   field_names = [f.name for f in fields]
-  return lambda b: _fields_for(b, field_names)   # pragma: no cover
+  return lambda b: _fields_for(b, field_names)  # pragma: no cover
 
 
 def _build_fields(*names):
@@ -93,10 +92,8 @@ def _incrementer(metric_suffix, description, fields):
   """
 
   def mk_metric(metric_prefix):
-    return gae_ts_mon.CounterMetric(
-        metric_prefix + metric_suffix,
-        description,
-        fields)
+    return gae_ts_mon.CounterMetric(metric_prefix + metric_suffix, description,
+                                    fields)
 
   metric_prod = mk_metric(_METRIC_PREFIX_PROD)
   metric_exp = mk_metric(_METRIC_PREFIX_EXPERIMENTAL)
@@ -138,70 +135,50 @@ def _adder(metric_suffix, description, fields, bucketer, units, value_fn):
 
 
 def _duration_adder(metric_suffix, description, value_fn):
-  return _adder(
-      metric_suffix,
-      description,
-      _build_fields(
-          'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
-          'canary'),
-      BUCKETER_48_HR,
-      gae_ts_mon.MetricsDataUnits.SECONDS,
-      value_fn)
+  return _adder(metric_suffix, description,
+                _build_fields('bucket', 'builder', 'result', 'failure_reason',
+                              'cancelation_reason', 'canary'), BUCKETER_48_HR,
+                gae_ts_mon.MetricsDataUnits.SECONDS, value_fn)
 
 
-inc_created_builds = _incrementer(
-    'created',
-    'Build creation',
-    _build_fields('bucket', 'builder', 'user_agent'))
-inc_started_builds = _incrementer(
-    'started',
-    'Build start',
-    _build_fields('bucket', 'builder', 'canary'))
+inc_created_builds = _incrementer('created', 'Build creation',
+                                  _build_fields('bucket', 'builder',
+                                                'user_agent'))
+inc_started_builds = _incrementer('started', 'Build start',
+                                  _build_fields('bucket', 'builder', 'canary'))
 inc_completed_builds = _incrementer(
     'completed',
     'Build completion, including success, failure and cancellation',
-    _build_fields(
-        'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
-        'canary'))
-inc_lease_expirations = _incrementer(
-    'lease_expired',
-    'Build lease expirations',
-    _build_fields('bucket', 'builder', 'status'))
-inc_leases = _incrementer(
-    'leases',
-    'Successful build leases or lease extensions',
-    _build_fields('bucket', 'builder'))
-
+    _build_fields('bucket', 'builder', 'result', 'failure_reason',
+                  'cancelation_reason', 'canary'))
+inc_lease_expirations = _incrementer('lease_expired', 'Build lease expirations',
+                                     _build_fields('bucket', 'builder',
+                                                   'status'))
+inc_leases = _incrementer('leases',
+                          'Successful build leases or lease extensions',
+                          _build_fields('bucket', 'builder'))
 
 inc_heartbeat_failures = gae_ts_mon.CounterMetric(
-    'buildbucket/builds/heartbeats',
-    'Failures to extend a build lease', []).increment
-
+    'buildbucket/builds/heartbeats', 'Failures to extend a build lease',
+    []).increment
 
 # requires the argument to have non-None create_time and complete_time.
 add_build_cycle_duration = _duration_adder(  # pragma: no branch
-    'cycle_durations',
-    'Duration between build creation and completion',
+    'cycle_durations', 'Duration between build creation and completion',
     lambda b: (b.complete_time - b.create_time).total_seconds())
-
 
 # requires the argument to have non-None start_time and complete_time.
 add_build_run_duration = _duration_adder(  # pragma: no branch
-    'run_durations',
-    'Duration between build start and completion',
+    'run_durations', 'Duration between build start and completion',
     lambda b: (b.complete_time - b.start_time).total_seconds())
-
 
 # requires the argument to have non-None create_time and start_time.
 add_build_scheduling_duration = _duration_adder(  # pragma: no branch
-    'scheduling_durations',
-    'Duration between build creation and start',
+    'scheduling_durations', 'Duration between build creation and start',
     lambda b: (b.start_time - b.create_time).total_seconds())
 
-
 BUILD_COUNT_PROD = gae_ts_mon.GaugeMetric(
-    _METRIC_PREFIX_PROD + 'count',
-    'Number of pending/running prod builds',
+    _METRIC_PREFIX_PROD + 'count', 'Number of pending/running prod builds',
     _build_fields('bucket', 'builder', 'status'))
 BUILD_COUNT_EXPERIMENTAL = gae_ts_mon.GaugeMetric(
     _METRIC_PREFIX_EXPERIMENTAL + 'count',
@@ -241,7 +218,7 @@ def set_build_count_metric_async(bucket, builder, status, experimental):
   assert isinstance(builder, basestring)
   q = model.Build.query(
       model.Build.bucket == bucket,
-      model.Build.tags=='builder:%s' % builder,
+      model.Build.tags == 'builder:%s' % builder,
       model.Build.status == status,
       model.Build.experimental == experimental,
   )
@@ -252,9 +229,9 @@ def set_build_count_metric_async(bucket, builder, status, experimental):
     return
 
   fields = {
-    'bucket': bucket,
-    'builder': builder,
-    'status': str(status),
+      'bucket': bucket,
+      'builder': builder,
+      'status': str(status),
   }
   metric = BUILD_COUNT_EXPERIMENTAL if experimental else BUILD_COUNT_PROD
   metric.set(value, fields=fields, target_fields=GLOBAL_TARGET_FIELDS)
@@ -282,18 +259,18 @@ def set_build_latency(bucket, builder, must_be_never_leased):
   else:
     max_age = 0
   fields = {
-    'bucket': bucket,
-    'builder': builder,
-    'must_be_never_leased': must_be_never_leased,
+      'bucket': bucket,
+      'builder': builder,
+      'must_be_never_leased': must_be_never_leased,
   }
   MAX_AGE_SCHEDULED.set(max_age, fields, target_fields=GLOBAL_TARGET_FIELDS)
 
 
 # Metrics that are per-app rather than per-instance.
 GLOBAL_METRICS = [
-  MAX_AGE_SCHEDULED,
-  BUILD_COUNT_PROD,
-  BUILD_COUNT_EXPERIMENTAL,
+    MAX_AGE_SCHEDULED,
+    BUILD_COUNT_PROD,
+    BUILD_COUNT_EXPERIMENTAL,
 ]
 
 
@@ -307,8 +284,8 @@ def update_global_metrics():
   for key in model.Builder.query().iter(keys_only=True):
     _, bucket, builder = key.id().split(':', 2)
     latency_query_queue.extend([
-      (bucket, builder, True),
-      (bucket, builder, False),
+        (bucket, builder, True),
+        (bucket, builder, False),
     ])
     for status in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED):
       for experimental in (False, True):

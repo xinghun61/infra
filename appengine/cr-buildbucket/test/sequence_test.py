@@ -8,7 +8,9 @@ import sequence
 
 
 class SequenceTest(testing.AppengineTestCase):
+
   def test_generate_async(self):
+
     def gen(*args):
       return sequence.generate_async(*args).get_result()
 

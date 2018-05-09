@@ -2,7 +2,7 @@
 # source: common.proto
 
 import sys
-_b=sys.version_info[0]<3 and (lambda x:x) or (lambda x:x.encode('latin1'))
+_b = sys.version_info[0] < 3 and (lambda x: x) or (lambda x: x.encode('latin1'))
 from google.protobuf.internal import enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -13,60 +13,50 @@ from google.protobuf import descriptor_pb2
 
 _sym_db = _symbol_database.Default()
 
-
-
-
 DESCRIPTOR = _descriptor.FileDescriptor(
-  name='common.proto',
-  package='buildbucket.v2',
-  syntax='proto3',
-  serialized_pb=_b('\n\x0c\x63ommon.proto\x12\x0e\x62uildbucket.v2\"O\n\x0cGerritChange\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06\x63hange\x18\x03 \x01(\x03\x12\x10\n\x08patchset\x18\x04 \x01(\x03\"G\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\t\x12\x0b\n\x03ref\x18\x04 \x01(\t\"(\n\nStringPair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t*\x92\x01\n\x06Status\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n\tSCHEDULED\x10\x01\x12\x0b\n\x07STARTED\x10\x02\x12\x19\n\x15\x43OMPLETED_STATUS_MASK\x10\x04\x12\x0b\n\x07SUCCESS\x10\x0c\x12\x0b\n\x07\x46\x41ILURE\x10\x14\x12\x11\n\rINFRA_FAILURE\x10$\x12\x0c\n\x08\x43\x41NCELED\x10\x44\x62\x06proto3')
-)
+    name='common.proto',
+    package='buildbucket.v2',
+    syntax='proto3',
+    serialized_pb=_b(
+        '\n\x0c\x63ommon.proto\x12\x0e\x62uildbucket.v2\"O\n\x0cGerritChange\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06\x63hange\x18\x03 \x01(\x03\x12\x10\n\x08patchset\x18\x04 \x01(\x03\"G\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\t\x12\x0b\n\x03ref\x18\x04 \x01(\t\"(\n\nStringPair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t*\x92\x01\n\x06Status\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n\tSCHEDULED\x10\x01\x12\x0b\n\x07STARTED\x10\x02\x12\x19\n\x15\x43OMPLETED_STATUS_MASK\x10\x04\x12\x0b\n\x07SUCCESS\x10\x0c\x12\x0b\n\x07\x46\x41ILURE\x10\x14\x12\x11\n\rINFRA_FAILURE\x10$\x12\x0c\n\x08\x43\x41NCELED\x10\x44\x62\x06proto3'
+    ))
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _STATUS = _descriptor.EnumDescriptor(
-  name='Status',
-  full_name='buildbucket.v2.Status',
-  filename=None,
-  file=DESCRIPTOR,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='STATUS_UNSPECIFIED', index=0, number=0,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='SCHEDULED', index=1, number=1,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='STARTED', index=2, number=2,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='COMPLETED_STATUS_MASK', index=3, number=4,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='SUCCESS', index=4, number=12,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='FAILURE', index=5, number=20,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='INFRA_FAILURE', index=6, number=36,
-      options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='CANCELED', index=7, number=68,
-      options=None,
-      type=None),
-  ],
-  containing_type=None,
-  options=None,
-  serialized_start=229,
-  serialized_end=375,
+    name='Status',
+    full_name='buildbucket.v2.Status',
+    filename=None,
+    file=DESCRIPTOR,
+    values=[
+        _descriptor.EnumValueDescriptor(
+            name='STATUS_UNSPECIFIED',
+            index=0,
+            number=0,
+            options=None,
+            type=None),
+        _descriptor.EnumValueDescriptor(
+            name='SCHEDULED', index=1, number=1, options=None, type=None),
+        _descriptor.EnumValueDescriptor(
+            name='STARTED', index=2, number=2, options=None, type=None),
+        _descriptor.EnumValueDescriptor(
+            name='COMPLETED_STATUS_MASK',
+            index=3,
+            number=4,
+            options=None,
+            type=None),
+        _descriptor.EnumValueDescriptor(
+            name='SUCCESS', index=4, number=12, options=None, type=None),
+        _descriptor.EnumValueDescriptor(
+            name='FAILURE', index=5, number=20, options=None, type=None),
+        _descriptor.EnumValueDescriptor(
+            name='INFRA_FAILURE', index=6, number=36, options=None, type=None),
+        _descriptor.EnumValueDescriptor(
+            name='CANCELED', index=7, number=68, options=None, type=None),
+    ],
+    containing_type=None,
+    options=None,
+    serialized_start=229,
+    serialized_end=375,
 )
 _sym_db.RegisterEnumDescriptor(_STATUS)
 
@@ -80,147 +70,224 @@ FAILURE = 20
 INFRA_FAILURE = 36
 CANCELED = 68
 
-
-
 _GERRITCHANGE = _descriptor.Descriptor(
-  name='GerritChange',
-  full_name='buildbucket.v2.GerritChange',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='host', full_name='buildbucket.v2.GerritChange.host', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='project', full_name='buildbucket.v2.GerritChange.project', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='change', full_name='buildbucket.v2.GerritChange.change', index=2,
-      number=3, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='patchset', full_name='buildbucket.v2.GerritChange.patchset', index=3,
-      number=4, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=32,
-  serialized_end=111,
+    name='GerritChange',
+    full_name='buildbucket.v2.GerritChange',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name='host',
+            full_name='buildbucket.v2.GerritChange.host',
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+        _descriptor.FieldDescriptor(
+            name='project',
+            full_name='buildbucket.v2.GerritChange.project',
+            index=1,
+            number=2,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+        _descriptor.FieldDescriptor(
+            name='change',
+            full_name='buildbucket.v2.GerritChange.change',
+            index=2,
+            number=3,
+            type=3,
+            cpp_type=2,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+        _descriptor.FieldDescriptor(
+            name='patchset',
+            full_name='buildbucket.v2.GerritChange.patchset',
+            index=3,
+            number=4,
+            type=3,
+            cpp_type=2,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=32,
+    serialized_end=111,
 )
-
 
 _GITILESCOMMIT = _descriptor.Descriptor(
-  name='GitilesCommit',
-  full_name='buildbucket.v2.GitilesCommit',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='host', full_name='buildbucket.v2.GitilesCommit.host', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='project', full_name='buildbucket.v2.GitilesCommit.project', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='id', full_name='buildbucket.v2.GitilesCommit.id', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='ref', full_name='buildbucket.v2.GitilesCommit.ref', index=3,
-      number=4, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=113,
-  serialized_end=184,
+    name='GitilesCommit',
+    full_name='buildbucket.v2.GitilesCommit',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name='host',
+            full_name='buildbucket.v2.GitilesCommit.host',
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+        _descriptor.FieldDescriptor(
+            name='project',
+            full_name='buildbucket.v2.GitilesCommit.project',
+            index=1,
+            number=2,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+        _descriptor.FieldDescriptor(
+            name='id',
+            full_name='buildbucket.v2.GitilesCommit.id',
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+        _descriptor.FieldDescriptor(
+            name='ref',
+            full_name='buildbucket.v2.GitilesCommit.ref',
+            index=3,
+            number=4,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=113,
+    serialized_end=184,
 )
 
-
 _STRINGPAIR = _descriptor.Descriptor(
-  name='StringPair',
-  full_name='buildbucket.v2.StringPair',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='key', full_name='buildbucket.v2.StringPair.key', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='buildbucket.v2.StringPair.value', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=186,
-  serialized_end=226,
+    name='StringPair',
+    full_name='buildbucket.v2.StringPair',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name='key',
+            full_name='buildbucket.v2.StringPair.key',
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+        _descriptor.FieldDescriptor(
+            name='value',
+            full_name='buildbucket.v2.StringPair.value',
+            index=1,
+            number=2,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=186,
+    serialized_end=226,
 )
 
 DESCRIPTOR.message_types_by_name['GerritChange'] = _GERRITCHANGE
@@ -228,26 +295,34 @@ DESCRIPTOR.message_types_by_name['GitilesCommit'] = _GITILESCOMMIT
 DESCRIPTOR.message_types_by_name['StringPair'] = _STRINGPAIR
 DESCRIPTOR.enum_types_by_name['Status'] = _STATUS
 
-GerritChange = _reflection.GeneratedProtocolMessageType('GerritChange', (_message.Message,), dict(
-  DESCRIPTOR = _GERRITCHANGE,
-  __module__ = 'common_pb2'
-  # @@protoc_insertion_point(class_scope:buildbucket.v2.GerritChange)
-  ))
+GerritChange = _reflection.GeneratedProtocolMessageType(
+    'GerritChange',
+    (_message.Message,),
+    dict(
+        DESCRIPTOR=_GERRITCHANGE,
+        __module__='common_pb2'
+        # @@protoc_insertion_point(class_scope:buildbucket.v2.GerritChange)
+    ))
 _sym_db.RegisterMessage(GerritChange)
 
-GitilesCommit = _reflection.GeneratedProtocolMessageType('GitilesCommit', (_message.Message,), dict(
-  DESCRIPTOR = _GITILESCOMMIT,
-  __module__ = 'common_pb2'
-  # @@protoc_insertion_point(class_scope:buildbucket.v2.GitilesCommit)
-  ))
+GitilesCommit = _reflection.GeneratedProtocolMessageType(
+    'GitilesCommit',
+    (_message.Message,),
+    dict(
+        DESCRIPTOR=_GITILESCOMMIT,
+        __module__='common_pb2'
+        # @@protoc_insertion_point(class_scope:buildbucket.v2.GitilesCommit)
+    ))
 _sym_db.RegisterMessage(GitilesCommit)
 
-StringPair = _reflection.GeneratedProtocolMessageType('StringPair', (_message.Message,), dict(
-  DESCRIPTOR = _STRINGPAIR,
-  __module__ = 'common_pb2'
-  # @@protoc_insertion_point(class_scope:buildbucket.v2.StringPair)
-  ))
+StringPair = _reflection.GeneratedProtocolMessageType(
+    'StringPair',
+    (_message.Message,),
+    dict(
+        DESCRIPTOR=_STRINGPAIR,
+        __module__='common_pb2'
+        # @@protoc_insertion_point(class_scope:buildbucket.v2.StringPair)
+    ))
 _sym_db.RegisterMessage(StringPair)
-
 
 # @@protoc_insertion_point(module_scope)

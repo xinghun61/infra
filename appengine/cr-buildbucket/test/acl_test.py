@@ -19,6 +19,7 @@ Acl = project_config_pb2.Acl
 
 
 class AclTest(testing.AppengineTestCase):
+
   def setUp(self):
     super(AclTest, self).setUp()
     self.current_identity = auth.Identity.from_bytes('user:a@example.com')
@@ -32,25 +33,26 @@ class AclTest(testing.AppengineTestCase):
     bucket_a = Bucket(
         name='a',
         acls=[
-          Acl(role=Acl.WRITER, group='a-writers'),
-          Acl(role=Acl.READER, group='a-readers'),
+            Acl(role=Acl.WRITER, group='a-writers'),
+            Acl(role=Acl.READER, group='a-readers'),
         ])
     bucket_b = Bucket(
         name='b',
         acls=[
-          Acl(role=Acl.WRITER, group='b-writers'),
-          Acl(role=Acl.READER, group='b-readers'),
+            Acl(role=Acl.WRITER, group='b-writers'),
+            Acl(role=Acl.READER, group='b-readers'),
         ])
     bucket_c = Bucket(
         name='c',
         acls=[
-          Acl(role=Acl.READER, group='c-readers'),
-          Acl(role=Acl.READER, identity='user:a@example.com'),
-          Acl(role=Acl.WRITER, group='c-writers'),
+            Acl(role=Acl.READER, group='c-readers'),
+            Acl(role=Acl.READER, identity='user:a@example.com'),
+            Acl(role=Acl.WRITER, group='c-writers'),
         ])
     all_buckets = [bucket_a, bucket_b, bucket_c]
     self.patch(
-        'config.get_buckets_async', autospec=True,
+        'config.get_buckets_async',
+        autospec=True,
         return_value=future(all_buckets))
 
     bucket_map = {b.name: b for b in all_buckets}
@@ -65,8 +67,7 @@ class AclTest(testing.AppengineTestCase):
     is_group_member.side_effect = lambda g, _=None: g == 'a-writers'
     is_admin.return_value = False
 
-    get_role = (
-      lambda *args: acl.get_role_async(*args).get_result())
+    get_role = (lambda *args: acl.get_role_async(*args).get_result())
 
     self.assertEqual(get_role('a'), Acl.WRITER)
     self.assertEqual(get_role('b'), None)
@@ -88,7 +89,7 @@ class AclTest(testing.AppengineTestCase):
     is_admin.return_value = False
 
     has_any_of_roles = (
-      lambda *args: acl.has_any_of_roles_async(*args).get_result())
+        lambda *args: acl.has_any_of_roles_async(*args).get_result())
 
     self.assertTrue(has_any_of_roles('a', [Acl.READER]))
     self.assertTrue(has_any_of_roles('a', [Acl.READER, Acl.WRITER]))
@@ -114,31 +115,30 @@ class AclTest(testing.AppengineTestCase):
     is_admin.return_value = False
 
     config.get_buckets_async.return_value = future([
-      Bucket(
-          name='available_bucket1',
-          acls=[
-            Acl(role=Acl.READER, group='xxx'),
-            Acl(role=Acl.WRITER, group='yyy')
-          ],
-      ),
-      Bucket(
-          name='available_bucket2',
-          acls=[
-            Acl(role=Acl.READER, group='xxx'),
-            Acl(role=Acl.WRITER, group='zzz')
-          ],
-      ),
-      Bucket(
-          name='available_bucket3',
-          acls=[
-            Acl(role=Acl.READER, identity='user:a@example.com'),
-          ],
-      ),
-      Bucket(
-          name='not_available_bucket',
-          acls=[
-            Acl(role=Acl.WRITER, group='zzz')],
-      ),
+        Bucket(
+            name='available_bucket1',
+            acls=[
+                Acl(role=Acl.READER, group='xxx'),
+                Acl(role=Acl.WRITER, group='yyy')
+            ],
+        ),
+        Bucket(
+            name='available_bucket2',
+            acls=[
+                Acl(role=Acl.READER, group='xxx'),
+                Acl(role=Acl.WRITER, group='zzz')
+            ],
+        ),
+        Bucket(
+            name='available_bucket3',
+            acls=[
+                Acl(role=Acl.READER, identity='user:a@example.com'),
+            ],
+        ),
+        Bucket(
+            name='not_available_bucket',
+            acls=[Acl(role=Acl.WRITER, group='zzz')],
+        ),
     ])
 
     availble_buckets = acl.get_acessible_buckets()

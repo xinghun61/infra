@@ -28,10 +28,8 @@ import notifications
 import service
 import swarming
 
-
-README_MD = (
-  'https://chromium.googlesource.com/infra/infra/+/master/'
-  'appengine/cr-buildbucket/README.md')
+README_MD = ('https://chromium.googlesource.com/infra/infra/+/master/'
+             'appengine/cr-buildbucket/README.md')
 
 
 class MainHandler(webapp2.RequestHandler):  # pragma: no cover
@@ -98,15 +96,15 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       logging.warning('no builds to backfill')
       return
     # Do not require -key index by using created_time index.
-    last, = (model.Build.query().order(model.Build.create_time)
-             .fetch(1, keys_only=True))
+    last, = (
+        model.Build.query().order(model.Build.create_time).fetch(
+            1, keys_only=True))
     space_start, space_end = first.id(), last.id() + 1
     space_size = space_end - space_start
     seg_size = max(1, int(math.ceil(space_size / shards)))
 
-    logging.info(
-        'build space [%d..%d), size %d, %d shards, segment size %d',
-        space_start, space_end, space_size, shards, seg_size)
+    logging.info('build space [%d..%d), size %d, %d shards, segment size %d',
+                 space_start, space_end, space_size, shards, seg_size)
 
     next_seg_start = space_start
     tasks = []
@@ -114,10 +112,7 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       seg_start = next_seg_start
       seg_end = min(space_end, seg_start + seg_size)
       next_seg_start = seg_end
-      tasks.append((
-        None,
-        'tag:{tag}-seg:{seg_index}-percent:0',
-        {
+      tasks.append((None, 'tag:{tag}-seg:{seg_index}-percent:0', {
           'action': 'segment',
           'tag': tag,
           'job_id': self.request.headers['X-AppEngine-TaskName'],
@@ -126,7 +121,7 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
           'seg_start': seg_start,
           'seg_end': seg_end,
           'started_ts': utils.datetime_to_timestamp(utils.utcnow()),
-        }))
+      }))
     self._recurse(tasks)
     logging.info('enqueued %d segment tasks for tag %s', len(tasks), tag)
 
@@ -168,11 +163,8 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
 
     # Datastore query timeout is 60 sec. Limit it to 50 sec.
     deadline = utils.utcnow() + datetime.timedelta(seconds=50)
-    while (
-        utils.utcnow() < deadline
-        and entry_count < self.ENTRY_LIMIT
-        and build_count < self.BUILD_LIMIT
-        and iterator.has_next()):
+    while (utils.utcnow() < deadline and entry_count < self.ENTRY_LIMIT and
+           build_count < self.BUILD_LIMIT and iterator.has_next()):
       b = iterator.next()
       build_count += 1
       for t in b.tags:
@@ -180,17 +172,17 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
         if k == payload['tag']:
           new_entries[v].append([b.bucket, b.key.id()])
           entry_count += 1
-    logging.info(
-        'collected %d entries from %d builds', entry_count, build_count)
+    logging.info('collected %d entries from %d builds', entry_count,
+                 build_count)
 
     if new_entries:  # pragma: no branch
       logging.info(
           'enqueuing a task to flush %d tag entries in %d TagIndex entities...',
           entry_count, len(new_entries))
       flush_payload = {
-        'action': 'flush',
-        'tag': payload['tag'],
-        'new_entries': new_entries,
+          'action': 'flush',
+          'tag': payload['tag'],
+          'new_entries': new_entries,
       }
       self._recurse([(None, 'tag:{tag}-flush', flush_payload)])
     if iterator.has_next():
@@ -205,18 +197,17 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
 
       try:
         self._recurse([(
-          '{job_id}-{seg_index}-{iteration}',
-          'tag:{tag}-seg:{seg_index}-percent:%d' % percent,
-          p,
+            '{job_id}-{seg_index}-{iteration}',
+            'tag:{tag}-seg:{seg_index}-percent:%d' % percent,
+            p,
         )])
       except taskqueue.TaskAlreadyExistsError:  # pragma: no cover
         pass
       return
 
     started_time = utils.timestamp_to_datetime(payload['started_ts'])
-    logging.info(
-        'segment %d is done in %s',
-        payload['seg_index'], utils.utcnow() - started_time)
+    logging.info('segment %d is done in %s', payload['seg_index'],
+                 utils.utcnow() - started_time)
 
   def flush(self, payload):
     """Saves new tag index entries.
@@ -226,15 +217,13 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       new_entries: a dict {tag_value: [[bucket, id}]]} of new index entries to
         add. Required.
     """
-    logging.info(
-        'flushing %d tag entries in %d TagIndex entities',
-        sum(len(es) for es in payload['new_entries'].itervalues()),
-        len(payload['new_entries'])
-    )
+    logging.info('flushing %d tag entries in %d TagIndex entities',
+                 sum(len(es) for es in payload['new_entries'].itervalues()),
+                 len(payload['new_entries']))
 
     futs = [
-      self._add_index_entries_async(payload['tag'] + ':' + tag_value, entries)
-      for tag_value, entries in payload['new_entries'].iteritems()
+        self._add_index_entries_async(payload['tag'] + ':' + tag_value, entries)
+        for tag_value, entries in payload['new_entries'].iteritems()
     ]
     ndb.Future.wait_all(futs)
 
@@ -249,9 +238,8 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
         updated += 1
     logging.info('updated %d TagIndex entities', updated)
     if retry_entries:
-      logging.warning(
-          'failed to update %d TagIndex entities, retrying...',
-          len(retry_entries))
+      logging.warning('failed to update %d TagIndex entities, retrying...',
+                      len(retry_entries))
       p = payload.copy()
       p['new_entries'] = retry_entries
       self._recurse([(None, 'tag:{tag}-flush', p)])
@@ -271,15 +259,14 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
         if len(idx.entries) >= model.TagIndex.MAX_ENTRY_COUNT:
           logging.warning(
               ('refusing to store more than %d entries in TagIndex(%s); '
-               'marking as incomplete.'),
-              model.TagIndex.MAX_ENTRY_COUNT, tag)
+               'marking as incomplete.'), model.TagIndex.MAX_ENTRY_COUNT, tag)
           idx.permanently_incomplete = True
           idx.entries = []
           yield idx.put_async()
           raise ndb.Return(True)
 
-        idx.entries.append(model.TagIndexEntry(
-            bucket=bucket, build_id=build_id))
+        idx.entries.append(
+            model.TagIndexEntry(bucket=bucket, build_id=build_id))
         added = True
     if not added:
       raise ndb.Return(False)
@@ -306,12 +293,10 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       name = name_fmt and name_fmt.format(**payload)
       path_suffix = path_suffix_fmt.format(**payload)
       assert '/' not in path_suffix
-      tasks.append((
-        name,
-        posixpath.join(
-            posixpath.dirname(self.request.path), path_suffix),
-        utils.encode_to_json(payload)
-      ))
+      tasks.append((name,
+                    posixpath.join(
+                        posixpath.dirname(self.request.path), path_suffix),
+                    utils.encode_to_json(payload)))
       if len(tasks) > 90:
         # enqueue_tasks accepts up to 100
         enqueue_tasks(queue_name, tasks)
@@ -346,9 +331,9 @@ class UnregisterBuilders(webapp2.RequestHandler):  # pragma: no cover
 
 def get_frontend_routes():  # pragma: no cover
   routes = [
-    webapp2.Route(r'/', MainHandler),
-    webapp2.Route(r'/b/<build_id:\d+>', BuildHandler),
-    endpoints_webapp2.discovery_service_route(),
+      webapp2.Route(r'/', MainHandler),
+      webapp2.Route(r'/b/<build_id:\d+>', BuildHandler),
+      endpoints_webapp2.discovery_service_route(),
   ]
   routes += endpoints_webapp2.api_routes(api.BuildBucketApi)
   routes += endpoints_webapp2.api_routes(swarmbucket_api.SwarmbucketApi)
@@ -358,30 +343,23 @@ def get_frontend_routes():  # pragma: no cover
 
 def get_backend_routes():
   return [  # pragma: no branch
-    webapp2.Route(
-        r'/internal/cron/buildbucket/check_expired_builds',
-        CronCheckExpiredBuilds),
-    webapp2.Route(
-        r'/internal/cron/buildbucket/update_buckets',
-        CronUpdateBuckets),
-    webapp2.Route(
-        r'/internal/cron/buildbucket/bq-export-prod',
-        bq.CronExportBuildsProd),
-    webapp2.Route(
-        r'/internal/cron/buildbucket/bq-export-experimental',
-        bq.CronExportBuildsExperimental),
-    webapp2.Route(
-        r'/internal/cron/buildbucket/unregister-builders',
-        UnregisterBuilders),
-    webapp2.Route(
-        r'/internal/task/buildbucket/notify/<build_id:\d+>',
-        notifications.TaskPublishNotification),
-    webapp2.Route(
-        r'/internal/task/buildbucket/backfill-tag-index/<rest>',
-        TaskBackfillTagIndex),
-    webapp2.Route(
-        r'/internal/task/buildbucket/cancel_swarming_task/<host>/<task_id>',
-        TaskCancelSwarmingTask),
+      webapp2.Route(r'/internal/cron/buildbucket/check_expired_builds',
+                    CronCheckExpiredBuilds),
+      webapp2.Route(r'/internal/cron/buildbucket/update_buckets',
+                    CronUpdateBuckets),
+      webapp2.Route(r'/internal/cron/buildbucket/bq-export-prod',
+                    bq.CronExportBuildsProd),
+      webapp2.Route(r'/internal/cron/buildbucket/bq-export-experimental',
+                    bq.CronExportBuildsExperimental),
+      webapp2.Route(r'/internal/cron/buildbucket/unregister-builders',
+                    UnregisterBuilders),
+      webapp2.Route(r'/internal/task/buildbucket/notify/<build_id:\d+>',
+                    notifications.TaskPublishNotification),
+      webapp2.Route(r'/internal/task/buildbucket/backfill-tag-index/<rest>',
+                    TaskBackfillTagIndex),
+      webapp2.Route(
+          r'/internal/task/buildbucket/cancel_swarming_task/<host>/<task_id>',
+          TaskCancelSwarmingTask),
   ]
 
 
@@ -392,6 +370,6 @@ def enqueue_tasks(queue_name, tasks):  # pragma: no cover
   tasks must be a list of tuples (name, url, payload).
   """
   taskqueue.Queue(queue_name).add([
-    taskqueue.Task(name=name, url=url, payload=payload)
-    for name, url, payload in tasks
+      taskqueue.Task(name=name, url=url, payload=payload)
+      for name, url, payload in tasks
   ])

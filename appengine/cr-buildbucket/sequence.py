@@ -37,11 +37,11 @@ def generate_async(seq_name, count):
     The generated number. For a returned number i, numbers [i, i+count) can be
     used by the caller.
   """
+
   @ndb.transactional_tasklet
   def txn():
-    seq = (
-      (yield NumberSequence.get_by_id_async(seq_name))
-      or NumberSequence(id=seq_name))
+    seq = ((yield NumberSequence.get_by_id_async(seq_name)) or
+           NumberSequence(id=seq_name))
     result = seq.next_number
     seq.next_number += count
     yield seq.put_async()
@@ -51,11 +51,9 @@ def generate_async(seq_name, count):
   number = yield txn()
   ellapsed_ms = (utils.utcnow() - started).total_seconds() * 1000
   if ellapsed_ms > 1000:  # pragma: no cover
-    logging.error(
-        'sequence number generation took > 1s\n'
-        'it took %dms\n'
-        'sequence: %s',
-        ellapsed_ms, seq_name)
+    logging.error('sequence number generation took > 1s\n'
+                  'it took %dms\n'
+                  'sequence: %s', ellapsed_ms, seq_name)
   else:
     logging.info('sequence number generation took %dms', ellapsed_ms)
   metrics.SEQUENCE_NUMBER_GEN_DURATION_MS.add(

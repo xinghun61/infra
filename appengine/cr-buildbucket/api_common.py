@@ -81,7 +81,7 @@ def build_to_message(build, include_lease_key=False):
   )
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(
-      build.lease_expiration_date)
+        build.lease_expiration_date)
   return msg
 
 
@@ -99,7 +99,7 @@ def build_to_dict(build, include_lease_key=False):
 
   # Special cases
   result = {
-    'tags': msg.tags,  # a list
+      'tags': msg.tags,  # a list
   }
 
   for f in msg.all_fields():

@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module integrates buildbucket with swarming.
 
 A bucket config may have "swarming" field that specifies how a builder
@@ -75,9 +74,9 @@ BUILD_RUN_RESULT_TOO_LARGE = '>= %d MB' % BUILD_RUN_RESULT_MAX_SIZE_MB
 BUILD_RUN_RESULT_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/build_run_result_size',
     'Size of the build result JSON file fetched from isolate',
-    [gae_ts_mon.StringField('bucket'), gae_ts_mon.StringField('builder')],
+    [gae_ts_mon.StringField('bucket'),
+     gae_ts_mon.StringField('builder')],
     units=gae_ts_mon.MetricsDataUnits.KILOBYTES)
-
 
 # The default percentage of builds that use canary swarming task template.
 # This number is relatively high so we treat canary seriously and that we have
@@ -94,9 +93,9 @@ CACHE_DIR = 'cache'
 # are either checked out, or installed via CIPD package.
 KITCHEN_CHECKOUT = 'kitchen-checkout'
 
-
 ################################################################################
 # Creation/cancellation of tasks.
+
 
 class Error(Exception):
   """Base class for swarmbucket-specific errors."""
@@ -199,8 +198,8 @@ def validate_build_parameters(builder_name, params):
       bad('inconsistent builder name')
     expected_emails = [c['author']['email'] for c in (changes or [])]
     if properties.pop('blamelist', None) not in (None, expected_emails):
-        bad('inconsistent blamelist property; blamelist must not be set or '
-            'it must match the emails in the "changes" build parameter')
+      bad('inconsistent blamelist property; blamelist must not be set or '
+          'it must match the emails in the "changes" build parameter')
     # Validate the rest of the properties using common logic.
     ctx = validation.Context.raise_on_error(exc_type=errors.InvalidInputError)
     for k, v in properties.iteritems():
@@ -221,8 +220,7 @@ def validate_build_parameters(builder_name, params):
 
       override_builder_cfg = project_config_pb2.Builder()
       try:
-        protoutil.merge_dict(
-            override_builder_cfg_data, override_builder_cfg)
+        protoutil.merge_dict(override_builder_cfg_data, override_builder_cfg)
       except TypeError as ex:
         bad('swarming.override_builder_cfg parameter: %s', ex)
       if override_builder_cfg.name:
@@ -234,11 +232,12 @@ def validate_build_parameters(builder_name, params):
       ctx = validation.Context.raise_on_error(
           exc_type=errors.InvalidInputError,
           prefix='swarming.override_builder_cfg parameter: ')
-      swarmingcfg_module.validate_builder_cfg(
-          override_builder_cfg, [], False, ctx)
+      swarmingcfg_module.validate_builder_cfg(override_builder_cfg, [], False,
+                                              ctx)
 
     if swarming:
       bad('unrecognized keys in swarming param: %r', swarming.keys())
+
 
 # Mocked in tests.
 def should_use_canary_template(percentage):  # pragma: no cover
@@ -283,19 +282,19 @@ def _buildbucket_property(build):
   https://chromium.googlesource.com/chromium/tools/build/+/82373bb503dca5f91cd0988d49df38394fdf8b0b/scripts/master/buildbucket/integration.py#329
   """
   return {
-    'hostname': app_identity.get_default_version_hostname(),
-    'build': {
-      'project': build.project,
-      'bucket': build.bucket,
-      'created_by': build.created_by.to_bytes(),
-      'created_ts': utils.datetime_to_timestamp(build.create_time),
-      'id': str(build.key.id()),
-      # Note: this includes only user-specified tags.
-      # It does not include auto-generated tags, such as "swarming_tag".
-      # This is a bit different from Buildbot-Buildbucket integration.
-      # In practice, however, only "buildset" tag is read from this list.
-      'tags': build.initial_tags,
-    },
+      'hostname': app_identity.get_default_version_hostname(),
+      'build': {
+          'project': build.project,
+          'bucket': build.bucket,
+          'created_by': build.created_by.to_bytes(),
+          'created_ts': utils.datetime_to_timestamp(build.create_time),
+          'id': str(build.key.id()),
+          # Note: this includes only user-specified tags.
+          # It does not include auto-generated tags, such as "swarming_tag".
+          # This is a bit different from Buildbot-Buildbucket integration.
+          # In practice, however, only "buildset" tag is read from this list.
+          'tags': build.initial_tags,
+      },
   }
 
 
@@ -325,9 +324,9 @@ def apply_if_tags(task):
   def walk(obj):
     if isinstance(obj, dict):
       return {
-        k: walk(v)
-        for k, v in obj.iteritems()
-        if k != tag_string and keep(v)
+          k: walk(v)
+          for k, v in obj.iteritems()
+          if k != tag_string and keep(v)
       }
     if isinstance(obj, list):
       return [walk(i) for i in obj if keep(i)]
@@ -357,22 +356,22 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
   host = swarmingcfg_module.clear_dash(builder_cfg.luci_migration_host)
   if master and host:
     try:
-      url = 'https://%s/masters/%s/builders/%s/' % (
-          host, master, builder_cfg.name)
+      url = 'https://%s/masters/%s/builders/%s/' % (host, master,
+                                                    builder_cfg.name)
       res = yield net.json_request_async(url, params={'format': 'json'})
       ret = res.get('luci_is_prod')
     except net.NotFoundError:
-      logging.warning(
-          'missing migration status for %r/%r', master, builder_cfg.name)
+      logging.warning('missing migration status for %r/%r', master,
+                      builder_cfg.name)
     except net.Error:
-      logging.exception(
-          'failed to get migration status for %r/%r', master, builder_cfg.name)
+      logging.exception('failed to get migration status for %r/%r', master,
+                        builder_cfg.name)
   raise ndb.Return(ret)
 
 
 @ndb.tasklet
-def _create_task_def_async(
-    swarming_cfg, builder_cfg, build, build_number, fake_build):
+def _create_task_def_async(swarming_cfg, builder_cfg, build, build_number,
+                           fake_build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -395,7 +394,7 @@ def _create_task_def_async(
   if build.canary_preference == model.CanaryPreference.AUTO:
     canary_percentage = DEFAULT_CANARY_TEMPLATE_PERCENTAGE
     if swarming_cfg.HasField(  # pragma: no branch
-          'task_template_canary_percentage'):
+        'task_template_canary_percentage'):
       canary_percentage = swarming_cfg.task_template_canary_percentage.value
     build.canary = should_use_canary_template(canary_percentage)
   else:
@@ -417,17 +416,26 @@ def _create_task_def_async(
   if not build.swarming_hostname:  # pragma: no cover
     raise Error('swarming hostname is not configured')
   task_template_params = {
-    'bucket': build.bucket,
-    'builder_hash': (
-        hashlib.sha256('%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()),
-    'build_id': build.key.id(),
-    'build_result_filename': BUILD_RUN_RESULT_FILENAME,
-    'build_url': build.url,
-    'builder': builder_cfg.name,
-    'cache_dir': CACHE_DIR,
-    'hostname': app_identity.get_default_version_hostname(),
-    'project': build.project,
-    'swarming_hostname': build.swarming_hostname,
+      'bucket':
+          build.bucket,
+      'builder_hash': (hashlib.sha256(
+          '%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()),
+      'build_id':
+          build.key.id(),
+      'build_result_filename':
+          BUILD_RUN_RESULT_FILENAME,
+      'build_url':
+          build.url,
+      'builder':
+          builder_cfg.name,
+      'cache_dir':
+          CACHE_DIR,
+      'hostname':
+          app_identity.get_default_version_hostname(),
+      'project':
+          build.project,
+      'swarming_hostname':
+          build.swarming_hostname,
   }
 
   extra_swarming_tags = []
@@ -444,9 +452,7 @@ def _create_task_def_async(
     if 'buildername' not in build_properties:
       build_properties['buildername'] = builder_cfg.name
 
-    build_properties.update(
-        buildbucket=_buildbucket_property(build),
-    )
+    build_properties.update(buildbucket=_buildbucket_property(build),)
     assert isinstance(build.experimental, bool)
     build_properties.setdefault('$recipe_engine/runtime', {}).update(
         is_luci=True,
@@ -475,39 +481,40 @@ def _create_task_def_async(
       emails = [c.get('author', {}).get('email') for c in changes]
       build_properties['blamelist'] = filter(None, emails)
 
-
     task_template_params.update({
-      'recipe': builder_cfg.recipe.name,
-      'properties_json': json.dumps(build_properties, sort_keys=True),
-      'checkout_dir': KITCHEN_CHECKOUT,
+        'recipe': builder_cfg.recipe.name,
+        'properties_json': json.dumps(build_properties, sort_keys=True),
+        'checkout_dir': KITCHEN_CHECKOUT,
     })
     extra_swarming_tags = [
-      'recipe_name:%s' % builder_cfg.recipe.name,
+        'recipe_name:%s' % builder_cfg.recipe.name,
     ]
 
     if builder_cfg.recipe.cipd_package:
       task_template_params.update({
-        'repository': '',
-        'revision':   '',
+          'repository': '',
+          'revision': '',
       })
       extra_swarming_tags.append(
-        'recipe_package:' + builder_cfg.recipe.cipd_package)
+          'recipe_package:' + builder_cfg.recipe.cipd_package)
       extra_cipd_packages.append({
-        'path':         KITCHEN_CHECKOUT,
-        'package_name': builder_cfg.recipe.cipd_package,
-        'version':      builder_cfg.recipe.cipd_version or 'refs/heads/master',
+          'path': KITCHEN_CHECKOUT,
+          'package_name': builder_cfg.recipe.cipd_package,
+          'version': builder_cfg.recipe.cipd_version or 'refs/heads/master',
       })
     else:
       task_template_params.update({
-        'repository': builder_cfg.recipe.repository,
-        'revision': 'HEAD',
+          'repository': builder_cfg.recipe.repository,
+          'revision': 'HEAD',
       })
       extra_swarming_tags.append(
-        'recipe_repository:' + builder_cfg.recipe.repository)
+          'recipe_repository:' + builder_cfg.recipe.repository)
 
   # Render task template.
   task_template_params = {
-    k: v or '' for k, v in task_template_params.iteritems()}
+      k: v or ''
+      for k, v in task_template_params.iteritems()
+  }
   task = format_obj(task_template, task_template_params)
 
   priority = int(task.get('priority', 0))
@@ -524,11 +531,11 @@ def _create_task_def_async(
 
   swarming_tags = task.setdefault('tags', [])
   _extend_unique(swarming_tags, [
-    'buildbucket_bucket:%s' % build.bucket,
-    'buildbucket_build_id:%s' % build.key.id(),
-    'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
-    'buildbucket_template_canary:%s' % ('1' if build.canary else '0'),
-    'buildbucket_template_revision:%s' % task_template_rev,
+      'buildbucket_bucket:%s' % build.bucket,
+      'buildbucket_build_id:%s' % build.key.id(),
+      'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
+      'buildbucket_template_canary:%s' % ('1' if build.canary else '0'),
+      'buildbucket_template_revision:%s' % task_template_rev,
   ])
   _extend_unique(swarming_tags, extra_swarming_tags)
   _extend_unique(swarming_tags, builder_cfg.swarming_tags)
@@ -540,14 +547,12 @@ def _create_task_def_async(
   task_properties = task.setdefault('properties', {})
 
   task_properties.setdefault('env', []).append({
-    'key': 'BUILDBUCKET_EXPERIMENTAL',
-    'value': str(build.experimental).upper(),
+      'key': 'BUILDBUCKET_EXPERIMENTAL',
+      'value': str(build.experimental).upper(),
   })
 
-  (task_properties
-    .setdefault('cipd_input', {})
-    .setdefault('packages', [])
-    .extend(extra_cipd_packages))
+  (task_properties.setdefault('cipd_input', {}).setdefault('packages', [])
+   .extend(extra_cipd_packages))
 
   if builder_cfg.expiration_secs > 0:
     task['expiration_secs'] = str(builder_cfg.expiration_secs)
@@ -556,15 +561,13 @@ def _create_task_def_async(
   if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
       'builder' not in dimensions):
     dimensions['builder'] = builder_cfg.name
-  dimensions.update({
-    d['key']: d['value']
-    for d in task_properties.get('dimensions', [])
-  })
-  task_properties['dimensions'] = [
-    {'key': k, 'value': v}
-    for k, v in sorted(dimensions.iteritems())
-    if v
-  ]
+  dimensions.update(
+      {d['key']: d['value']
+       for d in task_properties.get('dimensions', [])})
+  task_properties['dimensions'] = [{
+      'key': k,
+      'value': v
+  } for k, v in sorted(dimensions.iteritems()) if v]
 
   _add_named_caches(builder_cfg, task_properties)
 
@@ -573,14 +576,15 @@ def _create_task_def_async(
         builder_cfg.execution_timeout_secs)
 
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
-    task['pubsub_topic'] = (
-      'projects/%s/topics/%s' %
-      (app_identity.get_application_id(), PUBSUB_TOPIC))
-    task['pubsub_userdata'] = json.dumps({
-      'build_id': build.key.id(),
-      'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
-      'swarming_hostname': build.swarming_hostname,
-    }, sort_keys=True)
+    task['pubsub_topic'] = ('projects/%s/topics/%s' %
+                            (app_identity.get_application_id(), PUBSUB_TOPIC))
+    task['pubsub_userdata'] = json.dumps(
+        {
+            'build_id': build.key.id(),
+            'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
+            'swarming_hostname': build.swarming_hostname,
+        },
+        sort_keys=True)
   raise ndb.Return(task)
 
 
@@ -603,7 +607,10 @@ def _add_named_caches(builder_cfg, task_properties):
       cache_path = posixpath.join(CACHE_DIR, c.path)
     names.add(c.name)
     paths.add(cache_path)
-    task_properties['caches'].append({'path': cache_path, 'name': c.name, })
+    task_properties['caches'].append({
+        'path': cache_path,
+        'name': c.name,
+    })
 
   for c in template_caches:
     if c.get('path') not in paths and c.get('name') not in names:
@@ -641,22 +648,22 @@ def _get_builder_async(build):
     if builder_cfg.name == builder_name:  # pragma: no branch
       raise ndb.Return(bucket_cfg, builder_cfg)
 
-  raise errors.BuilderNotFoundError(
-      'Builder %r is not found in bucket %r' % (builder_name, build.bucket))
+  raise errors.BuilderNotFoundError('Builder %r is not found in bucket %r' %
+                                    (builder_name, build.bucket))
 
 
 @ndb.tasklet
 def prepare_task_def_async(build, build_number=None, fake_build=False):
   settings = yield get_settings_async()
   bucket_cfg, builder_cfg = yield _get_builder_async(build)
-  ret = yield _prepare_task_def_async(
-      build, build_number, bucket_cfg, builder_cfg, settings, fake_build)
+  ret = yield _prepare_task_def_async(build, build_number, bucket_cfg,
+                                      builder_cfg, settings, fake_build)
   raise ndb.Return(ret)
 
 
 @ndb.tasklet
-def _prepare_task_def_async(
-    build, build_number, bucket_cfg, builder_cfg, settings, fake_build):
+def _prepare_task_def_async(build, build_number, bucket_cfg, builder_cfg,
+                            settings, fake_build):
   """Prepares a swarming task definition.
 
   Validates the new build.
@@ -673,21 +680,19 @@ def _prepare_task_def_async(
         'Swarming buckets do not support creation of leased builds')
 
   if build_number is not None:
-    build.tags.append(
-        'build_address:%s/%s/%d' %
-        (build.bucket, builder_cfg.name, build_number))
+    build.tags.append('build_address:%s/%s/%d' %
+                      (build.bucket, builder_cfg.name, build_number))
 
   build.url = _generate_build_url(settings.milo_hostname, build, build_number)
 
   if build.experimental is None:
-    build.experimental = (
-        builder_cfg.experimental == project_config_pb2.YES)
+    build.experimental = (builder_cfg.experimental == project_config_pb2.YES)
     is_prod = yield _is_migrating_builder_prod_async(builder_cfg, build)
     if is_prod is not None:
       build.experimental = not is_prod
 
-  task_def = yield _create_task_def_async(
-      bucket_cfg.swarming, builder_cfg, build, build_number, fake_build)
+  task_def = yield _create_task_def_async(bucket_cfg.swarming, builder_cfg,
+                                          build, build_number, fake_build)
   raise ndb.Return(task_def)
 
 
@@ -703,8 +708,8 @@ def create_task_async(build, build_number=None):
   settings = yield get_settings_async()
   bucket_cfg, builder_cfg = yield _get_builder_async(build)
 
-  task_def = yield _prepare_task_def_async(
-      build, build_number, bucket_cfg, builder_cfg, settings, False)
+  task_def = yield _prepare_task_def_async(build, build_number, bucket_cfg,
+                                           builder_cfg, settings, False)
 
   assert build.swarming_hostname
   res = yield _call_api_async(
@@ -732,8 +737,8 @@ def create_task_async(build, build_number=None):
   build.swarming_task_id = task_id
 
   build.tags.extend([
-    'swarming_hostname:%s' % build.swarming_hostname,
-    'swarming_task_id:%s' % task_id,
+      'swarming_hostname:%s' % build.swarming_hostname,
+      'swarming_task_id:%s' % task_id,
   ])
   task_req = res.get('request', {})
   for t in task_req.get('tags', []):
@@ -761,21 +766,15 @@ def create_task_async(build, build_number=None):
 
 def _generate_build_url(milo_hostname, build, build_number):
   if not milo_hostname:
-    return (
-        'https://%s/task?id=%s' %
-        (build.swarming_hostname, build.swarming_task_id))
+    return ('https://%s/task?id=%s' % (build.swarming_hostname,
+                                       build.swarming_task_id))
   if build_number is not None:
-    return (
-        'https://%s/p/%s/builders/%s/%s/%d' %
-        (milo_hostname,
-        build.project,
-        build.bucket,
-        build.parameters[BUILDER_PARAMETER],
-        build_number))
+    return ('https://%s/p/%s/builders/%s/%s/%d' %
+            (milo_hostname, build.project, build.bucket,
+             build.parameters[BUILDER_PARAMETER], build_number))
 
-  return (
-      'https://%s/p/%s/builds/b%d' %
-      (milo_hostname, build.project, build.key.id()))
+  return ('https://%s/p/%s/builds/b%d' % (milo_hostname, build.project,
+                                          build.key.id()))
 
 
 @ndb.tasklet
@@ -785,8 +784,12 @@ def cancel_task_async(hostname, task_id):
   Noop if the task started running.
   """
   res = yield _call_api_async(
-      None, hostname, 'task/%s/cancel' % task_id, method='POST', payload={
-        'kill_running': True,
+      None,
+      hostname,
+      'task/%s/cancel' % task_id,
+      method='POST',
+      payload={
+          'kill_running': True,
       })
 
   if res.get('ok'):
@@ -808,8 +811,8 @@ def cancel_task_transactionally_async(hostname, task_id):  # pragma: no cover
 
   Swarming task cancelation is noop if the task started running.
   """
-  url = ('/internal/task/buildbucket/cancel_swarming_task/%s/%s' %
-         (hostname, task_id))
+  url = ('/internal/task/buildbucket/cancel_swarming_task/%s/%s' % (hostname,
+                                                                    task_id))
   task = taskqueue.Task(url=url)
   return task.add_async(queue_name='backend-default', transactional=True)
 
@@ -837,9 +840,8 @@ def _load_build_run_result_async(task_result, bucket, builder):
 
   server_prefix = 'https://'
   if not outputs_ref['isolatedserver'].startswith(server_prefix):
-    logging.error(
-        'Bad isolatedserver %r read from task %s',
-        outputs_ref['isolatedserver'], task_result['id'])
+    logging.error('Bad isolatedserver %r read from task %s',
+                  outputs_ref['isolatedserver'], task_result['id'])
     raise ndb.Return(None, BUILD_RUN_RESULT_CORRUPTED)
 
   hostname = outputs_ref['isolatedserver'][len(server_prefix):]
@@ -853,8 +855,8 @@ def _load_build_run_result_async(task_result, bucket, builder):
       logging.exception('could not load %s', isolated_loc.human_url)
       raise ndb.Return(None)
 
-  isolated_loc = isolate.Location(
-      hostname, outputs_ref['namespace'], outputs_ref['isolated'])
+  isolated_loc = isolate.Location(hostname, outputs_ref['namespace'],
+                                  outputs_ref['isolated'])
   isolated = yield fetch_json_async(isolated_loc)
   if isolated is None:
     raise ndb.Return(None, BUILD_RUN_RESULT_CORRUPTED)
@@ -868,17 +870,18 @@ def _load_build_run_result_async(task_result, bucket, builder):
   if result_size >= BUILD_RUN_RESULT_MAX_SIZE:
     raise ndb.Return(None, BUILD_RUN_RESULT_TOO_LARGE)
   BUILD_RUN_RESULT_SIZE_METRIC.add(result_size >> 10, {
-    'bucket': bucket,
-    'builder': builder,
+      'bucket': bucket,
+      'builder': builder,
   })
 
   result_loc = isolated_loc._replace(digest=result_entry['h'])
   build_result = yield fetch_json_async(result_loc)
-  raise ndb.Return(build_result, None if build_result else BUILD_RUN_RESULT_CORRUPTED)
+  raise ndb.Return(build_result, None
+                   if build_result else BUILD_RUN_RESULT_CORRUPTED)
 
 
-def _sync_build_in_memory(
-    build, task_result, build_run_result, build_run_result_error):
+def _sync_build_in_memory(build, task_result, build_run_result,
+                          build_run_result_error):
   """Syncs buildbucket |build| state with swarming task |result|."""
   # Task result docs:
   # https://github.com/luci/luci-py/blob/985821e9f13da2c93cb149d9e1159c68c72d58da/appengine/swarming/server/task_result.py#L239
@@ -898,20 +901,20 @@ def _sync_build_in_memory(
   build.failure_reason = None
   build.cancelation_reason = None
   build.result_details = {
-    'swarming': {
-      'task_result': task_result,
-    },
+      'swarming': {
+          'task_result': task_result,
+      },
   }
   # error message to include in result_details. Used only if build is complete.
   errmsg = ''
 
   terminal_states = {
-    'EXPIRED',
-    'TIMED_OUT',
-    'BOT_DIED',
-    'CANCELED',
-    'COMPLETED',
-    'KILLED',
+      'EXPIRED',
+      'TIMED_OUT',
+      'BOT_DIED',
+      'CANCELED',
+      'COMPLETED',
+      'KILLED',
   }
   state = (task_result or {}).get('state')
   if build_run_result_error:
@@ -924,9 +927,8 @@ def _sync_build_in_memory(
     build.status = model.BuildStatus.COMPLETED
     build.result = model.BuildResult.FAILURE
     build.failure_reason = model.FailureReason.INFRA_FAILURE
-    errmsg = (
-        'Swarming task %s on %s unexpectedly disappeared' %
-        (build.swarming_task_id, build.swarming_hostname))
+    errmsg = ('Swarming task %s on %s unexpectedly disappeared' %
+              (build.swarming_task_id, build.swarming_hostname))
   elif state == 'PENDING':
     build.status = model.BuildStatus.SCHEDULED
   elif state == 'RUNNING':
@@ -966,8 +968,8 @@ def _sync_build_in_memory(
   if build.status == old_status:  # pragma: no cover
     return False
   build.status_changed_time = now
-  logging.info(
-      'Build %s status: %s -> %s', build.key.id(), old_status, build.status)
+  logging.info('Build %s status: %s -> %s', build.key.id(), old_status,
+               build.status)
 
   def ts(key):
     v = (task_result or {}).get(key)
@@ -989,7 +991,7 @@ def _sync_build_in_memory(
       build.result_details['build_run_result'] = small_build_run_result
       # TODO(nodir,iannucci): define a schema for UI in a proto
       build.result_details['ui'] = {
-        'info': '\n'.join(annotations.get('text', [])),
+          'info': '\n'.join(annotations.get('text', [])),
       }
       build.result_details['properties'] = _extract_properties(
           build_run_result.get('annotations') or {})
@@ -1020,8 +1022,7 @@ def _extract_build_annotations(build_key, build_run_result):
     return None
 
   ann_step = annotations_pb2.Step()
-  json_format.Parse(
-      json.dumps(ann_dict), ann_step, ignore_unknown_fields=True)
+  json_format.Parse(json.dumps(ann_dict), ann_step, ignore_unknown_fields=True)
 
   return model.BuildAnnotations(
       key=model.BuildAnnotations.key_for(build_key),
@@ -1047,8 +1048,8 @@ def _sync_build_async(build_id, task_result, bucket, builder):
     build = yield model.Build.get_by_id_async(build_id)
     if not build:  # pragma: no cover
       raise ndb.Return(None)
-    made_change = _sync_build_in_memory(
-        build, task_result, build_run_result, build_run_result_error)
+    made_change = _sync_build_in_memory(build, task_result, build_run_result,
+                                        build_run_result_error)
     if not made_change:
       raise ndb.Return(None)
 
@@ -1129,7 +1130,7 @@ class SubNotify(webapp2.RequestHandler):
       logging.info('seen this message before, ignoring')
     else:
       self._process_msg(msg)
-    memcache.set(msg['messageId'], 1, namespace=nc, time=10*60)
+    memcache.set(msg['messageId'], 1, namespace=nc, time=10 * 60)
 
   def _process_msg(self, msg):
     hostname, created_time, task_id, build_id = self.unpack_msg(msg)
@@ -1142,26 +1143,28 @@ class SubNotify(webapp2.RequestHandler):
       if utils.utcnow() < created_time + datetime.timedelta(minutes=1):
         self.stop(
             'Build for a swarming task not found yet\nBuild: %s\nTask: %s',
-            build_id, task_url, redeliver=True)
-      self.stop(
-          'Build for a swarming task not found\nBuild: %s\nTask: %s',
-          build_id, task_url)
+            build_id,
+            task_url,
+            redeliver=True)
+      self.stop('Build for a swarming task not found\nBuild: %s\nTask: %s',
+                build_id, task_url)
 
     # Ensure the loaded build is associated with the task.
     if build.swarming_hostname != hostname:
-      self.stop(
-          'swarming_hostname %s of build %s does not match %s',
-          build.swarming_hostname, build_id, hostname)
+      self.stop('swarming_hostname %s of build %s does not match %s',
+                build.swarming_hostname, build_id, hostname)
     if build.swarming_task_id != task_id:
-      self.stop(
-          'swarming_task_id %s of build %s does not match %s',
-          build.swarming_task_id, build_id, task_id)
+      self.stop('swarming_task_id %s of build %s does not match %s',
+                build.swarming_task_id, build_id, task_id)
     assert build.parameters
 
     # Update build.
     result = _load_task_result_async(hostname, task_id).get_result()
     _sync_build_async(
-        build_id, result, build.bucket, build.parameters[BUILDER_PARAMETER],
+        build_id,
+        result,
+        build.bucket,
+        build.parameters[BUILDER_PARAMETER],
     ).get_result()
 
   def stop(self, msg, *args, **kwargs):
@@ -1197,15 +1200,14 @@ class CronUpdateBuilds(webapp2.RequestHandler):
 
   @ndb.tasklet
   def update_build_async(self, build):
-    result = yield _load_task_result_async(
-        build.swarming_hostname, build.swarming_task_id)
+    result = yield _load_task_result_async(build.swarming_hostname,
+                                           build.swarming_task_id)
     if not result:
-      logging.error(
-          'Task %s/%s referenced by build %s is not found',
-          build.swarming_hostname, build.swarming_task_id, build.key.id())
-    yield _sync_build_async(
-        build.key.id(), result, build.bucket,
-        build.parameters[BUILDER_PARAMETER])
+      logging.error('Task %s/%s referenced by build %s is not found',
+                    build.swarming_hostname, build.swarming_task_id,
+                    build.key.id())
+    yield _sync_build_async(build.key.id(), result, build.bucket,
+                            build.parameters[BUILDER_PARAMETER])
 
   @decorators.require_cronjob
   def get(self):  # pragma: no cover
@@ -1220,12 +1222,8 @@ class CronUpdateBuilds(webapp2.RequestHandler):
 
 def get_backend_routes():  # pragma: no cover
   return [
-    webapp2.Route(
-        r'/internal/cron/swarming/update_builds',
-        CronUpdateBuilds),
-    webapp2.Route(
-        r'/_ah/push-handlers/swarming/notify',
-        SubNotify),
+      webapp2.Route(r'/internal/cron/swarming/update_builds', CronUpdateBuilds),
+      webapp2.Route(r'/_ah/push-handlers/swarming/notify', SubNotify),
   ]
 
 
@@ -1234,9 +1232,14 @@ def get_backend_routes():  # pragma: no cover
 
 
 @ndb.tasklet
-def _call_api_async(
-    impersonated_identity, hostname, path, method='GET', payload=None,
-    delegation_tags=None, deadline=None, max_attempts=None):
+def _call_api_async(impersonated_identity,
+                    hostname,
+                    path,
+                    method='GET',
+                    payload=None,
+                    delegation_tags=None,
+                    deadline=None,
+                    max_attempts=None):
   """Calls Swarming API.
 
   If impersonated_identity is None, does not impersonate.

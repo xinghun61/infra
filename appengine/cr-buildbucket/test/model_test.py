@@ -12,6 +12,7 @@ import model
 
 
 class BuildTest(testing.AppengineTestCase):
+
   def test_regenerate_lease_key(self):
     build = model.Build(bucket='chromium')
     build.put()

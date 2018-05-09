@@ -1,7 +1,6 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Provides functions specific to v2 builds."""
 
 import logging
@@ -13,7 +12,6 @@ from . import errors
 from proto import build_pb2
 from proto import common_pb2
 import model
-
 
 BUILDER_PARAMETER = 'builder_name'
 
@@ -32,22 +30,17 @@ def build_to_v2_partial(build):
       number=result_details.get('properties', {}).get('buildnumber') or 0,
       created_by=build.created_by.to_bytes(),
       view_url=build.url,
-
       create_time=_dt2ts(build.create_time),
       start_time=_dt2ts(build.start_time),
       end_time=_dt2ts(build.complete_time),
       update_time=_dt2ts(build.update_time),
-
       status=_get_status(build),
-
       input=build_pb2.Build.Input(
           properties=_dict_to_struct(build.parameters.get('properties')),
           experimental=build.experimental,
       ),
       output=build_pb2.Build.Output(
-          properties=_dict_to_struct(result_details.get('properties')),
-      ),
-
+          properties=_dict_to_struct(result_details.get('properties')),),
       infra=build_pb2.BuildInfra(
           buildbucket=build_pb2.BuildInfra.Buildbucket(canary=build.canary),
           swarming=build_pb2.BuildInfra.Swarming(

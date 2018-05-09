@@ -33,7 +33,6 @@ import model
 import sequence
 import swarming
 
-
 MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
@@ -48,8 +47,7 @@ validate_bucket_name = errors.validate_bucket_name
 # This metric exists because defining it on the buildbucket server is easier
 # than modifying Buildbot. It is very specific intentionally.
 PEEK_ACCESS_DENIED_ERROR_COUNTER = gae_ts_mon.CounterMetric(
-    'buildbucket/peek_access_denied_errors',
-    'Number of errors in peek API',
+    'buildbucket/peek_access_denied_errors', 'Number of errors in peek API',
     [gae_ts_mon.StringField('bucket')])
 
 
@@ -105,16 +103,13 @@ def validate_build_set(bs):
   if bs.startswith('commit/gitiles/'):
     m = model.RE_BUILDSET_GITILES_COMMIT.match(bs)
     if not m:
-      raise errors.InvalidInputError(
-          'does not match regex "%s"' % (
-              model.RE_BUILDSET_GITILES_COMMIT.pattern))
+      raise errors.InvalidInputError('does not match regex "%s"' %
+                                     (model.RE_BUILDSET_GITILES_COMMIT.pattern))
     project = m.group(2)
     if project.startswith('a/'):
-      raise errors.InvalidInputError(
-          'gitiles project must not start with "a/"')
+      raise errors.InvalidInputError('gitiles project must not start with "a/"')
     if project.endswith('.git'):
-      raise errors.InvalidInputError(
-          'gitiles project must not end with ".git"')
+      raise errors.InvalidInputError('gitiles project must not end with ".git"')
 
   elif bs.startswith('patch/gerrit/'):
     if not model.RE_BUILDSET_GERRIT_CL.match(bs):
@@ -141,8 +136,8 @@ def validate_tags(tags, mode, builder=None):
   builder_tag = None
   for t in tags:
     if not isinstance(t, basestring):
-      raise errors.InvalidInputError(
-          'Invalid tag "%s": must be a string' % (t, ))
+      raise errors.InvalidInputError('Invalid tag "%s": must be a string' %
+                                     (t,))
     if ':' not in t:
       raise errors.InvalidInputError(
           'Invalid tag "%s": does not contain ":"' % t)
@@ -157,37 +152,49 @@ def validate_tags(tags, mode, builder=None):
     if k == 'builder':
       if mode == 'append':
         raise errors.InvalidInputError(
-          'Tag "builder" cannot be added to an existing build')
+            'Tag "builder" cannot be added to an existing build')
       if mode == 'new':  # pragma: no branch
         if builder is not None and v != builder:
           raise errors.InvalidInputError(
-              'Tag "%s" conflicts with builder_name parameter "%s"' %
-              (t, builder))
+              'Tag "%s" conflicts with builder_name parameter "%s"' % (t,
+                                                                       builder))
         if builder_tag is None:
           builder_tag = t
         elif t != builder_tag:
-          raise errors.InvalidInputError(
-              'Tag "%s" conflicts with tag "%s"' % (t, builder_tag))
+          raise errors.InvalidInputError('Tag "%s" conflicts with tag "%s"' %
+                                         (t, builder_tag))
     if mode != 'search' and k in RESERVED_TAG_KEYS:
       raise errors.InvalidInputError('Tag "%s" is reserved' % k)
 
 
 _BuildRequestBase = collections.namedtuple('_BuildRequestBase', [
-  'project', 'bucket', 'tags', 'parameters', 'lease_expiration_date',
-  'client_operation_id', 'pubsub_callback', 'retry_of', 'canary_preference',
-  'experimental',
+    'project',
+    'bucket',
+    'tags',
+    'parameters',
+    'lease_expiration_date',
+    'client_operation_id',
+    'pubsub_callback',
+    'retry_of',
+    'canary_preference',
+    'experimental',
 ])
 
 
 class BuildRequest(_BuildRequestBase):
   """A request to add a new build. Immutable."""
 
-  def __new__(
-      cls, project, bucket, tags=None, parameters=None,
-      lease_expiration_date=None, client_operation_id=None,
-      pubsub_callback=None, retry_of=None,
-      canary_preference=model.CanaryPreference.AUTO,
-      experimental=None):
+  def __new__(cls,
+              project,
+              bucket,
+              tags=None,
+              parameters=None,
+              lease_expiration_date=None,
+              client_operation_id=None,
+              pubsub_callback=None,
+              retry_of=None,
+              canary_preference=model.CanaryPreference.AUTO,
+              experimental=None):
     """Creates an BuildRequest. Does not perform validation.
 
     Args:
@@ -226,35 +233,33 @@ class BuildRequest(_BuildRequestBase):
           'invalid canary_preference %r' % self.canary_preference)
     validate_bucket_name(self.bucket)
     validate_tags(
-        self.tags, 'new',
-        builder=(self.parameters or {}).get(BUILDER_PARAMETER)
-    )
+        self.tags,
+        'new',
+        builder=(self.parameters or {}).get(BUILDER_PARAMETER))
     if self.parameters is not None and not isinstance(self.parameters, dict):
       raise errors.InvalidInputError('parameters must be a dict or None')
     validate_lease_expiration_date(self.lease_expiration_date)
     if self.client_operation_id is not None:
-      if not isinstance(
-          self.client_operation_id, basestring):  # pragma: no cover
+      if not isinstance(self.client_operation_id,
+                        basestring):  # pragma: no cover
         raise errors.InvalidInputError('client_operation_id must be string')
       if '/' in self.client_operation_id:  # pragma: no cover
-        raise errors.InvalidInputError(
-            'client_operation_id must not contain /')
+        raise errors.InvalidInputError('client_operation_id must not contain /')
 
     # Normalize.
     normalized_tags = sorted(set(self.tags or []))
-    return BuildRequest(
-        self.project, self.bucket, normalized_tags, self.parameters,
-        self.lease_expiration_date, self.client_operation_id,
-        self.pubsub_callback, self.retry_of, self.canary_preference,
-        self.experimental)
+    return BuildRequest(self.project, self.bucket, normalized_tags,
+                        self.parameters, self.lease_expiration_date,
+                        self.client_operation_id, self.pubsub_callback,
+                        self.retry_of, self.canary_preference,
+                        self.experimental)
 
   def _client_op_memcache_key(self, identity=None):
     if self.client_operation_id is None:  # pragma: no cover
       return None
-    return (
-      'client_op/%s/%s/add_build' % (
-        (identity or auth.get_current_identity()).to_bytes(),
-        self.client_operation_id))
+    return ('client_op/%s/%s/add_build' %
+            ((identity or auth.get_current_identity()).to_bytes(),
+             self.client_operation_id))
 
   def create_build(self, build_id, created_by, now):
     """Converts the request to a build."""
@@ -343,9 +348,8 @@ def add_many_async(build_request_list):
   ctx = ndb.get_context()
   new_builds = {}  # {i: model.Build}
 
-  logging.info(
-      '%s is creating %d builds',
-      auth.get_current_identity(), len(build_request_list))
+  logging.info('%s is creating %d builds', auth.get_current_identity(),
+               len(build_request_list))
 
   def pending_reqs():
     for i, r in enumerate(build_request_list):
@@ -388,25 +392,23 @@ def add_many_async(build_request_list):
     Mark resolved requests as done and save found builds in results.
     """
     cached_build_id_futs = {
-      i: ctx.memcache_get(r._client_op_memcache_key())
-      for i, r in pending_reqs()
-      if r.client_operation_id is not None
+        i: ctx.memcache_get(r._client_op_memcache_key())
+        for i, r in pending_reqs()
+        if r.client_operation_id is not None
     }
     if not cached_build_id_futs:
       return
 
     yield cached_build_id_futs.values()
     cached_build_ids = {
-      f.get_result(): i
-      for i, f in cached_build_id_futs.iteritems()
-      if f.get_result() is not None
+        f.get_result(): i
+        for i, f in cached_build_id_futs.iteritems()
+        if f.get_result() is not None
     }
     if not cached_build_ids:
       return
-    cached_builds = yield ndb.get_multi_async([
-      ndb.Key(model.Build, build_id)
-      for build_id in cached_build_ids
-    ])
+    cached_builds = yield ndb.get_multi_async(
+        [ndb.Key(model.Build, build_id) for build_id in cached_build_ids])
     for b in cached_builds:
       if b:  # pragma: no branch
         # A cached build has been found.
@@ -472,7 +474,7 @@ def add_many_async(build_request_list):
       if cfg and cfg.build_numbers == project_config_pb2.YES:
         numbered.setdefault(builder_id, []).append(i)
     # Now actually generate build numbers.
-    build_number_futs = [] # [(indexes, seq_name, build_number_fut)]
+    build_number_futs = []  # [(indexes, seq_name, build_number_fut)]
     for builder_id, indexes in numbered.iteritems():
       seq_name = sequence.builder_seq_name(builder_id[0], builder_id[1])
       fut = sequence.generate_async(seq_name, len(indexes))
@@ -513,11 +515,11 @@ def add_many_async(build_request_list):
     index_entries = collections.defaultdict(list)
     for b in new_builds.itervalues():
       for t in set(_indexed_tags(b.tags)):
-        index_entries[t].append(model.TagIndexEntry(
-            build_id=b.key.id(), bucket=b.bucket))
+        index_entries[t].append(
+            model.TagIndexEntry(build_id=b.key.id(), bucket=b.bucket))
     return [
-      _add_to_tag_index_async(tag, entries)
-      for tag, entries in index_entries.iteritems()
+        _add_to_tag_index_async(tag, entries)
+        for tag, entries in index_entries.iteritems()
     ]
 
   @ndb.tasklet
@@ -578,9 +580,8 @@ def _with_swarming_api_error_converter():
     yield
   except net.AuthError as ex:
     raise auth.AuthorizationError(
-        'Auth error while calling swarming on behalf of %s: %s' % (
-          auth.get_current_identity().to_bytes(), ex.response
-        ))
+        'Auth error while calling swarming on behalf of %s: %s' %
+        (auth.get_current_identity().to_bytes(), ex.response))
   except net.Error as ex:
     if ex.status_code == 400:
       # Note that 401, 403 and 404 responses are converted to different
@@ -606,24 +607,28 @@ def unregister_builders():
     ndb.delete_multi(keys)
 
 
-def retry(
-    build_id, lease_expiration_date=None, client_operation_id=None,
-    pubsub_callback=None):
+def retry(build_id,
+          lease_expiration_date=None,
+          client_operation_id=None,
+          pubsub_callback=None):
   """Adds a build with same bucket, parameters and tags as the given one."""
   build = model.Build.get_by_id(build_id)
   if not build:
     raise errors.BuildNotFoundError('Build %s not found' % build_id)
-  return add(BuildRequest(
-      build.project,
-      build.bucket,
-      tags=build.initial_tags if build.initial_tags is not None else build.tags,
-      parameters=build.parameters,
-      lease_expiration_date=lease_expiration_date,
-      client_operation_id=client_operation_id,
-      pubsub_callback=pubsub_callback,
-      retry_of=build_id,
-      canary_preference=build.canary_preference or model.CanaryPreference.AUTO,
-  ))
+  return add(
+      BuildRequest(
+          build.project,
+          build.bucket,
+          tags=build.initial_tags
+          if build.initial_tags is not None else build.tags,
+          parameters=build.parameters,
+          lease_expiration_date=lease_expiration_date,
+          client_operation_id=client_operation_id,
+          pubsub_callback=pubsub_callback,
+          retry_of=build_id,
+          canary_preference=build.canary_preference or
+          model.CanaryPreference.AUTO,
+      ))
 
 
 def get(build_id):
@@ -707,11 +712,21 @@ class StatusFilter(messages.Enum):
 class SearchQuery(object):
   """Argument for search. Mutable."""
 
-  def __init__(
-      self, buckets=None, tags=None, status=None, result=None,
-      failure_reason=None, cancelation_reason=None, created_by=None,
-      max_builds=None, start_cursor=None, retry_of=None, canary=None,
-      create_time_low=None, create_time_high=None, include_experimental=None):
+  def __init__(self,
+               buckets=None,
+               tags=None,
+               status=None,
+               result=None,
+               failure_reason=None,
+               cancelation_reason=None,
+               created_by=None,
+               max_builds=None,
+               start_cursor=None,
+               retry_of=None,
+               canary=None,
+               create_time_low=None,
+               create_time_high=None,
+               include_experimental=None):
     """Initializes SearchQuery.
 
     Args:
@@ -806,9 +821,9 @@ def search(q):
     q.buckets = set(q.buckets)
 
   is_tag_index_cursor = (
-    q.start_cursor and RE_TAG_INDEX_SEARCH_CURSOR.match(q.start_cursor))
+      q.start_cursor and RE_TAG_INDEX_SEARCH_CURSOR.match(q.start_cursor))
   can_use_tag_index = (
-    _indexed_tags(q.tags) and (not q.start_cursor or is_tag_index_cursor))
+      _indexed_tags(q.tags) and (not q.start_cursor or is_tag_index_cursor))
   if is_tag_index_cursor and not can_use_tag_index:
     raise errors.InvalidInputError('invalid cursor')
   can_use_query_search = not q.start_cursor or not is_tag_index_cursor
@@ -819,9 +834,8 @@ def search(q):
     try:
       search_start_time = utils.utcnow()
       results = _tag_index_search(q)
-      logging.info(
-          'tag index search took %dms',
-          (utils.utcnow() - search_start_time).total_seconds() * 1000)
+      logging.info('tag index search took %dms',
+                   (utils.utcnow() - search_start_time).total_seconds() * 1000)
       return results
     except (errors.InvalidIndexEntryOrder, errors.TagIndexIncomplete) as ex:
       if isinstance(ex, errors.InvalidIndexEntryOrder):
@@ -834,9 +848,8 @@ def search(q):
   assert can_use_query_search
   search_start_time = utils.utcnow()
   results = _query_search(q)
-  logging.info(
-      'query search took %dms',
-      (utils.utcnow() - search_start_time).total_seconds() * 1000)
+  logging.info('query search took %dms',
+               (utils.utcnow() - search_start_time).total_seconds() * 1000)
   return results
 
 
@@ -935,7 +948,7 @@ def _tag_index_search(q):
   # Choose a tag to search by.
   all_indexed_tags = _indexed_tags(q.tags)
   assert all_indexed_tags
-  indexed_tag = all_indexed_tags[0] # choose the most selective tag.
+  indexed_tag = all_indexed_tags[0]  # choose the most selective tag.
   indexed_tag_key = indexed_tag.split(':', 1)[0]
 
   # Exclude the indexed tag from the tag filter.
@@ -949,9 +962,8 @@ def _tag_index_search(q):
   if not idx or not idx.entries:
     logging.info('no index/entries for tag %s', indexed_tag)
     return [], None
-  logging.info(
-      'using TagIndex(%s); last build id = %s',
-      indexed_tag, idx.entries[-1].build_id)
+  logging.info('using TagIndex(%s); last build id = %s', indexed_tag,
+               idx.entries[-1].build_id)
 
   _check_tag_index_entry_order(idx)
 
@@ -998,29 +1010,29 @@ def _tag_index_search(q):
   # scalar_filters maps a name of a model.Build attribute to a filter value.
   # Applies only to non-repeated fields.
   scalar_filters = [
-    ('result', q.result),
-    ('failure_reason', q.failure_reason),
-    ('cancelation_reason', q.cancelation_reason),
-    ('created_by', q.created_by),
-    ('retry_of', q.retry_of),
-    ('canary', q.canary),
+      ('result', q.result),
+      ('failure_reason', q.failure_reason),
+      ('cancelation_reason', q.cancelation_reason),
+      ('created_by', q.created_by),
+      ('retry_of', q.retry_of),
+      ('canary', q.canary),
   ]
   scalar_filters = [(a, v) for a, v in scalar_filters if v is not None]
   if q.status == StatusFilter.INCOMPLETE:
     scalar_filters.append(('incomplete', True))
   elif q.status is not None:
-    scalar_filters.append(
-        ('status', model.BuildStatus.lookup_by_number(q.status.number)))
+    scalar_filters.append(('status',
+                           model.BuildStatus.lookup_by_number(q.status.number)))
 
   # Find the builds.
-  result = [] # ordered by build id by ascending.
+  result = []  # ordered by build id by ascending.
   last_considered_entry = None
   skipped_entries = 0
   inconsistent_entries = 0
   eof = False
   while len(result) < q.max_builds:
     fetch_count = q.max_builds - len(result)
-    entries_to_fetch = [] # ordered by build id by ascending.
+    entries_to_fetch = []  # ordered by build id by ascending.
     while entry_index >= 0:
       e = idx.entries[entry_index]
       entry_index -= 1
@@ -1089,7 +1101,7 @@ def _check_tag_index_entry_order(idx):
   # The order must be descending.
   for i in xrange(len(idx.entries) - 1):
     # Tolerate duplicates.
-    if idx.entries[i].build_id < idx.entries[i+1].build_id:
+    if idx.entries[i].build_id < idx.entries[i + 1].build_id:
       raise errors.InvalidIndexEntryOrder(
           'invalid entry order in TagIndex(%r)' % idx.key.id())
 
@@ -1138,12 +1150,10 @@ def peek(buckets, max_builds=None, start_cursor=None):
   # Check once again locally because an ndb query may return an entity not
   # satisfying the query.
   def local_predicate(b):
-    return (b.status == model.BuildStatus.SCHEDULED and
-            not b.is_leased and
+    return (b.status == model.BuildStatus.SCHEDULED and not b.is_leased and
             b.bucket in active_buckets)
 
-  return _fetch_page(
-      q, max_builds, start_cursor, predicate=local_predicate)
+  return _fetch_page(q, max_builds, start_cursor, predicate=local_predicate)
 
 
 def _get_leasable_build(build_id):
@@ -1211,6 +1221,7 @@ def reset(build_id):
   Returns:
     The reset Build.
   """
+
   @ndb.transactional
   def txn():
     build = _get_leasable_build(build_id)
@@ -1324,9 +1335,8 @@ def heartbeat_async(build_id, lease_key, lease_expiration_date):
       msg = ''
       if (build.result == model.BuildResult.CANCELED and
           build.cancelation_reason == model.CancelationReason.TIMEOUT):
-        msg = (
-            'Build was marked as timed out '
-            'because it did not complete for %s' % model.BUILD_TIMEOUT)
+        msg = ('Build was marked as timed out '
+               'because it did not complete for %s' % model.BUILD_TIMEOUT)
       raise errors.BuildIsCompletedError(msg)
     _check_lease(build, lease_key)
     build.lease_expiration_date = lease_expiration_date
@@ -1371,9 +1381,13 @@ def heartbeat_batch(heartbeats):
   return [get_result(h, f) for h, f in futures]
 
 
-def _complete(
-    build_id, lease_key, result, result_details, failure_reason=None,
-    url=None, new_tags=None):
+def _complete(build_id,
+              lease_key,
+              result,
+              result_details,
+              failure_reason=None,
+              url=None,
+              new_tags=None):
   """Marks a build as completed. Used by succeed and fail methods."""
   validate_lease_key(lease_key)
   validate_url(url)
@@ -1385,10 +1399,8 @@ def _complete(
     build = _get_leasable_build(build_id)
 
     if build.status == model.BuildStatus.COMPLETED:
-      if (build.result == result and
-          build.failure_reason == failure_reason and
-          build.result_details == result_details and
-          build.url == url):
+      if (build.result == result and build.failure_reason == failure_reason and
+          build.result_details == result_details and build.url == url):
         return False, build
       raise errors.BuildIsCompletedError(
           'Build %s has already completed' % build_id)
@@ -1428,13 +1440,20 @@ def succeed(build_id, lease_key, result_details=None, url=None, new_tags=None):
     The succeeded Build.
   """
   return _complete(
-      build_id, lease_key, model.BuildResult.SUCCESS, result_details, url=url,
+      build_id,
+      lease_key,
+      model.BuildResult.SUCCESS,
+      result_details,
+      url=url,
       new_tags=new_tags)
 
 
-def fail(
-    build_id, lease_key, result_details=None, failure_reason=None,
-    url=None, new_tags=None):
+def fail(build_id,
+         lease_key,
+         result_details=None,
+         failure_reason=None,
+         url=None,
+         new_tags=None):
   """Marks a build as failed. Idempotent.
 
   Args:
@@ -1450,8 +1469,13 @@ def fail(
   """
   failure_reason = failure_reason or model.FailureReason.BUILD_FAILURE
   return _complete(
-      build_id, lease_key, model.BuildResult.FAILURE, result_details,
-      failure_reason, url=url, new_tags=new_tags)
+      build_id,
+      lease_key,
+      model.BuildResult.FAILURE,
+      result_details,
+      failure_reason,
+      url=url,
+      new_tags=new_tags)
 
 
 def cancel(build_id, result_details=None):
@@ -1489,8 +1513,9 @@ def cancel(build_id, result_details=None):
     build.clear_lease()
     futs = [build.put_async(), events.on_build_completing_async(build)]
     if build.swarming_hostname and build.swarming_task_id is not None:
-      futs.append(swarming.cancel_task_transactionally_async(
-          build.swarming_hostname, build.swarming_task_id))
+      futs.append(
+          swarming.cancel_task_transactionally_async(build.swarming_hostname,
+                                                     build.swarming_task_id))
     _fut_results(*futs)
     return True, build
 
@@ -1502,6 +1527,7 @@ def cancel(build_id, result_details=None):
 
 @ndb.tasklet
 def _reset_expired_build_async(build_id):
+
   @ndb.transactional_tasklet
   def txn_async():
     build = yield model.Build.get_by_id_async(build_id)
@@ -1546,7 +1572,7 @@ def _timeout_async(build_id):
 
   # This is the only yield in this function, but it is not performance-critical.
   updated, build = yield txn_async()
-  if updated :  # pragma: no branch
+  if updated:  # pragma: no branch
     events.on_build_completed(build)
 
 
@@ -1608,8 +1634,9 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
       raise ndb.Return(False)
     futs = [key.delete_async()]
     if build.swarming_hostname and build.swarming_task_id:
-      futs.append(swarming.cancel_task_transactionally_async(
-          build.swarming_hostname, build.swarming_task_id))
+      futs.append(
+          swarming.cancel_task_transactionally_async(build.swarming_hostname,
+                                                     build.swarming_task_id))
     yield futs
     raise ndb.Return(True)
 
@@ -1621,9 +1648,8 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
   assert status in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED)
   tags = tags or []
   created_by = parse_identity(created_by)
-  q = model.Build.query(
-      model.Build.bucket == bucket,
-      model.Build.status == status)
+  q = model.Build.query(model.Build.bucket == bucket,
+                        model.Build.status == status)
   for t in tags:
     q = q.filter(model.Build.tags == t)
   if created_by:
@@ -1644,8 +1670,8 @@ def pause(bucket, is_paused):
 
   @ndb.transactional
   def try_set_pause():
-    state = (model.BucketState.get_by_id(id=bucket) or
-             model.BucketState(id=bucket))
+    state = (
+        model.BucketState.get_by_id(id=bucket) or model.BucketState(id=bucket))
     if state.is_paused != is_paused:
       state.is_paused = is_paused
       state.put()
@@ -1675,7 +1701,7 @@ def _add_to_tag_index_async(tag, new_entries):
     return
   new_entries.sort(key=lambda e: e.build_id, reverse=True)
   for i in xrange(len(new_entries) - 1):
-    assert new_entries[i].build_id != new_entries[i+1].build_id, 'Duplicate!'
+    assert new_entries[i].build_id != new_entries[i + 1].build_id, 'Duplicate!'
 
   logging.debug('adding %d entries to tag index %s', len(new_entries), tag)
 
@@ -1694,9 +1720,8 @@ def _add_to_tag_index_async(tag, new_entries):
       # idx.entries is sorted by descending.
       # Build ids are monotonically decreasing, so most probably new entries
       # will be added to the end.
-      fast_path = (
-          not idx.entries or
-          idx.entries[-1].build_id > new_entries[0].build_id)
+      fast_path = (not idx.entries or
+                   idx.entries[-1].build_id > new_entries[0].build_id)
       idx.entries.extend(new_entries)
       if not fast_path:
         # Atypical case
@@ -1714,10 +1739,8 @@ def _indexed_tags(tags):
   """
   if not tags:
     return []
-  return sorted(set(
-      t for t in tags
-      if t.startswith(('buildset:', 'build_address:'))
-  ))
+  return sorted(
+      set(t for t in tags if t.startswith(('buildset:', 'build_address:'))))
 
 
 def _fut_results(*futures):

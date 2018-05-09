@@ -16,133 +16,136 @@ import model
 
 
 class MetricsTest(testing.AppengineTestCase):
+
   def setUp(self):
     super(MetricsTest, self).setUp()
     gae_ts_mon.reset_for_unittest(disable=True)
 
   def test_set_build_count_metric(self):
     ndb.put_multi([
-      model.Build(
-          bucket='chromium',
-          status=model.BuildStatus.SCHEDULED,
-          create_time=datetime.datetime(2015, 1, 1),
-          tags=['builder:release'],
-          experimental=True,
-      ),
-      model.Build(
-          bucket='chromium',
-          status=model.BuildStatus.SCHEDULED,
-          tags=['builder:release'],
-          create_time=datetime.datetime(2015, 1, 1),
-      ),
-      model.Build(
-          bucket='chromium',
-          status=model.BuildStatus.SCHEDULED,
-          tags=['builder:release'],
-          create_time=datetime.datetime(2015, 1, 1),
-      ),
-      model.Build(
-          bucket='chromium',
-          status=model.BuildStatus.SCHEDULED,
-          tags=['builder:debug'],
-          create_time=datetime.datetime(2015, 1, 1),
-      ),
-      model.Build(
-          bucket='v8',
-          status=model.BuildStatus.SCHEDULED,
-          create_time=datetime.datetime(2015, 1, 1),
-      ),
-      model.Build(
-          bucket='chromium',
-          status=model.BuildStatus.STARTED,
-          create_time=datetime.datetime(2015, 1, 1),
-          start_time=datetime.datetime(2015, 1, 1),
-      ),
+        model.Build(
+            bucket='chromium',
+            status=model.BuildStatus.SCHEDULED,
+            create_time=datetime.datetime(2015, 1, 1),
+            tags=['builder:release'],
+            experimental=True,
+        ),
+        model.Build(
+            bucket='chromium',
+            status=model.BuildStatus.SCHEDULED,
+            tags=['builder:release'],
+            create_time=datetime.datetime(2015, 1, 1),
+        ),
+        model.Build(
+            bucket='chromium',
+            status=model.BuildStatus.SCHEDULED,
+            tags=['builder:release'],
+            create_time=datetime.datetime(2015, 1, 1),
+        ),
+        model.Build(
+            bucket='chromium',
+            status=model.BuildStatus.SCHEDULED,
+            tags=['builder:debug'],
+            create_time=datetime.datetime(2015, 1, 1),
+        ),
+        model.Build(
+            bucket='v8',
+            status=model.BuildStatus.SCHEDULED,
+            create_time=datetime.datetime(2015, 1, 1),
+        ),
+        model.Build(
+            bucket='chromium',
+            status=model.BuildStatus.STARTED,
+            create_time=datetime.datetime(2015, 1, 1),
+            start_time=datetime.datetime(2015, 1, 1),
+        ),
     ])
     metrics.set_build_count_metric_async(
-        'chromium',
-        'release',
-        model.BuildStatus.SCHEDULED,
-        False).get_result()
-    self.assertEqual(2, metrics.BUILD_COUNT_PROD.get(
-        {'bucket': 'chromium', 'builder': 'release', 'status': 'SCHEDULED'},
-        target_fields=metrics.GLOBAL_TARGET_FIELDS))
+        'chromium', 'release', model.BuildStatus.SCHEDULED, False).get_result()
+    self.assertEqual(2,
+                     metrics.BUILD_COUNT_PROD.get(
+                         {
+                             'bucket': 'chromium',
+                             'builder': 'release',
+                             'status': 'SCHEDULED'
+                         },
+                         target_fields=metrics.GLOBAL_TARGET_FIELDS))
 
   @mock.patch('components.utils.utcnow', autospec=True)
   def test_set_build_lease_latency(self, utcnow):
     utcnow.return_value = datetime.datetime(2015, 1, 4)
 
     ndb.put_multi([
-      model.Build(
-          bucket='chromium',
-          tags=['builder:release'],
-          status=model.BuildStatus.SCHEDULED,
-          never_leased=True,
-          create_time=datetime.datetime(2014, 1, 1),
-          experimental=True,  # should be ignored by both metrics
-      ),
-      model.Build(
-          bucket='chromium',
-          tags=['builder:release'],
-          status=model.BuildStatus.SCHEDULED,
-          never_leased=True,
-          create_time=datetime.datetime(2015, 1, 1),
-      ),
-      model.Build(
-          bucket='chromium',
-          tags=['builder:release'],
-          status=model.BuildStatus.SCHEDULED,
-          never_leased=False,
-          create_time=datetime.datetime(2014, 12, 31),
-      ),
-      model.Build(
-          bucket='chromium',
-          tags=['builder:release'],
-          status=model.BuildStatus.SCHEDULED,
-          never_leased=True,
-          create_time=datetime.datetime(2015, 1, 3),
-      ),
-      model.Build(
-          bucket='chromium',
-          tags=['builder:release'],
-          status=model.BuildStatus.COMPLETED,
-          result=model.BuildResult.CANCELED,
-          cancelation_reason=model.CancelationReason.TIMEOUT,
-          never_leased=True,
-          create_time=datetime.datetime(2015, 1, 3),
-          complete_time=datetime.datetime(2015, 1, 4),
-          canary=False,
-      ),
-      model.Build(
-          bucket='chromium',
-          tags=['builder:release'],
-          status=model.BuildStatus.SCHEDULED,
-          create_time=datetime.datetime(2014, 1, 3),
-          # never_leased is None, so this should be ignored by both metrics.
-      ),
-      model.Build(
-          bucket='v8',
-          tags=['builder:release'],
-          status=model.BuildStatus.SCHEDULED,
-          never_leased=True,
-          create_time=datetime.datetime(2015, 1, 3),
-      ),
+        model.Build(
+            bucket='chromium',
+            tags=['builder:release'],
+            status=model.BuildStatus.SCHEDULED,
+            never_leased=True,
+            create_time=datetime.datetime(2014, 1, 1),
+            experimental=True,  # should be ignored by both metrics
+        ),
+        model.Build(
+            bucket='chromium',
+            tags=['builder:release'],
+            status=model.BuildStatus.SCHEDULED,
+            never_leased=True,
+            create_time=datetime.datetime(2015, 1, 1),
+        ),
+        model.Build(
+            bucket='chromium',
+            tags=['builder:release'],
+            status=model.BuildStatus.SCHEDULED,
+            never_leased=False,
+            create_time=datetime.datetime(2014, 12, 31),
+        ),
+        model.Build(
+            bucket='chromium',
+            tags=['builder:release'],
+            status=model.BuildStatus.SCHEDULED,
+            never_leased=True,
+            create_time=datetime.datetime(2015, 1, 3),
+        ),
+        model.Build(
+            bucket='chromium',
+            tags=['builder:release'],
+            status=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.CANCELED,
+            cancelation_reason=model.CancelationReason.TIMEOUT,
+            never_leased=True,
+            create_time=datetime.datetime(2015, 1, 3),
+            complete_time=datetime.datetime(2015, 1, 4),
+            canary=False,
+        ),
+        model.Build(
+            bucket='chromium',
+            tags=['builder:release'],
+            status=model.BuildStatus.SCHEDULED,
+            create_time=datetime.datetime(2014, 1, 3),
+            # never_leased is None, so this should be ignored by both metrics.
+        ),
+        model.Build(
+            bucket='v8',
+            tags=['builder:release'],
+            status=model.BuildStatus.SCHEDULED,
+            never_leased=True,
+            create_time=datetime.datetime(2015, 1, 3),
+        ),
     ])
     metrics.set_build_latency('chromium', 'release', True).get_result()
     metrics.set_build_latency('chromium', 'release', False).get_result()
     max_lease = metrics.MAX_AGE_SCHEDULED.get(
         {
-          'bucket': 'chromium',
-          'builder': 'release',
-          'must_be_never_leased': True,
+            'bucket': 'chromium',
+            'builder': 'release',
+            'must_be_never_leased': True,
         },
         target_fields=metrics.GLOBAL_TARGET_FIELDS)
     self.assertEqual(max_lease, 3 * 24 * 3600)
     max_start = metrics.MAX_AGE_SCHEDULED.get(
         {
-          'bucket': 'chromium',
-          'builder': 'release',
-          'must_be_never_leased': False,
+            'bucket': 'chromium',
+            'builder': 'release',
+            'must_be_never_leased': False,
         },
         target_fields=metrics.GLOBAL_TARGET_FIELDS)
     self.assertEqual(max_start, 4 * 24 * 3600)
@@ -152,25 +155,25 @@ class MetricsTest(testing.AppengineTestCase):
     metrics.set_build_latency('chromium', 'release', False).get_result()
     max_lease = metrics.MAX_AGE_SCHEDULED.get(
         {
-          'bucket': 'chromium',
-          'builder': 'release',
-          'must_be_never_leased': True,
+            'bucket': 'chromium',
+            'builder': 'release',
+            'must_be_never_leased': True,
         },
         target_fields=metrics.GLOBAL_TARGET_FIELDS)
     self.assertEqual(max_lease, 0)
     max_start = metrics.MAX_AGE_SCHEDULED.get(
         {
-          'bucket': 'chromium',
-          'builder': 'release',
-          'must_be_never_leased': False,
+            'bucket': 'chromium',
+            'builder': 'release',
+            'must_be_never_leased': False,
         },
         target_fields=metrics.GLOBAL_TARGET_FIELDS)
     self.assertEqual(max_start, 0)
 
   @mock.patch('metrics.set_build_latency', autospec=True)
   @mock.patch('metrics.set_build_count_metric_async', autospec=True)
-  def test_update_global_metrics(
-      self, set_build_count_metric_async, set_build_latency):
+  def test_update_global_metrics(self, set_build_count_metric_async,
+                                 set_build_latency):
     set_build_count_metric_async.return_value = future(None)
     set_build_latency.return_value = future(None)
 
@@ -197,9 +200,9 @@ class MetricsTest(testing.AppengineTestCase):
     build = model.Build(
         bucket='master.x',
         tags=[
-          'builder:release',
-          'user_agent:cq',
-          'something:else',
+            'builder:release',
+            'user_agent:cq',
+            'something:else',
         ],
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.FAILURE,
@@ -207,14 +210,14 @@ class MetricsTest(testing.AppengineTestCase):
         canary=True,
     )
     expected = {
-      'bucket': 'master.x',
-      'builder': 'release',
-      'canary': True,
-      'user_agent': 'cq',
-      'status': 'COMPLETED',
-      'result': 'FAILURE',
-      'failure_reason': 'BUILD_FAILURE',
-      'cancelation_reason': '',
+        'bucket': 'master.x',
+        'builder': 'release',
+        'canary': True,
+        'user_agent': 'cq',
+        'status': 'COMPLETED',
+        'result': 'FAILURE',
+        'failure_reason': 'BUILD_FAILURE',
+        'cancelation_reason': '',
     }
     self.assertEqual(set(expected), set(metrics._BUILD_FIELDS))
     actual = metrics._fields_for(build, expected.keys())

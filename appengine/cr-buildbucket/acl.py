@@ -1,7 +1,6 @@
 # Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Access control list implementation.
 
 See Acl message in proto/project_config.proto.
@@ -17,9 +16,9 @@ from proto import project_config_pb2
 import config
 import errors
 
-
 ################################################################################
 ## Role definitions.
+
 
 class Action(messages.Enum):
   # Schedule a build.
@@ -51,56 +50,68 @@ class Action(messages.Enum):
 _action_dict = Action.to_dict()
 
 ACTION_DESCRIPTIONS = {
-  Action.ADD_BUILD: 'Schedule a build.',
-  Action.VIEW_BUILD: 'Get information about a build.',
-  Action.LEASE_BUILD: 'Lease a build for execution.',
-  Action.CANCEL_BUILD:
-    'Cancel an existing build. Does not require a lease key.',
-  Action.RESET_BUILD: 'Unlease and reset state of an existing build.',
-  Action.SEARCH_BUILDS: 'Search for builds or get a list of scheduled builds.',
-  Action.READ_ACL: 'View bucket ACLs.',
-  Action.WRITE_ACL: 'Change bucket ACLs.',
-  Action.DELETE_SCHEDULED_BUILDS: 'Delete all scheduled builds from a bucket.',
-  Action.ACCESS_BUCKET: 'Know about a bucket\'s existence and read its info.',
-  Action.PAUSE_BUCKET: 'Pause builds for a given bucket.',
-  Action.SET_NEXT_NUMBER: 'Set the number for the next build in a builder.',
+    Action.ADD_BUILD:
+        'Schedule a build.',
+    Action.VIEW_BUILD:
+        'Get information about a build.',
+    Action.LEASE_BUILD:
+        'Lease a build for execution.',
+    Action.CANCEL_BUILD:
+        'Cancel an existing build. Does not require a lease key.',
+    Action.RESET_BUILD:
+        'Unlease and reset state of an existing build.',
+    Action.SEARCH_BUILDS:
+        'Search for builds or get a list of scheduled builds.',
+    Action.READ_ACL:
+        'View bucket ACLs.',
+    Action.WRITE_ACL:
+        'Change bucket ACLs.',
+    Action.DELETE_SCHEDULED_BUILDS:
+        'Delete all scheduled builds from a bucket.',
+    Action.ACCESS_BUCKET:
+        'Know about a bucket\'s existence and read its info.',
+    Action.PAUSE_BUCKET:
+        'Pause builds for a given bucket.',
+    Action.SET_NEXT_NUMBER:
+        'Set the number for the next build in a builder.',
 }
 READER_ROLE_ACTIONS = [
-  Action.ACCESS_BUCKET,
-  Action.VIEW_BUILD,
-  Action.SEARCH_BUILDS,
+    Action.ACCESS_BUCKET,
+    Action.VIEW_BUILD,
+    Action.SEARCH_BUILDS,
 ]
 SCHEDULER_ROLE_ACTIONS = READER_ROLE_ACTIONS + [
-  Action.ADD_BUILD,
-  Action.CANCEL_BUILD,
+    Action.ADD_BUILD,
+    Action.CANCEL_BUILD,
 ]
 WRITER_ROLE_ACTIONS = SCHEDULER_ROLE_ACTIONS + [
-  Action.LEASE_BUILD,
-  Action.RESET_BUILD,
-  Action.DELETE_SCHEDULED_BUILDS,
-  Action.PAUSE_BUCKET,
-  Action.SET_NEXT_NUMBER,
+    Action.LEASE_BUILD,
+    Action.RESET_BUILD,
+    Action.DELETE_SCHEDULED_BUILDS,
+    Action.PAUSE_BUCKET,
+    Action.SET_NEXT_NUMBER,
 ]
 ROLE_DESCRIPTIONS = {
-  project_config_pb2.Acl.READER:
-    'Can do read-only operations, such as search for builds.',
-  project_config_pb2.Acl.SCHEDULER:
-    'Same as READER + can schedule and cancel builds.',
-  project_config_pb2.Acl.WRITER: 'Can do all write operations.',
+    project_config_pb2.Acl.READER:
+        'Can do read-only operations, such as search for builds.',
+    project_config_pb2.Acl.SCHEDULER:
+        'Same as READER + can schedule and cancel builds.',
+    project_config_pb2.Acl.WRITER:
+        'Can do all write operations.',
 }
 ACTIONS_FOR_ROLE = {
-  project_config_pb2.Acl.READER: set(READER_ROLE_ACTIONS),
-  project_config_pb2.Acl.SCHEDULER: set(SCHEDULER_ROLE_ACTIONS),
-  project_config_pb2.Acl.WRITER: set(WRITER_ROLE_ACTIONS),
+    project_config_pb2.Acl.READER: set(READER_ROLE_ACTIONS),
+    project_config_pb2.Acl.SCHEDULER: set(SCHEDULER_ROLE_ACTIONS),
+    project_config_pb2.Acl.WRITER: set(WRITER_ROLE_ACTIONS),
 }
 ROLES_FOR_ACTION = {
-  a: set(r for r, actions in ACTIONS_FOR_ROLE.items() if a in actions)
-  for a in Action
+    a: set(r for r, actions in ACTIONS_FOR_ROLE.items() if a in actions)
+    for a in Action
 }
-
 
 ################################################################################
 ## Granular actions. API uses these.
+
 
 def can_fn(action):
   assert isinstance(action, Action)
@@ -127,7 +138,6 @@ can_delete_scheduled_builds = can_fn(Action.DELETE_SCHEDULED_BUILDS)
 can_pause_buckets = can_fn(Action.PAUSE_BUCKET)
 can_access_bucket = can_fn(Action.ACCESS_BUCKET)
 can_set_next_number = can_fn(Action.SET_NEXT_NUMBER)
-
 
 ################################################################################
 ## Implementation.
@@ -224,8 +234,7 @@ def get_acessible_buckets():
   available_buckets = memcache.get(cache_key)
   if available_buckets is not None:
     return available_buckets
-  logging.info(
-      'Computing a list of available buckets for %s' % identity)
+  logging.info('Computing a list of available buckets for %s' % identity)
   group_buckets_map = collections.defaultdict(set)
   available_buckets = set()
   all_buckets = config.get_buckets_async().get_result()

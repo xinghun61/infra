@@ -328,7 +328,7 @@ def create_build_ids(dtime, count):
   # Build ID bits: "0N{43}R{16}V{4}"
   # where N is now bits, R is random bits and V is version bits.
   build_id = int(_id_time_segment(dtime) | (random.getrandbits(16) << 4))
-  return [build_id - i * (1<<4) for i in xrange(count)]
+  return [build_id - i * (1 << 4) for i in xrange(count)]
 
 
 def build_id_range(create_time_low, create_time_high):

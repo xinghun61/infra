@@ -7,6 +7,7 @@ import errors
 
 
 class ErrorsTest(testing.AppengineTestCase):
+
   def test_validate_bucket_name(self):
     with self.assertRaises(errors.InvalidInputError):
       errors.validate_bucket_name(1)

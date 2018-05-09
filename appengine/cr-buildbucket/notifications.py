@@ -1,7 +1,6 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """PubSub notifications about builds."""
 
 import json
@@ -23,12 +22,11 @@ import model
 @ndb.tasklet
 def enqueue_tasks_async(queue, task_defs):  # pragma: no cover
   tasks = [
-    taskqueue.Task(
-        url=t['url'],
-        payload=t['payload'],
-        retry_options=taskqueue.TaskRetryOptions(
-            task_age_limit=t['age_limit_sec']))
-    for t in task_defs
+      taskqueue.Task(
+          url=t['url'],
+          payload=t['payload'],
+          retry_options=taskqueue.TaskRetryOptions(
+              task_age_limit=t['age_limit_sec'])) for t in task_defs
   ]
   # Cannot just return add_async's return value because it is
   # a non-Future object and does not play nice with `yield fut1, fut2` construct
@@ -41,12 +39,15 @@ def enqueue_notifications_async(build):
 
   def mktask(mode):
     return {
-      'url': '/internal/task/buildbucket/notify/%d' % build.key.id(),
-      'payload': json.dumps({
-        'id': build.key.id(),
-        'mode': mode,
-      }, sort_keys=True),
-      'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
+        'url':
+            '/internal/task/buildbucket/notify/%d' % build.key.id(),
+        'payload':
+            json.dumps({
+                'id': build.key.id(),
+                'mode': mode,
+            }, sort_keys=True),
+        'age_limit_sec':
+            model.BUILD_TIMEOUT.total_seconds(),
     }
 
   task_defs = [mktask('global')]
@@ -68,8 +69,8 @@ class TaskPublishNotification(webapp2.RequestHandler):
       return
 
     message = {
-      'build': api_common.build_to_dict(build),
-      'hostname': app_identity.get_default_version_hostname(),
+        'build': api_common.build_to_dict(build),
+        'hostname': app_identity.get_default_version_hostname(),
     }
     attrs = {'build_id': str(build.key.id())}
     if body['mode'] == 'callback':

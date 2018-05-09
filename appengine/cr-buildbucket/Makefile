@@ -16,3 +16,6 @@ upload: build
 
 rollback:
 	appcfg.py -V `tools/gae version` rollback .
+
+format:
+	git cl format --python --full
