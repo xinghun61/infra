@@ -459,21 +459,6 @@ func TestPollWhitelistBehavior(t *testing.T) {
 						},
 					},
 				},
-				"star-project": {
-					Name: "star-project",
-					Repos: []*tricium.RepoDetails{
-						{
-							GitDetails: &tricium.GitRepoDetails{
-								Repository: "https://repo-host.com/star-project",
-							},
-							GerritDetails: &tricium.GerritDetails{
-								Host:             host,
-								Project:          "star-project",
-								WhitelistedGroup: []string{"*"},
-							},
-						},
-					},
-				},
 			},
 		}
 
@@ -567,33 +552,6 @@ func TestPollWhitelistBehavior(t *testing.T) {
 			So(poll(ctx, api, cp), ShouldBeNil)
 			Convey("Does not enqueue analyze requests", func() {
 				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
-			})
-		})
-
-		Convey("Poll with a change where whitelist contains *", func() {
-			api := &mockPollRestAPI{}
-			lastChangeTs := tc.Now().UTC()
-			files := map[string]*gr.FileInfo{
-				"README.md": {Status: fileStatusAdded},
-			}
-			revisions := map[string]gr.RevisionInfo{
-				"abcdef": {Files: files},
-			}
-			api.addChanges(host, "star-project", []gr.ChangeInfo{
-				{
-					ID:              "project~branch~Ideadc0de",
-					Project:         "star-project",
-					CurrentRevision: "abcdef",
-					Updated:         gr.TimeStamp(lastChangeTs),
-					Revisions:       revisions,
-					Owner:           &gr.AccountInfo{Email: "somebody-else@example.com"},
-				},
-			})
-			So(poll(ctx, api, cp), ShouldBeNil)
-			tc.Add(time.Second)
-			So(poll(ctx, api, cp), ShouldBeNil)
-			Convey("Enqueues an analyze request", func() {
-				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 1)
 			})
 		})
 	})

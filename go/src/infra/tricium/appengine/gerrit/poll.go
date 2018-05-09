@@ -321,46 +321,9 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 	if len(changes) == 0 {
 		return nil
 	}
-	owners := map[string]bool{}
+	changes = filterByWhitelist(ctx, repo.GerritDetails.WhitelistedGroup, changes)
 	var tasks []*tq.Task
 	for _, c := range changes {
-		// TODO(qyearsley): Remove special case for "*" after removing it from configs.
-		whitelist := repo.GerritDetails.WhitelistedGroup
-		if len(whitelist) != 0 && whitelist[0] != "*" {
-			isWhitelisted, ok := owners[c.Owner.Email]
-			if !ok {
-				ident, err := identity.MakeIdentity("user:" + c.Owner.Email)
-				if err != nil {
-					logging.Errorf(ctx, "Failed to create identity for %s, err: %v", c.Owner.Email, err)
-					// If we fail to create the identity
-					// for a user, skip this user for the
-					// rest of this poll.
-					owners[c.Owner.Email] = false
-					continue
-				}
-				state := auth.GetState(ctx)
-				if state == nil {
-					logging.Errorf(ctx, "Failed to check auth, no State in context")
-					continue
-				}
-				db := state.DB()
-				if db == nil {
-					logging.Errorf(ctx, "Failed to check auth, nil authdb in State")
-					continue
-				}
-				authOK, err := db.IsMember(ctx, ident, whitelist)
-				if err != nil {
-					logging.Errorf(ctx, "Failed to check auth for %s, err: %v", c.Owner.Email, err)
-				}
-				isWhitelisted = authOK
-				owners[c.Owner.Email] = isWhitelisted
-			}
-			if !isWhitelisted {
-				logging.Infof(ctx, "Owner is not whitelisted, not triggering Analyze (owner: %s, project: %s)",
-					c.Owner.Email, repo.GerritDetails.Project)
-				continue
-			}
-		}
 		var paths []string
 		for k, v := range c.Revisions[c.CurrentRevision].Files {
 			// In general, most analyzers won't need to read binary
@@ -407,6 +370,62 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 		return fmt.Errorf("failed to enqueue Analyze request: %v", err)
 	}
 	return nil
+}
+
+// filterByWhitelist filters the list of changes to analyze based on
+// whitelisted groups.
+//
+// A CL is analyzed if the owner (author) of the CL is in at least one of the
+// the whitelist groups for this repo as specified in the project config.
+// If there are no whitelisted groups, then there is no filtering.
+func filterByWhitelist(ctx context.Context, whitelistedGroups []string, changes []gr.ChangeInfo) []gr.ChangeInfo {
+	if len(whitelistedGroups) == 0 {
+		return changes
+	}
+
+	// The auth DB should be set in state by middleware.
+	state := auth.GetState(ctx)
+	if state == nil {
+		logging.Errorf(ctx, "failed to check auth, no State in context")
+		return nil
+	}
+	authDB := state.DB()
+	if authDB == nil {
+		logging.Errorf(ctx, "Failed to check auth, nil auth DB in State")
+		return nil
+	}
+
+	// To avoid making multiple checks for the same CL owner, we keep track
+	// of owners we've already checked.
+	owners := map[string]bool{}
+	whitelistedChanges := make([]gr.ChangeInfo, 0, len(changes))
+	for _, c := range changes {
+		email := c.Owner.Email
+		whitelisted, ok := owners[email]
+		if !ok {
+			// If we fail to check the whitelist for a user, we'll
+			// log an error and consider the owner not whitelisted.
+			owners[email] = false
+			ident, err := identity.MakeIdentity("user:" + email)
+			if err != nil {
+				logging.WithError(err).Errorf(ctx, "Failed to create identity for %q", email)
+				continue
+			}
+			authOK, err := authDB.IsMember(ctx, ident, whitelistedGroups)
+			if err != nil {
+				logging.WithError(err).Errorf(ctx, "Failed to check auth for %q", email)
+			}
+			whitelisted = authOK
+			if !whitelisted {
+				logging.Infof(ctx, "Owner %q is not whitelisted, skipping Analyze", email)
+			}
+			owners[email] = whitelisted
+		}
+		if whitelisted {
+			whitelistedChanges = append(whitelistedChanges, c)
+		}
+	}
+	return whitelistedChanges
 }
 
 // gerritProjectID constructs the ID used to store information about
