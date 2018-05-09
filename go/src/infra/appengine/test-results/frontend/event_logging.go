@@ -73,6 +73,10 @@ func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadPar
 			Name:     name,
 		}
 
+		if ftl.Unexpected != nil {
+			testRun.IsUnexpected = *ftl.Unexpected
+		}
+
 		if ftl.Runtime != nil {
 			testRun.Time = float32(*ftl.Runtime)
 		}
