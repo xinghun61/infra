@@ -63,7 +63,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
                                   recent_build_number)
     recent_build_info.commit_position = recent_commit_position
     recent_build_info.chromium_revision = recent_revision
-    mocked_build_info.return_value = recent_build_info
+    mocked_build_info.return_value = 200, recent_build_info
 
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,

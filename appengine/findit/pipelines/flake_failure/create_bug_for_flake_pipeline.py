@@ -90,7 +90,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
       analysis.LogInfo('Bug not filed because test was fixed or disabled.')
       return
 
-    most_recent_build_info = build_util.GetBuildInfo(
+    _, most_recent_build_info = build_util.GetBuildInfo(
         analysis.master_name, analysis.builder_name, most_recent_build_number)
 
     if (not most_recent_build_info or
