@@ -251,6 +251,15 @@ class BizobjTest(unittest.TestCase):
         set(['highlight']),
         tracker_bizobj.GetGrantedPerms(issue, {111L, 222L}, config))
 
+  def testLabelsByPrefix(self):
+    expected = tracker_bizobj.LabelsByPrefix(
+      ['OneWordLabel', 'Key-Value1', 'Key-Value2', 'Launch-X-Y-Z'],
+      ['launch-x'])
+    self.assertEqual(
+      {'key': ['Value1', 'Value2'],
+       'launch-x': ['Y-Z']},
+      expected)
+
   def testLabelIsMaskedByField(self):
     self.assertIsNone(tracker_bizobj.LabelIsMaskedByField('UI', []))
     self.assertIsNone(tracker_bizobj.LabelIsMaskedByField('P-1', []))
