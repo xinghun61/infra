@@ -83,7 +83,6 @@ var (
 func TestGenerate(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		pc := &tricium.ProjectConfig{
-			Name: project,
 			Functions: []*tricium.Function{
 				{
 					Type:     tricium.Function_ANALYZER,
@@ -136,6 +135,7 @@ func TestGenerate(t *testing.T) {
 					Platform: platform,
 				},
 			},
+			SwarmingServiceAccount: "swarming@email.com",
 		}
 		Convey("Correct selection generates workflow", func() {
 			wf, err := Generate(sc, pc, []string{})

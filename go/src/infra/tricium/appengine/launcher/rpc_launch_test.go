@@ -128,7 +128,6 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 
 func (*mockConfigProvider) GetProjectConfig(c context.Context, project string) (*tricium.ProjectConfig, error) {
 	return &tricium.ProjectConfig{
-		Name: project,
 		Selections: []*tricium.Selection{
 			{
 				Function: fileIsolator,
@@ -143,6 +142,7 @@ func (*mockConfigProvider) GetProjectConfig(c context.Context, project string) (
 				Platform: tricium.Platform_UBUNTU,
 			},
 		},
+		SwarmingServiceAccount: "swarming@email.com",
 	}, nil
 }
 

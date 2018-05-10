@@ -18,15 +18,10 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 	if sc.IsolateServer == "" {
 		return nil, fmt.Errorf("missing isolate server URL in service config")
 	}
-	pd := tricium.LookupProjectDetails(sc, pc.Name)
-	if pd == nil {
-		return nil, fmt.Errorf("unknown project, project: %s", pc.Name)
-	}
-	if pd.SwarmingServiceAccount == "" {
-		return nil, fmt.Errorf("missing swarming service account for project, project: %s", pc.Name)
+	if pc.SwarmingServiceAccount == "" {
+		return nil, fmt.Errorf("missing swarming service account for project: %+v", pc)
 	}
 	res := &tricium.ProjectConfig{
-		Name:       pc.Name,
 		Acls:       pc.Acls,
 		Selections: pc.Selections,
 	}

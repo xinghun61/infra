@@ -72,7 +72,6 @@ func TestValidate(t *testing.T) {
 
 		Convey("Supported function platform OK", func() {
 			_, err := Validate(sd, &tricium.ProjectConfig{
-				Name:      project,
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
@@ -80,13 +79,13 @@ func TestValidate(t *testing.T) {
 						Platform: platform,
 					},
 				},
+				SwarmingServiceAccount: "swarming@email.com",
 			})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("Non-supported function platform causes error", func() {
 			_, err := Validate(sd, &tricium.ProjectConfig{
-				Name:      project,
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
@@ -94,13 +93,13 @@ func TestValidate(t *testing.T) {
 						Platform: tricium.Platform_WINDOWS,
 					},
 				},
+				SwarmingServiceAccount: "swarming@email.com",
 			})
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Supported function config OK", func() {
 			_, err := Validate(sd, &tricium.ProjectConfig{
-				Name:      project,
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
@@ -114,13 +113,13 @@ func TestValidate(t *testing.T) {
 						},
 					},
 				},
+				SwarmingServiceAccount: "swarming@email.com",
 			})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("Non-supported function config causes error", func() {
 			_, err := Validate(sd, &tricium.ProjectConfig{
-				Name:      project,
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
@@ -134,6 +133,7 @@ func TestValidate(t *testing.T) {
 						},
 					},
 				},
+				SwarmingServiceAccount: "swarming@email.com",
 			})
 			So(err, ShouldNotBeNil)
 		})

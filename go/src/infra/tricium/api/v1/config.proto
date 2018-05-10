@@ -81,9 +81,6 @@ message ProjectDetails {
 // Adds project-specific functions and selects shared function
 // implementations.
 message ProjectConfig {
-  // Project name,
-  string name = 1;
-
   // Access control rules for the project.
   repeated Acl acls = 2;
 

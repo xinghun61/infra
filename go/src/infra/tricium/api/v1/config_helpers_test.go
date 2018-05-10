@@ -111,11 +111,9 @@ func TestLookupRepoDetails(t *testing.T) {
 func TestCanRequest(t *testing.T) {
 	ctx := memory.Use(memlogger.Use(context.Background()))
 
-	project := "playground/gerrit-tricium"
 	okACLGroup := "tricium-playground-requesters"
 	okACLUser := "user:ok@example.com"
 	pc := &ProjectConfig{
-		Name: project,
 		Acls: []*Acl{
 			{
 				Role:  Acl_REQUESTER,

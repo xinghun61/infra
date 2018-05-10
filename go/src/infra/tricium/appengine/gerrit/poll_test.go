@@ -115,7 +115,6 @@ func TestPollBasicBehavior(t *testing.T) {
 		cp := &mockConfigProvider{
 			Projects: map[string]*tricium.ProjectConfig{
 				"playground": {
-					Name: "playground",
 					Repos: []*tricium.RepoDetails{
 						{
 							GitDetails: &tricium.GitRepoDetails{
@@ -138,7 +137,6 @@ func TestPollBasicBehavior(t *testing.T) {
 					},
 				},
 				"infra": {
-					Name: "infra",
 					Repos: []*tricium.RepoDetails{
 						{
 							GitDetails: &tricium.GitRepoDetails{
@@ -151,9 +149,7 @@ func TestPollBasicBehavior(t *testing.T) {
 						},
 					},
 				},
-				"non-gerrit": {
-					Name: "non-gerrit",
-				},
+				"non-gerrit": {},
 			},
 		}
 		projects, err := cp.GetAllProjectConfigs(ctx)
@@ -431,7 +427,6 @@ func TestPollWhitelistBehavior(t *testing.T) {
 		cp := &mockConfigProvider{
 			Projects: map[string]*tricium.ProjectConfig{
 				noWhitelistProject: {
-					Name: noWhitelistProject,
 					Repos: []*tricium.RepoDetails{
 						{
 							GitDetails: &tricium.GitRepoDetails{
@@ -445,7 +440,6 @@ func TestPollWhitelistBehavior(t *testing.T) {
 					},
 				},
 				whitelistProject: {
-					Name: whitelistProject,
 					Repos: []*tricium.RepoDetails{
 						{
 							GitDetails: &tricium.GitRepoDetails{

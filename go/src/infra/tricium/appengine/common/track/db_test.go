@@ -36,7 +36,6 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
 	if p == project {
 		return &tricium.ProjectConfig{
-			Name: project,
 			Acls: []*tricium.Acl{
 				{
 					Role:     tricium.Acl_READER,

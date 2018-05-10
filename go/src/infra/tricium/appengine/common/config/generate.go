@@ -25,10 +25,6 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, paths []stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate project config: %v", err)
 	}
-	pd := tricium.LookupProjectDetails(sc, pc.Name)
-	if pd == nil {
-		return nil, fmt.Errorf("unknown project, project: %s", pc.Name)
-	}
 	var workers []*admin.Worker
 	functions := map[string]*tricium.Function{}
 	for _, s := range vpc.Selections {
@@ -54,7 +50,7 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, paths []stri
 		return nil, fmt.Errorf("workflow is not sane: %v", err)
 	}
 	return &admin.Workflow{
-		ServiceAccount: pd.SwarmingServiceAccount,
+		ServiceAccount: pc.SwarmingServiceAccount,
 		Workers:        workers,
 		SwarmingServer: sc.SwarmingServer,
 		IsolateServer:  sc.IsolateServer,

@@ -375,8 +375,8 @@ func (m *GerritRevision) GetGitRef() string {
 type GitCommit struct {
 	// Full repository URL, including schema, host and path.
 	Url string `protobuf:"bytes,1,opt,name=url" json:"url,omitempty"`
-	// Git ref, e.g. "refs/heads/master"; this can also be a git commit hash
-	// A specific
+	// A git commit-ish, such as a refname like "refs/heads/master".
+	// This can also be a tag or git commit hash.
 	Ref string `protobuf:"bytes,2,opt,name=ref" json:"ref,omitempty"`
 }
 
