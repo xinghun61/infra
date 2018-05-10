@@ -603,9 +603,10 @@ class FieldValueView(object):
         # A field is applicable to a given issue if it (a) applies to all,
         # issues or (b) already has a value on this issue, or (c) says that
         # it applies to issues with this type (or a prefix of it).
+        applicable_type_lower = self.applicable_type.lower()
         self.applicable = ezt.boolean(
             not self.applicable_type or values or
-            any(type_label.startswith(self.applicable_type.lower())
+            any(type_label.startswith(applicable_type_lower)
                 for type_label in issue_types))
       # TODO(jrobbins): also evaluate applicable_predicate
 

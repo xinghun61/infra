@@ -15,6 +15,7 @@ from third_party import ezt
 
 from framework import framework_views
 from framework import gcs_helpers
+from framework import template_helpers
 from framework import urls
 from proto import project_pb2
 from proto import tracker_pb2
@@ -462,23 +463,205 @@ class ComponentValueTest(unittest.TestCase):
 
 
 class FieldValueViewTest(unittest.TestCase):
-  pass  # TODO(jrobbins): write tests
+
+  def setUp(self):
+    self.config = tracker_pb2.ProjectIssueConfig()
+    self.estdays_fd = tracker_bizobj.MakeFieldDef(
+        1, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None,
+        None, False, False, False, 3, 99, None, False, None, None,
+        None, 'no_action', 'descriptive docstring', False, None, False)
+    self.designdoc_fd = tracker_bizobj.MakeFieldDef(
+        2, 789, 'DesignDoc', tracker_pb2.FieldTypes.STR_TYPE, 'Enhancement',
+        None, False, False, False, None, None, None, False, None, None,
+        None, 'no_action', 'descriptive docstring', False, None, False)
+    self.config.field_defs = [self.estdays_fd, self.designdoc_fd]
+
+  def testNoValues(self):
+    """We can create a FieldValueView with no values."""
+    values = []
+    derived_values = []
+    estdays_fvv = tracker_views.FieldValueView(
+        self.estdays_fd, self.config, values, derived_values, ['defect'])
+    self.assertEqual('EstDays', estdays_fvv.field_def.field_name)
+    self.assertEqual(3, estdays_fvv.field_def.min_value)
+    self.assertEqual(99, estdays_fvv.field_def.max_value)
+    self.assertEqual([], estdays_fvv.values)
+    self.assertEqual([], estdays_fvv.derived_values)
+
+  def testSomeValues(self):
+    """We can create a FieldValueView with some values."""
+    values = [template_helpers.EZTItem(val=12, docstring=None, idx=0)]
+    derived_values = [template_helpers.EZTItem(val=88, docstring=None, idx=0)]
+    estdays_fvv = tracker_views.FieldValueView(
+        self.estdays_fd, self.config, values, derived_values, ['defect'])
+    self.assertEqual(values, estdays_fvv.values)
+    self.assertEqual(derived_values, estdays_fvv.derived_values)
+
+  def testApplicability(self):
+    """We know whether a field should show an editing widget."""
+    # Not the right type and has no values.
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, [], [], ['defect'])
+    self.assertFalse(designdoc_fvv.applicable)
+
+    # Has a value.
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, ['fake value item'], [], ['defect'])
+    self.assertTrue(designdoc_fvv.applicable)
+
+    # Derived values don't cause editing fields to display.
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, [], ['fake value item'], ['defect'])
+    self.assertFalse(designdoc_fvv.applicable)
+
+    # Applicable to this type of issue.
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, [], [], ['enhancement'])
+    self.assertTrue(designdoc_fvv.applicable)
+
+    # Applicable to some issues in a bulk edit.
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, [], [],
+        ['defect', 'task', 'enhancement'])
+    self.assertTrue(designdoc_fvv.applicable)
+
+    # Applicable to all issues.
+    estdays_fvv = tracker_views.FieldValueView(
+        self.estdays_fd, self.config, [], [], ['enhancement'])
+    self.assertTrue(estdays_fvv.applicable)
+
+    # Explicitly set to be applicable when showing bounce values.
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, [], [], ['defect'],
+        applicable=True)
+    self.assertTrue(designdoc_fvv.applicable)
+
+  def testDisplay(self):
+    """We know when a value (or --) should be shown in the metadata column."""
+    # Not the right type and has no values.
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, [], [], ['defect'])
+    self.assertFalse(designdoc_fvv.display)
+
+    # Has a value.
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, ['fake value item'], [], ['defect'])
+    self.assertTrue(designdoc_fvv.display)
+
+    # Has a derived value.
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, [], ['fake value item'], ['defect'])
+    self.assertTrue(designdoc_fvv.display)
+
+    # Applicable to this type of issue, it will show "--".
+    designdoc_fvv = tracker_views.FieldValueView(
+        self.designdoc_fd, self.config, [], [], ['enhancement'])
+    self.assertTrue(designdoc_fvv.display)
+
+    # Applicable to all issues, it will show "--".
+    estdays_fvv = tracker_views.FieldValueView(
+        self.estdays_fd, self.config, [], [], ['enhancement'])
+    self.assertTrue(estdays_fvv.display)
 
 
-class FieldValueViewTest_Applicability(unittest.TestCase):
-  pass  # TODO(jrobbins): write tests
+class FVVFunctionsTest(unittest.TestCase):
 
+  def setUp(self):
+    self.config = tracker_pb2.ProjectIssueConfig()
+    self.estdays_fd = tracker_bizobj.MakeFieldDef(
+        1, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None,
+        None, False, False, False, 3, 99, None, False, None, None,
+        None, 'no_action', 'descriptive docstring', False, None, False)
+    self.os_fd = tracker_bizobj.MakeFieldDef(
+        2, 789, 'OS', tracker_pb2.FieldTypes.ENUM_TYPE,
+        'Enhancement', None, False, False, False, None, None, None,
+        False, None, None, None, 'no_action', 'descriptive docstring',
+        False, None, False)
+    self.milestone_fd = tracker_bizobj.MakeFieldDef(
+        3, 789, 'Launch-Milestone', tracker_pb2.FieldTypes.ENUM_TYPE,
+        'Enhancement', None, False, False, False, None, None, None,
+        False, None, None, None, 'no_action', 'descriptive docstring',
+        False, None, False)
+    self.config.field_defs = [self.estdays_fd, self.os_fd, self.milestone_fd]
+    self.config.well_known_labels = [
+        tracker_pb2.LabelDef(
+            label='Priority-High', label_docstring='Must be resolved'),
+        tracker_pb2.LabelDef(
+            label='Priority-Low', label_docstring='Can be slipped'),
+        ]
 
-class MakeFieldValueViewTest(unittest.TestCase):
-  pass  # TODO(jrobbins): write tests
+  def testPrecomputeInfoForValueViews_NoValues(self):
+    """We can precompute info needed for an issue with no fields or labels."""
+    labels = []
+    derived_labels = []
+    field_values = []
+    precomp_view_info = tracker_views._PrecomputeInfoForValueViews(
+        labels, derived_labels, field_values, self.config)
+    (labels_by_prefix, der_labels_by_prefix, field_values_by_id,
+     label_docs) = precomp_view_info
+    self.assertEqual({}, labels_by_prefix)
+    self.assertEqual({}, der_labels_by_prefix)
+    self.assertEqual({}, field_values_by_id)
+    self.assertEqual(
+        {'priority-high': 'Must be resolved',
+         'priority-low': 'Can be slipped'},
+        label_docs)
 
+  def testPrecomputeInfoForValueViews_SomeValues(self):
+    """We can precompute info needed for an issue with fields and labels."""
+    labels = ['Priority-Low', 'GoodFirstBug', 'Feature-UI', 'Feature-Installer',
+              'Launch-Milestone-66']
+    derived_labels = ['OS-Windows', 'OS-Linux']
+    field_values = [
+        tracker_bizobj.MakeFieldValue(1, 5, None, None, None, None, False),
+        ]
+    precomp_view_info = tracker_views._PrecomputeInfoForValueViews(
+        labels, derived_labels, field_values, self.config)
+    (labels_by_prefix, der_labels_by_prefix, field_values_by_id,
+     _label_docs) = precomp_view_info
+    self.assertEqual(
+        {'priority': ['Low'],
+         'feature': ['UI', 'Installer'],
+         'launch-milestone': ['66']},
+        labels_by_prefix)
+    self.assertEqual(
+        {'os': ['Windows', 'Linux']},
+        der_labels_by_prefix)
+    self.assertEqual(
+        {1: field_values},
+        field_values_by_id)
 
-class MakeFieldValueItemsTest(unittest.TestCase):
-  pass  # TODO(jrobbins): write tests
+  def testMakeAllFieldValueViews(self):
+    labels = ['Priority-Low', 'GoodFirstBug', 'Feature-UI', 'Feature-Installer',
+              'Launch-Milestone-66']
+    derived_labels = ['OS-Windows', 'OS-Linux']
+    field_values = [
+        tracker_bizobj.MakeFieldValue(1, 5, None, None, None, None, False),
+        ]
+    users_by_id = {}
+    fvvs = tracker_views.MakeAllFieldValueViews(
+        self.config, labels, derived_labels, field_values, users_by_id)
+    self.assertEqual(3, len(fvvs))
+    # Values are sorted by (applicable_type, field_name).
+    estdays_fvv, launch_milestone_fvv, os_fvv = fvvs
+    self.assertEqual('EstDays', estdays_fvv.field_name)
+    self.assertEqual(1, len(estdays_fvv.values))
+    self.assertEqual(0, len(estdays_fvv.derived_values))
+    self.assertEqual('Launch-Milestone', launch_milestone_fvv.field_name)
+    self.assertEqual(1, len(launch_milestone_fvv.values))
+    self.assertEqual(0, len(launch_milestone_fvv.derived_values))
+    self.assertEqual('OS', os_fvv.field_name)
+    self.assertEqual(0, len(os_fvv.values))
+    self.assertEqual(2, len(os_fvv.derived_values))
 
+  def testMakeFieldValueView(self):
+    pass  # Covered by testMakeAllFieldValueViews()
 
-class MakeBounceFieldValueViewsTest(unittest.TestCase):
-  pass  # TODO(jrobbins): write tests
+  def testMakeFieldValueItemsTest(self):
+    pass  # Covered by testMakeAllFieldValueViews()
+
+  def testMakeBounceFieldValueViews(self):
+    pass  # TODO(jrobbins): write tests
 
 
 class ConvertLabelsToFieldValuesTest(unittest.TestCase):
