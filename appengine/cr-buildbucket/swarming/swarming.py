@@ -557,17 +557,11 @@ def _create_task_def_async(swarming_cfg, builder_cfg, build, build_number,
   if builder_cfg.expiration_secs > 0:
     task['expiration_secs'] = str(builder_cfg.expiration_secs)
 
-  dimensions = swarmingcfg_module.parse_dimensions(builder_cfg.dimensions)
-  if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
-      'builder' not in dimensions):
-    dimensions['builder'] = builder_cfg.name
-  dimensions.update(
-      {d['key']: d['value']
-       for d in task_properties.get('dimensions', [])})
-  task_properties['dimensions'] = [{
-      'key': k,
-      'value': v
-  } for k, v in sorted(dimensions.iteritems()) if v]
+  # Add in all of the swarming dimensions to the task properties.
+  task_properties['dimensions'] = [
+      {'key': k, 'value': v}
+      for k, v in swarmingcfg_module.read_dimensions(builder_cfg)
+  ]
 
   _add_named_caches(builder_cfg, task_properties)
 

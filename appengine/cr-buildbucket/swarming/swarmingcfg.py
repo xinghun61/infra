@@ -11,6 +11,7 @@ import string
 
 from components.config import validation
 
+from proto import project_config_pb2
 
 DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 # Copied from
@@ -51,6 +52,22 @@ def read_properties(recipe):
     parsed = json.loads(v)
     result[k] = parsed
   return result
+
+
+# The below is covered by swarming_test.py and swarmbucket_api_test.py
+def read_dimensions(builder_cfg):  # pragma: no cover
+  """Read the dimensions for a builder config.
+
+  dimensions is returned as sorted list of (k, v) pairs.
+  This different from parse_dimensions in that this:
+  * Factors in the auto_builder_dimensions field.
+  * Removes empty value fields.
+  """
+  dimensions = parse_dimensions(builder_cfg.dimensions)
+  if (builder_cfg.auto_builder_dimension == project_config_pb2.YES and
+      'builder' not in dimensions):
+    dimensions['builder'] = builder_cfg.name
+  return [(k, v) for k, v in sorted(dimensions.iteritems()) if v]
 
 
 def parse_dimensions(strings):

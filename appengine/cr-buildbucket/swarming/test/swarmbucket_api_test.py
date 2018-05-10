@@ -21,6 +21,7 @@ import sequence
 
 class SwarmbucketApiTest(testing.EndpointsTestCase):
   api_service_cls = swarmbucket_api.SwarmbucketApi
+  maxDiff = None
 
   def setUp(self):
     super(SwarmbucketApiTest, self).setUp()
@@ -56,6 +57,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
           }
           dimensions: "foo:bar"
           dimensions: "baz:baz"
+          auto_builder_dimension: YES
         }
         builders {
           name: "win_chromium_rel_ng"
@@ -145,12 +147,15 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
               'name': 'linux_chromium_rel_ng',
               'category': 'Chromium',
               'properties_json': json.dumps({'foo': 'bar', 'baz': 1}),
-              'swarming_dimensions': ['foo:bar', 'baz:baz'],
+              'swarming_dimensions': [
+                  'baz:baz',
+                  'builder:linux_chromium_rel_ng',
+                  'foo:bar'],
             },
             {
               'name': 'win_chromium_rel_ng',
               'category': 'Chromium',
-              'properties_json': json.dumps({})
+              'properties_json': json.dumps({}),
             },
           ]
         }
@@ -194,12 +199,15 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
               'name': 'linux_chromium_rel_ng',
               'category': 'Chromium',
               'properties_json': json.dumps({'foo': 'bar', 'baz': 1}),
-              'swarming_dimensions': ['foo:bar', 'baz:baz'],
+              'swarming_dimensions': [
+                  'baz:baz',
+                  'builder:linux_chromium_rel_ng',
+                  'foo:bar'],
             },
             {
               'name': 'win_chromium_rel_ng',
               'category': 'Chromium',
-              'properties_json': json.dumps({})
+              'properties_json': json.dumps({}),
             },
           ]
         }
@@ -289,6 +297,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         },
         'dimensions': [
           {'key': 'baz', 'value': 'baz'},
+          {'key': 'builder', 'value': 'linux_chromium_rel_ng'},
           {'key': 'foo', 'value': 'bar'},
         ],
         'caches': [

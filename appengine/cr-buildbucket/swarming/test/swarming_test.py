@@ -201,10 +201,6 @@ class SwarmingTest(BaseTest):
                     },
                 ],
             },
-            'dimensions': [{
-                'key': 'in-template-key',
-                'value': 'in-template-value'
-            },],
         },
         'numerical_value_for_coverage_in_format_obj':
             42,
@@ -433,10 +429,6 @@ class SwarmingTest(BaseTest):
             'value': '8'
         },
         {
-            'key': 'in-template-key',
-            'value': 'in-template-value'
-        },
-        {
             'key': 'os',
             'value': 'Ubuntu'
         },
@@ -457,10 +449,6 @@ class SwarmingTest(BaseTest):
         {
             'key': 'cores',
             'value': '8'
-        },
-        {
-            'key': 'in-template-key',
-            'value': 'in-template-value'
         },
         {
             'key': 'os',
@@ -598,10 +586,6 @@ class SwarmingTest(BaseTest):
                         'value': '8'
                     },
                     {
-                        'key': 'in-template-key',
-                        'value': 'in-template-value'
-                    },
-                    {
                         'key': 'os',
                         'value': 'Ubuntu'
                     },
@@ -718,10 +702,6 @@ class SwarmingTest(BaseTest):
                     'value': '8'
                 },
                 {
-                    'key': 'in-template-key',
-                    'value': 'in-template-value'
-                },
-                {
                     'key': 'os',
                     'value': 'Ubuntu'
                 },
@@ -785,7 +765,6 @@ class SwarmingTest(BaseTest):
             'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
             'builder:linux_chromium_rel_ng',
             'swarming_dimension:cores:8',
-            'swarming_dimension:in-template-key:in-template-value',
             'swarming_dimension:os:Ubuntu',
             'swarming_dimension:pool:Chrome',
             'swarming_hostname:chromium-swarm.appspot.com',
@@ -912,10 +891,6 @@ class SwarmingTest(BaseTest):
                         'value': '8'
                     },
                     {
-                        'key': 'in-template-key',
-                        'value': 'in-template-value'
-                    },
-                    {
                         'key': 'os',
                         'value': 'Ubuntu'
                     },
@@ -1018,10 +993,6 @@ class SwarmingTest(BaseTest):
                     'value': '8'
                 },
                 {
-                    'key': 'in-template-key',
-                    'value': 'in-template-value'
-                },
-                {
                     'key': 'os',
                     'value': 'Ubuntu'
                 },
@@ -1084,7 +1055,6 @@ class SwarmingTest(BaseTest):
         set(build.tags), {
             'builder:linux_chromium_rel_ng',
             'swarming_dimension:cores:8',
-            'swarming_dimension:in-template-key:in-template-value',
             'swarming_dimension:os:Ubuntu',
             'swarming_dimension:pool:Chrome',
             'swarming_hostname:chromium-swarm.appspot.com',
@@ -1129,10 +1099,6 @@ class SwarmingTest(BaseTest):
                     {
                         'key': 'cores',
                         'value': '8'
-                    },
-                    {
-                        'key': 'in-template-key',
-                        'value': 'in-template-value'
                     },
                     {
                         'key': 'os',
@@ -1194,10 +1160,6 @@ class SwarmingTest(BaseTest):
                     {
                         'key': 'cores',
                         'value': '16'
-                    },
-                    {
-                        'key': 'in-template-key',
-                        'value': 'in-template-value'
                     },
                     {
                         'key': 'os',
@@ -1348,10 +1310,6 @@ class SwarmingTest(BaseTest):
                     {
                         'key': 'cores',
                         'value': '16'
-                    },
-                    {
-                        'key': 'in-template-key',
-                        'value': 'in-template-value'
                     },
                     {
                         'key': 'os',

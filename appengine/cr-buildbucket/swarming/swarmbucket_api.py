@@ -124,7 +124,9 @@ class SwarmbucketApi(remote.Service):
             category=builder.category,
             properties_json=json.dumps(
                 swarmingcfg.read_properties(builder.recipe)),
-            swarming_dimensions=[str(b) for b in builder.dimensions],
+            swarming_dimensions=[
+                '%s:%s' % (k, v)
+                for k, v in swarmingcfg.read_dimensions(builder)]
           )
           for builder in bucket.swarming.builders
         ],
