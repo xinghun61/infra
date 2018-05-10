@@ -924,6 +924,11 @@ def _sync_build_in_memory(build, task_result, build_run_result,
     errmsg = ('Swarming task %s on %s unexpectedly disappeared' %
               (build.swarming_task_id, build.swarming_hostname))
   elif state == 'PENDING':
+    if build.status == model.BuildStatus.STARTED:  # pragma: no cover
+      # Most probably, race between PubSub push handler and Cron job.
+      # With swarming, a build cannot go from STARTED back to PENDING,
+      # so ignore this.
+      return False
     build.status = model.BuildStatus.SCHEDULED
   elif state == 'RUNNING':
     build.status = model.BuildStatus.STARTED
