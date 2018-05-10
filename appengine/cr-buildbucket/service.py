@@ -38,7 +38,11 @@ MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 MAX_BUILDSET_LENGTH = 1024
 RE_TAG_INDEX_SEARCH_CURSOR = re.compile('^id>\d+$')
-RESERVED_TAG_KEYS = {'build_address', 'swarming_tag', 'swarming_dimension'}
+RESERVED_TAG_KEYS = {
+    swarming.BUILD_ADDRESS_TAG_KEY,
+    'swarming_tag',
+    'swarming_dimension',
+}
 BUILDER_PARAMETER = swarming.BUILDER_PARAMETER
 
 validate_bucket_name = errors.validate_bucket_name

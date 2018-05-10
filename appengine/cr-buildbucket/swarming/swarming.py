@@ -65,6 +65,7 @@ BUILDER_PARAMETER = 'builder_name'
 PARAM_PROPERTIES = 'properties'
 PARAM_SWARMING = 'swarming'
 PARAM_CHANGES = 'changes'
+BUILD_ADDRESS_TAG_KEY = 'build_address'
 
 BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
 BUILD_RUN_RESULT_CORRUPTED = 'corrupted'
@@ -655,6 +656,29 @@ def prepare_task_def_async(build, build_number=None, fake_build=False):
   raise ndb.Return(ret)
 
 
+def build_address(bucket, builder, number):
+  """Returns value for build_address tag."""
+  return '%s/%s/%d' % (bucket, builder, number)
+
+
+def build_address_tag(bucket, builder, number):
+  """Returns a build_address tag."""
+  return '%s:%s' % (BUILD_ADDRESS_TAG_KEY,
+                    build_address(bucket, builder, number))
+
+
+def parse_build_address(address):
+  """Parses a build address into its components. Opposite of build_address()."""
+  parts = address.split('/', 2)
+  if len(parts) != 3:
+    raise ValueError('number of slashes must be exactly 2')
+  try:
+    number = int(parts[2])
+  except ValueError:
+    raise ValueError('invalid build number "%s"' % parts[2])
+  return parts[0], parts[1], number
+
+
 @ndb.tasklet
 def _prepare_task_def_async(build, build_number, bucket_cfg, builder_cfg,
                             settings, fake_build):
@@ -674,8 +698,8 @@ def _prepare_task_def_async(build, build_number, bucket_cfg, builder_cfg,
         'Swarming buckets do not support creation of leased builds')
 
   if build_number is not None:
-    build.tags.append('build_address:%s/%s/%d' %
-                      (build.bucket, builder_cfg.name, build_number))
+    build.tags.append(
+        build_address_tag(build.bucket, builder_cfg.name, build_number))
 
   build.url = _generate_build_url(settings.milo_hostname, build, build_number)
 

@@ -8,8 +8,7 @@ code in this app is v1. In particular, this file implements a function that
 converts a v1 Build datastore entity to buildbucket.v2.Build message.
 """
 
-from google.appengine.ext import ndb
-
+from . import api
 from . import builds
 from . import errors
 from .builds import build_to_v2_partial

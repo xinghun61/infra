@@ -12,8 +12,10 @@ import posixpath
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
+from components import auth
 from components import decorators
 from components import endpoints_webapp2
+from components import prpc
 from components import utils
 
 import webapp2
@@ -27,6 +29,7 @@ import model
 import notifications
 import service
 import swarming
+import v2
 
 README_MD = ('https://chromium.googlesource.com/infra/infra/+/master/'
              'appengine/cr-buildbucket/README.md')
@@ -337,7 +340,13 @@ def get_frontend_routes():  # pragma: no cover
   ]
   routes += endpoints_webapp2.api_routes(api.BuildBucketApi)
   routes += endpoints_webapp2.api_routes(swarmbucket_api.SwarmbucketApi)
-  routes += access.create_routes()
+
+  prpc_server = prpc.Server()
+  prpc_server.add_interceptor(auth.prpc_interceptor)
+  prpc_server.add_service(access.AccessServicer())
+  prpc_server.add_service(v2.api.BuildsApi())
+  routes += prpc_server.get_routes()
+
   return routes
 
 

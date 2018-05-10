@@ -1790,6 +1790,19 @@ class SwarmingTest(BaseTest):
         },
     )
 
+  def test_parse_build_address_success(self):
+    self.assertEqual(
+        swarming.parse_build_address('luci.chromium.try/linux-rel/2'),
+        ('luci.chromium.try', 'linux-rel', 2))
+
+  def test_parse_build_address_invalid_number_of_slashes(self):
+    with self.assertRaises(ValueError):
+      swarming.parse_build_address('foo')
+
+  def test_parse_build_address_invalid_build_number(self):
+    with self.assertRaises(ValueError):
+      swarming.parse_build_address('a/b/c')
+
 
 class SubNotifyTest(BaseTest):
 

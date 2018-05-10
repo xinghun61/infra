@@ -7,7 +7,6 @@ import datetime
 from components import utils
 utils.fix_protobuf_package()
 
-from google.protobuf import struct_pb2
 from google.protobuf import timestamp_pb2
 
 from components import auth
@@ -22,6 +21,7 @@ import model
 
 
 class V2BuildsTest(testing.AppengineTestCase):
+  max_diff = None
 
   def test_get_builder_id(self):
     build = model.Build(
@@ -200,7 +200,7 @@ class V2BuildsTest(testing.AppengineTestCase):
         test_util.msg_to_dict(expected),
         test_util.msg_to_dict(builds.build_to_v2_partial(build)))
 
-  def test_build_to_v2_number(self):
+  def test_build_to_v2_number_in_result_details(self):
     msg = builds.build_to_v2_partial(
         mkbuild(result_details={
             'properties': {
@@ -228,6 +228,7 @@ class V2BuildsTest(testing.AppengineTestCase):
     ]
 
     expected = build_pb2.Build(
+        number=1,
         tags=[
             common_pb2.StringPair(key='buildset', value='bs'),
         ],

@@ -12,6 +12,7 @@ from . import errors
 from proto import build_pb2
 from proto import common_pb2
 import model
+import swarming
 
 BUILDER_PARAMETER = 'builder_name'
 
@@ -109,7 +110,13 @@ def _parse_tags(dest_msg, tags):
 
       # Exclude all "swarming_tag" tags.
       continue
-    elif k in ('build_address', 'swarming_hostname', 'swarming_task_id'):
+    elif k == swarming.BUILD_ADDRESS_TAG_KEY:
+      try:
+        _, _, dest_msg.number = swarming.parse_build_address(v)
+        continue
+      except ValueError as ex:  # pragma: no cover
+        raise errors.MalformedBuild('invalid build address "%s": %s' % (v, ex))
+    elif k in ('swarming_hostname', 'swarming_task_id'):
       # These tags are added automatically and are covered by proto fields.
       # Omit them.
       continue

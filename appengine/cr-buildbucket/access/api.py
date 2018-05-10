@@ -7,14 +7,13 @@ import logging
 from google.protobuf import duration_pb2
 
 from components import auth
-from components import prpc
 
 from access import access_pb2
 from access import access_prpc_pb2
 from proto import project_config_pb2
 import acl
 
-__all__ = ['create_routes']
+__all__ = ['AccessServicer']
 
 
 def create_resource_permissions(role):
@@ -79,11 +78,3 @@ class AccessServicer(object):
                 },
             )
         ],)
-
-
-def create_routes():  # pragma: no cover
-  """Instantiates a pRPC server and returns webapp2 routes for it."""
-  server = prpc.Server()
-  server.add_interceptor(auth.prpc_interceptor)
-  server.add_service(AccessServicer())
-  return server.get_routes()
