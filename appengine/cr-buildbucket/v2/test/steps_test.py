@@ -11,7 +11,7 @@ utils.fix_protobuf_package()
 from google.protobuf import text_format
 from google.protobuf import timestamp_pb2
 
-from components import multiline_proto
+from components import protoutil
 
 from testing_utils import testing
 
@@ -36,7 +36,7 @@ class StepsTest(testing.AppengineTestCase):
 
     expected = build_pb2.Build()
     with open(os.path.join(THIS_DIR, 'expected_steps.pb.txt')) as f:
-      text = multiline_proto.parse(f.read())
+      text = protoutil.parse_multiline(f.read())
       text_format.Merge(text, expected)
 
     converter = steps.AnnotationConverter('logdog.example.com', 'prefix')
