@@ -390,7 +390,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         status=analysis_status.COMPLETED,
         try_job_status=analysis_status.COMPLETED,
         confidence_in_culprit=1.0,
-        has_filed_bug=True)
+        bug_id=12345)
     self.assertTrue(culprit_util.CanRevertForAnalysis(analysis))
     mock_time_fn.assert_called_with('chromium', 'r13')
 

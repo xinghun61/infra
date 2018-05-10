@@ -151,7 +151,7 @@ def CanRevertForAnalysis(analysis):
 
   return bool(
       analysis.status == analysis_status.COMPLETED and
-      analysis.has_filed_bug and
+      analysis.bug_id is not None and
       floating_point_util.AlmostEquals(analysis.confidence_in_culprit, 1.0) and
       previous_data_point is not None and floating_point_util.AlmostEquals(
           previous_data_point.pass_rate,
