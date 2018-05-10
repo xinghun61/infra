@@ -151,7 +151,10 @@ type masterJSON struct {
 
 func (d *Builders) fetchBuilderNames(c context.Context, master *config.Master) (names []string, err error) {
 	// this is inefficient, but there is no better API
-	res, err := d.Buildbot.GetCompressedMasterJSON(c, &milo.MasterRequest{Name: master.Name})
+	res, err := d.Buildbot.GetCompressedMasterJSON(c, &milo.MasterRequest{
+		Name:        master.Name,
+		NoEmulation: true,
+	})
 	switch apiErr, _ := err.(*googleapi.Error); {
 	case apiErr != nil && apiErr.Code == http.StatusNotFound:
 		// Entire master was deleted. Treat it as there are no builders.
