@@ -38,7 +38,7 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing project")
 	}
 	if req.GitUrl == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing git repo")
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing git URL")
 	}
 	if req.GitRef == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing git ref")

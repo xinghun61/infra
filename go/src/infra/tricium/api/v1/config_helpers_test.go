@@ -17,37 +17,6 @@ import (
 	"go.chromium.org/luci/server/auth/authtest"
 )
 
-func TestProjectIsKnown(t *testing.T) {
-
-	project := "playground/gerrit-tricium"
-	sc := &ServiceConfig{Projects: []*ProjectDetails{{Name: project}}}
-
-	Convey("Known project is known", t, func() {
-		ok := ProjectIsKnown(sc, project)
-		So(ok, ShouldBeTrue)
-	})
-
-	Convey("Unknown project is unknown", t, func() {
-		ok := ProjectIsKnown(sc, "blabla")
-		So(ok, ShouldBeFalse)
-	})
-}
-
-func TestLookupProjectDetails(t *testing.T) {
-	project := "playground/gerrit-tricium"
-	sc := &ServiceConfig{Projects: []*ProjectDetails{{Name: project}}}
-
-	Convey("Known project is known", t, func() {
-		p := LookupProjectDetails(sc, project)
-		So(p, ShouldNotBeNil)
-	})
-
-	Convey("Unknown project is unknown", t, func() {
-		p := LookupProjectDetails(sc, "blabla")
-		So(p, ShouldBeNil)
-	})
-}
-
 func TestLookupRepoDetails(t *testing.T) {
 
 	pc := &ProjectConfig{

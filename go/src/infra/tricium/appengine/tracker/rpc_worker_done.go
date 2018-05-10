@@ -268,8 +268,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	if err := ds.Get(c, request); err != nil {
 		return fmt.Errorf("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err)
 	}
-	switch request.Consumer {
-	case tricium.Consumer_GERRIT:
+	if request.GerritProject != "" && request.GerritChange != "" {
 		if tricium.IsDone(functionState) {
 			// Only report results if there were comments.
 			if len(comments) == 0 {
@@ -288,8 +287,6 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 				return fmt.Errorf("failed to enqueue reporter results request: %v", err)
 			}
 		}
-	default:
-		// Do nothing.
 	}
 	return nil
 }

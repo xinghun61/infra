@@ -62,8 +62,13 @@ func TestAnalyzeQueueHandler(t *testing.T) {
 			// A request with an empty paths list is not valid.
 			ar := &tricium.AnalyzeRequest{
 				Project: "some-project",
-				GitRef:  "some/ref",
 				Paths:   nil,
+				Source: &tricium.AnalyzeRequest_GitCommit{
+					GitCommit: &tricium.GitCommit{
+						Ref: "some/ref",
+						Url: "https://example.com/repo.git",
+					},
+				},
 			}
 			bytes, err := proto.Marshal(ar)
 			analyzeHandler(&router.Context{

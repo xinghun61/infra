@@ -19,7 +19,6 @@ import (
 	"google.golang.org/grpc/codes"
 
 	admin "infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
 	"infra/tricium/appengine/common/track"
@@ -114,7 +113,7 @@ func swarmingTags(c context.Context, worker string, runID int64) []string {
 		logging.WithError(err).Errorf(c, "failed to get request for run ID: %d", runID)
 		return tags
 	}
-	if request.Consumer == tricium.Consumer_GERRIT {
+	if request.GerritProject != "" && request.GerritChange != "" {
 		cl, patch := common.ExtractCLPatchSetNumbers(request.GitRef)
 		tags = append(tags,
 			"gerrit_project:"+request.GerritProject,

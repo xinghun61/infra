@@ -22,8 +22,9 @@ import (
 )
 
 type runInfo struct {
-	ID        int64
-	Received  time.Time
+	ID       int64
+	Received time.Time
+	// TODO(qyearsley): Rename this to GitURL.
 	GitRepo   string
 	GitRef    string
 	GerritURL string

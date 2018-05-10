@@ -36,23 +36,19 @@ type mockConfigProvider struct {
 }
 
 func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
-	return &tricium.ServiceConfig{
-		Projects: []*tricium.ProjectDetails{
+	return nil, nil // not used in this test
+}
+func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
+	return &tricium.ProjectConfig{
+		Repos: []*tricium.RepoDetails{
 			{
-				Name: project,
-				RepoDetails: &tricium.RepoDetails{
-					Kind: tricium.RepoDetails_GIT,
-					GitDetails: &tricium.GitRepoDetails{
-						Repository: "https://chromium.googlesource.com/playground/gerrit-tricium",
-						Ref:        "master",
+				Source: &tricium.RepoDetails_GitRepo{
+					GitRepo: &tricium.GitRepo{
+						Url: "https://chromium.googlesource.com/playground/gerrit-tricium",
 					},
 				},
 			},
 		},
-	}, nil
-}
-func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
-	return &tricium.ProjectConfig{
 		Acls: []*tricium.Acl{
 			{
 				Role:     tricium.Acl_READER,
@@ -66,11 +62,9 @@ func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*trici
 	}, nil
 }
 
-func (*mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*tricium.ProjectConfig, error) {
-	// TODO(qyearsley): When Analyze is changed to use repo details from
-	// project configs, update this method to return the example repo
-	// details currently returned by GetServiceConfig.
-	return nil, nil // not used in this test
+func (cp *mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*tricium.ProjectConfig, error) {
+	pc, _ := cp.GetProjectConfig(c, project)
+	return map[string]*tricium.ProjectConfig{project: pc}, nil
 }
 
 func TestAnalyze(t *testing.T) {
@@ -79,6 +73,7 @@ func TestAnalyze(t *testing.T) {
 		ctx := tt.Context()
 
 		gitRef := "ref/test"
+		gitURL := "https://chromium.googlesource.com/playground/gerrit-tricium"
 		paths := []string{
 			"README.md",
 			"README2.md",
@@ -91,8 +86,13 @@ func TestAnalyze(t *testing.T) {
 
 			_, _, err := analyzeWithAuth(ctx, &tricium.AnalyzeRequest{
 				Project: project,
-				GitRef:  gitRef,
 				Paths:   paths,
+				Source: &tricium.AnalyzeRequest_GitCommit{
+					GitCommit: &tricium.GitCommit{
+						Url: gitURL,
+						Ref: gitRef,
+					},
+				},
 			}, &mockConfigProvider{})
 			So(err, ShouldBeNil)
 
@@ -107,48 +107,52 @@ func TestAnalyze(t *testing.T) {
 			})
 		})
 
-		Convey("Fails invalid request", func() {
+		Convey("A request for a Gerrit change with no host is invalid", func() {
 			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
-				Project:  project,
-				GitRef:   gitRef,
-				Paths:    paths,
-				Consumer: tricium.Consumer_GERRIT,
-				GerritDetails: &tricium.GerritConsumerDetails{
-					// Host field is missing.
-					Project:  project,
-					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
-					Revision: revision,
+				Project: project,
+				Paths:   paths,
+				Source: &tricium.AnalyzeRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						// Host field is missing.
+						Project: project,
+						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+						GitUrl:  "https://example.com/notimportant.git",
+						GitRef:  revision,
+					},
 				},
 			})
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("Validates valid request", func() {
+		Convey("A request with all Gerrit details is valid", func() {
 			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
-				Project:  project,
-				GitRef:   gitRef,
-				Paths:    paths,
-				Consumer: tricium.Consumer_GERRIT,
-				GerritDetails: &tricium.GerritConsumerDetails{
-					Host:     host,
-					Project:  project,
-					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
-					Revision: revision,
+				Project: project,
+				Paths:   paths,
+				Source: &tricium.AnalyzeRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						Host:    host,
+						Project: project,
+						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+						GitUrl:  "https://example.com/notimportant.git",
+						GitRef:  revision,
+					},
 				},
 			})
 			So(err, ShouldBeNil)
 		})
 
-		Convey("Validation checks Gerrit change ID format", func() {
+		Convey("A request with an invalid Change ID format is invalid", func() {
 			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
-				Project:  project,
-				GitRef:   gitRef,
-				Paths:    paths,
-				Consumer: tricium.Consumer_GERRIT,
-				GerritDetails: &tricium.GerritConsumerDetails{
-					Project:  project,
-					Change:   "bogus change ID",
-					Revision: revision,
+				Project: project,
+				Paths:   paths,
+				Source: &tricium.AnalyzeRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						Host:    host,
+						Project: project,
+						Change:  "bogus change ID",
+						GitUrl:  "https://example.com/notimportant.git",
+						GitRef:  revision,
+					},
 				},
 			})
 			So(err, ShouldNotBeNil)

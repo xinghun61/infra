@@ -102,12 +102,13 @@ func TestProgress(t *testing.T) {
 				Identity: identity.Identity(okACLUser),
 			})
 			request := &tricium.ProgressRequest{
-				Consumer: tricium.Consumer_GERRIT,
-				GerritDetails: &tricium.GerritConsumerDetails{
-					Host:     host,
-					Project:  project,
-					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
-					Revision: revision,
+				Source: &tricium.ProgressRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						Host:    host,
+						Project: project,
+						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+						GitRef:  revision,
+					},
 				},
 			}
 			response, err := server.Progress(ctx, request)
@@ -131,12 +132,13 @@ func TestProgress(t *testing.T) {
 				Identity: identity.Identity(okACLUser),
 			})
 			request := &tricium.ProgressRequest{
-				Consumer: tricium.Consumer_GERRIT,
-				GerritDetails: &tricium.GerritConsumerDetails{
-					Host:     host,
-					Project:  project,
-					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
-					Revision: "refs/changes/97/97/2",
+				Source: &tricium.ProgressRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						Host:    host,
+						Project: project,
+						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+						GitRef:  "refs/changes/97/97/2",
+					},
 				},
 			}
 			response, err := server.Progress(ctx, request)
@@ -169,12 +171,13 @@ func TestProgress(t *testing.T) {
 
 		Convey("Validate request with valid Gerrit details", func() {
 			request := &tricium.ProgressRequest{
-				Consumer: tricium.Consumer_GERRIT,
-				GerritDetails: &tricium.GerritConsumerDetails{
-					Host:     host,
-					Project:  project,
-					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
-					Revision: revision,
+				Source: &tricium.ProgressRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						Host:    host,
+						Project: project,
+						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+						GitRef:  revision,
+					},
 				},
 			}
 			id, err := validateProgressRequest(ctx, request)
@@ -184,12 +187,13 @@ func TestProgress(t *testing.T) {
 
 		Convey("Validate request with valid Gerrit details but no stored run", func() {
 			request := &tricium.ProgressRequest{
-				Consumer: tricium.Consumer_GERRIT,
-				GerritDetails: &tricium.GerritConsumerDetails{
-					Host:     host,
-					Project:  project,
-					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
-					Revision: "refs/changes/97/97/2",
+				Source: &tricium.ProgressRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						Host:    host,
+						Project: project,
+						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+						GitRef:  "refs/changes/97/97/2",
+					},
 				},
 			}
 			id, err := validateProgressRequest(ctx, request)
@@ -197,13 +201,14 @@ func TestProgress(t *testing.T) {
 			So(status.Code(err), ShouldEqual, codes.NotFound)
 		})
 
-		Convey("Validate request with missing Gerrit details", func() {
+		Convey("Validate request with missing Gerrit change ID", func() {
 			request := &tricium.ProgressRequest{
-				Consumer: tricium.Consumer_GERRIT,
-				GerritDetails: &tricium.GerritConsumerDetails{
-					Host:     host,
-					Project:  project,
-					Revision: revision,
+				Source: &tricium.ProgressRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						Host:    host,
+						Project: project,
+						GitRef:  revision,
+					},
 				},
 			}
 			_, err := validateProgressRequest(ctx, request)
@@ -212,13 +217,14 @@ func TestProgress(t *testing.T) {
 
 		Convey("Validate request with both Gerrit details run ID", func() {
 			request := &tricium.ProgressRequest{
-				RunId:    "76543",
-				Consumer: tricium.Consumer_GERRIT,
-				GerritDetails: &tricium.GerritConsumerDetails{
-					Host:     host,
-					Project:  project,
-					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
-					Revision: revision,
+				RunId: "76543",
+				Source: &tricium.ProgressRequest_GerritRevision{
+					GerritRevision: &tricium.GerritRevision{
+						Host:    host,
+						Project: project,
+						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+						GitRef:  revision,
+					},
 				},
 			}
 			_, err := validateProgressRequest(ctx, request)

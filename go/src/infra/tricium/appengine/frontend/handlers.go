@@ -53,7 +53,8 @@ func analyzeHandler(ctx *router.Context) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	logging.Infof(c, "[frontend] Analyze request (Project: %s, Git ref: %s)", ar.Project, ar.GitRef)
+
+	logging.Infof(c, "[frontend] Analyze request: %+v", ar)
 	if _, err := analyze(c, ar, config.LuciConfigServer); err != nil {
 		logging.WithError(err).Errorf(c, "[frontend] Failed to call Tricium.Analyze")
 		switch grpc.Code(err) {

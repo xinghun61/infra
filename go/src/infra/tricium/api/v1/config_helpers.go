@@ -13,34 +13,6 @@ import (
 	"go.chromium.org/luci/server/auth"
 )
 
-// ProjectIsKnown checks if the provided project is known to the Tricium service.
-//
-// DEPRECATED, will be removed with Projects is removed from ServiceConfig,
-// see https://crbug.com/824558.
-func ProjectIsKnown(sc *ServiceConfig, project string) bool {
-	for _, p := range sc.Projects {
-		if p.Name == project {
-			return true
-		}
-	}
-	return false
-}
-
-// LookupProjectDetails lookups up the project details entry for the provided project.
-//
-// Unknown projects results in nil.
-//
-// DEPRECATED, will be removed with Projects is removed from ServiceConfig,
-// see https://crbug.com/824558.
-func LookupProjectDetails(sc *ServiceConfig, project string) *ProjectDetails {
-	for _, p := range sc.Projects {
-		if p.Name == project {
-			return p
-		}
-	}
-	return nil
-}
-
 // LookupRepoDetails gets corresponding RepoDetails for the
 // repo that matches the given AnalyzeRequest.
 //

@@ -29,6 +29,7 @@ type LaunchRequest struct {
 	GitUrl string `protobuf:"bytes,3,opt,name=git_url,json=gitUrl" json:"git_url,omitempty"`
 	// A git commit-ish, such as a Gerrit revision ref name like
 	// "refs/changes/34/1234/1", or any other ref name or commit hash.
+	// This is used in the GitFileDetails data type used to pull files.
 	GitRef string `protobuf:"bytes,4,opt,name=git_ref,json=gitRef" json:"git_ref,omitempty"`
 	// File paths from the root of the Git repository.
 	// TODO(qyearsley): Replace this with a list of file metadata messages.

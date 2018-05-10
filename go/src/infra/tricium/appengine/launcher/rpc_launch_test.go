@@ -36,12 +36,6 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 	return &tricium.ServiceConfig{
 		SwarmingServer: "chromium-swarm-dev",
 		IsolateServer:  "isolatedserver-dev",
-		Projects: []*tricium.ProjectDetails{
-			{
-				Name: project,
-				SwarmingServiceAccount: "swarming@email.com",
-			},
-		},
 		Platforms: []*tricium.Platform_Details{
 			{
 				Name:       tricium.Platform_UBUNTU,

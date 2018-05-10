@@ -117,21 +117,21 @@ func TestPollBasicBehavior(t *testing.T) {
 				"playground": {
 					Repos: []*tricium.RepoDetails{
 						{
-							GitDetails: &tricium.GitRepoDetails{
-								Repository: "https://repo-host.com/playground",
-							},
-							GerritDetails: &tricium.GerritDetails{
-								Host:    host,
-								Project: "project/tricium-gerrit",
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "project/tricium-gerrit",
+									GitUrl:  "https://repo-host.com/playground",
+								},
 							},
 						},
 						{
-							GitDetails: &tricium.GitRepoDetails{
-								Repository: "https://repo-host.com/demo",
-							},
-							GerritDetails: &tricium.GerritDetails{
-								Host:    host,
-								Project: "project/tricium-gerrit/demo",
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "project/tricium-gerrit/demo",
+									GitUrl:  "https://repo-host.com/demo",
+								},
 							},
 						},
 					},
@@ -139,12 +139,12 @@ func TestPollBasicBehavior(t *testing.T) {
 				"infra": {
 					Repos: []*tricium.RepoDetails{
 						{
-							GitDetails: &tricium.GitRepoDetails{
-								Repository: "https://repo-host.com/infra",
-							},
-							GerritDetails: &tricium.GerritDetails{
-								Host:    host,
-								Project: "infra/infra",
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "infra",
+									GitUrl:  "https://repo-host.com/infra",
+								},
 							},
 						},
 					},
@@ -155,11 +155,11 @@ func TestPollBasicBehavior(t *testing.T) {
 		projects, err := cp.GetAllProjectConfigs(ctx)
 		So(err, ShouldBeNil)
 
-		var gerritProjects []*tricium.GerritDetails
+		var gerritProjects []*tricium.GerritProject
 		for _, pc := range projects {
 			for _, repo := range pc.Repos {
-				if gd := repo.GetGerritDetails(); gd != nil {
-					gerritProjects = append(gerritProjects, gd)
+				if gp := repo.GetGerritProject(); gp != nil {
+					gerritProjects = append(gerritProjects, gp)
 				}
 			}
 		}
@@ -263,7 +263,7 @@ func TestPollBasicBehavior(t *testing.T) {
 					ar := &tricium.AnalyzeRequest{}
 					So(proto.Unmarshal(task.Payload, ar), ShouldBeNil)
 					projects = append(projects, ar.Project)
-					repos = append(repos, ar.GitRepo)
+					repos = append(repos, ar.GetGerritRevision().GitUrl)
 				}
 				sort.Strings(projects)
 				So(projects, ShouldResemble, []string{"infra", "playground", "playground"})
@@ -429,12 +429,12 @@ func TestPollWhitelistBehavior(t *testing.T) {
 				noWhitelistProject: {
 					Repos: []*tricium.RepoDetails{
 						{
-							GitDetails: &tricium.GitRepoDetails{
-								Repository: "https://repo-host.com/no-whitelist",
-							},
-							GerritDetails: &tricium.GerritDetails{
-								Host:    host,
-								Project: noWhitelistProject,
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: noWhitelistProject,
+									GitUrl:  "https://repo-host.com/no-whitelist",
+								},
 							},
 						},
 					},
@@ -442,14 +442,14 @@ func TestPollWhitelistBehavior(t *testing.T) {
 				whitelistProject: {
 					Repos: []*tricium.RepoDetails{
 						{
-							GitDetails: &tricium.GitRepoDetails{
-								Repository: "https://repo-host.com/whitelist",
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: whitelistProject,
+									GitUrl:  "https://repo-host.com/whitelist",
+								},
 							},
-							GerritDetails: &tricium.GerritDetails{
-								Host:             host,
-								Project:          whitelistProject,
-								WhitelistedGroup: []string{whitelistGroup},
-							},
+							WhitelistedGroup: []string{whitelistGroup},
 						},
 					},
 				},
@@ -459,10 +459,10 @@ func TestPollWhitelistBehavior(t *testing.T) {
 		projects, err := cp.GetAllProjectConfigs(ctx)
 		So(err, ShouldBeNil)
 
-		var gerritProjects []*tricium.GerritDetails
+		var gerritProjects []*tricium.GerritProject
 		for _, pc := range projects {
 			for _, repo := range pc.Repos {
-				if gd := repo.GetGerritDetails(); gd != nil {
+				if gd := repo.GetGerritProject(); gd != nil {
 					gerritProjects = append(gerritProjects, gd)
 				}
 			}

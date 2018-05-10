@@ -46,14 +46,6 @@ func validateProjectProgressRequest(c context.Context, req *tricium.ProjectProgr
 }
 
 func projectProgress(c context.Context, project string, cp config.ProviderAPI) ([]*tricium.RunProgress, codes.Code, error) {
-	sc, err := cp.GetServiceConfig(c)
-	if err != nil {
-		return nil, codes.Internal, fmt.Errorf("failed to get service config: %v", err)
-	}
-	pd := tricium.LookupProjectDetails(sc, project)
-	if pd == nil {
-		return nil, codes.InvalidArgument, fmt.Errorf("unknown project")
-	}
 	var runProgress []*tricium.RunProgress
 	var requests []*track.AnalyzeRequest
 	if err := ds.GetAll(c, ds.NewQuery("AnalyzeRequest").Eq("Project", project), &requests); err != nil {

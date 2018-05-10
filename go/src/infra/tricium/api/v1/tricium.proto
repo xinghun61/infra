@@ -51,38 +51,10 @@ message AnalyzeRequest {
   // will behave for this request.
   string project = 1;
 
-  // Projects can have multiple associated repositories, so to unambiguously
-  // specify a patch we also need to know which repository to look at.
-  // DEPRECATED
-  string git_repo = 2;
-
-  // Git ref in the git repo for the project. Note that if gerrit_details
-  // is given, then this will also be present as the Revision. For patch
-  // number 7 of CL 12345, this will look like "refs/changes/45/12345/7".
-  // Regardless of whether gerrit_details is given, this ref will be used when
-  // checking out files.
-  // DEPRECATED
-  string git_ref = 3;
-
   // Paths to analyze in the project. Listed from the root of the Git
   // repository.
   // TODO(emso): document path separators or add listing of path segments.
   repeated string paths = 4;
-
-  // Consumer to send progress updates and results to.
-  //
-  // This field is optional. If included it will push progress and result
-  // updates to the provided consumer. The selected consumer must be
-  // configured for the project of the request.
-  //
-  // Note that progress and results can be accessed via the Tricium
-  // API regardless of whether a consumer has been included in the request.
-  // DEPRECATED
-  Consumer consumer = 5;
-
-  // Gerrit details for a Gerrit consumer.
-  // DEPRECATED
-  GerritConsumerDetails gerrit_details = 6;
 
   oneof source {
     GerritRevision gerrit_revision = 7;
@@ -145,7 +117,9 @@ message ProgressRequest {
   //
   // This field must be provided, unless a consumer is provided below.
   // If nothing else is provided, then all known progress for the run is returned.
-  // DEPRECATED, will be one choice in "source", below
+  //
+  // TODO(qyearsley): remove this field and make it one of the choices in
+  // "source", below.
   string run_id = 1;
 
   // An optional function name.
@@ -164,24 +138,11 @@ message ProgressRequest {
   // NB! Currently not supported.
   Platform platform = 3;
 
-  // Consumer of the progress information.
-  //
-  // This field is optional. If included, consumer-specific fields will be considered
-  // when looking up progress information and the run ID can be excluded.
-  //
-  // Note that if a run ID is listed and a consumer. Then the run ID will be used.
-  // DEPRECATED
-  Consumer consumer = 4;
-
-  // Gerrit details for the Gerrit consumer.
-  // DEPRECATED, will be replaced with GerritRevision.
-  GerritConsumerDetails gerrit_details = 5;
-
   // The information that's used to look up the run. If this request is for a
   // particular Gerrit revision, then that can be provided; otherwise the run
   // ID can be used.
   oneof source {
-    GerritRevision gerrit_revision = 6;
+    GerritRevision gerrit_revision = 4;
   }
 }
 
@@ -374,58 +335,4 @@ enum State {
   // For instance, the worker providing the data needed by a worker may have
   // failed.
   ABORTED = 6;
-}
-
-enum Consumer {
-  // No consumer means progress and results can be pulled from the Tricium service API.
-  //
-  // This is the default value used when no consumer is configured for a project.
-  NONE = 0;
-
-  // A Gerrit consumer means the Tricium service reports progress updates and
-  // results to Gerrit.
-  //
-  // Gerrit details need to be configured for a project before the Gerrit
-  // consumer option is enabled. Gerrit consumer details must be provided with
-  // the request if the consumer type is Gerrit.
-  GERRIT = 1;
-}
-
-// Gerrit consumer details to be provided if a Gerrit consumer is specified.
-message GerritConsumerDetails {
-  // Gerrit host.
-  //
-  // This value must not include protocol and is assumed to not include '##'.
-  //
-  // This field is required.
-  string host = 1;
-
-  // Gerrit project name.
-  //
-  // This value is assumed to not include '##'.
-  //
-  // This field is required.
-  string project = 2;
-
-  // Gerrit change ID.
-  //
-  // This value should be of the form "<project>~<branch>~<Change-Id>", where
-  // <Change-Id> is a Change-Id footer string, and not a legacy change ID
-  // number. Note that "refs/heads/" can be omitted from the branch.
-  //
-  // Example: "myProject~master~I8473b95934b5732ac55d26311a706c9c2bde9940"
-  //
-  // This field is required.
-  string change = 3;
-
-  // Gerrit change revision.
-  //
-  // This value should be the fetch URL for a revision of a change. Note that
-  // the last number of a change revision ref maps to the corresponding patch set
-  // number.
-  //
-  // Example: "refs/changes/97/97/1"
-  //
-  // This field is required.
-  string revision = 4;
 }

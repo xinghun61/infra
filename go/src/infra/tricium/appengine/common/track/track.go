@@ -66,18 +66,17 @@ type AnalyzeRequest struct {
 	ID int64 `gae:"$id"`
 	// Time when the corresponding request was received.
 	Received time.Time
-	// The Tricium project of the request.
-	// This is the project name listed in the Tricium service config.
+	// The name of the project in luci-config that specifies
+	// the configuration and project details that are used in
+	// this analyze request.
 	Project string
 	// File paths listed in the request.
 	Paths []string `gae:",noindex"`
-	// Git repository hosting files in the request.
+	// Full URL of Git repository hosting files in the request.
 	GitURL string `gae:",noindex"`
-	// Git ref to use in the Git repo.
+	// Git ref to use in the git repo.
 	GitRef string `gae:",noindex"`
-	// Consumer of progress updates and results.
-	Consumer tricium.Consumer
-	// Gerrit details for the Gerrit consumer.
+	// Gerrit details if applicable.
 	GerritHost    string `gae:",noindex"`
 	GerritProject string `gae:",noindex"`
 	GerritChange  string `gae:",noindex"`

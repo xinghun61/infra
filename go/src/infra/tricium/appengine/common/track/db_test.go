@@ -25,8 +25,6 @@ const (
 )
 
 // mockConfigProvider mocks the common.ConfigProvider interface.
-// TODO(qyearsley): Consider adding maps of configs in MockProvider
-// in common/config/provider.go to reduce duplication in tests.
 type mockConfigProvider struct{}
 
 func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {

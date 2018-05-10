@@ -75,7 +75,6 @@ func TestHelperFunctions(t *testing.T) {
 			GitURL:        "http://my-gerrit.com/my-project",
 			GitRef:        "refs/changes/97/597/2",
 			Paths:         []string{"README.md"},
-			Consumer:      tricium.Consumer_GERRIT,
 			GerritProject: "my-project",
 			GerritChange:  "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
 		}), ShouldBeNil)

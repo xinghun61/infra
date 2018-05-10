@@ -41,60 +41,52 @@ var server = &TriciumServer{}
 // via the Tricium UI.
 func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) (*tricium.AnalyzeResponse, error) {
 	if err := validateAnalyzeRequest(c, req); err != nil {
+		logging.WithError(err).Errorf(c, "AnalyzeRequest failed validation")
 		return nil, err
 	}
 	runID, code, err := analyzeWithAuth(c, req, config.LuciConfigServer)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "analyze failed: %v", err)
+		logging.WithError(err).Errorf(c, "Analyze failed")
 		return nil, grpc.Errorf(code, "failed to execute analyze request")
 	}
 	logging.Infof(c, "[frontend] Run ID: %s", runID)
 	return &tricium.AnalyzeResponse{RunId: runID}, nil
 }
 
+// validateAnalyzeRequest returns nil if the request was valid,
+// or a grpc error with a reaosn if the request is invalid.
 func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) error {
 	if req.Project == "" {
-		msg := "missing 'project' field in Analyze request"
-		logging.Errorf(c, msg)
-		return grpc.Errorf(codes.InvalidArgument, msg)
+		return grpc.Errorf(codes.InvalidArgument, "missing project")
 	}
 	if len(req.Paths) == 0 {
-		msg := "missing 'paths' field in Analyze request"
-		logging.Errorf(c, msg)
-		return grpc.Errorf(codes.InvalidArgument, msg)
+		return grpc.Errorf(codes.InvalidArgument, "missing paths")
 	}
-	if req.Consumer == tricium.Consumer_GERRIT {
-		gd := req.GetGerritDetails()
-		if gd == nil {
-			msg := "missing 'gerrit_details' field"
-			logging.Errorf(c, msg)
-			return grpc.Errorf(codes.InvalidArgument, msg)
+	switch source := req.Source.(type) {
+	case *tricium.AnalyzeRequest_GitCommit:
+		// TODO(qyearsley): Validate git ref. Add tests.
+		return nil
+	case *tricium.AnalyzeRequest_GerritRevision:
+		gr := source.GerritRevision
+		if gr.Host == "" {
+			return grpc.Errorf(codes.InvalidArgument, "missing Gerrit host")
 		}
-		if gd.Host == "" {
-			msg := "missing 'host' field in GerritConsumerDetails message"
-			logging.Errorf(c, msg)
-			return grpc.Errorf(codes.InvalidArgument, msg)
+		if gr.Project == "" {
+			return grpc.Errorf(codes.InvalidArgument, "missing Gerrit project")
 		}
-		if gd.Project == "" {
-			msg := "missing 'project' field in GerritConsumerDetails message"
-			logging.Errorf(c, msg)
-			return grpc.Errorf(codes.InvalidArgument, msg)
+		if gr.Change == "" {
+			return grpc.Errorf(codes.InvalidArgument, "missing Gerrit change ID")
 		}
-		if gd.Change == "" {
-			msg := "missing 'change' field in GerritConsumerDetails message"
-			logging.Errorf(c, msg)
-			return grpc.Errorf(codes.InvalidArgument, msg)
+		if match, _ := regexp.MatchString(".+~.+~I[0-9a-fA-F]{40}.*", gr.Change); !match {
+			return grpc.Errorf(codes.InvalidArgument, "invalid Gerrit change ID: "+gr.Change)
 		}
-		if match, _ := regexp.MatchString(".+~.+~I[0-9a-fA-F]{40}.*", gd.Change); !match {
-			msg := fmt.Sprintf("'change' value '%s' in GerritConsumerDetails message doesn't match expected format", gd.Change)
-			logging.Errorf(c, msg)
-			return grpc.Errorf(codes.InvalidArgument, msg)
+		if gr.GitRef == "" {
+			return grpc.Errorf(codes.InvalidArgument, "missing git ref")
 		}
-		if gd.Revision == "" {
-			msg := "missing 'revision' field in GerritConsumerDetails message"
-			logging.Errorf(c, msg)
-			return grpc.Errorf(codes.InvalidArgument, msg)
-		}
+	case nil:
+		return grpc.Errorf(codes.InvalidArgument, "missing source")
+	default:
+		return grpc.Errorf(codes.InvalidArgument, "unexpected source type")
 	}
 	return nil
 }
@@ -123,42 +115,42 @@ func analyzeWithAuth(c context.Context, req *tricium.AnalyzeRequest, cp config.P
 }
 
 func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, error) {
-	// TODO(emso): Verify that there is no current run for this request (map hashed requests to run IDs).
-	sc, err := cp.GetServiceConfig(c)
+	// Construct the track.AnalyzeRequest entity.
+	pc, err := cp.GetProjectConfig(c, req.Project)
 	if err != nil {
-		return "", fmt.Errorf("failed to get service config: %v", err)
+		return "", fmt.Errorf("failed to get project config: %v", err)
 	}
 	request := &track.AnalyzeRequest{
 		Received: clock.Now(c).UTC(),
 		Project:  req.Project,
 		Paths:    req.Paths,
-		GitRef:   req.GitRef,
-		Consumer: req.Consumer,
 	}
-	pd := tricium.LookupProjectDetails(sc, req.Project)
-	if pd == nil {
-		return "", fmt.Errorf("failed to lookup project details, project: %s", req.Project)
+	repo := tricium.LookupRepoDetails(pc, req)
+	if repo == nil {
+		return "", fmt.Errorf("failed to find matching repo in project config: %v", req.Project)
 	}
-	if pd.RepoDetails.Kind == tricium.RepoDetails_GIT {
-		rd := pd.RepoDetails.GitDetails
-		request.GitURL = rd.Repository
-		if request.GitRef == "" {
-			request.GitRef = rd.Ref
-		}
+	if source := req.GetGerritRevision(); source != nil {
+		request.GerritHost = source.Host
+		request.GerritProject = source.Project
+		request.GerritChange = source.Change
+		request.GitURL = source.GitUrl
+		request.GitRef = source.GitRef
+		request.GerritReportingDisabled = repo.DisableReporting
+	} else if source := req.GetGitCommit(); source != nil {
+		request.GitURL = source.Url
+		request.GitRef = source.Ref
 	} else {
-		return "", fmt.Errorf("unsupported repository kind in project details: %s", pd.RepoDetails.Kind)
+		return "", fmt.Errorf("unsupported request source")
 	}
-	if req.Consumer == tricium.Consumer_GERRIT {
-		gd := pd.GetGerritDetails()
-		if gd == nil {
-			return "", fmt.Errorf("missing Gerrit details for project, project: %s", req.Project)
-		}
-		request.GerritHost = gd.Host
-		request.GerritProject = req.GerritDetails.Project
-		request.GerritChange = req.GerritDetails.Change
-		request.GitRef = req.GerritDetails.Revision
-		request.GerritReportingDisabled = gd.DisableReporting
-	}
+
+	// TODO(qyearsley): Verify that there is no current run for this request,
+	// maybe by storing a mapping of hashed requests to run IDs, and checking
+	// that nothing exists for this exact request yet.
+	//
+	// One way to do this would be to make the run ID the hash of the
+	// track.AnalyzeRequest; then we would calculate the hash, check if the
+	// entity already exists, and if so, abort.
+
 	requestRes := &track.AnalyzeRequestResult{
 		ID:    1,
 		State: tricium.State_PENDING,
@@ -205,7 +197,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 			// Map Gerrit change ID to run ID.
 			taskC <- func() error {
 				// Nothing to do if there isn't a Gerrit consumer.
-				if req.Consumer != tricium.Consumer_GERRIT {
+				if req.GetGerritRevision() == nil {
 					return nil
 				}
 				g := &GerritChangeToRunID{
@@ -222,7 +214,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	if err != nil {
 		return "", fmt.Errorf("failed to track and launch request: %v", err)
 	}
-	// Monitor analyze requests per project,
+	// Monitor analyze requests per project.
 	analyzeRequestCount.Add(c, 1, request.Project)
 	return strconv.FormatInt(request.ID, 10), nil
 }

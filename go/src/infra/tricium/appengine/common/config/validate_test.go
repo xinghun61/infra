@@ -14,7 +14,6 @@ import (
 
 func TestValidate(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		project := "playground"
 		functionName := "PyLint"
 		platform := tricium.Platform_UBUNTU
 		config := "enable"
@@ -35,12 +34,6 @@ func TestValidate(t *testing.T) {
 				{
 					Type:               tricium.Data_RESULTS,
 					IsPlatformSpecific: true,
-				},
-			},
-			Projects: []*tricium.ProjectDetails{
-				{
-					Name: project,
-					SwarmingServiceAccount: "swarming@email.com",
 				},
 			},
 		}

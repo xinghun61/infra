@@ -26,12 +26,6 @@ var (
 	sc = &tricium.ServiceConfig{
 		SwarmingServer: "chromium-swarm-dev",
 		IsolateServer:  "isolatedserver-dev",
-		Projects: []*tricium.ProjectDetails{
-			{
-				Name: project,
-				SwarmingServiceAccount: "swarming@email.com",
-			},
-		},
 		Platforms: []*tricium.Platform_Details{
 			{
 				Name:       platform,

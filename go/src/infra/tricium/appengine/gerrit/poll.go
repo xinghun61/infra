@@ -94,7 +94,7 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 			name := name // Make a separate variable for use in the closure below
 			for _, repo := range pc.Repos {
 				repo := repo // Again, a new variable for the closure below
-				if repo.GerritDetails != nil && repo.GitDetails != nil {
+				if repo.GetGerritProject() != nil {
 					taskC <- func() error {
 						return pollProject(c, name, repo, gerrit)
 					}
@@ -112,27 +112,27 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 // in the query string. If no previous poll has been logged, then a time
 // corresponding to zero is used (time.Time{}).
 func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDetails, gerrit API) error {
-	gerritDetails := repo.GerritDetails
+	gerritProject := repo.GetGerritProject()
 
 	// Get last poll data for the given host/project.
-	p := &Project{ID: gerritProjectID(gerritDetails.Host, gerritDetails.Project)}
+	p := &Project{ID: gerritProjectID(gerritProject.Host, gerritProject.Project)}
 	if err := ds.Get(c, p); err != nil {
 		if err != ds.ErrNoSuchEntity {
 			return fmt.Errorf("failed to get Project entity: %v", err)
 		}
 		logging.Infof(c, "Found no previous entry for id:%s", p.ID)
 		err = nil
-		p.Instance = gerritDetails.Host
-		p.Project = gerritDetails.Project
+		p.Instance = gerritProject.Host
+		p.Project = gerritProject.Project
 	}
 
 	// If no previous poll, store current time and return.
 	if p.LastPoll.IsZero() {
 		logging.Infof(c, "No previous poll for %s/%s. Storing current timestamp and stopping.",
-			gerritDetails.Host, gerritDetails.Project)
-		p.ID = gerritProjectID(gerritDetails.Host, gerritDetails.Project)
-		p.Instance = gerritDetails.Host
-		p.Project = gerritDetails.Project
+			gerritProject.Host, gerritProject.Project)
+		p.ID = gerritProjectID(gerritProject.Host, gerritProject.Project)
+		p.Instance = gerritProject.Host
+		p.Project = gerritProject.Project
 		p.LastPoll = clock.Now(c).UTC()
 		logging.Debugf(c, "Storing project data: %+v", p)
 		if err := ds.Put(c, p); err != nil {
@@ -321,7 +321,8 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 	if len(changes) == 0 {
 		return nil
 	}
-	changes = filterByWhitelist(ctx, repo.GerritDetails.WhitelistedGroup, changes)
+	gerritProject := repo.GetGerritProject()
+	changes = filterByWhitelist(ctx, repo.WhitelistedGroup, changes)
 	var tasks []*tq.Task
 	for _, c := range changes {
 		var paths []string
@@ -345,16 +346,16 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 		// This is to get consistent behavior for the same input.
 		sort.Strings(paths)
 		req := &tricium.AnalyzeRequest{
-			Project:  triciumProject,
-			GitRepo:  repo.GitDetails.Repository,
-			GitRef:   c.Revisions[c.CurrentRevision].Ref,
-			Paths:    paths,
-			Consumer: tricium.Consumer_GERRIT,
-			GerritDetails: &tricium.GerritConsumerDetails{
-				Host:     repo.GerritDetails.Host,
-				Project:  repo.GerritDetails.Project,
-				Change:   c.ID,
-				Revision: c.Revisions[c.CurrentRevision].Ref,
+			Project: triciumProject,
+			Paths:   paths,
+			Source: &tricium.AnalyzeRequest_GerritRevision{
+				GerritRevision: &tricium.GerritRevision{
+					Host:    gerritProject.Host,
+					Project: gerritProject.Project,
+					Change:  c.ID,
+					GitRef:  c.Revisions[c.CurrentRevision].Ref,
+					GitUrl:  gerritProject.GitUrl,
+				},
 			},
 		}
 		b, err := proto.Marshal(req)
