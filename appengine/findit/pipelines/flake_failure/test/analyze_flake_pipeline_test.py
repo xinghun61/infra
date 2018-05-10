@@ -188,7 +188,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     expected_isolate_sha_input = GetIsolateShaForCommitPositionParameters(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=start_commit_position,
-        revision=start_revision)
+        revision=start_revision,
+        upper_bound_build_number=analysis.build_number)
 
     expected_pass_rate_input = DetermineApproximatePassRateInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),

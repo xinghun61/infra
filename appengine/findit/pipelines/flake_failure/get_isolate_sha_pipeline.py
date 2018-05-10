@@ -36,6 +36,9 @@ class GetIsolateShaForCommitPositionParameters(StructuredObject):
   # The exact revision corresponding to commit_position being requested.
   revision = basestring
 
+  # A late build number on the builder to assist in finding nearby builds.
+  upper_bound_build_number = int
+
 
 class GetIsolateShaForBuildParameters(StructuredObject):
   # The name of the master to query for a pre-determined sha.
@@ -119,9 +122,10 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
     test_name = analysis.test_name
     step_name = analysis.step_name
     commit_position = parameters.commit_position
+    upper_bound_build_number = parameters.upper_bound_build_number
 
     _, earliest_containing_build = step_util.GetValidBoundingBuildsForStep(
-        master_name, builder_name, step_name, None, analysis.build_number,
+        master_name, builder_name, step_name, None, upper_bound_build_number,
         commit_position)
 
     assert earliest_containing_build

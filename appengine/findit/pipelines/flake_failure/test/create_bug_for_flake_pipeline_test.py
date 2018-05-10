@@ -89,7 +89,8 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     expected_isolate_sha_input = GetIsolateShaForCommitPositionParameters(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=recent_commit_position,
-        revision=recent_revision)
+        revision=recent_revision,
+        upper_bound_build_number=recent_build_number)
 
     get_sha_output = GetIsolateShaOutput(
         isolate_sha='sha1', build_url='url', try_job_url=None)

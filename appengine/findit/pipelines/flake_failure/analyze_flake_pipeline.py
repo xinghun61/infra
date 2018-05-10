@@ -183,7 +183,8 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
             GetIsolateShaForCommitPositionParameters,
             analysis_urlsafe_key=analysis_urlsafe_key,
             commit_position=commit_position_to_analyze,
-            revision=revision_to_analyze)
+            revision=revision_to_analyze,
+            upper_bound_build_number=analysis.build_number)
         get_sha_output = yield GetIsolateShaForCommitPositionPipeline(
             get_isolate_sha_input)
 

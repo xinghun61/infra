@@ -149,7 +149,8 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     get_sha_input = GetIsolateShaForCommitPositionParameters(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         commit_position=requested_commit_position,
-        revision=requested_revision)
+        revision=requested_revision,
+        upper_bound_build_number=analysis.build_number)
 
     self.MockSynchronousPipeline(GetIsolateShaForBuildPipeline,
                                  get_build_sha_parameters, expected_output)
@@ -211,7 +212,8 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     get_sha_input = GetIsolateShaForCommitPositionParameters(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         commit_position=requested_commit_position,
-        revision=requested_revision)
+        revision=requested_revision,
+        upper_bound_build_number=analysis.build_number)
 
     expected_try_job_report = FlakeTryJobReport(
         result={},
