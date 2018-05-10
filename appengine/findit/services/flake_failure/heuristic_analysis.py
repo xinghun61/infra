@@ -10,6 +10,7 @@ from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
+from services import git
 from services import swarmed_test_util
 from waterfall import extractor_util
 from waterfall.flake import flake_constants
@@ -55,8 +56,8 @@ def GetSuspectedRevisions(git_blame, revision_range):
     git_blame (list): A list of Region objects representing the git blame of a
         file at a particular revision.
     revision_range (list): The list of revisions of a suspected flake build.
-        The revisions are expected to be in chronological order as a
-        DataPoint's blame_list.
+        The revisions are expected to be in chronological order from newest
+        to oldest.
 
   Returns:
     A list of revisions found in both git_blame and revision_range.
@@ -81,12 +82,20 @@ def IdentifySuspectedRevisions(analysis):
     (list): A list of revisions in chronological order suspected to have
         introduced test flakiness.
   """
-  suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
-  if not suspected_data_point:
+  regression_range = analysis.GetLatestRegressionRange()
+
+  if regression_range.lower is None or regression_range.upper is None:
+    analysis.LogWarning(
+        'Unable to identify suspects without a complete regression range')
     return []
 
+  upper_data_point = analysis.FindMatchingDataPointWithCommitPosition(
+      regression_range.upper)
+  assert upper_data_point, 'Cannot get test location without data point'
+  assert upper_data_point.git_hash, 'Upper bound revision is None'
+
   test_location = swarmed_test_util.GetTestLocation(
-      suspected_data_point.GetSwarmingTaskId(), analysis.test_name)
+      upper_data_point.GetSwarmingTaskId(), analysis.test_name)
   if not test_location:
     analysis.LogWarning('Failed to get test location. Heuristic results will '
                         'not be available.')
@@ -95,10 +104,18 @@ def IdentifySuspectedRevisions(analysis):
   normalized_file_path = extractor_util.NormalizeFilePath(test_location.file)
   git_repo = CachedGitilesRepository(
       _FINDIT_HTTP_CLIENT, flake_constants.CHROMIUM_GIT_REPOSITORY_URL)
-  git_blame = git_repo.GetBlame(normalized_file_path,
-                                suspected_data_point.git_hash)
+  git_blame = git_repo.GetBlame(normalized_file_path, upper_data_point.git_hash)
 
-  return GetSuspectedRevisions(git_blame, suspected_data_point.blame_list)
+  lower_data_point = analysis.FindMatchingDataPointWithCommitPosition(
+      regression_range.lower)
+  assert lower_data_point, (
+      'Cannot get list of commits without lower data point')
+  assert lower_data_point.git_hash, 'Lower bound revision is None'
+
+  revisions = git.GetCommitsBetweenRevisionsInOrder(
+      lower_data_point.git_hash, upper_data_point.git_hash, True)
+
+  return GetSuspectedRevisions(git_blame, revisions)
 
 
 def ListCommitPositionsFromSuspectedRanges(revisions_to_commits,
@@ -169,17 +186,9 @@ def SaveFlakeCulpritsForSuspectedRevisions(analysis_urlsafe_key,
   analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
   assert analysis
 
-  suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
-  if not suspected_build_point:
-    analysis.LogWarning(
-        'Skipping heuristic analysis due to suspeted build point being '
-        'unavailable')
-    analysis.heuristic_analysis_status = analysis_status.SKIPPED
-    analysis.put()
-    return
-
   for revision in suspected_revisions:
-    commit_position = suspected_build_point.GetCommitPosition(revision)
+    commit_position = git.GetCommitPositionFromRevision(revision)
+    assert commit_position, 'Canot create FlakeCulprit without commit position'
     suspect = (
         FlakeCulprit.Get(repo_name, revision) or
         FlakeCulprit.Create(repo_name, revision, commit_position))

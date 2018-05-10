@@ -15,6 +15,7 @@ from libs.gitiles.change_log import ChangeLog
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from services import git
 from services import swarmed_test_util
 from services.flake_failure import heuristic_analysis
 from waterfall.test import wf_testcase
@@ -91,25 +92,24 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
         }, [(None, 'r1'), ('r2', 'r3'), ('r3', 'r4')]))
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  def testSaveFlakeCulpritsForSuspectedRevisions(self, mocked_fn):
+  @mock.patch.object(git, 'GetCommitPositionFromRevision')
+  def testSaveFlakeCulpritsForSuspectedRevisions(self, mocked_commit_position,
+                                                 mocked_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
     step_name = 's'
     test_name = 't'
     suspected_revision = 'r1'
+    suspected_commit_position = 995
     suspected_revisions = [suspected_revision]
+
+    mocked_commit_position.return_value = suspected_commit_position
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
-    analysis.suspected_flake_build_number = 122
     analysis.data_points = [
-        DataPoint.Create(
-            build_number=122,
-            commit_position=1000,
-            previous_build_commit_position=999,
-            git_hash=suspected_revision,
-            blame_list=[suspected_revision])
+        DataPoint.Create(commit_position=1000, git_hash=suspected_revision)
     ]
     analysis.Save()
 
@@ -133,25 +133,25 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertIn(suspect.key.urlsafe(), analysis.suspect_urlsafe_keys)
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  def testSaveFlakeCulpritsForSuspectedRevisionsNoChangeLog(self, mocked_fn):
+  @mock.patch.object(git, 'GetCommitPositionFromRevision')
+  def testSaveFlakeCulpritsForSuspectedRevisionsNoChangeLog(
+      self, mocked_commit_position, mocked_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
     step_name = 's'
     test_name = 't'
     suspected_revision = 'r1'
+    suspected_commit_position = 995
     suspected_revisions = [suspected_revision]
+
+    mocked_commit_position.return_value = suspected_commit_position
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
-    analysis.suspected_flake_build_number = 122
+
     analysis.data_points = [
-        DataPoint.Create(
-            build_number=122,
-            commit_position=1000,
-            previous_build_commit_position=999,
-            git_hash=suspected_revision,
-            blame_list=[suspected_revision])
+        DataPoint.Create(commit_position=1000, git_hash=suspected_revision)
     ]
     analysis.Save()
 
@@ -165,29 +165,27 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(suspect)
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  @mock.patch.object(git, 'GetCommitPositionFromRevision')
   def testSaveFlakeCulpritsForSuspectedRevisionsExistingCulprit(
-      self, mocked_fn):
+      self, mocked_commit_position, mocked_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
     step_name = 's'
     test_name = 't'
     suspected_revision = 'r1'
+    suspect_commit_position = 995
     suspected_revisions = [suspected_revision]
+    mocked_commit_position.return_value = suspect_commit_position
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
-    analysis.suspected_flake_build_number = 122
     analysis.data_points = [
-        DataPoint.Create(
-            build_number=122,
-            commit_position=1000,
-            previous_build_commit_position=999,
-            git_hash=suspected_revision,
-            blame_list=[suspected_revision])
+        DataPoint.Create(commit_position=1000, git_hash=suspected_revision)
     ]
 
-    suspect = FlakeCulprit.Create('chromium', suspected_revision, 1000)
+    suspect = FlakeCulprit.Create('chromium', suspected_revision,
+                                  suspect_commit_position)
     suspect.url = 'url'
     suspect.put()
 
@@ -205,16 +203,20 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(swarmed_test_util, 'GetTestLocation')
   @mock.patch.object(CachedGitilesRepository, 'GetBlame')
-  def testIdentifySuspectedRanges(self, mock_blame, mock_test_location):
+  @mock.patch.object(git, 'GetCommitsBetweenRevisionsInOrder')
+  def testIdentifySuspectedRanges(self, mock_revisions, mock_blame,
+                                  mock_test_location):
     mock_blame.return_value = [Blame('r1000', 'a/b.cc')]
     mock_test_location.return_value = TestLocation(file='a/b.cc', line=1)
+    mock_revisions.return_value = ['r997', 'r998', 'r999', 'r1000']
+
     suspected_revision = 'r1000'
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(
-            build_number=123, git_hash='r1000', blame_list=[suspected_revision])
+        DataPoint.Create(commit_position=1000, git_hash='r1000', pass_rate=0.5),
+        DataPoint.Create(commit_position=997, git_hash='r997', pass_rate=1.0)
     ]
-    analysis.suspected_flake_build_number = 123
+
     analysis.Save()
 
     self.assertEqual([suspected_revision],
@@ -224,9 +226,8 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
   def testIdentifysuspectedRangesNoTestLocation(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(build_number=123, git_hash='r1000', blame_list=['r1'])
+        DataPoint.Create(commit_position=1000, git_hash='r1000')
     ]
-    analysis.suspected_flake_build_number = 123
     analysis.Save()
 
     self.assertEqual([],
@@ -242,7 +243,6 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis.data_points = [
         DataPoint.Create(pass_rate=0.5, commit_position=1000, build_number=100)
     ]
-    analysis.suspected_flake_build_id = '100'
     analysis.Save()
 
     heuristic_analysis.RunHeuristicAnalysis(analysis)
