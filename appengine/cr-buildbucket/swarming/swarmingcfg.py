@@ -34,9 +34,8 @@ def validate_hostname(hostname, ctx):
 
 def validate_service_account(service_account, ctx):
   if service_account != 'bot' and not SERVICE_ACCOUNT_RE.match(service_account):
-    ctx.error(
-        'value "%s" does not match %s',
-        service_account, SERVICE_ACCOUNT_RE.pattern)
+    ctx.error('value "%s" does not match %s', service_account,
+              SERVICE_ACCOUNT_RE.pattern)
 
 
 def read_properties(recipe):
@@ -96,9 +95,9 @@ def merge_recipe(r1, r2):
   r1.MergeFrom(r2)
   r1.properties[:] = []
   r1.properties_j[:] = [
-    '%s:%s' % (k, json.dumps(v))
-    for k, v in sorted(props.iteritems())
-    if v is not None
+      '%s:%s' % (k, json.dumps(v))
+      for k, v in sorted(props.iteritems())
+      if v is not None
   ]
 
 
@@ -117,10 +116,7 @@ def merge_builder(b1, b2):
   b1.dimensions[:] = format_dimensions(dims)
   b1.swarming_tags[:] = sorted(set(b1.swarming_tags))
 
-  caches = [
-    t[1]
-    for t in sorted({c.name: c for c in b1.caches}.iteritems())
-  ]
+  caches = [t[1] for t in sorted({c.name: c for c in b1.caches}.iteritems())]
   del b1.caches[:]
   b1.caches.extend(caches)
 
@@ -134,9 +130,8 @@ def validate_tag(tag, ctx):
     ctx.error('does not have ":": %s', tag)
   name = tag.split(':', 1)[0]
   if name.lower() == 'builder':
-    ctx.error(
-        'do not specify builder tag; '
-        'it is added by swarmbucket automatically')
+    ctx.error('do not specify builder tag; '
+              'it is added by swarmbucket automatically')
 
 
 def validate_dimensions(field_name, dimensions, ctx):
@@ -152,9 +147,8 @@ def validate_dimensions(field_name, dimensions, ctx):
         ctx.error('no key')
       else:
         if not DIMENSION_KEY_RGX.match(key):
-          ctx.error(
-            'key "%s" does not match pattern "%s"',
-            key, DIMENSION_KEY_RGX.pattern)
+          ctx.error('key "%s" does not match pattern "%s"', key,
+                    DIMENSION_KEY_RGX.pattern)
         if key in known_keys:
           ctx.error('duplicate key %s', key)
         else:
@@ -165,9 +159,8 @@ def validate_relative_path(path, ctx):
   if not path:
     ctx.error('path is required')
   if '\\' in path:
-    ctx.error(
-        'path cannot contain \\. On Windows forward-slashes will be '
-        'replaced with back-slashes.')
+    ctx.error('path cannot contain \\. On Windows forward-slashes will be '
+              'replaced with back-slashes.')
   if '..' in path.split('/'):
     ctx.error('path cannot contain ".."')
   if path.startswith('/'):
@@ -244,11 +237,13 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
   if final and not builder.name:
     ctx.error('name unspecified')
   else:
-    invalid_chars = ''.join(sorted(set(
-        c for c in builder.name if c not in BUILDER_NAME_VALID_CHAR_SET)))
+    invalid_chars = ''.join(
+        sorted(
+            set(c for c in builder.name
+                if c not in BUILDER_NAME_VALID_CHAR_SET)))
     if invalid_chars:
-      ctx.error('name uses invalid char(s) %r. Alphabet: "%s"',
-      invalid_chars, BUILDER_NAME_VALID_CHARS)
+      ctx.error('name uses invalid char(s) %r. Alphabet: "%s"', invalid_chars,
+                BUILDER_NAME_VALID_CHARS)
 
   for i, t in enumerate(builder.swarming_tags):
     with ctx.prefix('tag #%d: ', i + 1):
@@ -365,6 +360,7 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
       builders.
     mixins_are_valid (bool): if True, mixins are valid.
   """
+
   def make_subctx():
     return validation.Context(
         on_message=lambda msg: ctx.msg(msg.severity, '%s', msg.text))

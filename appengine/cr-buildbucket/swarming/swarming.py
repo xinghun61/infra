@@ -559,10 +559,10 @@ def _create_task_def_async(swarming_cfg, builder_cfg, build, build_number,
     task['expiration_secs'] = str(builder_cfg.expiration_secs)
 
   # Add in all of the swarming dimensions to the task properties.
-  task_properties['dimensions'] = [
-      {'key': k, 'value': v}
-      for k, v in swarmingcfg_module.read_dimensions(builder_cfg)
-  ]
+  task_properties['dimensions'] = [{
+      'key': k,
+      'value': v
+  } for k, v in swarmingcfg_module.read_dimensions(builder_cfg)]
 
   _add_named_caches(builder_cfg, task_properties)
 

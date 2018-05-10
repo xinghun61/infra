@@ -19,6 +19,7 @@ from swarming import swarmingcfg
 
 
 class ProjectCfgTest(testing.AppengineTestCase):
+
   def cfg_test(self, swarming_text, mixins_text, expected_errors):
     swarming_cfg = project_config_pb2.Swarming()
     protobuf.text_format.Merge(swarming_text, swarming_cfg)
@@ -34,8 +35,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ctx.result().messages)
 
   def test_valid(self):
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "example.com"
           builder_defaults {
             swarming_tags: "master:master.a"
@@ -68,11 +68,10 @@ class ProjectCfgTest(testing.AppengineTestCase):
               name: "foo"
             }
           }
-        ''',
-        '',
-        [])
+        ''', '', [])
 
   def test_validate_recipe_properties(self):
+
     def test(properties, properties_j, expected_errors):
       ctx = config_component.validation.Context()
       swarmingcfg.validate_recipe_properties(properties, properties_j, ctx)
@@ -83,62 +82,51 @@ class ProjectCfgTest(testing.AppengineTestCase):
     test([], [], [])
 
     runtime = '$recipe_engine/runtime:' + json.dumps({
-      'is_luci': False,
-      'is_experimental': True,
+        'is_luci': False,
+        'is_experimental': True,
     })
     test(
         properties=[
-          '',
-          ':',
-          'buildbucket:foobar',
-          'x:y',
+            '',
+            ':',
+            'buildbucket:foobar',
+            'x:y',
         ],
         properties_j=[
-          'x:"y"',
-          'y:b',
-          'z',
-          runtime,
+            'x:"y"',
+            'y:b',
+            'z',
+            runtime,
         ],
         expected_errors=[
-          'properties \'\': does not have a colon',
-          'properties \':\': key not specified',
-          'properties \'buildbucket:foobar\': reserved property',
-          'properties_j \'x:"y"\': duplicate property',
-          'properties_j \'y:b\': No JSON object could be decoded',
-          'properties_j \'z\': does not have a colon',
-          'properties_j %r: key \'is_luci\': reserved key' % runtime,
-          'properties_j %r: key \'is_experimental\': reserved key' % runtime,
-        ]
-    )
-
-    test(
-        [],
-        ['$recipe_engine/runtime:1'],
-        [
-          ('properties_j \'$recipe_engine/runtime:1\': '
-           'not a JSON object'),
+            'properties \'\': does not have a colon',
+            'properties \':\': key not specified',
+            'properties \'buildbucket:foobar\': reserved property',
+            'properties_j \'x:"y"\': duplicate property',
+            'properties_j \'y:b\': No JSON object could be decoded',
+            'properties_j \'z\': does not have a colon',
+            'properties_j %r: key \'is_luci\': reserved key' % runtime,
+            'properties_j %r: key \'is_experimental\': reserved key' % runtime,
         ])
 
-    test(
-      [],
-      ['$recipe_engine/runtime:{"unrecognized_is_fine": 1}'],
-      [])
+    test([], ['$recipe_engine/runtime:1'], [
+        ('properties_j \'$recipe_engine/runtime:1\': '
+         'not a JSON object'),
+    ])
+
+    test([], ['$recipe_engine/runtime:{"unrecognized_is_fine": 1}'], [])
 
   def test_bad(self):
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           builders {}
-        ''',
-        '',
-        [
-          'hostname: unspecified',
-          'builder #1: name unspecified',
-          'builder #1: recipe: name unspecified',
-          'builder #1: recipe: specify either cipd_package or repository',
-        ])
+        ''', '', [
+        'hostname: unspecified',
+        'builder #1: name unspecified',
+        'builder #1: recipe: name unspecified',
+        'builder #1: recipe: specify either cipd_package or repository',
+    ])
 
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "example.com"
           builder_defaults {
             recipe {
@@ -152,27 +140,21 @@ class ProjectCfgTest(testing.AppengineTestCase):
           builders {
             name: "meep"
           }
-        ''',
-        '',
-        [
-          'builder meep: duplicate builder name',
-        ])
+        ''', '', [
+        'builder meep: duplicate builder name',
+    ])
 
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "example.com"
           builders {
             name: ":/:"
           }
-        ''',
-        '',
-        [
-          ('builder :/:: name uses invalid char(s) u\'/:\'. '
-          'Alphabet: "%s"') % swarmingcfg.BUILDER_NAME_VALID_CHARS,
-        ])
+        ''', '', [
+        ('builder :/:: name uses invalid char(s) u\'/:\'. '
+         'Alphabet: "%s"') % swarmingcfg.BUILDER_NAME_VALID_CHARS,
+    ])
 
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "example.com"
           builder_defaults {name: "x"}
           builders {
@@ -183,14 +165,11 @@ class ProjectCfgTest(testing.AppengineTestCase):
               name: "foo"
             }
           }
-        ''',
-        '',
-        [
-          'builder_defaults: do not specify default name',
-        ])
+        ''', '', [
+        'builder_defaults: do not specify default name',
+    ])
 
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "https://example.com"
           task_template_canary_percentage { value: 102 }
           builder_defaults {
@@ -215,62 +194,53 @@ class ProjectCfgTest(testing.AppengineTestCase):
             caches { name: "d" path: "/a" }
             priority: 300
           }
-        ''',
-        '',
-        [
-          'hostname: must not contain "://"',
-          'task_template_canary_percentage.value must must be in [0, 100]',
-          'builder_defaults: tag #1: does not have ":": wrong',
-          'builder_defaults: dimension #1: does not have ":"',
-          'builder #1: tag #1: does not have ":": wrong2',
-          'builder #1: dimension #1: no key',
-          ('builder #1: dimension #2: '
-           'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'),
-          ('builder b2: tag #1: do not specify builder tag; '
-           'it is added by swarmbucket automatically'),
-          'builder b2: dimension #2: duplicate key x',
-          'builder b2: cache #1: name is required',
-          'builder b2: cache #1: path is required',
-          'builder b2: cache #2: name "a/b" does not match ^[a-z0-9_]{1,4096}$',
-          ('builder b2: cache #3: path cannot contain \\. '
-           'On Windows forward-slashes will be replaced with back-slashes.'),
-          'builder b2: cache #4: path cannot contain ".."',
-          'builder b2: cache #5: path cannot start with "/"',
-          'builder b2: priority must be in [0, 200] range; got 300',
-        ])
+        ''', '', [
+        'hostname: must not contain "://"',
+        'task_template_canary_percentage.value must must be in [0, 100]',
+        'builder_defaults: tag #1: does not have ":": wrong',
+        'builder_defaults: dimension #1: does not have ":"',
+        'builder #1: tag #1: does not have ":": wrong2',
+        'builder #1: dimension #1: no key',
+        ('builder #1: dimension #2: '
+         'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'),
+        ('builder b2: tag #1: do not specify builder tag; '
+         'it is added by swarmbucket automatically'),
+        'builder b2: dimension #2: duplicate key x',
+        'builder b2: cache #1: name is required',
+        'builder b2: cache #1: path is required',
+        'builder b2: cache #2: name "a/b" does not match ^[a-z0-9_]{1,4096}$',
+        ('builder b2: cache #3: path cannot contain \\. '
+         'On Windows forward-slashes will be replaced with back-slashes.'),
+        'builder b2: cache #4: path cannot contain ".."',
+        'builder b2: cache #5: path cannot start with "/"',
+        'builder b2: priority must be in [0, 200] range; got 300',
+    ])
 
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "example.com"
           builders {
             name: "rel"
             caches { path: "a" name: "a" }
             caches { path: "a" name: "a" }
           }
-        ''',
-        '',
-        [
-          'builder rel: cache #2: duplicate name',
-          'builder rel: cache #2: duplicate path',
-        ])
+        ''', '', [
+        'builder rel: cache #2: duplicate name',
+        'builder rel: cache #2: duplicate path',
+    ])
 
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "example.com"
           builders {
             name: "b"
             service_account: "not an email"
           }
-        ''',
-        '',
-        [
-          'builder b: service_account: value "not an email" does not match '
-          '^[0-9a-zA-Z_\\-\\.\\+\\%]+@[0-9a-zA-Z_\\-\\.]+$',
-        ])
+        ''', '', [
+        'builder b: service_account: value "not an email" does not match '
+        '^[0-9a-zA-Z_\\-\\.\\+\\%]+@[0-9a-zA-Z_\\-\\.]+$',
+    ])
 
   def test_default_recipe(self):
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "chromium-swarm.appspot.com"
           builder_defaults {
             dimensions: "pool:default"
@@ -292,8 +262,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''', '', [])
 
   def test_default_recipe_bad(self):
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "chromium-swarm.appspot.com"
           builder_defaults {
             dimensions: "pool:default"
@@ -303,15 +272,12 @@ class ProjectCfgTest(testing.AppengineTestCase):
             }
           }
           builders { name: "debug" }
-        ''',
-        '',
-        [
-          'builder_defaults: recipe: properties \'a\': does not have a colon',
-        ])
+        ''', '', [
+        'builder_defaults: recipe: properties \'a\': does not have a colon',
+    ])
 
   def test_cipd_and_repository_bad(self):
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "chromium-swarm.appspot.com"
           builders {
             name: "debug"
@@ -322,16 +288,13 @@ class ProjectCfgTest(testing.AppengineTestCase):
               cipd_package: "some/package"
             }
           }
-        ''',
-        '',
-        [
-          ('builder debug: recipe: specify either cipd_package '
-           'or repository, not both'),
-        ])
+        ''', '', [
+        ('builder debug: recipe: specify either cipd_package '
+         'or repository, not both'),
+    ])
 
   def test_clear_recipe_repository(self):
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           hostname: "chromium-swarm.appspot.com"
           builder_defaults {
             recipe {
@@ -346,11 +309,10 @@ class ProjectCfgTest(testing.AppengineTestCase):
               cipd_package: "some/package"
             }
           }
-        ''',
-        '',
-        [])
+        ''', '', [])
 
   def test_validate_builder_mixins(self):
+
     def test(cfg_text, expected_errors):
       ctx = config_component.validation.Context()
       cfg = project_config_pb2.BuildbucketCfg()
@@ -360,8 +322,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
           map(config_test.errmsg, expected_errors),
           ctx.result().messages)
 
-    test(
-        '''
+    test('''
           builder_mixins {
             name: "a"
             dimensions: "a:b"
@@ -371,11 +332,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
             mixins: "a"
             dimensions: "a:b"
           }
-        ''',
-        [])
+        ''', [])
 
-    test(
-        '''
+    test('''
           builder_mixins {
             name: "b"
             mixins: "a"
@@ -383,61 +342,41 @@ class ProjectCfgTest(testing.AppengineTestCase):
           builder_mixins {
             name: "a"
           }
-        ''',
-        [])
+        ''', [])
 
-    test(
-        '''
+    test('''
           builder_mixins {}
-        ''',
-        [
-          'builder_mixin #1: name unspecified'
-        ])
+        ''', ['builder_mixin #1: name unspecified'])
 
-    test(
-        '''
+    test('''
           builder_mixins { name: "a" }
           builder_mixins { name: "a" }
-        ''',
-        [
-          'builder_mixin a: duplicate name'
-        ])
+        ''', ['builder_mixin a: duplicate name'])
 
-    test(
-        '''
+    test('''
           builder_mixins {
             name: "a"
             mixins: ""
           }
-        ''',
-        [
-          'builder_mixin a: referenced mixin name is empty'
-        ])
+        ''', ['builder_mixin a: referenced mixin name is empty'])
 
-    test(
-        '''
+    test('''
           builder_mixins {
             name: "a"
             mixins: "b"
           }
-        ''',
-        [
-          'builder_mixin a: mixin "b" is not defined'
-        ])
+        ''', ['builder_mixin a: mixin "b" is not defined'])
 
-    test(
-        '''
+    test('''
           builder_mixins {
             name: "a"
             mixins: "a"
           }
-        ''',
-        [
-          'circular mixin chain: a -> a',
-        ])
+        ''', [
+        'circular mixin chain: a -> a',
+    ])
 
-    test(
-        '''
+    test('''
           builder_mixins {
             name: "a"
             mixins: "b"
@@ -450,12 +389,12 @@ class ProjectCfgTest(testing.AppengineTestCase):
             name: "c"
             mixins: "a"
           }
-        ''',
-        [
-          'circular mixin chain: a -> b -> c -> a',
-        ])
+        ''', [
+        'circular mixin chain: a -> b -> c -> a',
+    ])
 
   def test_builder_with_mixins(self):
+
     def test(cfg_text, expected_errors):
       ctx = config_component.validation.Context()
       cfg = project_config_pb2.BuildbucketCfg()
@@ -463,14 +402,13 @@ class ProjectCfgTest(testing.AppengineTestCase):
       swarmingcfg.validate_builder_mixins(cfg.builder_mixins, ctx)
       self.assertEqual([], ctx.result().messages)
       mixins = {m.name: m for m in cfg.builder_mixins}
-      swarmingcfg.validate_project_cfg(
-          cfg.buckets[0].swarming, mixins, True, ctx)
+      swarmingcfg.validate_project_cfg(cfg.buckets[0].swarming, mixins, True,
+                                       ctx)
       self.assertEqual(
           map(config_test.errmsg, expected_errors),
           ctx.result().messages)
 
-    test(
-        '''
+    test('''
           builder_mixins {
             name: "a"
 
@@ -509,11 +447,10 @@ class ProjectCfgTest(testing.AppengineTestCase):
               }
             }
           }
-        ''',
-        []
-    )
+        ''', [])
 
   def test_flatten_builder(self):
+
     def test(cfg_text, expected_builder_text):
       cfg = project_config_pb2.BuildbucketCfg()
       protobuf.text_format.Merge(cfg_text, cfg)
@@ -521,15 +458,15 @@ class ProjectCfgTest(testing.AppengineTestCase):
       swarmingcfg.flatten_builder(
           builder,
           cfg.buckets[0].swarming.builder_defaults,
-          {m.name: m for m in cfg.builder_mixins},
+          {m.name: m
+           for m in cfg.builder_mixins},
       )
 
       expected = project_config_pb2.Builder()
       protobuf.text_format.Merge(expected_builder_text, expected)
       self.assertEqual(builder, expected)
 
-    test(
-      '''
+    test('''
         buckets {
           name: "bucket"
           swarming {
@@ -571,8 +508,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
             }
           }
         }
-      ''',
-      '''
+      ''', '''
         name: "builder"
         swarming_tags: "buildertag:yes"
         swarming_tags: "commontag:yes"
@@ -599,12 +535,10 @@ class ProjectCfgTest(testing.AppengineTestCase):
           name: "git_chromium"
           path: "git_cache"
         }
-      '''
-    )
+      ''')
 
     # Diamond merge.
-    test(
-        '''
+    test('''
           builder_mixins {
             name: "base"
             dimensions: "d1:base"
@@ -687,8 +621,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
               }
             }
           }
-        ''',
-        '''
+        ''', '''
           name: "builder"
           dimensions: "d1:base"
           dimensions: "d2:"
@@ -721,12 +654,10 @@ class ProjectCfgTest(testing.AppengineTestCase):
             properties_j: "pj2:\\\"first\\\""
             properties_j: "pj3:\\\"second\\\""
           }
-        '''
-    )
+        ''')
 
     # builder_defaults, a builder_defaults mixin and a builder mixin.
-    test(
-        '''
+    test('''
           builder_mixins {
             name: "default"
             dimensions: "pool:builder_default_mixin"
@@ -753,8 +684,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
               }
             }
           }
-        ''',
-        '''
+        ''', '''
           name: "release"
           dimensions: "pool:builder_mixin"
           recipe {
@@ -781,8 +711,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
               }
             }
           }
-      ''',
-      '''
+      ''', '''
           name: "ng-1000"
           dimensions: "pool:mixed"
           auto_builder_dimension: YES
@@ -822,6 +751,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
 
 class ServiceCfgTest(testing.AppengineTestCase):
+
   def cfg_test(self, swarming_text, expected_errors):
     ctx = config_component.validation.Context()
 
@@ -837,10 +767,8 @@ class ServiceCfgTest(testing.AppengineTestCase):
     self.cfg_test('', [])
 
   def test_schema_in_hostname(self):
-    self.cfg_test(
-        '''
+    self.cfg_test('''
           milo_hostname: "https://milo.example.com"
-        ''',
-        [
-          'milo_hostname: must not contain "://"',
-        ])
+        ''', [
+        'milo_hostname: must not contain "://"',
+    ])

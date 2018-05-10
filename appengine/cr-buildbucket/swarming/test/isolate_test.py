@@ -24,7 +24,7 @@ class IsolateTest(testing.AppengineTestCase):
   def test_fetch_content(self):
     expected = 'foo'
     net.json_request_async.return_value = future({
-      'content': base64.b64encode(zlib.compress(expected)),
+        'content': base64.b64encode(zlib.compress(expected)),
     })
 
     actual = isolate.fetch_async(self.loc).get_result()
@@ -33,8 +33,10 @@ class IsolateTest(testing.AppengineTestCase):
         'https://swarming.example.com/_ah/api/isolateservice/v1/retrieve',
         method='POST',
         payload={
-          'digest': self.loc.digest,
-          'namespace': {'namespace': self.loc.namespace},
+            'digest': self.loc.digest,
+            'namespace': {
+                'namespace': self.loc.namespace
+            },
         },
         scopes=net.EMAIL_SCOPE,
     )
@@ -46,14 +48,14 @@ class IsolateTest(testing.AppengineTestCase):
 
   def test_fetch_content_not_base64(self):
     net.json_request_async.return_value = future({
-      'content': 'sdfsfsd',
+        'content': 'sdfsfsd',
     })
     with self.assertRaises(isolate.Error):
       isolate.fetch_async(self.loc).get_result()
 
   def test_fetch_content_cannot_decompress(self):
     net.json_request_async.return_value = future({
-      'content': base64.b64encode('~'),
+        'content': base64.b64encode('~'),
     })
     with self.assertRaises(isolate.Error):
       isolate.fetch_async(self.loc).get_result()
@@ -61,7 +63,7 @@ class IsolateTest(testing.AppengineTestCase):
   def test_fetch_via_url(self):
     expected = 'foo'
     net.json_request_async.return_value = future({
-      'url': 'https://example.com/file?a=b',
+        'url': 'https://example.com/file?a=b',
     })
     net.request_async.return_value = future(zlib.compress(expected))
 
@@ -74,7 +76,7 @@ class IsolateTest(testing.AppengineTestCase):
 
   def test_fetch_via_url_error(self):
     net.json_request_async.return_value = future({
-      'url': 'https://example.com/file',
+        'url': 'https://example.com/file',
     })
     net.request_async.side_effect = net.Error('error', 500, None)
 
@@ -83,7 +85,7 @@ class IsolateTest(testing.AppengineTestCase):
 
   def test_fetch_no_content_or_url(self):
     net.json_request_async.return_value = future({
-      'something_else': 'yeah',
+        'something_else': 'yeah',
     })
     with self.assertRaises(isolate.Error):
       isolate.fetch_async(self.loc).get_result()
