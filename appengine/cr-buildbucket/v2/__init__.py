@@ -12,5 +12,4 @@ from . import builds
 from . import errors
 from .builds import build_to_v2_partial
 from .steps import AnnotationConverter
-from .builds import BUILDER_PARAMETER
 import model

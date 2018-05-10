@@ -20,8 +20,6 @@ import swarming
 
 future = test_util.future
 
-BUILDER_PARAMETER = swarming.BUILDER_PARAMETER
-
 
 class BaseTestCase(testing.AppengineTestCase):
   """Base class for api.py tests."""
@@ -54,7 +52,7 @@ class BaseTestCase(testing.AppengineTestCase):
         project='chromium',
         bucket='luci.chromium.try',
         parameters={
-            BUILDER_PARAMETER: builder_name,
+            model.BUILDER_PARAMETER: builder_name,
         },
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.SUCCESS,

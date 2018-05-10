@@ -264,7 +264,7 @@ def mkbuild(**kwargs):
       id=1,
       project='chromium',
       bucket='luci.chromium.try',
-      parameters={v2.BUILDER_PARAMETER: 'linux-rel'},
+      parameters={model.BUILDER_PARAMETER: 'linux-rel'},
       created_by=auth.Identity('user', 'john@example.com'),
       create_time=datetime.datetime(2018, 1, 1),
   )

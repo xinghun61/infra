@@ -61,7 +61,6 @@ import model
 import protoutil
 
 PUBSUB_TOPIC = 'swarming'
-BUILDER_PARAMETER = 'builder_name'
 PARAM_PROPERTIES = 'properties'
 PARAM_SWARMING = 'swarming'
 PARAM_CHANGES = 'changes'
@@ -167,7 +166,7 @@ def validate_build_parameters(builder_name, params):
   def bad(fmt, *args):
     raise errors.InvalidInputError(fmt % args)
 
-  params.pop(BUILDER_PARAMETER)  # already validated
+  params.pop(model.BUILDER_PARAMETER)  # already validated
 
   def assert_object(name, value):
     if not isinstance(value, dict):
@@ -628,7 +627,7 @@ def _get_builder_async(build):
   if not build.parameters:
     raise errors.InvalidInputError(
         'A build for bucket %r must have parameters' % build.bucket)
-  builder_name = build.parameters.get(BUILDER_PARAMETER)
+  builder_name = build.parameters.get(model.BUILDER_PARAMETER)
   if not isinstance(builder_name, basestring):
     raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
 
@@ -789,7 +788,7 @@ def _generate_build_url(milo_hostname, build, build_number):
   if build_number is not None:
     return ('https://%s/p/%s/builders/%s/%s/%d' %
             (milo_hostname, build.project, build.bucket,
-             build.parameters[BUILDER_PARAMETER], build_number))
+             build.parameters[model.BUILDER_PARAMETER], build_number))
 
   return ('https://%s/p/%s/builds/b%d' % (milo_hostname, build.project,
                                           build.key.id()))
@@ -1187,7 +1186,7 @@ class SubNotify(webapp2.RequestHandler):
         build_id,
         result,
         build.bucket,
-        build.parameters[BUILDER_PARAMETER],
+        build.parameters[model.BUILDER_PARAMETER],
     ).get_result()
 
   def stop(self, msg, *args, **kwargs):
@@ -1230,7 +1229,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
                     build.swarming_hostname, build.swarming_task_id,
                     build.key.id())
     yield _sync_build_async(build.key.id(), result, build.bucket,
-                            build.parameters[BUILDER_PARAMETER])
+                            build.parameters[model.BUILDER_PARAMETER])
 
   @decorators.require_cronjob
   def get(self):  # pragma: no cover

@@ -168,7 +168,7 @@ class ApiTests(object):
   def test_retry(self, retry):
     build = model.Build(
         bucket='chromium',
-        parameters={'builder_name': 'debug'},
+        parameters={model.BUILDER_PARAMETER: 'debug'},
         tags=['a:b'],
         retry_of=2,
     )

@@ -43,7 +43,6 @@ RESERVED_TAG_KEYS = {
     'swarming_tag',
     'swarming_dimension',
 }
-BUILDER_PARAMETER = swarming.BUILDER_PARAMETER
 
 validate_bucket_name = errors.validate_bucket_name
 
@@ -239,7 +238,7 @@ class BuildRequest(_BuildRequestBase):
     validate_tags(
         self.tags,
         'new',
-        builder=(self.parameters or {}).get(BUILDER_PARAMETER))
+        builder=(self.parameters or {}).get(model.BUILDER_PARAMETER))
     if self.parameters is not None and not isinstance(self.parameters, dict):
       raise errors.InvalidInputError('parameters must be a dict or None')
     validate_lease_expiration_date(self.lease_expiration_date)
@@ -290,7 +289,7 @@ class BuildRequest(_BuildRequestBase):
 
     # Auto-add builder tag.
     # Note that we leave build.initial_tags intact.
-    builder = build.parameters.get(BUILDER_PARAMETER)
+    builder = build.parameters.get(model.BUILDER_PARAMETER)
     if builder:
       builder_tag = 'builder:' + builder
       if builder_tag not in build.tags:
@@ -435,7 +434,7 @@ def add_many_async(build_request_list):
     """Creates/updates model.Builder entities."""
     builder_ids = set()
     for b in new_builds.itervalues():
-      builder = b.parameters.get(BUILDER_PARAMETER)
+      builder = b.parameters.get(model.BUILDER_PARAMETER)
       if builder:
         builder_ids.add('%s:%s:%s' % (b.project, b.bucket, builder))
     keys = [ndb.Key(model.Builder, bid) for bid in builder_ids]
@@ -472,7 +471,7 @@ def add_many_async(build_request_list):
     # Filter and index new_builds first.
     numbered = {}  # {(bucket, builder): [i]}
     for i, b in new_builds.iteritems():
-      builder = (b.parameters or {}).get(swarming.BUILDER_PARAMETER)
+      builder = (b.parameters or {}).get(model.BUILDER_PARAMETER)
       builder_id = (b.bucket, builder)
       cfg = builder_cfgs.get(builder_id)
       if cfg and cfg.build_numbers == project_config_pb2.YES:

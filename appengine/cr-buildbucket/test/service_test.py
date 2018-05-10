@@ -77,7 +77,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         create_time=self.now,
         tags=[self.INDEXED_TAG],
         parameters={
-            'builder_name':
+            model.BUILDER_PARAMETER:
                 'infra',
             'changes': [{
                 'author': 'nodir@google.com',
@@ -149,7 +149,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
                              **request_fields))
 
   def test_add(self):
-    params = {'builder_name': 'linux_rel'}
+    params = {model.BUILDER_PARAMETER: 'linux_rel'}
     build = self.add(
         bucket='chromium',
         parameters=params,
@@ -174,19 +174,19 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         service.BuildRequest(
             project='chromium',
             bucket='try',
-            parameters={'builder_name': 'linux_rel'},
+            parameters={model.BUILDER_PARAMETER: 'linux_rel'},
             canary_preference=model.CanaryPreference.PROD,
         ),
         service.BuildRequest(
             project='chromium',
             bucket='try',
-            parameters={'builder_name': 'mac_rel'},
+            parameters={model.BUILDER_PARAMETER: 'mac_rel'},
             canary_preference=model.CanaryPreference.PROD,
         ),
         service.BuildRequest(
             project='chromium',
             bucket='try',
-            parameters={'builder_name': 'win_rel'},
+            parameters={model.BUILDER_PARAMETER: 'win_rel'},
             canary_preference=model.CanaryPreference.PROD,
         ),
     ]).get_result()
@@ -203,12 +203,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add_with_client_operation_id(self):
     build = self.add(
         bucket='chromium',
-        parameters={'builder_name': 'linux_rel'},
+        parameters={model.BUILDER_PARAMETER: 'linux_rel'},
         client_operation_id='1',
     )
     build2 = self.add(
         bucket='chromium',
-        parameters={'builder_name': 'linux_rel'},
+        parameters={model.BUILDER_PARAMETER: 'linux_rel'},
         client_operation_id='1',
     )
     self.assertIsNotNone(build.key)
@@ -265,7 +265,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
             project=self.chromium_project_id,
             bucket=self.chromium_bucket.name,
             parameters={
-                'builder_name': 'infra',
+                model.BUILDER_PARAMETER: 'infra',
                 'i': 1
             },
         ),
@@ -273,7 +273,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
             project=self.chromium_project_id,
             bucket=self.chromium_bucket.name,
             parameters={
-                'builder_name': 'infra',
+                model.BUILDER_PARAMETER: 'infra',
                 'i': 2
             },
         )
@@ -298,7 +298,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
           service.BuildRequest(
               project=self.chromium_project_id,
               bucket=self.chromium_bucket.name,
-              parameters={'builder_name': 'infra'},
+              parameters={model.BUILDER_PARAMETER: 'infra'},
           ))
 
     try_return_async.assert_called_with('chromium/infra', 1)
@@ -321,7 +321,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
             project=self.chromium_project_id,
             bucket=self.chromium_bucket.name,
             parameters={
-                'builder_name': 'infra',
+                model.BUILDER_PARAMETER: 'infra',
                 'i': 0
             },
         ),
@@ -329,7 +329,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
             project=self.chromium_project_id,
             bucket=self.chromium_bucket.name,
             parameters={
-                'builder_name': 'infra',
+                model.BUILDER_PARAMETER: 'infra',
                 'i': 1
             },
         )
@@ -352,7 +352,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add_with_builder_name(self):
     build = self.add(
         bucket='chromium',
-        parameters={'builder_name': 'linux_rel'},
+        parameters={model.BUILDER_PARAMETER: 'linux_rel'},
         client_operation_id='1',
     )
     self.assertTrue('builder:linux_rel' in build.tags)
@@ -410,7 +410,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         service.BuildRequest(
             project=self.chromium_project_id,
             bucket='chromium',
-            parameters={'builder_name': 'foo'}))
+            parameters={model.BUILDER_PARAMETER: 'foo'}))
     self.assertEqual(build.tags, ['builder:foo'])
 
   def test_add_builder_tag_multi(self):
@@ -418,7 +418,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         service.BuildRequest(
             project=self.chromium_project_id,
             bucket='chromium',
-            parameters={'builder_name': 'foo'},
+            parameters={model.BUILDER_PARAMETER: 'foo'},
             tags=['builder:foo', 'builder:foo'],
         ))
     self.assertEqual(build.tags, ['builder:foo'])
@@ -437,7 +437,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         service.BuildRequest(
             project=self.chromium_project_id,
             bucket='chromium',
-            parameters={'builder_name': 'foo'},
+            parameters={model.BUILDER_PARAMETER: 'foo'},
             tags=['builder:foo'],
         ))
     self.assertEqual(build.tags, ['builder:foo'])
@@ -448,7 +448,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
           service.BuildRequest(
               project=self.chromium_project_id,
               bucket='chromium',
-              parameters={'builder_name': 'foo'},
+              parameters={model.BUILDER_PARAMETER: 'foo'},
               tags=['builder:bar'],
           ))
 

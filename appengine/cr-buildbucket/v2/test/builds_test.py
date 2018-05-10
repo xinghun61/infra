@@ -28,7 +28,7 @@ class V2BuildsTest(testing.AppengineTestCase):
         project='chromium',
         bucket='master.tryserver.chromium.linux',
         parameters={
-            builds.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
         },
     )
     self.assertEqual(
@@ -44,7 +44,7 @@ class V2BuildsTest(testing.AppengineTestCase):
         project='chromium',
         bucket='luci.chromium.try',
         parameters={
-            builds.BUILDER_PARAMETER: 'linux-rel',
+            model.BUILDER_PARAMETER: 'linux-rel',
         },
     )
     self.assertEqual(
@@ -278,7 +278,7 @@ class V2BuildsTest(testing.AppengineTestCase):
 
   def test_build_to_v2_no_builder_name(self):
     build = mkbuild()
-    del build.parameters[builds.BUILDER_PARAMETER]
+    del build.parameters[model.BUILDER_PARAMETER]
     with self.assertRaises(errors.UnsupportedBuild):
       builds.build_to_v2_partial(build)
 
@@ -288,7 +288,7 @@ def mkbuild(**kwargs):
       id=1,
       project='chromium',
       bucket='luci.chromium.try',
-      parameters={builds.BUILDER_PARAMETER: 'linux-rel'},
+      parameters={model.BUILDER_PARAMETER: 'linux-rel'},
       created_by=auth.Identity('user', 'john@example.com'),
   )
   args['parameters'].update(kwargs.pop('parameters', {}))

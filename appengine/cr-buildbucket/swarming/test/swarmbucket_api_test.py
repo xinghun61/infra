@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import copy
 import datetime
 import json
 
@@ -16,6 +15,7 @@ from test import config_test
 from swarming import swarmbucket_api
 from test.test_util import future
 import config
+import model
 import sequence
 
 
@@ -249,7 +249,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'luci.chromium.try',
             'parameters_json':
                 json.dumps({
-                    'builder_name': 'linux_chromium_rel_ng',
+                    model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
                 }),
         },
     }
@@ -353,7 +353,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 ')))',
             'parameters_json':
                 json.dumps({
-                    'builder_name': 'linux_chromium_rel_ng',
+                    model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
                 }),
         },
     }
@@ -381,7 +381,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'luci.chromium.try',
             'parameters_json':
                 json.dumps({
-                    'builder_name': 'not-existing-builder',
+                    model.BUILDER_PARAMETER: 'not-existing-builder',
                 }),
         },
     }
@@ -395,7 +395,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'secret.bucket',
             'parameters_json':
                 json.dumps({
-                    'builder_name': 'linux_chromium_rel_ng',
+                    model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
                 }),
         }
     }

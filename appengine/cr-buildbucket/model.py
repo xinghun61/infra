@@ -28,6 +28,9 @@ RE_BUILDSET_GITILES_COMMIT = re.compile(
 # patch/gerrit/chromium-review.googlesource.com/677784/5
 RE_BUILDSET_GERRIT_CL = re.compile(r'^patch/gerrit/([^/]+)/(\d+)/(\d+)$')
 
+# Key in Build.parameters that specifies the builder name.
+BUILDER_PARAMETER = 'builder_name'
+
 
 class BuildStatus(messages.Enum):
   # A build is created, can be leased by someone and started.

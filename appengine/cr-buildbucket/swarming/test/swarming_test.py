@@ -298,13 +298,13 @@ class SwarmingTest(BaseTest):
     ]
     for p in bad:
       logging.info('testing %s', p)
-      p['builder_name'] = 'foo'
+      p[model.BUILDER_PARAMETER] = 'foo'
       with self.assertRaises(errors.InvalidInputError):
-        swarming.validate_build_parameters(p['builder_name'], p)
+        swarming.validate_build_parameters(p[model.BUILDER_PARAMETER], p)
 
     swarming.validate_build_parameters(
         'foo', {
-            'builder_name': 'foo',
+            model.BUILDER_PARAMETER: 'foo',
             'properties': {
                 'blamelist': ['a@example.com'],
             },
@@ -321,7 +321,7 @@ class SwarmingTest(BaseTest):
 
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
         },
         tags=['builder:linux_chromium_rel_ng'],
     )
@@ -350,7 +350,7 @@ class SwarmingTest(BaseTest):
   def test_recipe_cipd_package(self):
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng cipd',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng cipd',
         },
         tags=['builder:linux_chromium_rel_ng cipd'],
     )
@@ -375,7 +375,7 @@ class SwarmingTest(BaseTest):
 
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
         },
         tags=['builder:linux_chromium_rel_ng'],
     )
@@ -394,7 +394,7 @@ class SwarmingTest(BaseTest):
 
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
         },
         tags=['builder:linux_chromium_rel_ng'],
     )
@@ -413,7 +413,7 @@ class SwarmingTest(BaseTest):
 
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
         },
         tags=['builder:linux_chromium_rel_ng'],
     )
@@ -557,7 +557,7 @@ class SwarmingTest(BaseTest):
 
     build = mkBuild(
         parameters={
-            'builder_name':
+            model.BUILDER_PARAMETER:
                 'linux_chromium_rel_ng',
             'properties': {
                 'a': 'b',
@@ -796,7 +796,7 @@ class SwarmingTest(BaseTest):
 
   def test_create_task_async_experimental(self):
     build = mkBuild(
-        parameters={'builder_name': 'linux_chromium_rel_ng'},
+        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
         experimental=True,
     )
 
@@ -833,7 +833,7 @@ class SwarmingTest(BaseTest):
   def test_create_task_async_for_non_swarming_bucket(self):
     self.bucket_cfg.ClearField('swarming')
     build = mkBuild(
-        parameters={'builder_name': 'linux_chromium_rel_ng'},
+        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
         tags=['builder:linux_chromium_rel_ng'],
     )
 
@@ -845,7 +845,7 @@ class SwarmingTest(BaseTest):
     self.task_template_canary = None
 
     build = mkBuild(
-        parameters={'builder_name': 'linux_chromium_rel_ng'},
+        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
         tags=['builder:linux_chromium_rel_ng'],
     )
 
@@ -860,18 +860,18 @@ class SwarmingTest(BaseTest):
 
     with self.assertRaises(errors.BuilderNotFoundError):
       build.parameters = {
-          'builder_name': 'non-existent builder',
+          model.BUILDER_PARAMETER: 'non-existent builder',
       }
       swarming.create_task_async(build).get_result()
 
     with self.assertRaises(errors.InvalidInputError):
-      build.parameters['builder_name'] = 2
+      build.parameters[model.BUILDER_PARAMETER] = 2
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_canary_template(self):
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
         },
         tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.CANARY,
@@ -1070,7 +1070,7 @@ class SwarmingTest(BaseTest):
   def test_create_task_async_no_canary_template_explicit(self):
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
         },
         tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.CANARY,
@@ -1122,7 +1122,7 @@ class SwarmingTest(BaseTest):
     }
 
     build = mkBuild(
-        parameters={'builder_name': 'linux_chromium_rel_ng'},
+        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
         tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
@@ -1134,7 +1134,7 @@ class SwarmingTest(BaseTest):
   def test_create_task_async_override_cfg(self):
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
             'swarming': {
                 'override_builder_cfg': {
                     # Override cores dimension.
@@ -1193,7 +1193,7 @@ class SwarmingTest(BaseTest):
   def test_create_task_async_override_cfg_malformed(self):
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
             'swarming': {
                 'override_builder_cfg': [],
             }
@@ -1205,7 +1205,7 @@ class SwarmingTest(BaseTest):
 
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
             'swarming': {
                 'override_builder_cfg': {
                     'name': 'x',
@@ -1219,7 +1219,7 @@ class SwarmingTest(BaseTest):
 
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
             'swarming': {
                 'override_builder_cfg': {
                     'mixins': ['x'],
@@ -1233,7 +1233,7 @@ class SwarmingTest(BaseTest):
 
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
             'swarming': {
                 'override_builder_cfg': {
                     'blabla': 'x',
@@ -1248,7 +1248,7 @@ class SwarmingTest(BaseTest):
     # Remove a required dimension.
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
             'swarming': {
                 'override_builder_cfg': {
                     'dimensions': ['pool:'],
@@ -1263,7 +1263,7 @@ class SwarmingTest(BaseTest):
     # Override build numbers
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
             'swarming': {
                 'override_builder_cfg': {
                     'build_numbers': False,
@@ -1277,7 +1277,7 @@ class SwarmingTest(BaseTest):
 
   def test_create_task_async_on_leased_build(self):
     build = mkBuild(
-        parameters={'builder_name': 'linux_chromium_rel_ng'},
+        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
         tags=['builder:linux_chromium_rel_ng'],
         lease_key=12345,
     )
@@ -1288,7 +1288,7 @@ class SwarmingTest(BaseTest):
     self.settings.swarming.milo_hostname = ''
     build = mkBuild(
         parameters={
-            'builder_name': 'linux_chromium_rel_ng',
+            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
             'swarming': {
                 'override_builder_cfg': {
                     # Override cores dimension.
@@ -1726,7 +1726,7 @@ class SwarmingTest(BaseTest):
 
   def test_generate_build_url(self):
     build = mkBuild(
-        parameters={swarming.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
+        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
         swarming_hostname='swarming.example.com',
         swarming_task_id='deadbeef',
     )
@@ -1893,7 +1893,7 @@ class SubNotifyTest(BaseTest):
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_post(self, load_task_result_async):
     build = mkBuild(
-        parameters={'builder_name': 'release'},
+        parameters={model.BUILDER_PARAMETER: 'release'},
         tags=['builder:linux_chromium_rel_ng'],
         swarming_hostname='chromium-swarm.appspot.com',
         swarming_task_id='deadbeef',
@@ -1935,7 +1935,7 @@ class SubNotifyTest(BaseTest):
 
   def test_post_with_different_swarming_hostname(self):
     build = mkBuild(
-        parameters={'builder_name': 'release'},
+        parameters={model.BUILDER_PARAMETER: 'release'},
         tags=['builder:linux_chromium_rel_ng'],
         swarming_hostname='chromium-swarm.appspot.com',
         swarming_task_id='deadbeef',
@@ -1969,7 +1969,7 @@ class SubNotifyTest(BaseTest):
 
   def test_post_with_different_task_id(self):
     build = mkBuild(
-        parameters={'builder_name': 'release'},
+        parameters={model.BUILDER_PARAMETER: 'release'},
         tags=['builder:release'],
         swarming_hostname='chromium-swarm.appspot.com',
         swarming_task_id='deadbeef',
@@ -2098,7 +2098,7 @@ class CronUpdateTest(BaseTest):
     self.build = mkBuild(
         start_time=self.now + datetime.timedelta(seconds=1),
         parameters={
-            'builder_name': 'release',
+            model.BUILDER_PARAMETER: 'release',
         },
         tags=['builder:release'],
         swarming_hostname='chromium-swarm.appsot.com',

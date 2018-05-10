@@ -14,8 +14,6 @@ from proto import common_pb2
 import model
 import swarming
 
-BUILDER_PARAMETER = 'builder_name'
-
 
 def build_to_v2_partial(build):
   """Converts a model.Build to an incomplete build_pb2.Build.
@@ -125,10 +123,10 @@ def _parse_tags(dest_msg, tags):
 
 
 def _get_builder_id(build):
-  builder = (build.parameters or {}).get(BUILDER_PARAMETER)
+  builder = (build.parameters or {}).get(model.BUILDER_PARAMETER)
   if not builder:
     raise errors.UnsupportedBuild(
-        'does not have %s parameter' % BUILDER_PARAMETER)
+        'does not have %s parameter' % model.BUILDER_PARAMETER)
 
   bucket = build.bucket
   # in V2, we drop "luci.{project}." prefix.
