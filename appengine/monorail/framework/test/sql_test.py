@@ -160,7 +160,9 @@ class MonorailConnectionTest(unittest.TestCase):
 
   def testGetConnectionForShard(self):
     sql_cnxn = self.cnxn.GetConnectionForShard(1)
-    self.assertEqual(settings.physical_db_name_format % 1,
+    replica_name = settings.db_replica_names[
+      1 % len(settings.db_replica_names)]
+    self.assertEqual(settings.physical_db_name_format % replica_name,
                       sql_cnxn.instance)
     self.assertEqual(settings.db_database_name, sql_cnxn.database)
 

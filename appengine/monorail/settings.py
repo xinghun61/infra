@@ -55,7 +55,7 @@ send_noreply_email_as = 'monorail+noreply@chromium.org'
 # The default is to look for a database named "monorail" in replicas
 # named "replica-00" .. "replica-09"
 db_database_name = 'monorail'
-db_replica_prefix = 'replica-'
+db_replica_names = ['configure replicas per GAE instance in settings.py']
 
 # The default connection pool size for mysql connections.
 db_cnxn_pool_size = 5
@@ -269,13 +269,22 @@ else:
     db_cloud_project = app_id
     db_master_name = 'master-g2'
     db_region = 'us-central1'
-    db_replica_prefix = 'replica-g2-'
+    db_replica_names = [
+        'replica-g2-00', 'replica-g2-01', 'replica-g2-02', 'replica-g2-03',
+        'replica-g2-04', 'replica-g2-05', 'replica-g2-06', 'replica-g2-07',
+        # replica-g2-08 still exists, but we are testing without it.
+        'replica-g2-09']
 
   elif app_id == 'monorail-prod':
     send_all_email_to = None  # Deliver it to the intended users.
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
     analytics_id = 'UA-55762617-14'
+    db_replica_names = [
+        'replica-00', 'replica-01', 'replica-02', 'replica-03',
+        'replica-04', 'replica-05', 'replica-06', 'replica-07',
+        # RIP replica-08
+        'replica-09']
 
 if dev_mode:
   site_name = 'Monorail Dev'
@@ -290,9 +299,9 @@ else:
 # Format string for the name of the physical database replicas.
 if db_region:
   physical_db_name_format = (
-      db_cloud_project + ':' + db_region + ':' + db_replica_prefix + '%02d')
+      db_cloud_project + ':' + db_region + ':%s')
 else:
-  physical_db_name_format = db_cloud_project + ':' + db_replica_prefix + '%02d'
+  physical_db_name_format = db_cloud_project + ':%s'
 
 # preferred domains to display
 preferred_domains = {
