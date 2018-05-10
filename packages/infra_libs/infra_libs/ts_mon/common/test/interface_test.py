@@ -40,6 +40,7 @@ class GlobalsTest(unittest.TestCase):
     interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
     interface.state.target = mock.create_autospec(targets.Target)
     interface.state.global_monitor.send.return_value = None
+    interface.state.global_monitor.failed.return_value = False
 
     # pylint: disable=unused-argument
     def populate_data_set(pb):
@@ -53,6 +54,7 @@ class GlobalsTest(unittest.TestCase):
 
     interface.flush()
     self.assertEqual(1, interface.state.global_monitor.send.call_count)
+    self.assertEqual(1, interface.state.global_monitor.failed.call_count)
     proto = interface.state.global_monitor.send.call_args[0][0]
     self.assertEqual(1,
         len(proto.metrics_collection[0].metrics_data_set[0].data))
@@ -355,6 +357,7 @@ class FlushThreadTest(unittest.TestCase):
   def setUp(self):
     mock.patch('infra_libs.ts_mon.common.interface.flush',
                autospec=True).start()
+    interface.flush.return_value = True
     mock.patch('time.time', autospec=True).start()
 
     self.fake_time = 0
@@ -367,6 +370,7 @@ class FlushThreadTest(unittest.TestCase):
 
   def increment_time(self, delta):
     self.fake_time += delta
+    return True
 
   def assertInRange(self, lower, upper, value):
     self.assertGreaterEqual(value, lower)
@@ -435,6 +439,16 @@ class FlushThreadTest(unittest.TestCase):
     self.assertInRange(30, 60, self.stop_event.timeout_wait())
     self.assertAlmostEqual(0, self.stop_event.timeout_wait())
     self.assertAlmostEqual(0, self.stop_event.timeout_wait())
+
+  def test_backoff_on_failure(self):
+    self.t.start()
+
+    # Flush fails.
+    interface.flush.return_value = False
+
+    self.assertInRange(30, 60, self.stop_event.timeout_wait())
+    for i in [1, 2, 4, 8, 16, 32, 60, 60]:
+      self.assertAlmostEqual(i, self.stop_event.timeout_wait())
 
 
 class GenerateNewProtoTest(unittest.TestCase):

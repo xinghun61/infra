@@ -20,6 +20,7 @@ Most of the documentation relates to
 * [Flags](flags.md)
 * [Buildbot master authentication to Cloud Endpoints](master_auth.md)
 * [Front-end development](front_end.md)
+* [Using Go](../go/README.md)
 
 TBD:
 

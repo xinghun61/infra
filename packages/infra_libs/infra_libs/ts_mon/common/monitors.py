@@ -103,6 +103,8 @@ class Monitor(object):
   make the HTTP request, wait for a response and return None.
   If asynchronous, send() should start the request and immediately return some
   object which is later passed to wait() once all requests have been started.
+
+  failed() will return a bool indicating whether the last send failed.
   """
 
   _SCOPES = []
@@ -113,6 +115,9 @@ class Monitor(object):
   def wait(self, state):  # pragma: no cover
     pass
 
+  def failed(self):
+    raise NotImplementedError()
+
 
 class HttpsMonitor(Monitor):
 
@@ -120,10 +125,12 @@ class HttpsMonitor(Monitor):
 
   def __init__(self, endpoint, credential_factory, http=None, ca_certs=None):
     self._endpoint = endpoint
+    self._failed = False
     credentials = credential_factory.create(self._SCOPES)
     if http is None:
       http = httplib2_utils.RetriableHttp(
-          httplib2_utils.InstrumentedHttp('acq-mon-api', ca_certs=ca_certs))
+          httplib2_utils.InstrumentedHttp('acq-mon-api', ca_certs=ca_certs),
+          max_tries=2)
     self._http = credentials.authorize(http)
 
   def encode_to_json(self, metric_pb):
@@ -137,13 +144,20 @@ class HttpsMonitor(Monitor):
           method='POST',
           body=body,
           headers={'Content-Type': 'application/json'})
-      if resp.status != 200:
+      if resp.status == 200:
+        self._failed = False
+      else:
         logging.warning('HttpsMonitor.send received status %d: %s', resp.status,
                         content)
+        self._failed = True
     except (ValueError, errors.Error,
             socket.timeout, socket.error, socket.herror, socket.gaierror,
             httplib2.HttpLib2Error):
       logging.exception('HttpsMonitor.send failed')
+      self._failed = True
+
+  def failed(self):
+    return self._failed
 
 
 class DebugMonitor(Monitor):
@@ -161,8 +175,14 @@ class DebugMonitor(Monitor):
       self._fh.write(text + '\n\n')
       self._fh.flush()
 
+  def failed(self):
+    return False
+
 
 class NullMonitor(Monitor):
   """Class that doesn't send metrics anywhere."""
   def send(self, metric_pb):
     pass
+
+  def failed(self):
+    return False

@@ -28,6 +28,8 @@ class MonitorTest(unittest.TestCase):
     metric1 = metrics_pb2.MetricsPayload()
     with self.assertRaises(NotImplementedError):
       m.send(metric1)
+    with self.assertRaises(NotImplementedError):
+      m.failed()
 
 
 class HttpsMonitorTest(unittest.TestCase):
@@ -52,6 +54,7 @@ class HttpsMonitorTest(unittest.TestCase):
       mock.call('endpoint', method='POST', body=self.message(payload),
                 headers={'Content-Type': 'application/json'}),
     ])
+    self.assertFalse(mon.failed())
 
   def test_default_send(self):
     self._test_send(None)
@@ -79,6 +82,7 @@ class HttpsMonitorTest(unittest.TestCase):
         method='POST',
         body=self.message(metric1),
         headers={'Content-Type': 'application/json'})
+    self.assertTrue(mon.failed())
 
   @mock.patch('infra_libs.ts_mon.common.monitors.CredentialFactory.'
               'from_string')
@@ -96,6 +100,7 @@ class HttpsMonitorTest(unittest.TestCase):
         method='POST',
         body=self.message(metric1),
         headers={'Content-Type': 'application/json'})
+    self.assertTrue(mon.failed())
 
 
 class DebugMonitorTest(unittest.TestCase):
@@ -110,6 +115,7 @@ class DebugMonitorTest(unittest.TestCase):
       with open(filename) as fh:
         output = fh.read()
     self.assertIn('metrics_data_set {\n    metric_name: "m1"\n  }', output)
+    self.assertFalse(m.failed())
 
   @mock.patch('logging.info')
   def test_send_log(self, mock_logging_info):
@@ -120,6 +126,7 @@ class DebugMonitorTest(unittest.TestCase):
     self.assertEqual(1, mock_logging_info.call_count)
     output = mock_logging_info.call_args[0][1]
     self.assertIn('metrics_data_set {\n    metric_name: "m1"\n  }', output)
+    self.assertFalse(m.failed())
 
 
 class NullMonitorTest(unittest.TestCase):
@@ -129,6 +136,7 @@ class NullMonitorTest(unittest.TestCase):
     payload = metrics_pb2.MetricsPayload()
     payload.metrics_collection.add().metrics_data_set.add().metric_name = 'm1'
     m.send(payload)
+    self.assertFalse(m.failed())
 
 
 class CredentialFactoryTest(unittest.TestCase):
