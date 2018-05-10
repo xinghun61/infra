@@ -33,8 +33,6 @@
       "/path/to/tmp/json",
       "--revision",
       "src@refs/tags/66.0.3329.0",
-      "--refs",
-      "refs/tags/66.0.3329.0",
       "--with_branch_heads",
       "--with_tags"
     ],
