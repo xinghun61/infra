@@ -59,9 +59,11 @@ class NextCommitPositionPipeline(SynchronousPipeline):
     # spans a single build cycle. During this time, bisect is preferred to
     # exponential search.
     use_bisect = analysis.suspected_flake_build_number is not None
+    latest_regression_range = analysis.GetLatestRegressionRange()
 
     calculated_next_commit_position, culprit_commit_position = (
-        lookback_algorithm.GetNextCommitPosition(data_points, use_bisect))
+        lookback_algorithm.GetNextCommitPosition(data_points, use_bisect,
+                                                 latest_regression_range))
 
     if calculated_next_commit_position is None:
       # The analysis is finished according to the lookback algorithm.

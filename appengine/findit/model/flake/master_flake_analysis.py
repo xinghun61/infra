@@ -291,6 +291,58 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
     return None
 
+  def GetLatestRegressionRange(self):
+    """Gets the latest stable -> flaky commit positions in data_points.
+
+    Returns:
+      (IntRange): The commit position of the latest
+          stable data_point and commit position of the earliest subsequent flaky
+          data point. Either point can be None if no flaky or stable points are
+          found.
+    """
+    if not self.data_points:
+      return IntRange(lower=None, upper=None)
+
+    if len(self.data_points) == 1:
+      data_point = self.data_points[0]
+
+      if pass_rate_util.IsStableDefaultThresholds(data_point.pass_rate):
+        # A lower bound stable is found, but no upper bound. The caller of this
+        # function should interpret this as the flakiness being unreproducible.
+        return IntRange(lower=data_point.commit_position, upper=None)
+
+      # The flakiness is reproducible, but no lower bound (stable) has been
+      # identified yet.
+      return IntRange(lower=None, upper=data_point.commit_position)
+
+    # For the latest regression range, sort in reverse order by commit position.
+    data_points = sorted(
+        self.data_points, key=lambda k: k.commit_position, reverse=True)
+
+    # Identify the adjacent flaky and stable data points with the highest commit
+    # positions.
+    latest_stable_index = None
+    for i, data_point in enumerate(data_points):
+      if pass_rate_util.IsStableDefaultThresholds(data_point.pass_rate):
+        latest_stable_index = i
+        break
+
+    if latest_stable_index is None:
+      # All data points are flaky. The caller should interpret this as no
+      # findings yet.
+      return IntRange(lower=None, upper=data_points[-1].commit_position)
+
+    # A regression range has been identified.
+    assert latest_stable_index > 0, (
+        'Non-reproducible flaky tests should only have 1 data point')
+    adjacent_flaky_data_point = data_points[latest_stable_index - 1]
+    assert not pass_rate_util.IsStableDefaultThresholds(
+        adjacent_flaky_data_point.pass_rate)
+
+    return IntRange(
+        lower=data_points[latest_stable_index].commit_position,
+        upper=adjacent_flaky_data_point.commit_position)
+
   def Reset(self):
     super(MasterFlakeAnalysis, self).Reset()
     self.original_master_name = None
@@ -350,7 +402,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       data points created by try jobs.
 
     Args:
-      data_points (list): A list of DataPoint objects.
       lower_bound_build_number (int): The earlist build number a data point can
           have not to be filtered out. If None is passed, defaults to 0.
       upper_bound_build_number (int): The latest build number a data point can

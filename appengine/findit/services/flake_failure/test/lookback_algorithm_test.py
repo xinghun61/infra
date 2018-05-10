@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import mock
-
+from dto.int_range import IntRange
 from gae_libs.testcase import TestCase
 from model.flake.master_flake_analysis import DataPoint
 from services.flake_failure import lookback_algorithm
@@ -143,78 +142,16 @@ class LookbackAlgorithmTest(TestCase):
     self.assertEqual(3, lookback_algorithm.BisectPoint(1, 5))
     self.assertEqual(1, lookback_algorithm.BisectPoint(1, 1))
 
-  def testGetLatestRegressionRangeRange(self):
-    self.assertEqual((None, None),
-                     lookback_algorithm.GetLatestRegressionRange([]))
-    self.assertEqual((None, 100),
-                     lookback_algorithm.GetLatestRegressionRange(
-                         [DataPoint.Create(commit_position=100,
-                                           pass_rate=0.5)]))
-    self.assertEqual((100, None),
-                     lookback_algorithm.GetLatestRegressionRange(
-                         [DataPoint.Create(commit_position=100,
-                                           pass_rate=1.0)]))
-    self.assertEqual((None, 90),
-                     lookback_algorithm.GetLatestRegressionRange([
-                         DataPoint.Create(commit_position=100, pass_rate=0.5),
-                         DataPoint.Create(commit_position=90, pass_rate=0.5)
-                     ]))
-    self.assertEqual((90, 91),
-                     lookback_algorithm.GetLatestRegressionRange([
-                         DataPoint.Create(commit_position=91, pass_rate=0.9),
-                         DataPoint.Create(commit_position=90, pass_rate=1.0)
-                     ]))
-    self.assertEqual((92, 95),
-                     lookback_algorithm.GetLatestRegressionRange([
-                         DataPoint.Create(commit_position=95, pass_rate=0.6),
-                         DataPoint.Create(commit_position=92, pass_rate=1.0),
-                         DataPoint.Create(commit_position=91, pass_rate=0.9),
-                         DataPoint.Create(commit_position=90, pass_rate=1.0),
-                     ]))
-    self.assertEqual((94, 95),
-                     lookback_algorithm.GetLatestRegressionRange([
-                         DataPoint.Create(commit_position=96, pass_rate=0.8),
-                         DataPoint.Create(commit_position=95, pass_rate=0.9),
-                         DataPoint.Create(commit_position=94, pass_rate=0.0),
-                         DataPoint.Create(commit_position=93, pass_rate=0.6),
-                         DataPoint.Create(commit_position=92, pass_rate=1.0),
-                         DataPoint.Create(commit_position=91, pass_rate=0.9),
-                         DataPoint.Create(commit_position=90, pass_rate=1.0),
-                     ]))
-
   def testBisectNextCommitPosition(self):
-    self.assertEqual((95, None),
-                     lookback_algorithm._Bisect([
-                         DataPoint.Create(commit_position=90, pass_rate=1.0),
-                         DataPoint.Create(commit_position=100, pass_rate=0.9)
-                     ]))
+    regression_range = IntRange(lower=90, upper=100)
+    self.assertEqual((95, None), lookback_algorithm._Bisect(regression_range))
 
   def testBisectFinished(self):
-    self.assertEqual((None, 91),
-                     lookback_algorithm._Bisect([
-                         DataPoint.Create(commit_position=90, pass_rate=1.0),
-                         DataPoint.Create(commit_position=91, pass_rate=0.9)
-                     ]))
-
-  @mock.patch.object(
-      lookback_algorithm, 'GetLatestRegressionRange', return_value=(None, None))
-  def testShouldRunBisectNoRegressionRange(self, _):
-    self.assertFalse(lookback_algorithm._ShouldRunBisect([], False))
-
-  @mock.patch.object(
-      lookback_algorithm, 'GetLatestRegressionRange', return_value=(1, 3))
-  def testShouldRunBisectUseBisectFlagFalse(self, _):
-    self.assertFalse(lookback_algorithm._ShouldRunBisect([], False))
-
-  def testShouldRunBisect(self):
-    data_points = [
-        DataPoint.Create(commit_position=100, pass_rate=0.5),
-        DataPoint.Create(commit_position=90, pass_rate=1.0)
-    ]
-
-    self.assertTrue(lookback_algorithm._ShouldRunBisect(data_points, True))
+    regression_range = IntRange(lower=90, upper=91)
+    self.assertEqual((None, 91), lookback_algorithm._Bisect(regression_range))
 
   def testGetNextCommitPositionBisect(self):
+    regression_range = IntRange(lower=90, upper=100)
     data_points = [
         DataPoint.Create(commit_position=100, pass_rate=0.9),
         DataPoint.Create(commit_position=90, pass_rate=1.0),
@@ -222,9 +159,10 @@ class LookbackAlgorithmTest(TestCase):
 
     self.assertEqual((95, None),
                      lookback_algorithm.GetNextCommitPosition(
-                         data_points, True))
+                         data_points, True, regression_range))
 
   def testGetNextCommitPositionExponentialSearch(self):
+    regression_range = IntRange(lower=90, upper=100)
     data_points = [
         DataPoint.Create(commit_position=100, pass_rate=0.9),
         DataPoint.Create(commit_position=90, pass_rate=1.0),
@@ -232,4 +170,4 @@ class LookbackAlgorithmTest(TestCase):
 
     self.assertEqual((99, None),
                      lookback_algorithm.GetNextCommitPosition(
-                         data_points, False))
+                         data_points, False, regression_range))

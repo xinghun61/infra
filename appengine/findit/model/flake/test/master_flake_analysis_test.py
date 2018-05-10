@@ -316,6 +316,72 @@ class MasterFlakeAnalysisTest(TestCase):
                      analysis.GetDataPointsWithinCommitPositionRange(
                          IntRange(lower=None, upper=None)))
 
+  def testGetLatestRegressionRangeRangeNoDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = []
+    self.assertEqual(
+        IntRange(lower=None, upper=None), analysis.GetLatestRegressionRange())
+
+  def testGetLatestRegressionRangeRangeNoUpperBound(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=100, pass_rate=0.5)
+    ]
+
+    self.assertEqual(
+        IntRange(lower=None, upper=100), analysis.GetLatestRegressionRange())
+
+  def testGetLatestRegressionRangeRangeNoLowerBound(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=100, pass_rate=1.0)
+    ]
+    self.assertEqual(
+        IntRange(lower=100, upper=None), analysis.GetLatestRegressionRange())
+
+  def testGetLatestRegressionRangeNoUpperBoundMultipleDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=100, pass_rate=0.5),
+        DataPoint.Create(commit_position=90, pass_rate=0.5)
+    ]
+    self.assertEqual(
+        IntRange(lower=None, upper=90), analysis.GetLatestRegressionRange())
+
+  def testGetLatestRegressionRange(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=91, pass_rate=0.9),
+        DataPoint.Create(commit_position=90, pass_rate=1.0)
+    ]
+    self.assertEqual(
+        IntRange(lower=90, upper=91), analysis.GetLatestRegressionRange())
+
+  def testGetLatestRegressionRangeMultipleRanges(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=95, pass_rate=0.6),
+        DataPoint.Create(commit_position=92, pass_rate=1.0),
+        DataPoint.Create(commit_position=91, pass_rate=0.9),
+        DataPoint.Create(commit_position=90, pass_rate=1.0),
+    ]
+    self.assertEqual(
+        IntRange(lower=92, upper=95), analysis.GetLatestRegressionRange())
+
+  def testGetLatestRegressionRangeMultipleDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=96, pass_rate=0.8),
+        DataPoint.Create(commit_position=95, pass_rate=0.9),
+        DataPoint.Create(commit_position=94, pass_rate=0.0),
+        DataPoint.Create(commit_position=93, pass_rate=0.6),
+        DataPoint.Create(commit_position=92, pass_rate=1.0),
+        DataPoint.Create(commit_position=91, pass_rate=0.9),
+        DataPoint.Create(commit_position=90, pass_rate=1.0),
+    ]
+    self.assertEqual(
+        IntRange(lower=94, upper=95), analysis.GetLatestRegressionRange())
+
   def testInitializeRunning(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
