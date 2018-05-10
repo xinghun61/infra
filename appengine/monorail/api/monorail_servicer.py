@@ -140,33 +140,32 @@ class MonorailServicer(object):
     exc_type = type(e)
     if exc_type == exceptions.NoSuchUserException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
-      prpc_context.details = 'The user does not exist.'
-    elif exc_type ==  exceptions.NoSuchProjectException:
+      prpc_context.set_details('The user does not exist.')
+    elif exc_type == exceptions.NoSuchProjectException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
-      prpc_context.details = 'The project does not exist.'
-    elif exc_type ==  exceptions.NoSuchIssueException:
+      prpc_context.set_details('The project does not exist.')
+    elif exc_type == exceptions.NoSuchIssueException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
-      prpc_context.details = 'The issue does not exist.'
+      prpc_context.set_details('The issue does not exist.')
     elif exc_type == exceptions.NoSuchComponentException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
-      prpc_context.details = 'The component does not exist.'
+      prpc_context.set_details('The component does not exist.')
     elif exc_type == permissions.BannedUserException:
       prpc_context.set_code(codes.StatusCode.PERMISSION_DENIED)
-      prpc_context.details = 'The requesting user has been banned.'
+      prpc_context.set_details('The requesting user has been banned.')
     elif exc_type == permissions.PermissionException:
       prpc_context.set_code(codes.StatusCode.PERMISSION_DENIED)
-      prpc_context.details = 'Permission denied.'
+      prpc_context.set_details('Permission denied.')
     elif exc_type == exceptions.GroupExistsException:
       prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
-      prpc_context.details = 'The user group already exists.'
+      prpc_context.set_details('The user group already exists.')
     elif exc_type == exceptions.InvalidComponentNameException:
       prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
-      prpc_context.details = 'That component name is invalid.'
+      prpc_context.set_details('That component name is invalid.')
     # TODO(jrobbins): Increment and enforce action limits.
     elif exc_type == ratelimiter.ApiRateLimitExceeded:
       prpc_context.set_code(codes.StatusCode.PERMISSION_DENIED)
-      prpc_context.details = (
-          'The requester has exceeded API quotas limit.')
+      prpc_context.set_details('The requester has exceeded API quotas limit.')
     else:
       return False  # Re-raise any exception from programming errors.
     return True  # It if was one of the cases above, don't reraise.
