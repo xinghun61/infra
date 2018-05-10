@@ -23,14 +23,15 @@ var _ = math.Inf
 type LaunchRequest struct {
 	// The run ID created by a Tricium.Analyze call.
 	RunId int64 `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
-	// The name of the project as it is known to Tricium.
+	// The name of the project in luci-config.
 	Project string `protobuf:"bytes,2,opt,name=project" json:"project,omitempty"`
-	// The full URL of the git repo for this analysis request.
+	// The full URL of the git repo used for this run.
 	GitUrl string `protobuf:"bytes,3,opt,name=git_url,json=gitUrl" json:"git_url,omitempty"`
-	// TODO(emso): Specify Git ref requirements.
+	// A git commit-ish, such as a Gerrit revision ref name like
+	// "refs/changes/34/1234/1", or any other ref name or commit hash.
 	GitRef string `protobuf:"bytes,4,opt,name=git_ref,json=gitRef" json:"git_ref,omitempty"`
 	// File paths from the root of the Git repository.
-	// TODO(emso): Specify file separators, or add listing of path segments.
+	// TODO(qyearsley): Replace this with a list of file metadata messages.
 	Paths []string `protobuf:"bytes,5,rep,name=paths" json:"paths,omitempty"`
 }
 

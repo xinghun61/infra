@@ -17,17 +17,19 @@ message LaunchRequest {
   // The run ID created by a Tricium.Analyze call.
   int64 run_id = 1;
 
-  // The name of the project as it is known to Tricium.
+  // The name of the project in luci-config.
   string project = 2;
 
-  // The full URL of the git repo for this analysis request.
+  // The full URL of the git repo used for this run.
   string git_url = 3;
 
-  // TODO(emso): Specify Git ref requirements.
+  // A git commit-ish, such as a Gerrit revision ref name like
+  // "refs/changes/34/1234/1", or any other ref name or commit hash.
+  // This is used in the GitFileDetails data type used to pull files.
   string git_ref = 4;
 
   // File paths from the root of the Git repository.
-  // TODO(emso): Specify file separators, or add listing of path segments.
+  // TODO(qyearsley): Replace this with a list of file metadata messages.
   repeated string paths = 5;
 }
 
