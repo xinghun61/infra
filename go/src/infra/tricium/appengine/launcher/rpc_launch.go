@@ -37,7 +37,7 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 	if req.Project == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing project")
 	}
-	if req.GitRepo == "" {
+	if req.GitUrl == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing git repo")
 	}
 	if req.GitRef == "" {
@@ -100,7 +100,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	wfTask.Payload = b
 	// Isolate initial input.
 	inputHash, err := isolator.IsolateGitFileDetails(c, wf.IsolateServer, &tricium.Data_GitFileDetails{
-		Repository: req.GitRepo,
+		Repository: req.GitUrl,
 		Ref:        req.GitRef,
 		Paths:      req.Paths,
 	})

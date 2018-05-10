@@ -20,8 +20,8 @@ message LaunchRequest {
   // The name of the project as it is known to Tricium.
   string project = 2;
 
-  // The Git repo connected to the project in the Tricium config.
-  string git_repo = 3;
+  // The full URL of the git repo for this analysis request.
+  string git_url = 3;
 
   // TODO(emso): Specify Git ref requirements.
   string git_ref = 4;

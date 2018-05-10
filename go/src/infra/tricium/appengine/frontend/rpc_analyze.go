@@ -166,7 +166,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	lr := &admin.LaunchRequest{
 		Project: request.Project,
 		Paths:   request.Paths,
-		GitRepo: request.GitRepo,
+		GitUrl:  request.GitRepo,
 		GitRef:  request.GitRef,
 	}
 
