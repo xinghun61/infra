@@ -529,6 +529,32 @@ class QueryParsingUnitTest(unittest.TestCase):
         MakeCond(GT, [fd2], ['3'], [3]),
         cond2)
 
+  def testParseUserQuery_Approvals(self):
+    """Test approval queries are parsed correctly."""
+    fd1 = tracker_bizobj.MakeFieldDef(
+        1, self.project_id, 'UIReview', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+        'applic', 'applic', False, False, False, None, None, None, False, None,
+        None, None, 'no_action', 'doc', False)
+    fd2 = tracker_bizobj.MakeFieldDef(
+        2, self.project_id, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE,
+        'applic', 'applic', False, False, False, None, None, None, False, None,
+        None, None, 'no_action', 'doc', False)
+    fd3 = tracker_bizobj.MakeFieldDef(
+        3, self.project_id, 'UXReview', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+        'applic', 'applic', False, False, False, None, None, None, False, None,
+        None, None, 'no_action', 'doc', False)
+    self.default_config.field_defs.extend([fd1, fd2, fd3])
+    ast = query2ast.ParseUserQuery(
+        'UXReview-approver:user1@mail.com,user2@mail.com UIReview:Approved',
+        '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    cond2 = ast.conjunctions[0].conds[1]
+    self.assertEqual(MakeCond(TEXT_HAS, [fd3],
+                              ['user1@mail.com', 'user2@mail.com'], [],
+                              key_suffix='-approver'), cond1)
+    self.assertEqual(MakeCond(TEXT_HAS, [fd1], ['approved'], []), cond2)
+
+
   def testParseUserQuery_QuickOr(self):
     # quick-or searches
     ast = query2ast.ParseUserQuery(

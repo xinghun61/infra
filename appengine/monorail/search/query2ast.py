@@ -28,6 +28,7 @@ BOOL = tracker_pb2.FieldTypes.BOOL_TYPE
 DATE = tracker_pb2.FieldTypes.DATE_TYPE
 NUM = tracker_pb2.FieldTypes.INT_TYPE
 TXT = tracker_pb2.FieldTypes.STR_TYPE
+APPROVAL = tracker_pb2.FieldTypes.APPROVAL_TYPE
 
 EQ = ast_pb2.QueryOp.EQ
 NE = ast_pb2.QueryOp.NE
@@ -149,6 +150,11 @@ _DATE_FIELD_SUFFIX_TO_OP = {
     '-before': '<',
 }
 
+_APPROVAL_SUFFIXES = (
+    '-approver',
+    '-status',
+)
+
 BUILTIN_ISSUE_FIELDS = {
     f_name: tracker_pb2.FieldDef(field_name=f_name, field_type=f_type)
     for f_name, f_type in _ISSUE_FIELDS_LIST}
@@ -216,6 +222,9 @@ def ParseUserQuery(
     if fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE:
       # Only do non-enum fields because enums are stored as labels
       combined_fields[fd.field_name.lower()].append(fd)
+      if fd.field_type == APPROVAL:
+        for approval_suffix in _APPROVAL_SUFFIXES:
+          combined_fields[fd.field_name.lower() + approval_suffix].append(fd)
 
   conjunctions = [
       _ParseConjunction(sq, scope, combined_fields, warnings, now=now)
@@ -350,6 +359,12 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
           quick_or_ints.append(int(qov))
         except ValueError:
           pass
+      if first_field.field_type == APPROVAL:
+        for approval_suffix in _APPROVAL_SUFFIXES:
+          if prefix.endswith(approval_suffix):
+            return ast_pb2.MakeCond(op, fields[prefix], quick_or_vals,
+                                    quick_or_ints, key_suffix=approval_suffix)
+
       return ast_pb2.MakeCond(op, fields[prefix], quick_or_vals, quick_or_ints)
 
   # Since it is not a field, treat it as labels, E.g., Priority.

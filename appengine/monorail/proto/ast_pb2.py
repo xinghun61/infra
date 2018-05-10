@@ -65,6 +65,9 @@ class Condition(messages.Message):
   field_defs = messages.MessageField(tracker_pb2.FieldDef, 2, repeated=True)
   str_values = messages.StringField(3, repeated=True)
   int_values = messages.IntegerField(4, repeated=True)
+  # The suffix of a search field
+  # eg. the 'approver' in 'UXReview-approver:user@mail.com'
+  key_suffix = messages.StringField(5)
 
 
 class Conjunction(messages.Message):
@@ -77,8 +80,8 @@ class QueryAST(messages.Message):
   conjunctions = messages.MessageField(Conjunction, 1, repeated=True)
 
 
-def MakeCond(op, field_defs, str_values, int_values):
+def MakeCond(op, field_defs, str_values, int_values, key_suffix=None):
   """Shorthand function to construct a Condition PB."""
   return Condition(
       op=op, field_defs=field_defs, str_values=str_values,
-      int_values=int_values)
+      int_values=int_values, key_suffix=key_suffix)
