@@ -322,14 +322,12 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   """Extracts and returns build information as an instance of BuildInfo."""
   build_info = BuildInfo(master_name, builder_name, build_number)
   data_json = json.loads(build_data)
-  chromium_revision = GetBuildProperty(
-      data_json.get('properties', []), 'got_revision')
-  commit_position_line = GetBuildProperty(
-      data_json.get('properties', []), 'got_revision_cp')
-  parent_buildername = GetBuildProperty(
-      data_json.get('properties', []), 'parent_buildername')
-  parent_mastername = GetBuildProperty(
-      data_json.get('properties', []), 'parent_mastername')
+
+  properties = data_json.get('properties') or []
+  chromium_revision = GetBuildProperty(properties, 'got_revision')
+  commit_position_line = GetBuildProperty(properties, 'got_revision_cp')
+  parent_buildername = GetBuildProperty(properties, 'parent_buildername')
+  parent_mastername = GetBuildProperty(properties, 'parent_mastername')
 
   build_info.build_start_time = GetBuildStartTime(data_json)
   build_info.build_end_time = GetBuildEndTime(data_json)
