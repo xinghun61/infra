@@ -18,7 +18,7 @@ import (
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
-	trit "infra/tricium/appengine/common/testing"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 const (
@@ -152,7 +152,7 @@ func (*mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*
 
 func TestLaunchRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 		runID := int64(123456789)
 		Convey("Launch request", func() {

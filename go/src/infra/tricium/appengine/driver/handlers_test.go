@@ -14,7 +14,7 @@ import (
 	"google.golang.org/api/pubsub/v1"
 
 	"infra/tricium/appengine/common"
-	trit "infra/tricium/appengine/common/testing"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 
 func TestDecodePubsubMessage(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 		Convey("Decodes pubsub message without error", func() {
 			_, _, err := decodePubsubMessage(ctx, msg)
@@ -39,7 +39,7 @@ func TestDecodePubsubMessage(t *testing.T) {
 
 func TestHandlePubSubMessage(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 		Convey("Enqueues collect task", func() {
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 0)

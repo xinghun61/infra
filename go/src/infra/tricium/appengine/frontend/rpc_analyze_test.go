@@ -19,8 +19,8 @@ import (
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 const (
@@ -76,7 +76,7 @@ func (*mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*
 
 func TestAnalyze(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		gitRef := "ref/test"

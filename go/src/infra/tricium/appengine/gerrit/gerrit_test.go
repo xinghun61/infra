@@ -12,7 +12,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 func TestComposeChangesQueryURL(t *testing.T) {
@@ -35,7 +35,7 @@ func TestComposeChangesQueryURL(t *testing.T) {
 func TestCreateRobotComment(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 		runID := int64(1234567)
 		uuid := "7ae6f43d-22e9-4350-ace4-1fee9014509a"

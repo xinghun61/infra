@@ -16,12 +16,12 @@ import (
 	"go.chromium.org/luci/server/templates"
 
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 func TestLandingPageHandler(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		withTestingContext := func(c *router.Context, next router.Handler) {
@@ -53,7 +53,7 @@ func TestLandingPageHandler(t *testing.T) {
 
 func TestAnalyzeQueueHandler(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		w := httptest.NewRecorder()
@@ -69,8 +69,8 @@ func TestAnalyzeQueueHandler(t *testing.T) {
 			analyzeHandler(&router.Context{
 				Context: ctx,
 				Writer:  w,
-				Request: trit.MakeGetRequest(bytes),
-				Params:  trit.MakeParams(),
+				Request: triciumtest.MakeGetRequest(bytes),
+				Params:  triciumtest.MakeParams(),
 			})
 			So(w.Code, ShouldEqual, 400)
 			r, err := ioutil.ReadAll(w.Body)

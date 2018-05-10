@@ -17,8 +17,8 @@ import (
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 // MockIsolator mocks the Isolator interface for testing.
@@ -50,7 +50,7 @@ func (*mockIsolator) FetchIsolatedResults(c context.Context, serverURL, isolated
 
 func TestWorkerDoneRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		name, _, err := track.ExtractFunctionPlatform(fileIsolator)
@@ -150,7 +150,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 // failed.
 func TestWorkerDoneRequestWithAbortedWorker(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		name, _, err := track.ExtractFunctionPlatform(fileIsolator)

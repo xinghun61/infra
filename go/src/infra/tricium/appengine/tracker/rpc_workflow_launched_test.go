@@ -15,8 +15,8 @@ import (
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 const (
@@ -54,7 +54,7 @@ func (mockWorkflowProvider) GetWorkflow(c context.Context, runID int64) (*admin.
 
 func TestWorkflowLaunchedRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		Convey("Workflow request", func() {

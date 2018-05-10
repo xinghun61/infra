@@ -12,13 +12,13 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 
 	"infra/tricium/api/admin/v1"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 func TestReportResultsRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		// Add request -> run -> function -> worker to datastore.

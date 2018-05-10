@@ -20,13 +20,13 @@ import (
 	"go.chromium.org/luci/server/templates"
 
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 func TestRunPageHandler(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		withTestingContext := func(c *router.Context, next router.Handler) {
@@ -118,8 +118,8 @@ func TestRunPageHandler(t *testing.T) {
 			routerContext := &router.Context{
 				Context: ctx,
 				Writer:  w,
-				Request: trit.MakeGetRequest(nil),
-				Params:  trit.MakeParams("runId", "abc"),
+				Request: triciumtest.MakeGetRequest(nil),
+				Params:  triciumtest.MakeParams("runId", "abc"),
 			}
 			runPageHandler(routerContext)
 			r, err := ioutil.ReadAll(w.Body)
@@ -134,8 +134,8 @@ func TestRunPageHandler(t *testing.T) {
 			routerContext := &router.Context{
 				Context: ctx,
 				Writer:  w,
-				Request: trit.MakeGetRequest(nil),
-				Params:  trit.MakeParams("runId", "1234"),
+				Request: triciumtest.MakeGetRequest(nil),
+				Params:  triciumtest.MakeParams("runId", "1234"),
 			}
 			runPageHandler(routerContext)
 			r, err := ioutil.ReadAll(w.Body)

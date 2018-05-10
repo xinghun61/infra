@@ -13,13 +13,13 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 func TestReport(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		commentID := "7ef59cda-183c-48b3-8343-d9036a7f1419"

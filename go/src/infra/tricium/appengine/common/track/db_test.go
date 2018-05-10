@@ -15,7 +15,7 @@ import (
 	"go.chromium.org/luci/server/auth/authtest"
 
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 const (
@@ -59,7 +59,7 @@ func (*mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*
 func TestFetchRecentRequests(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		request := &AnalyzeRequest{Project: project}
@@ -89,7 +89,7 @@ func TestFetchRecentRequests(t *testing.T) {
 func TestTrackHelperFunctions(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		// Add completed request.

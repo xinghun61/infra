@@ -16,14 +16,14 @@ import (
 	"go.chromium.org/luci/server/auth/authtest"
 
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 func TestProjectProgress(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 		var runID int64 = 22
 

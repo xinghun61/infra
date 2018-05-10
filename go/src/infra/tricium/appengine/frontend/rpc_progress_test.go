@@ -20,14 +20,14 @@ import (
 	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 func TestProgress(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 		var runID int64 = 22
 

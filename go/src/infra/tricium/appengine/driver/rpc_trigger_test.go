@@ -16,8 +16,8 @@ import (
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 // mockConfigProvider mocks common.WorkflowProvider.
@@ -47,7 +47,7 @@ func (mockWorkflowProvider) GetWorkflow(c context.Context, runID int64) (*admin.
 
 func TestTriggerRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 		runID := int64(123456789)
 
@@ -66,7 +66,7 @@ func TestTriggerRequest(t *testing.T) {
 
 func TestHelperFunctions(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		So(ds.Put(ctx, &track.AnalyzeRequest{

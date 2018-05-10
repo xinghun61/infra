@@ -2,8 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package testing implements common testing functionality for the Tricium service modules.
-package testing
+// Package triciumtest implements common testing functionality for the Tricium
+// service modules.
+package triciumtest
 
 import (
 	"bytes"
@@ -22,8 +23,6 @@ import (
 
 	"infra/tricium/appengine/common"
 )
-
-// TODO(emso): rename package to triciumtest
 
 // Testing is a high-level testing object.
 type Testing struct {

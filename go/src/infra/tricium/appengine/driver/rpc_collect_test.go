@@ -14,7 +14,7 @@ import (
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
-	trit "infra/tricium/appengine/common/testing"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 type mockSwarmingFailure struct {
@@ -29,7 +29,7 @@ func (mockSwarmingFailure) Collect(c context.Context, serverURL string, taskID s
 
 func TestCollectRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 		runID := int64(123456789)
 

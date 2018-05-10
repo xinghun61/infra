@@ -26,8 +26,8 @@ import (
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
-	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
+	"infra/tricium/appengine/common/triciumtest"
 )
 
 const (
@@ -103,7 +103,7 @@ func numEnqueuedAnalyzeRequests(ctx context.Context) int {
 func TestPollBasicBehavior(t *testing.T) {
 
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		now := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -410,7 +410,7 @@ func TestPollBasicBehavior(t *testing.T) {
 func TestPollWhitelistBehavior(t *testing.T) {
 
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
+		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
 		var (
