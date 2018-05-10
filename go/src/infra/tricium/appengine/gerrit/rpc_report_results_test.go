@@ -24,8 +24,8 @@ func TestReportResultsRequest(t *testing.T) {
 		// Add request -> run -> function -> worker to datastore.
 		functionName := "MyLinter"
 		request := &track.AnalyzeRequest{
-			GitRepo: "https://chromium-review.googlesource.com",
-			GitRef:  "refs/changes/88/508788/1",
+			GitURL: "https://chromium-review.googlesource.com",
+			GitRef: "refs/changes/88/508788/1",
 		}
 		So(ds.Put(ctx, request), ShouldBeNil)
 		requestKey := ds.KeyForObj(ctx, request)

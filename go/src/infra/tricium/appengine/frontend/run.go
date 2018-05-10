@@ -92,9 +92,9 @@ func fetchRunInfo(c context.Context, request *track.AnalyzeRequest) (*runInfo, e
 	return &runInfo{
 		ID:        request.ID,
 		Received:  request.Received,
-		GitRepo:   request.GitRepo,
+		GitRepo:   request.GitURL,
 		GitRef:    request.GitRef,
-		GerritURL: common.GerritURL(request.GerritHost, request.GerritRevision),
+		GerritURL: common.GerritURL(request.GerritHost, request.GitRef),
 		Paths:     request.Paths,
 		Functions: functionMap,
 	}, nil

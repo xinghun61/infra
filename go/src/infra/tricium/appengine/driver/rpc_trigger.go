@@ -115,7 +115,7 @@ func swarmingTags(c context.Context, worker string, runID int64) []string {
 		return tags
 	}
 	if request.Consumer == tricium.Consumer_GERRIT {
-		cl, patch := common.ExtractCLPatchSetNumbers(request.GerritRevision)
+		cl, patch := common.ExtractCLPatchSetNumbers(request.GitRef)
 		tags = append(tags,
 			"gerrit_project:"+request.GerritProject,
 			"gerrit_change:"+request.GerritChange,

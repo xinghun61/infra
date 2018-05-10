@@ -72,7 +72,7 @@ type AnalyzeRequest struct {
 	// File paths listed in the request.
 	Paths []string `gae:",noindex"`
 	// Git repository hosting files in the request.
-	GitRepo string `gae:",noindex"`
+	GitURL string `gae:",noindex"`
 	// Git ref to use in the Git repo.
 	GitRef string `gae:",noindex"`
 	// Consumer of progress updates and results.
@@ -81,8 +81,6 @@ type AnalyzeRequest struct {
 	GerritHost    string `gae:",noindex"`
 	GerritProject string `gae:",noindex"`
 	GerritChange  string `gae:",noindex"`
-	// Note that Gerrit revision is another name for Gerrit patch set.
-	GerritRevision string `gae:",noindex"`
 	// Disabled Gerrit reporting means that no progress or result messages
 	// are sent to Gerrit.
 	GerritReportingDisabled bool `gae:",noindex"`

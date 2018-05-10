@@ -84,5 +84,5 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 		logging.Infof(c, "Too many comments (%d), not reporting results (run ID: %s)", len(comments), req.RunId)
 		return nil
 	}
-	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GerritRevision, req.RunId, comments)
+	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GitRef, req.RunId, comments)
 }

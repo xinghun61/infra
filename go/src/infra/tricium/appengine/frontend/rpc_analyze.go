@@ -141,7 +141,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	}
 	if pd.RepoDetails.Kind == tricium.RepoDetails_GIT {
 		rd := pd.RepoDetails.GitDetails
-		request.GitRepo = rd.Repository
+		request.GitURL = rd.Repository
 		if request.GitRef == "" {
 			request.GitRef = rd.Ref
 		}
@@ -156,7 +156,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		request.GerritHost = gd.Host
 		request.GerritProject = req.GerritDetails.Project
 		request.GerritChange = req.GerritDetails.Change
-		request.GerritRevision = req.GerritDetails.Revision
+		request.GitRef = req.GerritDetails.Revision
 		request.GerritReportingDisabled = gd.DisableReporting
 	}
 	requestRes := &track.AnalyzeRequestResult{
@@ -166,7 +166,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	lr := &admin.LaunchRequest{
 		Project: request.Project,
 		Paths:   request.Paths,
-		GitUrl:  request.GitRepo,
+		GitUrl:  request.GitURL,
 		GitRef:  request.GitRef,
 	}
 
@@ -209,7 +209,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 					return nil
 				}
 				g := &GerritChangeToRunID{
-					ID:    gerritMappingID(request.GerritHost, request.GerritProject, request.GerritChange, request.GerritRevision),
+					ID:    gerritMappingID(request.GerritHost, request.GerritProject, request.GerritChange, request.GitRef),
 					RunID: request.ID,
 				}
 				if err := ds.Put(c, g); err != nil {

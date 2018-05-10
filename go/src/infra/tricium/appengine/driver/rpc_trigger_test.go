@@ -70,21 +70,20 @@ func TestHelperFunctions(t *testing.T) {
 		ctx := tt.Context()
 
 		So(ds.Put(ctx, &track.AnalyzeRequest{
-			ID:             1,
-			Project:        "my-luci-config-project-id",
-			GitRepo:        "http://my-gerrit.com/my-project",
-			GitRef:         "refs/changes/97/597/2",
-			Paths:          []string{"README.md"},
-			Consumer:       tricium.Consumer_GERRIT,
-			GerritProject:  "my-project",
-			GerritChange:   "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
-			GerritRevision: "refs/changes/97/597/2",
+			ID:            1,
+			Project:       "my-luci-config-project-id",
+			GitURL:        "http://my-gerrit.com/my-project",
+			GitRef:        "refs/changes/97/597/2",
+			Paths:         []string{"README.md"},
+			Consumer:      tricium.Consumer_GERRIT,
+			GerritProject: "my-project",
+			GerritChange:  "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
 		}), ShouldBeNil)
 
 		So(ds.Put(ctx, &track.AnalyzeRequest{
 			ID:      2,
 			Project: "another-luci-config-project-id",
-			GitRepo: "http://my-nongerrit.com/repo-url",
+			GitURL:  "http://my-nongerrit.com/repo-url",
 			GitRef:  "refs/foo",
 			Paths:   []string{"README.md"},
 		}), ShouldBeNil)
