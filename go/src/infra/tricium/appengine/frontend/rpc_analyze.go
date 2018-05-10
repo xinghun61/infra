@@ -64,8 +64,13 @@ func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) erro
 	}
 	switch source := req.Source.(type) {
 	case *tricium.AnalyzeRequest_GitCommit:
-		// TODO(qyearsley): Validate git ref. Add tests.
-		return nil
+		gc := source.GitCommit
+		if gc.Url == "" {
+			return grpc.Errorf(codes.InvalidArgument, "missing git repo URL")
+		}
+		if gc.Ref == "" {
+			return grpc.Errorf(codes.InvalidArgument, "missing git ref")
+		}
 	case *tricium.AnalyzeRequest_GerritRevision:
 		gr := source.GerritRevision
 		if gr.Host == "" {
@@ -80,8 +85,11 @@ func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) erro
 		if match, _ := regexp.MatchString(".+~.+~I[0-9a-fA-F]{40}.*", gr.Change); !match {
 			return grpc.Errorf(codes.InvalidArgument, "invalid Gerrit change ID: "+gr.Change)
 		}
+		if gr.GitUrl == "" {
+			return grpc.Errorf(codes.InvalidArgument, "missing git repo URL for Gerrit change")
+		}
 		if gr.GitRef == "" {
-			return grpc.Errorf(codes.InvalidArgument, "missing git ref")
+			return grpc.Errorf(codes.InvalidArgument, "missing Gerrit revision git ref")
 		}
 	case nil:
 		return grpc.Errorf(codes.InvalidArgument, "missing source")

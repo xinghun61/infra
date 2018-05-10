@@ -5,7 +5,6 @@
 package frontend
 
 import (
-	"fmt"
 	"testing"
 
 	tq "go.chromium.org/gae/service/taskqueue"
@@ -24,11 +23,11 @@ import (
 )
 
 const (
-	host           = "chromium-review.googlesource.com"
-	project        = "playground/gerrit-tricium"
-	okACLUser      = "user:ok@example.com"
-	changeIDFooter = "I17e97e23ecf2890bf6b72ffd1d7a3167ed1b0a11"
-	revision       = "refs/changes/97/97/1"
+	project   = "playground-gerrit-tricium"
+	host      = "chromium-review.googlesource.com"
+	okACLUser = "user:ok@example.com"
+	changeID  = "playground/gerrit-tricium~master~I17e97e23ecf2890bf6b72ffd1d7a3167ed1b0a11"
+	revision  = "refs/changes/97/97/1"
 )
 
 // mockConfigProvider mocks the common.ConfigProvider interface.
@@ -72,25 +71,18 @@ func TestAnalyze(t *testing.T) {
 		tt := &triciumtest.Testing{}
 		ctx := tt.Context()
 
-		gitRef := "ref/test"
-		gitURL := "https://chromium.googlesource.com/playground/gerrit-tricium"
-		paths := []string{
-			"README.md",
-			"README2.md",
-		}
-
-		Convey("Service request", func() {
+		Convey("Basic request", func() {
 			ctx = auth.WithState(ctx, &authtest.FakeState{
 				Identity: identity.Identity(okACLUser),
 			})
 
 			_, _, err := analyzeWithAuth(ctx, &tricium.AnalyzeRequest{
 				Project: project,
-				Paths:   paths,
+				Paths:   []string{"README.md"},
 				Source: &tricium.AnalyzeRequest_GitCommit{
 					GitCommit: &tricium.GitCommit{
-						Url: gitURL,
-						Ref: gitRef,
+						Url: "https://chromium.googlesource.com/playground/gerrit-tricium",
+						Ref: "refs/heads/master",
 					},
 				},
 			}, &mockConfigProvider{})
@@ -106,57 +98,119 @@ func TestAnalyze(t *testing.T) {
 				So(len(r), ShouldEqual, 1)
 			})
 		})
+	})
+}
 
-		Convey("A request for a Gerrit change with no host is invalid", func() {
-			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
-				Project: project,
-				Paths:   paths,
-				Source: &tricium.AnalyzeRequest_GerritRevision{
-					GerritRevision: &tricium.GerritRevision{
-						// Host field is missing.
-						Project: project,
-						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
-						GitUrl:  "https://example.com/notimportant.git",
-						GitRef:  revision,
-					},
+func TestValidateAnalyzeRequest(t *testing.T) {
+	tt := &triciumtest.Testing{}
+	ctx := tt.Context()
+	paths := []string{"README.md"}
+	url := "https://example.com/notimportant.git"
+
+	Convey("A request for a Gerrit change with no host is invalid", t, func() {
+		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+			Project: project,
+			Paths:   paths,
+			Source: &tricium.AnalyzeRequest_GerritRevision{
+				GerritRevision: &tricium.GerritRevision{
+					// Host field is missing.
+					Project: project,
+					Change:  changeID,
+					GitUrl:  url,
+					GitRef:  revision,
 				},
-			})
-			So(err, ShouldNotBeNil)
+			},
 		})
+		So(err, ShouldNotBeNil)
+	})
 
-		Convey("A request with all Gerrit details is valid", func() {
-			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
-				Project: project,
-				Paths:   paths,
-				Source: &tricium.AnalyzeRequest_GerritRevision{
-					GerritRevision: &tricium.GerritRevision{
-						Host:    host,
-						Project: project,
-						Change:  fmt.Sprintf("%s~master~%s", project, changeIDFooter),
-						GitUrl:  "https://example.com/notimportant.git",
-						GitRef:  revision,
-					},
+	Convey("A request with all Gerrit details is valid", t, func() {
+		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+			Project: project,
+			Paths:   paths,
+			Source: &tricium.AnalyzeRequest_GerritRevision{
+				GerritRevision: &tricium.GerritRevision{
+					Host:    host,
+					Project: project,
+					Change:  changeID,
+					GitUrl:  url,
+					GitRef:  revision,
 				},
-			})
-			So(err, ShouldBeNil)
+			},
 		})
+		So(err, ShouldBeNil)
+	})
 
-		Convey("A request with an invalid Change ID format is invalid", func() {
-			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
-				Project: project,
-				Paths:   paths,
-				Source: &tricium.AnalyzeRequest_GerritRevision{
-					GerritRevision: &tricium.GerritRevision{
-						Host:    host,
-						Project: project,
-						Change:  "bogus change ID",
-						GitUrl:  "https://example.com/notimportant.git",
-						GitRef:  revision,
-					},
+	Convey("A request with an invalid Change ID format is invalid", t, func() {
+		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+			Project: project,
+			Paths:   paths,
+			Source: &tricium.AnalyzeRequest_GerritRevision{
+				GerritRevision: &tricium.GerritRevision{
+					Host:    host,
+					Project: project,
+					Change:  "bogus change ID",
+					GitUrl:  url,
+					GitRef:  revision,
 				},
-			})
-			So(err, ShouldNotBeNil)
+			},
 		})
+		So(err, ShouldNotBeNil)
+	})
 
+	Convey("A request for a Gerrit change with no git URL is invalid", t, func() {
+		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+			Project: project,
+			Paths:   paths,
+			Source: &tricium.AnalyzeRequest_GerritRevision{
+				GerritRevision: &tricium.GerritRevision{
+					Host:    host,
+					Project: project,
+					Change:  changeID,
+					GitRef:  revision,
+				},
+			},
+		})
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("A request for a git commit with all fields is valid", t, func() {
+		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+			Project: project,
+			Paths:   paths,
+			Source: &tricium.AnalyzeRequest_GitCommit{
+				GitCommit: &tricium.GitCommit{
+					Url: "https://example.com/repo.git",
+					Ref: "refs/heads/master",
+				},
+			},
+		})
+		So(err, ShouldBeNil)
+	})
+
+	Convey("A request for a git commit with no URL is invalid", t, func() {
+		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+			Project: project,
+			Paths:   paths,
+			Source: &tricium.AnalyzeRequest_GitCommit{
+				GitCommit: &tricium.GitCommit{
+					Ref: "refs/heads/master",
+				},
+			},
+		})
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("A request for a git commit with no ref is invalid", t, func() {
+		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+			Project: project,
+			Paths:   paths,
+			Source: &tricium.AnalyzeRequest_GitCommit{
+				GitCommit: &tricium.GitCommit{
+					Url: "https://example.com/repo.git",
+				},
+			},
+		})
+		So(err, ShouldNotBeNil)
 	})
 }
