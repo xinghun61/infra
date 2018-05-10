@@ -674,8 +674,9 @@ def _MakeFieldValueView(fd, config, precomp_view_info, users_by_id):
 
   issue_types = (labels_by_prefix.get('type', []) +
                  der_labels_by_prefix.get('type', []))
+  issue_types_lower = [it.lower() for it in issue_types]
 
-  return FieldValueView(fd, config, values, derived_values, issue_types)
+  return FieldValueView(fd, config, values, derived_values, issue_types_lower)
 
 
 def _MakeFieldValueItems(field_values, users_by_id):
