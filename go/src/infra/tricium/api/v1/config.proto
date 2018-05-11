@@ -28,23 +28,23 @@ message ServiceConfig {
   //
   // Specific recipe details for the worker will be added as flags at the
   // end of the argument list.
-  Cmd recipe_cmd = 4;
+  Cmd recipe_cmd = 5;
 
   // Base recipe packages used for workers implemented as recipes.
   //
   // These packages will be adjusted for the platform in question, by appending
   // platform name details to the end of the package name.
-  repeated CipdPackage recipe_packages = 5;
+  repeated CipdPackage recipe_packages = 6;
 
   // Swarming server to use for this service instance.
   //
   // This should be a full URL with no trailing slash.
-  string swarming_server = 6;
+  string swarming_server = 7;
 
   // Isolate server to use for this service instance.
   //
   // This should be a full URL with no trailing slash.
-  string isolate_server = 7;
+  string isolate_server = 8;
 }
 
 // Tricium project configuration.
@@ -81,15 +81,12 @@ message ProjectConfig {
 message RepoDetails {
   // Could be renamed to kind when the above kind is removed.
   oneof source {
-    GerritProject gerrit_project = 1;
-    GitRepo git_repo = 2;
+    GerritProject gerrit_project = 4;
+    GitRepo git_repo = 5;
   }
 
-
-  // TODO(crbug.com/824558): add disable_reporting and whitelisted_group
-
   // Whether to disable reporting results back.
-  bool disable_reporting = 3;
+  bool disable_reporting = 6;
 
   // Whitelisted groups.
   //
@@ -99,7 +96,7 @@ message RepoDetails {
   // Group names must be known to the Chrome infra auth service,
   // https://chrome-infra-auth.appspot.com. Contact a Chromium trooper
   // if you need to add or modify a group: g.co/bugatrooper.
-  repeated string whitelisted_group = 4;
+  repeated string whitelisted_group = 7;
 }
 
 // Specifies a Gerrit project and its corresponding git repo.
