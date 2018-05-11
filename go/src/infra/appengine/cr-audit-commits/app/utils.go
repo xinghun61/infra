@@ -34,7 +34,7 @@ const (
 	emailScope        = "https://www.googleapis.com/auth/userinfo.email"
 	failedBuildPrefix = "Sample Failed Build:"
 	failedStepPrefix  = "Sample Failed Step:"
-	flakyTestPrefix   = "Flaky test name:"
+	flakyTestPrefix   = "Sample Flaky Test:"
 	bugIDRegex        = "^(?i)Bug(:|=)(.*)"
 )
 

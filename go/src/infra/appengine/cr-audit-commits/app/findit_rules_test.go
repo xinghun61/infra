@@ -249,7 +249,7 @@ func TestFinditRules(t *testing.T) {
 			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
 				"https://ci/fake/build": fakeBuild,
 			}}
-			rc.CommitMessage = rc.CommitMessage + "\nFlaky test name: dummy_test"
+			rc.CommitMessage = rc.CommitMessage + "\nSample Flaky Test: dummy_test"
 			rr := CulpritInBuild(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleSkipped)
 
@@ -306,7 +306,7 @@ func TestFinditRules(t *testing.T) {
 			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
 				"https://ci/fake/build": fakeBuild,
 			}}
-			rc.CommitMessage = rc.CommitMessage + "\nSample Failed Step: dummy_step\nFlaky test name: dummy_test"
+			rc.CommitMessage = rc.CommitMessage + "\nSample Failed Step: dummy_step\nSample Flaky Test: dummy_test"
 			rr := FailedBuildIsAppropriateFailure(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
@@ -326,7 +326,7 @@ func TestFinditRules(t *testing.T) {
 			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
 				"https://ci/fake/build": fakeBuild,
 			}}
-			rc.CommitMessage = rc.CommitMessage + "\nSample Failed Step: dummy_step\nFlaky test name: dummy_test"
+			rc.CommitMessage = rc.CommitMessage + "\nSample Failed Step: dummy_step\nSample Flaky Test: dummy_test"
 			rr := FailedBuildIsAppropriateFailure(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "does not have an expected failure")
