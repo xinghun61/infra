@@ -135,7 +135,7 @@ def copy_wheel_to_local_cache():
 
 def push_wheelhouse():
   status = subprocess.call([
-      sys.executable, GSUTIL, '--force-version', '4.7', '-m', 'cp',
+      sys.executable, GSUTIL, '-m', 'cp',
       os.path.join(WHEELHOUSE, '*'), WHEELS_URL])
   if status:
     print('Failed to upload wheels, falling back to local cache')
