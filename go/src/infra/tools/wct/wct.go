@@ -4,6 +4,7 @@
 // To run wct tests using this app (from ../):
 // xvfb-run go run wct/wct.go -chromedriver=/usr/local/google/home/$USER/Downloads/chromedriver -base=frontend
 
+//go:generate go run gen/gen.go
 package main
 
 import (
@@ -80,7 +81,7 @@ func main() {
 	var err error
 
 	http.HandleFunc("/wct-monkeypatch.js", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./monkeypatch.js")
+		w.Write([]byte(monkeypatchJS))
 	})
 
 	http.HandleFunc("/result", func(w http.ResponseWriter, r *http.Request) {

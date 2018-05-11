@@ -1,5 +1,4 @@
 .PHONY: test
-WCT_PATH = ./node_modules/web-component-tester/bin/wct
 VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
 default: help
 
@@ -23,8 +22,8 @@ build: deps
 clean:
 	rm elements/som-app/som-app.vulcanized.html
 
-test: deps
-	xvfb-run -a $(WCT_PATH)
-
 wct: deps
-	xvfb-run go run ../../../tools/wct/wct.go -base=. -chrome=google-chrome
+	xvfb-run go run ../../../tools/wct/wct.go ../../../tools/wct/monkeypatch.go -base=. -chrome=google-chrome
+
+wct_debug: deps
+	go run ../../../tools/wct/wct.go ../../../tools/wct/monkeypatch.go -base=. -chrome=google-chrome -persist

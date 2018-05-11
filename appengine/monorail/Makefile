@@ -88,10 +88,10 @@ clean_vulcanized:
 	find . -name "*.vulcanized.*" -delete
 
 wct: deps
-	xvfb-run go run ../../go/src/infra/tools/wct/wct.go -base=. -prefix=elements/test/ -chrome=google-chrome
+	xvfb-run go run ../../go/src/infra/tools/wct/wct.go  ../../go/src/infra/tools/wct/monkeypatch.go -base=. -prefix=elements/test/ -chrome=google-chrome
 
 wct_debug: deps
-	go run ../../go/src/infra/tools/wct/wct.go -base=. -prefix=elements/test/ -chrome=google-chrome -persist -timeout 1000000
+	go run ../../go/src/infra/tools/wct/wct.go ../../go/src/infra/tools/wct/monkeypatch.go -base=. -prefix=elements/test/ -chrome=google-chrome -persist
 
 
 pylint:
