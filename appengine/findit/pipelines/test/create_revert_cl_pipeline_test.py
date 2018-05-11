@@ -101,7 +101,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
                                       buildbot.CreateBuildUrl('m', 'b', '123'),
                                       'step')
     mock_revert.assert_called_with(
-        reason, self.review_change_id, '20001', bug_id=None, footer=None)
+        reason, self.review_change_id, '20001', bug_id=None)
 
   @mock.patch.object(
       culprit_action, '_CanCreateRevertForCulprit', return_value=False)

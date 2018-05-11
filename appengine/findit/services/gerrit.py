@@ -186,8 +186,7 @@ def _GenerateRevertReasonForFailure(build_id, commit_position, revision,
                                     sample_step_name)
 
 
-def _GenerateRevertReasonForFlake(build_id, commit_position, revision, culprit,
-                                  sample_step_name):
+def _GenerateRevertReasonForFlake(build_id, commit_position, revision, culprit):
   analysis = ndb.Key(urlsafe=culprit.flake_analysis_urlsafe_keys[-1]).get()
   assert analysis
 
@@ -199,20 +198,13 @@ def _GenerateRevertReasonForFlake(build_id, commit_position, revision, culprit,
       https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key=%s\n
       Sample Failed Build: %s\n
       Sample Failed Step: %s\n
-      Sample Failed test: %s""") % (commit_position or revision,
-                                    culprit.key.urlsafe(), sample_build_url,
-                                    sample_step_name, analysis.test_name)
-
-
-def _GetFooterForCulprit(culprit):
-  if type(culprit) is not FlakeCulprit:
-    return None
-
-  analysis = ndb.Key(urlsafe=culprit.flake_analysis_urlsafe_keys[-1]).get()
-  assert analysis
-
-  return 'Flaky step name: {step_name}\nFlaky test name: {test_name}'.format(
-      step_name=analysis.step_name, test_name=analysis.test_name)
+      Sample Flaky Test: %s""") % (
+      commit_position or revision,
+      culprit.key.urlsafe(),
+      sample_build_url,
+      analysis.original_step_name,
+      analysis.original_test_name,
+  )
 
 
 def _GetBugIdForCulprit(culprit):
@@ -307,19 +299,16 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
   if not revert_change_id:
     if type(culprit) is FlakeCulprit:
       revert_reason = _GenerateRevertReasonForFlake(
-          build_id, culprit_commit_position, revision, culprit,
-          sample_step_name)
+          build_id, culprit_commit_position, revision, culprit)
     else:
       revert_reason = _GenerateRevertReasonForFailure(
           build_id, culprit_commit_position, revision, culprit,
           sample_step_name)
-    footer = _GetFooterForCulprit(culprit)
     bug_id = _GetBugIdForCulprit(culprit)
     revert_change_id = codereview.CreateRevert(
         revert_reason,
         culprit_change_id,
         culprit_cl_info.GetPatchsetIdByRevision(revision),
-        footer=footer,
         bug_id=bug_id)
 
     if not revert_change_id:  # pragma: no cover

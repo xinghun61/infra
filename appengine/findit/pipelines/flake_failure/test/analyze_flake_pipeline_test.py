@@ -87,13 +87,24 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulprit(
       self, mocked_test_location, mocked_confidence, mocked_culprit,
       mocked_revision):
-    build_id = 'm/b/None'
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    build_id = 'm/b/123'
+    step_name = 's'
+    test_name = 't'
     culprit_commit_position = 999
 
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.data_points = [
         DataPoint.Create(commit_position=culprit_commit_position)
     ]
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
+    analysis.original_step_name = step_name
+    analysis.original_test_name = test_name
     analysis.Save()
 
     culprit_revision = 'r999'

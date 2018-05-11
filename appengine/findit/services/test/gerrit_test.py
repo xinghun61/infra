@@ -116,7 +116,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
                                       buildbot.CreateBuildUrl('m', 'b', '1'),
                                       sample_failed_step)
     mock_gerrit.assert_called_once_with(
-        reason, self.review_change_id, '20001', bug_id=None, footer=None)
+        reason, self.review_change_id, '20001', bug_id=None)
 
     culprit_link = (
         'https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
@@ -172,7 +172,6 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
-    sample_failed_step = 'compile'
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
@@ -183,10 +182,17 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     master_name = 'm'
     builder_name = 'b'
-    build_number = '1'
+    build_number = 1
+    step_name = 's'
+    sample_failed_step = step_name
     test_name = 't'
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, 's', test_name)
+                                          build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
+    analysis.original_step_name = step_name
+    analysis.original_test_name = test_name
     analysis.bug_id = 1
     analysis.put()
 
@@ -195,7 +201,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
-                                         failure_type.COMPILE,
+                                         failure_type.FLAKY_TEST,
                                          sample_failed_step)
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
@@ -210,16 +216,12 @@ class GerritTest(wf_testcase.WaterfallTestCase):
       https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key=%s\n
       Sample Failed Build: %s\n
       Sample Failed Step: %s\n
-      Sample Failed test: %s""") % (commit_position or revision,
-                                    culprit.key.urlsafe(),
-                                    buildbot.CreateBuildUrl('m', 'b', '1'),
-                                    sample_failed_step, test_name)
+      Sample Flaky Test: %s""") % (commit_position or revision,
+                                   culprit.key.urlsafe(),
+                                   buildbot.CreateBuildUrl('m', 'b', '1'),
+                                   sample_failed_step, test_name)
     mock_gerrit.assert_called_once_with(
-        reason,
-        self.review_change_id,
-        '20001',
-        bug_id=1,
-        footer='Flaky step name: s\nFlaky test name: t')
+        reason, self.review_change_id, '20001', bug_id=1)
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)

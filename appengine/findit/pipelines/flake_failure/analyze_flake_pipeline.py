@@ -135,9 +135,9 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
           culprit_data_point.GetSwarmingTaskId(), analysis.test_name)
 
       # Data needed for reverts.
-      build_id = build_util.CreateBuildId(analysis.master_name,
-                                          analysis.builder_name,
-                                          culprit_data_point.build_number)
+      build_id = build_util.CreateBuildId(analysis.original_master_name,
+                                          analysis.original_builder_name,
+                                          analysis.original_build_number)
 
       # Log a Monorail bug and notify the culprit review about findings.
       with pipeline.InOrder():
