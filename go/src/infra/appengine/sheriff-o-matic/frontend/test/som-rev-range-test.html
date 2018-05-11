@@ -32,11 +32,30 @@
         repo: "chromium",
       };
 
-      flush( () => {
-        assert.notEqual(-1,
-            element.shadowRoot.querySelector('div').textContent.trim().indexOf('398901 - 398946'));
-        assert.equal(false, element.$.loadingMessage.hidden);
-        assert.equal(false, element.$.collapse.opened);
+      flush(() => {
+        assert(element.shadowRoot.querySelector('div').textContent.includes('398901 - 398946')) 
+        assert.isFalse(element.$.loadingMessage.hidden);
+        assert.isFalse(element.$.collapse.opened);
+        done();
+      });
+    });
+
+    test('out-of-order commit positions', function(done) {
+      element.range = {
+        positions: [
+          "refs/heads/master@{#398913}",
+          "refs/heads/master@{#398921}",
+          "refs/heads/master@{#398946}",
+          "refs/heads/master@{#398942}",
+          "refs/heads/master@{#398901}"
+        ],
+        repo: "chromium",
+      };
+
+      flush(() => {
+        assert(element.shadowRoot.querySelector('div').textContent.includes('398901 - 398946')) 
+        assert.isFalse(element.$.loadingMessage.hidden);
+        assert.isFalse(element.$.collapse.opened);
         done();
       });
     });

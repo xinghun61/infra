@@ -38,6 +38,9 @@ class SomRevRange extends Polymer.Element {
   }
 
   _fetchData() {
+    if (this.range && this.range.positions) {
+      this.range.positions.sort();
+    }
     let start = this._regressionStart(this.range);
     let end = this._regressionEnd(this.range);
     let url = `/api/v1/revrange/${start}/${end}`;
@@ -103,6 +106,7 @@ class SomRevRange extends Polymer.Element {
     if (!range) {
       return '';
     }
+    range.positions.sort();
 
     let start = this._regressionStart(range);
     let end = this._regressionEnd(range);
