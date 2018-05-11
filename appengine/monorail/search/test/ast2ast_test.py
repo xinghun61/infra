@@ -609,6 +609,20 @@ class AST2ASTTest(unittest.TestCase):
     new_cond = ast2ast._PreprocessCustomCond(self.cnxn, cond, self.services)
     self.assertEqual(cond, new_cond)
 
+  def testPreprocessCustomCond_ApprovalUser(self):
+    fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='UXReview',
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.TEXT_HAS, [fd], ['a@example.com'], [],
+        key_suffix=query2ast.APPROVER_SUFFIX)
+    new_cond = ast2ast._PreprocessCustomCond(self.cnxn, cond, self.services)
+    self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
+    self.assertEqual(cond.field_defs, new_cond.field_defs)
+    self.assertEqual([111L], new_cond.int_values)
+    self.assertEqual([], new_cond.str_values)
+    self.assertEqual(query2ast.APPROVER_SUFFIX, new_cond.key_suffix)
+
   def testPreprocessCond_NoChange(self):
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.TEXT_HAS, [ANY_FIELD], ['foo'], [])
     self.assertEqual(

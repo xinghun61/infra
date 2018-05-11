@@ -150,9 +150,16 @@ _DATE_FIELD_SUFFIX_TO_OP = {
     '-before': '<',
 }
 
+SET_BY_SUFFIX = '-by'
+SET_ON_SUFFIX = '-on'
+APPROVER_SUFFIX = '-approver'
+STATUS_SUFFIX = '-status'
+
 _APPROVAL_SUFFIXES = (
-    '-approver',
-    '-status',
+    SET_BY_SUFFIX,
+    SET_ON_SUFFIX,
+    APPROVER_SUFFIX,
+    STATUS_SUFFIX,
 )
 
 BUILTIN_ISSUE_FIELDS = {
