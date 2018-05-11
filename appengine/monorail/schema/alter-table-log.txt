@@ -1499,4 +1499,6 @@ ALTER TABLE Issue2FieldValue ADD FOREIGN KEY (phase_id) REFERENCES IssuePhaseDef
 ALTER TABLE FieldDef ADD COLUMN is_phase_field BOOLEAN DEFAULT FALSE;
 
 ===================================================================
-TODO(jojwang): monorail:3774, Drop Issue2Phase table
+2018-5-11: Rename Issue2Phase table to IssuePhaseDef: Part Two, drop Issue2Phase
+
+DROP TABLE Issue2Phase;
