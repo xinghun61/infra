@@ -294,7 +294,8 @@ def GetBuildProperty(properties, property_name):
 
 def GetBuildStartTime(build_data_json):
   times = build_data_json.get('times')
-  if not times:
+  if not times or not times[0]:
+    # For a build with infra failure, the start time might be set to None.
     return None
   return datetime.utcfromtimestamp(times[0])
 
@@ -338,9 +339,10 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   build_info.parent_buildername = parent_buildername
   build_info.parent_mastername = parent_mastername
 
-  changes = data_json.get('sourceStamp', {}).get('changes') or []
+  changes = (data_json.get('sourceStamp') or {}).get('changes') or []
   for change in changes:
-    if change['revision'] not in build_info.blame_list:
+    if (change.get('revision') and
+        change['revision'] not in build_info.blame_list):
       build_info.blame_list.append(change['revision'])
 
   # Step categories:
@@ -349,11 +351,14 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   # 3. A step is not passed if it is not in SUCCESS or WARNINGS status. This
   #    category includes steps in statuses: FAILED, SKIPPED, EXCEPTION, RETRY,
   #    CANCELLED, etc.
-  steps = data_json.get('steps', [])
+  steps = data_json.get('steps') or []
   for step_data in steps:
-    step_name = step_data['name']
+    step_name = step_data.get('name')
 
-    if not step_data.get('isFinished', False):
+    if not step_name:
+      continue
+
+    if not step_data.get('isFinished'):
       # Skip steps that haven't started yet or are still running.
       continue
 
