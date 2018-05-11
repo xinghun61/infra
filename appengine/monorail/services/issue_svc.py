@@ -532,7 +532,7 @@ class IssueService(object):
       self, cnxn, services, project_id, summary, status,
       owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
       marked_description, blocked_on=None, blocking=None, attachments=None,
-      timestamp=None, index_now=True, phases=None):
+      timestamp=None, index_now=False, phases=None):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -672,6 +672,8 @@ class IssueService(object):
     if index_now:
       tracker_fulltext.IndexIssues(
           cnxn, [issue], services.user, self, self._config_service)
+    else:
+      self.EnqueueIssuesForIndexing(cnxn, [issue.issue_id])
 
     return issue.local_id, comment
 
@@ -1257,6 +1259,8 @@ class IssueService(object):
     if index_now:
       tracker_fulltext.IndexIssues(
           cnxn, [issue], services.user_service, self, self._config_service)
+    else:
+      self.EnqueueIssuesForIndexing(cnxn, [issue.issue_id])
 
     return amendments, comment_pb
 
@@ -1270,7 +1274,7 @@ class IssueService(object):
       self, cnxn, services, reporter_id, project_id,
       local_id, summary, status, owner_id, cc_ids, labels, field_values,
       component_ids, blocked_on, blocking, dangling_blocked_on_refs,
-      dangling_blocking_refs, merged_into, index_now=True,
+      dangling_blocking_refs, merged_into, index_now=False,
       page_gen_ts=None, comment=None, inbound_message=None, attachments=None,
       kept_attachments=None, is_description=False, timestamp=None):
     """Update the issue in the database and return info for notifications.
@@ -1604,6 +1608,8 @@ class IssueService(object):
     if index_now:
       tracker_fulltext.IndexIssues(
           cnxn, [issue], services.user, self, self._config_service)
+    else:
+      self.EnqueueIssuesForIndexing(cnxn, [issue.issue_id])
 
     if is_spam:
       # Soft-deletes have to have a user ID, so spam comments are
@@ -2366,7 +2372,7 @@ class IssueService(object):
 
   def SoftDeleteComment(
       self, cnxn, issue, issue_comment, deleted_by_user_id,
-      user_service, delete=True, reindex=True, is_spam=False):
+      user_service, delete=True, reindex=False, is_spam=False):
     """Mark comment as un/deleted, which shows/hides it from average users."""
     # Update number of attachments
     attachments = 0
@@ -2395,6 +2401,8 @@ class IssueService(object):
     if reindex:
       tracker_fulltext.IndexIssues(
           cnxn, [issue], user_service, self, self._config_service)
+    else:
+      self.EnqueueIssuesForIndexing(cnxn, [issue.issue_id])
 
   ### Approvals
 
@@ -2511,7 +2519,7 @@ class IssueService(object):
 
   def SoftDeleteAttachment(
       self, cnxn, project_id, local_id, seq_num, attach_id, user_service,
-      delete=True, index_now=True):
+      delete=True, index_now=False):
     """Mark attachment as un/deleted, which shows/hides it from avg users."""
     issue = self.GetIssueByLocalID(cnxn, project_id, local_id, use_cache=False)
     all_comments = self.GetCommentsForIssue(cnxn, issue.issue_id)
@@ -2552,6 +2560,8 @@ class IssueService(object):
     if index_now:
       tracker_fulltext.IndexIssues(
           cnxn, [issue], user_service, self, self._config_service)
+    else:
+      self.EnqueueIssuesForIndexing(cnxn, [issue.issue_id])
 
   ### Reindex queue
 

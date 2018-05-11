@@ -698,7 +698,7 @@ class IssueDetail(issuepeek.IssuePeek):
             mr.auth.user_id, mr.project_id, mr.local_id, summary, status,
             owner_id, cc_ids, labels, field_values, component_ids,
             blocked_on_iids, blocking_iids, dangling_blocked_on_refs,
-            dangling_blocking_refs, merge_into_iid,
+            dangling_blocking_refs, merge_into_iid, index_now=False,
             page_gen_ts=page_generation_time, comment=parsed.comment,
             is_description=is_description, attachments=parsed.attachments,
             kept_attachments=parsed.kept_attachments if is_description else [])

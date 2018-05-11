@@ -388,6 +388,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), False, 1.0, False)
     self.SetUpUpdateIssuesModified(set())
+    self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
     actual_local_id, _ = self.services.issue.CreateIssue(
@@ -408,6 +409,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), False, 1.0, False)
     self.SetUpUpdateIssuesModified(set(), modified_timestamp=self.now)
+    self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
     actual_local_id, _ = self.services.issue.CreateIssue(
@@ -434,6 +436,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), True, 1.0, True)
     self.SetUpUpdateIssuesModified(set())
+    self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
     actual_local_id, _ = self.services.issue.CreateIssue(
@@ -455,6 +458,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), True, 1.0, False)
     self.SetUpUpdateIssuesModified(set())
+    self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
     actual_local_id, _ = self.services.issue.CreateIssue(
@@ -921,6 +925,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue._UpdateIssuesModified(
         self.cnxn, {issue.issue_id, target_issue.issue_id},
         modified_timestamp=self.now, invalidate=True)
+    self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
     delta = tracker_pb2.IssueDelta(merged_into=target_issue.issue_id)
@@ -957,6 +962,7 @@ class IssueServiceTest(unittest.TestCase):
        None, False, 1.0, False)
     self.services.issue._UpdateIssuesModified(
         self.cnxn, set(), modified_timestamp=self.now)
+    self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
     self.services.issue.ApplyIssueComment(self.cnxn, self.services,
@@ -1016,6 +1022,7 @@ class IssueServiceTest(unittest.TestCase):
                 default_project_name=issue.project_name)])
     self.services.issue._UpdateIssuesModified(
         self.cnxn, {blockedon_issue.issue_id}, modified_timestamp=self.now)
+    self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
     self.services.issue.ApplyIssueComment(self.cnxn, self.services,
@@ -1607,6 +1614,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateComment(
         comment.id, delta={'deleted_by': 222L, 'is_spam': False})
     self.SetUpUpdateIssues(given_delta={'attachment_count': 0})
+    self.SetUpEnqueueIssuesForIndexing([78901])
     self.mox.ReplayAll()
     self.services.issue.SoftDeleteComment(
         self.cnxn, issue_1, comment, 222L, self.services.user)
@@ -1706,6 +1714,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpGetComments([78901])
     self.SetUpUpdateAttachment(1234, {'deleted': True})
     self.SetUpUpdateIssues(given_delta={'attachment_count': 0})
+    self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
     self.services.issue.SoftDeleteAttachment(

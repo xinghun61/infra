@@ -342,8 +342,6 @@ class WorkEnv(object):
       self.services.project.UpdateRecentActivity(self.mr.cnxn, project_id)
       new_issue = self.services.issue.GetIssueByLocalID(
           self.mr.cnxn, project_id, new_local_id)
-      self.services.issue.EnqueueIssuesForIndexing(self.mr.cnxn,
-          [new_issue.issue_id])
 
     return new_issue, comment
 
@@ -487,8 +485,6 @@ class WorkEnv(object):
       # TODO(jrobbins): side effects of setting merged_into.
       self.services.project.UpdateRecentActivity(
           self.mr.cnxn, issue.project_id)
-      self.services.issue.EnqueueIssuesForIndexing(self.mr.cnxn,
-          [issue.issue_id])
 
     with self.mr.profiler.Phase('Generating notifications'):
       hostport = framework_helpers.GetHostPort()
