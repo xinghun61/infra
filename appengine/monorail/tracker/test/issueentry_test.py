@@ -10,11 +10,13 @@ import time
 import unittest
 
 from google.appengine.ext import testbed
+from mock import Mock, patch
 import webapp2
 
 from framework import framework_views
 from framework import permissions
 from services import service_manager
+from services import template_svc
 from testing import fake
 from testing import testing_helpers
 from tracker import issueentry
@@ -32,6 +34,7 @@ class IssueEntryTest(unittest.TestCase):
         issue=fake.IssueService(),
         user=fake.UserService(),
         project=fake.ProjectService(),
+        template=Mock(spec=template_svc.TemplateService),
         features=fake.FeaturesService())
     self.project = self.services.project.TestAddProject('proj', project_id=987)
     request = webapp2.Request.blank('/p/proj/issues/entry')
@@ -64,6 +67,8 @@ class IssueEntryTest(unittest.TestCase):
         is_private=False)
 
     self.mox = mox.Mox()
+    self.services.template.GetProjectTemplates = Mock(
+        return_value=testing_helpers.DefaultTemplates())
 
   def tearDown(self):
     self.testbed.deactivate()
@@ -151,7 +156,9 @@ class IssueEntryTest(unittest.TestCase):
     self.mox.ReplayAll()
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     self.services.config.StoreConfig(mr.cnxn, config)
-    config.templates[1].summary_must_be_edited = False
+    templates = testing_helpers.DefaultTemplates()
+    templates[1].summary_must_be_edited = False
+    self.services.template.GetProjectTemplates.return_value = templates
 
     page_data = self.servlet.GatherPageData(mr)
     self.mox.VerifyAll()
@@ -224,8 +231,7 @@ class IssueEntryTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry')
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    template = config.templates[0]
+    template = testing_helpers.DefaultTemplates()[0]
     post_data = fake.PostData(
         summary=['Nya nya I modified the summary'],
         comment=[template.content],
@@ -246,14 +252,15 @@ class IssueEntryTest(unittest.TestCase):
     self.assertIsNone(url)
 
   def test_SelectTemplate(self):
+    templates = testing_helpers.DefaultTemplates()
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry')
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
-    templ = issueentry._SelectTemplate(None, config, False)
+    templ = issueentry._SelectTemplate(None, config, False, templates)
     self.assertEquals('Defect report from user', templ.name)
 
-    templ = issueentry._SelectTemplate(None, config, True)
+    templ = issueentry._SelectTemplate(None, config, True, templates)
     self.assertEquals('Defect report from developer', templ.name)
 
   def testProcessFormData_RejectNonexistentHotlist(self):

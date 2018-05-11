@@ -25,7 +25,7 @@ from tracker import tracker_bizobj
 from tracker import tracker_helpers
 
 
-def convert_project(project, config, role):
+def convert_project(project, config, role, templates):
   """Convert Monorail Project PB to API ProjectWrapper PB."""
 
   return api_pb2_v1.ProjectWrapper(
@@ -36,10 +36,10 @@ def convert_project(project, config, role):
       summary=project.summary,
       description=project.description,
       role=role,
-      issuesConfig=convert_project_config(config))
+      issuesConfig=convert_project_config(config, templates))
 
 
-def convert_project_config(config):
+def convert_project_config(config, templates):
   """Convert Monorail ProjectIssueConfig PB to API ProjectIssueConfig PB."""
 
   return api_pb2_v1.ProjectIssueConfig(
@@ -49,7 +49,7 @@ def convert_project_config(config):
       defaultSorting=config.default_sort_spec.split(),
       statuses=[convert_status(s) for s in config.well_known_statuses],
       labels=[convert_label(l) for l in config.well_known_labels],
-      prompts=[convert_template(t) for t in config.templates],
+      prompts=[convert_template(t) for t in templates],
       defaultPromptForMembers=config.default_template_for_developers,
       defaultPromptForNonMembers=config.default_template_for_users)
 

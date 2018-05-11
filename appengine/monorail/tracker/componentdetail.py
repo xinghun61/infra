@@ -87,7 +87,7 @@ class ComponentDetail(servlet.Servlet):
 
     subcomponents = tracker_bizobj.FindDescendantComponents(
         config, component_def)
-    templates = self.services.config.TemplatesWithComponent(
+    templates = self.services.template.TemplatesWithComponent(
         mr.cnxn, component_def.component_id, config)
     allow_delete = allow_edit and not subcomponents and not templates
 

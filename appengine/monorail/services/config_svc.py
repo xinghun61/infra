@@ -27,14 +27,7 @@ from tracker import tracker_bizobj
 from tracker import tracker_constants
 
 
-TEMPLATE_TABLE_NAME = 'Template'
-TEMPLATE2LABEL_TABLE_NAME = 'Template2Label'
-TEMPLATE2ADMIN_TABLE_NAME = 'Template2Admin'
-TEMPLATE2COMPONENT_TABLE_NAME = 'Template2Component'
-TEMPLATE2FIELDVALUE_TABLE_NAME = 'Template2FieldValue'
 PROJECTISSUECONFIG_TABLE_NAME = 'ProjectIssueConfig'
-TEMPLATE2PHASE_TABLE_NAME = 'Template2Phase'
-TEMPLATE2APPROVALVALUE_TABLE_NAME = 'Template2ApprovalValue'
 LABELDEF_TABLE_NAME = 'LabelDef'
 FIELDDEF_TABLE_NAME = 'FieldDef'
 FIELDDEF2ADMIN_TABLE_NAME = 'FieldDef2Admin'
@@ -46,19 +39,6 @@ STATUSDEF_TABLE_NAME = 'StatusDef'
 APPROVALDEF2APPROVER_TABLE_NAME = 'ApprovalDef2Approver'
 APPROVALDEF2SURVEY_TABLE_NAME = 'ApprovalDef2Survey'
 
-TEMPLATE_COLS = [
-    'id', 'project_id', 'name', 'content', 'summary', 'summary_must_be_edited',
-    'owner_id', 'status', 'members_only', 'owner_defaults_to_member',
-    'component_required']
-TEMPLATE2LABEL_COLS = ['template_id', 'label']
-TEMPLATE2COMPONENT_COLS = ['template_id', 'component_id']
-TEMPLATE2ADMIN_COLS = ['template_id', 'admin_id']
-TEMPLATE2FIELDVALUE_COLS = [
-    'template_id', 'field_id', 'int_value', 'str_value', 'user_id',
-    'date_value', 'url_value']
-TEMPLATE2PHASE_COLS = ['id', 'template_id', 'name', 'rank']
-TEMPLATE2APPROVALVALUE_COLS = [
-    'approval_id', 'template_id', 'phase_id', 'status']
 PROJECTISSUECONFIG_COLS = [
     'project_id', 'statuses_offer_merge', 'exclusive_label_prefixes',
     'default_template_for_developers', 'default_template_for_users',
@@ -280,26 +260,6 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
 
     return config
 
-  def _UnpackTemplate(self, template_row):
-    """Partially construct a template object using info from a DB row."""
-    (template_id, project_id, name, content, summary,
-     summary_must_be_edited, owner_id, status,
-     members_only, owner_defaults_to_member, component_required) = template_row
-    template = tracker_pb2.TemplateDef()
-    template.template_id = template_id
-    template.name = name
-    template.content = content
-    template.summary = summary
-    template.summary_must_be_edited = bool(
-        summary_must_be_edited)
-    template.owner_id = owner_id or 0
-    template.status = status
-    template.members_only = bool(members_only)
-    template.owner_defaults_to_member = bool(owner_defaults_to_member)
-    template.component_required = bool(component_required)
-
-    return template, project_id
-
   def _UnpackFieldDef(self, fielddef_row):
     """Partially construct a FieldDef object using info from a DB row."""
     (field_id, project_id, _rank, field_name, field_type,
@@ -343,72 +303,18 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     return cd
 
   def _DeserializeIssueConfigs(
-      self, config_rows, template_rows, template2label_rows,
-      template2component_rows, template2admin_rows, template2fieldvalue_rows,
-      template2phase_rows, template2approvalvalue_rows,
-      statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
-      componentdef_rows, component2admin_rows, component2cc_rows,
-      component2label_rows, approvaldef2approver_rows, approvaldef2survey_rows):
+      self, config_rows, statusdef_rows, labeldef_rows, fielddef_rows,
+      fielddef2admin_rows, componentdef_rows, component2admin_rows,
+      component2cc_rows, component2label_rows, approvaldef2approver_rows,
+      approvaldef2survey_rows):
     """Convert the given row tuples into a dict of ProjectIssueConfig PBs."""
     result_dict = {}
-    template_dict = {}
     fielddef_dict = {}
     approvaldef_dict = {}
 
     for config_row in config_rows:
       config = self._UnpackProjectIssueConfig(config_row)
       result_dict[config.project_id] = config
-
-    for template_row in template_rows:
-      template, project_id = self._UnpackTemplate(template_row)
-      if project_id in result_dict:
-        result_dict[project_id].templates.append(template)
-        template_dict[template.template_id] = template
-
-    for template2label_row in template2label_rows:
-      template_id, label = template2label_row
-      template = template_dict.get(template_id)
-      if template:
-        template.labels.append(label)
-
-    for template2component_row in template2component_rows:
-      template_id, component_id = template2component_row
-      template = template_dict.get(template_id)
-      if template:
-        template.component_ids.append(component_id)
-
-    for template2admin_row in template2admin_rows:
-      template_id, admin_id = template2admin_row
-      template = template_dict.get(template_id)
-      if template:
-        template.admin_ids.append(admin_id)
-
-    for fv_row in template2fieldvalue_rows:
-      (template_id, field_id, int_value, str_value, user_id,
-       date_value, url_value) = fv_row
-      fv = tracker_bizobj.MakeFieldValue(
-          field_id, int_value, str_value, user_id, date_value, url_value, False)
-      template = template_dict.get(template_id)
-      if template:
-        template.field_values.append(fv)
-
-    # TODO(jojwang): monorail:3241, deserialize approvals w/out phases
-    phase_to_av_dict = collections.defaultdict(list)
-    for av_row in template2approvalvalue_rows:
-      (approval_id, _template_id, phase_id, status) = av_row
-      approval_value = tracker_pb2.ApprovalValue(
-          approval_id=approval_id,
-          status=tracker_pb2.ApprovalStatus(status.upper()))
-      phase_to_av_dict[phase_id].append(approval_value)
-
-    for phase_row in template2phase_rows:
-      (phase_id, template_id, name, rank) = phase_row
-      phase = tracker_pb2.Phase(
-          phase_id=phase_id, name=name, rank=rank)
-      phase.approval_values = phase_to_av_dict[phase_id]
-      template = template_dict.get(template_id)
-      if template:
-        template.phases.append(phase)
 
     for statusdef_row in statusdef_rows:
       (_, project_id, _rank, status,
@@ -471,25 +377,6 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     """On RAM and memcache miss, hit the database."""
     config_rows = self.config_service.projectissueconfig_tbl.Select(
         cnxn, cols=PROJECTISSUECONFIG_COLS, project_id=project_ids)
-
-    template_rows = self.config_service.template_tbl.Select(
-        cnxn, cols=TEMPLATE_COLS, project_id=project_ids,
-        order_by=[('name', [])])
-    template_ids = [row[0] for row in template_rows]
-    template2label_rows = self.config_service.template2label_tbl.Select(
-        cnxn, cols=TEMPLATE2LABEL_COLS, template_id=template_ids)
-    template2component_rows = self.config_service.template2component_tbl.Select(
-        cnxn, cols=TEMPLATE2COMPONENT_COLS, template_id=template_ids)
-    template2admin_rows = self.config_service.template2admin_tbl.Select(
-        cnxn, cols=TEMPLATE2ADMIN_COLS, template_id=template_ids)
-    template2fv_rows = self.config_service.template2fieldvalue_tbl.Select(
-        cnxn, cols=TEMPLATE2FIELDVALUE_COLS, template_id=template_ids)
-    logging.info('t2fv is %r', template2fv_rows)
-    template2phase_rows = self.config_service.template2phase_tbl.Select(
-        cnxn, cols=TEMPLATE2PHASE_COLS, template_id=template_ids)
-    template2av_rows = self.config_service.template2approvalvalue_tbl.Select(
-        cnxn, cols=TEMPLATE2APPROVALVALUE_COLS, template_id=template_ids)
-
     statusdef_rows = self.config_service.statusdef_tbl.Select(
         cnxn, cols=STATUSDEF_COLS, project_id=project_ids,
         where=[('rank IS NOT NULL', [])], order_by=[('rank', [])])
@@ -524,12 +411,9 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
         cnxn, cols=COMPONENT2LABEL_COLS, component_id=component_ids)
 
     retrieved_dict = self._DeserializeIssueConfigs(
-        config_rows, template_rows, template2label_rows,
-        template2component_rows, template2admin_rows,
-        template2fv_rows, template2phase_rows, template2av_rows,
-        statusdef_rows, labeldef_rows, fielddef_rows, fielddef2admin_rows,
-        componentdef_rows, component2admin_rows, component2cc_rows,
-        component2label_rows, approver_rows, survey_rows)
+        config_rows, statusdef_rows, labeldef_rows, fielddef_rows,
+        fielddef2admin_rows, componentdef_rows, component2admin_rows,
+        component2cc_rows, component2label_rows, approver_rows, survey_rows)
     return retrieved_dict
 
   def FetchItems(self, cnxn, keys):
@@ -555,17 +439,6 @@ class ConfigService(object):
     Args:
       cache_manager: manages local caches with distributed invalidation.
     """
-    self.template_tbl = sql.SQLTableManager(TEMPLATE_TABLE_NAME)
-    self.template2label_tbl = sql.SQLTableManager(TEMPLATE2LABEL_TABLE_NAME)
-    self.template2component_tbl = sql.SQLTableManager(
-        TEMPLATE2COMPONENT_TABLE_NAME)
-    self.template2admin_tbl = sql.SQLTableManager(TEMPLATE2ADMIN_TABLE_NAME)
-    self.template2fieldvalue_tbl = sql.SQLTableManager(
-        TEMPLATE2FIELDVALUE_TABLE_NAME)
-    self.template2phase_tbl = sql.SQLTableManager(
-        TEMPLATE2PHASE_TABLE_NAME)
-    self.template2approvalvalue_tbl = sql.SQLTableManager(
-        TEMPLATE2APPROVALVALUE_TABLE_NAME)
     self.projectissueconfig_tbl = sql.SQLTableManager(
         PROJECTISSUECONFIG_TABLE_NAME)
     self.statusdef_tbl = sql.SQLTableManager(STATUSDEF_TABLE_NAME)
@@ -921,19 +794,6 @@ class ConfigService(object):
         cnxn, [project_id], use_cache=use_cache)
     return config_dict[project_id]
 
-  def TemplatesWithComponent(self, cnxn, component_id, config):
-    """Returns all templates with the specified component.
-
-    Args:
-      cnxn: connection to SQL database.
-      component_id: int component id.
-      config: ProjectIssueConfig instance.
-    """
-    template2component_rows = self.template2component_tbl.Select(
-        cnxn, cols=['template_id'], component_id=component_id)
-    template_ids = [r[0] for r in template2component_rows]
-    return [t for t in config.templates if t.template_id in template_ids]
-
   def StoreConfig(self, cnxn, config):
     """Update an issue config in the database.
 
@@ -961,106 +821,10 @@ class ConfigService(object):
         custom_issue_entry_url=config.custom_issue_entry_url,
         commit=False)
 
-    self._UpdateTemplates(cnxn, config)
     self._UpdateWellKnownLabels(cnxn, config)
     self._UpdateWellKnownStatuses(cnxn, config)
     self._UpdateApprovals(cnxn, config)
     cnxn.Commit()
-
-  def _UpdateTemplates(self, cnxn, config):
-    """Update the templates part of a project's issue configuration.
-
-    Args:
-      cnxn: connection to SQL database.
-      config: ProjectIssueConfig PB to update in the DB.
-    """
-    # Delete dependent rows of existing templates.  It is all rewritten below.
-    template_id_rows = self.template_tbl.Select(
-      cnxn, cols=['id'], project_id=config.project_id)
-    template_ids = [row[0] for row in template_id_rows]
-    self.template2label_tbl.Delete(
-      cnxn, template_id=template_ids, commit=False)
-    self.template2component_tbl.Delete(
-      cnxn, template_id=template_ids, commit=False)
-    self.template2admin_tbl.Delete(
-      cnxn, template_id=template_ids, commit=False)
-    self.template2fieldvalue_tbl.Delete(
-      cnxn, template_id=template_ids, commit=False)
-    self.template2approvalvalue_tbl.Delete(
-        cnxn, template_id=template_ids, commit=False)
-    self.template2phase_tbl.Delete(
-        cnxn, template_id=template_ids, commit=False)
-    self.template_tbl.Delete(
-      cnxn, project_id=config.project_id, commit=False)
-
-    # Now, update existing ones and add new ones.
-    template_rows = []
-    for template in config.templates:
-      row = (template.template_id,
-             config.project_id,
-             template.name,
-             template.content,
-             template.summary,
-             template.summary_must_be_edited,
-             template.owner_id or None,
-             template.status,
-             template.members_only,
-             template.owner_defaults_to_member,
-             template.component_required)
-      template_rows.append(row)
-
-    # Maybe first insert ones that have a template_id and then insert new ones
-    # separately.
-    generated_ids = self.template_tbl.InsertRows(
-        cnxn, TEMPLATE_COLS, template_rows, replace=True, commit=False,
-        return_generated_ids=True)
-    logging.info('generated_ids is %r', generated_ids)
-    for template in config.templates:
-      if not template.template_id:
-        # Get IDs from the back of the list because the original template IDs
-        # have already been added to template_rows.
-        template.template_id = generated_ids.pop()
-
-    template2label_rows = []
-    template2component_rows = []
-    template2admin_rows = []
-    template2fieldvalue_rows = []
-    template2phase_rows = []
-    template2approvalvalue_rows = []
-    for template in config.templates:
-      for label in template.labels:
-        if label:
-          template2label_rows.append((template.template_id, label))
-      for component_id in template.component_ids:
-        template2component_rows.append((template.template_id, component_id))
-      for admin_id in template.admin_ids:
-        template2admin_rows.append((template.template_id, admin_id))
-      for fv in template.field_values:
-        template2fieldvalue_rows.append(
-            (template.template_id, fv.field_id, fv.int_value, fv.str_value,
-             fv.user_id or None, fv.date_value, fv.url_value))
-      for phase in template.phases:
-        template2phase_rows.append(
-            (phase.phase_id, template.template_id, phase.name, phase.rank))
-        for av in phase.approval_values:
-          template2approvalvalue_rows.append(
-              (av.approval_id, template.template_id, phase.phase_id,
-               av.status.name.lower()))
-
-    self.template2label_tbl.InsertRows(
-        cnxn, TEMPLATE2LABEL_COLS, template2label_rows, ignore=True,
-        commit=False)
-    self.template2component_tbl.InsertRows(
-        cnxn, TEMPLATE2COMPONENT_COLS, template2component_rows, commit=False)
-    self.template2admin_tbl.InsertRows(
-        cnxn, TEMPLATE2ADMIN_COLS, template2admin_rows, commit=False)
-    self.template2fieldvalue_tbl.InsertRows(
-        cnxn, TEMPLATE2FIELDVALUE_COLS, template2fieldvalue_rows, commit=False)
-    self.template2phase_tbl.InsertRows(
-        cnxn, TEMPLATE2PHASE_COLS, template2phase_rows, commit=False)
-    self.template2approvalvalue_tbl.InsertRows(
-        cnxn, TEMPLATE2APPROVALVALUE_COLS, template2approvalvalue_rows,
-        commit=False)
 
   def _UpdateWellKnownLabels(self, cnxn, config):
     """Update the labels part of a project's issue configuration.
@@ -1161,9 +925,9 @@ class ConfigService(object):
   def UpdateConfig(
       self, cnxn, project, well_known_statuses=None,
       statuses_offer_merge=None, well_known_labels=None,
-      excl_label_prefixes=None, templates=None,
-      default_template_for_developers=None, default_template_for_users=None,
-      list_prefs=None, restrict_to_known=None, approval_defs=None):
+      excl_label_prefixes=None, default_template_for_developers=None,
+      default_template_for_users=None, list_prefs=None, restrict_to_known=None,
+      approval_defs=None):
     """Update project's issue tracker configuration with the given info.
 
     Args:
@@ -1174,7 +938,6 @@ class ConfigService(object):
       well_known_labels: [(label_name, docstring, deprecated),...]
       excl_label_prefixes: list of prefix strings.  Each issue should
           have only one label with each of these prefixed.
-      templates: List of PBs for issue templates.
       default_template_for_developers: int ID of template to use for devs.
       default_template_for_users: int ID of template to use for non-members.
       list_prefs: defaults for columns and sorting.
@@ -1202,9 +965,6 @@ class ConfigService(object):
 
     if approval_defs is not None:
       tracker_bizobj.SetConfigApprovals(project_config, approval_defs)
-
-    if templates is not None:
-      project_config.templates = templates
 
     if default_template_for_developers is not None:
       project_config.default_template_for_developers = (
@@ -1238,12 +998,6 @@ class ConfigService(object):
   def ExpungeConfig(self, cnxn, project_id):
     """Completely delete the specified project config from the database."""
     logging.info('expunging the config for %r', project_id)
-    template_id_rows = self.template_tbl.Select(
-        cnxn, cols=['id'], project_id=project_id)
-    template_ids = [row[0] for row in template_id_rows]
-    self.template2label_tbl.Delete(cnxn, template_id=template_ids)
-    self.template2component_tbl.Delete(cnxn, template_id=template_ids)
-    self.template_tbl.Delete(cnxn, project_id=project_id)
     self.statusdef_tbl.Delete(cnxn, project_id=project_id)
     self.labeldef_tbl.Delete(cnxn, project_id=project_id)
     self.projectissueconfig_tbl.Delete(cnxn, project_id=project_id)
@@ -1559,199 +1313,6 @@ class ConfigService(object):
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
     self.InvalidateMemcacheForEntireProject(project_id)
 
-  ### Issue template definition
-
-  def CreateIssueTemplateDef(
-      self, cnxn, project_id, name, content, summary, summary_must_be_edited,
-      status, members_only, owner_defaults_to_member, component_required,
-      owner_id=None, labels=None, component_ids=None, admin_ids=None,
-      field_values=None, phases=None):
-    """Create a new issue template definition with the given info.
-
-    Args:
-      cnxn:connection to SQL database.
-      project_id: int ID of the current project.
-      name: name of the new issue template.
-      content: string content of the issue template.
-      summary: string summary of the issue template.
-      summary_must_be_edited: True if the summary must be edited when this
-          issue template is used to make a new issue.
-      status: string default status of a new issue created with this template.
-      members_only: True if only members can view this issue template.
-      owner_defaults_to_member: True is issue owner should be set to member
-          creating the issue.
-      component_required: True if a component is required.
-      owner_id: user_id of default owner, if any.
-      labels: list of string labels for the new issue, if any.
-      component_ids: list of component_ids, if any.
-      admin_ids: list of admin_ids, if any.
-      field_values: list of FieldValue PBs, if any.
-      phases: list of Phase PBs, if any.
-
-    Returns:
-      Integer template_id of the new issue template definition.
-    """
-
-    template_id = self.template_tbl.InsertRow(
-        cnxn, project_id=project_id, name=name, content=content,
-        summary=summary, summary_must_be_edited=summary_must_be_edited,
-        owner_id=owner_id, status=status, members_only=members_only,
-        owner_defaults_to_member=owner_defaults_to_member,
-        component_required=component_required, commit=False)
-
-    if labels:
-      self.template2label_tbl.InsertRows(
-          cnxn, TEMPLATE2LABEL_COLS, [(template_id, label) for label in labels],
-          commit=False)
-    if component_ids:
-      self.template2component_tbl.InsertRows(
-          cnxn, TEMPLATE2COMPONENT_COLS, [(template_id, c_id) for
-                                          c_id in component_ids], commit=False)
-    if admin_ids:
-      self.template2admin_tbl.InsertRows(
-          cnxn, TEMPLATE2ADMIN_COLS, [(template_id, admin_id) for
-                                      admin_id in admin_ids], commit=False)
-    if field_values:
-      self.template2fieldvalue_tbl.InsertRows(
-          cnxn, TEMPLATE2FIELDVALUE_COLS, [
-              (template_id, fv.field_id, fv.int_value, fv.str_value, fv.user_id,
-               fv.date_value, fv.url_value) for fv in field_values],
-          commit=False)
-
-    if phases:
-      for phase in phases:
-        phase_id = self.template2phase_tbl.InsertRow(
-            cnxn, template_id=template_id, name=phase.name,
-            rank=phase.rank, commit=False)
-        self.template2approvalvalue_tbl.InsertRows(
-            cnxn, TEMPLATE2APPROVALVALUE_COLS,
-            [(av.approval_id, template_id, phase_id, av.status.name.lower())
-             for av in phase.approval_values],
-            commit=False)
-
-    cnxn.Commit()
-    self.config_2lc.InvalidateKeys(cnxn, [project_id])
-    self.InvalidateMemcacheForEntireProject(project_id)
-    return template_id
-
-  def UpdateIssueTemplateDef(
-      self, cnxn, project_id, template_id, name=None, content=None,
-      summary=None, summary_must_be_edited=None, status=None, members_only=None,
-      owner_defaults_to_member=None, component_required=None, owner_id=None,
-      labels=None, component_ids=None, admin_ids=None, field_values=None,
-      phases=None):
-    """Update an existing issue template definition with the given info.
-
-    Args:
-      cnxn:connection to SQL database.
-      project_id: int ID of the current project.
-      template_id: int ID of the issue template to update.
-      name: updated name of the new issue template.
-      content: updated string content of the issue template.
-      summary: updated string summary of the issue template.
-      summary_must_be_edited: True if the summary must be edited when this
-          issue template is used to make a new issue.
-      status: updated string default status of a new issue created with this
-          template.
-      members_only: True if only members can view this issue template.
-      owner_defaults_to_member: True is issue owner should be set to member
-          creating the issue.
-      component_required: True if a component is required.
-      owner_id: updated user_id of default owner, if any.
-      labels: updated list of string labels for the new issue, if any.
-      component_ids: updated list of component_ids, if any.
-      admin_ids: updated list of admin_ids, if any.
-      field_values: updated list of FieldValue PBs, if any.
-      phases: updated list of Phase PBs, if any.
-    """
-    new_values = {}
-    if name is not None:
-      new_values['name'] = name
-    if content is not None:
-      new_values['content'] = content
-    if summary is not None:
-      new_values['summary'] = summary
-    if summary_must_be_edited is not None:
-      new_values['summary_must_be_edited'] = bool(summary_must_be_edited)
-    if status is not None:
-      new_values['status'] = status
-    if members_only is not None:
-      new_values['members_only'] = bool(members_only)
-    if owner_defaults_to_member is not None:
-      new_values['owner_defaults_to_member'] = bool(owner_defaults_to_member)
-    if component_required is not None:
-      new_values['component_required'] = bool(component_required)
-    if owner_id is not None:
-      new_values['owner_id'] = owner_id
-
-    self.template_tbl.Update(cnxn, new_values, id=template_id, commit=False)
-
-    if labels is not None:
-      self.template2label_tbl.Delete(
-          cnxn, template_id=template_id, commit=False)
-      self.template2label_tbl.InsertRows(
-          cnxn, TEMPLATE2LABEL_COLS, [(template_id, label) for label in labels],
-          commit=False)
-    if component_ids is not None:
-      self.template2component_tbl.Delete(
-          cnxn, template_id=template_id, commit=False)
-      self.template2component_tbl.InsertRows(
-          cnxn, TEMPLATE2COMPONENT_COLS, [(template_id, c_id) for
-                                          c_id in component_ids],
-          commit=False)
-    if admin_ids is not None:
-      self.template2admin_tbl.Delete(
-          cnxn, template_id=template_id, commit=False)
-      self.template2admin_tbl.InsertRows(
-          cnxn, TEMPLATE2ADMIN_COLS, [(template_id, admin_id) for
-                                      admin_id in admin_ids],
-          commit=False)
-    if field_values is not None:
-      self.template2fieldvalue_tbl.Delete(
-          cnxn, template_id=template_id, commit=False)
-      self.template2fieldvalue_tbl.InsertRows(
-          cnxn, TEMPLATE2FIELDVALUE_COLS, [
-              (template_id, fv.field_id, fv.int_value, fv.str_value, fv.user_id,
-               fv.date_value, fv.url_value) for fv in field_values],
-          commit=False)
-    if phases is not None:
-      self.template2approvalvalue_tbl.Delete(
-          cnxn, template_id=template_id, commit=False)
-      self.template2phase_tbl.Delete(
-          cnxn, template_id=template_id, commit=False)
-      for phase in phases:
-        phase_id = self.template2phase_tbl.InsertRow(
-            cnxn, template_id=template_id, name=phase.name, rank=phase.rank,
-            commit=False)
-        self.template2approvalvalue_tbl.InsertRows(
-            cnxn, TEMPLATE2APPROVALVALUE_COLS,
-            [(av.approval_id, template_id, phase_id, av.status.name.lower())
-             for av in phase.approval_values], commit=False)
-
-    cnxn.Commit()
-    self.config_2lc.InvalidateKeys(cnxn, [project_id])
-    self.InvalidateMemcacheForEntireProject(project_id)
-
-  def DeleteIssueTemplateDef(self, cnxn, project_id, template_id):
-    """Delete the specified issue template definition."""
-    # TODO(jojwang): monorail:3241, soft delete may be required for launch
-    # process templates
-    self.template2label_tbl.Delete(cnxn, template_id=template_id, commit=False)
-    self.template2component_tbl.Delete(
-        cnxn, template_id=template_id, commit=False)
-    self.template2admin_tbl.Delete(cnxn, template_id=template_id, commit=False)
-    self.template2fieldvalue_tbl.Delete(
-        cnxn, template_id=template_id, commit=False)
-    self.template2approvalvalue_tbl.Delete(
-        cnxn, template_id=template_id, commit=False)
-    self.template2phase_tbl.Delete(
-          cnxn, template_id=template_id, commit=False)
-    self.template_tbl.Delete(cnxn, id=template_id, commit=False)
-
-    cnxn.Commit()
-    self.config_2lc.InvalidateKeys(cnxn, [project_id])
-    self.InvalidateMemcacheForEntireProject(project_id)
-
   ### Memcache management
 
   def InvalidateMemcache(self, issues, key_prefix=''):
@@ -1801,3 +1362,13 @@ class ConfigService(object):
     memcache.delete_multi(
         [str(project_id)], key_prefix='field_rows:',
         namespace=settings.memcache_namespace)
+
+  def UsersInvolvedInConfig(self, config, project_templates):
+    """Return a set of all user IDs referenced in the ProjectIssueConfig."""
+    result = set()
+    for template in project_templates:
+      result.update(tracker_bizobj.UsersInvolvedInTemplate(template))
+    for field in config.field_defs:
+      result.update(field.admin_ids)
+    # TODO(jrobbins): add component owners, auto-cc, and admins.
+    return result

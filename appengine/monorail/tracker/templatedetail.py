@@ -43,7 +43,10 @@ class TemplateDetail(servlet.Servlet):
     super(TemplateDetail, self).AssertBasePermission(mr)
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
-    template = tracker_bizobj.FindIssueTemplate(mr.template_name, config)
+    project_templates = self.services.template.GetProjectTemplates(mr.cnxn,
+        config.project_id)
+    template = tracker_bizobj.FindIssueTemplate(mr.template_name,
+        project_templates)
 
     if template:
       allow_view = permissions.CanViewTemplate(
@@ -65,7 +68,10 @@ class TemplateDetail(servlet.Servlet):
     """
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    template = tracker_bizobj.FindIssueTemplate(mr.template_name, config)
+    project_templates = self.services.template.GetProjectTemplates(mr.cnxn,
+        config.project_id)
+    template = tracker_bizobj.FindIssueTemplate(mr.template_name,
+        project_templates)
     template_view = tracker_views.IssueTemplateView(
         mr, template, self.services.user, config)
     with mr.profiler.Phase('making user views'):
@@ -143,7 +149,9 @@ class TemplateDetail(servlet.Servlet):
     parsed = template_helpers.ParseTemplateRequest(post_data, config)
     field_helpers.ShiftEnumFieldsIntoLabels(
         parsed.labels, [], parsed.field_val_strs, [], config)
-    template = tracker_bizobj.FindIssueTemplate(parsed.name, config)
+    project_templates = self.services.template.GetProjectTemplates(mr.cnxn,
+        config.project_id)
+    template = tracker_bizobj.FindIssueTemplate(parsed.name, project_templates)
     allow_edit = permissions.CanEditTemplate(
         mr.auth.effective_ids, mr.perms, mr.project, template)
     if not allow_edit:
@@ -151,7 +159,7 @@ class TemplateDetail(servlet.Servlet):
           'User is not allowed edit this issue template.')
 
     if 'deletetemplate' in post_data:
-      self.services.config.DeleteIssueTemplateDef(
+      self.services.template.DeleteIssueTemplateDef(
           mr.cnxn, mr.project_id, template.template_id)
       return framework_helpers.FormatAbsoluteURL(
           mr, urls.ADMIN_TEMPLATES, deleted=1, ts=int(time.time()))
@@ -197,7 +205,7 @@ class TemplateDetail(servlet.Servlet):
       return
 
     labels = [label for label in parsed.labels if label]
-    self.services.config.UpdateIssueTemplateDef(
+    self.services.template.UpdateIssueTemplateDef(
         mr.cnxn, mr.project_id, template.template_id, name=parsed.name,
         content=parsed.content, summary=parsed.summary,
         summary_must_be_edited=parsed.summary_must_be_edited,

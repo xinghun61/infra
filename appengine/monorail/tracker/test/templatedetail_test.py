@@ -10,10 +10,13 @@ import logging
 import unittest
 import settings
 
+from mock import Mock
+
 from third_party import ezt
 
 from framework import permissions
 from services import service_manager
+from services import template_svc
 from testing import fake
 from testing import testing_helpers
 from tracker import templatedetail
@@ -26,8 +29,10 @@ class TemplateDetailTest(unittest.TestCase):
 
   def setUp(self):
     self.cnxn = 'fake cnxn'
+    mock_template_service = Mock(spec=template_svc.TemplateService)
     self.services = service_manager.Services(project=fake.ProjectService(),
                                              config=fake.ConfigService(),
+                                             template=mock_template_service,
                                              usergroup=fake.UserGroupService(),
                                              user=fake.UserService())
     self.servlet = templatedetail.TemplateDetail('req', 'res',
@@ -92,7 +97,10 @@ class TemplateDetailTest(unittest.TestCase):
 
     self.config = self.services.config.GetProjectConfig(
         'fake cnxn', self.project.project_id)
-    self.config.templates.append(self.template)
+    self.templates = testing_helpers.DefaultTemplates()
+    self.templates.append(self.template)
+    self.services.template.GetProjectTemplates = Mock(
+        return_value=self.templates)
     self.config.component_defs.append(self.cd_1)
     self.config.field_defs.extend([self.fd_1, self.fd_2, self.fd_3, self.fd_4])
     self.config.approval_defs.extend([self.ad_3, self.ad_4])
@@ -244,21 +252,18 @@ class TemplateDetailTest(unittest.TestCase):
       approval_4=['phase_2']
     )
     url = self.servlet.ProcessFormData(self.mr, post_data)
-    template = tracker_bizobj.FindIssueTemplate('TestTemplate', self.config)
-    self.assertEqual(template.summary, 'TLDR')
-    self.assertEqual(template.content, 'HEY WHY')
-    self.assertEqual(template.status, 'Accepted')
-    self.assertEqual(template.owner_id, 333L)
-    self.assertEqual(template.labels, ['label-One', 'label-Two'])
-    self.assertItemsEqual(template.field_values[0].str_value, 'NO')
-    self.assertTrue(template.members_only)
-    self.assertFalse(template.summary_must_be_edited)
-    self.assertTrue(template.component_required)
-    self.assertTrue(template.owner_defaults_to_member)
-    # errors in phases should not matter if add_phases is not 'on'
-    self.assertIsNone(self.mr.errors.phase_approvals)
-    self.assertEqual(template.phases, [])
+
     self.assertTrue('/templates/detail?saved=1&template=TestTemplate&' in url)
+
+    self.services.template.UpdateIssueTemplateDef.assert_called_once_with(
+        self.mr.cnxn, 47925, 12345, status='Accepted', component_required=True,
+        phases=[],  name='TestTemplate', field_values=[
+          tracker_pb2.FieldValue(field_id=1, str_value='NO', derived=False),
+          tracker_pb2.FieldValue(field_id=2, str_value='MOOD', derived=False)],
+        labels=['label-One', 'label-Two'], owner_defaults_to_member=True,
+        admin_ids=[], content='HEY WHY', component_ids=[1],
+        summary_must_be_edited=False, summary='TLDR', members_only=True,
+        owner_id=333L)
 
   def testProcessFormData_AcceptPhases(self):
     post_data = fake.PostData(
@@ -286,24 +291,34 @@ class TemplateDetailTest(unittest.TestCase):
       approval_4=['phase_1']
     )
     url = self.servlet.ProcessFormData(self.mr, post_data)
-    template = tracker_bizobj.FindIssueTemplate('TestTemplate', self.config)
-    canary_phase = tracker_bizobj.FindPhase('canary', template.phases)
-    self.assertEqual(canary_phase.rank, 0)
-    self.assertEqual(canary_phase.approval_values[0].approval_id, 3)
-
-    stable_phase = tracker_bizobj.FindPhase('stable', template.phases)
-    self.assertEqual(stable_phase.rank, 1)
-    self.assertEqual(stable_phase.approval_values[0].approval_id, 4)
 
     self.assertTrue('/templates/detail?saved=1&template=TestTemplate&' in url)
 
+    self.services.template.UpdateIssueTemplateDef.assert_called_once_with(
+        self.mr.cnxn, 47925, 12345, status='Accepted', component_required=True,
+        phases=[
+          tracker_pb2.Phase(name='Canary', approval_values=[
+            tracker_pb2.ApprovalValue(approval_id=3)],
+            rank=0),
+          tracker_pb2.Phase(name='Stable', approval_values=[
+            tracker_pb2.ApprovalValue(approval_id=4)],
+            rank=1)],
+        name='TestTemplate', field_values=[
+          tracker_pb2.FieldValue(field_id=1, str_value='NO', derived=False),
+          tracker_pb2.FieldValue(field_id=2, str_value='MOOD', derived=False)],
+        labels=['label-One', 'label-Two'], owner_defaults_to_member=True,
+        admin_ids=[], content='HEY WHY', component_ids=[1],
+        summary_must_be_edited=False, summary='TLDR', members_only=True,
+        owner_id=333L)
+
   def testProcessFormData_Delete(self):
-     post_data = fake.PostData(
-         deletetemplate=['Submit'],
-         name=['TestTemplate'],
-         members_only=['on'],
-     )
-     url=self.servlet.ProcessFormData(self.mr, post_data)
-     template = tracker_bizobj.FindIssueTemplate('TestTemplate', self.config)
-     self.assertIsNone(template)
-     self.assertTrue('/adminTemplates?deleted=1&ts=' in url)
+    post_data = fake.PostData(
+      deletetemplate=['Submit'],
+      name=['TestTemplate'],
+      members_only=['on'],
+    )
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+
+    self.assertTrue('/p/None/adminTemplates?deleted=1' in url)
+    self.services.template.DeleteIssueTemplateDef\
+        .assert_called_once_with(self.mr.cnxn, 47925, 12345)

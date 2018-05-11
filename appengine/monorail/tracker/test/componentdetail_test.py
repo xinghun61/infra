@@ -7,12 +7,15 @@
 
 import unittest
 
+from mock import Mock, patch
+
 import mox
 
 from features import filterrules_helpers
 from framework import permissions
 from proto import project_pb2
 from services import service_manager
+from services import template_svc
 from testing import fake
 from testing import testing_helpers
 from tracker import componentdetail
@@ -28,6 +31,7 @@ class ComponentDetailTest(unittest.TestCase):
         user=fake.UserService(),
         issue=fake.IssueService(),
         config=fake.ConfigService(),
+        template=Mock(spec=template_svc.TemplateService),
         project=fake.ProjectService())
     self.servlet = componentdetail.ComponentDetail(
         'req', 'res', services=self.services)
@@ -164,8 +168,7 @@ class ComponentDetailTest(unittest.TestCase):
     self.assertEqual([subcd], page_data['subcomponents'])
 
   def testGatherPageData_WithTemplates(self):
-    self.services.config.component_ids_to_templates[self.cd.component_id] = [
-        'template']
+    self.services.template.TemplatesWithComponent.return_value = ['template']
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertFalse(page_data['allow_delete'])
     self.assertEqual(['template'], page_data['templates'])

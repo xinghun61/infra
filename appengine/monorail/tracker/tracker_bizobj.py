@@ -46,14 +46,13 @@ def GetLabels(issue):
 
 def MakeProjectIssueConfig(
     project_id, well_known_statuses, statuses_offer_merge, well_known_labels,
-    excl_label_prefixes, templates, col_spec):
+    excl_label_prefixes, col_spec):
   """Return a ProjectIssueConfig with the given values."""
   # pylint: disable=multiple-statements
   if not well_known_statuses: well_known_statuses = []
   if not statuses_offer_merge: statuses_offer_merge = []
   if not well_known_labels: well_known_labels = []
   if not excl_label_prefixes: excl_label_prefixes = []
-  if not templates: templates = []
   if not col_spec: col_spec = ' '
 
   project_config = tracker_pb2.ProjectIssueConfig()
@@ -63,7 +62,6 @@ def MakeProjectIssueConfig(
   SetConfigStatuses(project_config, well_known_statuses)
   project_config.statuses_offer_merge = statuses_offer_merge
   SetConfigLabels(project_config, well_known_labels)
-  SetConfigTemplates(project_config, templates)
   project_config.exclusive_label_prefixes = excl_label_prefixes
 
   # ID 0 means that nothing has been specified, so use hard-coded defaults.
@@ -75,19 +73,6 @@ def MakeProjectIssueConfig(
   # Note: default project issue config has no filter rules.
 
   return project_config
-
-
-def UsersInvolvedInConfig(config):
-  """Return a set of all user IDs referenced in the ProjectIssueConfig."""
-  result = set()
-  for template in config.templates:
-    if template.owner_id:
-      result.add(template.owner_id)
-    result.update(template.admin_ids)
-  for field in config.field_defs:
-    result.update(field.admin_ids)
-  # TODO(jrobbins): add component owners, auto-cc, and admins.
-  return result
 
 
 def FindFieldDef(field_name, config):
@@ -156,18 +141,18 @@ def FindPhase(name, phases):
   return None
 
 
-def FindIssueTemplate(template_name, config):
+def FindIssueTemplate(template_name, project_templates):
   """Find the specified issue template, or return None."""
-  for template in config.templates:
+  for template in project_templates:
     if template.name == template_name:
       return template
 
   return None
 
 
-def FindIssueTemplateByID(template_id, config):
+def FindIssueTemplateByID(template_id, project_templates):
   """Find the specified issue template, or return None."""
-  for template in config.templates:
+  for template in project_templates:
     if template.template_id == template_id:
       return template
 
@@ -462,13 +447,6 @@ def SetConfigApprovals(project_config, approval_def_tuples):
         approval_id=approval_id, approver_ids=approver_ids, survey=survey))
 
 
-def SetConfigTemplates(project_config, template_dict_list):
-  """Internal method to set the templates of a ProjectIssueConfig."""
-  templates = [ConvertDictToTemplate(template_dict)
-               for template_dict in template_dict_list]
-  project_config.templates = templates
-
-
 def ConvertDictToTemplate(template_dict):
   """Construct a Template PB with the values from template_dict.
 
@@ -477,7 +455,7 @@ def ConvertDictToTemplate(template_dict):
         PB fields.
 
   Returns:
-    A Template protocol buffer thatn can be stored in the
+    A Template protocol buffer that can be stored in the
     project's ProjectIssueConfig PB.
   """
   return MakeIssueTemplate(
@@ -532,7 +510,6 @@ def MakeDefaultProjectIssueConfig(project_id):
       tracker_constants.DEFAULT_STATUSES_OFFER_MERGE,
       tracker_constants.DEFAULT_WELL_KNOWN_LABELS,
       tracker_constants.DEFAULT_EXCL_LABEL_PREFIXES,
-      tracker_constants.DEFAULT_TEMPLATES,
       tracker_constants.DEFAULT_COL_SPEC)
 
 

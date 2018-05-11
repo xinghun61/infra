@@ -9,10 +9,13 @@ import mox
 import unittest
 import settings
 
+from mock import Mock
+
 from third_party import ezt
 
 from framework import permissions
 from services import service_manager
+from services import template_svc
 from testing import fake
 from testing import testing_helpers
 from tracker import templatecreate
@@ -26,11 +29,13 @@ class TemplateCreateTest(unittest.TestCase):
 
   def setUp(self):
     self.cnxn = 'fake cnxn'
-    self.services = service_manager.Services(project=fake.ProjectService(),
-                                             config=fake.ConfigService(),
-                                             user=fake.UserService())
+    self.services = service_manager.Services(
+        project=fake.ProjectService(),
+        config=fake.ConfigService(),
+        template=Mock(spec=template_svc.TemplateService),
+        user=fake.UserService())
     self.servlet = templatecreate.TemplateCreate('req', 'res',
-                                               services=self.services)
+        services=self.services)
     self.project = self.services.project.TestAddProject('proj')
 
     self.fd_1 = tracker_bizobj.MakeFieldDef(
@@ -58,12 +63,15 @@ class TemplateCreateTest(unittest.TestCase):
     self.config.approval_defs.extend([ad_2, ad_3])
     self.config.field_defs.extend([self.fd_1, self.fd_2, self.fd_3])
 
-
     first_tmpl = tracker_bizobj.MakeIssueTemplate(
         'sometemplate', 'summary', None, None, 'content', [], [], [],
         [])
-    self.config.templates.append(first_tmpl)
     self.services.config.StoreConfig(None, self.config)
+
+    templates = testing_helpers.DefaultTemplates()
+    templates.append(first_tmpl)
+    self.services.template.GetProjectTemplates = Mock(return_value=templates)
+
     self.mr = testing_helpers.MakeMonorailRequest(
         project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
     self.mox = mox.Mox()
@@ -201,18 +209,13 @@ class TemplateCreateTest(unittest.TestCase):
 
     url = self.servlet.ProcessFormData(self.mr, post_data)
 
-    template = None
-    for tmpl in self.config.templates:
-      if tmpl.name == 'secondtemplate':
-        template = tmpl
-    self.assertEqual(template.summary, 'TLDR')
-    self.assertEqual(template.content, 'HEY WHY')
-    self.assertItemsEqual(template.labels, ['label-One', 'label-Two'])
-    self.assertItemsEqual(template.field_values[0].str_value, 'NO')
+    self.assertTrue('/adminTemplates?saved=1&ts' in url)
+
+    self.assertEqual(0,
+        self.services.template.UpdateIssueTemplateDef.call_count)
+
     # errors in phases should not matter if add_phases is not 'on'
     self.assertIsNone(self.mr.errors.phase_approvals)
-    self.assertEqual(template.phases, [])
-    self.assertTrue('/adminTemplates?saved=1&ts' in url)
 
   def testProcessFormData_AcceptPhases(self):
     post_data = fake.PostData(
@@ -239,17 +242,22 @@ class TemplateCreateTest(unittest.TestCase):
     )
 
     url = self.servlet.ProcessFormData(self.mr, post_data)
-    template = tracker_bizobj.FindIssueTemplate('secondtemplate', self.config)
-    canary_phase = tracker_bizobj.FindPhase('canary', template.phases)
-    self.assertEqual(canary_phase.rank, 0)
-    self.assertEqual(canary_phase.approval_values[0].approval_id, 2)
-    self.assertEqual(canary_phase.approval_values[0].status,
-                     tracker_pb2.ApprovalStatus.NOT_SET)
-
-    stable_phase = tracker_bizobj.FindPhase('stable', template.phases)
-    self.assertEqual(stable_phase.rank, 1)
-    self.assertEqual(stable_phase.approval_values[0].approval_id, 3)
-    self.assertEqual(stable_phase.approval_values[0].status,
-                     tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
-
     self.assertTrue('/adminTemplates?saved=1&ts' in url)
+
+    fv = tracker_pb2.FieldValue(field_id=1, str_value='NO', derived=False)
+    phases = [
+      tracker_pb2.Phase(name='Canary',
+        rank=0,
+        approval_values=[
+          tracker_pb2.ApprovalValue(approval_id=2)]),
+      tracker_pb2.Phase(name='Stable',
+        rank=1,
+        approval_values=[
+          tracker_pb2.ApprovalValue(approval_id=3,
+            status=tracker_pb2.ApprovalStatus(
+              tracker_pb2.ApprovalStatus.NEEDS_REVIEW))]),
+    ]
+    self.services.template.CreateIssueTemplateDef.assert_called_once_with(
+        self.mr.cnxn, 47925, 'secondtemplate', 'HEY WHY', 'TLDR', True,
+        'Accepted', True, False, True, 0, ['label-One', 'label-Two'], [], [],
+        [fv], phases=phases)

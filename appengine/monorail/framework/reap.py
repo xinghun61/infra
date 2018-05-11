@@ -107,6 +107,7 @@ class Reap(jsonfeed.InternalTask):
     # All project purge functions are called with cnxn and project_id.
     project_purge_functions = (
       self.services.config.ExpungeConfig,
+      self.services.template.ExpungeProjectTemplates,
       self.services.features.ExpungeSavedQueriesExecuteInProject,
       self.services.features.ExpungeFilterRules,
       self.services.issue.ExpungeFormerLocations,

@@ -9,7 +9,9 @@ import email
 
 from proto import user_pb2
 from services import service_manager
+from services import template_svc
 from testing import fake
+from tracker import tracker_constants
 import webapp2
 
 DEFAULT_HOST = '127.0.0.1'
@@ -112,3 +114,23 @@ class Blank(object):
     if other is None:
       return False
     return vars(self) == vars(other)
+
+
+def DefaultTemplateRows():
+  return [(
+    None,
+    789,
+    template_dict['name'],
+    template_dict['content'],
+    template_dict['summary'],
+    template_dict.get('summary_must_be_edited'),
+    None,
+    template_dict['status'],
+    template_dict.get('members_only', False),
+    template_dict.get('owner_defaults_to_member', True),
+    template_dict.get('component_required', False),
+    ) for template_dict in tracker_constants.DEFAULT_TEMPLATES]
+
+
+def DefaultTemplates():
+  return [template_svc.UnpackTemplate(t) for t in DefaultTemplateRows()]

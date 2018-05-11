@@ -7,12 +7,16 @@
 
 import unittest
 
+import mock
 import mox
+
+from mock import Mock
 
 from framework import reap
 from framework import sql
 from proto import project_pb2
 from services import service_manager
+from services import template_svc
 from testing import fake
 from testing import testing_helpers
 
@@ -33,6 +37,7 @@ class ReapTest(unittest.TestCase):
         config=self.config_service,
         features=self.features_service,
         project_star=self.project_star_service,
+        template=Mock(spec=template_svc.TemplateService),
         user=fake.UserService(),
         usergroup=fake.UserGroupService())
 
@@ -111,3 +116,6 @@ class ReapTest(unittest.TestCase):
     self.assertEquals([self.proj1_id, self.proj2_id],
                       self.services.project_star.expunged_item_ids)
     self.assertEquals(0, len(self.services.project.test_projects))
+    self.services.template.ExpungeProjectTemplates.assert_has_calls([
+        mock.call(self.cnxn, 1001),
+        mock.call(self.cnxn, 1002)])

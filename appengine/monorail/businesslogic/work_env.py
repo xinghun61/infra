@@ -124,6 +124,8 @@ class WorkEnv(object):
           read_only_reason=read_only_reason, home_page=home_page,
           docs_url=docs_url, source_url=source_url, logo_gcs_id=logo_gcs_id,
           logo_file_name=logo_file_name)
+      self.services.template.CreateDefaultProjectTemplates(self.mr.cnxn,
+          project_id)
     return project_id
 
   def ListProjects(self, use_cache=True):

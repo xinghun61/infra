@@ -5,12 +5,14 @@
 
 """Tests for the issue admin pages."""
 
+import mock
 import mox
 import unittest
 
 from framework import permissions
 from framework import urls
 from services import service_manager
+from services import template_svc
 from testing import fake
 from testing import testing_helpers
 from tracker import issueadmin
@@ -27,6 +29,7 @@ class TestBase(unittest.TestCase):
         config=fake.ConfigService(),
         user=fake.UserService(),
         issue=fake.IssueService(),
+        template=mock.Mock(spec=template_svc.TemplateService),
         features=fake.FeaturesService())
     self.servlet = servlet_factory('req', 'res', services=self.services)
     self.project = self.services.project.TestAddProject(
@@ -37,6 +40,13 @@ class TestBase(unittest.TestCase):
     self.mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/admin', project=self.project)
     self.mox = mox.Mox()
+    self.test_template = tracker_bizobj.MakeIssueTemplate(
+        'Test Template', 'sum', 'New', 111L, 'content', [], [], [], [])
+    self.test_template.template_id = 12345
+    self.test_templates = testing_helpers.DefaultTemplates()
+    self.test_templates.append(self.test_template)
+    self.services.template.GetProjectTemplates\
+        .return_value = self.test_templates
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -60,7 +70,8 @@ class IssueAdminBaseTest(TestBase):
     page_data = self.servlet.GatherPageData(self.mr)
     self.mox.VerifyAll()
 
-    self.assertItemsEqual(['admin_tab_mode', 'config'], page_data.keys())
+    self.assertItemsEqual(['admin_tab_mode', 'config'],
+        page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
 
@@ -114,7 +125,8 @@ class AdminLabelsTest(TestBase):
     self.mox.VerifyAll()
 
     self.assertItemsEqual(
-        ['admin_tab_mode', 'config', 'field_defs'], page_data.keys())
+        ['admin_tab_mode', 'config', 'field_defs'],
+        page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
     self.assertEqual([], page_data['field_defs'])
@@ -150,9 +162,6 @@ class AdminTemplatesTest(TestBase):
 
   def setUp(self):
     super(AdminTemplatesTest, self).setUpServlet(issueadmin.AdminTemplates)
-    self.test_template = tracker_bizobj.MakeIssueTemplate(
-        'Test Template', 'sum', 'New', 111L, 'content', [], [], [], [])
-    self.test_template.template_id = 12345
     self.mr.auth.user_id = 333L
     self.mr.auth.effective_ids = {333L}
 
@@ -167,7 +176,6 @@ class AdminTemplatesTest(TestBase):
 
   def testProcessSubtabForm_NoEditProjectPerm(self):
     """If user lacks perms, raise an exception."""
-    self.config.templates.append(self.test_template)
     post_data = fake.PostData(
         default_template_for_developers=['Test Template'],
         default_template_for_users=['Test Template'])
@@ -180,7 +188,6 @@ class AdminTemplatesTest(TestBase):
 
   def testProcessSubtabForm_Normal(self):
     """If user has perms, set default templates."""
-    self.config.templates.append(self.test_template)
     post_data = fake.PostData(
         default_template_for_developers=['Test Template'],
         default_template_for_users=['Test Template'])
@@ -189,31 +196,28 @@ class AdminTemplatesTest(TestBase):
     self.assertEqual(12345, self.config.default_template_for_developers)
     self.assertEqual(12345, self.config.default_template_for_users)
 
-  def testParseDefaultTempalteSelections_NotSpecified(self):
-    self.config.templates.append(self.test_template)
+  def testParseDefaultTemplateSelections_NotSpecified(self):
     post_data = fake.PostData()
     for_devs, for_users = self.servlet._ParseDefaultTemplateSelections(
-        post_data, self.config.templates)
+        post_data, self.test_templates)
     self.assertEqual(None, for_devs)
     self.assertEqual(None, for_users)
 
-  def testParseDefaultTempalteSelections_TemplateNotFoundIsIgnored(self):
-    self.config.templates.append(self.test_template)
+  def testParseDefaultTemplateSelections_TemplateNotFoundIsIgnored(self):
     post_data = fake.PostData(
         default_template_for_developers=['Bad value'],
         default_template_for_users=['Bad value'])
     for_devs, for_users = self.servlet._ParseDefaultTemplateSelections(
-        post_data, self.config.templates)
+        post_data, self.test_templates)
     self.assertEqual(None, for_devs)
     self.assertEqual(None, for_users)
 
-  def testParseDefaultTempalteSelections_Normal(self):
-    self.config.templates.append(self.test_template)
+  def testParseDefaultTemplateSelections_Normal(self):
     post_data = fake.PostData(
         default_template_for_developers=['Test Template'],
         default_template_for_users=['Test Template'])
     for_devs, for_users = self.servlet._ParseDefaultTemplateSelections(
-        post_data, self.config.templates)
+        post_data, self.test_templates)
     self.assertEqual(12345, for_devs)
     self.assertEqual(12345, for_users)
 
@@ -240,10 +244,9 @@ class AdminComponentsTest(TestBase):
     self.mox.ReplayAll()
     page_data = self.servlet.GatherPageData(self.mr)
     self.mox.VerifyAll()
-
     self.assertItemsEqual(
-        ['admin_tab_mode', 'config', 'component_defs',
-         'failed_perm', 'failed_subcomp', 'failed_templ'], page_data.keys())
+        ['admin_tab_mode', 'failed_templ', 'component_defs', 'failed_perm',
+          'config', 'failed_subcomp'], page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
     self.assertEqual([], page_data['component_defs'])
@@ -251,6 +254,7 @@ class AdminComponentsTest(TestBase):
   def testProcessFormData_NoErrors(self):
     self.config.component_defs = [
         self.cd_clean, self.cd_with_subcomp, self.subcd, self.cd_with_template]
+    self.services.template.TemplatesWithComponent.return_value = []
     post_data = {
         'delete_components' : '%s,%s,%s' % (
             self.cd_clean.path, self.cd_with_subcomp.path, self.subcd.path)}
@@ -263,6 +267,7 @@ class AdminComponentsTest(TestBase):
   def testProcessFormData_SubCompError(self):
     self.config.component_defs = [
         self.cd_clean, self.cd_with_subcomp, self.subcd, self.cd_with_template]
+    self.services.template.TemplatesWithComponent.return_value = []
     post_data = {
         'delete_components' : '%s,%s' % (
             self.cd_clean.path, self.cd_with_subcomp.path)}
@@ -275,7 +280,13 @@ class AdminComponentsTest(TestBase):
   def testProcessFormData_TemplateError(self):
     self.config.component_defs = [
         self.cd_clean, self.cd_with_subcomp, self.subcd, self.cd_with_template]
-    self.services.config.component_ids_to_templates[4] = 'Test Template'
+
+    def mockTemplatesWithComponent(_cnxn, component_id, _config):
+      if component_id == 4:
+        return 'template'
+    self.services.template.TemplatesWithComponent\
+        .side_effect = mockTemplatesWithComponent
+
     post_data = {
         'delete_components' : '%s,%s,%s,%s' % (
             self.cd_clean.path, self.cd_with_subcomp.path, self.subcd.path,
@@ -386,7 +397,8 @@ class AdminRulesTest(TestBase):
     self.mox.VerifyAll()
 
     self.assertItemsEqual(
-        ['admin_tab_mode', 'config', 'rules', 'new_rule_indexes', 'max_rules'],
+        ['admin_tab_mode', 'config', 'rules', 'new_rule_indexes',
+         'max_rules'],
         page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)

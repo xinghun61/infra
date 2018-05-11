@@ -9,7 +9,7 @@ import endpoints
 import unittest
 import webtest
 from google.appengine.api import oauth
-from mock import Mock
+from mock import Mock, patch
 from protorpc import messages
 from protorpc import message_types
 
@@ -23,8 +23,10 @@ from proto import tracker_pb2
 from search import frontendsearchpipeline
 from services import api_svc_v1
 from services import service_manager
+from services import template_svc
 from services import tracker_fulltext
 from testing import fake
+from testing import testing_helpers
 from testing_utils import testing
 from tracker import tracker_bizobj
 
@@ -38,6 +40,7 @@ def MakeFakeServiceManager():
       issue=fake.IssueService(),
       issue_star=fake.IssueStarService(),
       features=fake.FeaturesService(),
+      template=Mock(spec=template_svc.TemplateService),
       cache_manager=fake.CacheManager())
 
 
@@ -226,7 +229,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testUsersGet_PublicProject(self):
     """The viewed user has one public project."""
-
+    self.services.template.GetProjectTemplates.return_value = \
+        testing_helpers.DefaultTemplates()
     self.services.project.TestAddProject(
         'public-project', owner_ids=[2])
     resp = self.call_api('users_get', self.request).json_body
@@ -245,7 +249,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def testUsersGet_OwnerProjectOnly(self):
     """The viewed user has different roles of projects."""
-
+    self.services.template.GetProjectTemplates.return_value = \
+        testing_helpers.DefaultTemplates()
     self.services.project.TestAddProject(
         'owner-project', owner_ids=[2])
     self.services.project.TestAddProject(

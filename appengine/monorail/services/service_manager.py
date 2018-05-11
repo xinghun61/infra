@@ -14,6 +14,7 @@ from services import issue_svc
 from services import project_svc
 from services import spam_svc
 from services import star_svc
+from services import template_svc
 from services import user_svc
 from services import usergroup_svc
 
@@ -28,7 +29,7 @@ class Services(object):
       self, project=None, user=None, issue=None, config=None,
       usergroup=None, cache_manager=None, autolink_obj=None,
       user_star=None, project_star=None, issue_star=None, features=None,
-      spam=None, hotlist_star=None, chart=None):
+      spam=None, hotlist_star=None, chart=None, template=None):
     # Persistence services
     self.project = project
     self.user = user
@@ -40,6 +41,7 @@ class Services(object):
     self.hotlist_star = hotlist_star
     self.issue_star = issue_star
     self.features = features
+    self.template = template
 
     # Misc. services
     self.cache_manager = cache_manager
@@ -69,10 +71,11 @@ def set_up_services():
     issue = issue_svc.IssueService(project, config, cache_manager, chart)
     autolink_obj = autolink.Autolink()
     spam = spam_svc.SpamService()
+    template = template_svc.TemplateService(cache_manager)
     svcs = Services(
       cache_manager=cache_manager, config=config, features=features,
       issue_star=issue_star, project=project, project_star=project_star,
       user=user, user_star=user_star, usergroup=usergroup, issue=issue,
       autolink_obj=autolink_obj, spam=spam, hotlist_star=hotlist_star,
-      chart=chart)
+      chart=chart, template=template)
   return svcs

@@ -866,9 +866,6 @@ class ConfigService(object):
         label_id: label
         for label, label_id in self.label_to_id.items()}
 
-  def TemplatesWithComponent(self, _cnxn, component_id, _config):
-    return self.component_ids_to_templates.get(component_id, [])
-
   def ExpungeConfig(self, _cnxn, project_id):
     self.expunged_configs.append(project_id)
 
@@ -938,9 +935,9 @@ class ConfigService(object):
   def UpdateConfig(
       self, cnxn, project, well_known_statuses=None,
       statuses_offer_merge=None, well_known_labels=None,
-      excl_label_prefixes=None, templates=None,
-      default_template_for_developers=None, default_template_for_users=None,
-      list_prefs=None, restrict_to_known=None, approval_defs=None):
+      excl_label_prefixes=None, default_template_for_developers=None,
+      default_template_for_users=None, list_prefs=None, restrict_to_known=None,
+      approval_defs=None):
     project_id = project.project_id
     project_config = self.GetProjectConfig(cnxn, project_id, use_cache=False)
 
@@ -958,9 +955,6 @@ class ConfigService(object):
 
     if approval_defs is not None:
       tracker_bizobj.SetConfigApprovals(project_config, approval_defs)
-
-    if templates is not None:
-      project_config.templates = templates
 
     if default_template_for_developers is not None:
       project_config.default_template_for_developers = (
@@ -1073,24 +1067,6 @@ class ConfigService(object):
         if cd.component_id != component_id]
     self.StoreConfig(cnxn, config)
 
-  def CreateIssueTemplateDef(
-      self, cnxn, project_id, name, content, summary, summary_must_be_edited,
-      status, members_only, owner_defaults_to_member, component_required,
-      owner_id=None, labels=None, component_ids=None, admin_ids=None,
-      field_values=None, phases=None):
-    config = self.GetProjectConfig(cnxn, project_id)
-    template_id = self.next_template_id
-    self.next_template_id += 1
-    if not admin_ids:
-      admin_ids = []
-    template = tracker_bizobj.MakeIssueTemplate(
-        name, summary, status, owner_id, content, labels, field_values,
-        admin_ids, component_ids, summary_must_be_edited,
-        owner_defaults_to_member, component_required, members_only, phases)
-    config.templates.append(template)
-    self.StoreConfig(cnxn, config)
-    return template_id
-
   def UpdateIssueTemplateDef(
       self, cnxn, project_id, template_id, name=None, content=None,
       summary=None, summary_must_be_edited=None, status=None, members_only=None,
@@ -1127,14 +1103,6 @@ class ConfigService(object):
       template.field_values = field_values
     if phases is not None:
       template.phases = phases
-
-    self.StoreConfig(cnxn, config)
-
-  def DeleteIssueTemplateDef(self, cnxn, project_id, template_id):
-    config = self.GetProjectConfig(cnxn, project_id)
-    updated_templates = [tmpl for tmpl in config.templates if
-                         tmpl.template_id is not template_id]
-    config.templates = updated_templates
 
     self.StoreConfig(cnxn, config)
 

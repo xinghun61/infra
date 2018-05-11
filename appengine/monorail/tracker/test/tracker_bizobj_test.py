@@ -12,6 +12,7 @@ from framework import framework_views
 from proto import tracker_pb2
 from services import service_manager
 from testing import fake
+from testing import testing_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
@@ -74,23 +75,6 @@ class BizobjTest(unittest.TestCase):
     issue.labels.extend(['d', 'e', 'f'])
     self.assertEquals(tracker_bizobj.GetLabels(issue),
                       ['d', 'e', 'f', 'a', 'b', 'c'])
-
-  def testUsersInvolvedInConfig_Empty(self):
-    config = tracker_pb2.ProjectIssueConfig()
-    self.assertEqual(set(), tracker_bizobj.UsersInvolvedInConfig(config))
-
-  def testUsersInvolvedInConfig_Default(self):
-    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    self.assertEqual(set(), tracker_bizobj.UsersInvolvedInConfig(config))
-
-  def testUsersInvolvedInConfig_Normal(self):
-    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    config.templates[0].owner_id = 111L
-    config.templates[0].admin_ids = [111L, 222L]
-    config.field_defs = [tracker_pb2.FieldDef(admin_ids=[333L])]
-    self.assertEqual(
-        {111L, 222L, 333L},
-        tracker_bizobj.UsersInvolvedInConfig(config))
 
   def testFindFieldDef_None(self):
     config = tracker_pb2.ProjectIssueConfig()
@@ -192,29 +176,27 @@ class BizobjTest(unittest.TestCase):
     self.assertIsNone(tracker_bizobj.FindPhase('ghost_phase', []))
 
   def testFindIssueTemplate_Normal(self):
-    config = tracker_pb2.ProjectIssueConfig()
     template = tracker_bizobj.MakeIssueTemplate(
         'template', 'summary', 'Available', 111L, 'content', [], [], [], [])
-    config.templates.append(template)
+    templates = testing_helpers.DefaultTemplates()
+    templates.append(template)
     self.assertEqual(
-        template, tracker_bizobj.FindIssueTemplate('template', config))
+        template, tracker_bizobj.FindIssueTemplate('template', templates))
 
   def testFindIssueTemplate_Empty(self):
-    config = tracker_pb2.ProjectIssueConfig()
-    self.assertIsNone(tracker_bizobj.FindIssueTemplate('template', config))
+    self.assertIsNone(tracker_bizobj.FindIssueTemplate('template', []))
 
   def testFindIssueTemplateById_Normal(self):
-    config = tracker_pb2.ProjectIssueConfig()
     template = tracker_bizobj.MakeIssueTemplate(
         'template', 'summary', 'Available', 111L, 'content', [], [], [], [])
     template.template_id = 1
-    config.templates.append(template)
+    templates = testing_helpers.DefaultTemplates()
+    templates.append(template)
     self.assertEqual(
-        template, tracker_bizobj.FindIssueTemplateByID(1, config))
+        template, tracker_bizobj.FindIssueTemplateByID(1, templates))
 
   def testFindIssueTemplateById_Empty(self):
-    config = tracker_pb2.ProjectIssueConfig()
-    self.assertIsNone(tracker_bizobj.FindIssueTemplateByID(1, config))
+    self.assertIsNone(tracker_bizobj.FindIssueTemplateByID(1, []))
 
   def testGetGrantedPerms_Empty(self):
     config = tracker_pb2.ProjectIssueConfig()
@@ -700,7 +682,6 @@ class BizobjTest(unittest.TestCase):
     self.assertTrue(len(config.well_known_statuses) > 0)
     self.assertTrue(config.statuses_offer_merge > 0)
     self.assertTrue(len(config.well_known_labels) > 0)
-    self.assertTrue(len(config.templates) > 0)
     self.assertTrue(len(config.exclusive_label_prefixes) > 0)
     # TODO(jrobbins): test actual values from default config
 

@@ -67,7 +67,11 @@ class ProjectExportJSON(jsonfeed.JsonFeed):
 
     config = self.services.config.GetProjectConfig(
         mr.cnxn, mr.project.project_id)
-    user_id_set.update(tracker_bizobj.UsersInvolvedInConfig(config))
+    project_templates = self.services.template.GetProjectTemplates(
+        mr.cnxn, config.project_id)
+    involved_users = self.services.config.UsersInvolvedInConfig(
+        config, project_templates)
+    user_id_set.update(involved_users)
 
     # The value 0 indicates "no user", e.g., that an issue has no owner.
     # We don't need to create a User row to represent that.
@@ -75,7 +79,7 @@ class ProjectExportJSON(jsonfeed.JsonFeed):
     email_dict = self.services.user.LookupUserEmails(mr.cnxn, user_id_set)
 
     project_json = self._MakeProjectJSON(project, email_dict)
-    config_json = self._MakeConfigJSON(config, email_dict)
+    config_json = self._MakeConfigJSON(config, email_dict, project_templates)
 
     json_data = {
         'metadata': {
@@ -124,7 +128,7 @@ class ProjectExportJSON(jsonfeed.JsonFeed):
     }
     return perm_json
 
-  def _MakeConfigJSON(self, config, email_dict):
+  def _MakeConfigJSON(self, config, email_dict, project_templates):
     config_json = {
       'statuses':
           [self._MakeStatusJSON(status)
@@ -141,7 +145,7 @@ class ProjectExportJSON(jsonfeed.JsonFeed):
            for component in config.component_defs],
       'templates':
           [self._MakeTemplateJSON(template, email_dict)
-           for template in config.templates],
+           for template in project_templates],
       'developer_template': config.default_template_for_developers,
       'user_template': config.default_template_for_users,
       'list_cols': config.default_col_spec,

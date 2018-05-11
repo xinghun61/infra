@@ -225,8 +225,10 @@ class AdminTemplates(IssueAdminBase):
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
+    project_templates = self.services.template.GetProjectTemplates(mr.cnxn,
+        config.project_id)
     default_template_id_for_developers, default_template_id_for_users = (
-        self._ParseDefaultTemplateSelections(post_data, config.templates))
+        self._ParseDefaultTemplateSelections(post_data, project_templates))
     if default_template_id_for_developers or default_template_id_for_users:
       self.services.config.UpdateConfig(
           mr.cnxn, mr.project,
@@ -343,7 +345,7 @@ class AdminComponents(IssueAdminBase):
       if subcomponents:
         subcomponents_errors.append(component_def.path)
 
-      templates = self.services.config.TemplatesWithComponent(
+      templates = self.services.template.TemplatesWithComponent(
           mr.cnxn, component_def.component_id, config)
       if templates:
         templates_errors.append(component_def.path)

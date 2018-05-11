@@ -64,10 +64,6 @@ def MakeProjectIssueConfig(prefix):
           MakeLabel('%s-label1' % prefix),
           MakeLabel('%s-label2' % prefix),
       ],
-      templates=[
-          MakeTemplate('%s-template1' % prefix),
-          MakeTemplate('%s-template2' % prefix),
-      ],
       default_template_for_developers=1,
       default_template_for_users=2
   )
@@ -125,8 +121,13 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testConvertProjectIssueConfig(self):
     """Test convert_project_config."""
-    config = MakeProjectIssueConfig('test')
-    config_api = api_pb2_v1_helpers.convert_project_config(config)
+    prefix = 'test'
+    config = MakeProjectIssueConfig(prefix)
+    templates = [
+        MakeTemplate('%s-template1' % prefix),
+        MakeTemplate('%s-template2' % prefix),
+    ]
+    config_api = api_pb2_v1_helpers.convert_project_config(config, templates)
     self.assertEquals(config.restrict_to_known, config_api.restrictToKnown)
     self.assertEquals(
         config.default_col_spec.split(), config_api.defaultColumns)
@@ -145,9 +146,15 @@ class ApiV1HelpersTest(unittest.TestCase):
   def testConvertProject(self):
     """Test convert_project."""
     project = MakeProject('testprj')
-    config = MakeProjectIssueConfig('testconfig')
+    prefix = 'testconfig'
+    config = MakeProjectIssueConfig(prefix)
     role = api_pb2_v1.Role.owner
-    project_api = api_pb2_v1_helpers.convert_project(project, config, role)
+    templates = [
+        MakeTemplate('%s-template1' % prefix),
+        MakeTemplate('%s-template2' % prefix),
+    ]
+    project_api = api_pb2_v1_helpers.convert_project(project, config, role,
+        templates)
     self.assertEquals(project.project_name, project_api.name)
     self.assertEquals(project.project_name, project_api.externalId)
     self.assertEquals('/p/%s/' % project.project_name, project_api.htmlLink)

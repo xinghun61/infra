@@ -108,7 +108,8 @@ class IssuePeekTest(unittest.TestCase):
     self.assertEqual(issuecomment_list[2:], visible_comments)
     self.assertTrue(pagination.visible)
     self.assertEqual(2, pagination.last)
-    self.assertEqual(framework_constants.DEFAULT_COMMENTS_PER_PAGE + 1, pagination.start)
+    self.assertEqual(framework_constants.DEFAULT_COMMENTS_PER_PAGE + 1,
+        pagination.start)
 
     # One comment on second page, 1 of them deleted.
     issuecomment_list[1].deleted_by = 123

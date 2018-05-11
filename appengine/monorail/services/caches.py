@@ -190,7 +190,7 @@ class AbstractTwoLevelCache(object):
     self.pb_class = pb_class
 
   def _MakeCache(self, cache_manager, kind, max_size=None):
-    """Make the RAM cache and registier it with the cache_manager."""
+    """Make the RAM cache and register it with the cache_manager."""
     return RamCache(cache_manager, kind, max_size=max_size)
 
   def CacheItem(self, key, value):

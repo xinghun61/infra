@@ -482,8 +482,6 @@ class ProjectIssueConfig(messages.Message):
   field_defs = messages.MessageField(FieldDef, 5, repeated=True)
   component_defs = messages.MessageField(ComponentDef, 6, repeated=True)
 
-  templates = messages.MessageField(TemplateDef, 30, repeated=True)
-
   default_template_for_developers = messages.IntegerField(3, required=True)
   default_template_for_users = messages.IntegerField(4, required=True)
 

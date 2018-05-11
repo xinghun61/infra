@@ -100,13 +100,15 @@ class TemplateCreate(servlet.Servlet):
     """
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    project_templates = self.services.template.GetProjectTemplates(mr.cnxn,
+        config.project_id)
     parsed = template_helpers.ParseTemplateRequest(post_data, config)
     field_helpers.ShiftEnumFieldsIntoLabels(
         parsed.labels, [], parsed.field_val_strs, [], config)
 
     if not parsed.name:
       mr.errors.name = 'Please provide a template name'
-    if tracker_bizobj.FindIssueTemplate(parsed.name, config):
+    if tracker_bizobj.FindIssueTemplate(parsed.name, project_templates):
       mr.errors.name = 'Template with name %s already exists' % parsed.name
 
     (admin_ids, owner_id, component_ids,
@@ -149,7 +151,7 @@ class TemplateCreate(servlet.Servlet):
       return
 
     labels = [label for label in parsed.labels if label]
-    self.services.config.CreateIssueTemplateDef(
+    self.services.template.CreateIssueTemplateDef(
         mr.cnxn, mr.project_id, parsed.name, parsed.content, parsed.summary,
         parsed.summary_must_be_edited, parsed.status, parsed.members_only,
         parsed.owner_defaults_to_member, parsed.component_required,

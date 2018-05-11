@@ -77,7 +77,9 @@ class IssueEntry(servlet.Servlet):
         permissions.EDIT_ISSUE_OWNER,
         permissions.EDIT_ISSUE_CC)
 
-    wkp = _SelectTemplate(mr.template_name, config, is_member)
+    templates = self.services.template.GetProjectTemplates(mr.cnxn,
+        config.project_id)
+    wkp = _SelectTemplate(mr.template_name, config, is_member, templates)
 
     if wkp.summary:
       initial_summary = wkp.summary
@@ -247,7 +249,10 @@ class IssueEntry(servlet.Servlet):
     if len(parsed.summary) > tracker_constants.MAX_SUMMARY_CHARS:
       mr.errors.summary = 'Summary is too long'
 
-    if _MatchesTemplate(parsed.comment, config):
+    project_templates = self.services.template.GetProjectTemplates(mr.cnxn,
+        config.project_id)
+
+    if _MatchesTemplate(parsed.comment, project_templates):
       mr.errors.comment = 'Template must be filled out.'
 
     if parsed.users.owner_id is None:
@@ -277,7 +282,7 @@ class IssueEntry(servlet.Servlet):
               mr.project.project_id, attachment_bytes_used=new_bytes_used)
 
           template_content = ''
-          for wkp in config.templates:
+          for wkp in project_templates:
             if wkp.name == parsed.template_name:
               template_content = wkp.content
           marked_description = tracker_helpers.MarkupDescriptionOnInput(
@@ -311,7 +316,7 @@ class IssueEntry(servlet.Servlet):
 
     if mr.errors.AnyErrors():
       component_required = False
-      for wkp in config.templates:
+      for wkp in project_templates:
         if wkp.name == parsed.template_name:
           component_required = wkp.component_required
       self.PleaseCorrect(
@@ -337,9 +342,9 @@ class IssueEntry(servlet.Servlet):
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.ISSUE_DETAIL, id=issue.local_id)
 
-def _MatchesTemplate(content, config):
+def _MatchesTemplate(content, project_templates):
     content = content.strip(string.whitespace)
-    for template in config.templates:
+    for template in project_templates:
       template_content = template.content.strip(string.whitespace)
       diff = difflib.unified_diff(content.splitlines(),
           template_content.splitlines())
@@ -364,19 +369,21 @@ def _DiscardUnusedTemplateLabelPrefixes(labels):
           if not lab.endswith('-?')]
 
 
-def _SelectTemplate(requested_template_name, config, is_member):
+def _SelectTemplate(requested_template_name, config, is_member,
+                    project_templates):
   """Return the template to show to the user in this situation.
 
   Args:
     requested_template_name: name of template requested by user, or None.
     config: ProjectIssueConfig for this project.
     is_member: True if user is a project member.
+    project_templates: The templates in the given project.
 
   Returns:
     A Template PB with info needed to populate the issue entry form.
   """
   if requested_template_name:
-    for template in config.templates:
+    for template in project_templates:
       if requested_template_name == template.name:
         return template
     logging.info('Issue template name %s not found', requested_template_name)
@@ -391,17 +398,17 @@ def _SelectTemplate(requested_template_name, config, is_member):
   # positions of the templates that are defined in tracker_constants.
   if default_id == 0:
     if is_member:
-      return config.templates[0]
-    elif len(config.templates) > 1:
-      return config.templates[1]
+      return project_templates[0]
+    elif len(project_templates) > 1:
+      return project_templates[1]
 
   # This project has a relevant default template ID that we can use.
-  for template in config.templates:
+  for template in project_templates:
     if template.template_id == default_id:
       return template
 
   # If it was not found, just go with a template that we know exists.
-  return config.templates[0]
+  return project_templates[0]
 
 
 def ProcessParsedHotlistRefs(mr, services, parsed_hotlist_refs):

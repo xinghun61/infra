@@ -885,7 +885,7 @@ def MakeFieldUserViews(cnxn, template, user_service):
 
 
 class ConfigView(template_helpers.PBProxy):
-  """Make it easy to display most fieds of a ProjectIssueConfig in EZT."""
+  """Make it easy to display most fields of a ProjectIssueConfig in EZT."""
 
   def __init__(self, mr, services, config):
     """Gather data for the issue section of a project admin page.
@@ -914,9 +914,11 @@ class ConfigView(template_helpers.PBProxy):
       else:
         self.closed_statuses.append(item)
 
+    project_templates = services.template.GetProjectTemplates(mr.cnxn,
+        config.project_id)
     self.templates = [
         IssueTemplateView(mr, tmpl, services.user, config)
-        for tmpl in config.templates]
+        for tmpl in project_templates]
     for index, template in enumerate(self.templates):
       template.index = index
 

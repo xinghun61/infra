@@ -7,7 +7,7 @@
 
 import logging
 import unittest
-from mock import patch
+from mock import Mock, patch
 
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
@@ -18,6 +18,7 @@ from features import send_notifications
 from proto import project_pb2
 from proto import tracker_pb2
 from services import service_manager
+from services import template_svc
 from testing import fake
 from testing import testing_helpers
 from tracker import tracker_bizobj
@@ -35,6 +36,7 @@ class WorkEnvTest(unittest.TestCase):
         project=fake.ProjectService(),
         issue_star=fake.IssueStarService(),
         project_star=fake.ProjectStarService(),
+        template=Mock(spec=template_svc.TemplateService),
         spam=fake.SpamService())
     self.work_env = work_env.WorkEnv(
       self.mr, self.services, 'Testing phase')
@@ -57,6 +59,8 @@ class WorkEnvTest(unittest.TestCase):
 
     self.assertEqual('summary', actual.summary)
     self.assertEqual('desc', actual.description)
+    self.services.template.CreateDefaultProjectTemplates\
+        .assert_called_once_with(self.mr.cnxn, project_id)
 
   def testCreateProject_AlreadyExists(self):
     """We can create a project."""
@@ -64,6 +68,9 @@ class WorkEnvTest(unittest.TestCase):
     with self.assertRaises(exceptions.ProjectAlreadyExists):
       with self.work_env as we:
         we.CreateProject('testproj', [111L], [222L], [333L], 'summary', 'desc')
+
+    self.assertFalse(
+        self.services.template.CreateDefaultProjectTemplates.called)
 
   def testListProjects(self):
     """We can get the project IDs of projects visible to the current user."""

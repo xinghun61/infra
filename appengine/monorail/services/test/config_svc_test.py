@@ -9,6 +9,7 @@ import re
 import unittest
 import logging
 
+from mock import Mock, patch
 import mox
 
 from google.appengine.api import memcache
@@ -17,6 +18,7 @@ from google.appengine.ext import testbed
 from framework import sql
 from proto import tracker_pb2
 from services import config_svc
+from services import template_svc
 from testing import fake
 from tracker import tracker_bizobj
 from tracker import tracker_constants
@@ -178,20 +180,6 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
       (789, 'Duplicate', 'Pri Type', 1, 2,
        'Type Pri Summary', '-Pri', 'Mstone', 'Owner',
        '', None)]
-    self.template_rows = [
-        (1, 789, 'firstName', 'firstContent', 'firstSummary',
-         False, None, None, False, False, False),
-        (2, 789, 'secondName', 'secondContent', 'secondSummary',
-         False, None, None, False, False, False),]
-    self.template2label_rows = []
-    self.template2component_rows = []
-    self.template2admin_rows = []
-    self.template2fieldvalue_rows = []
-    self.template2phase_rows = [
-        (1, 1, 'Canary', 1),
-        (2, 1, 'Stable', 11)
-    ]
-    self.template2av_rows = [(21, 1, 1, 'needs_review'), (22, 1, 1, 'not_set')]
     self.statusdef_rows = [(1, 789, 1, 'New', True, 'doc', False),
                            (2, 789, 2, 'Fixed', False, 'doc', False)]
     self.labeldef_rows = [(1, 789, 1, 'Security', 'doc', False),
@@ -214,15 +202,12 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
 
   def testDeserializeIssueConfigs_Empty(self):
     config_dict = self.config_2lc._DeserializeIssueConfigs(
-        [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [])
+        [], [], [], [], [], [], [], [], [], [], [])
     self.assertEqual({}, config_dict)
 
   def testDeserializeIssueConfigs_Normal(self):
     config_dict = self.config_2lc._DeserializeIssueConfigs(
-        self.config_rows, self.template_rows, self.template2label_rows,
-        self.template2component_rows, self.template2admin_rows,
-        self.template2fieldvalue_rows, self.template2phase_rows,
-        self.template2av_rows, self.statusdef_rows, self.labeldef_rows,
+        self.config_rows, self.statusdef_rows, self.labeldef_rows,
         self.fielddef_rows, self.fielddef2admin_rows, self.componentdef_rows,
         self.component2admin_rows, self.component2cc_rows,
         self.component2label_rows, self.approvaldef2approver_rows,
@@ -238,49 +223,11 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual(len(self.approvaldef2approver_rows),
                      len(config.approval_defs[0].approver_ids))
     self.assertEqual(config.approval_defs[0].survey, 'Q1\nQ2\nQ3')
-    self.assertEqual(len(self.template_rows), len(config.templates))
-    launch_template = tracker_bizobj.FindIssueTemplate('firstName', config)
-    self.assertEqual(len(self.template2phase_rows),
-                     len(launch_template.phases))
-    canary_phase = tracker_bizobj.FindPhase(
-        'Canary', launch_template.phases)
-    av_21 = tracker_bizobj.FindApprovalValueByID(
-        21, canary_phase.approval_values)
-    self.assertEqual(av_21.status, tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
-    av_22 = tracker_bizobj.FindApprovalValueByID(
-        22, canary_phase.approval_values)
-    self.assertEqual(av_22.status, tracker_pb2.ApprovalStatus.NOT_SET)
-    stable_phase = tracker_bizobj.FindPhase(
-        'Stable', launch_template.phases)
-    self.assertEqual(0, len(stable_phase.approval_values))
 
   def SetUpFetchConfigs(self, project_ids):
     self.config_service.projectissueconfig_tbl.Select(
         self.cnxn, cols=config_svc.PROJECTISSUECONFIG_COLS,
         project_id=project_ids).AndReturn(self.config_rows)
-
-    self.config_service.template_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE_COLS, project_id=project_ids,
-        order_by=[('name', [])]).AndReturn(self.template_rows)
-    template_ids = [row[0] for row in self.template_rows]
-    self.config_service.template2label_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2LABEL_COLS,
-        template_id=template_ids).AndReturn(self.template2label_rows)
-    self.config_service.template2component_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2COMPONENT_COLS,
-        template_id=template_ids).AndReturn(self.template2component_rows)
-    self.config_service.template2admin_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2ADMIN_COLS,
-        template_id=template_ids).AndReturn(self.template2admin_rows)
-    self.config_service.template2fieldvalue_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2FIELDVALUE_COLS,
-        template_id=template_ids).AndReturn(self.template2fieldvalue_rows)
-    self.config_service.template2phase_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2PHASE_COLS,
-        template_id=template_ids).AndReturn(self.template2phase_rows)
-    self.config_service.template2approvalvalue_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2APPROVALVALUE_COLS,
-        template_id=template_ids).AndReturn(self.template2av_rows)
 
     self.config_service.statusdef_tbl.Select(
         self.cnxn, cols=config_svc.STATUSDEF_COLS, project_id=project_ids,
@@ -670,27 +617,6 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.projectissueconfig_tbl.Select(
         self.cnxn, cols=config_svc.PROJECTISSUECONFIG_COLS,
         project_id=project_ids).AndReturn([])
-    self.config_service.template_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE_COLS,
-        project_id=project_ids, order_by=[('name', [])]).AndReturn([])
-    self.config_service.template2label_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2LABEL_COLS,
-        template_id=[]).AndReturn([])
-    self.config_service.template2component_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2COMPONENT_COLS,
-        template_id=[]).AndReturn([])
-    self.config_service.template2admin_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2ADMIN_COLS,
-        template_id=[]).AndReturn([])
-    self.config_service.template2fieldvalue_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2FIELDVALUE_COLS,
-        template_id=[]).AndReturn([])
-    self.config_service.template2phase_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2PHASE_COLS,
-        template_id=[]).AndReturn([])
-    self.config_service.template2approvalvalue_tbl.Select(
-        self.cnxn, cols=config_svc.TEMPLATE2APPROVALVALUE_COLS,
-        template_id=[]).AndReturn([])
     self.config_service.statusdef_tbl.Select(
         self.cnxn, cols=config_svc.STATUSDEF_COLS,
         project_id=project_ids, where=[('rank IS NOT NULL', [])],
@@ -772,91 +698,9 @@ class ConfigServiceTest(unittest.TestCase):
         custom_issue_entry_url=None,
         commit=False)
 
-    self.SetUpUpdateTemplates_Default(project_id)
     self.SetUpUpdateWellKnownLabels_Default(project_id)
     self.SetUpUpdateWellKnownStatuses_Default(project_id)
     self.cnxn.Commit()
-
-  def SetUpUpdateTemplates_Default(
-      self, project_id, component_rows=None, admin_rows=None, fv_rows=None,
-      phase_rows=None, av_rows=None):
-    """Replay for UpdateTemplates.
-
-    template_tbl and template2label_tbl are based on DEFAULT_TEMPLATES
-
-    Args:
-      project_id: the project id
-      component_rows: optional list of template2component_rows
-      admin_rows: optional list of template2admin_rows
-      fv_rows: optional list of template2fieldvalue_rows
-    """
-    self.config_service.template_tbl.Select(
-      self.cnxn, cols=['id'], project_id=project_id).AndReturn([])
-    self.config_service.template2label_tbl.Delete(
-      self.cnxn, template_id=[], commit=False)
-    self.config_service.template2component_tbl.Delete(
-      self.cnxn, template_id=[], commit=False)
-    self.config_service.template2admin_tbl.Delete(
-      self.cnxn, template_id=[], commit=False)
-    self.config_service.template2fieldvalue_tbl.Delete(
-      self.cnxn, template_id=[], commit=False)
-    self.config_service.template2phase_tbl.Delete(
-        self.cnxn, template_id=[], commit=False)
-    self.config_service.template2approvalvalue_tbl.Delete(
-        self.cnxn, template_id=[], commit=False)
-    self.config_service.template_tbl.Delete(
-      self.cnxn, project_id=project_id, commit=False)
-
-    template_rows = []
-    for template_dict in tracker_constants.DEFAULT_TEMPLATES:
-      row = (None,
-             project_id,
-             template_dict['name'],
-             template_dict['content'],
-             template_dict['summary'],
-             template_dict.get('summary_must_be_edited'),
-             None,
-             template_dict['status'],
-             template_dict.get('members_only', False),
-             template_dict.get('owner_defaults_to_member', True),
-             template_dict.get('component_required', False))
-      template_rows.append(row)
-
-    self.config_service.template_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE_COLS, template_rows,
-        replace=True, commit=False, return_generated_ids=True).AndReturn(
-        range(1, len(template_rows) + 1))
-
-    template2label_rows = [
-        (2, 'Type-Defect'),
-        (2, 'Priority-Medium'),
-        (1, 'Type-Defect'),
-        (1, 'Priority-Medium'),
-        ]
-    template2component_rows = component_rows or []
-    template2admin_rows = admin_rows or []
-    template2fieldvalue_rows = fv_rows or []
-    template2phase_rows = phase_rows or []
-    template2approvalvalue_rows = av_rows or []
-
-    self.config_service.template2label_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2LABEL_COLS, template2label_rows,
-        ignore=True, commit=False)
-    self.config_service.template2component_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2COMPONENT_COLS, template2component_rows,
-        commit=False)
-    self.config_service.template2admin_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2ADMIN_COLS, template2admin_rows,
-        commit=False)
-    self.config_service.template2fieldvalue_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2FIELDVALUE_COLS,
-        template2fieldvalue_rows, commit=False)
-    self.config_service.template2phase_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2PHASE_COLS,
-        template2phase_rows, commit=False)
-    self.config_service.template2approvalvalue_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2APPROVALVALUE_COLS,
-        template2approvalvalue_rows, commit=False)
 
   def SetUpUpdateWellKnownLabels_Default(self, project_id):
     by_id = {
@@ -928,26 +772,6 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.StoreConfig(self.cnxn, config)
     self.mox.VerifyAll()
 
-  def testUpdateTemplates(self):
-    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    self.SetUpUpdateTemplates_Default(789)
-
-    self.mox.ReplayAll()
-    self.config_service._UpdateTemplates(self.cnxn, config)
-    self.mox.VerifyAll()
-
-  def testUpdateTemplates_CustomFields(self):
-    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    config.templates[0].field_values = [
-        tracker_bizobj.MakeFieldValue(
-            1, None, None, None, None, 'www.google.com', False)]
-    self.SetUpUpdateTemplates_Default(
-        789, fv_rows=[(2, 1, None, None, None, None, 'www.google.com')])
-
-    self.mox.ReplayAll()
-    self.config_service._UpdateTemplates(self.cnxn, config)
-    self.mox.VerifyAll()
-
   def testUpdateWellKnownLabels(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.SetUpUpdateWellKnownLabels_Default(789)
@@ -985,11 +809,6 @@ class ConfigServiceTest(unittest.TestCase):
     pass  # TODO(jrobbins): add a test for this
 
   def SetUpExpungeConfig(self, project_id):
-    self.config_service.template_tbl.Select(
-        self.cnxn, cols=['id'], project_id=project_id).AndReturn([])
-    self.config_service.template2label_tbl.Delete(self.cnxn, template_id=[])
-    self.config_service.template2component_tbl.Delete(self.cnxn, template_id=[])
-    self.config_service.template_tbl.Delete(self.cnxn, project_id=project_id)
     self.config_service.statusdef_tbl.Delete(self.cnxn, project_id=project_id)
     self.config_service.labeldef_tbl.Delete(self.cnxn, project_id=project_id)
     self.config_service.projectissueconfig_tbl.Delete(
@@ -1163,114 +982,6 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.DeleteComponentDef(self.cnxn, 789, 1)
     self.mox.VerifyAll()
 
-  ### Issue template definition
-
-  def SetUpCreateIssueTemplateDef(self):
-    self.config_service.template_tbl.InsertRow(
-        self.cnxn, project_id=789, name='template', content='content',
-        summary='summary', summary_must_be_edited=True, owner_id=111L,
-        status='Available', members_only=True, owner_defaults_to_member=True,
-        component_required=True, commit=False).AndReturn(1)
-    self.config_service.template2label_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2LABEL_COLS, [(1, 'label')], commit=False)
-    self.config_service.template2component_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2COMPONENT_COLS, [(1, 3)], commit=False)
-    self.config_service.template2admin_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2ADMIN_COLS, [(1, 222L)], commit=False)
-    self.config_service.template2fieldvalue_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2FIELDVALUE_COLS, [
-            (1, 1, None, 'somestring', None, None, None)], commit=False)
-    self.config_service.template2phase_tbl.InsertRow(
-        self.cnxn, template_id=1, name='Canary', rank=11,
-        commit=False).AndReturn(1)
-    self.config_service.template2approvalvalue_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2APPROVALVALUE_COLS,
-        [(23, 1, 1, 'needs_review'), (24, 1, 1, 'not_set')], commit=False)
-
-    self.cnxn.Commit()
-
-  def testCreateIssueTemplateDef(self):
-    fv = tracker_bizobj.MakeFieldValue(
-        1, None, 'somestring', None, None, None, False)
-    av_23 = tracker_pb2.ApprovalValue(
-        approval_id=23, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
-    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
-    approval_values = [av_23, av_24]
-    phases = [tracker_pb2.Phase(
-        name='Canary', approval_values=approval_values, rank=11)]
-    self.SetUpCreateIssueTemplateDef()
-    self.mox.ReplayAll()
-    self.config_service.CreateIssueTemplateDef(
-        self.cnxn, 789, 'template', 'content', 'summary', True, 'Available',
-        True, True, True, owner_id=111L, labels=['label'], component_ids=[3],
-        admin_ids=[222L], field_values=[fv], phases=phases)
-    self.mox.VerifyAll()
-
-  def SetUpUpdateIssueTemplateDef(self):
-    new_values = dict(
-        content='content', summary='summary', component_required=True)
-    self.config_service.template_tbl.Update(
-        self.cnxn, new_values, id=1, commit=False)
-    self.config_service.template2label_tbl.Delete(
-        self.cnxn, template_id=1, commit=False)
-    self.config_service.template2label_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2LABEL_COLS, [], commit=False)
-    self.config_service.template2admin_tbl.Delete(
-        self.cnxn, template_id=1, commit=False)
-    self.config_service.template2admin_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2ADMIN_COLS, [(1, 111L)], commit=False)
-    self.config_service.template2approvalvalue_tbl.Delete(
-        self.cnxn, template_id=1, commit=False)
-    self.config_service.template2phase_tbl.Delete(
-        self.cnxn, template_id=1, commit=False)
-    self.config_service.template2phase_tbl.InsertRow(
-        self.cnxn, template_id=1, name='Canary', rank=11,
-        commit=False).AndReturn(1)
-    self.config_service.template2approvalvalue_tbl.InsertRows(
-        self.cnxn, config_svc.TEMPLATE2APPROVALVALUE_COLS,
-        [(20, 1, 1, 'not_set'), (21, 1, 1, 'not_set')], commit=False)
-
-    self.cnxn.Commit()
-
-  def testUpdateIssueTemplateDef(self):
-    av_20 = tracker_pb2.ApprovalValue(approval_id=20)
-    av_21 = tracker_pb2.ApprovalValue(approval_id=21)
-    approval_values = [av_20, av_21]
-    phases = [tracker_pb2.Phase(
-        name='Canary', approval_values=approval_values, rank=11)]
-    self.SetUpUpdateIssueTemplateDef()
-    self.mox.ReplayAll()
-    self.config_service.UpdateIssueTemplateDef(
-        self.cnxn, 789, 1, content='content', summary='summary',
-        component_required=True, labels=[], admin_ids=[111L],
-        phases=phases)
-    self.mox.VerifyAll()
-
-  def SetUpDeleteIssueTemplateDef(self):
-    template_id = 1
-    self.config_service.template2label_tbl.Delete(
-        self.cnxn, template_id=template_id, commit=False)
-    self.config_service.template2component_tbl.Delete(
-        self.cnxn, template_id=template_id, commit=False)
-    self.config_service.template2admin_tbl.Delete(
-        self.cnxn, template_id=template_id, commit=False)
-    self.config_service.template2fieldvalue_tbl.Delete(
-        self.cnxn, template_id=template_id, commit=False)
-    self.config_service.template2approvalvalue_tbl.Delete(
-        self.cnxn, template_id=template_id, commit=False)
-    self.config_service.template2phase_tbl.Delete(
-        self.cnxn, template_id=template_id, commit=False)
-    self.config_service.template_tbl.Delete(
-        self.cnxn, id=template_id, commit=False)
-    self.cnxn.Commit()
-
-  def testDeleteIssueTemplateDef(self):
-    self.SetUpDeleteIssueTemplateDef()
-    self.mox.ReplayAll()
-    self.config_service.DeleteIssueTemplateDef(
-        self.cnxn, 789, 1)
-    self.mox.VerifyAll()
-
   ### Memcache management
 
   def testInvalidateMemcache(self):
@@ -1313,3 +1024,28 @@ class ConfigServiceTest(unittest.TestCase):
     self.assertIsNone(memcache.get('label_rows:789'))
     self.assertIsNone(memcache.get('field_rows:789'))
     self.assertEqual(NOW, memcache.get('890;1'))
+
+  def testUsersInvolvedInConfig_Empty(self):
+    templates = []
+    config = tracker_pb2.ProjectIssueConfig()
+    self.assertEqual(set(), self.config_service.UsersInvolvedInConfig(
+        config, templates))
+
+  def testUsersInvolvedInConfig_Default(self):
+    templates = [
+        tracker_bizobj.ConvertDictToTemplate(t)
+        for t in tracker_constants.DEFAULT_TEMPLATES]
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.assertEqual(set(), self.config_service.UsersInvolvedInConfig(
+        config, templates))
+
+  def testUsersInvolvedInConfig_Normal(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    templates = [
+        tracker_bizobj.ConvertDictToTemplate(t)
+        for t in tracker_constants.DEFAULT_TEMPLATES]
+    templates[0].owner_id = 111L
+    templates[0].admin_ids = [111L, 222L]
+    config.field_defs = [tracker_pb2.FieldDef(admin_ids=[333L])]
+    actual = self.config_service.UsersInvolvedInConfig(config, templates)
+    self.assertEqual({111L, 222L, 333L}, actual)
