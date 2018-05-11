@@ -416,3 +416,6 @@ date_action_ping_author = 'monorail'
 # potentially differ. It is equal to the maximum unsigned 32 bit integer,
 # because the `int(10) unsigned` column type in MySQL is 32 bits.
 maximum_snapshot_period_end = 4294967295
+
+# Percent of requests to report to cloud tracing.
+trace_fraction = 0.1

@@ -22,6 +22,7 @@ import httplib
 import json
 import logging
 import os
+import random
 import time
 import urllib
 
@@ -273,7 +274,7 @@ class Servlet(webapp2.RequestHandler):
     if settings.enable_profiler_logging:
       self.mr.profiler.LogStats()
 
-    if False: # TODO(seanmccullough): Use sampling to stay under quota.
+    if random.random() < settings.trace_fraction:
       self.mr.profiler.ReportTrace()
 
   def _AddHelpDebugPageData(self, page_data):
