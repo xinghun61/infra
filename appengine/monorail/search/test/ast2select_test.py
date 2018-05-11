@@ -1360,6 +1360,21 @@ class AST2SelectTest(unittest.TestCase):
     self.assertEqual([('Cond1.name IS NULL', [])], where)
     self.assertEqual([], unsupported)
 
+  def testProcessPhaseCond_HasGate(self):
+    fd = BUILTIN_ISSUE_FIELDS['gate']
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.EQ, [fd], ['canary', 'stable'], [])
+    left_joins, where, unsupported = ast2select._ProcessPhaseCond(
+        cond, 'Cond1', 'Phase1', False)
+    self.assertEqual(
+        [('(Issue2ApprovalValue AS Cond1 JOIN IssuePhaseDef AS Phase1 '
+          'ON Cond1.phase_id = Phase1.id AND '
+          'LOWER(Phase1.name) IN (%s,%s)) '
+          'ON Issue.id = Cond1.issue_id', ['canary', 'stable'])],
+        left_joins)
+    self.assertEqual([('Phase1.name IS NOT NULL', [])], where)
+    self.assertEqual([], unsupported)
+
   def testCompare_IntTypes(self):
     val_type = tracker_pb2.FieldTypes.INT_TYPE
     cond_str, cond_args = ast2select._Compare(

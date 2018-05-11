@@ -264,6 +264,21 @@ class QueryParsingUnitTest(unittest.TestCase):
         MakeCond(IS_DEFINED, [BUILTIN_ISSUE_FIELDS['label']], ['size'], []),
         cond1)
 
+  def testParseUserQuery_Phase(self):
+    ast = query2ast.ParseUserQuery(
+        'gate:Canary,Stable', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(TEXT_HAS, [BUILTIN_ISSUE_FIELDS['gate']], ['canary', 'stable'], []),
+        cond1)
+
+    ast = query2ast.ParseUserQuery(
+        '-gate:Canary,Stable', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(NOT_TEXT_HAS, [BUILTIN_ISSUE_FIELDS['gate']], ['canary', 'stable'], []),
+        cond1)
+
   def testParseUserQuery_Components(self):
     """Parse user queries for components"""
     ast = query2ast.ParseUserQuery(

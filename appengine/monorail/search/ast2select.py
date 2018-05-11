@@ -70,18 +70,18 @@ def BuildSQLQuery(query_ast, snapshot_mode=False):
   return left_joins, where, unsupported_conds
 
 
-def _ProcessBlockedOnIDCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessBlockedOnIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a blockedon_id=issue_id cond to SQL."""
   return _ProcessRelatedIDCond(cond, alias, 'blockedon', snapshot_mode)
 
 
-def _ProcessBlockingIDCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessBlockingIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a blocking_id:1,2 cond to SQL."""
   return _ProcessRelatedIDCond(cond, alias, 'blockedon', reverse_relation=True,
       snapshot_mode=snapshot_mode)
 
 
-def _ProcessMergedIntoIDCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessMergedIntoIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a mergedinto:1,2 cond to SQL."""
   return _ProcessRelatedIDCond(cond, alias, 'mergedinto',
       snapshot_mode=snapshot_mode)
@@ -139,7 +139,7 @@ def _GetFieldTypeAndValues(cond):
     return tracker_pb2.FieldTypes.STR_TYPE, cond.str_values
 
 
-def _ProcessOwnerCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessOwnerCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert an owner:substring cond to SQL."""
   if snapshot_mode:
     left_joins = [(
@@ -157,7 +157,7 @@ def _ProcessOwnerCond(cond, alias, _user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessOwnerIDCond(cond, _alias, _user_alias, snapshot_mode):
+def _ProcessOwnerIDCond(cond, _alias, _spare_alias, snapshot_mode):
   """Convert an owner_id=user_id cond to SQL."""
   if snapshot_mode:
     field_type, field_values = _GetFieldTypeAndValues(cond)
@@ -184,7 +184,7 @@ def _ProcessOwnerIDCond(cond, _alias, _user_alias, snapshot_mode):
   return [], where, []
 
 
-def _ProcessOwnerLastVisitCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessOwnerLastVisitCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert an ownerlastvisit<timestamp cond to SQL."""
   # TODO(jeffcarp): It is possible to support this on snapshots.
   if snapshot_mode:
@@ -200,7 +200,7 @@ def _ProcessOwnerLastVisitCond(cond, alias, _user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessIsOwnerBouncing(cond, alias, _user_alias, snapshot_mode):
+def _ProcessIsOwnerBouncing(cond, alias, _spare_alias, snapshot_mode):
   """Convert an is:ownerbouncing cond to SQL."""
   if snapshot_mode:
     return [], [], [cond]
@@ -220,7 +220,7 @@ def _ProcessIsOwnerBouncing(cond, alias, _user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessReporterCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessReporterCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a reporter:substring cond to SQL."""
   if snapshot_mode:
     left_joins = [(
@@ -236,7 +236,7 @@ def _ProcessReporterCond(cond, alias, _user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessReporterIDCond(cond, _alias, _user_alias, snapshot_mode):
+def _ProcessReporterIDCond(cond, _alias, _spare_alias, snapshot_mode):
   """Convert a reporter_ID=user_id cond to SQL."""
   field_type, field_values = _GetFieldTypeAndValues(cond)
 
@@ -276,7 +276,7 @@ def _ProcessCcCond(cond, alias, user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessCcIDCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessCcIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a cc_id=user_id cond to SQL."""
   if snapshot_mode:
     join_str = (
@@ -319,7 +319,7 @@ def _ProcessStarredByCond(cond, alias, user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessStarredByIDCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessStarredByIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a starredby_id=user_id cond to SQL."""
   if snapshot_mode:
     return [], [], [cond]
@@ -359,7 +359,7 @@ def _ProcessCommentByCond(cond, alias, user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessCommentByIDCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessCommentByIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a commentby_id=user_id cond to SQL."""
   if snapshot_mode:
     return [], [], [cond]
@@ -378,7 +378,7 @@ def _ProcessCommentByIDCond(cond, alias, _user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessStatusIDCond(cond, _alias, _user_alias, snapshot_mode):
+def _ProcessStatusIDCond(cond, _alias, _spare_alias, snapshot_mode):
   """Convert a status_id=ID cond to SQL."""
   field_type, field_values = _GetFieldTypeAndValues(cond)
   if snapshot_mode:
@@ -400,7 +400,7 @@ def _ProcessStatusIDCond(cond, _alias, _user_alias, snapshot_mode):
   return [], where, []
 
 
-def _ProcessLabelIDCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessLabelIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a label_id=ID cond to SQL."""
   if snapshot_mode:
     join_str = (
@@ -421,7 +421,7 @@ def _ProcessLabelIDCond(cond, alias, _user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessComponentIDCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessComponentIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert a component_id=ID cond to SQL."""
   # This is a built-in field, so it shadows any other fields w/ the same name.
   if snapshot_mode:
@@ -501,7 +501,7 @@ def _ProcessCustomFieldCond(cond, alias, user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessAttachmentCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessAttachmentCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert has:attachment and -has:attachment cond to SQL."""
   if snapshot_mode:
     return [], [], [cond]
@@ -522,7 +522,7 @@ def _ProcessAttachmentCond(cond, alias, _user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessHotlistIDCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessHotlistIDCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert hotlist_id=IDS cond to SQL."""
   if snapshot_mode:
     join_str = (
@@ -544,7 +544,7 @@ def _ProcessHotlistIDCond(cond, alias, _user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessHotlistCond(cond, alias, _user_alias, snapshot_mode):
+def _ProcessHotlistCond(cond, alias, _spare_alias, snapshot_mode):
   """Convert hotlist=user:hotlist-name to SQL"""
   # hotlist conditions that reach this function definitely have invalid
   # user_name/id/email. This validity was determined in
@@ -574,6 +574,22 @@ def _ProcessHotlistCond(cond, alias, _user_alias, snapshot_mode):
   return left_joins, where, []
 
 
+def _ProcessPhaseCond(cond, alias, phase_alias, _snapshot_mode):
+  """Convert gate:<phase_name> to SQL."""
+
+  cond_str, cond_args = _Compare(
+      phase_alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE, 'name', cond.str_values)
+  left_joins = [(
+      '(Issue2ApprovalValue AS {alias} JOIN IssuePhaseDef AS {phase_alias} '
+      'ON {alias}.phase_id = {phase_alias}.id AND {name_cond}) '
+      'ON Issue.id = {alias}.issue_id'.format(
+          alias=alias, phase_alias=phase_alias, name_cond=cond_str),
+      cond_args)]
+  where = [_CompareAlreadyJoined(phase_alias, cond.op, 'name')]
+
+  return left_joins, where, []
+
+
 _PROCESSORS = {
     'owner': _ProcessOwnerCond,
     'owner_id': _ProcessOwnerIDCond,
@@ -596,6 +612,7 @@ _PROCESSORS = {
     'attachment': _ProcessAttachmentCond,
     'hotlist_id': _ProcessHotlistIDCond,
     'hotlist': _ProcessHotlistCond,
+    'gate': _ProcessPhaseCond,
     }
 
 
@@ -611,7 +628,7 @@ def _ProcessCond(cond_num, cond, snapshot_mode):
     statement.  Each of them is a list of (str, [val, ...]) pairs.
   """
   alias = 'Cond%d' % cond_num
-  user_alias = 'User%d' % cond_num
+  spare_alias = 'Spare%d' % cond_num
   # Note: a condition like [x=y] has field_name "x", there may be multiple
   # field definitions that match "x", but they will all have field_name "x".
   field_def = cond.field_defs[0]
@@ -630,7 +647,7 @@ def _ProcessCond(cond_num, cond, snapshot_mode):
 
   elif field_def.field_name in _PROCESSORS:
     proc = _PROCESSORS[field_def.field_name]
-    return proc(cond, alias, user_alias, snapshot_mode)
+    return proc(cond, alias, spare_alias, snapshot_mode)
 
   elif field_def.field_id:  # it is a search on a custom field
     return _ProcessCustomFieldCond(cond, alias, user_alias, snapshot_mode)

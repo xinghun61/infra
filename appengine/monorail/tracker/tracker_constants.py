@@ -30,7 +30,7 @@ RESERVED_PREFIXES = [
     'hotlist', 'rank', 'explicit_status', 'derived_status', 'explicit_owner',
     'derived_owner', 'explicit_cc', 'derived_cc', 'explicit_label',
     'derived_label', 'last_comment_by', 'exact_component',
-    'explicit_component', 'derived_component', 'alllabels']
+    'explicit_component', 'derived_component', 'alllabels', 'gate']
 
 # The columns are useless in the grid view, so don't offer them.
 NOT_USED_IN_GRID_AXES = [
@@ -222,4 +222,3 @@ RECOMPUTE_DERIVED_FIELDS_BLOCK_SIZE = 250
 # This is the number of issues listed in the ReindexQueue table that will
 # be processed each minute.
 MAX_ISSUES_TO_REINDEX_PER_MINUTE = 500
-

@@ -108,6 +108,7 @@ _ISSUE_FIELDS_LIST = [
     ('component', TXT),
     ('component_id', NUM),
     ('description', TXT),
+    ('gate', TXT),
     ('hotlist', TXT),
     ('hotlist_id', NUM),
     ('id', NUM),
@@ -338,6 +339,10 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
       return ast_pb2.MakeCond(op, fields[unquoted_value], [], [])
     else:  # Look for any label with that prefix.
       return ast_pb2.MakeCond(op, fields['label'], [unquoted_value], [])
+
+  # Search entries with certain gates.
+  if prefix == 'gate':
+    return ast_pb2.MakeCond(op, fields['gate'], quick_or_vals, [])
 
   # Determine hotlist query type.
   # If prefix is not 'hotlist', quick_or_vals is empty, or qov
