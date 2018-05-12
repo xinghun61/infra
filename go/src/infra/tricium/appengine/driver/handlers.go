@@ -93,7 +93,7 @@ func pubsubPushHandler(ctx *router.Context) {
 	logging.Infof(c, "[driver] Received pubsub push message")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to read pubsub message body: %v", err)
+		logging.WithError(err).Errorf(c, "failed to read pubsub message body")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -101,13 +101,13 @@ func pubsubPushHandler(ctx *router.Context) {
 		Message pubsub.PubsubMessage `json:"message"`
 	}
 	if err := json.Unmarshal(body, &pushBody); err != nil {
-		logging.WithError(err).Errorf(c, "failed to unmarshal JSON pubsub message: %v", err)
+		logging.WithError(err).Errorf(c, "failed to unmarshal JSON pubsub message")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	// Process pubsub message
+	// Process pubsub message.
 	if err := handlePubSubMessage(c, &pushBody.Message); err != nil {
-		logging.WithError(err).Errorf(c, "failed to handle PubSub message: %v", err)
+		logging.WithError(err).Errorf(c, "failed to handle PubSub message")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -138,7 +138,7 @@ func pubsubPullHandler(ctx *router.Context) {
 	logging.Infof(c, "[driver] Pulled pubsub message")
 	// Process pubsub message.
 	if err := handlePubSubMessage(c, msg); err != nil {
-		logging.WithError(err).Errorf(c, "failed to handle PubSub messages: %v", err)
+		logging.WithError(err).Errorf(c, "failed to handle PubSub messages")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

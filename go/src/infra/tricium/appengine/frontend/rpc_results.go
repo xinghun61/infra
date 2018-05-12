@@ -33,7 +33,7 @@ func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) 
 	}
 	results, isMerged, err := results(c, runID)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "results failed: %v", err)
+		logging.WithError(err).Errorf(c, "results failed")
 		return nil, grpc.Errorf(codes.Internal, "failed to execute results request")
 	}
 	logging.Infof(c, "[frontend] Results: %v", results)

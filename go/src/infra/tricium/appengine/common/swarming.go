@@ -76,12 +76,12 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 	c, _ = context.WithTimeout(c, 60*time.Second)
 	oauthClient, err := getOAuthClient(c)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to create oauth client: %v", err)
+		logging.WithError(err).Errorf(c, "failed to create oauth client")
 		return "", fmt.Errorf("failed to create oauth client: %v", err)
 	}
 	swarmingService, err := swarming.New(oauthClient)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to create swarming client: %v", err)
+		logging.WithError(err).Errorf(c, "failed to create swarming client")
 		return "", fmt.Errorf("failed to create swarming client: %v", err)
 	}
 	// TODO(emso): Read timeouts from the analyzer config.
@@ -111,7 +111,7 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 		Tags:           tags,
 	}).Do()
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to trigger swarming task: %v", err)
+		logging.WithError(err).Errorf(c, "failed to trigger swarming task")
 		return "", fmt.Errorf("failed to trigger swarming task: %v", err)
 	}
 	logging.Infof(c, "Worker triggered, ID: %q, name: %q, dimensions: %v, pubsub topic: %q, input isolate: %q",

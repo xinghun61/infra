@@ -30,7 +30,7 @@ func (*configServer) Validate(c context.Context, req *admin.ValidateRequest) (*a
 	if sc == nil {
 		var err error
 		if sc, err = config.LuciConfigServer.GetServiceConfig(c); err != nil {
-			logging.WithError(err).Errorf(c, "failed to get service config: %v", err)
+			logging.WithError(err).Errorf(c, "failed to get service config")
 			return nil, grpc.Errorf(codes.InvalidArgument, "failed to get service config")
 		}
 	}

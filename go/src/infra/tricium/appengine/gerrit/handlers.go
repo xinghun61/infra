@@ -26,7 +26,7 @@ var reporter = &gerritReporter{}
 func pollHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 	if err := poll(c, GerritServer, config.LuciConfigServer); err != nil {
-		logging.WithError(err).Errorf(c, "failed to poll: %v", err)
+		logging.WithError(err).Errorf(c, "failed to poll")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

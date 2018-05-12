@@ -66,7 +66,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	// Create PubSub userdata for trigger request.
 	b, err := proto.Marshal(req)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to marshal trigger request for PubSub user data: %v", err)
+		logging.WithError(err).Errorf(c, "failed to marshal trigger request for PubSub user data")
 		return fmt.Errorf("failed to marshal PubSub user data for swarming task: %v", err)
 	}
 	userdata := base64.StdEncoding.EncodeToString(b)

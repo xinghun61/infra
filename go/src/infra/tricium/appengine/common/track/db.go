@@ -55,7 +55,7 @@ func FetchRecentRequests(c context.Context, cp config.ProviderAPI) ([]*AnalyzeRe
 	// NB! This only lists the last 20 requests.
 	q := ds.NewQuery("AnalyzeRequest").Order("-Received").Limit(20)
 	if err := ds.GetAll(c, q, &requests); err != nil {
-		logging.WithError(err).Errorf(c, "failed to get AnalyzeRequest entities: %v", err)
+		logging.WithError(err).Errorf(c, "failed to get AnalyzeRequest entities")
 		return nil, err
 	}
 	// Only include readable requests.
@@ -65,12 +65,12 @@ func FetchRecentRequests(c context.Context, cp config.ProviderAPI) ([]*AnalyzeRe
 		if _, ok := checked[r.Project]; !ok {
 			pc, err := cp.GetProjectConfig(c, r.Project)
 			if err != nil {
-				logging.WithError(err).Errorf(c, "failed to get config for project %s: %v", r.Project, err)
+				logging.WithError(err).Errorf(c, "failed to get config for project %s", r.Project)
 				return nil, err
 			}
 			checked[r.Project], err = tricium.CanRead(c, pc)
 			if err != nil {
-				logging.WithError(err).Errorf(c, "failed to check read access %s: %v", r.Project, err)
+				logging.WithError(err).Errorf(c, "failed to check read access %s", r.Project)
 				return nil, err
 			}
 		}

@@ -32,7 +32,7 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 	}
 	count, reports, issues, err := feedback(c, req.Category, stime, etime)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "feedback failed: %v", err)
+		logging.WithError(err).Errorf(c, "feedback failed")
 		return nil, grpc.Errorf(codes.Internal, "failed to execute feedback request")
 	}
 	logging.Infof(c, "[frontend] Feedback, category: %q, not useful: %d, issues: %s", req.Category, count, issues)

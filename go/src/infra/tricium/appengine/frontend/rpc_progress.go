@@ -28,7 +28,7 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 	}
 	runState, functionProgress, errCode, err := progress(c, runID)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "progress failed: %v, run ID: %d", err, runID)
+		logging.WithError(err).Errorf(c, "progress failed, run ID: %d", runID)
 		return nil, grpc.Errorf(errCode, "failed to execute progress request")
 	}
 	logging.Infof(c, "[frontend] Function progress: %v", functionProgress)
