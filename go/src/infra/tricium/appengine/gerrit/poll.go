@@ -86,7 +86,7 @@ func (c byUpdatedTime) Less(i, j int) bool { return c[i].Updated.Time().Before(c
 func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 	projects, err := cp.GetAllProjectConfigs(c)
 	if err != nil {
-		return fmt.Errorf("failed to get service config: %v", err)
+		return fmt.Errorf("failed to get all service configs: %v", err)
 	}
 
 	return parallel.FanOutIn(func(taskC chan<- func() error) {
