@@ -15,6 +15,7 @@ from services.test_failure import ci_test_failure
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicAnalysisParameters
+from services.test.build_failure_analysis_test import ChangeLogFromDict
 from services.test_failure import extract_test_signal
 from services.test_failure import test_failure_analysis
 from waterfall import build_util
@@ -207,73 +208,78 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         }
     }
     change_logs = {
-        'r99_1': {
-            'revision':
-                'r99_1',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a/b/f99_1.cc',
-                'new_path': 'a/b/f99_1.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r99_2': {
-            'revision':
-                'r99_2',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a/b/f99_2.cc',
-                'new_path': 'a/b/f99_2.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r98_1': {
-            'revision':
-                'r98_1',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'y/z/f98.cc',
-                'new_path': 'y/z/f98.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r97_1': {
-            'revision':
-                'r97_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.ADD,
-                    'old_path': '/dev/null',
-                    'new_path': 'x/y/f99_1.cc'
-                },
-                {
+        'r99_1':
+            ChangeLogFromDict({
+                'revision':
+                    'r99_1',
+                'touched_files': [{
                     'change_type': ChangeType.MODIFY,
                     'old_path': 'a/b/f99_1.cc',
                     'new_path': 'a/b/f99_1.cc'
-                },
-            ],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r96_1': {
-            'revision':
-                'r96_1',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a/b/f96_1.cc',
-                'new_path': 'a/b/f96_1.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
+                },],
+                'author': {
+                    'email': 'author@abc.com'
+                }
+            }),
+        'r99_2':
+            ChangeLogFromDict({
+                'revision':
+                    'r99_2',
+                'touched_files': [{
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_2.cc',
+                    'new_path': 'a/b/f99_2.cc'
+                },],
+                'author': {
+                    'email': 'author@abc.com'
+                }
+            }),
+        'r98_1':
+            ChangeLogFromDict({
+                'revision':
+                    'r98_1',
+                'touched_files': [{
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'y/z/f98.cc',
+                    'new_path': 'y/z/f98.cc'
+                },],
+                'author': {
+                    'email': 'author@abc.com'
+                }
+            }),
+        'r97_1':
+            ChangeLogFromDict({
+                'revision':
+                    'r97_1',
+                'touched_files': [
+                    {
+                        'change_type': ChangeType.ADD,
+                        'old_path': '/dev/null',
+                        'new_path': 'x/y/f99_1.cc'
+                    },
+                    {
+                        'change_type': ChangeType.MODIFY,
+                        'old_path': 'a/b/f99_1.cc',
+                        'new_path': 'a/b/f99_1.cc'
+                    },
+                ],
+                'author': {
+                    'email': 'author@abc.com'
+                }
+            }),
+        'r96_1':
+            ChangeLogFromDict({
+                'revision':
+                    'r96_1',
+                'touched_files': [{
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f96_1.cc',
+                    'new_path': 'a/b/f96_1.cc'
+                },],
+                'author': {
+                    'email': 'author@abc.com'
+                }
+            }),
     }
     deps_info = {}
     failure_signals_json = {

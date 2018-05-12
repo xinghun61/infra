@@ -269,3 +269,27 @@ def AnyNewBuildSucceeded(master_name, builder_name, build_number):
       return True
 
   return False
+
+
+def GetGoodRevision(failure_info):
+  """Gets the earliest passed revision for the failures.
+
+  Uses the chromium_revision of the earliest last_pass of failures, ignore the
+  failures with no last_pass.
+
+  Args:
+    failure_info(CompileFailureInfo, TestFailureInfo): Failure info.
+
+  Returns:
+    (str): chromium_revision of the earliest last_pass Findit found.
+  """
+  earliest_last_pass_build = failure_info.build_number
+  for step_failure in failure_info.failed_steps.itervalues():
+    if (step_failure.last_pass and
+        step_failure.last_pass < earliest_last_pass_build):
+      earliest_last_pass_build = step_failure.last_pass
+
+  if (earliest_last_pass_build < failure_info.build_number and
+      failure_info.builds.get(earliest_last_pass_build)):
+    return failure_info.builds[earliest_last_pass_build].chromium_revision
+  return None

@@ -209,7 +209,8 @@ def HeuristicAnalysisForTest(heuristic_params):
       failure_info, FinditHttpClient())
 
   # 3. Gets change_logs.
-  change_logs = git.PullChangeLogs(failure_info)
+  change_logs = git.PullChangeLogs(
+      ci_failure.GetGoodRevision(failure_info), failure_info.chromium_revision)
 
   # 4. Gets deps info.
   deps_info = deps.ExtractDepsInfo(failure_info, change_logs)

@@ -17,8 +17,51 @@ from services.compile_failure import extract_compile_signal
 from services.parameters import CompileFailureInfo
 from services.parameters import CompileHeuristicAnalysisOutput
 from services.parameters import CompileHeuristicAnalysisParameters
+from services.test.build_failure_analysis_test import ChangeLogFromDict
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
+
+_SAMPLE_CHANGE_LOG = {
+    'r99_1':
+        ChangeLogFromDict({
+            'revision':
+                'r99_1',
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_1.cc',
+                'new_path': 'a/b/f99_1.cc'
+            },],
+            'author': {
+                'email': 'author@abc.com'
+            }
+        }),
+    'r99_2':
+        ChangeLogFromDict({
+            'revision':
+                'r99_2',
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/f99_2.cc',
+                'new_path': 'a/b/f99_2.cc'
+            },],
+            'author': {
+                'email': 'author@abc.com'
+            }
+        }),
+    'r98_1':
+        ChangeLogFromDict({
+            'revision':
+                'r98_1',
+            'touched_files': [{
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'y/z/f98.cc',
+                'new_path': 'y/z/f98.cc'
+            },],
+            'author': {
+                'email': 'author@abc.com'
+            }
+        }),
+}
 
 
 class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
@@ -47,44 +90,6 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             },
             97: {}
         }
-    }
-    change_logs = {
-        'r99_1': {
-            'revision':
-                'r99_1',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a/b/f99_1.cc',
-                'new_path': 'a/b/f99_1.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r99_2': {
-            'revision':
-                'r99_2',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a/b/f99_2.cc',
-                'new_path': 'a/b/f99_2.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r98_1': {
-            'revision':
-                'r98_1',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'y/z/f98.cc',
-                'new_path': 'y/z/f98.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
     }
     deps_info = {}
     failure_signals_json = {
@@ -149,8 +154,8 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     analysis_result, suspected_cls = (
         compile_failure_analysis.AnalyzeCompileFailure(
-            CompileFailureInfo.FromSerializable(failure_info), change_logs,
-            deps_info, failure_signals_json))
+            CompileFailureInfo.FromSerializable(failure_info),
+            _SAMPLE_CHANGE_LOG, deps_info, failure_signals_json))
 
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
@@ -178,44 +183,6 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                 'blame_list': ['r98_1'],
             }
         }
-    }
-    change_logs = {
-        'r99_1': {
-            'revision':
-                'r99_1',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a/b/f99_1.cc',
-                'new_path': 'a/b/f99_1.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r99_2': {
-            'revision':
-                'r99_2',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a/b/f99_2.cc',
-                'new_path': 'a/b/f99_2.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r98_1': {
-            'revision':
-                'r98_1',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'y/z/f98.cc',
-                'new_path': 'y/z/f98.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
     }
     deps_info = {}
     failure_signals_json = {
@@ -278,8 +245,8 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     analysis_result, suspected_cls = (
         compile_failure_analysis.AnalyzeCompileFailure(
-            CompileFailureInfo.FromSerializable(failure_info), change_logs,
-            deps_info, failure_signals_json))
+            CompileFailureInfo.FromSerializable(failure_info),
+            _SAMPLE_CHANGE_LOG, deps_info, failure_signals_json))
 
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
@@ -346,44 +313,6 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
-    change_logs = {
-        'r99_1': {
-            'revision':
-                'r99_1',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a/b/f99_1.cc',
-                'new_path': 'a/b/f99_1.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r99_2': {
-            'revision':
-                'r99_2',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a/b/f99_2.cc',
-                'new_path': 'a/b/f99_2.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-        'r98_1': {
-            'revision':
-                'r98_1',
-            'touched_files': [{
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'y/z/f98.cc',
-                'new_path': 'y/z/f98.cc'
-            },],
-            'author': {
-                'email': 'author@abc.com'
-            }
-        },
-    }
     deps_info = {}
     failure_signals_json = {
         'compile': {
@@ -429,8 +358,8 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     analysis_result, suspected_cls = (
         compile_failure_analysis.AnalyzeCompileFailure(
-            CompileFailureInfo.FromSerializable(failure_info), change_logs,
-            deps_info, failure_signals_json))
+            CompileFailureInfo.FromSerializable(failure_info),
+            _SAMPLE_CHANGE_LOG, deps_info, failure_signals_json))
 
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))

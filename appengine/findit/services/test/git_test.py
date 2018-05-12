@@ -8,11 +8,11 @@ from datetime import timedelta
 import mock
 
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs.gitiles.change_log import ChangeLog
 from libs import time_util
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from services import git
-from services.parameters import CompileFailureInfo
 from waterfall.test import wf_testcase
 
 SOME_TIME = datetime(2018, 1, 1, 1)
@@ -45,126 +45,59 @@ class GitTest(wf_testcase.WaterfallTestCase):
     blame = git.GetGitBlame(repo_url, revision, file_path)
     self.assertIsNotNone(blame)
 
-  def testPullChangelogs(self):
-
-    rev1_commit_log = """)]}'
-    {
-      "commit": "rev1",
-      "tree": "tree_rev",
-      "parents": [
-        "rev0"
-      ],
-      "author": {
-        "name": "someone@chromium.org",
-        "email": "someone@chromium.org",
-        "time": "Wed Jun 11 19:35:32 2014"
-      },
-      "committer": {
-        "name": "someone@chromium.org",
-        "email": "someone@chromium.org",
-        "time": "Wed Jun 11 19:35:32 2014"
-      },
-      "message": "Cr-Commit-Position: refs/heads/master@{#175976}",
-      "tree_diff": [
-        {
-          "type": "add",
-          "old_id": "id1",
-          "old_mode": 33188,
-          "old_path": "/dev/null",
-          "new_id": "id2",
-          "new_mode": 33188,
-          "new_path": "added_file.js"
-        }
-      ]
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLogs')
+  def testPullChangelogs(self, mock_fn):
+    change_log_rev1_dict = {
+        'author': {
+            'name':
+                'someone@chromium.org',
+            'email':
+                'someone@chromium.org',
+            'time':
+                datetime.strptime('Wed Jun 11 19:35:32 2014',
+                                  '%a %b %d %H:%M:%S %Y'),
+        },
+        'committer': {
+            'name':
+                'someone@chromium.org',
+            'email':
+                'someone@chromium.org',
+            'time':
+                datetime.strptime('Wed Jun 11 19:35:32 2014',
+                                  '%a %b %d %H:%M:%S %Y'),
+        },
+        'message':
+            'Cr-Commit-Position: refs/heads/master@{#175976}',
+        'commit_position':
+            175976,
+        'touched_files': [{
+            'new_path': 'added_file.js',
+            'change_type': 'add',
+            'old_path': '/dev/null'
+        }],
+        'commit_url':
+            'https://chromium.googlesource.com/chromium/src.git/+log/rev0',
+        'code_review_url':
+            None,
+        'revision':
+            'rev1',
+        'reverted_revision':
+            None,
+        'review_server_host':
+            None,
+        'review_change_id':
+            None,
     }
-    """
-    rev1_commit_log_url = ('https://chromium.googlesource.com/chromium/src.git'
-                           '/+/rev1')
-    rev1_commit_json_url = '%s?format=json' % rev1_commit_log_url
+    change_log_rev1 = ChangeLog.FromDict(change_log_rev1_dict)
+    mock_fn.return_value = [change_log_rev1]
 
-    with self.mock_urlfetch() as urlfetch:
-      urlfetch.register_handler(rev1_commit_json_url, rev1_commit_log)
+    expected_change_logs = {'rev1': change_log_rev1}
 
-    failure_info = {
-        'failed': True,
-        'chromium_revision': 'rev1',
-        'builds': {
-            '999': {
-                'blame_list': ['rev1']
-            }
-        }
-    }
-
-    expected_change_logs = {
-        'rev1': {
-            'author': {
-                'name':
-                    'someone@chromium.org',
-                'email':
-                    'someone@chromium.org',
-                'time':
-                    datetime.strptime('Wed Jun 11 19:35:32 2014',
-                                      '%a %b %d %H:%M:%S %Y'),
-            },
-            'committer': {
-                'name':
-                    'someone@chromium.org',
-                'email':
-                    'someone@chromium.org',
-                'time':
-                    datetime.strptime('Wed Jun 11 19:35:32 2014',
-                                      '%a %b %d %H:%M:%S %Y'),
-            },
-            'message':
-                'Cr-Commit-Position: refs/heads/master@{#175976}',
-            'commit_position':
-                175976,
-            'touched_files': [{
-                'new_path': 'added_file.js',
-                'change_type': 'add',
-                'old_path': '/dev/null'
-            }],
-            'commit_url':
-                rev1_commit_log_url,
-            'code_review_url':
-                None,
-            'revision':
-                'rev1',
-            'reverted_revision':
-                None,
-            'review_server_host':
-                None,
-            'review_change_id':
-                None,
-        }
-    }
-
-    change_logs = git.PullChangeLogs(
-        CompileFailureInfo.FromSerializable(failure_info))
+    change_logs = git.PullChangeLogs('rev0', 'rev1')
     self.assertEqual(expected_change_logs, change_logs)
 
-  def testPullChangelogsFailed(self):
-
-    rev1_commit_log = """)]}'\n{}"""
-    rev1_commit_log_url = ('https://chromium.googlesource.com/chromium/src.git'
-                           '/+/rev1')
-    rev1_commit_json_url = '%s?format=json' % rev1_commit_log_url
-
-    with self.mock_urlfetch() as urlfetch:
-      urlfetch.register_handler(rev1_commit_json_url, rev1_commit_log)
-
-    failure_info = {
-        'failed': True,
-        'chromium_revision': 'rev1',
-        'builds': {
-            '999': {
-                'blame_list': ['rev1']
-            }
-        }
-    }
-
-    with self.assertRaises(Exception):
-      git.PullChangeLogs(CompileFailureInfo.FromSerializable(failure_info))
+  def testPullChangelogsNoStartRevision(self):
+    self.assertEqual({}, git.PullChangeLogs(None, 'rev1'))
 
   def _MockGetChangeLog(self, revision):
 

@@ -13,6 +13,7 @@ from libs.deps.dependency import Dependency
 from libs.gitiles.diff import ChangeType
 from services import deps
 from services.parameters import TestFailureInfo
+from services.test.build_failure_analysis_test import ChangeLogFromDict
 
 _DEP_FETCHER = chrome_dependency_fetcher.ChromeDependencyFetcher(
     CachedGitilesRepository.Factory(FinditHttpClient()))
@@ -23,8 +24,8 @@ class DepsTest(testing.AppengineTestCase):
   def testGetOSPlatformName(self):
     master_name = 'chromium.linux'
     builder_name = 'android'
-    self.assertEqual('android',
-                     deps.GetOSPlatformName(master_name, builder_name))
+    self.assertEqual('android', deps.GetOSPlatformName(master_name,
+                                                       builder_name))
 
   def testGetOSPlatformNameDefault(self):
     master_name = 'chromium.linux'
@@ -67,15 +68,13 @@ class DepsTest(testing.AppengineTestCase):
   def testDetectDependencyRoll(self, mock_dep_fetcher):
 
     revision = 'rev2'
-    change_log = {
-        'touched_files': [
-            {
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'DEPS',
-                'new_path': 'DEPS'
-            },
-        ]
-    }
+    change_log = ChangeLogFromDict({
+        'touched_files': [{
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'DEPS',
+            'new_path': 'DEPS'
+        },]
+    })
     os_platform = 'unix'
 
     mock_dep_fetcher.side_effect = [{
@@ -102,15 +101,13 @@ class DepsTest(testing.AppengineTestCase):
   def testDetectDependencyRollNotRoll(self):
 
     revision = 'rev2'
-    change_log = {
-        'touched_files': [
-            {
-                'change_type': ChangeType.MODIFY,
-                'old_path': 'a.cc',
-                'new_path': 'a.cc'
-            },
-        ]
-    }
+    change_log = ChangeLogFromDict({
+        'touched_files': [{
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'a.cc',
+            'new_path': 'a.cc'
+        },]
+    })
     os_platform = 'unix'
 
     self.assertEqual([],
@@ -120,24 +117,22 @@ class DepsTest(testing.AppengineTestCase):
   @mock.patch.object(deps, 'DetectDependencyRoll')
   def testDetectDependencyRolls(self, mock_roll):
     change_logs = {
-        'rev1': {
-            'touched_files': [
-                {
+        'rev1':
+            ChangeLogFromDict({
+                'touched_files': [{
                     'change_type': ChangeType.MODIFY,
                     'old_path': 'a.cc',
                     'new_path': 'a.cc'
-                },
-            ]
-        },
-        'rev2': {
-            'touched_files': [
-                {
+                },]
+            }),
+        'rev2':
+            ChangeLogFromDict({
+                'touched_files': [{
                     'change_type': ChangeType.MODIFY,
                     'old_path': 'DEPS',
                     'new_path': 'DEPS'
-                },
-            ]
-        }
+                },]
+            })
     }
     os_platform = 'unix'
     rev2_roll = [
@@ -179,24 +174,22 @@ class DepsTest(testing.AppengineTestCase):
         'failed': True,
     }
     change_logs = {
-        'rev2': {
-            'touched_files': [
-                {
+        'rev2':
+            ChangeLogFromDict({
+                'touched_files': [{
                     'change_type': ChangeType.MODIFY,
                     'old_path': 'DEPS',
                     'new_path': 'DEPS'
-                },
-            ]
-        },
-        'rev1': {
-            'touched_files': [
-                {
+                },]
+            }),
+        'rev1':
+            ChangeLogFromDict({
+                'touched_files': [{
                     'change_type': ChangeType.MODIFY,
                     'old_path': 'a/file.cc',
                     'new_path': 'a/file.cc'
-                },
-            ]
-        },
+                },]
+            }),
     }
     expected_deps_info = {
         'deps': {
@@ -210,14 +203,12 @@ class DepsTest(testing.AppengineTestCase):
             },
         },
         'deps_rolls': {
-            'rev2': [
-                {
-                    'path': 'src/dep1',
-                    'repo_url': 'https://url_dep1',
-                    'old_revision': '7',
-                    'new_revision': '9',
-                },
-            ]
+            'rev2': [{
+                'path': 'src/dep1',
+                'repo_url': 'https://url_dep1',
+                'old_revision': '7',
+                'new_revision': '9',
+            },]
         }
     }
 

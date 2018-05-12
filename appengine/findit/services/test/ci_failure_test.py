@@ -16,7 +16,6 @@ from services.parameters import CompileFailureInfo
 from services.parameters import FailureInfoBuilds
 from waterfall import buildbot
 from waterfall import build_util
-from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 
@@ -526,3 +525,61 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     ci_failure._GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
     ci_failure._GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
     self.assertTrue(mock_fn.call_count < 2)
+
+  def testGetGoodRevision(self):
+    failed_steps = {
+        'a': {
+            'current_failure': 124,
+            'first_failure': 124,
+            'last_pass': 123
+        },
+        'b': {
+            'current_failure': 124,
+            'first_failure': 124,
+        },
+        'c': {
+            'current_failure': 124,
+            'first_failure': 123,
+            'last_pass': 122
+        },
+    }
+    builds = {
+        122: {
+            'chromium_revision': '122_git_hash',
+            'blame_list': ['122_git_hash']
+        },
+        123: {
+            'chromium_revision': '123_git_hash',
+            'blame_list': ['123_git_hash']
+        },
+        124: {
+            'chromium_revision': '124_git_hash',
+            'blame_list': ['124_git_hash']
+        }
+    }
+    failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
+    builds = FailureInfoBuilds.FromSerializable(builds)
+    failure_info = CompileFailureInfo(
+        build_number=124, failed_steps=failed_steps, builds=builds)
+
+    self.assertEqual('122_git_hash', ci_failure.GetGoodRevision(failure_info))
+
+  def testGetGoodRevisionNoLastPass(self):
+    failed_steps = {
+        'a': {
+            'current_failure': 124,
+            'first_failure': 124,
+        }
+    }
+    builds = {
+        124: {
+            'chromium_revision': '124_git_hash',
+            'blame_list': ['124_git_hash']
+        }
+    }
+    failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
+    builds = FailureInfoBuilds.FromSerializable(builds)
+    failure_info = CompileFailureInfo(
+        build_number=124, failed_steps=failed_steps, builds=builds)
+
+    self.assertIsNone(ci_failure.GetGoodRevision(failure_info))

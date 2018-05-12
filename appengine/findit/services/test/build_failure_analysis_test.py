@@ -12,6 +12,7 @@ from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
+from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import Contributor
 from libs.gitiles.change_log import FileChangeInfo
 from libs.gitiles.diff import ChangeType
@@ -24,18 +25,42 @@ from waterfall.failure_signal import FailureSignal
 from waterfall.test import wf_testcase
 
 
+def ChangeLogFromDict(data):
+  touched_files = [
+      FileChangeInfo.FromDict(touched_file)
+      for touched_file in data.get('touched_files', [])
+  ]
+
+  author = Contributor(
+      data.get('author', {}).get('name', 'author'),
+      data.get('author', {}).get('email', 'email'),
+      data.get('author', {}).get('time', 'time'))
+  committer = Contributor(
+      data.get('committer', {}).get('name', 'committer'),
+      data.get('committer', {}).get('email', 'email'),
+      data.get('committer', {}).get('time', 'time'))
+  return ChangeLog(author, committer, data.get('revision'),
+                   data.get('commit_position'), data.get('message'),
+                   touched_files, data.get('commit_url'),
+                   data.get('code_review_url'), data.get('reverted_revision'),
+                   data.get('review_server_host'), data.get('review_change_id'))
+
+
 class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def _MockGetChangeLog(self, revision):
 
     class MockChangeLog(object):
 
-      def __init__(self, date, touched_files):
-        self.author = Contributor(
-            'name', 'email@chromium.org',
-            datetime.strptime('Jun %s 04:35:32 2015' % date,
+      def __init__(self, revision, touched_files, **kwargs):
+        self.author = kwargs.get('author') or Contributor(
+            'name',
+            'email@chromium.org',
+            # use revision as the date as well for testing purpose.
+            datetime.strptime('Jun %s 04:35:32 2015' % revision,
                               '%b %d %H:%M:%S %Y'))
         self.touched_files = touched_files
+        self.revision = revision
 
     MOCK_CHANGE_LOGS = {}
     MOCK_CHANGE_LOGS['1'] = MockChangeLog('1', [])
@@ -112,8 +137,12 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     return MOCK_CHANGE_LOGS.get(revision, MockChangeLog('12', []))
 
-  def _MockGetCommitsBetweenRevisions(self, start_revision, end_revision):
-    return map(str, range(int(start_revision) + 1, int(end_revision) + 1))
+  def _MockGetChangeLogs(self, start_revision, end_revision):
+    return [
+        self._MockGetChangeLog(str(r))
+        for r in range(int(start_revision) + 1,
+                       int(end_revision) + 1)
+    ]
 
   def _MockGetBlame(self, path, revision):
     if revision == '10' or revision == '11' or path == 'f_not_exist.cc':
@@ -146,7 +175,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     failure_signal.failed_edges = failed_edges
     change_log_json = {
         'revision':
-            'rev',
+            '12',
         'touched_files': [
             {
                 'change_type': ChangeType.ADD,
@@ -188,7 +217,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     deps_info = {}
 
     justification = build_failure_analysis.CheckFiles(
-        failure_signal, change_log_json, deps_info, True)
+        failure_signal, ChangeLogFromDict(change_log_json), deps_info, True)
     self.assertIsNotNone(justification)
     # The score is 2 because:
     # CL only touches dependencies
@@ -207,7 +236,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     change_log_json = {
         'revision':
-            'rev',
+            '12',
         'touched_files': [
             {
                 'change_type': ChangeType.ADD,
@@ -249,7 +278,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     deps_info = {}
 
     justification = build_failure_analysis.CheckFiles(
-        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
+        FailureSignal.FromDict(failure_signal_json),
+        ChangeLogFromDict(change_log_json), deps_info)
     self.assertIsNotNone(justification)
     # The score is 15 because:
     # +5 added a/b/f1.cc (same file src/a/b/f1.cc in failure_signal log)
@@ -265,7 +295,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     failure_signal_json = {'files': {'src/a/b/f.cc': [],}}
     change_log_json = {
         'revision':
-            'rev',
+            '12',
         'touched_files': [{
             'change_type': ChangeType.ADD,
             'old_path': '/dev/null',
@@ -275,7 +305,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     deps_info = {}
 
     justification = build_failure_analysis.CheckFiles(
-        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
+        FailureSignal.FromDict(failure_signal_json),
+        ChangeLogFromDict(change_log_json), deps_info)
     self.assertIsNone(justification)
 
   def _testCheckFileInDependencyRoll(self,
@@ -286,8 +317,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                                      expected_hints=None):
     self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
     self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
-    self.mock(CachedGitilesRepository, 'GetCommitsBetweenRevisions',
-              self._MockGetCommitsBetweenRevisions)
+    self.mock(CachedGitilesRepository, 'GetChangeLogs', self._MockGetChangeLogs)
     justification = build_failure_analysis._Justification()
     build_failure_analysis._CheckFileInDependencyRolls(
         file_path_in_log, rolls, justification, line_numbers)
@@ -522,7 +552,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     failure_signal_json = {'files': {'src/third_party/dep1/f.cc': [123],}}
     change_log_json = {
         'revision':
-            'rev',
+            '12',
         'touched_files': [{
             'change_type': ChangeType.MODIFY,
             'old_path': 'DEPS',
@@ -531,7 +561,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     deps_info = {
         'deps_rolls': {
-            'rev': [{
+            '12': [{
                 'path': 'src/third_party/dep1',
                 'repo_url': 'https://url_dep1',
                 'old_revision': '7',
@@ -540,11 +570,11 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         }
     }
     self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
-    self.mock(CachedGitilesRepository, 'GetCommitsBetweenRevisions',
-              self._MockGetCommitsBetweenRevisions)
+    self.mock(CachedGitilesRepository, 'GetChangeLogs', self._MockGetChangeLogs)
     self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
     justification = build_failure_analysis.CheckFiles(
-        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
+        FailureSignal.FromDict(failure_signal_json),
+        ChangeLogFromDict(change_log_json), deps_info)
     self.assertIsNotNone(justification)
     # The score is 1 because:
     # +1 rolled third_party/dep1/ and src/third_party/dep1/f.cc was in log.
@@ -555,11 +585,11 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
         'revision': '8'
     }
-    touched_file = {
+    touched_file = FileChangeInfo.FromDict({
         'change_type': ChangeType.MODIFY,
         'old_path': 'a/b/c.cc',
         'new_path': 'a/b/c.cc'
-    }
+    })
     line_numbers = [2, 7, 8]
     commit_revision = '7'
     self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
@@ -574,11 +604,11 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
         'revision': '9'
     }
-    touched_file = {
+    touched_file = FileChangeInfo.FromDict({
         'change_type': ChangeType.MODIFY,
         'old_path': 'a/b/c.cc',
         'new_path': 'a/b/c.cc'
-    }
+    })
     line_numbers = [2, 7, 8]
     commit_revision = '9'
     self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
@@ -593,11 +623,11 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
         'revision': '8'
     }
-    touched_file = {
+    touched_file = FileChangeInfo.FromDict({
         'change_type': ChangeType.MODIFY,
         'old_path': 'a/b/c.cc',
         'new_path': 'a/b/c.cc'
-    }
+    })
     line_numbers = [15]
     commit_revision = '7'
     self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
@@ -612,11 +642,11 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
         'revision': '10'
     }
-    touched_file = {
+    touched_file = FileChangeInfo.FromDict({
         'change_type': ChangeType.MODIFY,
         'old_path': 'a/b/c.cc',
         'new_path': 'a/b/c.cc'
-    }
+    })
     line_numbers = [2, 7, 8]
     commit_revision = '7'
     self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
@@ -633,11 +663,11 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     self.mock(build_failure_analysis, '_GetChangedLinesForChromiumRepo',
               MockGetChangedLines)
-    touched_file = {
+    touched_file = FileChangeInfo.FromDict({
         'change_type': ChangeType.MODIFY,
         'old_path': 'a/b/c.cc',
         'new_path': 'a/b/c.cc'
-    }
+    })
     file_path_in_log = 'a/b/c.cc'
     justification = build_failure_analysis._Justification()
     file_name_occurrences = {'c.cc': 1}
@@ -914,8 +944,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             None,
     }
 
-    cl_info = build_failure_analysis.CreateCLInfoDict(justification_dict,
-                                                      build_number, change_log)
+    cl_info = build_failure_analysis.CreateCLInfoDict(
+        justification_dict, build_number, ChangeLogFromDict(change_log))
 
     expected_cl_info = {
         'build_number': build_number,
@@ -1000,7 +1030,11 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(max_score)
 
   def testAnalyzeOneCLShouldNotBlameChange(self):
-    change_log = {'author': {'email': NO_BLAME_ACTION_ACCOUNTS[0]}}
+    change_log = ChangeLogFromDict({
+        'author': {
+            'email': NO_BLAME_ACTION_ACCOUNTS[0]
+        }
+    })
     result, max_score = build_failure_analysis.AnalyzeOneCL(
         123, {}, change_log, {})
     self.assertIsNone(result)

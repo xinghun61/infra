@@ -90,8 +90,8 @@ def DetectDependencyRoll(revision, change_log, os_platform, dep_fetcher):
     }
   """
   # Check DEPS roll only if the chromium DEPS file is changed by the CL.
-  for touched_file in change_log['touched_files']:
-    if touched_file['new_path'] == 'DEPS':
+  for touched_file in change_log.touched_files:
+    if touched_file.new_path == 'DEPS':
       # In git, r^ refers to the previous revision of r.
       old_revision = '%s^' % revision
       rolls = dep_fetcher.GetDependencyRolls(old_revision, revision,

@@ -39,7 +39,7 @@ def _GetChangedLinesForChromiumRepo(repo_info, touched_file, line_numbers,
 
   Args:
     repo_info (dict): The repo_url and revision for the build cycle.
-    touched_file (dict): The touched file found in the change log.
+    touched_file (FileChangeInfo): The touched file found in the change log.
     line_numbers (list): List of line_numbers mentioned in the failure log.
     suspected_revision (str): Git hash revision of the suspected CL.
 
@@ -49,7 +49,7 @@ def _GetChangedLinesForChromiumRepo(repo_info, touched_file, line_numbers,
   changed_line_numbers = []
   if line_numbers and repo_info:
     blame = git.GetGitBlame(repo_info['repo_url'], repo_info['revision'],
-                            touched_file['new_path'])
+                            touched_file.new_path)
     if blame:
       for line_number in line_numbers:
         for region in blame:
@@ -181,7 +181,7 @@ def _CheckFile(touched_file,
   """Checks if the given files are related and updates the justification.
 
   Args:
-    touched_file (dict): The touched file found in the change log.
+    touched_file (FileChangeInfo): The touched file found in the change log.
     file_path_in_log (str): File path appearing in the failure log.
     justification (_Justification): An instance of _Justification.
     file_name_occurrences (dict): A dict mapping file names to
@@ -193,10 +193,10 @@ def _CheckFile(touched_file,
     check_dependencies (bool): A boolean indicating if file_path_in_log is
         from dependencies given by ninja output.
   """
-  change_type = touched_file['change_type']
+  change_type = touched_file.change_type
 
   if change_type == ChangeType.MODIFY:
-    changed_src_file_path = touched_file['new_path']
+    changed_src_file_path = touched_file.new_path
     file_name = os.path.basename(changed_src_file_path)
 
     score = 0
@@ -218,7 +218,7 @@ def _CheckFile(touched_file,
                                   changed_line_numbers, check_dependencies)
 
   if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
-    changed_src_file_path = touched_file['new_path']
+    changed_src_file_path = touched_file.new_path
     file_name = os.path.basename(changed_src_file_path)
 
     score = 0
@@ -237,7 +237,7 @@ def _CheckFile(touched_file,
           check_dependencies=check_dependencies)
 
   if change_type in (ChangeType.DELETE, ChangeType.RENAME):
-    changed_src_file_path = touched_file['old_path']
+    changed_src_file_path = touched_file.old_path
     file_name = os.path.basename(changed_src_file_path)
 
     score = 0
@@ -256,23 +256,21 @@ def _CheckFile(touched_file,
           check_dependencies=check_dependencies)
 
 
-def _GetChangeTypeAndCulpritCommit(file_path_in_log, roll_repo,
-                                   commits_between_revisions):
+def _GetChangeTypeAndCulpritCommit(file_path_in_log, changes_between_revisions):
   """Determines the first commit that touches a file within a revision range.
 
   Args:
     file_path_in_log: The file to search each commit's change logs for.
-    roll_repo: A git repository object to make requests to git for changes logs.
-    commits_between_revisions: A list of revisions to request change logs.
+    changes_between_revisions: A list of ChangeLogs.
 
   Returns:
     The modification type made to file_path_in_log if found.
     The corresponding commit that touched file_path_in_log if found.
   """
-  for commit in commits_between_revisions:
+
+  for change_log in changes_between_revisions:
     # Use the change log for each commit to determine if and how
     # file_path_in_log log was modified.
-    change_log = roll_repo.GetChangeLog(commit)
     for file_change_info in change_log.touched_files:
       if file_change_info.change_type in (ChangeType.DELETE, ChangeType.RENAME):
         changed_src_file_path = file_change_info.old_path
@@ -282,7 +280,7 @@ def _GetChangeTypeAndCulpritCommit(file_path_in_log, roll_repo,
       if files.IsSameFile(changed_src_file_path, file_path_in_log):
         # Found the file and the commit that modified it.
         # TODO(lijeffrey): It is possible multiple commits modified the files.
-        return file_change_info.change_type, commit
+        return file_change_info.change_type, change_log.revision
 
       # TODO(lijeffrey): It is possible files.IsRelated(changed_src_file_path,
       # file_path_in_log) may also provide useful information, but how is not
@@ -312,11 +310,9 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
     # If the DEPS roll is downgrade, bail out.
     return file_change_type, changed_line_numbers
 
-  commits_in_roll = roll_repo.GetCommitsBetweenRevisions(
-      old_revision, new_revision)
-
+  changes_in_roll = roll_repo.GetChangeLogs(old_revision, new_revision)
   file_change_type, culprit_commit = _GetChangeTypeAndCulpritCommit(
-      file_path_in_log, roll_repo, commits_in_roll)
+      file_path_in_log, changes_in_roll)
 
   if culprit_commit is None:
     # Bail out if no commits touched the file in the log.
@@ -330,12 +326,13 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
     if not blame:
       return file_change_type, changed_line_numbers
 
+    revisions_in_roll = [change.revision for change in changes_in_roll]
     for region in blame:
       if line_numbers:
         for line_number in line_numbers:
           if (line_number >= region.start and
               line_number <= region.start + region.count - 1 and
-              region.revision in commits_in_roll):
+              region.revision in revisions_in_roll):
             # One line which appears in the failure log is changed within
             # the DEPS roll.
             changed_line_numbers.append(line_number)
@@ -413,8 +410,7 @@ def CheckFiles(failure_signal, change_log, deps_info, check_dependencies=False):
 
   Args:
     failure_signal (FailureSignal): The failure signal of a failed step or test.
-    change_log (dict): The change log of a CL as returned by
-        common.change_log.ChangeLog.ToDict().
+    change_log (ChangeLog): The change log of a CL.
     deps_info (dict): Output of pipeline ExtractDEPSInfoPipeline.
     check_dependencies (bool): If it's true check ninja dependencies.
 
@@ -424,30 +420,30 @@ def CheckFiles(failure_signal, change_log, deps_info, check_dependencies=False):
   """
   # Use a dict to map each file name of the touched files to their occurrences.
   file_name_occurrences = defaultdict(int)
-  for touched_file in change_log['touched_files']:
-    change_type = touched_file['change_type']
+  for touched_file in change_log.touched_files:
+    change_type = touched_file.change_type
     if (change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME,
                         ChangeType.MODIFY)):
-      file_name = os.path.basename(touched_file['new_path'])
+      file_name = os.path.basename(touched_file.new_path)
       file_name_occurrences[file_name] += 1
 
     if change_type in (ChangeType.DELETE, ChangeType.RENAME):
-      file_name = os.path.basename(touched_file['old_path'])
+      file_name = os.path.basename(touched_file.old_path)
       file_name_occurrences[file_name] += 1
 
   justification = _Justification()
 
-  rolls = deps_info.get('deps_rolls', {}).get(change_log['revision'], [])
+  rolls = deps_info.get('deps_rolls', {}).get(change_log.revision, [])
   repo_info = deps_info.get('deps', {}).get('src', {})
 
   if not check_dependencies:
     for file_path_in_log, line_numbers in failure_signal.files.iteritems():
       file_path_in_log = files.StripChromiumRootDirectory(file_path_in_log)
 
-      for touched_file in change_log['touched_files']:
+      for touched_file in change_log.touched_files:
         _CheckFile(touched_file, file_path_in_log, justification,
                    file_name_occurrences, line_numbers, repo_info,
-                   change_log['revision'])
+                   change_log.revision)
 
       _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
                                   line_numbers)
@@ -455,10 +451,10 @@ def CheckFiles(failure_signal, change_log, deps_info, check_dependencies=False):
     for failed_edge in failure_signal.failed_edges:
       for dependency in failed_edge.get('dependencies'):
         dependency = files.StripChromiumRootDirectory(dependency)
-        for touched_file in change_log['touched_files']:
+        for touched_file in change_log.touched_files:
           _CheckFile(touched_file, dependency, justification,
                      file_name_occurrences, None, repo_info,
-                     change_log['revision'], True)
+                     change_log.revision, True)
 
         _CheckFileInDependencyRolls(dependency, rolls, justification, [])
   if not justification.score:
@@ -519,9 +515,9 @@ def CreateCLInfoDict(justification_dict, build_number, change_log):
   cl_info = {
       'build_number': build_number,
       'repo_name': 'chromium',
-      'revision': change_log['revision'],
-      'commit_position': change_log.get('commit_position'),
-      'url': change_log.get('code_review_url') or change_log.get('commit_url'),
+      'revision': change_log.revision,
+      'commit_position': change_log.commit_position,
+      'url': change_log.code_review_url or change_log.commit_url,
   }
 
   cl_info.update(justification_dict)
@@ -550,7 +546,7 @@ def AnalyzeOneCL(build_number,
                  use_ninja_output=False):
   """Checkes one CL to see if it's a suspect."""
 
-  if change_log and change_log['author']['email'] in NO_BLAME_ACTION_ACCOUNTS:
+  if change_log and change_log.author.email in NO_BLAME_ACTION_ACCOUNTS:
     # This change should never be flagged as suspect.
     justification_dict = None
   else:
