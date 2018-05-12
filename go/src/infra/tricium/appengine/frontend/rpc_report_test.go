@@ -19,9 +19,7 @@ import (
 
 func TestReport(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
-
+		ctx := triciumtest.Context()
 		commentID := "7ef59cda-183c-48b3-8343-d9036a7f1419"
 		functionName := "Spacey"
 		platform := tricium.Platform_UBUNTU

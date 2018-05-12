@@ -22,9 +22,7 @@ import (
 
 func TestProjectProgress(t *testing.T) {
 	Convey("Test Environment", t, func() {
-
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 		var runID int64 = 22
 
 		// Add completed request.

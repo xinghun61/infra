@@ -28,8 +28,7 @@ var (
 
 func TestDecodePubsubMessage(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 		Convey("Decodes pubsub message without error", func() {
 			_, _, err := decodePubsubMessage(ctx, msg)
 			So(err, ShouldBeNil)
@@ -39,8 +38,7 @@ func TestDecodePubsubMessage(t *testing.T) {
 
 func TestHandlePubSubMessage(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 		Convey("Enqueues collect task", func() {
 			So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 0)
 			received := &ReceivedPubSubMessage{ID: taskID}

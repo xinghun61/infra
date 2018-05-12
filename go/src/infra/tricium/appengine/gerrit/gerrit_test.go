@@ -35,8 +35,7 @@ func TestComposeChangesQueryURL(t *testing.T) {
 func TestCreateRobotComment(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 		runID := int64(1234567)
 		uuid := "7ae6f43d-22e9-4350-ace4-1fee9014509a"
 

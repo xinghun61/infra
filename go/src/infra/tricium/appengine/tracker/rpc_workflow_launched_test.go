@@ -54,8 +54,7 @@ func (mockWorkflowProvider) GetWorkflow(c context.Context, runID int64) (*admin.
 
 func TestWorkflowLaunchedRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		Convey("Workflow request", func() {
 			// Add pending workflow run entity.

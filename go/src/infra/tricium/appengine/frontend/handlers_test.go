@@ -21,8 +21,7 @@ import (
 
 func TestLandingPageHandler(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		withTestingContext := func(c *router.Context, next router.Handler) {
 			c.Context = ctx
@@ -53,9 +52,7 @@ func TestLandingPageHandler(t *testing.T) {
 
 func TestAnalyzeQueueHandler(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
-
+		ctx := triciumtest.Context()
 		w := httptest.NewRecorder()
 
 		Convey("Analyze queue handler checks for invalid requests", func() {

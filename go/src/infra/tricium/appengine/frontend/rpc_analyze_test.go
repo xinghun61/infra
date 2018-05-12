@@ -68,8 +68,7 @@ func (cp *mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[strin
 
 func TestAnalyze(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		Convey("Basic request", func() {
 			ctx = auth.WithState(ctx, &authtest.FakeState{
@@ -102,8 +101,7 @@ func TestAnalyze(t *testing.T) {
 }
 
 func TestValidateAnalyzeRequest(t *testing.T) {
-	tt := &triciumtest.Testing{}
-	ctx := tt.Context()
+	ctx := triciumtest.Context()
 	paths := []string{"README.md"}
 	url := "https://example.com/notimportant.git"
 

@@ -24,12 +24,8 @@ import (
 	"infra/tricium/appengine/common"
 )
 
-// Testing is a high-level testing object.
-type Testing struct {
-}
-
-// Context generates a correctly configured context with queues and clock.
-func (t *Testing) Context() context.Context {
+// Context generates a context with queues and clock for testing.
+func Context() context.Context {
 	ctx := memory.Use(memlogger.Use(context.Background()))
 	ctx, _ = testclock.UseTime(ctx, testclock.TestTimeUTC.Round(time.Millisecond))
 	tq.GetTestable(ctx).CreateQueue(common.AnalyzeQueue)

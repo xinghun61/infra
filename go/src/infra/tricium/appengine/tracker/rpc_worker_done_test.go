@@ -50,8 +50,7 @@ func (*mockIsolator) FetchIsolatedResults(c context.Context, serverURL, isolated
 
 func TestWorkerDoneRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		name, _, err := track.ExtractFunctionPlatform(fileIsolator)
 		So(err, ShouldBeNil)
@@ -150,8 +149,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 // failed.
 func TestWorkerDoneRequestWithAbortedWorker(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		name, _, err := track.ExtractFunctionPlatform(fileIsolator)
 		So(err, ShouldBeNil)

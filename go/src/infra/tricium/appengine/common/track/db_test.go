@@ -56,8 +56,7 @@ func (*mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*
 func TestFetchRecentRequests(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		request := &AnalyzeRequest{Project: project}
 		So(ds.Put(ctx, request), ShouldBeNil)
@@ -86,8 +85,7 @@ func TestFetchRecentRequests(t *testing.T) {
 func TestTrackHelperFunctions(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		// Add completed request.
 		request := &AnalyzeRequest{}

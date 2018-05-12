@@ -19,8 +19,7 @@ import (
 
 func TestWorkerLaunchedRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		// Add pending workflow run entity.
 		request := &track.AnalyzeRequest{}

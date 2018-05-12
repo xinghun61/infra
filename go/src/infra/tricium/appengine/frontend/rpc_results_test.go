@@ -22,8 +22,7 @@ import (
 
 func TestResults(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		// Add request->run->analyzer->worker->comments.
 		request := &track.AnalyzeRequest{}

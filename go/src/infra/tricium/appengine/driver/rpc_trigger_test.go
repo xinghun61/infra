@@ -47,8 +47,7 @@ func (mockWorkflowProvider) GetWorkflow(c context.Context, runID int64) (*admin.
 
 func TestTriggerRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 		runID := int64(123456789)
 
 		Convey("Driver trigger request", func() {
@@ -66,8 +65,7 @@ func TestTriggerRequest(t *testing.T) {
 
 func TestHelperFunctions(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		So(ds.Put(ctx, &track.AnalyzeRequest{
 			ID:            1,

@@ -103,8 +103,7 @@ func numEnqueuedAnalyzeRequests(ctx context.Context) int {
 func TestPollBasicBehavior(t *testing.T) {
 
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		now := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		ctx, tc := testclock.UseTime(ctx, now)
@@ -406,8 +405,7 @@ func TestPollBasicBehavior(t *testing.T) {
 func TestPollWhitelistBehavior(t *testing.T) {
 
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		var (
 			noWhitelistProject = "no-whitelist-project"

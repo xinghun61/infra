@@ -146,8 +146,7 @@ func (*mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*
 
 func TestLaunchRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 		runID := int64(123456789)
 		Convey("Launch request", func() {
 			err := launch(ctx, &admin.LaunchRequest{

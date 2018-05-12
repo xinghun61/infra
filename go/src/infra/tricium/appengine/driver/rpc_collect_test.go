@@ -29,8 +29,7 @@ func (mockSwarmingFailure) Collect(c context.Context, serverURL string, taskID s
 
 func TestCollectRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 		runID := int64(123456789)
 
 		Convey("Driver collect request for worker with successors", func() {

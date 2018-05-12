@@ -26,8 +26,7 @@ import (
 
 func TestRunPageHandler(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &triciumtest.Testing{}
-		ctx := tt.Context()
+		ctx := triciumtest.Context()
 
 		withTestingContext := func(c *router.Context, next router.Handler) {
 			c.Context = ctx
