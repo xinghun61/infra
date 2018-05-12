@@ -244,7 +244,7 @@ CREATE TABLE Issue2FieldValue (
   INDEX (field_id, issue_shard, str_value(255)),
   INDEX (field_id, issue_shard, user_id),
   INDEX (field_id, issue_shard, date_value),
-  INDEX (field_id, issue_shard, url_value),
+  INDEX (field_id, issue_shard, url_value(255)),
 
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (field_id) REFERENCES FieldDef(id),

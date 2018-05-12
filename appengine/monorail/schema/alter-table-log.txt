@@ -1502,3 +1502,8 @@ ALTER TABLE FieldDef ADD COLUMN is_phase_field BOOLEAN DEFAULT FALSE;
 2018-5-11: Rename Issue2Phase table to IssuePhaseDef: Part Two, drop Issue2Phase
 
 DROP TABLE Issue2Phase;
+==================================================================
+2018-05-11: Restrict size of index field in Issue2FieldValue
+
+ALTER TABLE Issue2FieldValue DROP INDEX field_id_5;
+ALTER TABLE Issue2FieldValue ADD INDEX (field_id, issue_shard, url_value(255));
