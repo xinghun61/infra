@@ -1017,6 +1017,101 @@ class AST2SelectTest(unittest.TestCase):
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
 
+  def testProcessApprovalFieldCond_Status(self):
+    approval_fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='UXReview',
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.EQ, [approval_fd], ['Approved'], [],
+        key_suffix=query2ast.STATUS_SUFFIX)
+    left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
+        cond, 'Cond1', 'Spare1', False)
+    self.assertEqual(
+        [('Issue2ApprovalValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.approval_id = %s AND LOWER(Cond1.status) = %s',
+          [1, 'approved'])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.approval_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+
+  def testProcessApprovalFieldCond_SetOn(self):
+    approval_fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='UXReview',
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    int_time = int(time.mktime(datetime.datetime(2016, 10, 5).timetuple()))
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.EQ, [approval_fd], [], [int_time],
+        key_suffix=query2ast.SET_ON_SUFFIX)
+    left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
+        cond, 'Cond1', 'Spare1', False)
+    self.assertEqual(
+        [('Issue2ApprovalValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.approval_id = %s AND Cond1.set_on = %s',
+          [1, int_time])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.approval_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+
+  def testProcessApprovalFieldCond_SetBy(self):
+    approval_fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='UXReview',
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.EQ, [approval_fd], ['user2@email.com'], [],
+        key_suffix=query2ast.SET_BY_SUFFIX)
+    left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
+        cond, 'Cond1', 'User1', False)
+    self.assertEqual(
+        [('User AS User1 ON LOWER(User1.email) = %s', ['user2@email.com']),
+         ('Issue2ApprovalValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.approval_id = %s AND Cond1.setter_id = User1.user_id',
+          [1])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.approval_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+
+  def testProcessApprovalFieldCond_ApproverID(self):
+    approval_fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='UXReview',
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.EQ, [approval_fd], [], [111L],
+        key_suffix=query2ast.APPROVER_SUFFIX)
+    left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
+        cond, 'Cond1', 'User1', False)
+    self.assertEqual(
+        [('IssueApproval2Approver AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.approval_id = %s AND Cond1.approver_id = %s',
+          [1, 111L])], left_joins)
+    self.assertEqual(
+        [('Cond1.approval_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+
+
+  def testProcessApprovalFieldCond_IsDefined(self):
+    approval_fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='UXReview',
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.IS_DEFINED, [approval_fd], [], [])
+    left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
+        cond, 'Cond1', 'User1', False)
+    self.assertEqual(
+        [('Issue2ApprovalValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.approval_id = %s',
+          [1])], left_joins)
+    self.assertEqual(
+        [('Cond1.approval_id IS NOT NULL', [])],
+        where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+
   def testProcessCustomFieldCond_IntType(self):
     fd = tracker_pb2.FieldDef(
       field_id=1, project_id=789, field_name='EstDays',

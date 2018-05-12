@@ -25,6 +25,7 @@ import logging
 from framework import sql
 from proto import ast_pb2
 from proto import tracker_pb2
+from search import query2ast
 from services import tracker_fulltext
 
 
@@ -444,6 +445,73 @@ def _ProcessComponentIDCond(cond, alias, _spare_alias, snapshot_mode):
   return left_joins, where, []
 
 
+def _ProcessApprovalFieldCond(cond, alias, user_alias, snapshot_mode):
+  """Convert a custom approval field cond to SQL."""
+  if snapshot_mode:
+    return [], [], [cond]
+
+  approval_fd = cond.field_defs[0]
+  left_joins = []
+
+  join_str_tmpl = (
+    '{tbl_name} AS {alias} ON Issue.id = {alias}.issue_id AND '
+    '{alias}.approval_id = %s')
+
+  join_args = [approval_fd.field_id]
+
+  val_type, values = _GetFieldTypeAndValues(cond)
+  if val_type is tracker_pb2.FieldTypes.STR_TYPE:
+    values = [val.lower() for val in values]
+  if cond.op in (
+      ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
+    join_str = join_str_tmpl.format(
+        tbl_name='Issue2ApprovalValue', alias=alias)
+    left_joins = [(join_str, join_args)]
+  else:
+    op = cond.op
+    if op == ast_pb2.QueryOp.NE:
+      op = ast_pb2.QueryOp.EQ  # Negation is done in WHERE clause.
+
+    if (not cond.key_suffix) or cond.key_suffix == query2ast.STATUS_SUFFIX:
+      tbl_str = 'Issue2ApprovalValue'
+      cond_str, cond_args = _Compare(
+          alias, op, val_type, 'status', values)
+    elif cond.key_suffix == query2ast.SET_ON_SUFFIX:
+      tbl_str = 'Issue2ApprovalValue'
+      cond_str, cond_args = _Compare(
+          alias, op, val_type, 'set_on', values)
+    elif cond.key_suffix in [query2ast.APPROVER_SUFFIX, query2ast.SET_BY_SUFFIX]:
+      if cond.key_suffix == query2ast.SET_BY_SUFFIX:
+        tbl_str = 'Issue2ApprovalValue'
+        col_name = 'setter_id'
+      else:
+        tbl_str = 'IssueApproval2Approver'
+        col_name = 'approver_id'
+
+      if val_type == tracker_pb2.FieldTypes.INT_TYPE:
+        cond_str, cond_args = _Compare(
+            alias, op, val_type, col_name, values)
+      else:
+        email_cond_str, email_cond_args = _Compare(
+            user_alias, op, val_type, 'email', values)
+        left_joins.append((
+          'User AS {user_alias} ON {email_cond}'.format(
+              user_alias=user_alias, email_cond=email_cond_str),
+          email_cond_args))
+
+        cond_str = '{alias}.setter_id = {user_alias}.user_id'.format(
+            alias=alias, user_alias=user_alias)
+        cond_args = []
+    if cond_str or cond_args:
+      join_str = join_str_tmpl.format(tbl_name=tbl_str, alias=alias)
+      join_str += ' AND ' + cond_str
+      join_args.extend(cond_args)
+    left_joins.append((join_str, join_args))
+
+  where = [_CompareAlreadyJoined(alias, cond.op, 'approval_id')]
+  return left_joins, where, []
+
+
 def _ProcessCustomFieldCond(cond, alias, user_alias, snapshot_mode):
   """Convert a custom field cond to SQL."""
   if snapshot_mode:
@@ -650,6 +718,8 @@ def _ProcessCond(cond_num, cond, snapshot_mode):
     return proc(cond, alias, spare_alias, snapshot_mode)
 
   elif field_def.field_id:  # it is a search on a custom field
+    if field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
+      return _ProcessCustomApprovalCond(cond, alias, user_alias, snapshot_mode)
     return _ProcessCustomFieldCond(cond, alias, user_alias, snapshot_mode)
 
   elif (field_def.field_name in tracker_fulltext.ISSUE_FULLTEXT_FIELDS or
