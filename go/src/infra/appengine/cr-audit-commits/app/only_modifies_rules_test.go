@@ -246,6 +246,68 @@ func TestOnlyModifiesPaths(t *testing.T) {
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 		})
+		Convey("Adds a file in whitelisted dir", func() {
+			// Inject gitiles log response
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
+			}
+			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+				Project:  "a",
+				Treeish:  "b07c0de",
+				PageSize: 1,
+				TreeDiff: true,
+			}).Return(&gitilespb.LogResponse{
+				Log: []*git.Commit{
+					{
+						Id: "b07c0de",
+						TreeDiff: []*git.Commit_TreeDiff{
+							{
+								Type:    git.Commit_TreeDiff_ADD,
+								OldPath: "",
+								NewPath: "somedir/somefile",
+							},
+						},
+					},
+				},
+			}, nil)
+			// Run rule
+			rr := OnlyModifiesDirRule(ctx, ap, rc, testClients, "ruleName", "somedir")
+			// Check result code
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+			So(rr.Message, ShouldEqual, "")
+		})
+		Convey("Deletes a file in whitelisted dir", func() {
+			// Inject gitiles log response
+			gitilesMockClient := gitilespb.NewMockGitilesClient(gomock.NewController(t))
+			testClients.gitilesFactory = func(host string, httpClient *http.Client) (gitilespb.GitilesClient, error) {
+				return gitilesMockClient, nil
+			}
+			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
+				Project:  "a",
+				Treeish:  "b07c0de",
+				PageSize: 1,
+				TreeDiff: true,
+			}).Return(&gitilespb.LogResponse{
+				Log: []*git.Commit{
+					{
+						Id: "b07c0de",
+						TreeDiff: []*git.Commit_TreeDiff{
+							{
+								Type:    git.Commit_TreeDiff_DELETE,
+								OldPath: "somedir/somefile",
+								NewPath: "",
+							},
+						},
+					},
+				},
+			}, nil)
+			// Run rule
+			rr := OnlyModifiesDirRule(ctx, ap, rc, testClients, "ruleName", "somedir")
+			// Check result code
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+			So(rr.Message, ShouldEqual, "")
+		})
 	})
 }
 

@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/api/gitiles"
+	"go.chromium.org/luci/common/proto/git"
 	gitilespb "go.chromium.org/luci/common/proto/gitiles"
 )
 
@@ -106,11 +107,11 @@ func OnlyModifiesPathsRule(ctx context.Context, ap *AuditParams, rc *RelevantCom
 	}
 	ok := true
 	for _, path := range td {
-		if !check(path.OldPath) {
+		if path.Type != git.Commit_TreeDiff_ADD && !check(path.OldPath) {
 			ok = false
 			break
 		}
-		if !check(path.NewPath) {
+		if path.Type != git.Commit_TreeDiff_DELETE && !check(path.NewPath) {
 			ok = false
 			break
 		}
