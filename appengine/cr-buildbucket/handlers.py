@@ -21,6 +21,7 @@ from components import utils
 import webapp2
 
 from swarming import swarmbucket_api
+from v2 import api as v2_api
 import access
 import api
 import bq
@@ -29,7 +30,6 @@ import model
 import notifications
 import service
 import swarming
-import v2
 
 README_MD = ('https://chromium.googlesource.com/infra/infra/+/master/'
              'appengine/cr-buildbucket/README.md')
@@ -344,7 +344,7 @@ def get_frontend_routes():  # pragma: no cover
   prpc_server = prpc.Server()
   prpc_server.add_interceptor(auth.prpc_interceptor)
   prpc_server.add_service(access.AccessServicer())
-  prpc_server.add_service(v2.api.BuildsApi())
+  prpc_server.add_service(v2_api.BuildsApi())
   routes += prpc_server.get_routes()
 
   return routes
