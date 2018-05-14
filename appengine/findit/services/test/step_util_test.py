@@ -23,7 +23,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGetLowerBoundBuildNumber(self):
     self.assertEqual(5, step_util._GetLowerBoundBuildNumber(5, 100))
-    self.assertEqual(0, step_util._GetLowerBoundBuildNumber(None, 100, 200))
+    self.assertEqual(50, step_util._GetLowerBoundBuildNumber(None, 100, 200))
     self.assertEqual(100, step_util._GetLowerBoundBuildNumber(None, 600, 500))
 
   @mock.patch.object(

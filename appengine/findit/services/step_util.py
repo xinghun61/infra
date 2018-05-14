@@ -60,7 +60,13 @@ def _GetLowerBoundBuildNumber(
   if lower_bound_build_number is not None:
     return lower_bound_build_number
 
-  return max(upper_bound_build_number - default_build_number_window_size, 0)
+  if upper_bound_build_number > default_build_number_window_size:
+    return upper_bound_build_number - default_build_number_window_size
+
+  # For new builders, there may not be that many builds yet. This is a temporary
+  # workaround and wil be replaced when the isolate index service is ready and
+  # this function will no longer be necessary. 
+  return upper_bound_build_number / 2
 
 
 # TODO(crbug/804617): Modify this function to use new LUCI API when ready.
@@ -102,9 +108,9 @@ def GetValidBoundingBuildsForStep(
   http_client = FinditHttpClient()
 
   logging.debug('GetBoundingBuildsForStep being called for %s/%s/%s with build '
-  'number bounds (%d, %d) at commit position %d', master_name, builder_name,
-  step_name, lower_bound_build_number or -1, upper_bound_build_number or -1,
-  requested_commit_position)
+                'number bounds (%d, %d) at commit position %d', master_name,
+                builder_name, step_name, lower_bound_build_number or -1,
+                upper_bound_build_number or -1, requested_commit_position)
 
   assert upper_bound_build_number is not None, 'upper_bound can\'t be None'
 
@@ -117,7 +123,8 @@ def GetValidBoundingBuildsForStep(
 
   lower_bound_build_number = _GetLowerBoundBuildNumber(lower_bound_build_number,
                                                        upper_bound_build_number)
-  logging.info('Found lower_bound_build_number to be %d.', lower_bound_build_number)
+  logging.info('Found lower_bound_build_number to be %d.',
+               lower_bound_build_number)
 
   _, earliest_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                    lower_bound_build_number)
