@@ -342,7 +342,8 @@ def _PreprocessExactUsers(cnxn, cond, user_service, id_fields):
   op = _TextOpToIntOp(cond.op)
   if _IsDefinedOp(op):
     # No need to look up any IDs if we are just testing for any defined value.
-    return ast_pb2.Condition(op=op, field_defs=id_fields)
+    return ast_pb2.Condition(op=op, field_defs=id_fields, key_suffix=cond.key_suffix,
+                             phase_name=cond.phase_name)
 
   # This preprocessing step is only for ops that compare whole values, not
   # substrings.
@@ -362,7 +363,8 @@ def _PreprocessExactUsers(cnxn, cond, user_service, id_fields):
         return cond  # preprocessing failed, stick with the original cond.
 
   return ast_pb2.MakeCond(
-      op, id_fields, [], user_ids, key_suffix=cond.key_suffix)
+      op, id_fields, [], user_ids, key_suffix=cond.key_suffix,
+      phase_name=cond.phase_name)
 
 
 def _PreprocessOwnerCond(

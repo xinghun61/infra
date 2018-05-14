@@ -68,6 +68,8 @@ class Condition(messages.Message):
   # The suffix of a search field
   # eg. the 'approver' in 'UXReview-approver:user@mail.com'
   key_suffix = messages.StringField(5)
+  # The name of the phase this field value should belong to.
+  phase_name = messages.StringField(6)
 
 
 class Conjunction(messages.Message):
@@ -80,8 +82,9 @@ class QueryAST(messages.Message):
   conjunctions = messages.MessageField(Conjunction, 1, repeated=True)
 
 
-def MakeCond(op, field_defs, str_values, int_values, key_suffix=None):
+def MakeCond(op, field_defs, str_values, int_values,
+             key_suffix=None, phase_name=None):
   """Shorthand function to construct a Condition PB."""
   return Condition(
       op=op, field_defs=field_defs, str_values=str_values,
-      int_values=int_values, key_suffix=key_suffix)
+      int_values=int_values, key_suffix=key_suffix, phase_name=phase_name)

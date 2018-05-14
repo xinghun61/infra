@@ -445,6 +445,8 @@ def _ProcessComponentIDCond(cond, alias, _spare_alias, snapshot_mode):
   return left_joins, where, []
 
 
+# TODO(jojang): monorail:3819, check for cond.phase_name and process
+# appropriately so users can search 'Canary.UXReview-status:Approved'
 def _ProcessApprovalFieldCond(cond, alias, user_alias, snapshot_mode):
   """Convert a custom approval field cond to SQL."""
   if snapshot_mode:
@@ -462,6 +464,11 @@ def _ProcessApprovalFieldCond(cond, alias, user_alias, snapshot_mode):
   val_type, values = _GetFieldTypeAndValues(cond)
   if val_type is tracker_pb2.FieldTypes.STR_TYPE:
     values = [val.lower() for val in values]
+  # TODO(jojwang):monorail:3809, check if there is a cond.key_suffx.
+  # status, approver should always have a value, so 'has:UXReview-approver'
+  # should return the same issues as 'has:UXReview'.
+  # There will not always be values approval.setter_id and approval.set_on
+  # and the current code would not process 'has:UXReview-by' correctly.
   if cond.op in (
       ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
     join_str = join_str_tmpl.format(

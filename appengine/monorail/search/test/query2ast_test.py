@@ -569,6 +569,18 @@ class QueryParsingUnitTest(unittest.TestCase):
                               key_suffix='-approver'), cond1)
     self.assertEqual(MakeCond(TEXT_HAS, [fd1], ['approved'], []), cond2)
 
+  def testParseUserQuery_PhaseFields(self):
+    fd = tracker_bizobj.MakeFieldDef(
+        1, self.project_id, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE,
+        'applic', 'applic', False, False, False, None, None, None, False, None,
+        None, None, 'no_action', 'doc', False, is_phase_field=True)
+    self.default_config.field_defs.append(fd)
+    ast = query2ast.ParseUserQuery(
+        'UXReview.EstDays>3', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(GT, [fd], ['3'], [3], phase_name='uxreview'),
+        cond1)
 
   def testParseUserQuery_QuickOr(self):
     # quick-or searches

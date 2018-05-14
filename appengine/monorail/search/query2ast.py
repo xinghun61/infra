@@ -83,7 +83,7 @@ TERM_RE = re.compile(
 # value.  E.g., [stars>10] or [is:open] or [summary:"memory leak"].  The prefix
 # can include a leading "-" to negate the comparison.
 OP_RE = re.compile(
-    r'^(?P<prefix>[-_\w]*?)'
+    r'^(?P<prefix>[-_.\w]*?)'
     r'(?P<op>%s)'
     r'(?P<value>([-@\w][-\*,./:<=>@\w]*|"[^"]*"))$' %
     OPS_PATTERN,
@@ -355,6 +355,12 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
     except IndexError:
       is_fields = False
 
+  phase_name = None
+  if '.' in prefix and is_fields:
+    split_prefix = prefix.split('.', 1)
+    if split_prefix[1] in fields:
+      phase_name, prefix = split_prefix
+
   # search built-in and custom fields. E.g., summary.
   if prefix in fields and is_fields:
     # Note: if first matching field is date-type, we assume they all are.
@@ -375,9 +381,10 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
         for approval_suffix in _APPROVAL_SUFFIXES:
           if prefix.endswith(approval_suffix):
             return ast_pb2.MakeCond(op, fields[prefix], quick_or_vals,
-                                    quick_or_ints, key_suffix=approval_suffix)
-
-      return ast_pb2.MakeCond(op, fields[prefix], quick_or_vals, quick_or_ints)
+                                    quick_or_ints, key_suffix=approval_suffix,
+                                    phase_name=phase_name)
+      return ast_pb2.MakeCond(
+          op, fields[prefix], quick_or_vals, quick_or_ints, phase_name=phase_name)
 
   # Since it is not a field, treat it as labels, E.g., Priority.
   quick_or_labels = ['%s-%s' % (prefix, v) for v in quick_or_vals]
