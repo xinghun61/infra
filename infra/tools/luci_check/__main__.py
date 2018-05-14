@@ -40,8 +40,8 @@ class LuciCheck(app.BaseApplication):
       dest='masters')
 
   def main(self, opts):
-    if not opts.master:
-      opts.master = self.get_masters()
+    if not opts.masters:
+      opts.masters = self.get_masters()
     sys.exit(luci_check.Checker(opts.console, opts.masters).check())
 
 
