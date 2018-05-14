@@ -221,4 +221,4 @@ RECOMPUTE_DERIVED_FIELDS_BLOCK_SIZE = 250
 
 # This is the number of issues listed in the ReindexQueue table that will
 # be processed each minute.
-MAX_ISSUES_TO_REINDEX_PER_MINUTE = 500
+MAX_ISSUES_TO_REINDEX_PER_MINUTE = 100
