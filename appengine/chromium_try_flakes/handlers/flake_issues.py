@@ -214,8 +214,11 @@ class ProcessIssue(webapp2.RequestHandler):
     return time_since_finishing <= datetime.timedelta(days=1)
 
   @ndb.non_transactional
-  def _get_new_flakes(self, flake):
-    num_runs = len(flake.occurrences) - flake.num_reported_flaky_runs
+  def _get_new_flakes(self, flake, num_reported_flaky_runs):
+    num_runs = len(flake.occurrences) - num_reported_flaky_runs
+    if num_runs <= 0:
+      return []
+
     flaky_runs = ndb.get_multi(flake.occurrences[-num_runs:])
     flaky_runs = [run for run in flaky_runs if run is not None]
     return [
@@ -296,20 +299,6 @@ class ProcessIssue(webapp2.RequestHandler):
     return build_steps
 
   @staticmethod
-  @ndb.non_transactional
-  def _report_flakes_to_findit(flake, flaky_runs, use_staging):
-    if flake is None:
-      logging.warning('Failed to send flakes to FindIt', exc_info=True)
-      return
-
-    try:
-      build_steps = ProcessIssue.get_build_steps(flake, flaky_runs)
-      findit_api.FindItAPI(use_staging=use_staging).flake(
-          flake.name, flake.is_step, flake.issue_id, build_steps)
-    except (httplib.HTTPException, apiclient.errors.Error):
-      logging.warning('Failed to send flakes to FindIt', exc_info=True)
-
-  @staticmethod
   def follow_duplication_chain(api, starting_issue_id):
     """Finds last merged-into issue in the deduplication chain.
 
@@ -385,8 +374,6 @@ class ProcessIssue(webapp2.RequestHandler):
     flake.num_reported_flaky_runs = len(flake.occurrences)
     flake.issue_last_updated = now
 
-    self._report_flakes_to_findit(flake, new_flakes, self.is_staging)
-
   @ndb.transactional
   def _create_issue(self, api, flake, new_flakes, now):
     _, qlabel = get_queue_details(flake.name)
@@ -423,8 +410,6 @@ class ProcessIssue(webapp2.RequestHandler):
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
 
-    self._report_flakes_to_findit(flake, new_flakes, self.is_staging)
-
     # Find all flakes in the current flakiness period to compute metrics. The
     # flakiness period is a series of flakes with a gap no larger than
     # MAX_GAP_FOR_FLAKINESS_PERIOD seconds.
@@ -446,9 +431,8 @@ class ProcessIssue(webapp2.RequestHandler):
     logging.info('Reported time_since_threshold_exceeded %d for flake %s',
                  time_since_threshold_exceeded, flake.name)
 
-
   @ndb.transactional(xg=True)  # pylint: disable=E1120
-  def post(self, urlsafe_key):
+  def _report_flakes_to_monorail(self, flake):
     api = issue_tracker_api.IssueTrackerAPI('chromium', self.is_staging)
 
     # Check if we should stop processing this issue because we've posted too
@@ -457,28 +441,20 @@ class ProcessIssue(webapp2.RequestHandler):
     num_updates_last_day = FlakeUpdate.query(
         FlakeUpdate.time_updated > day_ago,
         ancestor=self._get_flake_update_singleton_key()).count()
+
     if num_updates_last_day >= MAX_UPDATED_ISSUES_PER_DAY:
       logging.info('Too many issues updated in the last 24 hours')
-      return
-
-    now = datetime.datetime.utcnow()
-    flake = ndb.Key(urlsafe=urlsafe_key).get()
-    logging.info('Processing %s', flake.key)
-
-    # Only update/file issues if there are new flaky runs.
-    if flake.num_reported_flaky_runs == len(flake.occurrences):
-      logging.info(
-          'No new flakes (reported %d, total %d)',
-          flake.num_reported_flaky_runs, len(flake.occurrences))
       return
 
     # Retrieve flaky runs outside of the transaction, because we are not
     # planning to modify them and because there could be more of them than the
     # number of groups supported by cross-group transactions on AppEngine.
-    new_flakes = self._get_new_flakes(flake)
+    new_flakes_to_report = self._get_new_flakes(flake,
+                                                flake.num_reported_flaky_runs)
 
-    if len(new_flakes) < MIN_REQUIRED_FLAKY_RUNS:
-      logging.info('Too few new flakes: %d', len(new_flakes))
+    if len(new_flakes_to_report) < MIN_REQUIRED_FLAKY_RUNS:
+      logging.info('Too few new flakes to worth reporting to issues: %d',
+          len(new_flakes_to_report))
       return
 
     # Don't file a bug if one already exists.
@@ -490,19 +466,62 @@ class ProcessIssue(webapp2.RequestHandler):
         flake.issue_id = existing_issue.id
         flake.issue_last_updated = existing_issue.created
 
+    now = datetime.datetime.utcnow()
     if flake.issue_id > 0:
       # Update issues at most once a day.
       if flake.issue_last_updated > now - datetime.timedelta(days=1):
         logging.info('Issue was updated less than 24 hours ago')
         return
 
-      self._update_issue(api, flake, new_flakes, now)
+      self._update_issue(api, flake, new_flakes_to_report, now)
       self._increment_update_counter()
     else:
-      self._create_issue(api, flake, new_flakes, now)
+      self._create_issue(api, flake, new_flakes_to_report, now)
       # Don't update the issue just yet, this may fail, and we need the
       # transaction to succeed in order to avoid filing duplicate bugs.
       self._increment_update_counter()
+
+  @ndb.non_transactional
+  def _report_flakes_to_findit(self, flake):
+    # Retrieve flaky runs outside of the transaction, because we are not
+    # planning to modify them and because there could be more of them than the
+    # number of groups supported by cross-group transactions on AppEngine.
+    new_flakes_to_report = self._get_new_flakes(
+        flake, flake.num_reported_flaky_runs_to_findit)
+
+    if len(new_flakes_to_report) < MIN_REQUIRED_FLAKY_RUNS:
+      logging.info('Too few new flakes to worth reporting to FindIt: %d',
+          len(new_flakes_to_report))
+      return
+
+    try:
+      build_steps = ProcessIssue.get_build_steps(flake, new_flakes_to_report)
+
+      # In Chromium Try Flake uses non-positive integers to represent empty
+      # issue id for a flake, however, FindIt uses None.
+      issue_id_for_findit = None if flake.issue_id <= 0 else flake.issue_id
+      findit_api.FindItAPI(use_staging=self.is_staging).flake(
+          flake.name, flake.is_step, issue_id_for_findit, build_steps)
+    except (httplib.HTTPException, apiclient.errors.Error):
+      logging.warning('Failed to send flakes to FindIt', exc_info=True)
+
+    flake.num_reported_flaky_runs_to_findit = len(flake.occurrences)
+
+  @ndb.transactional(xg=True)
+  def post(self, urlsafe_key):
+    flake = ndb.Key(urlsafe=urlsafe_key).get()
+    if not flake: # pragma: no cover
+      logging.warning('Flake with urlsafe key: \'%s\' is None' % urlsafe_key,
+                      exc_info=True)
+      return
+
+    logging.info('Processing %s', flake.key)
+    self._report_flakes_to_monorail(flake)
+
+    # Reporting to FindIt needs to come after reporting to issues because it
+    # makes FindIt's job easier if it can reuse the issues filed by Chromium Try
+    # Flake.
+    self._report_flakes_to_findit(flake)
 
     # Note that if transaction fails for some reason at this point, we may post
     # updates or create issues multiple times. On the other hand, this should be

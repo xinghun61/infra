@@ -900,7 +900,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
     issue = self.mock_api.create(MockIssue({}))
     flake = self._create_flake()
-    flake.num_reported_flaky_runs = 2
+    flake.num_reported_flaky_runs_to_findit = 2
     flake.issue_id = issue.id
     flake.put()
     with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 1):
@@ -916,15 +916,44 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
   def test_does_not_throw_exceptions_on_request_error_to_findit(self):
     flake = self._create_flake()
+    flake.put()
     self.mock_findit.return_value.flake.side_effect = httplib.HTTPException()
-    ProcessIssue._report_flakes_to_findit(flake, [], use_staging=False)
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+      self.assertEqual(200, response.status_int)
 
     self.mock_findit.return_value.flake.side_effect = HttpError(
         mock.Mock(status=503), '')
-    ProcessIssue._report_flakes_to_findit(flake, [], use_staging=False)
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+      self.assertEqual(200, response.status_int)
 
-  def test_does_not_throw_exceptions_on_no_flake_data_findit(self):
-    ProcessIssue._report_flakes_to_findit(None, [], use_staging=False)
+  # This test tests that Chromium Try Flake keeps reporting new flakes to FindIt
+  # Even if it stops reporting to issues after hitting an upper limit.
+  def test_report_to_findit_ignores_max_updated_issue_per_day(self):
+    flake_method = mock.Mock()
+    self.mock_findit.return_value.flake = flake_method
+
+    patched_max_updated_issues_per_day = 5
+    with mock.patch('handlers.flake_issues.MAX_UPDATED_ISSUES_PER_DAY',
+                    patched_max_updated_issues_per_day):
+      with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+        for _ in range(10):
+          key = self._create_flake().put()
+          response = self.test_app.post('/issues/process/%s' % key.urlsafe())
+          self.assertEqual(200, response.status_int)
+
+    self.assertEquals(flake_method.call_count, 10)
+
+    # The first 5 issues reported to FindIt should have issue ids attached
+    # because they are reported to issues successfully, however, for the last 5
+    # issues, their issue ids should be None.
+    # NOTE: the index of the issue id in the call_args object is 2.
+    for i in range(patched_max_updated_issues_per_day):
+      self.assertTrue(flake_method.call_args_list[i][0][2] > 0)
+
+    for i in range(patched_max_updated_issues_per_day + 1, 10):
+      self.assertEquals(flake_method.call_args_list[i][0][2], None)
 
 class CreateFlakyRunTestCase(testing.AppengineTestCase):
   app_module = main.app

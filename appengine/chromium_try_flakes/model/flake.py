@@ -64,8 +64,15 @@ class Flake(ndb.Model):
   # Stores previous issue ID when the issue need to be re-created.
   old_issue_id = ndb.IntegerProperty(default=0)
 
-  # Number of occurences that were already reported on the issue.
+  # Number of occurences that were already reported to the issue tracker and
+  # Findit respectively. They don't share the same value because Chromium Try
+  # Flake can only report flaky runs to at most 10 issues per day, however,
+  # there is no upper limit for reporting to Findit.
+  # NOTE: num_reported_flaky_runs should be renamed to
+  # num_reported_flaky_runs_to_issue, but it didn't happen due to backward
+  # compatbility.
   num_reported_flaky_runs = ndb.IntegerProperty(default=0)
+  num_reported_flaky_runs_to_findit = ndb.IntegerProperty(default=0)
 
 
 # The following two entities are used to track updates posted to the issue
