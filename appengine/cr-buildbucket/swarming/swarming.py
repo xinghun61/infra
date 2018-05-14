@@ -1181,7 +1181,7 @@ class SubNotify(webapp2.RequestHandler):
     redeliver = kwargs.get('redeliver')
     logging.log(logging.WARNING if redeliver else logging.ERROR, msg)
     self.response.write(msg)
-    self.abort(500 if redeliver else 200)
+    self.abort(400 if redeliver else 200)
 
   def parse_json_obj(self, text, name):
     """Parses a JSON object from |text| if possible. Otherwise stops."""

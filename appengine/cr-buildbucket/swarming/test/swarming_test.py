@@ -2059,7 +2059,7 @@ class SubNotifyTest(BaseTest):
   @contextlib.contextmanager
   def assert_bad_message(self, expect_redelivery=False):
     self.handler.bad_message = False
-    err = exc.HTTPInternalServerError if expect_redelivery else exc.HTTPOk
+    err = exc.HTTPClientError if expect_redelivery else exc.HTTPOk
     with self.assertRaises(err):
       yield
     self.assertTrue(self.handler.bad_message)
