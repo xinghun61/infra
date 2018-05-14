@@ -6,7 +6,6 @@
 import datetime
 import json
 import logging
-import urlparse
 
 from google.appengine.api import app_identity
 from google.appengine.api import taskqueue
@@ -18,9 +17,6 @@ from components import net
 from components import utils
 import bqh
 
-from third_party import annotations_pb2
-
-import config
 import model
 import v2
 
@@ -156,14 +152,7 @@ def _build_to_v2(bid, build, build_ann):
     build_v2 = v2.build_to_v2_partial(build)
 
     if build_ann:
-      ann_step = annotations_pb2.Step()
-      ann_step.ParseFromString(build_ann.annotation_binary)
-      host, project, prefix, _ = parse_logdog_url(build_ann.annotation_url)
-      converter = v2.AnnotationConverter(
-          default_logdog_host=host,
-          default_logdog_prefix='%s/%s' % (project, prefix),
-      )
-      build_v2.steps.extend(converter.parse_substeps(ann_step.substep))
+      build_v2.steps.extend(v2.parse_steps(build_ann))
 
       for s in build_v2.steps:
         s.summary_markdown = ''
@@ -220,19 +209,3 @@ def _export_builds(dataset, v2_builds, deadline):
     failed_ids.append(b.id)
     logging.error('failed to insert row for build %d: %r', b.id, err['errors'])
   return failed_ids
-
-
-def parse_logdog_url(url):
-  # LogDog URL example:
-  #   'logdog://logs.chromium.org/chromium/'
-  #   'buildbucket/cr-buildbucket.appspot.com/8953190917205316816/+/annotations'
-  u = urlparse.urlparse(url)
-  full_path = u.path.strip('/').split('/')
-  if (u.scheme != 'logdog' or u.params or u.query or u.fragment or
-      len(full_path) < 4 or '+' not in full_path):
-    raise ValueError('invalid logdog URL %r' % url)
-  project = full_path[0]
-  plus_pos = full_path.index('+')
-  stream_prefix = '/'.join(full_path[1:plus_pos])
-  stream_name = '/'.join(full_path[plus_pos + 1:])
-  return u.netloc, project, stream_prefix, stream_name

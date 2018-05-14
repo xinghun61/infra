@@ -51,11 +51,11 @@ steps: <
   name: "with stdio"
   logs: <
     name: "stdout"
-    view_url: "https://logdog.example.com/v/?s=prefix%2F%2B%2Fsteps%2Fsetup_build%2F0%2Fstdout"
+    view_url: "https://logdog.example.com/v/?s=project%2Fprefix%2F%2B%2Fsteps%2Fsetup_build%2F0%2Fstdout"
   >
   logs: <
     name: "stderr"
-    view_url: "https://logdog.example.com/v/?s=prefix%2F%2B%2Fsteps%2Fsetup_build%2F0%2Fstderr"
+    view_url: "https://logdog.example.com/v/?s=project%2Fprefix%2F%2B%2Fsteps%2Fsetup_build%2F0%2Fstderr"
   >
   status: STARTED
 >
@@ -64,7 +64,7 @@ steps: <
   name: "other links logdog"
   logs: <
     name: "run_recipe"
-    view_url: "https://logdog.example.com/v/?s=prefix%2F%2B%2Fsteps%2Fsetup_build%2F0%2Flogs%2Frun_recipe%2F0"
+    view_url: "https://logdog.example.com/v/?s=project%2Fprefix%2F%2B%2Fsteps%2Fsetup_build%2F0%2Flogs%2Frun_recipe%2F0"
   >
   status: STARTED
 >

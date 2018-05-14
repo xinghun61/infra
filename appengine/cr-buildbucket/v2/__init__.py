@@ -11,5 +11,5 @@ converts a v1 Build datastore entity to buildbucket.v2.Build message.
 from . import builds
 from . import errors
 from .builds import build_to_v2_partial
-from .steps import AnnotationConverter
+from .steps import parse_steps
 import model

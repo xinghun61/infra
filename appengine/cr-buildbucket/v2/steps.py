@@ -7,11 +7,8 @@ This is a Python port of
 https://chromium.googlesource.com/infra/luci/luci-go/+/82a12f6887aca7c425b26dd6b77329b41617627e/milo/buildsource/buildbot/buildstore/annotations.go
 """
 
-import logging
-import re
 import urllib
-
-from google.protobuf import timestamp_pb2
+import urlparse
 
 from third_party import annotations_pb2
 
@@ -20,6 +17,34 @@ from proto import step_pb2
 
 # The character used to separate parent-child steps.
 STEP_SEP = '|'
+
+
+def parse_steps(build_ann):
+  """Returns a list of step_pb2.Step parsed from a model.BuildAnnotation."""
+  ann_step = annotations_pb2.Step()
+  ann_step.ParseFromString(build_ann.annotation_binary)
+  host, project, prefix, _ = parse_logdog_url(build_ann.annotation_url)
+  converter = AnnotationConverter(
+      default_logdog_host=host,
+      default_logdog_prefix='%s/%s' % (project, prefix),
+  )
+  return converter.parse_substeps(ann_step.substep)
+
+
+def parse_logdog_url(url):
+  # LogDog URL example:
+  #   'logdog://logs.chromium.org/chromium/'
+  #   'buildbucket/cr-buildbucket.appspot.com/8953190917205316816/+/annotations'
+  u = urlparse.urlparse(url)
+  full_path = u.path.strip('/').split('/')
+  if (u.scheme != 'logdog' or u.params or u.query or u.fragment or
+      len(full_path) < 4 or '+' not in full_path):
+    raise ValueError('invalid logdog URL %r' % url)
+  project = full_path[0]
+  plus_pos = full_path.index('+')
+  stream_prefix = '/'.join(full_path[1:plus_pos])
+  stream_name = '/'.join(full_path[plus_pos + 1:])
+  return u.netloc, project, stream_prefix, stream_name
 
 
 class AnnotationConverter(object):

@@ -2,31 +2,27 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import datetime
 import os
+import unittest
 
 from components import utils
 utils.fix_protobuf_package()
 
 from google.protobuf import text_format
-from google.protobuf import timestamp_pb2
 
 from components import protoutil
 
-from testing_utils import testing
-
 from third_party import annotations_pb2
 
-from proto import common_pb2
 from proto import build_pb2
-from proto import step_pb2
 from v2 import steps
 from test import test_util
+import model
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class StepsTest(testing.AppengineTestCase):
+class ParseStepsTest(unittest.TestCase):
   maxDiff = None
 
   def test_parse_step(self):
@@ -39,11 +35,34 @@ class StepsTest(testing.AppengineTestCase):
       text = protoutil.parse_multiline(f.read())
       text_format.Merge(text, expected)
 
-    converter = steps.AnnotationConverter('logdog.example.com', 'prefix')
-    actual = build_pb2.Build(
-        steps=converter.parse_substeps(annotation_step.substep))
+    build_ann = model.BuildAnnotations(
+        annotation_binary=annotation_step.SerializeToString(),
+        annotation_url='logdog://logdog.example.com/project/prefix/+/stream',
+    )
+    actual = build_pb2.Build(steps=steps.parse_steps(build_ann))
 
     # Compare messages as dicts.
-    # assertEqual has better support for dicts.
+    # assertEqual has better support for dicts than protobufs.
     self.assertEqual(
         test_util.msg_to_dict(expected), test_util.msg_to_dict(actual))
+
+
+class ParseLogDogURLTest(unittest.TestCase):
+
+  def test_success(self):
+    url = ('logdog://luci-logdog-dev.appspot.com/'
+           'infra/'
+           'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048/+/'
+           'annotations')
+    expected = (
+        'luci-logdog-dev.appspot.com',
+        'infra',
+        'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048',
+        'annotations',
+    )
+    actual = steps.parse_logdog_url(url)
+    self.assertEqual(actual, expected)
+
+  def test_failure(self):
+    with self.assertRaises(ValueError):
+      steps.parse_logdog_url('logdog://trash')

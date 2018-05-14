@@ -238,27 +238,6 @@ class BigQueryExportTest(testing.AppengineTestCase):
     )
 
 
-class ParseLogDogURLTest(testing.AppengineTestCase):
-
-  def test_success(self):
-    url = ('logdog://luci-logdog-dev.appspot.com/'
-           'infra/'
-           'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048/+/'
-           'annotations')
-    expected = (
-        'luci-logdog-dev.appspot.com',
-        'infra',
-        'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048',
-        'annotations',
-    )
-    actual = bq.parse_logdog_url(url)
-    self.assertEqual(actual, expected)
-
-  def test_failure(self):
-    with self.assertRaises(ValueError):
-      bq.parse_logdog_url('logdog://trash')
-
-
 def mkbuild(**kwargs):
   args = dict(
       id=1,
