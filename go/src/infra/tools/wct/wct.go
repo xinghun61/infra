@@ -171,6 +171,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	// If the user wants to run the test harness persistently, just loop
+	// and print the doneCh results whenever they're sent.  This is
+	// effectively the end of the program when *persist == true, because
+	// the user is expected to Ctrl-C to kill the harness in this case.
+	if *persist {
+		select {
+		case errors := <-doneCh:
+			if errors {
+				logging.Errorf(ctx, "FAILED\n")
+			} else {
+				logging.Infof(ctx, "PASSED\n")
+			}
+		}
+	}
+
+	// If we're running in non-persistent mode, just run the tests once
+	// and exit after printing the results. This is the expected path
+	// for continuous builders or other non-interactive use cases.
 	select {
 	case errors := <-doneCh:
 		err = c.Shutdown(ctxt)
