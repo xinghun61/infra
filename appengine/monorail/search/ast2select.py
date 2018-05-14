@@ -719,8 +719,8 @@ def _ProcessCond(cond_num, cond, snapshot_mode):
 
   elif field_def.field_id:  # it is a search on a custom field
     if field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
-      return _ProcessCustomApprovalCond(cond, alias, user_alias, snapshot_mode)
-    return _ProcessCustomFieldCond(cond, alias, user_alias, snapshot_mode)
+      return _ProcessCustomApprovalCond(cond, alias, spare_alias, snapshot_mode)
+    return _ProcessCustomFieldCond(cond, alias, spare_alias, snapshot_mode)
 
   elif (field_def.field_name in tracker_fulltext.ISSUE_FULLTEXT_FIELDS or
         field_def.field_name == 'any_field'):
