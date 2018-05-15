@@ -272,8 +272,7 @@ else:
     db_replica_names = [
         'replica-g2-00', 'replica-g2-01', 'replica-g2-02', 'replica-g2-03',
         'replica-g2-04', 'replica-g2-05', 'replica-g2-06', 'replica-g2-07',
-        # replica-g2-08 still exists, but we are testing without it.
-        'replica-g2-09']
+        'replica-g2-08', 'replica-g2-09']
 
   elif app_id == 'monorail-prod':
     send_all_email_to = None  # Deliver it to the intended users.
@@ -283,7 +282,7 @@ else:
     db_replica_names = [
         'replica-00', 'replica-01', 'replica-02', 'replica-03',
         'replica-04', 'replica-05', 'replica-06', 'replica-07',
-        # RIP replica-08
+        'replica-08a', # Replacement for replica-08.
         'replica-09']
 
 if dev_mode:
