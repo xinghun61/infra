@@ -1354,6 +1354,7 @@ class IssueService(object):
     issue.cc_ids.extend(cc_ids)
     issue.labels.extend(labels)
     issue.field_values.extend(field_values)
+    issue.component_ids.extend(component_ids)
     issue.reporter_id = reporter_id
     if timestamp:
       issue.opened_timestamp = timestamp

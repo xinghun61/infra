@@ -238,7 +238,13 @@ class InboundEmail(webapp2.RequestHandler):
 
     labels += ['Restrict-View-Google', 'Pri-2']
     field_values = []
-    components = ['Infra']
+
+    # TODO(zhangtiff): Remove this special casing once components can be set via
+    # the email header.
+    if 'codesearch' in body:
+      components = ['Infra>Codesearch']
+    else:
+      components = ['Infra']
 
     formatted_body = 'Filed by %s on behalf of %s\n\n%s' % (
         auth.email, from_addr, body)

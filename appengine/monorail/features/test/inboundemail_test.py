@@ -25,6 +25,7 @@ from proto import user_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
+from tracker import tracker_helpers
 
 
 class InboundEmailTest(unittest.TestCase):
@@ -230,6 +231,11 @@ class InboundEmailTest(unittest.TestCase):
 
   def testProcessAlert_NewIssue(self):
     """When an alert for a new incident comes in, create a new issue."""
+    self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
+    tracker_helpers.LookupComponentIDs(
+        ['Infra'],
+        mox.IgnoreArg()).AndReturn([1])
+
     self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
     self.services.config.LookupLabelID(
         self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
@@ -262,6 +268,7 @@ class InboundEmailTest(unittest.TestCase):
     self.assertEqual('issue title', actual_issue.summary)
     self.assertEqual('Available', actual_issue.status)
     self.assertEqual(111L, actual_issue.reporter_id)
+    self.assertEqual([1], actual_issue.component_ids)
     self.assertEqual(None, actual_issue.owner_id)
     self.assertEqual(
         ['Infra-Troopers-Alerts', 'Restrict-View-Google',
@@ -270,6 +277,45 @@ class InboundEmailTest(unittest.TestCase):
     self.assertEqual(
         'Filed by user@example.com on behalf of user@google.com\n\nissue body',
         actual_comments[0].content)
+
+  def testProcessAlert_NewIssue_Codesearch(self):
+    """When an alert for a new incident comes in, create a new issue.
+
+    If the body contains the string 'codesearch' then we should auto-assign to
+    the Infra>Codesearch component."""
+    self.mox.StubOutWithMock(tracker_helpers, 'LookupComponentIDs')
+    tracker_helpers.LookupComponentIDs(
+        ['Infra>Codesearch'],
+        mox.IgnoreArg()).AndReturn([2])
+
+    self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
+    self.services.config.LookupLabelID(
+        self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
+    ).AndReturn(None)
+
+    # Mock command parsing.
+    mock_uia = commitlogcommands.UpdateIssueAction(101L)
+    self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
+    commitlogcommands.UpdateIssueAction(101L).AndReturn(mock_uia)
+
+    self.mox.StubOutWithMock(mock_uia, 'Parse')
+    mock_uia.Parse(
+        self.cnxn, self.project.project_name, 111L, ['issue body codesearch'],
+        self.services, strip_quoted_lines=True)
+
+    self.mox.ReplayAll()
+
+    auth = authdata.AuthData(user_id=111L, email='user@example.com')
+    ret = self.inbound.ProcessAlert(
+        self.cnxn, self.project, self.project_addr, 'user@google.com',
+        auth, 'issue title', 'issue body codesearch', 'incident-1')
+
+    self.mox.VerifyAll()
+    self.assertIsNone(ret)
+
+    actual_issue = self.services.issue.GetIssueByLocalID(
+        self.cnxn, self.project.project_id, 101L)
+    self.assertEqual([2], actual_issue.component_ids)
 
   def testProcessAlert_ExistingIssue(self):
     """When an alert for an ongoing incident comes in, add a comment."""
