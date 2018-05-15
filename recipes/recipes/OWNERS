@@ -7,18 +7,17 @@ per-file depot_tools_builder.py=iannucci@chromium.org
 per-file gerrit_cq_test.py=tandrii@chromium.org
 
 per-file goma_hello_world.py=tikuta@chromium.org
+per-file goma_hello_world.py=yyanagisawa@chromium.org
 per-file goma_hello_world.py=vadimsh@chromium.org
 
 per-file infra_*.py=iannucci@chromium.org
 per-file infra_*.py=tandrii@chromium.org
 per-file infra_*.py=vadimsh@chromium.org
 
-per-file isolate_go_perf.py=tandrii@chromium.org
-
 per-file lkgr_finder.py=machenbach@chromium.org
 
-per-file luci*.py=dnj@chromium.org
 per-file luci*.py=iannucci@chromium.org
+per-file luci*.py=tandrii@chromium.org
 per-file luci*.py=vadimsh@chromium.org
 
 per-file recipe_autoroller.py=iannucci@chromium.org
