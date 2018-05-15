@@ -343,7 +343,7 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessOwnerCond(cond, 'Cond1',
-        'User1', snapshot_mode=False)
+        'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('User AS Cond1 ON (Issue.owner_id = Cond1.user_id '
           'OR Issue.derived_owner_id = Cond1.user_id)', [])],
@@ -360,7 +360,7 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessOwnerCond(cond, 'Cond1',
-        'User1', snapshot_mode=True)
+        'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('User AS Cond1 ON IssueSnapshot.owner_id = Cond1.user_id', [])],
         left_joins)
@@ -375,7 +375,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['owner_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessOwnerIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual([], left_joins)
     self.assertEqual(
         [('(Issue.owner_id = %s OR Issue.derived_owner_id = %s)',
@@ -388,7 +388,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['owner_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessOwnerIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=True)
+        'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([('IssueSnapshot.owner_id = %s', [111L])], where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
@@ -399,7 +399,7 @@ class AST2SelectTest(unittest.TestCase):
     NOW = 1234567890
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.LT, [fd], [], [NOW])
     left_joins, where, unsupported = ast2select._ProcessOwnerLastVisitCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('User AS Cond1 ON (Issue.owner_id = Cond1.user_id OR '
           'Issue.derived_owner_id = Cond1.user_id)',
@@ -418,7 +418,7 @@ class AST2SelectTest(unittest.TestCase):
     NOW = 1234567890
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.LT, [fd], [], [NOW])
     left_joins, where, unsupported = ast2select._ProcessOwnerLastVisitCond(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([cond], unsupported)
@@ -427,7 +427,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['ownerbouncing']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [])
     left_joins, where, unsupported = ast2select._ProcessIsOwnerBouncing(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('User AS Cond1 ON (Issue.owner_id = Cond1.user_id OR '
           'Issue.derived_owner_id = Cond1.user_id)',
@@ -446,7 +446,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['ownerbouncing']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [])
     left_joins, where, unsupported = ast2select._ProcessIsOwnerBouncing(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([cond], unsupported)
@@ -456,7 +456,7 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessReporterCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('User AS Cond1 ON Issue.reporter_id = Cond1.user_id', [])],
         left_joins)
@@ -472,7 +472,7 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessReporterCond(cond,
-        'Cond1', 'User1', snapshot_mode=True)
+        'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('User AS Cond1 ON IssueSnapshot.reporter_id = Cond1.user_id', [])],
         left_joins)
@@ -487,7 +487,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['reporter_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessReporterIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual([], left_joins)
     self.assertEqual(
         [('Issue.reporter_id = %s', [111L])],
@@ -499,7 +499,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['reporter_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessReporterIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual(
         [('IssueSnapshot.reporter_id = %s', [111L])],
@@ -512,16 +512,16 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessCcCond(cond, 'Cond1',
-        'User1', snapshot_mode=False)
+        'Spare1', snapshot_mode=False)
     self.assertEqual(
-        [('(Issue2Cc AS Cond1 JOIN User AS User1 '
-          'ON Cond1.cc_id = User1.user_id AND (LOWER(User1.email) LIKE %s)) '
+        [('(Issue2Cc AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.cc_id = Spare1.user_id AND (LOWER(Spare1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
           ['%example.com%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NOT NULL', [])],
+        [('Spare1.email IS NOT NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -531,16 +531,16 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessCcCond(cond, 'Cond1',
-        'User1', snapshot_mode=True)
+        'Spare1', snapshot_mode=True)
     self.assertEqual(
-        [('(IssueSnapshot2Cc AS Cond1 JOIN User AS User1 '
-          'ON Cond1.cc_id = User1.user_id AND (LOWER(User1.email) LIKE %s)) '
+        [('(IssueSnapshot2Cc AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.cc_id = Spare1.user_id AND (LOWER(Spare1.email) LIKE %s)) '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id',
           ['%example.com%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NOT NULL', [])],
+        [('Spare1.email IS NOT NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -550,17 +550,17 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['.com', '.org'], [])
     left_joins, where, unsupported = ast2select._ProcessCcCond(cond, 'Cond1',
-        'User1', snapshot_mode=False)
+        'Spare1', snapshot_mode=False)
     self.assertEqual(
-        [('(Issue2Cc AS Cond1 JOIN User AS User1 '
-          'ON Cond1.cc_id = User1.user_id AND '
-          '(LOWER(User1.email) LIKE %s OR LOWER(User1.email) LIKE %s)) '
+        [('(Issue2Cc AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.cc_id = Spare1.user_id AND '
+          '(LOWER(Spare1.email) LIKE %s OR LOWER(Spare1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
           ['%.com%', '%.org%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NOT NULL', [])],
+        [('Spare1.email IS NOT NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -570,17 +570,17 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['.com', '.org'], [])
     left_joins, where, unsupported = ast2select._ProcessCcCond(cond, 'Cond1',
-        'User1', snapshot_mode=True)
+        'Spare1', snapshot_mode=True)
     self.assertEqual(
-        [('(IssueSnapshot2Cc AS Cond1 JOIN User AS User1 '
-          'ON Cond1.cc_id = User1.user_id AND '
-          '(LOWER(User1.email) LIKE %s OR LOWER(User1.email) LIKE %s)) '
+        [('(IssueSnapshot2Cc AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.cc_id = Spare1.user_id AND '
+          '(LOWER(Spare1.email) LIKE %s OR LOWER(Spare1.email) LIKE %s)) '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id',
           ['%.com%', '%.org%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NOT NULL', [])],
+        [('Spare1.email IS NOT NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -590,16 +590,16 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.NOT_TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessCcCond(cond, 'Cond1',
-        'User1', snapshot_mode=False)
+        'Spare1', snapshot_mode=False)
     self.assertEqual(
-        [('(Issue2Cc AS Cond1 JOIN User AS User1 '
-          'ON Cond1.cc_id = User1.user_id AND (LOWER(User1.email) LIKE %s)) '
+        [('(Issue2Cc AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.cc_id = Spare1.user_id AND (LOWER(Spare1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
           ['%example.com%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NULL', [])],
+        [('Spare1.email IS NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -609,16 +609,16 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.NOT_TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessCcCond(cond, 'Cond1',
-        'User1', snapshot_mode=True)
+        'Spare1', snapshot_mode=True)
     self.assertEqual(
-        [('(IssueSnapshot2Cc AS Cond1 JOIN User AS User1 '
-          'ON Cond1.cc_id = User1.user_id AND (LOWER(User1.email) LIKE %s)) '
+        [('(IssueSnapshot2Cc AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.cc_id = Spare1.user_id AND (LOWER(Spare1.email) LIKE %s)) '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id',
           ['%example.com%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NULL', [])],
+        [('Spare1.email IS NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -628,17 +628,17 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.NOT_TEXT_HAS, [fd], ['.com', '.org'], [])
     left_joins, where, unsupported = ast2select._ProcessCcCond(cond, 'Cond1',
-        'User1', snapshot_mode=False)
+        'Spare1', snapshot_mode=False)
     self.assertEqual(
-        [('(Issue2Cc AS Cond1 JOIN User AS User1 '
-          'ON Cond1.cc_id = User1.user_id AND '
-          '(LOWER(User1.email) LIKE %s OR LOWER(User1.email) LIKE %s)) '
+        [('(Issue2Cc AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.cc_id = Spare1.user_id AND '
+          '(LOWER(Spare1.email) LIKE %s OR LOWER(Spare1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id AND Issue.shard = Cond1.issue_shard',
           ['%.com%', '%.org%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NULL', [])],
+        [('Spare1.email IS NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -648,17 +648,17 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.NOT_TEXT_HAS, [fd], ['.com', '.org'], [])
     left_joins, where, unsupported = ast2select._ProcessCcCond(cond, 'Cond1',
-        'User1', snapshot_mode=True)
+        'Spare1', snapshot_mode=True)
     self.assertEqual(
-        [('(IssueSnapshot2Cc AS Cond1 JOIN User AS User1 '
-          'ON Cond1.cc_id = User1.user_id AND '
-          '(LOWER(User1.email) LIKE %s OR LOWER(User1.email) LIKE %s)) '
+        [('(IssueSnapshot2Cc AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.cc_id = Spare1.user_id AND '
+          '(LOWER(Spare1.email) LIKE %s OR LOWER(Spare1.email) LIKE %s)) '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id',
           ['%.com%', '%.org%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NULL', [])],
+        [('Spare1.email IS NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -667,7 +667,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['cc_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessCcIDCond(cond, 'Cond1',
-        'User1', snapshot_mode=False)
+        'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2Cc AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -685,7 +685,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['cc_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessCcIDCond(cond, 'Cond1',
-        'User1', snapshot_mode=True)
+        'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('IssueSnapshot2Cc AS Cond1 '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id '
@@ -704,15 +704,15 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessStarredByCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
-        [('(IssueStar AS Cond1 JOIN User AS User1 '
-          'ON Cond1.user_id = User1.user_id AND (LOWER(User1.email) LIKE %s)) '
+        [('(IssueStar AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.user_id = Spare1.user_id AND (LOWER(Spare1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id', ['%example.com%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NOT NULL', [])],
+        [('Spare1.email IS NOT NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -722,7 +722,7 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessStarredByCond(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([cond], unsupported)
@@ -731,7 +731,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['starredby_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessStarredByIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('IssueStar AS Cond1 ON Issue.id = Cond1.issue_id '
           'AND Cond1.user_id = %s', [111L])],
@@ -747,7 +747,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['starredby_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessStarredByIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([cond], unsupported)
@@ -757,17 +757,17 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessCommentByCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
-        [('(Comment AS Cond1 JOIN User AS User1 '
-          'ON Cond1.commenter_id = User1.user_id '
-          'AND (LOWER(User1.email) LIKE %s)) '
+        [('(Comment AS Cond1 JOIN User AS Spare1 '
+          'ON Cond1.commenter_id = Spare1.user_id '
+          'AND (LOWER(Spare1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id AND Cond1.deleted_by IS NULL',
           ['%example.com%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
-        [('User1.email IS NOT NULL', [])],
+        [('Spare1.email IS NOT NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -777,7 +777,7 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['example.com'], [])
     left_joins, where, unsupported = ast2select._ProcessCommentByCond(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([cond], unsupported)
@@ -786,7 +786,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessCommentByIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.commenter_id = %s AND Cond1.deleted_by IS NULL',
@@ -803,7 +803,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessCommentByIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([cond], unsupported)
@@ -812,7 +812,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L, 222L])
     left_joins, where, unsupported = ast2select._ProcessCommentByIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.commenter_id IN (%s,%s) '
@@ -830,7 +830,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [111L])
     left_joins, where, unsupported = ast2select._ProcessCommentByIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.commenter_id = %s AND Cond1.deleted_by IS NULL',
@@ -847,7 +847,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['status_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [2])
     left_joins, where, unsupported = ast2select._ProcessStatusIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual([], left_joins)
     self.assertEqual(
         [('(Issue.status_id = %s OR Issue.derived_status_id = %s)', [2, 2])],
@@ -859,7 +859,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['status_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [2])
     left_joins, where, unsupported = ast2select._ProcessStatusIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=True)
+        'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([('IssueSnapshot.status_id = %s', [2])], where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
@@ -869,14 +869,14 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [])
     with self.assertRaises(ast2select.NoPossibleResults):
-      ast2select._ProcessLabelIDCond(cond, 'Cond1', 'User1',
+      ast2select._ProcessLabelIDCond(cond, 'Cond1', 'Spare1',
           snapshot_mode=False)
 
   def testProcessLabelIDCond_SingleValue(self):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
     left_joins, where, unsupported = ast2select._ProcessLabelIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2Label AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -893,7 +893,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
     left_joins, where, unsupported = ast2select._ProcessLabelIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=True)
+        'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('IssueSnapshot2Label AS Cond1 '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id AND '
@@ -910,7 +910,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2])
     left_joins, where, unsupported = ast2select._ProcessLabelIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2Label AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -927,7 +927,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [])
     left_joins, where, unsupported = ast2select._ProcessLabelIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([], unsupported)
@@ -936,7 +936,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
     left_joins, where, unsupported = ast2select._ProcessLabelIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2Label AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -953,7 +953,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
     left_joins, where, unsupported = ast2select._ProcessLabelIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=True)
+        'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('IssueSnapshot2Label AS Cond1 '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id AND '
@@ -970,7 +970,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['label_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2])
     left_joins, where, unsupported = ast2select._ProcessLabelIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2Label AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -987,7 +987,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['component_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [101])
     left_joins, where, unsupported = ast2select._ProcessComponentIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2Component AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -1004,7 +1004,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['component_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [101])
     left_joins, where, unsupported = ast2select._ProcessComponentIDCond(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('IssueSnapshot2Component AS Cond1 '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id AND '
@@ -1064,11 +1064,11 @@ class AST2SelectTest(unittest.TestCase):
         ast_pb2.QueryOp.EQ, [approval_fd], ['user2@email.com'], [],
         key_suffix=query2ast.SET_BY_SUFFIX)
     left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
-        cond, 'Cond1', 'User1', False)
+        cond, 'Cond1', 'Spare1', False)
     self.assertEqual(
-        [('User AS User1 ON LOWER(User1.email) = %s', ['user2@email.com']),
+        [('User AS Spare1 ON LOWER(Spare1.email) = %s', ['user2@email.com']),
          ('Issue2ApprovalValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
-          'Cond1.approval_id = %s AND Cond1.setter_id = User1.user_id',
+          'Cond1.approval_id = %s AND Cond1.setter_id = Spare1.user_id',
           [1])],
         left_joins)
     self.assertEqual(
@@ -1084,7 +1084,7 @@ class AST2SelectTest(unittest.TestCase):
         ast_pb2.QueryOp.EQ, [approval_fd], [], [111L],
         key_suffix=query2ast.APPROVER_SUFFIX)
     left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
-        cond, 'Cond1', 'User1', False)
+        cond, 'Cond1', 'Spare1', False)
     self.assertEqual(
         [('IssueApproval2Approver AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.approval_id = %s AND Cond1.approver_id = %s',
@@ -1102,7 +1102,7 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.IS_DEFINED, [approval_fd], [], [])
     left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
-        cond, 'Cond1', 'User1', False)
+        cond, 'Cond1', 'Spare1', False)
     self.assertEqual(
         [('Issue2ApprovalValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.approval_id = %s',
@@ -1119,7 +1119,7 @@ class AST2SelectTest(unittest.TestCase):
     val = 42
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -1140,7 +1140,7 @@ class AST2SelectTest(unittest.TestCase):
     val = 'Fuzzy'
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [val], [])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -1161,7 +1161,7 @@ class AST2SelectTest(unittest.TestCase):
     val = 'Fuzzy'
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [val], [])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([cond], unsupported)
@@ -1173,7 +1173,7 @@ class AST2SelectTest(unittest.TestCase):
     val = 111L
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -1194,14 +1194,14 @@ class AST2SelectTest(unittest.TestCase):
     val = 'exec@example.com'
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [val], [])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
-        [('User AS User1 ON '
-          'LOWER(User1.email) = %s', [val]),
+        [('User AS Spare1 ON '
+          'LOWER(Spare1.email) = %s', [val]),
          ('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
           'Cond1.field_id = %s AND '
-          'Cond1.user_id = User1.user_id', [1])],
+          'Cond1.user_id = Spare1.user_id', [1])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertTrue(sql._IsValidJoin(left_joins[1][0]))
@@ -1218,7 +1218,7 @@ class AST2SelectTest(unittest.TestCase):
     val = int(time.mktime(datetime.datetime(2016, 10, 5).timetuple()))
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -1236,7 +1236,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['attachment']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.IS_DEFINED, [fd], [], [])
     left_joins, where, unsupported = ast2select._ProcessAttachmentCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual([], left_joins)
     self.assertEqual(
         [('(Issue.attachment_count IS NOT NULL AND '
@@ -1247,7 +1247,7 @@ class AST2SelectTest(unittest.TestCase):
 
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.IS_NOT_DEFINED, [fd], [], [])
     left_joins, where, unsupported = ast2select._ProcessAttachmentCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual([], left_joins)
     self.assertEqual(
         [('(Issue.attachment_count IS NULL OR '
@@ -1261,7 +1261,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['attachment']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.IS_DEFINED, [fd], [], [])
     left_joins, where, unsupported = ast2select._ProcessAttachmentCond(
-        cond, 'Cond1', 'User1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([cond], unsupported)
@@ -1270,7 +1270,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['attachment']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.TEXT_HAS, [fd], ['jpg'], [])
     left_joins, where, unsupported = ast2select._ProcessAttachmentCond(
-        cond, 'Cond1', 'User1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Attachment AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.deleted = %s',
@@ -1287,7 +1287,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2])
     left_joins, where, unsupported = ast2select._ProcessHotlistIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Hotlist2Issue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.hotlist_id IN (%s,%s)', [1, 2])],
@@ -1301,7 +1301,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2])
     left_joins, where, unsupported = ast2select._ProcessHotlistIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=True)
+        'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('IssueSnapshot2Hotlist AS Cond1 '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id AND '
@@ -1316,7 +1316,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
     left_joins, where, unsupported = ast2select._ProcessHotlistIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Hotlist2Issue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.hotlist_id = %s', [1])],
@@ -1330,7 +1330,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2])
     left_joins, where, unsupported = ast2select._ProcessHotlistIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Hotlist2Issue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.hotlist_id IN (%s,%s)', [1, 2])],
@@ -1344,7 +1344,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2])
     left_joins, where, unsupported = ast2select._ProcessHotlistIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=True)
+        'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('IssueSnapshot2Hotlist AS Cond1 '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id AND '
@@ -1359,7 +1359,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
     left_joins, where, unsupported = ast2select._ProcessHotlistIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Hotlist2Issue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.hotlist_id = %s', [1])],
@@ -1373,7 +1373,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
     left_joins, where, unsupported = ast2select._ProcessHotlistIDCond(cond,
-        'Cond1', 'User1', snapshot_mode=True)
+        'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('IssueSnapshot2Hotlist AS Cond1 '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id AND '
@@ -1388,7 +1388,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['invalid:spa'], [])
     left_joins, where, unsupported = ast2select._ProcessHotlistCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
       [('(Hotlist2Issue JOIN Hotlist AS Cond1 ON '
         'Hotlist2Issue.hotlist_id = Cond1.id AND (LOWER(Cond1.name) LIKE %s))'
@@ -1401,7 +1401,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['invalid:spa'], [])
     left_joins, where, unsupported = ast2select._ProcessHotlistCond(cond,
-        'Cond1', 'User1', snapshot_mode=True)
+        'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual(
       [('(IssueSnapshot2Hotlist JOIN Hotlist AS Cond1 ON '
         'IssueSnapshot2Hotlist.hotlist_id = Cond1.id '
@@ -1417,7 +1417,7 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd],
                             ['invalid:spa', 'port', 'invalid2:barc'], [])
     left_joins, where, unsupported = ast2select._ProcessHotlistCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
       [('(Hotlist2Issue JOIN Hotlist AS Cond1 ON '
         'Hotlist2Issue.hotlist_id = Cond1.id AND (LOWER(Cond1.name) LIKE %s OR '
@@ -1431,7 +1431,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = BUILTIN_ISSUE_FIELDS['hotlist']
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], ['invalid:spa'], [])
     left_joins, where, unsupported = ast2select._ProcessHotlistCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
       [('(Hotlist2Issue JOIN Hotlist AS Cond1 ON '
         'Hotlist2Issue.hotlist_id = Cond1.id AND (LOWER(Cond1.name) LIKE %s))'
@@ -1445,7 +1445,7 @@ class AST2SelectTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NOT_TEXT_HAS, [fd],
                             ['invalid:spa', 'port', 'invalid2:barc'], [])
     left_joins, where, unsupported = ast2select._ProcessHotlistCond(cond,
-        'Cond1', 'User1', snapshot_mode=False)
+        'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
       [('(Hotlist2Issue JOIN Hotlist AS Cond1 ON '
         'Hotlist2Issue.hotlist_id = Cond1.id AND (LOWER(Cond1.name) LIKE %s OR '

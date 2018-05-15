@@ -745,8 +745,8 @@ SHORTHAND = {
     'opt_alias': '( AS %s)?' % TABLE_PAT,
     'email_cond': (r'\(?'
                    r'('
-                   r'(LOWER\(User\d+\.email\) IS NULL OR )?'
-                   r'LOWER\(User\d+\.email\) '
+                   r'(LOWER\(Spare\d+\.email\) IS NULL OR )?'
+                   r'LOWER\(Spare\d+\.email\) '
                    r'(%s %%s|IN \(%%s(, ?%%s)*\))'
                    r'( (AND|OR) )?'
                    r')+'
