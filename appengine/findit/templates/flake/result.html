@@ -312,7 +312,6 @@
         var swarmingTaskIds = dataPoint.task_ids;
         var buildNumber = dataPoint.build_number;
         var thisBuildGitHash = dataPoint.git_hash;
-        var lowerBoundRegressionRange = dataPoint.lower_bound_git_hash;
         var tryJobUrl = dataPoint.try_job_url;
 
         $('#pass-rate').text(passRate);
@@ -449,7 +448,7 @@
                          regression-range-confidence="{{regression_range_confidence}}"
                          heuristic-analysis-results="{{suspected_culprits|tojson}}"
                          culprit-url="{{culprit_url}}"
-                         culprit-text="{{culprit_text}}"
+                         culprit-revision="{{culprit_revision}}"
                          culprit-confidence="{{culprit_confidence}}"
                          bug-id="{{bug_id}}"
                          error="{{error}}">

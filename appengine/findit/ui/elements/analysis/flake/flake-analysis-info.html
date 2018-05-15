@@ -53,23 +53,27 @@
       }
 
       .pending {
-        background-color: yellow;
-      }
-
-      .skipped {
-        background-color: gray;
+        color: #666666;
+        background-color: #fffc6c;
+        border-color: #c5c56d;
       }
 
       .completed {
-        background-color: green;
+        color: #ffffff;
+        background-color: #8fdf5f;
+        border-color: #4f8530;
       }
 
       .running {
-        background-color: blue;
+        color: #666666;
+        background-color: #fffc6c;
+        border-color: #c5c56d;
       }
 
       .error {
-        background-color: red;
+        color: #ffffff;
+        background-color: #e98080;
+        border-color: #a77272;
       }
 
     </style>
@@ -78,42 +82,46 @@
       <div id="header" slot="expandable-card-header" inner-h-t-m-l="[[_header]]"></div>
       <div slot="expandable-card-content">
         <table>
-          <tr>
-            <td class="description">Regression Range</td>
-            <td class="data">
-              <template is="dom-if" if="[[shouldShowRegressionRange(status, regressionRangeLower, regressionRangeUpper)]]">
-              <span class$="[[status]]">&nbsp;&nbsp;&nbsp;</span>
-                <a href$="[[_regressionRangeUrl]]">[[_regressionRangeText]]</a>
-                <template is="dom-if" if="[[regressionRangeConfidence]]">
-                  (Confidence [[regressionRangeConfidence]]%)
+          <template is="dom-if" if="[[! culpritRevision]]">
+            <!--Show regression range if no culprit is found yet.-->
+            <tr>
+              <td class="description">Regression Range</td>
+              <td class="data">
+                <span class$="[[status]]">&nbsp;&nbsp;&nbsp;</span>
+                <template is="dom-if" if="[[regressionRangeFound(regressionRangeLower, regressionRangeUpper)]]">
+                  <a href$="https://crrev.com/[[regressionRangeLower]]..[[regressionRangeUpper]]?pretty=fuller">[[regressionRangeLower]]..[[regressionRangeUpper]]</a>
+                  <template is="dom-if" if="[[regressionRangeConfidence]]">
+                    (Confidence [[regressionRangeConfidence]]%)
+                  </template>
                 </template>
-              </template>
-              <template is="dom-if" if="[[!shouldShowRegressionRange(status, regressionRangeLower, regressionRangeUpper)]]">
-              n/a
-              </template>
-            </td>
-          </tr>
+                <template is="dom-if" if="[[onlyUpperBoundFound(regressionRangeLower, regressionRangeUpper)]]">
+                  ?..[[regressionRangeUpper]]
+                </template>
+                <template is="dom-if" if="[[flakeIsNotReproducible(regressionRangeLower, regressionRangeUpper)]]">
+                  unreproducible
+                </template>
+              </td>
+            </tr>
+          </template>
 
           <!-- Show heuristic analysis results. -->
           <template is="dom-if" if="[[hasHeuristicAnalysisResults(heuristicAnalysisResults)]]">
             <tr>
               <td class="description">Heuristic Analysis</td>
               <td class="data">
-                <ul>
                   <template is="dom-repeat" items="{{heuristicAnalysisResults}}">
-                    <li><a href="{{item.url}}">{{item.commit_position}}</a></li>
+                    <a href="{{item.url}}">{{item.commit_position}}</a>&nbsp;
                   </template>
-                </ul>
               </td>
             </tr>
           </template>
 
           <!-- Show culprit information. -->
-          <template is="dom-if" if="[[isCulpritFound(status, culpritUrl)]]">
+          <template is="dom-if" if="[[culpritUrl]]">
             <tr>
               <td class="description">Culprit</td>
               <td class="data">
-                <a href$="[[culpritUrl]]">[[culpritText]]</a>
+                <a href$="[[culpritUrl]]">[[culpritRevision]]</a>
                 <template is="dom-if" if="[[culpritConfidence]]">
                   (Confidence [[culpritConfidence]]%)
                 </template>
@@ -158,7 +166,7 @@
           heuristicAnalysisResults: Array,
 
           culpritUrl: String,
-          culpritText: String,
+          culpritRevision: String,
           culpritConfidence: String,
 
           bugId: String,
@@ -167,34 +175,24 @@
 
           _header: {
             type: String,
-            computed: 'computeHeader(status, culpritUrl, culpritText, bugId)'
-          },
-
-          _regressionRangeUrl: {
-            type: String,
-            computed: 'computeRegressionRangeUrl(regressionRangeLower, regressionRangeUpper)'
-          },
-
-          _regressionRangeText: {
-            type: String,
-            computed: 'computeRegressionRangeText(regressionRangeLower, regressionRangeUpper)'
+            computed: 'computeHeader(status, culpritUrl, culpritRevision, bugId)'
           },
 
         },
 
         // Computed properties.
-        computeHeader: function (status, culpritUrl, culpritText, bugId) {
+        computeHeader: function (status, culpritUrl, culpritRevision, bugId) {
           var extraInfo = "";
           var result = "";
           status = status.toLowerCase();
 
           // Regression is finished, but culprit isn't done.
           if (status === "completed") {
-            result = "Analysis complete.";
+            result = "Analysis completed.";
           } else if (status === "pending") {
             result = "Analysis pending.";
           } else if (status === "error"){
-            result = "Analysis ended in error.";
+            result = "Analysis errored.";
           } else {
             result = "Analysis running.";
           }
@@ -202,7 +200,11 @@
           // Add extra information
           if (culpritUrl) {
             extraInfo += (" Culprit: <a href='" + culpritUrl + "'>" +
-                          culpritText + "</a>. ");
+                          culpritRevision + "</a>. ");
+          }
+
+          if (this.flakeIsNotReproducible(this.regressionRangeLower, this.regressionRangeUpper)) {
+            extraInfo += "Unreproducible."
           }
 
           if (bugId) {
@@ -217,32 +219,16 @@
           return result;
         },
 
-
-        computeRegressionRangeUrl: function (regressionRangeLower, regressionRangeUpper) {
-          if (!regressionRangeLower || !regressionRangeUpper)
-            return 'None';
-          return "https://crrev.com/" + regressionRangeLower + ".." + regressionRangeUpper + "?pretty=fuller";
-        },
-
-        computeRegressionRangeText: function (regressionRangeLower, regressionRangeUpper) {
-          if (!regressionRangeLower || !regressionRangeUpper)
-            return 'None';
-          return regressionRangeLower +
-            '...' +
-            regressionRangeUpper;
-        },
-
-        // TODO(crbug.com/831675): Show regression range as analysis runs.
         regressionRangeFound: function(regressionRangeLower, regressionRangeUpper) {
           return regressionRangeLower && regressionRangeUpper;
         },
 
-        shouldShowRegressionRange: function(status, regressionRangeLower, regressionRangeUpper) {
-          return status.toLowerCase() === 'completed' && this.regressionRangeFound(regressionRangeLower, regressionRangeUpper);
+        onlyUpperBoundFound: function(regressionRangeLower, regressionRangeUpper) {
+          return !regressionRangeLower && regressionRangeUpper;
         },
 
-        isCulpritFound: function (status, culpritUrl) {
-          return status.toLowerCase() == 'completed' && culpritUrl;
+        flakeIsNotReproducible: function(regressionRangeLower, regressionRangeUpper) {
+          return regressionRangeLower && !regressionRangeUpper;
         },
 
         hasHeuristicAnalysisResults: function(heuristicAnalysisResults) {

@@ -37,8 +37,6 @@ def _GetSuspectedFlakeInfo(analysis):
           'build_number': int,
           'commit_position': int,
           'git_hash': str,
-          'lower_bound_commit_position': int,
-          'lower_bound_git_hash': str,
           'triage_result': int (correct, incorrect, etc.)
       }
   """
@@ -62,10 +60,6 @@ def _GetSuspectedFlakeInfo(analysis):
           data_point.commit_position,
       'git_hash':
           data_point.git_hash,
-      'lower_bound_commit_position': (
-          data_point.previous_build_commit_position),
-      'lower_bound_git_hash':
-          data_point.previous_build_git_hash,
       'triage_result': (analysis.triage_history[-1].triage_result
                         if analysis.triage_history else triage_status.UNTRIAGED)
   }
@@ -167,21 +161,7 @@ def _GetCoordinatesData(analysis):
 
   # Order by commit position from earliest to latest.
   data_points = sorted(analysis.data_points, key=lambda x: x.commit_position)
-  coordinates = []
-
-  previous_data_point = data_points[0]
-  data = _GetBasicData(previous_data_point)
-  coordinates.append(data)
-
-  for i in range(1, len(data_points)):
-    data_point = data_points[i]
-    data = _GetBasicData(data_point)
-    data['lower_bound_commit_position'] = previous_data_point.commit_position
-    data['lower_bound_git_hash'] = previous_data_point.git_hash
-    previous_data_point = data_point
-    coordinates.append(data)
-
-  return coordinates
+  return [_GetBasicData(data_point) for data_point in data_points]
 
 
 def _GetNumbersOfDataPointGroups(data_points):
@@ -497,6 +477,7 @@ class CheckFlake(BaseHandler):
     culprit = _GetCulpritInfo(analysis)
     build_level_number, revision_level_number = _GetNumbersOfDataPointGroups(
         analysis.data_points)
+    regression_range = analysis.GetLatestRegressionRange()
     regression_range_confidence = suspected_flake.get('confidence', 0)
     culprit_confidence = culprit.get('confidence', 0)
 
@@ -555,7 +536,7 @@ class CheckFlake(BaseHandler):
         'revision_level_number':
             revision_level_number,
         'error':
-            analysis.error_message,
+            analysis.error_message or '',
         'iterations_to_rerun':
             analysis.iterations_to_rerun,
         'show_admin_options':
@@ -576,23 +557,22 @@ class CheckFlake(BaseHandler):
             analysis.original_step_name,
         'test_name':
             analysis.original_test_name,
-        'regression_range_upper': (suspected_flake.get('commit_position', '') or
-                                   suspected_flake.get('git_hash', '') or ''),
-        'regression_range_lower': (
-            suspected_flake.get('lower_bound_commit_position', '') or
-            suspected_flake.get('lower_bound_git_hash', '') or ''),
+        'regression_range_upper':
+            regression_range.upper or 0,
+        'regression_range_lower':
+            regression_range.lower or 0,
         'regression_range_confidence':
             regression_range_confidence,
         'culprit_url':
             culprit.get('url', ''),
-        'culprit_text':
-            culprit.get('commit_position', '') or culprit.get('revision', ''),
+        'culprit_revision': (culprit.get('commit_position', 0) or
+                             culprit.get('git_hash', '')),
         'culprit_confidence':
             culprit_confidence,
         'bug_id':
             str(analysis.bug_id) if analysis.bug_id else '',
         'status':
-            analysis_status.STATUS_TO_DESCRIPTION.get(status).lower()
+            analysis_status.STATUS_TO_DESCRIPTION.get(status).lower(),
     }
 
     if (auth_util.IsCurrentUserAdmin() and analysis.completed and

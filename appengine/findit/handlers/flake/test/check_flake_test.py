@@ -254,9 +254,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       return_value={
           'build_number': 100,
           'commit_position': 200,
-          'lower_bound_commit_position': 100,
           'git_hash': 'git_hash_1',
-          'lower_bound_git_hash': 'git_hash_0',
           'triage_result': 0,
           'confidence': .5
       })
@@ -287,15 +285,20 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.original_build_number = build_number
     analysis.original_step_name = step_name
     analysis.original_test_name = test_name
-    data_point = DataPoint()
-    data_point.build_number = 100
-    data_point.pass_rate = success_rate
-    data_point.task_ids = ['task_id']
-    data_point.commit_position = culprit_commit_position
-    data_point.previous_build_commit_position = lower_commit_position
-    data_point.git_hash = culprit_git_hash
-    data_point.previous_build_git_hash = lower_git_hash
-    analysis.data_points.append(data_point)
+    data_point1 = DataPoint()
+    data_point1.build_number = 101
+    data_point1.pass_rate = success_rate
+    data_point1.task_ids = ['task_id1']
+    data_point1.commit_position = culprit_commit_position
+    data_point1.git_hash = culprit_git_hash
+    analysis.data_points.append(data_point1)
+    data_point2 = DataPoint()
+    data_point2.build_number = 100
+    data_point2.pass_rate = 1.0
+    data_point2.task_ids = ['task_id2']
+    data_point2.commit_position = lower_commit_position
+    data_point2.git_hash = culprit_git_hash
+    analysis.data_points.append(data_point2)
     analysis.status = analysis_status.COMPLETED
     analysis.suspected_flake_build_number = 100
     analysis.confidence_in_suspected_build = .5
@@ -343,11 +346,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'analysis_complete':
             False,
         'build_level_number':
-            1,
+            2,
         'revision_level_number':
             0,
         'error':
-            None,
+            '',
         'iterations_to_rerun':
             100,
         'pending_time':
@@ -356,9 +359,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'confidence': 0.5,
             'build_number': 100,
             'commit_position': 200,
-            'lower_bound_commit_position': 100,
             'git_hash': 'git_hash_1',
-            'lower_bound_git_hash': 'git_hash_0',
             'triage_result': 0
         },
         'suspected_culprits': [{
@@ -384,7 +385,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             '',
         'culprit_confidence':
             '',
-        'culprit_text':
+        'culprit_revision':
             '',
         'culprit_url':
             '',
@@ -507,10 +508,20 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.original_build_number = build_number - 1
     analysis.original_step_name = step_name
     analysis.original_test_name = test_name
-    data_point = DataPoint()
-    data_point.build_number = build_number - 1
-    data_point.pass_rate = success_rate
-    analysis.data_points.append(data_point)
+    data_point1 = DataPoint()
+    data_point1.build_number = 101
+    data_point1.pass_rate = success_rate
+    data_point1.task_ids = ['task_id1']
+    data_point1.commit_position = 12345
+    data_point1.git_hash = 'hash1'
+    analysis.data_points.append(data_point1)
+    data_point2 = DataPoint()
+    data_point2.build_number = 100
+    data_point2.pass_rate = 1.0
+    data_point2.task_ids = ['task_id2']
+    data_point2.commit_position = 12340
+    data_point2.git_hash = 'hash2'
+    analysis.data_points.append(data_point2)
     analysis.status = analysis_status.RUNNING
     analysis.suspected_flake_build_number = 100
     analysis.updated_time = datetime.datetime(2016, 1, 1)
@@ -553,11 +564,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'analysis_complete':
             False,
         'build_level_number':
-            1,
+            2,
         'revision_level_number':
             0,
         'error':
-            None,
+            '',
         'iterations_to_rerun':
             100,
         'pending_time':
@@ -587,14 +598,14 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             '',
         'culprit_confidence':
             '',
-        'culprit_text':
+        'culprit_revision':
             '',
         'culprit_url':
             '',
         'regression_range_confidence':
             '',
         'regression_range_lower':
-            '',
+            12340,
         'regression_range_upper':
             12345
     }
@@ -718,8 +729,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point.pass_rate = 0.9
     data_point.commit_position = 2
     data_point.git_hash = 'git_hash_2'
-    data_point.previous_build_commit_position = 1
-    data_point.previous_build_git_hash = 'git_hash_1'
     analysis.data_points.append(data_point)
     analysis.confidence_in_suspected_build = 0
     analysis.Save()
@@ -729,8 +738,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'build_number': analysis.suspected_flake_build_number,
         'commit_position': 2,
         'git_hash': 'git_hash_2',
-        'lower_bound_commit_position': 1,
-        'lower_bound_git_hash': 'git_hash_1',
         'triage_result': 0
     }
 
@@ -808,8 +815,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point_1.pass_rate = success_rate
     data_point_1.commit_position = 5
     data_point_1.git_hash = 'git_hash_5'
-    data_point_1.previous_build_commit_position = 4
-    data_point_1.previous_build_git_hash = 'git_hash_4'
     data_point_1.try_job_url = try_job_url
     analysis.data_points.append(data_point_1)
 
@@ -818,8 +823,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point_2.pass_rate = success_rate
     data_point_2.commit_position = 2
     data_point_2.git_hash = 'git_hash_2'
-    data_point_2.previous_build_commit_position = 1
-    data_point_2.previous_build_git_hash = 'git_hash_1'
     data_point_2.try_job_url = try_job_url
     analysis.data_points.append(data_point_2)
     analysis.Save()
@@ -837,8 +840,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'task_ids': [],
         'build_number': build_number,
         'git_hash': 'git_hash_5',
-        'lower_bound_commit_position': 2,
-        'lower_bound_git_hash': 'git_hash_2',
         'try_job_url': try_job_url
     }]
     self.assertEqual(expected_result, check_flake._GetCoordinatesData(analysis))
