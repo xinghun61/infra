@@ -1,3 +1,20 @@
+# Release Notes sheriff-o-matic 2018-05-15
+
+- 2 commits, 1 bugs affected since fbf9fe3 (2018-05-04T17:09:12Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[wct tester] Replace inlined MONKEYPATCH js with an included script.](https://chromium-review.googlesource.com/1055672) (seanmccullough@chromium.org)
+- [[som] Ensure commit positions are sorted before linking to rev range.](https://chromium-review.googlesource.com/1055602) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/841472](https://crbug.com/841472)
+
+
 # Release Notes sheriff-o-matic 2018-05-04
 
 - 4 commits, 2 bugs affected since 7475df8 ()
