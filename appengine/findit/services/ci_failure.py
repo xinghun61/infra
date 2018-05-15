@@ -26,6 +26,7 @@ _SUPPORTED_FAILURE_TYPE = [failure_type.COMPILE, failure_type.TEST]
 _CACHE_EXPIRE_TIME_SECONDS = 7 * 24 * 60 * 60
 
 
+# TODO(crbug/842980): Deprecate blame_list in builds.
 def _GetBlameListAndRevisionForBuild(build_info):
   """Gets blame list and chromium revision info for a build.
 

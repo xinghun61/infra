@@ -136,7 +136,12 @@ def AnalyzeTestFailure(failure_info, change_logs, deps_info, failure_signals):
         if (build_number > failed_build_number or
             build_number < start_build_number):
           continue
+
         for revision in build.blame_list:
+          # TODO(crbug/842980): Deprecate blame_list in builds.
+          if not change_logs.get(revision):
+            continue
+
           if is_test_level:
             # Checks files at test level.
             for test_analysis_result in step_analysis_result['tests']:

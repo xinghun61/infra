@@ -38,6 +38,10 @@ def _Analyze(start_build_number,
       continue
 
     for revision in build.blame_list:
+      # TODO(crbug/842980): Deprecate blame_list in builds.
+      if not change_logs.get(revision):
+        continue
+
       new_suspected_cl_dict, max_score = build_failure_analysis.AnalyzeOneCL(
           build_number, failure_signal, change_logs[revision], deps_info,
           use_ninja_output)
