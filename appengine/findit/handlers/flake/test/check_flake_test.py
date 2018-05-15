@@ -350,7 +350,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'revision_level_number':
             0,
         'error':
-            '',
+            None,
         'iterations_to_rerun':
             100,
         'pending_time':
@@ -568,7 +568,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'revision_level_number':
             0,
         'error':
-            '',
+            None,
         'iterations_to_rerun':
             100,
         'pending_time':

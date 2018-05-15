@@ -536,7 +536,7 @@ class CheckFlake(BaseHandler):
         'revision_level_number':
             revision_level_number,
         'error':
-            analysis.error_message or '',
+            analysis.error_message,
         'iterations_to_rerun':
             analysis.iterations_to_rerun,
         'show_admin_options':
@@ -558,9 +558,9 @@ class CheckFlake(BaseHandler):
         'test_name':
             analysis.original_test_name,
         'regression_range_upper':
-            regression_range.upper or 0,
+            regression_range.upper,
         'regression_range_lower':
-            regression_range.lower or 0,
+            regression_range.lower,
         'regression_range_confidence':
             regression_range_confidence,
         'culprit_url':

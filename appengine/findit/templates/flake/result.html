@@ -443,15 +443,15 @@
                      test-name="{{test_name}}">
     </flake-test-info>
     <flake-analysis-info status="{{status}}"
-                         regression-range-upper="{{regression_range_upper}}"
-                         regression-range-lower="{{regression_range_lower}}"
+                         regression-range-upper="{{regression_range_upper or ''}}"
+                         regression-range-lower="{{regression_range_lower or ''}}"
                          regression-range-confidence="{{regression_range_confidence}}"
                          heuristic-analysis-results="{{suspected_culprits|tojson}}"
                          culprit-url="{{culprit_url}}"
                          culprit-revision="{{culprit_revision}}"
                          culprit-confidence="{{culprit_confidence}}"
                          bug-id="{{bug_id}}"
-                         error="{{error}}">
+                         error="{{error or ''}}">
     </flake-analysis-info>
 
     <!-- Graph -->
