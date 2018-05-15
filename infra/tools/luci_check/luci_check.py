@@ -4,6 +4,7 @@
 """Testable functions for Luci_check."""
 
 import base64
+import datetime
 import json
 import os
 import requests
@@ -97,7 +98,13 @@ class Checker(object):
 
       luci_cfg_builders = set(
           builder.name[0].split('/')[2] for builder in console.builders)
-      buildbot_builders = set(master['builders'].keys())
+      modified = datetime.datetime.strptime(
+          master['Modified'], '%Y-%m-%dT%H:%M:%S.%fZ')
+      buildbot_builders = set()
+      if modified > datetime.datetime.now() - datetime.timedelta(hours=1):
+        # Only look at masters that have not been turned down.
+        # Turned down masters have no builders.
+        buildbot_builders = set(master['builders'].keys())
       plus = buildbot_builders - luci_cfg_builders
 
       # Add in all the new builders.
