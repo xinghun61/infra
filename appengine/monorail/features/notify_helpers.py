@@ -36,9 +36,9 @@ from tracker import tracker_bizobj
 
 # Email tasks can get too large for AppEngine to handle. In order to prevent
 # that, we set a maximum body size, and may truncate messages to that length.
-# We set this value to 40k so that the total of 40k body + 40k html_body +
+# We set this value to 35k so that the total of 35k body + 35k html_body +
 # metadata does not exceed AppEngine's limit of 100k.
-MAX_EMAIL_BODY_SIZE = 40 * 1024
+MAX_EMAIL_BODY_SIZE = 35 * 1024
 
 # This HTML template adds mark up which enables Gmail/Inbox to display a
 # convenient link that takes users to the CL directly from the inbox without
