@@ -548,15 +548,15 @@ class CheckFlake(BaseHandler):
 
         # new ui stuff
         'master_name':
-            analysis.original_master_name,
+            analysis.original_master_name or analysis.master_name,
         'builder_name':
-            analysis.original_builder_name,
+            analysis.original_builder_name or analysis.builder_name,
         'build_number':
-            analysis.original_build_number,
+            analysis.original_build_number or analysis.build_number,
         'step_name':
-            analysis.original_step_name,
+            analysis.original_step_name or analysis.step_name,
         'test_name':
-            analysis.original_test_name,
+            analysis.original_test_name or analysis.test_name,
         'regression_range_upper':
             regression_range.upper,
         'regression_range_lower':

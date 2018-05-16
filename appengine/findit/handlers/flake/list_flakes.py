@@ -93,10 +93,10 @@ class ListFlakes(BaseHandler):
       data['start_date'] = start_date
       data['end_date'] = end_date
 
-    for master_flake_analysis in analyses:
+    for analysis in analyses:
       culprit = None
-      if master_flake_analysis.culprit_urlsafe_key:
-        culprit_key = ndb.Key(urlsafe=master_flake_analysis.culprit_urlsafe_key)
+      if analysis.culprit_urlsafe_key:
+        culprit_key = ndb.Key(urlsafe=analysis.culprit_urlsafe_key)
         # TODO(crbug.com/799308): Remove this hack when bug is fixed.
         assert culprit_key.pairs()[0]
         assert culprit_key.pairs()[0][0]  # Name of the model.
@@ -104,44 +104,43 @@ class ListFlakes(BaseHandler):
         culprit = ndb.Key(culprit_key.pairs()[0][0],
                           culprit_key.pairs()[0][1]).get()
 
-      status = master_flake_analysis.status
-      if (master_flake_analysis.try_job_status == analysis_status.ERROR or
-          master_flake_analysis.heuristic_analysis_status ==
-          analysis_status.ERROR):
+      status = analysis.status
+      if (analysis.try_job_status == analysis_status.ERROR or
+          analysis.heuristic_analysis_status == analysis_status.ERROR):
         status = analysis_status.ERROR
 
       timestamp = (
-          time_util.ConvertToTimestamp(master_flake_analysis.request_time)
-          if master_flake_analysis.request_time else 'None')
+          time_util.ConvertToTimestamp(analysis.request_time)
+          if analysis.request_time else 'None')
 
       data['master_flake_analyses'].append({
           'master_name':
-              master_flake_analysis.original_master_name,
+              analysis.original_master_name or analysis.master_name,
           'builder_name':
-              master_flake_analysis.original_builder_name,
+              analysis.original_builder_name or analysis.builder_name,
           'build_number':
-              master_flake_analysis.original_build_number,
+              analysis.original_build_number or analysis.build_number,
           'step_name':
-              master_flake_analysis.original_step_name,
+              analysis.original_step_name or analysis.step_name,
           'test_name':
-              master_flake_analysis.original_test_name,
+              analysis.original_test_name or analysis.test_name,
           'bug_id':
-              master_flake_analysis.bug_id,
+              analysis.bug_id,
           'confidence_in_culprit':
-              master_flake_analysis.confidence_in_culprit,
+              analysis.confidence_in_culprit,
           'confidence_in_suspected_build':
-              master_flake_analysis.confidence_in_suspected_build,
+              analysis.confidence_in_suspected_build,
           'culprit':
               culprit.to_dict() if culprit else {},
           'key':
-              master_flake_analysis.key.urlsafe(),
+              analysis.key.urlsafe(),
           'request_utc_timestamp':
               timestamp,
           'result_status':
               result_status.RESULT_STATUS_TO_DESCRIPTION.get(
-                  master_flake_analysis.result_status),
+                  analysis.result_status),
           'suspected_build':
-              master_flake_analysis.suspected_flake_build_number,
+              analysis.suspected_flake_build_number,
           'status':
               analysis_status.STATUS_TO_DESCRIPTION.get(status),
       })
