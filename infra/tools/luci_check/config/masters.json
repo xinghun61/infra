@@ -35,11 +35,6 @@
     false
   ],
   [
-    "chromium.goma",
-    "luci.chromium.ci",
-    false
-  ],
-  [
     "chromium.gpu",
     "luci.chromium.ci",
     false
@@ -47,21 +42,6 @@
   [
     "chromium.gpu.fyi",
     "luci.chromium.ci",
-    false
-  ],
-  [
-    "chromium.infra",
-    "luci.infra.ci",
-    false
-  ],
-  [
-    "chromium.infra.codesearch",
-    "luci.infra.ci",
-    false
-  ],
-  [
-    "chromium.infra.cron",
-    "luci.infra.ci",
     false
   ],
   [
@@ -95,17 +75,7 @@
     false
   ],
   [
-    "chromium.sandbox",
-    "luci.chromium.ci",
-    false
-  ],
-  [
     "chromium.swarm",
-    "luci.chromium.ci",
-    false
-  ],
-  [
-    "chromium.tools.build",
     "luci.chromium.ci",
     false
   ],
