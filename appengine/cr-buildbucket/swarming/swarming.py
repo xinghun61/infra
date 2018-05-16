@@ -358,7 +358,8 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
     try:
       url = 'https://%s/masters/%s/builders/%s/' % (host, master,
                                                     builder_cfg.name)
-      res = yield net.json_request_async(url, params={'format': 'json'})
+      res = yield net.json_request_async(
+          url, params={'format': 'json'}, scopes=net.EMAIL_SCOPE)
       ret = res.get('luci_is_prod')
     except net.NotFoundError:
       logging.warning('missing migration status for %r/%r', master,
