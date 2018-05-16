@@ -269,14 +269,16 @@ class QueryParsingUnitTest(unittest.TestCase):
         'gate:Canary,Stable', '', BUILTIN_ISSUE_FIELDS, self.default_config)
     cond1 = ast.conjunctions[0].conds[0]
     self.assertEqual(
-        MakeCond(TEXT_HAS, [BUILTIN_ISSUE_FIELDS['gate']], ['canary', 'stable'], []),
+        MakeCond(TEXT_HAS, [BUILTIN_ISSUE_FIELDS['gate']],
+                 ['canary', 'stable'], []),
         cond1)
 
     ast = query2ast.ParseUserQuery(
         '-gate:Canary,Stable', '', BUILTIN_ISSUE_FIELDS, self.default_config)
     cond1 = ast.conjunctions[0].conds[0]
     self.assertEqual(
-        MakeCond(NOT_TEXT_HAS, [BUILTIN_ISSUE_FIELDS['gate']], ['canary', 'stable'], []),
+        MakeCond(NOT_TEXT_HAS, [BUILTIN_ISSUE_FIELDS['gate']],
+                 ['canary', 'stable'], []),
         cond1)
 
   def testParseUserQuery_Components(self):

@@ -759,6 +759,14 @@ SHORTHAND = {
                      r'( (AND|OR) )?'
                      r')+'
                      r'\)?' % COMPARE_OP_PAT),
+    'phase_cond': (r'\(?'
+                   r'('
+                   r'(LOWER\(Phase\d+\.name\) IS NULL OR )?'
+                   r'LOWER\(Phase\d+\.name\) '
+                   r'(%s %%s|IN \(%%s(, ?%%s)*\))'
+                   r'( (AND|OR) )?'
+                   r')+'
+                   r'\)?' % COMPARE_OP_PAT),
     }
 
 
@@ -834,6 +842,10 @@ JOIN_RE_LIST = [
     _MakeRE(
         r'^\({table} JOIN Hotlist AS {table} '
         r'ON {tab_col} = {tab_col} AND {hotlist_cond}\) '
+        r'ON Issue.id = {tab_col}?'),
+    _MakeRE(
+        r'^\({table} JOIN IssuePhaseDef AS {table} '
+        r'ON {tab_col} = {tab_col} AND {phase_cond}\) '
         r'ON Issue.id = {tab_col}?'),
     _MakeRE(
         r'^{table} AS {table} ON {tab_col} = {tab_col} '

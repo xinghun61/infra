@@ -238,6 +238,7 @@ CREATE TABLE Issue2FieldValue (
   url_value VARCHAR(1024),
 
   derived BOOLEAN DEFAULT FALSE,
+  phase_id INT,
 
   INDEX (issue_id, field_id),
   INDEX (field_id, issue_shard, int_value),
@@ -248,7 +249,8 @@ CREATE TABLE Issue2FieldValue (
 
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (field_id) REFERENCES FieldDef(id),
-  FOREIGN KEY (user_id) REFERENCES User(user_id)
+  FOREIGN KEY (user_id) REFERENCES User(user_id),
+  FOREIGN KEY (phase_id) REFERENCES IssuePhaseDef(id)
 ) ENGINE=INNODB;
 
 

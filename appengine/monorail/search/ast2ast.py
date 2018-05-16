@@ -342,7 +342,8 @@ def _PreprocessExactUsers(cnxn, cond, user_service, id_fields):
   op = _TextOpToIntOp(cond.op)
   if _IsDefinedOp(op):
     # No need to look up any IDs if we are just testing for any defined value.
-    return ast_pb2.Condition(op=op, field_defs=id_fields, key_suffix=cond.key_suffix,
+    return ast_pb2.Condition(op=op, field_defs=id_fields,
+                             key_suffix=cond.key_suffix,
                              phase_name=cond.phase_name)
 
   # This preprocessing step is only for ops that compare whole values, not
@@ -461,10 +462,12 @@ def _PreprocessCustomCond(cnxn, cond, services):
     return _PreprocessExactUsers(cnxn, cond, services.user, user_field_defs)
 
   approval_field_defs = [fd for fd in cond.field_defs
-                         if fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
+                         if (fd.field_type ==
+                             tracker_pb2.FieldTypes.APPROVAL_TYPE)]
   if approval_field_defs:
     if cond.key_suffix in [query2ast.APPROVER_SUFFIX, query2ast.SET_BY_SUFFIX]:
-      return _PreprocessExactUsers(cnxn, cond, services.user, approval_field_defs)
+      return _PreprocessExactUsers(
+          cnxn, cond, services.user, approval_field_defs)
 
   return cond
 

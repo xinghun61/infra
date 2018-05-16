@@ -707,7 +707,8 @@ class AST2SelectTest(unittest.TestCase):
         cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('(IssueStar AS Cond1 JOIN User AS Spare1 '
-          'ON Cond1.user_id = Spare1.user_id AND (LOWER(Spare1.email) LIKE %s)) '
+          'ON Cond1.user_id = Spare1.user_id AND '
+          '(LOWER(Spare1.email) LIKE %s)) '
           'ON Issue.id = Cond1.issue_id', ['%example.com%'])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
@@ -1119,7 +1120,7 @@ class AST2SelectTest(unittest.TestCase):
     val = 42
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'Spare1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', 'Phase', snapshot_mode=False)
     self.assertEqual(
         [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -1140,7 +1141,7 @@ class AST2SelectTest(unittest.TestCase):
     val = 'Fuzzy'
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [val], [])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'Spare1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1','Phase1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -1161,7 +1162,7 @@ class AST2SelectTest(unittest.TestCase):
     val = 'Fuzzy'
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [val], [])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'Spare1', snapshot_mode=True)
+        cond, 'Cond1', 'Spare1', 'Phase1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual([], where)
     self.assertEqual([cond], unsupported)
@@ -1173,7 +1174,7 @@ class AST2SelectTest(unittest.TestCase):
     val = 111L
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'Spare1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', 'Phase1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -1194,7 +1195,7 @@ class AST2SelectTest(unittest.TestCase):
     val = 'exec@example.com'
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [val], [])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'Spare1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', 'Phase1',  snapshot_mode=False)
     self.assertEqual(
         [('User AS Spare1 ON '
           'LOWER(Spare1.email) = %s', [val]),
@@ -1218,7 +1219,7 @@ class AST2SelectTest(unittest.TestCase):
     val = int(time.mktime(datetime.datetime(2016, 10, 5).timetuple()))
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
-        cond, 'Cond1', 'Spare1', snapshot_mode=False)
+        cond, 'Cond1', 'Spare1', 'Phase1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
@@ -1229,6 +1230,24 @@ class AST2SelectTest(unittest.TestCase):
     self.assertEqual(
         [('Cond1.field_id IS NOT NULL', [])],
         where)
+    self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+    self.assertEqual([], unsupported)
+
+  def testProcessCustomFieldCond_PhaseName(self):
+    fd = tracker_pb2.FieldDef(
+      field_id=1, project_id=789, field_name='Milestone',
+      field_type=tracker_pb2.FieldTypes.INT_TYPE)
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [72],
+                            phase_name='Canary')
+    left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
+        cond, 'Cond1', 'User1', 'Phase1', snapshot_mode=False)
+    self.assertEqual(
+        [('IssuePhaseDef AS Phase1 ON LOWER(Phase1.name) = %s', ['Canary']),
+        ('Issue2FieldValue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+         'Issue.shard = Cond1.issue_shard AND '
+         'Cond1.field_id = %s AND Cond1.int_value = %s AND '
+         'Cond1.phase_id = Phase1.id', [1, 72])],
+        left_joins)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
 

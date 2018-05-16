@@ -15,7 +15,8 @@ class ASTPb2Test(unittest.TestCase):
 
   def testCond(self):
     fd = tracker_pb2.FieldDef(field_id=1, field_name='Size')
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['XL'], [], key_suffix='-approver')
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.EQ, [fd], ['XL'], [], key_suffix='-approver')
     self.assertEqual(ast_pb2.QueryOp.EQ, cond.op)
     self.assertEqual([fd], cond.field_defs)
     self.assertEqual(['XL'], cond.str_values)

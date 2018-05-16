@@ -487,7 +487,8 @@ def _ProcessApprovalFieldCond(cond, alias, user_alias, snapshot_mode):
       tbl_str = 'Issue2ApprovalValue'
       cond_str, cond_args = _Compare(
           alias, op, val_type, 'set_on', values)
-    elif cond.key_suffix in [query2ast.APPROVER_SUFFIX, query2ast.SET_BY_SUFFIX]:
+    elif cond.key_suffix in [
+        query2ast.APPROVER_SUFFIX, query2ast.SET_BY_SUFFIX]:
       if cond.key_suffix == query2ast.SET_BY_SUFFIX:
         tbl_str = 'Issue2ApprovalValue'
         col_name = 'setter_id'
@@ -519,7 +520,8 @@ def _ProcessApprovalFieldCond(cond, alias, user_alias, snapshot_mode):
   return left_joins, where, []
 
 
-def _ProcessCustomFieldCond(cond, alias, user_alias, snapshot_mode):
+def _ProcessCustomFieldCond(
+    cond, alias, user_alias, phase_alias, snapshot_mode):
   """Convert a custom field cond to SQL."""
   if snapshot_mode:
     return [], [], [cond]
@@ -570,6 +572,20 @@ def _ProcessCustomFieldCond(cond, alias, user_alias, snapshot_mode):
     if cond_str or cond_args:
       join_str += ' AND ' + cond_str
       join_args.extend(cond_args)
+
+  if cond.phase_name:
+    phase_cond_str, phase_cond_args = _Compare(
+        phase_alias, ast_pb2.QueryOp.EQ, tracker_pb2.FieldTypes.STR_TYPE,
+        'name', [cond.phase_name])
+    left_joins.append((
+        'IssuePhaseDef AS {phase_alias} ON {phase_cond}'.format(
+            phase_alias=phase_alias, phase_cond=phase_cond_str),
+        phase_cond_args))
+    cond_str = '{alias}.phase_id = {phase_alias}.id'.format(
+        alias=alias, phase_alias=phase_alias)
+    cond_args = []
+    join_str += ' AND ' + cond_str
+    join_args.extend(cond_args)
 
   left_joins.append((join_str, join_args))
   where = [_CompareAlreadyJoined(alias, cond.op, 'field_id')]
@@ -653,7 +669,8 @@ def _ProcessPhaseCond(cond, alias, phase_alias, _snapshot_mode):
   """Convert gate:<phase_name> to SQL."""
 
   cond_str, cond_args = _Compare(
-      phase_alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE, 'name', cond.str_values)
+      phase_alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE,
+      'name', cond.str_values)
   left_joins = [(
       '(Issue2ApprovalValue AS {alias} JOIN IssuePhaseDef AS {phase_alias} '
       'ON {alias}.phase_id = {phase_alias}.id AND {name_cond}) '
@@ -725,9 +742,11 @@ def _ProcessCond(cond_num, cond, snapshot_mode):
     return proc(cond, alias, spare_alias, snapshot_mode)
 
   elif field_def.field_id:  # it is a search on a custom field
+    phase_alias = 'Phase%d' % cond_num
     if field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
       return _ProcessApprovalFieldCond(cond, alias, spare_alias, snapshot_mode)
-    return _ProcessCustomFieldCond(cond, alias, spare_alias, snapshot_mode)
+    return _ProcessCustomFieldCond(
+        cond, alias, spare_alias, phase_alias, snapshot_mode)
 
   elif (field_def.field_name in tracker_fulltext.ISSUE_FULLTEXT_FIELDS or
         field_def.field_name == 'any_field'):

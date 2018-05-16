@@ -383,8 +383,8 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
             return ast_pb2.MakeCond(op, fields[prefix], quick_or_vals,
                                     quick_or_ints, key_suffix=approval_suffix,
                                     phase_name=phase_name)
-      return ast_pb2.MakeCond(
-          op, fields[prefix], quick_or_vals, quick_or_ints, phase_name=phase_name)
+      return ast_pb2.MakeCond(op, fields[prefix], quick_or_vals,
+                              quick_or_ints, phase_name=phase_name)
 
   # Since it is not a field, treat it as labels, E.g., Priority.
   quick_or_labels = ['%s-%s' % (prefix, v) for v in quick_or_vals]
