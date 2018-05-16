@@ -38,11 +38,13 @@ class LuciCheck(app.BaseApplication):
     parser.add_argument(
       '-m', '--master', action='append', help="consider these masters",
       dest='masters')
+    parser.add_argument('--output-json')
 
   def main(self, opts):
     if not opts.masters:
       opts.masters = self.get_masters()
-    sys.exit(luci_check.Checker(opts.console, opts.masters).check())
+    checker = luci_check.Checker(opts.console, opts.masters, opts.output_json)
+    sys.exit(checker.check())
 
 
 if __name__ == '__main__':

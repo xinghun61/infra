@@ -82,10 +82,21 @@
       "python",
       "-u",
       "run.py",
-      "infra.tools.luci_check"
+      "infra.tools.luci_check",
+      "--output-json",
+      "/path/to/tmp/json"
     ],
     "cwd": "[START_DIR]/infra",
-    "name": "Run checks"
+    "name": "Run checks",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"foo.cfg\": \"bar\\nbaz\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@foo.cfg@bar@@@",
+      "@@@STEP_LOG_LINE@foo.cfg@baz@@@",
+      "@@@STEP_LOG_END@foo.cfg@@@"
+    ]
   },
   {
     "name": "$result",

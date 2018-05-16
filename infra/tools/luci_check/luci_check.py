@@ -4,10 +4,13 @@
 """Testable functions for Luci_check."""
 
 import base64
+import cStringIO
+import contextlib
 import datetime
 import json
 import os
 import requests
+import sys
 import zlib
 
 from google.protobuf import text_format
@@ -20,10 +23,30 @@ GET_MASTER_URL = (
 
 
 class Checker(object):
-  def __init__(self, console_def_url, masters):
+  def __init__(self, console_def_url, masters, output_json):
     self.console_def_url = console_def_url
     self.masters = masters
     self.master_data = {}
+    self.output_json = output_json
+    self.out_files = {}
+
+  @contextlib.contextmanager
+  def output(self, name):
+    if self.output_json:
+      f = cStringIO.StringIO()
+    else:
+      f = sys.stdout
+      print '=' * len(name)
+      print name
+      print '=' * len(name)
+    yield f
+    if self.output_json:
+      self.out_files[name] = f.getvalue()
+      f.close()
+    else:
+      print '=' * (len(name) + 4)
+      print 'end %s' % name
+      print '=' * (len(name) + 4)
 
   @staticmethod
   def get_master(name):  # pragma: no cover
@@ -48,38 +71,31 @@ class Checker(object):
     r = requests.get(self.console_def_url + '?format=TEXT')
     return text_format.Parse(base64.b64decode(r.text), proj.Project())
 
-  @staticmethod
-  def output_luci_milo(console_def):
-    # TODO(hinoka): This should probably go in results json, or a separate
-    #               logdog stream.
-    print '============='
-    print 'luci-milo.cfg'
-    print '============='
-    print 'logo_url: "%s"' % console_def.logo_url
-    print
-    for header in console_def.headers:
-      print 'headers {'
-      print '  id: "%s"' % header.id  # Move ID up top.
-      header.id = ""
-      for line in text_format.MessageToString(
-          header, as_utf8=True, use_index_order=False).split('\n'):
-        if line:
-          print '  ' + line
-      print '}'
-      print
-    for console in console_def.consoles:
-      print 'consoles {'
-      print '  header_id: "%s"' % console.header_id
-      console.header_id = ""
-      for line in text_format.MessageToString(
-          console, as_utf8=True).split('\n'):
-        if line:
-          print '  ' + line
-      print '}'
-      print
-    print '================='
-    print 'end luci-milo.cfg'
-    print '================='
+  def output_luci_milo(self, console_def):
+    with self.output("luci-milo.cfg") as f:
+      f.write('logo_url: "%s"\n\n' % console_def.logo_url)
+      for header in console_def.headers:
+        f.write('headers {\n')
+        f.write('  id: "%s"\n' % header.id)  # Move ID up top.
+        header.id = ""
+        for line in text_format.MessageToString(
+            header, as_utf8=True, use_index_order=False).split('\n'):
+          if line:
+            f.write('  %s\n' % line)
+        f.write('}\n\n')
+      for console in console_def.consoles:
+        f.write('consoles {\n')
+        f.write('  header_id: "%s"\n' % console.header_id)
+        console.header_id = ""
+        for line in text_format.MessageToString(
+            console, as_utf8=True).split('\n'):
+          if line:
+            f.write('  %s\n' % line)
+        f.write('}\n\n')
+
+  def flush_output_json(self):
+    with open(self.output_json, 'w') as f:
+      json.dump(self.out_files, f)
 
   def check(self):
     for name, bucket, _ in self.masters:
@@ -135,4 +151,6 @@ class Checker(object):
       print 'Found diffs!'
       rc = 1
     self.output_luci_milo(console_def)  # Print new config file to output.
+    if self.output_json:
+      self.flush_output_json()
     return rc
