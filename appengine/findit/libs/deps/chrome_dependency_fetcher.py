@@ -31,22 +31,18 @@ class DEPSDownloader(deps_parser.DEPSLoader):
 
   def Load(self, repo_url, revision, deps_file):
     repository = self._get_repository(repo_url)
-    content = None
-    if deps_file == 'DEPS' and repo_url == _CHROMIUM_REPO_MASTER:
-      # Try .DEPS.git instead of DEPS first, for commits during the Git chaos.
-      content = repository.GetSource('.DEPS.git', revision)
-
+    content = repository.GetSource(deps_file, revision)
     if content is None:
-      content = repository.GetSource(deps_file, revision)
-
-    if content is None and deps_file != 'DEPS':
-      # Like gclient, fall back to raw 'DEPS' when all else fails.
-      content = repository.GetSource('DEPS', revision)
+      if deps_file == 'DEPS' and repo_url == _CHROMIUM_REPO_MASTER:
+        # Fallbacks to .DEPS.git instead, for commits during the Git chaos.
+        content = repository.GetSource('.DEPS.git', revision)
+      if deps_file != 'DEPS':
+        # Like gclient, falls back to raw 'DEPS' when all else fails.
+        content = repository.GetSource('DEPS', revision)
 
     if content is None:
       raise Exception('Failed to pull %s file from %s, at revision %s.' %
                       (deps_file, repo_url, revision))
-
     return content
 
 
