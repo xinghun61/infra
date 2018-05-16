@@ -18,6 +18,9 @@ class StepMetadata(StructuredObject):
   # The full name of the step, including platform.
   full_step_name = basestring
 
+  # Name of the isolate target.
+  isolate_target_name = basestring
+
   # Whether the step was run with vs without the patch.
   patched = bool
 

@@ -182,7 +182,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         patched=False,
         swarm_task_ids=None,
         waterfall_buildername='b',
-        waterfall_mastername='w')
+        waterfall_mastername='w',
+        isolate_target_name='s')
 
     mocked_revision.return_value = {'git_sha': start_revision}
 
@@ -264,7 +265,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         patched=False,
         swarm_task_ids=None,
         waterfall_buildername='b',
-        waterfall_mastername='w')
+        waterfall_mastername='w',
+        isolate_target_name='s')
 
     mocked_revision.return_value = {'git_sha': start_revision}
     mocked_delay.return_value = delay
