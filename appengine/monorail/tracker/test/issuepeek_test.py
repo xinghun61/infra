@@ -31,8 +31,12 @@ class IssuePeekTest(unittest.TestCase):
         project=fake.ProjectService(),
         config=fake.ConfigService(),
         issue=fake.IssueService(),
+        issue_star=fake.IssueStarService(),
         user=fake.UserService(),
+        usergroup=fake.UserGroupService(),
+        features=fake.FeaturesService(),
         spam=fake.SpamService())
+    self.services.user.TestAddUser('suer@example.com', 111L)
     self.proj = self.services.project.TestAddProject('proj', project_id=789)
     self.cnxn = 'fake cnxn'
     self.servlet = issuepeek.IssuePeek(
@@ -45,16 +49,19 @@ class IssuePeekTest(unittest.TestCase):
   def tearDown(self):
     self.testbed.deactivate()
 
-  def testAssertBasePermission(self):
+  def testGatherPageData_NoPermission(self):
     """Permit users who can view issues."""
+    # Empty permissionset does not have the VIEW permission.
     mr = testing_helpers.MakeMonorailRequest(
         project=self.proj,
         perms=permissions.EMPTY_PERMISSIONSET)
     mr.local_id = self.local_id_1
     self.assertRaises(permissions.PermissionException,
-                      self.servlet.AssertBasePermission, mr)
+                      self.servlet.GatherPageData, mr)
+
+    # User permissionset has the VIEW permission.
     mr.perms = permissions.USER_PERMISSIONSET
-    self.servlet.AssertBasePermission(mr)
+    self.servlet.GatherPageData(mr)
 
   def testPaginateComments_NotVisible(self):
     mr = testing_helpers.MakeMonorailRequest()

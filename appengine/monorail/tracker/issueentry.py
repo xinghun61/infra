@@ -278,8 +278,11 @@ class IssueEntry(servlet.Servlet):
           if parsed.attachments:
             new_bytes_used = tracker_helpers.ComputeNewQuotaBytesUsed(
                 mr.project, parsed.attachments)
-            we.UpdateProject(
-              mr.project.project_id, attachment_bytes_used=new_bytes_used)
+            # TODO(jrobbins): Make quota be calculated and stored as
+            # part of applying the comment.
+            self.services.project.UpdateProject(
+                mr.cnxn, mr.project.project_id,
+                attachment_bytes_used=new_bytes_used)
 
           template_content = ''
           for wkp in project_templates:

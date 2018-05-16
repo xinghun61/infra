@@ -254,6 +254,7 @@ class InboundEmail(webapp2.RequestHandler):
     component_ids = tracker_helpers.LookupComponentIDs(components, config)
 
     mc = monorailcontext.MonorailContext(self.services, auth=auth, cnxn=cnxn)
+    mc.LookupLoggedInUserPerms(project)
     with work_env.WorkEnv(mc, self.services) as we:
       updated_issue = None
       owner_id = None

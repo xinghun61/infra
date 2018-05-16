@@ -212,7 +212,7 @@ class ApiV1HelpersTest(unittest.TestCase):
     mar.project_name = 'test-project'
     mar.project_id = 12345
     mar.auth.effective_ids = {111L}
-    mar.perms = permissions.EMPTY_PERMISSIONSET
+    mar.perms = permissions.READ_ONLY_PERMISSIONSET
     mar.profiler = profiler.Profiler()
 
     now = 1472067725

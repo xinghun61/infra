@@ -39,7 +39,8 @@ class InboundEmailTest(unittest.TestCase):
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService())
     self.project = self.services.project.TestAddProject(
-        'proj', project_id=987, process_inbound_email=True)
+        'proj', project_id=987, process_inbound_email=True,
+        contrib_ids=[111L])
     self.project_addr = 'proj@monorail.example.com'
 
     self.issue = tracker_pb2.Issue()

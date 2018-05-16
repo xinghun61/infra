@@ -77,6 +77,47 @@ class WorkEnv(object):
       self.mr.profiler.EndPhase()
     return False  # Re-raise any exception in the with-block.
 
+  def _AssertUserCanViewProject(self, project):
+    """Make sure the user may view the given project."""
+    if not permissions.UserCanViewProject(
+        self.mr.auth.user_pb, self.mr.auth.effective_ids, project):
+      raise permissions.PermissionException(
+          'User is not allowed to view this project')
+
+  def _AssertPermInProject(self, perm, project):
+    """Make sure the user may use perm in the given project."""
+    permitted = self.mr.perms.CanUsePerm(
+        perm, self.mr.auth.effective_ids, project, [])
+    if not permitted:
+      raise permissions.PermissionException(
+        'User lacks permission %r in project %s' % (perm, project.project_name))
+
+  def _AssertUserCanViewIssue(self, issue, allow_viewing_deleted=False):
+    """Make sure the user may view the issue."""
+    project = self.GetProject(issue.project_id)
+    config = self.GetProjectConfig(issue.project_id)
+    granted_perms = tracker_bizobj.GetGrantedPerms(
+        issue, self.mr.auth.effective_ids, config)
+    permit_view = permissions.CanViewIssue(
+        self.mr.auth.effective_ids, self.mr.perms, project, issue,
+        allow_viewing_deleted=allow_viewing_deleted,
+        granted_perms=granted_perms)
+    if not permit_view:
+      raise permissions.PermissionException(
+          'User is not allowed to view this issue')
+    return project, granted_perms
+
+  def _AssertPermInIssue(self, issue, perm):
+    """Make sure the user may use perm on the given issue."""
+    project, granted_perms = self._AssertUserCanViewIssue(
+        issue, allow_viewing_deleted=True)
+    permitted = self.mr.perms.CanUsePerm(
+        perm, self.mr.auth.effective_ids, project,
+        permissions.GetRestrictions(issue), granted_perms=granted_perms)
+    if not permitted:
+      raise permissions.PermissionException(
+        'User lacks permission %r in issue' % perm)
+
   ### Site methods
 
   # FUTURE: GetSiteReadOnlyState()
@@ -117,6 +158,10 @@ class WorkEnv(object):
     Raises:
       ProjectAlreadyExists: A project with that name already exists.
     """
+    if not permissions.CanCreateProject(self.mr.perms):
+      raise permissions.PermissionException(
+          'User is not allowed to create a project')
+
     with self.mr.profiler.Phase('creating project %r' % project_name):
       project_id = self.services.project.CreateProject(
           self.mr.cnxn, project_name, owner_ids, committer_ids, contributor_ids,
@@ -130,14 +175,19 @@ class WorkEnv(object):
 
   def ListProjects(self, use_cache=True):
     """Return a list of project IDs that the current user may view."""
+    # Note: No permission checks because anyone can list projects, but
+    # the results are filtered by permission to view each project.
+
     with self.mr.profiler.Phase('list projects for %r' % self.mr.auth.user_id):
       project_ids = self.services.project.GetVisibleLiveProjects(
           self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids,
           use_cache=use_cache)
+
+    project_ids = sorted(project_ids)
     return project_ids
 
   def GetProject(self, project_id, use_cache=True):
-    """Return the specified project, TODO: iff the signed in user may view it.
+    """Return the specified project.
 
     Args:
       project_id: int project_id of the project to retrieve.
@@ -152,10 +202,12 @@ class WorkEnv(object):
     with self.mr.profiler.Phase('getting project %r' % project_id):
       project = self.services.project.GetProject(
           self.mr.cnxn, project_id, use_cache=use_cache)
+
+    self._AssertUserCanViewProject(project)
     return project
 
   def GetProjectByName(self, project_name, use_cache=True):
-    """Return the named project, TODO: iff the signed in user may view it.
+    """Return the named project.
 
     Args:
       project_name: string name of the project to retrieve.
@@ -172,6 +224,8 @@ class WorkEnv(object):
           self.mr.cnxn, project_name, use_cache=use_cache)
     if not project:
       raise exceptions.NoSuchProjectException()
+
+    self._AssertUserCanViewProject(project)
     return project
 
   def UpdateProject(
@@ -184,6 +238,9 @@ class WorkEnv(object):
       recent_activity=None, revision_url_format=None, home_page=None,
       docs_url=None, source_url=None, logo_gcs_id=None, logo_file_name=None):
     """Update the DB with the given project information."""
+    project = self.GetProject(project_id)
+    self._AssertPermInProject(permissions.EDIT_PROJECT, project)
+
     with self.mr.profiler.Phase('updating project %r' % project_id):
       self.services.project.UpdateProject(
           self.mr.cnxn, project_id, summary=summary, description=description,
@@ -214,6 +271,9 @@ class WorkEnv(object):
     Raises:
       NoSuchProjectException: There is no project with that ID.
     """
+    project = self.GetProject(project_id)
+    self._AssertPermInProject(permissions.EDIT_PROJECT, project)
+
     with self.mr.profiler.Phase('marking deletable %r' % project_id):
       _project = self.GetProject(project_id)
       self.services.project.MarkProjectDeletable(
@@ -232,10 +292,10 @@ class WorkEnv(object):
     Raises:
       NoSuchProjectException: There is no project with that ID.
     """
-    if not self.mr.auth.user_id:
-      raise ValueError('Anon user cannot star')
+    project = self.GetProject(project_id)
+    self._AssertPermInProject(permissions.SET_STAR, project)
+
     with self.mr.profiler.Phase('(un)starring project %r' % project_id):
-      _project = self.GetProject(project_id)
       self.services.project_star.SetStar(
           self.mr.cnxn, project_id, self.mr.auth.user_id, starred)
 
@@ -252,7 +312,11 @@ class WorkEnv(object):
       NoSuchProjectException: There is no project with that ID.
     """
     if project_id is None:
+      raise exceptions.InputException('No project specified')
+
+    if not self.mr.auth.user_id:
       return False
+
     with self.mr.profiler.Phase('checking project star %r' % project_id):
       _project = self.GetProject(project_id)
       return self.services.project_star.IsItemStarredBy(
@@ -269,6 +333,9 @@ class WorkEnv(object):
       A list of projects that were starred by current user and that they
       are currently allowed to view.
     """
+    # Note: No permission checks for this call, but the list of starred
+    # projects is filtered based on permission to view.
+
     if viewed_user_id is None:
       if self.mr.auth.user_id:
         viewed_user_id = self.mr.auth.user_id
@@ -281,7 +348,7 @@ class WorkEnv(object):
     return viewable_projects
 
   def GetProjectConfig(self, project_id, use_cache=True):
-    """Return the specifed config, TODO: iff the signed in user may view it.
+    """Return the specifed config.
 
     Args:
       project_name: string name of the project to retrieve.
@@ -293,6 +360,9 @@ class WorkEnv(object):
     Raises:
       NoSuchProjectException: There is no matching config.
     """
+    # Use the same permission check as GetProject().
+    _project = self.GetProject(project_id)
+
     with self.mr.profiler.Phase('getting config for %r' % project_id):
       config = self.services.config.GetProjectConfig(
           self.mr.cnxn, project_id, use_cache=use_cache)
@@ -331,6 +401,9 @@ class WorkEnv(object):
     Returns:
       A tuple (newly created Issue, Comment PB for the description).
     """
+    project = self.GetProject(project_id)
+    self._AssertPermInProject(permissions.CREATE_ISSUE, project)
+
     with self.mr.profiler.Phase('creating issue in project %r' % project_id):
       reporter_id = self.mr.auth.user_id
       new_local_id, comment = self.services.issue.CreateIssue(
@@ -349,6 +422,9 @@ class WorkEnv(object):
 
   def ListIssues(self):
     """Do an issue search using info in mr and return a pipeline object."""
+    # Permission to view a project is checked in Frontendsearchpipeline().
+    # Individual results are filtered by permissions in SearchForIIDs().
+
     with self.mr.profiler.Phase('searching issues'):
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
           self.mr, self.services, self.mr.num)
@@ -367,6 +443,9 @@ class WorkEnv(object):
     Returns:
       A 4-tuple of flipper info: (prev_iid, cur_index, next_iid, total_count).
     """
+    # Permission to view a project is checked in Frontendsearchpipeline().
+    # Individual results are filtered by permissions in SearchForIIDs().
+
     with self.mr.profiler.Phase('finding issue position in search'):
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
           self.mr, self.services, None)
@@ -380,20 +459,39 @@ class WorkEnv(object):
       prev_iid, cur_index, next_iid = pipeline.DetermineIssuePosition(issue)
       return prev_iid, cur_index, next_iid, pipeline.total_count
 
-  def GetIssue(self, issue_id, use_cache=True):
-    """Return the specified issue, TODO: iff the signed in user may view it."""
+  def GetIssue(self, issue_id, use_cache=True, allow_viewing_deleted=False):
+    """Return the specified issue.
+
+    Args:
+      issue_id: int global issue ID.
+      use_cache: set to false to ensure fresh issue.
+      allow_viewing_deleted: set to true to allow user to view a deleted issue.
+
+    Returns:
+      The requested Issue PB.
+    """
+    if issue_id is None:
+      raise exceptions.InputException('No issue issue_id specified')
+
     with self.mr.profiler.Phase('getting issue %r' % issue_id):
       issue = self.services.issue.GetIssue(
           self.mr.cnxn, issue_id, use_cache=use_cache)
+
+    self._AssertUserCanViewIssue(
+        issue, allow_viewing_deleted=allow_viewing_deleted)
     return issue
 
-  def GetIssueByLocalID(self, project_id, local_id, use_cache=True):
+  def GetIssueByLocalID(
+      self, project_id, local_id, use_cache=True,
+      allow_viewing_deleted=False):
     """Return the specified issue, TODO: iff the signed in user may view it.
 
     Args:
       project_id: int project ID of the project that contains the issue.
       local_id: int issue local id number.
       use_cache: set to False when doing read-modify-write operations.
+      allow_viewing_deleted: set to True to return a deleted issue so that
+          an authorized user may undelete it.
 
     Returns:
       The specified Issue PB.
@@ -410,6 +508,9 @@ class WorkEnv(object):
     with self.mr.profiler.Phase('getting issue %r:%r' % (project_id, local_id)):
       issue = self.services.issue.GetIssueByLocalID(
           self.mr.cnxn, project_id, local_id, use_cache=use_cache)
+
+    self._AssertUserCanViewIssue(
+        issue, allow_viewing_deleted=allow_viewing_deleted)
     return issue
 
   def UpdateIssueApprovalStatus(
@@ -418,6 +519,7 @@ class WorkEnv(object):
     issue, approval_value = self.services.issue.GetIssueApproval(
         self.mr.cnxn, issue_id, approval_id)
 
+    self._AssertUserCanViewIssue(issue)
     if not permissions.CanUpdateApprovalStatus(
         self.mr.auth.effective_ids, approval_value.approver_ids,
         approval_value.status, new_status):
@@ -442,6 +544,7 @@ class WorkEnv(object):
     issue, approval_value = self.services.issue.GetIssueApproval(
         self.mr.cnxn, issue_id, approval_id)
 
+    self._AssertUserCanViewIssue(issue)
     # TODO(jojwang): monorail:3582, OR this with project admin/owners
     # or check for admin/owner perms inside CanUpdateApprovers
     if not permissions.CanUpdateApprovers(
@@ -475,6 +578,8 @@ class WorkEnv(object):
     Returns:
       Nothing.
     """
+    self._AssertUserCanViewIssue(issue)
+
     config = self.GetProjectConfig(issue.project_id)
     old_owner_id = tracker_bizobj.GetOwnerId(issue)
 
@@ -498,6 +603,8 @@ class WorkEnv(object):
 
   def DeleteIssue(self, issue, delete):
     """Mark or unmark the given issue as deleted."""
+    self._AssertPermInIssue(issue, permissions.DELETE_ISSUE)
+
     with self.mr.profiler.Phase('Marking issue %r deleted' % (issue.issue_id)):
       self.services.issue.SoftDeleteIssue(
           self.mr.cnxn, issue.project_id, issue.local_id, delete,
@@ -531,44 +638,64 @@ class WorkEnv(object):
 
   # FUTURE: CreateComment()
 
-  def ListIssueComments(self, viewable_issue):
+  def ListIssueComments(self, issue):
     """Return comments on the specified viewable issue."""
-    with self.mr.profiler.Phase(
-        'getting comments for %r' % viewable_issue.issue_id):
+    self._AssertUserCanViewIssue(issue)
+
+    with self.mr.profiler.Phase('getting comments for %r' % issue.issue_id):
       comments = self.services.issue.GetCommentsForIssue(
-          self.mr.cnxn, viewable_issue.issue_id)
+          self.mr.cnxn, issue.issue_id)
     return comments
 
   # FUTURE: UpdateComment()
 
   def DeleteComment(self, issue, comment, delete):
     """Mark or unmark a comment as deleted by the current user."""
+    self._AssertUserCanViewIssue(issue)
+
+    project = self.GetProject(issue.project_id)
+    config = self.GetProjectConfig(issue.project_id)
+    granted_perms = tracker_bizobj.GetGrantedPerms(
+        issue, self.mr.auth.effective_ids, config)
+    if ((comment.is_spam and mr.auth.user_id == comment.user_id) or
+        not permissions.CanDelete(
+            self.mr.auth.user_id, self.mr.auth.effective_ids, self.mr.perms,
+            comment.deleted_by, comment.user_id, project,
+            permissions.GetRestrictions(issue), granted_perms=granted_perms)):
+      raise permissions.PermissionException('Cannot delete comment')
+
     with self.mr.profiler.Phase(
         'deleting issue %r comment %r' % (issue.issue_id, comment.id)):
       self.services.issue.SoftDeleteComment(
           self.mr.cnxn, issue, comment, self.mr.auth.user_id,
           self.services.user, delete=delete)
 
-  def StarIssue(self, viewable_issue, starred):
+  def StarIssue(self, issue, starred):
     """Set or clear a star on the given issue for the signed in user."""
     if not self.mr.auth.user_id:
       raise exceptions.InputException('Anon cannot star issues')
+    self._AssertPermInIssue(issue, permissions.SET_STAR)
 
-    with self.mr.profiler.Phase('starring issue %r' % viewable_issue.issue_id):
+    with self.mr.profiler.Phase('starring issue %r' % issue.issue_id):
       config = self.services.config.GetProjectConfig(
-          self.mr.cnxn, viewable_issue.project_id)
+          self.mr.cnxn, issue.project_id)
       self.services.issue_star.SetStar(
-          self.mr.cnxn, self.services, config, viewable_issue.issue_id,
+          self.mr.cnxn, self.services, config, issue.issue_id,
           self.mr.auth.user_id, starred)
 
-  def IsIssueStarred(self, viewable_issue, cnxn=None):
+  def IsIssueStarred(self, issue, cnxn=None):
     """Return True if the given issue is starred by the signed in user."""
-    with self.mr.profiler.Phase('checking star %r' % viewable_issue.issue_id):
+    self._AssertUserCanViewIssue(issue)
+
+    with self.mr.profiler.Phase('checking star %r' % issue.issue_id):
       return self.services.issue_star.IsItemStarredBy(
-          cnxn or self.mr.cnxn, viewable_issue.issue_id, self.mr.auth.user_id)
+          cnxn or self.mr.cnxn, issue.issue_id, self.mr.auth.user_id)
 
   def ListStarredIssueIDs(self):
     """Return a list of the issue IDs that the current issue has starred."""
+    # This returns an unfiltered list of issue_ids.  Permissions will be
+    # applied if and when the caller attempts to load each issue.
+
     with self.mr.profiler.Phase('getting stars %r' % self.mr.auth.user_id):
       return self.services.issue_star.LookupStarredItemIDs(
           self.mr.cnxn, self.mr.auth.user_id)
@@ -591,6 +718,8 @@ class WorkEnv(object):
       1. A dict of {name: count} for each item in group_by.
       2. A list of any unsupported query conditions in query.
     """
+    # This returns counts of viewable issues.
+
     with self.mr.profiler.Phase('querying snapshot counts'):
       return self.services.chart.QueryIssueSnapshots(
         self.mr.cnxn, self.services, timestamp, self.mr.auth.effective_ids,

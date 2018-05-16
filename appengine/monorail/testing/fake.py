@@ -1295,6 +1295,9 @@ class IssueService(object):
     else:
       raise exceptions.NoSuchIssueException()
 
+  def GetPreviousLocations(self, cnxn, issue):
+    return []
+
   def GetCommentsByUser(self, cnxn, user_id):
     """Get all comments created by a user"""
     comments = []
@@ -2022,6 +2025,9 @@ class FeaturesService(object):
           pass
 
   # end of Hotlist functions
+
+  def GetRecentCommands(self, cnxn, user_id, project_id):
+    return [], []
 
   def ExpungeSavedQueriesExecuteInProject(self, _cnxn, project_id):
     self.expunged_saved_queries.append(project_id)

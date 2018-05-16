@@ -583,12 +583,12 @@ class Servlet(webapp2.RequestHandler):
       project_thumbnail_url = tracker_views.LogoView(project).thumbnail_url
 
     with work_env.WorkEnv(mr, self.services) as we:
-      is_project_starred = we.IsProjectStarred(mr.project_id)
-
-    project_view = None
-    if mr.project:
-      # TODO(jrobbins): should this be a ProjectView?
-      project_view = template_helpers.PBProxy(mr.project)
+      is_project_starred = False
+      project_view = None
+      if mr.project:
+        is_project_starred = we.IsProjectStarred(mr.project_id)
+        # TODO(jrobbins): should this be a ProjectView?
+        project_view = template_helpers.PBProxy(mr.project)
 
     grid_x_attr = None
     grid_y_attr = None

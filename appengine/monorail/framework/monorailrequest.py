@@ -436,12 +436,10 @@ class MonorailRequest(MonorailRequestBase):
     Raises:
       NoSuchProjectException if there is no project with that name.
     """
-    with work_env.WorkEnv(
-        self, services, phase='get current project, if any') as we:
-      if not self.project_name:
-        logging.info('no project_name, so no project')
-      else:
-        self.project = we.GetProjectByName(self.project_name)
+    logging.info('project_name is %r', self.project_name)
+    if self.project_name:
+      self.project = services.project.GetProjectByName(
+          self.cnxn, self.project_name)
 
   def _LookupHotlist(self, services):
     """Get information about the current hotlist (if any) from the request."""

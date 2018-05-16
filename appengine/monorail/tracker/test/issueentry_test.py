@@ -187,9 +187,9 @@ class IssueEntryTest(unittest.TestCase):
 
   def testProcessFormData_RedirectToEnteredIssue(self):
     mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/entry')
+        path='/p/proj/issues/entry', project=self.project)
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
-    mr.perms = permissions.EMPTY_PERMISSIONSET
+    mr.perms = permissions.USER_PERMISSIONSET
     post_data = fake.PostData(
         summary=['fake summary'],
         comment=['fake comment'],
@@ -207,7 +207,7 @@ class IssueEntryTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry')
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
-    mr.perms = permissions.EMPTY_PERMISSIONSET
+    mr.perms = permissions.USER_PERMISSIONSET
     post_data = fake.PostData(
         summary=[issueentry.PLACEHOLDER_SUMMARY],
         comment=['fake comment'],
@@ -230,6 +230,7 @@ class IssueEntryTest(unittest.TestCase):
   def testProcessFormData_RejectUnmodifiedTemplate(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry')
+    mr.perms = permissions.USER_PERMISSIONSET
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     template = testing_helpers.DefaultTemplates()[0]
     post_data = fake.PostData(

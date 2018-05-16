@@ -27,9 +27,10 @@ class ProjectAdminAdvancedTest(unittest.TestCase):
         project=fake.ProjectService())
     self.servlet = projectadminadvanced.ProjectAdminAdvanced(
         'req', 'res', services=services)
-    self.project = services.project.TestAddProject('proj')
+    self.project = services.project.TestAddProject('proj', owner_ids=[111L])
     self.mr = testing_helpers.MakeMonorailRequest(
-        project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
+        project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
+        user_info={'user_id':111L})
 
   def testAssertBasePermission(self):
     # Signed-out users cannot edit the project

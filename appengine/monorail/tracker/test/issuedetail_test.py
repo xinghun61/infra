@@ -837,6 +837,7 @@ class GetAdjacentIssueTest(unittest.TestCase):
         project=fake.ProjectService(),
         issue_star=fake.IssueStarService(),
         spam=fake.SpamService())
+    self.services.project.TestAddProject('proj', project_id=789)
     self.mr = testing_helpers.MakeMonorailRequest()
     self.mr.auth.user_id = 111L
     self.mr.auth.effective_ids = {111L}

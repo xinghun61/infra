@@ -38,28 +38,6 @@ class IssuePeek(servlet.Servlet):
   _PAGE_TEMPLATE = 'tracker/issue-peek-ajah.ezt'
   _ALLOW_VIEWING_DELETED = False
 
-  def AssertBasePermission(self, mr):
-    """Check that the user has permission to even visit this page."""
-    super(IssuePeek, self).AssertBasePermission(mr)
-    try:
-      with work_env.WorkEnv(mr, self.services) as we:
-        issue = we.GetIssueByLocalID(mr.project_id, mr.local_id)
-        config = we.GetProjectConfig(mr.project_id)
-    except exceptions.NoSuchIssueException:
-      return
-    if not issue:
-      return
-    granted_perms = tracker_bizobj.GetGrantedPerms(
-        issue, mr.auth.effective_ids, config)
-    permit_view = permissions.CanViewIssue(
-        mr.auth.effective_ids, mr.perms, mr.project, issue,
-        allow_viewing_deleted=self._ALLOW_VIEWING_DELETED,
-        granted_perms=granted_perms)
-    if not permit_view:
-      logging.warning('Issue is %r', issue)
-      raise permissions.PermissionException(
-          'User is not allowed to view this issue')
-
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page.
 
@@ -104,7 +82,8 @@ class IssuePeek(servlet.Servlet):
 
     (issue_view, description_views,
      comment_views) = self._MakeIssueAndCommentViews(
-         mr, issue, users_by_id, descriptions, visible_comments, config)
+         mr, issue, users_by_id, descriptions, visible_comments, config,
+         issue_reporters=[], comment_reporters=[])
 
     with mr.profiler.Phase('getting starring info'):
       starred = star_promise.WaitAndGetValue()
@@ -232,9 +211,11 @@ class IssuePeek(servlet.Servlet):
           all_related={rel.issue_id: rel for rel in all_related})
 
     with mr.profiler.Phase('autolinker object lookup'):
-      all_ref_artifacts = self.services.autolink.GetAllReferencedArtifacts(
-          mr, [c.content for c in descriptions + comments
-               if not c.deleted_by])
+      all_ref_artifacts = None
+      if self.services.autolink:
+        all_ref_artifacts = self.services.autolink.GetAllReferencedArtifacts(
+            mr, [c.content for c in descriptions + comments
+                 if not c.deleted_by])
 
     with mr.profiler.Phase('making comment views'):
       reporter_auth = authdata.AuthData.FromUserID(

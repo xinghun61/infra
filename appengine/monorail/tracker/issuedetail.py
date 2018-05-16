@@ -112,7 +112,8 @@ class IssueDetail(issuepeek.IssuePeek):
         # Signed in users could edit the issue, so it must be fresh.
         use_cache = not mr.auth.user_id
         issue = we.GetIssueByLocalID(
-            mr.project_id, mr.local_id, use_cache=use_cache)
+            mr.project_id, mr.local_id, use_cache=use_cache,
+            allow_viewing_deleted=True)
       except exceptions.NoSuchIssueException:
         issue = None
 
@@ -688,8 +689,11 @@ class IssueDetail(issuepeek.IssuePeek):
           if parsed.attachments:
             new_bytes_used = tracker_helpers.ComputeNewQuotaBytesUsed(
                 mr.project, parsed.attachments)
-            we.UpdateProject(
-                mr.project.project_id, attachment_bytes_used=new_bytes_used)
+            # TODO(jrobbins): Make quota be calculated and stored as
+            # part of applying the comment.
+            self.services.project.UpdateProject(
+                mr.cnxn, mr.project.project_id,
+                attachment_bytes_used=new_bytes_used)
 
           # Store everything we got from the form.  If the user lacked perms
           # any attempted edit would be a no-op because of the logic above.
@@ -1139,21 +1143,10 @@ class IssueCommentDeletion(servlet.Servlet):
 
     with work_env.WorkEnv(mr, self.services) as we:
       issue = we.GetIssueByLocalID(mr.project_id, local_id, use_cache=False)
-      config = we.GetProjectConfig(mr.project_id)
 
       all_comments = we.ListIssueComments(issue)
       logging.info('comments on %s are: %s', local_id, all_comments)
       comment = all_comments[sequence_num]
-
-      granted_perms = tracker_bizobj.GetGrantedPerms(
-          issue, mr.auth.effective_ids, config)
-
-      if ((comment.is_spam and mr.auth.user_id == comment.user_id) or
-          not permissions.CanDelete(
-          mr.auth.user_id, mr.auth.effective_ids, mr.perms,
-          comment.deleted_by, comment.user_id, mr.project,
-          permissions.GetRestrictions(issue), granted_perms=granted_perms)):
-        raise permissions.PermissionException('Cannot delete comment')
 
       we.DeleteComment(issue, comment, delete)
 
@@ -1187,14 +1180,8 @@ class IssueDeleteForm(servlet.Servlet):
     logging.info('Marking issue %d as deleted: %r', local_id, delete)
 
     with work_env.WorkEnv(mr, self.services) as we:
-      issue = we.GetIssueByLocalID(mr.project_id, local_id)
-      config = we.GetProjectConfig(mr.project_id)
-      granted_perms = tracker_bizobj.GetGrantedPerms(
-          issue, mr.auth.effective_ids, config)
-      permit_delete = self.CheckPerm(
-          mr, permissions.DELETE_ISSUE, art=issue, granted_perms=granted_perms)
-      if not permit_delete:
-        raise permissions.PermissionException('Cannot un/delete issue')
+      issue = we.GetIssueByLocalID(
+          mr.project_id, local_id, allow_viewing_deleted=True)
       we.DeleteIssue(issue, delete)
 
     return framework_helpers.FormatAbsoluteURL(
@@ -1464,6 +1451,9 @@ def GetAdjacentIssue(we, issue, hotlist=None, next_issue=False):
 
   Returns:
     The adjacent issue.
+
+  Raises:
+    NoSuchIssueException when there is no adjacent issue in the list.
   """
   if hotlist:
     (prev_iid, _cur_index, next_iid, _total_count
@@ -1472,4 +1462,6 @@ def GetAdjacentIssue(we, issue, hotlist=None, next_issue=False):
     (prev_iid, _cur_index, next_iid, _total_count
         ) = we.FindIssuePositionInSearch(issue)
   iid = next_iid if next_issue else prev_iid
+  if iid is None:
+    raise exceptions.NoSuchIssueException()
   return we.GetIssue(iid)

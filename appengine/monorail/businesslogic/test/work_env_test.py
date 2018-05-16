@@ -14,6 +14,7 @@ from google.appengine.ext import testbed
 
 from businesslogic import work_env
 from framework import exceptions
+from framework import permissions
 from features import send_notifications
 from proto import project_pb2
 from proto import tracker_pb2
@@ -28,7 +29,6 @@ class WorkEnvTest(unittest.TestCase):
 
   def setUp(self):
     self.cnxn = 'fake connection'
-    self.mr = testing_helpers.MakeMonorailRequest()
     self.services = service_manager.Services(
         config=fake.ConfigService(),
         issue=fake.IssueService(),
@@ -38,12 +38,23 @@ class WorkEnvTest(unittest.TestCase):
         project_star=fake.ProjectStarService(),
         template=Mock(spec=template_svc.TemplateService),
         spam=fake.SpamService())
+    self.project = self.services.project.TestAddProject(
+        'proj', project_id=789)
+    self.admin_user = self.services.user.TestAddUser(
+        'admin@example.com', 444L)
+    self.admin_user.is_site_admin = True
+    self.mr = testing_helpers.MakeMonorailRequest(project=self.project)
+    self.mr.perms = permissions.READ_ONLY_PERMISSIONSET
+
     self.work_env = work_env.WorkEnv(
       self.mr, self.services, 'Testing phase')
 
   def SignIn(self, user_id=111L):
+    self.mr.auth.user_pb = self.services.user.GetUser(self.cnxn, user_id)
     self.mr.auth.user_id = user_id
     self.mr.auth.effective_ids = {user_id}
+    self.mr.perms = permissions.GetPermissions(
+        self.mr.auth.user_pb, self.mr.auth.effective_ids, self.project)
 
   # FUTURE: GetSiteReadOnlyState()
   # FUTURE: SetSiteReadOnlyState()
@@ -52,9 +63,10 @@ class WorkEnvTest(unittest.TestCase):
 
   def testCreateProject_Normal(self):
     """We can create a project."""
+    self.SignIn(user_id=self.admin_user.user_id)
     with self.work_env as we:
       project_id = we.CreateProject(
-          'testproj', [111L], [222L], [333L], 'summary', 'desc')
+          'newproj', [111L], [222L], [333L], 'summary', 'desc')
       actual = we.GetProject(project_id)
 
     self.assertEqual('summary', actual.summary)
@@ -64,32 +76,32 @@ class WorkEnvTest(unittest.TestCase):
 
   def testCreateProject_AlreadyExists(self):
     """We can create a project."""
-    self.services.project.TestAddProject('testproj', project_id=789)
+    self.SignIn(user_id=self.admin_user.user_id)
+    # Project 'proj' is created in setUp().
     with self.assertRaises(exceptions.ProjectAlreadyExists):
       with self.work_env as we:
-        we.CreateProject('testproj', [111L], [222L], [333L], 'summary', 'desc')
+        we.CreateProject('proj', [111L], [222L], [333L], 'summary', 'desc')
 
     self.assertFalse(
         self.services.template.CreateDefaultProjectTemplates.called)
 
   def testListProjects(self):
     """We can get the project IDs of projects visible to the current user."""
-    self.services.project.TestAddProject('proj1', project_id=1)
+    # Project 789 is created in setUp()
     self.services.project.TestAddProject(
         'proj2', project_id=2, access=project_pb2.ProjectAccess.MEMBERS_ONLY)
     self.services.project.TestAddProject('proj3', project_id=3)
     with self.work_env as we:
       actual = we.ListProjects()
 
-    self.assertEqual([1, 3], actual)
+    self.assertEqual([3, 789], actual)
 
   def testGetProject_Normal(self):
     """We can get an existing project by project_id."""
-    project = self.services.project.TestAddProject('proj', project_id=789)
     with self.work_env as we:
       actual = we.GetProject(789)
 
-    self.assertEqual(project, actual)
+    self.assertEqual(self.project, actual)
 
   def testGetProject_NoSuchProject(self):
     """We reject attempts to get a non-existent project."""
@@ -99,11 +111,10 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetProjectByName_Normal(self):
     """We can get an existing project by project_name."""
-    project = self.services.project.TestAddProject('proj', project_id=789)
     with self.work_env as we:
       actual = we.GetProjectByName('proj')
 
-    self.assertEqual(project, actual)
+    self.assertEqual(self.project, actual)
 
   def testGetProjectByName_NoSuchProject(self):
     """We reject attempts to get a non-existent project."""
@@ -113,7 +124,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testUpdateProject_Normal(self):
     """We can update an existing project."""
-    project = self.services.project.TestAddProject('proj', project_id=789)
+    self.SignIn(user_id=self.admin_user.user_id)
     with self.work_env as we:
       we.UpdateProject(789, read_only_reason='test reason')
       project = we.GetProject(789)
@@ -122,20 +133,22 @@ class WorkEnvTest(unittest.TestCase):
 
   def testUpdateProject_NoSuchProject(self):
     """Updating a nonexistent project raises an exception."""
+    self.SignIn(user_id=self.admin_user.user_id)
     with self.assertRaises(exceptions.NoSuchProjectException):
       with self.work_env as we:
-        we.UpdateProject(789, summary='new summary')
+        we.UpdateProject(999, summary='new summary')
 
   def testDeleteProject_Normal(self):
     """We can mark an existing project as deletable."""
-    project = self.services.project.TestAddProject('proj', project_id=789)
+    self.SignIn(user_id=self.admin_user.user_id)
     with self.work_env as we:
       we.DeleteProject(789)
 
-    self.assertEqual(project_pb2.ProjectState.DELETABLE, project.state)
+    self.assertEqual(project_pb2.ProjectState.DELETABLE, self.project.state)
 
   def testDeleteProject_NoSuchProject(self):
     """Changing a nonexistent project raises an exception."""
+    self.SignIn(user_id=self.admin_user.user_id)
     with self.assertRaises(exceptions.NoSuchProjectException):
       with self.work_env as we:
         we.DeleteProject(999)
@@ -143,7 +156,6 @@ class WorkEnvTest(unittest.TestCase):
   def testStarProject_Normal(self):
     """We can star and unstar a project."""
     self.SignIn()
-    self.services.project.TestAddProject('proj', project_id=789)
     with self.work_env as we:
       self.assertFalse(we.IsProjectStarred(789))
       we.StarProject(789, True)
@@ -160,8 +172,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testStarProject_Anon(self):
     """Anon user can't star a project."""
-    self.services.project.TestAddProject('proj', project_id=789)
-    with self.assertRaises(ValueError):
+    with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.StarProject(789, True)
 
@@ -171,20 +182,22 @@ class WorkEnvTest(unittest.TestCase):
     pass
 
   def testIsProjectStarred_NoProjectSpecified(self):
-    """For non-project pages, we always return false."""
+    """A project ID must be specified."""
     with self.work_env as we:
-      self.assertFalse(we.IsProjectStarred(None))
+      with self.assertRaises(exceptions.InputException):
+        self.assertFalse(we.IsProjectStarred(None))
 
   def testIsProjectStarred_NoSuchProject(self):
     """We can't check for stars on a nonexistent project."""
+    self.SignIn()
     with self.assertRaises(exceptions.NoSuchProjectException):
       with self.work_env as we:
         we.IsProjectStarred(999)
 
   def testListStarredProjects_ViewingSelf(self):
     """A user can view their own starred projects, if they still have access."""
-    project1 = self.services.project.TestAddProject('proj1', project_id=789)
-    project2 = self.services.project.TestAddProject('proj2', project_id=890)
+    project1 = self.services.project.TestAddProject('proj1', project_id=1)
+    project2 = self.services.project.TestAddProject('proj2', project_id=2)
     with self.work_env as we:
       self.SignIn()
       we.StarProject(project1.project_id, True)
@@ -197,8 +210,8 @@ class WorkEnvTest(unittest.TestCase):
 
   def testListStarredProjects_ViewingOther(self):
     """A user can view their own starred projects, if they still have access."""
-    project1 = self.services.project.TestAddProject('proj1', project_id=789)
-    project2 = self.services.project.TestAddProject('proj2', project_id=890)
+    project1 = self.services.project.TestAddProject('proj1', project_id=1)
+    project2 = self.services.project.TestAddProject('proj2', project_id=2)
     with self.work_env as we:
       self.SignIn(user_id=222L)
       we.StarProject(project1.project_id, True)
@@ -390,6 +403,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testDeleteIssue(self):
     """We can mark and unmark an issue as deleted."""
+    self.SignIn(user_id=self.admin_user.user_id)
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     with self.work_env as we:

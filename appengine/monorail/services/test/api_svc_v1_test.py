@@ -398,7 +398,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
               lambda x, y, z: FakeFrontendSearchPipeline())
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[1],  # requester
         access=project_pb2.ProjectAccess.MEMBERS_ONLY,
         project_id=12345)
     resp = self.call_api('issues_list', self.request).json_body
