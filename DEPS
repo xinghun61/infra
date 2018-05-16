@@ -1,10 +1,3 @@
-vars = {
-  # npm_modules.git is special: we can't check it out on Windows because paths
-  # there are too long for Windows. Instead we use 'deps_os' gclient feature to
-  # checkout it out only on Linux and Mac.
-  "npm_modules_revision": "f83fafaa22f5ff396cf5306285ca3806d1b2cf1b",
-}
-
 deps = {
   "build":
     "https://chromium.googlesource.com/chromium/tools/build.git",
@@ -105,19 +98,12 @@ deps = {
   "infra/appengine/third_party/src/github.com/golang/oauth2":
   ("https://chromium.googlesource.com/external/github.com/golang/oauth2.git"
    "@cb029f4c1f58850787981eefaf9d9bf547c1a722"),
-}
 
-
-deps_os = {
-  "unix": {
-    "infra/appengine/third_party/npm_modules":
-      ("https://chromium.googlesource.com/infra/third_party/npm_modules.git@" +
-      Var("npm_modules_revision")),
-  },
-  "mac": {
-    "infra/appengine/third_party/npm_modules":
-      ("https://chromium.googlesource.com/infra/third_party/npm_modules.git@" +
-      Var("npm_modules_revision")),
+  "infra/appengine/third_party/npm_modules": {
+      "url":
+      ("https://chromium.googlesource.com/infra/third_party/npm_modules.git@"
+       "f83fafaa22f5ff396cf5306285ca3806d1b2cf1b"),
+      "condition": "checkout_linux or checkout_mac",
   }
 }
 
