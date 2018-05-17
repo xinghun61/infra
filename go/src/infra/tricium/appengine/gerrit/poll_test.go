@@ -146,15 +146,6 @@ func TestPollBasicBehavior(t *testing.T) {
 								},
 							},
 						},
-						{ // This repo is a duplicate of one above.
-							Source: &tricium.RepoDetails_GerritProject{
-								GerritProject: &tricium.GerritProject{
-									Host:    host,
-									Project: "project/tricium-gerrit",
-									GitUrl:  "https://repo-host.com/playground",
-								},
-							},
-						},
 					},
 				},
 				"non-gerrit": {},
@@ -163,11 +154,15 @@ func TestPollBasicBehavior(t *testing.T) {
 		projects, err := cp.GetAllProjectConfigs(ctx)
 		So(err, ShouldBeNil)
 
-		gerritProjects := []*tricium.GerritProject{
-			projects["playground"].Repos[0].GetGerritProject(),
-			projects["playground"].Repos[1].GetGerritProject(),
-			projects["infra"].Repos[0].GetGerritProject(),
+		var gerritProjects []*tricium.GerritProject
+		for _, pc := range projects {
+			for _, repo := range pc.Repos {
+				if gp := repo.GetGerritProject(); gp != nil {
+					gerritProjects = append(gerritProjects, gp)
+				}
+			}
 		}
+		So(len(gerritProjects), ShouldEqual, 3)
 
 		Convey("First poll, no changes", func() {
 			api := &mockPollRestAPI{}

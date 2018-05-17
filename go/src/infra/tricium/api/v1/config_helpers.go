@@ -18,19 +18,20 @@ import (
 //
 // Returns nil if no such repo is found.
 func LookupRepoDetails(pc *ProjectConfig, request *AnalyzeRequest) *RepoDetails {
-	target := requestURL(request)
-	if target == "" {
+	requestURL := urlFromRequest(request)
+	if requestURL == "" {
 		return nil
 	}
 	for _, repo := range pc.Repos {
-		if RepoURL(repo) == target {
+		repoURL := urlFromRepo(repo)
+		if requestURL == repoURL {
 			return repo
 		}
 	}
 	return nil
 }
 
-func requestURL(request *AnalyzeRequest) string {
+func urlFromRequest(request *AnalyzeRequest) string {
 	if revision := request.GetGerritRevision(); revision != nil {
 		return revision.GitUrl
 	}
@@ -40,8 +41,7 @@ func requestURL(request *AnalyzeRequest) string {
 	return ""
 }
 
-// RepoURL returns the repository URL string for a RepoDetails.
-func RepoURL(repo *RepoDetails) string {
+func urlFromRepo(repo *RepoDetails) string {
 	if project := repo.GetGerritProject(); project != nil {
 		return project.GitUrl
 	}
