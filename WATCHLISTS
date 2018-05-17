@@ -1,0 +1,10 @@
+{
+  'WATCHLIST_DEFINITIONS': {
+    'chopsui': {
+      'filepath': '\.(js|html|css|scss)$',
+    },
+  },
+  'WATCHLISTS': {
+    'chopsui': ['chops-ui-reviews@google.com'],
+  },
+}
