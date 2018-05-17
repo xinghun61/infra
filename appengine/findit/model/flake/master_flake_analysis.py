@@ -319,6 +319,14 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     data_points = sorted(
         self.data_points, key=lambda k: k.commit_position, reverse=True)
 
+    # Disregard the data point created by the check for recent flakiness (if
+    # any).
+    # TODO(crbug.com/843846): Remove this data sanitization once change for
+    # not appending that data point is committed.
+    if (data_points and
+        pass_rate_util.IsStableDefaultThresholds(data_points[0].pass_rate)):
+      data_points = data_points[1:]
+
     # Identify the adjacent flaky and stable data points with the highest commit
     # positions.
     latest_stable_index = None

@@ -352,7 +352,17 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(commit_position=91, pass_rate=0.9),
-        DataPoint.Create(commit_position=90, pass_rate=1.0)
+        DataPoint.Create(commit_position=90, pass_rate=1.0),
+    ]
+    self.assertEqual(
+        IntRange(lower=90, upper=91), analysis.GetLatestRegressionRange())
+
+  def testGetLatestRegressionRangeIgnoreRecentStable(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=100, pass_rate=1.0),
+        DataPoint.Create(commit_position=91, pass_rate=0.9),
+        DataPoint.Create(commit_position=90, pass_rate=1.0),
     ]
     self.assertEqual(
         IntRange(lower=90, upper=91), analysis.GetLatestRegressionRange())
