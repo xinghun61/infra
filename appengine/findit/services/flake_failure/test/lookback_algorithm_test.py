@@ -5,8 +5,8 @@
 from dto.int_range import IntRange
 from gae_libs.testcase import TestCase
 from model.flake.master_flake_analysis import DataPoint
+from services.flake_failure import flake_constants
 from services.flake_failure import lookback_algorithm
-from waterfall.flake import flake_constants
 
 
 class LookbackAlgorithmTest(TestCase):

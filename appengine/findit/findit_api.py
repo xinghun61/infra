@@ -33,6 +33,7 @@ from libs import analysis_status
 from libs import time_util
 from libs.cache_decorator import Cached
 from model import analysis_approach_type
+from model.flake import triggering_sources
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -46,7 +47,6 @@ from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.flake import step_mapper
-from waterfall.flake import triggering_sources
 
 # This is used by the underlying ProtoRpc when creating names for the ProtoRPC
 # messages below. This package name will show up as a prefix to the message
@@ -332,8 +332,9 @@ class FindItApi(remote.Service):
         return _TryJobStatus.FINISHED, None
       return _TryJobStatus.FINISHED, step_info
 
-    ref_name = (swarming_task.parameters.get('ref_name')
-                if swarming_task and swarming_task.parameters else None)
+    ref_name = (
+        swarming_task.parameters.get('ref_name')
+        if swarming_task and swarming_task.parameters else None)
     return (_TryJobStatus.FINISHED,
             try_job.test_results[-1].get('culprit', {}).get(
                 ref_name or step_name, {}).get('tests', {}).get(test_name))
@@ -448,13 +449,16 @@ class FindItApi(remote.Service):
     swarming_tasks = defaultdict(dict)
     for step_name, step_map in failure_result_map.iteritems():
       if isinstance(step_map, basestring):
-        swarming_tasks[step_name][step_map] = (WfSwarmingTask.Get(
-            *build_util.GetBuildInfoFromId(step_map), step_name=step_name))
+        swarming_tasks[step_name][step_map] = (
+            WfSwarmingTask.Get(
+                *build_util.GetBuildInfoFromId(step_map), step_name=step_name))
       else:
         for task_key in step_map.values():
           if not swarming_tasks[step_name].get(task_key):
-            swarming_tasks[step_name][task_key] = (WfSwarmingTask.Get(
-                *build_util.GetBuildInfoFromId(task_key), step_name=step_name))
+            swarming_tasks[step_name][task_key] = (
+                WfSwarmingTask.Get(
+                    *build_util.GetBuildInfoFromId(task_key),
+                    step_name=step_name))
 
     return swarming_tasks
 

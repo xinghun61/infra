@@ -6,12 +6,11 @@ import logging
 
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import time_util
-
+from model.flake import triggering_sources
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
-from waterfall.flake import triggering_sources
 
 
 class TriggerFlakeAnalysesPipeline(BasePipeline):

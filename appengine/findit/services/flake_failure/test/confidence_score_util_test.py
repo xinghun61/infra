@@ -7,8 +7,8 @@ import mock
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import confidence_score_util
-from waterfall.flake import confidence
-from waterfall.flake import flake_constants
+from services.flake_failure import confidence
+from services.flake_failure import flake_constants
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 

@@ -27,9 +27,9 @@ from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
 from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
     RunFlakeSwarmingTaskPipeline)
 from services.flake_failure import data_point_util
+from services.flake_failure import flake_constants
 from services.flake_failure import pass_rate_util
 from services.flake_failure import run_swarming_util
-from waterfall.flake import flake_constants
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 

@@ -18,12 +18,12 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services import culprit_action
 from services import gerrit
 from services.flake_failure import data_point_util
+from services.flake_failure import flake_constants
 from services.flake_failure import pass_rate_util
 from services.parameters import CreateRevertCLParameters
 from services.parameters import SubmitRevertCLParameters
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 # TODO(crbug.com/828464): Make this configurable.
 _AUTO_REVERT_LIMIT = 4

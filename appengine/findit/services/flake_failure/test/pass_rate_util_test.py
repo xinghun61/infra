@@ -6,8 +6,8 @@ import mock
 
 from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto.swarming_task_error import SwarmingTaskError
+from services.flake_failure import flake_constants
 from services.flake_failure import pass_rate_util
-from waterfall.flake import flake_constants
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 

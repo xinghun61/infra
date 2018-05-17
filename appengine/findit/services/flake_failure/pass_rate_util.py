@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 """Utility functions for processing a flaky test's pass rates."""
 
+from services.flake_failure import flake_constants
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 
 def ArePassRatesEqual(pass_rate_1, pass_rate_2):

@@ -20,6 +20,7 @@ from libs import analysis_status
 from libs import time_util
 from model import analysis_approach_type
 from model.base_suspected_cl import RevertCL
+from model.flake import triggering_sources
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
@@ -29,7 +30,6 @@ from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.flake import step_mapper
-from waterfall.flake import triggering_sources
 
 
 class FinditApiTest(testing.EndpointsTestCase):

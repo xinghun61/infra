@@ -4,9 +4,9 @@
 
 from google.appengine.ext import ndb
 
+from services.flake_failure import flake_constants
 from services.flake_failure import pass_rate_util
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 
 def GetEarliestCommitPosition(lower_bound, upper_bound):

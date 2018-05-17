@@ -9,10 +9,9 @@ from urlparse import urlparse
 
 from google.appengine.ext import ndb
 from google.protobuf.timestamp_pb2 import Timestamp
-
 from libs import analysis_status
 from libs import time_util
-
+from model.flake import triggering_sources
 from model.proto.gen import findit_pb2
 from model.proto.gen.compile_analysis_pb2 import CompileAnalysisCompletionEvent
 from model.proto.gen.test_analysis_pb2 import TestAnalysisCompletionEvent
@@ -21,7 +20,6 @@ from model.wf_suspected_cl import WfSuspectedCL
 from services import bigquery_helper
 from services.flake_failure.pass_rate_util import IsFullyStable
 from waterfall import waterfall_config
-from waterfall.flake import triggering_sources
 
 # Constants to report events to.
 _PROJECT_ID = 'findit-for-me'

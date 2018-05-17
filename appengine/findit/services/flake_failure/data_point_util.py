@@ -7,9 +7,9 @@ from google.appengine.ext import ndb
 
 from model.flake.master_flake_analysis import DataPoint
 from services.flake_failure import flake_analysis_util
+from services.flake_failure import flake_constants
 from services.flake_failure import pass_rate_util
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 
 def GetMaximumIterationsToRunPerDataPoint():

@@ -5,7 +5,7 @@
 import mock
 
 from model.flake.master_flake_analysis import DataPoint
-from waterfall.flake import confidence
+from services.flake_failure import confidence
 from waterfall.test import wf_testcase
 
 

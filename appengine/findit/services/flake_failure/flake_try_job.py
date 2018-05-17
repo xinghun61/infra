@@ -15,8 +15,8 @@ from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from services import swarmed_test_util
 from services import try_job as try_job_service
+from services.flake_failure import flake_constants
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 _DEFAULT_ITERATIONS_TO_RERUN = 100
 

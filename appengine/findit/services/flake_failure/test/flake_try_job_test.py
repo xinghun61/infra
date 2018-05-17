@@ -21,9 +21,9 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from services import swarmed_test_util
 from services import try_job as try_job_service
+from services.flake_failure import flake_constants
 from services.flake_failure import flake_try_job
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 _GTEST_RESULTS = GtestTestResults(None)
 

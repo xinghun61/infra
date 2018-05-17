@@ -11,6 +11,7 @@ from dto.test_location import TestLocation
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
 from libs.structured_object import StructuredObject
+from model.flake import triggering_sources
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     DetermineApproximatePassRateInput)
@@ -23,9 +24,8 @@ from pipelines.flake_failure.get_isolate_sha_pipeline import (
 from services import issue_tracking_service
 from services import swarmed_test_util
 from services import swarming
+from services.flake_failure import pass_rate_util
 from waterfall import build_util
-from waterfall.flake import triggering_sources
-from waterfall.flake.lookback_algorithm import IsFullyStable
 
 _SUBJECT_TEMPLATE = '{} is Flaky'
 _BODY_TEMPLATE = ('Findit has detected a flake at test {}.\n\n'
@@ -178,7 +178,7 @@ class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
 
     # If we're out of bounds of the lower or upper flake threshold, this test
     # is stable (either passing or failing consistently).
-    if not data_point or IsFullyStable(data_point.pass_rate):
+    if not data_point or pass_rate_util.IsFullyStable(data_point.pass_rate):
       analysis.LogInfo('Bug not filed because test is stable in latest build.')
       return
 

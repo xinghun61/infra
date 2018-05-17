@@ -6,8 +6,8 @@ import pickle
 
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
+from model.flake import triggering_sources
 from waterfall.flake import flake_analysis_service
-from waterfall.flake import triggering_sources
 
 
 class ProcessFlakeAnalysisRequest(BaseHandler):

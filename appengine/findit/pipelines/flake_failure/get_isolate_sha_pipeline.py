@@ -18,11 +18,11 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
 from services import step_util
 from services import swarmbot_util
 from services import swarming
+from services.flake_failure import flake_constants
 from services.flake_failure import flake_try_job
 from waterfall import build_util
 from waterfall import buildbot
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 
 class GetIsolateShaForCommitPositionParameters(StructuredObject):

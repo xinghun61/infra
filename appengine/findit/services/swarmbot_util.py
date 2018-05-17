@@ -14,7 +14,7 @@ from infra_api_clients.swarming import swarming_util
 from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
 from services import swarming
-from waterfall.flake import flake_constants
+from services.flake_failure import flake_constants
 
 # Swarming URL templates.
 BOT_LIST_URL = 'https://%s/api/swarming/v1/bots/list%s'
@@ -77,8 +77,9 @@ def GetAllBotsWithCache(dimensions, cache_name, http_client):
 
 def OnlyAvailable(bots):
   return [
-      b for b in bots if not (b.get('task_id') or b.get('is_dead') or
-                              b.get('quarantined') or b.get('deleted'))
+      b for b in bots
+      if not (b.get('task_id') or b.get('is_dead') or b.get('quarantined') or
+              b.get('deleted'))
   ]
 
 

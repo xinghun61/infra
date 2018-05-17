@@ -11,6 +11,7 @@ from dto.step_metadata import StepMetadata
 from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
+from model.flake import triggering_sources
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
@@ -18,7 +19,6 @@ from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionOutput)
 from waterfall import build_util
 from waterfall import waterfall_config
-from waterfall.flake import triggering_sources
 
 
 def _NeedANewAnalysis(normalized_test,

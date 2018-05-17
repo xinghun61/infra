@@ -18,8 +18,8 @@ from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 # TODO(crbug.com/809885): Merge flake_analysis_util.py.
 from services.flake_failure import flake_analysis_util
+from services.flake_failure import flake_constants
 from waterfall.flake import flake_analysis_util as flake_util
-from waterfall.flake import flake_constants
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 

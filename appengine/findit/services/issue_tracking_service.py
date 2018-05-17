@@ -12,19 +12,17 @@ import textwrap
 
 from google.appengine.api import app_identity
 from google.appengine.ext import ndb
-
 from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
+from model.flake import master_flake_analysis
+from model.flake.detection.flake_issue import FlakeIssue
 from monorail_api import CustomizedField
 from monorail_api import IssueTrackerAPI
 from monorail_api import Issue
 from services import monitoring
-
-from model.flake import master_flake_analysis
-from model.flake.detection.flake_issue import FlakeIssue
+from services.flake_failure import flake_constants
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE = 'Flaky-Test={} is:open'
 

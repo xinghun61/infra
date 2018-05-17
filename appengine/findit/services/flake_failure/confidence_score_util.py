@@ -3,9 +3,9 @@
 # found in the LICENSE file.
 """Logic for all confidence score-related operations."""
 
+from services.flake_failure import confidence
+from services.flake_failure import flake_constants
 from services.flake_failure import pass_rate_util
-from waterfall.flake import confidence
-from waterfall.flake import flake_constants
 
 
 def CalculateCulpritConfidenceScore(analysis, culprit_commit_position):

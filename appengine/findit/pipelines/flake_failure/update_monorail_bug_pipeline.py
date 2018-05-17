@@ -11,7 +11,7 @@ from gae_libs.pipelines import SynchronousPipeline
 from libs.structured_object import StructuredObject
 from monorail_api import IssueTrackerAPI
 from services import issue_tracking_service
-from waterfall.flake import flake_constants
+from services.flake_failure import flake_constants
 
 
 class UpdateMonorailBugInput(StructuredObject):

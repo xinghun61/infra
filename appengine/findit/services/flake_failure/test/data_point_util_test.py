@@ -14,8 +14,8 @@ from dto.update_flake_analysis_data_points_input import (
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import data_point_util
+from services.flake_failure import flake_constants
 from waterfall.build_info import BuildInfo
-from waterfall.flake import flake_constants
 from waterfall.test import wf_testcase
 
 

@@ -12,8 +12,8 @@ from libs import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
 from services import git
 from services import swarmed_test_util
+from services.flake_failure import flake_constants
 from waterfall import extractor_util
-from waterfall.flake import flake_constants
 
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
 

@@ -9,8 +9,8 @@ from common.findit_http_client import FinditHttpClient
 from infra_api_clients.swarming import swarming_util
 from libs import time_util
 from services import swarming
+from services.flake_failure import flake_constants
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS = 5
 DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS = 0.1

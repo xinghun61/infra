@@ -7,8 +7,8 @@ from common import monitoring
 from dto import swarming_task_error
 from libs import analysis_status
 from libs import time_util
+from services.flake_failure import flake_constants
 from waterfall import waterfall_config
-from waterfall.flake import flake_constants
 
 
 def _CalculateNumberOfIterationsToRunWithinTimeout(estimated_timeout_per_test):

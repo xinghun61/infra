@@ -10,6 +10,7 @@ from google.protobuf import timestamp_pb2
 from libs import analysis_status
 from libs import time_util
 from model import suspected_cl_status
+from model.flake import triggering_sources
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.master_flake_analysis import DataPoint
@@ -21,8 +22,6 @@ from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_analysis import WfAnalysis
 from services import bigquery_helper
 from services import event_reporting
-from waterfall.flake import triggering_sources
-
 from waterfall.test import wf_testcase
 
 

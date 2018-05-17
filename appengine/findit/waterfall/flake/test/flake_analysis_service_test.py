@@ -6,10 +6,10 @@ from datetime import datetime
 import mock
 
 from common import constants
+from model.flake import triggering_sources
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from waterfall.flake import flake_analysis_service
-from waterfall.flake import triggering_sources
 from waterfall.test import wf_testcase
 from waterfall.test_info import TestInfo
 

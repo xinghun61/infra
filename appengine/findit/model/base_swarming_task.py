@@ -6,7 +6,6 @@ from google.appengine.ext import ndb
 
 from libs import analysis_status
 from libs import time_util
-from waterfall.flake import triggering_sources
 
 
 class BaseSwarmingTask(ndb.Model):
@@ -55,10 +54,6 @@ class BaseSwarmingTask(ndb.Model):
   # The number of seconds this task is expected to complete within.
   timeout_seconds = ndb.IntegerProperty(indexed=False)
 
-  # From where this task was requested.
-  triggering_source = ndb.IntegerProperty(
-      indexed=False, default=triggering_sources.FINDIT_PIPELINE)
-
   def Reset(self):
     """Resets the task as if it's a new task."""
     self.task_id = None
@@ -75,4 +70,3 @@ class BaseSwarmingTask(ndb.Model):
     self.parameters = {}
     self.canonical_step_name = None
     self.timeout_seconds = None
-    self.triggering_source = None
