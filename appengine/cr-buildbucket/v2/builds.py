@@ -11,8 +11,8 @@ from google.protobuf import timestamp_pb2
 from . import errors
 from proto import build_pb2
 from proto import common_pb2
+import buildtags
 import model
-import swarming
 
 
 def build_to_v2_partial(build):
@@ -62,14 +62,14 @@ def build_to_v2_partial(build):
 def _parse_tags(dest_msg, tags):
   for t in tags:
     # All builds in the datastore have tags that have a colon.
-    k, v = t.split(':', 1)
-    if k == 'builder':
+    k, v = buildtags.parse(t)
+    if k == buildtags.BUILDER_KEY:
       # we've already parsed builder from parameters
       # and build creation code guarantees consinstency.
       # Exclude builder tag.
       continue
-    if k == 'buildset':
-      m = model.RE_BUILDSET_GITILES_COMMIT.match(v)
+    if k == buildtags.BUILDSET_KEY:
+      m = buildtags.RE_BUILDSET_GITILES_COMMIT.match(v)
       if m:
         dest_msg.input.gitiles_commits.add(
             host=m.group(1),
@@ -78,7 +78,7 @@ def _parse_tags(dest_msg, tags):
         )
         continue
 
-      m = model.RE_BUILDSET_GERRIT_CL.match(v)
+      m = buildtags.RE_BUILDSET_GERRIT_CL.match(v)
       if m:
         dest_msg.input.gerrit_changes.add(
             host=m.group(1),
@@ -87,17 +87,17 @@ def _parse_tags(dest_msg, tags):
         )
         # TODO(nodir): fetch project from gerrit
         continue
-    elif k == 'swarming_dimension':
+    elif k == buildtags.SWARMING_DIMENSION_KEY:
       if ':' in v:  # pragma: no branch
-        k2, v2 = v.split(':', 1)
+        k2, v2 = buildtags.parse(v)
         dest_msg.infra.swarming.task_dimensions.add(key=k2, value=v2)
 
       # This line is actually covered, but pycoverage thinks it is not.
       # It cannot be not covered because the if statement above is covered.
       continue  # pragma: no cover
-    elif k == 'swarming_tag':
+    elif k == buildtags.SWARMING_TAG_KEY:
       if ':' in v:  # pragma: no branch
-        k2, v2 = v.split(':', 1)
+        k2, v2 = buildtags.parse(v)
         if k2 == 'priority':
           try:
             dest_msg.infra.swarming.priority = int(v2)
@@ -108,9 +108,9 @@ def _parse_tags(dest_msg, tags):
 
       # Exclude all "swarming_tag" tags.
       continue
-    elif k == swarming.BUILD_ADDRESS_TAG_KEY:
+    elif k == buildtags.BUILD_ADDRESS_KEY:
       try:
-        _, _, dest_msg.number = swarming.parse_build_address(v)
+        _, _, dest_msg.number = buildtags.parse_build_address(v)
         continue
       except ValueError as ex:  # pragma: no cover
         raise errors.MalformedBuild('invalid build address "%s": %s' % (v, ex))

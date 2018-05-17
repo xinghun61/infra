@@ -357,54 +357,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.assertTrue('builder:linux_rel' in build.tags)
 
-  def test_validate_tags_none(self):
-    self.assertIsNone(service.validate_tags(None, 'search'))
-
-  def test_validate_tags_nonlist(self):
-    with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags('tag:value', 'search')
-
-  def test_validate_tags_nonstring(self):
-    with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags(['tag:value', 123456], 'search')
-
-  def test_validate_tags_no_colon(self):
-    with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags(['tag,value'], 'search')
-
-  def test_validate_tags_build_address(self):
-    with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags(['build_address:1'], 'new')
-    with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags(['build_address:1'], 'append')
-
-  def test_validate_tags_append_builder(self):
-    with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags(['builder:1'], 'append')
-
-  def test_validate_tags_no_key(self):
-    with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags([':'], 'search')
-
-  def test_validate_buildset(self):
-    service.validate_build_set(
-        'commit/gitiles/chromium.googlesource.com/chromium/src/+/'
-        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    service.validate_build_set(
-        'patch/gerrit/chromium-review.googlesource.com/123/456')
-
-    bad = [
-        ('commit/gitiles/chromium.googlesource.com/a/chromium/src/+/'
-         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
-        ('commit/gitiles/chromium.googlesource.com/chromium/src.git/+/'
-         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
-        'commit/gitiles/chromium.googlesource.com/chromium/src.git/+/aaaaaaaa',
-        'patch/gerrit/chromium-review.googlesource.com/aa/bb',
-    ]
-    for bs in bad:
-      with self.assertRaises(errors.InvalidInputError):
-        service.validate_build_set(bs)
-
   def test_add_builder_tag(self):
     build = service.add(
         service.BuildRequest(

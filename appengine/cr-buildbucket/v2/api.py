@@ -13,8 +13,8 @@ from proto import rpc_prpc_pb2
 from proto import step_pb2  # pylint: disable=unused-import
 
 from . import builds as v2_builds
+import buildtags
 import service
-import swarming
 
 
 class StatusCodeError(Exception):
@@ -77,7 +77,7 @@ class BuildsApi(object):
       build = service.get(req.id)
     elif req.HasField('builder') and req.build_number:
       bucket = v1_bucket(req.builder)
-      tag = swarming.build_address_tag(bucket, req.builder.builder,
+      tag = buildtags.build_address_tag(bucket, req.builder.builder,
                                        req.build_number)
       builds, _ = service.search(
           service.SearchQuery(

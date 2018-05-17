@@ -8,7 +8,6 @@ import datetime
 import logging
 import random
 import re
-import sys
 import urlparse
 
 from google.appengine.api import taskqueue
@@ -25,6 +24,7 @@ import gae_ts_mon
 
 from proto import project_config_pb2
 import acl
+import buildtags
 import config
 import errors
 import events
@@ -36,13 +36,7 @@ import swarming
 MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
-MAX_BUILDSET_LENGTH = 1024
 RE_TAG_INDEX_SEARCH_CURSOR = re.compile('^id>\d+$')
-RESERVED_TAG_KEYS = {
-    swarming.BUILD_ADDRESS_TAG_KEY,
-    'swarming_tag',
-    'swarming_dimension',
-}
 
 validate_bucket_name = errors.validate_bucket_name
 
@@ -95,79 +89,6 @@ def fix_max_builds(max_builds):
   if max_builds < 0:
     raise errors.InvalidInputError('max_builds must be positive')
   return min(MAX_RETURN_BUILDS, max_builds)
-
-
-def validate_build_set(bs):
-  """Validates a buildset."""
-  if len('buildset:') + len(bs) > MAX_BUILDSET_LENGTH:
-    raise errors.InvalidInputError('too long')
-
-  # Verify that a buildset with a known prefix is well formed.
-  if bs.startswith('commit/gitiles/'):
-    m = model.RE_BUILDSET_GITILES_COMMIT.match(bs)
-    if not m:
-      raise errors.InvalidInputError('does not match regex "%s"' %
-                                     (model.RE_BUILDSET_GITILES_COMMIT.pattern))
-    project = m.group(2)
-    if project.startswith('a/'):
-      raise errors.InvalidInputError('gitiles project must not start with "a/"')
-    if project.endswith('.git'):
-      raise errors.InvalidInputError('gitiles project must not end with ".git"')
-
-  elif bs.startswith('patch/gerrit/'):
-    if not model.RE_BUILDSET_GERRIT_CL.match(bs):
-      raise errors.InvalidInputError(
-          'does not match regex "%s"' % model.RE_BUILDSET_GERRIT_CL.pattern)
-
-
-def validate_tags(tags, mode, builder=None):
-  """Validates build tags.
-
-  mode must be a string, one of:
-    'new': tags are for a new build.
-    'append': tags are to be appended to an existing build.
-    'search': tags to search by.
-
-  builder is the value of "builder_name" parameter. If specified, tags
-  "builder:<v>" must have v equal to the builder.
-  """
-  assert mode in ('new', 'append', 'search'), mode
-  if tags is None:
-    return
-  if not isinstance(tags, list):
-    raise errors.InvalidInputError('tags must be a list')
-  builder_tag = None
-  for t in tags:
-    if not isinstance(t, basestring):
-      raise errors.InvalidInputError('Invalid tag "%s": must be a string' %
-                                     (t,))
-    if ':' not in t:
-      raise errors.InvalidInputError(
-          'Invalid tag "%s": does not contain ":"' % t)
-    if t[0] == ':':
-      raise errors.InvalidInputError('Invalid tag "%s": starts with ":"' % t)
-    k, v = t.split(':', 1)
-    if k == 'buildset':
-      try:
-        validate_build_set(v)
-      except errors.InvalidInputError as ex:
-        raise errors.InvalidInputError('Invalid tag "%s": %s' % (t, ex))
-    if k == 'builder':
-      if mode == 'append':
-        raise errors.InvalidInputError(
-            'Tag "builder" cannot be added to an existing build')
-      if mode == 'new':  # pragma: no branch
-        if builder is not None and v != builder:
-          raise errors.InvalidInputError(
-              'Tag "%s" conflicts with builder_name parameter "%s"' % (t,
-                                                                       builder))
-        if builder_tag is None:
-          builder_tag = t
-        elif t != builder_tag:
-          raise errors.InvalidInputError('Tag "%s" conflicts with tag "%s"' %
-                                         (t, builder_tag))
-    if mode != 'search' and k in RESERVED_TAG_KEYS:
-      raise errors.InvalidInputError('Tag "%s" is reserved' % k)
 
 
 _BuildRequestBase = collections.namedtuple('_BuildRequestBase', [
@@ -235,7 +156,7 @@ class BuildRequest(_BuildRequestBase):
       raise errors.InvalidInputError(
           'invalid canary_preference %r' % self.canary_preference)
     validate_bucket_name(self.bucket)
-    validate_tags(
+    buildtags.validate_tags(
         self.tags,
         'new',
         builder=(self.parameters or {}).get(model.BUILDER_PARAMETER))
@@ -291,7 +212,7 @@ class BuildRequest(_BuildRequestBase):
     # Note that we leave build.initial_tags intact.
     builder = build.parameters.get(model.BUILDER_PARAMETER)
     if builder:
-      builder_tag = 'builder:' + builder
+      builder_tag = buildtags.builder_tag(builder)
       if builder_tag not in build.tags:
         build.tags.append(builder_tag)
 
@@ -798,7 +719,7 @@ def search(q):
   """
   if q.buckets is not None and not isinstance(q.buckets, list):
     raise errors.InvalidInputError('Buckets must be a list or None')
-  validate_tags(q.tags, 'search')
+  buildtags.validate_tags(q.tags, 'search')
 
   q = q.copy()
   if (q.create_time_low is not None and
@@ -952,7 +873,7 @@ def _tag_index_search(q):
   all_indexed_tags = _indexed_tags(q.tags)
   assert all_indexed_tags
   indexed_tag = all_indexed_tags[0]  # choose the most selective tag.
-  indexed_tag_key = indexed_tag.split(':', 1)[0]
+  indexed_tag_key = buildtags.parse(indexed_tag)[0]
 
   # Exclude the indexed tag from the tag filter.
   q = q.copy()
@@ -1394,7 +1315,7 @@ def _complete(build_id,
   """Marks a build as completed. Used by succeed and fail methods."""
   validate_lease_key(lease_key)
   validate_url(url)
-  validate_tags(new_tags, 'append')
+  buildtags.validate_tags(new_tags, 'append')
   assert result in (model.BuildResult.SUCCESS, model.BuildResult.FAILURE)
 
   @ndb.transactional

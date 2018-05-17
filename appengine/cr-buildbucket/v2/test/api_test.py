@@ -14,9 +14,9 @@ from proto import build_pb2
 from proto import rpc_pb2
 from test import test_util
 from v2 import api
+import buildtags
 import model
 import service
-import swarming
 
 future = test_util.future
 
@@ -98,7 +98,7 @@ class GetBuildTests(BaseTestCase):
         bucket='luci.chromium.try',
         builder_name='linux-try',
         tags=[
-            swarming.build_address_tag('luci.chromium.try', 'linux-try', 2),
+            buildtags.build_address_tag('luci.chromium.try', 'linux-try', 2),
         ],
     )
     service_search.return_value = ([ds_build], None)

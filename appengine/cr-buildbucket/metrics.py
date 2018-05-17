@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import datetime
 import logging
 
 from google.appengine.ext import ndb
@@ -10,7 +9,7 @@ from google.appengine.ext import ndb
 from components import utils
 import gae_ts_mon
 
-import config
+import buildtags
 import model
 
 # Override default target fields for app-global metrics.
@@ -67,7 +66,7 @@ def _fields_for(build, field_names):
       val = getattr(build, f)
     else:
       if tags is None:
-        tags = dict(t.split(':', 1) for t in build.tags)
+        tags = dict(buildtags.parse(t) for t in build.tags)
       val = tags.get(f)
     result[f] = typ(val or _default_field_value(f))
   return result

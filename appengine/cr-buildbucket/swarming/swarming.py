@@ -53,6 +53,7 @@ from proto import project_config_pb2
 from proto import service_config_pb2
 from . import swarmingcfg as swarmingcfg_module
 from . import isolate
+import buildtags
 import config
 import errors
 import events
@@ -64,7 +65,6 @@ PUBSUB_TOPIC = 'swarming'
 PARAM_PROPERTIES = 'properties'
 PARAM_SWARMING = 'swarming'
 PARAM_CHANGES = 'changes'
-BUILD_ADDRESS_TAG_KEY = 'build_address'
 
 BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
 BUILD_RUN_RESULT_CORRUPTED = 'corrupted'
@@ -656,28 +656,6 @@ def prepare_task_def_async(build, build_number=None, fake_build=False):
   raise ndb.Return(ret)
 
 
-def build_address(bucket, builder, number):
-  """Returns value for build_address tag."""
-  return '%s/%s/%d' % (bucket, builder, number)
-
-
-def build_address_tag(bucket, builder, number):
-  """Returns a build_address tag."""
-  return '%s:%s' % (BUILD_ADDRESS_TAG_KEY,
-                    build_address(bucket, builder, number))
-
-
-def parse_build_address(address):
-  """Parses a build address into its components. Opposite of build_address()."""
-  parts = address.split('/', 2)
-  if len(parts) != 3:
-    raise ValueError('number of slashes must be exactly 2')
-  try:
-    number = int(parts[2])
-  except ValueError:
-    raise ValueError('invalid build number "%s"' % parts[2])
-  return parts[0], parts[1], number
-
 
 @ndb.tasklet
 def _prepare_task_def_async(build, build_number, bucket_cfg, builder_cfg,
@@ -699,7 +677,8 @@ def _prepare_task_def_async(build, build_number, bucket_cfg, builder_cfg,
 
   if build_number is not None:
     build.tags.append(
-        build_address_tag(build.bucket, builder_cfg.name, build_number))
+        buildtags.build_address_tag(
+            build.bucket, builder_cfg.name, build_number))
 
   build.url = _generate_build_url(settings.milo_hostname, build, build_number)
 
@@ -760,9 +739,10 @@ def create_task_async(build, build_number=None):
   ])
   task_req = res.get('request', {})
   for t in task_req.get('tags', []):
-    build.tags.append('swarming_tag:%s' % t)
+    build.tags.append(buildtags.format(buildtags.SWARMING_TAG_KEY, t))
   for d in task_req.get('properties', {}).get('dimensions', []):
-    build.tags.append('swarming_dimension:%s:%s' % (d['key'], d['value']))
+    dt = buildtags.format(d['key'], d['value'])
+    build.tags.append(buildtags.format(buildtags.SWARMING_DIMENSION_KEY, dt))
 
   build.service_account = task_req.get('service_account')
 

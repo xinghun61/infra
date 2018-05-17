@@ -4,7 +4,6 @@
 
 import datetime
 import random
-import re
 
 from components import auth
 from google.appengine.ext import ndb
@@ -12,21 +11,14 @@ from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 from protorpc import messages
 
+import buildtags
+
 BEGINING_OF_THE_WORLD = datetime.datetime(2010, 1, 1, 0, 0, 0, 0)
 BUILD_TIMEOUT = datetime.timedelta(days=2)
 
 # If builds weren't scheduled for this duration on a given builder, the
 # Builder entity is deleted.
 BUILDER_EXPIRATION_DURATION = datetime.timedelta(weeks=4)
-
-# Gitiles commit buildset pattern. Example:
-# ('commit/gitiles/chromium.googlesource.com/infra/luci/luci-go/+/'
-#  'b7a757f457487cd5cfe2dae83f65c5bc10e288b7')
-RE_BUILDSET_GITILES_COMMIT = re.compile(
-    r'^commit/gitiles/([^/]+)/(.+?)/\+/([a-f0-9]{40})$')
-# Gerrit CL buildset pattern. Example:
-# patch/gerrit/chromium-review.googlesource.com/677784/5
-RE_BUILDSET_GERRIT_CL = re.compile(r'^patch/gerrit/([^/]+)/(\d+)/(\d+)$')
 
 # Key in Build.parameters that specifies the builder name.
 BUILDER_PARAMETER = 'builder_name'
@@ -210,7 +202,10 @@ class Build(ndb.Model):
     assert (self.lease_expiration_date is not None) == is_leased
     assert (self.leasee is not None) == is_leased
     # no cover due to a bug in coverage (https://stackoverflow.com/a/35325514)
-    assert not self.tags or all(':' in t for t in self.tags)  # pragma: no cover
+
+    tag_delm = buildtags.DELIMITER
+    assert (not self.tags or
+            all(tag_delm in t for t in self.tags))  # pragma: no cover
     assert self.create_time
     assert (self.complete_time is not None) == is_completed
     assert not is_started or self.start_time
