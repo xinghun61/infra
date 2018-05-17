@@ -1174,6 +1174,29 @@ class FinditApiTest(testing.EndpointsTestCase):
 
   @mock.patch.object(
       findit_api, '_ValidateOauthUser', return_value=('email', False))
+  def testFlakeAnalysisRequestWithoutBugId(self, _):
+    flake = {
+        'name':
+            'suite.test',
+        'is_step':
+            False,
+        'bug_id':
+            None,
+        'build_steps': [{
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 456,
+            'step_name': 'name (with patch) on Windows-7-SP1',
+        }]
+    }
+
+    response = self.call_api('AnalyzeFlake', body=flake)
+    self.assertEqual(200, response.status_int)
+    self.assertTrue(response.json_body.get('queued'))
+    self.assertEqual(1, len(self.taskqueue_requests))
+
+  @mock.patch.object(
+      findit_api, '_ValidateOauthUser', return_value=('email', False))
   @mock.patch.object(
       findit_api, '_AsyncProcessFlakeReport', side_effect=Exception())
   def testAuthorizedRequestToAnalyzeFlakeNotQueued(self, mocked_func, _):

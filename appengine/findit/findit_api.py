@@ -137,7 +137,7 @@ class _Flake(messages.Message):
   name = messages.StringField(1, required=True)
   is_step = messages.BooleanField(2, required=False, default=False)
   bug_id = messages.IntegerField(
-      3, variant=messages.Variant.INT32, required=True)
+      3, variant=messages.Variant.INT32, required=False)
   build_steps = messages.MessageField(_BuildStep, 4, repeated=True)
 
 
