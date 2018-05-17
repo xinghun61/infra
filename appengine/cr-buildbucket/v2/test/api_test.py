@@ -4,14 +4,20 @@
 
 import datetime
 
+from google.appengine.ext import ndb
+
 from components import auth
 from components import prpc
 from components.prpc import context as prpc_context
 from testing_utils import testing
 import mock
 
+from third_party import annotations_pb2
+
 from proto import build_pb2
+from proto import common_pb2
 from proto import rpc_pb2
+from proto import step_pb2
 from test import test_util
 from v2 import api
 import buildtags
@@ -78,6 +84,39 @@ class ApiMethodDecoratorTests(BaseTestCase):
   def test_status_code_error_handling(self):
     self.error_handling_test(
         api.InvalidArgument('bad'), prpc.StatusCode.INVALID_ARGUMENT, 'bad')
+
+
+class ToBuildMessagesTests(BaseTestCase):
+
+  def test_steps(self):
+    build = self.new_build()
+    annotation_step = annotations_pb2.Step(
+        substep=[
+            annotations_pb2.Step.Substep(
+                step=annotations_pb2.Step(
+                    name='a',
+                    status=annotations_pb2.SUCCESS,
+                )),
+            annotations_pb2.Step.Substep(
+                step=annotations_pb2.Step(
+                    name='b',
+                    status=annotations_pb2.RUNNING,
+                )),
+        ],)
+    model.BuildAnnotations(
+        key=model.BuildAnnotations.key_for(build.key),
+        annotation_binary=annotation_step.SerializeToString(),
+        annotation_url='logdog://logdog.example.com/project/prefix/+/stream',
+    ).put()
+
+    expected_steps = [
+        step_pb2.Step(name='a', status=common_pb2.SUCCESS),
+        step_pb2.Step(name='b', status=common_pb2.STARTED),
+    ]
+    actual = api.to_build_messages([build], None)
+
+    self.assertEqual(len(actual), 1)
+    self.assertEqual(list(actual[0].steps), expected_steps)
 
 
 class GetBuildTests(BaseTestCase):

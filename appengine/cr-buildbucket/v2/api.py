@@ -4,6 +4,8 @@
 
 import functools
 
+from google.appengine.ext import ndb
+
 from components import auth
 from components import prpc
 
@@ -12,9 +14,10 @@ from proto import rpc_pb2  # pylint: disable=unused-import
 from proto import rpc_prpc_pb2
 from proto import step_pb2  # pylint: disable=unused-import
 
-from . import builds as v2_builds
 import buildtags
+import model
 import service
+import v2
 
 
 class StatusCodeError(Exception):
@@ -62,6 +65,21 @@ def v1_bucket(builder_id):
   return 'luci.%s.%s' % (builder_id.project, builder_id.bucket)
 
 
+def to_build_messages(builds, field_mask):
+  """Converts model.Build instances to build_pb2.Build messages."""
+  builds_msgs = map(v2.build_to_v2_partial, builds)
+
+  # TODO(nodir): load steps conditionally, according to the field_mask.
+  annotations = ndb.get_multi(
+      [model.BuildAnnotations.key_for(b.key) for b in builds])
+  for b, build_ann in zip(builds_msgs, annotations):
+    if build_ann:
+      b.steps.extend(v2.parse_steps(build_ann))
+
+  # TODO(nodir): apply field_mask.
+  return builds_msgs
+
+
 class BuildsApi(object):
   """Implements buildbucket.v2.Builds proto service."""
 
@@ -78,7 +96,7 @@ class BuildsApi(object):
     elif req.HasField('builder') and req.build_number:
       bucket = v1_bucket(req.builder)
       tag = buildtags.build_address_tag(bucket, req.builder.builder,
-                                       req.build_number)
+                                        req.build_number)
       builds, _ = service.search(
           service.SearchQuery(
               buckets=[bucket],
@@ -90,7 +108,4 @@ class BuildsApi(object):
 
     if not build:
       raise NotFound()
-
-    # TODO(nodir): add support for steps
-    # TODO(nodir): add suport for req.build_fields.
-    return v2_builds.build_to_v2_partial(build)
+    return to_build_messages([build], req.build_fields)[0]
