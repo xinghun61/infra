@@ -159,6 +159,10 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
     return tests && tests.length > 0;
   }
 
+  _haveArtifacts(test) {
+    return test && test.artifacts;
+  }
+
   _haveTestExpectations(test) {
     return test && test.expectations && test.expectations.length > 0;
   }

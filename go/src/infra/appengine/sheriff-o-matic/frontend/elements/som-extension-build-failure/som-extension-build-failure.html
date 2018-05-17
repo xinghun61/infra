@@ -104,6 +104,14 @@
                     , <a href$="[[_linkToEditForTest(extension.builders, test.test_name)]]">edit test expectations</a>
                   </template>
                   )
+                  <template is="dom-if" if="[[_haveArtifacts(test)]]">
+                    Test artifacts:
+                    <ul class="artifacts">
+                      <template is="dom-repeat" items="[[test.artifacts]]" as="artifact">
+                        <li><a href="[[artifact.location]]">[[artifact.name]]</a>
+                      </template>
+                    </ul>
+                  </template>
                   <template is="dom-if" if="[[_hasResultHistory(extension.reason)]]">
                     <template is="dom-repeat" items="[[extension.reason.alert_test_results]]" as="testResults">
                       <template is="dom-repeat" items="[[testResults.master_results]]" as="masterResults">

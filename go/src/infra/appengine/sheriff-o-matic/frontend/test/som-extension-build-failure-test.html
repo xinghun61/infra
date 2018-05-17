@@ -108,6 +108,36 @@
       });
     });
 
+    test('renders links for artifacts', function(done) {
+      element.extension = {
+        reason: {
+          'tests': [
+            {
+              'test_name': 'best_test',
+              'artifacts': [
+                {
+                  name: 'sadness',
+                  location: 'https://foo',
+                },
+                 {
+                  name: 'sadness',
+                  location: 'https://bar',
+                },
+              ],
+            },
+          ],
+        },
+      };
+      element._uberify = (url) => { return url; };
+      flush( () => {
+        let artifacts = element.$$('.artifacts');
+        assert.isNotNull(artifacts);
+        // 2 LI's + one dom-repeat
+        assert.equal(3, artifacts.childElementCount);
+        done();
+      });
+    });
+
     test('renders links for code search, java test', function(done) {
       element.extension = {
         reason: {
