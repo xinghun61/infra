@@ -18,6 +18,8 @@ class MockPatchResponse(object):
 class MockCloudTraceProjects(object):
   def __init__(self):
     self.patch_response = MockPatchResponse()
+    self.project_id = None
+    self.body = None
 
   def patchTraces(self, projectId, body):
     self.project_id = projectId
@@ -89,6 +91,7 @@ class ProfilerTest(unittest.TestCase):
     for span in span_json:
       self.assertTrue(span['endTime'] > span['startTime'])
 
+    # pylint: disable=unbalanced-tuple-unpacking
     span1, span2, span3, span4 = span_json
 
     self.assertEquals(span1['name'], 'overall profile')

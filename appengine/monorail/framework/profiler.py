@@ -87,7 +87,9 @@ class Profiler(object):
       logging.info('would have sent trace: %s', spans)
       return
 
-    trace_id, root_span_id = self.trace_context.split(';')[0].split('/')
+    # TODO(seanmccullough): set root_span_id on spans that don't have a
+    # parentSpanId property.
+    trace_id, _root_span_id = self.trace_context.split(';')[0].split('/')
     traces_body = {
       'projectId': self.project_id,
       'traceId': trace_id,
@@ -101,7 +103,7 @@ class Profiler(object):
     # delay the response to the browser.
     request = self.trace_service.projects().patchTraces(
         projectId=self.project_id, body=body)
-    res = request.execute()
+    _res = request.execute()
 
 
 class _Phase(object):
@@ -157,7 +159,8 @@ class _Phase(object):
       'kind': 'RPC_SERVER',
       'name': self.name,
       'spanId': self.id,
-      'startTime': datetime.datetime.fromtimestamp(self.start).isoformat() + 'Z',
+      'startTime':
+          datetime.datetime.fromtimestamp(self.start).isoformat() + 'Z',
       'endTime': datetime.datetime.fromtimestamp(endTime).isoformat() + 'Z',
     }
 

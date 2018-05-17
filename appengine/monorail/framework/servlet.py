@@ -189,7 +189,8 @@ class Servlet(webapp2.RequestHandler):
         'max-age=31536000; includeSubDomains')
 
     if 'X-Cloud-Trace-Context' in self.request.headers:
-      self.mr.profiler.trace_context = self.request.headers.get('X-Cloud-Trace-Context')
+      self.mr.profiler.trace_context = (
+          self.request.headers.get('X-Cloud-Trace-Context'))
     if trace_service is not None:
       self.mr.profiler.trace_service = trace_service
 

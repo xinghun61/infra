@@ -94,9 +94,11 @@ class ProjectExportJSONTest(unittest.TestCase):
           'component_required': False,
           'name': 'Defect report from developer',
           'summary': 'Enter one-line summary',
-          'content': 'What steps will reproduce the problem?\n1. \n2. \n3. '
-            '\n\nWhat is the expected output?\n\n\nWhat do you see instead?\n'
-            '\n\nPlease use labels and text to provide additional information.\n',
+          'content': 'What steps will reproduce the problem?\n1. \n2. \n3. \n'
+            '\n'
+            'What is the expected output?\n\n\nWhat do you see instead?\n'
+            '\n\n'
+            'Please use labels and text to provide additional information.\n',
           'admins': []
         }, {
           'status': 'New',
