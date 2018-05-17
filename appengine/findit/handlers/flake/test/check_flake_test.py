@@ -20,9 +20,9 @@ from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
-from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 from waterfall.test import wf_testcase
 
 
@@ -198,10 +198,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
   def testMissingKeyPost(self, *_):
     response = self.test_app.post(
-        '/waterfall/flake', params={
-            'format': 'json',
-            'rerun': '1'
-        }, status=404)
+        '/waterfall/flake', params={'format': 'json',
+                                    'rerun': '1'}, status=404)
     self.assertEqual('No key was provided.',
                      response.json_body.get('error_message'))
 
@@ -214,10 +212,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/flake',
-        params={
-            'format': 'json',
-            'key': analysis.key.urlsafe()
-        },
+        params={'format': 'json',
+                'key': analysis.key.urlsafe()},
         status=404)
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
@@ -237,11 +233,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={
-            'format': 'json',
-            'rerun': '1',
-            'key': analysis.key.urlsafe()
-        },
+        params={'format': 'json',
+                'rerun': '1',
+                'key': analysis.key.urlsafe()},
         status=404)
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
@@ -968,11 +962,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={
-            'format': 'json',
-            'rerun': '1',
-            'key': analysis.key.urlsafe()
-        },
+        params={'format': 'json',
+                'rerun': '1',
+                'key': analysis.key.urlsafe()},
         status=403)
     self.assertEqual('Only admin is allowed to rerun.',
                      response.json_body.get('error_message'))
@@ -990,11 +982,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={
-            'format': 'json',
-            'rerun': '1',
-            'key': analysis.key.urlsafe()
-        },
+        params={'format': 'json',
+                'rerun': '1',
+                'key': analysis.key.urlsafe()},
         status=400)
     self.assertEqual(
         'Cannot rerun analysis if one is currently running or pending.',
@@ -1039,7 +1029,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  @mock.patch.object(RecursiveFlakePipeline, 'from_id', mock.MagicMock())
+  @mock.patch.object(AnalyzeFlakePipeline, 'from_id', mock.MagicMock())
   def testRequestCancelWhenAuthorized(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -1073,7 +1063,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  @mock.patch.object(RecursiveFlakePipeline, 'from_id', mock.MagicMock())
+  @mock.patch.object(AnalyzeFlakePipeline, 'from_id', mock.MagicMock())
   def testRequestCancelWhenAuthorizedCulpritRunning(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -1115,11 +1105,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={
-            'format': 'json',
-            'cancel': '1',
-            'key': analysis.key.urlsafe()
-        },
+        params={'format': 'json',
+                'cancel': '1',
+                'key': analysis.key.urlsafe()},
         status=403)
     self.assertEqual('Only admin is allowed to cancel.',
                      response.json_body.get('error_message'))
@@ -1131,10 +1119,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={
-            'format': 'json',
-            'cancel': '1'
-        },
+        params={'format': 'json',
+                'cancel': '1'},
         status=404)
     self.assertEqual('No key was provided.',
                      response.json_body.get('error_message'))
@@ -1152,18 +1138,16 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={
-            'format': 'json',
-            'cancel': '1',
-            'key': analysis.key.urlsafe()
-        },
+        params={'format': 'json',
+                'cancel': '1',
+                'key': analysis.key.urlsafe()},
         status=404)
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
 
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  @mock.patch.object(RecursiveFlakePipeline, 'from_id', mock.MagicMock())
+  @mock.patch.object(AnalyzeFlakePipeline, 'from_id', mock.MagicMock())
   def testRequestCancelWhenAnalysisCompleted(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -1183,18 +1167,16 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={
-            'key': analysis.key.urlsafe(),
-            'cancel': '1',
-            'format': 'json'
-        },
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'},
         status=400)
     self.assertEqual('Can\'t cancel an analysis that\'s complete',
                      response.json_body.get('error_message'))
 
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  @mock.patch.object(RecursiveFlakePipeline, 'from_id', mock.MagicMock())
+  @mock.patch.object(AnalyzeFlakePipeline, 'from_id', mock.MagicMock())
   def testRequestCancelWhenNoRootId(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -1214,11 +1196,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={
-            'key': analysis.key.urlsafe(),
-            'cancel': '1',
-            'format': 'json'
-        },
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'},
         status=404)
 
     self.assertEqual('No root pipeline found for analysis.',
@@ -1226,7 +1206,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  @mock.patch.object(RecursiveFlakePipeline, 'from_id', return_value=None)
+  @mock.patch.object(AnalyzeFlakePipeline, 'from_id', return_value=None)
   def testRequestCancelWhenRootPipelineCannotBeFound(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -1246,11 +1226,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={
-            'key': analysis.key.urlsafe(),
-            'cancel': '1',
-            'format': 'json'
-        },
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'},
         status=404)
     self.assertEqual('Root pipeline couldn\'t be found.',
                      response.json_body.get('error_message'))

@@ -17,10 +17,10 @@ from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
-from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
 
 def _GetSuspectedFlakeInfo(analysis):
@@ -352,7 +352,7 @@ class CheckFlake(BaseHandler):
 
     if not analysis.root_pipeline_id:
       return self.CreateError('No root pipeline found for analysis.', 404)
-    root_pipeline = RecursiveFlakePipeline.from_id(analysis.root_pipeline_id)
+    root_pipeline = AnalyzeFlakePipeline.from_id(analysis.root_pipeline_id)
 
     if not root_pipeline:
       return self.CreateError('Root pipeline couldn\'t be found.', 404)

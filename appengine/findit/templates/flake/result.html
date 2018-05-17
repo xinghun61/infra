@@ -516,7 +516,8 @@
       <div style="border: 1px solid black">
         <!-- Rerun options -->
         <h4>Rerun options</h4>
-        <form action="/waterfall/flake/analyze_regression_range" name="regression_range_rerun" method="post">
+        <!-- TODO(crbug.com/843837): Support manual regression range rerun in new pipelines. -->
+        <form action="" name="regression_range_rerun" method="post">
           <div>
             <input type="hidden" name="xsrf_token" value="{{ xsrf_token }}" />
             <input type="hidden" name="key" value="{{ key }}" />
