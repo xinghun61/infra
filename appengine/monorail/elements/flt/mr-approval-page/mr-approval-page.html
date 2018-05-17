@@ -1,74 +1,120 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../../../bower_components/app-route/app-location.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-header.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-login.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 
-<link rel="import" href="../mr-gates-view/mr-gates-view.html">
+<link rel="import" href="../mr-approval-page/mr-issue-header.html">
 <link rel="import" href="../mr-issue-details/mr-issue-details.html">
-<link rel="import" href="../mr-launch-overview/mr-launch-overview.html">
 <link rel="import" href="../mr-issue-details/mr-metadata.html">
+<link rel="import" href="../mr-launch-overview/mr-launch-overview.html">
 
 <dom-module id="mr-approval-page">
   <template>
     <style>
       chops-header {
-        --chops-header-text-color: #fff;
-        background-color: hsl(235, 66%, 30%);
+        height: 40px;
+        background-color: hsl(0, 0%, 95%);
+        border-bottom: 1px solid hsl(0, 0%, 80%);
       }
       chops-header a {
-        color: #fff;
+        color: hsl(0, 0%, 13%);
         text-decoration: none;
       }
-      .container {
-        box-sizing: border-box;
-        margin: 0 auto;
-        max-width: 1280px;
-        padding: 0.5em 16px;
+      .container-main {
+        overflow: hidden;
+        flex-grow: 1;
         display: flex;
-        align-items: flex-start;
+        align-items: stretch;
         justify-content: space-between;
         flex-direction: row;
-        flex-wrap: wrap;
+        flex-wrap: no-wrap;
+        box-sizing: border-box;
       }
-      .container-item {
-        margin: 8px 0;
+      .container-outside {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        margin: auto;
+        padding: 0.75em 8px;
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+        flex-direction: row;
+        flex-wrap: no-wrap;
+      }
+      .main-item {
         flex-grow: 0;
         flex-shrink: 0;
+        box-sizing: border-box;
+        min-height: 100%;
       }
-      mr-metadata, mr-launch-overview {
-        width: 19%;
+      .metadata-container {
+        font-size: 85%;
+        background: hsl(120, 35%, 95%);
+        border: 1px solid hsl(120, 15%, 90%);
+        width: 15%;
+        min-width: 256px;
+        flex-grow: 0;
+        flex-shrink: 0;
+        margin-right: 16px;
+        box-sizing: border-box;
       }
       mr-issue-details {
-        width: 60%;
+        padding-right: 16px;
+        border-right: 1px dotted hsl(227, 10%, 87%);
+        width: 50%;
       }
-      mr-gates-view {
-        width: 60%;
-        padding: 16px 20%;
+      mr-launch-overview {
+        padding-left: 16px;
+        width: 50%;
       }
       @media (max-width: 1280px) {
-        .container {
+        .container-outside {
           padding: 0.5em 8px;
+        }
+        .container-main {
+          flex-direction: column;
+        }
+        .main-item {
+          width: 100%;
+          padding: 0;
+          min-height: 0;
+          border: 0;
         }
       }
       @media (max-width: 840px) {
-        .container-item {
-          width: 100%;
+        .container-outside {
+          flex-direction: column;
         }
-
-        mr-gates-view {
-          padding: 16px 0;
+        .metadata-container {
+          margin: 0.25em 0;
+          width: 100%;
+          height: auto;
         }
       }
     </style>
+    <app-location query-params="{{queryParams}}" url-space-regex="^/p/chromium/issues/approval"></app-location>
+    <iron-ajax
+        auto
+        url="/elements/mock-data/gates-mock.json"
+        handle-as="json"
+        last-response="{{gates}}">
+    </iron-ajax>
     <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
       <span slot="subheader">&gt; <a href="#">Feature Launch Issue</a></span>
-      <chops-login logout-url="/" user="test@chromium.org"></chops-login>
+      <chops-login logout-url="/" user="[[user]]"></chops-login>
     </chops-header>
-    <div class="container">
-      <mr-metadata class="container-item"></mr-metadata>
-      <mr-issue-details class="container-item"></mr-issue-details>
-      <mr-launch-overview class="container-item" gates="[[gates]]" on-gate-selected="_onGateSelected"></mr-launch-overview>
-      <mr-gates-view class="container-item" gates="[[gates]]" current-gate-index="{{currentGateIndex}}"></mr-gates-view>
+    <mr-issue-header issue-id="[[issueId]]" you="[[queryParams.you]]"></mr-issue-header>
+    <div class="container-outside">
+      <div class="metadata-container">
+        <mr-metadata></mr-metadata>
+      </div>
+      <div class="container-main">
+        <mr-issue-details class="main-item"></mr-issue-details>
+        <mr-launch-overview class="main-item" user="[[user]]" gates="[[gates]]"></mr-launch-overview>
+      </div>
     </div>
   </template>
   <script src="./mr-approval-page.js"></script>
