@@ -1386,6 +1386,13 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(
         [{'value': 'new summary', 'url': None}],
         tracker_bizobj.AmendmentLinks(summary_amendment, users_by_id, 'proj'))
+
+    summary_amendment = tracker_bizobj.MakeSummaryAmendment(
+        'new summary', 'NULL')
+    self.assertEqual(
+        [{'value': 'new summary', 'url': None}],
+        tracker_bizobj.AmendmentLinks(summary_amendment, users_by_id, 'proj'))
+
     summary_amendment = tracker_bizobj.MakeSummaryAmendment(
         'new summary', 'old info')
     self.assertEqual(
@@ -1397,6 +1404,12 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(
         [{'value': 'New', 'url': None}],
         tracker_bizobj.AmendmentLinks(status_amendment, users_by_id, 'proj'))
+
+    status_amendment = tracker_bizobj.MakeStatusAmendment('New', 'NULL')
+    self.assertEqual(
+        [{'value': 'New', 'url': None}],
+        tracker_bizobj.AmendmentLinks(status_amendment, users_by_id, 'proj'))
+
     status_amendment = tracker_bizobj.MakeStatusAmendment(
         'Assigned', 'New')
     self.assertEqual(

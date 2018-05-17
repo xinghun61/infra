@@ -1245,7 +1245,10 @@ def AmendmentLinks(amendment, users_by_id, project_name):
   if (amendment.field == tracker_pb2.FieldID.SUMMARY or
       amendment.field == tracker_pb2.FieldID.STATUS):
     result = amendment.newvalue
-    if amendment.oldvalue:
+    oldValue = amendment.oldvalue;
+    # Old issues have a 'NULL' string as the old value of the summary
+    # or status fields. See crbug.com/monorail/3805
+    if oldValue and oldValue != 'NULL':
       result += ' (was: %s)' % amendment.oldvalue
     return [{'value': result, 'url': None}]
   # Display new owner only
