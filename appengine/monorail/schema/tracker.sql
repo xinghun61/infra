@@ -225,6 +225,13 @@ CREATE TABLE Issue2Label (
   FOREIGN KEY (label_id) REFERENCES LabelDef(id)
 ) ENGINE=INNODB;
 
+CREATE TABLE IssuePhaseDef (
+  id INT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) BINARY NOT NULL,
+  rank SMALLINT UNSIGNED,
+
+  PRIMARY KEY (id)
+) ENGINE=INNODB;
 
 CREATE TABLE Issue2FieldValue (
   issue_id INT NOT NULL,
@@ -828,15 +835,6 @@ CREATE TABLE ApprovalDef2Survey (
 
   FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
   FOREIGN KEY (project_id) REFERENCES Project(project_id)
-) ENGINE=INNODB;
-
-
-CREATE TABLE IssuePhaseDef (
-  id INT NOT NULL AUTO_INCREMENT,
-  name VARCHAR(255) BINARY NOT NULL,
-  rank SMALLINT UNSIGNED,
-
-  PRIMARY KEY (id)
 ) ENGINE=INNODB;
 
 CREATE TABLE Issue2ApprovalValue (
