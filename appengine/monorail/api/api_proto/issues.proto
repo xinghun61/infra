@@ -5,39 +5,47 @@
 
 syntax = "proto3";
 
-
 package monorail;
+
+import "google/protobuf/empty.proto";
+import "api/api_proto/common.proto";
+import "api/api_proto/issue_objects.proto";
 
 
 service Issues {
-  rpc CreateIssue (CreateIssueRequest) returns (Issue) {}
-  rpc DeleteIssueComment (DeleteIssueCommentRequest) returns (Comment) {}
+  rpc CreateIssue (CreateIssueRequest) returns (IssueResponse) {}
+  rpc GetIssue (GetIssueRequest) returns (IssueResponse) {}
+  rpc DeleteIssueComment (DeleteIssueCommentRequest)
+      returns (google.protobuf.Empty) {}
 }
 
 
+// Next available tag: 4
 message CreateIssueRequest {
-  string project_name = 1;
-  Issue issue = 2;
+  RequestTrace trace = 1;
+  string project_name = 2;
+  Issue issue = 3;
 }
 
 
-message Issue {
-  string project_name = 1;
-  int64 local_id = 2;
-  string summary = 3;
-  string description = 4;
+// Next available tag: 3
+message GetIssueRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
 }
 
 
+// Next available tag: 2
+message IssueResponse {
+  Issue issue = 1;
+}
+
+
+// Next available tag: 6
 message DeleteIssueCommentRequest {
-  string project_name = 1;
-  int64 local_id = 2;
-  int64 comment_id = 3;
-  bool delete = 4;
-}
-
-
-message Comment {
-  string content = 1;
-  bool deleted = 2;
+  RequestTrace trace = 1;
+  string project_name = 2;
+  int64 local_id = 3;
+  int64 comment_id = 4;
+  bool delete = 5;
 }

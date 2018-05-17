@@ -8,12 +8,15 @@
 import unittest
 
 import mox
+from google.protobuf import empty_pb2
+
 from components.prpc import codes
 from components.prpc import context
 from components.prpc import server
 
 from api import issues_servicer
 from api.api_proto import issues_pb2
+from api.api_proto import issue_objects_pb2
 from framework import authdata
 from framework import monorailcontext
 from testing import fake
@@ -50,7 +53,7 @@ class IssuesServicerTest(unittest.TestCase):
     """API call to CreateIssue can reach Do* method."""
     request = issues_pb2.CreateIssueRequest(
         project_name='proj',
-        issue=issues_pb2.Issue(
+        issue=issue_objects_pb2.Issue(
             project_name='proj', local_id=1, summary='sum'))
     response = self.issues_svcr.CreateIssue(
         request, self.prpc_context, cnxn=self.cnxn,
@@ -62,12 +65,35 @@ class IssuesServicerTest(unittest.TestCase):
     """We can create an issue."""
     request = issues_pb2.CreateIssueRequest(
         project_name='proj',
-        issue=issues_pb2.Issue(
+        issue=issue_objects_pb2.Issue(
             project_name='proj', local_id=1, summary='sum'))
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.issues_svcr.DoCreateIssue(mc, request)
     self.assertEqual('proj', response.project_name)
+
+  def testGetIssue(self):
+    """API call to GetIssue can reach Do* method."""
+    request = issues_pb2.GetIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 123
+    response = self.issues_svcr.GetIssue(
+        request, self.prpc_context, cnxn=self.cnxn,
+        auth=authdata.AuthData(user_id=111L, email='owner@example.com'))
+    self.assertEqual(codes.StatusCode.OK, self.prpc_context._code)
+    self.assertEqual('proj', response.issue.project_name)
+    self.assertEqual(123, response.issue.local_id)
+
+  def testDoGetIssue_Normal(self):
+    """We can get an issue."""
+    request = issues_pb2.GetIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 123
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.issues_svcr.DoGetIssue(mc, request)
+    self.assertEqual('proj', response.issue.project_name)
+    self.assertEqual(123, response.issue.local_id)
 
   def testDeleteIssueComment(self):
     """API call to DeleteIssueComment can reach Do* method."""
@@ -77,7 +103,7 @@ class IssuesServicerTest(unittest.TestCase):
         request, self.prpc_context, cnxn=self.cnxn,
         auth=authdata.AuthData(user_id=111L, email='owner@example.com'))
     self.assertEqual(codes.StatusCode.OK, self.prpc_context._code)
-    self.assertTrue(response.deleted)
+    self.assertTrue(isinstance(response, empty_pb2.Empty))
 
   def testDoDeleteIssueComment_Normal(self):
     """We can delete a comment."""
@@ -86,4 +112,4 @@ class IssuesServicerTest(unittest.TestCase):
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.issues_svcr.DoDeleteIssueComment(mc, request)
-    self.assertTrue(response.deleted)
+    self.assertTrue(isinstance(response, empty_pb2.Empty))

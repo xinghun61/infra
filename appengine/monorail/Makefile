@@ -31,6 +31,11 @@ help:
 	@echo "Available commands:"
 	@sed -n '/^[a-zA-Z0-9_.]*:/s/:.*//p' <Makefile
 
+prpc_proto:
+	PATH=../../luci/appengine/components/tools:$(PATH) \
+	../../cipd/protoc \
+	--python_out=. --prpc-python_out=. api/api_proto/*.proto
+
 test:
 	../../test.py test appengine/monorail
 

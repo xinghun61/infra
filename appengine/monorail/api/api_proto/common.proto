@@ -1,0 +1,64 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is govered by a BSD-style
+// license that can be found in the LICENSE file or at
+// https://developers.google.com/open-source/licenses/bsd
+
+// This file defines small protobufs that are included as parts of
+// multiple services or *_objects.proto PBs.
+//
+// "Ref" objects contain enough information for a UI to display
+// something to the user, and identifying info so that the client can
+// request more info from the server.
+
+syntax = "proto3";
+
+package monorail;
+
+
+// Next available tag: 3
+message RequestTrace {
+  string token = 1;  // XSRF token from the HTML page.
+  string reason = 2;  // Optional request purpose from client for debugging.
+  // TODO(jrobbins): Consider passing a trace_id back and forth to measure
+  // combined latency of sequences of related requests in stackdriver.
+}
+
+
+// Next available tag: 2
+message ComponentRef {
+  string path = 1;
+}
+
+// Next available tag: 2
+message FieldRef {
+  string field_name = 1;
+}
+
+
+// Next available tag: 3
+message LabelRef {
+  string label = 1;
+  bool is_derived = 2;
+}
+
+
+// Next available tag: 4
+message StatusRef {
+  string status = 1;
+  bool means_open = 2;
+  bool is_derived = 3;
+}
+
+
+// Next available tag: 3
+message IssueRef {
+  string project_name = 1;
+  uint32 local_id = 2;
+}
+
+
+// Next available tag: 3
+message UserRef {
+  uint64 user_id = 1;
+  string email = 2;  // May be obscured like "usern...@example.com".
+}
