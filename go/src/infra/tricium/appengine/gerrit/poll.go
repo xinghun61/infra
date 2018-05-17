@@ -14,6 +14,7 @@ import (
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
@@ -89,11 +90,29 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 		return fmt.Errorf("failed to get all service configs: %v", err)
 	}
 
+	// Sort the names so that we can iterate through them in a
+	// deterministic order.
+	names := make([]string, 0, len(projects))
+	for name := range projects {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	// We don't want to poll the same repo for two different projects,
+	// so we keep track of which repos we've seen before.
 	return parallel.FanOutIn(func(taskC chan<- func() error) {
-		for name, pc := range projects {
+		seen := stringset.New(len(projects))
+		for _, name := range names {
 			name := name // Make a separate variable for use in the closure below
+			pc := projects[name]
 			for _, repo := range pc.Repos {
 				repo := repo // Again, a new variable for the closure below
+				repoURL := tricium.RepoURL(repo)
+				if seen.Has(repoURL) {
+					logging.Errorf(c, "Found duplicate repo %s", repoURL)
+					continue
+				}
+				seen.Add(repoURL)
 				if repo.GetGerritProject() != nil {
 					taskC <- func() error {
 						return pollProject(c, name, repo, gerrit)

@@ -113,28 +113,6 @@ func TestPollBasicBehavior(t *testing.T) {
 
 		cp := &mockConfigProvider{
 			Projects: map[string]*tricium.ProjectConfig{
-				"playground": {
-					Repos: []*tricium.RepoDetails{
-						{
-							Source: &tricium.RepoDetails_GerritProject{
-								GerritProject: &tricium.GerritProject{
-									Host:    host,
-									Project: "project/tricium-gerrit",
-									GitUrl:  "https://repo-host.com/playground",
-								},
-							},
-						},
-						{
-							Source: &tricium.RepoDetails_GerritProject{
-								GerritProject: &tricium.GerritProject{
-									Host:    host,
-									Project: "project/tricium-gerrit/demo",
-									GitUrl:  "https://repo-host.com/demo",
-								},
-							},
-						},
-					},
-				},
 				"infra": {
 					Repos: []*tricium.RepoDetails{
 						{
@@ -146,6 +124,39 @@ func TestPollBasicBehavior(t *testing.T) {
 								},
 							},
 						},
+						{
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "project/tricium-gerrit",
+									GitUrl:  "https://repo-host.com/playground",
+								},
+							},
+						},
+					},
+				},
+				"playground": {
+					Repos: []*tricium.RepoDetails{
+						{
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "project/tricium-gerrit/demo",
+									GitUrl:  "https://repo-host.com/demo",
+								},
+							},
+						},
+						// The repo below is a duplicate
+						// and will be ignored in poll().
+						{
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "project/tricium-gerrit",
+									GitUrl:  "https://repo-host.com/playground",
+								},
+							},
+						},
 					},
 				},
 				"non-gerrit": {},
@@ -154,15 +165,11 @@ func TestPollBasicBehavior(t *testing.T) {
 		projects, err := cp.GetAllProjectConfigs(ctx)
 		So(err, ShouldBeNil)
 
-		var gerritProjects []*tricium.GerritProject
-		for _, pc := range projects {
-			for _, repo := range pc.Repos {
-				if gp := repo.GetGerritProject(); gp != nil {
-					gerritProjects = append(gerritProjects, gp)
-				}
-			}
+		gerritProjects := []*tricium.GerritProject{
+			projects["infra"].Repos[0].GetGerritProject(),
+			projects["infra"].Repos[1].GetGerritProject(),
+			projects["playground"].Repos[0].GetGerritProject(),
 		}
-		So(len(gerritProjects), ShouldEqual, 3)
 
 		Convey("First poll, no changes", func() {
 			api := &mockPollRestAPI{}
@@ -265,7 +272,7 @@ func TestPollBasicBehavior(t *testing.T) {
 					repos = append(repos, ar.GetGerritRevision().GitUrl)
 				}
 				sort.Strings(projects)
-				So(projects, ShouldResemble, []string{"infra", "playground", "playground"})
+				So(projects, ShouldResemble, []string{"infra", "infra", "playground"})
 				sort.Strings(repos)
 				So(repos, ShouldResemble, []string{
 					"https://repo-host.com/demo",
