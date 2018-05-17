@@ -1,0 +1,58 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../mr-approval-card/mr-approval-card.html">
+
+<dom-module id="mr-gate">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      h2 {
+        margin: 0;
+        font-size: 105%;
+        font-weight: normal;
+        padding: 0.5em 8px;
+        box-sizing: border-box;
+      }
+      h2 em {
+        margin-left: 16px;
+        font-size: 80%;
+      }
+    </style>
+    <iron-ajax
+        auto
+        url="https://chromepmo.appspot.com/schedule/mstone/json?mstone=[[gate.target]]"
+        handle-as="json"
+        last-response="{{_milestoneData}}">
+    </iron-ajax>
+    <h2>
+      Approvals<span hidden$="[[!gate.gateName]]">:
+        [[gate.gateName]]
+      </span>
+      <span hidden$="[[!gate.status]]">
+         - [[gate.status]] [[gate.target]]
+      </span>
+      <em hidden$="[[!_nextDate]]">
+        [[_dateDescriptor]]
+        <chops-timestamp date="[[_nextDate]]"></chops-timestamp>
+      </em>
+    </h2>
+    <template is="dom-repeat" items="[[gate.approvals]]">
+      <mr-approval-card title="[[item.title]]"
+                     user="[[user]]"
+                     approval-comments="[[item.comments]]"
+                     survey="[[item.survey]]"
+                     survey-template="[[item.surveyTemplate]]"
+                     urls="[[item.urls]]"
+                     labels="[[item.labels]]"
+                     users="[[item.users]]"></mr-approval-card>
+    </template>
+    <template is="dom-if" if="[[!gate.approvals.length]]">
+      No tasks for this gate.
+    </template>
+  </template>
+  <script src="./mr-gate.js"></script>
+<dom-module>
