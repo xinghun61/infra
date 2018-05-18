@@ -88,13 +88,24 @@ func (t *TestFailure) Title(bses []*messages.BuildStep) string {
 	return fmt.Sprintf("%s failing on multiple builders", name)
 }
 
+// ArtifactLink is a link to a test artifact left by perf tests.
+type ArtifactLink struct {
+	// Name is the name of the artifact.
+	Name string `json:"name"`
+	// Location is the location of the artifact.
+	Location string `json:"location"`
+}
+
 // TestWithResult stores the information provided by Findit for a specific test,
 // for example if the test is flaky or is there a culprit for the test failure.
+// Also contains test-specific details like expectations and any artifacts
+// produced by the test run.
 type TestWithResult struct {
 	TestName     string                     `json:"test_name"`
 	IsFlaky      bool                       `json:"is_flaky"`
 	SuspectedCLs []messages.SuspectCL       `json:"suspected_cls"`
 	Expectations []*te.ExpectationStatement `json:"expectations"`
+	Artifacts    []ArtifactLink             `json:"artifacts"`
 }
 
 // testFailureAnalyzer analyzes steps to see if there is any data in the tests
@@ -116,6 +127,14 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messa
 			continue
 		}
 		for t, r := range failure.Tests {
+			artifacts, err := getArtifactsForTest(ctx, f, r.TestName)
+			if err != nil {
+				logging.Errorf(ctx, "couldn't get test artifacts for %+v: %v", r.TestName, err)
+			} else {
+				failure.Tests[t].Artifacts = artifacts
+				logging.Infof(ctx, "added %d artifacts to %q", len(failure.Tests[t].Artifacts), r.TestName)
+			}
+
 			config, ok := te.BuilderConfigs[f.Build.BuilderName]
 			if !ok {
 				logging.Warningf(ctx, "no config (out of %d) for %s", len(te.BuilderConfigs), f.Build.BuilderName)
@@ -124,14 +143,46 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messa
 			exps, err := getExpectationsForTest(ctx, r.TestName, config)
 			if err != nil {
 				logging.Errorf(ctx, "couldn't get test expectations for %+v: %v", r.TestName, err)
-				continue
+			} else {
+				failure.Tests[t].Expectations = exps
 			}
-			failure.Tests[t].Expectations = exps
 		}
 		results[i] = failure
 	}
 
 	return results, nil
+}
+
+func getArtifactsForTest(ctx context.Context, f *messages.BuildStep, name string) ([]ArtifactLink, error) {
+	ret := []ArtifactLink{}
+	suiteName := GetTestSuite(f)
+	trc := client.GetTestResults(ctx)
+	testResults, err := trc.TestResults(ctx, f.Master, f.Build.BuilderName, suiteName, f.Build.Number)
+	if err != nil {
+		return nil, err
+	}
+	if testResults == nil {
+		return nil, fmt.Errorf("didn't get any test results for test name %q", name)
+	}
+	delim := "/"
+	if testResults.PathDelim != nil {
+		delim = *testResults.PathDelim
+	}
+
+	for testName, res := range testResults.Tests.Flatten(delim) {
+		if testName == name {
+			for artName, locations := range res.Artifacts {
+				for _, loc := range locations {
+					ret = append(ret, ArtifactLink{
+						Name:     artName,
+						Location: loc,
+					})
+				}
+			}
+		}
+	}
+
+	return ret, nil
 }
 
 // tests is a slice of tests with Findit results.
