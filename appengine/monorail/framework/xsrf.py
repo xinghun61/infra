@@ -34,6 +34,11 @@ TOKEN_TIMEOUT_MARGIN_SEC = 5 * framework_constants.SECS_PER_MINUTE
 # use 'xhr' with all of them.
 XHR_SERVLET_PATH = 'xhr'
 
+# Return the same XSRF token within a 10 minute period to allow the same
+# token to be used in multiple requests by the same user. Quickly changing the
+# XSRF token defeats URL-based caching. More context in crbug.com/monorail/3814.
+TOKEN_GRANULARITY_MINUTES = 10 * framework_constants.SECS_PER_MINUTE
+
 DELIMITER = ':'
 
 
@@ -58,7 +63,7 @@ def GenerateToken(user_id, servlet_path, token_time=None):
   if not user_id:
     return ''  # Don't give tokens out to anonymous visitors.
 
-  token_time = token_time or int(time.time())
+  token_time = token_time or GetRoundedTime()
   digester = hmac.new(secrets_svc.GetXSRFKey())
   digester.update(str(user_id))
   digester.update(DELIMITER)
@@ -93,7 +98,7 @@ def ValidateToken(
     token_time = long(decoded.split(DELIMITER)[-1])
   except (TypeError, ValueError):
     raise TokenIncorrect('could not decode token')
-  now = now or int(time.time())
+  now = now or GetRoundedTime()
 
   # The given token should match the generated one with the same time.
   expected_token = GenerateToken(user_id, servlet_path, token_time=token_time)
@@ -117,9 +122,14 @@ def ValidateToken(
 
 def TokenExpiresSec(now=None):
   """Return timestamp when current tokens will expire, minus a safety margin."""
-  now = now or int(time.time())
+  now = now or GetRoundedTime()
   return now + TOKEN_TIMEOUT_SEC - TOKEN_TIMEOUT_MARGIN_SEC
 
+
+def GetRoundedTime():
+  now = int(time.time())
+  rounded = now - (now % TOKEN_GRANULARITY_MINUTES)
+  return rounded
 
 class Error(Exception):
   """Base class for errors from this module."""

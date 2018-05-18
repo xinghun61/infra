@@ -8,6 +8,8 @@
 import time
 import unittest
 
+from mock import patch
+
 from google.appengine.ext import testbed
 
 import settings
@@ -41,6 +43,7 @@ class XsrfTest(unittest.TestCase):
 
   def testGenerateToken_DifferentTimesGetDifferentTokens(self):
     test_time = int(time.time())
+    # TODO(jeffcarp): Remove token_time testing arg and use mock.patch.
     self.assertNotEqual(
         xsrf.GenerateToken(111L, '/path', token_time=test_time),
         xsrf.GenerateToken(111L, '/path', token_time=test_time + 1))
@@ -85,3 +88,12 @@ class XsrfTest(unittest.TestCase):
       xsrf.TokenIncorrect,
       xsrf.ValidateToken, token, 11L, '/path',
       now=test_time + xsrf.TOKEN_TIMEOUT_SEC + 1)
+
+  @patch('time.time')
+  def testGetRoundedTime(self, mockTime):
+    mockTime.return_value = 1526344117
+    self.assertEqual(1526343600, xsrf.GetRoundedTime())
+
+    # When it divides evenly by 10 minutes (600 seconds).
+    mockTime.return_value = 1526344200
+    self.assertEqual(1526344200, xsrf.GetRoundedTime())
