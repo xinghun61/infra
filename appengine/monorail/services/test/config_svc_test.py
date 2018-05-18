@@ -29,9 +29,6 @@ LABEL_ROW_SHARDS = config_svc.LABEL_ROW_SHARDS
 def MakeConfigService(cache_manager, my_mox):
   config_service = config_svc.ConfigService(cache_manager)
   for table_var in [
-      'template_tbl', 'template2label_tbl', 'template2admin_tbl',
-      'template2component_tbl', 'template2fieldvalue_tbl',
-      'template2phase_tbl', 'template2approvalvalue_tbl',
       'projectissueconfig_tbl', 'statusdef_tbl', 'labeldef_tbl', 'fielddef_tbl',
       'fielddef2admin_tbl', 'componentdef_tbl', 'component2admin_tbl',
       'component2cc_tbl', 'component2label_tbl', 'approvaldef2approver_tbl',
