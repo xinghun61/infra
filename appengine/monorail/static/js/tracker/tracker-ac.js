@@ -1056,22 +1056,11 @@ function TKR_setUpProjectStore(projects, multiValue) {
  * @param {string} projectName The name of the current project.
  * @param {string} token The user's url-command-attack-prevention token.
  * @param {number} cct The project's cached-content-timestamp.
- * @param {Object} opt_args Key=value pairs.
  */
-function TKR_fetchOptions(projectName, token, cct, opt_args) {
+function TKR_fetchOptions(projectName, token, cct) {
   const projectPart = projectName ? '/p/' + projectName : '/hosting';
-  let optionsURL = `${projectPart}/feeds/issueOptions?token=${token}`;
-  // TODO(jeffcarp): Construct this using URLSearchParams once browser compatible.
-  for (let arg in opt_args) {
-    optionsURL += '&' + arg + '=' + encodeURIComponent(opt_args[arg]);
-  }
-  optionsURL += `&cct=${cct}`;
-
-  let membersURL = `${projectPart}/feeds/issueOptionsMembers?token=${token}`;
-  for (let arg in opt_args) {
-    membersURL += '&' + arg + '=' + encodeURIComponent(opt_args[arg]);
-  }
-  membersURL += `&cct=${cct}`;
+  const optionsURL = `${projectPart}/feeds/issueOptions?token=${token}&cct=${cct}`;
+  const membersURL = `${projectPart}/feeds/issueOptionsMembers?token=${token}&cct=${cct}`;
 
   const statusesLabelsPromise = CS_fetch(optionsURL);
   const membersPromise = CS_fetch(membersURL);
