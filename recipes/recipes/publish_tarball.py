@@ -125,6 +125,9 @@ def export_lite_tarball(api, version):
             '!', '-iname', '*.gn*',
             '!', '-iname', '*.isolate*',
             '!', '-iname', '*.grd*',
+            # This file is required for Linux afdo builds.
+            '!', '-path',
+            api.path.join(dest_dir, 'chrome/android/profiles/afdo.prof'),
             '-delete'])
       except api.step.StepFailure:  # pragma: no cover
         # Ignore failures to delete these directories - they can be inspected

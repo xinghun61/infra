@@ -431,6 +431,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune android_webview"
@@ -453,6 +456,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune buildtools/third_party/libc++"
@@ -475,6 +481,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune chrome/android"
@@ -497,6 +506,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune chromecast"
@@ -519,6 +531,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune ios"
@@ -541,6 +556,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune native_client"
@@ -563,6 +581,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune native_client_sdk"
@@ -585,6 +606,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/android_platform"
@@ -607,6 +631,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/chromite"
@@ -629,6 +656,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/closure_compiler"
@@ -651,6 +681,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/freetype"
@@ -673,6 +706,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/icu"
@@ -695,6 +731,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/libjpeg_turbo"
@@ -717,6 +756,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/libxml/src"
@@ -739,6 +781,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/snappy"
@@ -761,6 +806,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/webgl"
@@ -783,6 +831,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/yasm"
@@ -805,6 +856,9 @@
       "!",
       "-iname",
       "*.grd*",
+      "!",
+      "-path",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune tools/win"
