@@ -1,13 +1,18 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-button.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
 
 <dom-module id="mr-compact-comments">
   <template>
     <style>
+      chops-button {
+        margin: 0;
+        border: 1px solid hsl(0, 0%, 80%);
+      }
       button.toggle {
         background: none;
-        color: hsl(0, 0%, 45%);
+        color: hsl(0, 0%, 39%);
         border: 0;
         border-bottom: thin dotted hsl(0, 0%, 83%);
         width: 100%;
@@ -21,13 +26,28 @@
       button.toggle[hidden], .card-comment[hidden] {
         display: none;
       }
+      textarea {
+        width: 100%;
+        margin: 0.5em 0;
+        box-sizing: border-box;
+        border: 1px solid hsl(0, 0%, 80%);
+        height: 5em;
+        transition: height 0.1s ease-in-out;
+        padding: 0.5em 4px;
+      }
+      textarea:placeholder-shown {
+        height: 3em;
+      }
+      textarea:focus {
+        height: 5em;
+      }
       .card-comment {
         border-bottom: thin dotted hsl(0, 0%, 83%);
-        font-size: 90%;
-        padding: 1em 0;
+        padding: 0.5em 0;
       }
       .comment-header {
-        color: hsl(0, 0%, 45%);
+        color: hsl(0, 0%, 39%);
+        margin-bottom: 0.5em;
       }
     </style>
     <button on-click="toggleComments" class="toggle" hidden$="[[_hideToggle]]">
@@ -35,11 +55,16 @@
     </button>
     <template is="dom-repeat" items="[[comments]]" as="comment">
       <div class="card-comment" hidden$=[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]>
-        <div class="comment-header">Comment [[index]] by [[comment.user]]</div>
-        [[comment.content]]
+        <div class="comment-header">Comment [[index]] by [[comment.user]] on <chops-timestamp></chops-timestamp></div>
+        <template is="dom-repeat" items="[[_computeCommentLines(comment.content)]]" as="line">
+          [[line]]<br />
+        </template>
       </div>
     </template>
-    <paper-textarea label="Add a comment"></paper-textarea>
+    <textarea id="commentText" value="{{_newCommentText::input}}" placeholder="Add a comment"></textarea>
+    <chops-button on-click="_submitComment">
+      Submit
+    </chops-button>
   </template>
   <script src="./mr-compact-comments.js"></script>
 <dom-module>

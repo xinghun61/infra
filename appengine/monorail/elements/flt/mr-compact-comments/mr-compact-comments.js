@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * `<mr-compact-comments>` ....
+ * `<mr-compact-comments>`
  *
  * Display Monorail comments in a dense and compact way. Currently used by the
  * feature launch tracking page.
@@ -22,6 +22,10 @@ class MrCompactComments extends Polymer.Element {
         type: Array,
         value: [],
       },
+      user: {
+        type: String,
+        value: 'you@google.com',
+      },
       _commentsHidden: {
         type: Boolean,
         value: true,
@@ -35,6 +39,7 @@ class MrCompactComments extends Polymer.Element {
         value: false,
         computed: '_computeHideToggle(_commentsHiddenCount)',
       },
+      _newCommentText: String,
     };
   }
 
@@ -50,8 +55,22 @@ class MrCompactComments extends Polymer.Element {
     return Math.max(numComments - shownCount, 0);
   }
 
+  _computeCommentLines(comment) {
+    return comment.trim().split(/(\r?\n){2}/);
+  }
+
   _computeHideToggle(hiddenCount) {
     return hiddenCount <= 0;
+  }
+
+  _submitComment() {
+    this.push('comments', {
+      user: this.user,
+      content: this._newCommentText,
+      date: new Date(),
+    });
+
+    this.$.commentText.value = '';
   }
 }
 customElements.define(MrCompactComments.is, MrCompactComments);
