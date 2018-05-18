@@ -1,0 +1,6 @@
+{{.Build.Builder.IDString}} notification
+
+<a href="{{.Build.ViewURL}}">Build {{.Build.Number}}</a>
+has completed.
+
+{{template "shared_a" .}}
