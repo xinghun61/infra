@@ -37,7 +37,7 @@ XHR_SERVLET_PATH = 'xhr'
 # Return the same XSRF token within a 10 minute period to allow the same
 # token to be used in multiple requests by the same user. Quickly changing the
 # XSRF token defeats URL-based caching. More context in crbug.com/monorail/3814.
-TOKEN_GRANULARITY_MINUTES = 10 * framework_constants.SECS_PER_MINUTE
+TOKEN_GRANULARITY_SECONDS = 10 * framework_constants.SECS_PER_MINUTE
 
 DELIMITER = ':'
 
@@ -48,9 +48,7 @@ def GenerateToken(user_id, servlet_path, token_time=None):
   Args:
     user_id: int user ID of the user viewing an HTML form.
     servlet_path: string URI path to limit the use of the token.
-    token_time: Time at which the token is generated in seconds since the
-        epoch.  This is used in validation and testing. Defaults to the
-        current time.
+    token_time: Time at which the token is generated in seconds since the epoch.
 
   Returns:
     A url-safe security token.  The token is a string with the digest
@@ -77,15 +75,13 @@ def GenerateToken(user_id, servlet_path, token_time=None):
 
 
 def ValidateToken(
-  token, user_id, servlet_path, now=None, timeout=TOKEN_TIMEOUT_SEC):
+  token, user_id, servlet_path, timeout=TOKEN_TIMEOUT_SEC):
   """Return True if the given token is valid for the given scope.
 
   Args:
     token: String token that was presented by the user.
     user_id: int user ID.
     servlet_path: string URI path to limit the use of the token.
-    now: Time in seconds since th epoch.  Defaults to the current time.
-        It is explicitly specified only in tests.
 
   Raises:
     TokenIncorrect: if the token is missing or invalid.
@@ -98,7 +94,7 @@ def ValidateToken(
     token_time = long(decoded.split(DELIMITER)[-1])
   except (TypeError, ValueError):
     raise TokenIncorrect('could not decode token')
-  now = now or GetRoundedTime()
+  now = GetRoundedTime()
 
   # The given token should match the generated one with the same time.
   expected_token = GenerateToken(user_id, servlet_path, token_time=token_time)
@@ -120,15 +116,15 @@ def ValidateToken(
     raise TokenIncorrect('token has expired')
 
 
-def TokenExpiresSec(now=None):
+def TokenExpiresSec():
   """Return timestamp when current tokens will expire, minus a safety margin."""
-  now = now or GetRoundedTime()
+  now = GetRoundedTime()
   return now + TOKEN_TIMEOUT_SEC - TOKEN_TIMEOUT_MARGIN_SEC
 
 
 def GetRoundedTime():
   now = int(time.time())
-  rounded = now - (now % TOKEN_GRANULARITY_MINUTES)
+  rounded = now - (now % TOKEN_GRANULARITY_SECONDS)
   return rounded
 
 class Error(Exception):
