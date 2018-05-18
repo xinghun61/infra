@@ -1,0 +1,157 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/iron-icons/editor-icons.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+
+<link rel="import" href="../mr-flt-flipper/mr-flt-flipper.html">
+<link rel="import" href="../shared/mr-flt-styles.html">
+
+<dom-module id="mr-attachment-gallery">
+  <template>
+    <style include="mr-flt-styles">
+      :host {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+      }
+      h3 {
+        box-sizing: border-box;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      iron-icon[icon="attachment"] {
+        --iron-icon-fill-color: hsl(0, 0%, 45%);
+        --iron-icon-height: 32px;
+        --iron-icon-width: 32px;
+      }
+      img {
+        max-width: 100%;
+      }
+      mr-flt-flipper {
+        font-weight: normal;
+        margin-left: 16px;
+      }
+      paper-dialog h4 {
+        display: flex;
+        justify-content: space-between;
+      }
+      .content {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        box-sizing: border-box;
+        padding: 0.75em 0;
+      }
+      .shown-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+      .show-text {
+        max-width: 70vw;
+        overflow: auto;
+        max-height: 80vh;
+      }
+      .slide-wrapper {
+        max-width: 30%;
+        min-width: 20%;
+        height: 180px;
+        overflow-y: hidden;
+        box-sizing: border-box;
+        transition: box-shadow 0.5s linear;
+        cursor: pointer;
+        border: 1px solid hsl(0, 0%, 83%);
+        padding: 0.5em 8px;
+        margin-right: 16px;
+        background: hsl(0, 0%, 95%);
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex-shrink: 0;
+        flex-direction: column;
+      }
+      .slide-wrapper h4 {
+        font-size: 100%;
+        color: -webkit-link;
+        font-weight: normal;
+        margin: 0;
+        margin-bottom: 0.5em;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      .slide-wrapper:hover {
+        border: 1px solid hsl(227, 20%, 75%);
+        box-shadow: 0px 2px 8px -1px hsla(0, 0%, 0%, 0.5);
+      }
+    </style>
+    <h3>
+      Attachment gallery
+      <chops-button on-click="edit">
+        <iron-icon icon="editor:attach-file"></iron-icon>
+        Add attachments
+      </chops-button>
+    </h3>
+    <div class="content">
+      <template is="dom-repeat" items="[[files]]" as="file">
+        <button
+            data-index$="[[index]]"
+            class="slide-wrapper"
+            on-click="_showFile">
+          <h4>[[file.url]]</h4>
+          <template is="dom-if" if="[[file.thumbUrl]]">
+            <img src$="/elements/mock-data/[[file.thumbUrl]]" />
+          </template>
+          <template is="dom-if" if="[[!file.thumbUrl]]">
+            <iron-icon icon="attachment"></iron-icon>
+          </template>
+        </button>
+      </template>
+    </div>
+
+    <paper-dialog id="showFile">
+      <h4>
+        <span>
+          <iron-icon icon="attachment"></iron-icon>
+          [[_shownFile.url]]
+          ([[_displaySize(_shownFile.fileSize)]])
+
+          <!-- TODO(zhangtiff): Make this download link work. -->
+          (<a href="#">Download</a>)
+        </span>
+
+        <mr-flt-flipper
+            index="[[_unzeroIndex(_shownIndex)]]"
+            count="[[files.length]]"
+            on-click-prev="_showPrev"
+            on-click-next="_showNext">
+        </mr-flt-flipper>
+      </h4>
+      <div class="shown-wrapper">
+        <template is="dom-if" if="[[_shownFile.thumbUrl]]">
+          <img src$="/elements/mock-data/[[_shownFile.url]]" />
+        </template>
+        <template is="dom-if" if="[[!_shownFile.thumbUrl]]">
+          <iron-ajax
+              auto
+              url="/elements/mock-data/gates-chrome.json"
+              handle-as="text"
+              last-response="{{_shownText}}">
+          </iron-ajax>
+          <div class="show-text">
+            [[_shownText]]
+          </div>
+        </template>
+      </div>
+    </paper-dialog>
+  </template>
+  <script src="./mr-attachment-gallery.js"></script>
+<dom-module>
