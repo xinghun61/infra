@@ -29,7 +29,7 @@ class TemplateTwoLevelCacheTest(unittest.TestCase):
     self.template_2lc.template_service.template2component_tbl = Mock()
     self.template_2lc.template_service.template2admin_tbl = Mock()
     self.template_2lc.template_service.template2fieldvalue_tbl = Mock()
-    self.template_2lc.template_service.template2phase_tbl = Mock()
+    self.template_2lc.template_service.issuephasedef_tbl = Mock()
     self.template_2lc.template_service.template2approvalvalue_tbl = Mock()
 
   def testFetchItems_Empty(self):
@@ -43,7 +43,7 @@ class TemplateTwoLevelCacheTest(unittest.TestCase):
         .return_value = []
     self.template_2lc.template_service.template2fieldvalue_tbl.Select\
         .return_value = []
-    self.template_2lc.template_service.template2phase_tbl.Select\
+    self.template_2lc.template_service.issuephasedef_tbl.Select\
         .return_value = []
     self.template_2lc.template_service.template2approvalvalue_tbl.Select\
         .return_value = []
@@ -91,8 +91,8 @@ class TemplateTwoLevelCacheTest(unittest.TestCase):
         status=tracker_pb2.ApprovalStatus('NA'))
     av2 = tracker_pb2.ApprovalValue(approval_id=18,
         status=tracker_pb2.ApprovalStatus('NOT_SET'))
-    phase1_row = (19, 9, 'phase-1', 1)
-    phase2_row = (20, 7, 'phase-2', 2)
+    phase1_row = (19, 'phase-1', 1)
+    phase2_row = (20, 'phase-2', 2)
     phase1 = tracker_pb2.Phase(phase_id=19, name='phase-1', rank=1)
     phase1.approval_values = [av1]
     phase2 = tracker_pb2.Phase(phase_id=20, name='phase-2', rank=2)
@@ -100,7 +100,7 @@ class TemplateTwoLevelCacheTest(unittest.TestCase):
 
     self.template_2lc.template_service.template2approvalvalue_tbl.Select\
         .return_value = [av1_row, av2_row]
-    self.template_2lc.template_service.template2phase_tbl.Select\
+    self.template_2lc.template_service.issuephasedef_tbl.Select\
         .return_value = [phase1_row, phase2_row]
 
     actual = self.template_2lc.FetchItems(cnxn=None, keys=[1, 2])
@@ -194,7 +194,7 @@ class CreateIssueTemplateDefTest(TemplateServiceTest):
     self.template_service.template2component_tbl.InsertRows = Mock()
     self.template_service.template2admin_tbl.InsertRows = Mock()
     self.template_service.template2fieldvalue_tbl.InsertRows = Mock()
-    self.template_service.template2phase_tbl.InsertRow = Mock(return_value=81)
+    self.template_service.issuephasedef_tbl.InsertRow = Mock(return_value=81)
     self.template_service.template2approvalvalue_tbl.InsertRows = Mock()
     self.template_service.template_2lc._StrToKey = Mock(return_value=789)
 
@@ -235,8 +235,8 @@ class CreateIssueTemplateDefTest(TemplateServiceTest):
         .assert_called_once_with(self.cnxn,
             template_svc.TEMPLATE2FIELDVALUE_COLS,
             [(1, 1, None, 'somestring', None, None, None)], commit=False)
-    self.template_service.template2phase_tbl.InsertRow\
-        .assert_called_once_with(self.cnxn, template_id=1, name='Canary',
+    self.template_service.issuephasedef_tbl.InsertRow\
+        .assert_called_once_with(self.cnxn, name='Canary',
             rank=11, commit=False)
     self.template_service.template2approvalvalue_tbl.InsertRows\
         .assert_called_once_with(self.cnxn,
@@ -258,8 +258,7 @@ class UpdateIssueTemplateDefTest(TemplateServiceTest):
     self.template_service.template2admin_tbl.Delete = Mock()
     self.template_service.template2admin_tbl.InsertRows = Mock()
     self.template_service.template2approvalvalue_tbl.Delete = Mock()
-    self.template_service.template2phase_tbl.Delete = Mock()
-    self.template_service.template2phase_tbl.InsertRow = Mock(return_value=1)
+    self.template_service.issuephasedef_tbl.InsertRow = Mock(return_value=1)
     self.template_service.template2approvalvalue_tbl.InsertRows = Mock()
     self.template_service.template_2lc._StrToKey = Mock(return_value=789)
 
@@ -290,10 +289,8 @@ class UpdateIssueTemplateDefTest(TemplateServiceTest):
             [(1, 111L)], commit=False)
     self.template_service.template2approvalvalue_tbl.Delete\
         .assert_called_once_with(self.cnxn, template_id=1, commit=False)
-    self.template_service.template2phase_tbl.Delete\
-        .assert_called_once_with(self.cnxn, template_id=1, commit=False)
-    self.template_service.template2phase_tbl.InsertRow\
-        .assert_called_once_with(self.cnxn, template_id=1, name='Canary',
+    self.template_service.issuephasedef_tbl.InsertRow\
+        .assert_called_once_with(self.cnxn, name='Canary',
             rank=11, commit=False)
     self.template_service.template2approvalvalue_tbl.InsertRows\
         .assert_called_once_with(self.cnxn,
@@ -312,7 +309,6 @@ class DeleteTemplateTest(TemplateServiceTest):
     self.template_service.template2admin_tbl.Delete = Mock()
     self.template_service.template2fieldvalue_tbl.Delete = Mock()
     self.template_service.template2approvalvalue_tbl.Delete = Mock()
-    self.template_service.template2phase_tbl.Delete = Mock()
     self.template_service.template_tbl.Delete = Mock()
     self.template_service.template_2lc._StrToKey = Mock(return_value=789)
 
@@ -327,8 +323,6 @@ class DeleteTemplateTest(TemplateServiceTest):
     self.template_service.template2fieldvalue_tbl.Delete\
         .assert_called_once_with(self.cnxn, template_id=1, commit=False)
     self.template_service.template2approvalvalue_tbl.Delete\
-        .assert_called_once_with(self.cnxn, template_id=1, commit=False)
-    self.template_service.template2phase_tbl.Delete\
         .assert_called_once_with(self.cnxn, template_id=1, commit=False)
     self.template_service.template_tbl.Delete\
         .assert_called_once_with(self.cnxn, id=1, commit=False)

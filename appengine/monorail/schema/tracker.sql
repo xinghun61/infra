@@ -499,6 +499,7 @@ CREATE TABLE Template2Component (
 ) ENGINE=INNODB;
 
 
+-- TODO(jojwang): monorail:3756 Delete later
 CREATE TABLE Template2Phase (
   id INT NOT NULL AUTO_INCREMENT,
   template_id INT NOT NULL,
@@ -520,7 +521,7 @@ CREATE TABLE Template2ApprovalValue (
 
   FOREIGN KEY (approval_id) REFERENCES FieldDef(id),
   FOREIGN KEY (template_id) REFERENCES Template(id),
-  FOREIGN KEY (phase_id) REFERENCES Template2Phase(id)
+  FOREIGN KEY (phase_id) REFERENCES IssuePhaseDef(id)
 ) ENGINE=INNODB;
 
 

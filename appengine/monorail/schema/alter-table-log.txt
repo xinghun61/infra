@@ -1507,3 +1507,13 @@ DROP TABLE Issue2Phase;
 
 ALTER TABLE Issue2FieldValue DROP INDEX field_id_5;
 ALTER TABLE Issue2FieldValue ADD INDEX (field_id, issue_shard, url_value(255));
+
+==================================================================
+2018-05-18: Replace Template2Phase FK with IssuePhaseDef.
+
+TRUNCATE TABLE Template2ApprovalValue;
+ALTER TABLE Template2ApprovalValue DROP FOREIGN KEY Template2ApprovalValue_ibfk_3;
+ALTER TABLE Template2ApprovalValue ADD FOREIGN KEY (phase_id) REFERENCES IssuePhaseDef(id);
+
+==================================================================
+TODO(jojwang):monorail:3756, DROP TABLE Template2Phase;

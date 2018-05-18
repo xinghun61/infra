@@ -29,7 +29,7 @@ TEMPLATE2ADMIN_COLS = ['template_id', 'admin_id']
 TEMPLATE2FIELDVALUE_COLS = [
     'template_id', 'field_id', 'int_value', 'str_value', 'user_id',
     'date_value', 'url_value']
-TEMPLATE2PHASE_COLS = ['id', 'template_id', 'name', 'rank']
+ISSUEPHASEDEF_COLS = ['id', 'name', 'rank']
 TEMPLATE2APPROVALVALUE_COLS = [
     'approval_id', 'template_id', 'phase_id', 'status']
 
@@ -39,7 +39,7 @@ TEMPLATE2LABEL_TABLE_NAME = 'Template2Label'
 TEMPLATE2ADMIN_TABLE_NAME = 'Template2Admin'
 TEMPLATE2COMPONENT_TABLE_NAME = 'Template2Component'
 TEMPLATE2FIELDVALUE_TABLE_NAME = 'Template2FieldValue'
-TEMPLATE2PHASE_TABLE_NAME = 'Template2Phase'
+ISSUEPHASEDEF_TABLE_NAME = 'IssuePhaseDef'
 TEMPLATE2APPROVALVALUE_TABLE_NAME = 'Template2ApprovalValue'
 
 
@@ -74,20 +74,21 @@ class TemplateTwoLevelCache(caches.AbstractTwoLevelCache):
       template_ids = [row[0] for row in template_rows]
       template2label_rows = self.template_service.\
           template2label_tbl.Select(
-            cnxn, cols=TEMPLATE2LABEL_COLS, template_id=template_ids)
+              cnxn, cols=TEMPLATE2LABEL_COLS, template_id=template_ids)
       template2component_rows = self.template_service.\
           template2component_tbl.Select(
-            cnxn, cols=TEMPLATE2COMPONENT_COLS, template_id=template_ids)
+              cnxn, cols=TEMPLATE2COMPONENT_COLS, template_id=template_ids)
       template2admin_rows = self.template_service.template2admin_tbl.Select(
           cnxn, cols=TEMPLATE2ADMIN_COLS, template_id=template_ids)
       template2fieldvalue_rows = self.template_service.\
           template2fieldvalue_tbl.Select(
-            cnxn, cols=TEMPLATE2FIELDVALUE_COLS, template_id=template_ids)
-      template2phase_rows = self.template_service.template2phase_tbl.Select(
-          cnxn, cols=TEMPLATE2PHASE_COLS, template_id=template_ids)
+              cnxn, cols=TEMPLATE2FIELDVALUE_COLS, template_id=template_ids)
       template2approvalvalue_rows = self.template_service.\
           template2approvalvalue_tbl.Select(
-            cnxn, cols=TEMPLATE2APPROVALVALUE_COLS, template_id=template_ids)
+              cnxn, cols=TEMPLATE2APPROVALVALUE_COLS, template_id=template_ids)
+      phase_ids = [av_row[2] for av_row in template2approvalvalue_rows]
+      phase_rows = self.template_service.issuephasedef_tbl.Select(
+          cnxn, cols=ISSUEPHASEDEF_COLS, id=list(set(phase_ids)))
 
       # Build TemplateDef with all related data.
       template_dict = {}
@@ -123,23 +124,29 @@ class TemplateTwoLevelCache(caches.AbstractTwoLevelCache):
         if template:
           template.field_values.append(fv)
 
-      # TODO(jojwang): monorail:3241, deserialize approvals w/out phases
+      # TODO(jojwang): monorail:3756, deserialize approvals w/out phases
       phase_to_av_dict = collections.defaultdict(list)
       for av_row in template2approvalvalue_rows:
-        (approval_id, _template_id, phase_id, status) = av_row
+        (approval_id, template_id, phase_id, status) = av_row
         approval_value = tracker_pb2.ApprovalValue(
             approval_id=approval_id,
             status=tracker_pb2.ApprovalStatus(status.upper()))
-        phase_to_av_dict[phase_id].append(approval_value)
+        phase_to_av_dict[phase_id, template_id].append(approval_value)
 
-      for phase_row in template2phase_rows:
-        (phase_id, template_id, name, rank) = phase_row
+      phases_by_id = {}
+      for phase_row in phase_rows:
+        (phase_id, name, rank) = phase_row
         phase = tracker_pb2.Phase(
             phase_id=phase_id, name=name, rank=rank)
-        phase.approval_values = phase_to_av_dict[phase_id]
-        template = template_dict.get(template_id)
-        if template:
-          template.phases.append(phase)
+        phases_by_id[phase.phase_id] = phase
+
+      for (phase_id, template_id), avs in phase_to_av_dict.iteritems():
+        try:
+          phase = phases_by_id[phase_id]
+          phase.approval_values = avs
+          template_dict[template_id].phases.append(phase)
+        except KeyError:
+          logging.error('Approval value tied to missing phase: %r', phase_id)
 
       project_templates_dict[project_id] = template_dict.values()
 
@@ -156,8 +163,8 @@ class TemplateService(object):
     self.template2admin_tbl = sql.SQLTableManager(TEMPLATE2ADMIN_TABLE_NAME)
     self.template2fieldvalue_tbl = sql.SQLTableManager(
         TEMPLATE2FIELDVALUE_TABLE_NAME)
-    self.template2phase_tbl = sql.SQLTableManager(
-        TEMPLATE2PHASE_TABLE_NAME)
+    self.issuephasedef_tbl = sql.SQLTableManager(
+        ISSUEPHASEDEF_TABLE_NAME)
     self.template2approvalvalue_tbl = sql.SQLTableManager(
         TEMPLATE2APPROVALVALUE_TABLE_NAME)
 
@@ -270,9 +277,8 @@ class TemplateService(object):
 
     if phases:
       for phase in phases:
-        phase_id = self.template2phase_tbl.InsertRow(
-            cnxn, template_id=template_id, name=phase.name,
-            rank=phase.rank, commit=False)
+        phase_id = self.issuephasedef_tbl.InsertRow(
+            cnxn, name=phase.name, rank=phase.rank, commit=False)
         self.template2approvalvalue_tbl.InsertRows(
             cnxn, TEMPLATE2APPROVALVALUE_COLS,
             [(av.approval_id, template_id, phase_id, av.status.name.lower())
@@ -363,15 +369,15 @@ class TemplateService(object):
               (template_id, fv.field_id, fv.int_value, fv.str_value, fv.user_id,
                fv.date_value, fv.url_value) for fv in field_values],
           commit=False)
+
+    # TODO(jojwang): monorail:3756, when approval_values are separated from
+    # phases, we need to keep track of tmp phase_ids created at the servlet.
     if phases is not None:
       self.template2approvalvalue_tbl.Delete(
           cnxn, template_id=template_id, commit=False)
-      self.template2phase_tbl.Delete(
-          cnxn, template_id=template_id, commit=False)
       for phase in phases:
-        phase_id = self.template2phase_tbl.InsertRow(
-            cnxn, template_id=template_id, name=phase.name, rank=phase.rank,
-            commit=False)
+        phase_id = self.issuephasedef_tbl.InsertRow(
+            cnxn, name=phase.name, rank=phase.rank, commit=False)
         self.template2approvalvalue_tbl.InsertRows(
             cnxn, TEMPLATE2APPROVALVALUE_COLS,
             [(av.approval_id, template_id, phase_id, av.status.name.lower())
@@ -392,8 +398,10 @@ class TemplateService(object):
         cnxn, template_id=template_id, commit=False)
     self.template2approvalvalue_tbl.Delete(
         cnxn, template_id=template_id, commit=False)
-    self.template2phase_tbl.Delete(
-          cnxn, template_id=template_id, commit=False)
+    # We do not delete issuephasedef rows becuase these rows will be used by
+    # issues that were created with this template. template2approvalvalue rows
+    # can be deleted becuase those rows are copied over to issue2approvalvalue
+    # during issue creation.
     self.template_tbl.Delete(cnxn, id=template_id, commit=False)
 
     cnxn.Commit()
