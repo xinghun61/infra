@@ -1,90 +1,46 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../../bower_components/chopsui/chops-button.html">
-<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
-<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
-
 <link rel="import" href="../mr-compact-comments/mr-compact-comments.html">
+<link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
+<link rel="import" href="../mr-issue-details/mr-attachment-gallery.html">
+<link rel="import" href="../mr-issue-details/mr-metadata.html">
+<link rel="import" href="../shared/mr-flt-styles.html">
 
 <dom-module id="mr-issue-details">
   <template>
-    <style>
+    <style include="mr-flt-styles">
       :host {
-        width: 650px;
         font-size: 85%;
         background-color: white;
         padding: 0;
         padding-bottom: 1em;
-      }
-      button.toggle {
-        background: none;
-        color: grey;
-        border: 0;
-        border-bottom: thin dotted hsl(0, 0%, 83%);
-        width: 100%;
-        padding: 0.5em 0;
-        text-align: left;
-      }
-      button.toggle:hover {
-        cursor: pointer;
-        text-decoration: underline;
-      }
-      .card-comment {
-        border-bottom: thin dotted hsl(0, 0%, 83%);
-        font-size: 90%;
-        padding: 1em 0;
-      }
-      .card-section {
-        padding: 0.25em 16px;
-      }
-      h2 {
-        margin-top: 0;
-        font-size: 150%;
-        color: white;
-        background-color: var(--paper-indigo-500);
-        font-weight: normal;
-        padding: 0.5em 16px;
-        box-sizing: border-box;
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        align-items: stretch;
+        justify-content: flex-start;
+        flex-direction: column;
+        z-index: 1;
+        margin: 0;
+        box-sizing: border-box;
       }
-      h2 chops-button {
-        font-size: 70%;
-        color: var(--paper-indigo-900);
-        background: white;
-        border-radius: 8px;
-        text-transform: uppercase;
+      mr-attachment-gallery {
+        margin-bottom: 0.5em;
+        box-sizing: border-box;
       }
-      h2 chops-button iron-icon {
-        margin-right: 4px;
-      }
-      h3 {
-        font-weight: normal;
-        color: var(--paper-indigo-500);
-        font-size: 130%;
+      .comments-section{
+        box-sizing: border-box;
+        padding: 0.25em 8px;
       }
     </style>
-    <h2 class="issue-header">
-      [[summary]]
-      <chops-button on-click="editData" raised="true">
-        <iron-icon icon="create"></iron-icon>
-        Edit
-      </chops-button>
-    </h2>
-    <div class="card-section">
+    <mr-attachment-gallery></mr-attachment-gallery>
+    <mr-inline-editor
+        content="{{description}}"
+        title="Feature description"
+        edit-text="Edit description"
+        placeholder="Feature description">
       [[description]]
-    </div>
-    <div class="card-section">
-      <h3>Feature Discussion</h3>
-      <mr-compact-comments comments="[[comments]]"></mr-compact-comments>
-    </div>
-    <paper-dialog id="editDialog">
-      <h3>Edit general information here</h3>
-      <p>When the viewer has permission to edit information, the edit button will be shown</p>
-      <p>Without editing permission, users will only see the data w/out the edit button</p>
-    </paper-dialog>
+    </mr-inline-editor>
+    <h3>Feature discussion / Changelog</h3>
+    <mr-compact-comments comments="[[comments]]" comments-shown-count=5></mr-compact-comments>
   </template>
   <script src="./mr-issue-details.js"></script>
 <dom-module>

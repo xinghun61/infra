@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * `<mr-issue-details>` ....
+ * `<mr-issue-details>`
  *
  * This is the main details section for a given issue.
  *
@@ -14,10 +14,6 @@ class MrIssueDetails extends Polymer.Element {
   // TODO(zhangtiff): Replace this with real data.
   static get properties() {
     return {
-      summary: {
-        type: String,
-        value: 'Autofill credit card icons',
-      },
       description: {
         type: String,
         value: `More detailed description of what this feature is. Lorem ipsum
@@ -43,19 +39,38 @@ class MrIssueDetails extends Polymer.Element {
             content: '4. Mauris ornare nec nunc id posuere.',
           }, {
             user: 'testuser@chromium.org',
-            content: '5th test comment.',
+            content: `
+                5th test comment. I am a long comment who will be testing
+                how long comments look. With a really long comment,
+                you have to be careful to make sure the UI doesn't get
+                stretched. After all, it would be disappointing if people had a
+                perfectly good long comment but it caused problems by stretching
+                the UI. How long do you think this comment should be?
+
+                I will add some line breaks to make it taller without making it
+                a lot longer in text.
+
+                With the power of line breaks it's really easy to stretch the
+                content on a page.
+
+                I have a few points I want to make:
+
+                1. Monorail
+
+                2. Hello world.
+
+                3. Three.
+
+                4. This is a number
+
+                Now that you've read my 4-point plan, I hope you this ramble
+                has been information. Have a nice day! And thanks for checking
+                out this FLT mock.
+            `,
           },
         ],
       },
-      strings: {
-        type: Array,
-        value: [{name: 'RandomString', values: ['useful string']}],
-      },
     };
-  }
-
-  editData() {
-    this.$.editDialog.open();
   }
 }
 customElements.define(MrIssueDetails.is, MrIssueDetails);
