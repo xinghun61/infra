@@ -361,6 +361,7 @@ class ServletRegistry(object):
 
     self._SetupUserServlets({
         urls.USER_PROFILE: userprofile.UserProfile,
+        urls.USER_PROFILE_POLYMER: userprofile.UserProfilePolymer,
         urls.BAN_USER: userprofile.BanUser,
         urls.BAN_SPAMMER: banspammer.BanSpammer,
         urls.USER_CLEAR_BOUNCING: userclearbouncing.UserClearBouncing,

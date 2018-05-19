@@ -1,0 +1,38 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+
+<dom-module id="mr-day-icon">
+  <template>
+    <style>
+      :host {
+        background-color: hsl(0, 0%, 95%);
+        margin: 0.25em 8px;
+        height: 32px;
+        width: 32px;
+        border: 2px solid white;
+        transition: border-color .5s ease-in-out;
+      }
+      :host(:hover) {
+        cursor: pointer;
+        border-color: hsl(87, 20%, 45%);
+      }
+      :host([activity-level="1"]) {
+        background-color: hsl(87, 70%, 87%);
+      }
+      :host([activity-level="2"]) {
+        background-color: hsl(88, 67%, 72%);
+      }
+      :host([activity-level="3"]) {
+        background-color: hsl(87, 80%, 40%);
+      }
+      :host.selected {
+        border-color: hsl(0, 0%, 13%);
+      }
+    </style>
+    <paper-tooltip>
+      [[changes]] CLs<br />
+      [[bugs]] bugs
+    </paper-tooltip>
+  </template>
+  <script src="./mr-day-icon.js"></script>
+</dom-module>

@@ -34,6 +34,7 @@ CUES_JSON = '/hosting/cues'
 # URLs of user pages, relative to either /u/userid or /u/username
 # TODO(jrobbins): Add /u/userid as the canonical URL in metadata.
 USER_PROFILE = '/'
+USER_PROFILE_POLYMER = '/polymer'
 USER_CLEAR_BOUNCING = '/clearBouncing'
 BAN_USER = '/ban'
 BAN_SPAMMER = '/banSpammer'

@@ -17,6 +17,9 @@ BACKEND_MODULES?= besearch
 
 VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
 CRISPER_PATH = ./node_modules/crisper/bin/crisper
+VULCANIZE = $(VULCANIZE_PATH) $(1).html --inline-script \
+		| $(CRISPER_PATH) \
+		--html $(1).vulcanized.html --js $(1).vulcanized.js --only-split
 
 PY_DIRS = api,features,framework,project,proto,search,services,sitewide,testing,tracker
 
@@ -76,18 +79,10 @@ deps:
 	ln -s ../../../crdx/chopsui bower_components/chopsui
 
 vulcanize: clean_vulcanized
-	$(VULCANIZE_PATH) elements/flt/mr-approval-page/mr-approval-page.html --inline-script \
-	| $(CRISPER_PATH) \
-		--html elements/flt/mr-approval-page/mr-approval-page.vulcanized.html \
-		--js elements/flt/mr-approval-page/mr-approval-page.vulcanized.js --only-split
-	$(VULCANIZE_PATH) elements/bar-chart.html --inline-script \
-	| $(CRISPER_PATH) \
-		--html elements/bar-chart.vulcanized.html \
-		--js elements/bar-chart.vulcanized.js --only-split
-	$(VULCANIZE_PATH) elements/mr-flipper/mr-flipper.html --inline-script \
-	| $(CRISPER_PATH) \
-		--html elements/mr-flipper/mr-flipper.vulcanized.html \
-		--js elements/mr-flipper/mr-flipper.vulcanized.js --only-split
+	$(call VULCANIZE, elements/flt/mr-approval-page/mr-approval-page)
+	$(call VULCANIZE, elements/chdir/mr-profile-page/mr-profile-page)
+	$(call VULCANIZE, elements/bar-chart)
+	$(call VULCANIZE, elements/mr-flipper/mr-flipper)
 
 clean_vulcanized:
 	find . -name "*.vulcanized.*" -delete

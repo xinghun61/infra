@@ -157,6 +157,12 @@ class UserProfile(servlet.Servlet):
         saved=1, ts=int(time.time()))
 
 
+class UserProfilePolymer(UserProfile):
+  """New Polymer version of user profiles in Monorail."""
+
+  _PAGE_TEMPLATE = 'sitewide/user-profile-page-polymer.ezt'
+
+
 class BanUser(servlet.Servlet):
   """Bans or un-bans a user."""
 

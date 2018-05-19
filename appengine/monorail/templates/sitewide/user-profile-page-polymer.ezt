@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<title>Monorail: Polymer Profile Page</title>
+<meta name=viewport content="width=device-width, user-scalable=no">
+
+[if-any dev_mode]
+<link rel="import" href="/elements/chdir/mr-profile-page/mr-profile-page.html?version=[app_version]" nonce="[nonce]">
+[else]
+<link rel="import" href="/elements/chdir/mr-profile-page/mr-profile-page.vulcanized.html?version=[app_version]" nonce="[nonce]">
+<script src="/elements/chdir/mr-profile-page/mr-profile-page.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
+[end]
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', 'Noto', sans-serif;
+  }
+</style>
+
+<mr-profile-page viewed-user="[viewed_user_display_name]"></mr-profile-page>
