@@ -105,7 +105,6 @@
                   </template>
                   )
                   <template is="dom-if" if="[[_haveArtifacts(test)]]">
-                    Test artifacts:
                     <ul class="artifacts">
                       <template is="dom-repeat" items="[[test.artifacts]]" as="artifact">
                         <li><a target="_blank" href="[[artifact.location]]">[[artifact.name]]</a>
