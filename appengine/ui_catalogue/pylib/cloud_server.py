@@ -12,6 +12,7 @@ import webapp2
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
+import gae_ts_mon
 from pylib.third_party import cloudstorage
 from pylib.ui_catalogue import routes_list
 from pylib.ui_catalogue import ScreenshotLoader
@@ -50,4 +51,5 @@ class RemoteScreenshotLoader(ScreenshotLoader):
 
 
 gae_app = webapp2.WSGIApplication(routes_list, debug=True)
+gae_ts_mon.initialize(gae_app)
 gae_app.config['screenshot_loader'] = RemoteScreenshotLoader()

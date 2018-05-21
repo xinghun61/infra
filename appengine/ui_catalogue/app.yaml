@@ -49,3 +49,6 @@ handlers:
   static_files: build/es5-bundled/index.html
   upload: build/es5-bundled/index.html
   secure: always
+
+includes:
+  - gae_ts_mon

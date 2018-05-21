@@ -8,14 +8,16 @@ import os
 import sys
 import unittest
 
+from mock import Mock
 from mock import patch
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from pylib import cloud_server
+with patch('gae_ts_mon.initialize', Mock()):
+  from pylib import cloud_server
+
 from pylib.third_party import cloudstorage
 from pylib.ui_catalogue import ScreenshotLoader
-
 
 
 TEST_DATA = [
