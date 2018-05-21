@@ -180,13 +180,13 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.mox.ResetAll()
 
   def testUnpackApprovalValue(self):
-    av, issue_id, ms_id = self.issue_2lc._UnpackApprovalValue(
+    av, issue_id = self.issue_2lc._UnpackApprovalValue(
         self.approvalvalue_rows[0])
     self.assertEqual(av.status, tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
     self.assertIsNone(av.setter_id)
     self.assertIsNone(av.set_on)
     self.assertEqual(issue_id, 78901)
-    self.assertEqual(ms_id, 1)
+    self.assertEqual(av.phase_id, 1)
 
   def testUnpackPhase(self):
     phase = self.issue_2lc._UnpackPhase(
@@ -209,15 +209,15 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.assertItemsEqual([78901], issue_dict.keys())
     issue = issue_dict[78901]
     self.assertEqual(len(issue.phases), 2)
-    canary_phase = tracker_bizobj.FindPhaseByID(1, issue.phases)
-    self.assertEqual(len(canary_phase.approval_values), 1)
+    self.assertIsNotNone(tracker_bizobj.FindPhaseByID(1, issue.phases))
     av_21 = tracker_bizobj.FindApprovalValueByID(
-        21, canary_phase.approval_values)
+        21, issue.approval_values)
+    self.assertEqual(av_21.phase_id, 1)
     self.assertItemsEqual(av_21.approver_ids, [111, 222, 333])
-    stable_phase = tracker_bizobj.FindPhaseByID(2, issue.phases)
-    self.assertEqual(len(stable_phase.approval_values), 1)
-    self.assertIsNotNone(tracker_bizobj.FindApprovalValueByID(
-        22, stable_phase.approval_values))
+    self.assertIsNotNone(tracker_bizobj.FindPhaseByID(2, issue.phases))
+    av_22 = tracker_bizobj.FindApprovalValueByID(
+        22, issue.approval_values)
+    self.assertEqual(av_22.phase_id, 2)
 
   def testDeserializeIssues_UnexpectedLabel(self):
     unexpected_label_rows = [
@@ -371,16 +371,14 @@ class IssueServiceTest(unittest.TestCase):
   def testCreateIssue(self):
     settings.classifier_spam_thresh = 0.9
     av_23 = tracker_pb2.ApprovalValue(
-        approval_id=23, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
-    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
+        approval_id=23, phase_id=1,
+        status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24, phase_id=1)
     approval_values = [av_23, av_24]
-    phase = tracker_pb2.Phase(
-        name='Canary', approval_values=approval_values, rank=11)
-    phase_row = ('Canary', 11)
     av_rows = [(23, 78901, 1, 'needs_review', None, None),
                (24, 78901, 1, 'not_set', None, None)]
     self.SetUpAllocateNextLocalID(789, None, None)
-    self.SetUpInsertIssue(phase_row=phase_row, av_rows=av_rows)
+    self.SetUpInsertIssue(av_rows=av_rows)
     self.SetUpInsertComment(7890101, is_description=True)
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), self.reporter, False).AndReturn(
@@ -394,7 +392,7 @@ class IssueServiceTest(unittest.TestCase):
     actual_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
         'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
-        index_now=False, timestamp=self.now, phases=[phase])
+        index_now=False, timestamp=self.now, approval_values=approval_values)
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
 
@@ -436,6 +434,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), True, 1.0, True)
     self.SetUpUpdateIssuesModified(set())
+    self.SetUpUpdateIssuesApprovals([])
     self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
@@ -458,6 +457,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
        mox.IsA(tracker_pb2.Issue), True, 1.0, False)
     self.SetUpUpdateIssuesModified(set())
+    self.SetUpUpdateIssuesApprovals([])
     self.SetUpEnqueueIssuesForIndexing([78901])
 
     self.mox.ReplayAll()
@@ -568,7 +568,7 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(locations, [(781, 1), (782, 11)])
 
   def SetUpInsertIssue(
-      self, label_rows=None, phase_row=None, av_rows=None):
+      self, label_rows=None, av_rows=None):
     row = (789, 1, 1, 111L, 111L,
            self.now, 0, self.now, self.now, self.now, self.now,
            None, 0,
@@ -587,7 +587,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesCc()
     self.SetUpUpdateIssuesNotify()
     self.SetUpUpdateIssuesRelation()
-    self.SetUpCreateIssuePhases(phase_row=phase_row, av_rows=av_rows)
+    self.SetUpUpdateIssuesApprovals(av_rows=av_rows)
     self.services.chart.StoreIssueSnapshots(self.cnxn, mox.IgnoreArg(),
         commit=False)
 
@@ -676,15 +676,12 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, issue_svc.DANGLINGRELATION_COLS, dangling_relation_rows,
         ignore=True, commit=False)
 
-  def SetUpCreateIssuePhases(self, phase_row=None, av_rows=None):
-    if phase_row:
-      (name, rank) = phase_row
-      self.services.issue.issuephasedef_tbl.InsertRow(
-          self.cnxn, name=name,
-          rank=rank, commit=False).AndReturn(1)
-      av_rows=av_rows or []
-      self.services.issue.issue2approvalvalue_tbl.InsertRows(
-          self.cnxn, issue_svc.ISSUE2APPROVALVALUE_COLS, av_rows, commit=False)
+  def SetUpUpdateIssuesApprovals(self, av_rows=None):
+    av_rows = av_rows or []
+    self.services.issue.issue2approvalvalue_tbl.Delete(
+        self.cnxn, issue_id=78901, commit=False)
+    self.services.issue.issue2approvalvalue_tbl.InsertRows(
+        self.cnxn, issue_svc.ISSUE2APPROVALVALUE_COLS, av_rows, commit=False)
 
   def testInsertIssue(self):
     self.SetUpInsertIssue()
@@ -1624,11 +1621,10 @@ class IssueServiceTest(unittest.TestCase):
 
   def testGetIssueApproval(self):
     av_24 = tracker_pb2.ApprovalValue(approval_id=24)
-    phases = [tracker_pb2.Phase(
-        phase_id=1, rank=1, approval_values=[av_24])]
+    av_25 = tracker_pb2.ApprovalValue(approval_id=25)
     issue_1 = fake.MakeTestIssue(
         project_id=789, local_id=1, owner_id=111L, summary='sum',
-        status='Live', issue_id=78901, phases=phases)
+        status='Live', issue_id=78901, approval_values=[av_24, av_25])
     issue_1.project_name = 'proj'
     self.services.issue.issue_2lc.CacheItem(78901, issue_1)
 

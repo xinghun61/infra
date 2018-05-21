@@ -124,29 +124,25 @@ class TemplateTwoLevelCache(caches.AbstractTwoLevelCache):
         if template:
           template.field_values.append(fv)
 
-      # TODO(jojwang): monorail:3756, deserialize approvals w/out phases
-      phase_to_av_dict = collections.defaultdict(list)
-      for av_row in template2approvalvalue_rows:
-        (approval_id, template_id, phase_id, status) = av_row
-        approval_value = tracker_pb2.ApprovalValue(
-            approval_id=approval_id,
-            status=tracker_pb2.ApprovalStatus(status.upper()))
-        phase_to_av_dict[phase_id, template_id].append(approval_value)
-
       phases_by_id = {}
       for phase_row in phase_rows:
         (phase_id, name, rank) = phase_row
         phase = tracker_pb2.Phase(
             phase_id=phase_id, name=name, rank=rank)
-        phases_by_id[phase.phase_id] = phase
+        phases_by_id[phase_id] = phase
 
-      for (phase_id, template_id), avs in phase_to_av_dict.iteritems():
-        try:
-          phase = phases_by_id[phase_id]
-          phase.approval_values = avs
-          template_dict[template_id].phases.append(phase)
-        except KeyError:
-          logging.error('Approval value tied to missing phase: %r', phase_id)
+      # Note: there is no templateapproval2approver_tbl.
+      for av_row in template2approvalvalue_rows:
+        (approval_id, template_id, phase_id, status) = av_row
+        approval_value = tracker_pb2.ApprovalValue(
+            approval_id=approval_id, phase_id=phase_id,
+            status=tracker_pb2.ApprovalStatus(status.upper()))
+        template = template_dict.get(template_id)
+        if template:
+          template.approval_values.append(approval_value)
+          phase = phases_by_id.get(phase_id)
+          if phase and phase not in template.phases:
+            template_dict.get(template_id).phases.append(phase)
 
       project_templates_dict[project_id] = template_dict.values()
 
@@ -223,7 +219,7 @@ class TemplateService(object):
       self, cnxn, project_id, name, content, summary, summary_must_be_edited,
       status, members_only, owner_defaults_to_member, component_required,
       owner_id=None, labels=None, component_ids=None, admin_ids=None,
-      field_values=None, phases=None):
+      field_values=None, phases=None, approval_values=None):
     """Create a new issue template definition with the given info.
 
     Args:
@@ -245,6 +241,7 @@ class TemplateService(object):
       admin_ids: list of admin_ids, if any.
       field_values: list of FieldValue PBs, if any.
       phases: list of Phase PBs, if any.
+      approval_values: list of ApprovalValue PBs, if any.
 
     Returns:
       Integer template_id of the new issue template definition.
@@ -275,15 +272,23 @@ class TemplateService(object):
                fv.date_value, fv.url_value) for fv in field_values],
           commit=False)
 
+    # current phase_ids are tmp and only used for tracking approval and
+    # phase relations.
+    phase_id_by_tmp = collections.defaultdict(lambda: None)
+    # TODO(jojwang): monorail:3756, process phaseless approvals.
+    # (take approval_values for loop out of 'if phases' block.)
     if phases:
       for phase in phases:
         phase_id = self.issuephasedef_tbl.InsertRow(
             cnxn, name=phase.name, rank=phase.rank, commit=False)
-        self.template2approvalvalue_tbl.InsertRows(
-            cnxn, TEMPLATE2APPROVALVALUE_COLS,
-            [(av.approval_id, template_id, phase_id, av.status.name.lower())
-             for av in phase.approval_values],
-            commit=False)
+        phase_id_by_tmp[phase.phase_id] = phase_id
+
+      self.template2approvalvalue_tbl.InsertRows(
+          cnxn, TEMPLATE2APPROVALVALUE_COLS,
+          [(av.approval_id, template_id,
+            phase_id_by_tmp[av.phase_id], av.status.name.lower())
+           for av in approval_values],
+          commit=False)
 
     cnxn.Commit()
     self.template_2lc.InvalidateKeys(cnxn, [project_id])
@@ -294,7 +299,7 @@ class TemplateService(object):
       summary=None, summary_must_be_edited=None, status=None, members_only=None,
       owner_defaults_to_member=None, component_required=None, owner_id=None,
       labels=None, component_ids=None, admin_ids=None, field_values=None,
-      phases=None):
+      phases=None, approval_values=None):
     """Update an existing issue template definition with the given info.
 
     Args:
@@ -318,6 +323,7 @@ class TemplateService(object):
       admin_ids: updated list of admin_ids, if any.
       field_values: updated list of FieldValue PBs, if any.
       phases: updated list of Phase PBs, if any.
+      approval_values: updated list of ApprovalValue PBs, if any.
     """
     new_values = {}
     if name is not None:
@@ -370,6 +376,7 @@ class TemplateService(object):
                fv.date_value, fv.url_value) for fv in field_values],
           commit=False)
 
+    phase_id_by_tmp = {}
     # TODO(jojwang): monorail:3756, when approval_values are separated from
     # phases, we need to keep track of tmp phase_ids created at the servlet.
     if phases is not None:
@@ -378,10 +385,13 @@ class TemplateService(object):
       for phase in phases:
         phase_id = self.issuephasedef_tbl.InsertRow(
             cnxn, name=phase.name, rank=phase.rank, commit=False)
-        self.template2approvalvalue_tbl.InsertRows(
-            cnxn, TEMPLATE2APPROVALVALUE_COLS,
-            [(av.approval_id, template_id, phase_id, av.status.name.lower())
-             for av in phase.approval_values], commit=False)
+        phase_id_by_tmp[phase.phase_id] = phase_id
+
+      self.template2approvalvalue_tbl.InsertRows(
+          cnxn, TEMPLATE2APPROVALVALUE_COLS,
+          [(av.approval_id, template_id,
+            phase_id_by_tmp.get(av.phase_id), av.status.name.lower())
+           for av in approval_values], commit=False)
 
     cnxn.Commit()
     self.template_2lc.InvalidateKeys(cnxn, [project_id])

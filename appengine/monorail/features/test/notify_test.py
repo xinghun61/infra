@@ -258,13 +258,14 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.user.TestAddUser('approver_new@example.com', 8)
     self.services.user.TestAddUser('approver_still@example.com', 9)
     canary_phase = tracker_pb2.Phase(
-        name='Canary', phase_id=1, rank=1,
-        approval_values=[
-          tracker_pb2.ApprovalValue(approval_id=3, approver_ids=[8, 9])])
+        name='Canary', phase_id=1, rank=1)
+    approval_values = [
+        tracker_pb2.ApprovalValue(approval_id=3, approver_ids=[8, 9])]
     approval_issue = MakeTestIssue(
         project_id=12345, local_id=2, owner_id=2, reporter_id=1,
         is_spam=True)
     approval_issue.phases = [canary_phase]
+    approval_issue.approval_values = approval_values
     self.services.issue.TestAddIssue(approval_issue)
 
     amend = tracker_bizobj.MakeApprovalApproversAmendment([7, 9], [8, 9])

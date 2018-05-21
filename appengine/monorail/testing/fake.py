@@ -73,7 +73,7 @@ def MakeTestIssue(
     derived_owner_id=0, issue_id=None, reporter_id=None, opened_timestamp=None,
     closed_timestamp=None, modified_timestamp=None, is_spam=False,
     component_ids=None, project_name=None, field_values=None, cc_ids=None,
-    derived_cc_ids=None, assume_stale=True, phases=None):
+    derived_cc_ids=None, assume_stale=True, phases=None, approval_values=None):
   """Easily make an Issue for testing."""
   issue = tracker_pb2.Issue()
   issue.project_id = project_id
@@ -118,6 +118,8 @@ def MakeTestIssue(
     issue.field_values = field_values
   if phases is not None:
     issue.phases = phases
+  if approval_values is not None:
+    issue.approval_values = approval_values
   return issue
 
 
@@ -1072,7 +1074,7 @@ class ConfigService(object):
       summary=None, summary_must_be_edited=None, status=None, members_only=None,
       owner_defaults_to_member=None, component_required=None, owner_id=None,
       labels=None, component_ids=None, admin_ids=None, field_values=None,
-      phases=None):
+      phases=None, approval_values=None):
     config = self.GetProjectConfig(cnxn, project_id)
     template = tracker_bizobj.FindIssueTemplateByID(template_id, config)
     if name is not None:
@@ -1103,6 +1105,8 @@ class ConfigService(object):
       template.field_values = field_values
     if phases is not None:
       template.phases = phases
+    if approval_values is not None:
+      template.approval_values = approval_values
 
     self.StoreConfig(cnxn, config)
 
@@ -1347,7 +1351,7 @@ class IssueService(object):
       summary, status, owner_id, cc_ids, labels, field_values,
       component_ids, reporter_id, marked_description, blocked_on=None,
       blocking=None, attachments=None, timestamp=None, index_now=False,
-      phases=None):
+      phases=None, approval_values=None):
     issue = tracker_pb2.Issue()
     issue.project_id = project_id
     issue.summary = summary
@@ -1373,6 +1377,9 @@ class IssueService(object):
     if phases:
       issue.phases = phases
 
+    if approval_values:
+      issue.approval_values = approval_values
+
     issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
     issue.issue_id = project_id * 1000000 + issue.local_id
 
@@ -1383,34 +1390,31 @@ class IssueService(object):
 
   def GetIssueApproval(self, cnxn, issue_id, approval_id, use_cache=True):
     issue = self.GetIssue(cnxn, issue_id, use_cache=use_cache)
-    for phase in issue.phases:
-      approval = tracker_bizobj.FindApprovalValueByID(
-          approval_id, phase.approval_values)
-      if approval:
-        return issue, approval
+    approval = tracker_bizobj.FindApprovalValueByID(
+        approval_id, issue.approval_values)
+    if approval:
+      return issue, approval
     raise exceptions.NoSuchIssueApprovalException()
 
   def UpdateIssueApprovalStatus(
       self, cnxn, issue_id, approval_id, status, setter_id, set_on,
       commit=True):
     issue = self.GetIssue(cnxn, issue_id)
-    for phase in issue.phases:
-      for av in phase.approval_values:
-        if av.approval_id == approval_id:
-          av.status = status
-          av.setter_id = setter_id
-          av.set_on = set_on
-          return
+    for av in issue.approval_values:
+      if av.approval_id == approval_id:
+        av.status = status
+        av.setter_id = setter_id
+        av.set_on = set_on
+        return
     return
 
   def UpdateIssueApprovalApprovers(
       self, cnxn, issue_id, approval_id, approver_ids, commit=True):
     issue = self.GetIssue(cnxn, issue_id)
-    for phase in issue.phases:
-      for av in phase.approval_values:
-        if av.approval_id == approval_id:
-          av.approver_ids = approver_ids
-          return
+    for av in issue.approval_values:
+      if av.approval_id == approval_id:
+        av.approver_ids = approver_ids
+        return
     return
 
   def SetUsedLocalID(self, cnxn, project_id):

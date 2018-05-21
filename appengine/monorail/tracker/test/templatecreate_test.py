@@ -246,18 +246,16 @@ class TemplateCreateTest(unittest.TestCase):
 
     fv = tracker_pb2.FieldValue(field_id=1, str_value='NO', derived=False)
     phases = [
-      tracker_pb2.Phase(name='Canary',
-        rank=0,
-        approval_values=[
-          tracker_pb2.ApprovalValue(approval_id=2)]),
-      tracker_pb2.Phase(name='Stable',
-        rank=1,
-        approval_values=[
-          tracker_pb2.ApprovalValue(approval_id=3,
-            status=tracker_pb2.ApprovalStatus(
-              tracker_pb2.ApprovalStatus.NEEDS_REVIEW))]),
+        tracker_pb2.Phase(name='Canary', rank=0, phase_id=0),
+        tracker_pb2.Phase(name='Stable', rank=1, phase_id=1)
     ]
+    approval_values = [
+        tracker_pb2.ApprovalValue(approval_id=2, phase_id=0),
+        tracker_pb2.ApprovalValue(
+            approval_id=3, status=tracker_pb2.ApprovalStatus(
+                tracker_pb2.ApprovalStatus.NEEDS_REVIEW), phase_id=1)
+        ]
     self.services.template.CreateIssueTemplateDef.assert_called_once_with(
         self.mr.cnxn, 47925, 'secondtemplate', 'HEY WHY', 'TLDR', True,
         'Accepted', True, False, True, 0, ['label-One', 'label-Two'], [], [],
-        [fv], phases=phases)
+        [fv], phases=phases, approval_values=approval_values)

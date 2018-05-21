@@ -49,13 +49,13 @@ class ApprovalValue(messages.Message):
   set_on = messages.IntegerField(4)
   approver_ids = messages.IntegerField(5, repeated=True)
   subfield_values = messages.MessageField(FieldValue, 6, repeated=True)
+  phase_id = messages.IntegerField(7)
 
 
 class Phase(messages.Message):
   """Holds a single launch review phase."""
   phase_id = messages.IntegerField(1)
   name = messages.StringField(2)
-  approval_values = messages.MessageField(ApprovalValue, 3, repeated=True)
   rank = messages.IntegerField(4)
 
 
@@ -79,7 +79,7 @@ class Issue(messages.Message):
   Summary, Status, Owner, CC, reporter, and opened_timestamp are hard
   fields that are always there.  All other metadata is stored as
   labels or custom fields.
-  Next available tag: 60.
+  Next available tag: 61.
   """
   # Globally unique issue ID.
   issue_id = messages.IntegerField(42)
@@ -171,6 +171,7 @@ class Issue(messages.Message):
   assume_stale = messages.BooleanField(57, default=True)
 
   phases = messages.MessageField(Phase, 59, repeated=True)
+  approval_values = messages.MessageField(ApprovalValue, 60, repeated=True)
 
 
 class FieldID(messages.Enum):
@@ -421,7 +422,7 @@ class ApprovalDef(messages.Message):
   approver_ids = messages.IntegerField(4, repeated=True)
   survey = messages.StringField(5)
 
-
+# Next available tag: 48
 class TemplateDef(messages.Message):
   """Definition of one issue template."""
   template_id = messages.IntegerField(57)
@@ -448,6 +449,7 @@ class TemplateDef(messages.Message):
   component_ids = messages.IntegerField(43, repeated=True)
   component_required = messages.BooleanField(44, default=False)
   phases = messages.MessageField(Phase, 46, repeated=True)
+  approval_values = messages.MessageField(ApprovalValue, 47, repeated=True)
 
 
 class ProjectIssueConfig(messages.Message):

@@ -87,16 +87,15 @@ class TemplateTwoLevelCacheTest(unittest.TestCase):
 
     av1_row = (17, 9, 19, 'na')
     av2_row = (18, 7, 20, 'not_set')
-    av1 = tracker_pb2.ApprovalValue(approval_id=17,
-        status=tracker_pb2.ApprovalStatus('NA'))
-    av2 = tracker_pb2.ApprovalValue(approval_id=18,
-        status=tracker_pb2.ApprovalStatus('NOT_SET'))
+    av1 = tracker_pb2.ApprovalValue(approval_id=17, phase_id=19,
+                                    status=tracker_pb2.ApprovalStatus('NA'))
+    av2 = tracker_pb2.ApprovalValue(approval_id=18, phase_id=20,
+                                    status=tracker_pb2.ApprovalStatus(
+                                        'NOT_SET'))
     phase1_row = (19, 'phase-1', 1)
     phase2_row = (20, 'phase-2', 2)
     phase1 = tracker_pb2.Phase(phase_id=19, name='phase-1', rank=1)
-    phase1.approval_values = [av1]
     phase2 = tracker_pb2.Phase(phase_id=20, name='phase-2', rank=2)
-    phase2.approval_values = [av2]
 
     self.template_2lc.template_service.template2approvalvalue_tbl.Select\
         .return_value = [av1_row, av2_row]
@@ -131,6 +130,10 @@ class TemplateTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual([], actual[1][0].phases)
     self.assertEqual([phase1], actual[1][1].phases)
     self.assertEqual([phase2], actual[2][0].phases)
+
+    self.assertEqual([], actual[1][0].approval_values)
+    self.assertEqual([av1], actual[1][1].approval_values)
+    self.assertEqual([av2], actual[2][0].approval_values)
 
 
 class TemplateServiceTest(unittest.TestCase):
@@ -202,16 +205,18 @@ class CreateIssueTemplateDefTest(TemplateServiceTest):
     fv = tracker_bizobj.MakeFieldValue(
         1, None, 'somestring', None, None, None, False)
     av_23 = tracker_pb2.ApprovalValue(
-        approval_id=23, status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
-    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
+        approval_id=23, phase_id=11,
+        status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24, phase_id=11)
     approval_values = [av_23, av_24]
     phases = [tracker_pb2.Phase(
-        name='Canary', approval_values=approval_values, rank=11)]
+        name='Canary', rank=11, phase_id=11)]
 
     actual_template_id = self.template_service.CreateIssueTemplateDef(
         self.cnxn, 789, 'template', 'content', 'summary', True, 'Available',
         True, True, True, owner_id=111L, labels=['label'], component_ids=[3],
-        admin_ids=[222L], field_values=[fv], phases=phases)
+        admin_ids=[222L], field_values=[fv], phases=phases,
+        approval_values=approval_values)
 
     self.assertEqual(1, actual_template_id)
 
@@ -263,15 +268,15 @@ class UpdateIssueTemplateDefTest(TemplateServiceTest):
     self.template_service.template_2lc._StrToKey = Mock(return_value=789)
 
   def testUpdateIssueTemplateDef(self):
-    av_20 = tracker_pb2.ApprovalValue(approval_id=20)
-    av_21 = tracker_pb2.ApprovalValue(approval_id=21)
+    av_20 = tracker_pb2.ApprovalValue(approval_id=20, phase_id=11)
+    av_21 = tracker_pb2.ApprovalValue(approval_id=21, phase_id=11)
     approval_values = [av_20, av_21]
     phases = [tracker_pb2.Phase(
-        name='Canary', approval_values=approval_values, rank=11)]
+        name='Canary', phase_id=11, rank=11)]
     self.template_service.UpdateIssueTemplateDef(
         self.cnxn, 789, 1, content='content', summary='summary',
         component_required=True, labels=[], admin_ids=[111L],
-        phases=phases)
+        phases=phases, approval_values=approval_values)
 
     new_values = dict(
         content='content', summary='summary', component_required=True)

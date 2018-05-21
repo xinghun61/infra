@@ -332,12 +332,12 @@ class WorkEnvTest(unittest.TestCase):
     """We can update an issue's ApprovalValue status."""
     self.SignIn()
 
-    av_21 = tracker_pb2.ApprovalValue(approval_id=21)
-    av_24 = tracker_pb2.ApprovalValue(approval_id=24, approver_ids=[111L])
+    av_21 = tracker_pb2.ApprovalValue(approval_id=21, phase_id=1)
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24, approver_ids=[111L], phase_id=1)
     phases = [tracker_pb2.Phase(
-        phase_id=1, rank=1, approval_values=[av_21, av_24])]
+        phase_id=1, rank=1)]
     issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
-                               issue_id=78901, phases=phases)
+                               issue_id=78901, phases=phases, approval_values=[av_21, av_24])
     self.services.issue.TestAddIssue(issue)
 
     self.work_env.UpdateIssueApprovalStatus(
@@ -345,10 +345,11 @@ class WorkEnvTest(unittest.TestCase):
 
     issue = self.services.issue.GetIssue(self.cnxn, 78901)
     phase = issue.phases[0]
-    updated_av = tracker_bizobj.FindApprovalValueByID(24, phase.approval_values)
+    updated_av = tracker_bizobj.FindApprovalValueByID(24, issue.approval_values)
     self.assertEqual(updated_av.status, tracker_pb2.ApprovalStatus.APPROVED)
     self.assertEqual(updated_av.setter_id, 111L)
     self.assertEqual(updated_av.set_on, 3456)
+    self.assertEqual(updated_av.phase_id, phase.phase_id)
     amendment_comment = self.services.issue.GetCommentsForIssue(
         self.cnxn, 78901)[-1]
     self.assertEqual(amendment_comment.approval_id, 24)
@@ -360,19 +361,20 @@ class WorkEnvTest(unittest.TestCase):
     """We can update an issue's approval approvers."""
     self.SignIn()
 
-    av_23 = tracker_pb2.ApprovalValue(approval_id=23, approver_ids=[111L, 555L])
+    av_23 = tracker_pb2.ApprovalValue(approval_id=23, approver_ids=[111L, 555L], phase_id=1)
     phases = [tracker_pb2.Phase(
-        phase_id=1, rank=1, approval_values=[av_23])]
+        phase_id=1, rank=1)]
     issue = fake.MakeTestIssue(789, 1, 'summary', 'Avialable', 111L,
-                               issue_id=78901, phases=phases)
+                               issue_id=78901, phases=phases, approval_values=[av_23])
     self.services.issue.TestAddIssue(issue)
 
     self.work_env.UpdateIssueApprovalApprovers(78901, 23, [111L, 222L, 444L])
 
     issue = self.services.issue.GetIssue(self.cnxn, 78901)
     phase = issue.phases[0]
-    updated_av = tracker_bizobj.FindApprovalValueByID(23, phase.approval_values)
+    updated_av = tracker_bizobj.FindApprovalValueByID(23, issue.approval_values)
     self.assertItemsEqual([111, 222, 444], updated_av.approver_ids)
+    self.assertEqual(updated_av.phase_id, phase.phase_id)
     amendment_comment = self.services.issue.GetCommentsForIssue(
         self.cnxn, 78901)[-1]
     self.assertEqual(amendment_comment.approval_id, 23)

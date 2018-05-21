@@ -230,8 +230,8 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
     (approval_id, issue_id, phase_id, status, setter_id, set_on) = av_row
     av = tracker_pb2.ApprovalValue(
         approval_id=approval_id, setter_id=setter_id, set_on=set_on,
-        status=tracker_pb2.ApprovalStatus(status.upper()))
-    return av, issue_id, phase_id
+        status=tracker_pb2.ApprovalStatus(status.upper()), phase_id=phase_id)
+    return av, issue_id
 
   def _UnpackPhase(self, phase_row):
     """Construct a Phase PB from a DB row."""
@@ -288,29 +288,22 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       fv, issue_id = self._UnpackFieldValue(fv_row)
       results_dict[issue_id].field_values.append(fv)
 
-    approvers_dict = collections.defaultdict(list)
-    for approver_row in av_approver_rows:
-      approval_id, approver_id, issue_id = approver_row
-      approvers_dict[approval_id, issue_id].append(approver_id)
-
-    phase_avs_dict = collections.defaultdict(list)
-    for av_row in approvalvalue_rows:
-      av, issue_id, phase_id = self._UnpackApprovalValue(av_row)
-      av.approver_ids = approvers_dict[av.approval_id, issue_id]
-      phase_avs_dict[phase_id, issue_id].append(av)
-
     phases_by_id = {}
     for phase_row in phase_rows:
       phase = self._UnpackPhase(phase_row)
       phases_by_id[phase.phase_id] = phase
 
-    for (phase_id, issue_id), avs in phase_avs_dict.iteritems():
-      try:
-        phase = phases_by_id[phase_id]
-        phase.approval_values = avs
-        results_dict[issue_id].phases.append(phase)
-      except KeyError:
-        logging.error('Approval value tied to missing phase: %r', phase_id)
+    approvers_dict = collections.defaultdict(list)
+    for approver_row in av_approver_rows:
+      approval_id, approver_id, issue_id = approver_row
+      approvers_dict[approval_id, issue_id].append(approver_id)
+
+    for av_row in approvalvalue_rows:
+      av, issue_id = self._UnpackApprovalValue(av_row)
+      av.approver_ids = approvers_dict[av.approval_id, issue_id]
+      results_dict[issue_id].approval_values.append(av)
+      if av.phase_id:
+        results_dict[issue_id].phases.append(phases_by_id[av.phase_id])
 
     for issue_id, dst_issue_id, kind, rank in relation_rows:
       src_issue = results_dict.get(issue_id)
@@ -532,7 +525,7 @@ class IssueService(object):
       self, cnxn, services, project_id, summary, status,
       owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
       marked_description, blocked_on=None, blocking=None, attachments=None,
-      timestamp=None, index_now=False, phases=None):
+      timestamp=None, index_now=False, phases=None, approval_values=None):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -555,6 +548,7 @@ class IssueService(object):
       timestamp: time that the issue was entered, defaults to now.
       index_now: True if the issue should be updated in the full text index.
       phases: list of Phase PBs, if any.
+      approval_values: list of ApprovalValue PBs, if any.
 
     Returns:
       A tuple (the integer local ID of the new issue, Comment PB for the
@@ -590,6 +584,8 @@ class IssueService(object):
       issue.attachment_count = len(attachments)
     if phases:
       issue.phases = phases
+    if approval_values:
+      issue.approval_values = approval_values
     timestamp = timestamp or int(time.time())
     issue.opened_timestamp = timestamp
     issue.modified_timestamp = timestamp
@@ -906,7 +902,7 @@ class IssueService(object):
     self._UpdateIssuesCc(cnxn, [issue], commit=False)
     self._UpdateIssuesNotify(cnxn, [issue], commit=False)
     self._UpdateIssuesRelation(cnxn, [issue], commit=False)
-    self._CreateIssuePhases(cnxn, issue, commit=False)
+    self._UpdateIssuesApprovals(cnxn, issue, commit=False)
     self.chart_service.StoreIssueSnapshots(cnxn, [issue], commit=False)
     cnxn.Commit()
     self._config_service.InvalidateMemcache([issue])
@@ -1146,18 +1142,16 @@ class IssueService(object):
     if invalidate:
       self.InvalidateIIDs(cnxn, iids)
 
-  def _CreateIssuePhases(self, cnxn, issue, commit=True):
-    """Insert Issue2[Phase] and [ApprovalValue] rows for the given issue."""
-    # NOTE: currently not supporting phase editing.
-    # only editing approvalvalues within phases.
-    for phase in issue.phases:
-      phase_id = self.issuephasedef_tbl.InsertRow(
-          cnxn, name=phase.name, rank=phase.rank, commit=commit)
-      av_rows =  [(av.approval_id, issue.issue_id, phase_id,
-                   av.status.name.lower(), av.setter_id, av.set_on)
-                  for av in phase.approval_values]
-      self.issue2approvalvalue_tbl.InsertRows(
-          cnxn, ISSUE2APPROVALVALUE_COLS, av_rows, commit=commit)
+  def _UpdateIssuesApprovals(self, cnxn, issue, commit=True):
+    """Update the Issue2ApprovalValue table rows for the given issue."""
+    self.issue2approvalvalue_tbl.Delete(
+        cnxn, issue_id=issue.issue_id, commit=commit)
+    av_rows = [(av.approval_id, issue.issue_id, av.phase_id,
+                av.status.name.lower(), av.setter_id, av.set_on) for
+               av in issue.approval_values]
+    self.issue2approvalvalue_tbl.InsertRows(
+        cnxn, ISSUE2APPROVALVALUE_COLS, av_rows, commit=commit)
+    # TODO(jojwang)monorail:3756, call UpdateIssueApprovalApprovers here
 
   def DeltaUpdateIssue(
       self, cnxn, services, reporter_id, project_id,
@@ -2409,11 +2403,10 @@ class IssueService(object):
   def GetIssueApproval(self, cnxn, issue_id, approval_id, use_cache=True):
     """Retrieve the specified approval for the specified issue."""
     issue = self.GetIssue(cnxn, issue_id, use_cache=use_cache)
-    for phase in issue.phases:
-      approval = tracker_bizobj.FindApprovalValueByID(
-          approval_id, phase.approval_values)
-      if approval:
-        return issue, approval
+    approval = tracker_bizobj.FindApprovalValueByID(
+        approval_id, issue.approval_values)
+    if approval:
+      return issue, approval
     raise exceptions.NoSuchIssueApprovalException()
 
   def UpdateIssueApprovalStatus(

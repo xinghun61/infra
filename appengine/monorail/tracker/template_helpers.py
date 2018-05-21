@@ -110,46 +110,51 @@ def GetTemplateInfoFromParsed(mr, services, parsed, config):
                  fv.field_id, tracker_bizobj.GetFieldValue(fv, {}))
 
   phases = []
+  approvals = []
   if parsed.add_phases:
-    phases = _GetPhasesFromParsed(
+    phases, approvals = _GetPhasesAndApprovalsFromParsed(
         mr, parsed.phase_names, parsed.approvals_by_phase_idx,
         parsed.required_approval_ids)
 
-  return admin_ids, owner_id, component_ids, field_values, phases
+  return admin_ids, owner_id, component_ids, field_values, phases, approvals
 
-
-def _GetPhasesFromParsed(
+# TODO(jojwang): monorail:3756, eventually parse phase-less approvals.
+def _GetPhasesAndApprovalsFromParsed(
     mr, phase_names, approvals_by_phase_idx, required_approval_ids):
   """Get Phase PBs from a parsed phase_names and approvals_by_phase_idx."""
 
   phases = []
+  approvals = []
 
   valid_phase_names = [name for name in phase_names if name]
   if len(valid_phase_names) != len(
       set(name.lower() for name in valid_phase_names)):
     mr.errors.phase_approvals = 'Duplicate gate names.'
-    return phases
+    return phases, approvals
   valid_phase_idxs = [idx for idx, name in enumerate(phase_names) if name]
   if set(valid_phase_idxs) != set(approvals_by_phase_idx.keys()):
     mr.errors.phase_approvals = 'Defined gates must have assigned approvals.'
-    return phases
+    return phases, approvals
 
   for idx in approvals_by_phase_idx:
     approval_ids = approvals_by_phase_idx[idx]
     phase_name = phase_names[idx]
 
     # Distributing the ranks over a wider range is not necessary since
-    # any edits to template phases will cause a complete rewrite
-    phase = tracker_pb2.Phase(name=phase_name, rank=idx)
+    # any edits to template phases will cause a complete rewrite.
+    # phase_id is temporarily the idx for keeping track of which approvals
+    # belong to which phases.
+    phase = tracker_pb2.Phase(name=phase_name, rank=idx, phase_id=idx)
     phases.append(phase)
+
     for approval_id in approval_ids:
       av = tracker_pb2.ApprovalValue(
-          approval_id=approval_id)
+          approval_id=approval_id, phase_id=idx)
       if approval_id in required_approval_ids:
         av.status = tracker_pb2.ApprovalStatus.NEEDS_REVIEW
       # TODO(jojwang): monorail:3655, add default sub_field_values
       # TODO(jojwang): monorail:3656, add option for default approvers
       # per template
-      phase.approval_values.append(av)
+      approvals.append(av)
 
-  return phases
+  return phases, approvals

@@ -88,12 +88,13 @@ class TemplateDetailTest(unittest.TestCase):
     self.template.component_ids.append(1)
 
     self.canary_phase = tracker_pb2.Phase(
-        name='Canary', phase_id=1, rank=1,
-        approval_values=[tracker_pb2.ApprovalValue(approval_id=3)])
+        name='Canary', phase_id=1, rank=1)
+    self.av_3 = tracker_pb2.ApprovalValue(approval_id=3, phase_id=1)
     self.stable_phase = tracker_pb2.Phase(
-        name='Stable', phase_id=2, rank=3,
-        approval_values=[tracker_pb2.ApprovalValue(approval_id=4)])
+        name='Stable', phase_id=2, rank=3)
+    self.av_4 = tracker_pb2.ApprovalValue(approval_id=4, phase_id=2)
     self.template.phases.extend([self.stable_phase, self.canary_phase])
+    self.template.approval_values.extend([self.av_3, self.av_4])
 
     self.config = self.services.config.GetProjectConfig(
         'fake cnxn', self.project.project_id)
@@ -257,7 +258,7 @@ class TemplateDetailTest(unittest.TestCase):
 
     self.services.template.UpdateIssueTemplateDef.assert_called_once_with(
         self.mr.cnxn, 47925, 12345, status='Accepted', component_required=True,
-        phases=[],  name='TestTemplate', field_values=[
+        phases=[], approval_values=[], name='TestTemplate', field_values=[
           tracker_pb2.FieldValue(field_id=1, str_value='NO', derived=False),
           tracker_pb2.FieldValue(field_id=2, str_value='MOOD', derived=False)],
         labels=['label-One', 'label-Two'], owner_defaults_to_member=True,
@@ -297,15 +298,14 @@ class TemplateDetailTest(unittest.TestCase):
     self.services.template.UpdateIssueTemplateDef.assert_called_once_with(
         self.mr.cnxn, 47925, 12345, status='Accepted', component_required=True,
         phases=[
-          tracker_pb2.Phase(name='Canary', approval_values=[
-            tracker_pb2.ApprovalValue(approval_id=3)],
-            rank=0),
-          tracker_pb2.Phase(name='Stable', approval_values=[
-            tracker_pb2.ApprovalValue(approval_id=4)],
-            rank=1)],
+            tracker_pb2.Phase(name='Canary', rank=0, phase_id=0),
+            tracker_pb2.Phase(name='Stable', rank=1, phase_id=1)],
+        approval_values=[tracker_pb2.ApprovalValue(approval_id=3, phase_id=0),
+                         tracker_pb2.ApprovalValue(approval_id=4, phase_id=1)],
         name='TestTemplate', field_values=[
-          tracker_pb2.FieldValue(field_id=1, str_value='NO', derived=False),
-          tracker_pb2.FieldValue(field_id=2, str_value='MOOD', derived=False)],
+            tracker_pb2.FieldValue(field_id=1, str_value='NO', derived=False),
+            tracker_pb2.FieldValue(
+                field_id=2, str_value='MOOD', derived=False)],
         labels=['label-One', 'label-Two'], owner_defaults_to_member=True,
         admin_ids=[], content='HEY WHY', component_ids=[1],
         summary_must_be_edited=False, summary='TLDR', members_only=True,

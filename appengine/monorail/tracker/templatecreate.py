@@ -112,7 +112,8 @@ class TemplateCreate(servlet.Servlet):
       mr.errors.name = 'Template with name %s already exists' % parsed.name
 
     (admin_ids, owner_id, component_ids,
-     field_values, phases) = template_helpers.GetTemplateInfoFromParsed(
+     field_values, phases,
+     approvals) = template_helpers.GetTemplateInfoFromParsed(
          mr, self.services, parsed, config)
 
     if mr.errors.AnyErrors():
@@ -155,7 +156,8 @@ class TemplateCreate(servlet.Servlet):
         mr.cnxn, mr.project_id, parsed.name, parsed.content, parsed.summary,
         parsed.summary_must_be_edited, parsed.status, parsed.members_only,
         parsed.owner_defaults_to_member, parsed.component_required,
-        owner_id, labels, component_ids, admin_ids, field_values, phases=phases)
+        owner_id, labels, component_ids, admin_ids, field_values, phases=phases,
+        approval_values=approvals)
 
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.ADMIN_TEMPLATES, saved=1, ts=int(time.time()))

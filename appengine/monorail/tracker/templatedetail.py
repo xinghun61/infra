@@ -91,13 +91,19 @@ class TemplateDetail(servlet.Servlet):
       approval_subfields_present = True
 
     initial_phases = template.phases[:]
+    avs_by_phase_id = collections.defaultdict(list)
+    # TODO(jojwang):monorail:3756 look out for phaseless approvals.
+    for av in template.approval_values:
+      if av.phase_id:
+        avs_by_phase_id[av.phase_id].append(av)
+
     # TODO(jojwang): monorail:3576, replace this sort by adding order_by
     # when fetching phases at config_svc:488
     initial_phases.sort(key=lambda phase: phase.rank)
     required_approval_ids = []
     prechecked_approvals = []
     for idx, phase in enumerate(initial_phases):
-      for av in phase.approval_values:
+      for av in avs_by_phase_id[phase.phase_id]:
         prechecked_approvals.append('%d_phase_%d' % (av.approval_id, idx))
         if av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW:
           required_approval_ids.append(av.approval_id)
@@ -165,7 +171,8 @@ class TemplateDetail(servlet.Servlet):
           mr, urls.ADMIN_TEMPLATES, deleted=1, ts=int(time.time()))
 
     (admin_ids, owner_id, component_ids,
-     field_values, phases) = template_helpers.GetTemplateInfoFromParsed(
+     field_values, phases,
+     approvals) = template_helpers.GetTemplateInfoFromParsed(
          mr, self.services, parsed, config)
 
     if mr.errors.AnyErrors():
@@ -213,7 +220,7 @@ class TemplateDetail(servlet.Servlet):
         owner_defaults_to_member=parsed.owner_defaults_to_member,
         component_required=parsed.component_required, owner_id=owner_id,
         labels=labels, component_ids=component_ids, admin_ids=admin_ids,
-        field_values=field_values, phases=phases)
+        field_values=field_values, phases=phases, approval_values=approvals)
 
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.TEMPLATE_DETAIL, template=template.name,
