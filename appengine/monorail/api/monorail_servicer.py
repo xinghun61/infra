@@ -3,6 +3,7 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
+import functools
 import logging
 import sys
 import time
@@ -26,6 +27,16 @@ def ConvertPRPCStatusToHTTPStatus(context):
   return server._PRPC_TO_HTTP_STATUS.get(context._code, 500)
 
 
+def PRPCMethod(func):
+  @functools.wraps(func)
+  def wrapper(self, request, prpc_context, cnxn=None, auth=None):
+    return self.Run(
+        func, request, prpc_context, cnxn=cnxn, auth=auth)
+
+  wrapper.wrapped = func
+  return wrapper
+
+
 class MonorailServicer(object):
   """Abstract base class for API servicers.
   """
@@ -38,12 +49,12 @@ class MonorailServicer(object):
       self.rate_limiter = None
 
   def Run(
-      self, do_method, request, prpc_context,
+      self, handler, request, prpc_context,
       cnxn=None, auth=None, perms=None, start_time=None, end_time=None):
     """Run a Do* method in an API context.
 
     Args:
-      do_method: API Do* method to call with MonorailContext and request.
+      handler: API handler method to call with MonorailContext and request.
       request: API Request proto object.
       prpc_context: pRPC context object with status code.
       cnxn: Optional connection to SQL database.
@@ -53,7 +64,7 @@ class MonorailServicer(object):
       end_time: Int timestamp passed in during testing.
 
     Returns:
-      The response proto returned from the do_method or None if that
+      The response proto returned from the handler or None if that
       method raised an exception that we handle.
 
     Raises:
@@ -78,7 +89,7 @@ class MonorailServicer(object):
       if not perms:
         mc.LookupLoggedInUserPerms(self.GetRequestProject(mc.cnxn, request))
       self.AssertBaseChecks(mc, request)
-      response = do_method(mc, request)
+      response = handler(self, mc, request)
 
     except Exception as e:
       if not self.ProcessException(e, prpc_context):

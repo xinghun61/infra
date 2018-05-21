@@ -71,11 +71,8 @@ class TestableServicer(monorail_servicer.MonorailServicer):
     self.seen_mc = None
     self.seen_request = None
 
-  def CalcSomething(self, request, prpc_context, cnxn=None, auth=None):
-    return self.Run(self.DoCalcSomething, request, prpc_context,
-                    cnxn=cnxn, auth=auth)
-
-  def DoCalcSomething(self, mc, request):
+  @monorail_servicer.PRPCMethod
+  def CalcSomething(self, mc, request):
     """Raise the test exception, or return what we got for verification."""
     self.was_called = True
     self.seen_mc = mc
@@ -122,8 +119,9 @@ class MonorailServicerTest(unittest.TestCase):
     self.mox.ReplayAll()
 
   def testRun_SiteWide_Normal(self):
-    """Calling the API method calls the Do* method, which keeps status OK."""
+    """Calling the handler through the decorator."""
     self.SetUpRecordMonitoringStats()
+    # pylint: disable=unexpected-keyword-arg
     response = self.svcr.CalcSomething(
         self.request, self.prpc_context, cnxn=self.cnxn, auth=self.auth)
     self.assertIsNone(self.svcr.seen_mc.cnxn)  # Because of CleanUp().
@@ -140,17 +138,19 @@ class MonorailServicerTest(unittest.TestCase):
     """If we reject the request, give PERMISSION_DENIED."""
     self.auth.user_pb.banned = 'Spammer'
     self.SetUpRecordMonitoringStats()
+    # pylint: disable=unexpected-keyword-arg
     self.svcr.CalcSomething(
         self.request, self.prpc_context, cnxn=self.cnxn, auth=self.auth)
     self.assertFalse(self.svcr.was_called)
     self.assertEqual(
         codes.StatusCode.PERMISSION_DENIED, self.prpc_context._code)
 
-  def testRun_DoMethodErrorResponse(self):
-    """An expected exception in the Do* method causes an error status."""
+  def testRun_HandlerErrorResponse(self):
+    """An expected exception in the method causes an error status."""
     self.SetUpRecordMonitoringStats()
     # pylint: disable=attribute-defined-outside-init
     self.request.exc_class = exceptions.NoSuchUserException
+    # pylint: disable=unexpected-keyword-arg
     response = self.svcr.CalcSomething(
         self.request, self.prpc_context, cnxn=self.cnxn, auth=self.auth)
     self.assertTrue(self.svcr.was_called)
@@ -160,8 +160,8 @@ class MonorailServicerTest(unittest.TestCase):
     self.assertIsNone(response)
     self.assertEqual(codes.StatusCode.NOT_FOUND, self.prpc_context._code)
 
-  def testRun_DoMethodProgrammingError(self):
-    """An unexception in the Do* method is re-raised."""
+  def testRun_HandlerProgrammingError(self):
+    """An unexception in the handler method is re-raised."""
     self.SetUpRecordMonitoringStats()
     # pylint: disable=attribute-defined-outside-init
     self.request.exc_class = NotImplementedError

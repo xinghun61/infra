@@ -43,47 +43,24 @@ class ProjectsServicerTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
-  def testListProjects(self):
-    """API call to ListProjects() can reach Do* method."""
-    request = projects_pb2.ListProjectsRequest()
-    response = self.projects_svcr.ListProjects(
-        request, self.prpc_context, cnxn=self.cnxn,
-        auth=authdata.AuthData(user_id=111L, email='owner@example.com'))
-    self.assertEqual(codes.StatusCode.OK, self.prpc_context._code)
-    self.assertEqual(2, len(response.projects))
+  def CallWrapped(self, wrapped_handler, *args, **kwargs):
+    return wrapped_handler.wrapped(self.projects_svcr, *args, **kwargs)
 
   def testDoListProjects_Normal(self):
     """We can get a list of all projects on the site."""
     request = projects_pb2.ListProjectsRequest()
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    response = self.projects_svcr.DoListProjects(mc, request)
+    response = self.CallWrapped(self.projects_svcr.ListProjects, mc, request)
     self.assertEqual(2, len(response.projects))
-
-  def testUpdateProjectConfiguredLabels(self):
-    """API call to UpdateProjectConfiguredLabels can reach Do* method."""
-    request = projects_pb2.UpdateProjectConfiguredLabelsRequest(project='proj')
-    response = self.projects_svcr.UpdateProjectConfiguredLabels(
-        request, self.prpc_context, cnxn=self.cnxn,
-        auth=authdata.AuthData(user_id=111L, email='owner@example.com'))
-    self.assertEqual(codes.StatusCode.OK, self.prpc_context._code)
-    self.assertEqual(4, len(response.labels))
 
   def testDoUpdateProjectConfiguredLabels_Normal(self):
     """We can replace all label definitions in a project."""
     request = projects_pb2.UpdateProjectConfiguredLabelsRequest(project='proj')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    response = self.projects_svcr.DoUpdateProjectConfiguredLabels(mc, request)
-    self.assertEqual(4, len(response.labels))
-
-  def testPatchProjectConfiguredLabels(self):
-    """API call PatchProjectConfiguredLabels can reach Do* method."""
-    request = projects_pb2.PatchProjectConfiguredLabelsRequest(project='proj')
-    response = self.projects_svcr.PatchProjectConfiguredLabels(
-        request, self.prpc_context,
-        auth=authdata.AuthData(user_id=111L, email='owner@example.com'))
-    self.assertEqual(codes.StatusCode.OK, self.prpc_context._code)
+    response = self.CallWrapped(
+        self.projects_svcr.UpdateProjectConfiguredLabels, mc, request)
     self.assertEqual(4, len(response.labels))
 
   def testDoPatchProjectConfiguredLabels_Normal(self):
@@ -91,5 +68,6 @@ class ProjectsServicerTest(unittest.TestCase):
     request = projects_pb2.PatchProjectConfiguredLabelsRequest(project='proj')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    response = self.projects_svcr.DoPatchProjectConfiguredLabels(mc, request)
+    response = self.CallWrapped(
+        self.projects_svcr.PatchProjectConfiguredLabels, mc, request)
     self.assertEqual(4, len(response.labels))

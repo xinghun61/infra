@@ -43,20 +43,13 @@ class UsersServicerTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
-  def testGetUsers(self):
-    """API call to GetUsers can reach the Do* method."""
-    self.assertIsNone(self.users_svcr.rate_limiter)
-    request = users_pb2.GetUserRequest(email='test@example.com')
-    response = self.users_svcr.GetUser(
-        request, self.prpc_context, cnxn=self.cnxn,
-        auth=authdata.AuthData(user_id=111L, email='owner@example.com'))
-    self.assertEqual(codes.StatusCode.OK, self.prpc_context._code)
-    self.assertEqual(hash('test@example.com'), response.id)
+  def CallWrapped(self, wrapped_handler, *args, **kwargs):
+    return wrapped_handler.wrapped(self.users_svcr, *args, **kwargs)
 
-  def testDoGetUsers_Normal(self):
+  def testGetUsers_Normal(self):
     """We can get a user by email address."""
     request = users_pb2.GetUserRequest(email='test@example.com')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    response = self.users_svcr.DoGetUser(mc, request)
+    response = self.CallWrapped(self.users_svcr.GetUser, mc, request)
     self.assertEqual(hash('test@example.com'), response.id)

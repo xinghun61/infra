@@ -11,19 +11,15 @@ from api.api_proto import users_prpc_pb2
 class UsersServicer(monorail_servicer.MonorailServicer):
   """Handle API requests related to User objects.
 
-  Each API request is implemented with a one-line "Run" method that matches
-  the method defined in the .proto file, and a Do* method that:
-  does any request-specific validation, uses work_env to safely operate on
-  business objects, and returns a response proto.
+  Each API request is implemented with a method as defined in the
+  .proto file that does any request-specific validation, uses work_env
+  to safely operate on business objects, and returns a response proto.
   """
 
   DESCRIPTION = users_prpc_pb2.UsersServiceDescription
 
-  def GetUser(self, request, prpc_context, cnxn=None, auth=None):
-    return self.Run(self.DoGetUser, request, prpc_context,
-                    cnxn=cnxn, auth=auth)
-
-  def DoGetUser(self, _mc, request):
+  @monorail_servicer.PRPCMethod
+  def GetUser(self, _mc, request):
     # Do any request-specific validation:
     # None.
 
