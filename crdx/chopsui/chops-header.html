@@ -16,12 +16,6 @@
         align-items: center;
         z-index: 100;
       }
-      #headerTitle {
-        font-size: 18px;
-        display: flex;
-        align-items: center;
-        @apply --chops-header-title-theme;
-      }
       a {
         color: var(--chops-header-text-color);
         text-decoration: none;
@@ -29,11 +23,18 @@
       a:hover {
         text-decoration: underline;
       }
+      #headerTitle {
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        @apply --chops-header-title-theme;
+      }
       #headerTitle img {
         height: 32px;
         width: 32px;
         font-size: 10px;
         overflow: hidden;
+        margin: 0;
       }
       #headerTitle small {
         font-size: 14px;

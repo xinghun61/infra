@@ -1,5 +1,4 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../paper-tooltip/paper-tooltip.html">
 <script src="../moment/min/moment.min.js"></script>
 <script src="../moment-timezone/builds/moment-timezone-with-data.min.js"></script>
 
@@ -8,11 +7,10 @@
     <style>
     </style>
     <template is="dom-if" if="[[!short]]">
-      [[_fmtDate]] ([[_computeRelativeTime(date)]])
+      [[_formattedDate]] ([[_computeRelativeTime(date)]])
     </template>
-    <template is="dom-if" if="[[short]]">
+    <template is="dom-if" if="[[short]]" title="[[_formattedDate]]">
       [[_computeRelativeTime(date)]]
-      <paper-tooltip>[[_fmtDate]]</paper-tooltip>
     </template>
   </template>
   <script>
@@ -33,7 +31,10 @@
       static get properties() {
         return {
           /** The javascript Date object, which is stored in UTC, to be processed. */
-          date: Object,
+          date: {
+            type: Object,
+            value: () => (new Date()),
+          },
           /** When true, a shorter version of the date will be displayed. */
           short: {
             type: Boolean,
@@ -42,10 +43,10 @@
           /** The format of the date. */
           dateFormat: {
             type: String,
-            value: "ddd D MMM 'YY, h:mm a z",
+            value: "ddd, D MMM YYYY, h:mm a z",
           },
           /** The formatted date. */
-          _fmtDate: {
+          _formattedDate: {
             type: String,
             computed: '_computeDisplayedTime(date, dateFormat)',
           },

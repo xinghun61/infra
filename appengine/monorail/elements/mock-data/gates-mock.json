@@ -1,7 +1,8 @@
 [
   {
     "gateName": "Beta",
-    "milestone": "Approved 66",
+    "target": 67,
+    "status": "Approved",
     "approvals": [
       {
         "title": "Privacy",
@@ -27,7 +28,7 @@
         ],
         "users": [
           {
-            "name": "Approver(s)",
+            "name": "Approvers",
             "values": [
               "approver@chromium.org",
               "privacy@chromium.org"
@@ -59,8 +60,9 @@
         ],
         "users": [
           {
-            "name": "Approver(s)",
+            "name": "Approvers",
             "values": [
+              "security@chromium.org",
               "approver@chromium.org",
               "approver-group@chromium.org"
             ]
@@ -95,8 +97,9 @@
         ],
         "users": [
           {
-            "name": "Approver(s)",
+            "name": "Approvers",
             "values": [
+              "legal@chromium.org",
               "chrome-lawyers@chromium.org"
             ]
           }
@@ -106,7 +109,8 @@
   },
   {
     "gateName": "Stable Exp",
-    "milestone": "Target 66",
+    "target": 67,
+    "status": "Target",
     "approvals": [
       {
         "title": "Test",
@@ -132,9 +136,9 @@
         ],
         "users": [
           {
-            "name": "Approver(s)",
+            "name": "Approvers",
             "values": [
-              "approver@chromium.org",
+              "test@chromium.org",
               "approver-group@chromium.org"
             ]
           }
@@ -178,9 +182,9 @@
         ],
         "users": [
           {
-            "name": "Approver(s)",
+            "name": "Approvers",
             "values": [
-              "approver@chromium.org",
+              "ux@chromium.org",
               "approver-group@chromium.org"
             ]
           }
@@ -218,9 +222,9 @@
         ],
         "users": [
           {
-            "name": "Approver(s)",
+            "name": "Approvers",
             "values": [
-              "approver@chromium.org",
+              "accessibility@chromium.org",
               "approver-group@chromium.org"
             ]
           }
@@ -251,7 +255,7 @@
         ],
         "users": [
           {
-            "name": "Approver(s)",
+            "name": "Approvers",
             "values": [
               "leadership@chromium.org"
             ]
@@ -262,7 +266,8 @@
   },
   {
     "gateName": "Stable",
-    "milestone": "Target 66",
+    "target": 67,
+    "status": "Target",
     "approvals": [
       {
         "title": "Leadership",
@@ -289,9 +294,9 @@
         ],
         "users": [
           {
-            "name": "Approver(s)",
+            "name": "Approvers",
             "values": [
-              "leadesrship@chromium.org"
+              "leadership@chromium.org"
             ]
           }
         ]

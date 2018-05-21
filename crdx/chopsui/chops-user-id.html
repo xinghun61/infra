@@ -1,5 +1,4 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 
 <dom-module id="chops-user-id">
@@ -34,8 +33,11 @@
       <template is="dom-if" if="[[!profileLink]]">
         [[userId]]
       </template>
-      <iron-icon icon="clear" hidden$="[[!removeable]]" on-click="_removeUser"></iron-icon>
-      <paper-tooltip>[[fullName]] [[email]]</paper-tooltip>
+      <iron-icon
+        icon="clear"
+        hidden$="[[!removeable]]"
+        on-click="_removeUser"
+        title="[[fullName]] [[email]]"></iron-icon>
     </span>
   </template>
   <script>
