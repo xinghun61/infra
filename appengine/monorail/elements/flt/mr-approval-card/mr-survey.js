@@ -17,7 +17,7 @@ class MrSurvey extends Polymer.Element {
     return {
       survey: String,
       surveyTemplate: String,
-      editting: {
+      editing: {
         type: Boolean,
         value: false,
       },
@@ -30,11 +30,11 @@ class MrSurvey extends Polymer.Element {
   }
 
   edit() {
-    this.editting = true;
+    this.editing = true;
   }
 
   cancel() {
-    this.editting = false;
+    this.editing = false;
   }
 
   save() {

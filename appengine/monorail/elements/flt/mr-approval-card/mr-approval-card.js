@@ -44,7 +44,7 @@ class MrApprovalCard extends Polymer.Element {
         reflectToAttribute: true,
         computed: '_computeClass(_status)',
       },
-      editting: {
+      editing: {
         type: Boolean,
         value: false,
       },
@@ -80,15 +80,15 @@ class MrApprovalCard extends Polymer.Element {
   }
 
   edit() {
-    this.editting = true;
+    this.editing = true;
   }
 
   cancel() {
-    this.editting = false;
+    this.editing = false;
   }
 
   save() {
-    this.editting = false;
+    this.editing = false;
     let newLabels = Object.assign([], this.labels);
     newLabels.forEach((l) => {
       if (l.name === 'Status') {

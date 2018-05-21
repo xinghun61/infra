@@ -95,13 +95,13 @@
         <template is="dom-if" if="[[_isApprovalOwner]]">
           <div class="approver-notice">
             You are an approver for this bit.
-            <template is="dom-if" if="[[!editting]]">
+            <template is="dom-if" if="[[!editing]]">
               <chops-button on-click="edit">
                 <iron-icon icon="create"></iron-icon>
                 Edit approval data
               </chops-button>
             </template>
-            <template is="dom-if" if="[[editting]]">
+            <template is="dom-if" if="[[editing]]">
               <div>
                 <chops-button on-click="save" class="emphasized">
                   <iron-icon icon="create"></iron-icon>
@@ -119,12 +119,12 @@
           <tr>
             <th>Status:</th>
             <td>
-              <select id="statusInput" hidden$="[[!editting]]">
+              <select id="statusInput" hidden$="[[!editing]]">
                 <template is="dom-repeat" items="[[statuses]]">
                   <option value$="[[item]]" selected$="[[_computeIsSelected(_status, item)]]">[[item]]</option>
                 </template>
               </select>
-              <span hidden$="[[editting]]">
+              <span hidden$="[[editing]]">
                 [[_status]]
               </span>
             </td>
