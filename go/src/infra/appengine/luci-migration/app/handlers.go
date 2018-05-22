@@ -382,13 +382,17 @@ func taskHandler(f func(c *router.Context) error) router.Handler {
 func parsePubSubJSON(r io.Reader, data interface{}) error {
 	var req struct {
 		Message struct {
-			Data []byte // base64 on the wire
+			Data       []byte // base64 on the wire
+			Attributes map[string]interface{}
 		}
 	}
 	if err := json.NewDecoder(r).Decode(&req); err != nil {
 		return errors.Annotate(err, "could not parse pubsub message").Err()
 	}
-
+	if v, ok := req.Message.Attributes["version"].(string); ok && v != "v1" {
+		// Ignore v2 pubsub messages. We read v1.
+		return nil
+	}
 	if err := json.Unmarshal(req.Message.Data, data); err != nil {
 		return errors.Annotate(err, "could not parse pubsub message data").Err()
 	}
