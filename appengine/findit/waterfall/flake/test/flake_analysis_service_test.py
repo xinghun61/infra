@@ -388,11 +388,11 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
       '_CheckForNewAnalysis',
       side_effect=Exception('Should bail out on android and fuchsia'))
   def testBailoutForAndroidAndFuchsia(self, *_):
-    step1 = BuildStep.Create('m.Android', 'b', 80, 's', datetime(2016, 10, 20))
-    step2 = BuildStep.Create('m', 'android t', 80, 's', datetime(2016, 10, 20))
-    step3 = BuildStep.Create('m', 'Fuchsia t', 80, 's', datetime(2016, 10, 20))
+    step1 = BuildStep.Create('m', 'Win10 Tests x64 (dbg)', 80, 's',
+                             datetime(2016, 10, 20))
+    step2 = BuildStep.Create('m', 'Fuchsia t', 80, 's', datetime(2016, 10, 20))
     request = FlakeAnalysisRequest.Create('flake', False, 123)
-    request.build_steps = [step1, step2, step3]
+    request.build_steps = [step1, step2]
 
     def FindMatchingWaterfallStep(step, _):
       step.wf_master_name = step.master_name

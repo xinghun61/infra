@@ -96,8 +96,8 @@ def _MergeNewRequestIntoExistingOne(new_request, existing_request, rerun=False):
   supported_build_step = None
   if candidate_supported_steps:
     supported_build_step = candidate_supported_steps[0]
-    existing_request.swarmed = (existing_request.swarmed or
-                                supported_build_step.swarmed)
+    existing_request.swarmed = (
+        existing_request.swarmed or supported_build_step.swarmed)
     existing_request.supported = True
     need_updating = True
 
@@ -229,13 +229,12 @@ def ScheduleAnalysisForFlake(request,
   trigger_action = 'manual' if manually_triggered else 'auto'
   flake_source = 'cq' if request.on_cq else 'waterfall'
 
-  # crbug.com/804912: temporarily bail out for android and fuchsia.
   build_steps = []
   for build_step in request.build_steps:
     step_mapper.FindMatchingWaterfallStep(build_step, request.name)
+    # crbug.com/844516: temporarily bail out for fuchsia and Win7.
     if build_step.has_matching_waterfall_step and (
-        'android' in build_step.wf_master_name.lower() or
-        'android' in build_step.wf_builder_name.lower() or
+        build_step.wf_builder_name == 'Win10 Tests x64 (dbg)' or
         'fuchsia' in build_step.wf_builder_name.lower()):
       continue
     build_steps.append(build_step)
