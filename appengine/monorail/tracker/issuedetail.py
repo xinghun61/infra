@@ -155,6 +155,13 @@ class IssueDetail(issuepeek.IssuePeek):
           # Issue is not "missing," moved, or deleted, it is just non-existent.
           return self._GetMissingIssuePageData(mr, issue_not_created=True)
 
+      if issue.approval_values:
+        logging.info(
+            'Issue contains approvals, redirecting to issue approvals page.')
+        url = framework_helpers.FormatAbsoluteURL(
+            mr, urls.ISSUE_APPROVAL, id=issue.local_id)
+        return self.redirect(url, abort=True)
+
       star_cnxn = sql.MonorailConnection()
       star_promise = framework_helpers.Promise(
           we.IsIssueStarred, issue, cnxn=star_cnxn)

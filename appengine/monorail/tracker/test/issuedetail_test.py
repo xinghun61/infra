@@ -19,6 +19,8 @@ from features import send_notifications
 from framework import authdata
 from framework import exceptions
 from framework import framework_views
+from framework import framework_helpers
+from framework import urls
 from framework import permissions
 from framework import profiler
 from framework import sorting
@@ -51,6 +53,8 @@ class IssueDetailTest(unittest.TestCase):
     self.config = tracker_pb2.ProjectIssueConfig()
     self.config.statuses_offer_merge.append('Duplicate')
     self.services.config.StoreConfig(self.cnxn, self.config)
+
+
 
   def testChooseNextPage(self):
     mr = testing_helpers.MakeMonorailRequest(
@@ -249,6 +253,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         issue=fake.IssueService(),
         issue_star=fake.IssueStarService(),
         project=fake.ProjectService(),
+        spam=fake.SpamService(),
         user=fake.UserService())
     self.project = self.services.project.TestAddProject(
       'proj', project_id=987, committer_ids=[111L])
@@ -266,6 +271,19 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
     issuedetail.GetAdjacentIssue = self.original_GetAdjacentIssue
+
+  def testGatherPageData_ApprovalRedirect(self):
+    self.servlet.redirect = mock.Mock()
+    approval_values = [tracker_pb2.ApprovalValue(approval_id=23, phase_id=1)]
+    self.issue.approval_values = approval_values
+    self.services.issue.TestAddIssue(self.issue)
+    mr = testing_helpers.MakeMonorailRequest(
+        project=self.project, path='/p/proj/issues/detail?id=%d' % self.issue.local_id)
+    mr.auth.user_id = 111L
+
+    url = framework_helpers.FormatAbsoluteURL(
+        mr, urls.ISSUE_APPROVAL, id=self.issue.local_id)
+    self.servlet.redirect.assert_called_once()
 
   def testFieldEditPermitted_NoEdit(self):
     page_perms = testing_helpers.Blank(
