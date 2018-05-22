@@ -1,3 +1,26 @@
+# Release Notes sheriff-o-matic 2018-05-22
+
+- 4 commits, 2 bugs affected since b14fa24 (2018-05-15T21:15:39Z)
+- 2 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SoM: Fix refreshing.](https://chromium-review.googlesource.com/1069549) (zhangtiff@google.com)
+- [[som] Remove unnecessary text.](https://chromium-review.googlesource.com/1067025) (seanmccullough@chromium.org)
+- [[som] Server-side pieces to render perf test artifacts.](https://chromium-review.googlesource.com/1066819) (seanmccullough@chromium.org)
+- [[som] Modify the UI to render artifact elements if present in tests.](https://chromium-review.googlesource.com/1062955) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/772212](https://crbug.com/772212)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/845476](https://crbug.com/845476)
+
+
 # Release Notes sheriff-o-matic 2018-05-15
 
 - 2 commits, 1 bugs affected since fbf9fe3 (2018-05-04T17:09:12Z)
