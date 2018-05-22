@@ -1,4 +1,3 @@
-<!-- TODO(jeffcarp): add tests for this component -->
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <dom-module id="mr-flipper">
@@ -69,27 +68,30 @@
       }
 
       fetchFlipperData() {
-        fetch(`detail/flipper${location.search}`, {
+        const options = {
           credentials: 'include',
           method: 'GET',
-        }).then((res) => res.text())
-          .then((rawDataStr) => {
-            // Strip XSSI prefix.
-            const data = JSON.parse(rawDataStr.substr(5));
-            // Add one since we display cardinal number in UI.
-            this.current = data.cur_index + 1;
-            this.totalCount = data.total_count;
-            if (data.prev_url) {
-              this.prevUrl = data.prev_url;
-            }
-            if (data.next_url) {
-              this.nextUrl = data.next_url;
-            }
-            if (this.current && this.totalCount) {
-              this.showCounts = true;
-            }
-          }
-        );
+        };
+        fetch(`detail/flipper${location.search}`, options)
+          .then(res => res.text())
+          // Strip XSSI prefix from response.
+          .then(dataStr => JSON.parse(dataStr.substr(5)))
+          .then(data => this._updateWithData(data));
+      }
+
+      _updateWithData(data) {
+        // Add one since we display cardinal number in UI.
+        this.current = data.cur_index + 1;
+        this.totalCount = data.total_count;
+        if (data.prev_url) {
+          this.prevUrl = data.prev_url;
+        }
+        if (data.next_url) {
+          this.nextUrl = data.next_url;
+        }
+        if (this.current && this.totalCount) {
+          this.showCounts = true;
+        }
       }
 
       _urlClasses(url) {

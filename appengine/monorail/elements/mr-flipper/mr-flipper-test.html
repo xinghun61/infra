@@ -1,0 +1,56 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/mr-flipper/mr-flipper.html">
+<test-fixture id="basic">
+  <template>
+    <mr-flipper></mr-flipper>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    let element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('renders', function(done) {
+      flush(() => {
+        assert.isDefined(element, 'element is defined');
+        done();
+      });
+    });
+
+    test('_updateWithData', function(done) {
+      const data = {
+        cur_index: 5,
+        total_count: 8,
+        prev_url: 'https://rutabaga/4',
+        next_url: 'https://rutabaga/6',
+      };
+      flush(() => {
+        element._updateWithData(data);
+        assert.equal(element.current, 6);
+        assert.equal(element.totalCount, 8);
+        assert.equal(element.prevUrl, 'https://rutabaga/4');
+        assert.equal(element.nextUrl, 'https://rutabaga/6');
+        assert.isTrue(element.showCounts);
+        done();
+      });
+    });
+
+    test('_urlClasses', function(done) {
+      flush(() => {
+        assert.equal(element._urlClasses('rutabaga'), '');
+        assert.equal(element._urlClasses(''), 'hidden');
+        assert.equal(element._urlClasses(), 'hidden');
+        done();
+      });
+    });
+  });
+})();
+</script>
