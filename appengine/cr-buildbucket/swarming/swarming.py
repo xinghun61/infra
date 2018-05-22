@@ -38,6 +38,7 @@ from components import auth
 from components import config as component_config
 from components import decorators
 from components import net
+from components import protoutil
 from components import utils
 from components.config import validation
 from google.appengine.api import app_identity
@@ -50,7 +51,6 @@ import webapp2
 from third_party import annotations_pb2
 
 from proto import project_config_pb2
-from proto import service_config_pb2
 from . import swarmingcfg as swarmingcfg_module
 from . import isolate
 import buildtags
@@ -59,7 +59,6 @@ import errors
 import events
 import gae_ts_mon
 import model
-import protoutil
 
 PUBSUB_TOPIC = 'swarming'
 PARAM_PROPERTIES = 'properties'
@@ -656,7 +655,6 @@ def prepare_task_def_async(build, build_number=None, fake_build=False):
   raise ndb.Return(ret)
 
 
-
 @ndb.tasklet
 def _prepare_task_def_async(build, build_number, bucket_cfg, builder_cfg,
                             settings, fake_build):
@@ -677,8 +675,8 @@ def _prepare_task_def_async(build, build_number, bucket_cfg, builder_cfg,
 
   if build_number is not None:
     build.tags.append(
-        buildtags.build_address_tag(
-            build.bucket, builder_cfg.name, build_number))
+        buildtags.build_address_tag(build.bucket, builder_cfg.name,
+                                    build_number))
 
   build.url = _generate_build_url(settings.milo_hostname, build, build_number)
 
