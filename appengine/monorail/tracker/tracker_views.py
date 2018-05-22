@@ -740,14 +740,17 @@ class FieldDefView(template_helpers.PBProxy):
       self.choices = tracker_helpers.LabelsMaskedByFields(
           config, [field_def.field_name], trim_prefix=True)
 
+    self.approvers = []
+    self.survey = ''
+    self.survey_questions = []
     if (approval_def and
         field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE):
       self.approvers = [user_views.get(approver_id) for
                              approver_id in approval_def.approver_ids]
-      self.survey = approval_def.survey
-    else:
-      self.approvers = []
-      self.survey = None
+      if approval_def.survey:
+        self.survey = approval_def.survey
+        self.survey_questions = self.survey.split('\n')
+
 
     self.docstring_short = template_helpers.FitUnsafeText(
         field_def.docstring, 200)

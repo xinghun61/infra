@@ -724,7 +724,8 @@ class FieldDefViewTest(unittest.TestCase):
     self.assertEqual(view.approval_id, 1)
     self.assertEqual(view.is_approval_subfield, ezt.boolean(True))
     self.assertEqual(view.approvers, [])
-    self.assertEqual(view.survey, None)
+    self.assertEqual(view.survey, '')
+    self.assertEqual(view.survey_questions, [])
     self.assertIsNone(view.is_phase_field)
 
   def testFieldDefView_Approval(self):
@@ -732,11 +733,27 @@ class FieldDefViewTest(unittest.TestCase):
     approver_view = framework_views.StuffUserView(
         111L, 'shouldnotmatter@ch.org', False)
     user_views = {111L: approver_view}
+
     view = tracker_views.FieldDefView(
         self.approval_fd, config,
         user_views= user_views, approval_def=self.approval_def)
     self.assertEqual(view.approvers, [approver_view])
     self.assertEqual(view.survey, self.approval_def.survey)
+    self.assertEqual(view.survey_questions, [view.survey])
+
+    self.approval_def.survey = None
+    view = tracker_views.FieldDefView(
+        self.approval_fd, config,
+        user_views= user_views, approval_def=self.approval_def)
+    self.assertEqual(view.survey, '')
+    self.assertEqual(view.survey_questions, [])
+
+    self.approval_def.survey = 'Q1\nQ2\nQ3'
+    view = tracker_views.FieldDefView(
+        self.approval_fd, config,
+        user_views= user_views, approval_def=self.approval_def)
+    self.assertEqual(view.survey, self.approval_def.survey)
+    self.assertEqual(view.survey_questions, ['Q1', 'Q2', 'Q3'])
 
 
 class IssueTemplateViewTest(unittest.TestCase):

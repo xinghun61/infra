@@ -104,7 +104,20 @@
         [end]
       </td>
     </tr>
-    [# TODO(jojwang): monorail: 3241, show approval survey]
+    <tr>
+      <th>Survey:</th>
+      <td>
+        [if-any allow_edit]
+          <textarea name="survey" rows="4" cols="75">[field_def.survey]</textarea>
+        [else]
+          <table cellspacing="4" cellpadding="0" style="padding: 2px; border:2px solid #eee">
+            [for field_def.survey_questions]
+              <tr><td>[field_def.survey_questions]</td></tr>
+            [end]
+          </table>
+        [end]
+      </td>
+    </tr>
   [else]
     <tr>
       <th>Multivalued:</th>
