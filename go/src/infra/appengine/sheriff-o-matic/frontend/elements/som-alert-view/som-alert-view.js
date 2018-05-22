@@ -159,7 +159,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
     if (this._currentAlertView == 'examineAlert') return;
 
     this.$.bugQueue.refresh();
-    this.$.masterRestarts.refresh();
     this.$.treeStatus.refresh();
     this._updateAlerts(this._alertStreams);
   }
