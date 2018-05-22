@@ -247,9 +247,12 @@ class WorkEnvTest(unittest.TestCase):
   def testCreateIssue_Normal(self):
     """We can create an issue."""
     self.SignIn(user_id=111L)
+    approval_values = [tracker_pb2.ApprovalValue(approval_id=23, phase_id=3)]
+    phases = [tracker_pb2.Phase(name='Canary', phase_id=3)]
     with self.work_env as we:
       actual_issue, comment = we.CreateIssue(
-          789, 'sum', 'New', 222L, [333L], ['Hot'], [], [], 'desc')
+          789, 'sum', 'New', 222L, [333L], ['Hot'], [], [], 'desc',
+          phases=phases, approval_values=approval_values)
     self.assertEqual(789, actual_issue.project_id)
     self.assertEqual('sum', actual_issue.summary)
     self.assertEqual('New', actual_issue.status)
@@ -258,6 +261,8 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual([333L], actual_issue.cc_ids)
     self.assertEqual([], actual_issue.field_values)
     self.assertEqual([], actual_issue.component_ids)
+    self.assertEqual(approval_values, actual_issue.approval_values)
+    self.assertEqual(phases, actual_issue.phases)
     self.assertEqual('desc', comment.content)
     loaded_comments = self.services.issue.GetCommentsForIssue(
         self.cnxn, actual_issue.issue_id)

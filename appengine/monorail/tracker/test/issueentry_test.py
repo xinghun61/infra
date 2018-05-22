@@ -352,6 +352,19 @@ class IssueEntryTest(unittest.TestCase):
     self.assertEqual('Not in your hotlist(s): U1:H2', mr.errors.hotlists)
     self.assertIsNone(url)
 
+  def testAttachDefaultApprovers(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.approval_defs = [
+        tracker_pb2.ApprovalDef(
+            approval_id=23, approver_ids=[222L], survey='Question?'),
+        tracker_pb2.ApprovalDef(
+            approval_id=24, approver_ids=[111L], survey='Question?')]
+    approval_values = [tracker_pb2.ApprovalValue(
+         approval_id=24, phase_id=1,
+         status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
+    issueentry._AttachDefaultApprovers(config, approval_values)
+    self.assertEqual(approval_values[0].approver_ids, [111L])
+
   # TODO(aneeshm): add a test for the ambiguous hotlist name case; it works
   # correctly when tested locally, but for some reason doesn't in the test
   # environment. Probably a result of some quirk in fake.py?

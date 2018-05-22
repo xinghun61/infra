@@ -377,9 +377,20 @@ class IssueServiceTest(unittest.TestCase):
     approval_values = [av_23, av_24]
     av_rows = [(23, 78901, 1, 'needs_review', None, None),
                (24, 78901, 1, 'not_set', None, None)]
+    ad_23 = tracker_pb2.ApprovalDef(
+        approval_id=23, approver_ids=[111L], survey='Question?')
+    ad_24 = tracker_pb2.ApprovalDef(
+        approval_id=24, approver_ids=[111L], survey='Question?')
+    config = self.services.config.GetProjectConfig(
+        self.cnxn, 789)
+    config.approval_defs.extend([ad_23, ad_24])
+    self.services.config.StoreConfig(self.cnxn, config)
+
     self.SetUpAllocateNextLocalID(789, None, None)
     self.SetUpInsertIssue(av_rows=av_rows)
     self.SetUpInsertComment(7890101, is_description=True)
+    self.SetUpInsertComment(7890101, is_description=True, approval_id=23, content='<b>Question?</b>')
+    self.SetUpInsertComment(7890101, is_description=True, approval_id=24, content='<b>Question?</b>')
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), self.reporter, False).AndReturn(
         self.classifierResult(0.0))
@@ -1493,10 +1504,11 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def SetUpInsertComment(
-      self, comment_id, is_spam=False, is_description=False, approval_id=None):
+      self, comment_id, is_spam=False, is_description=False, approval_id=None, content=None):
+    content = content or 'content'
     commentcontent_id = comment_id * 10
     self.services.issue.commentcontent_tbl.InsertRow(
-        self.cnxn, content='content',
+        self.cnxn, content=content,
         inbound_message=None, commit=False).AndReturn(commentcontent_id)
     self.services.issue.comment_tbl.InsertRow(
         self.cnxn, issue_id=78901, created=self.now, project_id=789,

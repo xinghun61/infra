@@ -379,7 +379,7 @@ class WorkEnv(object):
   def CreateIssue(
       self, project_id, summary, status, owner_id, cc_ids, labels,
       field_values, component_ids, marked_description, blocked_on=None,
-      blocking=None, attachments=None, phases=None):
+      blocking=None, attachments=None, phases=None, approval_values=None):
     """Create and store a new issue with all the given information.
 
     Args:
@@ -396,7 +396,8 @@ class WorkEnv(object):
       blocking: list of issue_ids that this issue blocks.
       attachments: [(filename, contents, mimetype),...] attachments uploaded at
           the time the comment was made.
-      phases: list of Milestone PBs.
+      phases: list of Phase PBs.
+      approval_values: list of ApprovalValue PBs.
 
     Returns:
       A tuple (newly created Issue, Comment PB for the description).
@@ -410,7 +411,8 @@ class WorkEnv(object):
           self.mr.cnxn, self.services, project_id, summary, status,
           owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
           marked_description, blocked_on=blocked_on, blocking=blocking,
-          attachments=attachments, index_now=False, phases=phases)
+          attachments=attachments, index_now=False, phases=phases,
+          approval_values=approval_values)
       logging.info('created issue %r in project %r', new_local_id, project_id)
 
     with self.mr.profiler.Phase('following up after issue creation'):

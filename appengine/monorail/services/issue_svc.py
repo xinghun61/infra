@@ -623,10 +623,30 @@ class IssueService(object):
     logging.info('classified new issue as %s' % predicted_label)
     self.spam_labels.increment({'type': predicted_label})
 
+    # Create approval surveys
+    approval_comments = []
+    if approval_values:
+      approval_defs_by_id = {ad.approval_id: ad for ad in config.approval_defs}
+      for av in approval_values:
+        ad = approval_defs_by_id.get(av.approval_id)
+        if ad:
+          survey = ''
+          if ad.survey:
+            questions = ad.survey.split('\n')
+            survey = '\n'.join(['<b>' + q + '</b>' for q in questions])
+          approval_comments.append(self._MakeIssueComment(
+              project_id, reporter_id, survey, timestamp=timestamp, is_description=True,
+              approval_id=ad.approval_id))
+        else:
+          logging.info('Could not find ApprovalDef with approval_id %r', av.approval_id)
+
     issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
     issue_id = self.InsertIssue(cnxn, issue)
     comment.issue_id = issue_id
     self.InsertComment(cnxn, comment)
+    for approval_comment in approval_comments:
+      approval_comment.issue_id = issue_id
+      self.InsertComment(cnxn, approval_comment)
 
     issue.issue_id = issue_id
 

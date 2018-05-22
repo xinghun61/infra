@@ -318,19 +318,28 @@ class IssueEntry(servlet.Servlet):
                 attachment_bytes_used=new_bytes_used)
 
           template_content = ''
+          phases = None
+          tmpl_approval_values = []
           for wkp in project_templates:
             if wkp.name == parsed.template_name:
               template_content = wkp.content
+              phases = wkp.phases
+              tmpl_approval_values = wkp.approval_values or []
           marked_description = tracker_helpers.MarkupDescriptionOnInput(
               parsed.comment, template_content)
           has_star = 'star' in post_data and post_data['star'] == '1'
+
+          approval_values = tmpl_approval_values[:]
+          if approval_values:
+            _AttachDefaultApprovers(config, approval_values)
 
           issue, comment = we.CreateIssue(
               mr.project_id, parsed.summary, parsed.status,
               parsed.users.owner_id, parsed.users.cc_ids, labels, field_values,
               component_ids, marked_description,
               blocked_on=parsed.blocked_on.iids,
-              blocking=parsed.blocking.iids, attachments=parsed.attachments)
+              blocking=parsed.blocking.iids, attachments=parsed.attachments,
+              approval_values=approval_values, phases=phases)
 
           if has_star:
             we.StarIssue(issue, True)
@@ -377,6 +386,17 @@ class IssueEntry(servlet.Servlet):
     # format a redirect url
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.ISSUE_DETAIL, id=issue.local_id)
+
+
+def _AttachDefaultApprovers(config, approval_values):
+  approval_defs_by_id = {ad.approval_id: ad for ad in config.approval_defs}
+  for av in approval_values:
+    ad = approval_defs_by_id.get(av.approval_id)
+    if ad:
+      av.approver_ids = ad.approver_ids[:]
+    else:
+      logging.info('ApprovalDef with approval_id %r could not be found', av.approval_id)
+
 
 def _MatchesTemplate(content, project_templates):
     content = content.strip(string.whitespace)
