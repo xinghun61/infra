@@ -61,7 +61,7 @@ class TemplateCreate(servlet.Servlet):
     if any(fv.field_def.is_approval_subfield for fv in field_views):
       approval_subfields_present = True
 
-    initial_phases = [tracker_pb2.Phase()] * 6
+    initial_phases = [tracker_pb2.Phase()] * template_helpers.MAX_NUM_PHASES
     return {
         'admin_tab_mode': self._PROCESS_SUBTAB,
         'allow_edit': ezt.boolean(True),

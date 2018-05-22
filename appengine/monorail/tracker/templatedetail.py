@@ -107,7 +107,8 @@ class TemplateDetail(servlet.Servlet):
         prechecked_approvals.append('%d_phase_%d' % (av.approval_id, idx))
         if av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW:
           required_approval_ids.append(av.approval_id)
-    initial_phases.extend([tracker_pb2.Phase()] * (6 - len(template.phases)))
+    initial_phases.extend([tracker_pb2.Phase()] * (
+        template_helpers.MAX_NUM_PHASES - len(template.phases)))
 
     allow_edit = permissions.CanEditTemplate(
         mr.auth.effective_ids, mr.perms, mr.project, template)

@@ -3,27 +3,27 @@
   <tr>
     <th>Approval</th>
     <th style="color:grey">omit</th>
-    <th><input name="phase_0" placeholder="Gate Name" size="7"></th>
-    <th><input name="phase_1" size="7"></th>
-    <th><input name="phase_2" size="7"></th>
-    <th><input name="phase_3" size="7"></th>
-    <th><input name="phase_4" size="7"></th>
-    <th><input name="phase_5" size="7"></th>
+    <th><input name="phase_0" placeholder="Gate Name" size="7" [if-any allow_edit][else]disabled[end]></th>
+    <th><input name="phase_1" size="7" [if-any allow_edit][else]disabled[end]></th>
+    <th><input name="phase_2" size="7" [if-any allow_edit][else]disabled[end]></th>
+    <th><input name="phase_3" size="7" [if-any allow_edit][else]disabled[end]></th>
+    <th><input name="phase_4" size="7" [if-any allow_edit][else]disabled[end]></th>
+    <th><input name="phase_5" size="7" [if-any allow_edit][else]disabled[end]></th>
   </tr>
   [for approvals]
     <tr>
       <td nowrap><b>[approvals.field_name]</b>
         <br>
-        <span><input id="[approvals.field_id]_required" name="approval_[approvals.field_id]_required" type="checkbox">
+        <span><input id="[approvals.field_id]_required" name="approval_[approvals.field_id]_required" type="checkbox" [if-any allow_edit][else]disabled[end]>
         <label for="[approvals.field_id]_required">Require review</label></span>
       </td>
-      <td><input name="approval_[approvals.field_id]" value="omit" type="radio" checked="checked"></td>
-      <td><input id="[approvals.field_id]_phase_0" name="approval_[approvals.field_id]" value="phase_0" type="radio"></td>
-      <td><input id="[approvals.field_id]_phase_1" name="approval_[approvals.field_id]" value="phase_1" type="radio"></td>
-      <td><input id="[approvals.field_id]_phase_2" name="approval_[approvals.field_id]" value="phase_2" type="radio"></td>
-      <td><input id="[approvals.field_id]_phase_3" name="approval_[approvals.field_id]" value="phase_3" type="radio"></td>
-      <td><input id="[approvals.field_id]_phase_4" name="approval_[approvals.field_id]" value="phase_4" type="radio"></td>
-      <td><input id="[approvals.field_id]_phase_5" name="approval_[approvals.field_id]" value="phase_5" type="radio"></td>
+      <td><input name="approval_[approvals.field_id]" value="omit" type="radio" checked="checked" [if-any allow_edit][else]disabled[end]></td>
+      <td><input id="[approvals.field_id]_phase_0" name="approval_[approvals.field_id]" value="phase_0" type="radio" [if-any allow_edit][else]disabled[end]></td>
+      <td><input id="[approvals.field_id]_phase_1" name="approval_[approvals.field_id]" value="phase_1" type="radio" [if-any allow_edit][else]disabled[end]></td>
+      <td><input id="[approvals.field_id]_phase_2" name="approval_[approvals.field_id]" value="phase_2" type="radio" [if-any allow_edit][else]disabled[end]></td>
+      <td><input id="[approvals.field_id]_phase_3" name="approval_[approvals.field_id]" value="phase_3" type="radio" [if-any allow_edit][else]disabled[end]></td>
+      <td><input id="[approvals.field_id]_phase_4" name="approval_[approvals.field_id]" value="phase_4" type="radio" [if-any allow_edit][else]disabled[end]></td>
+      <td><input id="[approvals.field_id]_phase_5" name="approval_[approvals.field_id]" value="phase_5" type="radio" [if-any allow_edit][else]disabled[end]></td>
     </tr>
   [end]
 </table>

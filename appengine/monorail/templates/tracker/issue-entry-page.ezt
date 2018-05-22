@@ -182,6 +182,15 @@
        </tr>
       </tbody>
 
+     [if-any approvals]
+       <tr>
+         <th>Launch Gates:</th>
+         <td colspan="7">
+           [include "launch-gates-widget.ezt"]
+         </td>
+       </tr>
+     [end]
+
      [if-any show_captcha]
       <tr><th style="white-space:nowrap">Human Verification:</th>
        <td colspan="2">
@@ -213,6 +222,10 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
+
+  if ($('launch-gates-table')) {
+    $('launch-gates-table').classList.remove('hidden');
+  }
 
   if ($("template_name")) {
     $("template_name").addEventListener("change", function(event) {

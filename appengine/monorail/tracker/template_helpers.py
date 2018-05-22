@@ -17,6 +17,7 @@ from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from proto import tracker_pb2
 
+MAX_NUM_PHASES = 6
 
 PHASE_INPUTS = [
     'phase_0', 'phase_1', 'phase_2', 'phase_3', 'phase_4', 'phase_5']

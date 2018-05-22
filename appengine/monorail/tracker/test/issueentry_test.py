@@ -20,6 +20,8 @@ from services import template_svc
 from testing import fake
 from testing import testing_helpers
 from tracker import issueentry
+from tracker import tracker_bizobj
+from proto import tracker_pb2
 
 
 class IssueEntryTest(unittest.TestCase):
@@ -114,6 +116,41 @@ class IssueEntryTest(unittest.TestCase):
     self.assertEqual(page_data['initial_status'], 'New')
     self.assertTrue(page_data['clear_summary_on_click'])
     self.assertTrue(page_data['must_edit_summary'])
+
+  def testGatherPageData_Approvals(self):
+     user = self.services.user.TestAddUser('user@invalid', 100)
+     mr = testing_helpers.MakeMonorailRequest(
+         path='/p/proj/issues/entry', services=self.services)
+     mr.auth.user_view = framework_views.MakeUserView(
+         'cnxn', self.services.user, 100)
+
+     self.mox.StubOutWithMock(self.services.user, 'GetUser')
+     self.services.user.GetUser(
+         mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
+     self.mox.ReplayAll()
+     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+     config.field_defs = [
+         tracker_bizobj.MakeFieldDef(
+             24, mr.project_id, 'UXReview',
+             tracker_pb2.FieldTypes.APPROVAL_TYPE, None, '', False, False,
+             False, None, None, '', False, '', '',
+             tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)]
+     self.services.config.StoreConfig(mr.cnxn, config)
+     templates = testing_helpers.DefaultTemplates()
+     templates[1].phases = [tracker_pb2.Phase(
+         phase_id=1, rank=4, name='Canary')]
+     templates[1].approval_values = [tracker_pb2.ApprovalValue(
+         approval_id=24, phase_id=1,
+         status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
+     self.services.template.GetProjectTemplates.return_value = templates
+
+     page_data = self.servlet.GatherPageData(mr)
+     self.mox.VerifyAll()
+     self.assertEqual(page_data['approvals'][0].field_name, 'UXReview')
+     self.assertEqual(page_data['initial_phases'][0],
+                           tracker_pb2.Phase(phase_id=1, name='Canary', rank=4))
+     self.assertEqual(page_data['prechecked_approvals'], ['24_phase_0'])
+     self.assertEqual(page_data['required_approval_ids'], [24])
 
   def testGatherPageData_DefaultOwnerAvailability(self):
     user = self.services.user.TestAddUser('user@invalid', 100)

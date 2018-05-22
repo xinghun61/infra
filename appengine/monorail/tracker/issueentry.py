@@ -5,6 +5,7 @@
 
 """Servlet that implements the entry of new issues."""
 
+import collections
 import difflib
 import logging
 import string
@@ -24,11 +25,12 @@ from framework import template_helpers
 from framework import urls
 from third_party import ezt
 from tracker import field_helpers
+from tracker import template_helpers as issue_tmpl_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
 from tracker import tracker_views
-
+from proto import tracker_pb2
 
 PLACEHOLDER_SUMMARY = 'Enter one-line summary'
 
@@ -142,6 +144,27 @@ class IssueEntry(servlet.Servlet):
     field_views = tracker_views.MakeAllFieldValueViews(
         config, link_or_template_labels, [], wkp.field_values, field_user_views)
 
+    # Compute Phases and Approvals
+    phases = wkp.phases[:]
+    avs_by_phase_id = collections.defaultdict(list)
+    approval_ids = []
+    # TODO(jojwang):monorail:3756 look out for phase-less approvals.
+    for av in wkp.approval_values:
+      approval_ids.append(av.approval_id)
+      if av.phase_id:
+        avs_by_phase_id[av.phase_id].append(av)
+
+    phases.sort(key=lambda phase: phase.rank)
+    required_approval_ids = []
+    prechecked_approvals = []
+    for idx, phase in enumerate(phases):
+      for av in avs_by_phase_id[phase.phase_id]:
+        prechecked_approvals.append('%d_phase_%d' % (av.approval_id, idx))
+        if av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW:
+          required_approval_ids.append(av.approval_id)
+    phases.extend([tracker_pb2.Phase()] * (
+        issue_tmpl_helpers.MAX_NUM_PHASES - len(wkp.phases)))
+
     page_data = {
         'issue_tab_mode': 'issueEntry',
         'initial_summary': initial_summary,
@@ -177,6 +200,15 @@ class IssueEntry(servlet.Servlet):
 
         'restrict_to_known': ezt.boolean(restrict_to_known),
         'is_member': ezt.boolean(is_member),
+        # The following are necessary for displaying phases that come with
+        # this template. These are read-only.
+        'allow_edit': ezt.boolean(False),
+        'initial_phases': phases,
+        'approvals': [view for view in field_views if view.field_id in
+                      approval_ids],
+        'prechecked_approvals': prechecked_approvals,
+        'required_approval_ids': required_approval_ids,
+        # TODO(jowjang): monorail:3263, Show approval subfield values.
         }
 
     return page_data
