@@ -211,3 +211,54 @@ indexes:
   ancestor: yes
   properties:
   - name: time_reported
+
+# Isolated build index
+- kind: IsolatedTarget
+  properties:
+  - name: bucket
+  - name: builder_name
+  - name: gitiles_host
+  - name: gitiles_project
+  - name: gitiles_ref
+  - name: has_patch
+  - name: luci_project
+  - name: target_name
+  - name: commit_position
+    direction: desc
+
+- kind: IsolatedTarget
+  properties:
+  - name: bucket
+  - name: builder_name
+  - name: gitiles_host
+  - name: gitiles_project
+  - name: gitiles_ref
+  - name: has_patch
+  - name: luci_project
+  - name: target_name
+  - name: commit_position
+    direction: asc
+
+- kind: IsolatedTarget
+  properties:
+  - name: builder_name
+  - name: gitiles_host
+  - name: gitiles_project
+  - name: gitiles_ref
+  - name: has_patch
+  - name: master_name
+  - name: target_name
+  - name: commit_position
+    direction: asc
+
+- kind: IsolatedTarget
+  properties:
+  - name: builder_name
+  - name: gitiles_host
+  - name: gitiles_project
+  - name: gitiles_ref
+  - name: has_patch
+  - name: master_name
+  - name: target_name
+  - name: commit_position
+    direction: desc
