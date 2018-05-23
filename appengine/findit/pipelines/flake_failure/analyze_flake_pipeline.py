@@ -76,24 +76,18 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
   input_type = AnalyzeFlakeInput
 
   def OnAbort(self, parameters):
-    analysis_urlsafe_key = parameters.analysis_urlsafe_key
-    analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
-    assert analysis
-
-    flake_analysis_util.ReportError(analysis_urlsafe_key)
-    analysis.Update(end_time=time_util.GetUTCNow())
+    flake_analysis_util.ReportPotentialErrorToCompleteAnalysis(
+        parameters.analysis_urlsafe_key)
     monitoring.aborted_pipelines.increment({'type': 'flake'})
 
   def RunImpl(self, parameters):
     analysis_urlsafe_key = parameters.analysis_urlsafe_key
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
-    assert analysis
+    assert analysis, 'Can not retrieve analysis entry from datastore'
     if analysis.request_time:
       monitoring.pipeline_times.increment_by(
           int((time_util.GetUTCNow() - analysis.request_time).total_seconds()),
-          {
-              'type': 'flake'
-          })
+          {'type': 'flake'})
 
     commit_position_parameters = parameters.analyze_commit_position_parameters
     commit_position_to_analyze = commit_position_parameters.next_commit_position

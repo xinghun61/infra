@@ -84,15 +84,17 @@ def CalculateDelaySecondsBetweenRetries(retries, manually_triggered):
     return delay_seconds
 
 
-@ndb.transactional
-def ReportError(analysis_urlsafe_key):
+def ReportPotentialErrorToCompleteAnalysis(analysis_urlsafe_key):
   """Gets and sets an error for a MasterFlakeAnalysis."""
   analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
   assert analysis
 
   if not analysis.completed:
     error = analysis.GetError()
-    analysis.Update(status=analysis_status.ERROR, error=error)
+    analysis.Update(
+        status=analysis_status.ERROR,
+        error=error,
+        end_time=time_util.GetUTCNow())
 
 
 def ShouldThrottleAnalysis():

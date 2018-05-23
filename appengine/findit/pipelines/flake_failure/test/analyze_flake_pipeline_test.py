@@ -301,7 +301,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
     mocked_revision.assert_called_once_with(mock.ANY, 1000)
 
-  @mock.patch.object(flake_analysis_util, 'ReportError')
+  @mock.patch.object(flake_analysis_util,
+                     'ReportPotentialErrorToCompleteAnalysis')
   def testOnAbort(self, mocked_error):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()

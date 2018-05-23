@@ -87,7 +87,8 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
-    flake_analysis_util.ReportError(analysis.key.urlsafe())
+    flake_analysis_util.ReportPotentialErrorToCompleteAnalysis(
+        analysis.key.urlsafe())
 
     analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
     self.assertIsNotNone(analysis.error)
@@ -97,7 +98,8 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.Save()
 
-    flake_analysis_util.ReportError(analysis.key.urlsafe())
+    flake_analysis_util.ReportPotentialErrorToCompleteAnalysis(
+        analysis.key.urlsafe())
 
     analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
     self.assertIsNone(analysis.error)
@@ -105,17 +107,13 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
   def testShouldThrottleAnalysis(self):
     self.UpdateUnitTestConfigSettings(
         config_property='check_flake_settings',
-        override_data={
-            'throttle_flake_analyses': True
-        })
+        override_data={'throttle_flake_analyses': True})
     self.assertTrue(flake_analysis_util.ShouldThrottleAnalysis())
 
   def testShouldThrottleAnalysisNotThrottled(self):
     self.UpdateUnitTestConfigSettings(
         config_property='check_flake_settings',
-        override_data={
-            'throttle_flake_analyses': False
-        })
+        override_data={'throttle_flake_analyses': False})
     self.assertFalse(flake_analysis_util.ShouldThrottleAnalysis())
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
