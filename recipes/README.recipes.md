@@ -548,7 +548,7 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 &mdash; **def [RunSteps](/recipes/recipes/wpt_export.py#29)(api):**
 ### *recipes* / [wpt\_import](/recipes/recipes/wpt_import.py)
 
-[DEPS](/recipes/recipes/wpt_import.py#17): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/wpt_import.py#17): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 Imports changes from web-platform-tests into Chromium.
 
@@ -559,9 +559,9 @@ before committing to Chromium.
 
 See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 
-&mdash; **def [RunSteps](/recipes/recipes/wpt_import.py#31)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/wpt_import.py#32)(api):**
 
-&mdash; **def [git\_cl\_issue\_link](/recipes/recipes/wpt_import.py#74)(api):**
+&mdash; **def [git\_cl\_issue\_link](/recipes/recipes/wpt_import.py#96)(api):**
 
 Runs a step which adds a link to the current CL if there is one.
 

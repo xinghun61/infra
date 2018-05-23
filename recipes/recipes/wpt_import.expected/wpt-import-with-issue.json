@@ -206,6 +206,32 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[HOME]/.netrc",
+      "[TMP_BASE]/home_tmp_1/.netrc"
+    ],
+    "infra_step": true,
+    "name": "copy credentials to dummy HOME"
+  },
+  {
+    "cmd": [
+      "git",
+      "config",
+      "--global",
+      "http.cookiefile",
+      "[TMP_BASE]/home_tmp_1/.gitcookies"
+    ],
+    "cwd": "[TMP_BASE]/home_tmp_1",
+    "infra_step": true,
+    "name": "set git config http.cookiefile in dummy HOME"
+  },
+  {
+    "cmd": [
       "vpython",
       "-u",
       "[START_DIR]/src/third_party/blink/tools/wpt_import.py",
@@ -220,9 +246,23 @@
     ],
     "cwd": "[START_DIR]/src/third_party/blink",
     "env": {
+      "HOME": "[TMP_BASE]/home_tmp_1",
       "SKIP_GCE_AUTH_FOR_GIT": "1"
     },
     "name": "Import changes from WPT to Chromium"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[TMP_BASE]/home_tmp_1"
+    ],
+    "infra_step": true,
+    "name": "rmtree dummy HOME"
   },
   {
     "cmd": [
