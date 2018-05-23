@@ -149,7 +149,8 @@ class IssueEntry(servlet.Servlet):
     avs_by_phase_id = collections.defaultdict(list)
     approval_ids = []
     # TODO(jojwang):monorail:3756 look out for phase-less approvals.
-    for av in wkp.approval_values:
+    # TODO(jrobbins): remove "or []" after next release.
+    for av in wkp.approval_values or []:
       approval_ids.append(av.approval_id)
       if av.phase_id:
         avs_by_phase_id[av.phase_id].append(av)
