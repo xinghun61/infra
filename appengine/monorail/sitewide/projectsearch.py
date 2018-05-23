@@ -42,12 +42,15 @@ class ProjectSearchPipeline(object):
       cnxn: connection to SQL database.
       list_page_url: string page URL for prev and next links.
     """
-    self.pagination = paginate.ArtifactPagination(
-        self.mr, self.allowed_project_ids, self.default_results_per_page,
-        list_page_url)
-    with self.mr.profiler.Phase('getting projects on current pagination page'):
+    with self.mr.profiler.Phase('getting all projects'):
       project_dict = self.services.project.GetProjects(
-          cnxn, self.pagination.visible_results)
-      self.visible_results = [
-          project_dict[pid] for pid in self.pagination.visible_results]
-      logging.info('visible_results is %r', self.visible_results)
+          cnxn, self.allowed_project_ids)
+      project_list = sorted(
+          project_dict.values(),
+          key=lambda p: p.project_name)
+      logging.info('project_list is %r', project_list)
+
+    self.pagination = paginate.ArtifactPagination(
+        self.mr, project_list, self.default_results_per_page,
+        list_page_url)
+    self.visible_results = self.pagination.visible_results
