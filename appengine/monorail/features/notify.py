@@ -746,23 +746,25 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
       user_ids_from_fields):
     """Formulate emails to be sent."""
 
+    # TODO(jojwang): avoid need to make MonorailRequest and autolinker
+    # for comment_view OR make make tracker_views._ParseTextRuns public
+    # and only pass text_runs to email_data.
+    mr = monorailrequest.MonorailRequest(self.services)
+    mr.project_name = project.project_name
+    mr.project = project
+    autolinker = autolink.Autolink()
+
     approval_url = framework_helpers.IssueCommentURL(
         hostport, project, issue.local_id, is_approval=True)
 
-    # TODO(jojwang): monorail:3588, currently one approver/status change
-    # creates one comment with one amendment and no content. If this changes,
-    # this will have to be redone.
-    try:
-      amendment = comment.amendments[0]
-    except IndexError:
-      raise exceptions.NoSuchAmendmentException()
+    comment_view = tracker_views.IssueCommentView(
+        project.project_name, comment, users_by_id, autolinker, {}, mr, issue)
 
     commenter_view = users_by_id[comment.user_id]
     email_data = {
-        'amendment': tracker_views.AmendmentView(
-            amendment, users_by_id, project.project_name),
         'approval_url': approval_url,
         'commenter': commenter_view,
+        'comment': comment_view,
         }
     subject = 'issue %s in %s: %s' % (
         issue.local_id, project.project_name, issue.summary)
@@ -770,7 +772,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     body = notify_helpers._TruncateBody(email_body)
 
     recipient_ids = self._GetApprovalEmailRecipients(
-        approval_value, amendment, issue, user_ids_from_fields,
+        approval_value, comment, issue, user_ids_from_fields,
         omit_ids=[comment.user_id])
 
     email_tasks = []
@@ -787,21 +789,32 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     return email_tasks
 
   def _GetApprovalEmailRecipients(
-      self, approval_value, amendment, issue, user_ids_from_fields,
+      self, approval_value, comment, issue, user_ids_from_fields,
       omit_ids=None):
+    # NOTE: user_ids_from_fields are all the notify_on=ANY_COMMENT users.
+    # However, these users will still be excluded from notifications
+    # meant for approvers only eg. (status changed to REVIEW_REQUESTED).
     recipient_ids = []
-    if amendment.custom_field_name is 'Status':
-      if approval_value.status is tracker_pb2.ApprovalStatus.REVIEW_REQUESTED:
-        recipient_ids = approval_value.approver_ids
-      else:
-        recipient_ids.extend([issue.owner_id])
-        recipient_ids.extend(user_ids_from_fields)
+    if comment.amendments:
+      for amendment in comment.amendments:
+        if amendment.custom_field_name is 'Status':
+          if (approval_value.status is
+              tracker_pb2.ApprovalStatus.REVIEW_REQUESTED):
+            recipient_ids = approval_value.approver_ids
+          else:
+            recipient_ids.extend([issue.owner_id])
+            recipient_ids.extend(user_ids_from_fields)
 
-    elif amendment.custom_field_name is 'Approvers':
+        elif amendment.custom_field_name is 'Approvers':
+          recipient_ids.extend(approval_value.approver_ids)
+          recipient_ids.append(issue.owner_id)
+          recipient_ids.extend(user_ids_from_fields)
+          recipient_ids.extend(amendment.removed_user_ids)
+    else:
+      # No amendments, just a comment.
       recipient_ids.extend(approval_value.approver_ids)
       recipient_ids.append(issue.owner_id)
       recipient_ids.extend(user_ids_from_fields)
-      recipient_ids.extend(amendment.removed_user_ids)
 
     if omit_ids:
       recipient_ids = [rid for rid in recipient_ids if rid not in omit_ids]

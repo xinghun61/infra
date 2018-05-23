@@ -1,17 +1,18 @@
 [approval_url]
 [commenter.display_name] made the following updates:
-[is amendment.field_name "Status"]
-Status: [amendment.newvalue]
 
 Please check the issue and take appropriate action.
 
-[end]
+[if-any comment.amendments][#
+  ]Updates:
+[#][for comment.amendments]      [comment.amendments.field_name]: [format "raw"][comment.amendments.newvalue][end]
+[#][end][end]
 
-[is amendment.field_name "Approvers"]
-Approvers: [amendment.newvalue]
-
+[if-any comment.content][#
+  ][for comment.text_runs][include "render-plain-text.ezt" comment.text_runs][end][#
+][else](No comment was entered for this change.)[#
+][end]
 
 You are receiving this message because you are listed as the TL/PM
 on this issue or you are/were listed as an approver for this
 issue's approval.
-[end]

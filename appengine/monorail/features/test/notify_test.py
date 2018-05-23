@@ -272,7 +272,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
 
     comment = tracker_pb2.IssueComment(
         project_id=12345, user_id=9, issue_id=approval_issue.issue_id,
-        amendments=[amend])
+        amendments=[amend], timestamp=1234567890, content='just a comment.')
     self.services.issue.TestAddComment(comment, approval_issue.local_id)
 
     task = notify.NotifyApprovalChangeTask(
@@ -289,6 +289,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         method='POST',
         services=self.services)
     result = task.HandleRequest(mr)
+    self.assertTrue('just a comment' in result['tasks'][0]['body'])
     self.assertTrue('Approvers: -approver' in result['tasks'][0]['body'])
     self.assertItemsEqual(
         ['user@example.com', 'approver_old@example.com',
@@ -302,25 +303,38 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     approval_value = tracker_pb2.ApprovalValue(
         approver_ids=[222L, 333L],
         status=tracker_pb2.ApprovalStatus.APPROVED)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, user_id=1, issue_id=78901)
 
+    # Comment with not amendments notifies everyone.
+    rids = task._GetApprovalEmailRecipients(
+        approval_value, comment, issue, [777L, 888L])
+    self.assertItemsEqual(rids, [111L, 222L, 333L, 777L, 888L])
+
+    # New APPROVED status notifies owners and any_comment users.
     amendment = tracker_bizobj.MakeApprovalStatusAmendment(
         tracker_pb2.ApprovalStatus.APPROVED)
+    comment.amendments = [amendment]
     rids = task._GetApprovalEmailRecipients(
-        approval_value, amendment, issue, [777L, 888L])
+        approval_value, comment, issue, [777L, 888L])
     self.assertItemsEqual(rids, [111L, 777L, 888L])
 
+    # New REVIEW_REQUESTED status notifies approvers.
     approval_value.status = tracker_pb2.ApprovalStatus.REVIEW_REQUESTED
     amendment = tracker_bizobj.MakeApprovalStatusAmendment(
         tracker_pb2.ApprovalStatus.REVIEW_REQUESTED)
+    comment.amendments = [amendment]
     rids = task._GetApprovalEmailRecipients(
-        approval_value, amendment, issue, [777L, 888L])
+        approval_value, comment, issue, [777L, 888L])
     self.assertItemsEqual(rids, [222L, 333L])
 
+    # Approvers change notifies everyone.
     approval_value.approver_ids = [333L, 555L]
     amendment = tracker_bizobj.MakeApprovalApproversAmendment(
         [222L], [555L])
+    comment.amendments = [amendment]
     rids = task._GetApprovalEmailRecipients(
-        approval_value, amendment, issue, [777L], omit_ids=[444L, 333L])
+        approval_value, comment, issue, [777L], omit_ids=[444L, 333L])
     self.assertItemsEqual(rids, [111L, 222L, 555L, 777L])
 
   def testOutboundEmailTask_Normal(self):
