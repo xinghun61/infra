@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package='buildbucket.v2',
     syntax='proto3',
     serialized_pb=_b(
-        '\n\nstep.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0c\x63ommon.proto\"\x83\x02\n\x04Step\x12\x0c\n\x04name\x18\x01 \x01(\t\x12.\n\nstart_time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12&\n\x06status\x18\x04 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12&\n\x04logs\x18\x05 \x03(\x0b\x32\x18.buildbucket.v2.Step.Log\x12\x18\n\x10summary_markdown\x18\x07 \x01(\t\x1a%\n\x03Log\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08view_url\x18\x02 \x01(\tb\x06proto3'
+        '\n\nstep.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0c\x63ommon.proto\"\x83\x02\n\x04Step\x12\x0c\n\x04name\x18\x01 \x01(\t\x12.\n\nstart_time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12&\n\x06status\x18\x04 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12&\n\x04logs\x18\x05 \x03(\x0b\x32\x18.buildbucket.v2.Step.Log\x12\x18\n\x10summary_markdown\x18\x07 \x01(\t\x1a%\n\x03Log\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08view_url\x18\x02 \x01(\tB6Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     ),
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
@@ -226,4 +226,8 @@ Step = _reflection.GeneratedProtocolMessageType(
 _sym_db.RegisterMessage(Step)
 _sym_db.RegisterMessage(Step.Log)
 
+DESCRIPTOR.has_options = True
+DESCRIPTOR._options = _descriptor._ParseOptions(
+    descriptor_pb2.FileOptions(),
+    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'))
 # @@protoc_insertion_point(module_scope)

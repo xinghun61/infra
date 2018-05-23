@@ -108,4 +108,4 @@ class BuildsApi(object):
 
     if not build:
       raise NotFound()
-    return to_build_messages([build], req.build_fields)[0]
+    return to_build_messages([build], req.fields)[0]

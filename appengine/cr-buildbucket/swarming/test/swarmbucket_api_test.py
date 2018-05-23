@@ -10,9 +10,9 @@ from components import auth_testing
 from testing_utils import testing
 import mock
 
-from proto import project_config_pb2
-from test import config_test
+from proto.config import project_config_pb2
 from swarming import swarmbucket_api
+from test import config_test
 from test.test_util import future
 import config
 import model

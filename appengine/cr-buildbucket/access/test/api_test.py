@@ -8,8 +8,8 @@ from testing_utils import testing
 
 from access import access_pb2
 from access import api
+from proto.config import project_config_pb2
 import acl
-from proto import project_config_pb2
 
 # Alias here for convenience.
 Acl = project_config_pb2.Acl

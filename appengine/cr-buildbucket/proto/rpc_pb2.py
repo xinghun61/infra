@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package='buildbucket.v2',
     syntax='proto3',
     serialized_pb=_b(
-        '\n\trpc.proto\x12\x0e\x62uildbucket.v2\x1a google/protobuf/field_mask.proto\x1a\x0b\x62uild.proto\"\x92\x01\n\x0fGetBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12+\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x1a.buildbucket.v2.Builder.ID\x12\x14\n\x0c\x62uild_number\x18\x03 \x01(\x05\x12\x30\n\x0c\x62uild_fields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask2N\n\x06\x42uilds\x12\x44\n\x08GetBuild\x12\x1f.buildbucket.v2.GetBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x62\x06proto3'
+        '\n\trpc.proto\x12\x0e\x62uildbucket.v2\x1a google/protobuf/field_mask.proto\x1a\x0b\x62uild.proto\"\x8c\x01\n\x0fGetBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12+\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x1a.buildbucket.v2.Builder.ID\x12\x14\n\x0c\x62uild_number\x18\x03 \x01(\x05\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask2N\n\x06\x42uilds\x12\x44\n\x08GetBuild\x12\x1f.buildbucket.v2.GetBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     ),
     dependencies=[
         google_dot_protobuf_dot_field__mask__pb2.DESCRIPTOR,
@@ -84,8 +84,8 @@ _GETBUILDREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             options=None),
         _descriptor.FieldDescriptor(
-            name='build_fields',
-            full_name='buildbucket.v2.GetBuildRequest.build_fields',
+            name='fields',
+            full_name='buildbucket.v2.GetBuildRequest.fields',
             index=3,
             number=100,
             type=11,
@@ -109,12 +109,12 @@ _GETBUILDREQUEST = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=77,
-    serialized_end=223,
+    serialized_end=217,
 )
 
 _GETBUILDREQUEST.fields_by_name['builder'].message_type = build__pb2._BUILDER_ID
 _GETBUILDREQUEST.fields_by_name[
-    'build_fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 DESCRIPTOR.message_types_by_name['GetBuildRequest'] = _GETBUILDREQUEST
 
 GetBuildRequest = _reflection.GeneratedProtocolMessageType(
@@ -127,4 +127,8 @@ GetBuildRequest = _reflection.GeneratedProtocolMessageType(
     ))
 _sym_db.RegisterMessage(GetBuildRequest)
 
+DESCRIPTOR.has_options = True
+DESCRIPTOR._options = _descriptor._ParseOptions(
+    descriptor_pb2.FileOptions(),
+    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'))
 # @@protoc_insertion_point(module_scope)

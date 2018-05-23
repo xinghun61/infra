@@ -22,7 +22,7 @@ from components import net
 from components import utils
 import gae_ts_mon
 
-from proto import project_config_pb2
+from proto.config import project_config_pb2
 import acl
 import buildtags
 import config

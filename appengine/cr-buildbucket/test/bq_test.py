@@ -18,7 +18,7 @@ import mock
 from third_party import annotations_pb2
 
 from proto import build_pb2
-from proto import service_config_pb2
+from proto.config import service_config_pb2
 from test import test_util
 import bq
 import bqh

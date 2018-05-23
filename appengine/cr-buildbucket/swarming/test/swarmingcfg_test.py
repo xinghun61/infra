@@ -12,8 +12,8 @@ from google import protobuf
 from components import config as config_component
 from testing_utils import testing
 
-from proto import project_config_pb2
-from proto import service_config_pb2
+from proto.config import project_config_pb2
+from proto.config import service_config_pb2
 from test import config_test
 from swarming import swarmingcfg
 

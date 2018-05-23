@@ -11,7 +11,7 @@ import string
 
 from components.config import validation
 
-from proto import project_config_pb2
+from proto.config import project_config_pb2
 
 DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 # Copied from

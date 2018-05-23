@@ -24,10 +24,10 @@ import webapp2
 
 from third_party import annotations_pb2
 
+from proto.config import project_config_pb2
+from proto.config import service_config_pb2
 from swarming import isolate
 from swarming import swarming
-from proto import project_config_pb2
-from proto import service_config_pb2
 from test.test_util import future, future_exception, ununicide
 import errors
 import model

@@ -4,5 +4,4 @@
 
 compile:
 	echo Compiling .proto files
-	protoc --python_out=. --prpc-python_out=. *.proto
-	yapf -i *_pb2.py
+	./compile.py

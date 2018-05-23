@@ -13,8 +13,8 @@ from google.appengine.ext import ndb
 from testing_utils import testing
 import mock
 
-from proto import project_config_pb2
-from proto import service_config_pb2
+from proto.config import project_config_pb2
+from proto.config import service_config_pb2
 from test.test_util import future, future_exception
 import acl
 import api_common

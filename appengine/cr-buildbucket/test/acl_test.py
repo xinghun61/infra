@@ -6,7 +6,7 @@ from components import auth
 from testing_utils import testing
 import mock
 
-from proto import project_config_pb2
+from proto.config import project_config_pb2
 from test.test_util import future
 import acl
 import config

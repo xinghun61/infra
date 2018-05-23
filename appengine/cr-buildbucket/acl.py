@@ -8,11 +8,14 @@ See Acl message in proto/project_config.proto.
 
 import collections
 import logging
+
 from google.appengine.api import memcache
 from google.appengine.ext import ndb
+
 from components import auth
+
 from protorpc import messages
-from proto import project_config_pb2
+from proto.config import project_config_pb2
 import config
 import errors
 

@@ -23,8 +23,8 @@ from components import config
 from components import gitiles
 from components.config import validation
 
-from proto import project_config_pb2
-from proto import service_config_pb2
+from proto.config import project_config_pb2
+from proto.config import service_config_pb2
 import errors
 
 CURRENT_BUCKET_SCHEMA_VERSION = 4

@@ -50,9 +50,9 @@ import webapp2
 
 from third_party import annotations_pb2
 
-from proto import project_config_pb2
-from . import swarmingcfg as swarmingcfg_module
 from . import isolate
+from . import swarmingcfg as swarmingcfg_module
+from proto.config import project_config_pb2
 import buildtags
 import config
 import errors
