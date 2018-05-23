@@ -31,11 +31,9 @@ DEPS = [
 def RunSteps(api):
   api.gclient.set_config('chromium')
   api.bot_update.ensure_checkout()
-  api.git('config', '--global', 'user.name',
-          'Chromium WPT Sync',
+  api.git('config', 'user.name', 'Chromium WPT Sync',
           name='set git config user.name')
-  api.git('config', '--global', 'user.email',
-          'blink-w3c-test-autoroller@chromium.org',
+  api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
           name='set git config user.email')
   blink_dir = api.path['checkout'].join('third_party', 'blink')
 
@@ -65,7 +63,8 @@ def RunSteps(api):
       '/creds/service_accounts/service-account-wpt-monorail-api.json',
     ]
     try:
-      with api.context(cwd=blink_dir):
+      # Override GCE creds detection of git-cl.
+      with api.context(cwd=blink_dir, env={'SKIP_GCE_AUTH_FOR_GIT': '1'}):
         api.python('Import changes from WPT to Chromium', script, args,
                    venv=True)
     finally:
