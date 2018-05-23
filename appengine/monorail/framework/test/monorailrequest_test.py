@@ -5,11 +5,14 @@
 
 """Unit tests for the monorailrequest module."""
 
+import endpoints
+import mock
 import re
 import unittest
 
 import mox
 
+from google.appengine.api import oauth
 from google.appengine.api import users
 
 import webapp2
@@ -53,6 +56,71 @@ class HostportReTest(unittest.TestCase):
     for hostport in test_data:
       self.assertFalse(monorailrequest._HOSTPORT_RE.match(hostport),
                        msg='Incorrectly accepted %r' % hostport)
+
+
+class MonorailApiRequestUnitTest(unittest.TestCase):
+
+  def setUp(self):
+    self.cnxn = 'fake cnxn'
+    self.services = service_manager.Services(
+        config=fake.ConfigService(),
+        issue=fake.IssueService(),
+        project=fake.ProjectService(),
+        user=fake.UserService(),
+        usergroup=fake.UserGroupService())
+    self.project = self.services.project.TestAddProject(
+        'proj', project_id=789)
+    self.services.user.TestAddUser('requester@example.com', 111L)
+    self.issue = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L)
+    self.services.issue.TestAddIssue(self.issue)
+
+    self.patcher_1 = mock.patch('endpoints.get_current_user')
+    self.mock_endpoints_gcu = self.patcher_1.start()
+    self.mock_endpoints_gcu.return_value = None
+    self.patcher_2 = mock.patch('google.appengine.api.oauth.get_current_user')
+    self.mock_oauth_gcu = self.patcher_2.start()
+    self.mock_oauth_gcu.return_value = testing_helpers.Blank(
+        email=lambda: 'requester@example.com')
+
+  def tearDown(self):
+    mock.patch.stopall()
+
+  def testInit_NoProjectIssueOrViewedUser(self):
+    request = testing_helpers.Blank()
+    mar = monorailrequest.MonorailApiRequest(
+        request, self.services, cnxn=self.cnxn)
+    self.assertIsNone(mar.project)
+    self.assertIsNone(mar.issue)
+
+  def testInit_WithProject(self):
+    request = testing_helpers.Blank(projectId='proj')
+    mar = monorailrequest.MonorailApiRequest(
+        request, self.services, cnxn=self.cnxn)
+    self.assertEqual(self.project, mar.project)
+    self.assertIsNone(mar.issue)
+
+  def testInit_WithProjectAndIssue(self):
+    request = testing_helpers.Blank(
+        projectId='proj', issueId=1)
+    mar = monorailrequest.MonorailApiRequest(
+        request, self.services, cnxn=self.cnxn)
+    self.assertEqual(self.project, mar.project)
+    self.assertEqual(self.issue, mar.issue)
+
+  def testGetParam_Normal(self):
+    request = testing_helpers.Blank(q='owner:me')
+    mar = monorailrequest.MonorailApiRequest(
+        request, self.services, cnxn=self.cnxn)
+    self.assertEqual(None, mar.GetParam('unknown'))
+    self.assertEqual(100, mar.GetParam('num'))
+    self.assertEqual('owner:me', mar.GetParam('q'))
+
+    request = testing_helpers.Blank(q='owner:me', maxResults=200)
+    mar = monorailrequest.MonorailApiRequest(
+        request, self.services, cnxn=self.cnxn)
+    self.assertEqual(200, mar.GetParam('num'))
+
 
 class MonorailRequestUnitTest(unittest.TestCase):
 

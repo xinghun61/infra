@@ -101,6 +101,9 @@ class MonorailApiRequest(MonorailRequestBase):
         if hasattr(request, 'additionalProject'):
           self.params['projects'].extend(request.additionalProject)
           self.params['projects'] = list(set(self.params['projects']))
+    self.LookupLoggedInUserPerms(self.project)
+    if hasattr(request, 'projectId'):
+      with work_env.WorkEnv(self, services) as we:
         if hasattr(request, 'issueId'):
           self.issue = we.GetIssueByLocalID(
               self.project_id, request.issueId, use_cache=False)
@@ -119,7 +122,6 @@ class MonorailApiRequest(MonorailRequestBase):
             self.cnxn, self.viewed_username, services)
       except exceptions.NoSuchUserException:
         self.viewed_user_auth = None
-    self.LookupLoggedInUserPerms(self.project)
 
     # Build q.
     if hasattr(request, 'q') and request.q:
