@@ -23,7 +23,7 @@
 
 <tbody class="collapse"> [# collapse/expand controls undelete-able comments]
  <tr>
-  <td class="vt" style="width:12em; padding:0" rowspan="3" id="issuemeta">
+  <td class="vt" style="width:12em; padding:0" rowspan="2" id="issuemeta">
    <div id="meta-float">
 
    <div class="h3 issuemetaheader">
@@ -68,7 +68,7 @@
   </div> [# end meta-float]
 
   </td>
-  <td width="90%" class="vt issueheader" style="border-right: 2px solid white">
+  <td width="90%" class="vt issueheader" id="summary-float">
     [if-any issue.flagged_spam_bool]
      <div id="spam_banner">You have reported this issue as spam. To undo this, click the flag again.</div>
     [else][if-any issue.is_spam_bool]
@@ -79,14 +79,21 @@
         >report incorrect spam classification</a>.
       </div>
     [end][end]
-    <h1 class="not_styled_as_heading"><span class="h3" style="padding-left:4px">[issue.summary]</span></h1>
-  </td>
-  <td class="issueheader">
-    <mr-flipper />
-  </td>
- </tr>
- <tr>
-  <td class="issueheader" style="padding-left:6px; border-right: 2px solid white">
+
+   <div id="flipper-box">
+    <div>
+     <mr-flipper />
+    </div>
+    <div>
+      [if-any back_to_list_url]
+        <a href="[back_to_list_url]">Back to list</a>
+      [end]
+    </div>
+   </div>
+
+   <div>
+    <h1 class="not_styled_as_heading"><span class="h3" style="padding:4px">[issue.summary]</span></h1>
+    <div style="padding:4px">
       [if-any first_description.creator_role]<span class="role_label">Project Member</span>[end]
       Reported by
       [include "../framework/user-link.ezt" first_description.creator],
@@ -100,11 +107,7 @@
         <a href="#" id="edit-desc-btn">Edit description</a>
       </div>
       [end][# page_perms.EditIssue]
-  </td>
-  <td align="center" nowrap="nowrap" class="issueheader">
-   [if-any back_to_list_url]
-     <a href="[back_to_list_url]">Back to list</a>
-   [end]
+    </div>
   </td>
  </tr>
 

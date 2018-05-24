@@ -43,9 +43,12 @@ pre.prettyprint {
     white-space: nowrap;
 }
 
-#meta-float {
+#meta-float, #summary-float {
     position: sticky;
     top: 0;
+}
+#summary-float {
+    border-bottom: 2px solid white;
 }
 #meta-float th { white-space: nowrap; }
 .labelediting input { margin: 0 3px 4px 0; }
@@ -55,6 +58,18 @@ pre.prettyprint {
 .inplace input { width: 100%; }
 .inplace td { border: 0; }
 td.issueheader { background: #e5ecf9; }
+
+#flipper-box {
+    float: right;
+    height: 3em;
+    padding: 4px;
+    border-left: 2px solid white
+}
+
+#flipper-box div {
+    text-align: center;
+    padding: 3px;
+}
 
 .closed_colors td.issueheader, .closed_colors td.issueheader a {
     background: #888; color: #fff;
