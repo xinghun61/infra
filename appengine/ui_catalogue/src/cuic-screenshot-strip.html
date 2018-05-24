@@ -1,0 +1,57 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../bower_components/iron-list/iron-list.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-if.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="cuic-screenshots.html">
+<link rel="import" href="cuic-single-screenshot.html">
+
+<dom-module id="cuic-screenshot-strip">
+  <template>
+    <style>
+      #screenshots-container{
+        padding-top: 132px;
+      }
+
+      h1 {
+        font-weight: 400;
+        font-size: 24px;
+        margin: 0.4em 0;
+      }
+
+      iron-list {
+        height: 100vh;
+        width: 100vw;
+      }
+   </style>
+
+    <cuic-screenshots
+        id="screenshots"
+        on-screenshots-received="handleScreenshotsReceived_">
+    </cuic-screenshots>
+    <div id="screenshots-container">
+      <template id="has-screenshots" is="dom-if" if="[[screenshots_.length]]">
+        <iron-list
+            items="[[screenshots_]]"
+            as="item"
+            grid
+            scroll-target="document">
+          <template>
+            <cuic-single-screenshot
+                label="[[item.label]]"
+                key="[[item.key]]">
+            </cuic-single-screenshot>
+          </template>
+        </iron-list>
+      </template>
+      <template id="no-screenshots" is="dom-if" if="[[!screenshots_.length]]">
+          <h1 title="No screenshots match the selected tags and filters">No Screenshots</h1>
+      </template>
+    </div>
+  </template>
+  <script src="cuic-screenshot-strip.js"></script>
+</dom-module>

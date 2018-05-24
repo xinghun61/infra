@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+  <dom-module id="fake-cuic-selector-set"></dom-module>
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Selector Test</title>
+
+    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../bower_components/web-component-tester/browser.js"></script>
+    <script src="promise_utils.js"></script>
+
+    <link rel="import" href="../src/cuic-shot-selector.html">
+  </head>
+
+  <body>
+    <!-- Fix the position to prevent the test system from introducing extra padding. Needed for
+         sideways scrolling tests -->
+    <test-fixture id="selector-test-fixture" style="position: fixed; left:0">
+      <template>
+        <cuic-shot-selector></cuic-shot-selector>
+      </template>
+    </test-fixture>
+    <script src="cuic-shot-selector_test.js"></script>
+  </body>
+</html>

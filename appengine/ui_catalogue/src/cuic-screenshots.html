@@ -1,0 +1,25 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<dom-module id="cuic-screenshots">
+  <link rel="import" href="../bower_components/polymer/polymer.html">
+  <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+
+  <link rel="import" href="element-base-with-urls.html">
+
+  <template>
+    <iron-ajax
+        id="get-screenshot-list"
+        url="/service/screenshot_list"
+        handle-as="json"
+        content-type="application/json"
+        method="GET"
+        on-response="handleScreenshotListResponse_"
+        on-error="handleScreenshotListError_">
+    </iron-ajax>
+  </template>
+  <script src="cuic-screenshots.js"></script>
+</dom-module>

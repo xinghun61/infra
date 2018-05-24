@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+  <dom-module id="fake-cuic-screenshot-strip"></dom-module>
+  <dom-module id="fake-cuic-shot-selector"></dom-module>
+  <dom-module id="fake-irom-query-params"></dom-module>
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Summary View Test</title>
+
+    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../bower_components/web-component-tester/browser.js"></script>
+    <script src="promise_utils.js"></script>
+
+    <link rel="import" href="../src/cuic-summary-view.html">
+  </head>
+
+  <body>
+    <test-fixture id="summary-view-test-fixture">
+      <template>
+        <cuic-summary-view></cuic-summary-view>
+      </template>
+    </test-fixture>
+    <script src="cuic-summary-view_test.js"></script>
+  </body>
+</html>

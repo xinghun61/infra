@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <!--
+  Copyright 2018 The Chromium Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+  -->
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>ptest-element test</title>
+
+    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../bower_components/web-component-tester/browser.js"></script>
+    <script src="promise_utils.js"></script>
+
+    <link rel="import" href="../src/cuic-set-screenshot-source.html">
+  </head>
+  <body>
+    <test-fixture id="basic-test-fixture">
+      <template>
+        <cuic-set-screenshot-source></cuic-set-screenshot-source>
+      </template>
+    </test-fixture>
+
+    <script src="cuic-set-screenshot-source_test.js"></script>
+  </body>
+</html>

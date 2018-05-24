@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<dom-module id="empty-fake"></dom-module>
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>SingleScreenshot Test</title>
+
+    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../src/cuic-single-screenshot.html">
+  </head>
+
+  <body>
+    <test-fixture id="single-screenshot-test-fixture">
+      <template>
+        <cuic-single-screenshot label="Label" key="1"
+                                query_="screenshot_source='http://xxx'">
+        </cuic-single-screenshot>
+      </template>
+    </test-fixture>
+
+    <script src="cuic-single-screenshot_test.js"></script>
+  </body>
+</html>

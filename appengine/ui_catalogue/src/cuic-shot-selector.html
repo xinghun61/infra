@@ -1,0 +1,81 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="cuic-selector-set.html">
+
+<dom-module id="cuic-shot-selector">
+  <template>
+    <link rel="stylesheet" type="text/css" href="../src/cuic-shot-selector.css">
+    <cuic-selector-set id="tag-set" on-tag-change="handleTagChange_">
+    </cuic-selector-set>
+    <app-toolbar title="Only screenshots matching all the filters will be shown"
+                 id="filter-toolbar">
+      <!-- Provide filters for screenshot properties (test name etc.) -->
+      <template is="dom-repeat" items="{{menuEntries_}}">
+        <paper-dropdown-menu label="[[item.title]]" class="custom">
+          <paper-listbox slot="dropdown-content" selected="{{item.selection}}">
+            <template is="dom-repeat" items="[[item.values]]">
+              <paper-item>[[item]]</paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+      </template>
+    </app-toolbar>
+    <app-toolbar id="tag-toolbar">
+      <!-- Tag selection -->
+      <paper-item title="Only screenshots with all the required tags will be shown" id="tags-list">
+        <paper-item>
+          Required Tags:
+        </paper-item>
+        <template id="selected-tags" is="dom-repeat" items="[[selection.userTags]]">
+          <paper-item class="requiredTag">
+              <paper-item class="requiredTagText">
+                [[item]]
+              </paper-item>
+            <paper-button on-tap="removeTagTapped_">x</paper-button>
+          </paper-item>
+        </template>
+        <template id="unselected-tags" is="dom-if" if="[[userTagNames_.length]]">
+          <paper-item>
+            <paper-dropdown-menu
+                focused="{{userTagMenuFocused_}}"
+                label="Add Required Tag"
+                selected-item-label="{{newTag_}}"
+                on-focused-changed="newTagMenuFocusChange_">
+              <paper-listbox slot="dropdown-content"
+                  selected="{{newTagSelector_}}">
+                <template is="dom-repeat" items="[[userTagNames_]]">
+                  <paper-item>[[item]]</paper-item>
+                </template>
+              </paper-listbox>
+            </paper-dropdown-menu>
+          </paper-item>
+        </template>
+      </paper-item>
+    </app-toolbar>
+    <!-- Make the tag list horizontally scrollable for narrow screens -->
+    <template id="left-button-if" is="dom-if" if="[[leftButtonVisible_]]">
+      <paper-button id="left-button" on-tap="leftScrollButtonPressed_">
+        «
+      </paper-button>
+    </template>
+    <template id="right-button-if" is="dom-if" if="[[rightButtonVisible_]]">
+      <paper-button id="right-button" on-tap="rightScrollButtonPressed_">
+        »
+      </paper-button>
+    </template>
+  </template>
+  <script src="cuic-shot-selector.js"></script>
+</dom-module>

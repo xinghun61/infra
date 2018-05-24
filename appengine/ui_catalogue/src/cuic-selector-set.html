@@ -1,0 +1,28 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="element-base-with-urls.html">
+
+<dom-module id="cuic-selector-set">
+  <template>
+    <iron-ajax id="request"
+        auto
+        url="/service/selector_list"
+        id="get-selector-list"
+        handle-as="json"
+        content-type="application/json"
+        method="GET"
+        params="[[screenshotLocationParam_()]]"
+        last-response="{{taglist}}"
+        on-response="handleResponse_"
+        on-error="handleError_">
+    </iron-ajax>
+  </template>
+  <script src="cuic-selector-set.js"></script>
+</dom-module>

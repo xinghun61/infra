@@ -1,0 +1,69 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+
+<link rel="import" href="cuic-comments.html">
+<link rel="import" href="element-base-with-urls.html">
+
+<dom-module id="cuic-screenshot-view">
+  <template>
+    <style>
+      :host {
+        display: block;
+        padding: 10px;
+      }
+
+      h1 {
+        font-weight: 400;
+        font-size: 24px;
+        margin: 0.4em 0;
+      }
+    </style>
+
+    <iron-ajax
+        url="[[computeDataUrl_(key)]]"
+        id="get-screenshot-data"
+        handle-as="json"
+        content-type="application/json"
+        method="GET"
+        params="[[screenshotLocationParam_()]]"
+        on-response="handleResponse_"
+        on-error="handleError_">
+    </iron-ajax>
+    <div style="display:flex; flex:wrap; height:80vh;">
+      <iron-image
+          id="image"
+          src="[[computeScreenshotUrl_(key)]]"
+          style="margin-right:20px; flex:3;"
+          sizing="contain"
+          position="top">
+      </iron-image>
+      <div style="flex:1">
+        <h1>Filter Values</h1>
+        <template is="dom-repeat" items="[[filterValues_]]">
+            [[item.name]]: [[item.value]]<br>
+        </template>
+        <h1>User Tags</h1>
+        <template is="dom-repeat" items="[[userTags_]]">
+            [[item]]<br>
+        </template>
+        <h1>Metadata</h1>
+        <template is="dom-repeat" items="[[metadata_]]">
+            [[item.name]]: [[item.value]]<br>
+        </template>
+        <!--TODO: Reenable comments once we have worked out how to store them and completed a
+            privacy review-->
+        <!--<h1>Comments</h1>-->
+        <!--<cuic-comments key="[[key]]"
+        screenshot_source="[[screenshot_source]]"></cuic-comments>-->
+      </div>
+    </div>
+  </template>
+  <script src="cuic-screenshot-view.js"></script>
+</dom-module>

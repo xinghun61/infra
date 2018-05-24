@@ -1,0 +1,47 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="element-base-with-urls.html">
+
+<dom-module id="cuic-single-comment">
+  <template>
+    <iron-ajax
+        id="delete-comment"
+        url = "/service/[[screenshotkey]]/comment/[[comment.key]]"
+        method="DELETE"
+        params="[[screenshotLocationParam_()]]"
+        on-response = "handleDeleteResponse_"
+        on-error="handleDeleteError_">
+    </iron-ajax>
+    <iron-ajax
+        id="edit-comment"
+        url = "/service/[[screenshotkey]]/comment/[[comment.key]]"
+        method="PUT"
+        body="[[editText]]"
+        params="[[screenshotLocationParam_()]]"
+        on-response = "handleEditResponse_"
+        on-error="handleEditError_">
+    </iron-ajax>
+    <template is="dom-if" if="[[editing]]" id="editing">
+      <paper-input id="edit-input" label="Edit Comment" value="{{editText}}"></paper-input>
+      <paper-button id="save-edit" on-tap="saveEdit_">Save</paper-button>
+      <paper-button id="cancel-edit" on-tap="cancelEdit_">Cancel</paper-button>
+    </template>
+    <template is="dom-if" if="[[!editing]]" id="not-editing">
+      <p id="comment-string">[[comment.text]] ([[comment.email]])</p>
+      <template is="dom-if" if="[[comment.editable]]" id="editable">
+        <paper-button id="edit-button" on-tap="editComment_">Edit</paper-button>
+        <paper-button id="delete-button" on-tap="deleteComment_">Delete</paper-button><br>
+      </template>
+    </template>
+  </template>
+  <script src="cuic-single-comment.js"></script>
+</dom-module>

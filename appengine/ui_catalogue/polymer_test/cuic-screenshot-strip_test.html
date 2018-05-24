@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+  <dom-module id="fake-cuic-screenshots"></dom-module>
+  <dom-module id="fake-cuic-single-screenshot"></dom-module>
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Screenshot Strip Test</title>
+
+    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../bower_components/web-component-tester/browser.js"></script>
+    <script src="promise_utils.js"></script>
+
+    <link rel="import" href="../src/cuic-screenshot-strip.html">
+  </head>
+
+  <body>
+    <test-fixture id="screenshot-strip-test-fixture">
+      <template>
+        <cuic-screenshot-strip></cuic-screenshot-strip>
+      </template>
+    </test-fixture>
+    <script src="cuic-screenshot-strip_test.js"></script>
+  </body>
+</html>

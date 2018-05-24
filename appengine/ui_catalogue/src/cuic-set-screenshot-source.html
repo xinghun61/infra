@@ -1,0 +1,40 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-location/iron-location.html">
+<link rel="import" href="../bower_components/iron-location/iron-query-params.html">
+
+<dom-module id="cuic-set-screenshot-source">
+  <template>
+    <style>
+      :host {
+        display: block;
+        padding: 10px 20px;
+      }
+      #url_input {
+        width: 100%;
+      }
+    </style>
+
+    <iron-query-params
+        params-string="{{query_}}"
+        params-object="{{queryParams_}}">
+    </iron-query-params>
+    <iron-location query="{{query_}}"></iron-location>
+
+    Please enter the URL of JSON screenshot description file
+    <form title="The URL should be a link to a JSON screenshot file in Google Cloud Storage"
+          id="url_form">
+      <input id="url_input" type="url">
+      <input type="submit" value="Submit">
+    </form>
+
+  </template>
+
+  <script src="cuic-set-screenshot-source.js">
+  </script>
+</dom-module></html>

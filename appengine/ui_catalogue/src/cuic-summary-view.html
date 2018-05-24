@@ -1,0 +1,43 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/effects/waterfall.html">
+<link rel="import" href="../bower_components/iron-location/iron-location.html">
+<link rel="import" href="../bower_components/iron-location/iron-query-params.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="cuic-screenshots.html">
+<link rel="import" href="cuic-screenshot-strip.html">
+<link rel="import" href="cuic-shot-selector.html">
+
+<dom-module id="cuic-summary-view">
+  <template>
+    <style>
+       app-header {
+        background-color: #fff;
+        border-bottom: 1px solid rgba(0,0,0,0.12);
+        color: #333;
+        position: fixed;
+        z-index: 1;
+      }
+    </style>
+
+    <iron-query-params
+        id="query-params"
+        params-string="{{query_}}"
+        params-object="{{queryParams_}}">
+    </iron-query-params>
+    <iron-location query="{{query_}}"></iron-location>
+
+    <app-header slot="header" fixed effects="waterfall">
+      <cuic-shot-selector id="shot-selector" selection="{{selection_}}">
+      </cuic-shot-selector>
+    </app-header>
+    <cuic-screenshot-strip id="screenshot-strip" selection="[[selection_]]">
+    </cuic-screenshot-strip>
+  </template>
+  <script src="cuic-summary-view.js"></script>
+</dom-module>

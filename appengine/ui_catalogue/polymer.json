@@ -1,0 +1,27 @@
+{
+  "entrypoint": "index.html",
+  "shell": "src/cuic-main.html",
+  "fragments": [
+    "src/cuic-summary-view.html",
+    "src/cuic-screenshot-view.html",
+    "src/cuic-view404.html"
+  ],
+  "sources": [
+    "src/**/*",
+    "images/**/*",
+    "static/**/*",
+    "bower.json"
+  ],
+  "extraDependencies": [
+    "manifest.json",
+    "bower_components/webcomponentsjs/*.js"
+  ],
+  "lint": {
+    "rules": ["polymer-2"]
+  },
+  "builds": [
+    {
+      "preset": "es5-bundled"
+    }
+  ]
+}

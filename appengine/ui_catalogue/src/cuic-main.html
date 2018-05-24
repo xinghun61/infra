@@ -1,0 +1,54 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/neon-animation/web-animations.html">
+
+<link rel="lazy-import" href="cuic-screenshot-view.html">
+<link rel="lazy-import" href="cuic-summary-view.html">
+<link rel="lazy-import" href="cuic-view404.html">
+<link rel="lazy-import" href="cuic-set-screenshot-source.html">
+
+<dom-module id="cuic-main">
+<template>
+    <style>
+      :host {
+        --app-primary-color: #4285f4;
+        --app-secondary-color: black;
+        display: block;
+      }
+    </style>
+
+    <app-location route="{{route}}"></app-location>
+    <app-route
+        route="{{route}}"
+        pattern="[[rootPattern]]:page"
+        data="{{routeData}}"
+        query-params="{{queryParams}}"></app-route>
+
+    <iron-pages
+        id="pages"
+        selected="[[page]]"
+        attr-for-selected="name"
+        fallback-selection="cuic-view404"
+        role="main">
+      <cuic-summary-view name="cuic-summary-view" id="cuic-summary-view">
+      </cuic-summary-view>
+      <cuic-screenshot-view name="cuic-screenshot-view"
+                            id="cuic-screenshot-view"
+                            key="[[queryParams.key]]">
+      </cuic-screenshot-view>
+      <cuic-set-screenshot-source name="cuic-set-screenshot-source">
+      </cuic-set-screenshot-source>
+      <cuic-view404 name="cuic-view404"></cuic-view404>
+    </iron-pages>
+  </template>
+
+  <script src="cuic-main.js"></script>
+</dom-module>

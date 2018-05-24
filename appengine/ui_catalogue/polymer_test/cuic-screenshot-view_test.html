@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+  <dom-module id="fake-iron-image"></dom-module>
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Screenshot View Test</title>
+
+    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../bower_components/web-component-tester/browser.js"></script>
+    <script src="promise_utils.js"></script>
+
+    <link rel="import" href="../src/cuic-screenshot-view.html">
+  </head>
+
+  <body>
+    <test-fixture id="screenshot-view-test-fixture">
+      <template>
+        <cuic-screenshot-view key="23"></cuic-screenshot-view>
+      </template>
+    </test-fixture>
+    <script src="cuic-screenshot-view_test.js"></script>
+  </body>
+</html>

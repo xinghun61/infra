@@ -1,0 +1,47 @@
+<!--
+Copyright 2018 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="cuic-single-comment.html">
+
+<link rel="import" href="element-base-with-urls.html">
+
+<dom-module id="cuic-comments">
+  <template>
+    <iron-ajax
+        auto
+        url="[[computeCommentListUrl_(key)]]"
+        id="get-comments"
+        handle-as="json"
+        content-type="application/json"
+        method="GET"
+        params="[[screenshotLocationParam_()]]"
+        on-response="handleGetResponse_"
+        on-error="handleGetError_">
+    </iron-ajax>
+    <iron-ajax
+        url="[[computeCommentListUrl_(key)]]"
+        id="post-comment"
+        handle-as="text"
+        method="POST"
+        body="[[commentText_]]"
+        params="[[screenshotLocationParam_()]]"
+        on-response="handlePostResponse_"
+        on-error="handlePostError_">
+    </iron-ajax>
+    <template is="dom-repeat" items="[[comments_]]">
+      <cuic-single-comment
+          comment="[[item]]"
+          screenshotkey="[[key]]"
+          on-comments-changed="handleCommentsChanged_"></cuic-single-comment>
+    </template>
+    <paper-input id="new-comment-text" label="New Comment" value="{{commentText_}}"></paper-input>
+    <paper-button id="add-comment" on-tap="addComment_">Save comment</paper-button>
+  </template>
+  <script src="cuic-comments.js"></script>
+</dom-module>

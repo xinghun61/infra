@@ -1,0 +1,52 @@
+/*
+ * Copyright 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+paper-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  min-width: 0;
+  padding: 5px 10px;
+}
+
+.requiredTag {
+  background: #ccc;
+  margin: 0px 6px;
+  border-radius: 40px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.requiredTagText {
+  overflow: hidden;
+  min-width: 0;
+  padding: 0;
+}
+
+#tags-list {
+  padding: 0;
+}
+
+#right-button {
+  position: absolute;
+  left: calc(100vw - 50px);
+  top: 65px;
+  padding: 18px;
+  background: white;
+}
+
+#left-button {
+  position: absolute;
+  left: 0px;
+  top: 65px;
+  padding: 18px;
+  background: white;
+}
+
+#tag-toolbar {
+  padding: 0;
+}
