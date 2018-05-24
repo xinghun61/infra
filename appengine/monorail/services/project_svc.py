@@ -44,7 +44,8 @@ PROJECT_COLS = [
 USER2PROJECT_COLS = ['project_id', 'user_id', 'role_name']
 EXTRAPERM_COLS = ['project_id', 'user_id', 'perm']
 MEMBERNOTES_COLS = ['project_id', 'user_id', 'notes']
-AUTOCOMPLETEEXCLUSION_COLS = ['project_id', 'user_id']
+AUTOCOMPLETEEXCLUSION_COLS = [
+    'project_id', 'user_id', 'ac_exclude', 'no_expand']
 
 RECENT_ACTIVITY_THRESHOLD = framework_constants.SECS_PER_HOUR
 
@@ -417,6 +418,13 @@ class ProjectService(object):
     self.project_tbl.Update(cnxn, delta, project_id=project_id)
     self.project_2lc.InvalidateKeys(cnxn, [project_id])
 
+  def UpdateCachedContentTimestamp(self, cnxn, project_id, now=None):
+    now = now or int(time.time())
+    self.project_tbl.Update(
+        cnxn, {'cached_content_timestamp': now},
+        project_id=project_id, commit=False)
+    return now
+
   def UpdateProjectRoles(
       self, cnxn, project_id, owner_ids, committer_ids, contributor_ids,
       now=None):
@@ -426,10 +434,7 @@ class ProjectService(object):
     if not exists:
       raise exceptions.NoSuchProjectException()
 
-    now = now or int(time.time())
-    self.project_tbl.Update(
-        cnxn, {'cached_content_timestamp': now},
-        project_id=project_id)
+    self.UpdateCachedContentTimestamp(cnxn, project_id, now=now)
 
     self.user2project_tbl.Delete(
         cnxn, project_id=project_id, role_name='owner', commit=False)
@@ -540,11 +545,8 @@ class ProjectService(object):
         cnxn, EXTRAPERM_COLS,
         [(project_id, member_id, perm) for perm in extra_perms],
         commit=False)
-    now = now or int(time.time())
-    project.cached_content_timestamp = now
-    self.project_tbl.Update(
-        cnxn, {'cached_content_timestamp': project.cached_content_timestamp},
-        project_id=project_id, commit=False)
+    project.cached_content_timestamp = self.UpdateCachedContentTimestamp(
+        cnxn, project_id, now=now)
     cnxn.Commit()
 
     self.project_2lc.InvalidateKeys(cnxn, [project_id])
@@ -636,29 +638,39 @@ class ProjectService(object):
       project_id: int ID of the current project.
 
     Returns:
-      A list of user ids who are excluded from autocomplete list for given
-      project.
+      A pair containing: a list of user IDs who are excluded from the
+      autocomplete list for given project, and a list of group IDs to
+      not expand.
     """
-    acexclusion_rows = self.acexclusion_tbl.Select(
-        cnxn, cols=['user_id'], project_id=project_id)
-    user_ids = [row[0] for row in acexclusion_rows]
-    return user_ids
+    ac_exclusion_rows = self.acexclusion_tbl.Select(
+        cnxn, cols=['user_id'], project_id=project_id, ac_exclude=True)
+    ac_exclusion_ids = [row[0] for row in ac_exclusion_rows]
+    no_expand_rows = self.acexclusion_tbl.Select(
+        cnxn, cols=['user_id'], project_id=project_id, no_expand=True)
+    no_expand_ids = [row[0] for row in no_expand_rows]
+    return ac_exclusion_ids, no_expand_ids
 
   def UpdateProjectAutocompleteExclusion(
-      self, cnxn, project_id, member_id, exclude):
+      self, cnxn, project_id, member_id, ac_exclude, no_expand):
     """Update autocomplete exclusion for given user.
 
     Args:
       cnxn: connection to SQL database.
       project_id: int ID of the current project.
       member_id: int user ID of the user that was edited.
-      exclude: Whether this user should be excluded.
+      ac_exclude: Whether this user should be excluded.
+      no_expand: Whether this group should not be expanded.
     """
-    if exclude:
+    if ac_exclude or no_expand:
       self.acexclusion_tbl.InsertRows(
-        cnxn, AUTOCOMPLETEEXCLUSION_COLS, [(project_id, member_id)],
-        ignore=True)
+        cnxn, AUTOCOMPLETEEXCLUSION_COLS,
+        [(project_id, member_id, ac_exclude, no_expand)],
+        replace=True)
     else:
       self.acexclusion_tbl.Delete(
           cnxn, project_id=project_id, user_id=member_id)
 
+    self.UpdateCachedContentTimestamp(cnxn, project_id)
+    cnxn.Commit()
+
+    self.project_2lc.InvalidateKeys(cnxn, [project_id])

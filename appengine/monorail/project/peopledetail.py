@@ -61,17 +61,23 @@ class PeopleDetail(servlet.Servlet):
     """Build up a dictionary of data values to use when rendering the page."""
 
     member_id = self.ValidateMemberID(mr.cnxn, mr.specified_user_id, mr.project)
+    group_ids = self.services.usergroup.DetermineWhichUserIDsAreGroups(
+        mr.cnxn, [member_id])
     users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user, [member_id])
     framework_views.RevealAllEmailsToMembers(mr, users_by_id)
 
     project_commitments = self.services.project.GetProjectCommitments(
         mr.cnxn, mr.project_id)
-    acexclusion_ids = self.services.project.GetProjectAutocompleteExclusion(
+    (ac_exclusion_ids, no_expand_ids
+     ) = self.services.project.GetProjectAutocompleteExclusion(
         mr.cnxn, mr.project_id)
     member_view = project_views.MemberView(
         mr.auth.user_id, member_id, users_by_id[member_id], mr.project,
-        project_commitments, acexclusion_ids=acexclusion_ids)
+        project_commitments,
+        ac_exclusion=(member_id in ac_exclusion_ids),
+        no_expand=(member_id in no_expand_ids),
+        is_group=(member_id in group_ids))
 
     member_user = self.services.user.GetUser(mr.cnxn, member_id)
     # This ignores indirect memberships, which is ok because we are viewing
@@ -145,7 +151,7 @@ class PeopleDetail(servlet.Servlet):
   def ProcessFormData(self, mr, post_data):
     """Process the posted form."""
     # 1. Parse and validate user input.
-    user_id, role, extra_perms, notes, ac_exclusion = (
+    user_id, role, extra_perms, notes, ac_exclusion, no_expand = (
         self.ParsePersonData(mr, post_data))
     member_id = self.ValidateMemberID(mr.cnxn, user_id, mr.project)
 
@@ -153,7 +159,8 @@ class PeopleDetail(servlet.Servlet):
     if 'remove' in post_data:
       self.ProcessRemove(mr, member_id)
     else:
-      self.ProcessSave(mr, role, extra_perms, notes, member_id, ac_exclusion)
+      self.ProcessSave(
+          mr, role, extra_perms, notes, member_id, ac_exclusion, no_expand)
 
     # 3. Determine the next page in the UI flow.
     if 'remove' in post_data:
@@ -171,7 +178,9 @@ class PeopleDetail(servlet.Servlet):
 
     self.RemoveRole(mr.cnxn, mr.project, member_id)
 
-  def ProcessSave(self, mr, role, extra_perms, notes, member_id, ac_exclusion):
+  def ProcessSave(
+      self, mr, role, extra_perms, notes, member_id, ac_exclusion,
+      no_expand):
     """Process the posted form when the user pressed 'Save'."""
     if (not self.CanEditPerms(mr) and
         not self.CanEditMemberNotes(mr, member_id)):
@@ -189,7 +198,7 @@ class PeopleDetail(servlet.Servlet):
 
     if self.CanEditPerms(mr):
       self.services.project.UpdateProjectAutocompleteExclusion(
-          mr.cnxn, mr.project_id, member_id, ac_exclusion)
+          mr.cnxn, mr.project_id, member_id, ac_exclusion, no_expand)
 
   def CanEditMemberNotes(self, mr, member_id):
     """Return true if the logged in user can edit the current user's notes."""
@@ -229,8 +238,10 @@ class PeopleDetail(servlet.Servlet):
         extra_perms.append(perm)
 
     notes = post_data.get('notes', '').strip()
-    ac_exclusion = post_data.get('ac_exclude', '')
-    return mr.specified_user_id, role, extra_perms, notes, bool(ac_exclusion)
+    ac_exclusion = not post_data.get('ac_include', False)
+    no_expand = not post_data.get('ac_expand', False)
+    return (mr.specified_user_id, role, extra_perms, notes, ac_exclusion,
+            no_expand)
 
   def RemoveRole(self, cnxn, project, member_id):
     """Remove the given member from the project."""

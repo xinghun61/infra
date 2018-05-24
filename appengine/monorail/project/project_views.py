@@ -74,8 +74,10 @@ class ProjectView(template_helpers.PBProxy):
 class MemberView(object):
   """EZT-view of details of how a person is participating in a project."""
 
-  def __init__(self, logged_in_user_id, member_id, user_view, project,
-               project_commitments, effective_ids=None, acexclusion_ids=None):
+  def __init__(
+    self, logged_in_user_id, member_id, user_view, project,
+    project_commitments, effective_ids=None, ac_exclusion=False,
+    no_expand=False, is_group=False):
     """Initialize a MemberView with the given information.
 
     Args:
@@ -87,7 +89,10 @@ class MemberView(object):
           project, or None if commitments are not to be displayed.
       effective_ids: optional set of user IDs for this user, if supplied
           we show the highest role that they have via any group membership.
-      acexclusion_ids: Autocomplete exclusion ids for current project.
+      ac_exclusion: True when this member should not be in autocomplete.
+      no_expand: True for user groups that should not expand when generating
+          autocomplete options.
+      is_group: True if this user is actually a user group.
     """
     self.viewing_self = ezt.boolean(logged_in_user_id == member_id)
 
@@ -109,9 +114,9 @@ class MemberView(object):
     self.labels = []
     self.derived_labels = []
 
-    self.acexclusion =  ezt.boolean(False)
-    if acexclusion_ids is not None:
-      self.acexclusion =  ezt.boolean(member_id in acexclusion_ids)
+    self.ac_include = ezt.boolean(not ac_exclusion)
+    self.ac_expand = ezt.boolean(not no_expand)
 
+    self.is_group = ezt.boolean(is_group)
     self.is_service_account = ezt.boolean(framework_helpers.IsServiceAccount(
         self.user.email))

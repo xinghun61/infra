@@ -44,9 +44,14 @@
 
   <td style="white-space:nowrap">
     [is arg0 "hotlist"][else]
-    [if-any pagination.visible_results.acexclusion pagination.visible_results.is_service_account]
-      <a href="[detail_url]">Excluded</a>
-    [end][end]
+      [if-any pagination.visible_results.is_service_account]
+        <a href="[detail_url]">Excluded</a>
+      [else][if-any pagination.visible_results.ac_include]
+        [# Nothing is displayed when the member is included.]
+      [else]
+        <a href="[detail_url]">Excluded</a>
+      [end][end]
+    [end]
   </td>
 
   [is arg0 "hotlist"][else]

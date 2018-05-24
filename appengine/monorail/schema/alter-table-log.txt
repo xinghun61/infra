@@ -1515,5 +1515,12 @@ TRUNCATE TABLE Template2ApprovalValue;
 ALTER TABLE Template2ApprovalValue DROP FOREIGN KEY Template2ApprovalValue_ibfk_3;
 ALTER TABLE Template2ApprovalValue ADD FOREIGN KEY (phase_id) REFERENCES IssuePhaseDef(id);
 
+================================================================
+2018-05-22: Add boolean columns to control autocomplete exclusions.
+
+ALTER TABLE AutocompleteExclusion
+  ADD COLUMN ac_exclude BOOLEAN DEFAULT TRUE,
+  ADD COLUMN no_expand BOOLEAN DEFAULT FALSE;
+
 ==================================================================
 TODO(jojwang):monorail:3756, DROP TABLE Template2Phase;

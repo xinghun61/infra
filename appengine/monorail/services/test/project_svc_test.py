@@ -359,7 +359,8 @@ class ProjectServiceTest(unittest.TestCase):
     self.project_service.project_tbl.SelectValue(
         self.cnxn, 'project_name', project_id=project_id).AndReturn('projN')
     self.project_service.project_tbl.Update(
-        self.cnxn, {'cached_content_timestamp': NOW}, project_id=project_id)
+        self.cnxn, {'cached_content_timestamp': NOW}, project_id=project_id,
+        commit=False)
 
     self.project_service.user2project_tbl.Delete(
         self.cnxn, project_id=project_id, role_name='owner', commit=False)

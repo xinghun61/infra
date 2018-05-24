@@ -231,21 +231,23 @@ def GetMemberOptions(mr, services):
   committer_views = member_data['committers']
   contributor_views = member_data['contributors']
 
-  group_ids = services.usergroup.DetermineWhichUserIDsAreGroups(
+  all_group_ids = services.usergroup.DetermineWhichUserIDsAreGroups(
       mr.cnxn, [mem.user_id for mem in member_data['all_members']])
-  logging.info('group_ids is %r', group_ids)
 
-  acexclusion_ids = services.project.GetProjectAutocompleteExclusion(
+  (ac_exclusion_ids, no_expand_ids
+   ) = services.project.GetProjectAutocompleteExclusion(
       mr.cnxn, mr.project_id)
+  group_ids_to_expand = [
+    gid for gid in all_group_ids if gid not in no_expand_ids]
 
   # TODO(jrobbins): Normally, users will be allowed view the members
   # of any user group if the project From: email address is listed
   # as a group member, as well as any group that they are personally
   # members of.
   member_ids, owner_ids = services.usergroup.LookupVisibleMembers(
-      mr.cnxn, group_ids, mr.perms, mr.auth.effective_ids, services)
+      mr.cnxn, group_ids_to_expand, mr.perms, mr.auth.effective_ids, services)
   indirect_ids = set()
-  for gid in group_ids:
+  for gid in all_group_ids:
     indirect_ids.update(member_ids.get(gid, []))
     indirect_ids.update(owner_ids.get(gid, []))
   indirect_user_ids = list(indirect_ids)
@@ -258,13 +260,13 @@ def GetMemberOptions(mr, services):
   # Filter out service accounts
   visible_member_views = [m for m in visible_member_views
                           if not framework_helpers.IsServiceAccount(m.email)
-                          and not m.user_id in acexclusion_ids]
+                          and not m.user_id in ac_exclusion_ids]
   visible_member_email_list = sorted(set(
       uv.email for uv in visible_member_views))
   visible_members_dict = {}
   for uv in visible_member_views:
     visible_members_dict[uv.email] = uv.user_id
-  group_ids = set(services.usergroup.DetermineWhichUserIDsAreGroups(
+  all_visible_group_ids = set(services.usergroup.DetermineWhichUserIDsAreGroups(
       mr.cnxn, visible_members_dict.values()))
 
   members_def_list = [
@@ -273,7 +275,7 @@ def GetMemberOptions(mr, services):
   ]
   for md in members_def_list:
     md_id = visible_members_dict[md['name']]
-    if md_id in group_ids:
+    if md_id in all_visible_group_ids:
       md['is_group'] = True
 
   return (members_def_list, visible_member_views,

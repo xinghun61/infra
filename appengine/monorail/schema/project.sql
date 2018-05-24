@@ -142,6 +142,8 @@ CREATE TABLE MemberNotes (
 CREATE TABLE AutocompleteExclusion (
   project_id SMALLINT UNSIGNED NOT NULL,
   user_id INT UNSIGNED NOT NULL,
+  ac_exclude BOOLEAN DEFAULT TRUE,
+  no_expand BOOLEAN DEFAULT FALSE,
 
   PRIMARY KEY (project_id, user_id),
   FOREIGN KEY (project_id) REFERENCES Project(project_id),

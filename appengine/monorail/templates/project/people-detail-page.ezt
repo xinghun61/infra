@@ -80,7 +80,7 @@
 </tr>
 
 <tr>
- <th>No autocomplete:</th>
+ <th>Autocomplete:</th>
  <td>
     [if-any perms.EditProject]
       [define disable_checkbox]No[end]
@@ -90,12 +90,33 @@
     [if-any member.is_service_account]
       [define disable_checkbox]Yes[end]
     [end]
-     <input type="checkbox" name="ac_exclude"
-          [if-any member.acexclusion member.is_service_account]checked[end]
-          [is disable_checkbox "Yes"]disabled[end]
-          value="[member.user.user_id]"
-          >
-          [if-any member.is_service_account](service account is excluded by default)[end]
+     <div>
+       <input type="checkbox" name="ac_include" id="ac_include"
+            [if-any member.is_service_account][else]
+              [if-any member.ac_include]checked[end]
+            [end]
+            [is disable_checkbox "Yes"]disabled[end]
+            value="[member.user.user_id]"
+            >
+       <label for="ac_include">Include this member in autocomplete menus</label>
+     </div>
+     [if-any member.is_service_account]
+       <div>(service account is excluded by default)</div>
+     [end]
+
+     [if-any member.is_group]
+       <div>
+         <input type="checkbox" name="ac_expand" id="ac_expand"
+              [if-any member.ac_expand]checked[end]
+              [is disable_checkbox "Yes"]disabled[end]
+              value="[member.user.user_id]"
+              >
+         <label for="ac_expand">Expand this user group in autocomplete menus</label>
+       </div>
+     [else]
+       <input type="hidden" name="ac_expand" value="[member.user.user_id]">
+     [end]
+
  </td>
 </tr>
 
