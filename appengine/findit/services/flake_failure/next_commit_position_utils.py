@@ -48,18 +48,42 @@ def GetNextCommitPositionFromBuildRange(analysis, build_range,
     (int): The commit position of either the upper bound build, lower bound
         build, or the originally-requested commit position itself.
   """
-  assert (build_range.lower <= requested_commit_position and
-          requested_commit_position <= build_range.upper)
+  upper = build_range.upper
+  lower = build_range.lower
 
-  if not analysis.FindMatchingDataPointWithCommitPosition(build_range.upper):
-    # Try the later build first.
-    return build_range.upper
+  assert (lower <= requested_commit_position and
+          requested_commit_position <= upper), (
+              '{} is not within range of {} and {}'.format(
+                  requested_commit_position, lower, upper))
 
-  if not analysis.FindMatchingDataPointWithCommitPosition(build_range.lower):
-    # Try the earlier build.
-    return build_range.lower
+  # If the upper commit position has already been analyzed but not the lower,
+  # return lower. This case occurs when exponential search is early on and a
+  # requested commit is still close by.
+  if (analysis.FindMatchingDataPointWithCommitPosition(upper) and
+      not analysis.FindMatchingDataPointWithCommitPosition(lower)):
+    return lower
 
-  # Both the earlier and later builds have already been analyzed.
+  # If the lower commit position has already been analyzed but not the upper,
+  # return upper. This case occurs when the analysis has already identified a
+  # stable point.
+  if (analysis.FindMatchingDataPointWithCommitPosition(lower) and
+      not analysis.FindMatchingDataPointWithCommitPosition(upper)):
+    return upper
+
+  # Neither data point has been analyzed, so use whichever is closer. This case
+  # occurs during exponential search back when no stable point has been found
+  # yet.
+  if ((upper - requested_commit_position) <=
+      (requested_commit_position - lower) and
+      not analysis.FindMatchingDataPointWithCommitPosition(upper)):
+    # The upper bound commit position is closer and unanalyzed.
+    return upper
+
+  if not analysis.FindMatchingDataPointWithCommitPosition(lower):
+    # The lower bound commit position is closer and unanalyzed.
+    return lower
+
+  # Both the upper and lower bound commits have already been analyzed.
   # Use the requested commit position directly.
   return requested_commit_position
 

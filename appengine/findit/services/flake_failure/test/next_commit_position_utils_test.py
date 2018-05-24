@@ -87,8 +87,8 @@ class NextCommitPositionUtilsTest(wf_testcase.WaterfallTestCase):
         next_commit_position_utils.GetNextCommitPositionFromHeuristicResults(
             analysis.key.urlsafe()))
 
-  def testGetNextCommitPositionFromBuildRangeReturnUpperBound(self):
-    calculated_commit_position = 1005
+  def testGetNextCommitPositionFromBuildRangeReturnUpperBoundCloser(self):
+    calculated_commit_position = 1007
     build_range = IntRange(lower=1000, upper=1010)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -101,8 +101,22 @@ class NextCommitPositionUtilsTest(wf_testcase.WaterfallTestCase):
         next_commit_position_utils.GetNextCommitPositionFromBuildRange(
             analysis, build_range, calculated_commit_position))
 
+  def testGetNextCommitPositionFromBuildRangeReturnLowerBoundCloser(self):
+    calculated_commit_position = 1002
+    build_range = IntRange(lower=1000, upper=1010)
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=1020),  # Doesn't have either.
+    ]
+
+    self.assertEqual(
+        1000,
+        next_commit_position_utils.GetNextCommitPositionFromBuildRange(
+            analysis, build_range, calculated_commit_position))
+
   def testGetNextCommitPositionFromBuildRangeReturnLowerBound(self):
-    calculated_commit_position = 1005
+    calculated_commit_position = 1006
     build_range = IntRange(lower=1000, upper=1010)
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -112,6 +126,20 @@ class NextCommitPositionUtilsTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(
         1000,
+        next_commit_position_utils.GetNextCommitPositionFromBuildRange(
+            analysis, build_range, calculated_commit_position))
+
+  def testGetNextCommitPositionFromBuildRangeAlreadyHasLowerReturnUpper(self):
+    calculated_commit_position = 1002
+    build_range = IntRange(lower=1000, upper=1010)
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=1000),  # Already has lower bound.
+    ]
+
+    self.assertEqual(
+        1010,
         next_commit_position_utils.GetNextCommitPositionFromBuildRange(
             analysis, build_range, calculated_commit_position))
 
