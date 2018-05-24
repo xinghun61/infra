@@ -587,9 +587,11 @@ class Servlet(webapp2.RequestHandler):
       is_project_starred = False
       project_view = None
       if mr.project:
-        is_project_starred = we.IsProjectStarred(mr.project_id)
-        # TODO(jrobbins): should this be a ProjectView?
-        project_view = template_helpers.PBProxy(mr.project)
+        if permissions.UserCanViewProject(
+            mr.auth.user_pb, mr.auth.effective_ids, mr.project):
+          is_project_starred = we.IsProjectStarred(mr.project_id)
+          # TODO(jrobbins): should this be a ProjectView?
+          project_view = template_helpers.PBProxy(mr.project)
 
     grid_x_attr = None
     grid_y_attr = None
