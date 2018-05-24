@@ -216,6 +216,14 @@
     "cmd": [
       "python",
       "-u",
+      "[START_DIR]/src/chrome/android/profiles/update_afdo_profile.py"
+    ],
+    "name": "fetch android AFDO profile"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_PACKAGE_REPO[depot_tools]/download_from_google_storage.py",
       "--no_resume",
       "--extract",

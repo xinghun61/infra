@@ -229,6 +229,9 @@ def RunSteps(api):
         '--force-local-build', '--without-android', '--use-system-cmake',
         '--if-needed', '--gcc-toolchain=/usr', '--skip-build'])
 
+  api.python('fetch android AFDO profile', api.path['checkout'].join(
+      'chrome', 'android', 'profiles', 'update_afdo_profile.py'), [])
+
   node_modules_sha_path = api.path['checkout'].join(
       'third_party', 'node', 'node_modules.tar.gz.sha1')
   if api.path.exists(node_modules_sha_path):
