@@ -44,10 +44,21 @@ class ConfidenceScoreUtilTest(WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
     analysis.data_points = [
         DataPoint.Create(pass_rate=0.7, commit_position=1000),
-        DataPoint.Create(
-            pass_rate=flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD,
-            commit_position=999)
+        DataPoint.Create(pass_rate=1.0, commit_position=999),
+        DataPoint.Create(pass_rate=1.0, commit_position=996)
     ]
     self.assertEqual(.7,
+                     confidence_score_util.CalculateCulpritConfidenceScore(
+                         analysis, 1000))
+
+  @mock.patch.object(
+      confidence, 'SteppinessForCommitPosition', return_value=0.6)
+  def testCalculateCulpritConfidenceScoreFallbackToSteppiness(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(pass_rate=0.7, commit_position=1000),
+        DataPoint.Create(pass_rate=0.99, commit_position=999),
+    ]
+    self.assertEqual(.6,
                      confidence_score_util.CalculateCulpritConfidenceScore(
                          analysis, 1000))

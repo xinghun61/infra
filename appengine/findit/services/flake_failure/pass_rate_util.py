@@ -210,7 +210,7 @@ def MinimumIterationsReached(iterations):
     True if the data point has at least a minimum number of iterations.
   """
   minimum_iterations = waterfall_config.GetCheckFlakeSettings().get(
-      'minimum_iterations_required_for_confergence',
+      'minimum_iterations_required_for_convergence',
       flake_constants.MINIMUM_ITERATIONS_REQUIRED_FOR_CONVERGENCE)
 
   return iterations >= minimum_iterations

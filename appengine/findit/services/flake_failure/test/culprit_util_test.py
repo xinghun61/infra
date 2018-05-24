@@ -413,22 +413,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR,
         culprit_util.GetMinimumConfidenceToNotifyCulprits())
 
-  def testHasSeriesOfFullyStablePointsPrecedingCulprit(self):
-    culprit_commit_position = 13
-    culprit = FlakeCulprit.Create('chromium', 'r13', culprit_commit_position)
-    culprit.put()
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.data_points = [
-        DataPoint.Create(pass_rate=0.0, commit_position=10),
-        DataPoint.Create(pass_rate=0.0, commit_position=11),
-        DataPoint.Create(pass_rate=0.0, commit_position=12),
-        DataPoint.Create(
-            pass_rate=0.4, commit_position=culprit_commit_position),
-    ]
-    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
-    self.assertTrue(
-        culprit_util.HasSeriesOfFullyStablePointsPrecedingCulprit(analysis))
-
   def testIsConfiguredToNotifyCulpritsFalse(self):
     self.UpdateUnitTestConfigSettings('action_settings', {
         'cr_notification_should_notify_flake_culprit': False
@@ -543,39 +527,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       culprit_util, 'CulpritAddedNewFlakyTest', return_value=False)
   @mock.patch.object(
-      culprit_util,
-      'HasSeriesOfFullyStablePointsPrecedingCulprit',
-      return_value=False)
-  def testShouldSendNotificationInsufficientTrulyStableDataPoints(self, *_):
-    repo_name = 'repo'
-    revision = 'r1'
-    url = 'code.review.url'
-    commit_position = 1000
-
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = {'minimum_confidence_to_update_cr': 0.5}
-    analysis.confidence_in_culprit = 0.4
-
-    culprit = FlakeCulprit.Create(repo_name, revision, commit_position, url)
-    culprit.put()
-    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
-    analysis.data_points = [
-        DataPoint.Create(pass_rate=1.0, commit_position=commit_position - 1),
-        DataPoint.Create(pass_rate=0.4, commit_position=commit_position),
-    ]
-    analysis.put()
-
-    self.assertFalse(culprit_util.ShouldNotifyCulprit(analysis))
-
-  @mock.patch.object(
-      culprit_util, 'IsConfiguredToNotifyCulprits', return_value=True)
-  @mock.patch.object(
-      culprit_util, 'CulpritAddedNewFlakyTest', return_value=False)
-  @mock.patch.object(
-      culprit_util,
-      'HasSeriesOfFullyStablePointsPrecedingCulprit',
-      return_value=True)
-  @mock.patch.object(
       culprit_util, 'GetMinimumConfidenceToNotifyCulprits', return_value=1.0)
   def testShouldSendNotificationInsufficientConfidence(self, *_):
     repo_name = 'repo'
@@ -602,10 +553,6 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
       culprit_util, 'IsConfiguredToNotifyCulprits', return_value=True)
   @mock.patch.object(
       culprit_util, 'CulpritAddedNewFlakyTest', return_value=False)
-  @mock.patch.object(
-      culprit_util,
-      'HasSeriesOfFullyStablePointsPrecedingCulprit',
-      return_value=True)
   @mock.patch.object(
       culprit_util, 'GetMinimumConfidenceToNotifyCulprits', return_value=0.5)
   def testShouldSendNotification(self, *_):

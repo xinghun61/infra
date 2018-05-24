@@ -193,25 +193,6 @@ def GetMinimumConfidenceToNotifyCulprits():
       flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR)
 
 
-def HasSeriesOfFullyStablePointsPrecedingCulprit(analysis):
-  """Checks for a minimum number of fully-stable points before the culprit."""
-  culprit_urlsafe_key = analysis.culprit_urlsafe_key
-  assert culprit_urlsafe_key
-
-  culprit = ndb.Key(urlsafe=culprit_urlsafe_key).get()
-  assert culprit
-
-  ordered_data_points = sorted(
-      analysis.data_points, key=lambda k: k.commit_position)
-  required_number_of_stable_points = (
-      flake_constants.REQUIRED_NUMBER_OF_STABLE_POINTS_BEFORE_CULPRIT)
-  culprit_commit_position = culprit.commit_position
-
-  return data_point_util.HasSeriesOfFullyStablePointsPrecedingCommitPosition(
-      ordered_data_points, culprit_commit_position,
-      required_number_of_stable_points)
-
-
 def IsConfiguredToNotifyCulprits():
   action_settings = waterfall_config.GetActionSettings()
   return action_settings.get('cr_notification_should_notify_flake_culprit',
@@ -292,9 +273,7 @@ def ShouldNotifyCulprit(analysis):
      1. Never send a notification if Findit is not configured to do so.
      2. Never send if the culprit has already been notified by Findit.
      3. Always send if the culprit introduced a new flaky test.
-     4. Never send if the culprit is not preceded by a minimum number of
-        fully-passing or fully-failing data points.
-     5. Never send if there is insufficient confidence that the culprit is
+     4. Never send if there is insufficient confidence that the culprit is
         indeed responsible.
 
   Args:
@@ -330,12 +309,6 @@ def ShouldNotifyCulprit(analysis):
     analysis.LogInfo('Sending notification to code review due to adding a new '
                      'flaky test')
     return True
-
-  # A series of fully-stable points must precede the culprit.
-  if not HasSeriesOfFullyStablePointsPrecedingCulprit(analysis):
-    analysis.LogInfo('Skipping sending notification to code review due to '
-                     'the likelyhood of it being a false positive')
-    return False
 
   # Check confidence in culprit.
   if analysis.confidence_in_culprit < GetMinimumConfidenceToNotifyCulprits():

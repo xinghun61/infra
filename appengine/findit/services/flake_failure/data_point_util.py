@@ -34,8 +34,6 @@ def HasSeriesOfFullyStablePointsPrecedingCommitPosition(
 
   Args:
     data_points ([DataPoint]): The list of data points of a MasterFlakeAnalysis.
-        data_points is expected to be pre-sorted in ascending order by commit
-        position.
     commit_position (int): The commit position to find stable points preceding.
     required_number_of_stable_points (int): The minimum number of data points
         of the same fully-stable type required in order to send a notification
@@ -44,10 +42,13 @@ def HasSeriesOfFullyStablePointsPrecedingCommitPosition(
   if required_number_of_stable_points > len(data_points):
     return False
 
+  # Ensure the data points are sorted before processing.
+  ordered_data_points = sorted(data_points, key=lambda k: k.commit_position)
+
   fully_stable_data_points_in_a_row = 0
   previous_data_point = data_points[0]
 
-  for data_point in data_points:
+  for data_point in ordered_data_points:
     if data_point.commit_position == commit_position:
       break
 

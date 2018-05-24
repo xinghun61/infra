@@ -94,16 +94,20 @@ MAX_TIMEOUT_SECONDS = 3 * 60 * 60
 # The minimum number of iterations to be run before convergance is considered.
 # All variables related to convergence aren't configurable right now since it
 # should be a constant.
-MINIMUM_ITERATIONS_REQUIRED_FOR_CONVERGENCE = 100
+MINIMUM_ITERATIONS_REQUIRED_FOR_CONVERGENCE = 400
 
 # Value to indicate a test does not exist at a build number or commit position.
 PASS_RATE_TEST_NOT_FOUND = -1
 
 # The minimum required number of fully-stable points before a culprit in order
-# to send a notification to the code review. Based on historical data 3 stable
-# points should be able to weed out most false positives, and should not be
-# configurable.
-REQUIRED_NUMBER_OF_STABLE_POINTS_BEFORE_CULPRIT = 3
+# to send a notification to the code review. Statistically, 2 should be high
+# probability that the stable points are indeed stable. For example, assume a
+# test has a uniform 0.98 chance of passing, which is considered stable, and a
+# 100 iteration requirement for confidence. Then the probability of a
+# fully-stable data point being generated is 0.98^100 = 0.133, meaning there is
+# a 13.3% chance the stable point is false. For two such points to exist
+# consecutively would be 0.133^2, or 1.8%, 3 such points would be 0.03%, etc.
+REQUIRED_NUMBER_OF_STABLE_POINTS_BEFORE_CULPRIT = 2
 
 # Cushion multiplier for test setup/teardown.
 SWARMING_TASK_CUSHION_MULTIPLIER = 2.0
