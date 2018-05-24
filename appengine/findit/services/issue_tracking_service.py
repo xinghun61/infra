@@ -16,7 +16,6 @@ from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
 from model.flake import master_flake_analysis
-from model.flake.detection.flake_issue import FlakeIssue
 from monorail_api import CustomizedField
 from monorail_api import IssueTrackerAPI
 from monorail_api import Issue
@@ -435,89 +434,3 @@ def HasSufficientConfidenceInCulprit(analysis, required_confidence):
 
   return (analysis.confidence_in_culprit + flake_constants.EPSILON >=
           required_confidence)
-
-
-def UpdateBugForDetectedFlake(flake, occurrence_count):
-  """Updates the bug for a detected cq flake.
-
-  Args:
-    flake (model.flake.detection.flake): Parent Flake object to check.
-    occurrence_count (int): Number of recent occurrences.
-  """
-  # TODO(crbug.com/815252): Replace when frontend url is ready.
-  flake_url = 'dummy url'
-  comment = _FLAKE_DETECTION_COMMENT_BODY.format(
-      flake_count=occurrence_count,
-      test_name=flake.test_name,
-      flake_url=flake_url)
-
-  issue = GetBugForId(flake.flake_issue.issue_id)
-
-  # Set label for Findit detected flake if it's not already there.
-  if _FINDIT_DETECTED_LABEL_TEXT not in issue.labels:
-    issue.labels.append(_FINDIT_DETECTED_LABEL_TEXT)
-  if 'Sheriff-Chromium' not in issue.labels:
-    issue.labels.append('Sheriff-Chromium')
-
-  # Set Flaky-Test field. If it's already there, it's a no-op.
-  flaky_field = CustomizedField('Flaky-Test', flake.test_name)
-  issue.field_values.append(flaky_field)
-
-  UpdateBug(issue, comment, flake.project_id)
-  flake.flake_issue.last_updated_time = time_util.GetUTCNow()
-  flake.put()
-
-
-def CreateBugForDetectedFlake(flake,
-                              occurrence_count,
-                              priority='Pri-2',
-                              old_bug_id=None):
-  """Create a bug for a detected cq flake.
-
-  Args:
-    flake (model.flake.detection.flake): Parent Flake object to check.
-    occurrence_count (int): Number of recent occurrences.
-    priority (str, optional): Priority for the issue (Pri-0/1/2/3/4).
-    old_bug_id (str): A bug id for this flake which has been closed.
-  """
-  # TODO(crbug.com/815252): Replace when frontend url is ready.
-  flake_url = 'dummy url'
-  summary = _FLAKE_DETECTION_BUG_TITLE.format(test_name=flake.test_name)
-  body_header = _FLAKE_DETECTION_CREATE_BUG_BODY_HEADER.format(
-      test_name=flake.test_name)
-  body_content = _FLAKE_DETECTION_CREATE_BUG_BODY.format(
-      flake_count=occurrence_count, flake_url=flake_url)
-  description = '{}\n\n{}'.format(body_header, body_content)
-  if old_bug_id:
-    description = '{}\n\n{}'.format(
-        description,
-        _FLAKE_DETECTION_CREATE_BUG_BODY_PREVIOUS_ISSUE.format(
-            old_bug_id=old_bug_id))
-  description = '{}\n\n{}'.format(description,
-                                  _FLAKE_DETECTION_CREATE_BUG_BODY_FOOTER)
-
-  issue = Issue({
-      'status':
-          'Available',
-      'summary':
-          summary,
-      'description':
-          description,
-      'projectId':
-          flake.project_id,
-      'labels': [
-          _FINDIT_DETECTED_LABEL_TEXT, 'Sheriff-Chromium', priority, 'Type-Bug'
-      ],
-      'state':
-          'open',
-      'components': ['Tests>Flaky'],
-      'fieldValues': [CustomizedField('Flaky-Test', flake.test_name)]
-  })
-
-  issue_id = CreateBug(issue, flake.project_id)
-  if issue_id > 0:
-    monitoring.OnIssueChange('created', 'flake')
-  flake.flake_issue = FlakeIssue()
-  flake.flake_issue.FromMonorailIssue(issue)
-  flake.flake_issue.last_updated_time = time_util.GetUTCNow()
-  flake.put()
