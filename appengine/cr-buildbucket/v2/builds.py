@@ -33,7 +33,6 @@ def build_to_v2_partial(build):
       start_time=_dt2ts(build.start_time),
       end_time=_dt2ts(build.complete_time),
       update_time=_dt2ts(build.update_time),
-      status=_get_status(build),
       input=build_pb2.Build.Input(
           properties=_dict_to_struct(build.parameters.get('properties')),
           experimental=build.experimental,
@@ -49,6 +48,7 @@ def build_to_v2_partial(build):
           ),
       ),
   )
+  status_to_v2(build, ret)
 
   task_result = result_details.get('swarming', {}).get('task_result', {})
   for d in task_result.get('bot_dimensions', []):
@@ -140,28 +140,84 @@ def _get_builder_id(build):
   )
 
 
-def _get_status(build):
-  if build.status == model.BuildStatus.SCHEDULED:
-    return common_pb2.SCHEDULED
-  elif build.status == model.BuildStatus.STARTED:
-    return common_pb2.STARTED
-  elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
-    if build.result == model.BuildResult.SUCCESS:
-      return common_pb2.SUCCESS
-    elif build.result == model.BuildResult.FAILURE:
-      if build.failure_reason == model.FailureReason.BUILD_FAILURE:
-        return common_pb2.FAILURE
-      else:
-        return common_pb2.INFRA_FAILURE
-    elif build.result == model.BuildResult.CANCELED:  # pragma: no branch
-      reason = build.cancelation_reason
-      if reason == model.CancelationReason.CANCELED_EXPLICITLY:
-        return common_pb2.CANCELED
-      else:
-        return common_pb2.INFRA_FAILURE
+def status_to_v2(src, dest):
+  """Converts a V1 status to V2 status.
 
-  raise errors.MalformedBuild(  # pragma: no cover
-      'invalid status in build %d' % build.key.id())
+  Args:
+    src: a model.Build, source of V1 status.
+    dest: a build_pb2.Build, destination of V2 status. Its status and
+      all of status_reason fields will be mutated.
+  """
+  dest.status = common_pb2.STATUS_UNSPECIFIED
+  dest.ClearField('infra_failure_reason')
+  dest.ClearField('cancel_reason')
+
+  if src.status == model.BuildStatus.SCHEDULED:
+    dest.status = common_pb2.SCHEDULED
+  elif src.status == model.BuildStatus.STARTED:
+    dest.status = common_pb2.STARTED
+  elif src.status == model.BuildStatus.COMPLETED:  # pragma: no branch
+    if src.result == model.BuildResult.SUCCESS:
+      dest.status = common_pb2.SUCCESS
+    elif src.result == model.BuildResult.FAILURE:
+      if src.failure_reason == model.FailureReason.BUILD_FAILURE:
+        dest.status = common_pb2.FAILURE
+      else:
+        dest.status = common_pb2.INFRA_FAILURE
+        dest.infra_failure_reason.resource_exhaustion = False
+    elif src.result == model.BuildResult.CANCELED:  # pragma: no branch
+      if src.cancelation_reason == model.CancelationReason.CANCELED_EXPLICITLY:
+        dest.status = common_pb2.CANCELED
+        # V1 doesn't provide any cancel details.
+      elif src.cancelation_reason == model.CancelationReason.TIMEOUT:
+        # V1 timeout is V2 infra failure with resource exhaustion.
+        dest.status = common_pb2.INFRA_FAILURE
+        dest.infra_failure_reason.resource_exhaustion = True
+
+  if dest.status == common_pb2.STATUS_UNSPECIFIED:  # pragma: no cover
+    raise errors.MalformedBuild('invalid status in src %d' % src.key.id())
+
+
+def status_to_v1(src, dest):
+  """Converts a V1 status to V2 status.
+
+  Args:
+    src: a build_pb2.Build, source of V2 status.
+    dest: a model.Build, destination of V1 status. Its status, result,
+      failure_reason and cancelation_reason will be set.
+  """
+  dest.status = None
+  dest.result = None
+  dest.failure_reason = None
+  dest.cancelation_reason = None
+
+  if src.status == common_pb2.SCHEDULED:
+    dest.status = model.BuildStatus.SCHEDULED
+  elif src.status == common_pb2.STARTED:
+    dest.status = model.BuildStatus.STARTED
+  elif src.status == common_pb2.SUCCESS:
+    dest.status = model.BuildStatus.COMPLETED
+    dest.result = model.BuildResult.SUCCESS
+  elif src.status == common_pb2.FAILURE:
+    dest.status = model.BuildStatus.COMPLETED
+    dest.result = model.BuildResult.FAILURE
+    dest.failure_reason = model.FailureReason.BUILD_FAILURE
+  elif src.status == common_pb2.INFRA_FAILURE:
+    dest.status = model.BuildStatus.COMPLETED
+    if src.infra_failure_reason.resource_exhaustion:
+      # In python implementation, V2 resource exhaustion is V1 timeout.
+      dest.result = model.BuildResult.CANCELED
+      dest.cancelation_reason = model.CancelationReason.TIMEOUT
+    else:
+      dest.result = model.BuildResult.FAILURE
+      dest.failure_reason = model.FailureReason.INFRA_FAILURE
+  elif src.status == common_pb2.CANCELED:
+    dest.status = model.BuildStatus.COMPLETED
+    dest.result = model.BuildResult.CANCELED
+    dest.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
+
+  if dest.status is None:  # pragma: no cover
+    raise errors.MalformedBuild('invalid status in src %d' % src.id)
 
 
 def _dict_to_struct(d):

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import unittest
 
 from components import utils
 utils.fix_protobuf_package()
@@ -10,7 +11,6 @@ utils.fix_protobuf_package()
 from google.protobuf import timestamp_pb2
 
 from components import auth
-from testing_utils import testing
 
 from proto import common_pb2
 from proto import build_pb2
@@ -20,7 +20,7 @@ from test import test_util
 import model
 
 
-class V2BuildsTest(testing.AppengineTestCase):
+class V2BuildsTest(unittest.TestCase):
   max_diff = None
 
   def test_get_builder_id(self):
@@ -54,46 +54,6 @@ class V2BuildsTest(testing.AppengineTestCase):
             bucket='try',
             builder='linux-rel',
         ))
-
-  def test_get_status(self):
-    cases = [
-        (common_pb2.SCHEDULED, model.Build()),
-        (common_pb2.STARTED, model.Build(status=model.BuildStatus.STARTED)),
-        (common_pb2.SUCCESS,
-         model.Build(
-             status=model.BuildStatus.COMPLETED,
-             result=model.BuildResult.SUCCESS)),
-        (common_pb2.FAILURE,
-         model.Build(
-             status=model.BuildStatus.COMPLETED,
-             result=model.BuildResult.FAILURE,
-             failure_reason=model.FailureReason.BUILD_FAILURE)),
-        (common_pb2.INFRA_FAILURE,
-         model.Build(
-             status=model.BuildStatus.COMPLETED,
-             result=model.BuildResult.FAILURE)),
-        (common_pb2.INFRA_FAILURE,
-         model.Build(
-             status=model.BuildStatus.COMPLETED,
-             result=model.BuildResult.FAILURE,
-             failure_reason=model.FailureReason.INFRA_FAILURE)),
-        (common_pb2.CANCELED,
-         model.Build(
-             status=model.BuildStatus.COMPLETED,
-             result=model.BuildResult.CANCELED,
-             cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY)),
-        (common_pb2.INFRA_FAILURE,
-         model.Build(
-             status=model.BuildStatus.COMPLETED,
-             result=model.BuildResult.CANCELED,
-             cancelation_reason=model.CancelationReason.TIMEOUT)),
-    ]
-    for expected_status, build in cases:
-      self.assertEqual(
-          builds._get_status(build),
-          expected_status,
-          msg='%r' % build,
-      )
 
   def test_build_to_v2(self):
     dt0 = datetime.datetime(2018, 1, 1, 0)
@@ -281,6 +241,91 @@ class V2BuildsTest(testing.AppengineTestCase):
     del build.parameters[model.BUILDER_PARAMETER]
     with self.assertRaises(errors.UnsupportedBuild):
       builds.build_to_v2_partial(build)
+
+
+class TestStatusConversion(unittest.TestCase):
+  def compare(self, build_v1, build_v2, test_to_v1=True):
+    actual_v2 = build_pb2.Build()
+    builds.status_to_v2(build_v1, actual_v2)
+    self.assertEqual(actual_v2, build_v2)
+
+    if not test_to_v1:
+      return
+
+    actual_v1 = model.Build()
+    builds.status_to_v1(build_v2, actual_v1)
+    self.assertEqual(actual_v1.status, build_v1.status)
+    self.assertEqual(actual_v1.result, build_v1.result)
+    self.assertEqual(actual_v1.failure_reason, build_v1.failure_reason)
+    self.assertEqual(actual_v1.cancelation_reason, build_v1.cancelation_reason)
+
+  def test_empty(self):
+    self.compare(
+        model.Build(),
+        build_pb2.Build(status=common_pb2.SCHEDULED))
+
+  def test_started(self):
+    self.compare(
+        model.Build(status=model.BuildStatus.STARTED),
+        build_pb2.Build(status=common_pb2.STARTED))
+
+  def test_success(self):
+    self.compare(
+        model.Build(
+            status=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.SUCCESS),
+        build_pb2.Build(status=common_pb2.SUCCESS))
+
+  def test_build_failure(self):
+    self.compare(
+        model.Build(
+            status=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.FAILURE,
+            failure_reason=model.FailureReason.BUILD_FAILURE),
+        build_pb2.Build(status=common_pb2.FAILURE))
+
+  def test_generic_failure(self):
+    self.compare(
+        model.Build(
+            status=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.FAILURE),
+        build_pb2.Build(
+            status=common_pb2.INFRA_FAILURE,
+            infra_failure_reason=build_pb2.InfraFailureReason(
+                resource_exhaustion=False,
+            )),
+        test_to_v1=False)
+
+  def test_infra_failure(self):
+    self.compare(
+        model.Build(
+            status=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.FAILURE,
+            failure_reason=model.FailureReason.INFRA_FAILURE),
+        build_pb2.Build(
+            status=common_pb2.INFRA_FAILURE,
+            infra_failure_reason=build_pb2.InfraFailureReason(
+                resource_exhaustion=False,
+            )))
+
+  def test_canceled(self):
+    self.compare(
+        model.Build(
+            status=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.CANCELED,
+            cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY),
+        build_pb2.Build(status=common_pb2.CANCELED))
+
+  def test_timeout(self):
+    self.compare(
+        model.Build(
+            status=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.CANCELED,
+            cancelation_reason=model.CancelationReason.TIMEOUT),
+        build_pb2.Build(
+            status=common_pb2.INFRA_FAILURE,
+            infra_failure_reason=build_pb2.InfraFailureReason(
+                resource_exhaustion=True)))
 
 
 def mkbuild(**kwargs):
