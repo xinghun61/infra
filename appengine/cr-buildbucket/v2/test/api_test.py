@@ -4,10 +4,11 @@
 
 import datetime
 
-from google.appengine.ext import ndb
+from google.protobuf import field_mask_pb2
 
 from components import auth
 from components import prpc
+from components import protoutil
 from components.prpc import context as prpc_context
 from testing_utils import testing
 import mock
@@ -44,10 +45,14 @@ class BaseTestCase(testing.AppengineTestCase):
 
     self.api = api.BuildsApi()
 
-  def call(self, method, req, expected_code=prpc.StatusCode.OK):
+  def call(
+      self, method, req, expected_code=prpc.StatusCode.OK,
+      expected_details=None):
     ctx = prpc_context.ServicerContext()
     res = method(req, ctx)
     self.assertEqual(ctx.code, expected_code)
+    if expected_details is not None:
+      self.assertEqual(ctx.details, expected_details)
     if expected_code != prpc.StatusCode.OK:
       self.assertIsNone(res)
     return res
@@ -64,6 +69,7 @@ class BaseTestCase(testing.AppengineTestCase):
         result=model.BuildResult.SUCCESS,
         created_by=auth.Identity('user', 'johndoe@example.com'),
     )
+    build_kwargs['parameters'].update(kwargs.pop('parameters', {}))
     build_kwargs.update(kwargs)
     return model.Build(**build_kwargs)
 
@@ -71,9 +77,15 @@ class BaseTestCase(testing.AppengineTestCase):
 class ApiMethodDecoratorTests(BaseTestCase):
 
   def error_handling_test(self, ex, expected_code, expected_details):
-    method = api.api_method(mock.Mock(__name__='rpc', side_effect=ex))
+
+    class Service(object):
+      @api.api_method()
+      def GetBuild(self, req, ctx, mask):
+        raise ex
+
     ctx = prpc_context.ServicerContext()
-    method(None, None, ctx)
+    req = rpc_pb2.GetBuildRequest(id=1)
+    Service().GetBuild(req, ctx)
     self.assertEqual(ctx.code, expected_code)
     self.assertEqual(ctx.details, expected_details)
 
@@ -84,6 +96,39 @@ class ApiMethodDecoratorTests(BaseTestCase):
   def test_status_code_error_handling(self):
     self.error_handling_test(
         api.InvalidArgument('bad'), prpc.StatusCode.INVALID_ARGUMENT, 'bad')
+
+  def test_invalid_field_mask(self):
+    req = rpc_pb2.GetBuildRequest(
+        fields=field_mask_pb2.FieldMask(paths=['invalid']))
+    self.call(
+        self.api.GetBuild, req,
+        expected_code=prpc.StatusCode.INVALID_ARGUMENT,
+        expected_details=('invalid fields: invalid path "invalid": '
+                          'field "invalid" does not exist in message '
+                          'buildbucket.v2.Build'))
+
+  @mock.patch('service.get', autospec=True)
+  def test_trimming_exclude(self, service_get):
+    service_get.return_value = self.new_build(
+        parameters={'properties': {
+            'a': 'b'
+        }})
+    req = rpc_pb2.GetBuildRequest(id=1)
+    res = self.call(self.api.GetBuild, req)
+    self.assertFalse(res.input.HasField('properties'))
+
+  @mock.patch('service.get', autospec=True)
+  def test_trimming_include(self, service_get):
+    service_get.return_value = self.new_build(parameters={
+        'properties': {
+            'a': 'b',
+        },
+    })
+    req = rpc_pb2.GetBuildRequest(
+        id=1,
+        fields=field_mask_pb2.FieldMask(paths=['input.properties']))
+    res = self.call(self.api.GetBuild, req)
+    self.assertEqual(res.input.properties.items(), [('a', 'b')])
 
 
 class ToBuildMessagesTests(BaseTestCase):
@@ -113,7 +158,11 @@ class ToBuildMessagesTests(BaseTestCase):
         step_pb2.Step(name='a', status=common_pb2.SUCCESS),
         step_pb2.Step(name='b', status=common_pb2.STARTED),
     ]
-    actual = api.to_build_messages([build], None)
+    mask = protoutil.Mask.from_field_mask(
+        field_mask_pb2.FieldMask(paths=['steps']),
+        build_pb2.Build.DESCRIPTOR,
+    )
+    actual = api.to_build_messages([build], mask)
 
     self.assertEqual(len(actual), 1)
     self.assertEqual(list(actual[0].steps), expected_steps)
