@@ -489,8 +489,12 @@
     {% if show_debug_options %}
       <!-- Diagnositic information -->
       <p>
-        status:
-        <a href="{{ pipeline_status_path }}" target="_blank">pipeline status</a>
+        Pipeline:
+        {% if pipeline_status_path %}
+          <a href="{{ pipeline_status_path }}" target="_blank">pipeline status</a>
+        {% else %}
+          Pipeline was not started.
+        {% endif %}
       </p>
 
       <!-- Rerun analysis button -->
