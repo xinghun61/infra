@@ -1,5 +1,0 @@
-this file is shared
-
-{{define "shared_a"}}
-from shared
-{{end}}
