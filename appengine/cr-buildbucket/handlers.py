@@ -340,10 +340,9 @@ def get_frontend_routes():  # pragma: no cover
   routes = [
       webapp2.Route(r'/', MainHandler),
       webapp2.Route(r'/b/<build_id:\d+>', BuildHandler),
-      endpoints_webapp2.discovery_service_route(endpoints_services, '/api'),
   ]
-  for c in endpoints_services:
-    routes += endpoints_webapp2.api_routes(c)
+  routes.extend(
+      endpoints_webapp2.api_server(endpoints_services, base_path='/api'))
 
   prpc_server = prpc.Server()
   prpc_server.add_interceptor(auth.prpc_interceptor)
