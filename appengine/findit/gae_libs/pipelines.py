@@ -102,6 +102,7 @@ import pipeline as pipeline
 from pipeline import handlers as pipeline_handlers
 from pipeline import status_ui as pipeline_status_ui
 
+from libs import exceptions
 from libs.structured_object import StructuredObject
 
 _UNDEFINED_TYPE = object()
@@ -238,6 +239,11 @@ class BasePipeline(pipeline.Pipeline):
     logging.info('Root pipeline: %s', self.root_pipeline_status_path)
     logging.info('Current pipeline: %s', self.pipeline_status_path)
 
+  @exceptions.EnhanceMessage
+  def _RunImplWrapper(self, arg):
+    """Runs RunImpl to catch and process exceptions of user code."""
+    return self.RunImpl(arg)
+
   def finalized(self):
     """Implements Pipeline.finalized and calls customized functions instead."""
     arg = _ConvertPipelineParametersToInputObject(self.input_type, self.args,
@@ -257,7 +263,7 @@ class SynchronousPipeline(BasePipeline):
   def run(self, *args, **kwargs):
     self._LogStatusPath()
     arg = _ConvertPipelineParametersToInputObject(self.input_type, args, kwargs)
-    result = self.RunImpl(arg)
+    result = self._RunImplWrapper(arg)
     if not isinstance(result, self.output_type):
       raise pipeline.Abort('Expected output of type %s, but got %s' %
                            (self.output_type.__name__, type(result).__name__))
@@ -285,7 +291,7 @@ class GeneratorPipeline(BasePipeline):
   def run(self, *args, **kwargs):
     self._LogStatusPath()
     arg = _ConvertPipelineParametersToInputObject(self.input_type, args, kwargs)
-    pipeline_iter = self.RunImpl(arg)
+    pipeline_iter = self._RunImplWrapper(arg)
     if pipeline_iter and not isinstance(pipeline_iter, types.GeneratorType):
       raise pipeline.Abort(
           '%s did not spawn other pipelines' % self.__class__.__name__)
@@ -416,7 +422,7 @@ class AsynchronousPipeline(BasePipeline):
           })
 
     arg = _ConvertPipelineParametersToInputObject(self.input_type, args, kwargs)
-    result = self.RunImpl(arg)
+    result = self._RunImplWrapper(arg)
     if result is not None:
       logging.warning('%s.RunImpl should return nothing, but got a %s',
                       self.__class__.__name__,

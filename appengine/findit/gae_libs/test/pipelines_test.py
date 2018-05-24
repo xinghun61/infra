@@ -3,8 +3,10 @@
 # found in the LICENSE file.
 
 import mock
+import re
 
 from google.appengine.api import taskqueue
+from google.appengine.ext import db  # AppEngine pipeline uses db instead of ndb
 
 from libs.structured_object import StructuredObject
 from gae_libs import pipelines
@@ -19,6 +21,17 @@ class _SimpleInfo(StructuredObject):
 class _ComplexInfo(StructuredObject):
   a = int
   b = _SimpleInfo
+
+
+class _ExceptionPipeline(pipelines.SynchronousPipeline):
+  input_type = int
+  output_type = int
+
+  def _FunctionToTriggerExceptionIntentionally(self, arg):
+    return arg / 0
+
+  def RunImpl(self, arg):
+    return self._FunctionToTriggerExceptionIntentionally(arg)
 
 
 class _SynchronousPipelineWrongOutputType(pipelines.SynchronousPipeline):
@@ -311,6 +324,25 @@ class PipelinesTest(TestCase):
     with self.assertRaises(AssertionError):
       OutputTypeNotSupportedPipeline(1)
 
+  def testFormattedRetryMessage(self):
+    p = _ExceptionPipeline(1)
+    p.max_attempts = 1
+    p.start()
+    self.execute_queued_tasks()
+    p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
+    self.assertTrue(p.was_aborted)
+    pipeline_key = db.Key.from_path(
+        pipelines.pipeline.models._PipelineRecord.kind(), p.pipeline_id)
+    pipeline_record = db.get(pipeline_key)
+    self.assertIsNotNone(pipeline_record)
+    self.assertIsNotNone(pipeline_record.retry_message)
+    message_pattern = re.compile(
+        r'^ZeroDivisionError: gae_libs/test/pipelines_test.py:\d+ '
+        r'\_FunctionToTriggerExceptionIntentionally \$\$ integer '
+        r'division or modulo by zero$')
+    match = message_pattern.match(pipeline_record.retry_message)
+    self.assertIsNotNone(match)
+
   def testWrongOutputTypeForReultOfSynchronousPipeline(self):
     p = _SynchronousPipelineWrongOutputType(1)
     p.start()
@@ -414,12 +446,13 @@ class PipelinesTest(TestCase):
     error_func.assert_called_with('Callback failed with error: %s',
                                   'error message')
 
-  @mock.patch('google.appengine.api.taskqueue.Queue.delete_tasks_by_name',
-              side_effect=taskqueue.BadTaskStateError())
+  @mock.patch(
+      'google.appengine.api.taskqueue.Queue.delete_tasks_by_name',
+      side_effect=taskqueue.BadTaskStateError())
   @mock.patch.object(_AsynchronousPipelineCallback, 'CallbackImpl')
   @mock.patch.object(_AsynchronousPipelineCallback, 'OnTimeout')
-  def testAsynchronousPipelineCallbackTimeout(
-      self, mocked_OnTimeout, mocked_CallbackImpl, _):
+  def testAsynchronousPipelineCallbackTimeout(self, mocked_OnTimeout,
+                                              mocked_CallbackImpl, _):
     p = _WrapperForAsynchronousPipelineCallback(0)
     p.start()
     self.execute_queued_tasks()
@@ -430,15 +463,17 @@ class PipelinesTest(TestCase):
     mocked_OnTimeout.assert_called_once_with(0, {'p': 'v'})
     self.assertFalse(mocked_CallbackImpl.called)
 
-  @mock.patch.object(_AsynchronousPipelineCallback, 'CallbackImpl',
-                     return_value=(None, 1))
+  @mock.patch.object(
+      _AsynchronousPipelineCallback, 'CallbackImpl', return_value=(None, 1))
   @mock.patch.object(_AsynchronousPipelineCallback, 'OnTimeout')
   def testAsynchronousPipelineCallbackNoTimeoutOneCallback(
       self, mocked_OnTimeout, mocked_CallbackImpl):
     original_callback = _AsynchronousPipelineCallback.callback
+
     def Mocked_callback(*args, **kwargs):
       assert '_pipeline_timeout_' not in kwargs, 'Timeout task not deleted'
       original_callback(*args, **kwargs)
+
     self.mock(_AsynchronousPipelineCallback, 'callback', Mocked_callback)
 
     p = _WrapperForAsynchronousPipelineCallback(1)
@@ -451,8 +486,8 @@ class PipelinesTest(TestCase):
     self.assertFalse(mocked_OnTimeout.called)
     mocked_CallbackImpl.assert_called_once_with(1, {'p': 'v'})
 
-  @mock.patch.object(_AsynchronousPipelineCallback, 'CallbackImpl',
-                     return_value=(None, 2))
+  @mock.patch.object(
+      _AsynchronousPipelineCallback, 'CallbackImpl', return_value=(None, 2))
   @mock.patch.object(_AsynchronousPipelineCallback, 'OnTimeout')
   def testAsynchronousPipelineCallbackNoTimeoutDuplicateCallback(
       self, mocked_OnTimeout, mocked_CallbackImpl):
