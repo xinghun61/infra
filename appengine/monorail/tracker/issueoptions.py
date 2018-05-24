@@ -20,6 +20,7 @@ from framework import permissions
 from project import project_helpers
 from tracker import tracker_helpers
 from tracker import tracker_views
+from services import client_config_svc
 
 
 # Here are some restriction labels to help people do the most common things
@@ -258,9 +259,14 @@ def GetMemberOptions(mr, services):
       mr, owner_views, committer_views, contributor_views,
       indirect_member_views)
   # Filter out service accounts
-  visible_member_views = [m for m in visible_member_views
-                          if not framework_helpers.IsServiceAccount(m.email)
-                          and not m.user_id in ac_exclusion_ids]
+  _, service_acct_emails = (
+      client_config_svc.GetClientConfigSvc().GetClientIDEmails())
+  service_acct_emails = set(service_acct_emails)
+  visible_member_views = [
+      m for m in visible_member_views
+      if not framework_helpers.IsServiceAccount(
+        m.email, client_emails=service_acct_emails)
+      and not m.user_id in ac_exclusion_ids]
   visible_member_email_list = sorted(set(
       uv.email for uv in visible_member_views))
   visible_members_dict = {}

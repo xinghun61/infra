@@ -494,3 +494,13 @@ class IsServiceAccountTest(unittest.TestCase):
     self.assertTrue(framework_helpers.IsServiceAccount(developer))
     self.assertTrue(framework_helpers.IsServiceAccount(bugdroid))
     self.assertFalse(framework_helpers.IsServiceAccount(user))
+
+    client_emails = set([appspot, developer, bugdroid])
+    self.assertTrue(framework_helpers.IsServiceAccount(
+        appspot, client_emails=client_emails))
+    self.assertTrue(framework_helpers.IsServiceAccount(
+        developer, client_emails=client_emails))
+    self.assertTrue(framework_helpers.IsServiceAccount(
+        bugdroid, client_emails=client_emails))
+    self.assertFalse(framework_helpers.IsServiceAccount(
+        user, client_emails=client_emails))

@@ -712,12 +712,13 @@ def MakeRandomKey(length=RANDOM_KEY_LENGTH, chars=RANDOM_KEY_CHARACTERS):
   return ''.join(chars)
 
 
-def IsServiceAccount(email):
+def IsServiceAccount(email, client_emails=None):
   """Return a boolean value whether this email is a service account."""
   if email.endswith('gserviceaccount.com'):
     return True
-  _, client_emails = (
-      client_config_svc.GetClientConfigSvc().GetClientIDEmails())
+  if client_emails is None:
+    _, client_emails = (
+        client_config_svc.GetClientConfigSvc().GetClientIDEmails())
   return email in client_emails
 
 
