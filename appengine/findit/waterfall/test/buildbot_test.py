@@ -127,7 +127,7 @@ class BuildBotTest(unittest.TestCase):
     parameters = {'properties': {'parent_mastername': master_name}}
     mock_search.return_value = {
         'builds': [{
-            'parameters_json': json.dumps(parameters)
+            'result_details_json': json.dumps(parameters)
         }]
     }
     expected_result = (master_name, 'Linux Tests SANDBOX', 3932)
@@ -144,7 +144,11 @@ class BuildBotTest(unittest.TestCase):
   def testGetBuildbotMasterNameNotSerializable(self, mock_search):
     url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
            '/Linux%20Tests%20SANDBOX/3932')
-    mock_search.return_value = {'builds': [{'parameters_json': 'Not Found'}]}
+    mock_search.return_value = {
+        'builds': [{
+            'result_details_json': 'Not Found'
+        }]
+    }
     self.assertIsNone(buildbot.ParseBuildUrl(url))
 
   def testParseStepUrl(self):

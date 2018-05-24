@@ -6,6 +6,7 @@ import base64
 from datetime import datetime
 import gzip
 import io
+import inspect
 import logging
 import json
 import re
@@ -13,12 +14,14 @@ import urllib
 
 from common import rpc_util
 from common.waterfall import buildbucket_client
+from gae_libs.caches import PickledMemCache
+from libs.cache_decorator import Cached
 from waterfall.build_info import BuildInfo
 
-# TODO(crbug.com/787676): Use an api rather than parse urls to get the relavant
+# TODO(crbug.com/787676): Use an api rather than parse urls to get the relevant
 # data out of a build/tryjob url.
 _HOST_NAME_PATTERN = (
-    r'https?://(?:build\.chromium\.org/p|\w+\.\w+\.google\.com/i)')
+    r'https?://(?:(?:build|ci)\.chromium\.org/p|\w+\.\w+\.google\.com/i)')
 
 _MASTER_URL_PATTERN = re.compile(r'^%s/([^/]+)(?:/.*)?$' % _HOST_NAME_PATTERN)
 
@@ -173,7 +176,18 @@ def GetMasterNameFromUrl(url):
   return match.group(1)
 
 
+def _ComputeCacheKeyForLuciBuilder(func, args, kwargs, namespace):
+  """Returns a key for the Luci builder passed over to _GetBuildbotMasterName"""
+  params = inspect.getcallargs(func, *args, **kwargs)
+  return '%s-%s::%s' % (namespace, params['bucket_name'],
+                        params['builder_name'])
+
+
 # TODO(crbug/802940): Remove this when the API of getting LUCI build is ready.
+@Cached(
+    PickledMemCache(),
+    namespace='luci-builder-to-master',
+    key_generator=_ComputeCacheKeyForLuciBuilder)
 def _GetBuildbotMasterName(bucket_name, builder_name, build_number):
   """Gets buildbot master name based on build_address."""
   build_address = '%s/%s/%d' % (bucket_name, builder_name, build_number)
@@ -182,7 +196,7 @@ def _GetBuildbotMasterName(bucket_name, builder_name, build_number):
   if not res or len(res.get('builds', [])) < 1:
     return None
 
-  parameters_json = res['builds'][0].get('parameters_json')
+  parameters_json = res['builds'][0].get('result_details_json')
   try:
     properties = json.loads(parameters_json).get('properties', {})
     return properties.get('mastername') or properties.get('parent_mastername')
