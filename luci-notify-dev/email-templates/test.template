@@ -3,4 +3,4 @@
 <a href="{{.Build.ViewUrl}}">Build {{.Build.Number}}</a>
 has completed.
 
-{{template "shared_a" .}}
+{{template "steps" .}}
