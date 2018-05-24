@@ -101,7 +101,11 @@ func acceptLicense(ctx context.Context, xcodeAppPath string) error {
 	return nil
 }
 
-func finalizeInstallLegacy(ctx context.Context, xcodeAppPath, packageInstallerOnBots string) error {
+func finalizeInstallLegacy(ctx context.Context, xcodeAppPath, xcodeVersion, packageInstallerOnBots string) error {
+	if xcodeVersion > "8e3004b" {
+		return nil
+	}
+
 	packages := []string{
 		"MobileDevice.pkg",
 		"MobileDeviceDevelopment.pkg",
@@ -128,7 +132,7 @@ func finalizeInstallLegacy(ctx context.Context, xcodeAppPath, packageInstallerOn
 
 func finalizeInstall(ctx context.Context, xcodeAppPath, xcodeVersion, packageInstallerOnBots string) error {
 	if xcodeVersion <= "8e3004b" {
-		return finalizeInstallLegacy(ctx, xcodeAppPath, packageInstallerOnBots)
+		return nil
 	}
 	err := RunCommand(ctx, "sudo", "/usr/bin/xcodebuild", "-runFirstLaunch")
 	if err != nil {
@@ -180,9 +184,12 @@ func installXcode(ctx context.Context, args InstallArgs) error {
 		if err := acceptLicense(ctx, args.xcodeAppPath); err != nil {
 			return err
 		}
-		if err := finalizeInstall(ctx, args.xcodeAppPath, args.xcodeVersion, args.packageInstallerOnBots); err != nil {
+		if err := finalizeInstallLegacy(ctx, args.xcodeAppPath, args.xcodeVersion, args.packageInstallerOnBots); err != nil {
 			return err
 		}
+	}
+	if err := finalizeInstall(ctx, args.xcodeAppPath, args.xcodeVersion, args.packageInstallerOnBots); err != nil {
+		return err
 	}
 	return enableDeveloperMode(ctx)
 }

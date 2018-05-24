@@ -34,7 +34,7 @@ func TestInstallXcode(t *testing.T) {
 		Convey("for accepted license, mac", func() {
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(s.Calls, ShouldHaveLength, 5)
+			So(s.Calls, ShouldHaveLength, 6)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
 				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
@@ -52,11 +52,14 @@ func TestInstallXcode(t *testing.T) {
 				"-R", "u+w", "testdata/Xcode-old.app",
 			})
 
-			So(s.Calls[3].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
-			So(s.Calls[3].Args, ShouldResemble, []string{"-status"})
+			So(s.Calls[3].Executable, ShouldEqual, "sudo")
+			So(s.Calls[3].Args, ShouldResemble, []string{"/usr/bin/xcodebuild", "-runFirstLaunch"})
 
-			So(s.Calls[4].Executable, ShouldEqual, "sudo")
-			So(s.Calls[4].Args, ShouldResemble, []string{
+			So(s.Calls[4].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[4].Args, ShouldResemble, []string{"-status"})
+
+			So(s.Calls[5].Executable, ShouldEqual, "sudo")
+			So(s.Calls[5].Args, ShouldResemble, []string{
 				"/usr/sbin/DevToolsSecurity",
 				"-enable",
 			})
@@ -70,15 +73,18 @@ func TestInstallXcode(t *testing.T) {
 			}
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(s.Calls, ShouldHaveLength, 2)
+			So(s.Calls, ShouldHaveLength, 4)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
 				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
 			})
 			So(s.Calls[0].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
 
-			So(s.Calls[1].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
-			So(s.Calls[1].Args, ShouldResemble, []string{"-status"})
+			So(s.Calls[1].Executable, ShouldEqual, "sudo")
+			So(s.Calls[1].Args, ShouldResemble, []string{"/usr/bin/xcodebuild", "-runFirstLaunch"})
+
+			So(s.Calls[2].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[2].Args, ShouldResemble, []string{"-status"})
 		})
 
 		Convey("for already installed package with Developer mode disabled", func() {
@@ -89,18 +95,21 @@ func TestInstallXcode(t *testing.T) {
 			}
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(s.Calls, ShouldHaveLength, 3)
+			So(s.Calls, ShouldHaveLength, 4)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
 				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
 			})
 			So(s.Calls[0].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
 
-			So(s.Calls[1].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
-			So(s.Calls[1].Args, ShouldResemble, []string{"-status"})
+			So(s.Calls[1].Executable, ShouldEqual, "sudo")
+			So(s.Calls[1].Args, ShouldResemble, []string{"/usr/bin/xcodebuild", "-runFirstLaunch"})
 
-			So(s.Calls[2].Executable, ShouldEqual, "sudo")
-			So(s.Calls[2].Args, ShouldResemble, []string{
+			So(s.Calls[2].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[2].Args, ShouldResemble, []string{"-status"})
+
+			So(s.Calls[3].Executable, ShouldEqual, "sudo")
+			So(s.Calls[3].Args, ShouldResemble, []string{
 				"/usr/sbin/DevToolsSecurity",
 				"-enable",
 			})
@@ -110,7 +119,7 @@ func TestInstallXcode(t *testing.T) {
 			installArgs.serviceAccountJSON = "test/service-account.json"
 			err := installXcode(ctx, installArgs)
 			So(err, ShouldBeNil)
-			So(s.Calls, ShouldHaveLength, 5)
+			So(s.Calls, ShouldHaveLength, 6)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
 				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
@@ -130,11 +139,14 @@ func TestInstallXcode(t *testing.T) {
 				"-R", "u+w", "testdata/Xcode-old.app",
 			})
 
-			So(s.Calls[3].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
-			So(s.Calls[3].Args, ShouldResemble, []string{"-status"})
+			So(s.Calls[3].Executable, ShouldEqual, "sudo")
+			So(s.Calls[3].Args, ShouldResemble, []string{"/usr/bin/xcodebuild", "-runFirstLaunch"})
 
-			So(s.Calls[4].Executable, ShouldEqual, "sudo")
-			So(s.Calls[4].Args, ShouldResemble, []string{"/usr/sbin/DevToolsSecurity", "-enable"})
+			So(s.Calls[4].Executable, ShouldEqual, "/usr/sbin/DevToolsSecurity")
+			So(s.Calls[4].Args, ShouldResemble, []string{"-status"})
+
+			So(s.Calls[5].Executable, ShouldEqual, "sudo")
+			So(s.Calls[5].Args, ShouldResemble, []string{"/usr/sbin/DevToolsSecurity", "-enable"})
 		})
 
 		Convey("for new license, ios", func() {
