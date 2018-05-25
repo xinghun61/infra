@@ -600,6 +600,8 @@ class SwarmingTest(BaseTest):
                 'builder:linux_chromium_rel_ng',
                 'buildertag:yes',
                 'commontag:yes',
+                ('log_location:logdog://luci-logdog-dev.appspot.com/chromium/'
+                 'buildbucket/cr-buildbucket.appspot.com/1/+/annotations'),
                 'priority:108',
                 'recipe_name:recipe',
                 'recipe_repository:https://example.com/repo',
@@ -772,6 +774,8 @@ class SwarmingTest(BaseTest):
             'swarming_tag:builder:linux_chromium_rel_ng',
             'swarming_tag:buildertag:yes',
             'swarming_tag:commontag:yes',
+            ('swarming_tag:log_location:logdog://luci-logdog-dev.appspot.com/'
+             'chromium/buildbucket/cr-buildbucket.appspot.com/1/+/annotations'),
             'swarming_tag:priority:108',
             'swarming_tag:recipe_name:recipe',
             'swarming_tag:recipe_repository:https://example.com/repo',
@@ -783,6 +787,10 @@ class SwarmingTest(BaseTest):
          '/p/chromium/builders/luci.chromium.try/linux_chromium_rel_ng/1'))
 
     self.assertEqual(build.service_account, 'robot@example.com')
+
+    self.assertEqual(build.logdog_hostname, 'luci-logdog-dev.appspot.com')
+    self.assertEqual(build.logdog_project, 'chromium')
+    self.assertEqual(build.logdog_prefix, 'buildbucket/cr-buildbucket.appspot.com/1')
 
     # Test delegation token params.
     self.assertEqual(auth.delegate_async.mock_calls, [

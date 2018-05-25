@@ -109,6 +109,9 @@ class V2BuildsTest(unittest.TestCase):
         swarming_hostname='swarming.example.com',
         swarming_task_id='deadbeef',
         service_account='service-account@example.com',
+        logdog_hostname='logs.chromium.org',
+        logdog_project='chromium',
+        logdog_prefix='buildbucket/cr-buildbucket.example.com/81271231ba012',
         url='https://ci.example.com/build',
     )
 
@@ -148,6 +151,11 @@ class V2BuildsTest(unittest.TestCase):
                         key='pool', value='luci.chromium.try'),
                     common_pb2.StringPair(key='id', value='bot1'),
                 ],
+            ),
+            logdog=build_pb2.BuildInfra.LogDog(
+                hostname='logs.chromium.org',
+                project='chromium',
+                prefix='buildbucket/cr-buildbucket.example.com/81271231ba012',
             ),
         ),
         created_by='user:john@example.com',

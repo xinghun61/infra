@@ -60,6 +60,11 @@ def build_to_v2_partial(build):
               task_id=build.swarming_task_id,
               task_service_account=build.service_account,
           ),
+          logdog=build_pb2.BuildInfra.LogDog(
+              hostname=build.logdog_hostname,
+              project=build.logdog_project,
+              prefix=build.logdog_prefix,
+          ),
       ),
   )
   status_to_v2(build, ret)

@@ -58,6 +58,7 @@ import config
 import errors
 import events
 import gae_ts_mon
+import logdog
 import model
 
 PUBSUB_TOPIC = 'swarming'
@@ -737,6 +738,12 @@ def create_task_async(build, build_number=None):
   ])
   task_req = res.get('request', {})
   for t in task_req.get('tags', []):
+    key, value = buildtags.parse(t)
+    if key == 'log_location':
+      host, project, prefix, _ = logdog.parse_url(value)
+      build.logdog_hostname = host
+      build.logdog_project = project
+      build.logdog_prefix = prefix
     build.tags.append(buildtags.format(buildtags.SWARMING_TAG_KEY, t))
   for d in task_req.get('properties', {}).get('dimensions', []):
     dt = buildtags.format(d['key'], d['value'])

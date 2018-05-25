@@ -45,24 +45,3 @@ class ParseStepsTest(unittest.TestCase):
     # assertEqual has better support for dicts than protobufs.
     self.assertEqual(
         test_util.msg_to_dict(expected), test_util.msg_to_dict(actual))
-
-
-class ParseLogDogURLTest(unittest.TestCase):
-
-  def test_success(self):
-    url = ('logdog://luci-logdog-dev.appspot.com/'
-           'infra/'
-           'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048/+/'
-           'annotations')
-    expected = (
-        'luci-logdog-dev.appspot.com',
-        'infra',
-        'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048',
-        'annotations',
-    )
-    actual = steps.parse_logdog_url(url)
-    self.assertEqual(actual, expected)
-
-  def test_failure(self):
-    with self.assertRaises(ValueError):
-      steps.parse_logdog_url('logdog://trash')
