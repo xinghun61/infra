@@ -268,7 +268,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     approval_issue.approval_values = approval_values
     self.services.issue.TestAddIssue(approval_issue)
 
-    amend = tracker_bizobj.MakeApprovalApproversAmendment([7, 9], [8, 9])
+    amend = tracker_bizobj.MakeApprovalApproversAmendment([8], [7])
 
     comment = tracker_pb2.IssueComment(
         project_id=12345, user_id=9, issue_id=approval_issue.issue_id,
@@ -329,10 +329,10 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.assertItemsEqual(rids, [222L, 333L])
 
     # Approvers change notifies everyone.
-    approval_value.approver_ids = [333L, 555L]
     amendment = tracker_bizobj.MakeApprovalApproversAmendment(
         [222L], [555L])
     comment.amendments = [amendment]
+    approval_value.approver_ids = [222L]
     rids = task._GetApprovalEmailRecipients(
         approval_value, comment, issue, [777L], omit_ids=[444L, 333L])
     self.assertItemsEqual(rids, [111L, 222L, 555L, 777L])

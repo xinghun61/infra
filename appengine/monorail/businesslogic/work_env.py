@@ -515,59 +515,6 @@ class WorkEnv(object):
         issue, allow_viewing_deleted=allow_viewing_deleted)
     return issue
 
-  def UpdateIssueApprovalStatus(
-      self, issue_id, approval_id, new_status, set_on):
-    """Update an issue's approvalvalue."""
-    issue, approval_value = self.services.issue.GetIssueApproval(
-        self.mr.cnxn, issue_id, approval_id)
-
-    self._AssertUserCanViewIssue(issue)
-    if not permissions.CanUpdateApprovalStatus(
-        self.mr.auth.effective_ids, approval_value.approver_ids,
-        approval_value.status, new_status):
-      raise permissions.PermissionException(
-          'User not allowed to make this status update.')
-
-    with self.mr.profiler.Phase(
-        'updating approvalvalue for issue %r' % issue_id):
-      self.services.issue.UpdateIssueApprovalStatus(
-          self.mr.cnxn, issue_id, approval_id, new_status, self.mr.auth.user_id, set_on)
-      status_amendment = tracker_bizobj.MakeApprovalStatusAmendment(new_status)
-      comment = self.services.issue.CreateIssueComment(
-          self.mr.cnxn, issue, self.mr.auth.user_id, '', amendments=[status_amendment],
-          approval_id=approval_id)
-      send_notifications.PrepareAndSendApprovalChangeNotification(
-          issue.issue_id, approval_value.approval_id, self.mr.request.host, comment.id)
-    logging.info('updated ApprovalValue %r for issue %r',
-                 approval_id, issue_id)
-
-  def UpdateIssueApprovalApprovers(self, issue_id, approval_id, approver_ids):
-    """Update an issue's approval approvers."""
-    issue, approval_value = self.services.issue.GetIssueApproval(
-        self.mr.cnxn, issue_id, approval_id)
-
-    self._AssertUserCanViewIssue(issue)
-    # TODO(jojwang): monorail:3582, OR this with project admin/owners
-    # or check for admin/owner perms inside CanUpdateApprovers
-    if not permissions.CanUpdateApprovers(
-        self.mr.auth.effective_ids, approval_value.approver_ids):
-      raise permissions.PermissionException(
-          'User not allowed to modify approvers of this approval.')
-
-    with self.mr.profiler.Phase(
-        'updating approvers for issue %r, approval %r' % (
-            issue_id, approval_id)):
-      self.services.issue.UpdateIssueApprovalApprovers(
-          self.mr.cnxn, issue_id, approval_id, approver_ids)
-      approver_amendment = tracker_bizobj.MakeApprovalApproversAmendment(
-          approval_value.approver_ids, approver_ids)
-      comment = self.services.issue.CreateIssueComment(
-          self.mr.cnxn, issue, self.mr.auth.user_id, '',
-          amendments=[approver_amendment], approval_id=approval_id)
-      send_notifications.PrepareAndSendApprovalChangeNotification(
-          issue.issue_id, approval_value.approval_id, self.mr.request.host, comment.id)
-    logging.info('updated approvers to %r' % approver_ids)
-
   def UpdateIssue(self, issue, delta, comment_content, send_email=True):
     """Update an issue, TODO: iff the signed in user may edit it.
 

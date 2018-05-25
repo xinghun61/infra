@@ -1132,19 +1132,18 @@ def MakeApprovalStatusAmendment(new_status):
       custom_field_name='Status')
 
 
-def MakeApprovalApproversAmendment(old_approvers, new_approvers):
+def MakeApprovalApproversAmendment(approvers_add, approvers_remove):
   """Return an Amendment showing an issue approval's approvers changed.
 
   Args:
-    old_approvers: list of previous approver user_ids.
-    new_approvers: list of strings approver user_ids.
+    approvers_add: list of approver user_ids being added.
+    approvers_remove: list of approver user_ids being removed.
 
   Returns:
     A new Amendment object.
   """
-  added, removed = DiffValueLists(new_approvers, old_approvers)
   return MakeAmendment(
-      tracker_pb2.FieldID.CUSTOM, '', added, removed,
+      tracker_pb2.FieldID.CUSTOM, '', approvers_add, approvers_remove,
       custom_field_name='Approvers')
 
 
