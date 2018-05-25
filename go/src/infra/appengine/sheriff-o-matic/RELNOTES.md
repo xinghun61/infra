@@ -1,3 +1,19 @@
+# Release Notes sheriff-o-matic 2018-05-25
+
+- 1 commits, 1 bugs affected since fc95abd ()
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Only attempt to attach artifacts to test failures for perf.](https://chromium-review.googlesource.com/1072452) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/846562](https://crbug.com/846562)
+
+
 # Release Notes sheriff-o-matic 2018-05-22
 
 - 4 commits, 2 bugs affected since b14fa24 (2018-05-15T21:15:39Z)
