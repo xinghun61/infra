@@ -100,6 +100,7 @@ import operator
 import random
 import re
 import webapp2
+import zlib
 
 from google.appengine import runtime
 from google.appengine.api import datastore_errors
@@ -426,7 +427,7 @@ class RepoService(object):
     # See processing.ExtractCIPDClientProcessor for code that puts this data.
     # CIPD_BINARY_EXTRACT_PROCESSOR includes a version number that is bumped
     # whenever format of the data changes, so assume the data is correct.
-    data = processing_result.result.get('client_binary')
+    data = processing_result.read_result().get('client_binary')
     assert isinstance(data['size'], (int, long))
     assert data['hash_algo'] == 'SHA1'
     assert cas.is_valid_hash_digest('SHA1', data['hash_digest'])
@@ -798,7 +799,7 @@ class RepoService(object):
       # Prepare the ProcessingResult entity.
       result_entity = ProcessingResult(key=key, created_ts=utils.utcnow())
       result_entity.success = result is not None
-      result_entity.result = result
+      result_entity.write_result(result)
       result_entity.error = error
       # Apply the change.
       ndb.put_multi([package_instance, result_entity])
@@ -1115,6 +1116,12 @@ class ProcessingResult(ndb.Model):
 
   Entity ID is a processor name used to extract it. Parent entity is
   PackageInstance the information was extracted from.
+
+  For interoperability with Go version of the backend, compressed 'result' field
+  is handled in a special way. When Go backend writes it, it doesn't mark the
+  field as compressed (this functionality is not available in Go datastore
+  package), and it causes Python backend to read it in its compressed form. We
+  detect this case by absence of first '{', and decompress the field manually.
   """
   # Disable useless in-memory per-request cache. It's harmful in tests.
   _use_cache = False
@@ -1126,7 +1133,31 @@ class ProcessingResult(ndb.Model):
   # For success==False, an error message.
   error = ndb.TextProperty(required=False)
   # For success==True, a result of the processing as returned by Processor.run.
-  result = ndb.JsonProperty(required=False, compressed=True)
+  result = ndb.BlobProperty(required=False, compressed=True)
+
+  def write_result(self, res):
+    assert res is None or isinstance(res, dict), res
+    # Ndb will compress it for us.
+    self.result = json.dumps(res) if res is not None else None
+
+  def read_result(self):
+    if not self.result:
+      return None
+    # Is result uncompressed already? Happens when the entity was written by
+    # Python version of the backend. Note that zlib data never starts with '{',
+    # see https://stackoverflow.com/a/9050274.
+    if self.result[0] == '{':
+      return json.loads(self.result)
+    # Most likely self.result is zlib-compressed, so try to unzip it.
+    logging.warning(
+        'Looks like result is prepared by Go backend, '
+        'trying to decompress it now')
+    return json.loads(zlib.decompress(self.result))
+
+  def to_dict(self):
+    d = super(ProcessingResult, self).to_dict()
+    d['result'] = self.read_result()
+    return d
 
 
 def processing_result_key(package_name, instance_id, processor_name):

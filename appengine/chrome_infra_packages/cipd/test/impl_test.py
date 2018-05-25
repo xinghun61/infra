@@ -4,10 +4,12 @@
 
 import datetime
 import hashlib
+import json
 import random
 import StringIO
 import unittest
 import zipfile
+import zlib
 
 from google.appengine.ext import ndb
 from testing_utils import testing
@@ -526,6 +528,11 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertIsNone(info)
     self.assertEqual(
         'Failed to extract the binary: File is not a zip file', error_msg)
+
+  def test_compressed_processing_result(self):
+    p = impl.ProcessingResult()
+    p.result = zlib.compress(json.dumps({'a': 'b'}))
+    self.assertEqual({'a': 'b'}, p.read_result())
 
   def test_set_package_ref(self):
     ident1 = auth.Identity.from_bytes('user:abc@example.com')
