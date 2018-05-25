@@ -16,7 +16,7 @@ import (
 )
 
 func makeFakeAnalyzer(data []messages.ReasonRaw, errs []error) Analyzer {
-	return func(context.Context, []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+	return func(context.Context, []*messages.BuildStep, string) ([]messages.ReasonRaw, []error) {
 		return data, errs
 	}
 }
@@ -28,7 +28,7 @@ func TestReasonsForFailures(t *testing.T) {
 			Convey("nil", func() {
 				analyzers = []Analyzer{makeFakeAnalyzer(nil, nil)}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					nil,
 				})
 			})
@@ -40,7 +40,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}, nil),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 				})
 			})
@@ -53,7 +53,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}, nil),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 					nil,
 				})
@@ -70,7 +70,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 					nil,
 				})
@@ -87,7 +87,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 					nil,
 				})
@@ -104,7 +104,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}, nil),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "baz"},
 				})
 			})
@@ -121,7 +121,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 				})
 			})
@@ -143,7 +143,7 @@ func TestBasicAnalyzer(t *testing.T) {
 						Name: "bar",
 					},
 				},
-			})
+			}, "")
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
 				&basicFailure{

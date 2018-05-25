@@ -454,7 +454,7 @@ func TestTestStepFailureAlerts(t *testing.T) {
 
 					c = client.WithTestResults(c, testResultsFake.Server.URL)
 					finditFake.JSONResponse = &client.FinditAPIResponse{Results: test.finditResults}
-					gotResult, gotErr := testFailureAnalyzer(c, test.failures)
+					gotResult, gotErr := testFailureAnalyzer(c, test.failures, "chromium.perf")
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)
 				})

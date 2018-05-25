@@ -49,7 +49,7 @@ func (c *compileFailure) Title(bses []*messages.BuildStep) string {
 // compileFailureAnalyzer finds compile failures. The current logic for finding
 // compile failures isn't all that sophisticated, but it could be improved in
 // the future.
-func compileFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+func compileFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
 	results := make([]messages.ReasonRaw, len(fs))
 
 	for i, f := range fs {

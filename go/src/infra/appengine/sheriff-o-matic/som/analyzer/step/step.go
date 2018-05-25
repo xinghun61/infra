@@ -28,17 +28,17 @@ var (
 // If the analyzer returns errors, the reasons provided by it are only
 // considered invalid for the build steps which the analyzer had errors
 // processing.
-type Analyzer func(ctx context.Context, failures []*messages.BuildStep) ([]messages.ReasonRaw, []error)
+type Analyzer func(ctx context.Context, failures []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error)
 
 // ReasonFinder is a function which finds reasons for a set of build steps.
-type ReasonFinder func(ctx context.Context, failures []*messages.BuildStep) []messages.ReasonRaw
+type ReasonFinder func(ctx context.Context, failures []*messages.BuildStep, tree string) []messages.ReasonRaw
 
 // ReasonsForFailures is the default reason finder for package step.
-func ReasonsForFailures(ctx context.Context, failures []*messages.BuildStep) []messages.ReasonRaw {
+func ReasonsForFailures(ctx context.Context, failures []*messages.BuildStep, tree string) []messages.ReasonRaw {
 	reasons := make([]messages.ReasonRaw, len(failures))
 
 	for _, fa := range analyzers {
-		res, errs := fa(ctx, failures)
+		res, errs := fa(ctx, failures, tree)
 		if errs != nil {
 			logging.Errorf(ctx, "Got errors while analyzing with %v: %s", fa, errs)
 		}
@@ -81,7 +81,7 @@ func (b *basicFailure) Title(bses []*messages.BuildStep) string {
 	return fmt.Sprintf("%s failing on multiple builders", f.Step.Name)
 }
 
-func basicAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+func basicAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
 	results := make([]messages.ReasonRaw, len(fs))
 
 	for i, f := range fs {

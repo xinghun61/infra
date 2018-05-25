@@ -116,7 +116,7 @@ extern const DECLSPEC_SELECTANY CD3D11_VIDEO_DEFAULT D3D11_VIDEO_DEFAULT;
 				test := test
 				Convey(test.name, func() {
 					mc.StdioForStepValue = strings.Split(test.stdio, "\n")
-					gotResult, gotErr := compileFailureAnalyzer(ctx, test.failures)
+					gotResult, gotErr := compileFailureAnalyzer(ctx, test.failures, "")
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)
 				})

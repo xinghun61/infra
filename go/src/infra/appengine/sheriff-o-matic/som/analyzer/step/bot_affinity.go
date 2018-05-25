@@ -80,7 +80,7 @@ func (p *botFailure) Title(bses []*messages.BuildStep) string {
 // tests has infrastructure issues. It does this by looking for annotations on
 // the step which was run to determine which bots were affected, and by only
 // analyzing steps which were infrastructure failures.
-func botAnalyzer(ctx context.Context, failures []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+func botAnalyzer(ctx context.Context, failures []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
 	if len(failures) == 0 {
 		return []messages.ReasonRaw{}, nil
 	}

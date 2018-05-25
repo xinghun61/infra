@@ -110,7 +110,7 @@ type TestWithResult struct {
 
 // testFailureAnalyzer analyzes steps to see if there is any data in the tests
 // server which corresponds to the failure.
-func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
 	results := make([]messages.ReasonRaw, len(fs))
 
 	for i, f := range fs {
@@ -127,12 +127,14 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messa
 			continue
 		}
 		for t, r := range failure.Tests {
-			artifacts, err := getArtifactsForTest(ctx, f, r.TestName)
-			if err != nil {
-				logging.Errorf(ctx, "couldn't get test artifacts for %+v: %v", r.TestName, err)
-			} else {
-				failure.Tests[t].Artifacts = artifacts
-				logging.Infof(ctx, "added %d artifacts to %q", len(failure.Tests[t].Artifacts), r.TestName)
+			if tree == "chromium.perf" {
+				artifacts, err := getArtifactsForTest(ctx, f, r.TestName)
+				if err != nil {
+					logging.Errorf(ctx, "couldn't get test artifacts for %+v: %v", r.TestName, err)
+				} else {
+					failure.Tests[t].Artifacts = artifacts
+					logging.Infof(ctx, "added %d artifacts to %q", len(failure.Tests[t].Artifacts), r.TestName)
+				}
 			}
 
 			config, ok := te.BuilderConfigs[f.Build.BuilderName]

@@ -741,7 +741,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 
 	// Might not need full capacity buffer, since some failures are ignored below.
 	rs := make(chan res, len(filteredFailures))
-	reasons := a.reasonFinder(ctx, filteredFailures)
+	reasons := a.reasonFinder(ctx, filteredFailures, tree)
 
 	wg := sync.WaitGroup{}
 	scannedFailures := []*messages.BuildStep{}

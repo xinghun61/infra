@@ -66,10 +66,10 @@ type fakeAnalyzer struct {
 }
 
 func (f *fakeAnalyzer) Analyze(ctx context.Context, failures []*messages.BuildStep) []messages.ReasonRaw {
-	return fakeFinder(ctx, failures)
+	return fakeFinder(ctx, failures, "")
 }
 
-func fakeFinder(ctx context.Context, failures []*messages.BuildStep) []messages.ReasonRaw {
+func fakeFinder(ctx context.Context, failures []*messages.BuildStep, tree string) []messages.ReasonRaw {
 	raws := make([]messages.ReasonRaw, len(failures))
 	for i := range failures {
 		raws[i] = &fakeReasonRaw{}
