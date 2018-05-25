@@ -83,7 +83,7 @@ def validate_tags(tags, mode, builder=None):
     'search': tags to search by.
 
   builder is the value of "builder_name" parameter. If specified, tags
-  "builder:<v>" must have v equal to the builder.
+  "builder:<v>" must have v equal to the builder. Relevant only in 'new' mode.
   """
   assert mode in ('new', 'append', 'search'), mode
   if tags is None:

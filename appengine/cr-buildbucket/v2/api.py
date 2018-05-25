@@ -21,6 +21,7 @@ from proto import step_pb2  # pylint: disable=unused-import
 import buildtags
 import model
 import service
+import validation
 import v2
 
 
@@ -88,6 +89,8 @@ def api_method(default_mask=None):
           return res
         except auth.AuthorizationError:
           raise NotFound()
+        except validation.Error as ex:
+          raise InvalidArgument(ex.message)
 
       except StatusCodeError as ex:
         ctx.set_code(ex.code)
@@ -148,12 +151,11 @@ class BuildsApi(object):
   @api_method(default_mask=DEFAULT_BUILD_MASK)
   def GetBuild(self, req, ctx, mask):
     """Retrieves a build by id or number."""
+    validation.validate_get_build_request(req)
+
     if req.id:
-      if req.HasField('builder') or req.build_number:
-        raise InvalidArgument(
-            'id is mutually exclusive with builder and build_number')
       build = service.get(req.id)
-    elif req.HasField('builder') and req.build_number:
+    else:
       bucket = v1_bucket(req.builder)
       tag = buildtags.build_address_tag(bucket, req.builder.builder,
                                         req.build_number)
@@ -163,8 +165,6 @@ class BuildsApi(object):
               tags=[tag],
           ))
       build = builds[0] if builds else None
-    else:
-      raise InvalidArgument('id or (builder and build_number) are required')
 
     if not build:
       raise NotFound()
