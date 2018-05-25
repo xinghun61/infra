@@ -28,7 +28,7 @@ func init() {
 	r.POST("/internal/analyze", baseInternal, analyzeHandler)
 
 	r.GET("/", base, landingPageHandler)
-	r.GET("/run/:runId", base, runPageHandler)
+	r.GET("/run/*runID", base, landingPageHandler)
 
 	// Configure pRPC server.
 	s := common.NewRPCServer()

@@ -139,9 +139,8 @@ func NewRPCServer() *prpc.Server {
 // In particular it includes a set of default arguments passed to all templates.
 func prepareTemplates() *templates.Bundle {
 	return &templates.Bundle{
-		Loader:          templates.FileSystemLoader("templates"),
-		DebugMode:       info.IsDevAppServer,
-		DefaultTemplate: "base", // defined in includes/base.hml
+		Loader:    templates.FileSystemLoader("templates"),
+		DebugMode: info.IsDevAppServer,
 		DefaultArgs: func(c context.Context, e *templates.Extra) (templates.Args, error) {
 			loginURL, err := auth.LoginURL(c, e.Request.URL.RequestURI())
 			if err != nil {
