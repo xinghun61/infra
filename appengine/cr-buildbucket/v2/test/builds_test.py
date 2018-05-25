@@ -15,7 +15,6 @@ from components import auth
 from proto import common_pb2
 from proto import build_pb2
 from v2 import builds
-from v2 import errors
 from test import test_util
 import model
 
@@ -239,7 +238,7 @@ class V2BuildsTest(unittest.TestCase):
   def test_build_to_v2_no_builder_name(self):
     build = mkbuild()
     del build.parameters[model.BUILDER_PARAMETER]
-    with self.assertRaises(errors.UnsupportedBuild):
+    with self.assertRaises(builds.UnsupportedBuild):
       builds.build_to_v2_partial(build)
 
 

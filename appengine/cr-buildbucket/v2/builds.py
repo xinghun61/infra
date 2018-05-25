@@ -8,11 +8,25 @@ import logging
 from google.protobuf import struct_pb2
 from google.protobuf import timestamp_pb2
 
-from . import errors
 from proto import build_pb2
 from proto import common_pb2
 import buildtags
 import model
+
+
+__all__ = [
+    'UnsupportedBuild',
+    'MalformedBuild',
+    'build_to_v2_partial',
+]
+
+
+class UnsupportedBuild(Exception):
+  """A build cannot be converted to v2 format."""
+
+
+class MalformedBuild(Exception):
+  """A build has unexpected format."""
 
 
 def build_to_v2_partial(build):
@@ -20,7 +34,7 @@ def build_to_v2_partial(build):
 
   The returned build does not include steps.
 
-  May raise errors.UnsupportedBuild or errors.MalformedBuild.
+  May raise UnsupportedBuild or MalformedBuild.
   """
   result_details = build.result_details or {}
   ret = build_pb2.Build(
@@ -113,7 +127,7 @@ def _parse_tags(dest_msg, tags):
         _, _, dest_msg.number = buildtags.parse_build_address(v)
         continue
       except ValueError as ex:  # pragma: no cover
-        raise errors.MalformedBuild('invalid build address "%s": %s' % (v, ex))
+        raise MalformedBuild('invalid build address "%s": %s' % (v, ex))
     elif k in ('swarming_hostname', 'swarming_task_id'):
       # These tags are added automatically and are covered by proto fields.
       # Omit them.
@@ -125,7 +139,7 @@ def _parse_tags(dest_msg, tags):
 def _get_builder_id(build):
   builder = (build.parameters or {}).get(model.BUILDER_PARAMETER)
   if not builder:
-    raise errors.UnsupportedBuild(
+    raise UnsupportedBuild(
         'does not have %s parameter' % model.BUILDER_PARAMETER)
 
   bucket = build.bucket
@@ -175,7 +189,7 @@ def status_to_v2(src, dest):
         dest.infra_failure_reason.resource_exhaustion = True
 
   if dest.status == common_pb2.STATUS_UNSPECIFIED:  # pragma: no cover
-    raise errors.MalformedBuild('invalid status in src %d' % src.key.id())
+    raise MalformedBuild('invalid status in src %d' % src.key.id())
 
 
 def status_to_v1(src, dest):
@@ -217,7 +231,7 @@ def status_to_v1(src, dest):
     dest.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
 
   if dest.status is None:  # pragma: no cover
-    raise errors.MalformedBuild('invalid status in src %d' % src.id)
+    raise MalformedBuild('invalid status in src %d' % src.id)
 
 
 def _dict_to_struct(d):
