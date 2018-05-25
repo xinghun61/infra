@@ -51,6 +51,8 @@ from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugInput)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugPipeline)
+from pipelines.report_event_pipeline import ReportAnalysisEventPipeline
+from pipelines.report_event_pipeline import ReportEventInput
 from services import swarmed_test_util
 from services.flake_failure import confidence_score_util
 from services.flake_failure import flake_analysis_util
@@ -60,7 +62,7 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class AnalyzeFlakePipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def testAnalyzeFlakePipelineAnalysisFinishedNoFindigs(self):
+  def testAnalyzeFlakePipelineAnalysisFinishedNoFindings(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
@@ -72,6 +74,11 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         manually_triggered=False,
         retries=0,
         step_metadata=None)
+
+    expected_report_event_input = ReportEventInput(
+        analysis_urlsafe_key=analysis.key.urlsafe())
+    self.MockGeneratorPipeline(ReportAnalysisEventPipeline,
+                               expected_report_event_input, None)
 
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
     pipeline_job.start()
@@ -138,6 +145,9 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         analysis_urlsafe_key=analysis.key.urlsafe())
     expected_notify_culprit_input = NotifyCulpritInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
+    expected_report_event_input = ReportEventInput(
+        analysis_urlsafe_key=analysis.key.urlsafe())
+
     self.MockGeneratorPipeline(CreateBugForFlakePipeline,
                                expected_create_bug_input, None)
     self.MockGeneratorPipeline(CreateAndSubmitRevertPipeline,
@@ -146,6 +156,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
                                expected_update_bug_input, None)
     self.MockGeneratorPipeline(NotifyCulpritPipeline,
                                expected_notify_culprit_input, None)
+    self.MockGeneratorPipeline(ReportAnalysisEventPipeline,
+                               expected_report_event_input, None)
 
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
     pipeline_job.start()

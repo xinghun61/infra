@@ -354,4 +354,6 @@ def CreateTestFlakeAnalysisCompletionEvent(analysis):
   if analysis.has_filed_bug:
     event.analysis_info.actions.append(findit_pb2.BUG_CREATED)
 
+  # TODO (crbug.com/846531): Track auto revert.
+
   return event

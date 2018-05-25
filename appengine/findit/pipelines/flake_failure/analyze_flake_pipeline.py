@@ -44,6 +44,8 @@ from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugInput)
 from pipelines.flake_failure.update_monorail_bug_pipeline import (
     UpdateMonorailBugPipeline)
+from pipelines.report_event_pipeline import ReportAnalysisEventPipeline
+from pipelines.report_event_pipeline import ReportEventInput
 from services import swarmed_test_util
 from services.flake_failure import confidence_score_util
 from services.flake_failure import flake_analysis_util
@@ -87,7 +89,9 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
     if analysis.request_time:
       monitoring.pipeline_times.increment_by(
           int((time_util.GetUTCNow() - analysis.request_time).total_seconds()),
-          {'type': 'flake'})
+          {
+              'type': 'flake'
+          })
 
     commit_position_parameters = parameters.analyze_commit_position_parameters
     commit_position_to_analyze = commit_position_parameters.next_commit_position
@@ -102,6 +106,11 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
         analysis.LogInfo('Analysis completed with no findings')
         analysis.Update(
             end_time=time_util.GetUTCNow(), status=analysis_status.COMPLETED)
+
+        # Report events to BQ.
+        yield ReportAnalysisEventPipeline(
+            self.CreateInputObjectInstance(
+                ReportEventInput, analysis_urlsafe_key=analysis_urlsafe_key))
         return
 
       # Create a FlakeCulprit.
@@ -152,6 +161,11 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
         yield CreateAndSubmitRevertPipeline(create_and_submit_revert_input)
         yield UpdateMonorailBugPipeline(monorail_bug_input)
         yield NotifyCulpritPipeline(notify_culprit_input)
+
+        # Report events to BQ.
+        yield ReportAnalysisEventPipeline(
+            self.CreateInputObjectInstance(
+                ReportEventInput, analysis_urlsafe_key=analysis_urlsafe_key))
         return
 
     commit_info = crrev.RedirectByCommitPosition(FinditHttpClient(),
