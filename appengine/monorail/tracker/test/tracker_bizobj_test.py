@@ -1283,7 +1283,7 @@ class BizobjTest(unittest.TestCase):
 
   def testMakeApprovalApproversAmendment(self):
     actual_amendment = tracker_bizobj.MakeApprovalApproversAmendment(
-           [222L], [333L])
+        [222L], [333L])
     amendment = tracker_pb2.Amendment(
         field=tracker_pb2.FieldID.CUSTOM, newvalue='', added_user_ids=[222L],
         removed_user_ids=[333L], custom_field_name='Approvers')

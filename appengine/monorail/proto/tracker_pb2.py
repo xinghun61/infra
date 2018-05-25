@@ -52,6 +52,17 @@ class ApprovalValue(messages.Message):
   phase_id = messages.IntegerField(7)
 
 
+class ApprovalDelta(messages.Message):
+  """In-memory representation of requested changes to an issue's approval."""
+  status = messages.EnumField(ApprovalStatus, 1)
+  set_on = messages.IntegerField(2)
+  setter_id = messages.IntegerField(3)
+  approver_ids_add = messages.IntegerField(4, repeated=True)
+  approver_ids_remove = messages.IntegerField(5, repeated=True)
+  subfield_vals_add = messages.MessageField(FieldValue, 6, repeated=True)
+  subfield_vals_remove = messages.MessageField(FieldValue, 7, repeated=True)
+
+
 class Phase(messages.Message):
   """Holds a single launch review phase."""
   phase_id = messages.IntegerField(1)

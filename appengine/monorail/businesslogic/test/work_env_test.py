@@ -332,6 +332,30 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetIssueByLocalID(789, 1)
 
+  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
+  def testUpdateIssueApproval(self, mockPrepareAndSend):
+    """We can update an issue's approval_value."""
+
+    self.services.issue.DeltaUpdateIssueApproval = Mock()
+
+    self.SignIn()
+
+    av_24 = tracker_pb2.ApprovalValue(
+        approval_id=24, approver_ids=[111L],
+        status=tracker_pb2.ApprovalStatus.NOT_SET,set_on=1234, setter_id=999L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
+                               issue_id=78901, approval_values=[av_24])
+    self.services.issue.TestAddIssue(issue)
+
+    delta = tracker_pb2.ApprovalDelta(
+        status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED, set_on=2345,
+        approver_ids_add=[222L])
+
+    self.work_env.UpdateIssueApproval(78901, 24, delta, 'please review')
+
+    self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
+        self.mr.cnxn, 111L, issue, av_24, delta, comment='please review')
+
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Normal(self, fake_pasicn):
     """We can update an issue."""

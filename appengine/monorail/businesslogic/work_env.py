@@ -515,6 +515,36 @@ class WorkEnv(object):
         issue, allow_viewing_deleted=allow_viewing_deleted)
     return issue
 
+  def UpdateIssueApproval(self, issue_id, approval_id, approval_delta, comment_content):
+    """Update an issue's approval."""
+
+    issue, approval_value = self.services.issue.GetIssueApproval(
+        self.mr.cnxn, issue_id, approval_id)
+
+    self._AssertUserCanViewIssue(issue)
+
+    if approval_delta.status:
+      if not permissions.CanUpdateApprovalStatus(
+          self.mr.auth.effective_ids, approval_value.approver_ids,
+          approval_value.status, approval_delta.status):
+        raise permissions.PermissionException(
+            'User not allowed to make this status update.')
+
+    if approval_delta.approver_ids_remove or approval_delta.approver_ids_add:
+      if not permissions.CanUpdateApprovers(
+          self.mr.auth.effective_ids, approval_value.approver_ids):
+        raise permissions.PermissionException(
+            'User not allowed to modify approvers of this approval.')
+
+    with self.mr.profiler.Phase(
+        'updating approval for issue %r, aprpoval %r' % (
+            issue_id, approval_id)):
+      comment_pb = self.services.issue.DeltaUpdateIssueApproval(
+          self.mr.cnxn, self.mr.auth.user_id, issue, approval_value,
+          approval_delta, comment=comment_content)
+      send_notifications.PrepareAndSendApprovalChangeNotification(
+          issue_id, approval_id, self.mr.request.host, comment_pb.id)
+
   def UpdateIssue(self, issue, delta, comment_content, send_email=True):
     """Update an issue, TODO: iff the signed in user may edit it.
 

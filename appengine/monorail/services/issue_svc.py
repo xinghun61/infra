@@ -2429,9 +2429,57 @@ class IssueService(object):
       return issue, approval
     raise exceptions.NoSuchIssueApprovalException()
 
-  def UpdateIssueApprovalStatus(
-      self, cnxn, issue_id, approval_id, status, setter_id, set_on,
-      commit=True):
+  def DeltaUpdateIssueApproval(
+      self, cnxn, modifier_id, issue, approval, approval_delta,
+      comment_content=None, commit=True):
+    """Update the issue's approval in the database."""
+    amendments = []
+
+    # Update status in RAM and DB and create status amendment.
+    if approval_delta.status:
+      approval.status = approval_delta.status
+      approval.set_on = approval_delta.set_on or int(time.time())
+      approval.setter_id = modifier_id
+      status_amendment = tracker_bizobj.MakeApprovalStatusAmendment(
+          approval_delta.status)
+      amendments.append(status_amendment)
+
+      self._UpdateIssueApprovalStatus(
+        cnxn, issue.issue_id, approval.approval_id, approval.status,
+        approval.setter_id, approval.set_on)
+
+    # Update approver_ids in RAM and DB and create approver amendment.
+    approvers_add = [approver for approver in approval_delta.approver_ids_add
+                     if approver not in approval.approver_ids]
+    approvers_remove = [approver for approver in
+                        approval_delta.approver_ids_remove
+                        if id in approval.approver_ids]
+    if approvers_add or approvers_remove:
+      approver_ids = [approver for approver in
+                      list(approval.approver_ids) + approvers_add
+                      if approver not in approvers_remove]
+      approval.approver_ids = approver_ids
+      approvers_amendment = tracker_bizobj.MakeApprovalApproversAmendment(
+          approvers_add, approvers_remove)
+      amendments.append(approvers_amendment)
+
+      self._UpdateIssueApprovalApprovers(
+          cnxn, issue.issue_id, approval.approval_id, approver_ids)
+
+    # TODO(jojwang): monorail:3263, update approval.sub_field_values
+
+    comment_pb = self.CreateIssueComment(
+        cnxn, issue, modifier_id, comment_content, amendments=amendments,
+        approval_id=approval.approval_id, commit=False)
+
+    if commit:
+      cnxn.Commit()
+    self.issue_2lc.InvalidateKeys(cnxn, [issue.issue_id])
+
+    return comment_pb
+
+  def _UpdateIssueApprovalStatus(
+      self, cnxn, issue_id, approval_id, status, setter_id, set_on):
     """Update the approvalvalue for the given issue_id's issue."""
     set_on = set_on or int(time.time())
     delta = {
@@ -2443,12 +2491,8 @@ class IssueService(object):
         cnxn, delta, approval_id=approval_id, issue_id=issue_id,
         commit=False)
 
-    if commit:
-      cnxn.Commit()
-    self.issue_2lc.InvalidateKeys(cnxn, [issue_id])
-
-  def UpdateIssueApprovalApprovers(
-      self, cnxn, issue_id, approval_id, approver_ids, commit=True):
+  def _UpdateIssueApprovalApprovers(
+      self, cnxn, issue_id, approval_id, approver_ids):
     """Update the list of approvers allowed to approve an issue's approval."""
     self.issueapproval2approver_tbl.Delete(
         cnxn, issue_id=issue_id, approval_id=approval_id, commit=False)
@@ -2456,9 +2500,6 @@ class IssueService(object):
         cnxn, ISSUEAPPROVAL2APPROVER_COLS, [(approval_id, approver_id, issue_id)
                                             for approver_id in approver_ids],
         commit=False)
-    if commit:
-      cnxn.Commit()
-    self.issue_2lc.InvalidateKeys(cnxn, [issue_id])
 
   ### Attachments
 

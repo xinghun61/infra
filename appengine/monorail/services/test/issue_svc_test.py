@@ -1647,10 +1647,9 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(issue, issue_1)
 
   def testGetIssueApproval_NoSuchApproval(self):
-    phases = [tracker_pb2.Phase(phase_id=1, rank=1)]
     issue_1 = fake.MakeTestIssue(
         project_id=789, local_id=1, owner_id=111L, summary='sum',
-        status='Live', issue_id=78901, phases=phases)
+        status='Live', issue_id=78901)
     issue_1.project_name = 'proj'
     self.services.issue.issue_2lc.CacheItem(78901, issue_1)
     self.assertRaises(
@@ -1658,6 +1657,49 @@ class IssueServiceTest(unittest.TestCase):
         self.services.issue.GetIssueApproval,
         self.cnxn, issue_1.issue_id, 24)
 
+  def testUpdateIssueApproval(self):
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, summary='summary', status='New',
+        owner_id=999L, issue_id=78901)
+    av = tracker_pb2.ApprovalValue(approval_id=23)
+    final_av = tracker_pb2.ApprovalValue(
+        approval_id=23, setter_id=111L, set_on=1234,
+        status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
+        approver_ids=[222L, 444L])
+    amendments = [
+        tracker_bizobj.MakeApprovalStatusAmendment(
+            tracker_pb2.ApprovalStatus.REVIEW_REQUESTED),
+        tracker_bizobj.MakeApprovalApproversAmendment([222L, 444L], []),
+    ]
+    approval_delta = tracker_pb2.ApprovalDelta(
+        status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
+        approver_ids_add=[222L, 444L], set_on=1234)
+
+    self.services.issue.issue2approvalvalue_tbl.Update = Mock()
+    self.services.issue.issueapproval2approver_tbl.Delete = Mock()
+    self.services.issue.issueapproval2approver_tbl.InsertRows = Mock()
+    self.services.issue.CreateIssueComment = Mock()
+
+    self.services.issue.DeltaUpdateIssueApproval(
+        self.cnxn, 111L, issue, av, approval_delta, 'some comment',
+        commit=False)
+
+    self.assertEqual(av, final_av)
+
+    self.services.issue.issue2approvalvalue_tbl.Update.assert_called_once_with(
+        self.cnxn,
+        {'status': 'review_requested', 'setter_id': 111L, 'set_on': 1234},
+        approval_id=23, issue_id=78901, commit=False)
+    self.services.issue.issueapproval2approver_tbl.\
+        Delete.assert_called_once_with(
+            self.cnxn, issue_id=78901, approval_id=23, commit=False)
+    self.services.issue.issueapproval2approver_tbl.\
+        InsertRows.assert_called_once_with(
+            self.cnxn, issue_svc.ISSUEAPPROVAL2APPROVER_COLS,
+            [(23, 222, 78901), (23, 444, 78901)], commit=False)
+    self.services.issue.CreateIssueComment.assert_called_once_with(
+        self.cnxn, issue, 111L, 'some comment', amendments=amendments,
+        approval_id=23, commit=False)
 
   def testUpdateIssueApprovalStatus(self):
     av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L, set_on=1234)
@@ -1667,9 +1709,9 @@ class IssueServiceTest(unittest.TestCase):
         approval_id=23, issue_id=78901, commit=False)
 
     self.mox.ReplayAll()
-    self.services.issue.UpdateIssueApprovalStatus(
+    self.services.issue._UpdateIssueApprovalStatus(
         self.cnxn, 78901, av.approval_id, av.status,
-        av.setter_id, av.set_on, commit=False)
+        av.setter_id, av.set_on)
     self.mox.VerifyAll()
 
   def testUpdateIssueApprovalApprovers(self):
@@ -1680,8 +1722,8 @@ class IssueServiceTest(unittest.TestCase):
         [(23, 111, 78901), (23, 222, 78901), (23, 444, 78901)], commit=False)
 
     self.mox.ReplayAll()
-    self.services.issue.UpdateIssueApprovalApprovers(
-        self.cnxn, 78901, 23, [111, 222, 444], commit=False)
+    self.services.issue._UpdateIssueApprovalApprovers(
+        self.cnxn, 78901, 23, [111, 222, 444])
     self.mox.VerifyAll()
 
   ### Attachments
