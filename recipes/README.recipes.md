@@ -300,17 +300,17 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 &mdash; **def [RunSteps](/recipes/recipe_modules/infra_checkout/examples/full.py#17)(api):**
 ### *recipes* / [infra\_continuous](/recipes/recipes/infra_continuous.py)
 
-[DEPS](/recipes/recipes/infra_continuous.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [infra\_system](#recipe_modules-infra_system), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/infra_continuous.py#9): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [infra\_system](#recipe_modules-infra_system), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#173)(api, mastername, buildername, buildnumber):**
+&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#177)(api, mastername, buildername, buildnumber):**
 
-&mdash; **def [build\_cipd\_packages](/recipes/recipes/infra_continuous.py#89)(api, repo, rev, mastername, buildername, buildnumber, goos, goarch):**
+&mdash; **def [build\_cipd\_packages](/recipes/recipes/infra_continuous.py#93)(api, repo, rev, mastername, buildername, buildnumber, goos, goarch):**
 
-&mdash; **def [build\_luci](/recipes/recipes/infra_continuous.py#143)(api):**
+&mdash; **def [build\_luci](/recipes/recipes/infra_continuous.py#147)(api):**
 
-&mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#207)(api, mastername, buildername, buildnumber, project_name, repo_name, rev):**
+&mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#215)(api, mastername, buildername, buildnumber, project_name, repo_name, rev):**
 
-&mdash; **def [get\_go\_platforms\_for\_cipd](/recipes/recipes/infra_continuous.py#80)(builder):**
+&mdash; **def [get\_go\_platforms\_for\_cipd](/recipes/recipes/infra_continuous.py#84)(builder):**
 
 Yields a list of (GOOS, GOARCH) to build for on the given builder.
 ### *recipes* / [infra\_continuous\_luci](/recipes/recipes/infra_continuous_luci.py)
@@ -585,6 +585,7 @@ Runs a step which adds a link to the current CL if there is one.
 [depot_tools/recipe_modules/infra_paths]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/f16fdf3165b8b86d10386d18a6b6075169c10e15/recipes/README.recipes.md#recipe_modules-infra_paths
 [depot_tools/recipe_modules/presubmit]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/f16fdf3165b8b86d10386d18a6b6075169c10e15/recipes/README.recipes.md#recipe_modules-presubmit
 [depot_tools/recipe_modules/tryserver]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/f16fdf3165b8b86d10386d18a6b6075169c10e15/recipes/README.recipes.md#recipe_modules-tryserver
+[recipe_engine/recipe_modules/buildbucket]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/10f67fe223a7973a95bc5fff219d1a7a3d95a326/README.recipes.md#recipe_modules-buildbucket
 [recipe_engine/recipe_modules/context]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/10f67fe223a7973a95bc5fff219d1a7a3d95a326/README.recipes.md#recipe_modules-context
 [recipe_engine/recipe_modules/file]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/10f67fe223a7973a95bc5fff219d1a7a3d95a326/README.recipes.md#recipe_modules-file
 [recipe_engine/recipe_modules/json]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/10f67fe223a7973a95bc5fff219d1a7a3d95a326/README.recipes.md#recipe_modules-json

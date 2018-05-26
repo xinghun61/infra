@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
+
 from recipe_engine.recipe_api import Property
 
 DEPS = [
@@ -11,6 +13,7 @@ DEPS = [
   'depot_tools/gclient',
   'depot_tools/infra_paths',
   'infra_system',
+  'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/json',
@@ -18,6 +21,7 @@ DEPS = [
   'recipe_engine/platform',
   'recipe_engine/properties',
   'recipe_engine/python',
+  'recipe_engine/runtime',
   'recipe_engine/step',
 ]
 
@@ -181,6 +185,10 @@ def RunSteps(api, mastername, buildername, buildnumber):
     raise ValueError(
         'This recipe is not intended for builder %s. ' % buildername)
 
+  if api.runtime.is_luci:
+    # TODO(tandrii): rename mastername once migrated to LUCI.
+    mastername = api.buildbucket.properties['build']['bucket']
+
   # Prefix the system binary path to PATH so that all Python invocations will
   # use the system Python. This will ensure that packages built will be built
   # aginst the system Python's paths.
@@ -331,6 +339,38 @@ def GenTests(api):
         mastername='internal.infra',
         repository=
             'https://chrome-internal.googlesource.com/infra/infra_internal',
+    ) +
+    api.override_step_data(
+        'cipd - upload packages', api.json.output(cipd_json_output))
+  )
+  yield (
+    api.test('infra-internal-continuous-luci') +
+    api.runtime(is_luci=True, is_experimental=True) +
+    api.properties.git_scheduled(
+        path_config='kitchen',
+        buildername='infra-internal-continuous-trusty-32',
+        buildnumber=123,
+        repository=
+            'https://chrome-internal.googlesource.com/infra/infra_internal',
+        buildbucket=json.dumps({
+          "build": {
+            "bucket": "luci.infra-internal.ci",
+            "created_by": "user:luci-scheduler@appspot.gserviceaccount.com",
+            "created_ts": 1527292217677440,
+            "id": "8945511751514863184",
+            "project": "infra-internal",
+            "tags": [
+              "builder:infra-internal-continuous-trusty-32",
+              ("buildset:commit/gitiles/chrome-internal.googlesource.com/" +
+                "infra/infra_internal/" +
+                "+/2d72510e447ab60a9728aeea2362d8be2cbd7789"),
+              "gitiles_ref:refs/heads/master",
+              "scheduler_invocation_id:9110941813804031728",
+              "user_agent:luci-scheduler",
+            ],
+          },
+          "hostname": "cr-buildbucket.appspot.com"
+        }),
     ) +
     api.override_step_data(
         'cipd - upload packages', api.json.output(cipd_json_output))
