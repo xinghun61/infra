@@ -771,13 +771,3 @@ class EndpointsApiTest(testing.EndpointsTestCase, ApiTests):
   def setUp(self):
     super(EndpointsApiTest, self).setUp()
     self.setUpTests()
-
-
-class Webapp2ApiTest(test_case.Webapp2EndpointsTestCase, testing.MockPatchMixin,
-                     ApiTests):
-  api_service_cls = api.BuildBucketApi
-
-  def setUp(self):
-    super(Webapp2ApiTest, self).setUp()
-    self.setUpTests()
-    auth.api.reset_local_state()
