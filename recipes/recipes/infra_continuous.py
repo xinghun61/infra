@@ -169,7 +169,7 @@ def build_luci(api):
 
 
 PROPERTIES = {
-  'mastername': Property(),
+  'mastername': Property(default=None),
   'buildername': Property(),
   'buildnumber': Property(default=-1, kind=int),
 }
