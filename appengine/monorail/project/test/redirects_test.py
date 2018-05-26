@@ -28,6 +28,13 @@ class WikiRedirectTest(unittest.TestCase):
     self.servlet.mr = testing_helpers.MakeMonorailRequest(
         project=self.project)
 
+  def testRedirect_NoSuchProject(self):
+    """Visiting a project that we don't host is 404."""
+    self.servlet.mr.project = None
+    self.servlet.get()
+    self.assertEqual(
+        httplib.NOT_FOUND, self.servlet.response.status_code)
+
   def testRedirect_NoDocsSpecified(self):
     """Visiting any old wiki URL goes to admin intro by default."""
     self.servlet.get()
@@ -55,6 +62,13 @@ class SourceRedirectTest(unittest.TestCase):
     self.project = fake.Project()
     self.servlet.mr = testing_helpers.MakeMonorailRequest(
         project=self.project)
+
+  def testRedirect_NoSuchProject(self):
+    """Visiting a project that we don't host is 404."""
+    self.servlet.mr.project = None
+    self.servlet.get()
+    self.assertEqual(
+        httplib.NOT_FOUND, self.servlet.response.status_code)
 
   def testRedirect_NoSrcSpecified(self):
     """Visiting any old source code URL goes to admin intro by default."""

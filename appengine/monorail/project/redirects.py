@@ -22,6 +22,9 @@ class WikiRedirect(servlet.Servlet):
 
   def get(self, **kwargs):
     """Construct a 302 pointing at project.docs_url, or at adminIntro."""
+    if not self.mr.project:
+      self.response.status = httplib.NOT_FOUND
+      return
     docs_url = self.mr.project.docs_url
     if not docs_url:
       docs_url = framework_helpers.FormatAbsoluteURL(
@@ -35,6 +38,9 @@ class SourceRedirect(servlet.Servlet):
 
   def get(self, **kwargs):
     """Construct a 302 pointing at project.source_url, or at adminIntro."""
+    if not self.mr.project:
+      self.response.status = httplib.NOT_FOUND
+      return
     source_url = self.mr.project.source_url
     if not source_url:
       source_url = framework_helpers.FormatAbsoluteURL(
