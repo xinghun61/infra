@@ -82,7 +82,9 @@ class ShotSelector extends Polymer.Element {
       const selectedEntry = this.selection.filters[filterName];
       const v = this.filterlist_[filterName].slice();
       this.sortArray_(v, t => t.toUpperCase());
-      v.unshift('Any');
+      if (v.length > 1) {
+        v.unshift('Any');
+      }
       return {
         title: filterName,
         values: v,
