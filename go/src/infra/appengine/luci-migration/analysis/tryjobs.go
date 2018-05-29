@@ -211,7 +211,7 @@ func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 	var searchErr error
 	go func() {
 		defer close(foundBuilds)
-		searchErr = req.Run(foundBuilds, 0, nil)
+		_, searchErr = req.Run(foundBuilds, 0, nil)
 	}()
 
 	seen := make(map[groupKey]struct{}, DefaultMaxGroups+groupFetchWorkers)
@@ -373,7 +373,7 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 			"builds(url)",
 		)
 		var msgs []*bbapi.ApiCommonBuildMessage
-		msgs, *err = req.Fetch(0, nil)
+		msgs, _, *err = req.Fetch(0, nil)
 		if *err != nil {
 			return
 		}

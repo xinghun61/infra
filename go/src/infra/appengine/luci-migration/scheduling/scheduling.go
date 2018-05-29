@@ -176,7 +176,7 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 		strpair.Format(bbapi.TagBuildSet, buildSet),
 		strpair.Format(bbapi.TagBuilder, build.Builder),
 	)
-	switch newerBuilds, err := req.Fetch(1, nil); {
+	switch newerBuilds, _, err := req.Fetch(1, nil); {
 	case err != nil:
 		return errors.Annotate(err, "failed to search newer builds").Err()
 	case len(newerBuilds) > 0:
