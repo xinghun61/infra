@@ -29,14 +29,6 @@ class BaseTestResults(object):
     """Checks if the log contains useful information."""
     raise NotImplementedError()
 
-  def GetTestsRunStatuses(self):
-    """Parses test results and gets accumulated test run statuses.
-
-    Returns:
-      tests_statuses (dict): A dict of different statuses for each test.
-    """
-    raise NotImplementedError()
-
   def GetTestLocation(self, test_name):
     """Gets test location for a specific test."""
     raise NotImplementedError()

@@ -288,9 +288,6 @@ class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_result,
                      GtestTestResults.GetMergedTestResults(shard_results))
 
-  def testIsTestResultsInExpectedFormat(self):
-    self.assertEqual({}, GtestTestResults(None).GetTestsRunStatuses())
-
   def testIsTestResultsInExpectedFormatMatch(self):
     log = {
         'all_tests': ['test1', 'test2'],
@@ -341,29 +338,6 @@ class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
   def testTaskHasNoUsefulResult(self):
     test_results_log = {'per_iteration_data': [{}]}
     self.assertFalse(GtestTestResults(test_results_log).IsTestResultUseful())
-
-  def testGetTestsRunStatuses(self):
-    expected_statuses = {
-        'Unittest1.Subtest1': {
-            'SUCCESS': 1,
-            'total_run': 1
-        },
-        'Unittest1.Subtest2': {
-            'FAILURE': 2,
-            'total_run': 2
-        },
-        'Unittest2.PRE_Subtest1': {
-            'FAILURE': 2,
-            'total_run': 2
-        },
-        'Unittest2.Subtest2': {
-            'SUCCESS': 1,
-            'total_run': 1
-        }
-    }
-    self.assertEqual(
-        expected_statuses,
-        GtestTestResults(_SAMPLE_TEST_RESULTS).GetTestsRunStatuses())
 
   def testGetTestLocationNoTestLocations(self):
     result, error = GtestTestResults({}).GetTestLocation('test')

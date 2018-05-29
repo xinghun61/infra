@@ -105,7 +105,7 @@ def _UpdateSwarmingTaskEntity(master_name,
                               status=None,
                               task_id=None,
                               error=None,
-                              tests_statuses=None,
+                              classified_test_results=None,
                               parameters=None,
                               canonical_step_name=None,
                               created_ts=None,
@@ -116,7 +116,8 @@ def _UpdateSwarmingTaskEntity(master_name,
   task.status = status or task.status
   task.task_id = task_id or task.task_id
   task.error = error.ToSerializable() if error else task.error
-  task.tests_statuses = tests_statuses or task.tests_statuses
+  task.classified_test_results = task.GetClassifiedTestResults(
+      classified_test_results or {}) or task.classified_test_results
   task.parameters = task.parameters or {}
   task.parameters.update(parameters or {})
   task.canonical_step_name = canonical_step_name or task.canonical_step_name
@@ -158,8 +159,9 @@ def OnSwarmingTaskTimeout(run_swarming_task_params, task_id):
 
   data, output_json, _ = swarmed_test_util.GetSwarmingTaskDataAndResult(task_id)
   if output_json and test_results_util.IsTestResultsValid(output_json):
-    tests_statuses = test_results_util.GetTestResultObject(
-        output_json).GetTestsRunStatuses()
+    test_results = test_results_util.GetTestResultObject(output_json)
+    classified_test_results = (
+        test_results.GetClassifiedTestResults() if test_results else {})
     _UpdateSwarmingTaskEntity(
         master_name,
         builder_name,
@@ -167,7 +169,7 @@ def OnSwarmingTaskTimeout(run_swarming_task_params, task_id):
         step_name,
         status=analysis_status.COMPLETED,
         error=error,
-        tests_statuses=tests_statuses,
+        classified_test_results=classified_test_results,
         created_ts=data.get('created_ts'),
         started_ts=data.get('started_ts'),
         completed_ts=data.get('completed_ts'))
@@ -209,14 +211,15 @@ def OnSwarmingTaskError(master_name,
 def OnSwarmingTaskCompleted(master_name, builder_name, build_number, step_name,
                             data, output_json):
   test_results = test_results_util.GetTestResultObject(output_json)
-  tests_statuses = test_results.GetTestsRunStatuses() if test_results else {}
+  classified_test_results = (
+      test_results.GetClassifiedTestResults() if test_results else {})
   _UpdateSwarmingTaskEntity(
       master_name,
       builder_name,
       build_number,
       step_name,
       status=analysis_status.COMPLETED,
-      tests_statuses=tests_statuses,
+      classified_test_results=classified_test_results,
       created_ts=data.get('created_ts'),
       started_ts=data.get('started_ts'),
       completed_ts=data.get('completed_ts'))

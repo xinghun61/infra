@@ -1,7 +1,8 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""Functions for operating on test results from swarming."""
+"""Functions for operating on swarming reruns for flaky tests.
+"""
 
 from google.appengine.ext import ndb
 
@@ -11,49 +12,13 @@ from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto.swarming_task_error import SwarmingTaskError
 from infra_api_clients.swarming import swarming_util
 from libs import time_util
-from libs.test_results import test_results_util
 from services import constants
 from services import monitoring
 from services import swarmed_test_util
 from services import swarming
+from services.flake_failure import flake_test_results
 
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
-
-
-def _GetPassFailForTestStatuses(test_statuses):
-  """Gets the total number of passes and fails for the given tests.
-
-  PRE_ test runs count for the fails only whereas regular test runs count for
-  both pass and fail.
-
-  Args:
-    test_statuses (dict): Mapping of test_name to total_run, SUCCESS. This
-      Dict should only contain one test and it's PRE_ test. Ex:
-      {
-        '...PRE_test': {'total_run': 100, 'SUCCESS': 100},
-        '...test': {'total_run: 100, 'SUCCESS': 50}
-      }
-
-  Returns:
-    (int, int) Pass, fail counts.
-  """
-  # Note that the arguements should only contain information about one test.
-  p = 0
-  f = 0
-
-  for test_name, iteration_info in test_statuses.iteritems():
-    total_runs = iteration_info.get('total_run', 0)
-    passes = iteration_info.get('SUCCESS', 0)
-    assert total_runs >= passes
-
-    # For PRE_ runs, only count the failures.
-    if 'PRE_' in test_name:
-      f += total_runs - passes
-    else:
-      p += passes
-      f += total_runs - passes
-
-  return p, f
 
 
 def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error):
@@ -61,22 +26,14 @@ def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error):
   assert task_data
 
   if output_json:
-    # Use whatever's available in output_json.
-    test_statuses = test_results_util.GetTestResultObject(
-        output_json).GetTestsRunStatuses()
-    test_name = next(
-        (test for test in test_statuses.keys() if 'PRE_' not in test), None)
+    # Gets the total numbers of runs and number of suscessful runs from
+    # test results
+    tries, successes = flake_test_results.GetCountsFromSwarmingRerun(
+        output_json)
 
-    # Get the pass/fail numbers from test results
-    passes, fails = _GetPassFailForTestStatuses(test_statuses)
-    tries = passes + fails
-    successes = passes
-
-    if (tries == 0 and test_name is not None and
-        test_results_util.GetTestResultObject(output_json).DoesTestExist(
-            test_name)):
-      # The test exists, but something went wrong prevnting even a single test
-      # from being processed which counts as an error.
+    if tries is None or successes is None:
+      # Something went wrong preventing even a single test from being processed
+      # which counts as an error.
       error = error or SwarmingTaskError.GenerateError(
           code=swarming_task_error.UNKNOWN)
       tries = None

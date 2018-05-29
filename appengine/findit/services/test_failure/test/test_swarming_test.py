@@ -237,7 +237,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(task.task_id, task_id)
 
   @mock.patch.object(
-      _GTEST_RESULTS, 'GetTestsRunStatuses', return_value='tests_statuses')
+      _GTEST_RESULTS, 'GetClassifiedTestResults', return_value={})
   @mock.patch.object(test_results_util, 'IsTestResultsValid', return_value=True)
   @mock.patch.object(
       test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
@@ -268,7 +268,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     swarming_task = WfSwarmingTask.Get(master_name, builder_name, build_number,
                                        step_name)
     self.assertEqual(analysis_status.COMPLETED, swarming_task.status)
-    self.assertEqual('tests_statuses', swarming_task.tests_statuses)
+    self.assertEqual({}, swarming_task.tests_statuses)
     self.assertEqual({
         'code': swarming_task_error.RUNNER_TIMEOUT,
         'message': 'Runner to run swarming task timed out'
@@ -304,7 +304,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     }, swarming_task.error)
 
   @mock.patch.object(
-      _GTEST_RESULTS, 'GetTestsRunStatuses', return_value='tests_statuses')
+      _GTEST_RESULTS, 'GetClassifiedTestResults', return_value={})
   @mock.patch.object(
       test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
   def testOnSwarmingTaskCompleted(self, *_):
@@ -327,7 +327,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
 
     swarming_task = WfSwarmingTask.Get(master_name, builder_name, build_number,
                                        step_name)
-    self.assertEqual('tests_statuses', swarming_task.tests_statuses)
+    self.assertEqual({}, swarming_task.tests_statuses)
     self.assertEqual(analysis_status.COMPLETED, swarming_task.status)
     self.assertEqual(
         datetime.datetime(2015, 7, 30, 18, 11, 16, 743220),

@@ -170,25 +170,6 @@ class GtestTestResults(BaseTestResults):
     return self.test_results_json and any(
         self.test_results_json.get('per_iteration_data') or [])
 
-  def GetTestsRunStatuses(self):
-    """Parses test results and gets accumulated test run statuses.
-
-      Args:
-      test_results_json (dict): A dict of all test results in the task.
-
-    Returns:
-      tests_statuses (dict): A dict of different statuses for each test.
-    """
-    tests_statuses = defaultdict(lambda: defaultdict(int))
-    if self.test_results_json:
-      for iteration in self.test_results_json.get('per_iteration_data'):
-        for test_name, tests in iteration.iteritems():
-          tests_statuses[test_name]['total_run'] += len(tests)
-          for test in tests:
-            tests_statuses[test_name][test['status']] += 1
-
-    return tests_statuses
-
   def GetTestLocation(self, test_name):
     """Gets test location for a specific test."""
     test_locations = self.test_results_json.get('test_locations')

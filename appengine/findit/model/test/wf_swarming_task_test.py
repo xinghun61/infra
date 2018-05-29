@@ -4,12 +4,14 @@
 
 import unittest
 
+from libs.test_results.classified_test_results import ClassifiedTestResults
+from model.wf_swarming_task import _ClassifiedTestResult
 from model.wf_swarming_task import WfSwarmingTask
 
 
 class WfSwarmingTaskTest(unittest.TestCase):
 
-  def testClassifiedTests(self):
+  def testClassifiedTestsLegacy(self):
     task = WfSwarmingTask.Create('m', 'b', 121, 'browser_tests')
     task.tests_statuses = {
         'TestSuite1.test1': {
@@ -54,3 +56,64 @@ class WfSwarmingTaskTest(unittest.TestCase):
     task = WfSwarmingTask.Create(master_name, builder_name, build_number,
                                  expected_step_name)
     self.assertEqual(expected_step_name, task.step_name)
+
+  def testClassifiedTests(self):
+    task = WfSwarmingTask.Create('m', 'b', 122, 'browser_tests')
+    classified_results_dict = {
+        'Unittest1.Subtest1': {
+            'total_run': 1,
+            'num_expected_results': 0,
+            'num_unexpected_results': 1,
+            'results': {
+                'passes': {},
+                'failures': {},
+                'skips': {},
+                'unknowns': {
+                    'UNKNOWN': 1
+                }
+            }
+        },
+        'Unittest1.Subtest2': {
+            'total_run': 3,
+            'num_expected_results': 1,
+            'num_unexpected_results': 2,
+            'results': {
+                'passes': {
+                    'SUCCESS': 1
+                },
+                'failures': {
+                    'FAILURE': 2
+                },
+                'skips': {},
+                'unknowns': {}
+            }
+        },
+        'Unittest2.Subtest1': {
+            'total_run': 3,
+            'num_expected_results': 0,
+            'num_unexpected_results': 3,
+            'results': {
+                'passes': {},
+                'failures': {
+                    'FAILURE': 2
+                },
+                'skips': {
+                    'SKIPPED': 1
+                },
+                'unknowns': {}
+            }
+        }
+    }
+    task.classified_test_results = task.GetClassifiedTestResults(
+        ClassifiedTestResults.FromDict(classified_results_dict))
+
+    expected_classified_tests = {
+        'flaky_tests': ['Unittest1.Subtest2'],
+        'reliable_tests': ['Unittest2.Subtest1'],
+        'unknown_tests': ['Unittest1.Subtest1']
+    }
+
+    self.assertEqual(expected_classified_tests, task.classified_tests)
+    self.assertEqual(expected_classified_tests['reliable_tests'],
+                     task.reliable_tests)
+    self.assertEqual(expected_classified_tests['flaky_tests'], task.flaky_tests)
