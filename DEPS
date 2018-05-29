@@ -1,17 +1,22 @@
+vars = {
+  "chromium_git": "https://chromium.googlesource.com",
+  "external_github": "https://chromium.googlesource.com/external/github.com",
+}
+
 deps = {
   "build":
-    "https://chromium.googlesource.com/chromium/tools/build.git",
+    "{chromium_git}/chromium/tools/build.git",
 
   # Used to initiate bootstrapping.
   #
   # This commit resolves to tag "15.1.0".
   "infra/bootstrap/virtualenv-ext":
-   ("https://chromium.googlesource.com/external/github.com/pypa/virtualenv"
-     "@2db288fe1f8b6755f8df53b8a8a0667a0f71b1cf"),
+     "{external_github}/pypa/virtualenv@" +
+     "2db288fe1f8b6755f8df53b8a8a0667a0f71b1cf",
 
   "infra/luci":
-   ("https://chromium.googlesource.com/infra/luci/luci-py"
-     "@6bd4aeec635b893fa66fa8ab49cf77135c047746"),
+     "{chromium_git}/infra/luci/luci-py@" +
+     "6bd4aeec635b893fa66fa8ab49cf77135c047746",
 
   # This unpinned dependency is present because it is used by the trybots for
   # the recipes-py repo; They check out infra with this at HEAD, and then apply
@@ -19,91 +24,85 @@ deps = {
   # piggyback on top of infra in order to take advantage of it's precompiled
   # version of python-coverage.
   "infra/recipes-py":
-   ("https://chromium.googlesource.com/infra/luci/recipes-py"
-     "@origin/master"),
+     "{chromium_git}/infra/luci/recipes-py@" +
+     "origin/master",
 
   "infra/go/src/go.chromium.org/luci":
-    ("https://chromium.googlesource.com/infra/luci/luci-go"
-     "@f59c9de50df31833ed2d33d48d17bb55a1873bf7"),
+     "{chromium_git}/infra/luci/luci-go@" +
+     "f59c9de50df31833ed2d33d48d17bb55a1873bf7",
 
   "infra/go/src/go.chromium.org/gae":
-    ("https://chromium.googlesource.com/infra/luci/gae"
-     "@8c73e64a6d60c8d4cb1a4f6119675fa871d489cd"),
+     "{chromium_git}/infra/luci/gae@" +
+     "8c73e64a6d60c8d4cb1a4f6119675fa871d489cd",
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
-    ("https://chromium.googlesource.com/external/github.com/twbs/bootstrap.git"
-     "@b4895a0d6dc493f17fe9092db4debe44182d42ac"),
+     "{external_github}/twbs/bootstrap.git@" +
+     "b4895a0d6dc493f17fe9092db4debe44182d42ac",
 
   "infra/appengine/third_party/cloudstorage":
-    ("https://chromium.googlesource.com/external/github.com/"
-     "GoogleCloudPlatform/appengine-gcs-client.git"
-     "@76162a98044f2a481e2ef34d32b7e8196e534b78"),
+     "{external_github}/GoogleCloudPlatform/appengine-gcs-client.git@" +
+     "76162a98044f2a481e2ef34d32b7e8196e534b78",
 
   "infra/appengine/third_party/six":
-    ("https://chromium.googlesource.com/external/bitbucket.org/gutworth/six.git"
-     "@06daa9c7a4b43c49bf2a3d588c52672e1c5e3a2c"),
+     "{chromium_git}/external/bitbucket.org/gutworth/six.git@" +
+     "06daa9c7a4b43c49bf2a3d588c52672e1c5e3a2c",
 
   "infra/appengine/third_party/oauth2client":
-    ("https://chromium.googlesource.com/external/github.com/google/oauth2client.git"
-     "@e8b1e794d28f2117dd3e2b8feeb506b4c199c533"),
+     "{external_github}/google/oauth2client.git@" +
+     "e8b1e794d28f2117dd3e2b8feeb506b4c199c533",
 
   "infra/appengine/third_party/uritemplate":
-    ("https://chromium.googlesource.com/external/github.com/uri-templates/"
-     "uritemplate-py.git"
-     "@1e780a49412cdbb273e9421974cb91845c124f3f"),
+     "{external_github}/uri-templates/uritemplate-py.git@" +
+     "1e780a49412cdbb273e9421974cb91845c124f3f",
 
   "infra/appengine/third_party/httplib2":
-    ("https://chromium.googlesource.com/external/github.com/jcgregorio/httplib2.git"
-     "@058a1f9448d5c27c23772796f83a596caf9188e6"),
+     "{external_github}/jcgregorio/httplib2.git@" +
+     "058a1f9448d5c27c23772796f83a596caf9188e6",
 
   "infra/appengine/third_party/endpoints-proto-datastore":
-    ("https://chromium.googlesource.com/external/github.com/"
-     "GoogleCloudPlatform/endpoints-proto-datastore.git"
-     "@971bca8e31a4ab0ec78b823add5a47394d78965a"),
+     "{external_github}/GoogleCloudPlatform/endpoints-proto-datastore.git@" +
+     "971bca8e31a4ab0ec78b823add5a47394d78965a",
 
   "infra/appengine/third_party/difflibjs":
-    ("https://chromium.googlesource.com/external/github.com/qiao/difflib.js.git"
-     "@e11553ba3e303e2db206d04c95f8e51c5692ca28"),
+     "{external_github}/qiao/difflib.js.git@"
+     "e11553ba3e303e2db206d04c95f8e51c5692ca28",
 
   "infra/appengine/third_party/pipeline":
-    ("https://chromium.googlesource.com/external/github.com/"
-     "GoogleCloudPlatform/appengine-pipelines.git"
-     "@58cf59907f67db359fe626ee06b6d3ac448c9e15"),
+     "{external_github}/GoogleCloudPlatform/appengine-pipelines.git@" +
+     "58cf59907f67db359fe626ee06b6d3ac448c9e15",
 
   "infra/appengine/third_party/google-api-python-client":
-    ("https://chromium.googlesource.com/external/github.com/google/"
-     "google-api-python-client.git"
-     "@49d45a6c3318b75e551c3022020f46c78655f365"),
+     "{external_github}/google/google-api-python-client.git@" +
+     "49d45a6c3318b75e551c3022020f46c78655f365",
 
   "infra/appengine/third_party/catapult":
-    ("https://chromium.googlesource.com/external/github.com/catapult-project/"
-     "catapult.git"
-     "@506457cbd726324f327b80ae11f46c1dfeb8710d"),
+     "{external_github}/catapult-project/catapult.git@" +
+     "506457cbd726324f327b80ae11f46c1dfeb8710d",
 
   "infra/appengine/third_party/gae-pytz":
-    ("https://chromium.googlesource.com/external/code.google.com/p/gae-pytz/"
-     "@4d72fd095c91f874aaafb892859acbe3f927b3cd"),
+     "{chromium_git}/external/code.google.com/p/gae-pytz/@" +
+     "4d72fd095c91f874aaafb892859acbe3f927b3cd",
 
   "infra/appengine/third_party/dateutil":
-    ("https://chromium.googlesource.com/external/code.launchpad.net/dateutil/"
-     "@8c6026ba09716a4e164f5420120bfe2ebb2d9d82"),
+     "{chromium_git}/external/code.launchpad.net/dateutil/@" +
+     "8c6026ba09716a4e164f5420120bfe2ebb2d9d82",
 
   ## For ease of development. These are pulled in as wheels for run.py/test.py
   "expect_tests":
-    "https://chromium.googlesource.com/infra/testing/expect_tests.git",
+     "{chromium_git}/infra/testing/expect_tests.git",
   "testing_support":
-    "https://chromium.googlesource.com/infra/testing/testing_support.git",
+     "{chromium_git}/infra/testing/testing_support.git",
 
   "infra/appengine/third_party/src/github.com/golang/oauth2":
-  ("https://chromium.googlesource.com/external/github.com/golang/oauth2.git"
-   "@cb029f4c1f58850787981eefaf9d9bf547c1a722"),
+     "{external_github}/golang/oauth2.git@" +
+     "cb029f4c1f58850787981eefaf9d9bf547c1a722",
 
   "infra/appengine/third_party/npm_modules": {
-      "url":
-      ("https://chromium.googlesource.com/infra/third_party/npm_modules.git@"
-       "f83fafaa22f5ff396cf5306285ca3806d1b2cf1b"),
-      "condition": "checkout_linux or checkout_mac",
+     "url":
+        "{chromium_git}/infra/third_party/npm_modules.git@" +
+        "f83fafaa22f5ff396cf5306285ca3806d1b2cf1b",
+     "condition": "checkout_linux or checkout_mac",
   }
 }
 
