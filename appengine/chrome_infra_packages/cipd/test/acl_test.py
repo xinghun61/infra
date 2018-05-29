@@ -119,6 +119,44 @@ class TestRepoServiceACL(testing.AppengineTestCase):
     self.assertFalse(check('a/b/c/d', 'user:leaf-owner@example.com'))
     self.assertTrue(check('a/b/c/d/e/f', 'user:leaf-owner@example.com'))
 
+  def test_get_roles_admin(self):
+    auth_testing.mock_is_admin(self, True)
+    self.assertEqual(
+        acl.get_roles('pkg', auth_testing.DEFAULT_MOCKED_IDENTITY),
+        set(acl.ROLES))
+
+  def test_get_roles(self):
+    acl.PackageACL(
+        key=acl.package_acl_key('a', 'OWNER'),
+        users=[auth.Identity.from_bytes('user:owner@example.com')]).put()
+    acl.PackageACL(
+        key=acl.package_acl_key('a/b/c', 'READER'),
+        users=[auth.Identity.from_bytes('user:reader@example.com')]).put()
+    acl.PackageACL(
+        key=acl.package_acl_key('a/b/c/d/e', 'WRITER'),
+        groups=['group']).put()
+
+    # Mock groups.
+    def mocked_is_group_member(group, ident):
+      return group == 'group' and ident.name == 'writer@example.com'
+    self.mock(acl.auth, 'is_group_member', mocked_is_group_member)
+
+    call = lambda p, i: acl.get_roles(p, auth.Identity.from_bytes(i))
+    all_roles = set(acl.ROLES)
+
+    self.assertEqual(call('a', 'user:owner@example.com'), all_roles)
+    self.assertEqual(call('a', 'user:reader@example.com'), set())
+
+    self.assertEqual(call('a/b/c', 'user:owner@example.com'), all_roles)
+    self.assertEqual(call('a/b/c', 'user:reader@example.com'), {'READER'})
+
+    self.assertEqual(call('a/b/c/d/e', 'user:owner@example.com'), all_roles)
+    self.assertEqual(call('a/b/c/d/e', 'user:reader@example.com'), {'READER'})
+    self.assertEqual(
+        call('a/b/c/d/e', 'user:writer@example.com'),
+        {'READER', 'WRITER', 'COUNTER_WRITER'})
+
+
   def test_modify_roles_empty(self):
     # Just for code coverage.
     acl.modify_roles(

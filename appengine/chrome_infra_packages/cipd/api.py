@@ -421,6 +421,19 @@ class ModifyACLResponse(messages.Message):
 ################################################################################
 
 
+class FetchRolesResponse(messages.Message):
+  """Results of fetchRoles call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS status, roles the caller has in the package, including inherited
+  # ones.
+  roles = messages.StringField(3, repeated=True)
+
+
+################################################################################
+
+
 class FetchClientBinaryResponse(messages.Message):
   """Results of fetchClientBinary call."""
   class ClientBinary(messages.Message):
@@ -1187,6 +1200,23 @@ class PackageRepositoryApi(remote.Service):
     # exactly what is needed.
     acl.modify_roles(changes, caller, utils.utcnow())
     return ModifyACLResponse()
+
+
+  @gae_ts_mon.instrument_endpoint()
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_path=messages.StringField(1, required=True)),
+      FetchRolesResponse,
+      http_method='GET',
+      path='roles',
+      name='fetchRoles')
+  @auth.public
+  def fetch_roles(self, request):
+    """Queries what roles the caller has in the package prefix."""
+    package_path = validate_package_path(request.package_path)
+    caller = auth.get_current_identity()
+    return FetchRolesResponse(roles=sorted(acl.get_roles(package_path, caller)))
 
 
   ### ClientBinary methods.

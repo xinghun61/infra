@@ -25,6 +25,15 @@ ROLES = [
 ]
 
 
+# Role => all roles it implies (including self).
+IMPLIED_ROLES = {
+  'OWNER': ('OWNER', 'WRITER', 'READER', 'COUNTER_WRITER'),
+  'WRITER': ('WRITER', 'READER', 'COUNTER_WRITER'),
+  'READER': ('READER',),
+  'COUNTER_WRITER': ('COUNTER_WRITER',),
+}
+
+
 def is_valid_role(role_name):
   """True if given string can be used as a role name."""
   return role_name in ROLES
@@ -180,16 +189,20 @@ def package_acl_key(package_path, role):
   return ndb.Key(PackageACL, '%s:%s' % (role, package_path), parent=root_key())
 
 
-def get_package_acls(package_path, role):
-  """Returns a list of PackageACL entities with ACLs for given package path."""
+def get_package_acls_keys(package_path, role):
+  """Returns a list of PackageACL keys with ACLs for given package path."""
   assert impl.is_valid_package_path(package_path), package_path
   assert is_valid_role(role), role
   components = package_path.split('/')
-  keys = [
+  return [
     package_acl_key('/'.join(components[:i+1]), role)
     for i in xrange(len(components))
   ]
-  return filter(None, ndb.get_multi(keys))
+
+
+def get_package_acls(package_path, role):
+  """Returns a list of PackageACL entities with ACLs for given package path."""
+  return filter(None, ndb.get_multi(get_package_acls_keys(package_path, role)))
 
 
 def has_role(package_path, role, identity):
@@ -205,6 +218,31 @@ def has_role(package_path, role, identity):
       if auth.is_group_member(group, identity):
         return True
   return False
+
+
+def get_roles(package_path, identity):
+  """Returns set of roles an |identity| has in some |package_path|.
+
+  Understands roles inheritance, e.g. having OWNER role implies also having
+  READER and WRITER roles.
+  """
+  assert impl.is_valid_package_path(package_path), package_path
+  if auth.is_admin(identity):
+    return set(ROLES)
+
+  keys = []
+  for role in ROLES:
+    keys.extend(get_package_acls_keys(package_path, role))
+
+  ident_roles = set()
+  for acl in filter(None, ndb.get_multi(keys)):
+    if acl.role in ident_roles:
+      continue  # already have it, no need to check further
+    if (identity in acl.users or
+        any(auth.is_group_member(g, identity) for g in acl.groups)):
+      ident_roles.update(IMPLIED_ROLES[acl.role])
+
+  return ident_roles
 
 
 def modify_roles(changes, caller, now):

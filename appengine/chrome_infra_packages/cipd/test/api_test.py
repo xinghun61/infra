@@ -694,6 +694,26 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         'changes': [],
       })
 
+  def test_fetch_roles_ok(self):
+    acl.modify_roles(
+        changes=[
+          acl.RoleChange(
+              package_path='a',
+              revoke=False,
+              role='OWNER',
+              user=auth_testing.DEFAULT_MOCKED_IDENTITY,
+              group=None),
+        ],
+        caller=auth.Identity.from_bytes('user:a@example.com'),
+        now=datetime.datetime(2014, 1, 1))
+
+    resp = self.call_api('fetch_roles', {'package_path': 'a/b'})
+    self.assertEqual(200, resp.status_code)
+    self.assertEqual({
+      'status': 'SUCCESS',
+      'roles': ['COUNTER_WRITER', 'OWNER', 'READER', 'WRITER'],
+    }, resp.json_body)
+
   def test_fetch_client_binary_ok(self):
     _, registered = self.repo_service.register_instance(
         package_name='infra/tools/cipd/linux-amd64',
