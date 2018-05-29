@@ -14,6 +14,7 @@ from collections import defaultdict
 import cStringIO
 
 from libs.test_results.base_test_results import BaseTestResults
+from libs.test_results.classified_test_results import ClassifiedTestResults
 from services import constants
 
 _PRE_TEST_PREFIX = 'PRE_'
@@ -22,7 +23,13 @@ _PRE_TEST_PREFIX = 'PRE_'
 # TODO(crbug.com/785463): Use enum for error codes.
 RESULTS_INVALID = 10
 
-_NON_FAILURE_STATUSES = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
+# Statuses for gtest results.
+# Other statuses will be considered as failures.
+SUCCESS = 'SUCCESS'
+SKIPPED = 'SKIPPED'
+UNKNOWN = 'UNKNOWN'
+
+_NON_FAILURE_STATUSES = [SUCCESS, SKIPPED, UNKNOWN]
 
 
 def _RemoveAllPrefixesFromTestName(test):
@@ -92,7 +99,7 @@ class GtestTestResults(BaseTestResults):
 
         for test_run in iteration[test_name]:
           # We will ignore the test if some of the attempts were success.
-          if test_run['status'] == 'SUCCESS':
+          if test_run['status'] == SUCCESS:
             is_reliable_failure = False
             break
 
@@ -130,61 +137,6 @@ class GtestTestResults(BaseTestResults):
     # Checks if one test was enabled by checking the test results.
     # If the disabled tests array is empty, we assume the test is enabled.
     return test_name in all_tests and test_name not in disabled_tests
-
-  @staticmethod
-  def GetMergedTestResults(shard_results):
-    """Merges the shards into one.
-
-    Args:
-      shard_results (list): A list of dicts with individual shard results.
-
-    Returns:
-      A dict with the following form:
-      {
-        'all_tests':[
-          'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/0',
-          'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/1',
-          'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/10',
-          ...
-        ]
-        'per_iteration_data':[
-          {
-            'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/109': [
-              {
-                'elapsed_time_ms': 4719,
-                'losless_snippet': true,
-                'output_snippet': '[ RUN      ] run outputs\\n',
-                'output_snippet_base64': 'WyBSVU4gICAgICBdIEFsbEZvcm1zL0Zvcm1T'
-                'status': 'SUCCESS'
-              }
-            ],
-          },
-          ...
-        ]
-      }
-    """
-    if len(shard_results) == 1:
-      return shard_results[0]
-
-    def MergeListsOfDicts(merged, shard):
-      """Merges the ith dict each list into one dict."""
-      output = []
-      for i in xrange(max(len(merged), len(shard))):
-        merged_dict = merged[i] if i < len(merged) else {}
-        shard_dict = shard[i] if i < len(shard) else {}
-        output_dict = merged_dict.copy()
-        output_dict.update(shard_dict)
-        output.append(output_dict)
-      return output
-
-    merged_results = {'all_tests': set(), 'per_iteration_data': []}
-    for shard_result in shard_results:
-      merged_results['all_tests'].update(shard_result.get('all_tests', []))
-      merged_results['per_iteration_data'] = MergeListsOfDicts(
-          merged_results['per_iteration_data'],
-          shard_result.get('per_iteration_data', []))
-    merged_results['all_tests'] = sorted(merged_results['all_tests'])
-    return merged_results
 
   def GetFailedTestsInformation(self):
     """Parses the json data to get all the reliable failures' information."""
@@ -251,6 +203,127 @@ class GtestTestResults(BaseTestResults):
       error_str = 'test_location not found for %s.' % test_name
       return None, error_str
     return test_location, None
+
+  def GetClassifiedTestResults(self):
+    """Parses gtest results, counts and classifies test results by:
+      * status_group: passes/failures/skips/unknowns,
+      * status: actual result status.
+
+    Also counts number of expected and unexpected results for each test:
+    for gtest results, assumes
+      * SUCCESS is expected result for enabled tests, all the other statuses
+        will be considered as unexpected.
+      * SKIPPED is expected result for disabled tests, all the other statuses
+        will be considered as unexpected.
+
+    Returns:
+      (ClassifiedTestResults) An object with information for each test:
+      * total_run: total number of runs,
+      * num_expected_results: total number of runs with expected results,
+      * num_unexpected_results: total number of runs with unexpected results,
+      * results: classified test results in 4 groups: passes, failures, skips
+        and unknowns.
+    """
+    if not self.IsTestResultUseful():
+      return {}
+
+    def ClassifyOneResult(test_result, status, expected_status):
+      upper_status = status.upper()
+      if upper_status == expected_status:
+        test_result.num_expected_results += 1
+      else:
+        test_result.num_unexpected_results += 1
+
+      if upper_status == SUCCESS:
+        test_result.results.passes[upper_status] += 1
+      elif upper_status == SKIPPED:
+        test_result.results.skips[upper_status] += 1
+      elif upper_status == UNKNOWN:
+        test_result.results.unknowns[upper_status] += 1
+      else:
+        test_result.results.failures[upper_status] += 1
+
+    test_results = ClassifiedTestResults()
+    for iteration in self.test_results_json['per_iteration_data']:
+      for test_name, runs in iteration.iteritems():
+        base_test_name = _RemoveAllPrefixesFromTestName(test_name)
+        expected_status = SUCCESS if self.IsTestEnabled(
+            base_test_name) else SKIPPED
+
+        if base_test_name == test_name:
+          test_results[base_test_name].total_run += len(runs)
+          for run in runs:
+            ClassifyOneResult(test_results[base_test_name], run['status'],
+                              expected_status)
+        else:
+          # Test name is in the format (PRE_)+test, consolidates such results
+          # into base tests' results. Failure of PRE_tests will stop base tests
+          # from running, so count failures of PRE_ tests into failures of base
+          # tests. But successful PRE_tests are prerequisites for base test to
+          # run, so ignore successful PRE_tests runs to prevent double counting.
+          for run in runs:
+            if run['status'] != SUCCESS:
+              test_results[base_test_name].total_run += 1
+              ClassifyOneResult(test_results[base_test_name], run['status'],
+                                expected_status)
+
+    return test_results
+
+  @staticmethod
+  def GetMergedTestResults(shard_results):
+    """Merges the shards into one.
+
+    Args:
+      shard_results (list): A list of dicts with individual shard results.
+
+    Returns:
+      A dict with the following form:
+      {
+        'all_tests':[
+          'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/0',
+          'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/1',
+          'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/10',
+          ...
+        ]
+        'per_iteration_data':[
+          {
+            'AllForms/FormStructureBrowserTest.DataDrivenHeuristics/109': [
+              {
+                'elapsed_time_ms': 4719,
+                'losless_snippet': true,
+                'output_snippet': '[ RUN      ] run outputs\\n',
+                'output_snippet_base64': 'WyBSVU4gICAgICBdIEFsbEZvcm1zL0Zvcm1T'
+                'status': 'SUCCESS'
+              }
+            ],
+          },
+          ...
+        ]
+      }
+    """
+    if len(shard_results) == 1:
+      return shard_results[0]
+
+    def MergeListsOfDicts(merged, shard):
+      """Merges the ith dict each list into one dict."""
+      output = []
+      for i in xrange(max(len(merged), len(shard))):
+        merged_dict = merged[i] if i < len(merged) else {}
+        shard_dict = shard[i] if i < len(shard) else {}
+        # TODO(crbug/846498): optimize this to save memory.
+        output_dict = merged_dict.copy()
+        output_dict.update(shard_dict)
+        output.append(output_dict)
+      return output
+
+    merged_results = {'all_tests': set(), 'per_iteration_data': []}
+    for shard_result in shard_results:
+      merged_results['all_tests'].update(shard_result.get('all_tests', []))
+      merged_results['per_iteration_data'] = MergeListsOfDicts(
+          merged_results['per_iteration_data'],
+          shard_result.get('per_iteration_data', []))
+    merged_results['all_tests'] = sorted(merged_results['all_tests'])
+    return merged_results
 
   @staticmethod
   def IsTestResultsInExpectedFormat(test_results_json):

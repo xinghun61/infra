@@ -41,6 +41,33 @@ class BaseTestResults(object):
     """Gets test location for a specific test."""
     raise NotImplementedError()
 
+  def GetClassifiedTestResults(self):
+    """Parses test results, counts and classifies test results by:
+      * status_group: passes/failures/skips/unknowns,
+      * status: actual result status.
+
+    Also counts number of expected and unexpected results for each test.
+      All tests are expected to pass by default. However, some tests sometimes
+      have different expected result(s) for some reason, for example flakiness,
+      and such result statuses are usually specified in an expectation file or
+      an equivalent.
+      If the result status of a test run is the same as specified in the
+      expectation file, it is deemed as expected; otherwise, it is deemed as
+      unexpected.
+      For example, if a WebKit layout test has expected result statuses
+      ['PASS', 'FAIL'], then an actual run status 'FAIL' is expected,
+      whereas 'TIMEOUT' is unexpected.
+
+    Returns:
+      (ClassifiedTestResults) An object with information for each test:
+      * total_run: total number of runs,
+      * num_expected_results: total number of runs with expected results,
+      * num_unexpected_results: total number of runs with unexpected results,
+      * results: classified test results in 4 groups: passes, failures, skips
+        and unknowns.
+    """
+    raise NotImplementedError()
+
   @staticmethod
   def GetMergedTestResults(shard_results):
     """Merges the shards into one.

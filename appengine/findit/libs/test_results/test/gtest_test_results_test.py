@@ -389,3 +389,105 @@ class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
     result, error = GtestTestResults(test_results_log).GetTestLocation('test')
     self.assertEqual(expected_test_location, result)
     self.assertIsNone(error)
+
+  def testGetClassifiedTestResultsNoResult(self):
+    self.assertEqual({}, GtestTestResults(None).GetClassifiedTestResults())
+
+  def testGetClassifiedTestResults(self):
+
+    test_results = {
+        'all_tests': [
+            'Unittest1.Subtest1', 'Unittest1.Subtest2',
+            'Unittest2.PRE_Subtest1', 'Unittest2.PRE_PRE_Subtest1',
+            'Unittest2.Subtest1'
+        ],
+        'per_iteration_data': [{
+            'Unittest1.Subtest1': [{
+                'status': 'UNKNOWN',
+                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            }, {
+                'status': 'SUCCESS',
+                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            }],
+            'Unittest1.Subtest2': [{
+                'status': 'FAILURE',
+                'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDog'
+            }, {
+                'status': 'FAILURE',
+                'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDog'
+            }, {
+                'status': 'SUCCESS',
+                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            }],
+            'Unittest2.PRE_PRE_Subtest1': [{
+                'status': 'SKIPPED',
+                'output_snippet_base64': 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+            }],
+            'Unittest2.PRE_Subtest1': [{
+                'status': 'FAILURE',
+                'output_snippet_base64': 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+            }, {
+                'status': 'FAILURE',
+                'output_snippet_base64': 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+            }, {
+                'status': 'SUCCESS',
+                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            }],
+            'Unittest2.Subtest1': [{
+                'status': 'SUCCESS',
+                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            }]
+        }]
+    }
+    expected_result = {
+        'Unittest1.Subtest1': {
+            'total_run': 2,
+            'num_expected_results': 1,
+            'num_unexpected_results': 1,
+            'results': {
+                'passes': {
+                    'SUCCESS': 1
+                },
+                'failures': {},
+                'skips': {},
+                'unknowns': {
+                    'UNKNOWN': 1
+                }
+            }
+        },
+        'Unittest1.Subtest2': {
+            'total_run': 3,
+            'num_expected_results': 1,
+            'num_unexpected_results': 2,
+            'results': {
+                'passes': {
+                    'SUCCESS': 1
+                },
+                'failures': {
+                    'FAILURE': 2
+                },
+                'skips': {},
+                'unknowns': {}
+            }
+        },
+        'Unittest2.Subtest1': {
+            'total_run': 4,
+            'num_expected_results': 1,
+            'num_unexpected_results': 3,
+            'results': {
+                'passes': {
+                    'SUCCESS': 1,
+                },
+                'failures': {
+                    'FAILURE': 2
+                },
+                'skips': {
+                    'SKIPPED': 1
+                },
+                'unknowns': {}
+            }
+        }
+    }
+    result = GtestTestResults(test_results).GetClassifiedTestResults()
+    for test_name, expected_test_result in expected_result.iteritems():
+      self.assertEqual(expected_test_result, result[test_name].ToDict())

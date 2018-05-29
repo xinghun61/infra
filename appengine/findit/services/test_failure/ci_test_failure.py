@@ -17,8 +17,6 @@ from services.parameters import FailedTest
 from services.parameters import FailedTests
 from services.parameters import IsolatedDataList
 
-_NON_FAILURE_STATUSES = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
-
 
 def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
   """Parses the json data and saves all the reliable failures to the step."""
