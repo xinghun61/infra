@@ -17,6 +17,8 @@ from infra_api_clients.swarming.swarming_task_request import (
 from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 from libs.list_of_basestring import ListOfBasestring
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from pipelines.flake_failure.run_flake_swarming_task_pipeline import (
+    RunFlakeSwarmingTaskInput)
 from services import constants
 from services import swarmed_test_util
 from services import swarming
@@ -95,6 +97,19 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
     }
     error = SwarmingTaskError(code=1, message='m')
 
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+    parameters = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
     expected_result = FlakeSwarmingTaskOutput(
         task_id='task_id',
         started_time=datetime(2018, 4, 2, 19, 32, 6, 538220),
@@ -105,7 +120,7 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_result,
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
-                         task_data, None, error))
+                         task_data, None, error, parameters))
 
   @mock.patch.object(
       flake_test_results,
@@ -119,6 +134,19 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
         'task_id': 'task_id'
     }
 
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+    parameters = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
     expected_result = FlakeSwarmingTaskOutput(
         task_id='task_id',
         started_time=datetime(2018, 4, 2, 19, 32, 6, 538220),
@@ -129,28 +157,44 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_result,
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
-                         task_data, {'bla': 'bla'}, None))
+                         task_data, {'bla': 'bla'}, None, parameters))
 
   @mock.patch.object(
       flake_test_results, 'GetCountsFromSwarmingRerun', return_value=(1, 0))
-  def testParseFlakeSwarmingTaskOutputRunningTask(self, _):
+  def testParseFlakeSwarmingTaskOutputConsolidatedResult(self, _):
     task_data = {
         'created_ts': '2018-04-02T18:32:06.538220',
         'started_ts': '2018-04-02T19:32:06.538220',
-        'task_id': 'task_id'
+        'task_id': 'task_id',
+        'state': 'COMPLETED',
+        'failure': False,
+        'internal_failure': False
     }
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+    parameters = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
 
     expected_result = FlakeSwarmingTaskOutput(
         task_id='task_id',
         started_time=datetime(2018, 4, 2, 19, 32, 6, 538220),
         completed_time=None,
-        iterations=1,
+        iterations=50,
         error=None,
         pass_count=0)
 
     self.assertEqual(expected_result,
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
-                         task_data, {'bla': 'bla'}, None))
+                         task_data, {'bla': 'bla'}, None, parameters))
 
   @mock.patch.object(flake_test_results, 'GetCountsFromSwarmingRerun')
   def testParseFlakeSwarmingTaskOutput(self, mocked_pass_fail):
@@ -164,6 +208,22 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
     }
 
     mocked_pass_fail.return_value = (iterations, pass_count)
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
+    parameters = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
     expected_result = FlakeSwarmingTaskOutput(
         task_id='task_id',
         started_time=datetime(2018, 4, 2, 19, 32, 6, 538220),
@@ -174,7 +234,7 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_result,
                      flake_swarming._ParseFlakeSwarmingTaskOutput(
-                         task_data, 'content', None))
+                         task_data, 'content', None, parameters))
 
   @mock.patch.object(swarmed_test_util, 'GetSwarmingTaskDataAndResult')
   def testOnSwarmingTaskTimeoutNoTaskId(self, mocked_result):
@@ -191,7 +251,7 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
         pass_count=None)
 
     self.assertEqual(expected_result,
-                     flake_swarming.OnSwarmingTaskTimeout(None))
+                     flake_swarming.OnSwarmingTaskTimeout(None, None))
 
   @mock.patch.object(swarmed_test_util, 'GetSwarmingTaskDataAndResult')
   def testOnSwarmingTaskTimeoutNoData(self, mocked_result):
@@ -208,17 +268,37 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
         pass_count=None)
 
     self.assertEqual(expected_result,
-                     flake_swarming.OnSwarmingTaskTimeout(task_id))
+                     flake_swarming.OnSwarmingTaskTimeout(None, task_id))
 
   @mock.patch.object(swarmed_test_util, 'GetSwarmingTaskDataAndResult')
   @mock.patch.object(flake_swarming, '_ParseFlakeSwarmingTaskOutput')
   def testOnSwarmingTaskTimeout(self, mocked_parse, mocked_result):
     error = SwarmingTaskError.GenerateError(swarming_task_error.RUNNER_TIMEOUT)
-    mocked_result.return_value = 'data', 'content', None
     task_id = 'task_id'
 
-    flake_swarming.OnSwarmingTaskTimeout(task_id)
-    mocked_parse.assert_called_once_with('data', 'content', error)
+    task_data = {
+        'state': 'COMPLETE',
+    }
+    mocked_result.return_value = task_data, 'content', None
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
+    parameters = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
+    flake_swarming.OnSwarmingTaskTimeout(parameters, task_id)
+    mocked_parse.assert_called_once_with(task_data, 'content', error,
+                                         parameters)
 
   def testOnSwarmingTaskError(self):
     task_id = 'task_id'
@@ -238,10 +318,26 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(flake_swarming, 'OnSwarmingTaskError')
   def testOnSwarmingTaskStateChangedNoTaskData(self, mocked_error,
                                                mocked_result):
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
+    parameters = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
     task_id = 'task_id'
     mocked_result.return_value = None, None, None
 
-    flake_swarming.OnSwarmingTaskStateChanged(task_id)
+    flake_swarming.OnSwarmingTaskStateChanged(parameters, task_id)
     mocked_error.assert_called_once_with(task_id, None)
 
   @mock.patch.object(swarmed_test_util, 'GetSwarmingTaskDataAndResult')
@@ -250,7 +346,23 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
     task_data = {'state': constants.STATE_RUNNING}
     mocked_result.return_value = task_data, None, None
 
-    self.assertIsNone(flake_swarming.OnSwarmingTaskStateChanged(task_id))
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
+    parameters = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
+    self.assertIsNone(
+        flake_swarming.OnSwarmingTaskStateChanged(parameters, task_id))
 
   @mock.patch.object(swarmed_test_util, 'GetSwarmingTaskDataAndResult')
   @mock.patch.object(flake_swarming, '_ParseFlakeSwarmingTaskOutput')
@@ -262,8 +374,23 @@ class FlakeSwarmingTest(wf_testcase.WaterfallTestCase):
     }
     mocked_result.return_value = task_data, None, None
 
-    flake_swarming.OnSwarmingTaskStateChanged(task_id)
-    mocked_parse.assert_called_once_with(task_data, None, None)
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    commit_position = 1000
+    isolate_sha = 'sha1'
+    iterations = 50
+    timeout_seconds = 1200
+
+    parameters = RunFlakeSwarmingTaskInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        commit_position=commit_position,
+        isolate_sha=isolate_sha,
+        iterations=iterations,
+        timeout_seconds=timeout_seconds)
+
+    flake_swarming.OnSwarmingTaskStateChanged(parameters, task_id)
+    mocked_parse.assert_called_once_with(task_data, None, None, parameters)
 
   @mock.patch.object(swarming, 'CreateNewSwarmingTaskRequestTemplate')
   def testCreateNewSwarmingTaskRequest(self, mocked_template):

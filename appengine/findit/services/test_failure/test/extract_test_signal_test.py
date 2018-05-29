@@ -103,6 +103,47 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
         TestFailureInfo.FromSerializable(failure_info), None)
     self.assertEqual(_FAILURE_SIGNALS, signals)
 
+  def testGetSignalFromStepLogForWlt(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'webkit_layout_tests'
+
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed': True,
+        'chromium_revision': 'a_git_hash',
+        'failed_steps': {
+            'webkit_layout_tests': {
+                'last_pass': 122,
+                'current_failure': 123,
+                'first_failure': 123,
+                'supported': True
+            }
+        }
+    }
+
+    step = WfStep.Create(master_name, builder_name, build_number, step_name)
+    step.log_data = json.dumps({
+        'fast/test.html':
+            'dGhpcmRfcGFydHkvV2ViS2l0L0xheW91dFRlc3RzL2Zhc3QvdGVzdC5odG1s'
+    })
+    step.isolated = True
+    step.put()
+
+    signals = extract_test_signal.ExtractSignalsForTestFailure(
+        TestFailureInfo.FromSerializable(failure_info), None)
+
+    step = WfStep.Get(master_name, builder_name, build_number, step_name)
+
+    self.assertIsNotNone(step)
+    self.assertIsNotNone(step.log_data)
+    self.assertEqual({
+        'third_party/WebKit/LayoutTests/fast/test.html': []
+    }, signals['webkit_layout_tests']['files'])
+
   @mock.patch.object(
       build_util,
       'GetWaterfallBuildStepLog',

@@ -4,10 +4,11 @@
 """This module is for test results related operations."""
 
 from libs.test_results.gtest_test_results import GtestTestResults
+from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 
 _STEP_NAME_SEPARATOR = ' on '
 
-_TEST_RESULTS = [GtestTestResults]
+_TEST_RESULTS = [GtestTestResults, WebkitLayoutTestResults]
 
 
 def GetTestResultObject(test_results_json):

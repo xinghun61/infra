@@ -21,12 +21,14 @@ from services.flake_failure import flake_test_results
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
 
 
-def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error):
+def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error, parameters):
   """Returns swarming task results as a FlakeswarmingTaskOutput object."""
   assert task_data
 
+  iterations = parameters.iterations
+
   if output_json:
-    # Gets the total numbers of runs and number of suscessful runs from
+    # Gets the total numbers of runs and number of successful runs from
     # test results
     tries, successes = flake_test_results.GetCountsFromSwarmingRerun(
         output_json)
@@ -38,6 +40,14 @@ def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error):
           code=swarming_task_error.UNKNOWN)
       tries = None
       successes = None
+    elif (tries == 1 and task_data['state'] == constants.STATE_COMPLETED and
+          not task_data.get('failure') and not task_data.get('infra_failure')):
+      # webkit_layout_tests special case: test results will be combined into
+      # one if all results are the same.
+      # Use iterations instead assuming the test repeated that many times.
+      # Currently only do this if task completes successfully.
+      tries = iterations
+      successes = iterations * successes
 
     return FlakeSwarmingTaskOutput(
         completed_time=time_util.DatetimeFromString(
@@ -59,7 +69,7 @@ def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error):
         task_id=task_data['task_id'])
 
 
-def OnSwarmingTaskTimeout(task_id):
+def OnSwarmingTaskTimeout(parameters, task_id):
   """To be called when waiting for a swarming task times out."""
   timeout_error = SwarmingTaskError.GenerateError(
       swarming_task_error.RUNNER_TIMEOUT)
@@ -71,12 +81,12 @@ def OnSwarmingTaskTimeout(task_id):
   task_data, output_json, error = (
       swarmed_test_util.GetSwarmingTaskDataAndResult(task_id))
 
-  if not task_data:
+  if not task_data or not task_data.get('state'):
     return OnSwarmingTaskError(task_id, error or timeout_error)
 
   # Attempt to salvage whatever is available, but still report an error.
   return _ParseFlakeSwarmingTaskOutput(task_data, output_json, error or
-                                       timeout_error)
+                                       timeout_error, parameters)
 
 
 def OnSwarmingTaskError(task_id, error):
@@ -91,7 +101,7 @@ def OnSwarmingTaskError(task_id, error):
       task_id=task_id)
 
 
-def OnSwarmingTaskStateChanged(task_id):
+def OnSwarmingTaskStateChanged(parameters, task_id):
   """To be called when a swarming task's status changes."""
   task_data, output_json, error = (
       swarmed_test_util.GetSwarmingTaskDataAndResult(task_id))
@@ -107,7 +117,8 @@ def OnSwarmingTaskStateChanged(task_id):
   # The task is completed e.g. task_state == constants.STATE_COMPLETED. Even
   # if there is an error, attempt to salvage any usable information, but
   # still report the error.
-  return _ParseFlakeSwarmingTaskOutput(task_data, output_json, error)
+  return _ParseFlakeSwarmingTaskOutput(task_data, output_json, error,
+                                       parameters)
 
 
 def CreateNewSwarmingTaskRequest(

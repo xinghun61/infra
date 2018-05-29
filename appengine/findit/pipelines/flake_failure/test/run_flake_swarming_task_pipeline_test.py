@@ -146,7 +146,9 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
     mocked_output.return_value = flake_swarming_task_output
 
     pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
-    result = pipeline_job.CallbackImpl(None, {'task_id': 'task_id'})
+    result = pipeline_job.CallbackImpl(run_flake_swarming_task_input, {
+        'task_id': 'task_id'
+    })
     self.assertEqual((None, flake_swarming_task_output), result)
 
   @mock.patch.object(
@@ -167,7 +169,9 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
         timeout_seconds=timeout_seconds)
 
     pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
-    result = pipeline_job.CallbackImpl(None, {'task_id': 'task_id'})
+    result = pipeline_job.CallbackImpl(run_flake_swarming_task_input, {
+        'task_id': 'task_id'
+    })
     self.assertIsNone(result)
 
   @mock.patch.object(
@@ -189,7 +193,9 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
         timeout_seconds=timeout_seconds)
 
     pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
-    result = pipeline_job.CallbackImpl(None, {'task_id': 'task_id'})
+    result = pipeline_job.CallbackImpl(run_flake_swarming_task_input, {
+        'task_id': 'task_id'
+    })
     self.assertEqual(('Error getting swarming task result: m', None), result)
 
   @mock.patch.object(flake_swarming, 'OnSwarmingTaskTimeout')
@@ -200,17 +206,18 @@ class RunFlakeSwarmingTaskResultPipeline(WaterfallTestCase):
     iterations = 50
     timeout_seconds = 1200
     task_id = 'task_id'
+    analysis_urlsafe_key = analysis.key.urlsafe()
 
     run_flake_swarming_task_input = RunFlakeSwarmingTaskInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(),
+        analysis_urlsafe_key=analysis_urlsafe_key,
         commit_position=commit_position,
         isolate_sha=isolate_sha,
         iterations=iterations,
         timeout_seconds=timeout_seconds)
 
     pipeline_job = RunFlakeSwarmingTaskPipeline(run_flake_swarming_task_input)
-    pipeline_job.OnTimeout(None, {'task_id': task_id})
-    mock_fn.assert_called_once_with(task_id)
+    pipeline_job.OnTimeout(run_flake_swarming_task_input, {'task_id': task_id})
+    mock_fn.assert_called_once_with(run_flake_swarming_task_input, task_id)
 
   def testTimeoutSeconds(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

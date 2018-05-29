@@ -10,7 +10,6 @@ It provides functions to:
 """
 
 import base64
-from collections import defaultdict
 import cStringIO
 
 from libs.test_results.base_test_results import BaseTestResults

@@ -171,7 +171,7 @@ def _UpdateFirstFailureOnTestLevel(master_name, builder_name,
     test_checking_list = unfinished_tests[:]
 
     for test_name in test_checking_list:
-      if failed_test_log.get(test_name):
+      if failed_test_log.get(test_name) is not None:
         failed_step.tests[test_name].first_failure = build_number
       else:
         # Last pass for this test has been found.

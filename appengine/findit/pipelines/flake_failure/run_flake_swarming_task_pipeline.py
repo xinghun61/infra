@@ -41,9 +41,9 @@ class RunFlakeSwarmingTaskPipeline(AsynchronousPipeline):
   def OnTimeout(self, pipeline_parameters, callback_parameters):
     # TODO(crbug.com/835066): Capture metrics for pipeline timeouts.
     super(RunFlakeSwarmingTaskPipeline, self).OnTimeout(pipeline_parameters,
-                                                        pipeline_parameters)
+                                                        callback_parameters)
     task_id = callback_parameters.get('task_id')
-    return flake_swarming.OnSwarmingTaskTimeout(task_id)
+    return flake_swarming.OnSwarmingTaskTimeout(pipeline_parameters, task_id)
 
   def RunImpl(self, pipeline_parameters):
     if self.GetCallbackParameters().get('task_id'):
@@ -63,7 +63,7 @@ class RunFlakeSwarmingTaskPipeline(AsynchronousPipeline):
 
     self.SaveCallbackParameters({'task_id': task_id})
 
-  def CallbackImpl(self, _, callback_parameters):
+  def CallbackImpl(self, pipeline_parameters, callback_parameters):
     """Returns the results of the swarming task."""
     if not callback_parameters.get('task_id'):
       # Task_id is not saved in callback parameters yet, retries the callback.
@@ -71,7 +71,8 @@ class RunFlakeSwarmingTaskPipeline(AsynchronousPipeline):
 
     task_id = callback_parameters['task_id']
     try:
-      results = flake_swarming.OnSwarmingTaskStateChanged(task_id)
+      results = flake_swarming.OnSwarmingTaskStateChanged(
+          pipeline_parameters, task_id)
       if not results:
         # No task state, further callback is needed.
         return None

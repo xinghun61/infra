@@ -111,7 +111,7 @@ _SAMPLE_TEST_RESULTS_CONSISTENT = {
         'Unittest3.Subtest3': [{
             'status': 'SUCCESS',
             'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
-        }]
+        }],
     }]
 }
 
