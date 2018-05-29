@@ -15,7 +15,6 @@ sys.path.insert(0,
 
 from components import auth
 from components import utils
-from components.test_support import test_case
 from testing_utils import testing
 import mock
 import gae_ts_mon
@@ -29,13 +28,16 @@ import model
 import service
 
 
-class ApiTests(object):
+class EndpointsApiTest(testing.EndpointsTestCase):
+  api_service_cls = api.BuildBucketApi
+
   test_build = None
   test_bucket = None
   future_ts = None
   future_date = None
 
-  def setUpTests(self):
+  def setUp(self):
+    super(EndpointsApiTest, self).setUp()
     gae_ts_mon.reset_for_unittest(disable=True)
     auth.disable_process_cache()
 
@@ -763,11 +765,3 @@ class ApiTests(object):
             'tag': 'buildset',
             'shards': 0
         }, status=400)
-
-
-class EndpointsApiTest(testing.EndpointsTestCase, ApiTests):
-  api_service_cls = api.BuildBucketApi
-
-  def setUp(self):
-    super(EndpointsApiTest, self).setUp()
-    self.setUpTests()
