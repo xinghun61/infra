@@ -24,11 +24,11 @@ func init() {
 	// LUCI frameworks needs a bunch of routes exposed via default module.
 	standard.InstallHandlers(r)
 
-	// This is the analyze queue handler
+	// This is the analyze queue handler.
 	r.POST("/internal/analyze", baseInternal, analyzeHandler)
 
-	r.GET("/", base, landingPageHandler)
-	r.GET("/run/*runID", base, landingPageHandler)
+	r.GET("/", base, mainPageHandler)
+	r.GET("/run/*runID", base, mainPageHandler)
 
 	// Configure pRPC server.
 	s := common.NewRPCServer()

@@ -7,20 +7,16 @@ package common
 
 import (
 	"net/http"
-	"strings"
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/auth"
-	"go.chromium.org/luci/server/auth/xsrf"
 	"go.chromium.org/luci/server/router"
-	"go.chromium.org/luci/server/templates"
 )
 
 const (
@@ -89,10 +85,7 @@ func (m anonymousMethod) Authenticate(ctx context.Context, r *http.Request) (*au
 func MiddlewareForUI() router.MiddlewareChain {
 	// Configure auth system to use cookies and actually attempt to do the
 	// authentication. Finally, configure template system.
-	return MiddlewareBase().Extend(
-		auth.Authenticate(server.CookieAuth),
-		templates.WithTemplates(prepareTemplates()),
-	)
+	return MiddlewareBase().Extend(auth.Authenticate(server.CookieAuth))
 }
 
 // MiddlewareForREST returns a middleware chain intended for REST API routes.
@@ -130,38 +123,6 @@ func NewRPCServer() *prpc.Server {
 	return &prpc.Server{
 		AccessControl: func(c context.Context, origin string) bool {
 			return true
-		},
-	}
-}
-
-// prepareTemplates returns templates.Bundle used by all UI handlers.
-//
-// In particular it includes a set of default arguments passed to all templates.
-func prepareTemplates() *templates.Bundle {
-	return &templates.Bundle{
-		Loader:    templates.FileSystemLoader("templates"),
-		DebugMode: info.IsDevAppServer,
-		DefaultArgs: func(c context.Context, e *templates.Extra) (templates.Args, error) {
-			loginURL, err := auth.LoginURL(c, e.Request.URL.RequestURI())
-			if err != nil {
-				return nil, err
-			}
-			logoutURL, err := auth.LogoutURL(c, e.Request.URL.RequestURI())
-			if err != nil {
-				return nil, err
-			}
-			token, err := xsrf.Token(c)
-			if err != nil {
-				return nil, err
-			}
-			return templates.Args{
-				"AppVersion":  strings.Split(info.VersionID(c), ".")[0],
-				"IsAnonymous": auth.CurrentIdentity(c) == "anonymous:anonymous",
-				"User":        auth.CurrentUser(c),
-				"LoginURL":    loginURL,
-				"LogoutURL":   logoutURL,
-				"XsrfToken":   token,
-			}, nil
 		},
 	}
 }

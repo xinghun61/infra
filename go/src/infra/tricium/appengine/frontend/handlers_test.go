@@ -6,46 +6,52 @@ package frontend
 
 import (
 	"io/ioutil"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/router"
-	"go.chromium.org/luci/server/templates"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/triciumtest"
 )
 
-func TestLandingPageHandler(t *testing.T) {
+func TestMainPageHandler(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		ctx := triciumtest.Context()
-
-		withTestingContext := func(c *router.Context, next router.Handler) {
-			c.Context = ctx
-			next(c)
+		authState := &authtest.FakeState{
+			Identity: "user:user@example.com",
 		}
+		ctx = auth.WithState(ctx, authState)
+		w := httptest.NewRecorder()
 
-		r := router.New()
-		mw := router.NewMiddlewareChain(withTestingContext)
-		mw = mw.Extend(templates.WithTemplates(&templates.Bundle{
-			Loader: templates.AssetsLoader(map[string]string{
-				"pages/index.html": "Landing page content",
-			}),
-		}))
-		r.GET("/", mw, landingPageHandler)
-		srv := httptest.NewServer(r)
-		client := &http.Client{}
+		Convey("Basic request to main page handler", func() {
+			mainPageHandler(&router.Context{
+				Context: ctx,
+				Writer:  w,
+				Request: triciumtest.MakeGetRequest(nil),
+				Params:  triciumtest.MakeParams(),
+			})
+			So(w.Code, ShouldEqual, 200)
+			r, err := ioutil.ReadAll(w.Body)
+			So(err, ShouldBeNil)
+			body := string(r)
+			So(body, ShouldContainSubstring, "html")
+		})
 
-		Convey("Basic request", func() {
-			resp, err := client.Get(srv.URL + "/")
+		Convey("Constructing template args", func() {
+			args, err := templateArgs(ctx, triciumtest.MakeGetRequest(nil))
 			So(err, ShouldBeNil)
-			defer resp.Body.Close()
-			b, err := ioutil.ReadAll(resp.Body)
-			So(err, ShouldBeNil)
-			So(string(b), ShouldEqual, "Landing page content")
+			So(args, ShouldResemble, map[string]interface{}{
+				"AppVersion":  "testVersionID",
+				"IsAnonymous": false,
+				"LoginURL":    "http://fake.example.com/login?dest=%2Ftesting-path",
+				"LogoutURL":   "http://fake.example.com/logout?dest=%2Ftesting-path",
+				"User":        "user@example.com",
+			})
 		})
 	})
 }

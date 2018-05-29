@@ -1,10 +1,22 @@
 <!DOCTYPE html>
 <title>Tricium</title>
-<link rel="stylesheet" type="text/css" href="/static/style.css">
 <script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
 <link rel="import" href="/bower_components/chopsui/chops-header.html">
+<link rel="import" href="/bower_components/chopsui/chops-login.html">
+<style>
+body {
+  font-family: sans-serif;
+}
+p.version-footer {
+  color: #cccccc;
+  text-align: right;
+}
+</style>
 
-<chops-header app-title="Tricium" logo-src="/bower_components/chopsui/img/logo.png"></chops-header>
+<chops-header
+  app-title="Tricium"
+  logo-src="/bower_components/chopsui/img/logo.png">
+</chops-header>
 <pre id="content"></pre>
 <img id="mascot" src="/static/images/tri.png">
 <footer>
@@ -33,7 +45,7 @@ async function init() {
     content.textContent = JSON.stringify(data, null, 2);
     mascot.hidden = true;
   } catch (error) {
-    content.textContent = 'Failed to fetch Progress: ' + error;
+    content.textContent = error;
     mascot.hidden = false;
   }
 }
@@ -62,8 +74,8 @@ async function _requestProgress(runID) {
 async function _parseRpcJson(response) {
   const jsonPrefix = ')]}\'';
   const text = await response.text();
-  if (!text.startsWith(jsonPrefix) {
-    throw Error(`Non-JSONP response text: "${text}".`);
+  if (!text.startsWith(jsonPrefix)) {
+    throw Error('Got response text:' + text);
   }
   return JSON.parse(text.substring(jsonPrefix.length));
 }
