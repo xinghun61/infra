@@ -216,7 +216,8 @@ def RunSteps(api):
 
   api.git('clean', '-dffx')
   with api.context(cwd=api.path['checkout']):
-    api.gclient('sync', ['sync', '-D', '--nohooks'])
+    api.gclient('sync', ['sync', '-D', '--nohooks', '--with_branch_heads',
+                         '--with_tags'])
 
   api.step(
       'touch chrome/test/data/webui/i18n_process_css_test.html',

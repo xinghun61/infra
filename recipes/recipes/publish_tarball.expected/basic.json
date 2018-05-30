@@ -184,7 +184,9 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "sync",
       "-D",
-      "--nohooks"
+      "--nohooks",
+      "--with_branch_heads",
+      "--with_tags"
     ],
     "cwd": "[START_DIR]/src",
     "env": {
