@@ -133,7 +133,8 @@ gae_ts_mon.initialize(waterfall_backend_web_application)
 
 # "flake-detection-backend" module.
 flake_detection_backend_web_pages_handler_mappings = [
-    ('/flake/detection/cron/detect-cq-flakes', detect_cq_flakes.DetectCqFlakes)
+    ('/flake/detection/cron/detect-cq-false-rejection-flakes',
+     detect_flakes.DetectCQFalseRejectionFlakes)
 ]
 flake_detection_backend_web_application = webapp2.WSGIApplication(
     flake_detection_backend_web_pages_handler_mappings, debug=False)
