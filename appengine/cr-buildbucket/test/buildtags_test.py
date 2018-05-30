@@ -93,3 +93,14 @@ class ValidateTagsTests(unittest.TestCase):
   def test_invalid_buildset(self):
     with self.assertRaises(errors.InvalidInputError):
       buildtags.validate_tags(['buildset:patch/gerrit/foo'], 'search')
+
+  def test_two_gitiles_commits(self):
+    err_pattern = r'More than one commits/gitiles buildset'
+    with self.assertRaisesRegexp(errors.InvalidInputError, err_pattern):
+      tags = [
+          ('buildset:commit/gitiles/chromium.googlesource.com/chromium/src/+/'
+           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+          ('buildset:commit/gitiles/chromium.googlesource.com/chromium/src/+/'
+           'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),
+      ]
+      buildtags.validate_tags(tags, 'new')

@@ -30,12 +30,6 @@ def validate_gerrit_change(change):
   _check_fields_truth(change, ('host', 'change', 'patchset'))
 
 
-def validate_git_commit_hash(commit_hash):
-  """Validates a Git commit id."""
-  if len(commit_hash) != 40:
-    _err('length is not 40')
-
-
 def validate_tags(string_pairs, mode):
   """Validates a list of common.StringPair tags.
 
@@ -91,11 +85,9 @@ def validate_build_predicate(predicate):
     with _enter('builder'):
       validate_builder_id(predicate.builder)
   _check_repeated(predicate, 'gerrit_changes', validate_gerrit_change)
-  _check_repeated(predicate, 'git_commits', validate_git_commit_hash)
 
-  if (not predicate.HasField('builder') and not predicate.gerrit_changes
-      and not predicate.git_commits):
-    _err('builder, gerrit_changes or git_commits is required')
+  if not predicate.HasField('builder') and not predicate.gerrit_changes:
+    _err('builder or gerrit_changes is required')
 
   with _enter('tags'):
     validate_tags(predicate.tags, 'search')

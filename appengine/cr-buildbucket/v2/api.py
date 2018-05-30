@@ -118,7 +118,7 @@ DEFAULT_BUILD_MASK = protoutil.Mask.from_field_mask(
         'end_time',
         'update_time',
         'status',
-        'input.gitiles_commits',
+        'input.gitiles_commit',
         'input.gerrit_changes',
         'input.experimental',
         # TODO(nodir): add the following fields when they are defined in the

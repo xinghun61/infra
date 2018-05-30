@@ -121,7 +121,8 @@ class SearchBuildsRequestTests(BaseTestCase):
   def test_valid(self):
     msg = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
-            git_commits=['a' * 40],
+            builder=build_pb2.Builder.ID(
+                project='chromium', bucket='try', builder='linux-rel'),
         ))
     self.assert_valid(msg)
 
@@ -129,12 +130,13 @@ class SearchBuildsRequestTests(BaseTestCase):
     msg = rpc_pb2.SearchBuildsRequest()
     self.assert_invalid(
         msg,
-        r'predicate: builder, gerrit_changes or git_commits is required')
+        r'predicate: builder or gerrit_changes is required')
 
   def test_bad_page_size(self):
     msg = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
-            git_commits=['a' * 40]
+            builder=build_pb2.Builder.ID(
+                project='chromium', bucket='try', builder='linux-rel'),
         ),
         page_size=-1,
     )
@@ -153,7 +155,7 @@ class BuildPredicateTests(BaseTestCase):
   def test_empty(self):
     msg = rpc_pb2.BuildPredicate()
     self.assert_invalid(
-        msg, r'builder, gerrit_changes or git_commits is required')
+        msg, r'builder or gerrit_changes is required')
 
   def test_invalid_builder_id(self):
     msg = rpc_pb2.BuildPredicate(builder=build_pb2.Builder.ID())
@@ -165,13 +167,10 @@ class BuildPredicateTests(BaseTestCase):
     self.assert_invalid(
         msg, r'gerrit_changes\[0\].host: not specified')
 
-  def test_git_commits(self):
-    msg = rpc_pb2.BuildPredicate(git_commits=['deadbeef'])
-    self.assert_invalid(msg, r'git_commits\[0\]: length is not 40')
-
   def test_invalid_tags(self):
     msg = rpc_pb2.BuildPredicate(
-        git_commits=['a' * 40],
+        builder=build_pb2.Builder.ID(
+            project='chromium', bucket='try', builder='linux-rel'),
         tags=[common_pb2.StringPair(key='', value='')],
     )
     self.assert_invalid(msg, r'tags: Invalid tag')

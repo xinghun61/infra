@@ -91,6 +91,7 @@ def validate_tags(tags, mode, builder=None):
   if not isinstance(tags, list):
     raise errors.InvalidInputError('tags must be a list')
   builder_tag = None
+  seen_gitiles_commit = False
   for t in tags:  # pragma: no branch
     if not isinstance(t, basestring):
       raise errors.InvalidInputError('Invalid tag "%s": must be a string' %
@@ -106,6 +107,11 @@ def validate_tags(tags, mode, builder=None):
         validate_buildset(v)
       except errors.InvalidInputError as ex:
         raise errors.InvalidInputError('Invalid tag "%s": %s' % (t, ex))
+      if RE_BUILDSET_GITILES_COMMIT.match(v):  # pragma: no branch
+        if seen_gitiles_commit:
+          raise errors.InvalidInputError(
+              'More than one commits/gitiles buildset')
+        seen_gitiles_commit = True
     if k == BUILDER_KEY:
       if mode == 'append':
         raise errors.InvalidInputError(

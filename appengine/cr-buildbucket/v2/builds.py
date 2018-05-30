@@ -81,6 +81,8 @@ def build_to_v2_partial(build):
 
 
 def _parse_tags(dest_msg, tags):
+  dest_msg.input.ClearField('gitiles_commit')
+
   for t in tags:
     # All builds in the datastore have tags that have a colon.
     k, v = buildtags.parse(t)
@@ -92,11 +94,11 @@ def _parse_tags(dest_msg, tags):
     if k == buildtags.BUILDSET_KEY:
       m = buildtags.RE_BUILDSET_GITILES_COMMIT.match(v)
       if m:
-        dest_msg.input.gitiles_commits.add(
-            host=m.group(1),
-            project=m.group(2),
-            id=m.group(3),
-        )
+        if dest_msg.input.HasField('gitiles_commit'):
+          raise MalformedBuild('more than one commits/gitiles/ buildset')
+        dest_msg.input.gitiles_commit.host = m.group(1)
+        dest_msg.input.gitiles_commit.project = m.group(2)
+        dest_msg.input.gitiles_commit.id = m.group(3)
         continue
 
       m = buildtags.RE_BUILDSET_GERRIT_CL.match(v)

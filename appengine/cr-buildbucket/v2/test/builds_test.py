@@ -200,13 +200,11 @@ class V2BuildsTest(unittest.TestCase):
             common_pb2.StringPair(key='buildset', value='bs'),
         ],
         input=build_pb2.Build.Input(
-            gitiles_commits=[
-                common_pb2.GitilesCommit(
-                    host='chromium.googlesource.com',
-                    project='infra/luci/luci-go',
-                    id='b7a757f457487cd5cfe2dae83f65c5bc10e288b7',
-                ),
-            ],
+            gitiles_commit=common_pb2.GitilesCommit(
+                host='chromium.googlesource.com',
+                project='infra/luci/luci-go',
+                id='b7a757f457487cd5cfe2dae83f65c5bc10e288b7',
+            ),
             gerrit_changes=[
                 common_pb2.GerritChange(
                     host='chromium-review.googlesource.com',
@@ -247,6 +245,17 @@ class V2BuildsTest(unittest.TestCase):
     build = mkbuild()
     del build.parameters[model.BUILDER_PARAMETER]
     with self.assertRaises(builds.UnsupportedBuild):
+      builds.build_to_v2_partial(build)
+
+  def test_two_gitiles_commits(self):
+    build = mkbuild(tags=[
+        ('buildset:commit/gitiles/chromium.googlesource.com/'
+         'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b7'),
+        ('buildset:commit/gitiles/chromium.googlesource.com/'
+         'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b8'),
+    ])
+    err_pattern = r'more than one commits/gitiles/ buildset'
+    with self.assertRaisesRegexp(builds.MalformedBuild, err_pattern):
       builds.build_to_v2_partial(build)
 
 
