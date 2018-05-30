@@ -25,12 +25,17 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/context"
+	"google.golang.org/api/googleapi"
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/api/buildbucket/swarmbucket/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/grpc/prpc"
+	"go.chromium.org/luci/milo/api/buildbot"
+	miloAPI "go.chromium.org/luci/milo/api/proto"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
@@ -199,6 +204,66 @@ func analyzeBuilder(c *router.Context, builder *storage.Builder) error {
 	return nil
 }
 
+// getMiloNum gets the latest known build number from Milo.
+// This could be either a Buildbot or Buildbucket build number.
+func getMiloNum(c context.Context, h *http.Client, master, builder string) (int, error) {
+	client := miloAPI.NewBuildbotPRPCClient(&prpc.Client{
+		C:    h,
+		Host: "ci.chromium.org",
+	})
+	c, _ = context.WithTimeout(c, 55*time.Second)
+	builds, err := client.GetBuildbotBuildsJSON(
+		c,
+		&miloAPI.BuildbotBuildsRequest{
+			Master:         master,
+			Builder:        builder,
+			Limit:          1,
+			IncludeCurrent: true,
+		})
+	if err != nil || len(builds.Builds) == 0 {
+		return 0, err
+	}
+	var build buildbot.Build
+	if err := json.Unmarshal(builds.Builds[0].Data, &build); err != nil {
+		return 0, err
+	}
+	return build.Number, nil
+}
+
+// setNextSafe sets the next safe build number on buildbucket.
+// This may be latest (buildbot | buildbucket) number + 10.
+// This sets next safe for tryjobs too, since it doesn't hurt and the migration
+// app doesn't know whether or not tryjobs need build numbers.
+func setNextSafe(c context.Context, builder *storage.Builder) error {
+	cfg := config.Get(c)
+	master := cfg.FindMaster(builder.ID.Master)
+	if master == nil {
+		return errors.Reason("master %q is not configured", builder.ID.Master).Err()
+	}
+	t, err := auth.GetRPCTransport(c, auth.AsSelf)
+	if err != nil {
+		return err
+	}
+	h := &http.Client{Transport: t}
+	buildbotNum, err := getMiloNum(c, h, builder.ID.Master, builder.ID.Builder)
+	if err != nil {
+		return err
+	}
+	client, err := swarmbucket.New(h)
+	if err != nil {
+		return err
+	}
+	client.BasePath = fmt.Sprintf("https://%s/_ah/api/swarmbucket/v1/", cfg.BuildbucketHostname)
+	nextNum := int64(buildbotNum) + 10
+	req := swarmbucket.SwarmingSwarmbucketApiSetNextBuildNumberRequest{
+		Bucket:     master.GetLuciBucket(),
+		Builder:    builder.ID.Builder,
+		NextNumber: nextNum,
+	}
+	logging.Infof(c, "Setting next build number to %d", nextNum)
+	return client.SetNextBuildNumber(&req).Do()
+}
+
 func updateBuilder(c *router.Context, builder *storage.Builder) error {
 	now := clock.Now(c.Context)
 	reason := c.Request.FormValue(reasonFormValueName)
@@ -228,6 +293,18 @@ func updateBuilder(c *router.Context, builder *storage.Builder) error {
 	case "":
 	case "on":
 		luciIsProd = true
+		switch err := setNextSafe(c.Context, builder); err := err.(type) {
+		case nil:
+			// continue
+		case *googleapi.Error:
+			if err.Code == http.StatusForbidden {
+				http.Error(c.Writer, "Forbidden", http.StatusForbidden)
+				return nil
+			}
+			return err
+		default:
+			return err
+		}
 	default:
 		msg := fmt.Sprintf("invalid %s %q", luciIsProdFormValueName, v)
 		http.Error(c.Writer, msg, http.StatusBadRequest)
