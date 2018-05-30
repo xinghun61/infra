@@ -273,7 +273,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
           }
           builders { name: "debug" }
         ''', '', [
-        'builder_defaults: recipe: properties \'a\': does not have a colon',
+        'builder_defaults: recipe: properties u\'a\': does not have a colon',
     ])
 
   def test_cipd_and_repository_bad(self):
