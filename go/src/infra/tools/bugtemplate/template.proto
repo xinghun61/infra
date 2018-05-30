@@ -30,6 +30,9 @@ message Template {
     Type type = 6;
     // Bug labels.
     repeated string labels = 7;
+    // Bugs which should be blocked on the one being filed.
+    // Supports "project:number" notation.
+    repeated string blocking = 8;
 }
 
 enum Priority {

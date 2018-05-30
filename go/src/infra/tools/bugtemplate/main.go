@@ -79,6 +79,7 @@ func run() error {
 	params.Set("cc", strings.Join(cleanStrings(template.Cc), ","))
 	params.Set("components", strings.Join(cleanStrings(template.Components), ","))
 	params.Set("labels", strings.Join(cleanStrings(template.Labels), ","))
+	params.Set("blocking", strings.Join(cleanStrings(template.Blocking), ","))
 	ret := "https://bugs.chromium.org/p/chromium/issues/entry?" + params.Encode()
 	if *queryEscape {
 		ret = url.QueryEscape(ret)
