@@ -212,7 +212,7 @@ def validate_recipe_properties(properties, properties_j, ctx):
           try:
             value = json.loads(value)
           except ValueError as ex:
-            ctx.error(ex)
+            ctx.error('%s', ex)
             continue
 
         validate_recipe_property(key, value, ctx)

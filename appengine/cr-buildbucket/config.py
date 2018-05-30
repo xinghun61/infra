@@ -63,7 +63,7 @@ def validate_identity(identity, ctx):
   try:
     auth.Identity(kind, name)
   except ValueError as ex:
-    ctx.error(ex)
+    ctx.error('%s', ex)
 
 
 def validate_access_list(acl_list, ctx):
