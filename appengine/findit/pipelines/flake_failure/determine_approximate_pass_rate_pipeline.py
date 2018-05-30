@@ -60,7 +60,13 @@ class DetermineApproximatePassRatePipeline(GeneratorPipeline):
         analysis.FindMatchingDataPointWithCommitPosition(commit_position))
 
     if data_point:
-      assert previous_swarming_task_output
+      # previous_swarming_task_output should be None if and only if this is the
+      # first time analyzing this data point. If at any point a data point
+      # already exists and this pipeline is called with
+      # previous_swarming_task_output as None could be a sign of an infinite
+      # loop or otherwise duplicating work.
+      assert previous_swarming_task_output, (
+          'Attempt to re-analyze existing data point')
 
     if previous_swarming_task_output:
       assert data_point

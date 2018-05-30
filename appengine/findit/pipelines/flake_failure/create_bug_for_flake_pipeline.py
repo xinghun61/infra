@@ -101,34 +101,42 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
 
     most_recent_commit_position = most_recent_build_info.commit_position
 
-    # Get the isolate sha of the recent build.
-    get_isolate_sha_input = self.CreateInputObjectInstance(
-        GetIsolateShaForCommitPositionParameters,
-        analysis_urlsafe_key=analysis_urlsafe_key,
-        commit_position=most_recent_commit_position,
-        revision=most_recent_build_info.chromium_revision,
-        upper_bound_build_number=most_recent_build_number)
-    get_sha_output = yield GetIsolateShaForCommitPositionPipeline(
-        get_isolate_sha_input)
+    create_bug_input = self.CreateInputObjectInstance(
+        _CreateBugIfStillFlakyInputObject,
+        analysis_urlsafe_key=input_object.analysis_urlsafe_key,
+        commit_position=most_recent_commit_position)
 
-    # Determine approximate pass rate at the commit position/isolate sha.
-    determine_approximate_pass_rate_input = self.CreateInputObjectInstance(
-        DetermineApproximatePassRateInput,
-        analysis_urlsafe_key=analysis_urlsafe_key,
-        commit_position=most_recent_commit_position,
-        get_isolate_sha_output=get_sha_output,
-        previous_swarming_task_output=None,
-        revision=most_recent_build_info.chromium_revision,
-    )
-    analysis_pipeline = yield DetermineApproximatePassRatePipeline(
-        determine_approximate_pass_rate_input)
+    if analysis.FindMatchingDataPointWithCommitPosition(
+        most_recent_commit_position):
+      # In some corner cases, an analysis is triggered immediately after a
+      # culprit lands and completes quickly before a new build cycle becomes
+      # available. The commit position of the most recent build would thus be
+      # that of the very first data point, which has already been analyzed to
+      # be flaky and nothing has landed since, so a bug can be created directly.
+      yield _CreateBugIfStillFlaky(create_bug_input)
+    else:
+      with pipeline.InOrder():
+        # Get the isolate sha of the recent build.
+        get_sha_output = yield GetIsolateShaForCommitPositionPipeline(
+            self.CreateInputObjectInstance(
+                GetIsolateShaForCommitPositionParameters,
+                analysis_urlsafe_key=analysis_urlsafe_key,
+                commit_position=most_recent_commit_position,
+                revision=most_recent_build_info.chromium_revision,
+                upper_bound_build_number=most_recent_build_number))
 
-    with pipeline.After(analysis_pipeline):
-      next_input_object = pipelines.CreateInputObjectInstance(
-          _CreateBugIfStillFlakyInputObject,
-          analysis_urlsafe_key=input_object.analysis_urlsafe_key,
-          commit_position=most_recent_commit_position)
-      yield _CreateBugIfStillFlaky(next_input_object)
+        # Determine approximate pass rate at the commit position/isolate sha.
+        yield DetermineApproximatePassRatePipeline(
+            self.CreateInputObjectInstance(
+                DetermineApproximatePassRateInput,
+                analysis_urlsafe_key=analysis_urlsafe_key,
+                commit_position=most_recent_commit_position,
+                get_isolate_sha_output=get_sha_output,
+                previous_swarming_task_output=None,
+                revision=most_recent_build_info.chromium_revision))
+
+        # Create the bug.
+        yield _CreateBugIfStillFlaky(create_bug_input)
 
 
 def _GenerateSubjectAndBodyForBug(analysis):
