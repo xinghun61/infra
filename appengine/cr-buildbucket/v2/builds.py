@@ -18,6 +18,8 @@ __all__ = [
     'UnsupportedBuild',
     'MalformedBuild',
     'build_to_v2_partial',
+    'status_to_v1',
+    'status_to_v2',
 ]
 
 

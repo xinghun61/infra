@@ -12,3 +12,5 @@ from . import builds
 from .builds import *
 from .steps import parse_steps
 import model
+
+model.set_status_to_v2(status_to_v2)

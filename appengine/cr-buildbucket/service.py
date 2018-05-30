@@ -658,7 +658,7 @@ class SearchQuery(object):
         A build must be in one of the buckets.
       tags (list of str): a list of tags that a build must have.
         All of the |tags| must be present in a build.
-      status (StatusFilter): build status.
+      status (StatusFilter or common_pb2.Status): build status.
       result (model.BuildResult): build result.
       failure_reason (model.FailureReason): failure reason.
       cancelation_reason (model.CancelationReason): build cancelation reason.
@@ -704,6 +704,10 @@ class SearchQuery(object):
     # by mock module, not service_test
     return not self.__eq__(other)
 
+  @property
+  def status_is_v2(self):
+    return isinstance(self.status, int)
+
 
 def search(q):
   """Searches for builds.
@@ -717,6 +721,7 @@ def search(q):
       next_cursor (string): cursor for the next page.
         None if there are no more builds.
   """
+  assert isinstance(q.status, (type(None), StatusFilter, int)), q.status
   if q.buckets is not None and not isinstance(q.buckets, list):
     raise errors.InvalidInputError('Buckets must be a list or None')
   buildtags.validate_tags(q.tags, 'search')
@@ -806,14 +811,18 @@ def _query_search(q):
     dq = dq.filter(model.Build.tags == t)
   filter_if = lambda p, v: dq if v is None else dq.filter(p == v)
 
-  expected_statuses = None
-  if q.status == StatusFilter.INCOMPLETE:
-    expected_statuses = (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED)
+  expected_statuses_v1 = None
+  if q.status_is_v2:
+    dq = dq.filter(model.Build.status_v2 == q.status)
+  elif q.status == StatusFilter.INCOMPLETE:
+    expected_statuses_v1 = (
+        model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED)
     dq = dq.filter(model.Build.incomplete == True)
   elif q.status is not None:
     s = model.BuildStatus.lookup_by_number(q.status.number)
-    expected_statuses = (s,)
-    dq = filter_if(model.Build.status, s)
+    expected_statuses_v1 = (s,)
+    dq = dq.filter(model.Build.status == s)
+
   dq = filter_if(model.Build.result, q.result)
   dq = filter_if(model.Build.failure_reason, q.failure_reason)
   dq = filter_if(model.Build.cancelation_reason, q.cancelation_reason)
@@ -834,7 +843,10 @@ def _query_search(q):
   dq = dq.order(model.Build.key)
 
   def local_predicate(build):
-    if expected_statuses and build.status not in expected_statuses:
+    if q.status_is_v2:
+      if build.status_v2 != q.status:  # pragma: no cover
+        return False
+    elif expected_statuses_v1 and build.status not in expected_statuses_v1:
       return False  # pragma: no cover
     if q.buckets and build.bucket not in q.buckets:
       return False
@@ -942,7 +954,9 @@ def _tag_index_search(q):
       ('canary', q.canary),
   ]
   scalar_filters = [(a, v) for a, v in scalar_filters if v is not None]
-  if q.status == StatusFilter.INCOMPLETE:
+  if q.status_is_v2:
+    scalar_filters.append(('status_v2', q.status))
+  elif q.status == StatusFilter.INCOMPLETE:
     scalar_filters.append(('incomplete', True))
   elif q.status is not None:
     scalar_filters.append(('status',

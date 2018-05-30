@@ -13,6 +13,7 @@ from google.appengine.ext import ndb
 from testing_utils import testing
 import mock
 
+from proto import common_pb2
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from test.test_util import future, future_exception
@@ -806,6 +807,37 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         status=service.StatusFilter.INCOMPLETE,
         tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
+
+  def test_search_by_status_v2(self):
+    self.put_build(self.test_build)
+    build2 = model.Build(
+        bucket=self.test_build.bucket,
+        status=model.BuildStatus.COMPLETED,
+        result=model.BuildResult.SUCCESS,
+        create_time=utils.utcnow(),
+        complete_time=utils.utcnow() + datetime.timedelta(seconds=1),
+        canary=False,
+    )
+    self.put_build(build2)
+
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket], status=common_pb2.SCHEDULED)
+    self.assertEqual(builds, [self.test_build])
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket],
+        status=common_pb2.SCHEDULED,
+        tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [self.test_build])
+
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket],
+        status=common_pb2.FAILURE,
+        tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [])
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket],
+        status=common_pb2.FAILURE)
+    self.assertEqual(builds, [])
 
   def test_search_by_created_by(self):
     self.put_build(self.test_build)

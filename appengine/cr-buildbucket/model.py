@@ -11,6 +11,7 @@ from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 from protorpc import messages
 
+from proto import build_pb2
 import buildtags
 
 BEGINING_OF_THE_WORLD = datetime.datetime(2010, 1, 1, 0, 0, 0, 0)
@@ -111,6 +112,14 @@ class Build(ndb.Model):
   """
 
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
+
+  # A proto.common_pb2.Status corresponding to self.status.
+  # This is needed to index builds by V2 status because status_v2->status_v1
+  # function also depends on infra_failure_reason, i.e. without this it is
+  # impossible to take a V2 status and translate it to Datastore query over
+  # V1 status.
+  status_v2 = ndb.ComputedProperty(lambda self: self._compute_v2_status())
+
   incomplete = ndb.ComputedProperty(
       lambda self: self.status != BuildStatus.COMPLETED)
   status_changed_time = ndb.DateTimeProperty(auto_now_add=True)
@@ -223,6 +232,11 @@ class Build(ndb.Model):
     self.experimental = bool(self.experimental)
     self.initial_tags = sorted(set(self.initial_tags))
     self.tags = sorted(set(self.tags))
+
+  def _compute_v2_status(self):
+    build_v2 = build_pb2.Build()
+    status_to_v2(self, build_v2)
+    return build_v2.status
 
   def regenerate_lease_key(self):
     """Changes lease key to a different random int."""
@@ -350,3 +364,12 @@ def build_id_range(create_time_low, create_time_high):
     # convert exclusive to inclusive
     id_low = _id_time_segment(create_time_high - _TIME_RESOLUTION)
   return id_low, id_high
+
+
+status_to_v2 = None
+
+
+def set_status_to_v2(fn):
+  global status_to_v2
+  assert status_to_v2 is None
+  status_to_v2 = fn
