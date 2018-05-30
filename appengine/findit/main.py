@@ -40,8 +40,7 @@ from handlers.flake import check_flake
 from handlers.flake import flake_culprit
 from handlers.flake import list_flakes
 from handlers.flake import triage_flake_analysis
-from handlers.flake.detection import detect_cq_flakes
-from handlers.flake.detection import test_flake
+from handlers.flake.detection import detect_flakes
 
 # Default module.
 default_web_pages_handler_mappings = [
@@ -78,7 +77,6 @@ gae_ts_mon.initialize(pipeline_backend_application)
 waterfall_frontend_web_pages_handler_mappings = [
     ('/', home.Home),
     ('/build-failure', build_failure.BuildFailure),
-    ('/flake/detection/ui/test-flake', test_flake.TestFlake),
     ('/list-analyses', list_analyses.ListAnalyses),
     ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
     ('/waterfall/build-failure', build_failure.BuildFailure),
