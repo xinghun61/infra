@@ -19,11 +19,13 @@ Here's how to run Monorail locally for development on any unix system (not under
 1.  Make sure you have the AppEngine SDK:
     1.  It should be fetched for you by step 1 above (during runhooks)
     1.  Otherwise, you can download it from https://developers.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python
-1.  [Install MySQL v5.6](http://dev.mysql.com/downloads/mysql/5.6.html#downloads). Either download directly, or if you're on an Ubuntu derivative:
-    1.  **Do not download v5.7 (as of April 2016)**
-    1.  `sudo apt-get install mysql-server mysql-client`
+1.  Install MySQL v5.6.
+    1. If you're on a Debian derivative, use your package manager:
+        1.  `sudo apt-get install default-mysql-server default-mysql-client`
+    1. Otherwise, download from the [offical page](http://dev.mysql.com/downloads/mysql/5.6.html#downloads).
+        1.  **Do not download v5.7 (as of April 2016)**
 1.  Get the database backend running and use the command-line to create a database named "monorail":
-    1.  `sudo /usr/local/mysql/bin/mysqld_safe `
+    1.  `sudo /usr/bin/mysqld_safe `
     1.  `mysql --user=root --password=<pw>`
     1.  `CREATE DATABASE monorail;`
 1.  Install Python MySQLdb. Either:
