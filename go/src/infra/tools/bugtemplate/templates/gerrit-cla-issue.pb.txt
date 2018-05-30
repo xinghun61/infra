@@ -1,0 +1,20 @@
+summary: "Gerrit denies uploading CLs because of CLA check"
+
+description: <<END
+Please specify:
+
+1. Under which CLA you think you are (or should be) covered. If you've confirmed
+that you are, tell us how.
+2. Email which you use to sign in to Gerrit
+3. Output of command below from the machine where upload fails:
+   git cl creds-check
+4. Have you been able to upload CLs before? If yes, please link to a CL.
+
+END
+
+components: "Infra>Gerrit>Codereview"
+cc: "tandrii@chromium.org"
+type: Task
+pri: P1
+labels: "Restrict-View-Google"
+labels: "CQ2Gerrit-CLA-Migration"
