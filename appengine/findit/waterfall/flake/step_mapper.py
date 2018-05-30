@@ -139,6 +139,6 @@ def FindMatchingWaterfallStep(build_step, test_name):
         task_id, http_client)
     if output:
       # Guess from the format.
+      test_result_object = test_results_util.GetTestResultObject(output)
       build_step.supported = (
-          test_results_util.IsTestResultsValid(output) and
-          test_name in output.get('all_tests', []))
+          test_result_object and test_result_object.DoesTestExist(test_name))
