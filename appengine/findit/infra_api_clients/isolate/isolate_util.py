@@ -20,7 +20,7 @@ def FetchFileFromIsolatedServer(digest, name_space, isolated_server,
     http_client(RetryHttpClient): http client to send the request.
   """
   post_data = {'digest': digest, 'namespace': {'namespace': name_space}}
-  url = '%s/api/isolateservice/v1/retrieve' % isolated_server
+  url = '%s/_ah/api/isolateservice/v1/retrieve' % isolated_server
 
   content, error = http_client_util.SendRequestToServer(
       url, http_client, post_data=post_data)
