@@ -80,7 +80,7 @@ class HttpClientTest(testing.AppengineTestCase):
     url = 'http://test'
     timeout_seconds = 70
     dummy_http_client = DummyHttpClient(0, 404)
-    status_code, content = dummy_http_client.Get(
+    status_code, content, _response_headers = dummy_http_client.Get(
         url, timeout_seconds=timeout_seconds)
     self.assertEquals(200, status_code)
     self.assertEquals('success - GET', content)
@@ -93,7 +93,8 @@ class HttpClientTest(testing.AppengineTestCase):
     url = 'http://test'
     params = {'a': 1, 'b': 'b&b'}
     dummy_http_client = DummyHttpClient(0, 404)
-    status_code, content = dummy_http_client.Get(url, params=params)
+    status_code, content, _response_headers = dummy_http_client.Get(
+        url, params=params)
     self.assertEquals(200, status_code)
     self.assertEquals('success - GET', content)
     self.assertEquals(1, dummy_http_client.request_count)
@@ -125,7 +126,7 @@ class HttpClientTest(testing.AppengineTestCase):
 
     dummy_http_client = DummyHttpClient(simulated_failures, 503)
 
-    status_code, content = dummy_http_client.Get(
+    status_code, content, _response_headers = dummy_http_client.Get(
         'http://test', max_retries=simulated_failures + 2, retry_backoff=1)
     self.assertEquals(200, status_code)
     self.assertEquals('success - GET', content)
@@ -133,7 +134,7 @@ class HttpClientTest(testing.AppengineTestCase):
 
   def testFailedRequest(self):
     dummy_http_client = DummyHttpClient(5, 503)
-    status_code, content = dummy_http_client.Get(
+    status_code, content, _response_headers = dummy_http_client.Get(
         'http://test', max_retries=2, retry_backoff=0.01)
     self.assertEquals(2, dummy_http_client.request_count)
     self.assertEquals(503, status_code)
@@ -142,7 +143,7 @@ class HttpClientTest(testing.AppengineTestCase):
   def testFailedRequestWithNoInterceptor(self):
     dummy_http_client = DummyHttpClient(5, 503)
     dummy_http_client.interceptor = None
-    status_code, content = dummy_http_client.Get(
+    status_code, content, _response_headers = dummy_http_client.Get(
         'http://test', max_retries=2, retry_backoff=0.01)
     self.assertEquals(1, dummy_http_client.request_count)
     self.assertEquals(503, status_code)
@@ -152,7 +153,7 @@ class HttpClientTest(testing.AppengineTestCase):
     for expected_status_code in (302, 401, 403, 404, 501):
       dummy_http_client = DummyHttpClient(20000000, expected_status_code)
 
-      status_code, content = dummy_http_client.Get(
+      status_code, content, _response_headers = dummy_http_client.Get(
           'http://test', max_retries=2000, retry_backoff=0.1)
       self.assertEquals(1, dummy_http_client.request_count)
       self.assertEquals(expected_status_code, status_code)
@@ -160,13 +161,19 @@ class HttpClientTest(testing.AppengineTestCase):
 
   def testPostFailure(self):
     dummy_http_client = DummyHttpClient(1, 404)
-    status_code, content = dummy_http_client.Post('http://test', {'data': 0})
+    status_code, content, _response_headers = dummy_http_client.Post(
+        'http://test', {
+            'data': 0
+        })
     self.assertEquals(404, status_code)
     self.assertEquals('failure - POST', content)
 
   def testPostSuccess(self):
     dummy_http_client = DummyHttpClient(0, 404)
-    status_code, content = dummy_http_client.Post('http://test', {'data': 0})
+    status_code, content, _response_headers = dummy_http_client.Post(
+        'http://test', {
+            'data': 0
+        })
     self.assertEquals(200, status_code)
     self.assertEquals('success - POST', content)
 
@@ -174,14 +181,17 @@ class HttpClientTest(testing.AppengineTestCase):
     for expected_status_code in (302, 401, 403, 404, 501):
       dummy_http_client = DummyHttpClient(20000000, expected_status_code)
 
-      status_code, content = dummy_http_client.Post('http://test', {'data': 0})
+      status_code, content, _response_headers = dummy_http_client.Post(
+          'http://test', {
+              'data': 0
+          })
       self.assertEquals(1, dummy_http_client.request_count)
       self.assertEquals(expected_status_code, status_code)
       self.assertEquals('failure - POST', content)
 
   def testRetryForPost(self):
     dummy_http_client = DummyHttpClient(5, 503)
-    status_code, content = dummy_http_client.Post(
+    status_code, content, _response_headers = dummy_http_client.Post(
         'http://test', {'data': 0}, max_retries=3)
     self.assertEquals(3, dummy_http_client.request_count)
     self.assertEquals(503, status_code)
@@ -189,13 +199,19 @@ class HttpClientTest(testing.AppengineTestCase):
 
   def testPutFailure(self):
     dummy_http_client = DummyHttpClient(1, 404)
-    status_code, content = dummy_http_client.Put('http://test', {'data': 0})
+    status_code, content, _response_headers = dummy_http_client.Put(
+        'http://test', {
+            'data': 0
+        })
     self.assertEquals(404, status_code)
     self.assertEquals('failure - PUT', content)
 
   def testPutSuccess(self):
     dummy_http_client = DummyHttpClient(0, 404)
-    status_code, content = dummy_http_client.Put('http://test', {'data': 0})
+    status_code, content, _response_headers = dummy_http_client.Put(
+        'http://test', {
+            'data': 0
+        })
     self.assertEquals(200, status_code)
     self.assertEquals('success - PUT', content)
 
@@ -203,14 +219,17 @@ class HttpClientTest(testing.AppengineTestCase):
     for expected_status_code in (302, 401, 403, 404, 501):
       dummy_http_client = DummyHttpClient(20000000, expected_status_code)
 
-      status_code, content = dummy_http_client.Put('http://test', {'data': 0})
+      status_code, content, _response_headers = dummy_http_client.Put(
+          'http://test', {
+              'data': 0
+          })
       self.assertEquals(1, dummy_http_client.request_count)
       self.assertEquals(expected_status_code, status_code)
       self.assertEquals('failure - PUT', content)
 
   def testRetryForPut(self):
     dummy_http_client = DummyHttpClient(5, 503)
-    status_code, content = dummy_http_client.Put(
+    status_code, content, _response_headers = dummy_http_client.Put(
         'http://test', {'data': 0}, max_retries=3)
     self.assertEquals(3, dummy_http_client.request_count)
     self.assertEquals(503, status_code)
@@ -221,7 +240,8 @@ class HttpClientTest(testing.AppengineTestCase):
   def testRetriableException(self, mock_except, mock_warn):
     dummy_http_client = DummyHttpClient(0, 404)
     dummy_http_client.interceptor = RetryRuntimeErrorInterceptor()
-    status_code, content = dummy_http_client.Get('http://runtimeerror')
+    status_code, content, _response_headers = dummy_http_client.Get(
+        'http://runtimeerror')
     self.assertFalse(status_code)
     self.assertFalse(content)
     self.assertEqual(4, len(mock_warn.call_args_list))

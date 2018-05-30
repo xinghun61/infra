@@ -12,7 +12,7 @@ from libs.http.retry_http_client import RetryHttpClient
 
 class CrrevTest(unittest.TestCase):
 
-  @mock.patch.object(RetryHttpClient, 'Get', return_value=(404, 'error'))
+  @mock.patch.object(RetryHttpClient, 'Get', return_value=(404, 'error', {}))
   def testHttpRequestFailure(self, mocked_Get):
     http_client = RetryHttpClient()
     self.assertIsNone(crrev.RedirectByCommitPosition(http_client, 5000))
@@ -27,7 +27,7 @@ class CrrevTest(unittest.TestCase):
                         'git_sha': 'sha',
                         'repo_url': 'url',
                         'key': 'value'
-                    })))
+                    }), {}))
   def testHttpRequestSuccess(self, mocked_Get):
     http_client = RetryHttpClient()
     expected_result = {

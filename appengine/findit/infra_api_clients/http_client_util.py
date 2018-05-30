@@ -27,9 +27,11 @@ def SendRequestToServer(url, http_client, post_data=None):
     headers['Content-Length'] = len(post_data)
 
   if post_data:
-    status_code, content = http_client.Post(url, post_data, headers=headers)
+    status_code, content, _response_headers = http_client.Post(
+        url, post_data, headers=headers)
   else:
-    status_code, content = http_client.Get(url, headers=headers)
+    status_code, content, _response_headers = http_client.Get(
+        url, headers=headers)
   if status_code == 200:
     # Also return the last error encountered to be handled in the calling
     # code.

@@ -13,13 +13,13 @@ def DownloadData(url, data, http_client, **kwargs):
 
   headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 
-  status_code, response = http_client.Post(
+  status_code, content, _response_headers = http_client.Post(
       url, json.dumps(data), headers=headers, **kwargs)
-  if status_code != 200 or not response:
+  if status_code != 200 or not content:
     logging.error('Post request to %s failed' % url)
     return status_code, None
 
-  return status_code, response
+  return status_code, content
 
 
 def _GetResultJson(response):
@@ -43,5 +43,5 @@ def DownloadJsonData(url, data, http_client, **kwargs):
   Returns:
     The response deserialized from json into a python object (likely a dict).
   """
-  status_code, response = DownloadData(url, data, http_client, **kwargs)
-  return status_code, _GetResultJson(response) if response else None
+  status_code, content = DownloadData(url, data, http_client, **kwargs)
+  return status_code, _GetResultJson(content) if content else None

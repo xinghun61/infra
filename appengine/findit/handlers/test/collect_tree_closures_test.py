@@ -52,7 +52,7 @@ class CollectTreeClosuresTest(TestCase):
                                    'message': 'm1',
                                    'general_state': 'open',
                                    'username': 'test@chromium.org',
-                               }]))]
+                               }]), {})]
     statuses = collect_tree_closures._RetrieveTreeStatus(
         'chromium', datetime(2017, 03, 31))
     self.assertEqual(1, len(statuses))
@@ -71,7 +71,7 @@ class CollectTreeClosuresTest(TestCase):
 
   @mock.patch.object(collect_tree_closures.FinditHttpClient, 'Get')
   def testRetrieveTreeStatusFailure(self, mocked_Get):
-    mocked_Get.side_effect = [(400, 'error')]
+    mocked_Get.side_effect = [(400, 'error', {})]
     statuses = collect_tree_closures._RetrieveTreeStatus(
         'chromium', datetime(2017, 03, 31), end_time=datetime(2017, 04, 01))
 

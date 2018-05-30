@@ -148,5 +148,6 @@ class AuthUtilTest(unittest.TestCase):
 
     client = HeaderReturningHttpClient(
         interceptor=auth_util.AuthenticatingInterceptor())
-    _status, content = client.Get('https://codereview.chromium.org/api')
+    _status_code, content, _response_headers = client.Get(
+        'https://codereview.chromium.org/api')
     self.assertEqual('{"Authorization": "Bearer abc"}', content)

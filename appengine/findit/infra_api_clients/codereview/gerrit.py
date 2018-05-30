@@ -22,7 +22,7 @@ class Gerrit(codereview.CodeReview):
     self.commit_bot_emails = settings.get('commit_bot_emails',
                                           ['commit-bot@chromium.org'])
 
-  def _HandleResponse(self, status_code, content):
+  def _HandleResponse(self, status_code, content, _response_headers):
     if status_code != 200:
       if status_code == 409:
         # Submit rule failed. Content should tell which rule failed like:

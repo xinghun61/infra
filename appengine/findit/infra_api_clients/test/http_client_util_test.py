@@ -13,7 +13,7 @@ class HttpClientUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(FinditHttpClient, 'Get')
   def testSendRequestToServerSucceed(self, mocked_get):
-    mocked_get.return_value = (200, 'content')
+    mocked_get.return_value = (200, 'content', {})
     content, error = http_client_util.SendRequestToServer(
         'http://www.someurl.com', FinditHttpClient())
     self.assertEqual(content, 'content')
@@ -21,7 +21,7 @@ class HttpClientUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(FinditHttpClient, 'Post')
   def testSendRequestToServerRetryTimeout(self, mocked_post):
-    mocked_post.return_value = (403, None)
+    mocked_post.return_value = (403, None, {})
     content, error = http_client_util.SendRequestToServer(
         'http://www.someurl.com',
         FinditHttpClient(403, None),
@@ -29,4 +29,4 @@ class HttpClientUtilTest(wf_testcase.WaterfallTestCase):
             'data': 'data'
         })
     self.assertIsNone(content)
-    self.assertEqual(403, error['code'])
+    self.assertEqual(403, error['code'], {})

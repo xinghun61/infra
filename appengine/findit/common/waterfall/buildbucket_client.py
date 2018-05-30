@@ -212,7 +212,7 @@ def TriggerTryJobs(try_jobs):
   json_results = []
 
   for try_job in try_jobs:
-    status_code, content = FinditHttpClient().Put(
+    status_code, content, _response_headers = FinditHttpClient().Put(
         _BUILDBUCKET_PUT_GET_ENDPOINT,
         json.dumps(try_job.ToBuildbucketRequest()),
         headers=_GetHeaders())
@@ -239,7 +239,7 @@ def GetTryJobs(build_ids):
   json_results = []
 
   for build_id in build_ids:
-    status_code, content = FinditHttpClient().Get(
+    status_code, content, _response_headers = FinditHttpClient().Get(
         _BUILDBUCKET_PUT_GET_ENDPOINT + '/' + build_id, headers=_GetHeaders())
     if status_code == 200:  # pragma: no cover
       json_results.append(json.loads(content))
@@ -261,7 +261,7 @@ def SearchBuilds(tags):
     data (dict): A dict of builds' info.
   """
   tag_str = urllib.urlencode(tags)
-  status_code, content = FinditHttpClient().Get(
+  status_code, content, _response_headers = FinditHttpClient().Get(
       _BUILDBUCKET_SEARCH_ENDPOINT + '?' + tag_str, headers=_GetHeaders())
   if status_code == 200:
     try:

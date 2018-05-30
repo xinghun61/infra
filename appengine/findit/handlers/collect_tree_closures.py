@@ -47,7 +47,8 @@ def _CreateTreeStatus(tree_status_entry):
       time=time_util.DatetimeFromString(tree_status_entry['date']),
       message=tree_status_entry['message'],
       state=tree_status_entry['general_state'],
-      username=tree_status_entry['username'],)
+      username=tree_status_entry['username'],
+  )
 
 
 def _RetrieveTreeStatus(tree_name, start_time, end_time=None):
@@ -63,7 +64,7 @@ def _RetrieveTreeStatus(tree_name, start_time, end_time=None):
     # Tree status app treats startTime as the end of the time range.
     params['startTime'] = time_util.ConvertToTimestamp(end_time)
   http_client = FinditHttpClient()
-  status_code, content = http_client.Get(url, params=params)
+  status_code, content, _response_headers = http_client.Get(url, params=params)
   if status_code == 200:
     all_statuses = map(_CreateTreeStatus, json.loads(content))
     all_statuses.sort(key=lambda s: s.time)
@@ -136,7 +137,8 @@ def _CreateTreeClosure(tree_name, statuses, first_open_status):
       builder_name=builder_name,
       build_id=build_id,
       step_name=step_name,
-      key=ndb.Key(TreeClosure, key_str_id),)
+      key=ndb.Key(TreeClosure, key_str_id),
+  )
 
 
 def _DetectTreeClosureForTree(tree_name, all_statuses):
@@ -174,9 +176,9 @@ def _DetectTreeClosureForTree(tree_name, all_statuses):
     if first_open_index is not None:
       # The identified closure might not be complete with all the open statuses.
       tree_closures.append(
-          _CreateTreeClosure(tree_name, all_statuses[
-              close_index:latest_open_index + 1], all_statuses[
-                  first_open_index]))
+          _CreateTreeClosure(tree_name,
+                             all_statuses[close_index:latest_open_index + 1],
+                             all_statuses[first_open_index]))
     else:
       # The previous tree closure was complete with all the open statuses,
       # because a new tree closure started and was incomplete.

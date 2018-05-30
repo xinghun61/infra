@@ -21,7 +21,7 @@ def get_rotation_url():
 
 
 def get_all_rotations():
-  status_code, content = _HTTP_CLIENT.Get(get_rotation_url())
+  status_code, content, _headers = _HTTP_CLIENT.Get(get_rotation_url())
   if status_code == 200:
     content = json.loads(content)
     today = time_util.GetPSTNow().date().isoformat()
@@ -29,7 +29,8 @@ def get_all_rotations():
     rotations = content['rotations']
     for calendar in calendars:
       if calendar['date'] == today:
-        sheriffs = [['%s@google.com' % p.split('@')[0] for p in q]
+        sheriffs = [['%s@google.com' % p.split('@')[0]
+                     for p in q]
                     for q in calendar['participants']]
         return dict(zip(rotations, sheriffs))
     raise Exception('Today\'s date (%s) is not listed in the rotations '

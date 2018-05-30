@@ -55,7 +55,7 @@ class Rietveld(codereview.CodeReview):
         'Accept': 'text/plain',
     }
     url = 'https://%s/xsrf_token' % self._server_hostname
-    status_code, xsrf_token = self.HTTP_CLIENT.Post(
+    status_code, xsrf_token, _response_headers = self.HTTP_CLIENT.Post(
         url, data=None, headers=headers)
     if status_code != 200:
       logging.error('Failed to get xsrf token from %s', url)
@@ -91,15 +91,16 @@ class Rietveld(codereview.CodeReview):
       form_fields (dict): A dict of the form fields for the post request.
 
     Returns:
-      (status_code, content)
+      (status_code, content, response_headers)
       status_code (int): The http status code of the response.
       content (str): The content of the response.
+      response_headers (dict): str => str map containing headers.
     """
     url = 'https://%s%s' % (self._server_hostname, url_path)
     form_fields = form_fields or {}
     xsrf_token = self._GetXsrfToken()
     if not xsrf_token:
-      return 403, 'failed to get a xsrf token'
+      return 403, 'failed to get a xsrf token', {}
     form_fields['xsrf_token'] = xsrf_token
     headers = {
         'Accept': 'text/plain',
@@ -117,7 +118,8 @@ class Rietveld(codereview.CodeReview):
         'send_mail': str(bool(should_email)),
         'no_redirect': 'True',
     }
-    status_code, content = self._SendPostRequest(url_path, form_fields)
+    status_code, content, _response_headers = self._SendPostRequest(
+        url_path, form_fields)
     return status_code == 200 and content == 'OK'
 
   # Signature differs. Make patchset id required here - pylint: disable=W0222
@@ -133,7 +135,8 @@ class Rietveld(codereview.CodeReview):
         'no_redirect': 'True',
         'revert_cq': 0,  # Explicitly set it to 0 to avoid automatic CQ.
     }
-    status_code, content = self._SendPostRequest(url_path, form_fields)
+    status_code, content, _response_headers = self._SendPostRequest(
+        url_path, form_fields)
     if status_code == 200:
       return content
     else:
@@ -208,7 +211,8 @@ class Rietveld(codereview.CodeReview):
   def GetClDetails(self, change_id):
     params = {'messages': 'true'}
     url = 'https://%s/api/%s' % (self._server_hostname, change_id)
-    status_code, content = self.HTTP_CLIENT.Get(url, params=params)
+    status_code, content, _response_headers = self.HTTP_CLIENT.Get(
+        url, params=params)
     if status_code == 200:  # pragma: no branch
       return self._ParseClInfo(
           json.loads(content), cl_info.ClInfo(self._server_hostname, change_id))
@@ -233,7 +237,8 @@ class Rietveld(codereview.CodeReview):
         'message': message or '',
     }
 
-    status_code, content = self._SendPostRequest(url_path, form_fields)
+    status_code, content, _response_headers = self._SendPostRequest(
+        url_path, form_fields)
     return status_code == 200 and content == 'OK'
 
   def GetChangeIdForReview(self, review_url):  # pragma: no cover

@@ -35,9 +35,10 @@ class HttpClientMetricsInterceptorTest(testing.AppengineTestCase):
   def testNoException(self, mock_status_metric, mock_error_metric):
     client = DummyHttpClient()
     url = 'https://test.com/help?status=200&content=hello'
-    status, content = client.Get(url)
-    self.assertEqual(200, status)
+    status_code, content, response_headers = client.Get(url)
+    self.assertEqual(200, status_code)
     self.assertEqual('hello', content)
+    self.assertEqual({}, response_headers)
     mock_status_metric.increment.assert_called_once_with({
         'host': 'test.com',
         'status_code': '200',
@@ -50,7 +51,7 @@ class HttpClientMetricsInterceptorTest(testing.AppengineTestCase):
     client = DummyHttpClient()
     url = 'https://test.com/'
     with self.assertRaises(NotImplementedError):
-      _status, _content = client.Post(url, {})
+      _status_code, _content, _response_headers = client.Post(url, {})
     mock_error_metric.increment.assert_called_once_with({
         'host': 'test.com',
         'exception': 'exceptions.NotImplementedError',

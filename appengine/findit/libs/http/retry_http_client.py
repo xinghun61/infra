@@ -26,9 +26,10 @@ class RetryHttpClient(object):
     """Sends the actual HTTP GET request.
 
     Returns:
-      (status_code, content, headers)
+      (status_code, content, response_headers)
       status_code: the HTTP status code of the response.
       content: the content of the response.
+      response_headers (dict): str => str map containing response headers.
     """
     raise NotImplementedError(
         '_Get() should be implemented in the child class')  # pragma: no cover
@@ -37,7 +38,7 @@ class RetryHttpClient(object):
     """Sends the actual HTTP POST request.
 
     Returns:
-      (status_code, content, headers)
+      (status_code, content, response_headers)
     """
     raise NotImplementedError(
         '_Post() should be implemented in the child class')  # pragma: no cover
@@ -46,7 +47,7 @@ class RetryHttpClient(object):
     """Sends the actual HTTP PUT request.
 
     Returns:
-      (status_code, content, headers)
+      (status_code, content, response_headers)
     """
     raise NotImplementedError(
         '_Put() should be implemented in the child class')  # pragma: no cover
@@ -110,11 +111,12 @@ class RetryHttpClient(object):
 
         retry = False
         if self.interceptor:
-          response, retry = self.interceptor.OnResponse(request, {
-              'status_code': status_code,
-              'content': content,
-              'headers': response_headers
-          })
+          response, retry = self.interceptor.OnResponse(
+              request, {
+                  'status_code': status_code,
+                  'content': content,
+                  'headers': response_headers
+              })
           status_code, content, response_headers = response.get(
               'status_code'), response.get('content'), response.get('headers')
 
@@ -129,7 +131,7 @@ class RetryHttpClient(object):
 
       time.sleep(self.GetBackoff(retry_backoff, tries))
 
-    return status_code, content
+    return status_code, content, response_headers
 
   def Get(self,
           url,
@@ -150,7 +152,7 @@ class RetryHttpClient(object):
       retry_backoff (float): The base backoff in seconds for retry.
 
     Returns:
-      (status_code, content)
+      (status_code, content, response_headers)
     """
     return self._Retry(
         url,
@@ -181,7 +183,7 @@ class RetryHttpClient(object):
       retry_backoff (float): The base backoff in seconds for retry.
 
     Returns:
-      (status_code, content)
+      (status_code, content, response_headers)
     """
     return self._Retry(
         url,
@@ -212,7 +214,7 @@ class RetryHttpClient(object):
       retry_backoff (float): The base backoff in seconds for retry.
 
     Returns:
-      (status_code, content)
+      (status_code, content, response_headers)
     """
     return self._Retry(
         url,

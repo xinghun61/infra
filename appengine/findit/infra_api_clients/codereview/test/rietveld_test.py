@@ -31,13 +31,12 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
 
   def _Get(self, url, _, headers):
     self.requests.append((url, None, headers))
-    response = self.responses.get(url, (404, 'Not Found'))
+    response = self.responses.get(url, (404, 'Not Found', {}))
     return response[0], response[1], {}
-
 
   def _Post(self, url, data, _, headers):
     self.requests.append((url, data, headers))
-    response = self.responses.get(url, (404, 'Not Found'))
+    response = self.responses.get(url, (404, 'Not Found', {}))
     return response[0], response[1], {}
 
   def _Put(self, *_):  # pragma: no cover
@@ -55,7 +54,7 @@ class RietveldTest(testing.AppengineTestCase):
 
   def testGetXsrfTokenSuccess(self):
     self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
-                                 (200, 'abc'))
+                                 (200, 'abc', {}))
     self.assertEqual('abc', self.rietveld._GetXsrfToken())
     self.assertEqual(1, len(self.http_client.requests))
     _, _, headers = self.http_client.requests[0]
@@ -63,7 +62,7 @@ class RietveldTest(testing.AppengineTestCase):
 
   def testGetXsrfTokenFailure(self):
     self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
-                                 (302, 'login'))
+                                 (302, 'login', {}))
     self.assertIsNone(self.rietveld._GetXsrfToken())
 
   def testEncodeMultipartFormDataOfEmptyFormFields(self):
@@ -91,7 +90,7 @@ class RietveldTest(testing.AppengineTestCase):
                                                      change_id)
     self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
                                  (200, 'abc'))
-    self.http_client.SetResponse(message_publish_url, (200, 'OK'))
+    self.http_client.SetResponse(message_publish_url, (200, 'OK', {}))
     self.assertTrue(self.rietveld.PostMessage(change_id, 'message'))
     self.assertEqual(2, len(self.http_client.requests))
 
@@ -100,8 +99,8 @@ class RietveldTest(testing.AppengineTestCase):
     message_publish_url = 'https://%s/%s/publish' % (self.server_hostname,
                                                      change_id)
     self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
-                                 (302, 'login'))
-    self.http_client.SetResponse(message_publish_url, (200, 'OK'))
+                                 (302, 'login', {}))
+    self.http_client.SetResponse(message_publish_url, (200, 'OK', {}))
     self.assertFalse(self.rietveld.PostMessage(change_id, 'message'))
     self.assertEqual(1, len(self.http_client.requests))
 
@@ -111,13 +110,13 @@ class RietveldTest(testing.AppengineTestCase):
                                                      change_id)
     self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
                                  (200, 'abc'))
-    self.http_client.SetResponse(message_publish_url, (404, 'Error'))
+    self.http_client.SetResponse(message_publish_url, (404, 'Error', {}))
     self.assertFalse(self.rietveld.PostMessage(change_id, 'message'))
     self.assertEqual(2, len(self.http_client.requests))
 
   @mock.patch.object(Rietveld, '_SendPostRequest')
   def testCreateRevertSuccess(self, mocked_SendPostRequest):
-    mocked_SendPostRequest.side_effect = [(200, '1234')]
+    mocked_SendPostRequest.side_effect = [(200, '1234', {})]
     change_id = self.rietveld.CreateRevert('reason', 1222, 20001)
     self.assertEqual('1234', change_id)
     mocked_SendPostRequest.assert_called_once_with('/api/1222/20001/revert', {
@@ -128,7 +127,7 @@ class RietveldTest(testing.AppengineTestCase):
 
   @mock.patch.object(Rietveld, '_SendPostRequest')
   def testCreateRevertFail(self, mocked_SendPostRequest):
-    mocked_SendPostRequest.side_effect = [(404, 'error')]
+    mocked_SendPostRequest.side_effect = [(404, 'error', {})]
     change_id = self.rietveld.CreateRevert('reason', 1222, 20001)
     self.assertIsNone(change_id)
     mocked_SendPostRequest.assert_called_once_with('/api/1222/20001/revert', {
@@ -143,8 +142,8 @@ class RietveldTest(testing.AppengineTestCase):
     rietveld_url = 'https://server.host.name'
     change_id = '123456001'
     revert_change_id = '2713613003'
-    with open(
-        os.path.join(os.path.dirname(__file__), 'testissuedetails.json')) as f:
+    with open(os.path.join(os.path.dirname(__file__),
+                           'testissuedetails.json')) as f:
       response = 200, f.read()
     self.http_client.SetResponse('%s/api/%s?messages=true' %
                                  (rietveld_url, change_id), response)
@@ -248,13 +247,13 @@ class RietveldTest(testing.AppengineTestCase):
 
   @mock.patch('infra_api_clients.codereview.rietveld.Rietveld._SendPostRequest')
   def testAddReviewersNewReviewer(self, mock_send):
-    mock_send.return_value = (200, 'OK')
+    mock_send.return_value = (200, 'OK', {})
     rietveld_url = 'https://server.host.name'
     change_id = '2713613003'
     with open(
         os.path.join(os.path.dirname(__file__),
                      'reverttestissuedetails.json')) as f:
-      response = 200, f.read()
+      response = 200, f.read(), {}
     self.http_client.SetResponse('%s/api/%s?messages=true' %
                                  (rietveld_url, change_id), response)
     self.rietveld.AddReviewers(change_id, ['dummy@dummy.com'])

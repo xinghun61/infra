@@ -183,7 +183,7 @@ def _TreeIsOpen():
       'format': 'json',
   }
   client = FinditHttpClient()
-  status_code, content = client.Get(url, params)
+  status_code, content, _response_headers = client.Get(url, params)
 
   if status_code == 200:
     try:

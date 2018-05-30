@@ -37,9 +37,10 @@ class InterceptorTest(testing.AppengineTestCase):
   def testNoException(self, mock_logging):
     client = DummyHttpClient()
     url = 'https://test.com/help?status=200&content=hello'
-    status, content = client.Get(url)
-    self.assertEqual(status, 200)
+    status_code, content, response_headers = client.Get(url)
+    self.assertEqual(status_code, 200)
     self.assertEqual(content, 'hello')
+    self.assertEqual(response_headers, {})
     mock_logging.assert_called_once_with('got response status 200 for url %s',
                                          url)
 
@@ -48,7 +49,7 @@ class InterceptorTest(testing.AppengineTestCase):
     client = DummyHttpClient()
     url = 'https://test.com/'
     with self.assertRaises(NotImplementedError):
-      _status, _content = client.Post(url, {})
+      _status_code, _content = client.Post(url, {})
     mock_logging.assert_called_once_with('got exception %s("%s") for url %s',
                                          NotImplementedError,
                                          'Post not supported', url)
@@ -58,7 +59,7 @@ class InterceptorTest(testing.AppengineTestCase):
     client = DummyHttpClient()
     url = 'https://test.com/'
     with self.assertRaises(NotImplementedError):
-      _status, _content = client.Post(url, {}, max_retries=1)
+      _status_code, _content = client.Post(url, {}, max_retries=1)
     mock_logging.assert_called_once_with('got exception %s("%s") for url %s',
                                          NotImplementedError,
                                          'Post not supported', url)
@@ -69,7 +70,7 @@ class InterceptorTest(testing.AppengineTestCase):
     client = DummyHttpClient(retriable_exceptions=[NotImplementedError])
     url = 'https://test.com/'
     with self.assertRaises(NotImplementedError):
-      _status, _content = client.Post(url, {}, max_retries=2)
+      _status_code, _content = client.Post(url, {}, max_retries=2)
     mock_logging_e.assert_called_once_with('got exception %s("%s") for url %s',
                                            NotImplementedError,
                                            'Post not supported', url)
@@ -87,9 +88,10 @@ class InterceptorTest(testing.AppengineTestCase):
   def testNoExceptionHttpError(self, mock_logging):
     client = DummyHttpClient()
     url = 'https://test.com/help?status=404&content=Not_Found'
-    status, content = client.Get(url)
-    self.assertEqual(status, 404)
+    status_code, content, response_headers = client.Get(url)
+    self.assertEqual(status_code, 404)
     self.assertEqual(content, 'Not_Found')
+    self.assertEqual(response_headers, {})
     mock_logging.assert_called_once_with(
         'request to %s responded with %d http status and headers %s', url, 404,
         '[]')

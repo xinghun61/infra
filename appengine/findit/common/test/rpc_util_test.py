@@ -32,7 +32,7 @@ class RpcUtilTest(unittest.TestCase):
 
   def testDownloadDataError(self):
     mocked_http_client = mock.Mock()
-    mocked_http_client.Post.return_value = (404, '404')
+    mocked_http_client.Post.return_value = (404, '404', {})
 
     url = 'url'
     data = {'data': 'data'}
@@ -50,7 +50,7 @@ class RpcUtilTest(unittest.TestCase):
   def testDownloadData(self):
     response = 'response'
     mocked_http_client = mock.Mock()
-    mocked_http_client.Post.return_value = (200, response)
+    mocked_http_client.Post.return_value = (200, response, {})
 
     url = 'url'
     data = {'data': 'data'}

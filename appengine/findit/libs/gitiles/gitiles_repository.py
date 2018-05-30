@@ -76,7 +76,7 @@ class GitilesRepository(GitRepository):
     # Gerrit prepends )]}' to json-formatted response.
     prefix = ')]}\'\n'
 
-    status_code, content = self.http_client.Get(url, params)
+    status_code, content, _response_headers = self.http_client.Get(url, params)
     if status_code != 200:
       return None
     elif not content or not content.startswith(prefix):
@@ -85,7 +85,10 @@ class GitilesRepository(GitRepository):
     return json.loads(content[len(prefix):])
 
   def _SendRequestForTextResponse(self, url):
-    status_code, content = self.http_client.Get(url, {'format': 'text'})
+    status_code, content, _response_headers = self.http_client.Get(
+        url, {
+            'format': 'text'
+        })
     if status_code != 200:
       return None
     return base64.b64decode(content)

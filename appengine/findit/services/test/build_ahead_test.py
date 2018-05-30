@@ -75,13 +75,13 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(FinditHttpClient, 'Get')
   def testTreeIsOpen(self, mock_get):
     responses = [
-        (500, None),
-        (400, None),
-        (200, None),
-        (200, '[]'),
-        (200, '[{}]'),
-        (200, '[{"general_state":"closed"}]'),
-        (200, '[{"general_state":"open"}]'),
+        (500, None, {}),
+        (400, None, {}),
+        (200, None, {}),
+        (200, '[]', {}),
+        (200, '[{}]', {}),
+        (200, '[{"general_state":"closed"}]', {}),
+        (200, '[{"general_state":"open"}]', {}),
     ]
     mock_get.side_effect = responses
 
@@ -250,8 +250,7 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
                                                   linux_bot['builder'])
     # Save linux_cache missing a column to test the code that back-fills it.
     WfTryBotCache(
-        key=ndb.Key('WfTryBotCache', linux_cache_name),
-        recent_bots=[]).put()
+        key=ndb.Key('WfTryBotCache', linux_cache_name), recent_bots=[]).put()
     linux_cache = WfTryBotCache.Get(linux_cache_name)
     chrome_cache = WfTryBotCache.Get(
         swarmbot_util.GetCacheName(chrome_bot['master'], chrome_bot['builder']))

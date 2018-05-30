@@ -24,8 +24,8 @@ def RedirectByCommitPosition(http_client, commit_position):
       }
   """
   url = _REDIRECT_API + '/' + str(commit_position)
-  status, content = http_client.Get(url)
-  if status != 200:
+  status_code, content, _response_headers = http_client.Get(url)
+  if status_code != 200:
     return None
   data = json.loads(content)
   return {

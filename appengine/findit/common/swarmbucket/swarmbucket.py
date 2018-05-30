@@ -16,9 +16,10 @@ def _CallSwarmbucketAPI(base_url, api_name, request_data):
   endpoint = '%s/%s' % (base_url, api_name)
   data = json.dumps(request_data)
   headers = {'Content-Type': 'application/json; charset=UTF-8'}
-  status_code, body = FinditHttpClient().Post(endpoint, data, headers=headers)
+  status_code, content, _response_headers = FinditHttpClient().Post(
+      endpoint, data, headers=headers)
   if status_code == 200:
-    return json.loads(body)
+    return json.loads(content)
   return {}
 
 
