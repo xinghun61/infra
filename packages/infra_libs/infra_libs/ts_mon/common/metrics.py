@@ -122,7 +122,14 @@ class Metric(object):
         any(not isinstance(x, Field) for x in field_spec)):
       raise errors.MetricDefinitionError(
           'Metric constructor takes a list of Fields, or None')
-    if len(field_spec) > 7:
+    if len(field_spec) > 12:
+      # Monarch imposes a limit of a cardinality of 5000 for a single metric
+      # (see http://shortn/_WBupjZf2of).
+      # If a user set 12 fields, and each of those is just a boolean field
+      # with two possible values, the _lower limit_ on the cardinality of
+      # that metric is 2^12, or 4096.
+      # Note that since a combination of 5 built-in fields is fixed, we do
+      # not need to count them.
       raise errors.MonitoringTooManyFieldsError(self._name, field_spec)
 
     self._start_time = None
