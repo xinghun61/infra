@@ -397,6 +397,51 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
     return issue_dict
 
 
+class CommentTwoLevelCache(caches.AbstractTwoLevelCache):
+  """Class to manage RAM and memcache for IssueComment PBs."""
+
+  def __init__(self, cache_manager, issue_svc):
+    super(CommentTwoLevelCache, self).__init__(
+        cache_manager, 'comment', 'comment:', tracker_pb2.IssueComment,
+        max_size=settings.comment_cache_max_size)
+    self.issue_svc = issue_svc
+
+  # pylint: disable=arguments-differ
+  def FetchItems(self, cnxn, keys, shard_id=None):
+    comment_rows = self.issue_svc.comment_tbl.Select(cnxn,
+        cols=COMMENT_COLS, id=keys, shard_id=shard_id)
+
+    if len(comment_rows) < len(keys):
+      self.issue_svc.replication_lag_retries.increment()
+      logging.info('issue3755: expected %d, but got %d rows from shard %d',
+                   len(keys), len(comment_rows), shard_id)
+      shard_id = None  # Will use Master DB.
+      comment_rows = self.issue_svc.comment_tbl.Select(
+          cnxn, cols=COMMENT_COLS, id=keys, shard_id=None)
+      logging.info('Retry got %d comment rows from master', len(comment_rows))
+
+    cids = [row[0] for row in comment_rows]
+    commentcontent_ids = [row[-1] for row in comment_rows]
+    content_rows = self.issue_svc.commentcontent_tbl.Select(
+        cnxn, cols=COMMENTCONTENT_COLS, id=commentcontent_ids,
+        shard_id=shard_id)
+    approval_rows = self.issue_svc.issueapproval2comment_tbl.Select(
+        cnxn, cols=ISSUEAPPROVAL2COMMENT_COLS, comment_id=cids)
+    amendment_rows = self.issue_svc.issueupdate_tbl.Select(
+        cnxn, cols=ISSUEUPDATE_COLS, comment_id=cids, shard_id=shard_id)
+    attachment_rows = self.issue_svc.attachment_tbl.Select(
+        cnxn, cols=ATTACHMENT_COLS, comment_id=cids, shard_id=shard_id)
+
+    comments = self.issue_svc._DeserializeComments(comment_rows, content_rows,
+        amendment_rows, attachment_rows, approval_rows)
+
+    comments_dict = {}
+    for comment in comments:
+      comments_dict[comment.id] = comment
+
+    return comments_dict
+
+
 class IssueService(object):
   """The persistence layer for Monorail's issues, comments, and attachments."""
   spam_labels = ts_mon.CounterMetric(
@@ -464,6 +509,10 @@ class IssueService(object):
     # Like a dictionary {issue_id: issue}
     self.issue_2lc = IssueTwoLevelCache(
         cache_manager, self, project_service, config_service)
+
+    # Like a dictionary {comment_id: comment)
+    self.comment_2lc = CommentTwoLevelCache(
+        cache_manager, self)
 
     self._config_service = config_service
     self.chart_service = chart_service
@@ -2091,54 +2140,30 @@ class IssueService(object):
 
     return comments
 
-  def GetCommentsByID(self, cnxn, comment_ids, sequences):
+
+  def GetCommentsByID(self, cnxn, comment_ids, sequences, use_cache=False,
+      shard_id=None):
     """Return all IssueComment PBs by comment ids.
 
     Args:
       cnxn: connection to SQL database.
       comment_ids: a list of comment ids.
       sequences: sequence of the comments.
+      use_cache: optional boolean to enable the cache.
+      shard_id: optional int shard_id to limit retrieval.
 
     Returns:
-      A list of the IssueComment protocol buffers for the description
-      and comments on this issue.
+      A list of the IssueComment protocol buffers for comment_ids.
     """
     # Try loading issue comments from a random shard to reduce load on
     # master DB.
-    shard_id = sql.RandomShardID()
-    order_by = [('created ASC', [])]
-    comment_rows = self.comment_tbl.Select(
-        cnxn, cols=COMMENT_COLS, order_by=order_by, id=comment_ids,
-        shard_id=shard_id)
+    if shard_id is None:
+      shard_id = sql.RandomShardID()
 
-    # If any expected rows are missing, it may be due to DB replication
-    # lag.  So, try again on the master DB.
-    if len(comment_rows) < len(comment_ids):
-      self.replication_lag_retries.increment()
-      logging.info('issue3755: expected %d, but got %d rows from shard %d',
-                   len(comment_ids), len(comment_rows), shard_id)
-      shard_id = None  # Will use Master DB.
-      comment_rows = self.comment_tbl.Select(
-          cnxn, cols=COMMENT_COLS, order_by=order_by, id=comment_ids,
-          shard_id=shard_id)
-      logging.info('Retry got %d comment rows from master', len(comment_rows))
+    comment_dict, _missed_comments = self.comment_2lc.GetAll(cnxn, comment_ids,
+          use_cache=use_cache, shard_id=shard_id)
 
-    comment_ids = [row[0] for row in comment_rows]
-    commentcontent_ids = [row[-1] for row in comment_rows]
-    content_rows = self.commentcontent_tbl.Select(
-        cnxn, cols=COMMENTCONTENT_COLS, id=commentcontent_ids,
-        shard_id=shard_id)
-    amendment_rows = self.issueupdate_tbl.Select(
-        cnxn, cols=ISSUEUPDATE_COLS, comment_id=comment_ids, shard_id=shard_id)
-    attachment_rows = self.attachment_tbl.Select(
-        cnxn, cols=ATTACHMENT_COLS, comment_id=comment_ids, shard_id=shard_id)
-    approval_rows = self.issueapproval2comment_tbl.Select(
-        cnxn, cols=ISSUEAPPROVAL2COMMENT_COLS, comment_id=comment_ids,
-        shard_id=shard_id)
-
-    comments = self._DeserializeComments(
-        comment_rows, content_rows, amendment_rows, attachment_rows,
-        approval_rows)
+    comments = sorted(comment_dict.values(), key=lambda x: x.timestamp)
 
     for i in xrange(len(comment_ids)):
       comments[i].sequence = sequences[i]
@@ -2256,6 +2281,7 @@ class IssueService(object):
                if key in update_cols}
 
     self.comment_tbl.Update(cnxn, delta, id=comment.id)
+    self.comment_2lc.InvalidateKeys(cnxn, [comment.id])
 
   def _MakeIssueComment(
       self, project_id, user_id, content, inbound_message=None,

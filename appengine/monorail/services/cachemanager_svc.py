@@ -46,7 +46,8 @@ from framework import sql
 
 INVALIDATE_TABLE_NAME = 'Invalidate'
 INVALIDATE_COLS = ['timestep', 'kind', 'cache_key']
-INVALIDATE_KIND_VALUES = ['user', 'project', 'issue', 'issue_id', 'hotlist']
+INVALIDATE_KIND_VALUES = ['user', 'project', 'issue', 'issue_id', 'hotlist',
+    'comment']
 INVALIDATE_ALL_KEYS = 0
 MAX_INVALIDATE_ROWS_TO_CONSIDER = 1000
 

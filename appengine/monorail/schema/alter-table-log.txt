@@ -1524,3 +1524,10 @@ ALTER TABLE AutocompleteExclusion
 
 ==================================================================
 TODO(jojwang):monorail:3756, DROP TABLE Template2Phase;
+
+==============================================================
+2018-05-30: Add comment to Invalidate table
+
+ALTER TABLE Invalidate CHANGE kind
+  kind ENUM('user', 'project', 'issue', 'issue_id', 'hotlist',
+      'comment');

@@ -25,7 +25,7 @@ CREATE TABLE Invalidate (
   -- invalidating a project also invalidates all issue tracker config within
   -- that project.  But, they do not nest.  E.g., invalidating a project does
   -- not invalidate all issues in the project.
-  kind enum('user', 'project', 'issue', 'issue_id', 'hotlist') NOT NULL,
+  kind enum('user', 'project', 'issue', 'issue_id', 'hotlist', 'comment') NOT NULL,
 
   -- Which cache entry should be invalidated?  Special value 0 indicates
   -- that all entries should be invalidated.

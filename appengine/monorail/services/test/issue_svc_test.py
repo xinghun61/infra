@@ -1323,12 +1323,17 @@ class IssueServiceTest(unittest.TestCase):
 
     self.services.issue.comment_tbl.Select.assert_called_with(
         self.cnxn, cols=issue_svc.COMMENT_COLS,
-        order_by=[('created ASC', [])],
         id=comment_ids, shard_id=ANY)
 
     self.assertEqual(3, len(comments))
 
-  def testGetCommentsByID_ReplicationLag(self):
+  def testGetCommentsByID_CacheReplicationLag(self):
+    self._testGetCommentsByID_ReplicationLag(True)
+
+  def testGetCommentsByID_NoCacheReplicationLag(self):
+    self._testGetCommentsByID_ReplicationLag(False)
+
+  def _testGetCommentsByID_ReplicationLag(self, use_cache):
     """If not all comments are on the replica, we try the master."""
     comment_ids = [101001, 101002, 101003]
     replica_comment_ids = comment_ids[:-1]
@@ -1348,16 +1353,14 @@ class IssueServiceTest(unittest.TestCase):
     self.MockTheRestOfGetCommentsByID(comment_ids)
 
     comments = self.services.issue.GetCommentsByID(
-        self.cnxn, comment_ids, [0, 1, 2])
+        self.cnxn, comment_ids, [0, 1, 2], use_cache=use_cache)
 
     self.services.issue.comment_tbl.Select.assert_called_with(
         self.cnxn, cols=issue_svc.COMMENT_COLS,
-        order_by=[('created ASC', [])],
         id=comment_ids, shard_id=ANY)
     self.services.issue.comment_tbl.Select.assert_called_with(
         self.cnxn, cols=issue_svc.COMMENT_COLS,
-        order_by=[('created ASC', [])],
-        id=comment_ids, shard_id=None)
+        id=comment_ids, shard_id=ANY)
     self.assertEqual(3, len(comments))
 
   def testGetAbbrCommentsForIssue(self):

@@ -159,6 +159,10 @@ unit_test_mode = os.environ['SERVER_SOFTWARE'].startswith('test')
 # that have only 1024 MB total.
 issue_cache_max_size = 400 * 1000
 
+# If we assume 1KB each, then this would be 400 MB for this cache in frontends
+# that have only 1024 MB total.
+comment_cache_max_size = 400 * 1000
+
 # 150K users should be enough for all the frequent daily users plus the
 # occasional users that are mentioned on any popular pages.
 user_cache_max_size = 150 * 1000
