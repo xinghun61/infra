@@ -42,12 +42,12 @@ def _GetLogLocationForBuild(build_data):
   data_json = json.loads(build_data)
   properties = data_json.get('properties') or []
   buildbucket = None
-  for property in properties:
-    if property[0] == 'log_location':
-      return property[1]
+  for property_item in properties:
+    if property_item[0] == 'log_location':
+      return property_item[1]
 
-    if property[0] == 'buildbucket':
-      buildbucket = property[1]
+    if property_item[0] == 'buildbucket':
+      buildbucket = property_item[1]
 
   if not isinstance(buildbucket, dict):
     return None
@@ -222,8 +222,8 @@ def _ReturnStepLog(data, log_type):
     try:
       return json.loads(data) if data else None
     except ValueError:
-      logging.error('Failed to json load data for %s. Data is: %s.' % (log_type,
-                                                                       data))
+      logging.error(
+          'Failed to json load data for %s. Data is: %s.' % (log_type, data))
 
   return data
 

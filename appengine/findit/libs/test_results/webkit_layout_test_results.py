@@ -412,6 +412,7 @@ class WebkitLayoutTestResults(BaseTestResults):
 
   @staticmethod
   def ResultWasExpected(result, expected_results):
+    # pylint: disable=line-too-long
     """Returns whether the result can be treated as an expected result.
 
     Reference: https://chromium.googlesource.com/chromium/src/+/519d9521d16d9d3af3036daf4d1d5f4398f4396a/third_party/blink/tools/blinkpy/web_tests/models/test_expectations.py#970

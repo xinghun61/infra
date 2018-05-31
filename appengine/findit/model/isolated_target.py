@@ -39,7 +39,7 @@ class IsolatedTarget(ndb.Model):
 
   # The URL to the build page as presented by the 'url' field of buildbucket's
   # build response. e.g.
-  # 'https://ci.chromium.org/p/chromium/builders/luci.chromium.ci/Linux Builder/102460'
+  # 'https://ci.chromium.org/p/chromium/builders/luci.chromium.ci/Linux Builder/102460' # pylint: disable=line-too-long
   build_url = ndb.StringProperty(required=True, indexed=False)
 
   # The buildbucket id of the build, if available.
@@ -94,93 +94,91 @@ class IsolatedTarget(ndb.Model):
 
   @classmethod
   def FindIsolateBeforeCommitPositionByBucket(cls,
-                 luci_project,
-                 bucket,
-                 builder_name,
-                 gitiles_host,
-                 gitiles_project,
-                 gitiles_ref,
-                 target_name,
-                 commit_position,
-                 limit=1):
+                                              luci_project,
+                                              bucket,
+                                              builder_name,
+                                              gitiles_host,
+                                              gitiles_project,
+                                              gitiles_ref,
+                                              target_name,
+                                              commit_position,
+                                              limit=1):
     """Gets isolates with the matching config built at previous revisions.
 
     The reulsts will exclude the revision given.
     """
     return cls.query(
-        cls.has_patch == False,
-        cls.luci_project == luci_project, cls.bucket == bucket,
-        cls.builder_name == builder_name, cls.gitiles_host == gitiles_host,
+        cls.has_patch == False, cls.luci_project == luci_project,
+        cls.bucket == bucket, cls.builder_name == builder_name,
+        cls.gitiles_host == gitiles_host,
         cls.gitiles_project == gitiles_project, cls.gitiles_ref == gitiles_ref,
         cls.target_name == target_name, cls.commit_position <
         commit_position).order(-cls.commit_position).fetch(limit=limit)
 
   @classmethod
   def FindIsolateBeforeCommitPositionByMaster(cls,
-                         master_name,
-                         builder_name,
-                         gitiles_host,
-                         gitiles_project,
-                         gitiles_ref,
-                         target_name,
-                         commit_position,
-                         limit=1):
+                                              master_name,
+                                              builder_name,
+                                              gitiles_host,
+                                              gitiles_project,
+                                              gitiles_ref,
+                                              target_name,
+                                              commit_position,
+                                              limit=1):
     """Same as FindIsolateBeforeCommitPosition, but with master_name.
 
     The results will exclude the revision given and uses master_name instead of
     project + bucket.
     """
     return cls.query(
-        cls.has_patch == False,
-        cls.master_name == master_name, cls.builder_name == builder_name,
-        cls.gitiles_host == gitiles_host,
+        cls.has_patch == False, cls.master_name == master_name,
+        cls.builder_name == builder_name, cls.gitiles_host == gitiles_host,
         cls.gitiles_project == gitiles_project, cls.gitiles_ref == gitiles_ref,
         cls.target_name == target_name, cls.commit_position <
         commit_position).order(-cls.commit_position).fetch(limit=limit)
 
   @classmethod
   def FindIsolateAtOrAfterCommitPositionByBucket(cls,
-                    luci_project,
-                    bucket,
-                    builder_name,
-                    gitiles_host,
-                    gitiles_project,
-                    gitiles_ref,
-                    target_name,
-                    commit_position,
-                    limit=1):
+                                                 luci_project,
+                                                 bucket,
+                                                 builder_name,
+                                                 gitiles_host,
+                                                 gitiles_project,
+                                                 gitiles_ref,
+                                                 target_name,
+                                                 commit_position,
+                                                 limit=1):
     """Gets isolates with the matching config built at or after the revision.
 
     The results may include the commit postion given.
     """
-    return cls.query(
-        cls.has_patch == False,
-        cls.luci_project == luci_project, cls.bucket == bucket,
-        cls.builder_name == builder_name, cls.gitiles_host == gitiles_host,
-        cls.gitiles_project == gitiles_project, cls.gitiles_ref == gitiles_ref,
-        cls.target_name == target_name,
-        cls.commit_position >= commit_position).order(
-            cls.commit_position).fetch(limit=limit)
+    return cls.query(cls.has_patch == False, cls.luci_project == luci_project,
+                     cls.bucket == bucket, cls.builder_name == builder_name,
+                     cls.gitiles_host == gitiles_host,
+                     cls.gitiles_project == gitiles_project,
+                     cls.gitiles_ref == gitiles_ref,
+                     cls.target_name == target_name,
+                     cls.commit_position >= commit_position).order(
+                         cls.commit_position).fetch(limit=limit)
 
   @classmethod
   def FindIsolateAtOrAfterCommitPositionByMaster(cls,
-                            master_name,
-                            builder_name,
-                            gitiles_host,
-                            gitiles_project,
-                            gitiles_ref,
-                            target_name,
-                            commit_position,
-                            limit=1):
+                                                 master_name,
+                                                 builder_name,
+                                                 gitiles_host,
+                                                 gitiles_project,
+                                                 gitiles_ref,
+                                                 target_name,
+                                                 commit_position,
+                                                 limit=1):
     """Same as FindIsolateAtOrAfterCommitPosition, but with master_name.
 
     The results may include the commit position given and uses master_name
     instead of project + bucket.
     """
     return cls.query(
-        cls.has_patch == False,
-        cls.master_name == master_name, cls.builder_name == builder_name,
-        cls.gitiles_host == gitiles_host,
+        cls.has_patch == False, cls.master_name == master_name,
+        cls.builder_name == builder_name, cls.gitiles_host == gitiles_host,
         cls.gitiles_project == gitiles_project, cls.gitiles_ref == gitiles_ref,
         cls.target_name == target_name,
         cls.commit_position >= commit_position).order(

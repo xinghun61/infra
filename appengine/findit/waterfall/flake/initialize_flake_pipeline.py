@@ -88,8 +88,9 @@ def _NeedANewAnalysis(normalized_test,
     return saved, analysis
   elif (analysis.status == analysis_status.PENDING or
         analysis.status == analysis_status.RUNNING) and not force:
-    logging.info('Analysis was in state: %s, can\'t ' +
-                 'rerun until state is COMPLETED, or FAILED', analysis.status)
+    logging.info(
+        'Analysis was in state: %s, can\'t ' +
+        'rerun until state is COMPLETED, or FAILED', analysis.status)
     logging.info('Need a new analysis? %r', False)
     logging.info('analysis key: %s', analysis.key)
     return False, analysis
@@ -189,7 +190,7 @@ def ScheduleAnalysisIfNeeded(
         analyze_commit_position_parameters=NextCommitPositionOutput(
             culprit_commit_position=None,
             next_commit_position=starting_commit_position),
-        manually_triggered=True,
+        manually_triggered=manually_triggered,
         retries=0,
         step_metadata=StepMetadata.FromSerializable(step_metadata))
 

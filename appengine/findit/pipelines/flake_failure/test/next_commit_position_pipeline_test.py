@@ -145,7 +145,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
   @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   @mock.patch.object(heuristic_analysis, 'RunHeuristicAnalysis')
   def testNextCommitPositionPipelineRunHeuristicResults(
-      self, mock_run_heuristics, mock_bounding_builds, mock_heuristic_result,
+      self, _, mock_bounding_builds, mock_heuristic_result,
       mock_can_run_heuristic, mock_next_commit):
     master_name = 'm'
     builder_name = 'b'
@@ -196,7 +196,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
   @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   @mock.patch.object(heuristic_analysis, 'RunHeuristicAnalysis')
   def testNextCommitPositionPipelineRunHeuristicResultsNoResults(
-      self, mock_run_heuristics, mock_bounding_builds, mock_heuristic_result,
+      self, _, mock_bounding_builds, mock_heuristic_result,
       mock_can_run_heuristic, mock_next_commit):
     master_name = 'm'
     builder_name = 'b'

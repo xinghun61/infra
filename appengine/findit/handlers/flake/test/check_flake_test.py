@@ -198,8 +198,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
   def testMissingKeyPost(self, *_):
     response = self.test_app.post(
-        '/waterfall/flake', params={'format': 'json',
-                                    'rerun': '1'}, status=404)
+        '/waterfall/flake', params={
+            'format': 'json',
+            'rerun': '1'
+        }, status=404)
     self.assertEqual('No key was provided.',
                      response.json_body.get('error_message'))
 
@@ -212,8 +214,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/flake',
-        params={'format': 'json',
-                'key': analysis.key.urlsafe()},
+        params={
+            'format': 'json',
+            'key': analysis.key.urlsafe()
+        },
         status=404)
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
@@ -233,9 +237,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={'format': 'json',
-                'rerun': '1',
-                'key': analysis.key.urlsafe()},
+        params={
+            'format': 'json',
+            'rerun': '1',
+            'key': analysis.key.urlsafe()
+        },
         status=404)
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
@@ -263,7 +269,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     culprit_git_hash = 'git_hash_1'
-    lower_git_hash = 'git_hash_0'
     culprit_url = 'url'
     culprit_commit_position = 200
     lower_commit_position = 100
@@ -696,18 +701,22 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(len(triage_history), 1)
     self.assertEqual(triage_history[0].get('triage_result'), 'Correct')
     self.assertEqual(triage_history[0].get('user_name'), user_name)
-    self.assertEqual(triage_history[0].get(
-        'suspect_info', {}).get('build_number'), suspected_flake_build_number)
+    self.assertEqual(
+        triage_history[0].get('suspect_info', {}).get('build_number'),
+        suspected_flake_build_number)
 
   def testValidateInput(self):
     self.assertIsNone(CheckFlake()._ValidateInput('s', 't', None))
     self.assertIsNone(CheckFlake()._ValidateInput('s', 't', '654321'))
-    self.assertEqual(CheckFlake()._ValidateInput(None, 't', '').get(
-        'data', {}).get('error_message'), 'Step name must be specified')
-    self.assertEqual(CheckFlake()._ValidateInput('s', None, '').get(
-        'data', {}).get('error_message'), 'Test name must be specified')
-    self.assertEqual(CheckFlake()._ValidateInput('s', 't', 'a').get(
-        'data', {}).get('error_message'), 'Bug id must be an int')
+    self.assertEqual(
+        CheckFlake()._ValidateInput(None, 't', '').get(
+            'data', {}).get('error_message'), 'Step name must be specified')
+    self.assertEqual(
+        CheckFlake()._ValidateInput('s', None, '').get(
+            'data', {}).get('error_message'), 'Test name must be specified')
+    self.assertEqual(
+        CheckFlake()._ValidateInput('s', 't', 'a').get(
+            'data', {}).get('error_message'), 'Bug id must be an int')
 
   def testGetSuspectedFlakeInfoWhenNoSuspectedBuildNumber(self):
     self.assertEqual({}, check_flake._GetSuspectedFlakeInfo(None))
@@ -962,9 +971,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={'format': 'json',
-                'rerun': '1',
-                'key': analysis.key.urlsafe()},
+        params={
+            'format': 'json',
+            'rerun': '1',
+            'key': analysis.key.urlsafe()
+        },
         status=403)
     self.assertEqual('Only admin is allowed to rerun.',
                      response.json_body.get('error_message'))
@@ -982,9 +993,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={'format': 'json',
-                'rerun': '1',
-                'key': analysis.key.urlsafe()},
+        params={
+            'format': 'json',
+            'rerun': '1',
+            'key': analysis.key.urlsafe()
+        },
         status=400)
     self.assertEqual(
         'Cannot rerun analysis if one is currently running or pending.',
@@ -1105,9 +1118,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={'format': 'json',
-                'cancel': '1',
-                'key': analysis.key.urlsafe()},
+        params={
+            'format': 'json',
+            'cancel': '1',
+            'key': analysis.key.urlsafe()
+        },
         status=403)
     self.assertEqual('Only admin is allowed to cancel.',
                      response.json_body.get('error_message'))
@@ -1119,8 +1134,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={'format': 'json',
-                'cancel': '1'},
+        params={
+            'format': 'json',
+            'cancel': '1'
+        },
         status=404)
     self.assertEqual('No key was provided.',
                      response.json_body.get('error_message'))
@@ -1138,9 +1155,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={'format': 'json',
-                'cancel': '1',
-                'key': analysis.key.urlsafe()},
+        params={
+            'format': 'json',
+            'cancel': '1',
+            'key': analysis.key.urlsafe()
+        },
         status=404)
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
@@ -1167,9 +1186,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={'key': analysis.key.urlsafe(),
-                'cancel': '1',
-                'format': 'json'},
+        params={
+            'key': analysis.key.urlsafe(),
+            'cancel': '1',
+            'format': 'json'
+        },
         status=400)
     self.assertEqual('Can\'t cancel an analysis that\'s complete',
                      response.json_body.get('error_message'))
@@ -1196,9 +1217,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={'key': analysis.key.urlsafe(),
-                'cancel': '1',
-                'format': 'json'},
+        params={
+            'key': analysis.key.urlsafe(),
+            'cancel': '1',
+            'format': 'json'
+        },
         status=404)
 
     self.assertEqual('No root pipeline found for analysis.',
@@ -1226,9 +1249,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.post(
         '/waterfall/flake',
-        params={'key': analysis.key.urlsafe(),
-                'cancel': '1',
-                'format': 'json'},
+        params={
+            'key': analysis.key.urlsafe(),
+            'cancel': '1',
+            'format': 'json'
+        },
         status=404)
     self.assertEqual('Root pipeline couldn\'t be found.',
                      response.json_body.get('error_message'))

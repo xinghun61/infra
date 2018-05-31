@@ -326,7 +326,7 @@ class PipelinesTest(TestCase):
 
   def testFormattedRetryMessage(self):
     p = _ExceptionPipeline(1)
-    p.max_attempts = 1
+    p.max_attempts = 1  # pylint: disable=attribute-defined-outside-init
     p.start()
     self.execute_queued_tasks()
     p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)

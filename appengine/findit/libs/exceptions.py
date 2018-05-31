@@ -20,12 +20,13 @@ def EnhanceMessage(func):
 
   <file-name>:<line-number> <function-name> $$ <original-message>
   """
+
   @functools.wraps(func)
   def Wrapped(*args, **kwargs):
     try:
       return func(*args, **kwargs)
     except Exception as e:
-      exc_type, exc_obj, exc_tb = sys.exc_info()
+      exc_type, _, exc_tb = sys.exc_info()
 
       stacks = traceback.extract_tb(exc_tb)
       if not stacks:  # pragma: no branch.

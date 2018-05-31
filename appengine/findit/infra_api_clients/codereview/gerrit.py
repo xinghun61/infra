@@ -97,8 +97,9 @@ class Gerrit(codereview.CodeReview):
     original_cl_commit_revision = original_cl_info.commits[0].revision
     original_cl_commit_timestamp = original_cl_info.commits[0].timestamp
 
-    revert_cl_description = ('Revert "%s"\n\n' % (
-        original_cl_subject if original_cl_subject else original_cl_change_id))
+    revert_cl_description = (
+        'Revert "%s"\n\n' % (original_cl_subject
+                             if original_cl_subject else original_cl_change_id))
     revert_cl_description += 'This reverts commit %s.\n\n' % (
         original_cl_commit_revision)
     revert_cl_description += 'Reason for revert:\n%s\n\n' % revert_reason
@@ -149,7 +150,12 @@ class Gerrit(codereview.CodeReview):
     result = self._SetReview(change_id, message, should_email)
     return result is not None  # A successful post will return an empty dict.
 
-  def CreateRevert(self, reason, change_id, patchset_id=None, bug_id=None):
+  def CreateRevert(self,
+                   reason,
+                   change_id,
+                   patchset_id=None,
+                   footer=None,
+                   bug_id=None):
     parts = ['changes', change_id, 'revert']
     revert_cl_description = self._GenerateRevertCLDescription(
         change_id, reason, bug_id=bug_id)

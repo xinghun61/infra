@@ -371,7 +371,8 @@ class AsynchronousPipeline(BasePipeline):
     """
     return 0  # TODO: enforce a timeout after all existing pipelines migrated.
 
-  def OnTimeout(self, arg, parameters):
+  # TODO(crbug.com/848329): investigate whether the pipeline input is needed.
+  def OnTimeout(self, arg, parameters):  # pylint: disable=unused-argument
     """This function is called upon timeout without timely callback.
 
     Args:
@@ -379,8 +380,8 @@ class AsynchronousPipeline(BasePipeline):
       parameters (dict): A mapping from names to string values of the saved
           parameters.
     """
-    logging.error('{}.OnTimeout called with {} after {} seconds'.format(
-        type(self).__name__, parameters, self.TimeoutSeconds()))
+    logging.error('%s.OnTimeout called with %s after %s seconds',
+                  type(self).__name__, parameters, self.TimeoutSeconds())
 
   def ScheduleCallbackTask(self, name=None, countdown=None, parameters=None):
     """Schedules a task to run the callback in the same target and queue.
@@ -463,9 +464,9 @@ class AsynchronousPipeline(BasePipeline):
         return 500, 'plain/text', error
       else:  # No error, fill output.
         if result and not isinstance(result, self.output_type):
-          aborted = self.abort('Expected output of type %s, but got %s' %
-                               (self.output_type.__name__,
-                                type(result).__name__))
+          aborted = self.abort(
+              'Expected output of type %s, but got %s' %
+              (self.output_type.__name__, type(result).__name__))
           logging.info('%s aborted: %s', self.__class__.__name__, aborted)
         else:
           # Marks the pipeline as complete with the given result.

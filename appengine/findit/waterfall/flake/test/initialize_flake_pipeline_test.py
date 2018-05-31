@@ -167,12 +167,14 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_analysis.key.urlsafe.return_value = 'urlsafe_key'
     mocked_need_analysis.return_value = (True, mocked_analysis)
     test = TestInfo('m', 'b 1', 123, 's', 't')
+    manually_triggered = False
 
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
         test,
         test,
         bug_id=None,
         allow_new_analysis=True,
+        manually_triggered=manually_triggered,
         force=True,
         queue_name=constants.DEFAULT_QUEUE)
 
@@ -184,7 +186,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_commit_position_parameters=NextCommitPositionOutput(
             culprit_commit_position=None,
             next_commit_position=start_commit_position),
-        manually_triggered=True,
+        manually_triggered=manually_triggered,
         retries=0,
         step_metadata=StepMetadata.FromSerializable({}))
 

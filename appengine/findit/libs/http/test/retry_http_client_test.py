@@ -162,18 +162,14 @@ class HttpClientTest(testing.AppengineTestCase):
   def testPostFailure(self):
     dummy_http_client = DummyHttpClient(1, 404)
     status_code, content, _response_headers = dummy_http_client.Post(
-        'http://test', {
-            'data': 0
-        })
+        'http://test', {'data': 0})
     self.assertEquals(404, status_code)
     self.assertEquals('failure - POST', content)
 
   def testPostSuccess(self):
     dummy_http_client = DummyHttpClient(0, 404)
     status_code, content, _response_headers = dummy_http_client.Post(
-        'http://test', {
-            'data': 0
-        })
+        'http://test', {'data': 0})
     self.assertEquals(200, status_code)
     self.assertEquals('success - POST', content)
 
@@ -182,9 +178,7 @@ class HttpClientTest(testing.AppengineTestCase):
       dummy_http_client = DummyHttpClient(20000000, expected_status_code)
 
       status_code, content, _response_headers = dummy_http_client.Post(
-          'http://test', {
-              'data': 0
-          })
+          'http://test', {'data': 0})
       self.assertEquals(1, dummy_http_client.request_count)
       self.assertEquals(expected_status_code, status_code)
       self.assertEquals('failure - POST', content)
@@ -200,18 +194,14 @@ class HttpClientTest(testing.AppengineTestCase):
   def testPutFailure(self):
     dummy_http_client = DummyHttpClient(1, 404)
     status_code, content, _response_headers = dummy_http_client.Put(
-        'http://test', {
-            'data': 0
-        })
+        'http://test', {'data': 0})
     self.assertEquals(404, status_code)
     self.assertEquals('failure - PUT', content)
 
   def testPutSuccess(self):
     dummy_http_client = DummyHttpClient(0, 404)
     status_code, content, _response_headers = dummy_http_client.Put(
-        'http://test', {
-            'data': 0
-        })
+        'http://test', {'data': 0})
     self.assertEquals(200, status_code)
     self.assertEquals('success - PUT', content)
 
@@ -220,9 +210,7 @@ class HttpClientTest(testing.AppengineTestCase):
       dummy_http_client = DummyHttpClient(20000000, expected_status_code)
 
       status_code, content, _response_headers = dummy_http_client.Put(
-          'http://test', {
-              'data': 0
-          })
+          'http://test', {'data': 0})
       self.assertEquals(1, dummy_http_client.request_count)
       self.assertEquals(expected_status_code, status_code)
       self.assertEquals('failure - PUT', content)
@@ -252,11 +240,13 @@ class HttpClientTest(testing.AppengineTestCase):
     dummy_http_client = DummyHttpClient(0, 404)
     dummy_http_client.interceptor = RetryRuntimeErrorInterceptor()
     with self.assertRaises(Exception):
-      _status_code, _content = dummy_http_client.Get('http://exception')
+      _status_code, _content, _response_headers = dummy_http_client.Get(
+          'http://exception')
     self.assertEqual(1, len(mock_logging.call_args_list))
 
   def testNonRetriableExceptionWithInterceptor(self):
     dummy_http_client = DummyHttpClient(0, 404)
     dummy_http_client.interceptor = None
     with self.assertRaises(Exception):
-      _status_code, _content = dummy_http_client.Get('http://exception')
+      _status_code, _content, _response_headers = dummy_http_client.Get(
+          'http://exception')

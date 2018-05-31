@@ -49,7 +49,7 @@ class InterceptorTest(testing.AppengineTestCase):
     client = DummyHttpClient()
     url = 'https://test.com/'
     with self.assertRaises(NotImplementedError):
-      _status_code, _content = client.Post(url, {})
+      _status_code, _content, _resonse_headers = client.Post(url, {})
     mock_logging.assert_called_once_with('got exception %s("%s") for url %s',
                                          NotImplementedError,
                                          'Post not supported', url)
@@ -59,7 +59,8 @@ class InterceptorTest(testing.AppengineTestCase):
     client = DummyHttpClient()
     url = 'https://test.com/'
     with self.assertRaises(NotImplementedError):
-      _status_code, _content = client.Post(url, {}, max_retries=1)
+      _status_code, _content, _resonse_headers = client.Post(
+          url, {}, max_retries=1)
     mock_logging.assert_called_once_with('got exception %s("%s") for url %s',
                                          NotImplementedError,
                                          'Post not supported', url)
@@ -70,7 +71,8 @@ class InterceptorTest(testing.AppengineTestCase):
     client = DummyHttpClient(retriable_exceptions=[NotImplementedError])
     url = 'https://test.com/'
     with self.assertRaises(NotImplementedError):
-      _status_code, _content = client.Post(url, {}, max_retries=2)
+      _status_code, _content, _resonse_headers = client.Post(
+          url, {}, max_retries=2)
     mock_logging_e.assert_called_once_with('got exception %s("%s") for url %s',
                                            NotImplementedError,
                                            'Post not supported', url)
