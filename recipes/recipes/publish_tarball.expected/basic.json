@@ -32,9 +32,9 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "src@refs/tags/66.0.3329.0",
+      "src@refs/tags/69.0.3446.0",
       "--refs",
-      "refs/tags/66.0.3329.0",
+      "refs/tags/69.0.3446.0",
       "--with_branch_heads",
       "--with_tags"
     ],
@@ -44,13 +44,13 @@
       ]
     },
     "infra_step": true,
-    "name": "bot_update - 66.0.3329.0",
+    "name": "bot_update - 69.0.3446.0",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"src\": \"refs/tags/66.0.3329.0\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"src\": \"refs/tags/69.0.3446.0\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"src\": {@@@",
@@ -243,7 +243,7 @@
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
-      "chromium-66.0.3329.0",
+      "chromium-69.0.3446.0",
       "--verbose",
       "--progress",
       "--src-dir",
@@ -263,13 +263,13 @@
       "cp",
       "-a",
       "public-read",
-      "[TMP_BASE]/export_tarball_tmp_1/chromium-66.0.3329.0.tar.xz",
-      "gs://chromium-browser-official/chromium-66.0.3329.0.tar.xz"
+      "[TMP_BASE]/export_tarball_tmp_1/chromium-69.0.3446.0.tar.xz",
+      "gs://chromium-browser-official/chromium-69.0.3446.0.tar.xz"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-66.0.3329.0.tar.xz",
+    "name": "gsutil upload chromium-69.0.3446.0.tar.xz",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-66.0.3329.0.tar.xz@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0.tar.xz@@@"
     ]
   },
   {
@@ -277,7 +277,7 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP_BASE]/export_tarball_tmp_1/chromium-66.0.3329.0.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_1/chromium-69.0.3446.0.tar.xz",
       "/path/to/tmp/"
     ],
     "name": "generate_hashes"
@@ -294,12 +294,12 @@
       "-a",
       "public-read",
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
-      "gs://chromium-browser-official/chromium-66.0.3329.0.tar.xz.hashes"
+      "gs://chromium-browser-official/chromium-69.0.3446.0.tar.xz.hashes"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-66.0.3329.0.tar.xz.hashes",
+    "name": "gsutil upload chromium-69.0.3446.0.tar.xz.hashes",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-66.0.3329.0.tar.xz.hashes@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0.tar.xz.hashes@@@"
     ]
   },
   {
@@ -322,7 +322,7 @@
       {
         "builder_name": "Build From Tarball",
         "properties": {
-          "version": "66.0.3329.0"
+          "version": "69.0.3446.0"
         }
       }
     ],
@@ -336,7 +336,7 @@
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--test-data",
-      "chromium-66.0.3329.0",
+      "chromium-69.0.3446.0",
       "--verbose",
       "--progress",
       "--src-dir",
@@ -356,13 +356,13 @@
       "cp",
       "-a",
       "public-read",
-      "[TMP_BASE]/export_tarball_tmp_2/chromium-66.0.3329.0.tar.xz",
-      "gs://chromium-browser-official/chromium-66.0.3329.0-testdata.tar.xz"
+      "[TMP_BASE]/export_tarball_tmp_2/chromium-69.0.3446.0.tar.xz",
+      "gs://chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-66.0.3329.0-testdata.tar.xz",
+    "name": "gsutil upload chromium-69.0.3446.0-testdata.tar.xz",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-66.0.3329.0-testdata.tar.xz@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz@@@"
     ]
   },
   {
@@ -370,7 +370,7 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP_BASE]/export_tarball_tmp_2/chromium-66.0.3329.0.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_2/chromium-69.0.3446.0.tar.xz",
       "/path/to/tmp/"
     ],
     "name": "generate_hashes (2)"
@@ -387,12 +387,12 @@
       "-a",
       "public-read",
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
-      "gs://chromium-browser-official/chromium-66.0.3329.0-testdata.tar.xz.hashes"
+      "gs://chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz.hashes"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-66.0.3329.0-testdata.tar.xz.hashes",
+    "name": "gsutil upload chromium-69.0.3446.0-testdata.tar.xz.hashes",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-66.0.3329.0-testdata.tar.xz.hashes@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz.hashes@@@"
     ]
   },
   {
@@ -891,7 +891,7 @@
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
-      "chromium-66.0.3329.0",
+      "chromium-69.0.3446.0",
       "--verbose",
       "--progress",
       "--src-dir",
@@ -911,13 +911,13 @@
       "cp",
       "-a",
       "public-read",
-      "[TMP_BASE]/export_tarball_tmp_4/chromium-66.0.3329.0.tar.xz",
-      "gs://chromium-browser-official/chromium-66.0.3329.0-lite.tar.xz"
+      "[TMP_BASE]/export_tarball_tmp_4/chromium-69.0.3446.0.tar.xz",
+      "gs://chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-66.0.3329.0-lite.tar.xz",
+    "name": "gsutil upload chromium-69.0.3446.0-lite.tar.xz",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-66.0.3329.0-lite.tar.xz@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz@@@"
     ]
   },
   {
@@ -925,7 +925,7 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP_BASE]/export_tarball_tmp_4/chromium-66.0.3329.0.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_4/chromium-69.0.3446.0.tar.xz",
       "/path/to/tmp/"
     ],
     "name": "generate_hashes (3)"
@@ -942,12 +942,12 @@
       "-a",
       "public-read",
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
-      "gs://chromium-browser-official/chromium-66.0.3329.0-lite.tar.xz.hashes"
+      "gs://chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz.hashes"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-66.0.3329.0-lite.tar.xz.hashes",
+    "name": "gsutil upload chromium-69.0.3446.0-lite.tar.xz.hashes",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-66.0.3329.0-lite.tar.xz.hashes@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz.hashes@@@"
     ]
   },
   {
@@ -1009,7 +1009,7 @@
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
-      "chromium-66.0.3329.0",
+      "chromium-69.0.3446.0",
       "--verbose",
       "--progress",
       "--src-dir",
@@ -1029,13 +1029,13 @@
       "cp",
       "-a",
       "public-read",
-      "[TMP_BASE]/export_tarball_tmp_6/chromium-66.0.3329.0.tar.xz",
-      "gs://chromium-browser-official/chromium-66.0.3329.0-nacl.tar.xz"
+      "[TMP_BASE]/export_tarball_tmp_6/chromium-69.0.3446.0.tar.xz",
+      "gs://chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-66.0.3329.0-nacl.tar.xz",
+    "name": "gsutil upload chromium-69.0.3446.0-nacl.tar.xz",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-66.0.3329.0-nacl.tar.xz@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz@@@"
     ]
   },
   {
@@ -1043,7 +1043,7 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP_BASE]/export_tarball_tmp_6/chromium-66.0.3329.0.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_6/chromium-69.0.3446.0.tar.xz",
       "/path/to/tmp/"
     ],
     "name": "generate_hashes (4)"
@@ -1060,12 +1060,12 @@
       "-a",
       "public-read",
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
-      "gs://chromium-browser-official/chromium-66.0.3329.0-nacl.tar.xz.hashes"
+      "gs://chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz.hashes"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-66.0.3329.0-nacl.tar.xz.hashes",
+    "name": "gsutil upload chromium-69.0.3446.0-nacl.tar.xz.hashes",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-66.0.3329.0-nacl.tar.xz.hashes@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz.hashes@@@"
     ]
   },
   {

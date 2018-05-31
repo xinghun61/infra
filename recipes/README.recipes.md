@@ -372,17 +372,27 @@ staging and prod environments.
 
 [DEPS](/recipes/recipes/publish_tarball.py#11): [build/chromium][build/recipe_modules/chromium], [build/trigger][build/recipe_modules/trigger], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [omahaproxy](#recipe_modules-omahaproxy), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/publish_tarball.py#179)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/publish_tarball.py#202)(api):**
 
-&emsp; **@contextlib.contextmanager**<br>&mdash; **def [copytree\_checkout](/recipes/recipes/publish_tarball.py#76)(api):**
+&emsp; **@contextlib.contextmanager**<br>&mdash; **def [copytree\_checkout](/recipes/recipes/publish_tarball.py#99)(api):**
 
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_lite\_tarball](/recipes/recipes/publish_tarball.py#87)(api, version):**
+&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_lite\_tarball](/recipes/recipes/publish_tarball.py#110)(api, version):**
 
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_nacl\_tarball](/recipes/recipes/publish_tarball.py#155)(api, version):**
+&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_nacl\_tarball](/recipes/recipes/publish_tarball.py#178)(api, version):**
 
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_tarball](/recipes/recipes/publish_tarball.py#44)(api, args, source, destination):**
+&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_tarball](/recipes/recipes/publish_tarball.py#67)(api, args, source, destination):**
 
 &mdash; **def [gsutil\_upload](/recipes/recipes/publish_tarball.py#40)(api, source, bucket, dest, args):**
+
+&mdash; **def [published\_all\_tarballs](/recipes/recipes/publish_tarball.py#60)(version, ls_result):**
+
+&mdash; **def [published\_full\_tarball](/recipes/recipes/publish_tarball.py#44)(version, ls_result):**
+
+&mdash; **def [published\_lite\_tarball](/recipes/recipes/publish_tarball.py#48)(version, ls_result):**
+
+&mdash; **def [published\_nacl\_tarball](/recipes/recipes/publish_tarball.py#56)(version, ls_result):**
+
+&mdash; **def [published\_test\_tarball](/recipes/recipes/publish_tarball.py#52)(version, ls_result):**
 ### *recipes* / [recipe\_autoroller](/recipes/recipes/recipe_autoroller.py)
 
 [DEPS](/recipes/recipes/recipe_autoroller.py#7): [build/luci\_config][build/recipe_modules/luci_config], [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [recipe\_autoroller](#recipe_modules-recipe_autoroller), [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]

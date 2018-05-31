@@ -41,6 +41,29 @@ def gsutil_upload(api, source, bucket, dest, args):
   api.gsutil.upload(source, bucket, dest, args, name=str('upload ' + dest))
 
 
+def published_full_tarball(version, ls_result):
+  return 'chromium-%s.tar.xz' % version in ls_result
+
+
+def published_lite_tarball(version, ls_result):
+  return 'chromium-%s-lite.tar.xz' % version in ls_result
+
+
+def published_test_tarball(version, ls_result):
+  return 'chromium-%s-testdata.tar.xz' % version in ls_result
+
+
+def published_nacl_tarball(version, ls_result):
+  return 'chromium-%s-nacl.tar.xz' % version in ls_result
+
+
+def published_all_tarballs(version, ls_result):
+  return (published_full_tarball(version, ls_result) and
+          published_lite_tarball(version, ls_result) and
+          published_test_tarball(version, ls_result) and
+          published_nacl_tarball(version, ls_result))
+
+
 @recipe_api.composite_step
 def export_tarball(api, args, source, destination):
   try:
@@ -186,16 +209,12 @@ def RunSteps(api):
     # to avoid running into errors with older releases.
     # Exclude ios - it often uses internal buildspecs so public ones don't work.
     for release in api.omahaproxy.history(
-        min_major_version=63, exclude_platforms=['ios']):
+        min_major_version=66, exclude_platforms=['ios']):
       if release['channel'] not in ('stable', 'beta', 'dev', 'canary'):
         continue
-      # TODO(thomasanderson): When M66 reaches stable, update min_major_version
-      # to 66 and remove this check.
-      if (release['channel'] == 'canary' and
-          int(release['version'].split('.')[2]) < 3317):
-        continue
-      if 'chromium-%s.tar.xz' % release['version'] not in ls_result:
-        missing_releases.add(release['version'])
+      version = release['version']
+      if not published_all_tarballs(version, ls_result):
+        missing_releases.add(version)
     for version in missing_releases:
       if version not in BLACKLISTED_VERSIONS:
         api.trigger({'buildername': 'publish_tarball', 'version': version})
@@ -205,7 +224,7 @@ def RunSteps(api):
 
   ls_result = api.gsutil(['ls', 'gs://chromium-browser-official/'],
                          stdout=api.raw_io.output()).stdout
-  if 'chromium-%s.tar.xz' % version in ls_result:
+  if published_all_tarballs(version, ls_result):
     return
 
   api.gclient.set_config('chromium')
@@ -249,46 +268,49 @@ def RunSteps(api):
     )
 
   with api.step.defer_results():
-    # Export full tarball.
-    export_tarball(
-        api,
-        # Verbose output helps avoid a buildbot timeout when no output
-        # is produced for a long time.
-        ['--remove-nonessential-files',
-         'chromium-%s' % version,
-         '--verbose',
-         '--progress',
-         '--src-dir', api.path['checkout']],
-        'chromium-%s.tar.xz' % version,
-        'chromium-%s.tar.xz' % version)
+    if not published_full_tarball(version, ls_result):
+      export_tarball(
+          api,
+          # Verbose output helps avoid a buildbot timeout when no output
+          # is produced for a long time.
+          ['--remove-nonessential-files',
+           'chromium-%s' % version,
+           '--verbose',
+           '--progress',
+           '--src-dir', api.path['checkout']],
+          'chromium-%s.tar.xz' % version,
+          'chromium-%s.tar.xz' % version)
 
-    # Trigger a tarball build now that the full tarball has been uploaded.
-    api.trigger({
-        'builder_name': 'Build From Tarball',
-        'properties': {'version': version},
-    })
+      # Trigger a tarball build now that the full tarball has been uploaded.
+      api.trigger({
+          'builder_name': 'Build From Tarball',
+          'properties': {'version': version},
+      })
 
-    # Export test data.
-    export_tarball(
-        api,
-        # Verbose output helps avoid a buildbot timeout when no output
-        # is produced for a long time.
-        ['--test-data',
-         'chromium-%s' % version,
-         '--verbose',
-         '--progress',
-         '--src-dir', api.path['checkout']],
-        'chromium-%s.tar.xz' % version,
-        'chromium-%s-testdata.tar.xz' % version)
+    if not published_test_tarball(version, ls_result):
+      export_tarball(
+          api,
+          # Verbose output helps avoid a buildbot timeout when no output
+          # is produced for a long time.
+          ['--test-data',
+           'chromium-%s' % version,
+           '--verbose',
+           '--progress',
+           '--src-dir', api.path['checkout']],
+          'chromium-%s.tar.xz' % version,
+          'chromium-%s-testdata.tar.xz' % version)
 
-    export_lite_tarball(api, version)
-    export_nacl_tarball(api, version)
+    if not published_lite_tarball(version, ls_result):
+      export_lite_tarball(api, version)
+
+    if not published_nacl_tarball(version, ls_result):
+      export_nacl_tarball(api, version)
 
 
 def GenTests(api):
   yield (
     api.test('basic') +
-    api.properties.generic(version='66.0.3329.0') +
+    api.properties.generic(version='69.0.3446.0') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
     api.path.exists(api.path['checkout'].join(
@@ -297,10 +319,14 @@ def GenTests(api):
 
   yield (
     api.test('dupe') +
-    api.properties.generic(version='66.0.3329.0') +
+    api.properties.generic(version='69.0.3446.0') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output(
-        'chromium-66.0.3329.0.tar.xz'))
+        'gs://chromium-browser-official/chromium-69.0.3446.0.tar.xz\n'
+        'gs://chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz\n'
+        'gs://chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz\n'
+        'gs://chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz\n'
+    ))
   )
 
   yield (
