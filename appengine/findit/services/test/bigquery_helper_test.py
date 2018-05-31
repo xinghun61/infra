@@ -15,10 +15,14 @@ from services import bigquery_helper
 class BigqueryHelperTest(unittest.TestCase):
 
   @mock.patch.object(discovery, 'build')
-  def testCreateBigqueryClient(self, mock_client):
-    bigquery_helper._CreateBigqueryClient()
-
+  def testGetBigqueryClient(self, mock_client):
+    bigquery_helper._GetBigqueryClient()
     self.assertTrue(mock_client.called)
+
+  @mock.patch.object(discovery, 'build')
+  def testGetBigqueryClientIsCached(self, _):
+    client = bigquery_helper._GetBigqueryClient()
+    self.assertEqual(client, bigquery_helper._GetBigqueryClient())
 
   def testSchemaResponseToDicts(self):
     schema = [{'type': 'INTEGER', 'name': 'field_name', 'mode': 'NULLABLE'}]
@@ -188,9 +192,21 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertTrue(success)
     self.assertEqual(len(rows), 1)
 
+  def testBigqueryQueryRequestIncomplete(self):
+    mock_client = mock.Mock()
+    mock_client.jobs().query().execute.return_value = {}
+    success, rows = bigquery_helper.QueryRequest(mock_client, 'project',
+                                                 'query')
+    self.assertTrue(mock_client.jobs().query().execute.called)
+    self.assertFalse(success)
+    self.assertEqual(rows, [])
+
   def testBigqueryQueryRequestNoRows(self):
     mock_client = mock.Mock()
-    mock_client.jobs().query().execute.return_value = {'totalRows': '0'}
+    mock_client.jobs().query().execute.return_value = {
+        'jobComplete': True,
+        'totalRows': '0'
+    }
     success, rows = bigquery_helper.QueryRequest(mock_client, 'project',
                                                  'query')
     self.assertTrue(mock_client.jobs().query().execute.called)
@@ -215,7 +231,7 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertFalse(success)
     self.assertEqual(rows, [])
 
-  @mock.patch.object(bigquery_helper, '_CreateBigqueryClient')
+  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   @mock.patch.object(json_format, 'MessageToJson')
   @mock.patch.object(bigquery_helper, 'InsertRequest', return_value=True)
   def testReportEventsToBigQuery(self, insert_fn, json_func, *_):
@@ -223,13 +239,13 @@ class BigqueryHelperTest(unittest.TestCase):
     json_func.return_value = json.dumps(request_dict)
 
     events_and_ids = [(None, 'insertid')]
-    self.assertEqual(True,
-                     bigquery_helper.ReportEventsToBigquery(
-                         events_and_ids, 'projectid', 'datasetid', 'tableid'))
+    self.assertTrue(
+        bigquery_helper.ReportEventsToBigquery(events_and_ids, 'projectid',
+                                               'datasetid', 'tableid'))
     args, _ = insert_fn.call_args
     self.assertEqual(args[-1], [{'json': request_dict, 'insertId': 'insertid'}])
 
-  @mock.patch.object(bigquery_helper, '_CreateBigqueryClient')
+  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   @mock.patch.object(json_format, 'MessageToJson')
   @mock.patch.object(bigquery_helper, 'InsertRequest', return_value=False)
   def testReportEventsToBigQueryWithError(self, insert_fn, json_func, *_):
@@ -237,8 +253,8 @@ class BigqueryHelperTest(unittest.TestCase):
     json_func.return_value = json.dumps(request_dict)
 
     events_and_ids = [(None, 'insertid')]
-    self.assertEqual(False,
-                     bigquery_helper.ReportEventsToBigquery(
-                         events_and_ids, 'projectid', 'datasetid', 'tableid'))
+    self.assertFalse(
+        bigquery_helper.ReportEventsToBigquery(events_and_ids, 'projectid',
+                                               'datasetid', 'tableid'))
     args, _ = insert_fn.call_args
     self.assertEqual(args[-1], [{'json': request_dict, 'insertId': 'insertid'}])

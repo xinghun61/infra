@@ -11,28 +11,30 @@ from apiclient import discovery
 from google.protobuf import json_format
 from oauth2client import appengine as gae_oauth2client
 
-# Client constants.
-_BIGQUERY_AUTH_ENDPOINT = 'https://www.googleapis.com/auth/bigquery'
-_CREDENTIALS = gae_oauth2client.AppAssertionCredentials(
-    scope=_BIGQUERY_AUTH_ENDPOINT)
-_HTTP_AUTH = _CREDENTIALS.authorize(http=httplib2.Http(timeout=60))
+# Bigquery authentication endpoint.
+_AUTH_ENDPOINT = 'https://www.googleapis.com/auth/bigquery'
+
+# Number of retries before giving up.
 _REQUEST_RETRIES = 3
 
-# Query Constants.
 # Timeout for query requests, 60 seconds.
 _TIMEOUT_MS = 60000
-# Use standard SQL for queries.
-_USE_LEGACY_SQL = False
 
 
-# TODO (crbug.com/807501): Cache the client.
-def _CreateBigqueryClient():
+def _GetBigqueryClient():
   """Returns a Bigquery api client for the current project.
 
-  Logic is encapsulated for testing purposes.
+  This method caches the client for reusing.
   """
-  client = discovery.build('bigquery', 'v2', http=_HTTP_AUTH)
-  return client
+  if hasattr(_GetBigqueryClient, 'client'):
+    return getattr(_GetBigqueryClient, 'client')
+
+  credentials = gae_oauth2client.AppAssertionCredentials(scope=_AUTH_ENDPOINT)
+  http_auth = credentials.authorize(http=httplib2.Http(timeout=60))
+  bigquery_client = discovery.build('bigquery', 'v2', http=http_auth)
+
+  setattr(_GetBigqueryClient, 'client', bigquery_client)
+  return bigquery_client
 
 
 def _SchemaResponseToDicts(schema):
@@ -168,21 +170,15 @@ def InsertRequest(client, project_id, dataset_id, table_id, rows):
 
 
 def ExecuteQuery(project_id, query):  # pragma: no cover
-  return QueryRequest(_CreateBigqueryClient(), project_id, query)
+  return QueryRequest(_GetBigqueryClient(), project_id, query)
 
 
-def QueryRequest(client,
-                 project_id,
-                 query,
-                 timeout=_TIMEOUT_MS,
-                 use_legacy_sql=_USE_LEGACY_SQL):
+def QueryRequest(client, project_id, query, timeout=_TIMEOUT_MS):
   """Inserts the given rows into a bigquery table.
 
   Args:
     client (apiclient.dicovery): Bigquery client.
     project_id (str): Project Id in google cloud.
-    dataset_id (str): Dataset Id in Bigquery.
-    table_id (str): Table Id in Bigquery.
     query (str): query to run.
   Returns:
     (boolean, [dict]) Boolean to indicate success/failure, and the rows that
@@ -192,7 +188,7 @@ def QueryRequest(client,
       'kind': 'bigquery#queryRequest',
       'query': query,
       'timeoutMs': timeout,
-      'useLegacySql': use_legacy_sql,
+      'useLegacySql': False,
       'parameterMode': 'NAMED',
       'queryParameters': []
   }
@@ -203,12 +199,15 @@ def QueryRequest(client,
     logging.error('QueryRequest reported errors: %s', response.get('errors'))
     return False, []
 
+  if not response.get('jobComplete'):
+    logging.error('QueryRequest didn\'t finish, possibly due to timeout.')
+    return False, []
+
   if response.get('totalRows') == '0':
     logging.info('QueryRequest succeeded, but there were no rows returned.')
     return True, []
 
-  if (not response.get('jobComplete') or not response.get('schema') or
-      not response.get('rows')):
+  if (not response.get('schema') or not response.get('rows')):
     logging.error('QueryRequest succeeded, but there were missing fields.')
     return False, []
 
@@ -240,5 +239,5 @@ def ReportEventsToBigquery(events_and_ids, project_id, dataset_id, table_id):
           insert_id
   } for event, insert_id in events_and_ids]
 
-  return InsertRequest(_CreateBigqueryClient(), project_id, dataset_id,
-                       table_id, rows)
+  return InsertRequest(_GetBigqueryClient(), project_id, dataset_id, table_id,
+                       rows)
