@@ -427,6 +427,41 @@ class WorkEnvTest(unittest.TestCase):
       we.DeleteComment(issue, comment, False)
       self.assertEqual(None, comment.deleted_by)
 
+  @patch('services.issue_svc.IssueService.SoftDeleteComment')
+  def testDeleteComment_UndeleteableSpam(self, mockSoftDeleteComment):
+    """Throws exception when comment is spam and owner is deleting."""
+    self.SignIn(user_id=111L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=issue.issue_id, is_spam=True)
+    self.services.issue.TestAddComment(comment, 1)
+    with self.work_env as we:
+      with self.assertRaises(permissions.PermissionException):
+        we.DeleteComment(issue, comment, True)
+      self.assertEqual(None, comment.deleted_by)
+      mockSoftDeleteComment.assert_not_called()
+
+  @patch('services.issue_svc.IssueService.SoftDeleteComment')
+  @patch('framework.permissions.CanDelete')
+  def testDeleteComment_UndeletablePermissions(self, mockCanDelete,
+                                               mockSoftDeleteComment):
+    """Throws exception when deleter doesn't have permission to do so."""
+    mockCanDelete.return_value = False
+    self.SignIn(user_id=111L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=issue.issue_id, is_spam=True)
+    self.services.issue.TestAddComment(comment, 1)
+    with self.work_env as we:
+      with self.assertRaises(permissions.PermissionException):
+        we.DeleteComment(issue, comment, True)
+      self.assertEqual(None, comment.deleted_by)
+      mockSoftDeleteComment.assert_not_called()
+
   def testStarIssue_Normal(self):
     """We can star and unstar issues."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
