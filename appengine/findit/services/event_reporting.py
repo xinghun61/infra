@@ -11,6 +11,7 @@ from google.appengine.ext import ndb
 from google.protobuf.timestamp_pb2 import Timestamp
 from libs import analysis_status
 from libs import time_util
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.flake import triggering_sources
 from model.proto.gen import findit_pb2
 from model.proto.gen.compile_analysis_pb2 import CompileAnalysisCompletionEvent
@@ -72,7 +73,32 @@ def ReportTestFlakeAnalysisCompletionEvent(analysis):
       [(proto, event_id)], _PROJECT_ID, _DATASET_ID, _TABLE_ID_TEST)
 
 
-def _ExtractGeneralAnalysisInfo(analysis, event):
+def _ExtractBaseAnalysisInfo(analysis, event):
+  """Extracts base information and stores it in a proto.
+
+  Args:
+    analysis (BaseBuildModel, BaseAnalysis): Analysis to be extracted from.
+    event (TestAnalysisCompletionEvent,
+     CompileAnalysisCompletionEvent): Event proto to be written to.
+  Returns:
+    Event proto given as an argument.
+  """
+  if isinstance(analysis, MasterFlakeAnalysis):
+    master_name = analysis.original_master_name or analysis.master_name
+    builder_name = analysis.original_builder_name or analysis.builder_name
+    build_number = analysis.original_build_number or analysis.build_number
+  else:
+    master_name = analysis.master_name
+    builder_name = analysis.builder_name
+    build_number = analysis.build_number
+
+  event.analysis_info.master_name = master_name
+  event.analysis_info.builder_name = builder_name
+  event.analysis_info.detected_build_number = build_number
+  return event
+
+
+def _ExtractAnalysisTimestampInfo(analysis, event):
   """Extracts general information and stores it in a proto.
 
   Args:
@@ -82,8 +108,6 @@ def _ExtractGeneralAnalysisInfo(analysis, event):
   Returns:
     Event proto given as an argument.
   """
-  event.analysis_info.master_name = analysis.master_name
-  event.analysis_info.builder_name = analysis.builder_name
 
   def unix_time(dt):
     return int((dt - _EPOCH_START).total_seconds())
@@ -93,9 +117,12 @@ def _ExtractGeneralAnalysisInfo(analysis, event):
   seconds = unix_time(time_util.GetUTCNow())
   event.analysis_info.timestamp.completed.FromSeconds(seconds)
 
-  event.analysis_info.detected_build_number = analysis.build_number
-
   return event
+
+
+def _ExtractGeneralAnalysisInfo(analysis, event):
+  _ExtractBaseAnalysisInfo(analysis, event)
+  _ExtractAnalysisTimestampInfo(analysis, event)
 
 
 def _ExtractSuspectsForWfAnalysis(analysis, event):
@@ -290,8 +317,9 @@ def CreateTestFlakeAnalysisCompletionEvent(analysis):
   event.flake = True
   _ExtractGeneralAnalysisInfo(analysis, event)
 
-  event.analysis_info.step_name = analysis.step_name
-  event.test_name = analysis.test_name
+  event.analysis_info.step_name = (
+      analysis.original_step_name or analysis.step_name)
+  event.test_name = analysis.original_test_name or analysis.test_name
 
   if analysis.suspected_flake_build_number:
     event.analysis_info.culprit_build_number = (
