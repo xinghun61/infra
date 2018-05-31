@@ -10,6 +10,7 @@ DEPS = [
   'depot_tools/gclient',
 
   'recipe_engine/context',
+  'recipe_engine/file',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
@@ -37,6 +38,7 @@ def RunSteps(api, project_under_test, auth_with_account):
   safe_project_name = ''.join(
       c if c.isalnum() else '_' for c in project_under_test)
   root_dir = api.path['cache'].join('builder', safe_project_name)
+  api.file.ensure_directory('ensure cache dir', root_dir)
   c = api.gclient.make_config()
   soln = c.solutions.add()
   soln.name = project_under_test
@@ -58,6 +60,7 @@ def RunSteps(api, project_under_test, auth_with_account):
           root_dir.join(*([project_under_test] + path + ['recipes.py'])),
           '--use-bootstrap', 'test', 'run',
       ])
+
 
 def GenTests(api):
   yield (
