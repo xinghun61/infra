@@ -78,7 +78,8 @@ def api_method(default_mask=None):
         if req.HasField('fields'):
           try:
             mask = protoutil.Mask.from_field_mask(
-                req.fields, res_class.DESCRIPTOR)
+                req.fields, res_class.DESCRIPTOR,
+                json_names=ctx.response_encoding == prpc.Encoding.JSON)
           except ValueError as ex:
             raise InvalidArgument('invalid fields: %s' % ex)
 
