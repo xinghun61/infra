@@ -25,6 +25,6 @@ func newSwarmClient(ctx context.Context, authOpts auth.Options, swarmingHost str
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	swarm.BasePath = fmt.Sprintf("https://%s/api/swarming/v1/", swarmingHost)
+	swarm.BasePath = fmt.Sprintf("https://%s/_ah/api/swarming/v1/", swarmingHost)
 	return authenticator, authClient, swarm, nil
 }

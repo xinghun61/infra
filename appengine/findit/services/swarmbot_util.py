@@ -17,7 +17,7 @@ from services import swarming
 from services.flake_failure import flake_constants
 
 # Swarming URL templates.
-BOT_LIST_URL = 'https://%s/api/swarming/v1/bots/list%s'
+BOT_LIST_URL = 'https://%s/_ah/api/swarming/v1/bots/list%s'
 
 
 def GetCacheName(master, builder, suffix=""):

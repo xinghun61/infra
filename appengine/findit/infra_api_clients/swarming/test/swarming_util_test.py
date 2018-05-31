@@ -171,8 +171,8 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
                      swarming_util.GetBotCounts('host', dimensions,
                                                 None).Serialize())
 
-    expected_url = ('https://host/api/swarming/v1/bots/count?dimensions=os%3AOS'
-                    '&dimensions=cpu%3Acpu')
+    expected_url = ('https://host/_ah/api/swarming/v1/bots/count'
+                    '?dimensions=os%3AOS&dimensions=cpu%3Acpu')
     mock_fn.assert_called_once_with(expected_url, None)
 
   @mock.patch.object(
@@ -219,8 +219,8 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
   def testListTasksNoNewData(self, mock_fn):
     tags = {'master': 'm', 'buildername': 'b'}
     self.assertEqual([], swarming_util.ListTasks('host', tags, None))
-    expected_url = ('https://host/api/swarming/v1/tasks/list?tags=master%3Am&'
-                    'tags=buildername%3Ab')
+    expected_url = ('https://host/_ah/api/swarming/v1/tasks/list'
+                    '?tags=master%3Am&tags=buildername%3Ab')
     mock_fn.assert_called_once_with(expected_url, None)
 
   @mock.patch.object(

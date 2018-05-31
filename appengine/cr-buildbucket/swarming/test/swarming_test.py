@@ -617,7 +617,7 @@ class SwarmingTest(BaseTest):
     # Test swarming request.
     self.assertEqual(
         net.json_request_async.call_args[0][0],
-        'https://chromium-swarm.appspot.com/api/swarming/v1/tasks/new')
+        'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
     actual_task_def = net.json_request_async.call_args[1]['payload']
     expected_task_def = {
         'name':
@@ -927,7 +927,7 @@ class SwarmingTest(BaseTest):
     # Test swarming request.
     self.assertEqual(
         net.json_request_async.call_args[0][0],
-        'https://chromium-swarm.appspot.com/api/swarming/v1/tasks/new')
+        'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
     actual_task_def = net.json_request_async.call_args[1]['payload']
     expected_task_def = {
         'name':
@@ -1350,7 +1350,7 @@ class SwarmingTest(BaseTest):
     swarming.cancel_task('chromium-swarm.appspot.com', 'deadbeef')
     net.json_request_async.assert_called_with(
         ('https://chromium-swarm.appspot.com/'
-         'api/swarming/v1/task/deadbeef/cancel'),
+         '_ah/api/swarming/v1/task/deadbeef/cancel'),
         method='POST',
         scopes=net.EMAIL_SCOPE,
         delegation_token=None,

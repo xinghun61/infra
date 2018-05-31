@@ -12,11 +12,11 @@ from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from infra_api_clients.swarming.swarming_task_request import SwarmingTaskRequest
 
 # Swarming URL templates.
-_BOT_COUNT_URL = 'https://%s/api/swarming/v1/bots/count%s'
-_NEW_TASK_URL = 'https://%s/api/swarming/v1/tasks/new'
-_TASK_ID_URL = 'https://%s/api/swarming/v1/task/%s/request'
-_LIST_TASK_URL = 'https://%s/api/swarming/v1/tasks/list%s'
-_TASK_RESULT_URL = 'https://%s/api/swarming/v1/task/%s/result'
+_BOT_COUNT_URL = 'https://%s/_ah/api/swarming/v1/bots/count%s'
+_NEW_TASK_URL = 'https://%s/_ah/api/swarming/v1/tasks/new'
+_TASK_ID_URL = 'https://%s/_ah/api/swarming/v1/task/%s/request'
+_LIST_TASK_URL = 'https://%s/_ah/api/swarming/v1/tasks/list%s'
+_TASK_RESULT_URL = 'https://%s/_ah/api/swarming/v1/task/%s/result'
 
 
 def GetSwarmingTaskRequest(host, task_id, http_client):
@@ -69,7 +69,7 @@ def ParametersToQueryString(parameters, field):
   else:
     parameters_list = parameters
   query_string = ('&%s=' % field).join(parameters_list)
-  # Url looks like 'https://chromium-swarm.appspot.com/api/swarming/v1/bots
+  # Url looks like 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/bots
   # /count?dimensions=os:Windows-7-SP1&dimensions=cpu:x86-64'
   return '?%s=%s' % (field, query_string)
 

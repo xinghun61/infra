@@ -98,7 +98,7 @@ func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, build
 		return nil, err
 	}
 	sbucket, err := swarmbucket.New(authClient)
-	sbucket.BasePath = fmt.Sprintf("https://%s/api/swarmbucket/v1/", c.bbHost)
+	sbucket.BasePath = fmt.Sprintf("https://%s/_ah/api/swarmbucket/v1/", c.bbHost)
 
 	type parameters struct {
 		BuilderName     string `json:"builder_name"`
