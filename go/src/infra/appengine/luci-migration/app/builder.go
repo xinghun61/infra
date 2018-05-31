@@ -211,7 +211,6 @@ func getMiloNum(c context.Context, h *http.Client, master, builder string) (int,
 		C:    h,
 		Host: "ci.chromium.org",
 	})
-	c, _ = context.WithTimeout(c, 55*time.Second)
 	builds, err := client.GetBuildbotBuildsJSON(
 		c,
 		&miloAPI.BuildbotBuildsRequest{
@@ -240,6 +239,7 @@ func setNextSafe(c context.Context, builder *storage.Builder) error {
 	if master == nil {
 		return errors.Reason("master %q is not configured", builder.ID.Master).Err()
 	}
+	c, _ = context.WithTimeout(c, 55*time.Second)
 	t, err := auth.GetRPCTransport(c, auth.AsSelf)
 	if err != nil {
 		return err
