@@ -583,6 +583,7 @@ def _fetch_page(query, page_size, start_cursor, predicate=None):
       raise errors.InvalidInputError(msg)
 
   entities = []
+  skipped = 0
   while len(entities) < page_size:
     # It is important not to request more than needed in query.fetch_page,
     # otherwise the cursor we return to the user skips fetched, but not returned
@@ -591,12 +592,15 @@ def _fetch_page(query, page_size, start_cursor, predicate=None):
 
     page, curs, more = query.fetch_page(to_fetch, start_cursor=curs)
     for entity in page:
-      if predicate is None or predicate(entity):  # pragma: no branch
-        entities.append(entity)
-        if len(entities) >= page_size:
-          break
+      if predicate and not predicate(entity):  # pragma: no cover
+        skipped += 1
+        continue
+      entities.append(entity)
+      if len(entities) >= page_size:
+        break
     if not more:
       break
+  logging.debug('fetch_page: skipped %d entities', skipped)
 
   curs_str = None
   if more:
