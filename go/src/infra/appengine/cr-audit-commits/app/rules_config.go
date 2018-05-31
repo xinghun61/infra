@@ -143,6 +143,45 @@ var RuleMap = map[string]*RepoConfig{
 			"autoroll-rules-angle":       AutoRollRulesDEPS("angle-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 			"autoroll-rules-skcms":       AutoRollRulesSKCMS("skcms-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 			"autoroll-rules-swiftshader": AutoRollRulesDEPS("swiftshader-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"bookmaker": AccountRules{
+				Account: "skia-bookmaker@skia-swarming-bots.iam.gserviceaccount.com",
+				Funcs: []RuleFunc{
+					func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+						return OnlyModifiesDirRule(ctx, ap, rc, cs, "OnlyModifiesAPIDocs", "site/user/api")
+					},
+				},
+				notificationFunction: fileBugForAutoRollViolation,
+			},
+			"recreate-skps": AccountRules{
+				Account: "skia-recreate-skps@skia-swarming-bots.iam.gserviceaccount.com",
+				Funcs: []RuleFunc{
+					func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+						return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesVersionFile", "infra/bots/assets/skp/VERSION")
+					},
+				},
+				notificationFunction: fileBugForAutoRollViolation,
+			},
+		},
+	},
+	"fuchsia-topaz-master": {
+		BaseRepoURL: "https://fuchsia.googlesource.com/topaz.git",
+		GerritURL:   "https://fuchsia-review.googlesource.com",
+		BranchName:  "refs/heads/master",
+		// No special meaning, ToT as of the time this line was added.
+		StartingCommit:  "ec7b9088a64bb6a71d8e327a0d04ee9a2f6bb9ec",
+		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
+		MonorailProject: "chromium",
+		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
+		Rules: map[string]RuleSet{
+			"autoroll-rules-skia": AccountRules{
+				Account: "skia-fuchsia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com",
+				Funcs: []RuleFunc{
+					func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+						return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesSkiaManifest", "manifest/skia")
+					},
+				},
+				notificationFunction: fileBugForAutoRollViolation,
+			},
 		},
 	},
 }
