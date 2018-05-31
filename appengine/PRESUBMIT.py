@@ -249,17 +249,13 @@ def CommonChecks(_input_api, _output_api):  # pragma: no cover
 
 def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
-  # TODO(crbug.com/828677): Pylint for GAE broke in a non-trivial way. Disable
-  # it for now until it is fixed.
-  # output.extend(input_api.RunTests(PylintChecks(
-  #   input_api, output_api, only_changed=True)))
+  output.extend(input_api.RunTests(PylintChecks(
+    input_api, output_api, only_changed=True)))
   return output
 
 
 def CheckChangeOnCommit(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
-  # TODO(crbug.com/828677): Pylint for GAE broke in a non-trivial way. Disable
-  # it for now until it is fixed.
-  # output.extend(input_api.RunTests(PylintChecks(
-  #   input_api, output_api, only_changed=False)))
+  output.extend(input_api.RunTests(PylintChecks(
+    input_api, output_api, only_changed=False)))
   return output
