@@ -80,12 +80,12 @@ class ApiMethodDecoratorTests(BaseTestCase):
 
     class Service(object):
       @api.api_method()
-      def GetBuild(self, req, ctx, mask):
+      def GetBuild(self, _req, _ctx, _mask):
         raise ex
 
     ctx = prpc_context.ServicerContext()
     req = rpc_pb2.GetBuildRequest(id=1)
-    Service().GetBuild(req, ctx)
+    Service().GetBuild(req, ctx)  # pylint: disable=no-value-for-parameter
     self.assertEqual(ctx.code, expected_code)
     self.assertEqual(ctx.details, expected_details)
 

@@ -716,8 +716,8 @@ class ConfigTest(testing.AppengineTestCase):
             errmsg('Bucket #3: invalid name: Bucket not specified'),
             errmsg(
                 'Bucket luci.x: invalid name: Bucket must start with '
-                '"luci.chromium." because it starts with "luci." and is defined '
-                'in the chromium project'),
+                '"luci.chromium." because it starts with "luci." and is defined'
+                ' in the chromium project'),
         ])
 
   def test_validate_buildbucket_cfg_unsorted(self):

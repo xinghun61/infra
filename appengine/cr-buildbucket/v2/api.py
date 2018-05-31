@@ -18,10 +18,10 @@ from proto import rpc_pb2  # pylint: disable=unused-import
 from proto import rpc_prpc_pb2
 from proto import step_pb2  # pylint: disable=unused-import
 
+from v2 import validation
 import buildtags
 import model
 import service
-import validation
 import v2
 
 
@@ -149,7 +149,7 @@ class BuildsApi(object):
   DESCRIPTION = rpc_prpc_pb2.BuildsServiceDescription
 
   @api_method(default_mask=DEFAULT_BUILD_MASK)
-  def GetBuild(self, req, ctx, mask):
+  def GetBuild(self, req, _ctx, mask):
     """Retrieves a build by id or number."""
     validation.validate_get_build_request(req)
 

@@ -37,17 +37,12 @@ RE_BUILDSET_GERRIT_CL = re.compile(r'^patch/gerrit/([^/]+)/(\d+)/(\d+)$')
 
 
 def builder_tag(builder):  # pragma: no cover
-  return format(BUILDER_KEY, builder)
-
-
-def format(key, value):   # pragma: no cover
-  # """Returns a tag string from a key-value pair."""
-  return '%s%s%s' % (key, DELIMITER, value)
+  return unparse(BUILDER_KEY, builder)
 
 
 def build_address_tag(bucket, builder, number):   # pragma: no cover
   """Returns a build_address tag."""
-  return format(BUILD_ADDRESS_KEY, build_address(bucket, builder, number))
+  return unparse(BUILD_ADDRESS_KEY, build_address(bucket, builder, number))
 
 
 def parse_build_address(address):
@@ -67,6 +62,11 @@ def parse(tag):  # pragma: no cover
   if DELIMITER not in tag:
     raise ValueError('tag must have ":"')
   return tag.split(DELIMITER, 1)
+
+
+def unparse(key, value):   # pragma: no cover
+  # """Returns a tag string from a key-value pair."""
+  return '%s%s%s' % (key, DELIMITER, value)
 
 
 def build_address(bucket, builder, number):   # pragma: no cover
@@ -90,7 +90,7 @@ def validate_tags(tags, mode, builder=None):
     return
   if not isinstance(tags, list):
     raise errors.InvalidInputError('tags must be a list')
-  builder_tag = None
+  seen_builder_tag = None
   seen_gitiles_commit = False
   for t in tags:  # pragma: no branch
     if not isinstance(t, basestring):
@@ -121,11 +121,11 @@ def validate_tags(tags, mode, builder=None):
           raise errors.InvalidInputError(
               'Tag "%s" conflicts with builder_name parameter "%s"' % (t,
                                                                        builder))
-        if builder_tag is None:
-          builder_tag = t
-        elif t != builder_tag:  # pragma: no branch
+        if seen_builder_tag is None:
+          seen_builder_tag = t
+        elif t != seen_builder_tag:  # pragma: no branch
           raise errors.InvalidInputError('Tag "%s" conflicts with tag "%s"' %
-                                         (t, builder_tag))
+                                         (t, seen_builder_tag))
     if mode != 'search' and k in RESERVED_KEYS:
       raise errors.InvalidInputError('Tag "%s" is reserved' % k)
 

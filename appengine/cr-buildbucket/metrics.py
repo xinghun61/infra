@@ -223,7 +223,7 @@ def set_build_count_metric_async(bucket, builder, status, experimental):
   )
   try:
     value = yield q.count_async()
-  except:  # pragma: no cover
+  except Exception:  # pragma: no cover
     logging.exception('failed to count builds with query %s', q)
     return
 

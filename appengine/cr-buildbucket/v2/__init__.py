@@ -8,6 +8,9 @@ code in this app is v1. In particular, this file implements a function that
 converts a v1 Build datastore entity to buildbucket.v2.Build message.
 """
 
+# Pylint doesn't like wildcard imports.
+# pylint: disable=W0401
+
 from . import builds
 from .builds import *
 from .steps import parse_steps

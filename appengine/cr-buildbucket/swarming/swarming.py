@@ -744,10 +744,10 @@ def create_task_async(build, build_number=None):
       build.logdog_hostname = host
       build.logdog_project = project
       build.logdog_prefix = prefix
-    build.tags.append(buildtags.format(buildtags.SWARMING_TAG_KEY, t))
+    build.tags.append(buildtags.unparse(buildtags.SWARMING_TAG_KEY, t))
   for d in task_req.get('properties', {}).get('dimensions', []):
-    dt = buildtags.format(d['key'], d['value'])
-    build.tags.append(buildtags.format(buildtags.SWARMING_DIMENSION_KEY, dt))
+    dt = buildtags.unparse(d['key'], d['value'])
+    build.tags.append(buildtags.unparse(buildtags.SWARMING_DIMENSION_KEY, dt))
 
   build.service_account = task_req.get('service_account')
 

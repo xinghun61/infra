@@ -44,9 +44,9 @@ def modify_proto(src, dest):
     f.write(contents)
 
 
-def find_files(dir, suffix=''):
+def find_files(path, suffix=''):
   return [
-      f for f in os.listdir(dir)
+      f for f in os.listdir(path)
       if f.endswith(suffix)
   ]
 
