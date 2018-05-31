@@ -6,7 +6,7 @@ from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 
 
-class DetecCQFalseRejectiontFlakes(BaseHandler):
+class DetectCQFalseRejectionFlakes(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):  # pragma: no cover
