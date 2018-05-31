@@ -6,6 +6,8 @@ import mock
 
 from common.findit_http_client import FinditHttpClient
 from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
+from libs.test_results import test_results_util
+from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 from model.flake.flake_analysis_request import BuildStep
 from services import swarmed_test_util
 from services import swarming
@@ -173,3 +175,19 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     step_mapper.FindMatchingWaterfallStep(self.wf_build_step, 'test1')
     self.assertTrue(self.wf_build_step.swarmed)
     self.assertTrue(self.wf_build_step.supported)
+
+  @mock.patch.object(
+      swarmed_test_util,
+      'GetTestResultForSwarmingTask',
+      return_value=_SAMPLE_OUTPUT)
+  @mock.patch.object(
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value=wf_testcase.SAMPLE_STEP_METADATA)
+  @mock.patch.object(test_results_util, 'GetTestResultObject')
+  def testFindMatchingWaterfallStepNotSupportOtherIsolatedScriptTests(
+      self, mock_object, *_):
+    mock_object.return_value = WebkitLayoutTestResults(None)
+    step_mapper.FindMatchingWaterfallStep(self.wf_build_step, 'test1')
+    self.assertTrue(self.wf_build_step.swarmed)
+    self.assertFalse(self.wf_build_step.supported)
