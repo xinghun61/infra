@@ -278,10 +278,11 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.issue.approval_values = approval_values
     self.services.issue.TestAddIssue(self.issue)
     mr = testing_helpers.MakeMonorailRequest(
-        project=self.project, path='/p/proj/issues/detail?id=%d' % self.issue.local_id)
+        project=self.project, path='/p/proj/issues/detail?id=%d' %
+            self.issue.local_id)
     mr.auth.user_id = 111L
 
-    url = framework_helpers.FormatAbsoluteURL(
+    framework_helpers.FormatAbsoluteURL(
         mr, urls.ISSUE_APPROVAL, id=self.issue.local_id)
     self.servlet.redirect.assert_called_once()
 

@@ -333,7 +333,7 @@ class WorkEnvTest(unittest.TestCase):
         _actual = we.GetIssueByLocalID(789, 1)
 
   @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
-  def testUpdateIssueApproval(self, mockPrepareAndSend):
+  def testUpdateIssueApproval(self, _mockPrepareAndSend):
     """We can update an issue's approval_value."""
 
     self.services.issue.DeltaUpdateIssueApproval = Mock()

@@ -389,8 +389,10 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpAllocateNextLocalID(789, None, None)
     self.SetUpInsertIssue(av_rows=av_rows)
     self.SetUpInsertComment(7890101, is_description=True)
-    self.SetUpInsertComment(7890101, is_description=True, approval_id=23, content='<b>Question?</b>')
-    self.SetUpInsertComment(7890101, is_description=True, approval_id=24, content='<b>Question?</b>')
+    self.SetUpInsertComment(7890101, is_description=True, approval_id=23,
+        content='<b>Question?</b>')
+    self.SetUpInsertComment(7890101, is_description=True, approval_id=24,
+        content='<b>Question?</b>')
     self.services.spam.ClassifyIssue(mox.IgnoreArg(),
         mox.IgnoreArg(), self.reporter, False).AndReturn(
         self.classifierResult(0.0))
@@ -1503,8 +1505,10 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, issue_ids=[100001, 100002])
     self.mox.VerifyAll()
 
+
   def SetUpInsertComment(
-      self, comment_id, is_spam=False, is_description=False, approval_id=None, content=None):
+      self, comment_id, is_spam=False, is_description=False, approval_id=None,
+          content=None):
     content = content or 'content'
     commentcontent_id = comment_id * 10
     self.services.issue.commentcontent_tbl.InsertRow(

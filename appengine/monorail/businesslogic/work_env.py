@@ -515,7 +515,8 @@ class WorkEnv(object):
         issue, allow_viewing_deleted=allow_viewing_deleted)
     return issue
 
-  def UpdateIssueApproval(self, issue_id, approval_id, approval_delta, comment_content):
+  def UpdateIssueApproval(self, issue_id, approval_id, approval_delta,
+      comment_content):
     """Update an issue's approval."""
 
     issue, approval_value = self.services.issue.GetIssueApproval(
@@ -563,7 +564,7 @@ class WorkEnv(object):
     old_owner_id = tracker_bizobj.GetOwnerId(issue)
 
     with self.mr.profiler.Phase('Updating issue %r' % (issue.issue_id)):
-      amendments, comment_pb = self.services.issue.DeltaUpdateIssue(
+      _amendments, comment_pb = self.services.issue.DeltaUpdateIssue(
           self.mr.cnxn, self.services, self.mr.auth.user_id, issue.project_id,
           config, issue, delta, comment=comment_content)
 
@@ -636,7 +637,7 @@ class WorkEnv(object):
     config = self.GetProjectConfig(issue.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(
         issue, self.mr.auth.effective_ids, config)
-    if ((comment.is_spam and mr.auth.user_id == comment.user_id) or
+    if ((comment.is_spam and self.mr.auth.user_id == comment.user_id) or
         not permissions.CanDelete(
             self.mr.auth.user_id, self.mr.auth.effective_ids, self.mr.perms,
             comment.deleted_by, comment.user_id, project,

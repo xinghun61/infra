@@ -635,10 +635,11 @@ class IssueService(object):
             questions = ad.survey.split('\n')
             survey = '\n'.join(['<b>' + q + '</b>' for q in questions])
           approval_comments.append(self._MakeIssueComment(
-              project_id, reporter_id, survey, timestamp=timestamp, is_description=True,
-              approval_id=ad.approval_id))
+              project_id, reporter_id, survey, timestamp=timestamp,
+              is_description=True, approval_id=ad.approval_id))
         else:
-          logging.info('Could not find ApprovalDef with approval_id %r', av.approval_id)
+          logging.info('Could not find ApprovalDef with approval_id %r',
+              av.approval_id)
 
     issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
     issue_id = self.InsertIssue(cnxn, issue)

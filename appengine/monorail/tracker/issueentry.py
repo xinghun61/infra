@@ -395,7 +395,8 @@ def _AttachDefaultApprovers(config, approval_values):
     if ad:
       av.approver_ids = ad.approver_ids[:]
     else:
-      logging.info('ApprovalDef with approval_id %r could not be found', av.approval_id)
+      logging.info('ApprovalDef with approval_id %r could not be found',
+          av.approval_id)
 
 
 def _MatchesTemplate(content, project_templates):
