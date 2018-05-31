@@ -99,14 +99,15 @@ class IssueMembersOptionsJSON(jsonfeed.JsonFeed):
     self.SetCacheHeaders(self.response)
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    (members_def_list, visible_member_views,
-        visible_member_email_list) = GetMemberOptions(mr, self.services)
+    (visible_member_views, visible_member_email_list,
+        visible_group_emails) = GetMemberOptions(mr, self.services)
     fields = GetFieldOptions(mr, self.services, config,
         visible_member_views, visible_member_email_list)
 
     return {
       'fields': fields,
-      'members': members_def_list
+      'members': visible_member_email_list,
+      'group_emails': visible_group_emails,
     }
 
 
@@ -275,17 +276,13 @@ def GetMemberOptions(mr, services):
   all_visible_group_ids = set(services.usergroup.DetermineWhichUserIDsAreGroups(
       mr.cnxn, visible_members_dict.values()))
 
-  members_def_list = [
-    dict(name=email, doc='')
-    for email in visible_member_email_list
-  ]
-  for md in members_def_list:
-    md_id = visible_members_dict[md['name']]
-    if md_id in all_visible_group_ids:
-      md['is_group'] = True
+  visible_group_emails = []
+  for email in visible_member_email_list:
+    member_id = visible_members_dict[email]
+    if member_id in all_visible_group_ids:
+      visible_group_emails.append(email)
 
-  return (members_def_list, visible_member_views,
-      visible_member_email_list)
+  return visible_member_views, visible_member_email_list, visible_group_emails
 
 
 def _FilterMemberData(

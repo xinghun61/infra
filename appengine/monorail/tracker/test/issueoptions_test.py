@@ -75,8 +75,7 @@ class IssueOptionsJSONTest(unittest.TestCase):
                             effective_ids=None):
     json_data = self.RunHandleRequest(servlet,
         logged_in_user_id, perms, effective_ids=effective_ids)
-    member_emails = [member['name'] for member in json_data['members']]
-    return member_emails
+    return json_data['members']
 
   def VerifyMembersInFeeds(self, logged_in_user_id, perms, expected_visible):
     member_emails = self.RunAndGetMemberEmails(self.members_servlet,
@@ -115,10 +114,10 @@ class IssueOptionsJSONTest(unittest.TestCase):
     json_data = self.RunHandleRequest(self.members_servlet,
         999L, permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET)
     for member in json_data['members']:
-      if member['name'] == 'group999@googlegroups.com':
-        self.assertTrue(member['is_group'])
+      if member == 'group999@googlegroups.com':
+        self.assertTrue(member in json_data['group_emails'])
       else:
-        self.assertNotIn('is_group', member)
+        self.assertFalse(member in json_data['group_emails'])
 
   def testHandleRequest_AcExclusion(self):
     self.project.contributor_ids.extend([666L])

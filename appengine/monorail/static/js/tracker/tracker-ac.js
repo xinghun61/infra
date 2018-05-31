@@ -591,21 +591,21 @@ function TKR_setUpCustomPermissionsStore(customPermissions) {
  * monorail-specific methods.
  * TODO(jrobbins): would it be easier to define my own class to use
  * instead of _AC_Simple_Store?
- * @param {Array} memberDefs An array of definitions of the project
- * members.  Each definition has a name and docstring.
+ * @param {Array} memberDefs an array of member objects.
+ * @param {Array} nonGroupMemberDefs an array of member objects who are not groups.
  */
-function TKR_setUpMemberStore(memberDefs, indMemberDefs) {
-  var memberWords = [];
-  var indMemberWords = [];
-  var docdict = {};
-  for (var i = 0; i < memberDefs.length; i++) {
-    var member = memberDefs[i];
-    memberWords.push(member.name);
-    docdict[member.name] = member.doc;
-    if(!member.is_group) {
-      indMemberWords.push(member.name);
-    }
-  }
+function TKR_setUpMemberStore(memberDefs, nonGroupMemberDefs) {
+  let memberWords = [];
+  let indMemberWords = [];
+  let docdict = {};
+
+  memberDefs.forEach(memberDef => {
+    memberWords.push(memberDef.name);
+    docdict[memberDef.name] = null;
+  });
+  nonGroupMemberDefs.forEach(memberDef => {
+    indMemberWords.push(memberDef.name);
+  });
 
   TKR_memberListStore = new _AC_SimpleStore(memberWords, docdict);
 
@@ -1076,26 +1076,31 @@ function TKR_fetchOptions(projectName, token, cct) {
     TKR_restrict_to_known = jsonData.strict;
   });
 
-  membersPromise.then((jsonData) => {
-    const indMemberDefs = jsonData.members.filter(m => !m.is_group);
-    TKR_setUpMemberStore(jsonData.members, indMemberDefs);
-    TKR_prepOwnerField(jsonData.members);
-    TKR_setUpUserAutocompleteStores(jsonData.fields, jsonData.members);
+  const postMembersPromise = membersPromise.then((jsonData) => {
+    // TODO(jeffcarp): Abandon concept of a def object for members.
+    const groupEmailsDict = {};
+    jsonData.group_emails.forEach(email => groupEmailsDict[email] = true);
+    jsonData.nonGroupEmails = jsonData.members.filter(email => {
+      return !groupEmailsDict.hasOwnProperty(email);
+    }).map(email => ({name: email}));
+    jsonData.memberEmails = jsonData.members.map(email => ({name: email}));
+    TKR_setUpMemberStore(jsonData.memberEmails, jsonData.nonGroupEmails);
+    TKR_prepOwnerField(jsonData.memberEmails);
+    TKR_setUpUserAutocompleteStores(jsonData.fields, jsonData.memberEmails);
+    return jsonData
   });
 
-  Promise.all([statusesLabelsPromise, membersPromise]).then(datas => {
-    // Merge both result objects.
+  Promise.all([statusesLabelsPromise, postMembersPromise]).then(datas => {
+    // Merge result objects.
     let jsonData = datas[0];
     Object.assign(jsonData, datas[1]);
-
-    const indMemberDefs = jsonData.members.filter(m => !m.is_group);
     /* QuickEdit is not yet in Monorail. crbug.com/monorail/1926
     TKR_setUpQuickEditStore(
-       jsonData.labels, jsonData.members, jsonData.open, jsonData.closed,
-       indMemberDefs);
+       jsonData.labels, jsonData.memberEmails, jsonData.open, jsonData.closed,
+       jsonData.nonGroupEmails);
     */
     TKR_setUpSearchStore(
-        jsonData.labels, jsonData.members, jsonData.open, jsonData.closed,
-       jsonData.components, jsonData.fields, indMemberDefs);
+       jsonData.labels, jsonData.memberEmails, jsonData.open, jsonData.closed,
+       jsonData.components, jsonData.fields, jsonData.nonGroupEmails);
   });
 }
