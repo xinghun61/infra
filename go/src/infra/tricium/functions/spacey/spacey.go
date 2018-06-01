@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	category = "Spacey"
+	category                = "Spacey"
+	individualCommentsLimit = 3
 )
 
 var (
@@ -52,21 +53,26 @@ func main() {
 				log.Fatalf("Failed to close file: %v, path: %s", err, p)
 			}
 		}()
+
 		scanner := bufio.NewScanner(file)
 		pos := 1
+		var comments []*tricium.Data_Comment
 		for scanner.Scan() {
 			line := scanner.Text()
 			if c := checkSpaceMix(p, line, pos); c != nil {
-				output.Comments = append(output.Comments, c)
+				comments = append(comments, c)
 			}
 			if c := checkTrailingSpace(p, line, pos); c != nil {
-				output.Comments = append(output.Comments, c)
+				comments = append(comments, c)
 			}
 			pos++
 		}
 		if err := scanner.Err(); err != nil {
 			log.Fatalf("Failed to read file: %v, path: %s", err, p)
 		}
+
+		commentFreqs := organizeCommentsByCategory(comments)
+		output.Comments = mergeComments(commentFreqs, p)
 	}
 
 	// Write Tricium RESULTS data.
@@ -153,4 +159,39 @@ func isInBlacklist(path string, blacklist []string) bool {
 		}
 	}
 	return false
+}
+
+// Groups comments of the same categories together into a map of comment category to list of comments
+func organizeCommentsByCategory(comments []*tricium.Data_Comment) map[string][]*tricium.Data_Comment {
+	commentFreqs := make(map[string][]*tricium.Data_Comment)
+
+	for _, comment := range comments {
+		elem, ok := commentFreqs[comment.Category]
+		if ok {
+			commentFreqs[comment.Category] = append(elem, comment)
+		} else {
+			commentFreqs[comment.Category] = []*tricium.Data_Comment{comment}
+		}
+	}
+
+	return commentFreqs
+}
+
+// Merges comments with the same category together if their number of occurrences is lower than individualCommentsLimit
+func mergeComments(commentFreqs map[string][]*tricium.Data_Comment, path string) []*tricium.Data_Comment {
+	var comments []*tricium.Data_Comment
+
+	for cat, categoryComments := range commentFreqs {
+		if len(categoryComments) < individualCommentsLimit {
+			comments = append(comments, categoryComments...)
+		} else {
+			comments = append(comments, &tricium.Data_Comment{
+				Category: cat,
+				Message:  fmt.Sprintf("Found %d %s warnings in this file", len(categoryComments), cat),
+				Path:     path,
+			})
+		}
+	}
+
+	return comments
 }

@@ -107,3 +107,80 @@ func TestCheckTrailingSpace(t *testing.T) {
 		So(checkTrailingSpace("my.pdf", " ", 1), ShouldBeNil)
 	})
 }
+
+func TestMergingSimilarComments(t *testing.T) {
+	Convey("Merges multiple similar comments (TrailingSpace) together into one", t, func() {
+		inputComments := []*tricium.Data_Comment{
+			{
+				Path:      "test.file",
+				Category:  "Spacey/TrailingSpace",
+				Message:   "Found trailing space",
+				StartLine: 1,
+				EndLine:   1,
+				StartChar: 4,
+				EndChar:   5,
+			},
+			{
+				Path:      "test.file",
+				Category:  "Spacey/TrailingSpace",
+				Message:   "Found trailing space",
+				StartLine: 2,
+				EndLine:   2,
+				StartChar: 4,
+				EndChar:   5,
+			},
+			{
+				Path:      "test.file",
+				Category:  "Spacey/TrailingSpace",
+				Message:   "Found trailing space",
+				StartLine: 1,
+				EndLine:   1,
+				StartChar: 3,
+				EndChar:   99,
+			},
+			{
+				Path:      "test.file",
+				Category:  "Spacey/TrailingSpace",
+				Message:   "Found trailing space",
+				StartLine: 9,
+				EndLine:   9,
+				StartChar: 43,
+				EndChar:   51,
+			},
+		}
+		expectedComments := []*tricium.Data_Comment{{
+			Path:     "test.file",
+			Category: "Spacey/TrailingSpace",
+			Message:  "Found 4 Spacey/TrailingSpace warnings in this file",
+		}}
+
+		organizedComments := organizeCommentsByCategory(inputComments)
+		So(mergeComments(organizedComments, "test.file"), ShouldResemble, expectedComments)
+	})
+
+	Convey("Keeps similar comments separate if their number of occurrences is below set limit", t, func() {
+		inputComments := []*tricium.Data_Comment{
+			{
+				Path:      "test.file",
+				Category:  "Spacey/TrailingSpace",
+				Message:   "Found trailing space",
+				StartLine: 1,
+				EndLine:   1,
+				StartChar: 4,
+				EndChar:   5,
+			},
+			{
+				Path:      "test.file",
+				Category:  "Spacey/TrailingSpace",
+				Message:   "Found trailing space",
+				StartLine: 2,
+				EndLine:   2,
+				StartChar: 4,
+				EndChar:   5,
+			},
+		}
+
+		organizedComments := organizeCommentsByCategory(inputComments)
+		So(mergeComments(organizedComments, "test.file"), ShouldResemble, inputComments)
+	})
+}
