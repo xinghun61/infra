@@ -3,15 +3,13 @@
 <dom-module id="chops-cl-link">
   <template>
     <style>
-      * {
+      :host {
         font-family: 'Roboto', 'Noto', sans-serif;
       }
     </style>
-    <p>
-      <a href$="https://crrev.com/[[change]]">[[change]]</a>
-      (<a href$="mailto:[[ownerEmail]]">[[_userName]]</a>):
-      [[description]]
-    </p>
+    <a href$="https://crrev.com/[[change]]">[[change]]</a>
+    (<a href$="mailto:[[ownerEmail]]">[[_userName]]</a>):
+    [[description]]
   </template>
   <script>
     'use strict';
