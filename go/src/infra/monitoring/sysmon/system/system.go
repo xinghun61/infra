@@ -233,7 +233,7 @@ func updateDiskMetrics(c context.Context) errors.MultiError {
 		ret = append(ret, fmt.Errorf("failed to get list of partitions: %s", err))
 	} else {
 		for _, part := range partitions {
-			if part.Mountpoint == "" || part.Device == "none" || isBlacklistedFstype(part.Fstype) {
+			if part.Mountpoint == "" || part.Device == "none" || isBlacklistedFstype(part.Fstype) || isBlacklistedMountpoint(part.Mountpoint) {
 				continue
 			}
 

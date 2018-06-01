@@ -42,6 +42,15 @@ func isBlacklistedFstype(fstype string) bool {
 	return ok
 }
 
+func isBlacklistedMountpoint(mountpoint string) bool {
+	// This is standard location for Docker containers on Linux (and we only
+	// support them on Linux atm), which are mounted to a separate partition when
+	// the container is running. The disk stats reported for them are the same as
+	// for the parent partition on which they are located, which causes disk space
+	// alert to be fired twice for the same physical paritition.
+	return strings.HasPrefix(mountpoint, "/var/lib/docker")
+}
+
 func removeDiskDevices(names []string) []string {
 	disksWithPartitions := map[string]struct{}{}
 	for _, name := range names {

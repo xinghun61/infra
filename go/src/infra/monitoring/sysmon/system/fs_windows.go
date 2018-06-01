@@ -8,6 +8,10 @@ func isBlacklistedFstype(fstype string) bool {
 	return false
 }
 
+func isBlacklistedMountpoint(mountpoint string) bool {
+	return false
+}
+
 func removeDiskDevices(names []string) []string {
 	return names
 }
