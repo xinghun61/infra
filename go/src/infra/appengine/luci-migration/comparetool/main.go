@@ -177,7 +177,7 @@ func (cmd *cmdRunCompare) Run(baseApp subcommands.Application, args []string, _ 
 		renderErr(c, errors.Annotate(err, "failed to create BuildBucket client").Err())
 		return 1
 	}
-	bbClient.BasePath = fmt.Sprintf("https://%s/api/buildbucket/v1/", cmd.bbHost)
+	bbClient.BasePath = fmt.Sprintf("https://%s/_ah/api/buildbucket/v1/", cmd.bbHost)
 
 	var rb reportBuilder
 	err = parallel.FanOutIn(func(workC chan<- func() error) {

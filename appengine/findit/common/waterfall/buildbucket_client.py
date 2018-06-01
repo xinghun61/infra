@@ -15,11 +15,11 @@ from common.findit_http_client import FinditHttpClient
 # TODO: save these settings in datastore and create a role account.
 _BUILDBUCKET_HOST = 'cr-buildbucket.appspot.com'
 _BUILDBUCKET_PUT_GET_ENDPOINT = (
-    'https://{hostname}/api/buildbucket/v1/builds'.format(
+    'https://{hostname}/_ah/api/buildbucket/v1/builds'.format(
         hostname=_BUILDBUCKET_HOST))
 _LUCI_PREFIX = 'luci.'
 _BUILDBUCKET_SEARCH_ENDPOINT = (
-    'https://{hostname}/api/buildbucket/v1/search'.format(
+    'https://{hostname}/_ah/api/buildbucket/v1/search'.format(
         hostname=_BUILDBUCKET_HOST))
 
 

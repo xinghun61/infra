@@ -94,7 +94,7 @@ func (c *cmdGetBuild) grabBuildDefinition(ctx context.Context, authOpts auth.Opt
 	if err != nil {
 		return err
 	}
-	bbucket.BasePath = fmt.Sprintf("https://%s/api/buildbucket/v1/", c.bbHost)
+	bbucket.BasePath = fmt.Sprintf("https://%s/_ah/api/buildbucket/v1/", c.bbHost)
 
 	answer, err := bbucket.Get(c.buildID).Do()
 	if err != nil {

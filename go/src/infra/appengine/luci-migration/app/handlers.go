@@ -211,7 +211,7 @@ func handleBuildbucketPubSub(c *router.Context) error {
 	if err != nil {
 		return errors.Annotate(err, "could not create buildbucket service").Tag(transient.Tag).Err()
 	}
-	bb.BasePath = fmt.Sprintf("https://%s/api/buildbucket/v1/", msg.Hostname)
+	bb.BasePath = fmt.Sprintf("https://%s/_ah/api/buildbucket/v1/", msg.Hostname)
 
 	var b scheduling.Build
 	b.ParametersJSON = msg.Build.ParametersJson
