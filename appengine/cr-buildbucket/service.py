@@ -584,6 +584,8 @@ def _fetch_page(query, page_size, start_cursor, predicate=None):
 
   entities = []
   skipped = 0
+  pages = 0
+  started = utils.utcnow()
   while len(entities) < page_size:
     # It is important not to request more than needed in query.fetch_page,
     # otherwise the cursor we return to the user skips fetched, but not returned
@@ -591,6 +593,7 @@ def _fetch_page(query, page_size, start_cursor, predicate=None):
     to_fetch = page_size - len(entities)
 
     page, curs, more = query.fetch_page(to_fetch, start_cursor=curs)
+    pages += 1
     for entity in page:
       if predicate and not predicate(entity):  # pragma: no cover
         skipped += 1
@@ -600,7 +603,9 @@ def _fetch_page(query, page_size, start_cursor, predicate=None):
         break
     if not more:
       break
-  logging.debug('fetch_page: skipped %d entities', skipped)
+  logging.debug('fetch_page: fetched %d pages in %dms, skipped %d entities',
+                pages, (utils.utcnow() - started).total_seconds() * 1000,
+                skipped)
 
   curs_str = None
   if more:
