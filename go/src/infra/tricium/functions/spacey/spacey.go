@@ -22,7 +22,7 @@ const (
 
 var (
 	mixedWhitespaceBlacklist = []string{".mk", "makefile", "Makefile", ".patch"}
-	trailingSpaceBlacklist   = []string{".patch"}
+	trailingSpaceBlacklist   = []string{".patch", ".pdf"}
 )
 
 func main() {
@@ -147,7 +147,7 @@ func checkTrailingSpace(path, line string, pos int) *tricium.Data_Comment {
 // Checks whether a path matches the given blacklist, where the blacklist
 // contains either file extensions or complete filenames.
 func isInBlacklist(path string, blacklist []string) bool {
-	for _, ext := range mixedWhitespaceBlacklist {
+	for _, ext := range blacklist {
 		if ext == filepath.Ext(path) || ext == filepath.Base(path) {
 			return true
 		}

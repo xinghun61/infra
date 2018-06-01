@@ -102,7 +102,8 @@ func TestCheckTrailingSpace(t *testing.T) {
 		})
 	})
 
-	Convey("Produces no comment in patch file", t, func() {
+	Convey("Produces no comment in blacklisted file types", t, func() {
 		So(checkTrailingSpace("my.patch", " ", 1), ShouldBeNil)
+		So(checkTrailingSpace("my.pdf", " ", 1), ShouldBeNil)
 	})
 }
