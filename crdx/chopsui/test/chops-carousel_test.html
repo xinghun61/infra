@@ -25,6 +25,7 @@
 
       assert.equal(element._focusedImage, '1.test');
       expect(element.$.carouselNav).be.visible;
+      expect(element.$.nextImage).be.visible;
 
       element.$.nextImage.click();
 

@@ -1,9 +1,8 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../../bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
-<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
 
 <link rel="import" href="../mr-flt-flipper/mr-flt-flipper.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
@@ -35,7 +34,7 @@
         font-weight: normal;
         margin-left: 16px;
       }
-      paper-dialog h4 {
+      chops-dialog h4 {
         display: flex;
         justify-content: space-between;
       }
@@ -57,8 +56,11 @@
         height: 100%;
       }
       .show-text {
+        border: 0;
+        min-width: 30vw;
         max-width: 70vw;
         overflow: auto;
+        max-height: 30vw;
         max-height: 80vh;
       }
       .slide-wrapper {
@@ -117,11 +119,11 @@
       </template>
     </div>
 
-    <paper-dialog id="showFile">
+    <chops-dialog id="showFile" aria-labelledby="dialogTitle">
       <h4>
         <span>
           <iron-icon icon="attachment"></iron-icon>
-          [[_shownFile.url]]
+          <span id="dialogTitle">Viewing file: [[_shownFile.url]]</span>
           ([[_displaySize(_shownFile.fileSize)]])
           <!-- TODO(zhangtiff): Make this download link work. -->
           (<a href="#">Download</a>)
@@ -139,18 +141,12 @@
           <img src$="/elements/mock-data/[[_shownFile.url]]" />
         </template>
         <template is="dom-if" if="[[!_shownFile.thumbUrl]]">
-          <iron-ajax
-              auto
-              url="/elements/mock-data/gates-chrome.json"
-              handle-as="text"
-              last-response="{{_shownText}}">
-          </iron-ajax>
-          <div class="show-text">
-            [[_shownText]]
-          </div>
+          <a href$="[[_shownFile.viewUrl]]" target="_blank">
+            View file in Monorail
+          </a>
         </template>
       </div>
-    </paper-dialog>
+    </chops-dialog>
   </template>
   <script src="./mr-attachment-gallery.js"></script>
 <dom-module>

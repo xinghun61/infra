@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<title>button</title>
+<meta charset="utf-8">
+<link rel="import" href="../chops-dialog.html">
+<script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+<script src="../../web-component-tester/browser.js"></script>
+
+<test-fixture id="chops-dialog-test">
+  <template>
+    <chops-dialog></chops-dialog>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('chops-dialog', function() {
+    let element;
+    setup(function() {
+      element = fixture('chops-dialog-test');
+    });
+
+    test('chops-dialog is visible when open', function(done) {
+      element.opened = false;
+      expect(element).be.hidden;
+
+      element.opened = true;
+      flush(() => {
+        expect(element).be.visible;
+        done();
+      });
+    });
+  });
+</script>

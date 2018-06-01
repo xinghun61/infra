@@ -43,13 +43,19 @@ permission, please contact jojwang@, zhangtiff@, or seanmccullough@ for instruct
 how to proceed.
 
 
-make a clone of the chopsui repo
+Make a clone of the chopsui repo:
 
 ```sh
 git clone https://chromium.googlesource.com/infra/infra/crdx/chopsui
 ```
 
-make sure chromium's depot_tools is in your path
+To test your elements, you will need to install polymer-cli:
+```sh
+npm install -g polymer-cli
+```
+
+Make sure Chromium's depot_tools is in your path as well. [Learn how to set up
+depot_tools here.](http://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up)
 
 ### Push a new version tag
 
