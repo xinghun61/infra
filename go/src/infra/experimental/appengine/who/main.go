@@ -200,12 +200,7 @@ func historyHandler(ctx *router.Context) {
 	}
 
 	for _, change := range *changeInfo {
-		updated, err := time.Parse("2006-01-02 15:04:05.000000000", change.Updated)
-		if err != nil {
-			logging.Errorf(c, "error parsing time: %s %v", change.Updated, err)
-			continue
-		}
-		day := updated.Truncate(24 * time.Hour)
+		day := change.Updated.Truncate(24 * time.Hour)
 		if _, ok := byDay[day]; !ok {
 			byDay[day] = []ActivityCounts{}
 		}
@@ -295,12 +290,7 @@ func detailHandler(ctx *router.Context) {
 	}
 
 	for _, change := range *changeInfo {
-		updated, err := time.Parse("2006-01-02 15:04:05.000000000", change.Updated)
-		if err != nil {
-			logging.Errorf(c, "error parsing time: %s %v", change.Updated, err)
-			continue
-		}
-		day := updated.Truncate(24 * time.Hour)
+		day := change.Updated.Truncate(24 * time.Hour)
 		if day == queryDay {
 			details.Changes = append(details.Changes, change)
 			details.Day = day

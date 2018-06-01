@@ -26,11 +26,11 @@ func TestPEP425TagSelector(t *testing.T) {
 	}{
 		{
 			[]*vpython.PEP425Tag{
-				{"py2", "none", "any"},
-				{"py27", "none", "any"},
-				{"cp27", "cp27mu", "linux_x86_64"},
-				{"cp27", "cp27mu", "manylinux1_x86_64"},
-				{"cp27", "none", "manylinux1_x86_64"},
+				{Python: "py2", Abi: "none", Platform: "any"},
+				{Python: "py27", Abi: "none", Platform: "any"},
+				{Python: "cp27", Abi: "cp27mu", Platform: "linux_x86_64"},
+				{Python: "cp27", Abi: "cp27mu", Platform: "manylinux1_x86_64"},
+				{Python: "cp27", Abi: "none", Platform: "manylinux1_x86_64"},
 			},
 			map[string]string{
 				"platform":         "linux-amd64",
@@ -46,43 +46,43 @@ func TestPEP425TagSelector(t *testing.T) {
 
 		{
 			[]*vpython.PEP425Tag{
-				{"cp27", "cp27m", "macosx_10_12_x86_64"},
-				{"cp27", "cp27m", "macosx_10_12_fat64"},
-				{"cp27", "cp27m", "macosx_10_12_fat32"},
-				{"cp27", "cp27m", "macosx_10_12_intel"},
-				{"cp27", "cp27m", "macosx_10_10_intel"},
-				{"cp27", "cp27m", "macosx_10_9_fat64"},
-				{"cp27", "cp27m", "macosx_10_9_fat32"},
-				{"cp27", "cp27m", "macosx_10_9_universal"},
-				{"cp27", "cp27m", "macosx_10_8_fat32"},
-				{"cp27", "cp27m", "macosx_10_8_universal"},
-				{"cp27", "cp27m", "macosx_10_6_intel"},
-				{"cp27", "cp27m", "macosx_10_6_fat64"},
-				{"cp27", "cp27m", "macosx_10_6_fat32"},
-				{"cp27", "cp27m", "macosx_10_6_universal"},
-				{"cp27", "cp27m", "macosx_10_5_universal"},
-				{"cp27", "cp27m", "macosx_10_4_intel"},
-				{"cp27", "cp27m", "macosx_10_4_fat32"},
-				{"cp27", "cp27m", "macosx_10_1_universal"},
-				{"cp27", "cp27m", "macosx_10_0_fat32"},
-				{"cp27", "cp27m", "macosx_10_0_universal"},
-				{"cp27", "none", "macosx_10_12_x86_64"},
-				{"cp27", "none", "macosx_10_12_intel"},
-				{"cp27", "none", "macosx_10_12_fat64"},
-				{"cp27", "none", "macosx_10_9_universal"},
-				{"cp27", "none", "macosx_10_8_x86_64"},
-				{"cp27", "none", "macosx_10_8_intel"},
-				{"cp27", "none", "macosx_10_7_intel"},
-				{"cp27", "none", "macosx_10_7_fat64"},
-				{"cp27", "none", "macosx_10_7_fat32"},
-				{"cp27", "none", "macosx_10_6_universal"},
-				{"cp27", "none", "macosx_10_5_x86_64"},
-				{"cp27", "none", "macosx_10_5_intel"},
-				{"cp27", "none", "macosx_10_3_fat32"},
-				{"cp27", "none", "macosx_10_3_universal"},
-				{"cp27", "none", "macosx_10_2_fat32"},
-				{"py2", "none", "macosx_10_4_intel"},
-				{"cp27", "none", "any"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_12_x86_64"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_12_fat64"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_12_fat32"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_12_intel"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_10_intel"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_9_fat64"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_9_fat32"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_9_universal"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_8_fat32"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_8_universal"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_6_intel"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_6_fat64"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_6_fat32"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_6_universal"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_5_universal"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_4_intel"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_4_fat32"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_1_universal"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_0_fat32"},
+				{Python: "cp27", Abi: "cp27m", Platform: "macosx_10_0_universal"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_12_x86_64"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_12_intel"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_12_fat64"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_9_universal"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_8_x86_64"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_8_intel"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_7_intel"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_7_fat64"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_7_fat32"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_6_universal"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_5_x86_64"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_5_intel"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_3_fat32"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_3_universal"},
+				{Python: "cp27", Abi: "none", Platform: "macosx_10_2_fat32"},
+				{Python: "py2", Abi: "none", Platform: "macosx_10_4_intel"},
+				{Python: "cp27", Abi: "none", Platform: "any"},
 			},
 			map[string]string{
 				"platform":         "mac-amd64",
@@ -98,8 +98,8 @@ func TestPEP425TagSelector(t *testing.T) {
 
 		{
 			[]*vpython.PEP425Tag{
-				{"py27", "none", "any"},
-				{"py27", "none", "linux_i686"},
+				{Python: "py27", Abi: "none", Platform: "any"},
+				{Python: "py27", Abi: "none", Platform: "linux_i686"},
 			},
 			map[string]string{
 				"platform":         "linux-386",
@@ -115,8 +115,8 @@ func TestPEP425TagSelector(t *testing.T) {
 
 		{
 			[]*vpython.PEP425Tag{
-				{"py27", "none", "any"},
-				{"py27", "none", "linux_x86_64"},
+				{Python: "py27", Abi: "none", Platform: "any"},
+				{Python: "py27", Abi: "none", Platform: "linux_x86_64"},
 			},
 			map[string]string{
 				"platform":         "linux-amd64",
@@ -183,8 +183,8 @@ func TestPEP425TagSelector(t *testing.T) {
 
 		Convey(`Returns an error when an unknown platform is selected.`, func() {
 			tag := pep425TagSelector([]*vpython.PEP425Tag{
-				{"py27", "none", "any"},
-				{"py27", "foo", "bar"},
+				{Python: "py27", Abi: "none", Platform: "any"},
+				{Python: "py27", Abi: "foo", Platform: "bar"},
 			})
 			So(tag, ShouldResemble, &vpython.PEP425Tag{Python: "py27", Abi: "foo", Platform: "bar"})
 
