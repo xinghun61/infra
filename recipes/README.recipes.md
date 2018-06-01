@@ -302,13 +302,13 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 
 [DEPS](/recipes/recipes/infra_continuous.py#9): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [infra\_system](#recipe_modules-infra_system), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#177)(api, mastername, buildername, buildnumber):**
+&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#183)(api, mastername, buildername, buildnumber):**
 
-&mdash; **def [build\_cipd\_packages](/recipes/recipes/infra_continuous.py#93)(api, repo, rev, mastername, buildername, buildnumber, goos, goarch):**
+&mdash; **def [build\_cipd\_packages](/recipes/recipes/infra_continuous.py#93)(api, repo, rev, bucket, buildername, buildnumber, goos, goarch):**
 
-&mdash; **def [build\_luci](/recipes/recipes/infra_continuous.py#147)(api):**
+&mdash; **def [build\_luci](/recipes/recipes/infra_continuous.py#152)(api):**
 
-&mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#215)(api, mastername, buildername, buildnumber, project_name, repo_name, rev):**
+&mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#222)(api, bucket, buildername, buildnumber, project_name, repo_name, rev):**
 
 &mdash; **def [get\_go\_platforms\_for\_cipd](/recipes/recipes/infra_continuous.py#84)(builder):**
 

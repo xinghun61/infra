@@ -189,7 +189,7 @@
       "--builder",
       "infra-internal-continuous-trusty-32",
       "--tags",
-      "buildbot_build:luci.infra-internal.ci/infra-internal-continuous-trusty-32/123",
+      "luci_build:luci.infra-internal.ci/infra-internal-continuous-trusty-32/123",
       "git_repository:https://chrome-internal.googlesource.com/infra/infra_internal",
       "git_revision:0a18b32e3a93913e1090d1ee6b8965c6dc3116d6"
     ],

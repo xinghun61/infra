@@ -91,7 +91,7 @@ def get_go_platforms_for_cipd(builder):
 
 
 def build_cipd_packages(
-    api, repo, rev, mastername, buildername, buildnumber, goos, goarch):
+    api, repo, rev, bucket, buildername, buildnumber, goos, goarch):
   # 'goos' and 'goarch' are used for cross-compilation of Go code.
   step_suffix = ''
   env = {}
@@ -116,8 +116,13 @@ def build_cipd_packages(
         api.path['checkout'].join('build', 'test_packages.py'))
 
   # Upload them, attach tags.
+  if api.runtime.is_luci:
+    build_tag_key = 'luci_build'
+  else:
+    # TODO(tandrii): get rid of this once migrated to LUCI.
+    build_tag_key = 'buildbot_build'
   tags = [
-    'buildbot_build:%s/%s/%s' % (mastername, buildername, buildnumber),
+    '%s:%s/%s/%s' % (build_tag_key, bucket, buildername, buildnumber),
     'git_repository:%s' % repo,
     'git_revision:%s' % rev,
   ]
@@ -169,6 +174,7 @@ def build_luci(api):
 
 
 PROPERTIES = {
+  # TODO(tandrii): get rid of mastername once migrated to LUCI.
   'mastername': Property(default=None),
   'buildername': Property(),
   'buildnumber': Property(default=-1, kind=int),
@@ -186,8 +192,9 @@ def RunSteps(api, mastername, buildername, buildnumber):
         'This recipe is not intended for builder %s. ' % buildername)
 
   if api.runtime.is_luci:
-    # TODO(tandrii): rename mastername once migrated to LUCI.
-    mastername = api.buildbucket.properties['build']['bucket']
+    bucket = api.buildbucket.properties['build']['bucket']
+  else:
+    bucket = mastername
 
   # Prefix the system binary path to PATH so that all Python invocations will
   # use the system Python. This will ensure that packages built will be built
@@ -208,11 +215,11 @@ def RunSteps(api, mastername, buildername, buildnumber):
     # ('revision' property is missing in that case).
     rev = bot_update_step.presentation.properties['got_revision']
 
-    build_main(api, mastername, buildername, buildnumber, project_name,
+    build_main(api, bucket, buildername, buildnumber, project_name,
                repo_name, rev)
 
 
-def build_main(api, mastername, buildername, buildnumber, project_name,
+def build_main(api, bucket, buildername, buildnumber, project_name,
                repo_name, rev):
 
   with api.step.defer_results():
@@ -267,10 +274,10 @@ def build_main(api, mastername, buildername, buildnumber, project_name,
   if buildnumber != -1:
     for goos, goarch in get_go_platforms_for_cipd(buildername):
       build_cipd_packages(
-          api, repo_name, rev, mastername, buildername, buildnumber,
+          api, repo_name, rev, bucket, buildername, buildnumber,
           goos, goarch)
   else:  # pragma: no cover
-    result = api.step('cipd - not building packages', None)
+    result = api.step('cipd - not building packages, no buildnumber', None)
     result.presentation.status = api.step.WARNING
 
   if buildername in LEGACY_LUCI_BUILDERS:
