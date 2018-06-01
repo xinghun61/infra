@@ -53,3 +53,4 @@ skip_files:
 - ^tools.*
 - ^[A-Z]+(\.[a-z]+)?
 - .+\.md
+- rpcexplorer/
