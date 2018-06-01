@@ -91,6 +91,21 @@ def add_device(docker_client, device, args):  # pylint: disable=unused-argument
 
 
 def launch(docker_client, android_devices, args):
+  # If no devices were detected, there's a chance that the usb hubs on the host
+  # are wedged. This can be fixed via a host reboot, so trigger one when this
+  # occurs. But to avoid reboot-loops on machines that don't physically have
+  # devices (eg: the usb cable fell out), only do so if the uptime is large
+  # enough.
+  # TODO(bpastene): Replace the host reboot with a hub device reset, which has
+  # been shown to heal it as well.
+  if not android_devices and not docker_client.get_running_containers():
+    uptime = main_helpers.get_host_uptime()
+    if uptime >= 60:  # 1 hour
+      logging.warning(
+          'No devices detected. Rebooting host since uptime (%dm) > 1hr.',
+          uptime)
+      main_helpers.reboot_host()
+      return
   container_descriptors = map(
       containers.AndroidContainerDescriptor, android_devices)
   main_helpers.launch_containers(docker_client, container_descriptors, args)
