@@ -359,9 +359,9 @@ class SwarmingTest(BaseTest):
 
     self.assertIn(
         {
-            'package_name':
-                ('infra/recipe_bundles/chromium.googlesource.com/chromium/tools'
-                 '/build'),
+            'package_name': (
+                'infra/recipe_bundles/chromium.googlesource.com/chromium/tools'
+                '/build'),
             'path':
                 'kitchen-checkout',
             'version':
@@ -792,8 +792,8 @@ class SwarmingTest(BaseTest):
 
     self.assertEqual(build.logdog_hostname, 'luci-logdog-dev.appspot.com')
     self.assertEqual(build.logdog_project, 'chromium')
-    self.assertEqual(
-        build.logdog_prefix, 'buildbucket/cr-buildbucket.appspot.com/1')
+    self.assertEqual(build.logdog_prefix,
+                     'buildbucket/cr-buildbucket.appspot.com/1')
 
     # Test delegation token params.
     self.assertEqual(auth.delegate_async.mock_calls, [

@@ -1,7 +1,6 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Utility functions for build tags, colon-delimeted key-value pairs.
 
 Many short functions are annotated with "pragma: no cover" because they are
@@ -40,7 +39,7 @@ def builder_tag(builder):  # pragma: no cover
   return unparse(BUILDER_KEY, builder)
 
 
-def build_address_tag(bucket, builder, number):   # pragma: no cover
+def build_address_tag(bucket, builder, number):  # pragma: no cover
   """Returns a build_address tag."""
   return unparse(BUILD_ADDRESS_KEY, build_address(bucket, builder, number))
 
@@ -64,12 +63,12 @@ def parse(tag):  # pragma: no cover
   return tag.split(DELIMITER, 1)
 
 
-def unparse(key, value):   # pragma: no cover
+def unparse(key, value):  # pragma: no cover
   # """Returns a tag string from a key-value pair."""
   return '%s%s%s' % (key, DELIMITER, value)
 
 
-def build_address(bucket, builder, number):   # pragma: no cover
+def build_address(bucket, builder, number):  # pragma: no cover
   """Returns value for build_address tag."""
   return '%s/%s/%d' % (bucket, builder, number)
 

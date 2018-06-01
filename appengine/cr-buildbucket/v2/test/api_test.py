@@ -45,9 +45,11 @@ class BaseTestCase(testing.AppengineTestCase):
 
     self.api = api.BuildsApi()
 
-  def call(
-      self, method, req, expected_code=prpc.StatusCode.OK,
-      expected_details=None):
+  def call(self,
+           method,
+           req,
+           expected_code=prpc.StatusCode.OK,
+           expected_details=None):
     ctx = prpc_context.ServicerContext()
     res = method(req, ctx)
     self.assertEqual(ctx.code, expected_code)
@@ -79,6 +81,7 @@ class ApiMethodDecoratorTests(BaseTestCase):
   def error_handling_test(self, ex, expected_code, expected_details):
 
     class Service(object):
+
       @api.api_method()
       def GetBuild(self, _req, _ctx, _mask):
         raise ex
@@ -101,7 +104,8 @@ class ApiMethodDecoratorTests(BaseTestCase):
     req = rpc_pb2.GetBuildRequest(
         fields=field_mask_pb2.FieldMask(paths=['invalid']))
     self.call(
-        self.api.GetBuild, req,
+        self.api.GetBuild,
+        req,
         expected_code=prpc.StatusCode.INVALID_ARGUMENT,
         expected_details=('invalid fields: invalid path "invalid": '
                           'field "invalid" does not exist in message '
@@ -125,8 +129,7 @@ class ApiMethodDecoratorTests(BaseTestCase):
         },
     })
     req = rpc_pb2.GetBuildRequest(
-        id=1,
-        fields=field_mask_pb2.FieldMask(paths=['input.properties']))
+        id=1, fields=field_mask_pb2.FieldMask(paths=['input.properties']))
     res = self.call(self.api.GetBuild, req)
     self.assertEqual(res.input.properties.items(), [('a', 'b')])
 

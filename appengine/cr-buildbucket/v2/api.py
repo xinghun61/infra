@@ -47,7 +47,6 @@ def status_code_error_class(code):
 NotFound = status_code_error_class(prpc.StatusCode.NOT_FOUND)
 InvalidArgument = status_code_error_class(prpc.StatusCode.INVALID_ARGUMENT)
 
-
 METHODS_BY_NAME = {
     m.name: m
     for m in rpc_prpc_pb2.BuildsServiceDescription['descriptor'].method
@@ -77,9 +76,8 @@ def api_method(default_mask=None):
         # Require that all RPC requests have "fields" field mask.
         if req.HasField('fields'):
           try:
-            mask = protoutil.Mask.from_field_mask(
-                req.fields, res_class.DESCRIPTOR,
-                json_names=ctx.response_encoding == prpc.Encoding.JSON)
+            mask = protoutil.Mask.from_field_mask(req.fields,
+                                                  res_class.DESCRIPTOR)
           except ValueError as ex:
             raise InvalidArgument('invalid fields: %s' % ex)
 
