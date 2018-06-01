@@ -3,9 +3,9 @@
 # found in the LICENSE file.
 
 from components import config
+from components import endpoints_webapp2
 from components import ereporter2
 from components import utils
-import endpoints
 import gae_ts_mon
 import webapp2
 
@@ -26,8 +26,9 @@ def create_html_app():  # pragma: no cover
 
 def create_endpoints_app():  # pragma: no cover
   """Returns WSGI app that serves cloud endpoints requests."""
-  return endpoints.api_server(
-      [api.BuildBucketApi, swarmbucket_api.SwarmbucketApi, config.ConfigApi])
+  return webapp2.WSGIApplication(endpoints_webapp2.api_server(
+      [api.BuildBucketApi, swarmbucket_api.SwarmbucketApi, config.ConfigApi],
+      base_path='/_ah/api'))
 
 
 def create_backend_app():  # pragma: no cover

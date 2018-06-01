@@ -11,7 +11,7 @@ handlers:
   upload: static/favicon.ico
   secure: always
 
-- url: /_ah/spi/.*
+- url: /_ah/api/.*
   script: apps.endpoints
 
 # RPC Explorer.
