@@ -15,10 +15,13 @@ from libs.http import interceptor
 class DummyHttpClient(retry_http_client.RetryHttpClient):
   """Returns mock response based on the url."""
 
-  def __init__(self, retriable_exceptions=None):
+  def __init__(self, retriable_exceptions=None, no_error_logging_statuses=None):
     dummy_interceptor = interceptor.LoggingInterceptor(
         retriable_exceptions=retriable_exceptions or [])
-    super(DummyHttpClient, self).__init__(interceptor=dummy_interceptor)
+    no_error_logging_statuses = no_error_logging_statuses or []
+    super(DummyHttpClient, self).__init__(
+        interceptor=dummy_interceptor,
+        no_error_logging_statuses=no_error_logging_statuses)
 
   def _Get(self, url, timeout_seconds, headers=None):
     url = urlparse.urlparse(url)
@@ -97,3 +100,12 @@ class InterceptorTest(testing.AppengineTestCase):
     mock_logging.assert_called_once_with(
         'request to %s responded with %d http status and headers %s', url, 404,
         '[]')
+
+  @mock.patch.object(logging, 'info')
+  def testNoExceptionHttpErrorNoLog(self, mock_logging):
+    client = DummyHttpClient(no_error_logging_statuses=[403])
+    url = 'https://test.com/help?status=403&content=Unauthorized'
+    status, content, _response_headers = client.Get(url)
+    self.assertEqual(status, 403)
+    self.assertEqual(content, 'Unauthorized')
+    self.assertFalse(mock_logging.called)

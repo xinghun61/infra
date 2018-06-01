@@ -49,6 +49,11 @@ handlers:
   static_dir: static/images
   secure: always
 
+# verification files
+- url: /(google[0-9a-f]*\.html)$
+  static_files: \1
+  upload: google[0-9a-f]*\.html
+
 # Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
   script: main.pipeline_status_application

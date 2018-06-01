@@ -16,18 +16,6 @@ _Result = collections.namedtuple('Result',
 
 class HttpClientAppengineTest(unittest.TestCase):
 
-  def testShouldLogErrorByDefault(self):
-    client = http_client_appengine.HttpClientAppengine()
-    self.assertFalse(client._ShouldLogError(200))
-    self.assertTrue(client._ShouldLogError(404))
-
-  def testShouldNotLogErrorForSpecificStatuses(self):
-    client = http_client_appengine.HttpClientAppengine(
-        no_error_logging_statuses=[404])
-    self.assertFalse(client._ShouldLogError(200))
-    self.assertFalse(client._ShouldLogError(404))
-    self.assertTrue(client._ShouldLogError(403))
-
   @mock.patch.object(
       http_client_appengine.auth_util.Authenticator,
       'GetHttpHeadersFor',

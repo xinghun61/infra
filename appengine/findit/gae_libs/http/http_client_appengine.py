@@ -31,13 +31,6 @@ class HttpClientAppengine(RetryHttpClient):
         interceptor=interceptor, *args, **kwargs)
     self.follow_redirects = follow_redirects
 
-  def _ShouldLogError(self, status_code):
-    if status_code == 200:
-      return False
-    if not self.no_error_logging_statuses:
-      return True
-    return status_code not in self.no_error_logging_statuses
-
   def _SendRequest(self, url, method, data, timeout, headers=None):
     headers = headers or {}
 
@@ -49,10 +42,6 @@ class HttpClientAppengine(RetryHttpClient):
         deadline=timeout,
         follow_redirects=self.follow_redirects,
         validate_certificate=True)
-
-    if self._ShouldLogError(result.status_code):
-      logging.error('Request to %s resulted in %d, headers:%s', url,
-                    result.status_code, json.dumps(result.headers.items()))
 
     return result.status_code, result.content, result.headers
 

@@ -19,8 +19,10 @@ class RetryHttpClient(object):
                interceptor=LoggingInterceptor()):
     # If an http request results in the given statuses, the subclasses should
     # not log an error.
-    self.no_error_logging_statuses = no_error_logging_statuses
     self.interceptor = interceptor
+    if isinstance(self.interceptor, LoggingInterceptor):
+      no_error_logging_statuses = no_error_logging_statuses or []
+      self.interceptor.no_error_logging_statuses = no_error_logging_statuses
 
   def _Get(self, url, timeout_seconds, headers):  # pylint: disable=W0613, R0201
     """Sends the actual HTTP GET request.
