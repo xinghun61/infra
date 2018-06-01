@@ -67,7 +67,7 @@ def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
     namespace='Canonical-step-name',
     expire_time=_CACHE_EXPIRE_TIME_SECONDS,
     key_generator=_CanonicalStepNameKeyGenerator)
-def _GetCanonicalStepName(master_name, builder_name, build_number, step_name):
+def GetCanonicalStepName(master_name, builder_name, build_number, step_name):
   step_metadata = build_util.GetWaterfallBuildStepLog(master_name, builder_name,
                                                       build_number, step_name,
                                                       FinditHttpClient(),
@@ -81,7 +81,7 @@ def _StepIsSupportedForMaster(master_name, builder_name, build_number,
   if step_name == 'compile':
     canonical_step_name = step_name
   else:
-    canonical_step_name = _GetCanonicalStepName(
+    canonical_step_name = GetCanonicalStepName(
         master_name, builder_name, build_number, step_name) or step_name
   return waterfall_config.StepIsSupportedForMaster(canonical_step_name,
                                                    master_name)

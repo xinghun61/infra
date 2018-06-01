@@ -6,13 +6,11 @@ import logging
 
 from common.findit_http_client import FinditHttpClient
 from libs.test_results import test_results_util
-from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
+from services import step_util
 from services import swarmed_test_util
 from services import swarming
 from waterfall import buildbot
 from waterfall import build_util
-
-_SUPPORTED_ISOLATED_SCRIPT_TESTS = ['webkit_layout_tests']
 
 
 def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
@@ -143,13 +141,9 @@ def FindMatchingWaterfallStep(build_step, test_name):
     if output:
       # Guess from the format.
       test_result_object = test_results_util.GetTestResultObject(output)
-      # Currently Findit supports all gtest test steps;
-      # for isolated-script-tests, Findit only supports webkit_layout_tests.
-      # TODO(crbug/836317): remove the special check for step_name when Findit
-      # supports all isolated_script_tests.
-      if (isinstance(test_result_object, WebkitLayoutTestResults) and
-          (metadata.get('canonical_step_name') or
-           build_step.step_name) not in _SUPPORTED_ISOLATED_SCRIPT_TESTS):
+      if not step_util.IsStepSupportedByFindit(
+          test_result_object,
+          metadata.get('canonical_step_name') or build_step.step_name):
         build_step.supported = False
       else:
         build_step.supported = (

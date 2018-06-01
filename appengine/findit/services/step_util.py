@@ -5,7 +5,9 @@
 
 import logging
 
+from common.constants import SUPPORTED_ISOLATED_SCRIPT_TESTS
 from common.findit_http_client import FinditHttpClient
+from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 from services import swarming
 from waterfall import build_util
 from waterfall import buildbot
@@ -65,7 +67,7 @@ def _GetLowerBoundBuildNumber(
 
   # For new builders, there may not be that many builds yet. This is a temporary
   # workaround and wil be replaced when the isolate index service is ready and
-  # this function will no longer be necessary. 
+  # this function will no longer be necessary.
   return upper_bound_build_number / 2
 
 
@@ -193,3 +195,24 @@ def GetValidBoundingBuildsForStep(
   assert upper_bound_build
 
   return lower_bound_build, upper_bound_build
+
+
+def IsStepSupportedByFindit(test_result_object, step_name):
+  """Checks if a test step is currently supported by Findit.
+
+  Currently Findit supports all gtest test steps;
+  for isolated-script-tests, Findit only supports webkit_layout_tests.
+
+  * If there isn't a parser for the test_result of the step, it's not supported;
+  * If the step is an isolated-script-test step but not webkit_layout_tests,
+    it's not supported.
+  """
+  if not test_result_object:
+    return False
+
+  # TODO(crbug/836317): remove the special check for step_name when Findit
+  # supports all isolated_script_tests.
+  if (isinstance(test_result_object, WebkitLayoutTestResults) and
+      step_name not in SUPPORTED_ISOLATED_SCRIPT_TESTS):
+    return False
+  return True

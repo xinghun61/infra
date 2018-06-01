@@ -68,3 +68,5 @@ NO_AUTO_COMMIT_REVERT_ACCOUNTS = [  # yapf: disable
 AUTO_ROLLER_ACCOUNT_PATTERN = re.compile(
     r'.*-chromium-autoroll@skia-buildbots\.google\.com\.iam\.'
     r'gserviceaccount\.com')
+
+SUPPORTED_ISOLATED_SCRIPT_TESTS = ['webkit_layout_tests']

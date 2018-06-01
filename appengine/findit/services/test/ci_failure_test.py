@@ -522,8 +522,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
           'canonical_step_name': 'step_name'
       })
   def testGetCanonicalStepNameCached(self, mock_fn):
-    ci_failure._GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
-    ci_failure._GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
+    ci_failure.GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
+    ci_failure.GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
     self.assertTrue(mock_fn.call_count < 2)
 
   def testGetGoodRevision(self):

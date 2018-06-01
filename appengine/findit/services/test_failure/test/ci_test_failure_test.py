@@ -7,8 +7,8 @@ import mock
 import os
 
 from common.findit_http_client import FinditHttpClient
-from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from model.wf_step import WfStep
+from services import step_util
 from services import swarmed_test_util
 from services import swarming
 from services.parameters import TestFailureInfo

@@ -4,6 +4,8 @@
 
 import mock
 
+from libs.test_results.gtest_test_results import GtestTestResults
+from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 from services import step_util
 from services import swarming
 from waterfall import build_util
@@ -101,3 +103,21 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(20, lower_bound.commit_position)
     self.assertEqual(20, upper_bound.commit_position)
+
+  def testIsStepSupportedByFinditObjectNone(self):
+    self.assertFalse(step_util.IsStepSupportedByFindit(None, 'step'))
+
+  def testIsStepSupportedByFinditOtherIsolatedScriptTest(self):
+    self.assertFalse(
+        step_util.IsStepSupportedByFindit(
+            WebkitLayoutTestResults(None), 'telemetry_perf_tests'))
+
+  def testIsStepSupportedByFinditWebkitLayoutTests(self):
+    self.assertTrue(
+        step_util.IsStepSupportedByFindit(
+            WebkitLayoutTestResults(None), 'webkit_layout_tests'))
+
+  def testIsStepSupportedByFinditGtests(self):
+    self.assertTrue(
+        step_util.IsStepSupportedByFindit(
+            GtestTestResults(None), 'browser_tests'))

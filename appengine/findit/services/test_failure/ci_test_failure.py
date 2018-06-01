@@ -11,6 +11,8 @@ from google.appengine.ext import ndb
 from common.findit_http_client import FinditHttpClient
 from libs.test_results import test_results_util
 from model.wf_step import WfStep
+from services import ci_failure
+from services import step_util
 from services import swarmed_test_util
 from services import swarming
 from services.parameters import FailedTest
@@ -59,7 +61,11 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
   result_log = swarmed_test_util.RetrieveShardedTestResultsFromIsolatedServer(
       list_isolated_data, http_client)
 
-  if not test_results_util.IsTestResultsValid(result_log):
+  test_results_object = test_results_util.GetTestResultObject(result_log)
+  if not step_util.IsStepSupportedByFindit(test_results_object,
+                                           ci_failure.GetCanonicalStepName(
+                                               master_name, builder_name,
+                                               build_number, step_name)):
     return False
 
   step = WfStep.Get(master_name, builder_name, build_number, step_name)
