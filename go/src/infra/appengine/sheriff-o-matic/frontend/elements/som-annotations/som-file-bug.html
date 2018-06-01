@@ -33,14 +33,11 @@
             on-input="_ccChanged"
             on-user-selected="_ccUserSelected"
             multiple></chops-user-input>
-        <paper-dropdown-menu id="priority" label="Select priority">
-          <paper-listbox slot="dropdown-content" selected="2">
-            <paper-item label="Pri-0">0 = Emergency</paper-item>
-            <paper-item label="Pri-1">1 = Need (for target milestone)</paper-item>
-            <paper-item label="Pri-2">2 = Want (for target milstone)</paper-item>
-            <paper-item label="Pri-3">3 = Not time critical</paper-item>
-          </paper-listbox>
-        </paper-dropdown-menu>
+        <select value="{{priority::change}}" id="priority">
+          <template is="dom-repeat" items="[[priorities]]">
+            <option value="[[item.label]]" selected$="[[_computePrioritySelected(item.label, priority)]]">[[item.label]] = [[item.tip]]</option>
+          </template>
+        </select>
         <paper-input id="labels" label="Labels (separate by commas)" value="[[_arrayToString(labels)]]"></paper-input>
       </paper-dialog-scrollable>
       <div class="buttons">

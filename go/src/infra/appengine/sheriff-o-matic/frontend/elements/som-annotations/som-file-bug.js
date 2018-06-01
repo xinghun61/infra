@@ -27,14 +27,38 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
       /** The bug's cc list. */
       cc: Array,
       /** The bug's priority. */
-      priority: String,
+      priority: {
+        type: String,
+        value: 'Pri-2',
+      },
+      priorities: {
+        type: Array,
+        value: [
+          {
+            label: 'Pri-0',
+            tip: 'Emergency',
+          },
+          {
+            label: 'Pri-1',
+            tip: 'Need (for target milestone)',
+          },
+          {
+            label: 'Pri-2',
+            tip: 'Want (for target milstone)',
+          },
+          {
+            label: 'Pri-3',
+            tip: 'Not time critical',
+          },
+        ],
+      },
       _fileBugErrorMessage: {
         type: String,
         value: '',
       },
       filedBugId: String,
       /** Autocomplete-d cc suggestions. */
-      ccSuggestions: Array
+      ccSuggestions: Array,
     }
   }
 
@@ -67,8 +91,8 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
       return
     } else {
       let labels = this._stringToArray(this.$.labels.value);
-      if(this.$.priority.selectedItemLabel) {
-        labels.push(this.$.priority.selectedItemLabel);
+      if (this.priority) {
+        labels.push(this.priority);
       }
 
       let selectedUsers = this.$.cc.selectedUsers.map((u) => {
@@ -159,6 +183,10 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
 
   _ccUserSelected(e) {
     this.ccSuggestions = [];
+  }
+
+  _computePrioritySelected(itemValue, selectedValue) {
+    return itemValue === selectedValue;
   }
 }
 
