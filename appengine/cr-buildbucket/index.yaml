@@ -6,6 +6,18 @@ indexes:
     - name: bucket
     - name: tags
 
+- kind: Build
+  properties:
+    - name: bucket
+    - name: tags
+    - name: status
+
+- kind: Build
+  properties:
+    - name: bucket
+    - name: tags
+    - name: incomplete
+
 # Peeking.
 - kind: Build
   properties:
