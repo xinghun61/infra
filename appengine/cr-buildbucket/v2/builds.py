@@ -13,7 +13,6 @@ from proto import common_pb2
 import buildtags
 import model
 
-
 __all__ = [
     'UnsupportedBuild',
     'MalformedBuild',
@@ -81,7 +80,7 @@ def build_to_v2_partial(build):
 
 
 def _parse_tags(dest_msg, tags):
-  dest_msg.input.ClearField('gitiles_commit')
+  assert not dest_msg.input.HasField('gitiles_commit'), dest_msg
 
   for t in tags:
     # All builds in the datastore have tags that have a colon.
