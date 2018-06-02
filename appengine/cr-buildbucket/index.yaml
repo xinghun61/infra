@@ -11,12 +11,14 @@ indexes:
     - name: bucket
     - name: tags
     - name: status
+    - name: experimental
 
 - kind: Build
   properties:
     - name: bucket
     - name: tags
     - name: incomplete
+    - name: experimental
 
 # Peeking.
 - kind: Build
