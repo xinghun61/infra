@@ -5,7 +5,6 @@
 import functools
 
 from google.appengine.ext import ndb
-from google.protobuf import field_mask_pb2
 from google.protobuf import symbol_database
 
 from components import auth
@@ -13,12 +12,14 @@ from components import protoutil
 from components import prpc
 
 # Some of these imports are required to populate proto symbol db.
+from proto import common_pb2
 from proto import build_pb2
 from proto import rpc_pb2  # pylint: disable=unused-import
 from proto import rpc_prpc_pb2
 from proto import step_pb2  # pylint: disable=unused-import
 
 from v2 import validation
+from v2 import default_field_masks
 import buildtags
 import model
 import service
@@ -53,82 +54,58 @@ METHODS_BY_NAME = {
 }
 
 
-def api_method(default_mask=None):
-  """Returns a decorator for a Builds RPC implementation.
+def api_method(fn):
+  """Decorates a Builds RPC implementation.
 
   Handles auth.AuthorizationError and StatusCodeError.
 
-  Adds fourth method argument to the method, a protoutil.Mask, defaults to
-  default_mask. If request has "fields" field, treats it as a FieldMask, parses
-  it to protoutil.Mask and passes that.
+  Adds fourth method argument to the method, a protoutil.Mask.
+  If request has "fields" field, treats it as a FieldMask, parses it to a
+  protoutil.Mask and passes that.
   After the method returns a response, the response is trimmed according to the
   mask. Requires request message to have "fields" field of type FieldMask.
+  The default field masks are defined in default_field_masks.MASKS.
   """
 
-  def decorator(fn):
-    method_desc = METHODS_BY_NAME[fn.__name__]
-    res_class = symbol_database.Default().GetSymbol(method_desc.output_type[1:])
+  method_desc = METHODS_BY_NAME[fn.__name__]
+  res_class = symbol_database.Default().GetSymbol(method_desc.output_type[1:])
+  default_mask = default_field_masks.MASKS.get(res_class)
 
-    @functools.wraps(fn)
-    def decorated(self, req, ctx):
-      try:
-        mask = default_mask
-        # Require that all RPC requests have "fields" field mask.
-        if req.HasField('fields'):
-          try:
-            mask = protoutil.Mask.from_field_mask(req.fields,
-                                                  res_class.DESCRIPTOR)
-          except ValueError as ex:
-            raise InvalidArgument('invalid fields: %s' % ex)
-
+  @functools.wraps(fn)
+  def decorated(self, req, ctx):
+    try:
+      mask = default_mask
+      # Require that all RPC requests have "fields" field mask.
+      if req.HasField('fields'):
         try:
-          res = fn(self, req, ctx, mask)
-          if mask:  # pragma: no branch
-            mask.trim(res)
-          return res
-        except auth.AuthorizationError:
-          raise NotFound()
-        except validation.Error as ex:
-          raise InvalidArgument(ex.message)
+          mask = protoutil.Mask.from_field_mask(req.fields,
+                                                res_class.DESCRIPTOR)
+        except ValueError as ex:
+          raise InvalidArgument('invalid fields: %s' % ex)
 
-      except StatusCodeError as ex:
-        ctx.set_code(ex.code)
-        ctx.set_details(ex.details)
-        return None
+      try:
+        res = fn(self, req, ctx, mask)
+        if mask:  # pragma: no branch
+          mask.trim(res)
+        return res
+      except auth.AuthorizationError:
+        raise NotFound()
+      except validation.Error as ex:
+        raise InvalidArgument(ex.message)
 
-    return decorated
+    except StatusCodeError as ex:
+      ctx.set_code(ex.code)
+      ctx.set_details(ex.details)
+      return None
 
-  return decorator
+  return decorated
 
 
 def v1_bucket(builder_id):
   return 'luci.%s.%s' % (builder_id.project, builder_id.bucket)
 
 
-DEFAULT_BUILD_MASK = protoutil.Mask.from_field_mask(
-    field_mask_pb2.FieldMask(paths=[
-        'id',
-        'builder',
-        'number',
-        'created_by',
-        'view_url',
-        'create_time',
-        'start_time',
-        'end_time',
-        'update_time',
-        'status',
-        'input.gitiles_commit',
-        'input.gerrit_changes',
-        'input.experimental',
-        # TODO(nodir): add the following fields when they are defined in the
-        # proto:
-        # 'user_duration',
-    ]),
-    build_pb2.Build.DESCRIPTOR,
-)
-
-
-def to_build_messages(builds, build_mask):
+def builds_to_v2(builds, build_mask):
   """Converts model.Build instances to build_pb2.Build messages."""
   builds_msgs = map(v2.build_to_v2_partial, builds)
 
@@ -142,30 +119,74 @@ def to_build_messages(builds, build_mask):
   return builds_msgs
 
 
+def build_predicate_to_search_query(predicate):
+  """Converts a rpc_pb2.BuildPredicate to service.SearchQuery."""
+  q = service.SearchQuery(
+      tags=[buildtags.unparse(p.key, p.value) for p in predicate.tags],
+      created_by=predicate.created_by or None,
+      include_experimental=predicate.include_experimental,
+      status=predicate.status,
+  )
+
+  # Filter by builder.
+  if predicate.HasField('builder'):
+    q.buckets = [v1_bucket(predicate.builder)]
+    q.tags.append(
+        buildtags.unparse(buildtags.BUILDER_KEY, predicate.builder.builder))
+
+  # Filter by gerrit changes.
+  buildsets = [
+      buildtags.gerrit_change_buildset(c.host, c.change, c.patchset)
+      for c in predicate.gerrit_changes
+  ]
+  q.tags.extend(buildtags.unparse(buildtags.BUILDSET_KEY, b) for b in buildsets)
+
+  # Filter by creation time.
+  if predicate.create_time.HasField('start_time'):
+    q.create_time_low = predicate.create_time.start_time.ToDatetime()
+  if predicate.create_time.HasField('end_time'):
+    q.create_time_high = predicate.create_time.end_time.ToDatetime()
+
+  return q
+
+
 class BuildsApi(object):
   """Implements buildbucket.v2.Builds proto service."""
 
   DESCRIPTION = rpc_prpc_pb2.BuildsServiceDescription
 
-  @api_method(default_mask=DEFAULT_BUILD_MASK)
+  @api_method
   def GetBuild(self, req, _ctx, mask):
     """Retrieves a build by id or number."""
     validation.validate_get_build_request(req)
 
     if req.id:
-      build = service.get(req.id)
+      build_v1 = service.get(req.id)
     else:
       bucket = v1_bucket(req.builder)
       tag = buildtags.build_address_tag(bucket, req.builder.builder,
                                         req.build_number)
-      builds, _ = service.search(
+      build_v1, _ = service.search(
           service.SearchQuery(
               buckets=[bucket],
               tags=[tag],
           ))
-      build = builds[0] if builds else None
+      build_v1 = build_v1[0] if build_v1 else None
 
-    if not build:
+    if not build_v1:
       raise NotFound()
 
-    return to_build_messages([build], mask)[0]
+    return builds_to_v2([build_v1], mask)[0]
+
+  @api_method
+  def SearchBuilds(self, req, _ctx, mask):
+    """Searches for builds."""
+    validation.validate_search_builds_request(req)
+    q = build_predicate_to_search_query(req.predicate)
+    q.start_cursor = req.page_token
+
+    builds_v1, cursor = service.search(q)
+    return rpc_pb2.SearchBuildsResponse(
+        builds=builds_to_v2(builds_v1, mask.submask('builds.*')),
+        next_page_token=cursor,
+    )

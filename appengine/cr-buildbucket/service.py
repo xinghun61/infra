@@ -22,6 +22,7 @@ from components import net
 from components import utils
 import gae_ts_mon
 
+from proto import common_pb2
 from proto.config import project_config_pb2
 import acl
 import buildtags
@@ -713,6 +714,9 @@ class SearchQuery(object):
     # by mock module, not service_test
     return not self.__eq__(other)
 
+  def __repr__(self):
+    return repr(self.__dict__)
+
   @property
   def status_is_v2(self):
     return isinstance(self.status, int)
@@ -749,6 +753,7 @@ def search(q):
   q.tags = q.tags or []
   q.max_builds = fix_max_builds(q.max_builds)
   q.created_by = parse_identity(q.created_by)
+  q.status = q.status if q.status != common_pb2.STATUS_UNSPECIFIED else None
 
   if not q.buckets and q.retry_of is not None:
     retry_of_build = model.Build.get_by_id(q.retry_of)

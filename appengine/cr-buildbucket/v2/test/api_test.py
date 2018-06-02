@@ -5,6 +5,7 @@
 import datetime
 
 from google.protobuf import field_mask_pb2
+from google.protobuf import timestamp_pb2
 
 from components import auth
 from components import prpc
@@ -59,7 +60,7 @@ class BaseTestCase(testing.AppengineTestCase):
       self.assertIsNone(res)
     return res
 
-  def new_build(self, builder_name='linux-try', **kwargs):
+  def new_build_v1(self, builder_name='linux-try', **kwargs):
     build_kwargs = dict(
         id=model.create_build_ids(self.now, 1)[0],
         project='chromium',
@@ -82,7 +83,7 @@ class ApiMethodDecoratorTests(BaseTestCase):
 
     class Service(object):
 
-      @api.api_method()
+      @api.api_method
       def GetBuild(self, _req, _ctx, _mask):
         raise ex
 
@@ -113,7 +114,7 @@ class ApiMethodDecoratorTests(BaseTestCase):
 
   @mock.patch('service.get', autospec=True)
   def test_trimming_exclude(self, service_get):
-    service_get.return_value = self.new_build(
+    service_get.return_value = self.new_build_v1(
         parameters={'properties': {
             'a': 'b'
         }})
@@ -123,7 +124,7 @@ class ApiMethodDecoratorTests(BaseTestCase):
 
   @mock.patch('service.get', autospec=True)
   def test_trimming_include(self, service_get):
-    service_get.return_value = self.new_build(parameters={
+    service_get.return_value = self.new_build_v1(parameters={
         'properties': {
             'a': 'b',
         },
@@ -137,7 +138,7 @@ class ApiMethodDecoratorTests(BaseTestCase):
 class ToBuildMessagesTests(BaseTestCase):
 
   def test_steps(self):
-    build = self.new_build()
+    build_v1 = self.new_build_v1()
     annotation_step = annotations_pb2.Step(
         substep=[
             annotations_pb2.Step.Substep(
@@ -152,7 +153,7 @@ class ToBuildMessagesTests(BaseTestCase):
                 )),
         ],)
     model.BuildAnnotations(
-        key=model.BuildAnnotations.key_for(build.key),
+        key=model.BuildAnnotations.key_for(build_v1.key),
         annotation_binary=annotation_step.SerializeToString(),
         annotation_url='logdog://logdog.example.com/project/prefix/+/stream',
     ).put()
@@ -165,7 +166,7 @@ class ToBuildMessagesTests(BaseTestCase):
         field_mask_pb2.FieldMask(paths=['steps']),
         build_pb2.Build.DESCRIPTOR,
     )
-    actual = api.to_build_messages([build], mask)
+    actual = api.builds_to_v2([build_v1], mask)
 
     self.assertEqual(len(actual), 1)
     self.assertEqual(list(actual[0].steps), expected_steps)
@@ -176,7 +177,7 @@ class GetBuildTests(BaseTestCase):
 
   @mock.patch('service.get', autospec=True)
   def test_by_id(self, service_get):
-    service_get.return_value = self.new_build(id=54)
+    service_get.return_value = self.new_build_v1(id=54)
     req = rpc_pb2.GetBuildRequest(id=54)
     res = self.call(self.api.GetBuild, req)
     self.assertEqual(res.id, 54)
@@ -184,7 +185,7 @@ class GetBuildTests(BaseTestCase):
 
   @mock.patch('service.search', autospec=True)
   def test_by_number(self, service_search):
-    ds_build = self.new_build(
+    build_v1 = self.new_build_v1(
         project='chromium',
         bucket='luci.chromium.try',
         builder_name='linux-try',
@@ -192,12 +193,12 @@ class GetBuildTests(BaseTestCase):
             buildtags.build_address_tag('luci.chromium.try', 'linux-try', 2),
         ],
     )
-    service_search.return_value = ([ds_build], None)
+    service_search.return_value = ([build_v1], None)
     builder_id = build_pb2.Builder.ID(
         project='chromium', bucket='try', builder='linux-try')
     req = rpc_pb2.GetBuildRequest(builder=builder_id, build_number=2)
     res = self.call(self.api.GetBuild, req)
-    self.assertEqual(res.id, ds_build.key.id())
+    self.assertEqual(res.id, build_v1.key.id())
     self.assertEqual(res.builder, builder_id)
     self.assertEqual(res.number, 2)
 
@@ -226,3 +227,41 @@ class GetBuildTests(BaseTestCase):
     req = rpc_pb2.GetBuildRequest(id=1, build_number=1)
     self.call(
         self.api.GetBuild, req, expected_code=prpc.StatusCode.INVALID_ARGUMENT)
+
+
+class SearchTests(BaseTestCase):
+
+  @mock.patch('service.search', autospec=True)
+  def test_basic(self, service_search):
+    builds_v1 = [self.new_build_v1(id=54), self.new_build_v1(id=55)]
+    service_search.return_value = (builds_v1, 'next page token')
+
+    req = rpc_pb2.SearchBuildsRequest(
+        predicate=rpc_pb2.BuildPredicate(
+            builder=build_pb2.Builder.ID(
+                project='chromium', bucket='try', builder='linux-try'),),)
+    res = self.call(self.api.SearchBuilds, req)
+
+    service_search.assert_called_once_with(
+        service.SearchQuery(
+            buckets=['luci.chromium.try'],
+            tags=['builder:linux-try'],
+            include_experimental=False,
+            status=common_pb2.STATUS_UNSPECIFIED,
+            start_cursor='',
+        ))
+    self.assertEqual(len(res.builds), 2)
+    self.assertEqual(res.builds[0].id, 54)
+    self.assertEqual(res.builds[1].id, 55)
+    self.assertEqual(res.next_page_token, 'next page token')
+
+
+class BuildPredicateToSearchQueryTests(BaseTestCase):
+
+  def test_create_time(self):
+    predicate = rpc_pb2.BuildPredicate()
+    predicate.create_time.start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    predicate.create_time.end_time.FromDatetime(datetime.datetime(2018, 1, 2))
+    q = api.build_predicate_to_search_query(predicate)
+    self.assertEqual(q.create_time_low, datetime.datetime(2018, 1, 1))
+    self.assertEqual(q.create_time_high, datetime.datetime(2018, 1, 2))

@@ -73,6 +73,14 @@ def build_address(bucket, builder, number):  # pragma: no cover
   return '%s/%s/%d' % (bucket, builder, number)
 
 
+def gerrit_change_buildset(host, change, patchset):  # pragma: no cover
+  return 'patch/gerrit/%s/%d/%d' % (host, change, patchset)
+
+
+def git_commit_buildset(commit_hash):  # pragma: no cover
+  return 'commit/git/' + commit_hash
+
+
 def validate_tags(tags, mode, builder=None):
   """Validates build tags.
 
