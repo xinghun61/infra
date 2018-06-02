@@ -136,7 +136,7 @@ def _enter_err(name, fmt, *args):
 
 
 def _field_stack():
-  if not hasattr(_CONTEXT, 'field_stack'):
+  if not hasattr(_CONTEXT, 'field_stack'):  # pragma: no cover
     _CONTEXT.field_stack = []
   return _CONTEXT.field_stack
 
