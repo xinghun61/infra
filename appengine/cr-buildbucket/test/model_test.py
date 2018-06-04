@@ -9,6 +9,7 @@ from components import utils
 from testing_utils import testing
 
 import model
+import v2
 
 
 class BuildTest(testing.AppengineTestCase):
