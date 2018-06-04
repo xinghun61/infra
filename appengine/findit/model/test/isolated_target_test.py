@@ -12,11 +12,11 @@ class IsolatedTargetTest(TestCase):
   def setUp(self):
     super(IsolatedTargetTest, self).setUp()
     for pos in range(100):
-      entry = IsolatedTarget.Create(
-          'chromium', 'ci', 'chromium.linux', 'Linux Builder',
-          'chromium.googlesource.com', 'chromium/src', 'refs/heads/master',
-          '', 'ci.chromium.org/b/80000123%d0909' % pos, 'browser_tests',
-          'abcdef%dabcdef' % pos, 55000 + pos * 13)
+      entry = IsolatedTarget.Create(843400990909000 + pos, 'chromium', 'ci',
+                                    'chromium.linux', 'Linux Builder',
+                                    'chromium.googlesource.com', 'chromium/src',
+                                    'refs/heads/master', '', 'browser_tests',
+                                    'abcdef%dabcdef' % pos, 55000 + pos * 13)
       entry.put()
 
   def testFindIsolate(self):

@@ -19,6 +19,7 @@ from handlers import check_duplicate_failures
 from handlers import check_reverted_cls
 from handlers import check_trybot_mapping
 from handlers import collect_tree_closures
+from handlers import completed_build_pubsub_ingestor
 from handlers import config
 from handlers import culprit
 from handlers import failure_log
@@ -44,6 +45,8 @@ from handlers.flake.detection import detect_flakes
 
 # Default module.
 default_web_pages_handler_mappings = [
+    ('/_ah/push-handlers/index-isolated-builds',
+     completed_build_pubsub_ingestor.CompletedBuildPubsubIngestor),
     ('/_ah/push-handlers/swarming',
      swarming_pubsub_pipeline_callback.SwarmingPubSubPipelineCallback),
     ('/_ah/push-handlers/tryjob',

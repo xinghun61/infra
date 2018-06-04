@@ -37,11 +37,6 @@ class IsolatedTarget(ndb.Model):
   # The ref that the ci builder builds from. e.g. 'refs/heads/master'.
   gitiles_ref = ndb.StringProperty(required=True)
 
-  # The URL to the build page as presented by the 'url' field of buildbucket's
-  # build response. e.g.
-  # 'https://ci.chromium.org/p/chromium/builders/luci.chromium.ci/Linux Builder/102460' # pylint: disable=line-too-long
-  build_url = ndb.StringProperty(required=True, indexed=False)
-
   # The buildbucket id of the build, if available.
   build_id = ndb.IntegerProperty()
 
@@ -75,11 +70,12 @@ class IsolatedTarget(ndb.Model):
     return cls._CreateKey(isolated_hash).get()
 
   @classmethod
-  def Create(cls, luci_project, bucket, master_name, builder_name, gitiles_host,
-             gitiles_project, gitiles_ref, gerrit_patch, build_url, target_name,
-             isolated_hash, commit_position):
+  def Create(cls, build_id, luci_project, bucket, master_name, builder_name,
+             gitiles_host, gitiles_project, gitiles_ref, gerrit_patch,
+             target_name, isolated_hash, commit_position):
     return cls(
         key=cls._CreateKey(isolated_hash),
+        build_id=build_id,
         luci_project=luci_project,
         bucket=bucket,
         master_name=master_name,
@@ -88,7 +84,6 @@ class IsolatedTarget(ndb.Model):
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
         gerrit_patch=gerrit_patch,
-        build_url=build_url,
         target_name=target_name,
         commit_position=commit_position)
 

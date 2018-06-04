@@ -6,9 +6,11 @@ import collections
 import json
 import mock
 
+from buildbucket_proto.build_pb2 import Build
 from testing_utils import testing
 
 from gae_libs.http import http_client_appengine
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 
 _Result = collections.namedtuple('Result',
@@ -60,11 +62,11 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def testTryJobToSwarmbucketRequest(self):
-    try_job = buildbucket_client.TryJob('luci.c', 'b', {'a': '1'}, ['a'], {
-        'tests': {
+    try_job = buildbucket_client.TryJob(
+        'luci.c', 'b', {'a': '1'}, ['a'],
+        {'tests': {
             'a_tests': ['Test.One', 'Test.Two'],
-        }
-    }, 'builder_abc123')
+        }}, 'builder_abc123')
     expceted_parameters = {
         'builder_name': 'b',
         'swarming': {
@@ -94,12 +96,12 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def testTryJobToSwarmbucketRequestWithOverrides(self):
-    try_job = buildbucket_client.TryJob('luci.c', 'b', {
-        'a': '1',
-        'recipe': 'b'
-    }, ['a'], {'tests': {
-        'a_tests': ['Test.One', 'Test.Two'],
-    }}, 'builder_abc123', ['os:Linux'])
+    try_job = buildbucket_client.TryJob(
+        'luci.c', 'b', {'a': '1',
+                        'recipe': 'b'}, ['a'],
+        {'tests': {
+            'a_tests': ['Test.One', 'Test.Two'],
+        }}, 'builder_abc123', ['os:Linux'])
     expceted_parameters = {
         'builder_name': 'b',
         'swarming': {
@@ -255,3 +257,32 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     mocked_fetch.return_value = _Result(
         status_code=200, content=response, headers={})
     self.assertIsNone(buildbucket_client.SearchBuilds(tags))
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testGetV2Build(self, mock_post):
+    mock_build = Build()
+    mock_build.id = 8945610992972640896
+    mock_build.status = 12
+    mock_build.output.properties['mastername'] = 'chromium.linux'
+    mock_build.output.properties['buildername'] = 'Linux Builder'
+    mock_build.output.properties.get_or_create_struct(
+        'swarm_hashes_ref/heads/mockmaster(at){#123}')[
+            'mock_target'] = 'mock_hash'
+    gitiles_commit = mock_build.input.gitiles_commit
+    gitiles_commit.host = 'gitiles.host'
+    gitiles_commit.project = 'gitiles/project'
+    gitiles_commit.ref = 'refs/heads/mockmaster'
+    mock_build.builder.project = 'mock_luci_project'
+    mock_build.builder.bucket = 'mock_bucket'
+    mock_build.builder.builder = 'Linux Builder'
+    mock_headers = {'X-Prpc-Grpc-Code': '0'}
+    binary_data = mock_build.SerializeToString()
+    mock_post.return_value = (200, binary_data, mock_headers)
+    build = buildbucket_client.GetV2Build(8945610992972640896)
+    self.assertIsNotNone(build)
+    self.assertEqual(mock_build.id, build.id)
+
+    mock_headers = {'X-Prpc-Grpc-Code': '4'}
+    binary_data = mock_build.SerializeToString()
+    mock_post.return_value = (404, binary_data, mock_headers)
+    self.assertIsNone(buildbucket_client.GetV2Build(8945610992972640896))

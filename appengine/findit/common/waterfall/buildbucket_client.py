@@ -8,9 +8,14 @@ import json
 import logging
 import urllib
 
-from gae_libs.http import auth_util
+from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.rpc_pb2 import GetBuildRequest
 
+from gae_libs.http import auth_util
 from common.findit_http_client import FinditHttpClient
+
+# https://github.com/grpc/grpc-go/blob/master/codes/codes.go
+GRPC_OK = '0'
 
 # TODO: save these settings in datastore and create a role account.
 _BUILDBUCKET_HOST = 'cr-buildbucket.appspot.com'
@@ -20,6 +25,9 @@ _BUILDBUCKET_PUT_GET_ENDPOINT = (
 _LUCI_PREFIX = 'luci.'
 _BUILDBUCKET_SEARCH_ENDPOINT = (
     'https://{hostname}/_ah/api/buildbucket/v1/search'.format(
+        hostname=_BUILDBUCKET_HOST))
+_BUILDBUCKET_V2_GET_BUILD_ENDPOINT = (
+    'https://{hostname}/prpc/buildbucket.v2.Builds/GetBuild'.format(
         hostname=_BUILDBUCKET_HOST))
 
 
@@ -272,4 +280,31 @@ def SearchBuilds(tags):
     logging.error(
         'Failed to search for builds using tags %s with status_code %d.',
         tag_str, status_code)
+  return None
+
+
+def GetV2Build(build_id, fields=None):
+  """Get a buildbucket build from the v2 API.
+
+  Args:
+    build_id (int64): Buildbucket id of the build to get.
+    fields (google.protobuf.FieldMask): Mask for the paths to get, as not all
+        fields are populated by default (such as steps).
+
+  Returns:
+    A buildbucket_proto.build_pb2.Build proto.
+  """
+  request = GetBuildRequest(id=build_id, fields=fields)
+  status_code, content, response_headers = FinditHttpClient().Post(
+      _BUILDBUCKET_V2_GET_BUILD_ENDPOINT, request.SerializeToString(),
+      headers={
+          'Content-Type': 'application/prpc; encoding=binary'
+      }
+  )
+  if status_code == 200 and response_headers.get('X-Prpc-Grpc-Code') == GRPC_OK:
+    result = Build()
+    result.ParseFromString(content)
+    return result
+  logging.warning('Unexpected prpc code: %s',
+                  response_headers.get('X-Prpc-Grpc-Code'))
   return None
