@@ -5,6 +5,7 @@
 import unittest
 
 import logdog
+import v2
 
 
 class ParseLogDogURLTest(unittest.TestCase):

@@ -15,6 +15,7 @@ from testing_utils import testing
 import handlers
 import main
 import model
+import v2
 
 
 class HandlerTest(testing.AppengineTestCase):

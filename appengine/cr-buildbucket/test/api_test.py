@@ -26,6 +26,7 @@ import config
 import errors
 import model
 import service
+import v2
 
 
 class EndpointsApiTest(testing.EndpointsTestCase):

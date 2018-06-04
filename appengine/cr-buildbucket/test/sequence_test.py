@@ -5,6 +5,7 @@
 from testing_utils import testing
 
 import sequence
+import v2
 
 
 class SequenceTest(testing.AppengineTestCase):

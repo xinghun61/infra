@@ -12,6 +12,7 @@ import acl
 import config
 import errors
 import model
+import v2
 
 # Shortcuts
 Bucket = project_config_pb2.Bucket

@@ -17,6 +17,7 @@ from test.test_util import future
 import config
 import model
 import sequence
+import v2
 
 
 class SwarmbucketApiTest(testing.EndpointsTestCase):

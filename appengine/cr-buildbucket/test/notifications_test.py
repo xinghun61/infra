@@ -17,6 +17,7 @@ import api_common
 import main
 import model
 import notifications
+import v2
 
 
 class NotificationsTest(testing.AppengineTestCase):

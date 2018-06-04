@@ -13,6 +13,7 @@ from test.test_util import future
 from testing_utils import testing
 import metrics
 import model
+import v2
 
 
 class MetricsTest(testing.AppengineTestCase):

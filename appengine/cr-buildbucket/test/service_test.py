@@ -25,6 +25,7 @@ import model
 import notifications
 import service
 import swarming
+import v2
 
 
 class BuildBucketServiceTest(testing.AppengineTestCase):
@@ -835,8 +836,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [])
     builds, _ = self.search(
-        buckets=[self.test_build.bucket],
-        status=common_pb2.FAILURE)
+        buckets=[self.test_build.bucket], status=common_pb2.FAILURE)
     self.assertEqual(builds, [])
 
   def test_search_by_created_by(self):
