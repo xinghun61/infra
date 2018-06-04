@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<title>userIdTest</title>
+<meta charset="utf-8">
+<link rel="import" href="../chops-chip.html">
+<script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+<script src="../../web-component-tester/browser.js"></script>
+
+<test-fixture id="chops-chip-test">
+  <template>
+    <chops-chip></chops-chip>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('chops-chip', function() {
+    var element;
+    setup(function() {
+      element = fixture('chops-chip-test');
+    });
+
+    test('without link', function(done) {
+      element.label = 'chip label';
+      flush(function() {
+        assert.isNotOk(element.shadowRoot.querySelector('a'));
+        done();
+      });
+    });
+
+    test('with link', function(done) {
+      element.label = 'chip label';
+      element.url = 'www.google.com';
+      flush(function() {
+        assert.isOk(element.shadowRoot.querySelector('a'));
+        done();
+      });
+    });
+
+    test('remove-chip', function(done) {
+      element.removeable = true;
+      element.value = '1';
+      element.label = 'A label';
+      element.addEventListener('remove-chip', (event) => {
+        assert.deepEqual(event.detail, {value: '1'});
+        done();
+      });
+      flush(function() {
+        element.shadowRoot.querySelector('iron-icon').click();
+      });
+    });
+  });
+</script>
