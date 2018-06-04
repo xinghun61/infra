@@ -13,10 +13,10 @@ handlers.
 
 Responsibilities of request handers (legacy UI and external API) and associated
 frameworks:
-+ API: check oauth client whitelist
++ API: check oauth client whitelist or XSRF token
 + Rate-limiting
 + Create a MonorailContext (or MonorailRequest) object:
-  - Parse the request, including syntaxtic validation, e.g, non-negative ints
+  - Parse the request, including syntactic validation, e.g, non-negative ints
   - Authenticate the requesting user
 + Call the WorkEnvironment to perform the requested action
   - Catch exceptions and generate error messages
@@ -54,40 +54,38 @@ from tracker import tracker_bizobj
 from proto import project_pb2
 
 
-# TODO(jrobbins): rate limiting and permission checking in each method.
-
 # TODO(jrobbins): break this file into one facade plus ~5
 # implementation parts that roughly correspond to services files.
 
 
 class WorkEnv(object):
 
-  def __init__(self, mr, services, phase=None):
-    self.mr = mr
+  def __init__(self, mc, services, phase=None):
+    self.mc = mc
     self.services = services
     self.phase = phase
 
   def __enter__(self):
-    if self.mr.profiler and self.phase:
-      self.mr.profiler.StartPhase(name=self.phase)
+    if self.mc.profiler and self.phase:
+      self.mc.profiler.StartPhase(name=self.phase)
     return self  # The instance of this class is the context object.
 
   def __exit__(self, exception_type, value, traceback):
-    if self.mr.profiler and self.phase:
-      self.mr.profiler.EndPhase()
+    if self.mc.profiler and self.phase:
+      self.mc.profiler.EndPhase()
     return False  # Re-raise any exception in the with-block.
 
   def _AssertUserCanViewProject(self, project):
     """Make sure the user may view the given project."""
     if not permissions.UserCanViewProject(
-        self.mr.auth.user_pb, self.mr.auth.effective_ids, project):
+        self.mc.auth.user_pb, self.mc.auth.effective_ids, project):
       raise permissions.PermissionException(
           'User is not allowed to view this project')
 
   def _AssertPermInProject(self, perm, project):
     """Make sure the user may use perm in the given project."""
-    permitted = self.mr.perms.CanUsePerm(
-        perm, self.mr.auth.effective_ids, project, [])
+    permitted = self.mc.perms.CanUsePerm(
+        perm, self.mc.auth.effective_ids, project, [])
     if not permitted:
       raise permissions.PermissionException(
         'User lacks permission %r in project %s' % (perm, project.project_name))
@@ -97,9 +95,9 @@ class WorkEnv(object):
     project = self.GetProject(issue.project_id)
     config = self.GetProjectConfig(issue.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(
-        issue, self.mr.auth.effective_ids, config)
+        issue, self.mc.auth.effective_ids, config)
     permit_view = permissions.CanViewIssue(
-        self.mr.auth.effective_ids, self.mr.perms, project, issue,
+        self.mc.auth.effective_ids, self.mc.perms, project, issue,
         allow_viewing_deleted=allow_viewing_deleted,
         granted_perms=granted_perms)
     if not permit_view:
@@ -111,8 +109,8 @@ class WorkEnv(object):
     """Make sure the user may use perm on the given issue."""
     project, granted_perms = self._AssertUserCanViewIssue(
         issue, allow_viewing_deleted=True)
-    permitted = self.mr.perms.CanUsePerm(
-        perm, self.mr.auth.effective_ids, project,
+    permitted = self.mc.perms.CanUsePerm(
+        perm, self.mc.auth.effective_ids, project,
         permissions.GetRestrictions(issue), granted_perms=granted_perms)
     if not permitted:
       raise permissions.PermissionException(
@@ -158,18 +156,18 @@ class WorkEnv(object):
     Raises:
       ProjectAlreadyExists: A project with that name already exists.
     """
-    if not permissions.CanCreateProject(self.mr.perms):
+    if not permissions.CanCreateProject(self.mc.perms):
       raise permissions.PermissionException(
           'User is not allowed to create a project')
 
-    with self.mr.profiler.Phase('creating project %r' % project_name):
+    with self.mc.profiler.Phase('creating project %r' % project_name):
       project_id = self.services.project.CreateProject(
-          self.mr.cnxn, project_name, owner_ids, committer_ids, contributor_ids,
+          self.mc.cnxn, project_name, owner_ids, committer_ids, contributor_ids,
           summary, description, state=state, access=access,
           read_only_reason=read_only_reason, home_page=home_page,
           docs_url=docs_url, source_url=source_url, logo_gcs_id=logo_gcs_id,
           logo_file_name=logo_file_name)
-      self.services.template.CreateDefaultProjectTemplates(self.mr.cnxn,
+      self.services.template.CreateDefaultProjectTemplates(self.mc.cnxn,
           project_id)
     return project_id
 
@@ -178,9 +176,9 @@ class WorkEnv(object):
     # Note: No permission checks because anyone can list projects, but
     # the results are filtered by permission to view each project.
 
-    with self.mr.profiler.Phase('list projects for %r' % self.mr.auth.user_id):
+    with self.mc.profiler.Phase('list projects for %r' % self.mc.auth.user_id):
       project_ids = self.services.project.GetVisibleLiveProjects(
-          self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids,
+          self.mc.cnxn, self.mc.auth.user_pb, self.mc.auth.effective_ids,
           use_cache=use_cache)
 
     project_ids = sorted(project_ids)
@@ -199,9 +197,9 @@ class WorkEnv(object):
     Raises:
       NoSuchProjectException: There is no project with that ID.
     """
-    with self.mr.profiler.Phase('getting project %r' % project_id):
+    with self.mc.profiler.Phase('getting project %r' % project_id):
       project = self.services.project.GetProject(
-          self.mr.cnxn, project_id, use_cache=use_cache)
+          self.mc.cnxn, project_id, use_cache=use_cache)
 
     self._AssertUserCanViewProject(project)
     return project
@@ -219,9 +217,9 @@ class WorkEnv(object):
     Raises:
       NoSuchProjectException: There is no project with that name.
     """
-    with self.mr.profiler.Phase('getting project %r' % project_name):
+    with self.mc.profiler.Phase('getting project %r' % project_name):
       project = self.services.project.GetProjectByName(
-          self.mr.cnxn, project_name, use_cache=use_cache)
+          self.mc.cnxn, project_name, use_cache=use_cache)
     if not project:
       raise exceptions.NoSuchProjectException()
 
@@ -241,9 +239,9 @@ class WorkEnv(object):
     project = self.GetProject(project_id)
     self._AssertPermInProject(permissions.EDIT_PROJECT, project)
 
-    with self.mr.profiler.Phase('updating project %r' % project_id):
+    with self.mc.profiler.Phase('updating project %r' % project_id):
       self.services.project.UpdateProject(
-          self.mr.cnxn, project_id, summary=summary, description=description,
+          self.mc.cnxn, project_id, summary=summary, description=description,
           state=state, state_reason=state_reason, access=access,
           issue_notify_address=issue_notify_address,
           attachment_bytes_used=attachment_bytes_used,
@@ -274,10 +272,10 @@ class WorkEnv(object):
     project = self.GetProject(project_id)
     self._AssertPermInProject(permissions.EDIT_PROJECT, project)
 
-    with self.mr.profiler.Phase('marking deletable %r' % project_id):
+    with self.mc.profiler.Phase('marking deletable %r' % project_id):
       _project = self.GetProject(project_id)
       self.services.project.MarkProjectDeletable(
-          self.mr.cnxn, project_id, self.services.config)
+          self.mc.cnxn, project_id, self.services.config)
 
   def StarProject(self, project_id, starred):
     """Star or unstar the specified project.
@@ -295,9 +293,9 @@ class WorkEnv(object):
     project = self.GetProject(project_id)
     self._AssertPermInProject(permissions.SET_STAR, project)
 
-    with self.mr.profiler.Phase('(un)starring project %r' % project_id):
+    with self.mc.profiler.Phase('(un)starring project %r' % project_id):
       self.services.project_star.SetStar(
-          self.mr.cnxn, project_id, self.mr.auth.user_id, starred)
+          self.mc.cnxn, project_id, self.mc.auth.user_id, starred)
 
   def IsProjectStarred(self, project_id):
     """Return True if the current user has starred the given project.
@@ -314,13 +312,13 @@ class WorkEnv(object):
     if project_id is None:
       raise exceptions.InputException('No project specified')
 
-    if not self.mr.auth.user_id:
+    if not self.mc.auth.user_id:
       return False
 
-    with self.mr.profiler.Phase('checking project star %r' % project_id):
+    with self.mc.profiler.Phase('checking project star %r' % project_id):
       _project = self.GetProject(project_id)
       return self.services.project_star.IsItemStarredBy(
-        self.mr.cnxn, project_id, self.mr.auth.user_id)
+        self.mc.cnxn, project_id, self.mc.auth.user_id)
 
   def ListStarredProjects(self, viewed_user_id=None):
     """Return a list of projects starred by the current or viewed user.
@@ -337,14 +335,14 @@ class WorkEnv(object):
     # projects is filtered based on permission to view.
 
     if viewed_user_id is None:
-      if self.mr.auth.user_id:
-        viewed_user_id = self.mr.auth.user_id
+      if self.mc.auth.user_id:
+        viewed_user_id = self.mc.auth.user_id
       else:
         return []  # Anon user and no viewed user specified.
-    with self.mr.profiler.Phase('ListStarredProjects for %r' % viewed_user_id):
+    with self.mc.profiler.Phase('ListStarredProjects for %r' % viewed_user_id):
       viewable_projects = sitewide_helpers.GetViewableStarredProjects(
-          self.mr.cnxn, self.services, viewed_user_id,
-          self.mr.auth.effective_ids, self.mr.auth.user_pb)
+          self.mc.cnxn, self.services, viewed_user_id,
+          self.mc.auth.effective_ids, self.mc.auth.user_pb)
     return viewable_projects
 
   def GetProjectConfig(self, project_id, use_cache=True):
@@ -363,9 +361,9 @@ class WorkEnv(object):
     # Use the same permission check as GetProject().
     _project = self.GetProject(project_id)
 
-    with self.mr.profiler.Phase('getting config for %r' % project_id):
+    with self.mc.profiler.Phase('getting config for %r' % project_id):
       config = self.services.config.GetProjectConfig(
-          self.mr.cnxn, project_id, use_cache=use_cache)
+          self.mc.cnxn, project_id, use_cache=use_cache)
     if not config:
       raise exceptions.NoSuchProjectException()
     return config
@@ -405,37 +403,42 @@ class WorkEnv(object):
     project = self.GetProject(project_id)
     self._AssertPermInProject(permissions.CREATE_ISSUE, project)
 
-    with self.mr.profiler.Phase('creating issue in project %r' % project_id):
-      reporter_id = self.mr.auth.user_id
+    with self.mc.profiler.Phase('creating issue in project %r' % project_id):
+      reporter_id = self.mc.auth.user_id
       new_local_id, comment = self.services.issue.CreateIssue(
-          self.mr.cnxn, self.services, project_id, summary, status,
+          self.mc.cnxn, self.services, project_id, summary, status,
           owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
           marked_description, blocked_on=blocked_on, blocking=blocking,
           attachments=attachments, index_now=False, phases=phases,
           approval_values=approval_values)
       logging.info('created issue %r in project %r', new_local_id, project_id)
 
-    with self.mr.profiler.Phase('following up after issue creation'):
-      self.services.project.UpdateRecentActivity(self.mr.cnxn, project_id)
+    with self.mc.profiler.Phase('following up after issue creation'):
+      self.services.project.UpdateRecentActivity(self.mc.cnxn, project_id)
       new_issue = self.services.issue.GetIssueByLocalID(
-          self.mr.cnxn, project_id, new_local_id)
+          self.mc.cnxn, project_id, new_local_id)
 
     return new_issue, comment
 
+  # TODO(jrobbins): This method requires self.mc to be a MonorailRequest.
+  # Instead, it should accept the projects, search query and pagination
+  # parameters as separate objects.
   def ListIssues(self):
     """Do an issue search using info in mr and return a pipeline object."""
     # Permission to view a project is checked in Frontendsearchpipeline().
     # Individual results are filtered by permissions in SearchForIIDs().
 
-    with self.mr.profiler.Phase('searching issues'):
+    with self.mc.profiler.Phase('searching issues'):
+      mr = self.mc  # TODO(jrobbins): change FrontendSearchPipeline.
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-          self.mr, self.services, self.mr.num)
-      if not self.mr.errors.AnyErrors():
+          mr, self.services, mr.num)
+      if not self.mc.errors.AnyErrors():
         pipeline.SearchForIIDs()
         pipeline.MergeAndSortIssues()
         pipeline.Paginate()
       return pipeline
 
+  # TODO(jrobbins): This method also requires self.mc to be a MonorailRequest.
   def FindIssuePositionInSearch(self, issue):
     """Do an issue search and return flipper info for the given issue.
 
@@ -448,10 +451,11 @@ class WorkEnv(object):
     # Permission to view a project is checked in Frontendsearchpipeline().
     # Individual results are filtered by permissions in SearchForIIDs().
 
-    with self.mr.profiler.Phase('finding issue position in search'):
+    with self.mc.profiler.Phase('finding issue position in search'):
+      mr = self.mc  # TODO(jrobbins): change FrontendSearchPipeline.
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-          self.mr, self.services, None)
-      if not self.mr.errors.AnyErrors():
+          mr, self.services, None)
+      if not self.mc.errors.AnyErrors():
         # Only do the search if the user's query parsed OK.
         pipeline.SearchForIIDs()
 
@@ -475,9 +479,9 @@ class WorkEnv(object):
     if issue_id is None:
       raise exceptions.InputException('No issue issue_id specified')
 
-    with self.mr.profiler.Phase('getting issue %r' % issue_id):
+    with self.mc.profiler.Phase('getting issue %r' % issue_id):
       issue = self.services.issue.GetIssue(
-          self.mr.cnxn, issue_id, use_cache=use_cache)
+          self.mc.cnxn, issue_id, use_cache=use_cache)
 
     self._AssertUserCanViewIssue(
         issue, allow_viewing_deleted=allow_viewing_deleted)
@@ -507,9 +511,9 @@ class WorkEnv(object):
     if local_id is None:
       raise exceptions.InputException('No issue local_id specified')
 
-    with self.mr.profiler.Phase('getting issue %r:%r' % (project_id, local_id)):
+    with self.mc.profiler.Phase('getting issue %r:%r' % (project_id, local_id)):
       issue = self.services.issue.GetIssueByLocalID(
-          self.mr.cnxn, project_id, local_id, use_cache=use_cache)
+          self.mc.cnxn, project_id, local_id, use_cache=use_cache)
 
     self._AssertUserCanViewIssue(
         issue, allow_viewing_deleted=allow_viewing_deleted)
@@ -517,43 +521,43 @@ class WorkEnv(object):
 
   def GetRelatedIssueRefs(self, issue):
     """Return a dict {iid: (project_name, local_id)} for all related issues."""
-    with self.mr.profiler.Phase('getting related issue refs'):
+    with self.mc.profiler.Phase('getting related issue refs'):
       related_iids = list(issue.blocked_on_iids) + list(issue.blocking_iids)
       if issue.merged_into:
         related_iids.append(issue.merged_into)
       logging.info('related_iids is %r', related_iids)
-      return self.services.issue.LookupIssueRefs(self.mr.cnxn, related_iids)
+      return self.services.issue.LookupIssueRefs(self.mc.cnxn, related_iids)
 
   def UpdateIssueApproval(self, issue_id, approval_id, approval_delta,
       comment_content):
     """Update an issue's approval."""
 
     issue, approval_value = self.services.issue.GetIssueApproval(
-        self.mr.cnxn, issue_id, approval_id)
+        self.mc.cnxn, issue_id, approval_id)
 
     self._AssertUserCanViewIssue(issue)
 
     if approval_delta.status:
       if not permissions.CanUpdateApprovalStatus(
-          self.mr.auth.effective_ids, approval_value.approver_ids,
+          self.mc.auth.effective_ids, approval_value.approver_ids,
           approval_value.status, approval_delta.status):
         raise permissions.PermissionException(
             'User not allowed to make this status update.')
 
     if approval_delta.approver_ids_remove or approval_delta.approver_ids_add:
       if not permissions.CanUpdateApprovers(
-          self.mr.auth.effective_ids, approval_value.approver_ids):
+          self.mc.auth.effective_ids, approval_value.approver_ids):
         raise permissions.PermissionException(
             'User not allowed to modify approvers of this approval.')
 
-    with self.mr.profiler.Phase(
+    with self.mc.profiler.Phase(
         'updating approval for issue %r, aprpoval %r' % (
             issue_id, approval_id)):
       comment_pb = self.services.issue.DeltaUpdateIssueApproval(
-          self.mr.cnxn, self.mr.auth.user_id, issue, approval_value,
+          self.mc.cnxn, self.mc.auth.user_id, issue, approval_value,
           approval_delta, comment=comment_content)
       send_notifications.PrepareAndSendApprovalChangeNotification(
-          issue_id, approval_id, self.mr.request.host, comment_pb.id)
+          issue_id, approval_id, self.mc.request.host, comment_pb.id)
 
   def UpdateIssue(self, issue, delta, comment_content, send_email=True):
     """Update an issue, TODO: iff the signed in user may edit it.
@@ -572,19 +576,19 @@ class WorkEnv(object):
     config = self.GetProjectConfig(issue.project_id)
     old_owner_id = tracker_bizobj.GetOwnerId(issue)
 
-    with self.mr.profiler.Phase('Updating issue %r' % (issue.issue_id)):
+    with self.mc.profiler.Phase('Updating issue %r' % (issue.issue_id)):
       _amendments, comment_pb = self.services.issue.DeltaUpdateIssue(
-          self.mr.cnxn, self.services, self.mr.auth.user_id, issue.project_id,
+          self.mc.cnxn, self.services, self.mc.auth.user_id, issue.project_id,
           config, issue, delta, comment=comment_content)
 
-    with self.mr.profiler.Phase('Following up after issue update'):
+    with self.mc.profiler.Phase('Following up after issue update'):
       # TODO(jrobbins): side effects of setting merged_into.
       self.services.project.UpdateRecentActivity(
-          self.mr.cnxn, issue.project_id)
+          self.mc.cnxn, issue.project_id)
 
-    with self.mr.profiler.Phase('Generating notifications'):
+    with self.mc.profiler.Phase('Generating notifications'):
       hostport = framework_helpers.GetHostPort()
-      reporter_id = self.mr.auth.user_id
+      reporter_id = self.mc.auth.user_id
       send_notifications.PrepareAndSendIssueChangeNotification(
           issue.issue_id, hostport, reporter_id,
           send_email=send_email, old_owner_id=old_owner_id,
@@ -594,11 +598,12 @@ class WorkEnv(object):
     """Mark or unmark the given issue as deleted."""
     self._AssertPermInIssue(issue, permissions.DELETE_ISSUE)
 
-    with self.mr.profiler.Phase('Marking issue %r deleted' % (issue.issue_id)):
+    with self.mc.profiler.Phase('Marking issue %r deleted' % (issue.issue_id)):
       self.services.issue.SoftDeleteIssue(
-          self.mr.cnxn, issue.project_id, issue.local_id, delete,
+          self.mc.cnxn, issue.project_id, issue.local_id, delete,
           self.services.user)
 
+  # TODO(jrobbins): This method also requires self.mc to be a MonorailRequest.
   def GetIssuePositionInHotlist(self, current_issue, hotlist):
     """Get index info of an issue within a hotlist.
 
@@ -606,16 +611,17 @@ class WorkEnv(object):
       current_issue: the currently viewed issue.
       hotlist: the hotlist this flipper is flipping through.
     """
-    issues_list = self.services.issue.GetIssues(self.mr.cnxn,
+    issues_list = self.services.issue.GetIssues(self.mc.cnxn,
         [item.issue_id for item in hotlist.items])
     project_ids = hotlist_helpers.GetAllProjectsOfIssues(
         [issue for issue in issues_list])
     config_list = hotlist_helpers.GetAllConfigsOfProjects(
-        self.mr.cnxn, project_ids, self.services)
+        self.mc.cnxn, project_ids, self.services)
     harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
+    mr = self.mc  # TODO(jrobbins): change GetSortedHotlistIssues.
     (sorted_issues, _hotlist_issues_context,
      _users) = hotlist_helpers.GetSortedHotlistIssues(
-         self.mr, hotlist.items, issues_list, harmonized_config,
+         mr, hotlist.items, issues_list, harmonized_config,
          self.services)
     (prev_iid, cur_index,
      next_iid) = features_bizobj.DetermineHotlistIssuePosition(
@@ -631,9 +637,9 @@ class WorkEnv(object):
     """Return comments on the specified viewable issue."""
     self._AssertUserCanViewIssue(issue)
 
-    with self.mr.profiler.Phase('getting comments for %r' % issue.issue_id):
+    with self.mc.profiler.Phase('getting comments for %r' % issue.issue_id):
       comments = self.services.issue.GetCommentsForIssue(
-          self.mr.cnxn, issue.issue_id)
+          self.mc.cnxn, issue.issue_id)
     return comments
 
   # FUTURE: UpdateComment()
@@ -645,57 +651,58 @@ class WorkEnv(object):
     project = self.GetProject(issue.project_id)
     config = self.GetProjectConfig(issue.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(
-        issue, self.mr.auth.effective_ids, config)
-    if ((comment.is_spam and self.mr.auth.user_id == comment.user_id) or
+        issue, self.mc.auth.effective_ids, config)
+    if ((comment.is_spam and self.mc.auth.user_id == comment.user_id) or
         not permissions.CanDelete(
-            self.mr.auth.user_id, self.mr.auth.effective_ids, self.mr.perms,
+            self.mc.auth.user_id, self.mc.auth.effective_ids, self.mc.perms,
             comment.deleted_by, comment.user_id, project,
             permissions.GetRestrictions(issue), granted_perms=granted_perms)):
       raise permissions.PermissionException('Cannot delete comment')
 
-    with self.mr.profiler.Phase(
+    with self.mc.profiler.Phase(
         'deleting issue %r comment %r' % (issue.issue_id, comment.id)):
       self.services.issue.SoftDeleteComment(
-          self.mr.cnxn, issue, comment, self.mr.auth.user_id,
+          self.mc.cnxn, issue, comment, self.mc.auth.user_id,
           self.services.user, delete=delete)
 
   def StarIssue(self, issue, starred):
     """Set or clear a star on the given issue for the signed in user."""
-    if not self.mr.auth.user_id:
+    if not self.mc.auth.user_id:
       raise exceptions.InputException('Anon cannot star issues')
     self._AssertPermInIssue(issue, permissions.SET_STAR)
 
-    with self.mr.profiler.Phase('starring issue %r' % issue.issue_id):
+    with self.mc.profiler.Phase('starring issue %r' % issue.issue_id):
       config = self.services.config.GetProjectConfig(
-          self.mr.cnxn, issue.project_id)
+          self.mc.cnxn, issue.project_id)
       self.services.issue_star.SetStar(
-          self.mr.cnxn, self.services, config, issue.issue_id,
-          self.mr.auth.user_id, starred)
+          self.mc.cnxn, self.services, config, issue.issue_id,
+          self.mc.auth.user_id, starred)
 
   def IsIssueStarred(self, issue, cnxn=None):
     """Return True if the given issue is starred by the signed in user."""
     self._AssertUserCanViewIssue(issue)
 
-    with self.mr.profiler.Phase('checking star %r' % issue.issue_id):
+    with self.mc.profiler.Phase('checking star %r' % issue.issue_id):
       return self.services.issue_star.IsItemStarredBy(
-          cnxn or self.mr.cnxn, issue.issue_id, self.mr.auth.user_id)
+          cnxn or self.mc.cnxn, issue.issue_id, self.mc.auth.user_id)
 
   def ListStarredIssueIDs(self):
     """Return a list of the issue IDs that the current issue has starred."""
     # This returns an unfiltered list of issue_ids.  Permissions will be
     # applied if and when the caller attempts to load each issue.
 
-    with self.mr.profiler.Phase('getting stars %r' % self.mr.auth.user_id):
+    with self.mc.profiler.Phase('getting stars %r' % self.mc.auth.user_id):
       return self.services.issue_star.LookupStarredItemIDs(
-          self.mr.cnxn, self.mr.auth.user_id)
+          self.mc.cnxn, self.mc.auth.user_id)
 
-  def SnapshotCountsQuery(self, timestamp, group_by, label_prefix=None,
+  def SnapshotCountsQuery(self, project, timestamp, group_by, label_prefix=None,
                           query=None, canned_query=None):
     """Query IssueSnapshots for daily counts.
 
     See chart_svc.QueryIssueSnapshots for more detail on arguments.
 
     Args:
+      project (Project): Project to search.
       timestamp (int): Will query for snapshots at this timestamp.
       group_by (str): 2nd dimension, see QueryIssueSnapshots for options.
       label_prefix (str): Required for label queries. Only returns results
@@ -709,10 +716,10 @@ class WorkEnv(object):
     """
     # This returns counts of viewable issues.
 
-    with self.mr.profiler.Phase('querying snapshot counts'):
+    with self.mc.profiler.Phase('querying snapshot counts'):
       return self.services.chart.QueryIssueSnapshots(
-        self.mr.cnxn, self.services, timestamp, self.mr.auth.effective_ids,
-        self.mr.project, self.mr.perms, group_by=group_by,
+        self.mc.cnxn, self.services, timestamp, self.mc.auth.effective_ids,
+        project, self.mc.perms, group_by=group_by,
         label_prefix=label_prefix, query=query, canned_query=canned_query)
 
   ### User methods

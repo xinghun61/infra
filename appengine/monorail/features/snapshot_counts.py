@@ -54,8 +54,8 @@ class SnapshotCounts(jsonfeed.InternalTask):
       canned_query = None
 
     with work_env.WorkEnv(mr, self.services) as we:
-      results, unsupported_fields = we.SnapshotCountsQuery(timestamp, group_by,
-          label_prefix, mr.query, canned_query)
+      results, unsupported_fields = we.SnapshotCountsQuery(
+          mr.project, timestamp, group_by, label_prefix, mr.query, canned_query)
 
     return {
       'results': results,
