@@ -10,10 +10,9 @@ runtime: python27
 api_version: 1
 threadsafe: no
 
-instance_class: F4
-automatic_scaling:
-  min_idle_instances: 40
-  max_pending_latency: 0.2s
+instance_class: B8
+manual_scaling:
+  instances: 100
 
 handlers:
 - url: /_ah/warmup
