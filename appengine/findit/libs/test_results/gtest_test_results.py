@@ -12,11 +12,10 @@ It provides functions to:
 import base64
 import cStringIO
 
+from libs.gtest_name_util import RemoveAllPrefixesFromTestName
 from libs.test_results.base_test_results import BaseTestResults
 from libs.test_results.classified_test_results import ClassifiedTestResults
 from services import constants
-
-_PRE_TEST_PREFIX = 'PRE_'
 
 # Invalid gtest result error codes.
 # TODO(crbug.com/785463): Use enum for error codes.
@@ -29,29 +28,6 @@ SKIPPED = 'SKIPPED'
 UNKNOWN = 'UNKNOWN'
 
 _NON_FAILURE_STATUSES = [SUCCESS, SKIPPED, UNKNOWN]
-
-
-def _RemoveAllPrefixesFromTestName(test):
-  """Removes prefixes from test names.
-
-  Args:
-    test (str): A test's name, eg: 'suite1.PRE_test1'.
-
-  Returns:
-    base_test (str): A base test name, eg: 'suite1.test1'.
-  """
-  test_name_start = max(test.find('.'), 0)
-  if test_name_start == 0:
-    return test
-
-  test_suite = test[:test_name_start]
-  test_name = test[test_name_start + 1:]
-  pre_position = test_name.find(_PRE_TEST_PREFIX)
-  while pre_position == 0:
-    test_name = test_name[len(_PRE_TEST_PREFIX):]
-    pre_position = test_name.find(_PRE_TEST_PREFIX)
-  base_test = '%s.%s' % (test_suite, test_name)
-  return base_test
 
 
 class GtestTestResults(BaseTestResults):
@@ -157,7 +133,7 @@ class GtestTestResults(BaseTestResults):
         for test in iteration[test_name]:
           failed_test_log[test_name] = self.ConcatenateTestLog(
               failed_test_log[test_name], test.get('output_snippet_base64', ''))
-        reliable_failed_tests[test_name] = _RemoveAllPrefixesFromTestName(
+        reliable_failed_tests[test_name] = RemoveAllPrefixesFromTestName(
             test_name)
 
     return failed_test_log, reliable_failed_tests
@@ -226,7 +202,7 @@ class GtestTestResults(BaseTestResults):
     test_results = ClassifiedTestResults()
     for iteration in self.test_results_json['per_iteration_data']:
       for test_name, runs in iteration.iteritems():
-        base_test_name = _RemoveAllPrefixesFromTestName(test_name)
+        base_test_name = RemoveAllPrefixesFromTestName(test_name)
         expected_status = SUCCESS if self.IsTestEnabled(
             base_test_name) else SKIPPED
 

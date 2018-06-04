@@ -5,7 +5,6 @@
 import base64
 import mock
 
-from libs.test_results import gtest_test_results
 from libs.test_results.gtest_test_results import GtestTestResults
 from services import constants
 from waterfall.test import wf_testcase
@@ -154,25 +153,15 @@ _SAMPLE_TEST_RESULTS_FLAKE = {
 
 class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
 
-  def testRemoveAllPrefixesFromTestNameNoPrefix(self):
-    test = 'abc_test'
-    self.assertEqual(test,
-                     gtest_test_results._RemoveAllPrefixesFromTestName(test))
-
-  def testRemoveAllPrefixesFromTestName(self):
-    test = 'abc_test.PRE_PRE_test1'
-    self.assertEqual('abc_test.test1',
-                     gtest_test_results._RemoveAllPrefixesFromTestName(test))
-
   def testConcatenateTestLogOneStringContainsAnother(self):
     string1 = base64.b64encode('This string should contain string2.')
     string2 = base64.b64encode('string2.')
-    self.assertEqual(string1,
-                     GtestTestResults(None).ConcatenateTestLog(
-                         string1, string2))
-    self.assertEqual(string1,
-                     GtestTestResults(None).ConcatenateTestLog(
-                         string2, string1))
+    self.assertEqual(
+        string1,
+        GtestTestResults(None).ConcatenateTestLog(string1, string2))
+    self.assertEqual(
+        string1,
+        GtestTestResults(None).ConcatenateTestLog(string2, string1))
 
   def testConcatenateTestLog(self):
     string1 = base64.b64encode('string1.')
