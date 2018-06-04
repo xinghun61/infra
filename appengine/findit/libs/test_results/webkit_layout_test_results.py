@@ -108,13 +108,14 @@ class WebkitLayoutTestResults(BaseTestResults):
     TODO(crbug/836994): parse other test results to get failed tests info.
 
     Returns:
-      failed_test_log: Logs for failed tests, currently only related test file.
+      failed_test_log: Logs for failed tests, currently empty string.
       reliable_failed_tests: reliable failed tests, and the base name for each
         test - For webkit_layout_test base name should be the same as test name.
     """
     if not self.test_results_json or not self.test_results_json.get('tests'):
       return {}, {}
 
+    failed_test_log = {}
     reliable_failed_tests = {}
     for test_name, test_result in self.test_results_json['tests'].iteritems():
       if test_result.get('actual'):  # pragma: no branch.
@@ -129,8 +130,9 @@ class WebkitLayoutTestResults(BaseTestResults):
           # For the case where test failed with different statuses, we still
           # treat it as a reliable failure to be consistent with other tools.
           reliable_failed_tests[test_name] = test_name
+          failed_test_log[test_name] = ''
 
-    return {}, reliable_failed_tests
+    return failed_test_log, reliable_failed_tests
 
   def IsTestResultUseful(self):
     """Checks if the log contains useful information."""

@@ -409,7 +409,9 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
 
   def testGetFailedTestsInformation(self):
     log, tests = self.test_result.GetFailedTestsInformation()
-    self.assertEqual({}, log)
+    self.assertEqual({
+        'bluetooth/requestDevice/chooser/new-scan-device-added.html': ''
+    }, log)
     self.assertEqual({
         'bluetooth/requestDevice/chooser/new-scan-device-added.html': (
             'bluetooth/requestDevice/chooser/new-scan-device-added.html')
