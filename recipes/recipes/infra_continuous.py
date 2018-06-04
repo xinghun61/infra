@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
 import json
 
 from recipe_engine.recipe_api import Property
@@ -12,7 +13,6 @@ DEPS = [
   'depot_tools/depot_tools',
   'depot_tools/gclient',
   'depot_tools/infra_paths',
-  'infra_system',
   'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/file',
@@ -23,6 +23,9 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/runtime',
   'recipe_engine/step',
+
+  'infra_system',
+  'infra_cipd',
 ]
 
 
@@ -81,74 +84,6 @@ LEGACY_LUCI_BUILDERS = {
 GO_DEPS_BUNDLING_BUILDER = 'infra-continuous-trusty-64'
 
 
-def get_go_platforms_for_cipd(builder):
-  """Yields a list of (GOOS, GOARCH) to build for on the given builder."""
-  for plat in CIPD_PACKAGE_BUILDERS.get(builder, []):
-    if plat == 'native':
-      yield None, None  # reset GOOS and GOARCH
-    else:
-      yield plat.split('-', 1)
-
-
-def build_cipd_packages(
-    api, repo, rev, bucket, buildername, buildnumber, goos, goarch):
-  # 'goos' and 'goarch' are used for cross-compilation of Go code.
-  step_suffix = ''
-  env = {}
-  if goos or goarch:
-    assert goos and goarch, 'Both GOOS and GOARCH should be set'
-    step_suffix = ' [GOOS:%s GOARCH:%s]' % (goos, goarch)
-    env = {'GOOS': goos, 'GOARCH': goarch}
-
-  # Build packages (don't upload them yet).
-  with api.context(env=env):
-    api.python(
-        'cipd - build packages' + step_suffix,
-        api.path['checkout'].join('build', 'build.py'),
-        ['--builder', api.properties.get('buildername')])
-
-  # Verify they are good. Run tests only when building packages for the host
-  # platform, since the host can't run binaries build with cross-compilation
-  # enabled.
-  if not goos and not goarch:
-    api.python(
-        'cipd - test packages integrity',
-        api.path['checkout'].join('build', 'test_packages.py'))
-
-  # Upload them, attach tags.
-  if api.runtime.is_luci:
-    build_tag_key = 'luci_build'
-  else:
-    # TODO(tandrii): get rid of this once migrated to LUCI.
-    build_tag_key = 'buildbot_build'
-  tags = [
-    '%s:%s/%s/%s' % (build_tag_key, bucket, buildername, buildnumber),
-    'git_repository:%s' % repo,
-    'git_revision:%s' % rev,
-  ]
-  try:
-    with api.context(env=env):
-      return api.python(
-          'cipd - upload packages' + step_suffix,
-          api.path['checkout'].join('build', 'build.py'),
-          [
-            '--no-rebuild',
-            '--upload',
-            '--service-account-json',
-            api.cipd.default_bot_service_account_credentials,
-            '--json-output', api.json.output(),
-            '--builder', api.properties.get('buildername'),
-          ] + ['--tags'] + tags)
-  finally:
-    step_result = api.step.active_result
-    output = step_result.json.output or {}
-    p = step_result.presentation
-    for pkg in output.get('succeeded', []):
-      info = pkg['info']
-      title = '%s %s' % (info['package'], info['instance_id'])
-      p.links[title] = info.get('url', 'http://example.com/not-implemented-yet')
-
-
 def build_luci(api):
   go_bin = api.path['checkout'].join('go', 'bin')
   go_env = api.path['checkout'].join('go', 'env.py')
@@ -174,27 +109,21 @@ def build_luci(api):
 
 
 PROPERTIES = {
-  # TODO(tandrii): get rid of mastername once migrated to LUCI.
-  'mastername': Property(default=None),
   'buildername': Property(),
   'buildnumber': Property(default=-1, kind=int),
 }
 
-def RunSteps(api, mastername, buildername, buildnumber):
+
+def RunSteps(api, buildername, buildnumber):
   if buildername.startswith('infra-internal-continuous'):
     project_name = 'infra_internal'
-    repo_name = 'https://chrome-internal.googlesource.com/infra/infra_internal'
+    repo_url = 'https://chrome-internal.googlesource.com/infra/infra_internal'
   elif buildername.startswith('infra-continuous'):
     project_name = 'infra'
-    repo_name = 'https://chromium.googlesource.com/infra/infra'
+    repo_url = 'https://chromium.googlesource.com/infra/infra'
   else:  # pragma: no cover
     raise ValueError(
         'This recipe is not intended for builder %s. ' % buildername)
-
-  if api.runtime.is_luci:
-    bucket = api.buildbucket.properties['build']['bucket']
-  else:
-    bucket = mastername
 
   # Prefix the system binary path to PATH so that all Python invocations will
   # use the system Python. This will ensure that packages built will be built
@@ -215,13 +144,10 @@ def RunSteps(api, mastername, buildername, buildnumber):
     # ('revision' property is missing in that case).
     rev = bot_update_step.presentation.properties['got_revision']
 
-    build_main(api, bucket, buildername, buildnumber, project_name,
-               repo_name, rev)
+    build_main(api, buildername, buildnumber, project_name, repo_url, rev)
 
 
-def build_main(api, bucket, buildername, buildnumber, project_name,
-               repo_name, rev):
-
+def build_main(api, buildername, buildnumber, project_name, repo_url, rev):
   with api.step.defer_results():
     with api.context(cwd=api.path['checkout']):
       # Run Linux tests everywhere, Windows tests only on public CI.
@@ -272,10 +198,15 @@ def build_main(api, bucket, buildername, buildnumber, project_name,
         ['python', api.path['checkout'].join('go', 'test.py')])
 
   if buildnumber != -1:
-    for goos, goarch in get_go_platforms_for_cipd(buildername):
-      build_cipd_packages(
-          api, repo_name, rev, bucket, buildername, buildnumber,
-          goos, goarch)
+    for plat in CIPD_PACKAGE_BUILDERS.get(buildername, []):
+      if plat == 'native':
+        goos, goarch = None, None
+      else:
+        goos, goarch = plat.split('-', 1)
+      with api.infra_cipd.context(api.path['checkout'], goos, goarch):
+        api.infra_cipd.build()
+        api.infra_cipd.test(skip_if_cross_compiling=True)
+        api.infra_cipd.upload(api.infra_cipd.tags(repo_url, rev))
   else:  # pragma: no cover
     result = api.step('cipd - not building packages, no buildnumber', None)
     result.presentation.status = api.step.WARNING
@@ -285,19 +216,6 @@ def build_main(api, bucket, buildername, buildnumber, project_name,
 
 
 def GenTests(api):
-  cipd_json_output = {
-    'succeeded': [
-      {
-        'info': {
-          'instance_id': 'abcdefabcdef63ad814cd1dfffe2fcfc9f81299c',
-          'package': 'infra/tools/some_tool/linux-bitness',
-        },
-        'pkg_def_name': 'some_tool',
-      },
-    ],
-    'failed': [],
-  }
-
   yield (
     api.test('infra-continuous-precise-64') +
     api.properties.git_scheduled(
@@ -306,13 +224,7 @@ def GenTests(api):
         buildnumber=123,
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/infra/infra',
-    ) +
-    api.override_step_data(
-        'cipd - upload packages [GOOS:linux GOARCH:arm]',
-        api.json.output(cipd_json_output)) +
-    api.override_step_data(
-        'cipd - upload packages [GOOS:linux GOARCH:arm64]',
-        api.json.output(cipd_json_output))
+    )
   )
   yield (
     api.test('infra-continuous-trusty-64') +
@@ -322,9 +234,7 @@ def GenTests(api):
         buildnumber=123,
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/infra/infra',
-    ) +
-    api.override_step_data(
-        'cipd - upload packages', api.json.output(cipd_json_output))
+    )
   )
   yield (
     api.test('infra-continuous-win-64') +
@@ -346,9 +256,7 @@ def GenTests(api):
         mastername='internal.infra',
         repository=
             'https://chrome-internal.googlesource.com/infra/infra_internal',
-    ) +
-    api.override_step_data(
-        'cipd - upload packages', api.json.output(cipd_json_output))
+    )
   )
   yield (
     api.test('infra-internal-continuous-luci') +
@@ -378,7 +286,5 @@ def GenTests(api):
           },
           "hostname": "cr-buildbucket.appspot.com"
         }),
-    ) +
-    api.override_step_data(
-        'cipd - upload packages', api.json.output(cipd_json_output))
+    )
   )

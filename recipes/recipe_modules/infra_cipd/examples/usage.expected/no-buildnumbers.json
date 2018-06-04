@@ -1,0 +1,25 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[BUILDER_CACHE]/assume/infra/build/build.py",
+      "--builder",
+      "just-build-and-test"
+    ],
+    "name": "cipd - build packages"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[BUILDER_CACHE]/assume/infra/build/test_packages.py"
+    ],
+    "name": "cipd - test packages integrity"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

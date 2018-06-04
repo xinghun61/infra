@@ -1,0 +1,59 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[BUILDER_CACHE]/assume/infra/build/build.py",
+      "--builder",
+      "native"
+    ],
+    "name": "cipd - build packages"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[BUILDER_CACHE]/assume/infra/build/test_packages.py"
+    ],
+    "name": "cipd - test packages integrity"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[BUILDER_CACHE]/assume/infra/build/build.py",
+      "--no-rebuild",
+      "--upload",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--builder",
+      "native",
+      "--tags",
+      "luci_build:luci.infra-internal.ci/native/5",
+      "git_repository:https://chromium.googlesource.com/infra/infra",
+      "git_revision:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    ],
+    "name": "cipd - upload packages",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"failed\": [], @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"succeeded\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"info\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"abcdefabcdef63ad814cd1dfffe2fcfc9f81299c\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/tools/some_tool/os-bitness\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"pkg_def_name\": \"some_tool\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@infra/tools/some_tool/os-bitness abcdefabcdef63ad814cd1dfffe2fcfc9f81299c@http://example.com/not-implemented-yet@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
