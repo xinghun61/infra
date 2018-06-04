@@ -13,7 +13,7 @@ GAE_PY?= python gae.py
 DEV_APPSERVER_FLAGS?=
 
 FRONTEND_MODULES?= default
-BACKEND_MODULES?= besearch
+BACKEND_MODULES?= besearch latency-insensitive
 
 VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
 CRISPER_PATH = ./node_modules/crisper/bin/crisper

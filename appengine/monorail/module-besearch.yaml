@@ -23,14 +23,6 @@ handlers:
 - url: /_backend/.*
   script: monorailapp.app
 
-- url: /_cron/.*
-  script: monorailapp.app
-  login: admin
-
-- url: /_task/.*
-  script: monorailapp.app
-  login: admin
-
 inbound_services:
 - warmup
 

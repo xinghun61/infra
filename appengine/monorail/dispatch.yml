@@ -1,0 +1,15 @@
+dispatch:
+- url: /_ah/mail/.*
+  service: latency-insensitive
+
+- url: /_ah/spi/.*
+  service: latency-insensitive
+
+- url: /_backend/.*
+  service: besearch
+
+- url: /_cron/.*
+  service: latency-insensitive
+
+- url: /_task/.*
+  service: latency-insensitive
