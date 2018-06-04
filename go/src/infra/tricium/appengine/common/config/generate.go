@@ -5,7 +5,6 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -170,10 +169,13 @@ func includeFunction(f *tricium.Function, paths []string) (bool, error) {
 //
 // The provided function is assumed to be verified.
 func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Function) (*admin.Worker, error) {
-	i := tricium.LookupImplForPlatform(f, s.Platform) // if verified, there should be an impl.
-	p := tricium.LookupPlatform(sc, s.Platform)       // if verified, the platform should be known.
-	// TODO(emso): Consider composing worker names using a character not
-	// allowed in function/platform names, e.g., '/'.
+	i := tricium.LookupImplForPlatform(f, s.Platform) // If verified, there should be an Impl.
+	p := tricium.LookupPlatform(sc, s.Platform)       // If verified, the platform should be known.
+	// TODO(qyearsley): The character that's used as a separator in worker
+	// names should be explicitly disallowed from function and platform
+	// names. Currently the character is "_"; a check could be added that
+	// the function and worker do not contain "_". If this is not feasible,
+	// the separator character could be changed.
 	w := &admin.Worker{
 		Name:                fmt.Sprintf("%s_%s", s.Function, s.Platform),
 		Needs:               f.Needs,
@@ -187,39 +189,14 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 	}
 	switch ii := i.Impl.(type) {
 	case *tricium.Impl_Recipe:
-		rps, err := tricium.GetRecipePackages(sc, s.Platform)
-		if err != nil {
-			return nil, errors.New("failed to lookup service recipe packages")
-		}
-		w.CipdPackages = append(w.CipdPackages, rps...)
-		w.Cmd, err = tricium.GetRecipeCmd(sc, s.Platform)
-		if err != nil {
-			return nil, errors.New("failed to lookup service recipe command")
-		}
-		p := map[string]interface{}{}
-		for _, prop := range ii.Recipe.Properties {
-			p[prop.Key] = prop.Value
-		}
-		for _, c := range s.Configs {
-			p[c.Name] = c.Value
-		}
-		b, err := json.Marshal(p)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal recipe properties: %v", err)
-		}
-		// TODO(emso): improve the command composition
-		w.Cmd.Args = append(w.Cmd.Args, []string{
-			"--recipe", ii.Recipe.Path,
-			"--repository", ii.Recipe.Repository,
-			"--revision", ii.Recipe.Revision,
-			"--properties", string(b)}...)
+		// TODO(qyearsley): Implement worker set up for recipe-based analyzers.
 	case *tricium.Impl_Cmd:
 		w.Cmd = ii.Cmd
 		for _, c := range s.Configs {
 			w.Cmd.Args = append(w.Cmd.Args, "--"+c.Name, c.Value)
 		}
 	case nil:
-		return nil, fmt.Errorf("missing impl when constructing worker %s", w.Name)
+		return nil, fmt.Errorf("missing Impl when constructing worker %s", w.Name)
 	default:
 		return nil, fmt.Errorf("Impl.Impl has unexpected type %T", ii)
 	}

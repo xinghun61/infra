@@ -12,6 +12,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 // Available data types should be listed in this enum and have a
 // corresponding nested message with a mandatory platforms fields,
 // see GitFileDetails for field details.
@@ -43,18 +49,42 @@ var Data_Type_value = map[string]int32{
 func (x Data_Type) String() string {
 	return proto.EnumName(Data_Type_name, int32(x))
 }
-func (Data_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 0} }
+func (Data_Type) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0, 0}
+}
 
 // Tricium data types.
 //
 // Any data type provided or needed by a Tricium function.
 type Data struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Data) Reset()                    { *m = Data{} }
-func (m *Data) String() string            { return proto.CompactTextString(m) }
-func (*Data) ProtoMessage()               {}
-func (*Data) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (m *Data) Reset()         { *m = Data{} }
+func (m *Data) String() string { return proto.CompactTextString(m) }
+func (*Data) ProtoMessage()    {}
+func (*Data) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0}
+}
+func (m *Data) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data.Unmarshal(m, b)
+}
+func (m *Data) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data.Marshal(b, m, deterministic)
+}
+func (dst *Data) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data.Merge(dst, src)
+}
+func (m *Data) XXX_Size() int {
+	return xxx_messageInfo_Data.Size(m)
+}
+func (m *Data) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data proto.InternalMessageInfo
 
 // Details for supported types, specifically whether a type is tied to
 // a platform.
@@ -62,14 +92,36 @@ func (*Data) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 // These type details are used to resolve data dependencies when
 // generating workflows.
 type Data_TypeDetails struct {
-	Type               Data_Type `protobuf:"varint,1,opt,name=type,enum=tricium.Data_Type" json:"type,omitempty"`
-	IsPlatformSpecific bool      `protobuf:"varint,2,opt,name=is_platform_specific,json=isPlatformSpecific" json:"is_platform_specific,omitempty"`
+	Type                 Data_Type `protobuf:"varint,1,opt,name=type,enum=tricium.Data_Type" json:"type,omitempty"`
+	IsPlatformSpecific   bool      `protobuf:"varint,2,opt,name=is_platform_specific,json=isPlatformSpecific" json:"is_platform_specific,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
-func (m *Data_TypeDetails) Reset()                    { *m = Data_TypeDetails{} }
-func (m *Data_TypeDetails) String() string            { return proto.CompactTextString(m) }
-func (*Data_TypeDetails) ProtoMessage()               {}
-func (*Data_TypeDetails) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 0} }
+func (m *Data_TypeDetails) Reset()         { *m = Data_TypeDetails{} }
+func (m *Data_TypeDetails) String() string { return proto.CompactTextString(m) }
+func (*Data_TypeDetails) ProtoMessage()    {}
+func (*Data_TypeDetails) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0, 0}
+}
+func (m *Data_TypeDetails) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_TypeDetails.Unmarshal(m, b)
+}
+func (m *Data_TypeDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_TypeDetails.Marshal(b, m, deterministic)
+}
+func (dst *Data_TypeDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_TypeDetails.Merge(dst, src)
+}
+func (m *Data_TypeDetails) XXX_Size() int {
+	return xxx_messageInfo_Data_TypeDetails.Size(m)
+}
+func (m *Data_TypeDetails) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_TypeDetails.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_TypeDetails proto.InternalMessageInfo
 
 func (m *Data_TypeDetails) GetType() Data_Type {
 	if m != nil {
@@ -96,16 +148,38 @@ type Data_GitFileDetails struct {
 	//
 	// This includes the ANY platform, encoded as zero, which should
 	// be used for any data that is not platform-specific.
-	Platforms  int64    `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
-	Repository string   `protobuf:"bytes,2,opt,name=repository" json:"repository,omitempty"`
-	Ref        string   `protobuf:"bytes,3,opt,name=ref" json:"ref,omitempty"`
-	Paths      []string `protobuf:"bytes,4,rep,name=paths" json:"paths,omitempty"`
+	Platforms            int64    `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
+	Repository           string   `protobuf:"bytes,2,opt,name=repository" json:"repository,omitempty"`
+	Ref                  string   `protobuf:"bytes,3,opt,name=ref" json:"ref,omitempty"`
+	Paths                []string `protobuf:"bytes,4,rep,name=paths" json:"paths,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Data_GitFileDetails) Reset()                    { *m = Data_GitFileDetails{} }
-func (m *Data_GitFileDetails) String() string            { return proto.CompactTextString(m) }
-func (*Data_GitFileDetails) ProtoMessage()               {}
-func (*Data_GitFileDetails) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 1} }
+func (m *Data_GitFileDetails) Reset()         { *m = Data_GitFileDetails{} }
+func (m *Data_GitFileDetails) String() string { return proto.CompactTextString(m) }
+func (*Data_GitFileDetails) ProtoMessage()    {}
+func (*Data_GitFileDetails) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0, 1}
+}
+func (m *Data_GitFileDetails) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_GitFileDetails.Unmarshal(m, b)
+}
+func (m *Data_GitFileDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_GitFileDetails.Marshal(b, m, deterministic)
+}
+func (dst *Data_GitFileDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_GitFileDetails.Merge(dst, src)
+}
+func (m *Data_GitFileDetails) XXX_Size() int {
+	return xxx_messageInfo_Data_GitFileDetails.Size(m)
+}
+func (m *Data_GitFileDetails) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_GitFileDetails.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_GitFileDetails proto.InternalMessageInfo
 
 func (m *Data_GitFileDetails) GetPlatforms() int64 {
 	if m != nil {
@@ -145,13 +219,35 @@ func (m *Data_GitFileDetails) GetPaths() []string {
 type Data_Files struct {
 	Platforms int64 `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
 	// Paths to files from the root of the isolated input.
-	Paths []string `protobuf:"bytes,2,rep,name=paths" json:"paths,omitempty"`
+	Paths                []string `protobuf:"bytes,2,rep,name=paths" json:"paths,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Data_Files) Reset()                    { *m = Data_Files{} }
-func (m *Data_Files) String() string            { return proto.CompactTextString(m) }
-func (*Data_Files) ProtoMessage()               {}
-func (*Data_Files) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 2} }
+func (m *Data_Files) Reset()         { *m = Data_Files{} }
+func (m *Data_Files) String() string { return proto.CompactTextString(m) }
+func (*Data_Files) ProtoMessage()    {}
+func (*Data_Files) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0, 2}
+}
+func (m *Data_Files) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Files.Unmarshal(m, b)
+}
+func (m *Data_Files) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Files.Marshal(b, m, deterministic)
+}
+func (dst *Data_Files) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Files.Merge(dst, src)
+}
+func (m *Data_Files) XXX_Size() int {
+	return xxx_messageInfo_Data_Files.Size(m)
+}
+func (m *Data_Files) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Files.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Files proto.InternalMessageInfo
 
 func (m *Data_Files) GetPlatforms() int64 {
 	if m != nil {
@@ -177,13 +273,35 @@ type Data_ClangDetails struct {
 	// Path to the compilation database. Typically, in the build root.
 	CompilationDb string `protobuf:"bytes,2,opt,name=compilation_db,json=compilationDb" json:"compilation_db,omitempty"`
 	// Paths to files needed to compile cpp files to analyze.
-	CompDepPath []string `protobuf:"bytes,3,rep,name=comp_dep_path,json=compDepPath" json:"comp_dep_path,omitempty"`
+	CompDepPath          []string `protobuf:"bytes,3,rep,name=comp_dep_path,json=compDepPath" json:"comp_dep_path,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Data_ClangDetails) Reset()                    { *m = Data_ClangDetails{} }
-func (m *Data_ClangDetails) String() string            { return proto.CompactTextString(m) }
-func (*Data_ClangDetails) ProtoMessage()               {}
-func (*Data_ClangDetails) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 3} }
+func (m *Data_ClangDetails) Reset()         { *m = Data_ClangDetails{} }
+func (m *Data_ClangDetails) String() string { return proto.CompactTextString(m) }
+func (*Data_ClangDetails) ProtoMessage()    {}
+func (*Data_ClangDetails) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0, 3}
+}
+func (m *Data_ClangDetails) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_ClangDetails.Unmarshal(m, b)
+}
+func (m *Data_ClangDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_ClangDetails.Marshal(b, m, deterministic)
+}
+func (dst *Data_ClangDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_ClangDetails.Merge(dst, src)
+}
+func (m *Data_ClangDetails) XXX_Size() int {
+	return xxx_messageInfo_Data_ClangDetails.Size(m)
+}
+func (m *Data_ClangDetails) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_ClangDetails.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_ClangDetails proto.InternalMessageInfo
 
 func (m *Data_ClangDetails) GetPlatforms() int64 {
 	if m != nil {
@@ -216,13 +334,35 @@ type Data_Results struct {
 	Platforms int64 `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
 	// Zero or more results found as comments, either inline comments or change
 	// comments (comments without line positions).
-	Comments []*Data_Comment `protobuf:"bytes,2,rep,name=comments" json:"comments,omitempty"`
+	Comments             []*Data_Comment `protobuf:"bytes,2,rep,name=comments" json:"comments,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *Data_Results) Reset()                    { *m = Data_Results{} }
-func (m *Data_Results) String() string            { return proto.CompactTextString(m) }
-func (*Data_Results) ProtoMessage()               {}
-func (*Data_Results) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 4} }
+func (m *Data_Results) Reset()         { *m = Data_Results{} }
+func (m *Data_Results) String() string { return proto.CompactTextString(m) }
+func (*Data_Results) ProtoMessage()    {}
+func (*Data_Results) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0, 4}
+}
+func (m *Data_Results) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Results.Unmarshal(m, b)
+}
+func (m *Data_Results) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Results.Marshal(b, m, deterministic)
+}
+func (dst *Data_Results) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Results.Merge(dst, src)
+}
+func (m *Data_Results) XXX_Size() int {
+	return xxx_messageInfo_Data_Results.Size(m)
+}
+func (m *Data_Results) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Results.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Results proto.InternalMessageInfo
 
 func (m *Data_Results) GetPlatforms() int64 {
 	if m != nil {
@@ -268,13 +408,35 @@ type Data_Comment struct {
 	StartChar int32 `protobuf:"varint,8,opt,name=start_char,json=startChar" json:"start_char,omitempty"`
 	EndChar   int32 `protobuf:"varint,9,opt,name=end_char,json=endChar" json:"end_char,omitempty"`
 	// Suggested fixes for the identified issue.
-	Suggestion []*Data_Suggestion `protobuf:"bytes,10,rep,name=suggestion" json:"suggestion,omitempty"`
+	Suggestion           []*Data_Suggestion `protobuf:"bytes,10,rep,name=suggestion" json:"suggestion,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
-func (m *Data_Comment) Reset()                    { *m = Data_Comment{} }
-func (m *Data_Comment) String() string            { return proto.CompactTextString(m) }
-func (*Data_Comment) ProtoMessage()               {}
-func (*Data_Comment) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 5} }
+func (m *Data_Comment) Reset()         { *m = Data_Comment{} }
+func (m *Data_Comment) String() string { return proto.CompactTextString(m) }
+func (*Data_Comment) ProtoMessage()    {}
+func (*Data_Comment) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0, 5}
+}
+func (m *Data_Comment) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Comment.Unmarshal(m, b)
+}
+func (m *Data_Comment) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Comment.Marshal(b, m, deterministic)
+}
+func (dst *Data_Comment) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Comment.Merge(dst, src)
+}
+func (m *Data_Comment) XXX_Size() int {
+	return xxx_messageInfo_Data_Comment.Size(m)
+}
+func (m *Data_Comment) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Comment.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Comment proto.InternalMessageInfo
 
 func (m *Data_Comment) GetId() string {
 	if m != nil {
@@ -354,13 +516,35 @@ type Data_Suggestion struct {
 	// A brief description of the suggested fix.
 	Description string `protobuf:"bytes,1,opt,name=description" json:"description,omitempty"`
 	// Fix as a list of replacements.
-	Replacement []*Data_Replacement `protobuf:"bytes,2,rep,name=replacement" json:"replacement,omitempty"`
+	Replacement          []*Data_Replacement `protobuf:"bytes,2,rep,name=replacement" json:"replacement,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
 }
 
-func (m *Data_Suggestion) Reset()                    { *m = Data_Suggestion{} }
-func (m *Data_Suggestion) String() string            { return proto.CompactTextString(m) }
-func (*Data_Suggestion) ProtoMessage()               {}
-func (*Data_Suggestion) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 6} }
+func (m *Data_Suggestion) Reset()         { *m = Data_Suggestion{} }
+func (m *Data_Suggestion) String() string { return proto.CompactTextString(m) }
+func (*Data_Suggestion) ProtoMessage()    {}
+func (*Data_Suggestion) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0, 6}
+}
+func (m *Data_Suggestion) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Suggestion.Unmarshal(m, b)
+}
+func (m *Data_Suggestion) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Suggestion.Marshal(b, m, deterministic)
+}
+func (dst *Data_Suggestion) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Suggestion.Merge(dst, src)
+}
+func (m *Data_Suggestion) XXX_Size() int {
+	return xxx_messageInfo_Data_Suggestion.Size(m)
+}
+func (m *Data_Suggestion) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Suggestion.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Suggestion proto.InternalMessageInfo
 
 func (m *Data_Suggestion) GetDescription() string {
 	if m != nil {
@@ -385,16 +569,38 @@ type Data_Replacement struct {
 	// A replacement string.
 	Replacement string `protobuf:"bytes,2,opt,name=replacement" json:"replacement,omitempty"`
 	// A continuous section of the file to replace.
-	StartLine int32 `protobuf:"varint,3,opt,name=start_line,json=startLine" json:"start_line,omitempty"`
-	EndLine   int32 `protobuf:"varint,4,opt,name=end_line,json=endLine" json:"end_line,omitempty"`
-	StartChar int32 `protobuf:"varint,5,opt,name=start_char,json=startChar" json:"start_char,omitempty"`
-	EndChar   int32 `protobuf:"varint,6,opt,name=end_char,json=endChar" json:"end_char,omitempty"`
+	StartLine            int32    `protobuf:"varint,3,opt,name=start_line,json=startLine" json:"start_line,omitempty"`
+	EndLine              int32    `protobuf:"varint,4,opt,name=end_line,json=endLine" json:"end_line,omitempty"`
+	StartChar            int32    `protobuf:"varint,5,opt,name=start_char,json=startChar" json:"start_char,omitempty"`
+	EndChar              int32    `protobuf:"varint,6,opt,name=end_char,json=endChar" json:"end_char,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Data_Replacement) Reset()                    { *m = Data_Replacement{} }
-func (m *Data_Replacement) String() string            { return proto.CompactTextString(m) }
-func (*Data_Replacement) ProtoMessage()               {}
-func (*Data_Replacement) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 7} }
+func (m *Data_Replacement) Reset()         { *m = Data_Replacement{} }
+func (m *Data_Replacement) String() string { return proto.CompactTextString(m) }
+func (*Data_Replacement) ProtoMessage()    {}
+func (*Data_Replacement) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_f6e6912ebba4e3ad, []int{0, 7}
+}
+func (m *Data_Replacement) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Replacement.Unmarshal(m, b)
+}
+func (m *Data_Replacement) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Replacement.Marshal(b, m, deterministic)
+}
+func (dst *Data_Replacement) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Replacement.Merge(dst, src)
+}
+func (m *Data_Replacement) XXX_Size() int {
+	return xxx_messageInfo_Data_Replacement.Size(m)
+}
+func (m *Data_Replacement) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Replacement.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Replacement proto.InternalMessageInfo
 
 func (m *Data_Replacement) GetPath() string {
 	if m != nil {
@@ -451,9 +657,11 @@ func init() {
 	proto.RegisterEnum("tricium.Data_Type", Data_Type_name, Data_Type_value)
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/v1/data.proto", fileDescriptor1) }
+func init() {
+	proto.RegisterFile("infra/tricium/api/v1/data.proto", fileDescriptor_data_f6e6912ebba4e3ad)
+}
 
-var fileDescriptor1 = []byte{
+var fileDescriptor_data_f6e6912ebba4e3ad = []byte{
 	// 595 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0xcd, 0x6a, 0xdb, 0x40,
 	0x14, 0x85, 0x2b, 0x4b, 0x8e, 0xac, 0xab, 0xc6, 0xb8, 0x43, 0x0a, 0x8a, 0xe8, 0x8f, 0x09, 0xb4,

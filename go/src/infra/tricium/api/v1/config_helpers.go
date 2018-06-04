@@ -144,27 +144,6 @@ func SupportsConfig(f *Function, config *Config) bool {
 	return false
 }
 
-// GetRecipePackages returns the base service recipe packages for recipe-based implementations.
-func GetRecipePackages(sc *ServiceConfig, platform Platform_Name) ([]*CipdPackage, error) {
-	if len(sc.RecipePackages) == 0 {
-		return nil, errors.New("service recipe packages missing")
-	}
-	// TODO(emso): adjust packages for platform.
-	return sc.RecipePackages, nil
-}
-
-// GetRecipeCmd returns the base service command for recipe-based implementations.
-func GetRecipeCmd(sc *ServiceConfig, platform Platform_Name) (*Cmd, error) {
-	if sc.GetRecipeCmd() == nil {
-		return nil, errors.New("service recipe command missing")
-	}
-	// TODO(emso): Adjust for platform?
-	return &Cmd{
-		Exec: sc.RecipeCmd.Exec,
-		Args: sc.RecipeCmd.Args,
-	}, nil
-}
-
 // ValidateFunction checks if the function config entry is valid.
 //
 // A valid function config entry has a name, valid deps and valid impl entries.

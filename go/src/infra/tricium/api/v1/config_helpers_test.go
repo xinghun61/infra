@@ -267,17 +267,6 @@ func TestLookupPlatform(t *testing.T) {
 	})
 }
 
-func TestGetRecipePackages(t *testing.T) {
-	// TODO(emso): test recipe packages
-}
-
-func TestGetRecipeCmd(t *testing.T) {
-	Convey("Unknown recipe cmd returns an error", t, func() {
-		_, err := GetRecipeCmd(&ServiceConfig{}, Platform_LINUX)
-		So(err, ShouldNotBeNil)
-	})
-}
-
 func TestValidateFunction(t *testing.T) {
 
 	sc := &ServiceConfig{

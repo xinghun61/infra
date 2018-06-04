@@ -305,19 +305,6 @@ func TestCreateWorker(t *testing.T) {
 					Dimensions: []string{dimension},
 				},
 			},
-			RecipePackages: []*tricium.CipdPackage{
-				{
-					PackageName: "infra/tools/luci/kitchen",
-					Path:        ".",
-					Version:     "git_revision:e6b225b4b008e57014021ad2c2e92b5e3f499438",
-				},
-			},
-			RecipeCmd: &tricium.Cmd{
-				Exec: "kitchen",
-				Args: []string{
-					"cook",
-				},
-			},
 		}
 		deadline := int32(120)
 		Convey("Correctly creates cmd-based worker", func() {
@@ -362,9 +349,6 @@ func TestCreateWorker(t *testing.T) {
 		})
 
 		Convey("Correctly creates recipe-based worker", func() {
-			recipe := "recipe"
-			repo := "infra-repo"
-			rev := "abcdefg"
 			f := &tricium.Function{
 				Name:       analyzer,
 				Needs:      tricium.Data_FILES,
@@ -383,9 +367,8 @@ func TestCreateWorker(t *testing.T) {
 						},
 						Impl: &tricium.Impl_Recipe{
 							Recipe: &tricium.Recipe{
-								Repository: repo,
-								Path:       recipe,
-								Revision:   rev,
+								CipdPackage: "path/to/cipd/package",
+								CipdVersion: "version",
 							},
 						},
 						Deadline: deadline,
@@ -400,20 +383,8 @@ func TestCreateWorker(t *testing.T) {
 			So(w.ProvidesForPlatform, ShouldEqual, platform)
 			So(len(w.Dimensions), ShouldEqual, 1)
 			So(w.Dimensions[0], ShouldEqual, dimension)
-			So(len(w.CipdPackages), ShouldEqual, 2)
+			So(len(w.CipdPackages), ShouldEqual, 1)
 			So(w.Deadline, ShouldEqual, deadline)
-			// kitchen cook --recipe ... --repository ... --revision ... --properties {config:configValue}
-			So(w.Cmd.Exec, ShouldEqual, "kitchen")
-			So(len(w.Cmd.Args), ShouldEqual, 9)
-			So(w.Cmd.Args[0], ShouldEqual, "cook")
-			So(w.Cmd.Args[1], ShouldEqual, "--recipe")
-			So(w.Cmd.Args[2], ShouldEqual, recipe)
-			So(w.Cmd.Args[3], ShouldEqual, "--repository")
-			So(w.Cmd.Args[4], ShouldEqual, repo)
-			So(w.Cmd.Args[5], ShouldEqual, "--revision")
-			So(w.Cmd.Args[6], ShouldEqual, rev)
-			So(w.Cmd.Args[7], ShouldEqual, "--properties")
-			So(w.Cmd.Args[8], ShouldEqual, fmt.Sprintf("{\"%s\":\"%s\"}", config, configValue))
 		})
 	})
 }
