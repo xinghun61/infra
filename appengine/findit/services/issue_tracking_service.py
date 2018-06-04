@@ -239,6 +239,8 @@ def ShouldUpdateBugForAnalysis(analysis):
                               'insufficient-confidence')
     return False
 
+  # TODO(crbug.com/847960): Do not update bugs if Findit already logged one as
+  # the information would be redundant.
   return True
 
 

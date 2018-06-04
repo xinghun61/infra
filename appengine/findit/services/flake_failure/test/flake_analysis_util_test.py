@@ -11,7 +11,6 @@ from google.appengine.ext import ndb
 from dto.flake_swarming_task_output import FlakeSwarmingTaskOutput
 from dto import swarming_task_error
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from libs import analysis_status
 from libs import time_util
 from libs.gitiles.change_log import ChangeLog
 from model.flake.flake_culprit import FlakeCulprit
@@ -83,37 +82,20 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
                      flake_analysis_util.CalculateDelaySecondsBetweenRetries(
                          flake_constants.MAX_RETRY_TIMES + 1, False))
 
-  def testReportError(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.Save()
-
-    flake_analysis_util.ReportPotentialErrorToCompleteAnalysis(
-        analysis.key.urlsafe())
-
-    analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
-    self.assertIsNotNone(analysis.error)
-
-  def testReportErrorNoError(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.status = analysis_status.COMPLETED
-    analysis.Save()
-
-    flake_analysis_util.ReportPotentialErrorToCompleteAnalysis(
-        analysis.key.urlsafe())
-
-    analysis = ndb.Key(urlsafe=analysis.key.urlsafe()).get()
-    self.assertIsNone(analysis.error)
-
   def testShouldThrottleAnalysis(self):
     self.UpdateUnitTestConfigSettings(
         config_property='check_flake_settings',
-        override_data={'throttle_flake_analyses': True})
+        override_data={
+            'throttle_flake_analyses': True
+        })
     self.assertTrue(flake_analysis_util.ShouldThrottleAnalysis())
 
   def testShouldThrottleAnalysisNotThrottled(self):
     self.UpdateUnitTestConfigSettings(
         config_property='check_flake_settings',
-        override_data={'throttle_flake_analyses': False})
+        override_data={
+            'throttle_flake_analyses': False
+        })
     self.assertFalse(flake_analysis_util.ShouldThrottleAnalysis())
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')

@@ -77,15 +77,31 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
 
   input_type = AnalyzeFlakeInput
 
-  def OnAbort(self, parameters):
-    flake_analysis_util.ReportPotentialErrorToCompleteAnalysis(
-        parameters.analysis_urlsafe_key)
-    monitoring.aborted_pipelines.increment({'type': 'flake'})
+  def OnFinalized(self, parameters):
+    if not self.IsRootPipeline():
+      # AnalyzeFlakePipeline is recursive. Only the root pipeline should update.
+      return
+
+    analysis_urlsafe_key = parameters.analysis_urlsafe_key
+    analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
+    assert analysis, 'Cannot retrieve analysis entry from datastore'
+
+    # Get the analysis' already-detected error, if any.
+    error = analysis.error
+
+    if self.was_aborted:
+      error = analysis.GetError()  # Capture any undetected error.
+      monitoring.aborted_pipelines.increment({'type': 'flake'})
+
+    status = analysis_status.ERROR if error else analysis_status.COMPLETED
+    analysis.Update(error=error, end_time=time_util.GetUTCNow(), status=status)
+
+    # TODO(crbug.com/847644): If error is set, report to ts_mon.
 
   def RunImpl(self, parameters):
     analysis_urlsafe_key = parameters.analysis_urlsafe_key
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
-    assert analysis, 'Can not retrieve analysis entry from datastore'
+    assert analysis, 'Cannot retrieve analysis entry from datastore'
     if analysis.request_time:
       monitoring.pipeline_times.increment_by(
           int((time_util.GetUTCNow() - analysis.request_time).total_seconds()),
@@ -104,8 +120,6 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
       if culprit_commit_position is None:
         # No culprit was identified. No further action.
         analysis.LogInfo('Analysis completed with no findings')
-        analysis.Update(
-            end_time=time_util.GetUTCNow(), status=analysis_status.COMPLETED)
 
         # Report events to BQ.
         yield ReportAnalysisEventPipeline(
@@ -123,12 +137,10 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
       confidence_score = confidence_score_util.CalculateCulpritConfidenceScore(
           analysis, culprit_commit_position)
 
-      # Update the analysis' fields to signfy completion.
+      # Update the analysis' culprit.
       analysis.Update(
           confidence_in_culprit=confidence_score,
-          culprit_urlsafe_key=culprit.key.urlsafe(),
-          end_time=time_util.GetUTCNow(),
-          status=analysis_status.COMPLETED)
+          culprit_urlsafe_key=culprit.key.urlsafe())
 
       # Determine the test's location for filing bugs.
       culprit_data_point = analysis.FindMatchingDataPointWithCommitPosition(
@@ -142,25 +154,31 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
                                           analysis.original_builder_name,
                                           analysis.original_build_number)
 
-      # Log a Monorail bug and notify the culprit review about findings.
       with pipeline.InOrder():
-        create_bug_input = self.CreateInputObjectInstance(
-            CreateBugForFlakePipelineInputObject,
-            analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-            test_location=test_location)
-        create_and_submit_revert_input = self.CreateInputObjectInstance(
-            CreateAndSubmitRevertInput,
-            analysis_urlsafe_key=analysis.key.urlsafe(),
-            build_id=build_id)
-        monorail_bug_input = self.CreateInputObjectInstance(
-            UpdateMonorailBugInput, analysis_urlsafe_key=analysis_urlsafe_key)
-        notify_culprit_input = self.CreateInputObjectInstance(
-            NotifyCulpritInput, analysis_urlsafe_key=analysis_urlsafe_key)
+        # Log Monorail bug.
+        yield CreateBugForFlakePipeline(
+            self.CreateInputObjectInstance(
+                CreateBugForFlakePipelineInputObject,
+                analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+                test_location=test_location))
 
-        yield CreateBugForFlakePipeline(create_bug_input)
-        yield CreateAndSubmitRevertPipeline(create_and_submit_revert_input)
-        yield UpdateMonorailBugPipeline(monorail_bug_input)
-        yield NotifyCulpritPipeline(notify_culprit_input)
+        # Revert culprit if applicable.
+        yield CreateAndSubmitRevertPipeline(
+            self.CreateInputObjectInstance(
+                CreateAndSubmitRevertInput,
+                analysis_urlsafe_key=analysis.key.urlsafe(),
+                build_id=build_id))
+
+        # Update bug with result.
+        yield UpdateMonorailBugPipeline(
+            self.CreateInputObjectInstance(
+                UpdateMonorailBugInput,
+                analysis_urlsafe_key=analysis_urlsafe_key))
+
+        # Update culprit code review.
+        yield NotifyCulpritPipeline(
+            self.CreateInputObjectInstance(
+                NotifyCulpritInput, analysis_urlsafe_key=analysis_urlsafe_key))
 
         # Report events to BQ.
         yield ReportAnalysisEventPipeline(
@@ -187,46 +205,41 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
 
       with pipeline.InOrder():
         # Determine isolate sha to run swarming tasks on.
-        get_isolate_sha_input = self.CreateInputObjectInstance(
-            GetIsolateShaForCommitPositionParameters,
-            analysis_urlsafe_key=analysis_urlsafe_key,
-            commit_position=commit_position_to_analyze,
-            revision=revision_to_analyze,
-            upper_bound_build_number=analysis.build_number)
         get_sha_output = yield GetIsolateShaForCommitPositionPipeline(
-            get_isolate_sha_input)
+            self.CreateInputObjectInstance(
+                GetIsolateShaForCommitPositionParameters,
+                analysis_urlsafe_key=analysis_urlsafe_key,
+                commit_position=commit_position_to_analyze,
+                revision=revision_to_analyze,
+                upper_bound_build_number=analysis.build_number))
 
         # Determine approximate pass rate at the commit position/isolate sha.
-        determine_approximate_pass_rate_input = self.CreateInputObjectInstance(
-            DetermineApproximatePassRateInput,
-            analysis_urlsafe_key=analysis_urlsafe_key,
-            commit_position=commit_position_to_analyze,
-            get_isolate_sha_output=get_sha_output,
-            previous_swarming_task_output=None,
-            revision=revision_to_analyze,
-        )
         yield DetermineApproximatePassRatePipeline(
-            determine_approximate_pass_rate_input)
+            self.CreateInputObjectInstance(
+                DetermineApproximatePassRateInput,
+                analysis_urlsafe_key=analysis_urlsafe_key,
+                commit_position=commit_position_to_analyze,
+                get_isolate_sha_output=get_sha_output,
+                previous_swarming_task_output=None,
+                revision=revision_to_analyze))
 
         # Determine the next commit position to analyze.
-        next_commit_position_input = self.CreateInputObjectInstance(
-            NextCommitPositionInput,
-            analysis_urlsafe_key=analysis_urlsafe_key,
-            commit_position_range=parameters.commit_position_range)
         next_commit_position_output = yield NextCommitPositionPipeline(
-            next_commit_position_input)
+            self.CreateInputObjectInstance(
+                NextCommitPositionInput,
+                analysis_urlsafe_key=analysis_urlsafe_key,
+                commit_position_range=parameters.commit_position_range))
 
         # Recurse on the new commit position.
-        analyze_next_commit_position_input = self.CreateInputObjectInstance(
-            AnalyzeFlakeInput,
-            analysis_urlsafe_key=analysis_urlsafe_key,
-            analyze_commit_position_parameters=next_commit_position_output,
-            commit_position_range=parameters.commit_position_range,
-            manually_triggered=parameters.manually_triggered,
-            retries=0,
-            step_metadata=parameters.step_metadata)
-
-        yield RecursiveAnalyzeFlakePipeline(analyze_next_commit_position_input)
+        yield RecursiveAnalyzeFlakePipeline(
+            self.CreateInputObjectInstance(
+                AnalyzeFlakeInput,
+                analysis_urlsafe_key=analysis_urlsafe_key,
+                analyze_commit_position_parameters=next_commit_position_output,
+                commit_position_range=parameters.commit_position_range,
+                manually_triggered=parameters.manually_triggered,
+                retries=0,
+                step_metadata=parameters.step_metadata))
     else:
       # Can't start the analysis just yet, reschedule.
       parameters.retries += 1

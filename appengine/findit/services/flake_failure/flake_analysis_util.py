@@ -8,7 +8,6 @@ from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from libs import analysis_status
 from libs import time_util
 from model.flake.flake_culprit import FlakeCulprit
 from services.flake_failure import flake_constants
@@ -82,19 +81,6 @@ def CalculateDelaySecondsBetweenRetries(retries, manually_triggered):
   else:
     delay_seconds = retries * flake_constants.BASE_COUNT_DOWN_SECONDS
     return delay_seconds
-
-
-def ReportPotentialErrorToCompleteAnalysis(analysis_urlsafe_key):
-  """Gets and sets an error for a MasterFlakeAnalysis."""
-  analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
-  assert analysis
-
-  if not analysis.completed:
-    error = analysis.GetError()
-    analysis.Update(
-        status=analysis_status.ERROR,
-        error=error,
-        end_time=time_util.GetUTCNow())
 
 
 def ShouldThrottleAnalysis():

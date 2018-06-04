@@ -201,6 +201,10 @@ class BasePipeline(pipeline.Pipeline):
   input_type = _UNDEFINED_TYPE
   output_type = _UNDEFINED_TYPE
 
+  def IsRootPipeline(self):
+    """Returns whether this pipeline is the root pipeline."""
+    return self.pipeline_id == self.root_pipeline_id
+
   def OnAbort(self, arg):
     """Called when the pipeline is aborted.
 
@@ -464,9 +468,9 @@ class AsynchronousPipeline(BasePipeline):
         return 500, 'plain/text', error
       else:  # No error, fill output.
         if result and not isinstance(result, self.output_type):
-          aborted = self.abort(
-              'Expected output of type %s, but got %s' %
-              (self.output_type.__name__, type(result).__name__))
+          aborted = self.abort('Expected output of type %s, but got %s' %
+                               (self.output_type.__name__,
+                                type(result).__name__))
           logging.info('%s aborted: %s', self.__class__.__name__, aborted)
         else:
           # Marks the pipeline as complete with the given result.

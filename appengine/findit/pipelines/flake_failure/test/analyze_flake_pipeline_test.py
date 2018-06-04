@@ -153,9 +153,9 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.MockGeneratorPipeline(CreateAndSubmitRevertPipeline,
                                expected_create_and_submit_revert_input, True)
     self.MockGeneratorPipeline(UpdateMonorailBugPipeline,
-                               expected_update_bug_input, None)
+                               expected_update_bug_input, True)
     self.MockGeneratorPipeline(NotifyCulpritPipeline,
-                               expected_notify_culprit_input, None)
+                               expected_notify_culprit_input, True)
     self.MockGeneratorPipeline(ReportAnalysisEventPipeline,
                                expected_report_event_input, None)
 
@@ -313,9 +313,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
     mocked_revision.assert_called_once_with(mock.ANY, 1000)
 
-  @mock.patch.object(flake_analysis_util,
-                     'ReportPotentialErrorToCompleteAnalysis')
-  def testOnAbort(self, mocked_error):
+  def testOnFinalizedNoError(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
@@ -329,9 +327,26 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         step_metadata=None)
 
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
-    pipeline_job.OnAbort(analyze_flake_input)
+    pipeline_job.OnFinalized(analyze_flake_input)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
-    self.assertTrue(mocked_error.called)
+  def testFinishAnalyzeFlakePipelineWithError(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.error = analysis.GetError()
+    analysis.Save()
+
+    analyze_flake_input = AnalyzeFlakeInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        analyze_commit_position_parameters=NextCommitPositionOutput(
+            next_commit_position=1000, culprit_commit_position=None),
+        commit_position_range=IntRange(lower=None, upper=None),
+        manually_triggered=False,
+        retries=0,
+        step_metadata=None)
+
+    pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
+    pipeline_job.OnFinalized(analyze_flake_input)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
 
   def testRecursiveAnalyzeFlakePipeline(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
