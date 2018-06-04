@@ -85,7 +85,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.EQ, [open_field], [], [])
     new_cond = ast2ast._PreprocessIsOpenCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.NE, new_cond.op)
     self.assertEqual([status_id_field], new_cond.field_defs)
     self.assertEqual([7, 8, 9], new_cond.int_values)
@@ -95,7 +95,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.NE, [open_field], [], [])
     new_cond = ast2ast._PreprocessIsOpenCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([status_id_field], new_cond.field_defs)
     self.assertEqual([7, 8, 9], new_cond.int_values)
@@ -122,7 +122,7 @@ class AST2ASTTest(unittest.TestCase):
       cond = ast_pb2.MakeCond(
           ast_pb2.QueryOp.TEXT_HAS, [blockedon_field], local_ids, [])
       new_cond = ast2ast._PreprocessBlockedOnCond(
-          self.cnxn, cond, [1], self.services, None)
+          self.cnxn, cond, [1], self.services, None, True)
       self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
       self.assertEqual([blockedon_id_field], new_cond.field_defs)
       self.assertEqual(expected, new_cond.int_values)
@@ -148,7 +148,7 @@ class AST2ASTTest(unittest.TestCase):
       cond = ast_pb2.MakeCond(
           ast_pb2.QueryOp.TEXT_HAS, [blockedon_field], local_ids, [])
       new_cond = ast2ast._PreprocessBlockedOnCond(
-          self.cnxn, cond, [1, 2], self.services, None)
+          self.cnxn, cond, [1, 2], self.services, None, True)
       self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
       self.assertEqual([blockedon_id_field], new_cond.field_defs)
       self.assertEqual(expected, new_cond.int_values)
@@ -172,7 +172,7 @@ class AST2ASTTest(unittest.TestCase):
           ast_pb2.QueryOp.TEXT_HAS, [blockedon_field], local_ids, [])
       with self.assertRaises(ValueError) as cm:
         ast2ast._PreprocessBlockedOnCond(
-            self.cnxn, cond, [1, 2], self.services, None)
+            self.cnxn, cond, [1, 2], self.services, None, True)
       self.assertEquals(
           'Searching for issues accross multiple/all projects without '
           'project prefixes is ambiguous and is currently not supported.',
@@ -186,7 +186,7 @@ class AST2ASTTest(unittest.TestCase):
       cond = ast_pb2.MakeCond(
           input_op, [blocked_field], [], [])
       new_cond = ast2ast._PreprocessIsBlockedCond(
-          self.cnxn, cond, [100], self.services, None)
+          self.cnxn, cond, [100], self.services, None, True)
       self.assertEqual(expected_op, new_cond.op)
       self.assertEqual([blocked_field], new_cond.field_defs)
       self.assertEqual([], new_cond.int_values)
@@ -197,7 +197,7 @@ class AST2ASTTest(unittest.TestCase):
     for op in (ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
       cond = ast_pb2.MakeCond(op, [blocked_field], [], [])
       new_cond = ast2ast._PreprocessBlockedOnCond(
-          self.cnxn, cond, [100], self.services, None)
+          self.cnxn, cond, [100], self.services, None, True)
       self.assertEqual(op, op)
       self.assertEqual([blocked_field], new_cond.field_defs)
       self.assertEqual([], new_cond.int_values)
@@ -208,7 +208,7 @@ class AST2ASTTest(unittest.TestCase):
     for op in (ast_pb2.QueryOp.IS_DEFINED, ast_pb2.QueryOp.IS_NOT_DEFINED):
       cond = ast_pb2.MakeCond(op, [blocking_field], [], [])
       new_cond = ast2ast._PreprocessBlockingCond(
-          self.cnxn, cond, [100], self.services, None)
+          self.cnxn, cond, [100], self.services, None, True)
       self.assertEqual(op, op)
       self.assertEqual([blocking_field], new_cond.field_defs)
       self.assertEqual([], new_cond.int_values)
@@ -235,7 +235,7 @@ class AST2ASTTest(unittest.TestCase):
       cond = ast_pb2.MakeCond(
           ast_pb2.QueryOp.TEXT_HAS, [blocking_field], local_ids, [])
       new_cond = ast2ast._PreprocessBlockingCond(
-          self.cnxn, cond, [1], self.services, None)
+          self.cnxn, cond, [1], self.services, None, True)
       self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
       self.assertEqual([blocking_id_field], new_cond.field_defs)
       self.assertEqual(expected, new_cond.int_values)
@@ -261,7 +261,7 @@ class AST2ASTTest(unittest.TestCase):
       cond = ast_pb2.MakeCond(
           ast_pb2.QueryOp.TEXT_HAS, [blocking_field], local_ids, [])
       new_cond = ast2ast._PreprocessBlockingCond(
-          self.cnxn, cond, [1, 2], self.services, None)
+          self.cnxn, cond, [1, 2], self.services, None, True)
       self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
       self.assertEqual([blocking_id_field], new_cond.field_defs)
       self.assertEqual(expected, new_cond.int_values)
@@ -285,7 +285,7 @@ class AST2ASTTest(unittest.TestCase):
           ast_pb2.QueryOp.TEXT_HAS, [blocking_field], local_ids, [])
       with self.assertRaises(ValueError) as cm:
         ast2ast._PreprocessBlockingCond(
-            self.cnxn, cond, [1, 2], self.services, None)
+            self.cnxn, cond, [1, 2], self.services, None, True)
       self.assertEquals(
         'Searching for issues accross multiple/all projects without '
         'project prefixes is ambiguous and is currently not supported.',
@@ -312,7 +312,7 @@ class AST2ASTTest(unittest.TestCase):
       cond = ast_pb2.MakeCond(
           ast_pb2.QueryOp.TEXT_HAS, [field], local_ids, [])
       new_cond = ast2ast._PreprocessMergedIntoCond(
-          self.cnxn, cond, [1], self.services, None)
+          self.cnxn, cond, [1], self.services, None, True)
       self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
       self.assertEqual([id_field], new_cond.field_defs)
       self.assertEqual(expected, new_cond.int_values)
@@ -326,7 +326,7 @@ class AST2ASTTest(unittest.TestCase):
       cond = ast_pb2.MakeCond(
           input_op, [spam_field], [], [])
       new_cond = ast2ast._PreprocessIsSpamCond(
-          self.cnxn, cond, [789], self.services, None)
+          self.cnxn, cond, [789], self.services, None, True)
       self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
       self.assertEqual([is_spam_field], new_cond.field_defs)
       self.assertEqual(int_values, new_cond.int_values)
@@ -339,7 +339,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.IS_DEFINED, [status_field], [], [])
     new_cond = ast2ast._PreprocessStatusCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.IS_DEFINED, new_cond.op)
     self.assertEqual([status_id_field], new_cond.field_defs)
     self.assertEqual([], new_cond.int_values)
@@ -348,7 +348,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.EQ, [status_field], ['New', 'Assigned'], [])
     new_cond = ast2ast._PreprocessStatusCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([status_id_field], new_cond.field_defs)
     self.assertEqual([0, 1], new_cond.int_values)
@@ -357,7 +357,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [status_field], [], [])
     new_cond = ast2ast._PreprocessStatusCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual([], new_cond.int_values)
 
   def testPrefixRegex(self):
@@ -401,7 +401,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.IS_DEFINED, [label_field], ['Priority'], [])
     new_cond = ast2ast._PreprocessLabelCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.IS_DEFINED, new_cond.op)
     self.assertEqual([label_id_field], new_cond.field_defs)
     self.assertEqual([1, 2, 3], new_cond.int_values)
@@ -411,7 +411,7 @@ class AST2ASTTest(unittest.TestCase):
         ast_pb2.QueryOp.EQ, [label_field],
         ['Priority-Low', 'Priority-High'], [])
     new_cond = ast2ast._PreprocessLabelCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([label_id_field], new_cond.field_defs)
     self.assertEqual([0, 1], new_cond.int_values)
@@ -421,7 +421,7 @@ class AST2ASTTest(unittest.TestCase):
         ast_pb2.QueryOp.KEY_HAS, [label_field],
         ['Priority-Low', 'Priority-High'], [])
     new_cond = ast2ast._PreprocessLabelCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([label_id_field], new_cond.field_defs)
     self.assertEqual([1, 2, 3], new_cond.int_values)
@@ -434,7 +434,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.IS_DEFINED, [component_field], ['UI', 'DB'], [])
     new_cond = ast2ast._PreprocessComponentCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.IS_DEFINED, new_cond.op)
     self.assertEqual([component_id_field], new_cond.field_defs)
     self.assertEqual([101, 102, 201], new_cond.int_values)
@@ -443,7 +443,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [component_field], ['UI', 'DB'], [])
     new_cond = ast2ast._PreprocessComponentCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([component_id_field], new_cond.field_defs)
     self.assertEqual([101, 102, 201], new_cond.int_values)
@@ -452,14 +452,14 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [component_field], [], [])
     new_cond = ast2ast._PreprocessComponentCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual([], new_cond.int_values)
 
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [component_field], ['unknown@example.com'],
         [])
     new_cond = ast2ast._PreprocessComponentCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual([], new_cond.int_values)
 
   def testPreprocessComponentCond_RootedAndNonRooted(self):
@@ -469,7 +469,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [component_field], ['UI'], [])
     new_cond = ast2ast._PreprocessComponentCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([component_id_field], new_cond.field_defs)
     self.assertEqual([101, 102], new_cond.int_values)
@@ -478,55 +478,80 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.EQ, [component_field], ['UI'], [])
     new_cond = ast2ast._PreprocessComponentCond(
-        self.cnxn, cond, [789], self.services, self.config)
+        self.cnxn, cond, [789], self.services, self.config, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([component_id_field], new_cond.field_defs)
     self.assertEqual([101], new_cond.int_values)
     self.assertEqual([], new_cond.str_values)
 
   def testPreprocessExactUsers_IsDefined(self):
+    """Anyone can search for [has:owner]."""
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.IS_DEFINED, [OWNER_FIELD], ['a@example.com'], [])
     new_cond = ast2ast._PreprocessExactUsers(
-        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD])
+        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], True)
     self.assertEqual(ast_pb2.QueryOp.IS_DEFINED, new_cond.op)
     self.assertEqual([OWNER_ID_FIELD], new_cond.field_defs)
     self.assertEqual([], new_cond.int_values)
     self.assertEqual([], new_cond.str_values)
 
+    # Non-members do not raise an exception.
+    ast2ast._PreprocessExactUsers(
+        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], False)
+
+
   def testPreprocessExactUsers_UserFound(self):
+    """Anyone can search for a know user, [owner:user@example.com]."""
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [OWNER_FIELD], ['a@example.com'], [])
     new_cond = ast2ast._PreprocessExactUsers(
-        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD])
+        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([OWNER_ID_FIELD], new_cond.field_defs)
     self.assertEqual([111L], new_cond.int_values)
     self.assertEqual([], new_cond.str_values)
 
+    # Non-members do not raise an exception.
+    ast2ast._PreprocessExactUsers(
+        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], False)
+
   def testPreprocessExactUsers_UserSpecifiedByID(self):
+    """Anyone may search for users by ID, [owner:1234]."""
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [OWNER_FIELD], ['123'], [])
     new_cond = ast2ast._PreprocessExactUsers(
-        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD])
+        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([OWNER_ID_FIELD], new_cond.field_defs)
     self.assertEqual([123L], new_cond.int_values)
     self.assertEqual([], new_cond.str_values)
 
+    # Non-members do not raise an exception.
+    ast2ast._PreprocessExactUsers(
+        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], False)
+
   def testPreprocessExactUsers_NonEquality(self):
+    """Project members may search for [owner_id>111]."""
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.GE, [OWNER_ID_FIELD], ['111'], [])
     new_cond = ast2ast._PreprocessExactUsers(
-        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD])
+        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], True)
     self.assertEqual(cond, new_cond)
+
+    with self.assertRaises(ast2ast.MalformedQuery):
+      ast2ast._PreprocessExactUsers(
+          self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], False)
 
   def testPreprocessExactUsers_UserNotFound(self):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [OWNER_FIELD], ['unknown@example.com'], [])
     new_cond = ast2ast._PreprocessExactUsers(
-        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD])
+        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], True)
     self.assertEqual(cond, new_cond)
+
+    with self.assertRaises(ast2ast.MalformedQuery):
+      ast2ast._PreprocessExactUsers(
+          self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], False)
 
   def testPreprocessHotlistCond(self):
     hotlist_field = BUILTIN_ISSUE_FIELDS['hotlist']
@@ -557,7 +582,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [hotlist_field], hotlist_query_vals, [])
     actual = ast2ast._PreprocessHotlistCond(
-        self.cnxn, cond, [1], self.services, None)
+        self.cnxn, cond, [1], self.services, None, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, actual.op)
     self.assertEqual([hotlist_id_field], actual.field_defs)
     self.assertItemsEqual([10, 30, 40, 50, 60], actual.int_values)
@@ -568,7 +593,7 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [hotlist_field], hotlist_query_vals, [])
     actual = ast2ast._PreprocessHotlistCond(
-        self.cnxn, cond, [1], self.services, None)
+        self.cnxn, cond, [1], self.services, None, True)
     self.assertEqual(cond, actual)
 
   def testPreprocessCustomCond_User(self):
@@ -577,7 +602,8 @@ class AST2ASTTest(unittest.TestCase):
         field_type=tracker_pb2.FieldTypes.USER_TYPE)
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['a@example.com'], [])
-    new_cond = ast2ast._PreprocessCustomCond(self.cnxn, cond, self.services)
+    new_cond = ast2ast._PreprocessCustomCond(
+        self.cnxn, cond, self.services, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual(cond.field_defs, new_cond.field_defs)
     self.assertEqual([111L], new_cond.int_values)
@@ -585,7 +611,8 @@ class AST2ASTTest(unittest.TestCase):
 
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['111'], [])
-    new_cond = ast2ast._PreprocessCustomCond(self.cnxn, cond, self.services)
+    new_cond = ast2ast._PreprocessCustomCond(
+        self.cnxn, cond, self.services, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual(cond.field_defs, new_cond.field_defs)
     self.assertEqual([111L], new_cond.int_values)
@@ -593,7 +620,8 @@ class AST2ASTTest(unittest.TestCase):
 
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['unknown@example.com'], [])
-    new_cond = ast2ast._PreprocessCustomCond(self.cnxn, cond, self.services)
+    new_cond = ast2ast._PreprocessCustomCond(
+        self.cnxn, cond, self.services, True)
     self.assertEqual(cond, new_cond)
 
   def testPreprocessCustomCond_NonUser(self):
@@ -602,11 +630,13 @@ class AST2ASTTest(unittest.TestCase):
         field_type=tracker_pb2.FieldTypes.INT_TYPE)
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['foo'], [123])
-    new_cond = ast2ast._PreprocessCustomCond(self.cnxn, cond, self.services)
+    new_cond = ast2ast._PreprocessCustomCond(
+        self.cnxn, cond, self.services, True)
     self.assertEqual(cond, new_cond)
 
     fd.field_type = tracker_pb2.FieldTypes.STR_TYPE
-    new_cond = ast2ast._PreprocessCustomCond(self.cnxn, cond, self.services)
+    new_cond = ast2ast._PreprocessCustomCond(
+        self.cnxn, cond, self.services, True)
     self.assertEqual(cond, new_cond)
 
   def testPreprocessCustomCond_ApprovalUser(self):
@@ -616,7 +646,8 @@ class AST2ASTTest(unittest.TestCase):
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [fd], ['a@example.com'], [],
         key_suffix=query2ast.APPROVER_SUFFIX)
-    new_cond = ast2ast._PreprocessCustomCond(self.cnxn, cond, self.services)
+    new_cond = ast2ast._PreprocessCustomCond(
+        self.cnxn, cond, self.services, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual(cond.field_defs, new_cond.field_defs)
     self.assertEqual([111L], new_cond.int_values)
@@ -626,7 +657,7 @@ class AST2ASTTest(unittest.TestCase):
   def testPreprocessCond_NoChange(self):
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.TEXT_HAS, [ANY_FIELD], ['foo'], [])
     self.assertEqual(
-        cond, ast2ast._PreprocessCond(self.cnxn, cond, [], None, None))
+        cond, ast2ast._PreprocessCond(self.cnxn, cond, [], None, None, True))
 
   def testTextOpToIntOp(self):
     self.assertEqual(ast_pb2.QueryOp.EQ,

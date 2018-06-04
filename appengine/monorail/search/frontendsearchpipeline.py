@@ -29,6 +29,7 @@ from google.appengine.api import urlfetch
 
 import settings
 from features import savedqueries_helpers
+from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
 from framework import paginate
@@ -89,6 +90,9 @@ class FrontendSearchPipeline(object):
               mr.auth.user_pb, mr.auth.effective_ids, p)]
     if mr.project_name:
       self.query_projects.append(mr.project)
+    member_of_all_projects = mr.auth.user_pb.is_site_admin or all(
+        framework_bizobj.UserIsInProject(p, mr.auth.effective_ids)
+        for p in self.query_projects)
     self.query_project_ids = sorted([
         p.project_id for p in self.query_projects])
     self.query_project_names = sorted([
@@ -114,7 +118,8 @@ class FrontendSearchPipeline(object):
 
     error_msg = _CheckQuery(
         self.mr.cnxn, self.services, self.mr.query, self.harmonized_config,
-        self.query_project_ids, warnings=self.mr.warnings)
+        self.query_project_ids, member_of_all_projects,
+        warnings=self.mr.warnings)
     if error_msg:
       self.mr.errors.query = error_msg
 
@@ -470,14 +475,16 @@ class FrontendSearchPipeline(object):
 
 
 def _CheckQuery(
-    cnxn, services, query, harmonized_config, project_ids, warnings=None):
+    cnxn, services, query, harmonized_config, project_ids,
+    member_of_all_projects, warnings=None):
   """Parse the given query and report the first error or None."""
   try:
     query_ast = query2ast.ParseUserQuery(
         query, '', query2ast.BUILTIN_ISSUE_FIELDS, harmonized_config,
         warnings=warnings)
     query_ast = ast2ast.PreprocessAST(
-        cnxn, query_ast, project_ids, services, harmonized_config)
+        cnxn, query_ast, project_ids, services, harmonized_config,
+        is_member=member_of_all_projects)
   except query2ast.InvalidQueryError as e:
     return e.message
   except ast2ast.MalformedQuery as e:

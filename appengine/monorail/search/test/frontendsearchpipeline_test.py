@@ -415,14 +415,14 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     warnings = []
     msg = frontendsearchpipeline._CheckQuery(
         'cnxn', self.services, 'ok query', self.default_config,
-        [self.project_id], warnings=warnings)
+        [self.project_id], True, warnings=warnings)
     self.assertIsNone(msg)
     self.assertEqual([], warnings)
 
     warnings = []
     msg = frontendsearchpipeline._CheckQuery(
         'cnxn', self.services, 'modified:0-0-0', self.default_config,
-        [self.project_id], warnings=warnings)
+        [self.project_id], True, warnings=warnings)
     self.assertEqual(
         'Could not parse date: 0-0-0',
         msg)
@@ -430,7 +430,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     warnings = []
     msg = frontendsearchpipeline._CheckQuery(
         'cnxn', self.services, 'foo (bar)', self.default_config,
-        [self.project_id], warnings=warnings)
+        [self.project_id], True, warnings=warnings)
     self.assertIsNone(msg)
     self.assertEqual(
         ['Parentheses are ignored in user queries.'],
@@ -439,7 +439,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     warnings = []
     msg = frontendsearchpipeline._CheckQuery(
         'cnxn', self.services, 'blocking:3.14', self.default_config,
-        [self.project_id], warnings=warnings)
+        [self.project_id], True, warnings=warnings)
     self.assertEqual(
         'Could not parse issue reference: 3.14',
         msg)

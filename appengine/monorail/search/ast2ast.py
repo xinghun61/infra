@@ -42,7 +42,7 @@ from tracker import tracker_bizobj
 
 
 def PreprocessAST(
-    cnxn, query_ast, project_ids, services, harmonized_config):
+    cnxn, query_ast, project_ids, services, harmonized_config, is_member=True):
   """Preprocess the query by doing lookups so that the SQL query is simpler.
 
   Args:
@@ -52,6 +52,8 @@ def PreprocessAST(
         and labels.
     services: Connections to persistence layer for users and configs.
     harmonized_config: harmonized config for all projects being searched.
+    is_member: True if user is a member of all the projects being searched,
+        so they can do user substring searches.
 
   Returns:
     A new QueryAST PB with simplified conditions.  Specifically, string values
@@ -63,7 +65,7 @@ def PreprocessAST(
   for conj in query_ast.conjunctions:
     new_conds = [
         _PreprocessCond(
-            cnxn, cond, project_ids, services, harmonized_config)
+            cnxn, cond, project_ids, services, harmonized_config, is_member)
         for cond in conj.conds]
     new_conjs.append(ast_pb2.Conjunction(conds=new_conds))
 
@@ -71,7 +73,7 @@ def PreprocessAST(
 
 
 def _PreprocessIsOpenCond(
-    cnxn, cond, project_ids, services, _harmonized_config):
+    cnxn, cond, project_ids, services, _harmonized_config, _is_member):
   """Preprocess an is:open cond into status_id != closed_status_ids."""
   if project_ids:
     closed_status_ids = []
@@ -95,7 +97,7 @@ def _PreprocessIsOpenCond(
 
 
 def _PreprocessIsBlockedCond(
-    _cnxn, cond, _project_ids, _services, _harmonized_config):
+    _cnxn, cond, _project_ids, _services, _harmonized_config, _is_member):
   """Preprocess an is:blocked cond into issues that are blocked."""
   if cond.op == ast_pb2.QueryOp.EQ:
     op = ast_pb2.QueryOp.IS_DEFINED
@@ -109,7 +111,7 @@ def _PreprocessIsBlockedCond(
 
 
 def _PreprocessIsSpamCond(
-    _cnxn, cond, _project_ids, _services, _harmonized_config):
+    _cnxn, cond, _project_ids, _services, _harmonized_config, _is_member):
   """Preprocess an is:spam cond into is_spam == 1."""
   if cond.op == ast_pb2.QueryOp.EQ:
     int_values = [1]
@@ -125,7 +127,7 @@ def _PreprocessIsSpamCond(
 
 
 def _PreprocessBlockedOnCond(
-    cnxn, cond, project_ids, services, _harmonized_config):
+    cnxn, cond, project_ids, services, _harmonized_config, _is_member):
   """Preprocess blockedon=xyz and has:blockedon conds.
 
   Preprocesses blockedon=xyz cond into blockedon_id:issue_ids.
@@ -139,7 +141,7 @@ def _PreprocessBlockedOnCond(
 
 
 def _PreprocessBlockingCond(
-    cnxn, cond, project_ids, services, _harmonized_config):
+    cnxn, cond, project_ids, services, _harmonized_config, _is_member):
   """Preprocess blocking=xyz and has:blocking conds.
 
   Preprocesses blocking=xyz cond into blocking_id:issue_ids.
@@ -153,7 +155,7 @@ def _PreprocessBlockingCond(
 
 
 def _PreprocessMergedIntoCond(
-    cnxn, cond, project_ids, services, _harmonized_config):
+    cnxn, cond, project_ids, services, _harmonized_config, _is_member):
   """Preprocess mergedinto=xyz and has:mergedinto conds.
 
   Preprocesses mergedinto=xyz cond into mergedinto_id:issue_ids.
@@ -199,7 +201,7 @@ def _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services):
 
 
 def _PreprocessStatusCond(
-    cnxn, cond, project_ids, services, _harmonized_config):
+    cnxn, cond, project_ids, services, _harmonized_config, _is_member):
   """Preprocess a status=names cond into status_id=IDs."""
   if project_ids:
     status_ids = []
@@ -258,7 +260,7 @@ def _MakeWordBoundaryRegex(cond):
 
 
 def _PreprocessLabelCond(
-    cnxn, cond, project_ids, services, _harmonized_config):
+    cnxn, cond, project_ids, services, _harmonized_config, _is_member):
   """Preprocess a label=names cond into label_id=IDs."""
   if project_ids:
     label_ids = []
@@ -296,7 +298,7 @@ def _PreprocessLabelCond(
 
 
 def _PreprocessComponentCond(
-    cnxn, cond, project_ids, services, harmonized_config):
+    cnxn, cond, project_ids, services, harmonized_config, _is_member):
   """Preprocess a component= or component:name cond into component_id=IDs."""
   exact = _IsEqualityOp(cond.op)
   component_ids = []
@@ -318,7 +320,8 @@ def _PreprocessComponentCond(
       int_values=component_ids)
 
 
-def _PreprocessExactUsers(cnxn, cond, user_service, id_fields):
+def _PreprocessExactUsers(
+    cnxn, cond, user_service, id_fields, is_member):
   """Preprocess a foo=emails cond into foo_id=IDs, if exact user match.
 
   This preprocesing step converts string conditions to int ID conditions.
@@ -334,10 +337,16 @@ def _PreprocessExactUsers(cnxn, cond, user_service, id_fields):
     cond: original parsed query Condition PB.
     user_service: connection to user persistence layer.
     id_fields: list of the search fields to use if the conversion to IDs
-        succeeds.
+        succeed.
+    is_member: True if user is a member of all the projects being searchers,
+        so they can do user substring searches.
 
   Returns:
     A new Condition PB that checks the id_field.  Or, the original cond.
+
+  Raises:
+    MalformedQuery: A non-member used a query term that could be used to
+        guess full user email addresses.
   """
   op = _TextOpToIntOp(cond.op)
   if _IsDefinedOp(op):
@@ -350,6 +359,8 @@ def _PreprocessExactUsers(cnxn, cond, user_service, id_fields):
   # substrings.
   if not _IsEqualityOp(op):
     logging.info('could not convert to IDs because op is %r', op)
+    if not is_member:
+      raise MalformedQuery('Only project members may compare user strings')
     return cond
 
   user_ids = []
@@ -361,6 +372,12 @@ def _PreprocessExactUsers(cnxn, cond, user_service, id_fields):
         user_ids.append(user_service.LookupUserID(cnxn, val))
       except exceptions.NoSuchUserException:
         logging.info('could not convert user %r to int ID', val)
+        if not is_member and not val.startswith('@'):
+          if '@' in val:
+            raise MalformedQuery('User email address not found')
+          else:
+            raise MalformedQuery(
+                'Only project members may search for user substrings')
         return cond  # preprocessing failed, stick with the original cond.
 
   return ast_pb2.MakeCond(
@@ -369,45 +386,47 @@ def _PreprocessExactUsers(cnxn, cond, user_service, id_fields):
 
 
 def _PreprocessOwnerCond(
-    cnxn, cond, _project_ids, services, _harmonized_config):
+    cnxn, cond, _project_ids, services, _harmonized_config, is_member):
   """Preprocess a owner=emails cond into owner_id=IDs, if exact user match."""
   return _PreprocessExactUsers(
-      cnxn, cond, services.user, [query2ast.BUILTIN_ISSUE_FIELDS['owner_id']])
+      cnxn, cond, services.user, [query2ast.BUILTIN_ISSUE_FIELDS['owner_id']],
+      is_member)
 
 
 def _PreprocessCcCond(
-    cnxn, cond, _project_ids, services, _harmonized_config):
+    cnxn, cond, _project_ids, services, _harmonized_config, is_member):
   """Preprocess a cc=emails cond into cc_id=IDs, if exact user match."""
   return _PreprocessExactUsers(
-      cnxn, cond, services.user, [query2ast.BUILTIN_ISSUE_FIELDS['cc_id']])
+      cnxn, cond, services.user, [query2ast.BUILTIN_ISSUE_FIELDS['cc_id']],
+      is_member)
 
 
 def _PreprocessReporterCond(
-    cnxn, cond, _project_ids, services, _harmonized_config):
+    cnxn, cond, _project_ids, services, _harmonized_config, is_member):
   """Preprocess a reporter=emails cond into reporter_id=IDs, if exact."""
   return _PreprocessExactUsers(
       cnxn, cond, services.user,
-      [query2ast.BUILTIN_ISSUE_FIELDS['reporter_id']])
+      [query2ast.BUILTIN_ISSUE_FIELDS['reporter_id']], is_member)
 
 
 def _PreprocessStarredByCond(
-    cnxn, cond, _project_ids, services, _harmonized_config):
+    cnxn, cond, _project_ids, services, _harmonized_config, is_member):
   """Preprocess a starredby=emails cond into starredby_id=IDs, if exact."""
   return _PreprocessExactUsers(
       cnxn, cond, services.user,
-      [query2ast.BUILTIN_ISSUE_FIELDS['starredby_id']])
+      [query2ast.BUILTIN_ISSUE_FIELDS['starredby_id']], is_member)
 
 
 def _PreprocessCommentByCond(
-    cnxn, cond, _project_ids, services, _harmonized_config):
+    cnxn, cond, _project_ids, services, _harmonized_config, is_member):
   """Preprocess a commentby=emails cond into commentby_id=IDs, if exact."""
   return _PreprocessExactUsers(
       cnxn, cond, services.user,
-      [query2ast.BUILTIN_ISSUE_FIELDS['commentby_id']])
+      [query2ast.BUILTIN_ISSUE_FIELDS['commentby_id']], is_member)
 
 
 def _PreprocessHotlistCond(
-    cnxn, cond, _project_ids, services, _harmonized_config):
+    cnxn, cond, _project_ids, services, _harmonized_config, _is_member):
   """Preprocess hotlist query
 
   Preprocesses a hotlist query in the form:
@@ -449,7 +468,7 @@ def _PreprocessHotlistCond(
       int_values=list(hotlist_ids))
 
 
-def _PreprocessCustomCond(cnxn, cond, services):
+def _PreprocessCustomCond(cnxn, cond, services, is_member):
   """Preprocess a custom_user_field=emails cond into IDs, if exact matches."""
   # TODO(jrobbins): better support for ambiguous fields.
   # For now, if any field is USER_TYPE and the value being searched
@@ -459,7 +478,8 @@ def _PreprocessCustomCond(cnxn, cond, services):
   user_field_defs = [fd for fd in cond.field_defs
                      if fd.field_type == tracker_pb2.FieldTypes.USER_TYPE]
   if user_field_defs:
-    return _PreprocessExactUsers(cnxn, cond, services.user, user_field_defs)
+    return _PreprocessExactUsers(
+        cnxn, cond, services.user, user_field_defs, is_member)
 
   approval_field_defs = [fd for fd in cond.field_defs
                          if (fd.field_type ==
@@ -467,7 +487,7 @@ def _PreprocessCustomCond(cnxn, cond, services):
   if approval_field_defs:
     if cond.key_suffix in [query2ast.APPROVER_SUFFIX, query2ast.SET_BY_SUFFIX]:
       return _PreprocessExactUsers(
-          cnxn, cond, services.user, approval_field_defs)
+          cnxn, cond, services.user, approval_field_defs, is_member)
 
   return cond
 
@@ -492,7 +512,7 @@ _PREPROCESSORS = {
 
 
 def _PreprocessCond(
-    cnxn, cond, project_ids, services, harmonized_config):
+    cnxn, cond, project_ids, services, harmonized_config, is_member):
   """Preprocess query by looking up status, label and component IDs."""
   # All the fields in a cond share the same name because they are parsed
   # from a user query term, and the term syntax allows just one field name.
@@ -504,13 +524,14 @@ def _PreprocessCond(
     # There can't be a mix of custom and built-in fields because built-in
     # field names are reserved and take priority over any conflicting ones.
     assert all(fd.field_id for fd in cond.field_defs)
-    return _PreprocessCustomCond(cnxn, cond, services)
+    return _PreprocessCustomCond(cnxn, cond, services, is_member)
 
   # Case 2: The user is searching a built-in field.
   preproc = _PREPROCESSORS.get(field_name)
   if preproc:
     # We have a preprocessor for that built-in field.
-    return preproc(cnxn, cond, project_ids, services, harmonized_config)
+    return preproc(
+        cnxn, cond, project_ids, services, harmonized_config, is_member)
   else:
     # We don't have a preprocessor for it.
     return cond
