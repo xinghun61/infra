@@ -22,7 +22,17 @@ class MrIssueHeader extends Polymer.Element {
 
   static get properties() {
     return {
+      created: {
+        type: Object,
+        value: () => {
+          return new Date();
+        },
+      },
       issueId: Number,
+      reporter: {
+        type: String,
+        value: 'reporter@chromium.org',
+      },
       summary: {
         type: String,
         value: 'Autofill credit card icons',

@@ -46,7 +46,6 @@ class MrMetadata extends Polymer.Element {
       users: {
         type: Array,
         value: [
-          {name: 'Reporter', values: ['reporter@chromium.org']},
           {name: 'Owner', values: ['owner@chromium.org']},
           {name: 'TL', values: ['techlead@chromium.org']},
           {name: 'PM', values: ['pm@chromium.org']},

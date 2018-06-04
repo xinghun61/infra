@@ -11,7 +11,7 @@
       :host {
         width: 100%;
         margin-top: 0;
-        font-size: 110%;
+        font-size: 100%;
         background-color: hsl(227, 100%, 95%);
         border-bottom: 1px solid hsl(227, 10%, 87%);
         font-weight: normal;
@@ -23,13 +23,44 @@
       }
       iron-icon {
         --iron-icon-fill-color: hsl(227, 15%, 66%);
+        flex-shrink: 0;
       }
       mr-flt-flipper {
         font-size: 85%;
       }
+      .byline {
+        display: block;
+        font-size: 12px;
+        width: 100%;
+        line-height: 140%;
+        color: hsl(227, 15%, 35%);
+      }
+      .main-text {
+        display: flex;
+        align-items: center;
+      }
+      .main-text iron-icon {
+        margin-right: 8px;
+      }
+      @media (max-width: 840px) {
+        :host {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .main-text {
+          width: 100%;
+          margin-bottom: 0.5em;
+        }
+      }
     </style>
-    <div>
-      <iron-icon icon="star"></iron-icon> Issue [[issueId]]: [[summary]]
+    <div class="main-text">
+      <iron-icon icon="star"></iron-icon>
+      <div>
+        Issue [[issueId]]: [[summary]]
+        <small class="byline">
+          Created by <a href$="/u/[[reporter]]/">[[reporter]]</a> on <chops-timestamp date="[[created]]"></chops-timestamp>
+        </small>
+      </div>
     </div>
 
     <mr-flt-flipper
