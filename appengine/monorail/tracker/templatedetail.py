@@ -78,7 +78,7 @@ class TemplateDetail(servlet.Servlet):
       users_involved = tracker_bizobj.UsersInvolvedInTemplate(template)
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, users_involved)
-      framework_views.RevealAllEmailsToMembers(mr, users_by_id)
+      framework_views.RevealAllEmailsToMembers(mr.auth, mr.project, users_by_id)
     field_name_set = {fd.field_name.lower() for fd in config.field_defs
                       if not fd.is_deleted}
     non_masked_labels = tracker_bizobj.NonMaskedLabels(

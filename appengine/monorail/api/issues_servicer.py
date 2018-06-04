@@ -3,12 +3,18 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
+import logging
+
 from google.protobuf import empty_pb2
 
 from api import monorail_servicer
+from api import converters
 from api.api_proto import issue_objects_pb2
 from api.api_proto import issues_pb2
 from api.api_proto import issues_prpc_pb2
+from businesslogic import work_env
+from framework import framework_views
+from tracker import tracker_bizobj
 
 
 class IssuesServicer(monorail_servicer.MonorailServicer):
@@ -28,14 +34,27 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return response
 
   @monorail_servicer.PRPCMethod
-  def GetIssue(self, _mc, request):
-    response = issues_pb2.IssueResponse()
+  def GetIssue(self, mc, request):
+    """Return the specified issue in a response proto."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      project = we.GetProjectByName(request.issue_ref.project_name)
+      mc.LookupLoggedInUserPerms(project)
+      config = we.GetProjectConfig(project.project_id)
+      issue = we.GetIssueByLocalID(
+        project.project_id, request.issue_ref.local_id)
+      related_refs = we.GetRelatedIssueRefs(issue)
 
-    issue = issue_objects_pb2.Issue(
-        project_name=request.issue_ref.project_name,
-        local_id=request.issue_ref.local_id,
-        summary='TODO: get issue from the database')
-    response.issue.CopyFrom(issue)
+    with mc.profiler.Phase('making user views'):
+      users_involved_in_issue = tracker_bizobj.UsersInvolvedInIssues([issue])
+      users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, users_involved_in_issue)
+      framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
+
+    with mc.profiler.Phase('converting to response objects'):
+      response = issues_pb2.IssueResponse()
+      response.issue.CopyFrom(converters.ConvertIssue(
+          issue, users_by_id, related_refs, config))
+
     return response
 
   @monorail_servicer.PRPCMethod

@@ -227,7 +227,7 @@ def GatherUpdatesData(
   users_by_id = framework_views.MakeAllUserViews(
       mr.cnxn, services.user, [c.user_id for c in comments],
       amendment_user_ids)
-  framework_views.RevealAllEmailsToMembers(mr, users_by_id)
+  framework_views.RevealAllEmailsToMembers(mr.auth, mr.project, users_by_id)
 
   num_results_returned = len(comments)
   displayed_activities = comments[:UPDATES_PER_PAGE]

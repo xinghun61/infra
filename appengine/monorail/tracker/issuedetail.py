@@ -213,7 +213,7 @@ class IssueDetail(issuepeek.IssuePeek):
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, users_involved_in_issue,
           users_involved_in_comment_list)
-      framework_views.RevealAllEmailsToMembers(mr, users_by_id)
+      framework_views.RevealAllEmailsToMembers(mr.auth, mr.project, users_by_id)
 
     issue_flaggers, comment_flaggers = [], {}
     if issue_spam_promise:

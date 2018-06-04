@@ -515,6 +515,15 @@ class WorkEnv(object):
         issue, allow_viewing_deleted=allow_viewing_deleted)
     return issue
 
+  def GetRelatedIssueRefs(self, issue):
+    """Return a dict {iid: (project_name, local_id)} for all related issues."""
+    with self.mr.profiler.Phase('getting related issue refs'):
+      related_iids = list(issue.blocked_on_iids) + list(issue.blocking_iids)
+      if issue.merged_into:
+        related_iids.append(issue.merged_into)
+      logging.info('related_iids is %r', related_iids)
+      return self.services.issue.LookupIssueRefs(self.mr.cnxn, related_iids)
+
   def UpdateIssueApproval(self, issue_id, approval_id, approval_delta,
       comment_content):
     """Update an issue's approval."""

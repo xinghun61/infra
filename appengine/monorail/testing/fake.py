@@ -1227,6 +1227,12 @@ class IssueService(object):
 
     return result, misses
 
+  def LookupIssueRefs(self, cnxn, issue_ids):
+    issue_dict = self.GetIssuesDict(cnxn, issue_ids)
+    return {
+      issue_id: (issue.project_name, issue.local_id)
+      for issue_id, issue in issue_dict.items()}
+
   def GetAllIssuesInProject(
       self, _cnxn, project_id, min_local_id=None, use_cache=True):
     self.get_all_issues_in_project_called = True

@@ -277,7 +277,7 @@ class AdminComponents(IssueAdminBase):
         mr.cnxn, self.services.user,
         *[list(cd.admin_ids) + list(cd.cc_ids)
           for cd in config.component_defs])
-    framework_views.RevealAllEmailsToMembers(mr, users_by_id)
+    framework_views.RevealAllEmailsToMembers(mr.auth, mr.project, users_by_id)
     component_def_views = [
         tracker_views.ComponentDefView(mr.cnxn, self.services, cd, users_by_id)
         # TODO(jrobbins): future component-level view restrictions.
@@ -497,7 +497,7 @@ class AdminRules(IssueAdminBase):
         mr.cnxn, self.services.user,
         [rule.default_owner_id for rule in rules],
         *[rule.add_cc_ids for rule in rules])
-    framework_views.RevealAllEmailsToMembers(mr, users_by_id)
+    framework_views.RevealAllEmailsToMembers(mr.auth, mr.project, users_by_id)
     rule_views = [filterrules_views.RuleView(rule, users_by_id)
                   for rule in rules]
 

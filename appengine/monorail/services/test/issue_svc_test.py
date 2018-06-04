@@ -366,6 +366,20 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(misses, [])
     self.assertEqual([78901, 78902], actual)
 
+  def testLookupIssueRefs_Empty(self):
+    actual = self.services.issue.LookupIssueRefs(self.cnxn, [])
+    self.assertEqual({}, actual)
+
+  def testLookupIssueRefs_Normal(self):
+    issue_1 = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        status='Live', issue_id=78901, project_name='proj')
+    self.services.issue.issue_2lc.CacheItem(78901, issue_1)
+    actual = self.services.issue.LookupIssueRefs(self.cnxn, [78901])
+    self.assertEqual(
+        {78901: ('proj', 1)},
+        actual)
+
   ### Issue objects
 
   def testCreateIssue(self):

@@ -50,7 +50,7 @@ class HotlistPeopleList(servlet.Servlet):
     with mr.profiler.Phase('gathering members on this page'):
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, all_members)
-      framework_views.RevealAllEmailsToMembers(mr, users_by_id)
+      framework_views.RevealAllEmailsToMembers(mr.auth, mr.project, users_by_id)
 
     untrusted_user_group_proxies = []
     # TODO(jojwang): implement FindUntrustedGroups()

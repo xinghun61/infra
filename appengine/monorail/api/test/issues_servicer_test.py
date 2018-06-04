@@ -38,8 +38,13 @@ class IssuesServicerTest(unittest.TestCase):
     self.project = self.services.project.TestAddProject(
         'proj', project_id=789, owner_ids=[111L])
     self.user = self.services.user.TestAddUser('owner@example.com', 111L)
-    self.issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
-    self.services.issue.TestAddIssue(self.issue)
+    self.issue_1 = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, project_name='proj')
+    self.issue_2 = fake.MakeTestIssue(
+        789, 2, 'sum', 'New', 111L, project_name='proj')
+    self.issue_1.blocked_on_iids.append(self.issue_2.issue_id)
+    self.services.issue.TestAddIssue(self.issue_1)
+    self.services.issue.TestAddIssue(self.issue_2)
     self.issues_svcr = issues_servicer.IssuesServicer(
         self.services, make_rate_limiter=False)
     self.prpc_context = context.ServicerContext()
@@ -60,19 +65,28 @@ class IssuesServicerTest(unittest.TestCase):
             project_name='proj', local_id=1, summary='sum'))
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
+
     response = self.CallWrapped(self.issues_svcr.CreateIssue, mc, request)
+
     self.assertEqual('proj', response.project_name)
 
   def testGetIssue_Normal(self):
     """We can get an issue."""
     request = issues_pb2.GetIssueRequest()
     request.issue_ref.project_name = 'proj'
-    request.issue_ref.local_id = 123
+    request.issue_ref.local_id = 1
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
     response = self.CallWrapped(self.issues_svcr.GetIssue, mc, request)
-    self.assertEqual('proj', response.issue.project_name)
-    self.assertEqual(123, response.issue.local_id)
+
+    actual = response.issue
+    self.assertEqual('proj', actual.project_name)
+    self.assertEqual(1, actual.local_id)
+    self.assertEqual(1, len(actual.blocked_on_issue_refs))
+    self.assertEqual('proj', actual.blocked_on_issue_refs[0].project_name)
+    self.assertEqual(2, actual.blocked_on_issue_refs[0].local_id)
 
   def testDoDeleteIssueComment_Normal(self):
     """We can delete a comment."""
@@ -80,6 +94,8 @@ class IssuesServicerTest(unittest.TestCase):
         project_name='proj', local_id=1, comment_id=11, delete=True)
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
+
     response = self.CallWrapped(
         self.issues_svcr.DeleteIssueComment, mc, request)
+
     self.assertTrue(isinstance(response, empty_pb2.Empty))

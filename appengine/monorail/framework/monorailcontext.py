@@ -55,7 +55,7 @@ class MonorailContext(object):
   def LookupLoggedInUserPerms(self, project):
     """Look up perms for user making a request in project (can be None)."""
     with self.profiler.Phase('looking up signed in user permissions'):
-      self.perms = self.perms or permissions.GetPermissions(
+      self.perms = permissions.GetPermissions(
           self.auth.user_pb, self.auth.effective_ids, project)
 
   def CleanUp(self):

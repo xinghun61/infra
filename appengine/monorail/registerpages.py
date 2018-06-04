@@ -178,8 +178,7 @@ class ServletRegistry(object):
     self._RegisterIssueHandlers()
     self._RegisterRedirects()
     self._RegisterInboundMail()
-    # TODO(jrobbins): pass in services once ACLs are implemented.
-    api_service.RegisterApiHandlers(self, 'not ready for services')
+    api_service.RegisterApiHandlers(self, services)
     autolink.RegisterAutolink(services)
     # Error pages should be the last to register.
     self._RegisterErrorPages()

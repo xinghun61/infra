@@ -78,7 +78,7 @@ class IssuePeek(servlet.Servlet):
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, involved_user_ids,
           comment_user_ids, group_ids=group_ids)
-      framework_views.RevealAllEmailsToMembers(mr, users_by_id)
+      framework_views.RevealAllEmailsToMembers(mr.auth, mr.project, users_by_id)
 
     (issue_view, description_views,
      comment_views) = self._MakeIssueAndCommentViews(

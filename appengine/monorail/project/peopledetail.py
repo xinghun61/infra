@@ -65,7 +65,7 @@ class PeopleDetail(servlet.Servlet):
         mr.cnxn, [member_id])
     users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user, [member_id])
-    framework_views.RevealAllEmailsToMembers(mr, users_by_id)
+    framework_views.RevealAllEmailsToMembers(mr.auth, mr.project, users_by_id)
 
     project_commitments = self.services.project.GetProjectCommitments(
         mr.cnxn, mr.project_id)

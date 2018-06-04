@@ -332,6 +332,39 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetIssueByLocalID(789, 1)
 
+  def testGetRelatedIssueRefs_None(self):
+    """We handle issues that have no related issues."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
+    self.services.issue.TestAddIssue(issue)
+
+    with self.work_env as we:
+      actual = we.GetRelatedIssueRefs(issue)
+
+    self.assertEqual({}, actual)
+
+  def testGetRelatedIssueRefs_Some(self):
+    """We can get refs for related issues of a given issue."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
+    sooner = fake.MakeTestIssue(789, 2, 'sum', 'New', 111L, project_name='proj')
+    later = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, project_name='proj')
+    better = fake.MakeTestIssue(789, 4, 'sum', 'New', 111L, project_name='proj')
+    issue.blocked_on_iids.append(sooner.issue_id)
+    issue.blocking_iids.append(later.issue_id)
+    issue.merged_into = better.issue_id
+    self.services.issue.TestAddIssue(issue)
+    self.services.issue.TestAddIssue(sooner)
+    self.services.issue.TestAddIssue(later)
+    self.services.issue.TestAddIssue(better)
+
+    with self.work_env as we:
+      actual = we.GetRelatedIssueRefs(issue)
+
+    self.assertEqual(
+        {sooner.issue_id: ('proj', 2),
+         later.issue_id: ('proj', 3),
+         better.issue_id: ('proj', 4)},
+        actual)
+
   @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
   def testUpdateIssueApproval(self, _mockPrepareAndSend):
     """We can update an issue's approval_value."""

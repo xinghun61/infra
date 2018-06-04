@@ -24,9 +24,10 @@ message RequestTrace {
 }
 
 
-// Next available tag: 2
+// Next available tag: 3
 message ComponentRef {
   string path = 1;
+  bool is_derived = 2;
 }
 
 // Next available tag: 2
@@ -57,8 +58,9 @@ message IssueRef {
 }
 
 
-// Next available tag: 3
+// Next available tag: 4
 message UserRef {
   uint64 user_id = 1;
   string email = 2;  // May be obscured like "usern...@example.com".
+  bool is_derived = 3;
 }

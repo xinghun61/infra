@@ -20,6 +20,7 @@ from framework import framework_bizobj
 from framework import monorailcontext
 from framework import ratelimiter
 from framework import permissions
+from framework import xsrf
 
 
 def ConvertPRPCStatusToHTTPStatus(context):
@@ -92,7 +93,7 @@ class MonorailServicer(object):
       response = handler(self, mc, request)
 
     except Exception as e:
-      if not self.ProcessException(e, prpc_context):
+      if not self.ProcessException(e, prpc_context, mc):
         raise e.__class__, e, sys.exc_info()[2]
     finally:
       if mc:
@@ -122,11 +123,18 @@ class MonorailServicer(object):
       raise permissions.BannedUserException(
           'The user %s has been banned from using this site' %
           mc.auth.email)
+    trace = request.trace if hasattr(request, 'trace') else None
+    if trace and trace.reason:
+      logging.info('Request reason: %r', trace.reason)
     # TODO(jrobbins): open the API to more than just signed in project members.
     if not settings.dev_mode:
       if not mc.auth.user_id:
         logging.info('TODO: open API to anon users')
         raise permissions.PermissionException()
+      if trace:
+        xsrf.ValidateToken(
+          trace.token('token'), mc.auth.user_id, xsrf.XHR_SERVLET_PATH)
+
       project = self.GetRequestProject(mc.cnxn, request)
       if project:
         if not framework_bizobj.UserIsInProject(
@@ -145,8 +153,9 @@ class MonorailServicer(object):
     else:
       return None
 
-  def ProcessException(self, e, prpc_context):
+  def ProcessException(self, e, prpc_context, mc):
     """Return True if we convert an exception to a pRPC status code."""
+    logging.exception(e)
     logging.info(e.message)
     exc_type = type(e)
     if exc_type == exceptions.NoSuchUserException:
@@ -165,6 +174,7 @@ class MonorailServicer(object):
       prpc_context.set_code(codes.StatusCode.PERMISSION_DENIED)
       prpc_context.set_details('The requesting user has been banned.')
     elif exc_type == permissions.PermissionException:
+      logging.info('perms is %r', mc.perms)
       prpc_context.set_code(codes.StatusCode.PERMISSION_DENIED)
       prpc_context.set_details('Permission denied.')
     elif exc_type == exceptions.GroupExistsException:
@@ -177,6 +187,10 @@ class MonorailServicer(object):
     elif exc_type == ratelimiter.ApiRateLimitExceeded:
       prpc_context.set_code(codes.StatusCode.PERMISSION_DENIED)
       prpc_context.set_details('The requester has exceeded API quotas limit.')
+    elif exc_type == xsrf.TokenIncorrect:
+      logging.info('Bad XSRF token: %r', e.message)
+      prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
+      prpc_context.set_details('Bad XSRF token.')
     else:
       return False  # Re-raise any exception from programming errors.
     return True  # It if was one of the cases above, don't reraise.

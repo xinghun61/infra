@@ -568,6 +568,13 @@ class IssueService(object):
 
     return self.LookupIssueIDs(cnxn, project_local_id_pairs)  # tuple
 
+  def LookupIssueRefs(self, cnxn, issue_ids):
+    """Return {issue_id: (project_name, local_id)} for each issue_id."""
+    issue_dict = self.GetIssuesDict(cnxn, issue_ids)
+    return {
+      issue_id: (issue.project_name, issue.local_id)
+      for issue_id, issue in issue_dict.items()}
+
   ### Issue objects
 
   def CreateIssue(

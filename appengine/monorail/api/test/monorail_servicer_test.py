@@ -263,8 +263,9 @@ class MonorailServicerTest(unittest.TestCase):
         self.svcr.GetRequestProject, self.cnxn, self.request)
 
   def CheckExceptionStatus(self, e, expected_code):
+    mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
     self.prpc_context.set_code(codes.StatusCode.OK)
-    processed = self.svcr.ProcessException(e, self.prpc_context)
+    processed = self.svcr.ProcessException(e, self.prpc_context, mc)
     if expected_code:
       self.assertTrue(processed)
       self.assertEqual(expected_code, self.prpc_context._code)

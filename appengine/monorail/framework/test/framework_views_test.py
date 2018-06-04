@@ -189,7 +189,8 @@ class RevealEmailsToMembersTest(unittest.TestCase):
     self.assertEqual('u...@example.com', user_view.display_name)
     # Assert profile url contains user ID before the reveal.
     self.assertEqual('/u/%s/' % viewed_user_id, user_view.profile_url)
-    framework_views.RevealAllEmailsToMembers(self.mr, users_by_id)
+    framework_views.RevealAllEmailsToMembers(
+        self.mr.auth, self.mr.project, users_by_id)
     self.assertEqual(expected, not user_view.obscure_email)
     if expected:
       # Assert display name is now revealed.

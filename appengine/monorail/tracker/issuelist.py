@@ -81,7 +81,8 @@ class IssueList(servlet.Servlet):
       mr.ComputeColSpec(config)
 
     with mr.profiler.Phase('publishing emails'):
-      framework_views.RevealAllEmailsToMembers(mr, pipeline.users_by_id)
+      framework_views.RevealAllEmailsToMembers(
+          mr.auth, mr.project, pipeline.users_by_id)
 
     with mr.profiler.Phase('getting related issues'):
       related_iids = set()

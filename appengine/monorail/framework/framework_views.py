@@ -217,14 +217,15 @@ def _ShouldRevealEmail(auth, project, viewed_email):
   return False
 
 
-def RevealAllEmailsToMembers(mr, users_by_id):
+def RevealAllEmailsToMembers(auth, project, users_by_id):
   """Allow project members to see unobscured email addresses in that project.
 
   Non project member addresses will be obscured.
   Site admins can see all email addresses unobscured.
 
   Args:
-    mr: common info parsed from the user's request.
+    auth: AuthInfo object for the signed in user.
+    project: the current project.
     users_by_id: dictionary of UserView's that will be displayed.
 
   Returns:
@@ -232,7 +233,7 @@ def RevealAllEmailsToMembers(mr, users_by_id):
     publish email address.
   """
   for user_view in users_by_id.itervalues():
-    if _ShouldRevealEmail(mr.auth, mr.project, user_view.email):
+    if _ShouldRevealEmail(auth, project, user_view.email):
       user_view.RevealEmail()
 
 
