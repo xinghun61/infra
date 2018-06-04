@@ -19,6 +19,7 @@ from api.api_proto import issue_objects_pb2
 from framework import framework_constants
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
+from tracker import tracker_views
 
 
 def ConvertStatusRef(explicit_status, derived_status, config):
@@ -40,12 +41,13 @@ def ConvertUserRef(explicit_user_id, derived_user_id, users_by_id):
   user_id = explicit_user_id or derived_user_id
   is_derived = not explicit_user_id
   if not user_id:
-    return common_pb2.UserRef(user_id=0, email=framework_constants.NO_USER_NAME)
+    return common_pb2.UserRef(
+        user_id=0, display_name=framework_constants.NO_USER_NAME)
 
   return common_pb2.UserRef(
       user_id=user_id,
       is_derived=is_derived,
-      email=users_by_id[user_id].email)
+      display_name=users_by_id[user_id].display_name)
 
 
 def ConvertUserRefs(explicit_user_ids, derived_user_ids, users_by_id):
@@ -55,12 +57,12 @@ def ConvertUserRefs(explicit_user_ids, derived_user_ids, users_by_id):
     result.append(common_pb2.UserRef(
       user_id=user_id,
       is_derived=False,
-      email=users_by_id[user_id].email))
+      display_name=users_by_id[user_id].display_name))
   for user_id in derived_user_ids:
     result.append(common_pb2.UserRef(
       user_id=user_id,
       is_derived=True,
-      email=users_by_id[user_id].email))
+      display_name=users_by_id[user_id].display_name))
   return result
 
 
@@ -96,6 +98,27 @@ def ConvertIssueRefs(issue_ids, related_refs_dict):
   return [ConvertIssueRef(related_refs_dict[iid]) for iid in issue_ids]
 
 
+def ConvertFieldValueItem(field_name, value, is_derived=False):
+  """Convert one field value view item into a protoc FieldValue."""
+  fv = issue_objects_pb2.FieldValue(
+      field_ref=common_pb2.FieldRef(field_name=field_name),
+      value=str(value.val),
+      is_derived=is_derived)
+  return fv
+
+
+# TODO(jrobbins): Refactor this to avoid needing to use view objects.
+def ConvertFieldValueViews(field_value_views):
+  """Convert FieldValueView objects to protoc FieldValue objects."""
+  result = []
+  for fvv in field_value_views:
+    result.extend([ConvertFieldValueItem(fvv.field_name, item)
+                   for item in fvv.values])
+    result.extend([ConvertFieldValueItem(fvv.field_name, item, is_derived=True)
+                   for item in fvv.derived_values])
+  return result
+
+
 def ConvertIssue(issue, users_by_id, related_refs, config):
   """Convert our protorpc Issue to a protoc Issue.
 
@@ -114,7 +137,9 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
       issue.owner_id, issue.derived_owner_id, users_by_id)
   cc_refs = ConvertUserRefs(
       issue.cc_ids, issue.derived_cc_ids, users_by_id)
-  label_refs = ConvertLabels(issue.labels, issue.derived_labels)
+  labels, derived_labels = tracker_bizobj.ExplicitAndDerivedNonMaskedLabels(
+      issue, config)
+  label_refs = ConvertLabels(labels, derived_labels)
   component_refs = ConvertComponents(
       issue.component_ids, issue.derived_component_ids, config)
   blocked_on_issue_refs = ConvertIssueRefs(
@@ -124,7 +149,12 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
   merged_into_issue_ref = None
   if issue.merged_into:
     merged_into_issue_ref = ConvertIssueRef(related_refs[issue.merged_into])
-  # TODO(jrobbins): field values
+
+  field_value_views = tracker_views.MakeAllFieldValueViews(
+      config, issue.labels, issue.derived_labels, issue.field_values,
+      users_by_id)
+  field_values = ConvertFieldValueViews(field_value_views)
+
   # TODO(jrobbins): approvals
   reporter_ref = ConvertUserRef(issue.reporter_id, None, users_by_id)
   result = issue_objects_pb2.Issue(
@@ -133,7 +163,7 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
       cc_refs=cc_refs, label_refs=label_refs, component_refs=component_refs,
       blocked_on_issue_refs=blocked_on_issue_refs,
       blocking_issue_refs=blocking_issue_refs,
-      merged_into_issue_ref=merged_into_issue_ref,
+      merged_into_issue_ref=merged_into_issue_ref, field_values=field_values,
       is_deleted=issue.deleted, reporter_ref=reporter_ref,
       opened_timestamp=issue.opened_timestamp,
       closed_timestamp=issue.closed_timestamp,

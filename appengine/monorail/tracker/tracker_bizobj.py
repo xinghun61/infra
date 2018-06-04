@@ -213,6 +213,19 @@ def NonMaskedLabels(labels, field_names):
           if not LabelIsMaskedByField(lab, field_names)]
 
 
+def ExplicitAndDerivedNonMaskedLabels(issue, config):
+  """Return two lists of labels that are not masked by custom fields."""
+  field_names = [fd.field_name.lower() for fd in config.field_defs
+                 if not fd.is_deleted]  # TODO(jrobbins): restricts
+  labels = [
+      lab for lab in issue.labels
+      if not LabelIsMaskedByField(lab, field_names)]
+  derived_labels = [
+    lab for lab in issue.derived_labels
+    if not LabelIsMaskedByField(lab, field_names)]
+  return labels, derived_labels
+
+
 def MakeFieldDef(
     field_id, project_id, field_name, field_type_int, applic_type, applic_pred,
     is_required, is_niche, is_multivalued, min_value, max_value, regex,

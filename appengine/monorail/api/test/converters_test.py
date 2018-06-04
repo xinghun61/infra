@@ -21,31 +21,31 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertUserRef(self):
     """We can convert user IDs to a UserRef."""
     users_by_id = {
-        111L: testing_helpers.Blank(email='user@example.com'),
+        111L: testing_helpers.Blank(display_name='user@example.com'),
         }
     # No specified user
     actual = converters.ConvertUserRef(None, None, users_by_id)
     expected = common_pb2.UserRef(
-        user_id=0, is_derived=False, email='----')
+        user_id=0, is_derived=False, display_name='----')
     self.assertEqual(expected, actual)
 
     # Explicitly specified user
     actual = converters.ConvertUserRef(111L, None, users_by_id)
     expected = common_pb2.UserRef(
-        user_id=111L, is_derived=False, email='user@example.com')
+        user_id=111L, is_derived=False, display_name='user@example.com')
     self.assertEqual(expected, actual)
 
     # Derived user
     actual = converters.ConvertUserRef(None, 111L, users_by_id)
     expected = common_pb2.UserRef(
-        user_id=111L, is_derived=True, email='user@example.com')
+        user_id=111L, is_derived=True, display_name='user@example.com')
     self.assertEqual(expected, actual)
 
   def testConvertUserRefs(self):
     """We can convert lists of user_ids into UserRefs."""
     users_by_id = {
-        111L: testing_helpers.Blank(email='one@example.com'),
-        222L: testing_helpers.Blank(email='two@example.com'),
+        111L: testing_helpers.Blank(display_name='one@example.com'),
+        222L: testing_helpers.Blank(display_name='two@example.com'),
         }
     # No specified users
     actual = converters.ConvertUserRefs(
@@ -58,9 +58,9 @@ class ConverterFunctionsTest(unittest.TestCase):
         [111L], [222L], users_by_id)
     expected = [
       common_pb2.UserRef(
-          user_id=111L, is_derived=False, email='one@example.com'),
+          user_id=111L, is_derived=False, display_name='one@example.com'),
       common_pb2.UserRef(
-          user_id=222L, is_derived=True, email='two@example.com'),
+          user_id=222L, is_derived=True, display_name='two@example.com'),
       ]
     self.assertEqual(expected, actual)
 
@@ -118,11 +118,47 @@ class ConverterFunctionsTest(unittest.TestCase):
          common_pb2.IssueRef(project_name='proj', local_id=2)],
         actual)
 
+  def testConvertFieldValueItem(self):
+    """We can convert one FieldValueView item to a protoc FieldValue."""
+    ffv = testing_helpers.Blank(val=123)
+    actual = converters.ConvertFieldValueItem('Size', ffv)
+    expected = issue_objects_pb2.FieldValue(
+        field_ref=common_pb2.FieldRef(field_name='Size'),
+        value='123')
+    self.assertEqual(expected, actual)
+
+    actual = converters.ConvertFieldValueItem('Size', ffv, is_derived=True)
+    expected = issue_objects_pb2.FieldValue(
+        field_ref=common_pb2.FieldRef(field_name='Size'),
+        value='123', is_derived=True)
+    self.assertEqual(expected, actual)
+
+  def testConvertFieldValueViews(self):
+    ffv_1 = testing_helpers.Blank(
+        field_name='Size', values=[testing_helpers.Blank(val=123)],
+        derived_values=[])
+    ffv_2 = testing_helpers.Blank(
+        field_name='Channels', values=[testing_helpers.Blank(val='Beta')],
+        derived_values=[testing_helpers.Blank(val='Dev')])
+    actual = converters.ConvertFieldValueViews([ffv_1, ffv_2])
+    expected = [
+      issue_objects_pb2.FieldValue(
+          field_ref=common_pb2.FieldRef(field_name='Size'),
+          value='123'),
+      issue_objects_pb2.FieldValue(
+          field_ref=common_pb2.FieldRef(field_name='Channels'),
+          value='Beta'),
+      issue_objects_pb2.FieldValue(
+          field_ref=common_pb2.FieldRef(field_name='Channels'),
+          value='Dev', is_derived=True),
+      ]
+    self.assertEqual(expected, actual)
+
   def testConvertIssue(self):
     """We can convert a protorpc Issue to a protoc Issue."""
     users_by_id = {
-        111L: testing_helpers.Blank(email='one@example.com'),
-        222L: testing_helpers.Blank(email='two@example.com'),
+        111L: testing_helpers.Blank(display_name='one@example.com'),
+        222L: testing_helpers.Blank(display_name='two@example.com'),
         }
     related_refs_dict = {
         78901: ('proj', 1),
@@ -148,17 +184,19 @@ class ConverterFunctionsTest(unittest.TestCase):
         status_ref=common_pb2.StatusRef(
             status='New', is_derived=False, means_open=True),
         owner_ref=common_pb2.UserRef(
-            user_id=111L, email='one@example.com', is_derived=False),
+            user_id=111L, display_name='one@example.com', is_derived=False),
         cc_refs=[common_pb2.UserRef(
-                     user_id=111L, email='one@example.com', is_derived=False),
+                     user_id=111L, display_name='one@example.com',
+                     is_derived=False),
                  common_pb2.UserRef(
-                     user_id=222L, email='two@example.com', is_derived=True)],
+                     user_id=222L, display_name='two@example.com',
+                     is_derived=True)],
         label_refs=[common_pb2.LabelRef(label='Hot', is_derived=False),
                     common_pb2.LabelRef(label='Scalability', is_derived=True)],
         component_refs=[common_pb2.ComponentRef(path='UI', is_derived=False)],
         is_deleted=False,
         reporter_ref=common_pb2.UserRef(
-            user_id=222L, email='two@example.com', is_derived=False),
+            user_id=222L, display_name='two@example.com', is_derived=False),
         opened_timestamp=now, star_count=12, is_spam=False, attachment_count=0
         )
     self.assertEqual(expected, actual)

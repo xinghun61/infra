@@ -85,15 +85,14 @@ class IssueView(template_helpers.PBProxy):
         config, issue.labels, issue.derived_labels, issue.field_values,
         users_by_id)
 
-    field_names = [fd.field_name.lower() for fd in config.field_defs
-                   if not fd.is_deleted]  # TODO(jrobbins): restricts
+    labels, derived_labels = tracker_bizobj.ExplicitAndDerivedNonMaskedLabels(
+        issue, config)
     self.labels = [
         framework_views.LabelView(label, config)
-        for label in tracker_bizobj.NonMaskedLabels(issue.labels, field_names)]
+        for label in labels]
     self.derived_labels = [
         framework_views.LabelView(label, config)
-        for label in issue.derived_labels
-        if not tracker_bizobj.LabelIsMaskedByField(label, field_names)]
+        for label in derived_labels]
     self.restrictions = _RestrictionsView(issue)
 
     # TODO(jrobbins): sort by order of labels in project config

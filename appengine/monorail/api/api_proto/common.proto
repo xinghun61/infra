@@ -61,6 +61,6 @@ message IssueRef {
 // Next available tag: 4
 message UserRef {
   uint64 user_id = 1;
-  string email = 2;  // May be obscured like "usern...@example.com".
+  string display_name = 2;  // email, or obscured like "usern...@example.com".
   bool is_derived = 3;
 }
