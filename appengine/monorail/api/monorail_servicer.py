@@ -126,6 +126,9 @@ class MonorailServicer(object):
     trace = request.trace if hasattr(request, 'trace') else None
     if trace and trace.reason:
       logging.info('Request reason: %r', trace.reason)
+    if trace and trace.request_id:
+      # TODO(jrobbins): Ignore requests with duplicate request_ids.
+      logging.info('request_id: %r', trace.request_id)
     # TODO(jrobbins): open the API to more than just signed in project members.
     if not settings.dev_mode:
       if not mc.auth.user_id:

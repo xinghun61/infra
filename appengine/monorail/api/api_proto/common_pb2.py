@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/common.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"-\n\x0cRequestTrace\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"\x1e\n\x08\x46ieldRef\x12\x12\n\nfield_name\x18\x01 \x01(\t\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"2\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"A\n\x0cRequestTrace\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\x12\x12\n\nrequest_id\x18\x03 \x01(\t\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"\x1e\n\x08\x46ieldRef\x12\x12\n\nfield_name\x18\x01 \x01(\t\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"2\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -47,6 +47,13 @@ _REQUESTTRACE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='request_id', full_name='monorail.RequestTrace.request_id', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -60,7 +67,7 @@ _REQUESTTRACE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=40,
-  serialized_end=85,
+  serialized_end=105,
 )
 
 
@@ -97,8 +104,8 @@ _COMPONENTREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=87,
-  serialized_end=135,
+  serialized_start=107,
+  serialized_end=155,
 )
 
 
@@ -128,8 +135,8 @@ _FIELDREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=137,
-  serialized_end=167,
+  serialized_start=157,
+  serialized_end=187,
 )
 
 
@@ -166,8 +173,8 @@ _LABELREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=169,
-  serialized_end=214,
+  serialized_start=189,
+  serialized_end=234,
 )
 
 
@@ -211,8 +218,8 @@ _STATUSREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=216,
-  serialized_end=283,
+  serialized_start=236,
+  serialized_end=303,
 )
 
 
@@ -249,8 +256,8 @@ _ISSUEREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=285,
-  serialized_end=335,
+  serialized_start=305,
+  serialized_end=355,
 )
 
 
@@ -294,8 +301,8 @@ _USERREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=337,
-  serialized_end=405,
+  serialized_start=357,
+  serialized_end=425,
 )
 
 DESCRIPTOR.message_types_by_name['RequestTrace'] = _REQUESTTRACE

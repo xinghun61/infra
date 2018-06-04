@@ -15,10 +15,12 @@ syntax = "proto3";
 package monorail;
 
 
-// Next available tag: 3
+// Next available tag: 4
 message RequestTrace {
   string token = 1;  // XSRF token from the HTML page.
   string reason = 2;  // Optional request purpose from client for debugging.
+  string request_id = 3; // Optional client-supplied string for idempotency.
+
   // TODO(jrobbins): Consider passing a trace_id back and forth to measure
   // combined latency of sequences of related requests in stackdriver.
 }
