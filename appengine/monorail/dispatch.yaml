@@ -1,0 +1,10 @@
+dispatch:
+
+- url: "*/_backend/*"
+  service: besearch
+
+- url: "*/_cron/*"
+  service: latency-insensitive
+
+- url: "*/_task/*"
+  service: latency-insensitive
