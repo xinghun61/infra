@@ -19,7 +19,7 @@ const (
 
 var chromeTPMs = []string{"cmasso@chromium.org", "govind@chromium.org", "amineer@chromium.org", "abdulsyed@chromium.org",
 	"bhthompson@chromium.org", "josafat@chromium.org", "gkihumba@chromium.org", "kbleicher@chromium.org",
-	"mmoss@chromium.org"}
+	"mmoss@chromium.org", "benmason@chromium.org"}
 
 // OnlyMergeApprovedChange is a RuleFunc that verifies that only approved changes are merged into a release branch.
 func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
