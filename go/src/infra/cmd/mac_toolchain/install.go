@@ -101,8 +101,27 @@ func acceptLicense(ctx context.Context, xcodeAppPath string) error {
 	return nil
 }
 
+func isXcode8(xcodeVersion string) bool {
+	versions := []string{
+		"8a218a",
+		"8b62",
+		"8c38",
+		"8c1002",
+		"8e162",
+		"8e1000a",
+		"8e2002",
+		"8e3004b",
+	}
+	for _, v := range versions {
+		if strings.HasPrefix(xcodeVersion, v) {
+			return true
+		}
+	}
+	return false
+}
+
 func finalizeInstallLegacy(ctx context.Context, xcodeAppPath, xcodeVersion, packageInstallerOnBots string) error {
-	if xcodeVersion > "8e3004b" {
+	if !isXcode8(xcodeVersion) {
 		return nil
 	}
 
@@ -131,7 +150,10 @@ func finalizeInstallLegacy(ctx context.Context, xcodeAppPath, xcodeVersion, pack
 }
 
 func finalizeInstall(ctx context.Context, xcodeAppPath, xcodeVersion, packageInstallerOnBots string) error {
-	if xcodeVersion <= "8e3004b" {
+	if isXcode8(xcodeVersion) {
+		return nil
+	}
+	if err := RunCommand(ctx, "/usr/bin/xcodebuild", "-checkFirstLaunchStatus"); err == nil {
 		return nil
 	}
 	err := RunCommand(ctx, "sudo", "/usr/bin/xcodebuild", "-runFirstLaunch")
@@ -146,7 +168,7 @@ func enableDeveloperMode(ctx context.Context) error {
 	if err != nil {
 		return errors.Annotate(err, "failed to run /usr/sbin/DevToolsSecurity -status").Err()
 	}
-	if out != "Developer mode is currently enabled." {
+	if !strings.Contains(out, "Developer mode is currently enabled.") {
 		err = RunCommand(ctx, "sudo", "/usr/sbin/DevToolsSecurity", "-enable")
 		if err != nil {
 			return errors.Annotate(err, "failed to run sudo /usr/sbin/DevToolsSecurity -enable").Err()
