@@ -36,9 +36,9 @@ def GetCountsFromSwarmingRerun(test_results_json):
 
   test_result = classified_test_results.values()[0]
 
-  tries = test_result.total_run or None
+  tries = test_result.total_run
 
   passes = test_result.results.passes
-  successes = sum(passes.values()) or None
+  successes = sum(passes.values())
 
   return tries, successes
