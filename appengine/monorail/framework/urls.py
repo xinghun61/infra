@@ -80,8 +80,6 @@ COMPONENT_DATA_EXPORT_CRON = '/_cron/componentDataExport'
 
 # URLs of handlers needed for GAE instance management.
 WARMUP = '/_ah/warmup'
-START = '/_ah/start'
-STOP = '/_ah/stop'
 
 # URLs of User pages
 SAVED_QUERIES = '/queries'

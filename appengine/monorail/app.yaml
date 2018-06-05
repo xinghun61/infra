@@ -11,9 +11,10 @@ threadsafe: no
 
 default_expiration: "3600d"
 
-instance_class: B8
-manual_scaling:
-  instances: 50
+instance_class: F4
+automatic_scaling:
+  min_idle_instances: 25
+  max_pending_latency: 0.2s
 
 handlers:
 - url: /robots.txt

@@ -331,8 +331,6 @@ class ServletRegistry(object):
         urls.CLIENT_MON: clientmon.ClientMonitor,
         urls.TRIM_VISITED_PAGES_CRON: trimvisitedpages.TrimVisitedPages,
         urls.WARMUP: warmup.Warmup,
-        urls.START: warmup.Start,
-        urls.STOP: warmup.Stop
         })
 
     self._SetupProjectServlets({
