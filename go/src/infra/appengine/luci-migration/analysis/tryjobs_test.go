@@ -37,7 +37,7 @@ import (
 
 func buildMsg(key groupKey, duration time.Duration, result string) *bbapi.ApiCommonBuildMessage {
 	return &bbapi.ApiCommonBuildMessage{
-		Tags:              []string{strpair.Format(bbapi.TagBuildSet, key.GerritChange.BuildSetString())},
+		Tags:              []string{strpair.Format(bbapi.TagBuildSet, key.GerritChange().BuildSetString())},
 		Status:            "COMPLETED",
 		Result:            result,
 		CreatedBy:         "user:someone@example.com",
@@ -92,7 +92,7 @@ func TestAnalyze(t *testing.T) {
 			testCtx.So(ok, ShouldBeTrue)
 			testCtx.So(cl.Patchset, ShouldBeBetween, 0, len(buildSets)+1)
 			key := mkKey(cl.Patchset)
-			testCtx.So(cl, ShouldResemble, &key.GerritChange)
+			testCtx.So(cl, ShouldResemble, key.GerritChange())
 
 			var spec mockedBuilds
 			switch r.FormValue("bucket") {
@@ -254,11 +254,9 @@ func TestAnalyze(t *testing.T) {
 
 func mkKey(patchSet int64) groupKey {
 	return groupKey{
-		GerritChange: buildbucketpb.GerritChange{
-			Host:     "gerrit.example.com",
-			Change:   1,
-			Patchset: patchSet,
-		},
+		Host:        "gerrit.example.com",
+		Change:      1,
+		Patchset:    patchSet,
 		GotRevision: "deadbeef",
 	}
 }

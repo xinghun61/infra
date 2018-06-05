@@ -24,13 +24,22 @@ import (
 type groupKey struct {
 	// do not put interfaces in this struct,
 	// because it is used as a map key.
-
-	buildbucketpb.GerritChange
+	Host        string
+	Change      int64
+	Patchset    int64
 	GotRevision string
 }
 
+func (k *groupKey) GerritChange() *buildbucketpb.GerritChange {
+	return &buildbucketpb.GerritChange{
+		Host:     k.Host,
+		Change:   k.Change,
+		Patchset: k.Patchset,
+	}
+}
+
 func (k *groupKey) String() string {
-	return fmt.Sprintf("%s @ %q", k.GerritChange.BuildSetString(), k.GotRevision)
+	return fmt.Sprintf("%s @ %q", k.GerritChange().BuildSetString(), k.GotRevision)
 }
 
 // group is two sets of builds, for Buildbot and LUCI, that should have the same

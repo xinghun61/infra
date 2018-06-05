@@ -239,8 +239,10 @@ func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 		}
 
 		key := groupKey{
-			GerritChange: *change,
-			GotRevision:  props.GotRevision,
+			Host:        change.Host,
+			Change:      change.Change,
+			Patchset:    change.Patchset,
+			GotRevision: props.GotRevision,
 		}
 		if _, ok := seen[key]; !ok {
 			keys <- key
@@ -358,7 +360,7 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 		req.Status(bbapi.StatusCompleted)
 		req.Tag(
 			strpair.Format(bbapi.TagBuilder, f.Builder),
-			strpair.Format(bbapi.TagBuildSet, g.Key.GerritChange.BuildSetString()))
+			strpair.Format(bbapi.TagBuildSet, g.Key.GerritChange().BuildSetString()))
 		req.CreationTsLow(bbapi.FormatTimestamp(f.MinCreationDate))
 		req.IncludeExperimental(true)
 		req.Fields(
