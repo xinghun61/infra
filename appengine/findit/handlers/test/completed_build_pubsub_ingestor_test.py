@@ -255,3 +255,26 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(123, IsolatedTarget.Get('mock_hash').commit_position)
     self.assertEqual(2, len(json.loads(response.body)['created_rows']))
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testPushIgnoreV2Push(self, mock_post):
+    request_body = json.dumps({
+        'message': {
+            'attributes': {
+                'build_id': '123456',
+                'version': 'v2',
+            },
+            'data':
+                base64.b64encode(
+                    json.dumps({
+                        'build': {
+                            'project': 'chromium',
+                            'status': 'COMPLETED'
+                        }
+                    })),
+        },
+    })
+    response = self.test_app.post(
+        '/index-isolated-builds?format=json', params=request_body)
+    self.assertFalse(mock_post.called)
+    self.assertEqual(200, response.status_int)

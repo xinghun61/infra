@@ -35,6 +35,10 @@ class CompletedBuildPubsubIngestor(BaseHandler):
     try:
       envelope = json.loads(self.request.body)
       build_id = envelope['message']['attributes']['build_id']
+      version = envelope['message']['attributes'].get('version')
+      if version and version != 'v1':
+        logging.info('Ignoring versions other than v1')
+        return
       build = json.loads(base64.b64decode(envelope['message']['data']))['build']
     except (ValueError, KeyError) as e:
       # Ignore requests with invalid message.
