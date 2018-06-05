@@ -15,6 +15,7 @@ DEPS = [
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
+  'recipe_engine/runtime',
   'recipe_engine/step',
 
   'build/luci_config',
@@ -60,6 +61,7 @@ def RunSteps(api, project_under_test, auth_with_account):
           root_dir.join(*([project_under_test] + path + ['recipes.py'])),
           '--use-bootstrap', 'test', 'run',
       ])
+  api.step('will fail on LUCI', cmd=None)
 
 
 def GenTests(api):
