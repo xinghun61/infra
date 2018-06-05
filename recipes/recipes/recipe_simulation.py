@@ -15,7 +15,6 @@ DEPS = [
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
-  'recipe_engine/runtime',
   'recipe_engine/step',
 
   'build/luci_config',
@@ -61,9 +60,6 @@ def RunSteps(api, project_under_test, auth_with_account):
           root_dir.join(*([project_under_test] + path + ['recipes.py'])),
           '--use-bootstrap', 'test', 'run',
       ])
-  # TODO(tandrii): undo this gatekeeper test.
-  if api.runtime.is_luci:
-    api.step('will fail on LUCI', ['TODO-tandrii-remove'])  # pragma: no cover
 
 
 def GenTests(api):
