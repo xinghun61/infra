@@ -110,11 +110,12 @@ def build_luci(api):
 
 PROPERTIES = {
   'buildername': Property(),
-  'buildnumber': Property(default=-1, kind=int),
+  'official': Property(default=False, kind=bool,
+                       help='if True, uploads packaged artifacts'),
 }
 
 
-def RunSteps(api, buildername, buildnumber):
+def RunSteps(api, buildername, official):
   if buildername.startswith('infra-internal-continuous'):
     project_name = 'infra_internal'
     repo_url = 'https://chrome-internal.googlesource.com/infra/infra_internal'
@@ -143,11 +144,10 @@ def RunSteps(api, buildername, buildnumber):
     # api.properties['revision'] except when the build was triggered manually
     # ('revision' property is missing in that case).
     rev = bot_update_step.presentation.properties['got_revision']
+    build_main(api, buildername, official, project_name, repo_url, rev)
 
-    build_main(api, buildername, buildnumber, project_name, repo_url, rev)
 
-
-def build_main(api, buildername, buildnumber, project_name, repo_url, rev):
+def build_main(api, buildername, official, project_name, repo_url, rev):
   with api.step.defer_results():
     with api.context(cwd=api.path['checkout']):
       # Run Linux tests everywhere, Windows tests only on public CI.
@@ -197,21 +197,18 @@ def build_main(api, buildername, buildnumber, project_name, repo_url, rev):
         api.path['checkout'].join('go', 'env.py'),
         ['python', api.path['checkout'].join('go', 'test.py')])
 
-  if buildnumber != -1:
-    for plat in CIPD_PACKAGE_BUILDERS.get(buildername, []):
-      if plat == 'native':
-        goos, goarch = None, None
-      else:
-        goos, goarch = plat.split('-', 1)
-      with api.infra_cipd.context(api.path['checkout'], goos, goarch):
-        api.infra_cipd.build()
-        api.infra_cipd.test(skip_if_cross_compiling=True)
+  for plat in CIPD_PACKAGE_BUILDERS.get(buildername, []):
+    if plat == 'native':
+      goos, goarch = None, None
+    else:
+      goos, goarch = plat.split('-', 1)
+    with api.infra_cipd.context(api.path['checkout'], goos, goarch):
+      api.infra_cipd.build()
+      api.infra_cipd.test(skip_if_cross_compiling=True)
+      if official:
         api.infra_cipd.upload(api.infra_cipd.tags(repo_url, rev))
-  else:  # pragma: no cover
-    result = api.step('cipd - not building packages, no buildnumber', None)
-    result.presentation.status = api.step.WARNING
 
-  if buildername in LEGACY_LUCI_BUILDERS:
+  if official and buildername in LEGACY_LUCI_BUILDERS:
     build_luci(api)
 
 
@@ -223,6 +220,7 @@ def GenTests(api):
         buildername='infra-continuous-precise-64',
         buildnumber=123,
         mastername='chromium.infra',
+        official=True,
         repository='https://chromium.googlesource.com/infra/infra',
     )
   )
@@ -232,6 +230,7 @@ def GenTests(api):
         path_config='kitchen',
         buildername='infra-continuous-trusty-64',
         buildnumber=123,
+        official=True,
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/infra/infra',
     )
@@ -242,6 +241,7 @@ def GenTests(api):
         path_config='kitchen',
         buildername='infra-continuous-win-64',
         buildnumber=123,
+        official=True,
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/infra/infra',
     ) +
@@ -253,38 +253,42 @@ def GenTests(api):
         path_config='kitchen',
         buildername='infra-internal-continuous-trusty-32',
         buildnumber=123,
+        official=True,
         mastername='internal.infra',
         repository=
             'https://chrome-internal.googlesource.com/infra/infra_internal',
     )
   )
-  yield (
-    api.test('infra-internal-continuous-luci') +
-    api.runtime(is_luci=True, is_experimental=True) +
-    api.properties.git_scheduled(
-        path_config='kitchen',
-        buildername='infra-internal-continuous-trusty-32',
-        buildnumber=123,
-        repository=
-            'https://chrome-internal.googlesource.com/infra/infra_internal',
-        buildbucket=json.dumps({
-          "build": {
-            "bucket": "luci.infra-internal.ci",
-            "created_by": "user:luci-scheduler@appspot.gserviceaccount.com",
-            "created_ts": 1527292217677440,
-            "id": "8945511751514863184",
-            "project": "infra-internal",
-            "tags": [
-              "builder:infra-internal-continuous-trusty-32",
-              ("buildset:commit/gitiles/chrome-internal.googlesource.com/" +
-                "infra/infra_internal/" +
-                "+/2d72510e447ab60a9728aeea2362d8be2cbd7789"),
-              "gitiles_ref:refs/heads/master",
-              "scheduler_invocation_id:9110941813804031728",
-              "user_agent:luci-scheduler",
-            ],
-          },
-          "hostname": "cr-buildbucket.appspot.com"
-        }),
+  for official in [True, False]:
+    yield (
+      api.test(
+        'infra-internal-continuous-luci' + ('-official' if official else '')) +
+      api.runtime(is_luci=True, is_experimental=True) +
+      api.properties.git_scheduled(
+          path_config='kitchen',
+          buildername='infra-internal-continuous-trusty-32',
+          buildnumber=123,
+          official=official,
+          repository=
+              'https://chrome-internal.googlesource.com/infra/infra_internal',
+          buildbucket=json.dumps({
+            "build": {
+              "bucket": "luci.infra-internal.ci",
+              "created_by": "user:luci-scheduler@appspot.gserviceaccount.com",
+              "created_ts": 1527292217677440,
+              "id": "8945511751514863184",
+              "project": "infra-internal",
+              "tags": [
+                "builder:infra-internal-continuous-trusty-32",
+                ("buildset:commit/gitiles/chrome-internal.googlesource.com/" +
+                  "infra/infra_internal/" +
+                  "+/2d72510e447ab60a9728aeea2362d8be2cbd7789"),
+                "gitiles_ref:refs/heads/master",
+                "scheduler_invocation_id:9110941813804031728",
+                "user_agent:luci-scheduler",
+              ],
+            },
+            "hostname": "cr-buildbucket.appspot.com"
+          }),
+      )
     )
-  )

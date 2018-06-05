@@ -176,6 +176,45 @@
     "name": "cipd - test packages integrity"
   },
   {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra_internal/build/build.py",
+      "--no-rebuild",
+      "--upload",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--builder",
+      "infra-internal-continuous-trusty-32",
+      "--tags",
+      "luci_build:luci.infra-internal.ci/infra-internal-continuous-trusty-32/123",
+      "git_repository:https://chrome-internal.googlesource.com/infra/infra_internal",
+      "git_revision:0a18b32e3a93913e1090d1ee6b8965c6dc3116d6"
+    ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "name": "cipd - upload packages",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"failed\": [], @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"succeeded\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"info\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"abcdefabcdef63ad814cd1dfffe2fcfc9f81299c\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/tools/some_tool/os-bitness\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"pkg_def_name\": \"some_tool\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@infra/tools/some_tool/os-bitness abcdefabcdef63ad814cd1dfffe2fcfc9f81299c@http://example.com/not-implemented-yet@@@"
+    ]
+  },
+  {
     "name": "$result",
     "recipe_result": null,
     "status_code": 0

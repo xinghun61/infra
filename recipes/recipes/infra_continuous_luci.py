@@ -8,6 +8,8 @@ Very dumb for now, with no side effects. Runs continuously on LUCI in both
 staging and prod environments.
 """
 
+# TODO(tandrii): remove this recipe once https://crbug.com/848984 is complete.
+
 
 DEPS = [
   'depot_tools/bot_update',
