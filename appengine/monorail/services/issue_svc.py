@@ -2148,7 +2148,7 @@ class IssueService(object):
     return comments
 
 
-  def GetCommentsByID(self, cnxn, comment_ids, sequences, use_cache=False,
+  def GetCommentsByID(self, cnxn, comment_ids, sequences, use_cache=True,
       shard_id=None):
     """Return all IssueComment PBs by comment ids.
 

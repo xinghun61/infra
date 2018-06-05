@@ -228,7 +228,7 @@ class Amendment(messages.Message):
   """Holds info about one issue field change."""
   field = messages.EnumField(FieldID, 11, required=True)
   # User-visible string describing the change
-  newvalue = messages.StringField(12, required=True)
+  newvalue = messages.StringField(12)
   # Newvalue could have + or - characters to indicate that labels and CCs
   # were added or removed
   # Users added to owner or cc field
