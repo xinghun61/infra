@@ -29,6 +29,7 @@ type MockCmd struct {
 	Stdin      io.Reader // Saved Stdin to be read by Run()
 	Executable string    // The name of the command
 	Args       []string  // Command line arguments of the command
+	Env        []string  // Additional environment variables VAR=value.
 
 	ReturnError   error  // Error to be returned by the invocation
 	ReturnOutput  string // Stdout to be return by the invocation
@@ -43,11 +44,14 @@ func (c *MockCmd) SetStdin(r io.Reader) {
 }
 
 // SetStdout implements Cmd.
-func (c *MockCmd) SetStdout(f *os.File) {
-}
+func (c *MockCmd) SetStdout(f *os.File) {}
 
 // SetStderr implements Cmd.
-func (c *MockCmd) SetStderr(f *os.File) {
+func (c *MockCmd) SetStderr(f *os.File) {}
+
+// SetEnvVar implements Cmd.
+func (c *MockCmd) SetEnvVar(variable, value string) {
+	c.Env = append(c.Env, variable+"="+value)
 }
 
 // CommandContext implements Session.

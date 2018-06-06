@@ -20,6 +20,7 @@ type Cmd interface {
 	SetStdin(io.Reader)
 	SetStdout(*os.File)
 	SetStderr(*os.File)
+	SetEnvVar(variable string, value string)
 }
 
 // Session abstracts exec.CommandContext into a mockable interface for testing.
@@ -47,6 +48,14 @@ func (c *RealCmd) SetStdout(f *os.File) {
 // SetStderr implements Cmd.
 func (c *RealCmd) SetStderr(f *os.File) {
 	c.Stderr = f
+}
+
+// SetEnvVar sets a new environment `variable` to `value`.
+func (c *RealCmd) SetEnvVar(variable string, value string) {
+	if len(c.Env) == 0 {
+		c.Env = os.Environ()
+	}
+	c.Env = append(c.Env, variable+"="+value)
 }
 
 // RealSession wraps exec.CommandContext to implement Session.

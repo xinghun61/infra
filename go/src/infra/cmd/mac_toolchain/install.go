@@ -93,8 +93,35 @@ func setXcodePath(ctx context.Context, xcodeAppPath string) error {
 	return nil
 }
 
+// RunWithXcode sets the Xcode path and runs a command as the current user.
+func RunWithXcode(ctx context.Context, xcodeAppPath string, executable string, args ...string) error {
+	cmd := CommandContext(ctx, executable, args...)
+	cmd.SetStdout(os.Stdout)
+	cmd.SetStderr(os.Stderr)
+	cmd.SetEnvVar("DEVELOPER_DIR", xcodeAppPath)
+	return cmd.Run()
+}
+
+// RunWithXcodeSelect temporarily sets the Xcode path with `sudo xcode-select
+// -s` and runs a callback.
+func RunWithXcodeSelect(ctx context.Context, xcodeAppPath string, f func() error) error {
+	oldPath := getXcodePath(ctx)
+	if oldPath != "" {
+		defer setXcodePath(ctx, oldPath)
+	}
+	if err := setXcodePath(ctx, xcodeAppPath); err != nil {
+		return err
+	}
+	if err := f(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func acceptLicense(ctx context.Context, xcodeAppPath string) error {
-	err := RunCommand(ctx, "sudo", "/usr/bin/xcodebuild", "-license", "accept")
+	err := RunWithXcodeSelect(ctx, xcodeAppPath, func() error {
+		return RunCommand(ctx, "sudo", "/usr/bin/xcodebuild", "-license", "accept")
+	})
 	if err != nil {
 		return errors.Annotate(err, "failed to accept new license").Err()
 	}
@@ -139,28 +166,32 @@ func finalizeInstallLegacy(ctx context.Context, xcodeAppPath, xcodeVersion, pack
 			return []string{"installer", "-package", pkgPath, "-target", "/"}
 		}
 	}
-	for _, p := range packages {
-		pkgPath := filepath.Join(packageDir, p)
-		err := RunCommand(ctx, "sudo", installCmd(pkgPath)...)
-		if err != nil {
-			return errors.Annotate(err, "failed to install Xcode package %s", pkgPath).Err()
+	return RunWithXcodeSelect(ctx, xcodeAppPath, func() error {
+		for _, p := range packages {
+			pkgPath := filepath.Join(packageDir, p)
+			err := RunCommand(ctx, "sudo", installCmd(pkgPath)...)
+			if err != nil {
+				return errors.Annotate(err, "failed to install Xcode package %s", pkgPath).Err()
+			}
 		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func finalizeInstall(ctx context.Context, xcodeAppPath, xcodeVersion, packageInstallerOnBots string) error {
 	if isXcode8(xcodeVersion) {
 		return nil
 	}
-	if err := RunCommand(ctx, "/usr/bin/xcodebuild", "-checkFirstLaunchStatus"); err == nil {
+	if err := RunWithXcode(ctx, xcodeAppPath, "/usr/bin/xcodebuild", "-checkFirstLaunchStatus"); err == nil {
 		return nil
 	}
-	err := RunCommand(ctx, "sudo", "/usr/bin/xcodebuild", "-runFirstLaunch")
-	if err != nil {
-		return errors.Annotate(err, "failed to install Xcode packages").Err()
-	}
-	return nil
+	return RunWithXcodeSelect(ctx, xcodeAppPath, func() error {
+		err := RunCommand(ctx, "sudo", "/usr/bin/xcodebuild", "-runFirstLaunch")
+		if err != nil {
+			return errors.Annotate(err, "failed to install Xcode packages").Err()
+		}
+		return nil
+	})
 }
 
 func enableDeveloperMode(ctx context.Context) error {
@@ -196,13 +227,6 @@ func installXcode(ctx context.Context, args InstallArgs) error {
 		return err
 	}
 	if needToAcceptLicense(ctx, args.xcodeAppPath, args.acceptedLicensesFile) {
-		oldPath := getXcodePath(ctx)
-		if oldPath != "" {
-			defer setXcodePath(ctx, oldPath)
-		}
-		if err := setXcodePath(ctx, args.xcodeAppPath); err != nil {
-			return err
-		}
 		if err := acceptLicense(ctx, args.xcodeAppPath); err != nil {
 			return err
 		}
