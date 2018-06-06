@@ -9,6 +9,8 @@ from libs.structured_object import StructuredObject
 
 class StepMetadata(StructuredObject):
   """Fields representing a step's metadata."""
+  _ignore_unknown_attributes = True
+
   # The name of the step, without platform.
   canonical_step_name = basestring
 

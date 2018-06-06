@@ -94,12 +94,17 @@ class SerilizableObjectTest(unittest.TestCase):
     self.assertEqual(1, obj_b.a.v)
 
   def testFromSerializableAssertionOnList(self):
-    with self.assertRaises(AssertionError):
+    with self.assertRaises(structured_object.DeserializationError):
       _ObjectA.FromSerializable(['v'])
 
   def testFromSerializableAssertionOnUndefinedAttribute(self):
-    with self.assertRaises(AssertionError):
+    with self.assertRaises(structured_object.DeserializationError):
       _ObjectA.FromSerializable({'undefined': 1})
+
+  def testFromSerializableUndefinedAttributeAllowed(self):
+    _ObjectA._ignore_unknown_attributes = True
+    o = _ObjectA.FromSerializable({'undefined': 1, 'v': 1})
+    self.assertEqual(1, o.v)
 
   def testFromSerializableAssertionOnMissingAttributeValue(self):
     obj_a = _ObjectA.FromSerializable({})

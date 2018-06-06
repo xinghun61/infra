@@ -100,8 +100,15 @@ import logging
 import types
 
 
+class DeserializationError(Exception):
+  pass
+
+
 class BaseSerializableObject(object):
   """This is the base class of StructuredObject, TypedDict and TypedList."""
+  # Set this to true to allow deserializing from objects with unrecognized
+  # attributes (and ignore them). Otherwise, deserializing will fail normally.
+  _ignore_unknown_attributes = False
 
   def ToSerializable(self):
     """Returns a dict or a list which all items are serialized."""
@@ -252,13 +259,24 @@ class StructuredObject(BaseSerializableObject):
     if data is None:
       return data
 
-    assert isinstance(
-        data, dict), ('Expecting a dict, but got %s' % type(data).__name__)
+    if not isinstance(data, dict):
+      raise DeserializationError(
+          'Expecting a dict, but got %s' % type(data).__name__)
     defined_attributes = cls._GetDefinedAttributes()
     undefined_attributes = set(data.keys()) - set(defined_attributes.keys())
-    assert len(undefined_attributes) == 0, ('%s not defined in %s' %
-                                            (','.join(undefined_attributes),
-                                             cls.__name__))
+    try:
+      if len(undefined_attributes) != 0:
+        raise DeserializationError('%s not defined in %s' %
+                                   (','.join(undefined_attributes),
+                                    cls.__name__))
+    except DeserializationError:
+      # For error reporting to catch this log record (and notify the team), the
+      # logging has to happen inside an except block s.t. logging module can tag
+      # the log with a stacktrace, required by strackdriver error reporting.
+      logging.exception('DeserializationError')
+      if not cls._ignore_unknown_attributes:
+        raise
+
     instance = cls()
     for name, value_type in defined_attributes.iteritems():
       if name not in data:
