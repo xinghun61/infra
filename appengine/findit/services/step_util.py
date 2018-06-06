@@ -12,6 +12,8 @@ from services import swarming
 from waterfall import build_util
 from waterfall import buildbot
 
+_HTTP_CLIENT = FinditHttpClient()
+
 
 # TODO(crbug/804617): Modify this function to use new LUCI API when ready.
 def _GetCandidateBounds(master_name, builder_name, upper_bound, lower_bound,
@@ -71,6 +73,62 @@ def _GetLowerBoundBuildNumber(
   return upper_bound_build_number / 2
 
 
+def _GetLowerBoundBuild(master_name, builder_name, lower_bound_build_number,
+                        upper_bound_build_number, step_name):
+  """Gets a valid lower build near build_number."""
+  # Search 10 below then 10 above for a valid build.
+  return (GetValidBuild(
+      master_name, builder_name, lower_bound_build_number, step_name, False,
+      min(10, lower_bound_build_number)) or GetValidBuild(
+          master_name, builder_name, lower_bound_build_number, step_name, True,
+          min(10, upper_bound_build_number - lower_bound_build_number)))
+
+
+def GetValidBuild(master_name, builder_name, requested_build_number, step_name,
+                  search_ascending, maximum_search_distance):
+  """Gets a valid bound at or near the requested build number.
+
+    A build is considered valid if it exists, has a commit position, and has a
+    swarming task available.
+
+  Args:
+    master_name (str): The name of the master to check.
+    builder_name (str): The name of the builder to check.
+    requested_build_number (int): The build number to get a valid build at or
+        near.
+    step_name (str): The name of the step.
+    search_ascending (bool): Whether to return a build at least as high as the
+        requested build number.
+    maximum_search_distance (int): The maximum number of builds to check.
+
+  Returns:
+    (BuildInfo): A valid BuildInfo at or near requested_build_number, or None if
+        not found.
+  """
+  candidate_build_number = requested_build_number
+  increment = 0
+  direction = 1 if search_ascending else -1
+
+  while increment <= maximum_search_distance:
+    candidate_build_number = requested_build_number + increment * direction
+
+    _, candidate_build = build_util.GetBuildInfo(master_name, builder_name,
+                                                 candidate_build_number)
+    if (candidate_build and candidate_build.commit_position is not None and
+        (candidate_build.result != buildbot.EXCEPTION or
+         swarming.CanFindSwarmingTaskFromBuildForAStep(
+             _HTTP_CLIENT, master_name, builder_name, candidate_build_number,
+             step_name))):
+      return candidate_build
+
+    increment += 1
+
+  logging.warning('Failed to find valid build for %s/%s/%s within %s builds',
+                  master_name, builder_name, requested_build_number,
+                  maximum_search_distance)
+  return None
+
+
 # TODO(crbug/804617): Modify this function to use new LUCI API when ready.
 def GetValidBoundingBuildsForStep(
     master_name, builder_name, step_name, lower_bound_build_number,
@@ -107,8 +165,6 @@ def GetValidBoundingBuildsForStep(
         boundary build, that boundary build is returned as both the lower and
         upper bound build.
   """
-  http_client = FinditHttpClient()
-
   logging.debug('GetBoundingBuildsForStep being called for %s/%s/%s with build '
                 'number bounds (%d, %d) at commit position %d', master_name,
                 builder_name, step_name, lower_bound_build_number or -1,
@@ -119,6 +175,7 @@ def GetValidBoundingBuildsForStep(
   _, latest_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                  upper_bound_build_number)
   logging.debug('latest_build_info: %r', latest_build_info)
+
   assert latest_build_info, 'Couldn\'t find build info for %s/%s/%s' % (
       master_name, builder_name, upper_bound_build_number)
   assert latest_build_info.commit_position is not None
@@ -128,8 +185,10 @@ def GetValidBoundingBuildsForStep(
   logging.info('Found lower_bound_build_number to be %d.',
                lower_bound_build_number)
 
-  _, earliest_build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                                   lower_bound_build_number)
+  earliest_build_info = _GetLowerBoundBuild(master_name, builder_name,
+                                            lower_bound_build_number,
+                                            upper_bound_build_number, step_name)
+
   logging.debug('earliest_build_info: %r', earliest_build_info)
   assert earliest_build_info, 'Couldn\'t find build info for %s/%s/%s' % (
       master_name, builder_name, lower_bound_build_number)
@@ -139,7 +198,7 @@ def GetValidBoundingBuildsForStep(
 
   if requested_commit_position <= earliest_build_info.commit_position:
     if not swarming.CanFindSwarmingTaskFromBuildForAStep(
-        http_client, master_name, builder_name, lower_bound_build_number,
+        _HTTP_CLIENT, master_name, builder_name, lower_bound_build_number,
         step_name):
       # TODO(crbug.com/831828): Support newly added test steps for this case.
       # Cannot find valid artifact in earliest_build for the step.
@@ -151,7 +210,7 @@ def GetValidBoundingBuildsForStep(
 
   if requested_commit_position >= latest_build_info.commit_position:
     if not swarming.CanFindSwarmingTaskFromBuildForAStep(
-        http_client, master_name, builder_name, upper_bound_build_number,
+        _HTTP_CLIENT, master_name, builder_name, upper_bound_build_number,
         step_name):
       # Cannot find valid artifact in latest_build for the step.
       return None, None
@@ -165,34 +224,14 @@ def GetValidBoundingBuildsForStep(
       master_name, builder_name, upper_bound_build_number,
       lower_bound_build_number, requested_commit_position)
 
-  # Get valid builds.
-  lower_bound_build = None
-  upper_bound_build = None
+  # Get valid builds at or near the candidate build bounds.
+  lower_bound_build = GetValidBuild(master_name, builder_name, lower_bound,
+                                    step_name, False,
+                                    lower_bound - lower_bound_build_number)
 
-  while lower_bound >= lower_bound_build_number:  # pragma: no branch
-    _, lower_bound_build = build_util.GetBuildInfo(master_name, builder_name,
-                                                   lower_bound)
-    if lower_bound_build:
-      if lower_bound_build.result != buildbot.EXCEPTION:
-        break
-      if swarming.CanFindSwarmingTaskFromBuildForAStep(
-          http_client, master_name, builder_name, lower_bound, step_name):
-        break
-    lower_bound -= 1
-
-  while upper_bound <= upper_bound_build_number:  # pragma: no branch
-    _, upper_bound_build = build_util.GetBuildInfo(master_name, builder_name,
-                                                   upper_bound)
-    if upper_bound_build:
-      if upper_bound_build.result != buildbot.EXCEPTION:
-        break
-      if swarming.CanFindSwarmingTaskFromBuildForAStep(
-          http_client, master_name, builder_name, upper_bound, step_name):
-        break
-    upper_bound += 1
-
-  assert lower_bound_build
-  assert upper_bound_build
+  upper_bound_build = GetValidBuild(master_name, builder_name, upper_bound,
+                                    step_name, True,
+                                    upper_bound_build_number - upper_bound)
 
   return lower_bound_build, upper_bound_build
 

@@ -28,6 +28,69 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(50, step_util._GetLowerBoundBuildNumber(None, 100, 200))
     self.assertEqual(100, step_util._GetLowerBoundBuildNumber(None, 600, 500))
 
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testGetValidBuildSearchAscendingWithinRange(self, mocked_get_build_info):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+
+    invalid_build_100 = BuildInfo(master_name, builder_name, 100)
+    invalid_build_101 = BuildInfo(master_name, builder_name, 101)
+    valid_build_102 = BuildInfo(master_name, builder_name, 102)
+    valid_build_102.commit_position = 1020
+
+    mocked_get_build_info.side_effect = [
+        (mock.ANY, invalid_build_100),
+        (mock.ANY, invalid_build_101),
+        (mock.ANY, valid_build_102),
+    ]
+
+    self.assertEqual(valid_build_102,
+                     step_util.GetValidBuild(master_name, builder_name, 100,
+                                             step_name, True, 2))
+
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testGetValidBuildSearchAscendingOutOfRange(self, mocked_get_build_info):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+
+    invalid_build_100 = BuildInfo(master_name, builder_name, 100)
+    invalid_build_101 = BuildInfo(master_name, builder_name, 101)
+    valid_build_102 = BuildInfo(master_name, builder_name, 102)
+    valid_build_102.commit_position = 1020
+
+    mocked_get_build_info.side_effect = [
+        (mock.ANY, invalid_build_100),
+        (mock.ANY, invalid_build_101),
+        (mock.ANY, valid_build_102),
+    ]
+
+    self.assertIsNone(
+        step_util.GetValidBuild(master_name, builder_name, 100, step_name, True,
+                                1))
+
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testGetValidBuildSearchDescending(self, mocked_get_build_info):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+
+    invalid_build_100 = BuildInfo(master_name, builder_name, 100)
+    invalid_build_99 = BuildInfo(master_name, builder_name, 99)
+    valid_build_98 = BuildInfo(master_name, builder_name, 98)
+    valid_build_98.commit_position = 980
+
+    mocked_get_build_info.side_effect = [
+        (mock.ANY, invalid_build_100),
+        (mock.ANY, invalid_build_99),
+        (mock.ANY, valid_build_98),
+    ]
+
+    self.assertEqual(valid_build_98,
+                     step_util.GetValidBuild(master_name, builder_name, 100,
+                                             step_name, True, 2))
+
   @mock.patch.object(
       swarming, 'CanFindSwarmingTaskFromBuildForAStep', return_value=True)
   @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
