@@ -371,8 +371,8 @@ def _PreprocessExactUsers(
       try:
         user_ids.append(user_service.LookupUserID(cnxn, val))
       except exceptions.NoSuchUserException:
-        logging.info('could not convert user %r to int ID', val)
-        if not is_member and not val.startswith('@'):
+        if not is_member and val != 'me' and not val.startswith('@'):
+          logging.info('could not convert user %r to int ID', val)
           if '@' in val:
             raise MalformedQuery('User email address not found')
           else:

@@ -553,6 +553,17 @@ class AST2ASTTest(unittest.TestCase):
       ast2ast._PreprocessExactUsers(
           self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], False)
 
+  def testPreprocessExactUsers_KeywordMe(self):
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.TEXT_HAS, [OWNER_FIELD], ['me'], [])
+    new_cond = ast2ast._PreprocessExactUsers(
+        self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], True)
+    self.assertEqual(cond, new_cond)
+
+    new_cond = ast2ast._PreprocessExactUsers(
+          self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], False)
+    self.assertEqual(cond, new_cond)
+
   def testPreprocessHotlistCond(self):
     hotlist_field = BUILTIN_ISSUE_FIELDS['hotlist']
     hotlist_id_field = BUILTIN_ISSUE_FIELDS['hotlist_id']

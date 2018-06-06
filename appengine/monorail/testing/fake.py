@@ -451,15 +451,9 @@ class UserService(object):
       self._CreateUser(cnxn, email)
 
   def LookupUserID(self, cnxn, email, autocreate=False, allowgroups=False):
-    user_id = self.users_by_email.get(email)
-    if not user_id and validate.IsValidEmail(email):
-      if autocreate:
-        self._CreateUser(cnxn, email)
-        user_id = self.users_by_email.get(email)
-      else:
-        raise exceptions.NoSuchUserException(email)
-
-    return user_id
+    email_dict = self.LookupUserIDs(
+        cnxn, [email], autocreate=autocreate, allowgroups=allowgroups)
+    return email_dict[email]
 
   def GetUsersByIDs(self, cnxn, user_ids, use_cache=True):
     user_dict = {}
@@ -479,10 +473,15 @@ class UserService(object):
                     allowgroups=False):
     email_dict = {}
     for email in emails:
-        user_id = self.LookupUserID(
-            cnxn, email, autocreate=autocreate, allowgroups=allowgroups)
-        if user_id:
-          email_dict[email] = user_id
+      user_id = self.users_by_email.get(email)
+      if not user_id:
+        if autocreate and validate.IsValidEmail(email):
+          self._CreateUser(cnxn, email)
+          user_id = self.users_by_email.get(email)
+        elif not autocreate:
+          raise exceptions.NoSuchUserException('%r' % email)
+      if user_id:
+        email_dict[email] = user_id
     return email_dict
 
   def LookupUserEmail(self, _cnxn, user_id):
