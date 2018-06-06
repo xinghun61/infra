@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/issues.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x1a\x61pi/api_proto/issues.proto\x12\x08monorail\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1a\x61pi/api_proto/common.proto\x1a!api/api_proto/issue_objects.proto\"q\n\x12\x43reateIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x1e\n\x05issue\x18\x03 \x01(\x0b\x32\x0f.monorail.Issue\"_\n\x0fGetIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\"/\n\rIssueResponse\x12\x1e\n\x05issue\x18\x01 \x01(\x0b\x32\x0f.monorail.Issue\"\x8e\x01\n\x19\x44\x65leteIssueCommentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x10\n\x08local_id\x18\x03 \x01(\x03\x12\x12\n\ncomment_id\x18\x04 \x01(\x03\x12\x0e\n\x06\x64\x65lete\x18\x05 \x01(\x08\x32\xe7\x01\n\x06Issues\x12\x46\n\x0b\x43reateIssue\x12\x1c.monorail.CreateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12@\n\x08GetIssue\x12\x19.monorail.GetIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12S\n\x12\x44\x65leteIssueComment\x12#.monorail.DeleteIssueCommentRequest\x1a\x16.google.protobuf.Empty\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x1a\x61pi/api_proto/issues.proto\x12\x08monorail\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1a\x61pi/api_proto/common.proto\x1a!api/api_proto/issue_objects.proto\"q\n\x12\x43reateIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x1e\n\x05issue\x18\x03 \x01(\x0b\x32\x0f.monorail.Issue\"_\n\x0fGetIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\"/\n\rIssueResponse\x12\x1e\n\x05issue\x18\x01 \x01(\x0b\x32\x0f.monorail.Issue\"\x8e\x01\n\x19\x44\x65leteIssueCommentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x10\n\x08local_id\x18\x03 \x01(\x03\x12\x12\n\ncomment_id\x18\x04 \x01(\x03\x12\x0e\n\x06\x64\x65lete\x18\x05 \x01(\x08\"\xea\x01\n\x15UpdateApprovalRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12%\n\tfield_ref\x18\x03 \x01(\x0b\x32\x12.monorail.FieldRef\x12/\n\x0e\x61pproval_delta\x18\x04 \x01(\x0b\x32\x17.monorail.ApprovalDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x12\n\nsend_email\x18\x06 \x01(\x08\">\n\x16UpdateApprovalResponse\x12$\n\x08\x61pproval\x18\x01 \x01(\x0b\x32\x12.monorail.Approval2\xbe\x02\n\x06Issues\x12\x46\n\x0b\x43reateIssue\x12\x1c.monorail.CreateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12@\n\x08GetIssue\x12\x19.monorail.GetIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12S\n\x12\x44\x65leteIssueComment\x12#.monorail.DeleteIssueCommentRequest\x1a\x16.google.protobuf.Empty\"\x00\x12U\n\x0eUpdateApproval\x12\x1f.monorail.UpdateApprovalRequest\x1a .monorail.UpdateApprovalResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,api_dot_api__proto_dot_common__pb2.DESCRIPTOR,api_dot_api__proto_dot_issue__objects__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -202,16 +202,120 @@ _DELETEISSUECOMMENTREQUEST = _descriptor.Descriptor(
   serialized_end=536,
 )
 
+
+_UPDATEAPPROVALREQUEST = _descriptor.Descriptor(
+  name='UpdateApprovalRequest',
+  full_name='monorail.UpdateApprovalRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='trace', full_name='monorail.UpdateApprovalRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='issue_ref', full_name='monorail.UpdateApprovalRequest.issue_ref', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='field_ref', full_name='monorail.UpdateApprovalRequest.field_ref', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='approval_delta', full_name='monorail.UpdateApprovalRequest.approval_delta', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='comment_content', full_name='monorail.UpdateApprovalRequest.comment_content', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='send_email', full_name='monorail.UpdateApprovalRequest.send_email', index=5,
+      number=6, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=539,
+  serialized_end=773,
+)
+
+
+_UPDATEAPPROVALRESPONSE = _descriptor.Descriptor(
+  name='UpdateApprovalResponse',
+  full_name='monorail.UpdateApprovalResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='approval', full_name='monorail.UpdateApprovalResponse.approval', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=775,
+  serialized_end=837,
+)
+
 _CREATEISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _CREATEISSUEREQUEST.fields_by_name['issue'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUE
 _GETISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _GETISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _ISSUERESPONSE.fields_by_name['issue'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUE
 _DELETEISSUECOMMENTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
+_UPDATEAPPROVALREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
+_UPDATEAPPROVALREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
+_UPDATEAPPROVALREQUEST.fields_by_name['field_ref'].message_type = api_dot_api__proto_dot_common__pb2._FIELDREF
+_UPDATEAPPROVALREQUEST.fields_by_name['approval_delta'].message_type = api_dot_api__proto_dot_issue__objects__pb2._APPROVALDELTA
+_UPDATEAPPROVALRESPONSE.fields_by_name['approval'].message_type = api_dot_api__proto_dot_issue__objects__pb2._APPROVAL
 DESCRIPTOR.message_types_by_name['CreateIssueRequest'] = _CREATEISSUEREQUEST
 DESCRIPTOR.message_types_by_name['GetIssueRequest'] = _GETISSUEREQUEST
 DESCRIPTOR.message_types_by_name['IssueResponse'] = _ISSUERESPONSE
 DESCRIPTOR.message_types_by_name['DeleteIssueCommentRequest'] = _DELETEISSUECOMMENTREQUEST
+DESCRIPTOR.message_types_by_name['UpdateApprovalRequest'] = _UPDATEAPPROVALREQUEST
+DESCRIPTOR.message_types_by_name['UpdateApprovalResponse'] = _UPDATEAPPROVALRESPONSE
 
 CreateIssueRequest = _reflection.GeneratedProtocolMessageType('CreateIssueRequest', (_message.Message,), dict(
   DESCRIPTOR = _CREATEISSUEREQUEST,
@@ -240,6 +344,20 @@ DeleteIssueCommentRequest = _reflection.GeneratedProtocolMessageType('DeleteIssu
   # @@protoc_insertion_point(class_scope:monorail.DeleteIssueCommentRequest)
   ))
 _sym_db.RegisterMessage(DeleteIssueCommentRequest)
+
+UpdateApprovalRequest = _reflection.GeneratedProtocolMessageType('UpdateApprovalRequest', (_message.Message,), dict(
+  DESCRIPTOR = _UPDATEAPPROVALREQUEST,
+  __module__ = 'api.api_proto.issues_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.UpdateApprovalRequest)
+  ))
+_sym_db.RegisterMessage(UpdateApprovalRequest)
+
+UpdateApprovalResponse = _reflection.GeneratedProtocolMessageType('UpdateApprovalResponse', (_message.Message,), dict(
+  DESCRIPTOR = _UPDATEAPPROVALRESPONSE,
+  __module__ = 'api.api_proto.issues_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.UpdateApprovalResponse)
+  ))
+_sym_db.RegisterMessage(UpdateApprovalResponse)
 
 
 # @@protoc_insertion_point(module_scope)

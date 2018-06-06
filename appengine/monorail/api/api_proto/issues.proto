@@ -17,6 +17,8 @@ service Issues {
   rpc GetIssue (GetIssueRequest) returns (IssueResponse) {}
   rpc DeleteIssueComment (DeleteIssueCommentRequest)
       returns (google.protobuf.Empty) {}
+  rpc UpdateApproval (UpdateApprovalRequest)
+      returns (UpdateApprovalResponse) {}
 }
 
 
@@ -48,4 +50,22 @@ message DeleteIssueCommentRequest {
   int64 local_id = 3;
   int64 comment_id = 4;
   bool delete = 5;
+}
+
+
+// Next available tag: 7
+message UpdateApprovalRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  FieldRef field_ref = 3;
+  ApprovalDelta approval_delta = 4;
+  string comment_content = 5;
+  bool send_email = 6;
+}
+
+
+// Next available tag: 2
+message UpdateApprovalResponse {
+  Approval approval = 1;
+  // TODO(jojwang): monorail:3895, add new_comment field.
 }
