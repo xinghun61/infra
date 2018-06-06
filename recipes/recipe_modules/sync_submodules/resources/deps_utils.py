@@ -6,25 +6,36 @@
 """Utilities for formatting and writing DEPS files."""
 
 
-class VarImpl(object):
-  """Implement the Var function used within the DEPS file."""
+def ExpandVars(local_scope, vars_dict):
+  """Expand the variables in |local_scope| using |vars_dict|.
 
-  def __init__(self, local_scope):
-    self._local_scope = local_scope
-
-  def Lookup(self, var_name):
-    """Implements the Var syntax."""
-    if var_name in self._local_scope.get('vars', {}):
-      return self._local_scope['vars'][var_name]
-    raise Exception('Var is not defined: %s' % var_name)
+  It does so by running 's.format(**vars_dict)' for all strings |s| in the
+  |local_scope| dictionary.
+  """
+  def _visit(node):
+    if isinstance(node, dict):
+      return {
+          _visit(k): _visit(v)
+          for k, v in node.iteritems()
+      }
+    if isinstance(node, list) or isinstance(node, tuple):
+      return [_visit(e) for e in node]
+    if isinstance(node, basestring):
+      return node.format(**vars_dict)
+    return node
+  return _visit(local_scope)
 
 
 def GetDepsContent(deps_content):
-  """Return all the sections of a DEPSf file content."""
+  """Return all the sections of a DEPS file content."""
   local_scope = {}
-  var = VarImpl(local_scope)
   global_scope = {
-      'Var': var.Lookup,
+      # gclient supports two ways to reference a variable:
+      # Var('foo') and '{foo}', and we define Var to make them equivalent.
+      # Note that to assign values to the variables, we can use the format
+      # function:
+      #   '{foo}/bar.git'.format({'foo': 'val'}) == 'val/bar.git'
+      'Var': lambda x: '{%s}' % x,
       'deps': {},
       'deps_os': {},
       'include_rules': [],
@@ -35,7 +46,7 @@ def GetDepsContent(deps_content):
       'use_relative_paths': False,
   }
   exec(deps_content, global_scope, local_scope)
-  return {
+  local_scope = {
     'deps': local_scope.get('deps', {}),
     'deps_os': local_scope.get('deps_os', {}),
     'include_rules': local_scope.get('include_rules', []),
@@ -44,4 +55,5 @@ def GetDepsContent(deps_content):
     'vars': local_scope.get('vars', {}),
     'recursedeps': local_scope.get('recursedeps', []),
     'use_relative_paths': local_scope.get('use_relative_paths', False),
-    }
+  }
+  return ExpandVars(local_scope, local_scope['vars'])
