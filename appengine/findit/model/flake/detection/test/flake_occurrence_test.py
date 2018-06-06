@@ -14,9 +14,8 @@ class CQFalseRejectionFlakeOccurrenceTest(TestCase):
   def testCreate(self):
     luci_project = 'chromium'
     step_name = 'step'
-    test_type = 'type'
     test_name = 'test'
-    flake = Flake.Create(luci_project, step_name, test_type, test_name)
+    flake = Flake.Create(luci_project, step_name, test_name)
     flake.put()
 
     build_id = 123

@@ -21,17 +21,13 @@ class FlakeTest(TestCase):
   def testGet(self):
     luci_project = 'chromium'
     step_name = 'step'
-    normalized_step_name = 'normalized_step'
     test_name = 'test'
-    normalized_test_name = 'normalized_test'
 
     flake_id = 'chromium/step/test'
     flake = Flake(
         luci_project=luci_project,
         step_name=step_name,
-        normalized_step_name=normalized_step_name,
         test_name=test_name,
-        normalized_test_name=normalized_test_name,
         id=flake_id)
     flake.put()
     self.assertEqual(
@@ -42,15 +38,11 @@ class FlakeTest(TestCase):
 
   def testCreate(self):
     luci_project = 'chromium'
-    step_name = 'test_type (with patch) on Android'
-    test_type = 'test_type (with patch)'
-    test_name = 'instance/suite.PRE_PRE_test/1'
+    step_name = 'step_name'
+    test_name = 'test_name'
 
     flake = Flake.Create(
-        luci_project=luci_project,
-        step_name=step_name,
-        test_name=test_name,
-        test_type=test_type)
+        luci_project=luci_project, step_name=step_name, test_name=test_name)
     flake.put()
 
     flakes = Flake.query(Flake.luci_project == luci_project,
@@ -58,25 +50,34 @@ class FlakeTest(TestCase):
                          Flake.test_name == test_name).fetch()
     self.assertEqual(1, len(flakes))
     self.assertEqual(flake, flakes[0])
-    self.assertEqual('suite.test', flakes[0].normalized_test_name)
-    self.assertEqual('test_type', flakes[0].normalized_step_name)
 
-  # Tests that for the normalized_step_name property, only ' (with patch)'
-  # that appearis as a postfix is stripped off.
-  def testCreateFlakeHasWithPatchInTestType(self):
+  def testComputedProperties(self):
     luci_project = 'chromium'
-    step_name = 'fake (with patch) test_type (with patch) on Android'
-    test_type = 'fake (with patch) test_type (with patch)'
-    test_name = 'test_name'
+    step_name = 'test_target (with patch) on Android'
+    test_name = 'instance/suite.PRE_PRE_test/1'
+
     flake = Flake.Create(
-        luci_project=luci_project,
-        step_name=step_name,
-        test_name=test_name,
-        test_type=test_type)
+        luci_project=luci_project, step_name=step_name, test_name=test_name)
     flake.put()
 
     fetched_flake = Flake.Get(
         luci_project=luci_project, step_name=step_name, test_name=test_name)
     self.assertTrue(fetched_flake)
-    self.assertEqual('fake (with patch) test_type',
+    self.assertEqual('test_target', fetched_flake.normalized_step_name)
+    self.assertEqual('suite.test', fetched_flake.normalized_test_name)
+
+  # Tests that for the normalized_step_name property, only ' (with patch)'
+  # that appears as a postfix is stripped off.
+  def testCreateFlakeHasWithPatchInStepName(self):
+    luci_project = 'chromium'
+    step_name = 'fake(withpatch)test_target (with patch) on Android'
+    test_name = 'test_name'
+    flake = Flake.Create(
+        luci_project=luci_project, step_name=step_name, test_name=test_name)
+    flake.put()
+
+    fetched_flake = Flake.Get(
+        luci_project=luci_project, step_name=step_name, test_name=test_name)
+    self.assertTrue(fetched_flake)
+    self.assertEqual('fake(withpatch)test_target',
                      fetched_flake.normalized_step_name)

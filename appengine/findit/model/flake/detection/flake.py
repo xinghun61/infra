@@ -6,20 +6,28 @@ from google.appengine.ext import ndb
 
 from libs import gtest_name_util
 
-# Used to identify a step that has the with patch postfix.
-_WITH_PATCH_POSTFIX = ' (with patch)'
 
+# TODO(crbug.com/848867): Correctly handles different step names that map to the
+# same target/binary.
+def _NormalizeStepName(step_name):
+  """Removes platform information and with patch postfix from the step_name.
 
-def _RemoveTestTypeWithPatchPostfix(test_type):
-  """Removes the (with patch) postfix from the test_type.
-
-  Note that the test_type is assumed to have removed hardware/platform
-  information, otherwise this method is no-op.
+  For example, 'angle_unittests (with patch) on Android' becomes
+  'angle_unittests'.
   """
-  if test_type.endswith(_WITH_PATCH_POSTFIX):
-    return test_type[:test_type.rfind(_WITH_PATCH_POSTFIX)]
+  return step_name.split(' ')[0]
 
-  return test_type
+
+def _NormalizeTestName(test_name):
+  """Removes prefixes and parameters from test names if they are gtests.
+
+  For example, 'A/ColorSpaceTest.PRE_PRE_testNullTransform/137' maps to
+  'ColorSpaceTest.testNullTransform'.
+
+  Note that this method is no-op for non-gtests.
+  """
+  return gtest_name_util.RemoveAllPrefixesFromTestName(
+      gtest_name_util.RemoveParametersFromTestName(test_name))
 
 
 class Flake(ndb.Model):
@@ -32,21 +40,17 @@ class Flake(ndb.Model):
   luci_project = ndb.StringProperty(required=True)
 
   # step_name may include hardware information and 'with patch' postfix, but
-  # normalized step name doesn't. For example:
-  # step name 'angle_unittests (with patch) on Android' and
-  # 'angle_unittests (with patch) on Windows-10-15063' have the same normalized
-  # step name: 'angle_unittests'.
-  # TODO(crbug.com/848867): Correctly handle different step names that map to
-  # the same target/binary.
+  # normalized step name doesn't.
   step_name = ndb.StringProperty(required=True)
-  normalized_step_name = ndb.StringProperty(required=True)
+  normalized_step_name = ndb.ComputedProperty(
+      lambda self: _NormalizeStepName(self.step_name))
 
   # normalized_test_name removes the instantiation and parameters parts for
   # parameterized gtests and also remove prefixes if the test name contains
-  # 'PRE_'. For example: A/ColorSpaceTest.PRE_PRE_testNullTransform/137 maps to
-  # ColorSpaceTest.testNullTransform.
+  # 'PRE_'.
   test_name = ndb.StringProperty(required=True)
-  normalized_test_name = ndb.StringProperty(required=True)
+  normalized_test_name = ndb.ComputedProperty(
+      lambda self: _NormalizeTestName(self.test_name))
 
   # TODO(crbug.com/849462): Re-evaluate the choice of id.
   @staticmethod
@@ -62,22 +66,13 @@ class Flake(ndb.Model):
             test_name=test_name))
 
   @classmethod
-  def Create(cls, luci_project, step_name, test_name, test_type):
-    """Creates a Flake entity for a flaky test.
-
-    Note that the test_type is assumed to have removed hardware/platform
-    information.
-    """
+  def Create(cls, luci_project, step_name, test_name):
+    """Creates a Flake entity for a flaky test."""
     flake_id = cls.GetId(
         luci_project=luci_project, step_name=step_name, test_name=test_name)
-    normalized_step_name = _RemoveTestTypeWithPatchPostfix(test_type)
-    normalized_test_name = gtest_name_util.RemoveAllPrefixesFromTestName(
-        gtest_name_util.RemoveParametersFromTestName(test_name))
 
     return cls(
         luci_project=luci_project,
         step_name=step_name,
-        normalized_step_name=normalized_step_name,
         test_name=test_name,
-        normalized_test_name=normalized_test_name,
         id=flake_id)
