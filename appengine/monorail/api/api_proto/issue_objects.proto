@@ -13,6 +13,41 @@ package monorail;
 import "api/api_proto/common.proto";
 
 
+// Next available tag: 8
+message Approval {
+  FieldRef field_ref = 1;
+  repeated UserRef approver_refs = 2;
+  ApprovalStatus status = 3;
+  fixed32 set_on = 4;
+  UserRef setter_ref = 5;
+  repeated FieldValue subfield_values = 6;
+  PhaseRef phase_ref = 7;
+}
+
+
+// Next available tag: 6
+message ApprovalDelta {
+  ApprovalStatus status = 1;
+  repeated UserRef approver_refs_add = 2;
+  repeated UserRef approver_refs_remove = 3;
+  repeated FieldValue field_vals_add = 4;
+  repeated FieldValue field_vals_remove = 5;
+}
+
+
+// Next available tag: 8
+enum ApprovalStatus {
+  NEEDS_REVIEW = 0;
+  NA = 1;
+  REVIEW_REQUESTED = 2;
+  REVIEW_STARTED = 3;
+  NEED_INFO = 4;
+  APPROVED = 5;
+  NOT_APPROVED = 6;
+  NOT_SET = 7;
+}
+
+
 // Next available tag: 4
 message FieldValue {
   FieldRef field_ref = 1;
@@ -44,4 +79,17 @@ message Issue {
   uint32 star_count = 18;
   bool is_spam = 19;
   uint32 attachment_count = 20;
+}
+
+
+// Next available tag:3
+message PhaseDef {
+  PhaseRef phase_ref = 1;
+  uint32 rank = 2;
+}
+
+
+// Next available tag:2
+message PhaseRef {
+  string phase_name = 1;
 }
