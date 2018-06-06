@@ -41,7 +41,9 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
       issue_tracking_service, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'TraverseMergedIssues', return_value=None)
-  def testUpdateMonorailBugPipelineWithCulpritBugNotFound(self, *_):
+  @mock.patch(
+      'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
+  def testUpdateMonorailBugPipelineWithCulpritBugNotFound(self, mocked_api, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.culprit_urlsafe_key = 'c'
     analysis.Save()
@@ -55,12 +57,16 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
 
     pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
     self.assertFalse(pipeline_job.outputs.default.value)
+    mocked_api.assert_called_once()
 
   @mock.patch.object(
       issue_tracking_service, 'ShouldUpdateBugForAnalysis', return_value=True)
   @mock.patch.object(
       issue_tracking_service, 'TraverseMergedIssues', return_value=None)
-  def testUpdateMonorailBugPipelineWithoutCulpritBugNotFound(self, *_):
+  @mock.patch(
+      'pipelines.flake_failure.update_monorail_bug_pipeline.IssueTrackerAPI')
+  def testUpdateMonorailBugPipelineWithoutCulpritBugNotFound(
+      self, mocked_api, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
@@ -73,6 +79,7 @@ class UpdateMonorailPipelineTestShouldNotUpdate(WaterfallTestCase):
 
     pipeline_job = pipelines.pipeline.Pipeline.from_id(pipeline_job.pipeline_id)
     self.assertFalse(pipeline_job.outputs.default.value)
+    mocked_api.assert_called_once()
 
   @mock.patch.object(appengine_util, 'IsStaging', return_value=False)
   @mock.patch.object(
