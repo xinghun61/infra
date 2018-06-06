@@ -26,6 +26,7 @@ PROJECTS = [
   'depot_tools',
   'build',
   'franky',
+  'gn',
   'infra',
   'skia',
   'skiabuildbot',
