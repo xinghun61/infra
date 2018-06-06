@@ -33,6 +33,8 @@ def add_argparse_options(parser):
   parser.add_argument('-n', '--no-verify',
       action='store_true',
       help="Don't check that the specified pin exists.")
+  parser.add_argument('--build-revision',
+      help="Use this revision for the build.git checkout instead of HEAD.")
   parser.add_argument('-C', '--checkout-path', metavar='PATH',
       help="If specified, the checkout at PATH will be used instead of a "
            "temporary one. If PATH does not exist, it will be created, and "
@@ -98,7 +100,7 @@ def checkout_for_args(args):
   LOGGER.warning('Checking out temporary repositories. This may take a few '
                  'minutes.')
   return checkout.Checkout.use(
-      path=args.checkout_path)
+      build_revision=args.build_revision, path=args.checkout_path)
 
 def pinfile_editor_from_args(args, c):
   return pinfile.Editor(

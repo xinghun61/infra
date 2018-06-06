@@ -32,9 +32,10 @@ solutions = [
 ]
 """
 
-  def __init__(self, path, delete=False):
+  def __init__(self, path, build_revision, delete=False):
     self._path = path
     self._delete = delete
+    self._build_revision = build_revision
 
   @property
   def path(self):
@@ -60,7 +61,7 @@ solutions = [
         c.teardown()
 
   @classmethod
-  def create(cls, path=None):
+  def create(cls, build_revision=None, path=None):
     """Creates a new Checkout using the specified path.
 
     Args:
@@ -70,15 +71,15 @@ solutions = [
     delete = False
     if path:
       if os.path.isdir(path):
-        return cls(path, delete=False)
+        return cls(path, build_revision, delete=False)
       os.makedirs(path)
     else:
       path = tempfile.mkdtemp(prefix='tmp_cros_pin')
       delete = True
 
     try:
-      cls.fetch(path)
-      c = cls(path, delete=delete)
+      cls.fetch(build_revision, path)
+      c = cls(path, build_revision, delete=delete)
       path = None # Signal our "finally" clause not to clean up here.
     finally:
       if path:
@@ -86,14 +87,18 @@ solutions = [
     return c
 
   @classmethod
-  def fetch(cls, path):
+  def fetch(cls, build_revision, path):
     LOGGER.info("Fetching => %s (This can take a while.)", path)
     gclient_path = os.path.join(path, '.gclient')
     with open(gclient_path, 'w') as fd:
       fd.write(cls.GCLIENT_TEMPLATE)
+    cmd = ['gclient', 'sync', '--nohooks', '--noprehooks']
+    if build_revision:
+      LOGGER.info("Using build.git revision %s", build_revision)
+      cmd.extend(['--revision', build_revision])
 
     execute.check_call(
-        ['gclient', 'sync', '--nohooks', '--noprehooks'],
+        cmd,
         cwd=path)
 
   def mktempfile(self, content):
