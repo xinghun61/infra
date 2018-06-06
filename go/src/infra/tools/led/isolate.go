@@ -47,7 +47,7 @@ func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (
 	iso := isolated.New()
 	type datum struct {
 		path    string
-		promise *archiver.Item
+		promise *archiver.PendingItem
 	}
 	isoData := []datum{}
 	i := int64(0)
