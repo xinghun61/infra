@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 import datetime
 import mock
-import logging
 
 from google.protobuf import timestamp_pb2
 
@@ -12,8 +11,8 @@ from libs import time_util
 from model import suspected_cl_status
 from model.flake import triggering_sources
 from model.flake.flake_culprit import FlakeCulprit
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.master_flake_analysis import DataPoint
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.proto.gen import findit_pb2
 from model.proto.gen.compile_analysis_pb2 import CompileAnalysisCompletionEvent
 from model.proto.gen.test_analysis_pb2 import TestAnalysisCompletionEvent
@@ -193,10 +192,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     builder = 'builder'
     step = 'step'
     test = 'test'
-
     build_number = 10
-    suspected_build_number = 5
-
     repo = 'chromium'
     revision = 'revision'
     culprit_commit_position = 2
@@ -218,7 +214,6 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
-    analysis.confidence_in_suspected_build = .5
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
@@ -246,9 +241,6 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.timestamp.completed, complete)
 
     self.assertEqual(event.analysis_info.detected_build_number, build_number)
-    self.assertEqual(event.regression_range_confidence, .5)
-    self.assertEqual(event.analysis_info.culprit_build_number,
-                     suspected_build_number)
 
     self.assertEqual(
         str(event.analysis_info.suspects),
@@ -264,8 +256,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
     self.assertEqual(event.analysis_info.outcomes, [
-        findit_pb2.CULPRIT, findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED
-    ])
+        findit_pb2.SUSPECT, findit_pb2.CULPRIT])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.CL_COMMENTED])
     self.assertTrue(event.flake)
 
@@ -277,10 +268,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     builder = 'builder'
     step = 'step'
     test = 'test'
-
     build_number = 10
-    suspected_build_number = 5
-
     repo = 'chromium'
     revision = 'revision'
     culprit_commit_position = 2
@@ -328,11 +316,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     complete = timestamp_pb2.Timestamp()
     complete.FromDatetime(analysis.end_time)
     self.assertEqual(event.analysis_info.timestamp.completed, complete)
-
     self.assertEqual(event.analysis_info.detected_build_number, build_number)
-    self.assertEqual(event.analysis_info.culprit_build_number,
-                     suspected_build_number)
-
     self.assertEqual(
         str(event.analysis_info.suspects),
         '[host: "chromium-review.googlesource.com"\nproject: "chromium"\nref: '
@@ -347,8 +331,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
     self.assertEqual(event.analysis_info.outcomes, [
-        findit_pb2.CULPRIT, findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED
-    ])
+        findit_pb2.SUSPECT, findit_pb2.CULPRIT])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.BUG_CREATED])
 
   @mock.patch.object(
@@ -359,10 +342,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     builder = 'builder'
     step = 'step'
     test = 'test'
-
     build_number = 10
-    suspected_build_number = 5
-
     repo = 'chromium'
     revision = 'revision'
     culprit_commit_position = 2
@@ -389,7 +369,6 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
     culprit.put()
     analysis.confidence_in_culprit = 1.0
-    analysis.confidence_in_suspected_build = 1.0
     analysis.suspect_urlsafe_keys = [
         suspect_1.key.urlsafe(),
         suspect_2.key.urlsafe(),
@@ -412,8 +391,6 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.timestamp.completed, complete)
 
     self.assertEqual(event.analysis_info.detected_build_number, build_number)
-    self.assertEqual(event.analysis_info.culprit_build_number,
-                     suspected_build_number)
 
     self.assertEqual(
         str(event.analysis_info.suspects),
@@ -429,9 +406,85 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
 
     self.assertEqual(event.analysis_info.outcomes, [
-        findit_pb2.CULPRIT, findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED
-    ])
+        findit_pb2.SUSPECT, findit_pb2.CULPRIT])
     self.assertEqual(event.analysis_info.actions, [findit_pb2.BUG_COMMENTED])
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
+  def testCreateTestFlakeAnalysisCompletionEventWithAutoRevert(self, _):
+    """Test reporting event where the Cr has been notified."""
+    master = 'master'
+    builder = 'builder'
+    step = 'step'
+    test = 'test'
+    build_number = 10
+    repo = 'chromium'
+    revision = 'revision'
+    culprit_commit_position = 2
+    culprit = FlakeCulprit.Create(repo, revision, culprit_commit_position)
+
+    suspect_1 = FlakeCulprit.Create(repo, revision, culprit_commit_position - 1)
+    suspect_1.put()
+    suspect_2 = FlakeCulprit.Create(repo, revision, culprit_commit_position)
+    suspect_2.put()
+    suspect_3 = FlakeCulprit.Create(repo, revision, culprit_commit_position + 1)
+    suspect_3.put()
+
+    analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
+                                          test)
+    analysis.has_submitted_autorevert = True
+    analysis.has_created_autorevert = True
+    analysis.data_points = [
+        DataPoint.Create(),
+        DataPoint.Create(),
+        DataPoint.Create()
+    ]
+    analysis.suspected_flake_build_number = 5
+    analysis.start_time = datetime.datetime(2017, 1, 1)
+    analysis.end_time = datetime.datetime(2017, 1, 2)
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    culprit.put()
+    analysis.confidence_in_culprit = 1.0
+    analysis.suspect_urlsafe_keys = [
+        suspect_1.key.urlsafe(),
+        suspect_2.key.urlsafe(),
+        suspect_3.key.urlsafe()
+    ]
+    analysis.bug_id = 1
+    analysis.bug_reported_by = triggering_sources.FINDIT_API
+    analysis.put()
+
+    event = event_reporting.CreateTestFlakeAnalysisCompletionEvent(analysis)
+    self.assertEqual(event.analysis_info.master_name, master)
+    self.assertEqual(event.analysis_info.builder_name, builder)
+    self.assertEqual(event.analysis_info.step_name, step)
+
+    start = timestamp_pb2.Timestamp()
+    start.FromDatetime(analysis.start_time)
+    self.assertEqual(event.analysis_info.timestamp.started, start)
+    complete = timestamp_pb2.Timestamp()
+    complete.FromDatetime(analysis.end_time)
+    self.assertEqual(event.analysis_info.timestamp.completed, complete)
+
+    self.assertEqual(event.analysis_info.detected_build_number, build_number)
+
+    self.assertEqual(
+        str(event.analysis_info.suspects),
+        '[host: "chromium-review.googlesource.com"\nproject: "chromium"\nref: '
+        '"refs/heads/master"\nrevision: "revision"\n, host: '
+        '"chromium-review.googlesource.com"\nproject: "chromium"\nref: '
+        '"refs/heads/master"\nrevision: "revision"\n, host: '
+        '"chromium-review.googlesource.com"\nproject: "chromium"\nref: '
+        '"refs/heads/master"\nrevision: "revision"\n]')
+    self.assertEqual(
+        str(event.analysis_info.culprit),
+        'host: "chromium-review.googlesource.com"\nproject: "chromium"\nref: '
+        '"refs/heads/master"\nrevision: "revision"\nconfidence: 1.0\n')
+
+    self.assertEqual(event.analysis_info.outcomes, [
+        findit_pb2.SUSPECT, findit_pb2.CULPRIT])
+    self.assertEqual(event.analysis_info.actions,
+                     [findit_pb2.REVERT_CREATED, findit_pb2.REVERT_SUBMITTED])
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
@@ -441,10 +494,7 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     builder = 'builder'
     step = 'step'
     test = 'test'
-
     build_number = 10
-    suspected_build_number = 5
-
     repo = 'chromium'
     revision = 'revision'
     culprit_commit_position = 2
@@ -463,7 +513,6 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create()
     ]
     analysis.suspected_flake_build_number = 5
-    analysis.confidence_in_suspected_build = .5
     analysis.start_time = datetime.datetime(2017, 1, 1)
     analysis.end_time = datetime.datetime(2017, 1, 2)
     analysis.confidence_in_culprit = 1.0
@@ -487,8 +536,6 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(event.analysis_info.timestamp.completed, complete)
 
     self.assertEqual(event.analysis_info.detected_build_number, build_number)
-    self.assertEqual(event.analysis_info.culprit_build_number,
-                     suspected_build_number)
 
     self.assertEqual(
         str(event.analysis_info.suspects),
@@ -500,52 +547,11 @@ class EventReportingTest(wf_testcase.WaterfallTestCase):
         '"refs/heads/master"\nrevision: "revision"\n]')
 
     self.assertEqual(event.analysis_info.outcomes,
-                     [findit_pb2.SUSPECT, findit_pb2.REGRESSION_IDENTIFIED])
+                     [findit_pb2.SUSPECT, findit_pb2.REPRODUCIBLE])
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
-  def testCreateTestFlakeAnalysisCompletionEventWithNoSuspects(self, _):
-    """Test reporting event where the Cr has been notified."""
-    master = 'master'
-    builder = 'builder'
-    step = 'step'
-    test = 'test'
-
-    build_number = 10
-    suspected_build_number = 5
-
-    analysis = MasterFlakeAnalysis.Create(master, builder, build_number, step,
-                                          test)
-    # Need two or more points for a valid regression range.
-    analysis.data_points = [DataPoint.Create(), DataPoint.Create()]
-    analysis.suspected_flake_build_number = 5
-    analysis.confidence_in_suspected_build = .5
-    analysis.start_time = datetime.datetime(2017, 1, 1)
-    analysis.end_time = datetime.datetime(2017, 1, 2)
-    analysis.put()
-
-    event = event_reporting.CreateTestFlakeAnalysisCompletionEvent(analysis)
-    self.assertEqual(event.analysis_info.master_name, master)
-    self.assertEqual(event.analysis_info.builder_name, builder)
-    self.assertEqual(event.analysis_info.step_name, step)
-
-    start = timestamp_pb2.Timestamp()
-    start.FromDatetime(analysis.start_time)
-    self.assertEqual(event.analysis_info.timestamp.started, start)
-    complete = timestamp_pb2.Timestamp()
-    complete.FromDatetime(analysis.end_time)
-    self.assertEqual(event.analysis_info.timestamp.completed, complete)
-
-    self.assertEqual(event.analysis_info.detected_build_number, build_number)
-    self.assertEqual(event.analysis_info.culprit_build_number,
-                     suspected_build_number)
-
-    self.assertEqual(event.analysis_info.outcomes,
-                     [findit_pb2.REGRESSION_IDENTIFIED])
-
-  @mock.patch.object(
-      time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 2))
-  def testCreateTestFlakeAnalysisCompletionEventWithNoRegressionRange(self, _):
+  def testCreateTestFlakeAnalysisCompletionEventNotReproducible(self, _):
     """Test reporting event where the Cr has been notified."""
     master = 'master'
     builder = 'builder'

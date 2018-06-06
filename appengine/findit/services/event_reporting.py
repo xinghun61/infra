@@ -12,15 +12,13 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from libs import analysis_status
 from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from model.flake import triggering_sources
 from model.proto.gen import findit_pb2
 from model.proto.gen.compile_analysis_pb2 import CompileAnalysisCompletionEvent
 from model.proto.gen.test_analysis_pb2 import TestAnalysisCompletionEvent
-from model.wf_try_job import WfTryJob
 from model.wf_suspected_cl import WfSuspectedCL
+from model.wf_try_job import WfTryJob
 from services import bigquery_helper
 from services.flake_failure.pass_rate_util import IsFullyStable
-from waterfall import waterfall_config
 
 # Constants to report events to.
 _PROJECT_ID = 'findit-for-me'
@@ -321,13 +319,9 @@ def CreateTestFlakeAnalysisCompletionEvent(analysis):
       analysis.original_step_name or analysis.step_name)
   event.test_name = analysis.original_test_name or analysis.test_name
 
-  if analysis.suspected_flake_build_number:
-    event.analysis_info.culprit_build_number = (
-        analysis.suspected_flake_build_number)
-    event.regression_range_confidence = analysis.confidence_in_suspected_build
-
   culprit_key = analysis.culprit_urlsafe_key
   culprit = None
+
   if culprit_key:
     culprit = ndb.Key(urlsafe=culprit_key).get()
     assert culprit
@@ -350,27 +344,24 @@ def CreateTestFlakeAnalysisCompletionEvent(analysis):
 
   # Outcomes.
 
+  # TODO(crbug.com/805243): Track these outcomes explicitly in
+  # master_flake_analysis.
+
+  if suspects:
+    # Heuristic analysis suggested suspects.
+    event.analysis_info.outcomes.append(findit_pb2.SUSPECT)
+
   if culprit:
     # Culprit was identified from a regression range.
     event.analysis_info.outcomes.append(findit_pb2.CULPRIT)
-
-  if suspects:
-    # Suspects were identified from a regression range but no culprit was found.
-    event.analysis_info.outcomes.append(findit_pb2.SUSPECT)
-
-  # TODO (crbug.com/805243): Track these outcomes explicitly in
-  # master_flake_analysis.
-  if analysis.suspected_flake_build_number is not None:
-    # Regression range was found but no further findings.
-    event.analysis_info.outcomes.append(findit_pb2.REGRESSION_IDENTIFIED)
-  # Long standing flake.
-  elif len(analysis.data_points) > 1:
-    event.analysis_info.outcomes.append(findit_pb2.REPRODUCIBLE)
-  # One data point and it's stable.
-  elif (analysis.data_points and
-        IsFullyStable(analysis.data_points[0].pass_rate)):
-    # More than one datapoint is required for a reproducible result.
-    event.analysis_info.outcomes.append(findit_pb2.NOT_REPRODUCIBLE)
+  else:
+    if len(analysis.data_points) > 1:
+      # Long standing flake.
+      event.analysis_info.outcomes.append(findit_pb2.REPRODUCIBLE)
+    elif (analysis.data_points and
+          IsFullyStable(analysis.data_points[0].pass_rate)):
+      # More than one datapoint is required for a reproducible result.
+      event.analysis_info.outcomes.append(findit_pb2.NOT_REPRODUCIBLE)
 
   # Actions.
   if analysis.has_commented_on_cl:
@@ -382,6 +373,10 @@ def CreateTestFlakeAnalysisCompletionEvent(analysis):
   if analysis.has_filed_bug:
     event.analysis_info.actions.append(findit_pb2.BUG_CREATED)
 
-  # TODO (crbug.com/846531): Track auto revert.
+  if analysis.has_created_autorevert:
+    event.analysis_info.actions.append(findit_pb2.REVERT_CREATED)
+
+  if analysis.has_submitted_autorevert:
+    event.analysis_info.actions.append(findit_pb2.REVERT_SUBMITTED)
 
   return event

@@ -15,6 +15,6 @@ message TestAnalysisCompletionEvent {
   // Test type (flake or failure).
   bool flake = 11;
 
-  // Confidence for the regression range (if any).
+  // (Deprecated) Confidence for the regression range (if any).
   float regression_range_confidence = 12;
 }
