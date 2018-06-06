@@ -117,6 +117,8 @@ class JsonFeed(servlet.Servlet):
       'Sending JSON response: %r length: %r',
       json_str[:framework_constants.LOGGING_MAX_LENGTH], len(json_str))
     self.response.content_type = framework_constants.CONTENT_TYPE_JSON
+    self.response.headers['X-Content-Type-Options'] = (
+        framework_constants.CONTENT_TYPE_JSON_OPTIONS)
     self.response.write(XSSI_PREFIX)
     self.response.write(json_str)
 

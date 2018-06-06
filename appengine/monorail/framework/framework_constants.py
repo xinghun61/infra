@@ -81,7 +81,8 @@ MAX_LABELS = 24
 DEFAULT_COMMENTS_PER_PAGE = 100
 
 # Content type to use when serving JSON.
-CONTENT_TYPE_JSON = 'application/x-javascript; charset=UTF-8'
+CONTENT_TYPE_JSON = 'application/json; charset=UTF-8'
+CONTENT_TYPE_JSON_OPTIONS = 'nosniff'
 
 # Maximum comments to index to keep the search index from choking.  E.g., if an
 # artifact had 1200 comments, only 0..99 and 701..1200 would be indexed.
