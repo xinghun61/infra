@@ -132,7 +132,7 @@ func TestGenerate(t *testing.T) {
 			SwarmingServiceAccount: "swarming@email.com",
 		}
 		Convey("Correct selection generates workflow", func() {
-			wf, err := Generate(sc, pc, []string{})
+			wf, err := Generate(sc, pc, []*tricium.Data_File{})
 			So(err, ShouldBeNil)
 			So(len(wf.Workers), ShouldEqual, 3)
 		})
@@ -248,7 +248,10 @@ func TestIncludeFunction(t *testing.T) {
 	Convey("No path filters means function is included", t, func() {
 		ok, err := includeFunction(&tricium.Function{
 			Type: tricium.Function_ANALYZER,
-		}, []string{"README.md", "path/foo.cc"})
+		}, []*tricium.Data_File{
+			{Path: "README.md"},
+			{Path: "path/foo.cc"},
+		})
 		So(err, ShouldBeNil)
 		So(ok, ShouldBeTrue)
 	})
@@ -257,7 +260,10 @@ func TestIncludeFunction(t *testing.T) {
 		ok, err := includeFunction(&tricium.Function{
 			Type:        tricium.Function_ANALYZER,
 			PathFilters: []string{"*.cc", "*.cpp"},
-		}, []string{"README.md", "path/foo.cc"})
+		}, []*tricium.Data_File{
+			{Path: "README.md"},
+			{Path: "path/foo.cc"},
+		})
 		So(err, ShouldBeNil)
 		So(ok, ShouldBeTrue)
 	})
@@ -266,7 +272,9 @@ func TestIncludeFunction(t *testing.T) {
 		ok, err := includeFunction(&tricium.Function{
 			Type:        tricium.Function_ANALYZER,
 			PathFilters: []string{"*.cc", "*.cpp"},
-		}, []string{"README.md", "whitespace.txt"})
+		}, []*tricium.Data_File{
+			{Path: "whitespace.txt"},
+		})
 		So(err, ShouldBeNil)
 		So(ok, ShouldBeFalse)
 	})
@@ -275,7 +283,10 @@ func TestIncludeFunction(t *testing.T) {
 		ok, err := includeFunction(&tricium.Function{
 			Type:        tricium.Function_ISOLATOR,
 			PathFilters: []string{"*.cc", "*.cpp"},
-		}, []string{"README.md", "whitespace.txt"})
+		}, []*tricium.Data_File{
+			{Path: "README.md"},
+			{Path: "path/foo.cc"},
+		})
 		So(err, ShouldBeNil)
 		So(ok, ShouldBeTrue)
 	})

@@ -12,12 +12,6 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
 // Enum names of supported platforms.
 //
 // Note that all platforms may be used to specify data dependencies but only
@@ -73,40 +67,16 @@ var Platform_Name_value = map[string]int32{
 func (x Platform_Name) String() string {
 	return proto.EnumName(Platform_Name_name, int32(x))
 }
-func (Platform_Name) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_platform_c38c1c676d3a59e7, []int{0, 0}
-}
+func (Platform_Name) EnumDescriptor() ([]byte, []int) { return fileDescriptor3, []int{0, 0} }
 
 // Platforms supported by Tricium.
 type Platform struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Platform) Reset()         { *m = Platform{} }
-func (m *Platform) String() string { return proto.CompactTextString(m) }
-func (*Platform) ProtoMessage()    {}
-func (*Platform) Descriptor() ([]byte, []int) {
-	return fileDescriptor_platform_c38c1c676d3a59e7, []int{0}
-}
-func (m *Platform) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Platform.Unmarshal(m, b)
-}
-func (m *Platform) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Platform.Marshal(b, m, deterministic)
-}
-func (dst *Platform) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Platform.Merge(dst, src)
-}
-func (m *Platform) XXX_Size() int {
-	return xxx_messageInfo_Platform.Size(m)
-}
-func (m *Platform) XXX_DiscardUnknown() {
-	xxx_messageInfo_Platform.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Platform proto.InternalMessageInfo
+func (m *Platform) Reset()                    { *m = Platform{} }
+func (m *Platform) String() string            { return proto.CompactTextString(m) }
+func (*Platform) ProtoMessage()               {}
+func (*Platform) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
 
 // Platform details for supported platforms.
 //
@@ -125,35 +95,13 @@ type Platform_Details struct {
 	// with this field set to true may be configured as the runtime platform
 	// of an implementation. All platform values may be used to express
 	// data dependencies between functions.
-	HasRuntime           bool     `protobuf:"varint,3,opt,name=has_runtime,json=hasRuntime" json:"has_runtime,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	HasRuntime bool `protobuf:"varint,3,opt,name=has_runtime,json=hasRuntime" json:"has_runtime,omitempty"`
 }
 
-func (m *Platform_Details) Reset()         { *m = Platform_Details{} }
-func (m *Platform_Details) String() string { return proto.CompactTextString(m) }
-func (*Platform_Details) ProtoMessage()    {}
-func (*Platform_Details) Descriptor() ([]byte, []int) {
-	return fileDescriptor_platform_c38c1c676d3a59e7, []int{0, 0}
-}
-func (m *Platform_Details) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Platform_Details.Unmarshal(m, b)
-}
-func (m *Platform_Details) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Platform_Details.Marshal(b, m, deterministic)
-}
-func (dst *Platform_Details) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Platform_Details.Merge(dst, src)
-}
-func (m *Platform_Details) XXX_Size() int {
-	return xxx_messageInfo_Platform_Details.Size(m)
-}
-func (m *Platform_Details) XXX_DiscardUnknown() {
-	xxx_messageInfo_Platform_Details.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Platform_Details proto.InternalMessageInfo
+func (m *Platform_Details) Reset()                    { *m = Platform_Details{} }
+func (m *Platform_Details) String() string            { return proto.CompactTextString(m) }
+func (*Platform_Details) ProtoMessage()               {}
+func (*Platform_Details) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0, 0} }
 
 func (m *Platform_Details) GetName() Platform_Name {
 	if m != nil {
@@ -182,11 +130,9 @@ func init() {
 	proto.RegisterEnum("tricium.Platform_Name", Platform_Name_name, Platform_Name_value)
 }
 
-func init() {
-	proto.RegisterFile("infra/tricium/api/v1/platform.proto", fileDescriptor_platform_c38c1c676d3a59e7)
-}
+func init() { proto.RegisterFile("infra/tricium/api/v1/platform.proto", fileDescriptor3) }
 
-var fileDescriptor_platform_c38c1c676d3a59e7 = []byte{
+var fileDescriptor3 = []byte{
 	// 270 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0xd0, 0xc1, 0x4e, 0xb3, 0x40,
 	0x14, 0x05, 0xe0, 0x9f, 0xd2, 0xbf, 0xd0, 0x8b, 0x31, 0xd7, 0x49, 0x34, 0xa4, 0x0b, 0x4b, 0xea,

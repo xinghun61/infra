@@ -344,29 +344,27 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 	changes = filterByWhitelist(ctx, repo.WhitelistedGroup, changes)
 	var tasks []*tq.Task
 	for _, c := range changes {
-		var paths []string
+		var files []*tricium.Data_File
 		for k, v := range c.Revisions[c.CurrentRevision].Files {
-			// In general, most analyzers won't need to read binary
-			// files, and deleted files cannot be checked out by
-			// GitFileIsolator.
-			// TODO(qyearsley): Enable inclusion of binary files once
-			// the metadata about whether the file is text or binary
-			// is included in the FILES data type (https://crbug.com/836548).
-			// The non-inclusion of binary files is meant to be temporary.
-			if v.Status != fileStatusDeleted && !v.Binary {
-				paths = append(paths, k)
+			if v.Status != fileStatusDeleted {
+				files = append(files, &tricium.Data_File{
+					Path:     k,
+					IsBinary: v.Binary,
+				})
 			}
 		}
-		if len(paths) == 0 {
+		if len(files) == 0 {
 			logging.Infof(ctx, "Not making Analyze request for change %s; changes has no files", c.ID)
 			continue
 		}
-		// Sorting files to account for random enumeration in go maps.
+		// Sorting files according to their paths to account for random enumeration in go maps.
 		// This is to get consistent behavior for the same input.
-		sort.Strings(paths)
+		sort.Slice(files, func(i, j int) bool {
+			return files[i].Path < files[j].Path
+		})
 		req := &tricium.AnalyzeRequest{
 			Project: triciumProject,
-			Paths:   paths,
+			Files:   files,
 			Source: &tricium.AnalyzeRequest_GerritRevision{
 				GerritRevision: &tricium.GerritRevision{
 					Host:    gerritProject.Host,

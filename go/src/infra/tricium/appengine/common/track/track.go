@@ -70,7 +70,7 @@ type AnalyzeRequest struct {
 	// the configuration and project details that are used in
 	// this analyze request.
 	Project string
-	// File paths listed in the request.
+	// Paths to files listed in the request.
 	Paths []string `gae:",noindex"`
 	// Full URL of Git repository hosting files in the request.
 	GitURL string `gae:",noindex"`

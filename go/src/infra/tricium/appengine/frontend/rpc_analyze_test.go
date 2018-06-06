@@ -77,7 +77,11 @@ func TestAnalyze(t *testing.T) {
 
 			_, _, err := analyzeWithAuth(ctx, &tricium.AnalyzeRequest{
 				Project: project,
-				Paths:   []string{"README.md"},
+				Files: []*tricium.Data_File{
+					{
+						Path: "README.md",
+					},
+				},
 				Source: &tricium.AnalyzeRequest_GitCommit{
 					GitCommit: &tricium.GitCommit{
 						Url: "https://chromium.googlesource.com/playground/gerrit-tricium",
@@ -102,13 +106,17 @@ func TestAnalyze(t *testing.T) {
 
 func TestValidateAnalyzeRequest(t *testing.T) {
 	ctx := triciumtest.Context()
-	paths := []string{"README.md"}
+	files := []*tricium.Data_File{
+		{
+			Path: "README.md",
+		},
+	}
 	url := "https://example.com/notimportant.git"
 
 	Convey("A request for a Gerrit change with no host is invalid", t, func() {
 		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
 			Project: project,
-			Paths:   paths,
+			Files:   files,
 			Source: &tricium.AnalyzeRequest_GerritRevision{
 				GerritRevision: &tricium.GerritRevision{
 					// Host field is missing.
@@ -125,7 +133,7 @@ func TestValidateAnalyzeRequest(t *testing.T) {
 	Convey("A request with all Gerrit details is valid", t, func() {
 		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
 			Project: project,
-			Paths:   paths,
+			Files:   files,
 			Source: &tricium.AnalyzeRequest_GerritRevision{
 				GerritRevision: &tricium.GerritRevision{
 					Host:    host,
@@ -142,7 +150,7 @@ func TestValidateAnalyzeRequest(t *testing.T) {
 	Convey("A request with an invalid Change ID format is invalid", t, func() {
 		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
 			Project: project,
-			Paths:   paths,
+			Files:   files,
 			Source: &tricium.AnalyzeRequest_GerritRevision{
 				GerritRevision: &tricium.GerritRevision{
 					Host:    host,
@@ -159,7 +167,7 @@ func TestValidateAnalyzeRequest(t *testing.T) {
 	Convey("A request for a Gerrit change with no git URL is invalid", t, func() {
 		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
 			Project: project,
-			Paths:   paths,
+			Files:   files,
 			Source: &tricium.AnalyzeRequest_GerritRevision{
 				GerritRevision: &tricium.GerritRevision{
 					Host:    host,
@@ -175,7 +183,7 @@ func TestValidateAnalyzeRequest(t *testing.T) {
 	Convey("A request for a git commit with all fields is valid", t, func() {
 		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
 			Project: project,
-			Paths:   paths,
+			Files:   files,
 			Source: &tricium.AnalyzeRequest_GitCommit{
 				GitCommit: &tricium.GitCommit{
 					Url: "https://example.com/repo.git",
@@ -189,7 +197,7 @@ func TestValidateAnalyzeRequest(t *testing.T) {
 	Convey("A request for a git commit with no URL is invalid", t, func() {
 		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
 			Project: project,
-			Paths:   paths,
+			Files:   files,
 			Source: &tricium.AnalyzeRequest_GitCommit{
 				GitCommit: &tricium.GitCommit{
 					Ref: "refs/heads/master",
@@ -202,7 +210,7 @@ func TestValidateAnalyzeRequest(t *testing.T) {
 	Convey("A request for a git commit with no ref is invalid", t, func() {
 		err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
 			Project: project,
-			Paths:   paths,
+			Files:   files,
 			Source: &tricium.AnalyzeRequest_GitCommit{
 				GitCommit: &tricium.GitCommit{
 					Url: "https://example.com/repo.git",

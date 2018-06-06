@@ -4,6 +4,8 @@
 
 syntax = "proto3";
 
+import "infra/tricium/api/v1/data.proto";
+
 package admin;
 
 // Launcher implements the internal launcher API of the Tricium service.
@@ -28,9 +30,8 @@ message LaunchRequest {
   // This is used in the GitFileDetails data type used to pull files.
   string git_ref = 4;
 
-  // File paths from the root of the Git repository.
-  // TODO(qyearsley): Replace this with a list of file metadata messages.
-  repeated string paths = 5;
+  // File metadata from the root of the Git repository.
+  repeated tricium.Data.File files = 5;
 }
 
 message LaunchResponse {

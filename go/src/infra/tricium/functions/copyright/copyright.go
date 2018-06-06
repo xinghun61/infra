@@ -53,12 +53,16 @@ func main() {
 
 	// Create RESULTS data.
 	output := &tricium.Data_Results{}
-	for _, p := range input.Paths {
-		if !isWhitelisted(p) {
-			log.Printf("Not emitting comments for file: %s", p)
+	for _, file := range input.Files {
+		if file.IsBinary {
+			log.Printf("Not performing Copyright checks on binary file: %s", file.Path)
+			return
+		}
+		if !isWhitelisted(file.Path) {
+			log.Printf("Not emitting comments for file: %s", file.Path)
 			continue
 		}
-		if c := checkCopyright(filepath.Join(*inputDir, p)); c != nil {
+		if c := checkCopyright(filepath.Join(*inputDir, file.Path)); c != nil {
 			output.Comments = append(output.Comments, c)
 		}
 	}

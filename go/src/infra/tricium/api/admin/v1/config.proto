@@ -8,6 +8,7 @@ package admin;
 
 import "infra/tricium/api/admin/v1/workflow.proto";
 import "infra/tricium/api/v1/config.proto";
+import "infra/tricium/api/v1/data.proto";
 
 service Config {
   // Validates a Tricium config.
@@ -50,8 +51,9 @@ message GenerateWorkflowRequest {
 
   // The paths to generate the workflow config.
   //
-  // These paths are used to decide which workers to include in the workflow.
-  repeated string paths = 2;
+  // This list of file metadata includes file paths which are used to
+  // decide which workers to include in the workflow.
+  repeated tricium.Data.File files = 2;
 }
 
 message GenerateWorkflowResponse {

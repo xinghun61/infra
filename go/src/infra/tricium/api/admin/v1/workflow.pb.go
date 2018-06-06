@@ -6,30 +6,55 @@ package admin
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import _ "infra/tricium/api/v1"
-import tricium "infra/tricium/api/v1"
-import tricium2 "infra/tricium/api/v1"
-import tricium1 "infra/tricium/api/v1"
+import v1 "infra/tricium/api/v1"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 // Tricium workflow configuration.
 //
 // Workflow configurations are typically generated from a Tricium configuration.
 type Workflow struct {
-	ServiceAccount string    `protobuf:"bytes,1,opt,name=service_account,json=serviceAccount" json:"service_account,omitempty"`
-	Workers        []*Worker `protobuf:"bytes,2,rep,name=workers" json:"workers,omitempty"`
-	SwarmingServer string    `protobuf:"bytes,3,opt,name=swarming_server,json=swarmingServer" json:"swarming_server,omitempty"`
-	IsolateServer  string    `protobuf:"bytes,4,opt,name=isolate_server,json=isolateServer" json:"isolate_server,omitempty"`
+	ServiceAccount       string    `protobuf:"bytes,1,opt,name=service_account,json=serviceAccount" json:"service_account,omitempty"`
+	Workers              []*Worker `protobuf:"bytes,2,rep,name=workers" json:"workers,omitempty"`
+	SwarmingServer       string    `protobuf:"bytes,3,opt,name=swarming_server,json=swarmingServer" json:"swarming_server,omitempty"`
+	IsolateServer        string    `protobuf:"bytes,4,opt,name=isolate_server,json=isolateServer" json:"isolate_server,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
-func (m *Workflow) Reset()                    { *m = Workflow{} }
-func (m *Workflow) String() string            { return proto.CompactTextString(m) }
-func (*Workflow) ProtoMessage()               {}
-func (*Workflow) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{0} }
+func (m *Workflow) Reset()         { *m = Workflow{} }
+func (m *Workflow) String() string { return proto.CompactTextString(m) }
+func (*Workflow) ProtoMessage()    {}
+func (*Workflow) Descriptor() ([]byte, []int) {
+	return fileDescriptor_workflow_fb412f2728cedcd6, []int{0}
+}
+func (m *Workflow) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Workflow.Unmarshal(m, b)
+}
+func (m *Workflow) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Workflow.Marshal(b, m, deterministic)
+}
+func (dst *Workflow) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Workflow.Merge(dst, src)
+}
+func (m *Workflow) XXX_Size() int {
+	return xxx_messageInfo_Workflow.Size(m)
+}
+func (m *Workflow) XXX_DiscardUnknown() {
+	xxx_messageInfo_Workflow.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Workflow proto.InternalMessageInfo
 
 func (m *Workflow) GetServiceAccount() string {
 	if m != nil {
@@ -68,32 +93,54 @@ type Worker struct {
 	// Includes data dependencies for runtime type checking.
 	// Platform-specific details are provided when required by the corresponding
 	// data type.
-	Needs               tricium.Data_Type      `protobuf:"varint,2,opt,name=needs,enum=tricium.Data_Type" json:"needs,omitempty"`
-	NeedsForPlatform    tricium1.Platform_Name `protobuf:"varint,3,opt,name=needs_for_platform,json=needsForPlatform,enum=tricium.Platform_Name" json:"needs_for_platform,omitempty"`
-	Provides            tricium.Data_Type      `protobuf:"varint,4,opt,name=provides,enum=tricium.Data_Type" json:"provides,omitempty"`
-	ProvidesForPlatform tricium1.Platform_Name `protobuf:"varint,5,opt,name=provides_for_platform,json=providesForPlatform,enum=tricium.Platform_Name" json:"provides_for_platform,omitempty"`
+	Needs               v1.Data_Type     `protobuf:"varint,2,opt,name=needs,enum=tricium.Data_Type" json:"needs,omitempty"`
+	NeedsForPlatform    v1.Platform_Name `protobuf:"varint,3,opt,name=needs_for_platform,json=needsForPlatform,enum=tricium.Platform_Name" json:"needs_for_platform,omitempty"`
+	Provides            v1.Data_Type     `protobuf:"varint,4,opt,name=provides,enum=tricium.Data_Type" json:"provides,omitempty"`
+	ProvidesForPlatform v1.Platform_Name `protobuf:"varint,5,opt,name=provides_for_platform,json=providesForPlatform,enum=tricium.Platform_Name" json:"provides_for_platform,omitempty"`
 	// Workers to run after this one.
 	Next []string `protobuf:"bytes,6,rep,name=next" json:"next,omitempty"`
 	// Name of the runtime platform configuration.
-	RuntimePlatform tricium1.Platform_Name `protobuf:"varint,7,opt,name=runtime_platform,json=runtimePlatform,enum=tricium.Platform_Name" json:"runtime_platform,omitempty"`
+	RuntimePlatform v1.Platform_Name `protobuf:"varint,7,opt,name=runtime_platform,json=runtimePlatform,enum=tricium.Platform_Name" json:"runtime_platform,omitempty"`
 	// Swarming dimensions for execution of the worker. These should be on the
 	// form "key:value", using keys and values known to the swarming service.
 	Dimensions []string `protobuf:"bytes,8,rep,name=dimensions" json:"dimensions,omitempty"`
 	// List of cipd packages needed for the swarming task used to execute the
 	// worker.
-	CipdPackages []*tricium2.CipdPackage `protobuf:"bytes,9,rep,name=cipd_packages,json=cipdPackages" json:"cipd_packages,omitempty"`
+	CipdPackages []*v1.CipdPackage `protobuf:"bytes,9,rep,name=cipd_packages,json=cipdPackages" json:"cipd_packages,omitempty"`
 	// Command used to execute the worker.
-	Cmd *tricium2.Cmd `protobuf:"bytes,10,opt,name=cmd" json:"cmd,omitempty"`
+	Cmd *v1.Cmd `protobuf:"bytes,10,opt,name=cmd" json:"cmd,omitempty"`
 	// Deadline for execution of the worker in minutes. Note that this time
 	// should include the overhead of triggering the corresponding swarming task
 	// collecting result from it.
-	Deadline int32 `protobuf:"varint,11,opt,name=deadline" json:"deadline,omitempty"`
+	Deadline             int32    `protobuf:"varint,11,opt,name=deadline" json:"deadline,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Worker) Reset()                    { *m = Worker{} }
-func (m *Worker) String() string            { return proto.CompactTextString(m) }
-func (*Worker) ProtoMessage()               {}
-func (*Worker) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{1} }
+func (m *Worker) Reset()         { *m = Worker{} }
+func (m *Worker) String() string { return proto.CompactTextString(m) }
+func (*Worker) ProtoMessage()    {}
+func (*Worker) Descriptor() ([]byte, []int) {
+	return fileDescriptor_workflow_fb412f2728cedcd6, []int{1}
+}
+func (m *Worker) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Worker.Unmarshal(m, b)
+}
+func (m *Worker) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Worker.Marshal(b, m, deterministic)
+}
+func (dst *Worker) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Worker.Merge(dst, src)
+}
+func (m *Worker) XXX_Size() int {
+	return xxx_messageInfo_Worker.Size(m)
+}
+func (m *Worker) XXX_DiscardUnknown() {
+	xxx_messageInfo_Worker.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Worker proto.InternalMessageInfo
 
 func (m *Worker) GetName() string {
 	if m != nil {
@@ -102,32 +149,32 @@ func (m *Worker) GetName() string {
 	return ""
 }
 
-func (m *Worker) GetNeeds() tricium.Data_Type {
+func (m *Worker) GetNeeds() v1.Data_Type {
 	if m != nil {
 		return m.Needs
 	}
-	return tricium.Data_NONE
+	return v1.Data_NONE
 }
 
-func (m *Worker) GetNeedsForPlatform() tricium1.Platform_Name {
+func (m *Worker) GetNeedsForPlatform() v1.Platform_Name {
 	if m != nil {
 		return m.NeedsForPlatform
 	}
-	return tricium1.Platform_ANY
+	return v1.Platform_ANY
 }
 
-func (m *Worker) GetProvides() tricium.Data_Type {
+func (m *Worker) GetProvides() v1.Data_Type {
 	if m != nil {
 		return m.Provides
 	}
-	return tricium.Data_NONE
+	return v1.Data_NONE
 }
 
-func (m *Worker) GetProvidesForPlatform() tricium1.Platform_Name {
+func (m *Worker) GetProvidesForPlatform() v1.Platform_Name {
 	if m != nil {
 		return m.ProvidesForPlatform
 	}
-	return tricium1.Platform_ANY
+	return v1.Platform_ANY
 }
 
 func (m *Worker) GetNext() []string {
@@ -137,11 +184,11 @@ func (m *Worker) GetNext() []string {
 	return nil
 }
 
-func (m *Worker) GetRuntimePlatform() tricium1.Platform_Name {
+func (m *Worker) GetRuntimePlatform() v1.Platform_Name {
 	if m != nil {
 		return m.RuntimePlatform
 	}
-	return tricium1.Platform_ANY
+	return v1.Platform_ANY
 }
 
 func (m *Worker) GetDimensions() []string {
@@ -151,14 +198,14 @@ func (m *Worker) GetDimensions() []string {
 	return nil
 }
 
-func (m *Worker) GetCipdPackages() []*tricium2.CipdPackage {
+func (m *Worker) GetCipdPackages() []*v1.CipdPackage {
 	if m != nil {
 		return m.CipdPackages
 	}
 	return nil
 }
 
-func (m *Worker) GetCmd() *tricium2.Cmd {
+func (m *Worker) GetCmd() *v1.Cmd {
 	if m != nil {
 		return m.Cmd
 	}
@@ -177,9 +224,11 @@ func init() {
 	proto.RegisterType((*Worker)(nil), "admin.Worker")
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/admin/v1/workflow.proto", fileDescriptor5) }
+func init() {
+	proto.RegisterFile("infra/tricium/api/admin/v1/workflow.proto", fileDescriptor_workflow_fb412f2728cedcd6)
+}
 
-var fileDescriptor5 = []byte{
+var fileDescriptor_workflow_fb412f2728cedcd6 = []byte{
 	// 449 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x92, 0x3d, 0x6f, 0xdb, 0x30,
 	0x10, 0x86, 0xa1, 0x2a, 0x76, 0x9c, 0x73, 0xec, 0x04, 0xec, 0x07, 0x04, 0x0f, 0xa9, 0x9a, 0xa2,

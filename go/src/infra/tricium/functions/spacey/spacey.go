@@ -43,7 +43,12 @@ func main() {
 
 	// Create RESULTS data.
 	output := &tricium.Data_Results{}
-	for _, p := range input.Paths {
+	for _, file := range input.Files {
+		if file.IsBinary {
+			log.Printf("Not performing Spacey checks on binary file: %s", file.Path)
+			return
+		}
+		p := file.Path
 		file, err := os.Open(filepath.Join(*inputDir, p))
 		if err != nil {
 			log.Fatalf("Failed to open file: %v, path: %s", err, p)

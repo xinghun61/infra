@@ -19,18 +19,46 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 // TriggerRequest contains the details needed to launch a swarming task for a
 // Tricium worker.
 type TriggerRequest struct {
-	RunId             int64  `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
-	IsolatedInputHash string `protobuf:"bytes,2,opt,name=isolated_input_hash,json=isolatedInputHash" json:"isolated_input_hash,omitempty"`
-	Worker            string `protobuf:"bytes,3,opt,name=worker" json:"worker,omitempty"`
+	RunId                int64    `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	IsolatedInputHash    string   `protobuf:"bytes,2,opt,name=isolated_input_hash,json=isolatedInputHash" json:"isolated_input_hash,omitempty"`
+	Worker               string   `protobuf:"bytes,3,opt,name=worker" json:"worker,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *TriggerRequest) Reset()                    { *m = TriggerRequest{} }
-func (m *TriggerRequest) String() string            { return proto.CompactTextString(m) }
-func (*TriggerRequest) ProtoMessage()               {}
-func (*TriggerRequest) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (m *TriggerRequest) Reset()         { *m = TriggerRequest{} }
+func (m *TriggerRequest) String() string { return proto.CompactTextString(m) }
+func (*TriggerRequest) ProtoMessage()    {}
+func (*TriggerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_driver_efc511f76a30a2e7, []int{0}
+}
+func (m *TriggerRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TriggerRequest.Unmarshal(m, b)
+}
+func (m *TriggerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TriggerRequest.Marshal(b, m, deterministic)
+}
+func (dst *TriggerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TriggerRequest.Merge(dst, src)
+}
+func (m *TriggerRequest) XXX_Size() int {
+	return xxx_messageInfo_TriggerRequest.Size(m)
+}
+func (m *TriggerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_TriggerRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TriggerRequest proto.InternalMessageInfo
 
 func (m *TriggerRequest) GetRunId() int64 {
 	if m != nil {
@@ -54,12 +82,34 @@ func (m *TriggerRequest) GetWorker() string {
 }
 
 type TriggerResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *TriggerResponse) Reset()                    { *m = TriggerResponse{} }
-func (m *TriggerResponse) String() string            { return proto.CompactTextString(m) }
-func (*TriggerResponse) ProtoMessage()               {}
-func (*TriggerResponse) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (m *TriggerResponse) Reset()         { *m = TriggerResponse{} }
+func (m *TriggerResponse) String() string { return proto.CompactTextString(m) }
+func (*TriggerResponse) ProtoMessage()    {}
+func (*TriggerResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_driver_efc511f76a30a2e7, []int{1}
+}
+func (m *TriggerResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TriggerResponse.Unmarshal(m, b)
+}
+func (m *TriggerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TriggerResponse.Marshal(b, m, deterministic)
+}
+func (dst *TriggerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TriggerResponse.Merge(dst, src)
+}
+func (m *TriggerResponse) XXX_Size() int {
+	return xxx_messageInfo_TriggerResponse.Size(m)
+}
+func (m *TriggerResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_TriggerResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TriggerResponse proto.InternalMessageInfo
 
 // CollectRequest contains the details needed to collect results from a swarming task
 // running a Tricium worker and to launch succeeding Tricium workers.
@@ -74,13 +124,35 @@ type CollectRequest struct {
 	// The Swarming task ID.
 	//
 	// Used to collect results from the completed swarming worker task.
-	TaskId string `protobuf:"bytes,4,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
+	TaskId               string   `protobuf:"bytes,4,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *CollectRequest) Reset()                    { *m = CollectRequest{} }
-func (m *CollectRequest) String() string            { return proto.CompactTextString(m) }
-func (*CollectRequest) ProtoMessage()               {}
-func (*CollectRequest) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
+func (m *CollectRequest) Reset()         { *m = CollectRequest{} }
+func (m *CollectRequest) String() string { return proto.CompactTextString(m) }
+func (*CollectRequest) ProtoMessage()    {}
+func (*CollectRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_driver_efc511f76a30a2e7, []int{2}
+}
+func (m *CollectRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CollectRequest.Unmarshal(m, b)
+}
+func (m *CollectRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CollectRequest.Marshal(b, m, deterministic)
+}
+func (dst *CollectRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CollectRequest.Merge(dst, src)
+}
+func (m *CollectRequest) XXX_Size() int {
+	return xxx_messageInfo_CollectRequest.Size(m)
+}
+func (m *CollectRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CollectRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CollectRequest proto.InternalMessageInfo
 
 func (m *CollectRequest) GetRunId() int64 {
 	if m != nil {
@@ -111,12 +183,34 @@ func (m *CollectRequest) GetTaskId() string {
 }
 
 type CollectResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *CollectResponse) Reset()                    { *m = CollectResponse{} }
-func (m *CollectResponse) String() string            { return proto.CompactTextString(m) }
-func (*CollectResponse) ProtoMessage()               {}
-func (*CollectResponse) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{3} }
+func (m *CollectResponse) Reset()         { *m = CollectResponse{} }
+func (m *CollectResponse) String() string { return proto.CompactTextString(m) }
+func (*CollectResponse) ProtoMessage()    {}
+func (*CollectResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_driver_efc511f76a30a2e7, []int{3}
+}
+func (m *CollectResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CollectResponse.Unmarshal(m, b)
+}
+func (m *CollectResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CollectResponse.Marshal(b, m, deterministic)
+}
+func (dst *CollectResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CollectResponse.Merge(dst, src)
+}
+func (m *CollectResponse) XXX_Size() int {
+	return xxx_messageInfo_CollectResponse.Size(m)
+}
+func (m *CollectResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CollectResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CollectResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*TriggerRequest)(nil), "admin.TriggerRequest")
@@ -133,8 +227,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Driver service
-
+// DriverClient is the client API for Driver service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type DriverClient interface {
 	// Trigger triggers a swarming task for a Tricium worker.
 	Trigger(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*TriggerResponse, error)
@@ -177,7 +272,7 @@ func NewDriverClient(cc *grpc.ClientConn) DriverClient {
 
 func (c *driverClient) Trigger(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*TriggerResponse, error) {
 	out := new(TriggerResponse)
-	err := grpc.Invoke(ctx, "/admin.Driver/Trigger", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/admin.Driver/Trigger", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -186,15 +281,14 @@ func (c *driverClient) Trigger(ctx context.Context, in *TriggerRequest, opts ...
 
 func (c *driverClient) Collect(ctx context.Context, in *CollectRequest, opts ...grpc.CallOption) (*CollectResponse, error) {
 	out := new(CollectResponse)
-	err := grpc.Invoke(ctx, "/admin.Driver/Collect", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/admin.Driver/Collect", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Driver service
-
+// DriverServer is the server API for Driver service.
 type DriverServer interface {
 	// Trigger triggers a swarming task for a Tricium worker.
 	Trigger(context.Context, *TriggerRequest) (*TriggerResponse, error)
@@ -259,9 +353,11 @@ var _Driver_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/admin/v1/driver.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/admin/v1/driver.proto", fileDescriptor1) }
+func init() {
+	proto.RegisterFile("infra/tricium/api/admin/v1/driver.proto", fileDescriptor_driver_efc511f76a30a2e7)
+}
 
-var fileDescriptor1 = []byte{
+var fileDescriptor_driver_efc511f76a30a2e7 = []byte{
 	// 258 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x91, 0x31, 0x4f, 0xfb, 0x30,
 	0x10, 0xc5, 0x95, 0x7f, 0xff, 0x4d, 0xc5, 0x0d, 0x45, 0x35, 0x6a, 0x89, 0x98, 0xaa, 0x2c, 0x74,

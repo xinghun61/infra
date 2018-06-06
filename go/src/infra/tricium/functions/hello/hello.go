@@ -34,11 +34,15 @@ func main() {
 
 	// Create RESULTS data.
 	output := &tricium.Data_Results{}
-	for _, p := range input.Paths {
+	for _, file := range input.Files {
+		if file.IsBinary {
+			log.Printf("Not performing Hello checks on binary file: %s", file.Path)
+			return
+		}
 		output.Comments = append(output.Comments, &tricium.Data_Comment{
 			Category: category,
 			Message:  message,
-			Path:     p,
+			Path:     file.Path,
 		})
 	}
 

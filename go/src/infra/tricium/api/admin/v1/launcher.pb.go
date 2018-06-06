@@ -8,6 +8,7 @@ import prpc "go.chromium.org/luci/grpc/prpc"
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+import v1 "infra/tricium/api/v1"
 
 import (
 	context "golang.org/x/net/context"
@@ -18,6 +19,12 @@ import (
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // LaunchRequest contains the details needed to launch a workflow for an analysis request.
 type LaunchRequest struct {
@@ -31,15 +38,36 @@ type LaunchRequest struct {
 	// "refs/changes/34/1234/1", or any other ref name or commit hash.
 	// This is used in the GitFileDetails data type used to pull files.
 	GitRef string `protobuf:"bytes,4,opt,name=git_ref,json=gitRef" json:"git_ref,omitempty"`
-	// File paths from the root of the Git repository.
-	// TODO(qyearsley): Replace this with a list of file metadata messages.
-	Paths []string `protobuf:"bytes,5,rep,name=paths" json:"paths,omitempty"`
+	// File metadata from the root of the Git repository.
+	Files                []*v1.Data_File `protobuf:"bytes,5,rep,name=files" json:"files,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *LaunchRequest) Reset()                    { *m = LaunchRequest{} }
-func (m *LaunchRequest) String() string            { return proto.CompactTextString(m) }
-func (*LaunchRequest) ProtoMessage()               {}
-func (*LaunchRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (m *LaunchRequest) Reset()         { *m = LaunchRequest{} }
+func (m *LaunchRequest) String() string { return proto.CompactTextString(m) }
+func (*LaunchRequest) ProtoMessage()    {}
+func (*LaunchRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_launcher_95c4eaf00761fd08, []int{0}
+}
+func (m *LaunchRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_LaunchRequest.Unmarshal(m, b)
+}
+func (m *LaunchRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_LaunchRequest.Marshal(b, m, deterministic)
+}
+func (dst *LaunchRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LaunchRequest.Merge(dst, src)
+}
+func (m *LaunchRequest) XXX_Size() int {
+	return xxx_messageInfo_LaunchRequest.Size(m)
+}
+func (m *LaunchRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_LaunchRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LaunchRequest proto.InternalMessageInfo
 
 func (m *LaunchRequest) GetRunId() int64 {
 	if m != nil {
@@ -69,20 +97,42 @@ func (m *LaunchRequest) GetGitRef() string {
 	return ""
 }
 
-func (m *LaunchRequest) GetPaths() []string {
+func (m *LaunchRequest) GetFiles() []*v1.Data_File {
 	if m != nil {
-		return m.Paths
+		return m.Files
 	}
 	return nil
 }
 
 type LaunchResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *LaunchResponse) Reset()                    { *m = LaunchResponse{} }
-func (m *LaunchResponse) String() string            { return proto.CompactTextString(m) }
-func (*LaunchResponse) ProtoMessage()               {}
-func (*LaunchResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
+func (m *LaunchResponse) Reset()         { *m = LaunchResponse{} }
+func (m *LaunchResponse) String() string { return proto.CompactTextString(m) }
+func (*LaunchResponse) ProtoMessage()    {}
+func (*LaunchResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_launcher_95c4eaf00761fd08, []int{1}
+}
+func (m *LaunchResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_LaunchResponse.Unmarshal(m, b)
+}
+func (m *LaunchResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_LaunchResponse.Marshal(b, m, deterministic)
+}
+func (dst *LaunchResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LaunchResponse.Merge(dst, src)
+}
+func (m *LaunchResponse) XXX_Size() int {
+	return xxx_messageInfo_LaunchResponse.Size(m)
+}
+func (m *LaunchResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_LaunchResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LaunchResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*LaunchRequest)(nil), "admin.LaunchRequest")
@@ -97,8 +147,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Launcher service
-
+// LauncherClient is the client API for Launcher service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type LauncherClient interface {
 	// Launch launches a workflow for provided request details.
 	Launch(ctx context.Context, in *LaunchRequest, opts ...grpc.CallOption) (*LaunchResponse, error)
@@ -130,15 +181,14 @@ func NewLauncherClient(cc *grpc.ClientConn) LauncherClient {
 
 func (c *launcherClient) Launch(ctx context.Context, in *LaunchRequest, opts ...grpc.CallOption) (*LaunchResponse, error) {
 	out := new(LaunchResponse)
-	err := grpc.Invoke(ctx, "/admin.Launcher/Launch", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/admin.Launcher/Launch", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Launcher service
-
+// LauncherServer is the server API for Launcher service.
 type LauncherServer interface {
 	// Launch launches a workflow for provided request details.
 	Launch(context.Context, *LaunchRequest) (*LaunchResponse, error)
@@ -179,22 +229,26 @@ var _Launcher_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/admin/v1/launcher.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/admin/v1/launcher.proto", fileDescriptor2) }
+func init() {
+	proto.RegisterFile("infra/tricium/api/admin/v1/launcher.proto", fileDescriptor_launcher_95c4eaf00761fd08)
+}
 
-var fileDescriptor2 = []byte{
-	// 219 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x8f, 0xc1, 0x4a, 0xc4, 0x30,
-	0x10, 0x40, 0xa9, 0xb5, 0x59, 0x77, 0x40, 0x91, 0xb0, 0x8b, 0xc1, 0x53, 0xd9, 0x53, 0xbd, 0x34,
-	0xa8, 0xf8, 0x01, 0x1e, 0x85, 0x3d, 0x05, 0x3c, 0x2f, 0xb1, 0x4d, 0x77, 0x47, 0xda, 0x24, 0x4e,
-	0x12, 0xbf, 0xc1, 0xcf, 0x16, 0x52, 0x2b, 0xe8, 0x6d, 0xde, 0x3c, 0x18, 0xde, 0xc0, 0x1d, 0xda,
-	0x81, 0xb4, 0x8c, 0x84, 0x1d, 0xa6, 0x49, 0x6a, 0x8f, 0x52, 0xf7, 0x13, 0x5a, 0xf9, 0x79, 0x2f,
-	0x47, 0x9d, 0x6c, 0x77, 0x32, 0xd4, 0x7a, 0x72, 0xd1, 0xf1, 0x2a, 0x8b, 0xdd, 0x57, 0x01, 0x97,
-	0xfb, 0x6c, 0x94, 0xf9, 0x48, 0x26, 0x44, 0xbe, 0x05, 0x46, 0xc9, 0x1e, 0xb0, 0x17, 0x45, 0x5d,
-	0x34, 0xa5, 0xaa, 0x28, 0xd9, 0x97, 0x9e, 0x0b, 0x58, 0x79, 0x72, 0xef, 0xa6, 0x8b, 0xe2, 0xac,
-	0x2e, 0x9a, 0xb5, 0x5a, 0x90, 0xdf, 0xc0, 0xea, 0x88, 0xf1, 0x90, 0x68, 0x14, 0x65, 0x36, 0xec,
-	0x88, 0xf1, 0x95, 0xc6, 0x45, 0x90, 0x19, 0xc4, 0xf9, 0xaf, 0x50, 0x66, 0xe0, 0x1b, 0xa8, 0xbc,
-	0x8e, 0xa7, 0x20, 0xaa, 0xba, 0x6c, 0xd6, 0x6a, 0x86, 0xdd, 0x35, 0x5c, 0x2d, 0x25, 0xc1, 0x3b,
-	0x1b, 0xcc, 0xc3, 0x33, 0x5c, 0xec, 0x7f, 0xaa, 0xf9, 0x13, 0xb0, 0x79, 0xe6, 0x9b, 0x36, 0xa7,
-	0xb7, 0x7f, 0xb2, 0x6f, 0xb7, 0xff, 0xb6, 0xf3, 0x89, 0x37, 0x96, 0xbf, 0x7d, 0xfc, 0x0e, 0x00,
-	0x00, 0xff, 0xff, 0xde, 0x93, 0xba, 0x65, 0x1a, 0x01, 0x00, 0x00,
+var fileDescriptor_launcher_95c4eaf00761fd08 = []byte{
+	// 245 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x8f, 0x41, 0x4b, 0xc3, 0x30,
+	0x18, 0x86, 0xa9, 0xb5, 0x9d, 0x46, 0x14, 0x09, 0x0e, 0xc3, 0x2e, 0x96, 0x9d, 0xea, 0x25, 0x61,
+	0x13, 0x7f, 0x80, 0x20, 0x82, 0xb0, 0x53, 0xc0, 0xf3, 0x88, 0xed, 0xd7, 0xf9, 0x49, 0x96, 0xd6,
+	0xaf, 0xc9, 0x7e, 0x8d, 0x3f, 0x56, 0x4c, 0x5b, 0x41, 0xbd, 0x25, 0x79, 0xde, 0x37, 0xbc, 0x0f,
+	0xbb, 0x45, 0xd7, 0x90, 0x51, 0x9e, 0xb0, 0xc2, 0xb0, 0x57, 0xa6, 0x43, 0x65, 0xea, 0x3d, 0x3a,
+	0x75, 0x58, 0x29, 0x6b, 0x82, 0xab, 0xde, 0x80, 0x64, 0x47, 0xad, 0x6f, 0x79, 0x16, 0xc1, 0xe2,
+	0xe6, 0x7f, 0xe3, 0xb0, 0x52, 0xb5, 0xf1, 0x66, 0xc8, 0x2d, 0x3f, 0x13, 0x76, 0xbe, 0x89, 0x55,
+	0x0d, 0x1f, 0x01, 0x7a, 0xcf, 0xe7, 0x2c, 0xa7, 0xe0, 0xb6, 0x58, 0x8b, 0xa4, 0x48, 0xca, 0x54,
+	0x67, 0x14, 0xdc, 0x73, 0xcd, 0x05, 0x9b, 0x75, 0xd4, 0xbe, 0x43, 0xe5, 0xc5, 0x51, 0x91, 0x94,
+	0xa7, 0x7a, 0xba, 0xf2, 0x6b, 0x36, 0xdb, 0xa1, 0xdf, 0x06, 0xb2, 0x22, 0x8d, 0x24, 0xdf, 0xa1,
+	0x7f, 0x21, 0x3b, 0x01, 0x82, 0x46, 0x1c, 0xff, 0x00, 0x0d, 0x0d, 0x2f, 0x59, 0xd6, 0xa0, 0x85,
+	0x5e, 0x64, 0x45, 0x5a, 0x9e, 0xad, 0xb9, 0x1c, 0xf7, 0xc9, 0xc7, 0xef, 0x61, 0x4f, 0x68, 0x41,
+	0x0f, 0x81, 0xe5, 0x25, 0xbb, 0x98, 0xd6, 0xf5, 0x5d, 0xeb, 0x7a, 0x58, 0x3f, 0xb0, 0x93, 0xcd,
+	0xa8, 0xca, 0xef, 0x59, 0x3e, 0x9c, 0xf9, 0x95, 0x8c, 0xbe, 0xf2, 0x97, 0xca, 0x62, 0xfe, 0xe7,
+	0x75, 0xf8, 0xe2, 0x35, 0x8f, 0xea, 0x77, 0x5f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x50, 0x13, 0xc6,
+	0x2b, 0x4f, 0x01, 0x00, 0x00,
 }

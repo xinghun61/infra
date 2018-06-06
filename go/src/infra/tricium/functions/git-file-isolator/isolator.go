@@ -49,7 +49,9 @@ func main() {
 	}
 	// Explicitly add list of files to checkout to speed things up.
 	// NB! The max length for a command line supported by the OS may be exceeded (inspect with $getconf ARG_MAX)
-	cmds[2].Args = append(cmds[2].Args, input.Paths...)
+	for _, file := range input.Files {
+		cmds[2].Args = append(cmds[2].Args, file.Path)
+	}
 	for _, c := range cmds {
 		c.Dir = dir
 		log.Printf("Running cmd: %s", c.Args)
@@ -58,13 +60,13 @@ func main() {
 		}
 	}
 
-	// Copy files to output directory for isolation.
-	for _, p := range input.Paths {
-		dest := filepath.Join(*outputDir, p)
+	// Copy files to output directory for isolation
+	for _, file := range input.Files {
+		dest := filepath.Join(*outputDir, file.Path)
 		if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 			log.Fatalf("Failed to create dirs for file: %v", err)
 		}
-		src := filepath.Join(dir, p)
+		src := filepath.Join(dir, file.Path)
 		cmd := exec.Command("cp", src, dest)
 		stderr, err := cmd.StderrPipe()
 		if err != nil {
@@ -82,7 +84,7 @@ func main() {
 
 	// Write Tricium output FILES data
 	output := &tricium.Data_Files{
-		Paths: input.Paths,
+		Files: input.Files,
 	}
 	path, err := tricium.WriteDataType(*outputDir, output)
 	if err != nil {

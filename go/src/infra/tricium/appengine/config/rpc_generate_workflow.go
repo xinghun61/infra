@@ -30,7 +30,7 @@ func (*configServer) GenerateWorkflow(c context.Context, req *admin.GenerateWork
 		logging.WithError(err).Errorf(c, "failed to get service config")
 		return nil, grpc.Errorf(codes.InvalidArgument, "failed to get service config")
 	}
-	wf, err := config.Generate(sc, pc, req.Paths)
+	wf, err := config.Generate(sc, pc, req.Files)
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to validate config")
 	}

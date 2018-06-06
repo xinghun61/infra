@@ -43,7 +43,7 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 	if req.GitRef == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing git ref")
 	}
-	if len(req.Paths) == 0 {
+	if len(req.Files) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
 	if err := launch(c, req, config.LuciConfigServer, common.IsolateServer,
@@ -73,7 +73,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 		logging.WithError(err).Errorf(c, "failed to get project config")
 		return err
 	}
-	wf, err := config.Generate(sc, pc, req.Paths)
+	wf, err := config.Generate(sc, pc, req.Files)
 	if err != nil {
 		return fmt.Errorf("failed to generate workflow config for project %s: %v", req.Project, err)
 	}
@@ -102,7 +102,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	inputHash, err := isolator.IsolateGitFileDetails(c, wf.IsolateServer, &tricium.Data_GitFileDetails{
 		Repository: req.GitUrl,
 		Ref:        req.GitRef,
-		Paths:      req.Paths,
+		Files:      req.Files,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to isolate git file details: %v", err)

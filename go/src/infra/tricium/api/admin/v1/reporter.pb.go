@@ -19,15 +19,43 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 type ReportResultsRequest struct {
-	RunId    int64  `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
-	Analyzer string `protobuf:"bytes,2,opt,name=analyzer" json:"analyzer,omitempty"`
+	RunId                int64    `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	Analyzer             string   `protobuf:"bytes,2,opt,name=analyzer" json:"analyzer,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ReportResultsRequest) Reset()                    { *m = ReportResultsRequest{} }
-func (m *ReportResultsRequest) String() string            { return proto.CompactTextString(m) }
-func (*ReportResultsRequest) ProtoMessage()               {}
-func (*ReportResultsRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+func (m *ReportResultsRequest) Reset()         { *m = ReportResultsRequest{} }
+func (m *ReportResultsRequest) String() string { return proto.CompactTextString(m) }
+func (*ReportResultsRequest) ProtoMessage()    {}
+func (*ReportResultsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_reporter_e472c2b31bcd314c, []int{0}
+}
+func (m *ReportResultsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ReportResultsRequest.Unmarshal(m, b)
+}
+func (m *ReportResultsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ReportResultsRequest.Marshal(b, m, deterministic)
+}
+func (dst *ReportResultsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReportResultsRequest.Merge(dst, src)
+}
+func (m *ReportResultsRequest) XXX_Size() int {
+	return xxx_messageInfo_ReportResultsRequest.Size(m)
+}
+func (m *ReportResultsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReportResultsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReportResultsRequest proto.InternalMessageInfo
 
 func (m *ReportResultsRequest) GetRunId() int64 {
 	if m != nil {
@@ -44,12 +72,34 @@ func (m *ReportResultsRequest) GetAnalyzer() string {
 }
 
 type ReportResultsResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ReportResultsResponse) Reset()                    { *m = ReportResultsResponse{} }
-func (m *ReportResultsResponse) String() string            { return proto.CompactTextString(m) }
-func (*ReportResultsResponse) ProtoMessage()               {}
-func (*ReportResultsResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{1} }
+func (m *ReportResultsResponse) Reset()         { *m = ReportResultsResponse{} }
+func (m *ReportResultsResponse) String() string { return proto.CompactTextString(m) }
+func (*ReportResultsResponse) ProtoMessage()    {}
+func (*ReportResultsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_reporter_e472c2b31bcd314c, []int{1}
+}
+func (m *ReportResultsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ReportResultsResponse.Unmarshal(m, b)
+}
+func (m *ReportResultsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ReportResultsResponse.Marshal(b, m, deterministic)
+}
+func (dst *ReportResultsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReportResultsResponse.Merge(dst, src)
+}
+func (m *ReportResultsResponse) XXX_Size() int {
+	return xxx_messageInfo_ReportResultsResponse.Size(m)
+}
+func (m *ReportResultsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReportResultsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReportResultsResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*ReportResultsRequest)(nil), "admin.ReportResultsRequest")
@@ -64,8 +114,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Reporter service
-
+// ReporterClient is the client API for Reporter service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ReporterClient interface {
 	// ReportResults reports Tricium results.
 	ReportResults(ctx context.Context, in *ReportResultsRequest, opts ...grpc.CallOption) (*ReportResultsResponse, error)
@@ -97,15 +148,14 @@ func NewReporterClient(cc *grpc.ClientConn) ReporterClient {
 
 func (c *reporterClient) ReportResults(ctx context.Context, in *ReportResultsRequest, opts ...grpc.CallOption) (*ReportResultsResponse, error) {
 	out := new(ReportResultsResponse)
-	err := grpc.Invoke(ctx, "/admin.Reporter/ReportResults", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/admin.Reporter/ReportResults", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Reporter service
-
+// ReporterServer is the server API for Reporter service.
 type ReporterServer interface {
 	// ReportResults reports Tricium results.
 	ReportResults(context.Context, *ReportResultsRequest) (*ReportResultsResponse, error)
@@ -146,9 +196,11 @@ var _Reporter_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/admin/v1/reporter.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/admin/v1/reporter.proto", fileDescriptor3) }
+func init() {
+	proto.RegisterFile("infra/tricium/api/admin/v1/reporter.proto", fileDescriptor_reporter_e472c2b31bcd314c)
+}
 
-var fileDescriptor3 = []byte{
+var fileDescriptor_reporter_e472c2b31bcd314c = []byte{
 	// 180 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x8f, 0xb1, 0x0a, 0xc2, 0x30,
 	0x10, 0x40, 0xa9, 0xd2, 0x52, 0x03, 0x2e, 0xc1, 0x62, 0xa9, 0x0e, 0xa5, 0x53, 0x5d, 0x1a, 0xd4,

@@ -51,10 +51,11 @@ message AnalyzeRequest {
   // will behave for this request.
   string project = 1;
 
-  // Paths to analyze in the project. Listed from the root of the Git
+  // Files to analyze in the project. Listed from the root of the Git
   // repository.
   // TODO(emso): document path separators or add listing of path segments.
-  repeated string paths = 4;
+  // repeated string paths = 4;
+  repeated Data.File files = 5;
 
   oneof source {
     GerritRevision gerrit_revision = 7;

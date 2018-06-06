@@ -19,7 +19,7 @@ import (
 // The workflow will be computed from the validated and merged config for the
 // project in question, and filtered to only include workers relevant to the
 // files to be analyzed.
-func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, paths []string) (*admin.Workflow, error) {
+func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tricium.Data_File) (*admin.Workflow, error) {
 	vpc, err := Validate(sc, pc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate project config: %v", err)
@@ -34,7 +34,7 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, paths []stri
 			}
 			functions[s.Function] = f
 		}
-		ok, err := includeFunction(functions[s.Function], paths)
+		ok, err := includeFunction(functions[s.Function], files)
 		if err != nil {
 			return nil, fmt.Errorf("failed include function check: %v", err)
 		} else if ok {
@@ -145,12 +145,13 @@ func checkWorkerDeps(w *admin.Worker, m map[string]*admin.Worker, visited map[st
 // The path filter only applies to the last part of the path.
 //
 // Also, path filters are only provided for analyzers; analyzer functions are
-// always includeded regardless of path matching.
-func includeFunction(f *tricium.Function, paths []string) (bool, error) {
-	if f.Type == tricium.Function_ISOLATOR || len(paths) == 0 || len(f.PathFilters) == 0 {
+// always included regardless of path matching.
+func includeFunction(f *tricium.Function, files []*tricium.Data_File) (bool, error) {
+	if f.Type == tricium.Function_ISOLATOR || len(files) == 0 || len(f.PathFilters) == 0 {
 		return true, nil
 	}
-	for _, p := range paths {
+	for _, file := range files {
+		p := file.Path
 		for _, filter := range f.PathFilters {
 			ok, err := filepath.Match(filter, filepath.Base(p))
 			if err != nil {

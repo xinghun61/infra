@@ -59,7 +59,7 @@ func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) erro
 	if req.Project == "" {
 		return grpc.Errorf(codes.InvalidArgument, "missing project")
 	}
-	if len(req.Paths) == 0 {
+	if len(req.Files) == 0 {
 		return grpc.Errorf(codes.InvalidArgument, "missing paths")
 	}
 	switch source := req.Source.(type) {
@@ -128,10 +128,14 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	if err != nil {
 		return "", fmt.Errorf("failed to get project config: %v", err)
 	}
+	var paths []string
+	for _, file := range req.Files {
+		paths = append(paths, file.Path)
+	}
 	request := &track.AnalyzeRequest{
 		Received: clock.Now(c).UTC(),
 		Project:  req.Project,
-		Paths:    req.Paths,
+		Paths:    paths,
 	}
 	repo := tricium.LookupRepoDetails(pc, req)
 	if repo == nil {
@@ -163,9 +167,11 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		ID:    1,
 		State: tricium.State_PENDING,
 	}
+	// TODO(diegomtzg): Consider changing variable names to reflect
+	// the difference between track.AnalyzeRequest and tricium.AnalyzeRequest
 	lr := &admin.LaunchRequest{
-		Project: request.Project,
-		Paths:   request.Paths,
+		Project: req.Project,
+		Files:   req.Files,
 		GitUrl:  request.GitURL,
 		GitRef:  request.GitRef,
 	}

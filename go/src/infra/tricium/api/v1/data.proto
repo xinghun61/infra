@@ -47,7 +47,7 @@ message Data {
 
     string repository = 2;
     string ref = 3;
-    repeated string paths = 4;
+    repeated File files = 4;
   }
 
 
@@ -61,10 +61,18 @@ message Data {
   message Files {
     int64 platforms = 1;
 
-    // Paths to files from the root of the isolated input.
-    repeated string paths = 2;
+    // Files from the root of the isolated input.
+    repeated File files = 3;
   }
+  
+  message File {
+    // Path to the file from the root of the isolated input. The path is
+    // relative to the root of the repository being analyzed.
+    string path = 1;
 
+    // Whether or not this file contains binary content (not text)
+    bool is_binary = 2;
+  }
 
   // Details needed to replay a clang compilation.
   //

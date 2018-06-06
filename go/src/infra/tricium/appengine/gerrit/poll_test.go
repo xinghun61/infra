@@ -324,8 +324,21 @@ func TestPollBasicBehavior(t *testing.T) {
 				for _, task := range tasks {
 					ar := &tricium.AnalyzeRequest{}
 					err := proto.Unmarshal(task.Payload, ar)
+
+					// Sorting files according to their paths to account for random
+					// enumeration in go maps.
+					sort.Slice(ar.Files, func(i, j int) bool {
+						return ar.Files[i].Path < ar.Files[j].Path
+					})
 					So(err, ShouldBeNil)
-					So(ar.Paths, ShouldResemble, []string{"changed.txt"})
+					So(ar.Files, ShouldResemble, []*tricium.Data_File{
+						{
+							Path:     "binary.png",
+							IsBinary: true},
+						{
+							Path:     "changed.txt",
+							IsBinary: false},
+					})
 				}
 			})
 		})

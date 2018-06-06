@@ -153,9 +153,9 @@ func TestLaunchRequest(t *testing.T) {
 				RunId:   runID,
 				Project: project,
 				GitRef:  "ref/test",
-				Paths: []string{
-					"README.md",
-					"README2.md",
+				Files: []*tricium.Data_File{
+					{Path: "README.md"},
+					{Path: "README2.md"},
 				},
 			}, &mockConfigProvider{}, common.MockIsolator, common.MockSwarmingAPI, common.MockPubSub)
 			So(err, ShouldBeNil)
@@ -179,9 +179,9 @@ func TestLaunchRequest(t *testing.T) {
 				RunId:   runID,
 				Project: "test-project",
 				GitRef:  "ref/test",
-				Paths: []string{
-					"README.md",
-					"README2.md",
+				Files: []*tricium.Data_File{
+					{Path: "README.md"},
+					{Path: "README2.md"},
 				},
 			}, config.MockProvider, common.MockIsolator, common.MockSwarmingAPI, common.MockPubSub)
 			So(err, ShouldBeNil)

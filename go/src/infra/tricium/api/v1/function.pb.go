@@ -12,12 +12,6 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
 // Tricium functions; isolators and analyzers.
 type Function_Type int32
 
@@ -41,9 +35,7 @@ var Function_Type_value = map[string]int32{
 func (x Function_Type) String() string {
 	return proto.EnumName(Function_Type_name, int32(x))
 }
-func (Function_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_function_7ca45bebdb2bcd3d, []int{0, 0}
-}
+func (Function_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{0, 0} }
 
 // Tricium function.
 //
@@ -94,35 +86,13 @@ type Function struct {
 	// A function may run on many platforms and the implementation per platform
 	// may differ. When possible, an implementation may be shared between several
 	// platforms.
-	Impls                []*Impl  `protobuf:"bytes,9,rep,name=impls" json:"impls,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Impls []*Impl `protobuf:"bytes,9,rep,name=impls" json:"impls,omitempty"`
 }
 
-func (m *Function) Reset()         { *m = Function{} }
-func (m *Function) String() string { return proto.CompactTextString(m) }
-func (*Function) ProtoMessage()    {}
-func (*Function) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_7ca45bebdb2bcd3d, []int{0}
-}
-func (m *Function) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Function.Unmarshal(m, b)
-}
-func (m *Function) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Function.Marshal(b, m, deterministic)
-}
-func (dst *Function) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Function.Merge(dst, src)
-}
-func (m *Function) XXX_Size() int {
-	return xxx_messageInfo_Function.Size(m)
-}
-func (m *Function) XXX_DiscardUnknown() {
-	xxx_messageInfo_Function.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Function proto.InternalMessageInfo
+func (m *Function) Reset()                    { *m = Function{} }
+func (m *Function) String() string            { return proto.CompactTextString(m) }
+func (*Function) ProtoMessage()               {}
+func (*Function) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 func (m *Function) GetType() Function_Type {
 	if m != nil {
@@ -195,35 +165,13 @@ type ConfigDef struct {
 	// Name of configuration option.
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 	// Default value for the config, e.g., checks="all".
-	Default              string   `protobuf:"bytes,2,opt,name=default" json:"default,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Default string `protobuf:"bytes,2,opt,name=default" json:"default,omitempty"`
 }
 
-func (m *ConfigDef) Reset()         { *m = ConfigDef{} }
-func (m *ConfigDef) String() string { return proto.CompactTextString(m) }
-func (*ConfigDef) ProtoMessage()    {}
-func (*ConfigDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_7ca45bebdb2bcd3d, []int{1}
-}
-func (m *ConfigDef) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ConfigDef.Unmarshal(m, b)
-}
-func (m *ConfigDef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ConfigDef.Marshal(b, m, deterministic)
-}
-func (dst *ConfigDef) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ConfigDef.Merge(dst, src)
-}
-func (m *ConfigDef) XXX_Size() int {
-	return xxx_messageInfo_ConfigDef.Size(m)
-}
-func (m *ConfigDef) XXX_DiscardUnknown() {
-	xxx_messageInfo_ConfigDef.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ConfigDef proto.InternalMessageInfo
+func (m *ConfigDef) Reset()                    { *m = ConfigDef{} }
+func (m *ConfigDef) String() string            { return proto.CompactTextString(m) }
+func (*ConfigDef) ProtoMessage()               {}
+func (*ConfigDef) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
 
 func (m *ConfigDef) GetName() string {
 	if m != nil {
@@ -276,35 +224,13 @@ type Impl struct {
 	// Note that this deadline includes the launch of a swarming task for the
 	// corresponding worker, and collection of results from that worker.
 	// Deadline should be given in seconds.
-	Deadline             int32    `protobuf:"varint,7,opt,name=deadline" json:"deadline,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Deadline int32 `protobuf:"varint,7,opt,name=deadline" json:"deadline,omitempty"`
 }
 
-func (m *Impl) Reset()         { *m = Impl{} }
-func (m *Impl) String() string { return proto.CompactTextString(m) }
-func (*Impl) ProtoMessage()    {}
-func (*Impl) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_7ca45bebdb2bcd3d, []int{2}
-}
-func (m *Impl) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Impl.Unmarshal(m, b)
-}
-func (m *Impl) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Impl.Marshal(b, m, deterministic)
-}
-func (dst *Impl) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Impl.Merge(dst, src)
-}
-func (m *Impl) XXX_Size() int {
-	return xxx_messageInfo_Impl.Size(m)
-}
-func (m *Impl) XXX_DiscardUnknown() {
-	xxx_messageInfo_Impl.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Impl proto.InternalMessageInfo
+func (m *Impl) Reset()                    { *m = Impl{} }
+func (m *Impl) String() string            { return proto.CompactTextString(m) }
+func (*Impl) ProtoMessage()               {}
+func (*Impl) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
 
 type isImpl_Impl interface {
 	isImpl_Impl()
@@ -435,12 +361,12 @@ func _Impl_OneofSizer(msg proto.Message) (n int) {
 	switch x := m.Impl.(type) {
 	case *Impl_Recipe:
 		s := proto.Size(x.Recipe)
-		n += 1 // tag and wire
+		n += proto.SizeVarint(5<<3 | proto.WireBytes)
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case *Impl_Cmd:
 		s := proto.Size(x.Cmd)
-		n += 1 // tag and wire
+		n += proto.SizeVarint(6<<3 | proto.WireBytes)
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case nil:
@@ -457,35 +383,13 @@ type Recipe struct {
 	// CIPD package version.
 	CipdVersion string `protobuf:"bytes,2,opt,name=cipd_version,json=cipdVersion" json:"cipd_version,omitempty"`
 	// Extra recipe properties to add, as a JSON mapping of keys to values.
-	Properties           string   `protobuf:"bytes,3,opt,name=properties" json:"properties,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Properties string `protobuf:"bytes,3,opt,name=properties" json:"properties,omitempty"`
 }
 
-func (m *Recipe) Reset()         { *m = Recipe{} }
-func (m *Recipe) String() string { return proto.CompactTextString(m) }
-func (*Recipe) ProtoMessage()    {}
-func (*Recipe) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_7ca45bebdb2bcd3d, []int{3}
-}
-func (m *Recipe) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Recipe.Unmarshal(m, b)
-}
-func (m *Recipe) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Recipe.Marshal(b, m, deterministic)
-}
-func (dst *Recipe) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Recipe.Merge(dst, src)
-}
-func (m *Recipe) XXX_Size() int {
-	return xxx_messageInfo_Recipe.Size(m)
-}
-func (m *Recipe) XXX_DiscardUnknown() {
-	xxx_messageInfo_Recipe.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Recipe proto.InternalMessageInfo
+func (m *Recipe) Reset()                    { *m = Recipe{} }
+func (m *Recipe) String() string            { return proto.CompactTextString(m) }
+func (*Recipe) ProtoMessage()               {}
+func (*Recipe) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
 
 func (m *Recipe) GetCipdPackage() string {
 	if m != nil {
@@ -513,35 +417,13 @@ type Cmd struct {
 	// Executable binary.
 	Exec string `protobuf:"bytes,1,opt,name=exec" json:"exec,omitempty"`
 	// Arguments in order.
-	Args                 []string `protobuf:"bytes,2,rep,name=args" json:"args,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Args []string `protobuf:"bytes,2,rep,name=args" json:"args,omitempty"`
 }
 
-func (m *Cmd) Reset()         { *m = Cmd{} }
-func (m *Cmd) String() string { return proto.CompactTextString(m) }
-func (*Cmd) ProtoMessage()    {}
-func (*Cmd) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_7ca45bebdb2bcd3d, []int{4}
-}
-func (m *Cmd) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Cmd.Unmarshal(m, b)
-}
-func (m *Cmd) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Cmd.Marshal(b, m, deterministic)
-}
-func (dst *Cmd) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Cmd.Merge(dst, src)
-}
-func (m *Cmd) XXX_Size() int {
-	return xxx_messageInfo_Cmd.Size(m)
-}
-func (m *Cmd) XXX_DiscardUnknown() {
-	xxx_messageInfo_Cmd.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Cmd proto.InternalMessageInfo
+func (m *Cmd) Reset()                    { *m = Cmd{} }
+func (m *Cmd) String() string            { return proto.CompactTextString(m) }
+func (*Cmd) ProtoMessage()               {}
+func (*Cmd) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
 
 func (m *Cmd) GetExec() string {
 	if m != nil {
@@ -566,35 +448,13 @@ type CipdPackage struct {
 	// installed. Cannot be empty or start with a slash.
 	Path string `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
 	// CIPD package version.
-	Version              string   `protobuf:"bytes,3,opt,name=version" json:"version,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Version string `protobuf:"bytes,3,opt,name=version" json:"version,omitempty"`
 }
 
-func (m *CipdPackage) Reset()         { *m = CipdPackage{} }
-func (m *CipdPackage) String() string { return proto.CompactTextString(m) }
-func (*CipdPackage) ProtoMessage()    {}
-func (*CipdPackage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_7ca45bebdb2bcd3d, []int{5}
-}
-func (m *CipdPackage) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CipdPackage.Unmarshal(m, b)
-}
-func (m *CipdPackage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CipdPackage.Marshal(b, m, deterministic)
-}
-func (dst *CipdPackage) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CipdPackage.Merge(dst, src)
-}
-func (m *CipdPackage) XXX_Size() int {
-	return xxx_messageInfo_CipdPackage.Size(m)
-}
-func (m *CipdPackage) XXX_DiscardUnknown() {
-	xxx_messageInfo_CipdPackage.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CipdPackage proto.InternalMessageInfo
+func (m *CipdPackage) Reset()                    { *m = CipdPackage{} }
+func (m *CipdPackage) String() string            { return proto.CompactTextString(m) }
+func (*CipdPackage) ProtoMessage()               {}
+func (*CipdPackage) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{5} }
 
 func (m *CipdPackage) GetPackageName() string {
 	if m != nil {
@@ -627,11 +487,9 @@ func init() {
 	proto.RegisterEnum("tricium.Function_Type", Function_Type_name, Function_Type_value)
 }
 
-func init() {
-	proto.RegisterFile("infra/tricium/api/v1/function.proto", fileDescriptor_function_7ca45bebdb2bcd3d)
-}
+func init() { proto.RegisterFile("infra/tricium/api/v1/function.proto", fileDescriptor2) }
 
-var fileDescriptor_function_7ca45bebdb2bcd3d = []byte{
+var fileDescriptor2 = []byte{
 	// 623 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x54, 0x5f, 0x6f, 0xd3, 0x3e,
 	0x14, 0x5d, 0x9b, 0xb4, 0x6b, 0x6f, 0xba, 0xdf, 0xfa, 0x33, 0x03, 0x45, 0x7b, 0x80, 0x92, 0xbd,

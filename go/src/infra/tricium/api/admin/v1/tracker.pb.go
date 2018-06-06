@@ -8,8 +8,7 @@ import prpc "go.chromium.org/luci/grpc/prpc"
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import tricium "infra/tricium/api/v1"
-import tricium4 "infra/tricium/api/v1"
+import v1 "infra/tricium/api/v1"
 
 import (
 	context "golang.org/x/net/context"
@@ -21,18 +20,46 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 // WorkflowLaunchedRequest specified details need to mark a workflow as
 // launched.
 //
 // This message should be sent by the Launcher after a workflow has been launched.
 type WorkflowLaunchedRequest struct {
-	RunId int64 `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	RunId                int64    `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *WorkflowLaunchedRequest) Reset()                    { *m = WorkflowLaunchedRequest{} }
-func (m *WorkflowLaunchedRequest) String() string            { return proto.CompactTextString(m) }
-func (*WorkflowLaunchedRequest) ProtoMessage()               {}
-func (*WorkflowLaunchedRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
+func (m *WorkflowLaunchedRequest) Reset()         { *m = WorkflowLaunchedRequest{} }
+func (m *WorkflowLaunchedRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkflowLaunchedRequest) ProtoMessage()    {}
+func (*WorkflowLaunchedRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tracker_1320142263273862, []int{0}
+}
+func (m *WorkflowLaunchedRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkflowLaunchedRequest.Unmarshal(m, b)
+}
+func (m *WorkflowLaunchedRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkflowLaunchedRequest.Marshal(b, m, deterministic)
+}
+func (dst *WorkflowLaunchedRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowLaunchedRequest.Merge(dst, src)
+}
+func (m *WorkflowLaunchedRequest) XXX_Size() int {
+	return xxx_messageInfo_WorkflowLaunchedRequest.Size(m)
+}
+func (m *WorkflowLaunchedRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowLaunchedRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowLaunchedRequest proto.InternalMessageInfo
 
 func (m *WorkflowLaunchedRequest) GetRunId() int64 {
 	if m != nil {
@@ -42,12 +69,34 @@ func (m *WorkflowLaunchedRequest) GetRunId() int64 {
 }
 
 type WorkflowLaunchedResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *WorkflowLaunchedResponse) Reset()                    { *m = WorkflowLaunchedResponse{} }
-func (m *WorkflowLaunchedResponse) String() string            { return proto.CompactTextString(m) }
-func (*WorkflowLaunchedResponse) ProtoMessage()               {}
-func (*WorkflowLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{1} }
+func (m *WorkflowLaunchedResponse) Reset()         { *m = WorkflowLaunchedResponse{} }
+func (m *WorkflowLaunchedResponse) String() string { return proto.CompactTextString(m) }
+func (*WorkflowLaunchedResponse) ProtoMessage()    {}
+func (*WorkflowLaunchedResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tracker_1320142263273862, []int{1}
+}
+func (m *WorkflowLaunchedResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkflowLaunchedResponse.Unmarshal(m, b)
+}
+func (m *WorkflowLaunchedResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkflowLaunchedResponse.Marshal(b, m, deterministic)
+}
+func (dst *WorkflowLaunchedResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowLaunchedResponse.Merge(dst, src)
+}
+func (m *WorkflowLaunchedResponse) XXX_Size() int {
+	return xxx_messageInfo_WorkflowLaunchedResponse.Size(m)
+}
+func (m *WorkflowLaunchedResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowLaunchedResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowLaunchedResponse proto.InternalMessageInfo
 
 // WorkerLaunchedRequest specifies details needed to mark a worker as launched.
 // This includes details useful for the tracking UI.
@@ -55,16 +104,38 @@ func (*WorkflowLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescr
 // This message should be sent by the Driver after a swarming task for the
 // worker has been triggered.
 type WorkerLaunchedRequest struct {
-	RunId             int64  `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
-	Worker            string `protobuf:"bytes,2,opt,name=worker" json:"worker,omitempty"`
-	IsolatedInputHash string `protobuf:"bytes,3,opt,name=isolated_input_hash,json=isolatedInputHash" json:"isolated_input_hash,omitempty"`
-	SwarmingTaskId    string `protobuf:"bytes,4,opt,name=swarming_task_id,json=swarmingTaskId" json:"swarming_task_id,omitempty"`
+	RunId                int64    `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	Worker               string   `protobuf:"bytes,2,opt,name=worker" json:"worker,omitempty"`
+	IsolatedInputHash    string   `protobuf:"bytes,3,opt,name=isolated_input_hash,json=isolatedInputHash" json:"isolated_input_hash,omitempty"`
+	SwarmingTaskId       string   `protobuf:"bytes,4,opt,name=swarming_task_id,json=swarmingTaskId" json:"swarming_task_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *WorkerLaunchedRequest) Reset()                    { *m = WorkerLaunchedRequest{} }
-func (m *WorkerLaunchedRequest) String() string            { return proto.CompactTextString(m) }
-func (*WorkerLaunchedRequest) ProtoMessage()               {}
-func (*WorkerLaunchedRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{2} }
+func (m *WorkerLaunchedRequest) Reset()         { *m = WorkerLaunchedRequest{} }
+func (m *WorkerLaunchedRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkerLaunchedRequest) ProtoMessage()    {}
+func (*WorkerLaunchedRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tracker_1320142263273862, []int{2}
+}
+func (m *WorkerLaunchedRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkerLaunchedRequest.Unmarshal(m, b)
+}
+func (m *WorkerLaunchedRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkerLaunchedRequest.Marshal(b, m, deterministic)
+}
+func (dst *WorkerLaunchedRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkerLaunchedRequest.Merge(dst, src)
+}
+func (m *WorkerLaunchedRequest) XXX_Size() int {
+	return xxx_messageInfo_WorkerLaunchedRequest.Size(m)
+}
+func (m *WorkerLaunchedRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkerLaunchedRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkerLaunchedRequest proto.InternalMessageInfo
 
 func (m *WorkerLaunchedRequest) GetRunId() int64 {
 	if m != nil {
@@ -95,12 +166,34 @@ func (m *WorkerLaunchedRequest) GetSwarmingTaskId() string {
 }
 
 type WorkerLaunchedResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *WorkerLaunchedResponse) Reset()                    { *m = WorkerLaunchedResponse{} }
-func (m *WorkerLaunchedResponse) String() string            { return proto.CompactTextString(m) }
-func (*WorkerLaunchedResponse) ProtoMessage()               {}
-func (*WorkerLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{3} }
+func (m *WorkerLaunchedResponse) Reset()         { *m = WorkerLaunchedResponse{} }
+func (m *WorkerLaunchedResponse) String() string { return proto.CompactTextString(m) }
+func (*WorkerLaunchedResponse) ProtoMessage()    {}
+func (*WorkerLaunchedResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tracker_1320142263273862, []int{3}
+}
+func (m *WorkerLaunchedResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkerLaunchedResponse.Unmarshal(m, b)
+}
+func (m *WorkerLaunchedResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkerLaunchedResponse.Marshal(b, m, deterministic)
+}
+func (dst *WorkerLaunchedResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkerLaunchedResponse.Merge(dst, src)
+}
+func (m *WorkerLaunchedResponse) XXX_Size() int {
+	return xxx_messageInfo_WorkerLaunchedResponse.Size(m)
+}
+func (m *WorkerLaunchedResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkerLaunchedResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkerLaunchedResponse proto.InternalMessageInfo
 
 // WorkerDoneRequest specifies details needed to mark a worker as done.
 // This includes details useful for the tracking UI.
@@ -108,17 +201,39 @@ func (*WorkerLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescrip
 // This message should be sent by the Driver after results from the swarming
 // task for a worker have been collected.
 type WorkerDoneRequest struct {
-	RunId              int64             `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
-	Worker             string            `protobuf:"bytes,2,opt,name=worker" json:"worker,omitempty"`
-	IsolatedOutputHash string            `protobuf:"bytes,3,opt,name=isolated_output_hash,json=isolatedOutputHash" json:"isolated_output_hash,omitempty"`
-	Provides           tricium.Data_Type `protobuf:"varint,4,opt,name=provides,enum=tricium.Data_Type" json:"provides,omitempty"`
-	State              tricium4.State    `protobuf:"varint,5,opt,name=state,enum=tricium.State" json:"state,omitempty"`
+	RunId                int64        `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	Worker               string       `protobuf:"bytes,2,opt,name=worker" json:"worker,omitempty"`
+	IsolatedOutputHash   string       `protobuf:"bytes,3,opt,name=isolated_output_hash,json=isolatedOutputHash" json:"isolated_output_hash,omitempty"`
+	Provides             v1.Data_Type `protobuf:"varint,4,opt,name=provides,enum=tricium.Data_Type" json:"provides,omitempty"`
+	State                v1.State     `protobuf:"varint,5,opt,name=state,enum=tricium.State" json:"state,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
-func (m *WorkerDoneRequest) Reset()                    { *m = WorkerDoneRequest{} }
-func (m *WorkerDoneRequest) String() string            { return proto.CompactTextString(m) }
-func (*WorkerDoneRequest) ProtoMessage()               {}
-func (*WorkerDoneRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{4} }
+func (m *WorkerDoneRequest) Reset()         { *m = WorkerDoneRequest{} }
+func (m *WorkerDoneRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkerDoneRequest) ProtoMessage()    {}
+func (*WorkerDoneRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tracker_1320142263273862, []int{4}
+}
+func (m *WorkerDoneRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkerDoneRequest.Unmarshal(m, b)
+}
+func (m *WorkerDoneRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkerDoneRequest.Marshal(b, m, deterministic)
+}
+func (dst *WorkerDoneRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkerDoneRequest.Merge(dst, src)
+}
+func (m *WorkerDoneRequest) XXX_Size() int {
+	return xxx_messageInfo_WorkerDoneRequest.Size(m)
+}
+func (m *WorkerDoneRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkerDoneRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkerDoneRequest proto.InternalMessageInfo
 
 func (m *WorkerDoneRequest) GetRunId() int64 {
 	if m != nil {
@@ -141,27 +256,49 @@ func (m *WorkerDoneRequest) GetIsolatedOutputHash() string {
 	return ""
 }
 
-func (m *WorkerDoneRequest) GetProvides() tricium.Data_Type {
+func (m *WorkerDoneRequest) GetProvides() v1.Data_Type {
 	if m != nil {
 		return m.Provides
 	}
-	return tricium.Data_NONE
+	return v1.Data_NONE
 }
 
-func (m *WorkerDoneRequest) GetState() tricium4.State {
+func (m *WorkerDoneRequest) GetState() v1.State {
 	if m != nil {
 		return m.State
 	}
-	return tricium4.State_PENDING
+	return v1.State_PENDING
 }
 
 type WorkerDoneResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *WorkerDoneResponse) Reset()                    { *m = WorkerDoneResponse{} }
-func (m *WorkerDoneResponse) String() string            { return proto.CompactTextString(m) }
-func (*WorkerDoneResponse) ProtoMessage()               {}
-func (*WorkerDoneResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{5} }
+func (m *WorkerDoneResponse) Reset()         { *m = WorkerDoneResponse{} }
+func (m *WorkerDoneResponse) String() string { return proto.CompactTextString(m) }
+func (*WorkerDoneResponse) ProtoMessage()    {}
+func (*WorkerDoneResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tracker_1320142263273862, []int{5}
+}
+func (m *WorkerDoneResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkerDoneResponse.Unmarshal(m, b)
+}
+func (m *WorkerDoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkerDoneResponse.Marshal(b, m, deterministic)
+}
+func (dst *WorkerDoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkerDoneResponse.Merge(dst, src)
+}
+func (m *WorkerDoneResponse) XXX_Size() int {
+	return xxx_messageInfo_WorkerDoneResponse.Size(m)
+}
+func (m *WorkerDoneResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkerDoneResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkerDoneResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*WorkflowLaunchedRequest)(nil), "admin.WorkflowLaunchedRequest")
@@ -180,8 +317,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Tracker service
-
+// TrackerClient is the client API for Tracker service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type TrackerClient interface {
 	// WorkflowLaunched marks the workflow as launched for a specified run.
 	WorkflowLaunched(ctx context.Context, in *WorkflowLaunchedRequest, opts ...grpc.CallOption) (*WorkflowLaunchedResponse, error)
@@ -235,7 +373,7 @@ func NewTrackerClient(cc *grpc.ClientConn) TrackerClient {
 
 func (c *trackerClient) WorkflowLaunched(ctx context.Context, in *WorkflowLaunchedRequest, opts ...grpc.CallOption) (*WorkflowLaunchedResponse, error) {
 	out := new(WorkflowLaunchedResponse)
-	err := grpc.Invoke(ctx, "/admin.Tracker/WorkflowLaunched", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/admin.Tracker/WorkflowLaunched", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +382,7 @@ func (c *trackerClient) WorkflowLaunched(ctx context.Context, in *WorkflowLaunch
 
 func (c *trackerClient) WorkerLaunched(ctx context.Context, in *WorkerLaunchedRequest, opts ...grpc.CallOption) (*WorkerLaunchedResponse, error) {
 	out := new(WorkerLaunchedResponse)
-	err := grpc.Invoke(ctx, "/admin.Tracker/WorkerLaunched", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/admin.Tracker/WorkerLaunched", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -253,15 +391,14 @@ func (c *trackerClient) WorkerLaunched(ctx context.Context, in *WorkerLaunchedRe
 
 func (c *trackerClient) WorkerDone(ctx context.Context, in *WorkerDoneRequest, opts ...grpc.CallOption) (*WorkerDoneResponse, error) {
 	out := new(WorkerDoneResponse)
-	err := grpc.Invoke(ctx, "/admin.Tracker/WorkerDone", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/admin.Tracker/WorkerDone", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Tracker service
-
+// TrackerServer is the server API for Tracker service.
 type TrackerServer interface {
 	// WorkflowLaunched marks the workflow as launched for a specified run.
 	WorkflowLaunched(context.Context, *WorkflowLaunchedRequest) (*WorkflowLaunchedResponse, error)
@@ -350,9 +487,11 @@ var _Tracker_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/admin/v1/tracker.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/admin/v1/tracker.proto", fileDescriptor4) }
+func init() {
+	proto.RegisterFile("infra/tricium/api/admin/v1/tracker.proto", fileDescriptor_tracker_1320142263273862)
+}
 
-var fileDescriptor4 = []byte{
+var fileDescriptor_tracker_1320142263273862 = []byte{
 	// 397 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0x4d, 0xee, 0xd3, 0x30,
 	0x10, 0xc5, 0x15, 0xfe, 0xa4, 0xc0, 0x2c, 0xa2, 0xd6, 0xb4, 0x25, 0x44, 0x40, 0xab, 0x88, 0x45,
