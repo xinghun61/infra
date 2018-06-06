@@ -952,7 +952,7 @@ def _GetRedirectIssue(we, current_issue, hotlist_id=None):
   hotlist = None
   if hotlist_id:
     try:
-      hotlist = we.services.features.GetHotlist(we.mr.cnxn, hotlist_id)
+      hotlist = we.services.features.GetHotlist(we.mc.cnxn, hotlist_id)
     except features_svc.NoSuchHotlistException:
       pass
 
