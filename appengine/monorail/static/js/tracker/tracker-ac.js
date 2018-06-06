@@ -632,7 +632,7 @@ function TKR_setUpMemberStore(memberDefs, nonGroupMemberDefs) {
   };
 
   TKR_ownerStore.completions = function(prefix, tofilter) {
-    var fullList = TKR_fullComplete(prefix, indMemberDefs);
+    var fullList = TKR_fullComplete(prefix, nonGroupMemberDefs);
     if (fullList) return fullList;
     return _AC_SimpleStore.prototype.completions.call(this, prefix, tofilter);
   };
