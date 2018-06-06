@@ -10,6 +10,7 @@ from services import step_util
 from services import swarming
 from waterfall import build_util
 from waterfall import buildbot
+from waterfall import waterfall_config
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
 
@@ -168,19 +169,23 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(20, upper_bound.commit_position)
 
   def testIsStepSupportedByFinditObjectNone(self):
-    self.assertFalse(step_util.IsStepSupportedByFindit(None, 'step'))
+    self.assertFalse(step_util.IsStepSupportedByFindit(None, 'step', 'm'))
 
   def testIsStepSupportedByFinditOtherIsolatedScriptTest(self):
     self.assertFalse(
         step_util.IsStepSupportedByFindit(
-            WebkitLayoutTestResults(None), 'telemetry_perf_tests'))
+            WebkitLayoutTestResults(None), 'telemetry_perf_tests', 'm'))
 
-  def testIsStepSupportedByFinditWebkitLayoutTests(self):
+  @mock.patch.object(
+      waterfall_config, 'StepIsSupportedForMaster', return_value=True)
+  def testIsStepSupportedByFinditWebkitLayoutTests(self, _):
     self.assertTrue(
         step_util.IsStepSupportedByFindit(
-            WebkitLayoutTestResults(None), 'webkit_layout_tests'))
+            WebkitLayoutTestResults(None), 'webkit_layout_tests', 'm'))
 
-  def testIsStepSupportedByFinditGtests(self):
+  @mock.patch.object(
+      waterfall_config, 'StepIsSupportedForMaster', return_value=True)
+  def testIsStepSupportedByFinditGtests(self, _):
     self.assertTrue(
         step_util.IsStepSupportedByFindit(
-            GtestTestResults(None), 'browser_tests'))
+            GtestTestResults(None), 'browser_tests', 'm'))

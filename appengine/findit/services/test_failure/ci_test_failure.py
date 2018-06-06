@@ -62,10 +62,10 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
       list_isolated_data, http_client)
 
   test_results_object = test_results_util.GetTestResultObject(result_log)
-  if not step_util.IsStepSupportedByFindit(test_results_object,
-                                           ci_failure.GetCanonicalStepName(
-                                               master_name, builder_name,
-                                               build_number, step_name)):
+  if not step_util.IsStepSupportedByFindit(
+      test_results_object,
+      ci_failure.GetCanonicalStepName(master_name, builder_name, build_number,
+                                      step_name), master_name):
     return False
 
   step = WfStep.Get(master_name, builder_name, build_number, step_name)
@@ -248,7 +248,8 @@ def CheckFirstKnownFailureForSwarmingTests(master_name, builder_name,
     return
 
   for step_name, failed_step in failed_steps.iteritems():
-    if not failed_step.list_isolated_data:  # Non-swarming step.
+    if not failed_step.supported or not failed_step.list_isolated_data:
+      # Not supported step or Non-swarming step.
       continue  # pragma: no cover.
     # Checks tests in one step and updates failed_step info if swarming.
     result = _StartTestLevelCheckForFirstFailure(master_name, builder_name,

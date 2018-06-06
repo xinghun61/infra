@@ -13,6 +13,7 @@ from services import swarmed_test_util
 from services import swarming
 from waterfall import buildbot
 from waterfall import build_util
+from waterfall import waterfall_config
 from waterfall.flake import step_mapper
 from waterfall.test import wf_testcase
 
@@ -52,6 +53,8 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
       swarmed_test_util,
       'GetTestResultForSwarmingTask',
       return_value=_SAMPLE_OUTPUT)
+  @mock.patch.object(
+      waterfall_config, 'StepIsSupportedForMaster', return_value=True)
   def testFindMatchingWaterfallStep(self, *_):
     step_mapper.FindMatchingWaterfallStep(self.build_step, 'test1')
     self.assertTrue(self.build_step.swarmed)

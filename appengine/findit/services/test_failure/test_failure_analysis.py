@@ -342,7 +342,7 @@ def GetsFirstFailureAtTestLevel(master_name, builder_name, build_number,
 
   for failed_step_name, step_failure_details in (
       failure_info.failed_steps.iteritems()):
-    if not step_failure_details.tests:
+    if not step_failure_details.tests or not step_failure_details.supported:
       # Not a test type Findit currently handles.
       continue
 

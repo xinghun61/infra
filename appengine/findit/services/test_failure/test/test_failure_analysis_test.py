@@ -683,12 +683,14 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                         'last_pass': 0,
                         'base_test_name': 'Unittest3.Subtest2'
                     }
-                }
+                },
+                'supported': True
             },
             'a_test': {
                 'current_failure': 2,
                 'first_failure': 1,
                 'last_pass': 0,
+                'supported': True
             }
         },
         'failure_type': failure_type.TEST
@@ -752,7 +754,8 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                         'last_pass': 0,
                         'base_test_name': 'Unittest3.Subtest2'
                     }
-                }
+                },
+                'supported': True
             },
             'a_tests': {
                 'current_failure': 2,
@@ -765,7 +768,8 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                         'last_pass': 0,
                         'base_test_name': 'Unittest3.Subtest2'
                     }
-                }
+                },
+                'supported': True
             }
         },
         'failure_type': failure_type.TEST
@@ -816,7 +820,8 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                         'last_pass': 0,
                         'base_test_name': 'Unittest3.Subtest2'
                     }
-                }
+                },
+                'supported': True
             },
             'a_tests': {
                 'current_failure': 2,
@@ -829,16 +834,14 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                         'last_pass': 1,
                         'base_test_name': 'Unittest1.Subtest1'
                     }
-                }
+                },
+                'supported': False
             }
         },
         'failure_type': failure_type.TEST
     }
 
-    expected_result = {
-        'a_tests': ['Unittest1.Subtest1'],
-        'abc_test': ['Unittest2.Subtest1']
-    }
+    expected_result = {'abc_test': ['Unittest2.Subtest1']}
     result = (
         test_failure_analysis.GetsFirstFailureAtTestLevel(
             master_name, builder_name, build_number,

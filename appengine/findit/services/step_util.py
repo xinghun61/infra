@@ -11,6 +11,7 @@ from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 from services import swarming
 from waterfall import build_util
 from waterfall import buildbot
+from waterfall import waterfall_config
 
 _HTTP_CLIENT = FinditHttpClient()
 
@@ -236,7 +237,7 @@ def GetValidBoundingBuildsForStep(
   return lower_bound_build, upper_bound_build
 
 
-def IsStepSupportedByFindit(test_result_object, step_name):
+def IsStepSupportedByFindit(test_result_object, step_name, master_name):
   """Checks if a test step is currently supported by Findit.
 
   Currently Findit supports all gtest test steps;
@@ -245,8 +246,12 @@ def IsStepSupportedByFindit(test_result_object, step_name):
   * If there isn't a parser for the test_result of the step, it's not supported;
   * If the step is an isolated-script-test step but not webkit_layout_tests,
     it's not supported.
+  * If the step is set to unsupported in config, it's not supported.
   """
   if not test_result_object:
+    return False
+
+  if not waterfall_config.StepIsSupportedForMaster(step_name, master_name):
     return False
 
   # TODO(crbug/836317): remove the special check for step_name when Findit

@@ -143,7 +143,8 @@ def FindMatchingWaterfallStep(build_step, test_name):
       test_result_object = test_results_util.GetTestResultObject(output)
       if not step_util.IsStepSupportedByFindit(
           test_result_object,
-          metadata.get('canonical_step_name') or build_step.step_name):
+          metadata.get('canonical_step_name') or build_step.step_name,
+          build_step.wf_master_name):
         build_step.supported = False
       else:
         build_step.supported = (
