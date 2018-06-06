@@ -119,10 +119,8 @@ class TemplateCreate(servlet.Servlet):
     if mr.errors.AnyErrors():
       field_views = tracker_views.MakeAllFieldValueViews(
           config, [], [], field_values, {})
-      prechecked_approvals = []
-      for phs_idx, approval_ids in parsed.approvals_by_phase_idx.iteritems():
-        prechecked_approvals.extend(['%d_phase_%d' % (approval_id, phs_idx)
-                                     for approval_id in approval_ids])
+      prechecked_approvals = template_helpers.GetCheckedApprovalsFromParsed(
+          parsed.approvals_to_phase_idx)
 
       self.PleaseCorrect(
           mr,

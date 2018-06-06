@@ -272,21 +272,22 @@ class TemplateService(object):
                fv.date_value, fv.url_value) for fv in field_values],
           commit=False)
 
-    # current phase_ids are tmp and only used for tracking approval and
-    # phase relations.
-    phase_id_by_tmp = collections.defaultdict(lambda: None)
-    # TODO(jojwang): monorail:3756, process phaseless approvals.
-    # (take approval_values for loop out of 'if phases' block.)
+    # current phase_ids in approval_values and phases are temporary and were
+    # assigned based on the order of the phases. These temporary phase_ids are
+    # used to keep track of which approvals belong to which phases and are
+    # updated once all phases have their real phase_ids returned from InsertRow.
+    phase_id_by_tmp = {}
     if phases:
       for phase in phases:
         phase_id = self.issuephasedef_tbl.InsertRow(
             cnxn, name=phase.name, rank=phase.rank, commit=False)
         phase_id_by_tmp[phase.phase_id] = phase_id
 
+    if approval_values:
       self.template2approvalvalue_tbl.InsertRows(
           cnxn, TEMPLATE2APPROVALVALUE_COLS,
           [(av.approval_id, template_id,
-            phase_id_by_tmp[av.phase_id], av.status.name.lower())
+            phase_id_by_tmp.get(av.phase_id), av.status.name.lower())
            for av in approval_values],
           commit=False)
 

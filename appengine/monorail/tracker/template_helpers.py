@@ -22,12 +22,13 @@ MAX_NUM_PHASES = 6
 PHASE_INPUTS = [
     'phase_0', 'phase_1', 'phase_2', 'phase_3', 'phase_4', 'phase_5']
 
+_NO_PHASE_VALUE = 'no_phase'
 
 ParsedTemplate = collections.namedtuple(
     'ParsedTemplate', 'name, members_only, summary, summary_must_be_edited, '
     'content, status, owner_str, labels, field_val_strs, component_paths, '
     'component_required, owner_defaults_to_member, admin_str, add_phases, '
-    'phase_names, approvals_by_phase_idx, required_approval_ids')
+    'phase_names, approvals_to_phase_idx, required_approval_ids')
 
 
 def ParseTemplateRequest(post_data, config):
@@ -64,23 +65,27 @@ def ParseTemplateRequest(post_data, config):
   phase_names = [post_data.get(phase_input, '') for phase_input in PHASE_INPUTS]
 
   required_approval_ids = []
-  approvals_by_phase_idx = collections.defaultdict(list)
+  approvals_to_phase_idx = {}
+
   for approval_def in config.approval_defs:
     phase_num = post_data.get('approval_%d' % approval_def.approval_id, '')
-    try:
-      idx = PHASE_INPUTS.index(phase_num)
-      approvals_by_phase_idx[idx].append(approval_def.approval_id)
-      required_name = 'approval_%d_required' % approval_def.approval_id
-      if (post_data.get(required_name) == 'on'):
-        required_approval_ids.append(approval_def.approval_id)
-    except ValueError:
-      logging.info('approval %d was omitted' % approval_def.approval_id)
+    if phase_num == _NO_PHASE_VALUE:
+      approvals_to_phase_idx[approval_def.approval_id] = None
+    else:
+      try:
+        idx = PHASE_INPUTS.index(phase_num)
+        approvals_to_phase_idx[approval_def.approval_id] = idx
+      except ValueError:
+        logging.info('approval %d was omitted' % approval_def.approval_id)
+    required_name = 'approval_%d_required' % approval_def.approval_id
+    if (post_data.get(required_name) == 'on'):
+      required_approval_ids.append(approval_def.approval_id)
 
   return ParsedTemplate(
       name, members_only, summary, summary_must_be_edited, content, status,
       owner_str, labels, field_val_strs, component_paths, component_required,
       owner_defaults_to_member, admin_str, add_phases, phase_names,
-      approvals_by_phase_idx, required_approval_ids)
+      approvals_to_phase_idx, required_approval_ids)
 
 
 def GetTemplateInfoFromParsed(mr, services, parsed, config):
@@ -114,14 +119,14 @@ def GetTemplateInfoFromParsed(mr, services, parsed, config):
   approvals = []
   if parsed.add_phases:
     phases, approvals = _GetPhasesAndApprovalsFromParsed(
-        mr, parsed.phase_names, parsed.approvals_by_phase_idx,
+        mr, parsed.phase_names, parsed.approvals_to_phase_idx,
         parsed.required_approval_ids)
 
   return admin_ids, owner_id, component_ids, field_values, phases, approvals
 
-# TODO(jojwang): monorail:3756, eventually parse phase-less approvals.
+
 def _GetPhasesAndApprovalsFromParsed(
-    mr, phase_names, approvals_by_phase_idx, required_approval_ids):
+    mr, phase_names, approvals_to_phase_idx, required_approval_ids):
   """Get Phase PBs from a parsed phase_names and approvals_by_phase_idx."""
 
   phases = []
@@ -133,29 +138,64 @@ def _GetPhasesAndApprovalsFromParsed(
     mr.errors.phase_approvals = 'Duplicate gate names.'
     return phases, approvals
   valid_phase_idxs = [idx for idx, name in enumerate(phase_names) if name]
-  if set(valid_phase_idxs) != set(approvals_by_phase_idx.keys()):
+  if set(valid_phase_idxs) != set(
+      [idx for idx in approvals_to_phase_idx.values() if idx is not None]):
     mr.errors.phase_approvals = 'Defined gates must have assigned approvals.'
     return phases, approvals
 
-  for idx in approvals_by_phase_idx:
-    approval_ids = approvals_by_phase_idx[idx]
-    phase_name = phase_names[idx]
+  # Distributing the ranks over a wider range is not necessary since
+  # any edits to template phases will cause a complete rewrite.
+  # phase_id is temporarily the idx for keeping track of which approvals
+  # belong to which phases.
+  for idx, phase_name in enumerate(phase_names):
+    if phase_name:
+      phase = tracker_pb2.Phase(name=phase_name, rank=idx, phase_id=idx)
+      phases.append(phase)
 
-    # Distributing the ranks over a wider range is not necessary since
-    # any edits to template phases will cause a complete rewrite.
-    # phase_id is temporarily the idx for keeping track of which approvals
-    # belong to which phases.
-    phase = tracker_pb2.Phase(name=phase_name, rank=idx, phase_id=idx)
-    phases.append(phase)
-
-    for approval_id in approval_ids:
-      av = tracker_pb2.ApprovalValue(
-          approval_id=approval_id, phase_id=idx)
-      if approval_id in required_approval_ids:
-        av.status = tracker_pb2.ApprovalStatus.NEEDS_REVIEW
+  for approval_id, phase_idx in approvals_to_phase_idx.iteritems():
+    av = tracker_pb2.ApprovalValue(
+        approval_id=approval_id, phase_id=phase_idx)
+    if approval_id in required_approval_ids:
+      av.status = tracker_pb2.ApprovalStatus.NEEDS_REVIEW
       # TODO(jojwang): monorail:3655, add default sub_field_values
       # TODO(jojwang): monorail:3656, add option for default approvers
       # per template
-      approvals.append(av)
+    approvals.append(av)
 
   return phases, approvals
+
+
+def GatherApprovalsPageData(approval_values, tmpl_phases):
+  """Create the page data necessary for filling in the launch-gates-table."""
+  # TODO(jojwang): monorail:3576, replace this sort by adding order_by
+  # when fetching phases at config_svc:488
+  phases = tmpl_phases[:]
+  phases.sort(key=lambda phase: phase.rank)
+  required_approval_ids = []
+  prechecked_approvals = []
+
+  phase_idx_by_id = {
+        phase.phase_id:idx for idx, phase in enumerate(phases)}
+  for av in approval_values:
+    if av.phase_id:
+      prechecked_approvals.append(
+          '%d_phase_%d' % (av.approval_id, phase_idx_by_id.get(av.phase_id)))
+    else:
+      prechecked_approvals.append('%d' % av.approval_id)
+    if av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW:
+      required_approval_ids.append(av.approval_id)
+
+  num_phases = len(phases)
+  phases.extend([tracker_pb2.Phase()] * (
+      MAX_NUM_PHASES - num_phases))
+  return prechecked_approvals, required_approval_ids, phases
+
+
+def GetCheckedApprovalsFromParsed(approvals_to_phase_idx):
+  checked_approvals = []
+  for approval_id, phs_idx in approvals_to_phase_idx.iteritems():
+    if phs_idx is not None:
+      checked_approvals.append('%d_phase_%d' % (approval_id, phs_idx))
+    else:
+      checked_approvals.append('%d' % approval_id)
+  return checked_approvals

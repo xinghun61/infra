@@ -144,27 +144,13 @@ class IssueEntry(servlet.Servlet):
     field_views = tracker_views.MakeAllFieldValueViews(
         config, link_or_template_labels, [], wkp.field_values, field_user_views)
 
-    # Compute Phases and Approvals
-    phases = wkp.phases[:]
-    avs_by_phase_id = collections.defaultdict(list)
-    approval_ids = []
-    # TODO(jojwang):monorail:3756 look out for phase-less approvals.
     # TODO(jrobbins): remove "or []" after next release.
+    (prechecked_approvals, required_approval_ids,
+     phases) = issue_tmpl_helpers.GatherApprovalsPageData(
+         wkp.approval_values or [], wkp.phases)
+    approval_ids = []
     for av in wkp.approval_values or []:
       approval_ids.append(av.approval_id)
-      if av.phase_id:
-        avs_by_phase_id[av.phase_id].append(av)
-
-    phases.sort(key=lambda phase: phase.rank)
-    required_approval_ids = []
-    prechecked_approvals = []
-    for idx, phase in enumerate(phases):
-      for av in avs_by_phase_id[phase.phase_id]:
-        prechecked_approvals.append('%d_phase_%d' % (av.approval_id, idx))
-        if av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW:
-          required_approval_ids.append(av.approval_id)
-    phases.extend([tracker_pb2.Phase()] * (
-        issue_tmpl_helpers.MAX_NUM_PHASES - len(wkp.phases)))
 
     page_data = {
         'issue_tab_mode': 'issueEntry',

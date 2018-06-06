@@ -90,25 +90,9 @@ class TemplateDetail(servlet.Servlet):
     if any(fv.field_def.is_approval_subfield for fv in field_views):
       approval_subfields_present = True
 
-    initial_phases = template.phases[:]
-    avs_by_phase_id = collections.defaultdict(list)
-    # TODO(jojwang):monorail:3756 look out for phaseless approvals.
-    for av in template.approval_values:
-      if av.phase_id:
-        avs_by_phase_id[av.phase_id].append(av)
-
-    # TODO(jojwang): monorail:3576, replace this sort by adding order_by
-    # when fetching phases at config_svc:488
-    initial_phases.sort(key=lambda phase: phase.rank)
-    required_approval_ids = []
-    prechecked_approvals = []
-    for idx, phase in enumerate(initial_phases):
-      for av in avs_by_phase_id[phase.phase_id]:
-        prechecked_approvals.append('%d_phase_%d' % (av.approval_id, idx))
-        if av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW:
-          required_approval_ids.append(av.approval_id)
-    initial_phases.extend([tracker_pb2.Phase()] * (
-        template_helpers.MAX_NUM_PHASES - len(template.phases)))
+    (prechecked_approvals, required_approval_ids,
+     initial_phases) = template_helpers.GatherApprovalsPageData(
+         template.approval_values, template.phases)
 
     allow_edit = permissions.CanEditTemplate(
         mr.auth.effective_ids, mr.perms, mr.project, template)
@@ -180,10 +164,8 @@ class TemplateDetail(servlet.Servlet):
       field_views = tracker_views.MakeAllFieldValueViews(
           config, [], [], field_values, {})
 
-      prechecked_approvals = []
-      for phs_idx, approval_ids in parsed.approvals_by_phase_idx.iteritems():
-        prechecked_approvals.extend(['%d_phase_%d' % (approval_id, phs_idx)
-                                     for approval_id in approval_ids])
+      prechecked_approvals = template_helpers.GetCheckedApprovalsFromParsed(
+          parsed.approvals_to_phase_idx)
 
       self.PleaseCorrect(
           mr,
