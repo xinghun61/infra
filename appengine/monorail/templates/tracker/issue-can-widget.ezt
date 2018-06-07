@@ -59,7 +59,7 @@
       [end]
       <option value="[saved_queries.query_id]"
               [is can saved_queries.query_id]
-                  selected=selected[end]
+                  selected=selected
                   [define selected]True[end]
               [end]
               title="[saved_queries.docstring]"
