@@ -343,6 +343,8 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   commit_position_line = GetBuildProperty(properties, 'got_revision_cp')
   parent_buildername = GetBuildProperty(properties, 'parent_buildername')
   parent_mastername = GetBuildProperty(properties, 'parent_mastername')
+  runtime = GetBuildProperty(properties, '$recipe_engine/runtime') or {}
+  buildbucket = GetBuildProperty(properties, 'buildbucket') or {}
 
   build_info.build_start_time = GetBuildStartTime(data_json)
   build_info.build_end_time = GetBuildEndTime(data_json)
@@ -352,6 +354,9 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   build_info.result = GetBuildResult(data_json)
   build_info.parent_buildername = parent_buildername
   build_info.parent_mastername = parent_mastername
+  build_info.buildbucket_id = buildbucket.get('build', {}).get('id')
+  build_info.buildbucket_bucket = buildbucket.get('build', {}).get('bucket')
+  build_info.is_luci = runtime.get('is_luci')
 
   changes = (data_json.get('sourceStamp') or {}).get('changes') or []
   for change in changes:

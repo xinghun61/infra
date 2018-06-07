@@ -365,6 +365,9 @@ class BuildBotTest(unittest.TestCase):
         'net_unittests on Windows-XP-SP3',
         'Failure reason',
     ]
+    expected_bucket = 'luci.chromium.ci'
+    expected_id = '8944439658040712928'
+    expected_is_luci = True
 
     build_info = buildbot.ExtractBuildInfo(master_name, builder_name,
                                            build_number, build_data)
@@ -381,6 +384,9 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(expected_failed_steps, build_info.failed_steps)
     self.assertEqual(expected_passed_steps, build_info.passed_steps)
     self.assertEqual(expected_not_passed_steps, build_info.not_passed_steps)
+    self.assertEqual(expected_bucket, build_info.buildbucket_bucket)
+    self.assertEqual(expected_id, build_info.buildbucket_id)
+    self.assertEqual(expected_is_luci, build_info.is_luci)
 
   def testExtractBuildInfoBlameList(self):
     build_file = os.path.join(
