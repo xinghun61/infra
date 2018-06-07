@@ -1,6 +1,7 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+import datetime
 import json
 import mock
 import unittest
@@ -10,6 +11,15 @@ from oauth2client import appengine as gae_oauth2client
 from google.protobuf import json_format
 
 from services import bigquery_helper
+
+# Used to test the timestamp conversion function.
+_UTC_TIMESTAMP_OF_START_TIME = '0'
+_UTC_DATETIME_OF_START_TIME = datetime.datetime(
+    year=1970, month=1, day=1, hour=0, minute=0, second=0)
+
+_UTC_TIMESTAMP_OF_YEAR_TWO_THOUSAND = '0.946684800E9'
+_UTC_DATETIME_OF_YEAR_TWO_THOUSAND = datetime.datetime(
+    year=2000, month=1, day=1, hour=0, minute=0, second=0)
 
 
 class BigqueryHelperTest(unittest.TestCase):
@@ -46,45 +56,76 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertTrue('type_conversion_function' in new_schema[0])
     self.assertEqual(new_schema[0]['type_conversion_function']('str'), 'str')
 
+    schema = [{'type': 'TIMESTAMP', 'name': 'field_name', 'mode': 'NULLABLE'}]
+    new_schema = bigquery_helper._SchemaResponseToDicts(schema)
+    self.assertEqual(new_schema[0]['name'], 'field_name')
+    self.assertEqual(new_schema[0]['nullable'], True)
+    self.assertTrue('type_conversion_function' in new_schema[0])
+    self.assertEqual(
+        new_schema[0]['type_conversion_function'](_UTC_TIMESTAMP_OF_START_TIME),
+        _UTC_DATETIME_OF_START_TIME)
+
   def testAssignTypeToRow(self):
     schema = bigquery_helper._SchemaResponseToDicts([{
         'type': 'INTEGER',
-        'name': 'field_name',
+        'name': 'int_field_name',
+        'mode': 'NULLABLE'
+    }, {
+        'type': 'BOOLEAN',
+        'name': 'boolean_field_name',
+        'mode': 'NULLABLE'
+    }, {
+        'type': 'STRING',
+        'name': 'string_field_name',
+        'mode': 'NULLABLE'
+    }, {
+        'type': 'TIMESTAMP',
+        'name': 'timestamp_field_name',
         'mode': 'NULLABLE'
     }])
-    row = {'f': [{'v': '123'}, {'v': 'false'}, {'v': 'tryserver.chromium.mac'}]}
+    row = {
+        'f': [{
+            'v': '123'
+        }, {
+            'v': 'false'
+        }, {
+            'v': 'tryserver.chromium.mac'
+        }, {
+            'v': _UTC_TIMESTAMP_OF_START_TIME
+        }]
+    }
 
     obj = bigquery_helper._AssignTypeToRow(schema, row)
-    self.assertEqual(obj, {'field_name': 123})
+    self.assertEqual(obj['int_field_name'], 123)
+    self.assertEqual(obj['boolean_field_name'], False)
+    self.assertEqual(obj['string_field_name'], 'tryserver.chromium.mac')
+    self.assertEqual(obj['timestamp_field_name'], _UTC_DATETIME_OF_START_TIME)
 
   def testAssignTypeToRowWithNullable(self):
     schema = bigquery_helper._SchemaResponseToDicts([{
         'type': 'INTEGER',
-        'name': 'field_name',
+        'name': 'int_field_name',
         'mode': 'NULLABLE'
-    }])
-    row = {'f': [{'v': None}]}
-
-    obj = bigquery_helper._AssignTypeToRow(schema, row)
-    self.assertEqual(obj, {'field_name': None})
-
-    schema = bigquery_helper._SchemaResponseToDicts([{
+    }, {
         'type': 'BOOLEAN',
-        'name': 'field_name',
+        'name': 'boolean_field_name',
         'mode': 'NULLABLE'
-    }])
-
-    obj = bigquery_helper._AssignTypeToRow(schema, row)
-    self.assertEqual(obj, {'field_name': None})
-
-    schema = bigquery_helper._SchemaResponseToDicts([{
+    }, {
         'type': 'STRING',
-        'name': 'field_name',
+        'name': 'string_field_name',
+        'mode': 'NULLABLE'
+    }, {
+        'type': 'TIMESTAMP',
+        'name': 'timestamp_field_name',
         'mode': 'NULLABLE'
     }])
+    row = {'f': [{'v': None}, {'v': None}, {'v': None}, {'v': None}]}
 
     obj = bigquery_helper._AssignTypeToRow(schema, row)
-    self.assertEqual(obj, {'field_name': None})
+    self.assertEqual(obj['int_field_name'], None)
+    self.assertEqual(obj['boolean_field_name'], None)
+    self.assertEqual(obj['string_field_name'], None)
+    self.assertEqual(obj['timestamp_field_name'], None)
 
   def testAssignTypeToRowWithUnknownSchema(self):
     schema = bigquery_helper._SchemaResponseToDicts([{
@@ -92,7 +133,7 @@ class BigqueryHelperTest(unittest.TestCase):
         'name': 'field_name',
         'mode': 'NULLABLE'
     }])
-    row = {'f': [{'v': '123'}, {'v': 'false'}, {'v': 'tryserver.chromium.mac'}]}
+    row = {'f': [{'v': '123'}]}
 
     obj = bigquery_helper._AssignTypeToRow(schema, row)
     self.assertEqual(obj, {'field_name': '123'})
@@ -114,6 +155,10 @@ class BigqueryHelperTest(unittest.TestCase):
         'type': 'BOOLEAN',
         'name': 'f4',
         'mode': 'NULLABLE'
+    }, {
+        'type': 'TIMESTAMP',
+        'name': 'f5',
+        'mode': 'NULLABLE'
     }]
 
     rows = [
@@ -126,6 +171,8 @@ class BigqueryHelperTest(unittest.TestCase):
                 'v': 'tryserver.chromium.mac'
             }, {
                 'v': 'false'
+            }, {
+                'v': _UTC_TIMESTAMP_OF_START_TIME
             }]
         },
         {
@@ -137,6 +184,8 @@ class BigqueryHelperTest(unittest.TestCase):
                 'v': 'fryserver.chromium.mac'
             }, {
                 'v': 'true'
+            }, {
+                'v': _UTC_TIMESTAMP_OF_YEAR_TWO_THOUSAND
             }]
         },
     ]
@@ -146,12 +195,14 @@ class BigqueryHelperTest(unittest.TestCase):
         'f1': '123',
         'f2': 100,
         'f3': 'tryserver.chromium.mac',
-        'f4': False
+        'f4': False,
+        'f5': _UTC_DATETIME_OF_START_TIME
     }, {
         'f1': '321',
         'f2': 200,
         'f3': 'fryserver.chromium.mac',
-        'f4': True
+        'f4': True,
+        'f5': _UTC_DATETIME_OF_YEAR_TWO_THOUSAND
     }])
 
   def testBigqueryInsertRequest(self):

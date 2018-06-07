@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Factilitates interacting with Bigquery through the REST API."""
 
+import datetime
 import httplib2
 import json
 import logging
@@ -70,10 +71,16 @@ def _SchemaResponseToDicts(schema):
       return None
     return val.lower() == 'true'
 
+  def _TimestampTypeConversion(val, nullable=False):
+    if nullable and val is None:
+      return None
+    return datetime.datetime.utcfromtimestamp(float(val))
+
   known_types = {
       'INTEGER': _IntegerTypeConversion,
       'STRING': _StringTypeConversion,
-      'BOOLEAN': _BooleanTypeConversion
+      'BOOLEAN': _BooleanTypeConversion,
+      'TIMESTAMP': _TimestampTypeConversion
   }
 
   schema_dicts = []
