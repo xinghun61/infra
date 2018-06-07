@@ -168,7 +168,8 @@ class MonorailApiRequest(MonorailRequestBase):
 
     self.query_project_names = self.GetParam('projects')
     self.group_by_spec = self.GetParam('groupby')
-    self.group_by_spec = ' '.join(ParseColSpec(self.group_by_spec))
+    self.group_by_spec = ' '.join(ParseColSpec(
+        self.group_by_spec, ignore=tracker_constants.NOT_USED_IN_GRID_AXES))
     self.sort_spec = self.GetParam('sort')
     self.sort_spec = ' '.join(ParseColSpec(self.sort_spec))
     self.query = self.GetParam('q')
@@ -325,6 +326,8 @@ class MonorailRequest(MonorailRequestBase):
     self.group_by_spec = self.GetParam(
         'groupby', default_value='',
         antitamper_re=framework_constants.SORTSPEC_RE)
+    self.group_by_spec = ' '.join(ParseColSpec(
+        self.group_by_spec, ignore=tracker_constants.NOT_USED_IN_GRID_AXES))
 
     # For issue list and grid mode.
     self.cursor = self.GetParam('cursor')
@@ -652,7 +655,9 @@ def _GetViewedEmail(viewed_user_val, cnxn, services):
   return viewed_email
 
 
-def ParseColSpec(col_spec, max_parts=framework_constants.MAX_SORT_PARTS):
+def ParseColSpec(
+    col_spec, max_parts=framework_constants.MAX_SORT_PARTS,
+    ignore=None):
   """Split a string column spec into a list of column names.
 
   We dedup col parts because an attacker could try to DoS us or guess
@@ -662,6 +667,7 @@ def ParseColSpec(col_spec, max_parts=framework_constants.MAX_SORT_PARTS):
   Args:
     col_spec: a unicode string containing a list of labels.
     max_parts: optional int maximum number of parts to consider.
+    ignore: optional list of column name parts to ignore.
 
   Returns:
     A list of the extracted labels. Non-alphanumeric
@@ -669,11 +675,17 @@ def ParseColSpec(col_spec, max_parts=framework_constants.MAX_SORT_PARTS):
   """
   cols = framework_constants.COLSPEC_COL_RE.findall(col_spec)
   result = []  # List of column headers with no duplicates.
-  seen = set()  # Set of column parts that we have processed so far.
+  # Set of column parts that we have processed so far.
+  seen = set()
+  if ignore:
+    seen = set(ignore_col.lower() for ignore_col in ignore)
+    max_parts += len(ignore)
+
   for col in cols:
     parts = []
     for part in col.split('/'):
-      if part.lower() not in seen and len(seen) < max_parts:
+      if (part.lower() not in seen and len(seen) < max_parts
+          and len(part) < framework_constants.MAX_COL_LEN):
         parts.append(part)
         seen.add(part.lower())
     if parts:

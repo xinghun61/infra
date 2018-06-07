@@ -33,6 +33,7 @@ RESERVED_PREFIXES = [
     'explicit_component', 'derived_component', 'alllabels', 'gate']
 
 # The columns are useless in the grid view, so don't offer them.
+# These are also not used in groupby in the issue list.
 NOT_USED_IN_GRID_AXES = [
     'Summary', 'ID', 'Opened', 'Closed', 'Modified', 'Cc',
     'OwnerModified', 'StatusModified', 'ComponentModified',

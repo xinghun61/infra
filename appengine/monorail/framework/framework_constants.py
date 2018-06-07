@@ -54,6 +54,7 @@ NO_VALUE_RE = re.compile(r'^-+$')
 COLSPEC_RE = re.compile(r'^[-.\w\s/]*$', re.UNICODE)
 COLSPEC_COL_RE = re.compile(r'[-.\w/]+', re.UNICODE)
 MAX_COL_PARTS = 25
+MAX_COL_LEN = 50
 
 # Used to loosely validate sort spec. Mainly guards against malicious input.
 SORTSPEC_RE = re.compile(r'^[-.\w\s/]*$', re.UNICODE)

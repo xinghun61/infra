@@ -485,6 +485,7 @@ class TestMonorailRequestFunctions(unittest.TestCase):
               '\xe5\x9f\xba\xe5\x9c\xb0\xe3\x81\xaf'.decode('utf-8')))
 
   def testParseColSpec_Dedup(self):
+    """An attacker cannot inflate response size by repeating a column."""
     parse = monorailrequest.ParseColSpec
     self.assertEqual([], parse(''))
     self.assertEqual(
@@ -493,6 +494,21 @@ class TestMonorailRequestFunctions(unittest.TestCase):
     self.assertEqual(
       ['A', 'b', 'c/d', 'e', 'f'],
       parse(u'A b c/d e f g h i j a/k l m/c/a n/o'))
+
+  def testParseColSpec_Huge(self):
+    """An attacker cannot inflate response size with a huge column name."""
+    parse = monorailrequest.ParseColSpec
+    self.assertEqual(
+      ['Aa', 'b', 'c/d'],
+      parse(u'Aa Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa b c/d'))
+
+  def testParseColSpec_Ignore(self):
+    """We ignore groupby and grid axes that would be useless."""
+    parse = monorailrequest.ParseColSpec
+    self.assertEqual(
+      ['Aa', 'b', 'c/d'],
+      parse(u'Aa AllLabels alllabels Id b opened/summary c/d',
+            ignore=tracker_constants.NOT_USED_IN_GRID_AXES))
 
 
 class TestPermissionLookup(unittest.TestCase):
