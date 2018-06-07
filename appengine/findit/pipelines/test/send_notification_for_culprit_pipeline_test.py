@@ -5,11 +5,11 @@
 import mock
 
 from common.waterfall import failure_type
+from pipelines.send_notification_for_culprit_pipeline import (
+    SendNotificationForCulpritPipeline)
 from services import culprit_action
 from services import gerrit
 from services.parameters import SendNotificationForCulpritParameters
-from waterfall.send_notification_for_culprit_pipeline import (
-    SendNotificationForCulpritPipeline)
 from waterfall.test import wf_testcase
 
 

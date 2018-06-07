@@ -12,6 +12,8 @@ from libs.list_of_basestring import ListOfBasestring
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
+from pipelines.send_notification_for_culprit_pipeline import (
+    SendNotificationForCulpritPipeline)
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from services import culprit_action
 from services import gerrit
@@ -22,8 +24,6 @@ from services.parameters import CulpritActionParameters
 from services.parameters import SendNotificationToIrcParameters
 from services.parameters import SendNotificationForCulpritParameters
 from services.parameters import SubmitRevertCLParameters
-from waterfall.send_notification_for_culprit_pipeline import (
-    SendNotificationForCulpritPipeline)
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
 from waterfall.test import wf_testcase

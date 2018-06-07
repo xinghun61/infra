@@ -10,6 +10,8 @@ from dto.dict_of_basestring import DictOfBasestring
 from gae_libs.pipelines import pipeline_handlers
 from libs.list_of_basestring import ListOfBasestring
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
+from pipelines.send_notification_for_culprit_pipeline import (
+    SendNotificationForCulpritPipeline)
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from pipelines.test_failure import revert_and_notify_test_culprit_pipeline
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
@@ -23,8 +25,6 @@ from services.parameters import CulpritActionParameters
 from services.parameters import SendNotificationForCulpritParameters
 from services.parameters import SubmitRevertCLParameters
 from services.test_failure import test_culprit_action
-from waterfall.send_notification_for_culprit_pipeline import (
-    SendNotificationForCulpritPipeline)
 from waterfall.test import wf_testcase
 
 
