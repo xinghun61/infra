@@ -89,6 +89,7 @@ function TKR_autosizeArtifactSerchField() {
     }
     if (new_size > qq.size) {
       qq.size = new_size;
+
     }
   }
 }
@@ -173,7 +174,6 @@ function TKR_addSort(colname, descending) {
   var url = isHotlist ? ($('hotlist_name').value + '?') : ('list?');
   url  += ('can='+ $('can').value + '&q=' +
       TKR_getArtifactSearchField().value);
-
   url += '&sort=' + specs.join('+');
   url += '&colspec=' + TKR_getColspecElement().value;
   TKR_go(url)

@@ -1,28 +1,28 @@
 [# This is used in the issue search form and issue advanced search page.  We want to show the same options in both contexts.]
-
+[define selected]False[end]
 <option disabled="disabled">Search within:</option>
-<option value="1" [is can "1"]selected=selected[end]
+<option value="1" [is can "1"]selected=selected [define selected]True[end] [end]
         title="All issues in the project">&nbsp;All issues</option>
-<option value="2" [is can "2"]selected=selected[end]
+<option value="2" [is can "2"]selected=selected [define selected]True[end] [end]
         title="All issues except ones with a closed status">&nbsp;Open issues</option>
 
 [if-any logged_in_user]
  [define username][logged_in_user.email][end]
  [is arg0 "admin"][define username]logged-in-user[end][end]
- <option value="3" [is can "3"]selected=selected[end]
+ <option value="3" [is can "3"]selected=selected [define selected]True[end] [end]
          title="[[]Open issues] owner=[username]">&nbsp;Open and owned by me</option>
- <option value="4" [is can "4"]selected=selected[end]
+ <option value="4" [is can "4"]selected=selected [define selected]True[end] [end]
          title="[[]Open issues] reporter=[username]">&nbsp;Open and reported by me</option>
- <option value="5" [is can "5"]selected=selected[end]
+ <option value="5" [is can "5"]selected=selected [define selected]True[end] [end]
          title="[[]Open issues] starredby:[username]">&nbsp;Open and starred by me</option>
- <option value="8" [is can "8"]selected=selected[end]
+ <option value="8" [is can "8"]selected=selected [define selected]True[end] [end]
          title="[[]Open issues] commentby:[username]">&nbsp;Open with comment by me</option>
 [end]
 
 [# TODO(jrobbins): deprecate these and tell projects to define canned queries instead.]
-<option value="6" [is can "6"]selected=selected[end]
+<option value="6" [is can "6"]selected=selected [define selected]True[end] [end]
          title="[[]Open issues] status=New">&nbsp;New issues</option>
-<option value="7" [is can "7"]selected=selected[end]
+<option value="7" [is can "7"]selected=selected [define selected]True[end] [end]
          title="[[]All issues] status=fixed,done">&nbsp;Issues to verify</option>
 
 [is arg0 "admin"][else]
@@ -34,7 +34,10 @@
     [end]
     [# TODO(jrobbins): canned query visibility conditions, e.g., members only. ]
     <option value="[canned_queries.query_id]"
-            [is can canned_queries.query_id]selected=selected[end]
+            [is can canned_queries.query_id]
+                selected=selected
+                [define selected]True[end]
+            [end]
             title="[canned_queries.docstring]"
             >&nbsp;[canned_queries.name]</option>
   [end]
@@ -55,7 +58,10 @@
         <option disabled="disabled">----</option>
       [end]
       <option value="[saved_queries.query_id]"
-              [is can saved_queries.query_id]selected=selected[end]
+              [is can saved_queries.query_id]
+                  selected=selected[end]
+                  [define selected]True[end]
+              [end]
               title="[saved_queries.docstring]"
               >&nbsp;[saved_queries.name]</option>
     [end]
@@ -68,3 +74,9 @@
   [end][# end if logged in]
 
 [end][# end not "admin"]
+
+[is selected "False"]
+  <option value="[can]" selected=selected
+          title="Custom Query"
+          >&nbsp;Custom Query</option>
+[end]
