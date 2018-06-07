@@ -87,9 +87,11 @@ class Profiler(object):
       logging.info('would have sent trace: %s', spans)
       return
 
-    # TODO(seanmccullough): set root_span_id on spans that don't have a
-    # parentSpanId property.
-    trace_id, _root_span_id = self.trace_context.split(';')[0].split('/')
+    trace_id, root_span_id = self.trace_context.split(';')[0].split('/')
+    for s in spans:
+      if not 'parentSpanId' in s:
+        s['parentSpanId'] = root_span_id
+
     traces_body = {
       'projectId': self.project_id,
       'traceId': trace_id,

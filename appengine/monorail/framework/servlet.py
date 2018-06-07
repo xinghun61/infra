@@ -275,7 +275,8 @@ class Servlet(webapp2.RequestHandler):
     if settings.enable_profiler_logging:
       self.mr.profiler.LogStats()
 
-    if random.random() < settings.trace_fraction:
+    if (self.mr.profiler.trace_context is not None and
+        random.random() < settings.trace_fraction):
       self.mr.profiler.ReportTrace()
 
   def _AddHelpDebugPageData(self, page_data):
