@@ -16,19 +16,18 @@ import swarming
 from swarming import swarmbucket_api
 
 
-def create_html_app():  # pragma: no cover
-  """Returns WSGI app that serves HTML pages."""
-  app = webapp2.WSGIApplication(
-      handlers.get_frontend_routes(), debug=utils.is_local_dev_server())
-  gae_ts_mon.initialize(app, cron_module='backend')
+def create_frontend_app():  # pragma: no cover
+  """Returns WSGI app for frontend."""
+  # Currently endpoints_webapp2.api_server returns a list of routes, so we
+  # could create a webapp2.WSGIApplication with (API routes + frontend routes).
+  # In the future, it will return a webapp2.WSGIApplication directly, to which
+  # we will have to append frontend routes.
+  app = webapp2.WSGIApplication(endpoints_webapp2.api_server(
+      [api.BuildbucketApi, swarmbucket_api.SwarmbucketApi, config.ConfigApi],
+      base_path='/_ah/api'), debug=utils.is_local_dev_server())
+  for route in handlers.get_frontend_routes():
+    app.router.add(route)
   return app
-
-
-def create_endpoints_app():  # pragma: no cover
-  """Returns WSGI app that serves cloud endpoints requests."""
-  return webapp2.WSGIApplication(endpoints_webapp2.api_server(
-      [api.BuildBucketApi, swarmbucket_api.SwarmbucketApi, config.ConfigApi],
-      base_path='/_ah/api'))
 
 
 def create_backend_app():  # pragma: no cover
@@ -45,4 +44,4 @@ def create_backend_app():  # pragma: no cover
 def initialize():  # pragma: no cover
   """Bootstraps the global state and creates WSGI applications."""
   ereporter2.register_formatter()
-  return create_html_app(), create_endpoints_app(), create_backend_app()
+  return create_frontend_app(), create_backend_app()

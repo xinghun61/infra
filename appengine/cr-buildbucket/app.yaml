@@ -11,9 +11,6 @@ handlers:
   upload: static/favicon.ico
   secure: always
 
-- url: /_ah/api/.*
-  script: apps.endpoints
-
 # RPC Explorer.
 
 - url: /rpcexplorer/?
@@ -33,7 +30,7 @@ handlers:
   secure: always
 
 - url: /.*
-  script: apps.html
+  script: apps.frontend
   secure: always
 
 libraries:

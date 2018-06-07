@@ -15,4 +15,4 @@ import google.protobuf
 
 import main
 
-html, endpoints, backend = main.initialize()
+frontend, backend = main.initialize()
