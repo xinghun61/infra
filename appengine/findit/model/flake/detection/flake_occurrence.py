@@ -30,6 +30,16 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   # Used to identify the flaky build.
   build_id = ndb.IntegerProperty(indexed=False, required=True)
 
+  # Used to identify the original name of a step in a given build. step_name may
+  # include hardware information, 'with patch' and 'without patch' postfix.
+  # For example: 'angle_unittests (with patch) on Android'.
+  step_name = ndb.StringProperty(required=True)
+
+  # Used to identify the original name of a test in a given test binary.
+  # test_name may include 'PRE_' prefixes and parameters if it's a gtest.
+  # For example: 'A/ColorSpaceTest.PRE_PRE_testNullTransform/137'.
+  test_name = ndb.StringProperty(required=True)
+
   # Used to identify the build configuration.
   build_configuration = ndb.StructuredProperty(
       BuildConfiguration, required=True)
@@ -47,14 +57,35 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   # detection for this occurrence.
   time_detected = ndb.DateTimeProperty(required=True, auto_now_add=True)
 
+  @staticmethod
+  def GetId(build_id, step_name, test_name):
+    return '%s@%s@%s' % (build_id, step_name, test_name)
+
   @classmethod
-  def Create(cls, build_id, luci_project, luci_bucket, luci_builder,
-             legacy_master_name, reference_succeeded_build_id, time_happened,
-             parent_flake_key):
+  def Get(cls, build_id, step_name, test_name, parent_flake_key):
+    """Gets a cq false rejection flake occurrence if it exists.
+
+    Args:
+      step_name: The original name of a step in a given build.
+      test_name: The original name of a test in a give test binary.
+      parent_flake_key: parent Flake model this occurrence is grouped under.
+    """
+    return cls.get_by_id(
+        cls.GetId(build_id, step_name, test_name), parent=parent_flake_key)
+
+  @classmethod
+  def Create(cls, build_id, step_name, test_name, luci_project, luci_bucket,
+             luci_builder, legacy_master_name, reference_succeeded_build_id,
+             time_happened, parent_flake_key):
     """Creates a cq false rejection flake occurrence.
 
-    NOTE: This method assumes that the parent Flake entity exists.
+    Args:
+      step_name: The original name of a step in a given build.
+      test_name: The original name of a test in a give test binary.
+      parent_flake_key: parent Flake model this occurrence is grouped under.
+                        This method assumes that the parent Flake entity exists.
     """
+    flake_occurrence_id = cls.GetId(build_id, step_name, test_name)
     build_configuration = BuildConfiguration(
         luci_project=luci_project,
         luci_bucket=luci_bucket,
@@ -63,8 +94,10 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
 
     return cls(
         build_id=build_id,
+        step_name=step_name,
+        test_name=test_name,
         build_configuration=build_configuration,
         reference_succeeded_build_id=reference_succeeded_build_id,
         time_happened=time_happened,
-        parent=parent_flake_key,
-        id=build_id)
+        id=flake_occurrence_id,
+        parent=parent_flake_key)

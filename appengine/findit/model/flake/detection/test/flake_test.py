@@ -8,76 +8,76 @@ from model.flake.detection.flake import Flake
 
 class FlakeTest(TestCase):
 
+  def testNormalizeStepName(self):
+    self.assertEqual('test_target', Flake.NormalizeStepName('test_target'))
+
+    self.assertEqual('test_target',
+                     Flake.NormalizeStepName('test_target on Android'))
+
+    self.assertEqual(
+        'test_target',
+        Flake.NormalizeStepName('test_target (with patch) on Android'))
+
+    # Only '(with patch)' that appears as a postfix is stripped off.
+    self.assertEqual(
+        'fake(withpatch)test_target',
+        Flake.NormalizeStepName(
+            'fake(withpatch)test_target (with patch) on Android'))
+
+  def testNormalizeTestName(self):
+    self.assertEqual('suite.test', Flake.NormalizeTestName('suite.test'))
+
+    self.assertEqual('suite.test', Flake.NormalizeTestName('a/suite.test/0'))
+
+    self.assertEqual('suite.test',
+                     Flake.NormalizeTestName('suite.PRE_PRE_test'))
+
+    self.assertEqual('suite.test',
+                     Flake.NormalizeTestName('a/suite.PRE_PRE_test/0'))
+
   def testGetId(self):
     luci_project = 'chromium'
-    step_name = 'step'
-    test_name = 'test'
+    normalized_step_name = 'normalized_step'
+    normalized_test_name = 'normalized_test'
     self.assertEqual(
-        'chromium/step/test',
+        'chromium@normalized_step@normalized_test',
         Flake.GetId(
-            luci_project=luci_project, step_name=step_name,
-            test_name=test_name))
+            luci_project=luci_project,
+            normalized_step_name=normalized_step_name,
+            normalized_test_name=normalized_test_name))
 
   def testGet(self):
     luci_project = 'chromium'
-    step_name = 'step'
-    test_name = 'test'
+    normalized_step_name = 'normalized_step'
+    normalized_test_name = 'normalized_test'
 
-    flake_id = 'chromium/step/test'
+    flake_id = 'chromium@normalized_step@normalized_test'
     flake = Flake(
         luci_project=luci_project,
-        step_name=step_name,
-        test_name=test_name,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name,
         id=flake_id)
     flake.put()
     self.assertEqual(
         flake,
         Flake.Get(
-            luci_project=luci_project, step_name=step_name,
-            test_name=test_name))
+            luci_project=luci_project,
+            normalized_step_name=normalized_step_name,
+            normalized_test_name=normalized_test_name))
 
   def testCreate(self):
     luci_project = 'chromium'
-    step_name = 'step_name'
-    test_name = 'test_name'
+    normalized_step_name = 'normalized_step'
+    normalized_test_name = 'normalized_test'
 
     flake = Flake.Create(
-        luci_project=luci_project, step_name=step_name, test_name=test_name)
-    flake.put()
-
-    flakes = Flake.query(Flake.luci_project == luci_project,
-                         Flake.step_name == step_name,
-                         Flake.test_name == test_name).fetch()
-    self.assertEqual(1, len(flakes))
-    self.assertEqual(flake, flakes[0])
-
-  def testComputedProperties(self):
-    luci_project = 'chromium'
-    step_name = 'test_target (with patch) on Android'
-    test_name = 'instance/suite.PRE_PRE_test/1'
-
-    flake = Flake.Create(
-        luci_project=luci_project, step_name=step_name, test_name=test_name)
+        luci_project=luci_project,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name)
     flake.put()
 
     fetched_flake = Flake.Get(
-        luci_project=luci_project, step_name=step_name, test_name=test_name)
-    self.assertTrue(fetched_flake)
-    self.assertEqual('test_target', fetched_flake.normalized_step_name)
-    self.assertEqual('suite.test', fetched_flake.normalized_test_name)
-
-  # Tests that for the normalized_step_name property, only ' (with patch)'
-  # that appears as a postfix is stripped off.
-  def testCreateFlakeHasWithPatchInStepName(self):
-    luci_project = 'chromium'
-    step_name = 'fake(withpatch)test_target (with patch) on Android'
-    test_name = 'test_name'
-    flake = Flake.Create(
-        luci_project=luci_project, step_name=step_name, test_name=test_name)
-    flake.put()
-
-    fetched_flake = Flake.Get(
-        luci_project=luci_project, step_name=step_name, test_name=test_name)
-    self.assertTrue(fetched_flake)
-    self.assertEqual('fake(withpatch)test_target',
-                     fetched_flake.normalized_step_name)
+        luci_project=luci_project,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name)
+    self.assertEqual(flake, fetched_flake)
