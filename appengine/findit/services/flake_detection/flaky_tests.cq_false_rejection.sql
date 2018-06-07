@@ -1,4 +1,4 @@
-# To detect flaky tests causing Chromium CQ false rejections in the past 7 days.
+# To detect flaky tests causing Chromium CQ false rejections in the past 1 days.
 #
 # Assumptions for the flake detection in this query are:
 # 1. In the same build of the same CL/patchset/builder_id (a bulid id is a tuple
@@ -63,7 +63,7 @@ WITH
     CROSS JOIN
       UNNEST(ca.contributing_bbucket_ids) AS build_id
   WHERE
-    ca.attempt_start_msec >= UNIX_MILLIS(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 day))
+    ca.attempt_start_msec >= UNIX_MILLIS(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day))
     AND ca.cq_name in (
       'chromium/angle/angle',
       'chromium/chromium/src' # iOS does not support (without patch) yet.
@@ -95,7 +95,6 @@ WITH
       build.builder.bucket,
       build.builder.builder) AS builder,
     ARRAY_AGG( CASE
-        # Only care about the failed builds.
         WHEN build.status = 'FAILURE' THEN
           STRUCT(
             build.build_id,
@@ -104,7 +103,13 @@ WITH
             build.gitiles_revision_cp,
             build.steps)
         ELSE NULL
-      END IGNORE NULLS ) AS builds
+      END IGNORE NULLS ) AS failed_builds,
+    # Record any matching successful build to serve as evidence showing why a
+    # specific build is deemed as a flaky build.
+    ANY_VALUE( CASE
+        WHEN build.status = 'SUCCESS' THEN
+          build.build_id
+        ELSE NULL END) AS reference_succeeded_build_id
   FROM
     patchset_groups AS pg
   CROSS JOIN
@@ -130,7 +135,7 @@ WITH
       CROSS JOIN
         UNNEST(build.input.gerrit_changes) AS gerrit_change
     WHERE
-      build.create_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 day)
+      build.create_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day)
       # Chromium CQ builds should have only one patchset, thus the arrary
       # cr-buildbucket.builds.completed_BETA.input.gerrit_changes would
       # effectively have only one element. But still check just in case.
@@ -159,15 +164,16 @@ WITH
   SELECT
     fbg.cq_name,
     # Info about the patch.
-    build.gerrit_change,
+    failed_build.gerrit_change,
     fbg.patchset_group_id AS patchset_group_id,
     fbg.committed,
     # Info about the code checkouted in the build.
-    build.gitiles_repository,
-    build.gitiles_revision_cp,
+    failed_build.gitiles_repository,
+    failed_build.gitiles_revision_cp,
     # Info about the build.
+    failed_build.build_id,
     fbg.builder,
-    build.build_id,
+    fbg.reference_succeeded_build_id,
     (ARRAY(
       SELECT
         AS STRUCT
@@ -187,7 +193,7 @@ WITH
             WHEN step.name LIKE '%(without patch)%' THEN step.name
             ELSE NULL END) AS step_name_without_patch
       FROM
-        UNNEST(build.steps) AS step
+        UNNEST(failed_build.steps) AS step
       WHERE
         step.name LIKE '%(with patch)%'
         OR step.name LIKE '%(without patch)%'
@@ -210,7 +216,7 @@ WITH
   FROM
       flaky_build_groups AS fbg
     CROSS JOIN
-      UNNEST(fbg.builds) AS build ),
+      UNNEST(fbg.failed_builds) AS failed_build ),
 
   # failed_tests is to find ALL the failed tests in ALL test steps that are
   # shown as red FAILURES on build pages.
@@ -230,7 +236,7 @@ WITH
   FROM
     `test-results-hrd.events.test_results`
   WHERE
-    _PARTITIONTIME >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 day)
+    _PARTITIONTIME >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day)
     # Only builds going through buildbucket have build ids, including:
     # 1. All Luci-based builds.
     # 2. A subset of buildbot-based builds, e.g. all CQ builds.
@@ -334,11 +340,12 @@ SELECT
   test_run.chromium_revision,
   # Info about the build.
   entire_build.builder.project AS luci_project,
-  entire_build.builder.bucket AS buildbucket,
-  test_run.buildbot_info.master_name,
-  entire_build.builder.builder,
-  test_run.buildbot_info.build_number,
+  entire_build.builder.bucket AS luci_bucket,
+  entire_build.builder.builder AS luci_builder,
   entire_build.build_id,
+  entire_build.reference_succeeded_build_id,
+  test_run.buildbot_info.master_name AS legacy_master_name,
+  test_run.buildbot_info.build_number,
   # Info about the test.
   test_run.step_name,
   test_run.test_name,
