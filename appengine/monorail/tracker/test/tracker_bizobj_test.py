@@ -886,6 +886,32 @@ class BizobjTest(unittest.TestCase):
         set([111L, 333L, 444L]),
         tracker_bizobj.UsersInvolvedInTemplate(template))
 
+  def testMakeApprovalDelta_AllSpecified(self):
+    added_fv = tracker_bizobj.MakeFieldValue(
+      1, None, 'added str', None, None, None, False)
+    removed_fv = tracker_bizobj.MakeFieldValue(
+      1, None, 'removed str', None, None, None, False)
+    actual = tracker_bizobj.MakeApprovalDelta(
+        tracker_pb2.ApprovalStatus.APPROVED, 111L, [222L], [],
+        [added_fv], [removed_fv], set_on=1234)
+    self.assertEqual(actual.status, tracker_pb2.ApprovalStatus.APPROVED)
+    self.assertEqual(actual.setter_id, 111L)
+    self.assertEqual(actual.set_on, 1234)
+    self.assertEqual(actual.subfield_vals_add, [added_fv])
+    self.assertEqual(actual.subfield_vals_remove, [removed_fv])
+
+  def testMakeApprovalDelta_WithNones(self):
+    added_fv = tracker_bizobj.MakeFieldValue(
+      1, None, 'added str', None, None, None, False)
+    removed_fv = tracker_bizobj.MakeFieldValue(
+      1, None, 'removed str', None, None, None, False)
+    actual = tracker_bizobj.MakeApprovalDelta(
+        None, 111L, [222L], [],
+        [added_fv], [removed_fv])
+    self.assertIsNone(actual.status)
+    self.assertIsNone(actual.setter_id)
+    self.assertIsNone(actual.set_on)
+
   def testMakeIssueDelta_AllSpecified(self):
     added_fv = tracker_bizobj.MakeFieldValue(
       1, None, 'added str', None, None, None, False)

@@ -12,6 +12,7 @@ tracker configuration.
 
 import collections
 import logging
+import time
 
 from framework import exceptions
 from framework import framework_bizobj
@@ -740,6 +741,23 @@ def UsersInvolvedInTemplate(template):
   if template.owner_id:
     result.add(template.owner_id)
   return result
+
+
+def MakeApprovalDelta(
+    status, setter_id, approver_ids_add, approver_ids_remove,
+    subfield_vals_add, subfield_vals_remove, set_on=None):
+  approval_delta = tracker_pb2.ApprovalDelta(
+      approver_ids_add=approver_ids_add,
+      approver_ids_remove=approver_ids_remove,
+      subfield_vals_add=subfield_vals_add,
+      subfield_vals_remove=subfield_vals_remove
+  )
+  if status is not None:
+    approval_delta.status = status
+    approval_delta.set_on = set_on or int(time.time())
+    approval_delta.setter_id = setter_id
+
+  return approval_delta
 
 
 def MakeIssueDelta(
