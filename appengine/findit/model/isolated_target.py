@@ -61,6 +61,14 @@ class IsolatedTarget(ndb.Model):
     """
     return bool(self.gerrit_patch)
 
+  @property
+  def isolated_hash(self):
+    return self.key.pairs()[0][1]
+
+  @property
+  def build_url(self):
+    return 'https://ci.chromium.org/p/chromium/builds/{}'.format(self.build_id)
+
   @classmethod
   def _CreateKey(cls, isolated_hash):
     return ndb.Key(cls, isolated_hash)
