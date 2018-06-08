@@ -213,82 +213,73 @@ def build_main(api, buildername, official, project_name, repo_url, rev):
 
 
 def GenTests(api):
-  yield (
-    api.test('infra-continuous-precise-64') +
-    api.properties.git_scheduled(
-        path_config='kitchen',
-        buildername='infra-continuous-precise-64',
-        buildnumber=123,
-        mastername='chromium.infra',
-        official=True,
-        repository='https://chromium.googlesource.com/infra/infra',
+
+  def test(name, is_luci=False, is_experimental=False, **properties):
+    default = {
+      'path_config': 'generic',
+      'buildername': 'infra-continuous-trusty-64',
+      'buildnumber': 123,
+      'mastername': 'chromium.infra',
+      'repository': 'https://chromium.googlesource.com/infra/infra',
+    }
+    for k, v in default.iteritems():
+      properties.setdefault(k, v)
+    return (
+        api.test(name) +
+        api.runtime(is_luci=is_luci, is_experimental=is_experimental) +
+        api.properties.git_scheduled(**properties)
     )
-  )
+
+  yield test(
+      'infra-continuous-precise-64',
+      buildername='infra-continuous-precise-64',
+      official=True)
+  yield test(
+      'infra-continuous-trusty-64',
+      buildername='infra-continuous-trusty-64',
+      official=True)
+
   yield (
-    api.test('infra-continuous-trusty-64') +
-    api.properties.git_scheduled(
-        path_config='kitchen',
-        buildername='infra-continuous-trusty-64',
-        buildnumber=123,
-        official=True,
-        mastername='chromium.infra',
-        repository='https://chromium.googlesource.com/infra/infra',
-    )
-  )
-  yield (
-    api.test('infra-continuous-win-64') +
-    api.properties.git_scheduled(
-        path_config='kitchen',
-        buildername='infra-continuous-win-64',
-        buildnumber=123,
-        official=True,
-        mastername='chromium.infra',
-        repository='https://chromium.googlesource.com/infra/infra',
-    ) +
-    api.platform.name('win')
-  )
-  yield (
-    api.test('infra-internal-continuous') +
-    api.properties.git_scheduled(
-        path_config='kitchen',
+    test(
+      'infra-continuous-win-64',
+      buildername='infra-continuous-win-64',
+      official=True) +
+    api.platform.name('win'))
+
+  yield test(
+      'infra-internal-continuous',
+      buildername='infra-internal-continuous-trusty-32',
+      official=True,
+      mastername='internal.infra',
+      repository=
+          'https://chrome-internal.googlesource.com/infra/infra_internal')
+
+  for official in [True, False]:
+    yield test(
+        'infra-internal-continuous-luci' + ('-official' if official else ''),
+        is_luci=True,
+        is_experimental=True,
         buildername='infra-internal-continuous-trusty-32',
-        buildnumber=123,
-        official=True,
-        mastername='internal.infra',
+        official=official,
         repository=
             'https://chrome-internal.googlesource.com/infra/infra_internal',
-    )
-  )
-  for official in [True, False]:
-    yield (
-      api.test(
-        'infra-internal-continuous-luci' + ('-official' if official else '')) +
-      api.runtime(is_luci=True, is_experimental=True) +
-      api.properties.git_scheduled(
-          path_config='kitchen',
-          buildername='infra-internal-continuous-trusty-32',
-          buildnumber=123,
-          official=official,
-          repository=
-              'https://chrome-internal.googlesource.com/infra/infra_internal',
-          buildbucket=json.dumps({
-            "build": {
-              "bucket": "luci.infra-internal.ci",
-              "created_by": "user:luci-scheduler@appspot.gserviceaccount.com",
-              "created_ts": 1527292217677440,
-              "id": "8945511751514863184",
-              "project": "infra-internal",
-              "tags": [
-                "builder:infra-internal-continuous-trusty-32",
-                ("buildset:commit/gitiles/chrome-internal.googlesource.com/" +
-                  "infra/infra_internal/" +
-                  "+/2d72510e447ab60a9728aeea2362d8be2cbd7789"),
-                "gitiles_ref:refs/heads/master",
-                "scheduler_invocation_id:9110941813804031728",
-                "user_agent:luci-scheduler",
-              ],
-            },
-            "hostname": "cr-buildbucket.appspot.com"
-          }),
+        buildbucket=json.dumps({
+          "build": {
+            "bucket": "luci.infra-internal.ci",
+            "created_by": "user:luci-scheduler@appspot.gserviceaccount.com",
+            "created_ts": 1527292217677440,
+            "id": "8945511751514863184",
+            "project": "infra-internal",
+            "tags": [
+              "builder:infra-internal-continuous-trusty-32",
+              ("buildset:commit/gitiles/chrome-internal.googlesource.com/" +
+                "infra/infra_internal/" +
+                "+/2d72510e447ab60a9728aeea2362d8be2cbd7789"),
+              "gitiles_ref:refs/heads/master",
+              "scheduler_invocation_id:9110941813804031728",
+              "user_agent:luci-scheduler",
+            ],
+          },
+          "hostname": "cr-buildbucket.appspot.com"
+        }),
       )
-    )
