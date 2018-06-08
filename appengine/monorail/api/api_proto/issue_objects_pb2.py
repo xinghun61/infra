@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/issue_objects.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n!api/api_proto/issue_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"\x92\x02\n\x08\x41pproval\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12(\n\rapprover_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12(\n\x06status\x18\x03 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12\x0e\n\x06set_on\x18\x04 \x01(\x07\x12%\n\nsetter_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12-\n\x0fsubfield_values\x18\x06 \x03(\x0b\x32\x14.monorail.FieldValue\x12%\n\tphase_ref\x18\x07 \x01(\x0b\x32\x12.monorail.PhaseRef\"\xf7\x01\n\rApprovalDelta\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12,\n\x11\x61pprover_refs_add\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12/\n\x14\x61pprover_refs_remove\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12,\n\x0e\x66ield_vals_add\x18\x04 \x03(\x0b\x32\x14.monorail.FieldValue\x12/\n\x11\x66ield_vals_remove\x18\x05 \x03(\x0b\x32\x14.monorail.FieldValue\"V\n\nFieldValue\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12\r\n\x05value\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"\x9a\x05\n\x05Issue\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\x12\x0f\n\x07summary\x18\x03 \x01(\t\x12\'\n\nstatus_ref\x18\x04 \x01(\x0b\x32\x13.monorail.StatusRef\x12$\n\towner_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12\"\n\x07\x63\x63_refs\x18\x06 \x03(\x0b\x32\x11.monorail.UserRef\x12&\n\nlabel_refs\x18\x07 \x03(\x0b\x32\x12.monorail.LabelRef\x12.\n\x0e\x63omponent_refs\x18\x08 \x03(\x0b\x32\x16.monorail.ComponentRef\x12\x31\n\x15\x62locked_on_issue_refs\x18\t \x03(\x0b\x32\x12.monorail.IssueRef\x12/\n\x13\x62locking_issue_refs\x18\n \x03(\x0b\x32\x12.monorail.IssueRef\x12\x31\n\x15merged_into_issue_ref\x18\x0b \x01(\x0b\x32\x12.monorail.IssueRef\x12*\n\x0c\x66ield_values\x18\x0c \x03(\x0b\x32\x14.monorail.FieldValue\x12\x12\n\nis_deleted\x18\r \x01(\x08\x12\'\n\x0creporter_ref\x18\x0e \x01(\x0b\x32\x11.monorail.UserRef\x12\x18\n\x10opened_timestamp\x18\x0f \x01(\x07\x12\x18\n\x10\x63losed_timestamp\x18\x10 \x01(\x07\x12\x1a\n\x12modified_timestamp\x18\x11 \x01(\x07\x12\x12\n\nstar_count\x18\x12 \x01(\r\x12\x0f\n\x07is_spam\x18\x13 \x01(\x08\x12\x18\n\x10\x61ttachment_count\x18\x14 \x01(\r\"?\n\x08PhaseDef\x12%\n\tphase_ref\x18\x01 \x01(\x0b\x32\x12.monorail.PhaseRef\x12\x0c\n\x04rank\x18\x02 \x01(\r\"\x1e\n\x08PhaseRef\x12\x12\n\nphase_name\x18\x01 \x01(\t*\x90\x01\n\x0e\x41pprovalStatus\x12\x0b\n\x07NOT_SET\x10\x00\x12\x10\n\x0cNEEDS_REVIEW\x10\x01\x12\x06\n\x02NA\x10\x02\x12\x14\n\x10REVIEW_REQUESTED\x10\x03\x12\x12\n\x0eREVIEW_STARTED\x10\x04\x12\r\n\tNEED_INFO\x10\x05\x12\x0c\n\x08\x41PPROVED\x10\x06\x12\x10\n\x0cNOT_APPROVED\x10\x07\x62\x06proto3')
+  serialized_pb=_b('\n!api/api_proto/issue_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"\x92\x02\n\x08\x41pproval\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12(\n\rapprover_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12(\n\x06status\x18\x03 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12\x0e\n\x06set_on\x18\x04 \x01(\x07\x12%\n\nsetter_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12-\n\x0fsubfield_values\x18\x06 \x03(\x0b\x32\x14.monorail.FieldValue\x12%\n\tphase_ref\x18\x07 \x01(\x0b\x32\x12.monorail.PhaseRef\"\xf7\x01\n\rApprovalDelta\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12,\n\x11\x61pprover_refs_add\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12/\n\x14\x61pprover_refs_remove\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12,\n\x0e\x66ield_vals_add\x18\x04 \x03(\x0b\x32\x14.monorail.FieldValue\x12/\n\x11\x66ield_vals_remove\x18\x05 \x03(\x0b\x32\x14.monorail.FieldValue\"V\n\nFieldValue\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12\r\n\x05value\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"\xeb\x05\n\x05Issue\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\x12\x0f\n\x07summary\x18\x03 \x01(\t\x12\'\n\nstatus_ref\x18\x04 \x01(\x0b\x32\x13.monorail.StatusRef\x12$\n\towner_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12\"\n\x07\x63\x63_refs\x18\x06 \x03(\x0b\x32\x11.monorail.UserRef\x12&\n\nlabel_refs\x18\x07 \x03(\x0b\x32\x12.monorail.LabelRef\x12.\n\x0e\x63omponent_refs\x18\x08 \x03(\x0b\x32\x16.monorail.ComponentRef\x12\x31\n\x15\x62locked_on_issue_refs\x18\t \x03(\x0b\x32\x12.monorail.IssueRef\x12/\n\x13\x62locking_issue_refs\x18\n \x03(\x0b\x32\x12.monorail.IssueRef\x12\x31\n\x15merged_into_issue_ref\x18\x0b \x01(\x0b\x32\x12.monorail.IssueRef\x12*\n\x0c\x66ield_values\x18\x0c \x03(\x0b\x32\x14.monorail.FieldValue\x12\x12\n\nis_deleted\x18\r \x01(\x08\x12\'\n\x0creporter_ref\x18\x0e \x01(\x0b\x32\x11.monorail.UserRef\x12\x18\n\x10opened_timestamp\x18\x0f \x01(\x07\x12\x18\n\x10\x63losed_timestamp\x18\x10 \x01(\x07\x12\x1a\n\x12modified_timestamp\x18\x11 \x01(\x07\x12\x12\n\nstar_count\x18\x12 \x01(\r\x12\x0f\n\x07is_spam\x18\x13 \x01(\x08\x12\x18\n\x10\x61ttachment_count\x18\x14 \x01(\r\x12+\n\x0f\x61pproval_values\x18\x15 \x03(\x0b\x32\x12.monorail.Approval\x12\"\n\x06phases\x18\x16 \x03(\x0b\x32\x12.monorail.PhaseDef\"?\n\x08PhaseDef\x12%\n\tphase_ref\x18\x01 \x01(\x0b\x32\x12.monorail.PhaseRef\x12\x0c\n\x04rank\x18\x02 \x01(\r\"\x1e\n\x08PhaseRef\x12\x12\n\nphase_name\x18\x01 \x01(\t*\x90\x01\n\x0e\x41pprovalStatus\x12\x0b\n\x07NOT_SET\x10\x00\x12\x10\n\x0cNEEDS_REVIEW\x10\x01\x12\x06\n\x02NA\x10\x02\x12\x14\n\x10REVIEW_REQUESTED\x10\x03\x12\x12\n\x0eREVIEW_STARTED\x10\x04\x12\r\n\tNEED_INFO\x10\x05\x12\x0c\n\x08\x41PPROVED\x10\x06\x12\x10\n\x0cNOT_APPROVED\x10\x07\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -67,8 +67,8 @@ _APPROVALSTATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1457,
-  serialized_end=1601,
+  serialized_start=1538,
+  serialized_end=1682,
 )
 _sym_db.RegisterEnumDescriptor(_APPROVALSTATUS)
 
@@ -408,6 +408,20 @@ _ISSUE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='approval_values', full_name='monorail.Issue.approval_values', index=20,
+      number=21, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='phases', full_name='monorail.Issue.phases', index=21,
+      number=22, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -421,7 +435,7 @@ _ISSUE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=691,
-  serialized_end=1357,
+  serialized_end=1438,
 )
 
 
@@ -458,8 +472,8 @@ _PHASEDEF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1359,
-  serialized_end=1422,
+  serialized_start=1440,
+  serialized_end=1503,
 )
 
 
@@ -489,8 +503,8 @@ _PHASEREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1424,
-  serialized_end=1454,
+  serialized_start=1505,
+  serialized_end=1535,
 )
 
 _APPROVAL.fields_by_name['field_ref'].message_type = api_dot_api__proto_dot_common__pb2._FIELDREF
@@ -515,6 +529,8 @@ _ISSUE.fields_by_name['blocking_issue_refs'].message_type = api_dot_api__proto_d
 _ISSUE.fields_by_name['merged_into_issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _ISSUE.fields_by_name['field_values'].message_type = _FIELDVALUE
 _ISSUE.fields_by_name['reporter_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
+_ISSUE.fields_by_name['approval_values'].message_type = _APPROVAL
+_ISSUE.fields_by_name['phases'].message_type = _PHASEDEF
 _PHASEDEF.fields_by_name['phase_ref'].message_type = _PHASEREF
 DESCRIPTOR.message_types_by_name['Approval'] = _APPROVAL
 DESCRIPTOR.message_types_by_name['ApprovalDelta'] = _APPROVALDELTA

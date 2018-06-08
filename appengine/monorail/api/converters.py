@@ -23,6 +23,18 @@ from tracker import tracker_views
 from proto import tracker_pb2
 
 
+def ConvertApprovalValues(approval_values, phases, users_by_id, config):
+  """Convert a list of ApprovalValue into protoc Approvals."""
+  phases_by_id = {
+    phase.phase_id: phase
+    for phase in phases}
+  result = [
+    ConvertApproval(
+      av, users_by_id, config, phase=phases_by_id.get(av.phase_id))
+    for av in approval_values]
+  return result
+
+
 def ConvertApproval(approval_value, users_by_id, config, phase=None):
   """Use the given ApprovalValue to create a protoc Approval."""
   approval_name = ''
@@ -189,9 +201,10 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
       config, issue.labels, issue.derived_labels, issue.field_values,
       users_by_id)
   field_values = ConvertFieldValueViews(field_value_views)
-
-  # TODO(jrobbins): approvals
+  approval_values = ConvertApprovalValues(
+      issue.approval_values, issue.phases, users_by_id, config)
   reporter_ref = ConvertUserRef(issue.reporter_id, None, users_by_id)
+  phases = [ConvertPhaseDef(phase) for phase in issue.phases]
   result = issue_objects_pb2.Issue(
       project_name=issue.project_name, local_id=issue.local_id,
       summary=issue.summary, status_ref=status_ref, owner_ref=owner_ref,
@@ -204,11 +217,13 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
       closed_timestamp=issue.closed_timestamp,
       modified_timestamp=issue.modified_timestamp,
       star_count=issue.star_count, is_spam=issue.is_spam,
-      attachment_count=issue.attachment_count)
+      attachment_count=issue.attachment_count,
+      approval_values=approval_values, phases=phases)
   return result
 
 
 def ConvertPhaseDef(phase):
+  """Convert a protorpc Phase to a protoc PhaseDef."""
   phase_def = issue_objects_pb2.PhaseDef(
       phase_ref=issue_objects_pb2.PhaseRef(phase_name=phase.name),
       rank=phase.rank)
