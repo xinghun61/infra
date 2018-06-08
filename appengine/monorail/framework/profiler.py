@@ -20,12 +20,20 @@ to explore performance interactively.
 import datetime
 import logging
 import random
+import re
 import threading
 import time
+
+from infra_libs import ts_mon
 
 from contextlib import contextmanager
 
 from google.appengine.api import app_identity
+
+PHASE_TIME = ts_mon.CumulativeDistributionMetric(
+    'monorail/servlet/phase_time',
+    'Time spent in profiler phases, in ms',
+    [ts_mon.StringField('phase')])
 
 
 class Profiler(object):
@@ -149,6 +157,11 @@ class _Phase(object):
 
     percent = self.elapsed_seconds / total_seconds * 100
     lines.append('%s%5d ms (%2d%%): %s' % (indent, self.ms, percent, self.name))
+
+    # Remove IDs etc to reduce the phase name cardinality for ts_mon.
+    normalized_phase = re.sub('[0-9]+', '', self.name)
+    PHASE_TIME.add(self.ms, {'phase': normalized_phase})
+
     for subphase in self.subphases:
       subphase.AccumulateStatLines(total_seconds, lines, indent=indent + '   ')
 
