@@ -37,14 +37,14 @@ message ApprovalDelta {
 
 // Next available tag: 8
 enum ApprovalStatus {
-  NEEDS_REVIEW = 0;
-  NA = 1;
-  REVIEW_REQUESTED = 2;
-  REVIEW_STARTED = 3;
-  NEED_INFO = 4;
-  APPROVED = 5;
-  NOT_APPROVED = 6;
-  NOT_SET = 7;
+  NOT_SET = 0;
+  NEEDS_REVIEW = 1;
+  NA = 2;
+  REVIEW_REQUESTED = 3;
+  REVIEW_STARTED = 4;
+  NEED_INFO = 5;
+  APPROVED = 6;
+  NOT_APPROVED = 7;
 }
 
 

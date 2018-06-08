@@ -18,6 +18,83 @@ from tracker import tracker_bizobj
 
 class ConverterFunctionsTest(unittest.TestCase):
 
+  def testConvertApproval(self):
+    """We can convert ApprovalValues to protoc Approvals."""
+    approval_value = tracker_pb2.ApprovalValue(
+        approval_id=3,
+        status=tracker_pb2.ApprovalStatus.NEED_INFO,
+        setter_id=222L,
+        set_on=2345,
+        approver_ids=[111L],
+        phase_id=1
+    )
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+
+    fd_1 = tracker_pb2.FieldDef(
+        field_name='FirstField', field_id=1,
+        field_type=tracker_pb2.FieldTypes.STR_TYPE,
+        applicable_type='')
+    fd_2 = tracker_pb2.FieldDef(
+        field_name='SecField', field_id=2,
+        field_type=tracker_pb2.FieldTypes.INT_TYPE,
+        applicable_type='')
+    fd_3 = tracker_pb2.FieldDef(
+        field_name='LegalApproval', field_id=3,
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
+        applicable_type='')
+    config.field_defs = [fd_1, fd_2, fd_3]
+    fv_1 = tracker_bizobj.MakeFieldValue(
+        1, None, 'string', None, None, None, False)
+    fv_2 = tracker_bizobj.MakeFieldValue(
+        2, 34, None, None, None, None, False)
+    approval_value.subfield_values = [fv_1, fv_2]
+
+    users_by_id = {
+        111L: testing_helpers.Blank(display_name='one@example.com'),
+        222L: testing_helpers.Blank(display_name='two@example.com'),
+        }
+
+    phase = tracker_pb2.Phase(phase_id=1, name='Canary')
+
+    actual = converters.ConvertApproval(
+        approval_value, users_by_id, config, phase=phase)
+    expected = issue_objects_pb2.Approval(
+        field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
+        approver_refs=[common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com', is_derived=False)
+          ],
+        status=5,
+        set_on=2345,
+        setter_ref=common_pb2.UserRef(
+            user_id=222L, display_name='two@example.com', is_derived=False
+        ),
+        subfield_values=[
+            issue_objects_pb2.FieldValue(
+                field_ref=common_pb2.FieldRef(field_name='FirstField'),
+                value='string',
+                is_derived=False
+            ),
+            issue_objects_pb2.FieldValue(
+                field_ref=common_pb2.FieldRef(field_name='SecField'),
+                value='34',
+                is_derived=False
+            )
+        ],
+        phase_ref=issue_objects_pb2.PhaseRef(phase_name='Canary')
+    )
+
+    self.assertEqual(expected, actual)
+
+  def testConvertApprovalStatus(self):
+    """We can convert a protorpc ApprovalStatus to a protoc ApprovalStatus."""
+    actual = converters.ConvertApprovalStatus(
+        tracker_pb2.ApprovalStatus.REVIEW_REQUESTED)
+    self.assertEqual(actual, issue_objects_pb2.REVIEW_REQUESTED)
+
+    actual = converters.ConvertApprovalStatus(
+        tracker_pb2.ApprovalStatus.NOT_SET)
+    self.assertEqual(actual, issue_objects_pb2.NOT_SET)
+
   def testConvertUserRef(self):
     """We can convert user IDs to a UserRef."""
     users_by_id = {
@@ -201,3 +278,12 @@ class ConverterFunctionsTest(unittest.TestCase):
         )
     self.assertEqual(expected, actual)
 
+  def testConvertPhaseDef(self):
+    """We can convert a prototpc Phase to a protoc PhaseDef. """
+    phase = tracker_pb2.Phase(phase_id=1, name='phase', rank=2)
+    actual = converters.ConvertPhaseDef(phase)
+    expected = issue_objects_pb2.PhaseDef(
+        phase_ref=issue_objects_pb2.PhaseRef(phase_name='phase'),
+        rank=2
+    )
+    self.assertEqual(expected, actual)

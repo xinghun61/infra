@@ -20,6 +20,36 @@ from framework import framework_constants
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from tracker import tracker_views
+from proto import tracker_pb2
+
+
+def ConvertApproval(approval_value, users_by_id, config, phase=None):
+  """Use the given ApprovalValue to create a protoc Approval."""
+  approval_name = ''
+  fd = tracker_bizobj.FindFieldDefByID(approval_value.approval_id, config)
+  if fd:
+    approval_name = fd.field_name
+
+  field_ref = common_pb2.FieldRef(field_name=approval_name)
+  approver_refs = ConvertUserRefs(approval_value.approver_ids, [], users_by_id)
+  setter_ref = ConvertUserRef(approval_value.setter_id, None, users_by_id)
+
+  status = ConvertApprovalStatus(approval_value.status)
+  set_on = approval_value.set_on
+
+  fv_views = tracker_views.MakeAllFieldValueViews(
+      config, [], [], approval_value.subfield_values, users_by_id)
+  subfield_values = ConvertFieldValueViews(fv_views)
+
+  phase_ref = issue_objects_pb2.PhaseRef()
+  if phase:
+    phase_ref.phase_name = phase.name
+
+  result = issue_objects_pb2.Approval(
+      field_ref=field_ref, approver_refs=approver_refs,
+      status=status, set_on=set_on, setter_ref=setter_ref,
+      subfield_values=subfield_values, phase_ref=phase_ref)
+  return result
 
 
 def ConvertStatusRef(explicit_status, derived_status, config):
@@ -34,6 +64,11 @@ def ConvertStatusRef(explicit_status, derived_status, config):
       status=status,
       is_derived=is_derived,
       means_open=tracker_helpers.MeansOpenInProject(status, config))
+
+
+def ConvertApprovalStatus(status):
+  """Use the given protorpc ApprovalStatus to create a protoc ApprovalStatus"""
+  return issue_objects_pb2.ApprovalStatus.Value(status.name)
 
 
 def ConvertUserRef(explicit_user_id, derived_user_id, users_by_id):
@@ -171,3 +206,10 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
       star_count=issue.star_count, is_spam=issue.is_spam,
       attachment_count=issue.attachment_count)
   return result
+
+
+def ConvertPhaseDef(phase):
+  phase_def = issue_objects_pb2.PhaseDef(
+      phase_ref=issue_objects_pb2.PhaseRef(phase_name=phase.name),
+      rank=phase.rank)
+  return phase_def
