@@ -98,6 +98,11 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
 
     # TODO(crbug.com/847644): If error is set, report to ts_mon.
 
+    # Monitor completion of pipeline.
+    monitoring.completed_pipelines.increment({
+        'type': 'flake'
+    })
+
   def RunImpl(self, parameters):
     analysis_urlsafe_key = parameters.analysis_urlsafe_key
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
