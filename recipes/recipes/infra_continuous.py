@@ -49,11 +49,11 @@ CIPD_PACKAGE_BUILDERS = {
   'infra-continuous-yakkety-64': ['linux-s390x'],
   'infra-continuous-zesty-64':   ['linux-ppc64', 'linux-ppc64le'],
 
-  # 10.13 is the primary builder for darwin-amd64.
+  # TODO(tandrii): make 10.13 is the primary builder for darwin-amd64.
   'infra-continuous-mac-10.10-64': [],
   'infra-continuous-mac-10.11-64': [],
-  'infra-continuous-mac-10.12-64': [],
-  'infra-continuous-mac-10.13-64': ['native'],
+  'infra-continuous-mac-10.12-64': ['native'],
+  'infra-continuous-mac-10.13-64': [],
 
   # Windows builders each build and test for their own bitness.
   'infra-continuous-win-32': ['native'],
