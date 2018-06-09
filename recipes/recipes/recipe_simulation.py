@@ -53,7 +53,7 @@ def RunSteps(api, project_under_test, auth_with_account):
   # This requires getting the refs.cfg from luci_config, reading the local
   # patched version, etc.
   result = api.luci_config.get_project_config(project_under_test, 'recipes.cfg')
-  path = api.json.loads(result['content'])['recipes_path'].split('/')
+  path = api.json.loads(result['content']).get('recipes_path', '').split('/')
 
   api.step(
       'recipe simulation test', [
