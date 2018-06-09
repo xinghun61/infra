@@ -49,11 +49,11 @@ CIPD_PACKAGE_BUILDERS = {
   'infra-continuous-yakkety-64': ['linux-s390x'],
   'infra-continuous-zesty-64':   ['linux-ppc64', 'linux-ppc64le'],
 
-  # TODO(tandrii): make 10.13 is the primary builder for darwin-amd64.
+  # 10.13 is the primary builder for darwin-amd64.
   'infra-continuous-mac-10.10-64': [],
   'infra-continuous-mac-10.11-64': [],
-  'infra-continuous-mac-10.12-64': ['native'],
-  'infra-continuous-mac-10.13-64': [],
+  'infra-continuous-mac-10.12-64': [],
+  'infra-continuous-mac-10.13-64': ['native'],
 
   # Windows builders each build and test for their own bitness.
   'infra-continuous-win-32': ['native'],
@@ -67,6 +67,28 @@ CIPD_PACKAGE_BUILDERS = {
   'infra-internal-continuous-mac-10.10-64': [],
   'infra-internal-continuous-mac-10.11-64': [],
   'infra-internal-continuous-mac-10.13-64': ['native'],
+
+
+  # Builders also upload CIPD packages.
+  'infra-packager-linux-32': ['native'],
+  'infra-packager-linux-64': [
+    'native',
+    'linux-arm',
+    'linux-arm64',
+    'linux-mips64'
+    'linux-ppc64',
+    'linux-ppc64le',
+    'linux-s390x'
+  ],
+  'infra-packager-mac-64': ['native'],
+  'infra-packager-win-32': ['native'],
+  'infra-packager-win-64': ['native'],
+
+  'infra-internal-packager-linux-32': ['native'],
+  'infra-internal-packager-linux-64': ['native', 'linux-arm', 'linux-arm64'],
+  'infra-internal-packager-mac-64': ['native'],
+  'infra-internal-packager-win-32': ['native'],
+  'infra-internal-packager-win-64': ['native'],
 }
 
 
