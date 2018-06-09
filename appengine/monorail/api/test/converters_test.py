@@ -14,6 +14,7 @@ from proto import tracker_pb2
 from testing import fake
 from testing import testing_helpers
 from tracker import tracker_bizobj
+from services import service_manager
 
 
 class ConverterFunctionsTest(unittest.TestCase):
@@ -24,6 +25,29 @@ class ConverterFunctionsTest(unittest.TestCase):
         111L: testing_helpers.Blank(display_name='one@example.com'),
         222L: testing_helpers.Blank(display_name='two@example.com'),
         }
+
+    self.services = service_manager.Services(
+        user = fake.UserService()
+    )
+
+    self.cnxn = fake.MonorailConnection()
+
+    self.fd_1 = tracker_pb2.FieldDef(
+        field_name='FirstField', field_id=1,
+        field_type=tracker_pb2.FieldTypes.STR_TYPE,
+        applicable_type='')
+    self.fd_2 = tracker_pb2.FieldDef(
+        field_name='SecField', field_id=2,
+        field_type=tracker_pb2.FieldTypes.INT_TYPE,
+        applicable_type='')
+    self.fd_3 = tracker_pb2.FieldDef(
+        field_name='LegalApproval', field_id=3,
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
+        applicable_type='')
+    self.fd_4 = tracker_pb2.FieldDef(
+        field_name='UserField', field_id=4,
+        field_type=tracker_pb2.FieldTypes.USER_TYPE,
+        applicable_type='')
 
   def testConvertApprovalValues_Empty(self):
     """We handle the case where an issue has no approval values."""
@@ -100,19 +124,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         phase_id=1
     )
 
-    fd_1 = tracker_pb2.FieldDef(
-        field_name='FirstField', field_id=1,
-        field_type=tracker_pb2.FieldTypes.STR_TYPE,
-        applicable_type='')
-    fd_2 = tracker_pb2.FieldDef(
-        field_name='SecField', field_id=2,
-        field_type=tracker_pb2.FieldTypes.INT_TYPE,
-        applicable_type='')
-    fd_3 = tracker_pb2.FieldDef(
-        field_name='LegalApproval', field_id=3,
-        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
-        applicable_type='')
-    self.config.field_defs = [fd_1, fd_2, fd_3]
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3]
     fv_1 = tracker_bizobj.MakeFieldValue(
         1, None, 'string', None, None, None, False)
     fv_2 = tracker_bizobj.MakeFieldValue(
@@ -350,3 +362,79 @@ class ConverterFunctionsTest(unittest.TestCase):
         rank=2
     )
     self.assertEqual(expected, actual)
+
+  def testIngestApprovalDelta(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user2@example.com', 222L)
+
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3, self.fd_4]
+
+    approval_delta = issue_objects_pb2.ApprovalDelta(
+        status=issue_objects_pb2.APPROVED,
+        approver_refs_add=[common_pb2.UserRef(user_id=111L)],
+        approver_refs_remove=[common_pb2.UserRef(user_id=222L)],
+        field_vals_add=[
+            issue_objects_pb2.FieldValue(
+                value='string', field_ref=common_pb2.FieldRef(
+                    field_name='FirstField'))],
+        field_vals_remove=[
+            issue_objects_pb2.FieldValue(
+                value='34', field_ref=common_pb2.FieldRef(
+                    field_name='SecField'))],
+        )
+
+    actual = converters.IngestApprovalDelta(
+        self.cnxn, self.services.user, approval_delta, 333L, self.config)
+    self.assertEqual(
+        actual.status, tracker_pb2.ApprovalStatus.APPROVED,)
+    self.assertEqual(actual.setter_id, 333L)
+    self.assertEqual(actual.approver_ids_add, [111L])
+    self.assertEqual(actual.approver_ids_remove, [222L])
+    self.assertEqual(actual.subfield_vals_add, [tracker_pb2.FieldValue(
+        str_value='string', field_id=1, derived=False)])
+    self.assertEqual(actual.subfield_vals_remove, [tracker_pb2.FieldValue(
+        int_value=34, field_id=2, derived=False)])
+
+    # test a NOT_SET status is registered as None.
+    approval_delta.status = issue_objects_pb2.NOT_SET
+    actual = converters.IngestApprovalDelta(
+        self.cnxn, self.services.user, approval_delta, 333L, self.config)
+    self.assertIsNone(actual.status)
+
+  def testIngestApprovalStatus(self):
+    actual = converters.IngestApprovalStatus(issue_objects_pb2.NOT_SET)
+    self.assertEqual(actual, tracker_pb2.ApprovalStatus.NOT_SET)
+
+    actual = converters.IngestApprovalStatus(issue_objects_pb2.NOT_APPROVED)
+    self.assertEqual(actual, tracker_pb2.ApprovalStatus.NOT_APPROVED)
+
+  def testIngestFieldValues(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4]
+
+    field_values = [
+      issue_objects_pb2.FieldValue(
+          value='string',
+          field_ref=common_pb2.FieldRef(field_name='FirstField')
+      ),
+      issue_objects_pb2.FieldValue(
+          value='34',
+          field_ref=common_pb2.FieldRef(field_name='SecField')
+      ),
+      issue_objects_pb2.FieldValue(
+          value='user1@example.com',
+          field_ref=common_pb2.FieldRef(field_name='UserField')
+        )
+    ]
+
+    actual = converters.IngestFieldValues(
+        self.cnxn, self.services.user, field_values, self.config)
+    self.assertEqual(
+        actual,
+        [
+            tracker_pb2.FieldValue(
+                str_value='string', field_id=1, derived=False),
+            tracker_pb2.FieldValue(int_value=34, field_id=2, derived=False),
+            tracker_pb2.FieldValue(user_id=111L, field_id=4, derived=False)
+        ]
+    )

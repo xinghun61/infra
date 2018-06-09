@@ -17,6 +17,7 @@ import logging
 from api.api_proto import common_pb2
 from api.api_proto import issue_objects_pb2
 from framework import framework_constants
+from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from tracker import tracker_views
@@ -228,3 +229,60 @@ def ConvertPhaseDef(phase):
       phase_ref=issue_objects_pb2.PhaseRef(phase_name=phase.name),
       rank=phase.rank)
   return phase_def
+
+
+def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
+  """Ingest a protoc ApprovalDelta and create a protorpc ApprovalDelta."""
+
+  approver_ids_add = [
+      ref.user_id for ref in approval_delta.approver_refs_add]
+  approver_ids_remove = [
+      ref.user_id for ref in approval_delta.approver_refs_remove]
+  sub_fvs_add = IngestFieldValues(
+      cnxn, user_service, approval_delta.field_vals_add, config)
+  sub_fvs_remove = IngestFieldValues(
+      cnxn, user_service, approval_delta.field_vals_remove, config)
+
+  # protoc ENUMs default to the zero value (in this case: NOT_SET).
+  # NOT_SET should only be allowed when an issue is first created.
+  # Once a user changes it to something else, no one should be allowed
+  # to set it back.
+  status = None
+  if approval_delta.status != issue_objects_pb2.NOT_SET:
+    status = IngestApprovalStatus(approval_delta.status)
+
+  return tracker_bizobj.MakeApprovalDelta(
+      status, setter_id, approver_ids_add,
+      approver_ids_remove, sub_fvs_add, sub_fvs_remove)
+
+
+def IngestApprovalStatus(approval_status):
+  """Ingest a protoc ApprovalStatus and create a protorpc ApprovalStatus. """
+  if approval_status == issue_objects_pb2.NOT_SET:
+    return tracker_pb2.ApprovalStatus.NOT_SET
+  return tracker_pb2.ApprovalStatus(approval_status)
+
+
+def IngestFieldValues(cnxn, user_service, field_values, config):
+  """Ingest a list of protoc FieldValues and create protorpc FieldValues.
+
+  Args:
+    cnxn: connection to the DB.
+    user_service: interface to user data storage.
+    field_values: a list of protoc FieldValue used by the API.
+    config: ProjectIssueConfig for this field_value's project.
+
+
+  Returns: A protorpc FieldValue object.
+  """
+  fds_by_name = {fd.field_name.lower(): fd for fd in config.field_defs}
+
+  ejected_fvs = []
+  for fv in field_values:
+    fd = fds_by_name.get(fv.field_ref.field_name.lower())
+    if fd:
+      ejected_fvs.append(
+          field_helpers.ParseOneFieldValue(
+              cnxn, user_service, fd, str(fv.value)))
+
+  return ejected_fvs
