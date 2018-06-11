@@ -116,6 +116,10 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
         if f.retcode == 1:
           # Commit and push to the destination ref.
           self.m.git('commit', '-m', COMMIT_MESSAGE)
-          self.m.git('push', 'origin', 'HEAD:%s' % dest_ref)
+          # TODO(hinoka): Delete after luci migration
+          if self.m.runtime.is_experimental:
+            self.m.git('push', 'origin', '--dry-run', 'HEAD:%s' % dest_ref)
+          else:
+            self.m.git('push', 'origin', 'HEAD:%s' % dest_ref)
         else:
           raise

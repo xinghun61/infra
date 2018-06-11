@@ -7,6 +7,7 @@ from recipe_engine.recipe_api import Property
 DEPS = [
   'sync_submodules',
   'recipe_engine/properties',
+  'recipe_engine/runtime',
 ]
 
 
@@ -32,36 +33,50 @@ def RunSteps(api, enable_recurse_deps, disable_path_prefix):
 def GenTests(api):
   yield api.test('basic') + api.properties(buildername='foo_builder')
   yield (
+      api.test('basic_experimental') +
+      api.properties(buildername='foo_builder') +
+      api.step_data('git diff-index', retcode=1) +
+      api.runtime(is_luci=True, is_experimental=True))
+  yield (
       api.test('basic_with_diff') +
       api.properties(buildername='foo_builder') +
-      api.step_data('git diff-index', retcode=1)
-  )
+      api.step_data('git diff-index', retcode=1) +
+      api.runtime(is_luci=True, is_experimental=False))
   yield (
       api.test('basic_with_diff_failure') +
       api.properties(buildername='foo_builder') +
-      api.step_data('git diff-index', retcode=2)
-  )
-  yield api.test('with_one_extra_submodule') + api.properties(
-      buildername='foo_builder',
-      extra_submodules='src/out=https://www.example.com')
-  yield api.test('with_two_extra_submodules') + api.properties(
-      buildername='foo_builder',
-      extra_submodules='src/foo=https://www.foo.com,src/bar=http://www.bar.com')
+      api.step_data('git diff-index', retcode=2) +
+      api.runtime(is_luci=True, is_experimental=False))
+  yield (
+      api.test('with_one_extra_submodule') +
+      api.properties(
+          buildername='foo_builder',
+          extra_submodules='src/out=https://www.example.com') +
+      api.runtime(is_luci=True, is_experimental=False))
+  yield (
+      api.test('with_two_extra_submodules') +
+      api.properties(
+          buildername='foo_builder',
+          extra_submodules=(
+              'src/foo=https://www.foo.com,src/bar=http://www.bar.com')) +
+      api.runtime(is_luci=True, is_experimental=False))
   yield (
       api.test('basic_with_prefix') +
       api.properties(
           source='https://chromium.googlesource.com/external/webrtc',
           buildername='foo_builder',
-          deps_path_prefix='src/')
-  )
-  yield api.test('basic_with_recurse_deps') + api.properties(
-      buildername='foo_builder',
-      enable_recurse_deps=True)
+          deps_path_prefix='src/') +
+      api.runtime(is_luci=True, is_experimental=False))
+  yield (
+      api.test('basic_with_recurse_deps') +
+      api.properties(
+        buildername='foo_builder', enable_recurse_deps=True) +
+      api.runtime(is_luci=True, is_experimental=False))
   yield (
       api.test('basic_with_prefix_disabled') +
       api.properties(
           source='https://chromium.googlesource.com/external/webrtc',
           buildername='foo_builder',
           deps_path_prefix='src/',
-          disable_path_prefix=True)
-  )
+          disable_path_prefix=True) +
+      api.runtime(is_luci=True, is_experimental=False))

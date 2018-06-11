@@ -190,7 +190,7 @@ If rolling any of the projects leads to failures, other
 projects are not affected.
 ### *recipe_modules* / [sync\_submodules](/recipes/recipe_modules/sync_submodules)
 
-[DEPS](/recipes/recipe_modules/sync_submodules/__init__.py#5): [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipe_modules/sync_submodules/__init__.py#5): [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 #### **class [SyncSubmodulesApi](/recipes/recipe_modules/sync_submodules/api.py#35)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
@@ -482,9 +482,9 @@ the permission to schedule a Dataflow job for your project.
 &mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#50)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
 ### *recipes* / [sync\_submodules](/recipes/recipes/sync_submodules.py)
 
-[DEPS](/recipes/recipes/sync_submodules.py#7): [sync\_submodules](#recipe_modules-sync_submodules), [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
+[DEPS](/recipes/recipes/sync_submodules.py#7): [sync\_submodules](#recipe_modules-sync_submodules), [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]
 
-&mdash; **def [RunSteps](/recipes/recipes/sync_submodules.py#20)(api, enable_recurse_deps, disable_path_prefix):**
+&mdash; **def [RunSteps](/recipes/recipes/sync_submodules.py#21)(api, enable_recurse_deps, disable_path_prefix):**
 ### *recipes* / [third\_party\_packages](/recipes/recipes/third_party_packages.py)
 
 [DEPS](/recipes/recipes/third_party_packages.py#10): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
