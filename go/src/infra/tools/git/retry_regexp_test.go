@@ -39,6 +39,7 @@ func TestDefaultGitRetryRegexps(t *testing.T) {
 			`Couldn't resolve host`,
 			`unable to access 'URL': Operation too slow. Less than 1000 bytes/sec transferred the last 300 seconds`,
 			`Unknown SSL protocol error in connection to foo.example.com:443`,
+			`Revision 2c6a80dd54ea51f704934f620f934f6f3a25207d of patch set 1 does not match refs/changes/02/1094702/1 for change`,
 		} {
 			Convey(fmt.Sprintf(`Matches line: %q`, line), func() {
 				So(DefaultGitRetryRegexp.MatchString(line), ShouldBeTrue)

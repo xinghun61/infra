@@ -68,6 +68,9 @@ var defaultGitRetryRegexpSource = []string{
 	`Unable to look up`,
 	`Couldn't resolve host`,
 	`Unknown SSL protocol error`,
+
+	// b/110032771
+	`Revision .* of patch set \d+ does not match refs/changes`,
 }
 
 // DefaultGitRetryRegexp is the set of default transient regular expressions to
