@@ -70,7 +70,8 @@ class TemplateCreateTest(unittest.TestCase):
 
     templates = testing_helpers.DefaultTemplates()
     templates.append(first_tmpl)
-    self.services.template.GetProjectTemplates = Mock(return_value=templates)
+    self.services.template.GetProjectTemplates = Mock(
+        return_value=tracker_pb2.TemplateSet(templates=templates))
 
     self.mr = testing_helpers.MakeMonorailRequest(
         project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET)

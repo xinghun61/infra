@@ -49,7 +49,8 @@ class TemplateTwoLevelCacheTest(unittest.TestCase):
         .return_value = []
 
     actual = self.template_2lc.FetchItems(cnxn=None, keys=[1, 2])
-    self.assertEqual({1: [], 2: []}, actual)
+    empty_template_set = tracker_pb2.TemplateSet(templates=[])
+    self.assertEqual({1: empty_template_set, 2: empty_template_set}, actual)
 
   def testFetchItems_Normal(self):
     template_9_row = (9, 1, 'template-9', 'content', 'summary',
@@ -104,36 +105,36 @@ class TemplateTwoLevelCacheTest(unittest.TestCase):
 
     actual = self.template_2lc.FetchItems(cnxn=None, keys=[1, 2])
     self.assertEqual(2, len(actual.keys()))
-    self.assertEqual(2, len(actual[1]))
-    self.assertEqual(1, len(actual[2]))
+    self.assertEqual(2, len(actual[1].templates))
+    self.assertEqual(1, len(actual[2].templates))
 
-    self.assertEqual(8, actual[1][0].template_id)
-    self.assertEqual(9, actual[1][1].template_id)
-    self.assertEqual(7, actual[2][0].template_id)
+    self.assertEqual(8, actual[1].templates[0].template_id)
+    self.assertEqual(9, actual[1].templates[1].template_id)
+    self.assertEqual(7, actual[2].templates[0].template_id)
 
-    self.assertEqual([], actual[1][0].labels)
-    self.assertEqual(['label-1'], actual[1][1].labels)
-    self.assertEqual(['label-2'], actual[2][0].labels)
+    self.assertEqual([], actual[1].templates[0].labels)
+    self.assertEqual(['label-1'], actual[1].templates[1].labels)
+    self.assertEqual(['label-2'], actual[2].templates[0].labels)
 
-    self.assertEqual([], actual[1][0].component_ids)
-    self.assertEqual([13], actual[1][1].component_ids)
-    self.assertEqual([14], actual[2][0].component_ids)
+    self.assertEqual([], actual[1].templates[0].component_ids)
+    self.assertEqual([13], actual[1].templates[1].component_ids)
+    self.assertEqual([14], actual[2].templates[0].component_ids)
 
-    self.assertEqual([], actual[1][0].admin_ids)
-    self.assertEqual([111L], actual[1][1].admin_ids)
-    self.assertEqual([222L], actual[2][0].admin_ids)
+    self.assertEqual([], actual[1].templates[0].admin_ids)
+    self.assertEqual([111L], actual[1].templates[1].admin_ids)
+    self.assertEqual([222L], actual[2].templates[0].admin_ids)
 
-    self.assertEqual([], actual[1][0].field_values)
-    self.assertEqual([fv1], actual[1][1].field_values)
-    self.assertEqual([fv2], actual[2][0].field_values)
+    self.assertEqual([], actual[1].templates[0].field_values)
+    self.assertEqual([fv1], actual[1].templates[1].field_values)
+    self.assertEqual([fv2], actual[2].templates[0].field_values)
 
-    self.assertEqual([], actual[1][0].phases)
-    self.assertEqual([phase1], actual[1][1].phases)
-    self.assertEqual([phase2], actual[2][0].phases)
+    self.assertEqual([], actual[1].templates[0].phases)
+    self.assertEqual([phase1], actual[1].templates[1].phases)
+    self.assertEqual([phase2], actual[2].templates[0].phases)
 
-    self.assertEqual([], actual[1][0].approval_values)
-    self.assertEqual([av1], actual[1][1].approval_values)
-    self.assertEqual([av2], actual[2][0].approval_values)
+    self.assertEqual([], actual[1].templates[0].approval_values)
+    self.assertEqual([av1], actual[1].templates[1].approval_values)
+    self.assertEqual([av2], actual[2].templates[0].approval_values)
 
 
 class TemplateServiceTest(unittest.TestCase):
@@ -157,12 +158,13 @@ class TemplateServiceTest(unittest.TestCase):
         expected_calls, any_order=True)
 
   def testGetProjectTemplates_Normal(self):
-    templates = [tracker_pb2.TemplateDef(template_id=1)]
-    result_dict = {789: templates}
+    template_set = tracker_pb2.TemplateSet(
+        templates=[tracker_pb2.TemplateDef(template_id=1)])
+    result_dict = {789: template_set}
     self.template_service.template_2lc.GetAll.return_value = (
         result_dict, None)
 
-    self.assertEqual(templates,
+    self.assertEqual(template_set,
         self.template_service.GetProjectTemplates(self.cnxn, 789))
     self.template_service.template_2lc.GetAll.assert_called_once_with(
         self.cnxn, [789])

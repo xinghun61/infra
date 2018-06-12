@@ -230,7 +230,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testUsersGet_PublicProject(self):
     """The viewed user has one public project."""
     self.services.template.GetProjectTemplates.return_value = \
-        testing_helpers.DefaultTemplates()
+        tracker_pb2.TemplateSet(templates=testing_helpers.DefaultTemplates())
     self.services.project.TestAddProject(
         'public-project', owner_ids=[2])
     resp = self.call_api('users_get', self.request).json_body
@@ -250,7 +250,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testUsersGet_OwnerProjectOnly(self):
     """The viewed user has different roles of projects."""
     self.services.template.GetProjectTemplates.return_value = \
-        testing_helpers.DefaultTemplates()
+        tracker_pb2.TemplateSet(templates=testing_helpers.DefaultTemplates())
     self.services.project.TestAddProject(
         'owner-project', owner_ids=[2])
     self.services.project.TestAddProject(

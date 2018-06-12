@@ -69,8 +69,9 @@ class IssueEntryTest(unittest.TestCase):
         is_private=False)
 
     self.mox = mox.Mox()
-    self.services.template.GetProjectTemplates = Mock(
-        return_value=testing_helpers.DefaultTemplates())
+    template_set = tracker_pb2.TemplateSet(
+        templates=testing_helpers.DefaultTemplates())
+    self.services.template.GetProjectTemplates = Mock(return_value=template_set)
 
   def tearDown(self):
     self.testbed.deactivate()
@@ -142,7 +143,8 @@ class IssueEntryTest(unittest.TestCase):
      templates[1].approval_values = [tracker_pb2.ApprovalValue(
          approval_id=24, phase_id=1,
          status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
-     self.services.template.GetProjectTemplates.return_value = templates
+     template_set = tracker_pb2.TemplateSet(templates=templates)
+     self.services.template.GetProjectTemplates.return_value = template_set
 
      page_data = self.servlet.GatherPageData(mr)
      self.mox.VerifyAll()
@@ -195,7 +197,8 @@ class IssueEntryTest(unittest.TestCase):
     self.services.config.StoreConfig(mr.cnxn, config)
     templates = testing_helpers.DefaultTemplates()
     templates[1].summary_must_be_edited = False
-    self.services.template.GetProjectTemplates.return_value = templates
+    template_set = tracker_pb2.TemplateSet(templates=templates)
+    self.services.template.GetProjectTemplates.return_value = template_set
 
     page_data = self.servlet.GatherPageData(mr)
     self.mox.VerifyAll()

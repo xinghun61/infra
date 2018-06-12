@@ -463,6 +463,11 @@ class TemplateDef(messages.Message):
   approval_values = messages.MessageField(ApprovalValue, 47, repeated=True)
 
 
+class TemplateSet(messages.Message):
+  """Holds a set of TemplateDefs. Used in caching."""
+  templates = messages.MessageField(TemplateDef, 1, repeated=True)
+
+
 class ProjectIssueConfig(messages.Message):
   """This holds all configuration info for one project.
 

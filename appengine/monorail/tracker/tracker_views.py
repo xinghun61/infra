@@ -916,11 +916,11 @@ class ConfigView(template_helpers.PBProxy):
       else:
         self.closed_statuses.append(item)
 
-    project_templates = services.template.GetProjectTemplates(mr.cnxn,
+    template_set = services.template.GetProjectTemplates(mr.cnxn,
         config.project_id)
     self.templates = [
         IssueTemplateView(mr, tmpl, services.user, config)
-        for tmpl in project_templates]
+        for tmpl in template_set.templates]
     for index, template in enumerate(self.templates):
       template.index = index
 

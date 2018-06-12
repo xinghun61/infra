@@ -101,7 +101,7 @@ class TemplateDetailTest(unittest.TestCase):
     self.templates = testing_helpers.DefaultTemplates()
     self.templates.append(self.template)
     self.services.template.GetProjectTemplates = Mock(
-        return_value=self.templates)
+        return_value=tracker_pb2.TemplateSet(templates=self.templates))
     self.config.component_defs.append(self.cd_1)
     self.config.field_defs.extend([self.fd_1, self.fd_2, self.fd_3, self.fd_4])
     self.config.approval_defs.extend([self.ad_3, self.ad_4])

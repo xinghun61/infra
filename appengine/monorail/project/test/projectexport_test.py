@@ -11,6 +11,7 @@ from mock import Mock, patch
 
 from framework import permissions
 from project import projectexport
+from proto import tracker_pb2
 from services import service_manager
 from services.template_svc import TemplateService
 from testing import fake
@@ -57,7 +58,7 @@ class ProjectExportJSONTest(unittest.TestCase):
     self.services.config.GetProjectConfig = Mock(return_value=test_config)
     test_templates = testing_helpers.DefaultTemplates()
     self.services.template.GetProjectTemplates = Mock(
-        return_value=test_templates)
+        return_value=tracker_pb2.TemplateSet(templates=test_templates))
     self.services.config.UsersInvolvedInConfig = Mock(return_value=[111L])
 
     json_data = self.servlet.HandleRequest(self.mr)

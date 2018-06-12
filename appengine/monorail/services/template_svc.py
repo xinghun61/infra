@@ -49,11 +49,11 @@ class TemplateTwoLevelCache(caches.AbstractTwoLevelCache):
   Holds a dictionary of {project_id: templateset} key value pairs,
   where a templateset is a list of all templates in a project.
   """
-  memcache_prefix = 'templateset:'
 
   def __init__(self, cache_manager, template_service):
     super(TemplateTwoLevelCache, self).__init__(
-        cache_manager, 'project', self.memcache_prefix, None)
+        cache_manager, 'project', memcache_prefix='templatesetprotos:',
+        pb_class=tracker_pb2.TemplateSet)
     self.template_service = template_service
 
   def _MakeCache(self, cache_manager, kind, max_size=None):
@@ -144,7 +144,8 @@ class TemplateTwoLevelCache(caches.AbstractTwoLevelCache):
           if phase and phase not in template.phases:
             template_dict.get(template_id).phases.append(phase)
 
-      project_templates_dict[project_id] = template_dict.values()
+      project_templates_dict[project_id] = tracker_pb2.TemplateSet(
+          templates=template_dict.values())
 
     return project_templates_dict
 
@@ -212,8 +213,8 @@ class TemplateService(object):
     template_ids = [r[0] for r in template2component_rows]
 
     # TODO(jeffcarp): Rewrite this method to join on project_id.
-    project_templates = self.GetProjectTemplates(cnxn, config.project_id)
-    return [t for t in project_templates if t.template_id in template_ids]
+    template_set = self.GetProjectTemplates(cnxn, config.project_id)
+    return [t for t in template_set.templates if t.template_id in template_ids]
 
   def CreateIssueTemplateDef(
       self, cnxn, project_id, name, content, summary, summary_must_be_edited,

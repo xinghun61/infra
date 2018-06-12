@@ -632,27 +632,27 @@ class MonorailApi(remote.Service):
     for proj in (visible_ownership + visible_deleted):
       config = self._services.config.GetProjectConfig(
           mar.cnxn, proj.project_id)
-      templates = self._services.template.GetProjectTemplates(
+      template_set = self._services.template.GetProjectTemplates(
           mar.cnxn, config.project_id)
       proj_result = api_pb2_v1_helpers.convert_project(
-          proj, config, api_pb2_v1.Role.owner, templates)
+          proj, config, api_pb2_v1.Role.owner, template_set.templates)
       project_list.append(proj_result)
     if not owner_project_only:
       for proj in visible_membership:
         config = self._services.config.GetProjectConfig(
             mar.cnxn, proj.project_id)
-        templates = self._services.template.GetProjectTemplates(
+        template_set = self._services.template.GetProjectTemplates(
             mar.cnxn, config.project_id)
         proj_result = api_pb2_v1_helpers.convert_project(
-            proj, config, api_pb2_v1.Role.member, templates)
+            proj, config, api_pb2_v1.Role.member, template_set.templates)
         project_list.append(proj_result)
       for proj in visible_contrib:
         config = self._services.config.GetProjectConfig(
             mar.cnxn, proj.project_id)
-        templates = self._services.template.GetProjectTemplates(
+        template_set = self._services.template.GetProjectTemplates(
             mar.cnxn, config.project_id)
         proj_result = api_pb2_v1_helpers.convert_project(
-            proj, config, api_pb2_v1.Role.contributor, templates)
+            proj, config, api_pb2_v1.Role.contributor, template_set.templates)
         project_list.append(proj_result)
 
     return api_pb2_v1.UsersGetResponse(

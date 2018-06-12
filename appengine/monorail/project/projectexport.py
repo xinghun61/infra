@@ -67,10 +67,10 @@ class ProjectExportJSON(jsonfeed.JsonFeed):
 
     config = self.services.config.GetProjectConfig(
         mr.cnxn, mr.project.project_id)
-    project_templates = self.services.template.GetProjectTemplates(
+    template_set = self.services.template.GetProjectTemplates(
         mr.cnxn, config.project_id)
     involved_users = self.services.config.UsersInvolvedInConfig(
-        config, project_templates)
+        config, template_set.templates)
     user_id_set.update(involved_users)
 
     # The value 0 indicates "no user", e.g., that an issue has no owner.
@@ -79,7 +79,8 @@ class ProjectExportJSON(jsonfeed.JsonFeed):
     email_dict = self.services.user.LookupUserEmails(mr.cnxn, user_id_set)
 
     project_json = self._MakeProjectJSON(project, email_dict)
-    config_json = self._MakeConfigJSON(config, email_dict, project_templates)
+    config_json = self._MakeConfigJSON(config, email_dict,
+        template_set.templates)
 
     json_data = {
         'metadata': {

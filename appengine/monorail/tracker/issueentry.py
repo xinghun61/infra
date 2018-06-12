@@ -79,9 +79,10 @@ class IssueEntry(servlet.Servlet):
         permissions.EDIT_ISSUE_OWNER,
         permissions.EDIT_ISSUE_CC)
 
-    templates = self.services.template.GetProjectTemplates(mr.cnxn,
+    template_set = self.services.template.GetProjectTemplates(mr.cnxn,
         config.project_id)
-    wkp = _SelectTemplate(mr.template_name, config, is_member, templates)
+    wkp = _SelectTemplate(mr.template_name, config, is_member,
+        template_set.templates)
 
     if wkp.summary:
       initial_summary = wkp.summary
@@ -268,10 +269,10 @@ class IssueEntry(servlet.Servlet):
     if len(parsed.summary) > tracker_constants.MAX_SUMMARY_CHARS:
       mr.errors.summary = 'Summary is too long'
 
-    project_templates = self.services.template.GetProjectTemplates(mr.cnxn,
+    template_set = self.services.template.GetProjectTemplates(mr.cnxn,
         config.project_id)
 
-    if _MatchesTemplate(parsed.comment, project_templates):
+    if _MatchesTemplate(parsed.comment, template_set.templates):
       mr.errors.comment = 'Template must be filled out.'
 
     if parsed.users.owner_id is None:
@@ -306,7 +307,7 @@ class IssueEntry(servlet.Servlet):
           template_content = ''
           phases = None
           tmpl_approval_values = []
-          for wkp in project_templates:
+          for wkp in template_set.templates:
             if wkp.name == parsed.template_name:
               template_content = wkp.content
               phases = wkp.phases
@@ -347,7 +348,7 @@ class IssueEntry(servlet.Servlet):
 
     if mr.errors.AnyErrors():
       component_required = False
-      for wkp in project_templates:
+      for wkp in template_set.templates:
         if wkp.name == parsed.template_name:
           component_required = wkp.component_required
       self.PleaseCorrect(

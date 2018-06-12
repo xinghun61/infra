@@ -11,6 +11,7 @@ import unittest
 
 from framework import permissions
 from framework import urls
+from proto import tracker_pb2
 from services import service_manager
 from services import template_svc
 from testing import fake
@@ -46,7 +47,7 @@ class TestBase(unittest.TestCase):
     self.test_templates = testing_helpers.DefaultTemplates()
     self.test_templates.append(self.test_template)
     self.services.template.GetProjectTemplates\
-        .return_value = self.test_templates
+        .return_value = tracker_pb2.TemplateSet(templates=self.test_templates)
 
   def tearDown(self):
     self.mox.UnsetStubs()

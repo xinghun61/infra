@@ -225,10 +225,10 @@ class AdminTemplates(IssueAdminBase):
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
-    project_templates = self.services.template.GetProjectTemplates(mr.cnxn,
+    template_set = self.services.template.GetProjectTemplates(mr.cnxn,
         config.project_id)
     default_template_id_for_developers, default_template_id_for_users = (
-        self._ParseDefaultTemplateSelections(post_data, project_templates))
+        self._ParseDefaultTemplateSelections(post_data, template_set.templates))
     if default_template_id_for_developers or default_template_id_for_users:
       self.services.config.UpdateConfig(
           mr.cnxn, mr.project,
