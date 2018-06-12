@@ -49,9 +49,16 @@ Make a clone of the chopsui repo:
 git clone https://chromium.googlesource.com/infra/infra/crdx/chopsui
 ```
 
-To test your elements, you will need to install polymer-cli:
+To test your elements, you will need to install `polymer-cli`:
+
 ```sh
 npm install -g polymer-cli
+```
+
+You can run the tests with:
+
+```sh
+polymer test
 ```
 
 Make sure Chromium's depot_tools is in your path as well. [Learn how to set up
