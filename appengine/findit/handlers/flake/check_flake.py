@@ -317,11 +317,11 @@ class CheckFlake(BaseHandler):
       return self.CreateError(
           'Cannot rerun analysis if one is currently running or pending.', 400)
 
-    master_name = analysis.master_name
-    builder_name = analysis.builder_name
-    build_number = analysis.build_number
-    step_name = analysis.step_name
-    test_name = analysis.test_name
+    master_name = analysis.original_master_name
+    builder_name = analysis.original_builder_name
+    build_number = analysis.original_build_number
+    step_name = analysis.original_step_name
+    test_name = analysis.original_test_name
     bug_id = analysis.bug_id
 
     logging.info('Rerun button pushed, analysis will be reset and triggered.\n'
