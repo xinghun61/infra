@@ -104,8 +104,8 @@ class LogDogUtilTest(unittest.TestCase):
     step_metadata = logdog_util._GetLogForPath(
         'host', 'project', 'path', self.http_client, retry_delay=0)
     self.assertIsNone(step_metadata)
-    mock_logging.assert_called_once_with('Error when fetch log: Wrong format'
-                                         ' - {"a": "a"}')
+    mock_logging.assert_called_once_with(
+        'Error when fetch log or annotations: Wrong format - {"a": "a"}')
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetStepMetadataFromLogDogRetry(self, mock_rpc):
@@ -180,6 +180,75 @@ class LogDogUtilTest(unittest.TestCase):
   def testGetAnnotationsProtoNoB64decodable(self, mock_fn):
     data = {'logs': [{'datagram': {'data': 'data'}}]}
     mock_fn.return_value = (200, json.dumps(data))
+    step = logdog_util._GetAnnotationsProtoForPath('host', 'project', 'path',
+                                                   self.http_client)
+    self.assertIsNone(step)
+
+  @mock.patch.object(rpc_util, 'DownloadJsonData')
+  def testGetAnnotationsProtoUseGet(self, mock_fn):
+    step_proto = _CreateProtobufMessage(self.step_name, self.stdout_stream,
+                                        self.step_metadata_stream)
+    step_log = step_proto.SerializeToString()
+    step_log_p1 = step_log[:len(step_log) / 2]
+    step_log_p2 = step_log[len(step_log) / 2:]
+    data1 = {
+        'logs': [{
+            'streamIndex': 1,
+            'datagram': {
+                'data': base64.b64encode(step_log_p2),
+                'partial': {
+                    'index': 1,
+                    'size': 1234
+                }
+            }
+        }]
+    }
+    data2 = {
+        'logs': [{
+            'streamIndex': 0,
+            'datagram': {
+                'data': base64.b64encode(step_log_p1),
+                'partial': {
+                    'size': 1234
+                }
+            }
+        }, {
+            'streamIndex': 1,
+            'datagram': {
+                'data': base64.b64encode(step_log_p2),
+                'partial': {
+                    'index': 1,
+                    'size': 1234
+                }
+            }
+        }]
+    }
+
+    mock_fn.side_effect = [(200, json.dumps(data1)), (200, json.dumps(data2))]
+    step = logdog_util._GetAnnotationsProtoForPath('host', 'project', 'path',
+                                                   self.http_client)
+    self.assertIsNotNone(step)
+
+  @mock.patch.object(rpc_util, 'DownloadJsonData')
+  def testGetAnnotationsProtoGetReturnsNone(self, mock_fn):
+    step_proto = _CreateProtobufMessage(self.step_name, self.stdout_stream,
+                                        self.step_metadata_stream)
+    step_log = step_proto.SerializeToString()
+    step_log_p2 = step_log[len(step_log) / 2:]
+    data1 = {
+        'logs': [{
+            'streamIndex': 1,
+            'datagram': {
+                'data': base64.b64encode(step_log_p2),
+                'partial': {
+                    'index': 1,
+                    'size': 1234
+                }
+            }
+        }]
+    }
+
+    mock_fn.side_effect = [(200, json.dumps(data1)), (200, None)]
     step = logdog_util._GetAnnotationsProtoForPath('host', 'project', 'path',
                                                    self.http_client)
     self.assertIsNone(step)

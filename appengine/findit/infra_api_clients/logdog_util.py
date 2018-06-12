@@ -43,9 +43,33 @@ def _ProcessStringForLogDog(base_string):
   return ''.join(new_string_list)
 
 
-def _GetLogForPath(host, project, path, http_client, retry_delay=5):
-  data = {'project': project, 'path': path}
+def _GetRawLogsFromGetEndpoint(host, data, http_client, retry_delay=5):
+  """Gets raw logs from Get endpoint.
 
+   The raw logs can be further processed to get annotations or a specific log.
+
+   For logs of annotations, it should look like:
+    [
+       {
+           'datagram': {
+               'data': (base64 encoded data)
+           }
+       }
+    ].
+
+  For an actual log, it should look like:
+    [
+       {
+           'text': {
+               'lines': [
+                  {
+                      'value': 'line'
+                  }
+               ]
+           }
+       }
+    ].
+  """
   tries = 0
   error_message = ''
 
@@ -64,41 +88,57 @@ def _GetLogForPath(host, project, path, http_client, retry_delay=5):
       error_message = 'cannot get json log.'
       break
     else:
-      # Gets data for log. Data format as below:
-      # {
-      #    'logs': [
-      #        {
-      #            'text': {
-      #                'lines': [
-      #                   {
-      #                       'value': 'line'
-      #                   }
-      #                ]
-      #            }
-      #        }
-      #     ]
-      # }
       logs = json.loads(response_json).get('logs')
       if not logs or not isinstance(logs, list):
         error_message = 'Wrong format - %s' % response_json
       else:
-        sio = cStringIO.StringIO()
-        for log in logs:
-          for line in log.get('text', {}).get('lines', []):
-            sio.write('%s\n' % line.get('value', '').encode('utf-8'))
-        data = sio.getvalue()
-        sio.close()
-
-        return data
+        return logs
     tries += 1
     time.sleep(tries * retry_delay)
 
   # Only logs error when the log was failed to get at last.
-  logging.error('Error when fetch log: %s' % error_message)
+  logging.error('Error when fetch log or annotations: %s' % error_message)
   return None
 
 
+def _GetLogForPath(host, project, path, http_client, retry_delay=5):
+  """Gets a specific log.
+
+  Downloads raw logs from logdog and merges logs into one log.
+  """
+  data = {'project': project, 'path': path}
+  logs = _GetRawLogsFromGetEndpoint(host, data, http_client, retry_delay)
+  if not logs:
+    return None
+
+  # Logs format as below:
+  #   [
+  #      {
+  #          'text': {
+  #              'lines': [
+  #                 {
+  #                     'value': 'line'
+  #                 }
+  #              ]
+  #          }
+  #      }
+  #   ]
+  sio = cStringIO.StringIO()
+  for log in logs:
+    for line in log.get('text', {}).get('lines', []):
+      sio.write('%s\n' % line.get('value', '').encode('utf-8'))
+  data = sio.getvalue()
+  sio.close()
+
+  return data
+
+
 def _GetAnnotationsProtoForPath(host, project, path, http_client):
+  """Gets annotations from logdog endpoint(s).
+
+  By default sends request to Tail endpoint for annotations, if only gets a
+  partial results, use Get endpoint instead.
+  """
   base_error_log = 'Error when load annotations protobuf: %s'
 
   data = {'project': project, 'path': path}
@@ -123,14 +163,33 @@ def _GetAnnotationsProtoForPath(host, project, path, http_client):
     logging.error(base_error_log % 'Wrong format - "logs"')
     return None
 
-  annotations_b64 = logs[-1].get('datagram', {}).get('data')
-  if not annotations_b64:
-    logging.error(base_error_log % 'Wrong format - "data"')
+  partial = logs[-1].get('datagram', {}).get('partial')
+  if partial:
+    # Only gets partial result from Tail, use Get instead to get annotations.
+    index = int(logs[-1]['streamIndex'])
+    partial_index = partial['index']
+    data = {'project': project, 'path': path, 'index': index - partial_index}
+    logs = _GetRawLogsFromGetEndpoint(host, data, http_client)
+
+  annotations = ''
+  if not logs:
+    logging.error(base_error_log % 'Wrong format - "logs"')
     return None
+
+  sio = cStringIO.StringIO()
+  for log in logs:
+    annotations_b64 = log.get('datagram', {}).get('data')
+    if not annotations_b64:
+      sio.close()
+      logging.error(base_error_log % 'Wrong format - "data"')
+      return None
+
+    sio.write(base64.b64decode(annotations_b64))
+  annotations = sio.getvalue()
+  sio.close()
 
   # Gets proto.
   try:
-    annotations = base64.b64decode(annotations_b64)
     step = annotations_pb2.Step()
     step.ParseFromString(annotations)
     return step
