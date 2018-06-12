@@ -48,6 +48,57 @@ enum ApprovalStatus {
 }
 
 
+// This message is only suitable for displaying the amendment to users.
+// We don't currently offer structured amendments that client code can
+// reason about, field names can be ambiguous, and we don't have
+// old_value for most changes.
+// Next available tag: 4
+message Amendment {
+  // This may be the name of a built-in or custom field, or relative to
+  // an approval field name.
+  string field_name = 1;
+  // This may be a new value that overwrote the old value, e.g., "Assigned",
+  // or it may be a space-separated list of changes, e.g., "Size-L -Size-S".
+  string new_or_delta_value = 2;
+  // old_value is only used when the user changes the summary.
+  string old_value = 3;
+}
+
+
+// Next available tag: 9
+message Attachment {
+  uint64 attachment_id = 1;
+  string filename = 2;
+  uint64 size = 3;  // Size in bytes.
+  string content_type = 4;
+  bool is_deleted = 5;
+  string thumbnail_url = 6;
+  string view_url = 7;
+  string download_url = 8;
+}
+
+
+// Next available tag: 14
+message Comment {
+  string project_name = 1;
+  uint32 local_id = 2;
+  uint32 sequence_num = 3;
+  bool is_deleted = 4;
+  UserRef commenter = 5;
+  fixed32 timestamp = 6;
+  string content = 7;
+  string inbound_message = 8;
+  repeated Amendment amendments = 9;
+  repeated Attachment attachments = 10;
+  FieldRef approval_ref = 11;
+  // If set, this comment is an issue description.
+  uint32 description_num = 12;
+  bool is_spam = 13;
+  // TODO(jrobbins): How do we tell the client which comments the user
+  // is allowed to undelete without exposing who deleted it?
+}
+
+
 // Next available tag: 4
 message FieldValue {
   FieldRef field_ref = 1;

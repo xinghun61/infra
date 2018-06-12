@@ -88,6 +88,10 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual('proj', actual.blocked_on_issue_refs[0].project_name)
     self.assertEqual(2, actual.blocked_on_issue_refs[0].local_id)
 
+  def testListComments_Normal(self):
+    """We can get comments on an issue."""
+    pass  # TODO(jrobbins): Implement this test.
+
   def testDoDeleteIssueComment_Normal(self):
     """We can delete a comment."""
     request = issues_pb2.DeleteIssueCommentRequest(

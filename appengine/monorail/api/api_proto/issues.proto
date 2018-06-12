@@ -15,6 +15,10 @@ import "api/api_proto/issue_objects.proto";
 service Issues {
   rpc CreateIssue (CreateIssueRequest) returns (IssueResponse) {}
   rpc GetIssue (GetIssueRequest) returns (IssueResponse) {}
+  // There is no CreateComment method because comments are created by updates,
+  // which may have just comment content and no delta.
+  // There is no GetComment method, clients should use ListComments.
+  rpc ListComments (ListCommentsRequest) returns (ListCommentsResponse) {}
   rpc DeleteIssueComment (DeleteIssueCommentRequest)
       returns (google.protobuf.Empty) {}
   rpc UpdateApproval (UpdateApprovalRequest)
@@ -41,6 +45,24 @@ message GetIssueRequest {
 message IssueResponse {
   Issue issue = 1;
 }
+
+
+// Next available tag: 3
+message ListCommentsRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+}
+
+
+// Next available tag: 2
+message ListCommentsResponse {
+  // Comments are in chronological order.  The list of comments may
+  // include deleted, spam, and description comments.  Spam and
+  // deleted comments will only have content supplied if the user is
+  // allowed to see it.
+  repeated Comment comments = 1;
+}
+
 
 
 // Next available tag: 6

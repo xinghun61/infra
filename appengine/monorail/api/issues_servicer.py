@@ -58,5 +58,23 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return response
 
   @monorail_servicer.PRPCMethod
+  def ListComments(self, mc, request):
+    """Return comments on the specified issue in a response proto."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      project = we.GetProjectByName(request.issue_ref.project_name)
+      mc.LookupLoggedInUserPerms(project)
+      # Get this issue to prove that the user can view it.
+      we.GetIssueByLocalID(project.project_id, request.issue_ref.local_id)
+
+    with mc.profiler.Phase('getting comments and making user views'):
+      pass  # TODO(jrobbins): implement calls to WE to get all comments.
+
+    with mc.profiler.Phase('converting to response objects'):
+      response = issues_pb2.ListCommentsResponse()
+        # TODO(jrobbins): implement conversion to protoc.
+
+    return response
+
+  @monorail_servicer.PRPCMethod
   def DeleteIssueComment(self, _mc, _request):
     return empty_pb2.Empty()
