@@ -66,6 +66,7 @@ class MrCompactComments extends Polymer.Element {
   _submitComment() {
     this.push('comments', {
       user: this.user,
+      diffs: [],
       content: this._newCommentText,
       date: new Date(),
     });

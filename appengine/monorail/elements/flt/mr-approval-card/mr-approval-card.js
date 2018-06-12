@@ -33,6 +33,7 @@ class MrApprovalCard extends Polymer.Element {
     return {
       title: String,
       approvalComments: Array,
+      gateName: String,
       survey: String,
       surveyTemplate: String,
       urls: Array,
@@ -43,10 +44,6 @@ class MrApprovalCard extends Polymer.Element {
         type: String,
         reflectToAttribute: true,
         computed: '_computeClass(_status)',
-      },
-      editing: {
-        type: Boolean,
-        value: false,
       },
       opened: {
         type: Boolean,
@@ -80,22 +77,26 @@ class MrApprovalCard extends Polymer.Element {
   }
 
   edit() {
-    this.editing = true;
+    this.$.editApproval.open();
   }
 
   cancel() {
-    this.editing = false;
+    this.$.editApproval.close();
   }
 
   save() {
-    this.editing = false;
+    const data = this.$.metadataForm.getData();
     let newLabels = Object.assign([], this.labels);
     newLabels.forEach((l) => {
       if (l.name === 'Status') {
-        l.values = [this.$.statusInput.value];
+        l.values = [data.status];
       }
     });
     this.labels = newLabels;
+    this.users = data.users;
+    this.urls = data.urls;
+
+    this.cancel();
   }
 
   toggleCard(evt) {
@@ -111,10 +112,6 @@ class MrApprovalCard extends Polymer.Element {
       return 'expand-less';
     }
     return 'expand-more';
-  }
-
-  _computeIsSelected(a, b) {
-    return a === b;
   }
 
   _computeStatus(labels) {

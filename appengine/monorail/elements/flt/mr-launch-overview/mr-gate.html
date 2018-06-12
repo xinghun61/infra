@@ -41,14 +41,17 @@
       </em>
     </h2>
     <template is="dom-repeat" items="[[gate.approvals]]">
-      <mr-approval-card title="[[item.title]]"
-                     user="[[user]]"
-                     approval-comments="[[item.comments]]"
-                     survey="[[item.survey]]"
-                     survey-template="[[item.surveyTemplate]]"
-                     urls="[[item.urls]]"
-                     labels="[[item.labels]]"
-                     users="[[item.users]]"></mr-approval-card>
+      <mr-approval-card
+          title="[[item.title]]"
+          gate-name="[[gate.gateName]]"
+          user="[[user]]"
+          approval-comments="[[item.comments]]"
+          survey="[[item.survey]]"
+          survey-template="[[item.surveyTemplate]]"
+          urls="[[item.urls]]"
+          labels="[[item.labels]]"
+          users="[[item.users]]"
+      ></mr-approval-card>
     </template>
     <template is="dom-if" if="[[!gate.approvals.length]]">
       No tasks for this gate.

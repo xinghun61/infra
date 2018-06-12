@@ -1,11 +1,13 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
 <link rel="import" href="../../../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
 <link rel="import" href="../mr-approval-card/mr-survey.html">
 <link rel="import" href="../mr-compact-comments/mr-compact-comments.html">
+<link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
 
 <dom-module id="mr-approval-card">
@@ -39,6 +41,10 @@
         justify-content: space-between;
         align-items: baseline;
       }
+      mr-edit-metadata {
+        width: 600px;
+        max-width: 100%;
+      }
       td, th {
         padding: 0.5em 0;
         padding-right: 8px;
@@ -58,6 +64,9 @@
         box-sizing: border-box;
         padding: 0.5em 16px;
         padding-bottom: 1em;
+      }
+      .dialog-actions {
+        text-align: right;
       }
       .expand-icon {
         margin-right: 8px;
@@ -83,77 +92,79 @@
         margin-left: 32px;
       }
     </style>
-      <button class="header" on-click="toggleCard">
-        <iron-icon class="expand-icon" icon="[[_expandIcon]]"></iron-icon>
-        [[title]]
-        <span class="status">
-          <iron-icon class="status-icon" icon=[[_statusIcon]]></iron-icon>
-          [[_status]]
-        </span>
-      </button>
-      <iron-collapse class="card-content" id="cardCollapse" opened="[[opened]]">
-        <template is="dom-if" if="[[_isApprovalOwner]]">
-          <div class="approver-notice">
-            You are an approver for this bit.
-            <template is="dom-if" if="[[!editing]]">
-              <chops-button on-click="edit">
-                <iron-icon icon="create"></iron-icon>
-                Edit approval data
-              </chops-button>
-            </template>
-            <template is="dom-if" if="[[editing]]">
-              <div>
-                <chops-button on-click="save" class="emphasized">
-                  <iron-icon icon="create"></iron-icon>
-                  Save changes
-                </chops-button>
-                <chops-button on-click="cancel">
-                  <iron-icon icon="close"></iron-icon>
-                  Cancel changes
-                </chops-button>
-              </div>
-            </template>
-          </div>
-        </template>
-        <table>
+    <button class="header" on-click="toggleCard">
+      <iron-icon class="expand-icon" icon="[[_expandIcon]]"></iron-icon>
+      [[title]]
+      <span class="status">
+        <iron-icon class="status-icon" icon=[[_statusIcon]]></iron-icon>
+        [[_status]]
+      </span>
+    </button>
+    <iron-collapse class="card-content" id="cardCollapse" opened="[[opened]]">
+      <template is="dom-if" if="[[_isApprovalOwner]]">
+        <div class="approver-notice">
+          You are an approver for this bit.
+          <chops-button on-click="edit">
+            <iron-icon icon="create"></iron-icon>
+            Edit approval data
+          </chops-button>
+        </div>
+      </template>
+      <table>
+        <tr>
+          <th>Status:</th>
+          <td>
+            [[_status]]
+          </td>
+        </tr>
+        <template is="dom-repeat" items="[[users]]" as="user">
           <tr>
-            <th>Status:</th>
+            <th>[[user.name]]:</th>
             <td>
-              <select id="statusInput" hidden$="[[!editing]]">
-                <template is="dom-repeat" items="[[statuses]]">
-                  <option value$="[[item]]" selected$="[[_computeIsSelected(_status, item)]]">[[item]]</option>
-                </template>
-              </select>
-              <span hidden$="[[editing]]">
-                [[_status]]
-              </span>
+              <template is="dom-repeat" items="[[user.values]]">
+                <a href="[[item]]">[[item]]</a>
+              </template>
             </td>
           </tr>
-          <template is="dom-repeat" items="[[users]]" as="user">
-            <tr>
-              <th>[[user.name]]:</th>
-              <td>
-                <template is="dom-repeat" items="[[user.values]]">
-                  <a href="[[item]]">[[item]]</a>
-                </template>
-              </td>
-            </tr>
-          </template>
-          <template is="dom-repeat" items="[[urls]]" as="link">
-            <tr>
-              <th>[[link.name]]:</th>
-              <td>
-                <template is="dom-repeat" items="[[link.values]]">
-                  <a href="[[item]]" target="_blank">[[item]]</a>
-                </template>
-              </td>
-            </tr>
-          </template>
-        </table>
-        <mr-survey survey="[[survey]]" survey-template="[[surveyTemplate]]"></mr-survey>
-        <h3>Approval comments / Changelog</h3>
-        <mr-compact-comments comments="[[approvalComments]]"></mr-compact-comments>
-      </iron-collapse>
+        </template>
+        <template is="dom-repeat" items="[[urls]]" as="link">
+          <tr>
+            <th>[[link.name]]:</th>
+            <td>
+              <template is="dom-repeat" items="[[link.values]]">
+                <a href="[[item]]" target="_blank">[[item]]</a>
+              </template>
+            </td>
+          </tr>
+        </template>
+      </table>
+      <mr-survey survey="[[survey]]" survey-template="[[surveyTemplate]]"></mr-survey>
+      <h3>Approval comments / Changelog</h3>
+      <mr-compact-comments comments="[[approvalComments]]"></mr-compact-comments>
+    </iron-collapse>
+    <chops-dialog id="editApproval" aria-labelledby="approvalDialogTitle">
+      <h3 id="approvalDialogTitle">
+        Editing Approval: [[gateName]] &gt; [[title]]
+      </h3>
+      <mr-edit-metadata
+        id="metadataForm"
+        users="[[users]]"
+        urls="[[urls]]"
+        statuses="[[statuses]]"
+        status="[[_status]]"
+        is-approver="[[_isApprovalOwner]]"
+      ></mr-edit-metadata>
+      <div class="dialog-actions">
+        <chops-button on-click="cancel" class="de-emphasized">
+          <iron-icon icon="close"></iron-icon>
+          Cancel
+        </chops-button>
+        <chops-button on-click="save" class="emphasized">
+          <iron-icon icon="create"></iron-icon>
+          Save changes
+        </chops-button>
+      </div>
+    </chops-dialog>
   </template>
   <script src="./mr-approval-card.js"></script>
 <dom-module>

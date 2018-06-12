@@ -1,0 +1,68 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<dom-module id="mr-edit-metadata">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      select,
+      input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.25em 4px;
+      }
+      label {
+        font-weight: bold;
+        word-wrap: break-word;
+      }
+      textarea {
+        width: 100%;
+        margin: 0.5em 0;
+        box-sizing: border-box;
+        border: 1px solid hsl(0, 0%, 80%);
+        height: 8em;
+        transition: height 0.1s ease-in-out;
+        padding: 0.5em 4px;
+        grid-column-start: 1;
+        grid-column-end: 2;
+      }
+      textarea:placeholder-shown {
+        height: 5em;
+      }
+      textarea:focus {
+        height: 8em;
+      }
+      .input-grid {
+        padding: 0.5em 0;
+        display: grid;
+        max-width: 100%;
+        grid-gap: 8px;
+        grid-template-columns: 25% auto;
+        align-items: flex-start;
+      }
+    </style>
+    <div class="input-grid">
+      <label for="statusInput">Status:</label>
+
+      <select id="statusInput">
+        <template is="dom-repeat" items="[[_statuses]]">
+          <option value$="[[item]]" selected$="[[_computeIsSelected(status, item)]]">[[item]]</option>
+        </template>
+      </select>
+      <template is="dom-repeat" items="[[users]]" as="user">
+        <label for$="[[_idForField(user.name)]]">[[user.name]]:</label>
+
+        <!--TODO(zhangtiff): Replace this with a multi input widget once
+        we have a stable and reliable one. -->
+        <input id$="[[_idForField(user.name)]]" value$="[[_joinValues(user.values)]]" />
+      </template>
+      <template is="dom-repeat" items="[[urls]]" as="url">
+        <label for$="[[_idForField(url.name)]]">[[url.name]]:</label>
+        <input id$="[[_idForField(url.name)]]" value$="[[_joinValues(url.values)]]" />
+      </template>
+    </div>
+    <textarea id="commentText" value="{{_newCommentText::input}}" placeholder="Comment to explain this change"></textarea>
+  </template>
+  <script src="./mr-edit-metadata.js"></script>
+<dom-module>
