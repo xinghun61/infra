@@ -19,6 +19,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 type State int32
 
 const (
@@ -73,7 +79,9 @@ var State_value = map[string]int32{
 func (x State) String() string {
 	return proto.EnumName(State_name, int32(x))
 }
-func (State) EnumDescriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
+func (State) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{0}
+}
 
 // AnalyzeRequest contains the details needed for an analysis request.
 type AnalyzeRequest struct {
@@ -90,13 +98,35 @@ type AnalyzeRequest struct {
 	// Types that are valid to be assigned to Source:
 	//	*AnalyzeRequest_GerritRevision
 	//	*AnalyzeRequest_GitCommit
-	Source isAnalyzeRequest_Source `protobuf_oneof:"source"`
+	Source               isAnalyzeRequest_Source `protobuf_oneof:"source"`
+	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
+	XXX_unrecognized     []byte                  `json:"-"`
+	XXX_sizecache        int32                   `json:"-"`
 }
 
-func (m *AnalyzeRequest) Reset()                    { *m = AnalyzeRequest{} }
-func (m *AnalyzeRequest) String() string            { return proto.CompactTextString(m) }
-func (*AnalyzeRequest) ProtoMessage()               {}
-func (*AnalyzeRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
+func (m *AnalyzeRequest) Reset()         { *m = AnalyzeRequest{} }
+func (m *AnalyzeRequest) String() string { return proto.CompactTextString(m) }
+func (*AnalyzeRequest) ProtoMessage()    {}
+func (*AnalyzeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{0}
+}
+func (m *AnalyzeRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AnalyzeRequest.Unmarshal(m, b)
+}
+func (m *AnalyzeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AnalyzeRequest.Marshal(b, m, deterministic)
+}
+func (dst *AnalyzeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AnalyzeRequest.Merge(dst, src)
+}
+func (m *AnalyzeRequest) XXX_Size() int {
+	return xxx_messageInfo_AnalyzeRequest.Size(m)
+}
+func (m *AnalyzeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_AnalyzeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AnalyzeRequest proto.InternalMessageInfo
 
 type isAnalyzeRequest_Source interface {
 	isAnalyzeRequest_Source()
@@ -206,12 +236,12 @@ func _AnalyzeRequest_OneofSizer(msg proto.Message) (n int) {
 	switch x := m.Source.(type) {
 	case *AnalyzeRequest_GerritRevision:
 		s := proto.Size(x.GerritRevision)
-		n += proto.SizeVarint(7<<3 | proto.WireBytes)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case *AnalyzeRequest_GitCommit:
 		s := proto.Size(x.GitCommit)
-		n += proto.SizeVarint(8<<3 | proto.WireBytes)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case nil:
@@ -248,13 +278,35 @@ type GerritRevision struct {
 	//
 	// This value should be the fetch URL for a revision of a change. Note that
 	// the last number of a change revision ref is the corresponding patch set.
-	GitRef string `protobuf:"bytes,5,opt,name=git_ref,json=gitRef" json:"git_ref,omitempty"`
+	GitRef               string   `protobuf:"bytes,5,opt,name=git_ref,json=gitRef" json:"git_ref,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *GerritRevision) Reset()                    { *m = GerritRevision{} }
-func (m *GerritRevision) String() string            { return proto.CompactTextString(m) }
-func (*GerritRevision) ProtoMessage()               {}
-func (*GerritRevision) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{1} }
+func (m *GerritRevision) Reset()         { *m = GerritRevision{} }
+func (m *GerritRevision) String() string { return proto.CompactTextString(m) }
+func (*GerritRevision) ProtoMessage()    {}
+func (*GerritRevision) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{1}
+}
+func (m *GerritRevision) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GerritRevision.Unmarshal(m, b)
+}
+func (m *GerritRevision) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GerritRevision.Marshal(b, m, deterministic)
+}
+func (dst *GerritRevision) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GerritRevision.Merge(dst, src)
+}
+func (m *GerritRevision) XXX_Size() int {
+	return xxx_messageInfo_GerritRevision.Size(m)
+}
+func (m *GerritRevision) XXX_DiscardUnknown() {
+	xxx_messageInfo_GerritRevision.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GerritRevision proto.InternalMessageInfo
 
 func (m *GerritRevision) GetHost() string {
 	if m != nil {
@@ -296,13 +348,35 @@ type GitCommit struct {
 	Url string `protobuf:"bytes,1,opt,name=url" json:"url,omitempty"`
 	// A git commit-ish, such as a refname like "refs/heads/master".
 	// This can also be a tag or git commit hash.
-	Ref string `protobuf:"bytes,2,opt,name=ref" json:"ref,omitempty"`
+	Ref                  string   `protobuf:"bytes,2,opt,name=ref" json:"ref,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *GitCommit) Reset()                    { *m = GitCommit{} }
-func (m *GitCommit) String() string            { return proto.CompactTextString(m) }
-func (*GitCommit) ProtoMessage()               {}
-func (*GitCommit) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{2} }
+func (m *GitCommit) Reset()         { *m = GitCommit{} }
+func (m *GitCommit) String() string { return proto.CompactTextString(m) }
+func (*GitCommit) ProtoMessage()    {}
+func (*GitCommit) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{2}
+}
+func (m *GitCommit) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GitCommit.Unmarshal(m, b)
+}
+func (m *GitCommit) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GitCommit.Marshal(b, m, deterministic)
+}
+func (dst *GitCommit) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GitCommit.Merge(dst, src)
+}
+func (m *GitCommit) XXX_Size() int {
+	return xxx_messageInfo_GitCommit.Size(m)
+}
+func (m *GitCommit) XXX_DiscardUnknown() {
+	xxx_messageInfo_GitCommit.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GitCommit proto.InternalMessageInfo
 
 func (m *GitCommit) GetUrl() string {
 	if m != nil {
@@ -322,13 +396,35 @@ type AnalyzeResponse struct {
 	// ID of the run started for this request.
 	//
 	// This ID can be used to track progress and request results.
-	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	RunId                string   `protobuf:"bytes,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *AnalyzeResponse) Reset()                    { *m = AnalyzeResponse{} }
-func (m *AnalyzeResponse) String() string            { return proto.CompactTextString(m) }
-func (*AnalyzeResponse) ProtoMessage()               {}
-func (*AnalyzeResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{3} }
+func (m *AnalyzeResponse) Reset()         { *m = AnalyzeResponse{} }
+func (m *AnalyzeResponse) String() string { return proto.CompactTextString(m) }
+func (*AnalyzeResponse) ProtoMessage()    {}
+func (*AnalyzeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{3}
+}
+func (m *AnalyzeResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AnalyzeResponse.Unmarshal(m, b)
+}
+func (m *AnalyzeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AnalyzeResponse.Marshal(b, m, deterministic)
+}
+func (dst *AnalyzeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AnalyzeResponse.Merge(dst, src)
+}
+func (m *AnalyzeResponse) XXX_Size() int {
+	return xxx_messageInfo_AnalyzeResponse.Size(m)
+}
+func (m *AnalyzeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AnalyzeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AnalyzeResponse proto.InternalMessageInfo
 
 func (m *AnalyzeResponse) GetRunId() string {
 	if m != nil {
@@ -366,13 +462,35 @@ type ProgressRequest struct {
 	//
 	// Types that are valid to be assigned to Source:
 	//	*ProgressRequest_GerritRevision
-	Source isProgressRequest_Source `protobuf_oneof:"source"`
+	Source               isProgressRequest_Source `protobuf_oneof:"source"`
+	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
+	XXX_unrecognized     []byte                   `json:"-"`
+	XXX_sizecache        int32                    `json:"-"`
 }
 
-func (m *ProgressRequest) Reset()                    { *m = ProgressRequest{} }
-func (m *ProgressRequest) String() string            { return proto.CompactTextString(m) }
-func (*ProgressRequest) ProtoMessage()               {}
-func (*ProgressRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{4} }
+func (m *ProgressRequest) Reset()         { *m = ProgressRequest{} }
+func (m *ProgressRequest) String() string { return proto.CompactTextString(m) }
+func (*ProgressRequest) ProtoMessage()    {}
+func (*ProgressRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{4}
+}
+func (m *ProgressRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProgressRequest.Unmarshal(m, b)
+}
+func (m *ProgressRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProgressRequest.Marshal(b, m, deterministic)
+}
+func (dst *ProgressRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProgressRequest.Merge(dst, src)
+}
+func (m *ProgressRequest) XXX_Size() int {
+	return xxx_messageInfo_ProgressRequest.Size(m)
+}
+func (m *ProgressRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProgressRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProgressRequest proto.InternalMessageInfo
 
 type isProgressRequest_Source interface {
 	isProgressRequest_Source()
@@ -464,7 +582,7 @@ func _ProgressRequest_OneofSizer(msg proto.Message) (n int) {
 	switch x := m.Source.(type) {
 	case *ProgressRequest_GerritRevision:
 		s := proto.Size(x.GerritRevision)
-		n += proto.SizeVarint(4<<3 | proto.WireBytes)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case nil:
@@ -485,13 +603,35 @@ type ProgressResponse struct {
 	// for any selection of these, a subset is returned.
 	//
 	// NB! Selection of a subset is currently not supported.
-	FunctionProgress []*FunctionProgress `protobuf:"bytes,3,rep,name=function_progress,json=functionProgress" json:"function_progress,omitempty"`
+	FunctionProgress     []*FunctionProgress `protobuf:"bytes,3,rep,name=function_progress,json=functionProgress" json:"function_progress,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
 }
 
-func (m *ProgressResponse) Reset()                    { *m = ProgressResponse{} }
-func (m *ProgressResponse) String() string            { return proto.CompactTextString(m) }
-func (*ProgressResponse) ProtoMessage()               {}
-func (*ProgressResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{5} }
+func (m *ProgressResponse) Reset()         { *m = ProgressResponse{} }
+func (m *ProgressResponse) String() string { return proto.CompactTextString(m) }
+func (*ProgressResponse) ProtoMessage()    {}
+func (*ProgressResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{5}
+}
+func (m *ProgressResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProgressResponse.Unmarshal(m, b)
+}
+func (m *ProgressResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProgressResponse.Marshal(b, m, deterministic)
+}
+func (dst *ProgressResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProgressResponse.Merge(dst, src)
+}
+func (m *ProgressResponse) XXX_Size() int {
+	return xxx_messageInfo_ProgressResponse.Size(m)
+}
+func (m *ProgressResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProgressResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProgressResponse proto.InternalMessageInfo
 
 func (m *ProgressResponse) GetRunId() string {
 	if m != nil {
@@ -531,13 +671,35 @@ type FunctionProgress struct {
 	// Number of comments.
 	//
 	// For analyzers that are done and produce comments.
-	NumComments int32 `protobuf:"varint,6,opt,name=num_comments,json=numComments" json:"num_comments,omitempty"`
+	NumComments          int32    `protobuf:"varint,6,opt,name=num_comments,json=numComments" json:"num_comments,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *FunctionProgress) Reset()                    { *m = FunctionProgress{} }
-func (m *FunctionProgress) String() string            { return proto.CompactTextString(m) }
-func (*FunctionProgress) ProtoMessage()               {}
-func (*FunctionProgress) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{6} }
+func (m *FunctionProgress) Reset()         { *m = FunctionProgress{} }
+func (m *FunctionProgress) String() string { return proto.CompactTextString(m) }
+func (*FunctionProgress) ProtoMessage()    {}
+func (*FunctionProgress) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{6}
+}
+func (m *FunctionProgress) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FunctionProgress.Unmarshal(m, b)
+}
+func (m *FunctionProgress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FunctionProgress.Marshal(b, m, deterministic)
+}
+func (dst *FunctionProgress) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FunctionProgress.Merge(dst, src)
+}
+func (m *FunctionProgress) XXX_Size() int {
+	return xxx_messageInfo_FunctionProgress.Size(m)
+}
+func (m *FunctionProgress) XXX_DiscardUnknown() {
+	xxx_messageInfo_FunctionProgress.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FunctionProgress proto.InternalMessageInfo
 
 func (m *FunctionProgress) GetName() string {
 	if m != nil {
@@ -585,13 +747,35 @@ type ProjectProgressRequest struct {
 	// Project to get progress for.
 	//
 	// The provided project name must be known to the queried Tricium instance.
-	Project string `protobuf:"bytes,1,opt,name=project" json:"project,omitempty"`
+	Project              string   `protobuf:"bytes,1,opt,name=project" json:"project,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ProjectProgressRequest) Reset()                    { *m = ProjectProgressRequest{} }
-func (m *ProjectProgressRequest) String() string            { return proto.CompactTextString(m) }
-func (*ProjectProgressRequest) ProtoMessage()               {}
-func (*ProjectProgressRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{7} }
+func (m *ProjectProgressRequest) Reset()         { *m = ProjectProgressRequest{} }
+func (m *ProjectProgressRequest) String() string { return proto.CompactTextString(m) }
+func (*ProjectProgressRequest) ProtoMessage()    {}
+func (*ProjectProgressRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{7}
+}
+func (m *ProjectProgressRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProjectProgressRequest.Unmarshal(m, b)
+}
+func (m *ProjectProgressRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProjectProgressRequest.Marshal(b, m, deterministic)
+}
+func (dst *ProjectProgressRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProjectProgressRequest.Merge(dst, src)
+}
+func (m *ProjectProgressRequest) XXX_Size() int {
+	return xxx_messageInfo_ProjectProgressRequest.Size(m)
+}
+func (m *ProjectProgressRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProjectProgressRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProjectProgressRequest proto.InternalMessageInfo
 
 func (m *ProjectProgressRequest) GetProject() string {
 	if m != nil {
@@ -605,13 +789,35 @@ type ProjectProgressResponse struct {
 	//
 	// The returned list is sorted based on state and detailed run progress
 	// can be requested using the run ID of each listed run.
-	RunProgress []*RunProgress `protobuf:"bytes,1,rep,name=run_progress,json=runProgress" json:"run_progress,omitempty"`
+	RunProgress          []*RunProgress `protobuf:"bytes,1,rep,name=run_progress,json=runProgress" json:"run_progress,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
 
-func (m *ProjectProgressResponse) Reset()                    { *m = ProjectProgressResponse{} }
-func (m *ProjectProgressResponse) String() string            { return proto.CompactTextString(m) }
-func (*ProjectProgressResponse) ProtoMessage()               {}
-func (*ProjectProgressResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{8} }
+func (m *ProjectProgressResponse) Reset()         { *m = ProjectProgressResponse{} }
+func (m *ProjectProgressResponse) String() string { return proto.CompactTextString(m) }
+func (*ProjectProgressResponse) ProtoMessage()    {}
+func (*ProjectProgressResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{8}
+}
+func (m *ProjectProgressResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProjectProgressResponse.Unmarshal(m, b)
+}
+func (m *ProjectProgressResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProjectProgressResponse.Marshal(b, m, deterministic)
+}
+func (dst *ProjectProgressResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProjectProgressResponse.Merge(dst, src)
+}
+func (m *ProjectProgressResponse) XXX_Size() int {
+	return xxx_messageInfo_ProjectProgressResponse.Size(m)
+}
+func (m *ProjectProgressResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProjectProgressResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProjectProgressResponse proto.InternalMessageInfo
 
 func (m *ProjectProgressResponse) GetRunProgress() []*RunProgress {
 	if m != nil {
@@ -621,15 +827,37 @@ func (m *ProjectProgressResponse) GetRunProgress() []*RunProgress {
 }
 
 type RunProgress struct {
-	RunId       string `protobuf:"bytes,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
-	State       State  `protobuf:"varint,2,opt,name=state,enum=tricium.State" json:"state,omitempty"`
-	NumComments int32  `protobuf:"varint,3,opt,name=num_comments,json=numComments" json:"num_comments,omitempty"`
+	RunId                string   `protobuf:"bytes,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	State                State    `protobuf:"varint,2,opt,name=state,enum=tricium.State" json:"state,omitempty"`
+	NumComments          int32    `protobuf:"varint,3,opt,name=num_comments,json=numComments" json:"num_comments,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *RunProgress) Reset()                    { *m = RunProgress{} }
-func (m *RunProgress) String() string            { return proto.CompactTextString(m) }
-func (*RunProgress) ProtoMessage()               {}
-func (*RunProgress) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{9} }
+func (m *RunProgress) Reset()         { *m = RunProgress{} }
+func (m *RunProgress) String() string { return proto.CompactTextString(m) }
+func (*RunProgress) ProtoMessage()    {}
+func (*RunProgress) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{9}
+}
+func (m *RunProgress) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RunProgress.Unmarshal(m, b)
+}
+func (m *RunProgress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RunProgress.Marshal(b, m, deterministic)
+}
+func (dst *RunProgress) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RunProgress.Merge(dst, src)
+}
+func (m *RunProgress) XXX_Size() int {
+	return xxx_messageInfo_RunProgress.Size(m)
+}
+func (m *RunProgress) XXX_DiscardUnknown() {
+	xxx_messageInfo_RunProgress.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RunProgress proto.InternalMessageInfo
 
 func (m *RunProgress) GetRunId() string {
 	if m != nil {
@@ -668,13 +896,35 @@ type ResultsRequest struct {
 	// If provided, only results for the provided platform and function are returned.
 	//
 	// NB! Currently not supported.
-	Platform Platform_Name `protobuf:"varint,3,opt,name=platform,enum=tricium.Platform_Name" json:"platform,omitempty"`
+	Platform             Platform_Name `protobuf:"varint,3,opt,name=platform,enum=tricium.Platform_Name" json:"platform,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
-func (m *ResultsRequest) Reset()                    { *m = ResultsRequest{} }
-func (m *ResultsRequest) String() string            { return proto.CompactTextString(m) }
-func (*ResultsRequest) ProtoMessage()               {}
-func (*ResultsRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{10} }
+func (m *ResultsRequest) Reset()         { *m = ResultsRequest{} }
+func (m *ResultsRequest) String() string { return proto.CompactTextString(m) }
+func (*ResultsRequest) ProtoMessage()    {}
+func (*ResultsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{10}
+}
+func (m *ResultsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResultsRequest.Unmarshal(m, b)
+}
+func (m *ResultsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResultsRequest.Marshal(b, m, deterministic)
+}
+func (dst *ResultsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResultsRequest.Merge(dst, src)
+}
+func (m *ResultsRequest) XXX_Size() int {
+	return xxx_messageInfo_ResultsRequest.Size(m)
+}
+func (m *ResultsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResultsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResultsRequest proto.InternalMessageInfo
 
 func (m *ResultsRequest) GetRunId() string {
 	if m != nil {
@@ -706,13 +956,35 @@ type ResultsResponse struct {
 	// platforms was made and the request did not include a specific platform.
 	// Results for a run with no specific function selected will be marked as merged
 	// if any included analyzer results were merged.
-	IsMerged bool `protobuf:"varint,2,opt,name=is_merged,json=isMerged" json:"is_merged,omitempty"`
+	IsMerged             bool     `protobuf:"varint,2,opt,name=is_merged,json=isMerged" json:"is_merged,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ResultsResponse) Reset()                    { *m = ResultsResponse{} }
-func (m *ResultsResponse) String() string            { return proto.CompactTextString(m) }
-func (*ResultsResponse) ProtoMessage()               {}
-func (*ResultsResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{11} }
+func (m *ResultsResponse) Reset()         { *m = ResultsResponse{} }
+func (m *ResultsResponse) String() string { return proto.CompactTextString(m) }
+func (*ResultsResponse) ProtoMessage()    {}
+func (*ResultsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{11}
+}
+func (m *ResultsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResultsResponse.Unmarshal(m, b)
+}
+func (m *ResultsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResultsResponse.Marshal(b, m, deterministic)
+}
+func (dst *ResultsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResultsResponse.Merge(dst, src)
+}
+func (m *ResultsResponse) XXX_Size() int {
+	return xxx_messageInfo_ResultsResponse.Size(m)
+}
+func (m *ResultsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResultsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResultsResponse proto.InternalMessageInfo
 
 func (m *ResultsResponse) GetResults() *Data_Results {
 	if m != nil {
@@ -750,13 +1022,35 @@ type FeedbackRequest struct {
 	// Must be on the form "2006-01-02T08:04:05Z" (RFC 3339) and after start_time.
 	//
 	// Optional field. Defaults to now.
-	EndTime string `protobuf:"bytes,3,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
+	EndTime              string   `protobuf:"bytes,3,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *FeedbackRequest) Reset()                    { *m = FeedbackRequest{} }
-func (m *FeedbackRequest) String() string            { return proto.CompactTextString(m) }
-func (*FeedbackRequest) ProtoMessage()               {}
-func (*FeedbackRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{12} }
+func (m *FeedbackRequest) Reset()         { *m = FeedbackRequest{} }
+func (m *FeedbackRequest) String() string { return proto.CompactTextString(m) }
+func (*FeedbackRequest) ProtoMessage()    {}
+func (*FeedbackRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{12}
+}
+func (m *FeedbackRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FeedbackRequest.Unmarshal(m, b)
+}
+func (m *FeedbackRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FeedbackRequest.Marshal(b, m, deterministic)
+}
+func (dst *FeedbackRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FeedbackRequest.Merge(dst, src)
+}
+func (m *FeedbackRequest) XXX_Size() int {
+	return xxx_messageInfo_FeedbackRequest.Size(m)
+}
+func (m *FeedbackRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_FeedbackRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FeedbackRequest proto.InternalMessageInfo
 
 func (m *FeedbackRequest) GetCategory() string {
 	if m != nil {
@@ -789,13 +1083,35 @@ type FeedbackResponse struct {
 	// Number of collected 'not useful' reports.
 	NotUsefulReports int32 `protobuf:"varint,2,opt,name=not_useful_reports,json=notUsefulReports" json:"not_useful_reports,omitempty"`
 	// List of URLs to 'not useful' bug reports.
-	Issues []string `protobuf:"bytes,3,rep,name=issues" json:"issues,omitempty"`
+	Issues               []string `protobuf:"bytes,3,rep,name=issues" json:"issues,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *FeedbackResponse) Reset()                    { *m = FeedbackResponse{} }
-func (m *FeedbackResponse) String() string            { return proto.CompactTextString(m) }
-func (*FeedbackResponse) ProtoMessage()               {}
-func (*FeedbackResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{13} }
+func (m *FeedbackResponse) Reset()         { *m = FeedbackResponse{} }
+func (m *FeedbackResponse) String() string { return proto.CompactTextString(m) }
+func (*FeedbackResponse) ProtoMessage()    {}
+func (*FeedbackResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{13}
+}
+func (m *FeedbackResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FeedbackResponse.Unmarshal(m, b)
+}
+func (m *FeedbackResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FeedbackResponse.Marshal(b, m, deterministic)
+}
+func (dst *FeedbackResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FeedbackResponse.Merge(dst, src)
+}
+func (m *FeedbackResponse) XXX_Size() int {
+	return xxx_messageInfo_FeedbackResponse.Size(m)
+}
+func (m *FeedbackResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_FeedbackResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FeedbackResponse proto.InternalMessageInfo
 
 func (m *FeedbackResponse) GetComments() int32 {
 	if m != nil {
@@ -824,13 +1140,35 @@ type ReportNotUsefulRequest struct {
 	// More feedback information.
 	//
 	// Optional field.
-	MoreDetails string `protobuf:"bytes,2,opt,name=more_details,json=moreDetails" json:"more_details,omitempty"`
+	MoreDetails          string   `protobuf:"bytes,2,opt,name=more_details,json=moreDetails" json:"more_details,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ReportNotUsefulRequest) Reset()                    { *m = ReportNotUsefulRequest{} }
-func (m *ReportNotUsefulRequest) String() string            { return proto.CompactTextString(m) }
-func (*ReportNotUsefulRequest) ProtoMessage()               {}
-func (*ReportNotUsefulRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{14} }
+func (m *ReportNotUsefulRequest) Reset()         { *m = ReportNotUsefulRequest{} }
+func (m *ReportNotUsefulRequest) String() string { return proto.CompactTextString(m) }
+func (*ReportNotUsefulRequest) ProtoMessage()    {}
+func (*ReportNotUsefulRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{14}
+}
+func (m *ReportNotUsefulRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ReportNotUsefulRequest.Unmarshal(m, b)
+}
+func (m *ReportNotUsefulRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ReportNotUsefulRequest.Marshal(b, m, deterministic)
+}
+func (dst *ReportNotUsefulRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReportNotUsefulRequest.Merge(dst, src)
+}
+func (m *ReportNotUsefulRequest) XXX_Size() int {
+	return xxx_messageInfo_ReportNotUsefulRequest.Size(m)
+}
+func (m *ReportNotUsefulRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReportNotUsefulRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReportNotUsefulRequest proto.InternalMessageInfo
 
 func (m *ReportNotUsefulRequest) GetCommentId() string {
 	if m != nil {
@@ -850,13 +1188,35 @@ type ReportNotUsefulResponse struct {
 	// URL to issue if created.
 	//
 	// Only created if there were feedback details.
-	Issue string `protobuf:"bytes,1,opt,name=issue" json:"issue,omitempty"`
+	Issue                string   `protobuf:"bytes,1,opt,name=issue" json:"issue,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ReportNotUsefulResponse) Reset()                    { *m = ReportNotUsefulResponse{} }
-func (m *ReportNotUsefulResponse) String() string            { return proto.CompactTextString(m) }
-func (*ReportNotUsefulResponse) ProtoMessage()               {}
-func (*ReportNotUsefulResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{15} }
+func (m *ReportNotUsefulResponse) Reset()         { *m = ReportNotUsefulResponse{} }
+func (m *ReportNotUsefulResponse) String() string { return proto.CompactTextString(m) }
+func (*ReportNotUsefulResponse) ProtoMessage()    {}
+func (*ReportNotUsefulResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_tricium_f7a59ad663c62930, []int{15}
+}
+func (m *ReportNotUsefulResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ReportNotUsefulResponse.Unmarshal(m, b)
+}
+func (m *ReportNotUsefulResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ReportNotUsefulResponse.Marshal(b, m, deterministic)
+}
+func (dst *ReportNotUsefulResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReportNotUsefulResponse.Merge(dst, src)
+}
+func (m *ReportNotUsefulResponse) XXX_Size() int {
+	return xxx_messageInfo_ReportNotUsefulResponse.Size(m)
+}
+func (m *ReportNotUsefulResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReportNotUsefulResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReportNotUsefulResponse proto.InternalMessageInfo
 
 func (m *ReportNotUsefulResponse) GetIssue() string {
 	if m != nil {
@@ -893,8 +1253,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Tricium service
-
+// TriciumClient is the client API for Tricium service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type TriciumClient interface {
 	// Analyze requests analysis of a list of paths.
 	//
@@ -994,7 +1355,7 @@ func NewTriciumClient(cc *grpc.ClientConn) TriciumClient {
 
 func (c *triciumClient) Analyze(ctx context.Context, in *AnalyzeRequest, opts ...grpc.CallOption) (*AnalyzeResponse, error) {
 	out := new(AnalyzeResponse)
-	err := grpc.Invoke(ctx, "/tricium.Tricium/Analyze", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/tricium.Tricium/Analyze", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1003,7 +1364,7 @@ func (c *triciumClient) Analyze(ctx context.Context, in *AnalyzeRequest, opts ..
 
 func (c *triciumClient) Progress(ctx context.Context, in *ProgressRequest, opts ...grpc.CallOption) (*ProgressResponse, error) {
 	out := new(ProgressResponse)
-	err := grpc.Invoke(ctx, "/tricium.Tricium/Progress", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/tricium.Tricium/Progress", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1012,7 +1373,7 @@ func (c *triciumClient) Progress(ctx context.Context, in *ProgressRequest, opts 
 
 func (c *triciumClient) ProjectProgress(ctx context.Context, in *ProjectProgressRequest, opts ...grpc.CallOption) (*ProjectProgressResponse, error) {
 	out := new(ProjectProgressResponse)
-	err := grpc.Invoke(ctx, "/tricium.Tricium/ProjectProgress", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/tricium.Tricium/ProjectProgress", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1021,7 +1382,7 @@ func (c *triciumClient) ProjectProgress(ctx context.Context, in *ProjectProgress
 
 func (c *triciumClient) Results(ctx context.Context, in *ResultsRequest, opts ...grpc.CallOption) (*ResultsResponse, error) {
 	out := new(ResultsResponse)
-	err := grpc.Invoke(ctx, "/tricium.Tricium/Results", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/tricium.Tricium/Results", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1030,7 +1391,7 @@ func (c *triciumClient) Results(ctx context.Context, in *ResultsRequest, opts ..
 
 func (c *triciumClient) Feedback(ctx context.Context, in *FeedbackRequest, opts ...grpc.CallOption) (*FeedbackResponse, error) {
 	out := new(FeedbackResponse)
-	err := grpc.Invoke(ctx, "/tricium.Tricium/Feedback", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/tricium.Tricium/Feedback", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1039,15 +1400,14 @@ func (c *triciumClient) Feedback(ctx context.Context, in *FeedbackRequest, opts 
 
 func (c *triciumClient) ReportNotUseful(ctx context.Context, in *ReportNotUsefulRequest, opts ...grpc.CallOption) (*ReportNotUsefulResponse, error) {
 	out := new(ReportNotUsefulResponse)
-	err := grpc.Invoke(ctx, "/tricium.Tricium/ReportNotUseful", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/tricium.Tricium/ReportNotUseful", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Tricium service
-
+// TriciumServer is the server API for Tricium service.
 type TriciumServer interface {
 	// Analyze requests analysis of a list of paths.
 	//
@@ -1221,9 +1581,11 @@ var _Tricium_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/v1/tricium.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/v1/tricium.proto", fileDescriptor4) }
+func init() {
+	proto.RegisterFile("infra/tricium/api/v1/tricium.proto", fileDescriptor_tricium_f7a59ad663c62930)
+}
 
-var fileDescriptor4 = []byte{
+var fileDescriptor_tricium_f7a59ad663c62930 = []byte{
 	// 1001 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0x5d, 0x6e, 0xdb, 0x46,
 	0x10, 0x36, 0x23, 0x4b, 0xa4, 0x86, 0xae, 0xcc, 0x2c, 0x12, 0x9b, 0x56, 0x11, 0xc4, 0x65, 0xfb,

@@ -12,6 +12,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 // Available data types should be listed in this enum and have a
 // corresponding nested message with a mandatory platforms fields,
 // see GitFileDetails for field details.
@@ -43,18 +49,42 @@ var Data_Type_value = map[string]int32{
 func (x Data_Type) String() string {
 	return proto.EnumName(Data_Type_name, int32(x))
 }
-func (Data_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 0} }
+func (Data_Type) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 0}
+}
 
 // Tricium data types.
 //
 // Any data type provided or needed by a Tricium function.
 type Data struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Data) Reset()                    { *m = Data{} }
-func (m *Data) String() string            { return proto.CompactTextString(m) }
-func (*Data) ProtoMessage()               {}
-func (*Data) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (m *Data) Reset()         { *m = Data{} }
+func (m *Data) String() string { return proto.CompactTextString(m) }
+func (*Data) ProtoMessage()    {}
+func (*Data) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0}
+}
+func (m *Data) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data.Unmarshal(m, b)
+}
+func (m *Data) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data.Marshal(b, m, deterministic)
+}
+func (dst *Data) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data.Merge(dst, src)
+}
+func (m *Data) XXX_Size() int {
+	return xxx_messageInfo_Data.Size(m)
+}
+func (m *Data) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data proto.InternalMessageInfo
 
 // Details for supported types, specifically whether a type is tied to
 // a platform.
@@ -62,14 +92,36 @@ func (*Data) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 // These type details are used to resolve data dependencies when
 // generating workflows.
 type Data_TypeDetails struct {
-	Type               Data_Type `protobuf:"varint,1,opt,name=type,enum=tricium.Data_Type" json:"type,omitempty"`
-	IsPlatformSpecific bool      `protobuf:"varint,2,opt,name=is_platform_specific,json=isPlatformSpecific" json:"is_platform_specific,omitempty"`
+	Type                 Data_Type `protobuf:"varint,1,opt,name=type,enum=tricium.Data_Type" json:"type,omitempty"`
+	IsPlatformSpecific   bool      `protobuf:"varint,2,opt,name=is_platform_specific,json=isPlatformSpecific" json:"is_platform_specific,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
-func (m *Data_TypeDetails) Reset()                    { *m = Data_TypeDetails{} }
-func (m *Data_TypeDetails) String() string            { return proto.CompactTextString(m) }
-func (*Data_TypeDetails) ProtoMessage()               {}
-func (*Data_TypeDetails) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 0} }
+func (m *Data_TypeDetails) Reset()         { *m = Data_TypeDetails{} }
+func (m *Data_TypeDetails) String() string { return proto.CompactTextString(m) }
+func (*Data_TypeDetails) ProtoMessage()    {}
+func (*Data_TypeDetails) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 0}
+}
+func (m *Data_TypeDetails) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_TypeDetails.Unmarshal(m, b)
+}
+func (m *Data_TypeDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_TypeDetails.Marshal(b, m, deterministic)
+}
+func (dst *Data_TypeDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_TypeDetails.Merge(dst, src)
+}
+func (m *Data_TypeDetails) XXX_Size() int {
+	return xxx_messageInfo_Data_TypeDetails.Size(m)
+}
+func (m *Data_TypeDetails) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_TypeDetails.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_TypeDetails proto.InternalMessageInfo
 
 func (m *Data_TypeDetails) GetType() Data_Type {
 	if m != nil {
@@ -96,16 +148,38 @@ type Data_GitFileDetails struct {
 	//
 	// This includes the ANY platform, encoded as zero, which should
 	// be used for any data that is not platform-specific.
-	Platforms  int64        `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
-	Repository string       `protobuf:"bytes,2,opt,name=repository" json:"repository,omitempty"`
-	Ref        string       `protobuf:"bytes,3,opt,name=ref" json:"ref,omitempty"`
-	Files      []*Data_File `protobuf:"bytes,4,rep,name=files" json:"files,omitempty"`
+	Platforms            int64        `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
+	Repository           string       `protobuf:"bytes,2,opt,name=repository" json:"repository,omitempty"`
+	Ref                  string       `protobuf:"bytes,3,opt,name=ref" json:"ref,omitempty"`
+	Files                []*Data_File `protobuf:"bytes,4,rep,name=files" json:"files,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
-func (m *Data_GitFileDetails) Reset()                    { *m = Data_GitFileDetails{} }
-func (m *Data_GitFileDetails) String() string            { return proto.CompactTextString(m) }
-func (*Data_GitFileDetails) ProtoMessage()               {}
-func (*Data_GitFileDetails) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 1} }
+func (m *Data_GitFileDetails) Reset()         { *m = Data_GitFileDetails{} }
+func (m *Data_GitFileDetails) String() string { return proto.CompactTextString(m) }
+func (*Data_GitFileDetails) ProtoMessage()    {}
+func (*Data_GitFileDetails) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 1}
+}
+func (m *Data_GitFileDetails) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_GitFileDetails.Unmarshal(m, b)
+}
+func (m *Data_GitFileDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_GitFileDetails.Marshal(b, m, deterministic)
+}
+func (dst *Data_GitFileDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_GitFileDetails.Merge(dst, src)
+}
+func (m *Data_GitFileDetails) XXX_Size() int {
+	return xxx_messageInfo_Data_GitFileDetails.Size(m)
+}
+func (m *Data_GitFileDetails) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_GitFileDetails.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_GitFileDetails proto.InternalMessageInfo
 
 func (m *Data_GitFileDetails) GetPlatforms() int64 {
 	if m != nil {
@@ -145,13 +219,35 @@ func (m *Data_GitFileDetails) GetFiles() []*Data_File {
 type Data_Files struct {
 	Platforms int64 `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
 	// Files from the root of the isolated input.
-	Files []*Data_File `protobuf:"bytes,3,rep,name=files" json:"files,omitempty"`
+	Files                []*Data_File `protobuf:"bytes,3,rep,name=files" json:"files,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
-func (m *Data_Files) Reset()                    { *m = Data_Files{} }
-func (m *Data_Files) String() string            { return proto.CompactTextString(m) }
-func (*Data_Files) ProtoMessage()               {}
-func (*Data_Files) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 2} }
+func (m *Data_Files) Reset()         { *m = Data_Files{} }
+func (m *Data_Files) String() string { return proto.CompactTextString(m) }
+func (*Data_Files) ProtoMessage()    {}
+func (*Data_Files) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 2}
+}
+func (m *Data_Files) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Files.Unmarshal(m, b)
+}
+func (m *Data_Files) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Files.Marshal(b, m, deterministic)
+}
+func (dst *Data_Files) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Files.Merge(dst, src)
+}
+func (m *Data_Files) XXX_Size() int {
+	return xxx_messageInfo_Data_Files.Size(m)
+}
+func (m *Data_Files) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Files.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Files proto.InternalMessageInfo
 
 func (m *Data_Files) GetPlatforms() int64 {
 	if m != nil {
@@ -172,13 +268,35 @@ type Data_File struct {
 	// relative to the root of the repository being analyzed.
 	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
 	// Whether or not this file contains binary content (not text)
-	IsBinary bool `protobuf:"varint,2,opt,name=is_binary,json=isBinary" json:"is_binary,omitempty"`
+	IsBinary             bool     `protobuf:"varint,2,opt,name=is_binary,json=isBinary" json:"is_binary,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Data_File) Reset()                    { *m = Data_File{} }
-func (m *Data_File) String() string            { return proto.CompactTextString(m) }
-func (*Data_File) ProtoMessage()               {}
-func (*Data_File) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 3} }
+func (m *Data_File) Reset()         { *m = Data_File{} }
+func (m *Data_File) String() string { return proto.CompactTextString(m) }
+func (*Data_File) ProtoMessage()    {}
+func (*Data_File) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 3}
+}
+func (m *Data_File) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_File.Unmarshal(m, b)
+}
+func (m *Data_File) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_File.Marshal(b, m, deterministic)
+}
+func (dst *Data_File) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_File.Merge(dst, src)
+}
+func (m *Data_File) XXX_Size() int {
+	return xxx_messageInfo_Data_File.Size(m)
+}
+func (m *Data_File) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_File.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_File proto.InternalMessageInfo
 
 func (m *Data_File) GetPath() string {
 	if m != nil {
@@ -204,13 +322,35 @@ type Data_ClangDetails struct {
 	// Path to the compilation database. Typically, in the build root.
 	CompilationDb string `protobuf:"bytes,2,opt,name=compilation_db,json=compilationDb" json:"compilation_db,omitempty"`
 	// Paths to files needed to compile cpp files to analyze.
-	CompDepPath []string `protobuf:"bytes,3,rep,name=comp_dep_path,json=compDepPath" json:"comp_dep_path,omitempty"`
+	CompDepPaths         []string `protobuf:"bytes,3,rep,name=comp_dep_paths,json=compDepPaths" json:"comp_dep_paths,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Data_ClangDetails) Reset()                    { *m = Data_ClangDetails{} }
-func (m *Data_ClangDetails) String() string            { return proto.CompactTextString(m) }
-func (*Data_ClangDetails) ProtoMessage()               {}
-func (*Data_ClangDetails) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 4} }
+func (m *Data_ClangDetails) Reset()         { *m = Data_ClangDetails{} }
+func (m *Data_ClangDetails) String() string { return proto.CompactTextString(m) }
+func (*Data_ClangDetails) ProtoMessage()    {}
+func (*Data_ClangDetails) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 4}
+}
+func (m *Data_ClangDetails) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_ClangDetails.Unmarshal(m, b)
+}
+func (m *Data_ClangDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_ClangDetails.Marshal(b, m, deterministic)
+}
+func (dst *Data_ClangDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_ClangDetails.Merge(dst, src)
+}
+func (m *Data_ClangDetails) XXX_Size() int {
+	return xxx_messageInfo_Data_ClangDetails.Size(m)
+}
+func (m *Data_ClangDetails) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_ClangDetails.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_ClangDetails proto.InternalMessageInfo
 
 func (m *Data_ClangDetails) GetPlatforms() int64 {
 	if m != nil {
@@ -226,9 +366,9 @@ func (m *Data_ClangDetails) GetCompilationDb() string {
 	return ""
 }
 
-func (m *Data_ClangDetails) GetCompDepPath() []string {
+func (m *Data_ClangDetails) GetCompDepPaths() []string {
 	if m != nil {
-		return m.CompDepPath
+		return m.CompDepPaths
 	}
 	return nil
 }
@@ -243,13 +383,35 @@ type Data_Results struct {
 	Platforms int64 `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
 	// Zero or more results found as comments, either inline comments or change
 	// comments (comments without line positions).
-	Comments []*Data_Comment `protobuf:"bytes,2,rep,name=comments" json:"comments,omitempty"`
+	Comments             []*Data_Comment `protobuf:"bytes,2,rep,name=comments" json:"comments,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *Data_Results) Reset()                    { *m = Data_Results{} }
-func (m *Data_Results) String() string            { return proto.CompactTextString(m) }
-func (*Data_Results) ProtoMessage()               {}
-func (*Data_Results) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 5} }
+func (m *Data_Results) Reset()         { *m = Data_Results{} }
+func (m *Data_Results) String() string { return proto.CompactTextString(m) }
+func (*Data_Results) ProtoMessage()    {}
+func (*Data_Results) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 5}
+}
+func (m *Data_Results) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Results.Unmarshal(m, b)
+}
+func (m *Data_Results) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Results.Marshal(b, m, deterministic)
+}
+func (dst *Data_Results) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Results.Merge(dst, src)
+}
+func (m *Data_Results) XXX_Size() int {
+	return xxx_messageInfo_Data_Results.Size(m)
+}
+func (m *Data_Results) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Results.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Results proto.InternalMessageInfo
 
 func (m *Data_Results) GetPlatforms() int64 {
 	if m != nil {
@@ -295,13 +457,35 @@ type Data_Comment struct {
 	StartChar int32 `protobuf:"varint,8,opt,name=start_char,json=startChar" json:"start_char,omitempty"`
 	EndChar   int32 `protobuf:"varint,9,opt,name=end_char,json=endChar" json:"end_char,omitempty"`
 	// Suggested fixes for the identified issue.
-	Suggestion []*Data_Suggestion `protobuf:"bytes,10,rep,name=suggestion" json:"suggestion,omitempty"`
+	Suggestions          []*Data_Suggestion `protobuf:"bytes,10,rep,name=suggestions" json:"suggestions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
-func (m *Data_Comment) Reset()                    { *m = Data_Comment{} }
-func (m *Data_Comment) String() string            { return proto.CompactTextString(m) }
-func (*Data_Comment) ProtoMessage()               {}
-func (*Data_Comment) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 6} }
+func (m *Data_Comment) Reset()         { *m = Data_Comment{} }
+func (m *Data_Comment) String() string { return proto.CompactTextString(m) }
+func (*Data_Comment) ProtoMessage()    {}
+func (*Data_Comment) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 6}
+}
+func (m *Data_Comment) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Comment.Unmarshal(m, b)
+}
+func (m *Data_Comment) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Comment.Marshal(b, m, deterministic)
+}
+func (dst *Data_Comment) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Comment.Merge(dst, src)
+}
+func (m *Data_Comment) XXX_Size() int {
+	return xxx_messageInfo_Data_Comment.Size(m)
+}
+func (m *Data_Comment) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Comment.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Comment proto.InternalMessageInfo
 
 func (m *Data_Comment) GetId() string {
 	if m != nil {
@@ -366,9 +550,9 @@ func (m *Data_Comment) GetEndChar() int32 {
 	return 0
 }
 
-func (m *Data_Comment) GetSuggestion() []*Data_Suggestion {
+func (m *Data_Comment) GetSuggestions() []*Data_Suggestion {
 	if m != nil {
-		return m.Suggestion
+		return m.Suggestions
 	}
 	return nil
 }
@@ -381,13 +565,35 @@ type Data_Suggestion struct {
 	// A brief description of the suggested fix.
 	Description string `protobuf:"bytes,1,opt,name=description" json:"description,omitempty"`
 	// Fix as a list of replacements.
-	Replacement []*Data_Replacement `protobuf:"bytes,2,rep,name=replacement" json:"replacement,omitempty"`
+	Replacements         []*Data_Replacement `protobuf:"bytes,2,rep,name=replacements" json:"replacements,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
 }
 
-func (m *Data_Suggestion) Reset()                    { *m = Data_Suggestion{} }
-func (m *Data_Suggestion) String() string            { return proto.CompactTextString(m) }
-func (*Data_Suggestion) ProtoMessage()               {}
-func (*Data_Suggestion) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 7} }
+func (m *Data_Suggestion) Reset()         { *m = Data_Suggestion{} }
+func (m *Data_Suggestion) String() string { return proto.CompactTextString(m) }
+func (*Data_Suggestion) ProtoMessage()    {}
+func (*Data_Suggestion) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 7}
+}
+func (m *Data_Suggestion) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Suggestion.Unmarshal(m, b)
+}
+func (m *Data_Suggestion) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Suggestion.Marshal(b, m, deterministic)
+}
+func (dst *Data_Suggestion) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Suggestion.Merge(dst, src)
+}
+func (m *Data_Suggestion) XXX_Size() int {
+	return xxx_messageInfo_Data_Suggestion.Size(m)
+}
+func (m *Data_Suggestion) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Suggestion.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Suggestion proto.InternalMessageInfo
 
 func (m *Data_Suggestion) GetDescription() string {
 	if m != nil {
@@ -396,9 +602,9 @@ func (m *Data_Suggestion) GetDescription() string {
 	return ""
 }
 
-func (m *Data_Suggestion) GetReplacement() []*Data_Replacement {
+func (m *Data_Suggestion) GetReplacements() []*Data_Replacement {
 	if m != nil {
-		return m.Replacement
+		return m.Replacements
 	}
 	return nil
 }
@@ -412,16 +618,38 @@ type Data_Replacement struct {
 	// A replacement string.
 	Replacement string `protobuf:"bytes,2,opt,name=replacement" json:"replacement,omitempty"`
 	// A continuous section of the file to replace.
-	StartLine int32 `protobuf:"varint,3,opt,name=start_line,json=startLine" json:"start_line,omitempty"`
-	EndLine   int32 `protobuf:"varint,4,opt,name=end_line,json=endLine" json:"end_line,omitempty"`
-	StartChar int32 `protobuf:"varint,5,opt,name=start_char,json=startChar" json:"start_char,omitempty"`
-	EndChar   int32 `protobuf:"varint,6,opt,name=end_char,json=endChar" json:"end_char,omitempty"`
+	StartLine            int32    `protobuf:"varint,3,opt,name=start_line,json=startLine" json:"start_line,omitempty"`
+	EndLine              int32    `protobuf:"varint,4,opt,name=end_line,json=endLine" json:"end_line,omitempty"`
+	StartChar            int32    `protobuf:"varint,5,opt,name=start_char,json=startChar" json:"start_char,omitempty"`
+	EndChar              int32    `protobuf:"varint,6,opt,name=end_char,json=endChar" json:"end_char,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Data_Replacement) Reset()                    { *m = Data_Replacement{} }
-func (m *Data_Replacement) String() string            { return proto.CompactTextString(m) }
-func (*Data_Replacement) ProtoMessage()               {}
-func (*Data_Replacement) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 8} }
+func (m *Data_Replacement) Reset()         { *m = Data_Replacement{} }
+func (m *Data_Replacement) String() string { return proto.CompactTextString(m) }
+func (*Data_Replacement) ProtoMessage()    {}
+func (*Data_Replacement) Descriptor() ([]byte, []int) {
+	return fileDescriptor_data_89c42bb5167959f6, []int{0, 8}
+}
+func (m *Data_Replacement) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data_Replacement.Unmarshal(m, b)
+}
+func (m *Data_Replacement) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data_Replacement.Marshal(b, m, deterministic)
+}
+func (dst *Data_Replacement) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data_Replacement.Merge(dst, src)
+}
+func (m *Data_Replacement) XXX_Size() int {
+	return xxx_messageInfo_Data_Replacement.Size(m)
+}
+func (m *Data_Replacement) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data_Replacement.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Data_Replacement proto.InternalMessageInfo
 
 func (m *Data_Replacement) GetPath() string {
 	if m != nil {
@@ -479,48 +707,50 @@ func init() {
 	proto.RegisterEnum("tricium.Data_Type", Data_Type_name, Data_Type_value)
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/v1/data.proto", fileDescriptor1) }
+func init() {
+	proto.RegisterFile("infra/tricium/api/v1/data.proto", fileDescriptor_data_89c42bb5167959f6)
+}
 
-var fileDescriptor1 = []byte{
-	// 627 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0xcd, 0x6e, 0xda, 0x4c,
-	0x14, 0x86, 0x3f, 0x63, 0x13, 0xdb, 0xc7, 0x5f, 0x10, 0x1d, 0xa5, 0x92, 0xe3, 0xfe, 0xa1, 0x48,
-	0xad, 0x58, 0x41, 0xd3, 0x2e, 0x5a, 0xa9, 0xab, 0x14, 0x48, 0x14, 0x09, 0x25, 0xe9, 0x40, 0x37,
-	0xdd, 0x58, 0x83, 0x3d, 0xc0, 0xa8, 0xc6, 0x1e, 0xcd, 0x0c, 0xad, 0x72, 0x0b, 0xbd, 0x8d, 0x5e,
-	0x44, 0x2f, 0xae, 0x9b, 0x6a, 0x06, 0xc7, 0x98, 0xa8, 0x0a, 0xdd, 0xf9, 0xbc, 0xef, 0xf9, 0xe3,
-	0x39, 0x68, 0xe0, 0x05, 0xcb, 0xe7, 0x82, 0xf4, 0x95, 0x60, 0x09, 0x5b, 0xaf, 0xfa, 0x84, 0xb3,
-	0xfe, 0xb7, 0xd3, 0x7e, 0x4a, 0x14, 0xe9, 0x71, 0x51, 0xa8, 0x02, 0xb9, 0xa5, 0x75, 0xf2, 0xdb,
-	0x07, 0x67, 0x48, 0x14, 0x89, 0x16, 0x10, 0x4c, 0x6f, 0x39, 0x1d, 0x52, 0x45, 0x58, 0x26, 0xd1,
-	0x2b, 0x70, 0xd4, 0x2d, 0xa7, 0xa1, 0xd5, 0xb1, 0xba, 0xad, 0x37, 0xa8, 0x57, 0xe6, 0xf7, 0x74,
-	0x6e, 0x4f, 0x27, 0x62, 0xe3, 0xa3, 0xd7, 0x70, 0xc4, 0x64, 0xcc, 0x33, 0xa2, 0xe6, 0x85, 0x58,
-	0xc5, 0x92, 0xd3, 0x84, 0xcd, 0x59, 0x12, 0x36, 0x3a, 0x56, 0xd7, 0xc3, 0x88, 0xc9, 0x9b, 0xd2,
-	0x9a, 0x94, 0x4e, 0xf4, 0xc3, 0x82, 0xd6, 0x05, 0x53, 0xe7, 0x2c, 0xab, 0x86, 0x3d, 0x05, 0xff,
-	0xae, 0x83, 0x34, 0x13, 0x6d, 0xbc, 0x15, 0xd0, 0x73, 0x00, 0x41, 0x79, 0x21, 0x99, 0x2a, 0xc4,
-	0xad, 0x69, 0xec, 0xe3, 0x9a, 0x82, 0xda, 0x60, 0x0b, 0x3a, 0x0f, 0x6d, 0x63, 0xe8, 0x4f, 0xd4,
-	0x85, 0xe6, 0x9c, 0x65, 0x54, 0x86, 0x4e, 0xc7, 0xee, 0x06, 0xf7, 0xb7, 0xd7, 0x93, 0xf1, 0x26,
-	0x21, 0xba, 0x86, 0xa6, 0x0e, 0xf7, 0xad, 0x50, 0x35, 0xb4, 0xf7, 0x35, 0x7c, 0x07, 0x8e, 0x0e,
-	0x11, 0x02, 0x87, 0x13, 0xb5, 0x34, 0xad, 0x7c, 0x6c, 0xbe, 0xd1, 0x13, 0xf0, 0x99, 0x8c, 0x67,
-	0x2c, 0x27, 0xe5, 0xef, 0xf0, 0xb0, 0xc7, 0xe4, 0x47, 0x13, 0x47, 0xdf, 0xe1, 0xff, 0x41, 0x46,
-	0xf2, 0xc5, 0xbf, 0x31, 0x79, 0x09, 0xad, 0xa4, 0x58, 0x71, 0x96, 0x11, 0xc5, 0x8a, 0x3c, 0x4e,
-	0x67, 0x25, 0x97, 0xc3, 0x9a, 0x3a, 0x9c, 0xa1, 0x13, 0x30, 0x42, 0x9c, 0x52, 0x1e, 0x9b, 0x75,
-	0xf4, 0xfe, 0x3e, 0x0e, 0xb4, 0x38, 0xa4, 0xfc, 0x86, 0xa8, 0x65, 0xf4, 0x05, 0x5c, 0x4c, 0xe5,
-	0x3a, 0x53, 0xfb, 0x66, 0x9e, 0x82, 0x97, 0x14, 0xab, 0x15, 0xcd, 0x95, 0x0c, 0x1b, 0x86, 0xc3,
-	0xe3, 0x5d, 0x0e, 0x83, 0x8d, 0x8b, 0xab, 0xb4, 0xe8, 0x67, 0x03, 0xdc, 0x52, 0x45, 0x2d, 0x68,
-	0xb0, 0xb4, 0xe4, 0xd1, 0x60, 0x29, 0x8a, 0xc0, 0x4b, 0x88, 0xa2, 0x8b, 0xed, 0x51, 0xab, 0x18,
-	0x85, 0xe0, 0xae, 0xa8, 0x94, 0x64, 0x41, 0xcb, 0xb3, 0xde, 0x85, 0xfa, 0xd8, 0x6b, 0x91, 0x85,
-	0xce, 0xe6, 0xd8, 0x6b, 0x91, 0x55, 0xa4, 0x9b, 0x35, 0xd2, 0xcf, 0x00, 0xa4, 0x22, 0x42, 0xc5,
-	0x19, 0xcb, 0x69, 0x78, 0xd0, 0xb1, 0xba, 0x4d, 0xec, 0x1b, 0x65, 0xcc, 0x72, 0x8a, 0x8e, 0xc1,
-	0xa3, 0x79, 0xba, 0x31, 0x5d, 0x63, 0xba, 0x34, 0x4f, 0x8d, 0x55, 0x55, 0x26, 0x4b, 0x22, 0x42,
-	0xaf, 0x56, 0x39, 0x58, 0x12, 0x71, 0x57, 0x69, 0x4c, 0xbf, 0xaa, 0x34, 0xd6, 0x7b, 0x00, 0xb9,
-	0x5e, 0x2c, 0xa8, 0xd4, 0xec, 0x43, 0x30, 0x80, 0xc2, 0x5d, 0x40, 0x93, 0xca, 0xc7, 0xb5, 0xdc,
-	0xe8, 0x2b, 0xc0, 0xd6, 0x41, 0x1d, 0x08, 0x52, 0x2a, 0x13, 0xc1, 0xb8, 0x69, 0xb4, 0x01, 0x56,
-	0x97, 0xd0, 0x07, 0x08, 0x04, 0xe5, 0x19, 0x49, 0xa8, 0x06, 0x5b, 0xde, 0xe2, 0x78, 0x77, 0x14,
-	0xde, 0x26, 0xe0, 0x7a, 0x76, 0xf4, 0xcb, 0x82, 0xa0, 0x66, 0xfe, 0xf5, 0x8f, 0xda, 0xb9, 0x3f,
-	0xc0, 0xac, 0x50, 0x93, 0xee, 0x01, 0xb6, 0x1f, 0x02, 0xec, 0x3c, 0x04, 0xb8, 0xf9, 0x10, 0xe0,
-	0x83, 0x1d, 0xc0, 0x27, 0x9f, 0xc0, 0xd1, 0x0f, 0x0f, 0xf2, 0xc0, 0xb9, 0xba, 0xbe, 0x1a, 0xb5,
-	0xff, 0x43, 0x47, 0xd0, 0xbe, 0xb8, 0x9c, 0xc6, 0xe7, 0x97, 0xe3, 0x51, 0x3c, 0x1c, 0x4d, 0xcf,
-	0x2e, 0xc7, 0x93, 0xb6, 0x85, 0x7c, 0x68, 0x6a, 0x65, 0xd2, 0x6e, 0xa0, 0x47, 0x70, 0x38, 0x18,
-	0x9f, 0x5d, 0x5d, 0x54, 0xae, 0x8d, 0x02, 0x70, 0xf1, 0x68, 0xf2, 0x79, 0x3c, 0x9d, 0xb4, 0x9d,
-	0xd9, 0x81, 0x79, 0x0d, 0xdf, 0xfe, 0x09, 0x00, 0x00, 0xff, 0xff, 0x82, 0xe2, 0x0c, 0xf1, 0x30,
-	0x05, 0x00, 0x00,
+var fileDescriptor_data_89c42bb5167959f6 = []byte{
+	// 630 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0xcf, 0x6a, 0xdb, 0x4a,
+	0x14, 0xc6, 0xaf, 0x2c, 0x39, 0x92, 0x8e, 0x12, 0xe3, 0x3b, 0xe4, 0x82, 0xa2, 0x7b, 0x6f, 0x6b,
+	0x42, 0x5b, 0xbc, 0xb2, 0x9b, 0x76, 0x51, 0x28, 0x74, 0x91, 0xda, 0x4e, 0x08, 0x98, 0x24, 0x1d,
+	0xbb, 0x9b, 0x6e, 0xc4, 0x58, 0x1a, 0x3b, 0x03, 0xfa, 0x33, 0xcc, 0x8c, 0x0b, 0x5e, 0x76, 0xdb,
+	0xf7, 0xe8, 0x33, 0xf4, 0xf5, 0xca, 0x8c, 0x15, 0x59, 0x0e, 0x25, 0xe9, 0x4e, 0xe7, 0xfb, 0xbe,
+	0x39, 0x67, 0xf4, 0x3b, 0x42, 0xf0, 0x9c, 0x15, 0x4b, 0x41, 0x86, 0x4a, 0xb0, 0x84, 0xad, 0xf3,
+	0x21, 0xe1, 0x6c, 0xf8, 0xf5, 0x6c, 0x98, 0x12, 0x45, 0x06, 0x5c, 0x94, 0xaa, 0x44, 0x6e, 0x65,
+	0x9d, 0x7e, 0x03, 0x70, 0xc6, 0x44, 0x91, 0x68, 0x05, 0xc1, 0x7c, 0xc3, 0xe9, 0x98, 0x2a, 0xc2,
+	0x32, 0x89, 0x5e, 0x81, 0xa3, 0x36, 0x9c, 0x86, 0x56, 0xcf, 0xea, 0x77, 0xde, 0xa0, 0x41, 0x95,
+	0x1f, 0xe8, 0xec, 0x40, 0x07, 0xb1, 0xf1, 0xd1, 0x6b, 0x38, 0x66, 0x32, 0xe6, 0x19, 0x51, 0xcb,
+	0x52, 0xe4, 0xb1, 0xe4, 0x34, 0x61, 0x4b, 0x96, 0x84, 0xad, 0x9e, 0xd5, 0xf7, 0x30, 0x62, 0xf2,
+	0xb6, 0xb2, 0x66, 0x95, 0x13, 0x7d, 0xb7, 0xa0, 0x73, 0xc9, 0xd4, 0x05, 0xcb, 0xea, 0x61, 0xff,
+	0x81, 0x7f, 0xdf, 0x41, 0x9a, 0x89, 0x36, 0xde, 0x09, 0xe8, 0x19, 0x80, 0xa0, 0xbc, 0x94, 0x4c,
+	0x95, 0x62, 0x63, 0x1a, 0xfb, 0xb8, 0xa1, 0xa0, 0x2e, 0xd8, 0x82, 0x2e, 0x43, 0xdb, 0x18, 0xfa,
+	0x11, 0xf5, 0xa1, 0xbd, 0x64, 0x19, 0x95, 0xa1, 0xd3, 0xb3, 0xfb, 0xc1, 0xc3, 0xdb, 0xeb, 0xc9,
+	0x78, 0x1b, 0x88, 0x6e, 0xa0, 0xad, 0xcb, 0xa7, 0xae, 0x50, 0x37, 0xb4, 0x9f, 0x6a, 0xf8, 0x0e,
+	0x1c, 0x5d, 0x22, 0x04, 0x0e, 0x27, 0xea, 0xce, 0xb4, 0xf2, 0xb1, 0x79, 0x46, 0xff, 0x82, 0xcf,
+	0x64, 0xbc, 0x60, 0x05, 0xa9, 0xde, 0xc3, 0xc3, 0x1e, 0x93, 0x1f, 0x4d, 0x1d, 0x6d, 0xe0, 0x70,
+	0x94, 0x91, 0x62, 0xf5, 0x67, 0x4c, 0x5e, 0x42, 0x27, 0x29, 0x73, 0xce, 0x32, 0xa2, 0x58, 0x59,
+	0xc4, 0xe9, 0xa2, 0xe2, 0x72, 0xd4, 0x50, 0xc7, 0x0b, 0xf4, 0x62, 0x1b, 0x8b, 0x53, 0xca, 0x63,
+	0x7d, 0x85, 0xed, 0x0b, 0xf8, 0xf8, 0x50, 0xab, 0x63, 0xca, 0x6f, 0xb5, 0x16, 0x7d, 0x01, 0x17,
+	0x53, 0xb9, 0xce, 0xd4, 0x53, 0x53, 0xcf, 0xc0, 0x4b, 0xca, 0x3c, 0xa7, 0x85, 0x92, 0x61, 0xcb,
+	0x90, 0xf8, 0x67, 0x9f, 0xc4, 0x68, 0xeb, 0xe2, 0x3a, 0x16, 0xfd, 0x68, 0x81, 0x5b, 0xa9, 0xa8,
+	0x03, 0x2d, 0x96, 0x56, 0x44, 0x5a, 0x2c, 0x45, 0x11, 0x78, 0x09, 0x51, 0x74, 0xb5, 0x5b, 0x6b,
+	0x5d, 0xa3, 0x10, 0xdc, 0x9c, 0x4a, 0x49, 0x56, 0xb4, 0x5a, 0xec, 0x7d, 0xa9, 0xd7, 0xbd, 0x16,
+	0x59, 0xe8, 0x6c, 0xd7, 0xbd, 0x16, 0x59, 0xcd, 0xba, 0xdd, 0x60, 0xfd, 0x3f, 0x80, 0x54, 0x44,
+	0xa8, 0x38, 0x63, 0x05, 0x0d, 0x0f, 0x7a, 0x56, 0xbf, 0x8d, 0x7d, 0xa3, 0x4c, 0x59, 0x41, 0xd1,
+	0x09, 0x78, 0xb4, 0x48, 0xb7, 0xa6, 0x6b, 0x4c, 0x97, 0x16, 0xa9, 0xb1, 0xea, 0x93, 0xc9, 0x1d,
+	0x11, 0xa1, 0xd7, 0x38, 0x39, 0xba, 0x23, 0xe2, 0xfe, 0xa4, 0x31, 0xfd, 0xfa, 0xa4, 0xb1, 0xde,
+	0x43, 0x20, 0xd7, 0xab, 0x15, 0x95, 0x9a, 0xbe, 0x0c, 0xc1, 0x10, 0x0a, 0xf7, 0x09, 0xcd, 0xea,
+	0x00, 0x6e, 0x86, 0xa3, 0x1c, 0x60, 0x67, 0xa1, 0x1e, 0x04, 0x29, 0x95, 0x89, 0x60, 0x5c, 0x97,
+	0x15, 0xb2, 0xa6, 0x84, 0x3e, 0xc0, 0xa1, 0xa0, 0x3c, 0x23, 0x09, 0x6d, 0xae, 0xe3, 0x64, 0x7f,
+	0x18, 0xde, 0x25, 0xf0, 0x5e, 0x3c, 0xfa, 0x69, 0x41, 0xd0, 0x70, 0x7f, 0xfb, 0xb9, 0xf6, 0x20,
+	0x68, 0x9c, 0xa9, 0x36, 0xd4, 0x94, 0x1e, 0x40, 0xb6, 0x1f, 0x83, 0xec, 0x3c, 0x06, 0xb9, 0xfd,
+	0x18, 0xe4, 0x83, 0x3d, 0xc8, 0xa7, 0x9f, 0xc0, 0xd1, 0xbf, 0x1f, 0xe4, 0x81, 0x73, 0x7d, 0x73,
+	0x3d, 0xe9, 0xfe, 0x85, 0x8e, 0xa1, 0x7b, 0x79, 0x35, 0x8f, 0x2f, 0xae, 0xa6, 0x93, 0x78, 0x3c,
+	0x99, 0x9f, 0x5f, 0x4d, 0x67, 0x5d, 0x0b, 0xf9, 0xd0, 0xd6, 0xca, 0xac, 0xdb, 0x42, 0x7f, 0xc3,
+	0xd1, 0x68, 0x7a, 0x7e, 0x7d, 0x59, 0xbb, 0x36, 0x0a, 0xc0, 0xc5, 0x93, 0xd9, 0xe7, 0xe9, 0x7c,
+	0xd6, 0x75, 0x16, 0x07, 0xe6, 0x9f, 0xf8, 0xf6, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0x89, 0x62,
+	0xd8, 0xbf, 0x36, 0x05, 0x00, 0x00,
 }

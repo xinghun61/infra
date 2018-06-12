@@ -86,7 +86,7 @@ message Data {
     string compilation_db = 2;
 
     // Paths to files needed to compile cpp files to analyze.
-    repeated string comp_dep_path = 3;
+    repeated string comp_dep_paths = 3;
   }
 
 
@@ -143,7 +143,7 @@ message Data {
     int32 end_char = 9;
 
     // Suggested fixes for the identified issue.
-    repeated Suggestion suggestion = 10;
+    repeated Suggestion suggestions = 10;
   }
 
   // Suggested fix.
@@ -155,7 +155,7 @@ message Data {
     string description = 1;
 
     // Fix as a list of replacements.
-    repeated Replacement replacement = 2;
+    repeated Replacement replacements = 2;
   }
 
   // A suggested replacement.
