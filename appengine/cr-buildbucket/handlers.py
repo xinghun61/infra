@@ -13,6 +13,7 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 from components import auth
+from components import config as config_api
 from components import decorators
 from components import endpoints_webapp2
 from components import prpc
@@ -335,14 +336,17 @@ class UnregisterBuilders(webapp2.RequestHandler):  # pragma: no cover
 def get_frontend_routes():  # pragma: no cover
   endpoints_services = [
       api.BuildBucketApi,
+      config_api.ConfigApi,
       swarmbucket_api.SwarmbucketApi,
   ]
   routes = [
       webapp2.Route(r'/', MainHandler),
       webapp2.Route(r'/b/<build_id:\d+>', BuildHandler),
   ]
+  routes.extend(endpoints_webapp2.api_routes(endpoints_services))
+  # /api routes should be removed once clients are hitting /_ah/api.
   routes.extend(
-      endpoints_webapp2.api_server(endpoints_services, base_path='/api'))
+      endpoints_webapp2.api_routes(endpoints_services, base_path='/api'))
 
   prpc_server = prpc.Server()
   prpc_server.add_interceptor(auth.prpc_interceptor)
