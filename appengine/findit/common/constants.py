@@ -10,6 +10,7 @@ import endpoints
 
 # Names of all modules.
 WATERFALL_BACKEND = 'waterfall-backend'
+FLAKE_DETECTION_BACKEND = 'flake-detection-backend'
 
 # Names of all queues.
 DEFAULT_QUEUE = 'default'
@@ -18,6 +19,7 @@ WATERFALL_TRY_JOB_QUEUE = 'waterfall-try-job-queue'
 WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE = 'waterfall-failure-analysis-request'
 WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE = 'waterfall-flake-analysis-request'
 RERUN_TRYJOB_QUEUE = 'rerun-tryjob'
+FLAKE_DETECTION_QUEUE = 'flake-detection-queue'
 
 # Waterfall-related.
 WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL = (

@@ -34,4 +34,4 @@ cron:
   url: /flake/detection/cron/detect-cq-false-rejection-flakes
   # Dummy schedule, only while testing this by hand. Real schedule below.
   schedule: 3rd sunday of dec 00:00
-  # schedule: every 5 minutes
+  # schedule: every 1 hours

@@ -20,7 +20,7 @@ handlers:
   secure: always
 
 # For cron jobs and task queues, enforce admin permission.
-- url: /cq/(cron|task)/.*
+- url: /flake/detection/(cron|task)/.*
   script: main.flake_detection_backend_web_application
   secure: always
   login: admin
