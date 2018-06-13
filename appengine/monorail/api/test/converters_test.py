@@ -48,6 +48,10 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_name='UserField', field_id=4,
         field_type=tracker_pb2.FieldTypes.USER_TYPE,
         applicable_type='')
+    self.fd_5 = tracker_pb2.FieldDef(
+        field_name='Pre', field_id=5,
+        field_type=tracker_pb2.FieldTypes.ENUM_TYPE,
+        applicable_type='')
 
   def testConvertApprovalValues_Empty(self):
     """We handle the case where an issue has no approval values."""
@@ -264,41 +268,47 @@ class ConverterFunctionsTest(unittest.TestCase):
          common_pb2.IssueRef(project_name='proj', local_id=2)],
         actual)
 
-  def testConvertFieldValueItem(self):
+  def testConvertFieldValue(self):
     """We can convert one FieldValueView item to a protoc FieldValue."""
-    ffv = testing_helpers.Blank(val=123)
-    actual = converters.ConvertFieldValueItem('Size', ffv)
+    actual = converters.ConvertFieldValue('Size', 123)
     expected = issue_objects_pb2.FieldValue(
         field_ref=common_pb2.FieldRef(field_name='Size'),
         value='123')
     self.assertEqual(expected, actual)
 
-    actual = converters.ConvertFieldValueItem('Size', ffv, is_derived=True)
+    actual = converters.ConvertFieldValue('Size', 123, is_derived=True)
     expected = issue_objects_pb2.FieldValue(
         field_ref=common_pb2.FieldRef(field_name='Size'),
         value='123', is_derived=True)
     self.assertEqual(expected, actual)
 
-  def testConvertFieldValueViews(self):
-    ffv_1 = testing_helpers.Blank(
-        field_name='Size', values=[testing_helpers.Blank(val=123)],
-        derived_values=[])
-    ffv_2 = testing_helpers.Blank(
-        field_name='Channels', values=[testing_helpers.Blank(val='Beta')],
-        derived_values=[testing_helpers.Blank(val='Dev')])
-    actual = converters.ConvertFieldValueViews([ffv_1, ffv_2])
+  def testConvertFieldValues(self):
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4, self.fd_5]
+    fv_1 = tracker_bizobj.MakeFieldValue(
+        1, None, 'string', None, None, None, False)
+    fv_2 = tracker_bizobj.MakeFieldValue(
+        2, 34, None, None, None, None, False)
+    labels = ['Pre-label', 'not-label-enum', 'prenot-label']
+    der_labels =  ['Pre-label2']
+
+    actual = converters.ConvertFieldValues(
+        self.config, labels, der_labels, [fv_1, fv_2], {})
+
     expected = [
       issue_objects_pb2.FieldValue(
-          field_ref=common_pb2.FieldRef(field_name='Size'),
-          value='123'),
+          field_ref=common_pb2.FieldRef(field_name='FirstField'),
+          value='string'),
       issue_objects_pb2.FieldValue(
-          field_ref=common_pb2.FieldRef(field_name='Channels'),
-          value='Beta'),
+          field_ref=common_pb2.FieldRef(field_name='SecField'),
+          value='34'),
       issue_objects_pb2.FieldValue(
-          field_ref=common_pb2.FieldRef(field_name='Channels'),
-          value='Dev', is_derived=True),
+          field_ref=common_pb2.FieldRef(field_name='Pre'),
+          value='label'),
+      issue_objects_pb2.FieldValue(
+          field_ref=common_pb2.FieldRef(field_name='Pre'),
+          value='label2', is_derived=True),
       ]
-    self.assertEqual(expected, actual)
+    self.assertItemsEqual(expected, actual)
 
   def testConvertIssue(self):
     """We can convert a protorpc Issue to a protoc Issue."""

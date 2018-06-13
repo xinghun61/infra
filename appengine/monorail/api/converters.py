@@ -50,9 +50,8 @@ def ConvertApproval(approval_value, users_by_id, config, phase=None):
   status = ConvertApprovalStatus(approval_value.status)
   set_on = approval_value.set_on
 
-  fv_views = tracker_views.MakeAllFieldValueViews(
+  subfield_values = ConvertFieldValues(
       config, [], [], approval_value.subfield_values, users_by_id)
-  subfield_values = ConvertFieldValueViews(fv_views)
 
   phase_ref = issue_objects_pb2.PhaseRef()
   if phase:
@@ -146,25 +145,56 @@ def ConvertIssueRefs(issue_ids, related_refs_dict):
   return [ConvertIssueRef(related_refs_dict[iid]) for iid in issue_ids]
 
 
-def ConvertFieldValueItem(field_name, value, is_derived=False):
-  """Convert one field value view item into a protoc FieldValue."""
+def ConvertFieldValue(field_name, value, is_derived=False):
+  """Convert one field value into a protoc FieldValue."""
   fv = issue_objects_pb2.FieldValue(
       field_ref=common_pb2.FieldRef(field_name=field_name),
-      value=str(value.val),
+      value=str(value),
       is_derived=is_derived)
   return fv
 
 
-# TODO(jrobbins): Refactor this to avoid needing to use view objects.
-def ConvertFieldValueViews(field_value_views):
-  """Convert FieldValueView objects to protoc FieldValue objects."""
-  result = []
-  for fvv in field_value_views:
-    result.extend([ConvertFieldValueItem(fvv.field_name, item)
-                   for item in fvv.values])
-    result.extend([ConvertFieldValueItem(fvv.field_name, item, is_derived=True)
-                   for item in fvv.derived_values])
-  return result
+def ConvertFieldValues(
+    config, labels, derived_labels, field_values, users_by_id):
+  """Convert lists of labels and field_values to protoc FieldValues."""
+  fvs = []
+  fds_by_id = {fd.field_id:fd for fd in config.field_defs}
+  enum_names_by_lower = {
+      fd.field_name.lower(): fd.field_name for fd in config.field_defs
+      if fd.field_type == tracker_pb2.FieldTypes.ENUM_TYPE}
+
+  labels_by_prefix = tracker_bizobj.LabelsByPrefix(
+      labels, enum_names_by_lower.keys())
+  der_labels_by_prefix = tracker_bizobj.LabelsByPrefix(
+      derived_labels, enum_names_by_lower.keys())
+
+  # TODO(jojwang): add field_type: ENUM_TYPE to ConvertFieldValue.
+  for lower_field_name, values in labels_by_prefix.iteritems():
+    field_name = enum_names_by_lower.get(lower_field_name)
+    if not field_name:
+      continue
+    fvs.extend(
+        [ConvertFieldValue(field_name, value) for value in values])
+
+  for lower_field_name, values in der_labels_by_prefix.iteritems():
+    field_name = enum_names_by_lower.get(lower_field_name)
+    if not field_name:
+      continue
+    fvs.extend(
+        [ConvertFieldValue(
+            field_name, value, is_derived=True) for value in values])
+
+  # TODO(jojwang): add field_type fromm fds_by_id
+  for fv in field_values:
+    value = tracker_bizobj.GetFieldValue(fv, users_by_id)
+    field_def = fds_by_id.get(fv.field_id)
+    field_name = ''
+    if field_def:
+      field_name = field_def.field_name
+    fvs.append(ConvertFieldValue(
+        field_name, value, is_derived=fv.derived))
+
+  return fvs
 
 
 def ConvertIssue(issue, users_by_id, related_refs, config):
@@ -198,10 +228,9 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
   if issue.merged_into:
     merged_into_issue_ref = ConvertIssueRef(related_refs[issue.merged_into])
 
-  field_value_views = tracker_views.MakeAllFieldValueViews(
-      config, issue.labels, issue.derived_labels, issue.field_values,
-      users_by_id)
-  field_values = ConvertFieldValueViews(field_value_views)
+  field_values = ConvertFieldValues(
+      config, issue.labels, issue.derived_labels,
+      issue.field_values, users_by_id)
   approval_values = ConvertApprovalValues(
       issue.approval_values, issue.phases, users_by_id, config)
   reporter_ref = ConvertUserRef(issue.reporter_id, None, users_by_id)
