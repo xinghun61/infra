@@ -240,12 +240,6 @@ class V2BuildsTest(unittest.TestCase):
     self.assertEqual(msg.infra.swarming.priority, 0)
     self.assertEqual(len(msg.tags), 0)
 
-  def test_build_to_v2_no_builder_name(self):
-    build = mkbuild()
-    del build.parameters[model.BUILDER_PARAMETER]
-    with self.assertRaises(builds.UnsupportedBuild):
-      builds.build_to_v2_partial(build)
-
   def test_two_gitiles_commits(self):
     build = mkbuild(tags=[
         ('buildset:commit/gitiles/chromium.googlesource.com/'

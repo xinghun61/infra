@@ -74,7 +74,6 @@ def _process_pull_task_batch(queue_name, dataset):
   Leases pull tasks, fetches build entities, tries to convert them to v2 format
   and insert into BigQuery in v2 format.
 
-  If v2 conversion raises v2.UnsupportedBuild, skips the build.
   If v2 conversion raises any other exception, including
   v2.MalformedBuild, logs the exception and does not remove the task from
   the queue. Such a task will be retried later.
@@ -159,11 +158,6 @@ def _build_to_v2(bid, build, build_ann):
         s.ClearField('logs')
 
     return build_v2, False
-
-  except v2.UnsupportedBuild as ex:
-    logging.warning('skipping build %d: not supported by v2 conversion: %s',
-                    bid, ex)
-    return None, False
   except Exception:
     logging.exception('failed to convert build to v2\nBuild id: %d', bid)
     return None, True

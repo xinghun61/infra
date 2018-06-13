@@ -14,16 +14,11 @@ import buildtags
 import model
 
 __all__ = [
-    'UnsupportedBuild',
     'MalformedBuild',
     'build_to_v2_partial',
     'status_to_v1',
     'status_to_v2',
 ]
-
-
-class UnsupportedBuild(Exception):
-  """A build cannot be converted to v2 format."""
 
 
 class MalformedBuild(Exception):
@@ -35,7 +30,7 @@ def build_to_v2_partial(build):
 
   The returned build does not include steps.
 
-  May raise UnsupportedBuild or MalformedBuild.
+  May raise MalformedBuild.
   """
   result_details = build.result_details or {}
   ret = build_pb2.Build(
@@ -144,11 +139,6 @@ def _parse_tags(dest_msg, tags):
 
 
 def _get_builder_id(build):
-  builder = (build.parameters or {}).get(model.BUILDER_PARAMETER)
-  if not builder:
-    raise UnsupportedBuild(
-        'does not have %s parameter' % model.BUILDER_PARAMETER)
-
   bucket = build.bucket
   # in V2, we drop "luci.{project}." prefix.
   luci_prefix = 'luci.%s.' % build.project
@@ -157,7 +147,7 @@ def _get_builder_id(build):
   return build_pb2.Builder.ID(
       project=build.project,
       bucket=bucket,
-      builder=builder,
+      builder=(build.parameters or {}).get(model.BUILDER_PARAMETER) or '',
   )
 
 
