@@ -43,7 +43,6 @@ def build_to_v2_partial(build):
       builder=_get_builder_id(build),
       number=result_details.get('properties', {}).get('buildnumber') or 0,
       created_by=build.created_by.to_bytes(),
-      view_url=build.url,
       create_time=_dt2ts(build.create_time),
       start_time=_dt2ts(build.start_time),
       end_time=_dt2ts(build.complete_time),

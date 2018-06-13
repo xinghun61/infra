@@ -17,7 +17,6 @@ def _build_default_field_paths(prefix=''):  # pragma: no cover
       'builder',
       'number',
       'created_by',
-      'view_url',
       'create_time',
       'start_time',
       'end_time',

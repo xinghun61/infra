@@ -159,7 +159,6 @@ class V2BuildsTest(unittest.TestCase):
             ),
         ),
         created_by='user:john@example.com',
-        view_url='https://ci.example.com/build',
     )
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
