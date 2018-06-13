@@ -145,7 +145,7 @@ func extractFunctionWorkerStructure(
 	for _, w := range wf.Workers {
 		function, _, err := track.ExtractFunctionPlatform(w.Name)
 		if err != nil {
-			logging.Errorf(c, "Failed to extract function name: %v", err)
+			logging.WithError(err).Errorf(c, "Failed to extract function name")
 		}
 		a, ok := m[function]
 		if !ok {
@@ -159,7 +159,7 @@ func extractFunctionWorkerStructure(
 		a.Workers = append(a.Workers, workerRun)
 		a.Function.Workers = append(a.Function.Workers, w.Name)
 		functions = append(functions, function)
-		logging.Debugf(c, "Found function/worker: %v", a)
+		logging.Debugf(c, "Found function %q with %d workers", function, len(a.Workers))
 	}
 	return m, functions
 }

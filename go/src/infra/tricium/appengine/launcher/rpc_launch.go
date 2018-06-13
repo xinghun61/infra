@@ -5,6 +5,7 @@
 package launcher
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
@@ -56,12 +57,13 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, isolator common.IsolateAPI,
 	swarming common.SwarmingAPI, pubsub common.PubSubAPI) error {
 	// Guard checking if there is already a stored workflow for the run ID
-	// in the request, if so stop here.
+	// in the request; if so stop here.
 	w := &config.Workflow{ID: req.RunId}
 	if err := ds.Get(c, w); err != ds.ErrNoSuchEntity {
 		logging.Infof(c, "[launcher] Launch request for launched workflow, run ID: %s", req.RunId)
 		return nil
 	}
+
 	// Generate workflow and convert to string.
 	sc, err := cp.GetServiceConfig(c)
 	if err != nil {
@@ -73,10 +75,16 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 		logging.WithError(err).Errorf(c, "failed to get project config")
 		return err
 	}
+	configJSON, _ := json.Marshal(pc)
+	logging.Fields{
+		"project": req.Project,
+		"config":  string(configJSON),
+	}.Debugf(c, "Got project config")
 	wf, err := config.Generate(sc, pc, req.Files)
 	if err != nil {
 		return fmt.Errorf("failed to generate workflow config for project %s: %v", req.Project, err)
 	}
+
 	// Set up pubsub for worker completion notification.
 	err = pubsub.Setup(c)
 	if err != nil {
@@ -86,11 +94,13 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	if err != nil {
 		return fmt.Errorf("failed to marshal workflow proto: %v", err)
 	}
+
 	// Prepare workflow config entry to store.
 	wfConfig := &config.Workflow{
 		ID:                 req.RunId,
 		SerializedWorkflow: wfb,
 	}
+
 	// Prepare workflow launched request.
 	b, err := proto.Marshal(&admin.WorkflowLaunchedRequest{RunId: req.RunId})
 	if err != nil {
@@ -98,6 +108,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	}
 	wfTask := tq.NewPOSTTask("/tracker/internal/workflow-launched", nil)
 	wfTask.Payload = b
+
 	// Isolate initial input.
 	inputHash, err := isolator.IsolateGitFileDetails(c, wf.IsolateServer, &tricium.Data_GitFileDetails{
 		Repository: req.GitUrl,
@@ -108,6 +119,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 		return fmt.Errorf("failed to isolate git file details: %v", err)
 	}
 	logging.Infof(c, "[launcher] Isolated git file details, hash: %q", inputHash)
+
 	// TODO(emso): select dev/prod swarming/isolate serve based on
 	// devserver and dev/prod tricium instance. Prepare trigger requests
 	// for root workers.
