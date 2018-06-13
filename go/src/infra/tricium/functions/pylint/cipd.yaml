@@ -1,0 +1,9 @@
+package: infra/tricium/function/pylint
+install_mode: copy
+data:
+  - file: pylint_parser
+  - file: pylintrc
+
+  # Third party dependencies
+  - dir: pylint
+  - dir: python
