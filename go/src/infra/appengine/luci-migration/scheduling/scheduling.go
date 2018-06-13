@@ -74,7 +74,7 @@ type Scheduler struct {
 // BuildCompleted handles a build completion notification.
 func (h *Scheduler) BuildCompleted(c context.Context, build *Build) error {
 	switch {
-	case build.Status.Completed() && strings.HasPrefix(build.Bucket, "master."):
+	case build.Status.Ended() && strings.HasPrefix(build.Bucket, "master."):
 		return h.buildbotBuildCompleted(c, build)
 
 	case (build.Status == buildbucketpb.Status_FAILURE || build.Status == buildbucketpb.Status_INFRA_FAILURE) &&
