@@ -6,6 +6,7 @@ import json
 
 
 DEPS = [
+  'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/json',
   'recipe_engine/path',
@@ -34,34 +35,14 @@ def RunSteps(api):
 
 
 def GenTests(api):
-  # TODO(tandrii): move this to buildbucket's recipe module.
-  buildbucket_prop_value = json.dumps({
-    "build": {
-      "bucket": "luci.infra-internal.ci",
-      "created_by": "user:luci-scheduler@appspot.gserviceaccount.com",
-      "created_ts": 1527292217677440,
-      "id": "8945511751514863184",
-      "project": "infra-internal",
-      "tags": [
-        "builder:infra-internal-continuous-trusty-32",
-        ("buildset:commit/gitiles/chrome-internal.googlesource.com/" +
-          "infra/infra_internal/" +
-          "+/2d72510e447ab60a9728aeea2362d8be2cbd7789"),
-        "gitiles_ref:refs/heads/master",
-        "scheduler_invocation_id:9110941813804031728",
-        "user_agent:luci-scheduler",
-      ],
-    },
-    "hostname": "cr-buildbucket.appspot.com"
-  })
   yield (
     api.test('luci-native') +
     api.properties(
       path_config='generic',
       buildername='native',
       buildnumber=5,
-      buildbucket=buildbucket_prop_value,
     ) +
+    api.buildbucket.ci_build('infra-internal', 'ci', 'native') +
     api.runtime(is_luci=True, is_experimental=False))
   yield (
     api.test('luci-cross') +
@@ -71,8 +52,8 @@ def GenTests(api):
       goarch='arm64',
       buildername='cross',
       buildnumber=5,
-      buildbucket=buildbucket_prop_value,
     ) +
+    api.buildbucket.ci_build('infra-internal', 'ci', 'cross') +
     api.runtime(is_luci=True, is_experimental=False))
   yield (
     api.test('buildbot-legacy') +
@@ -88,6 +69,6 @@ def GenTests(api):
     api.properties(
       path_config='generic',
       buildername='just-build-and-test',
-      buildbucket=buildbucket_prop_value,
     ) +
+    api.buildbucket.ci_build('infra-internal', 'ci', 'just-build-and-test') +
     api.runtime(is_luci=True, is_experimental=False))
