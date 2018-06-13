@@ -6,6 +6,7 @@ import datetime
 import random
 
 from components import auth
+from components import datastore_utils
 from google.appengine.ext import ndb
 
 from google.appengine.ext.ndb import msgprop
@@ -143,7 +144,7 @@ class Build(ndb.Model):
   # superset of initial_tags. May contain auto-added tags.
   tags = ndb.StringProperty(repeated=True)
   # immutable arbitrary build parameters.
-  parameters = ndb.JsonProperty()
+  parameters = datastore_utils.DeterministicJsonProperty(json_type=dict)
   # PubSub message parameters for build status change notifications.
   pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
   # id of the original build that this build was derived from.
@@ -186,7 +187,7 @@ class Build(ndb.Model):
 
   complete_time = ndb.DateTimeProperty()
   result = msgprop.EnumProperty(BuildResult)
-  result_details = ndb.JsonProperty()
+  result_details = datastore_utils.DeterministicJsonProperty(json_type=dict)
   cancelation_reason = msgprop.EnumProperty(CancelationReason)
   failure_reason = msgprop.EnumProperty(FailureReason)
 
