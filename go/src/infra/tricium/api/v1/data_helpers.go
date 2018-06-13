@@ -5,12 +5,14 @@
 package tricium
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/golang/protobuf/jsonpb"
+	proto "github.com/golang/protobuf/proto"
 )
 
 const (
@@ -44,8 +46,11 @@ func GetPathForDataType(t interface{}) (string, error) {
 }
 
 // WriteDataType writes a Tricium data type to the file path assigned to the type.
-func WriteDataType(prefix string, t interface{}) (string, error) {
-	json, err := json.Marshal(t)
+func WriteDataType(prefix string, t proto.Message) (string, error) {
+	// The jsonpb marshaler produces a different output than the standard
+	// "encoding/json" package would. The JSON marshaler used must be
+	// consistent with the one used to create the initial isolated data.
+	json, err := (&jsonpb.Marshaler{}).MarshalToString(t)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal: %v", err)
 	}
@@ -62,14 +67,14 @@ func WriteDataType(prefix string, t interface{}) (string, error) {
 		return path, fmt.Errorf("failed to create file: %v", err)
 	}
 	defer f.Close()
-	if _, err := f.Write(json); err != nil {
+	if _, err := f.WriteString(json); err != nil {
 		return path, fmt.Errorf("failed to write to file: %v", err)
 	}
 	return path, nil
 }
 
 // ReadDataType reads a Tricium data type to the provided type.
-func ReadDataType(prefix string, t interface{}) error {
+func ReadDataType(prefix string, t proto.Message) error {
 	p, err := GetPathForDataType(t)
 	if err != nil {
 		return fmt.Errorf("failed to get path for type: %v", err)
@@ -79,7 +84,7 @@ func ReadDataType(prefix string, t interface{}) error {
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
 	}
-	if err := json.Unmarshal(msg, &t); err != nil {
+	if err := jsonpb.UnmarshalString(string(msg), t); err != nil {
 		return fmt.Errorf("failed to unmarshal: %v", err)
 	}
 	return nil

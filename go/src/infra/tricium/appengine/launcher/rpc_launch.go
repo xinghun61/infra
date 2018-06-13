@@ -45,7 +45,7 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing git ref")
 	}
 	if len(req.Files) == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing files to analyze")
 	}
 	if err := launch(c, req, config.LuciConfigServer, common.IsolateServer,
 		common.SwarmingServer, common.PubsubServer); err != nil {

@@ -38,16 +38,10 @@ type IsolateAPI interface {
 	// corresponding Tricium data type definition.
 	//
 	// The Git file details data type should be isolated with the following
-	// path tricium/data/git_file_details.json and the following data format:
-	// {
-	//   platforms: 0 -- for ANY platform
-	//   repository: gitRepo
-	//   ref: gitRef
-	//   path: paths[0]
-	//   path: paths[1]
-	//   ...
-	// }
-	// Note that this isolate has not command and includes no other isolates.
+	// path tricium/data/git_file_details.json and the data format as specified
+	// in tricium/api/v1/data.proto.
+	//
+	// Note that this isolate has no command and includes no other isolates.
 	IsolateGitFileDetails(c context.Context, serverURL string, d *tricium.Data_GitFileDetails) (string, error)
 
 	// IsolateWorker isolates the provided worker.

@@ -1,5 +1,17 @@
 {
-  "repository": "https://chromium.googlesource.com/infra/infra",
-  "ref": "refs/changes/90/872190/1",
-  "paths": ["go/src/infra/tricium/functions/git-file-isolator/README.md"]
+  "repository":"https://chromium.googlesource.com/infra/infra",
+  "ref":"refs/changes/95/1089995/6",
+  "files":[
+    {"path":"go/src/infra/tricium/functions/pylint/.gitignore"},
+    {"path":"go/src/infra/tricium/functions/pylint/Makefile"},
+    {"path":"go/src/infra/tricium/functions/pylint/README.md"},
+    {"path":"go/src/infra/tricium/functions/pylint/cipd.yaml"},
+    {"path":"go/src/infra/tricium/functions/pylint/pylint.infra_testing"},
+    {"path":"go/src/infra/tricium/functions/pylint/pylint_parser","isBinary":true},
+    {"path":"go/src/infra/tricium/functions/pylint/pylint_parser.go"},
+    {"path":"go/src/infra/tricium/functions/pylint/pylint_parser_test.go"},
+    {"path":"go/src/infra/tricium/functions/pylint/pylintrc"},
+    {"path":"go/src/infra/tricium/functions/pylint/test/python.example"},
+    {"path":"go/src/infra/tricium/functions/pylint/test/tricium/data/files.json"}
+  ]
 }

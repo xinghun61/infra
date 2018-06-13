@@ -11,17 +11,14 @@ import (
 )
 
 func TestGetPathForDataType(t *testing.T) {
-	Convey("Test Environment", t, func() {
+	Convey("Known data type has path", t, func() {
+		d := &Data_GitFileDetails{}
+		_, err := GetPathForDataType(d)
+		So(err, ShouldBeNil)
+	})
 
-		Convey("Known data type has path", func() {
-			d := &Data_GitFileDetails{}
-			_, err := GetPathForDataType(d)
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Unknown data type returns an error", func() {
-			_, err := GetPathForDataType("jkgdsjf")
-			So(err, ShouldNotBeNil)
-		})
+	Convey("Unknown data type returns an error", t, func() {
+		_, err := GetPathForDataType("jkgdsjf")
+		So(err, ShouldNotBeNil)
 	})
 }

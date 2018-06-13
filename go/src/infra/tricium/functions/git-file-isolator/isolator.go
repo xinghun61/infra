@@ -33,6 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to setup temporary directory: %v", err)
 	}
+
 	// Clean up.
 	defer func() {
 		if err := os.RemoveAll(dir); err != nil {
@@ -41,14 +42,18 @@ func main() {
 	}()
 	log.Printf("Created temporary directory: %s", dir)
 
-	// Checkout files from Git ref.
+	// Check out files from the given git ref.
 	cmds := []*exec.Cmd{
 		exec.Command("git", "init"),
-		exec.Command("git", "fetch", "--depth=1", "--no-tags", "--no-recurse-submodules", input.Repository, input.Ref),
+		exec.Command("git", "fetch", "--depth=1", "--no-tags",
+			"--no-recurse-submodules", input.Repository, input.Ref),
 		exec.Command("git", "checkout", "FETCH_HEAD", "--"),
 	}
-	// Explicitly add list of files to checkout to speed things up.
-	// NB! The max length for a command line supported by the OS may be exceeded (inspect with $getconf ARG_MAX)
+	// Explicitly add the list of files to the command line to checkout
+	// to speed things up.
+	// NB! The max length for a command line supported by the OS may be
+	// exceeded; the max length for command line on POSIX can be inspected
+	// with `getconf ARG_MAX`.
 	for _, file := range input.Files {
 		cmds[2].Args = append(cmds[2].Args, file.Path)
 	}
@@ -60,7 +65,7 @@ func main() {
 		}
 	}
 
-	// Copy files to output directory for isolation
+	// Copy files to output directory for isolation.
 	for _, file := range input.Files {
 		dest := filepath.Join(*outputDir, file.Path)
 		if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
@@ -82,7 +87,7 @@ func main() {
 		}
 	}
 
-	// Write Tricium output FILES data
+	// Write Tricium output FILES data.
 	output := &tricium.Data_Files{
 		Files: input.Files,
 	}
