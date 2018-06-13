@@ -21,6 +21,34 @@ func TestCheckSpaceMix(t *testing.T) {
 			EndLine:   1,
 			StartChar: 0,
 			EndChar:   1,
+			Suggestions: []*tricium.Data_Suggestion{
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "         code",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     6,
+						},
+					},
+					Description: "Replace all whitespace at the beginning of the line with spaces",
+				},
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "\tcode",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     6,
+						},
+					},
+					Description: "Replace all whitespace at the beginning of the line with tabs",
+				},
+			},
 		})
 	})
 
@@ -33,6 +61,34 @@ func TestCheckSpaceMix(t *testing.T) {
 			EndLine:   1,
 			StartChar: 0,
 			EndChar:   2,
+			Suggestions: []*tricium.Data_Suggestion{
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "          code",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     7,
+						},
+					},
+					Description: "Replace all whitespace at the beginning of the line with spaces",
+				},
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "\tcode",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     7,
+						},
+					},
+					Description: "Replace all whitespace at the beginning of the line with tabs",
+				},
+			},
 		})
 	})
 
@@ -45,6 +101,34 @@ func TestCheckSpaceMix(t *testing.T) {
 			EndLine:   1,
 			StartChar: 0,
 			EndChar:   1,
+			Suggestions: []*tricium.Data_Suggestion{
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "         code",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     6,
+						},
+					},
+					Description: "Replace all whitespace at the beginning of the line with spaces",
+				},
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "\tcode",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     6,
+						},
+					},
+					Description: "Replace all whitespace at the beginning of the line with tabs",
+				},
+			},
 		})
 	})
 
@@ -57,6 +141,34 @@ func TestCheckSpaceMix(t *testing.T) {
 			EndLine:   1,
 			StartChar: 0,
 			EndChar:   2,
+			Suggestions: []*tricium.Data_Suggestion{
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "        ...",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     6,
+						},
+					},
+					Description: "Replace all whitespace at the beginning of the line with spaces",
+				},
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "\t...",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     6,
+						},
+					},
+					Description: "Replace all whitespace at the beginning of the line with tabs",
+				},
+			},
 		})
 	})
 
@@ -87,6 +199,21 @@ func TestCheckTrailingSpace(t *testing.T) {
 			EndLine:   1,
 			StartChar: 4,
 			EndChar:   4,
+			Suggestions: []*tricium.Data_Suggestion{
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "code",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     4,
+						},
+					},
+					Description: "Get rid of trailing space",
+				},
+			},
 		})
 	})
 
@@ -99,6 +226,21 @@ func TestCheckTrailingSpace(t *testing.T) {
 			EndLine:   1,
 			StartChar: 4,
 			EndChar:   5,
+			Suggestions: []*tricium.Data_Suggestion{
+				{
+					Replacements: []*tricium.Data_Replacement{
+						{
+							Replacement: "code",
+							Path:        "test.file",
+							StartLine:   1,
+							EndLine:     1,
+							StartChar:   0,
+							EndChar:     5,
+						},
+					},
+					Description: "Get rid of trailing space",
+				},
+			},
 		})
 	})
 

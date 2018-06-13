@@ -14,11 +14,13 @@ import (
 	"unicode"
 
 	"infra/tricium/api/v1"
+	"strings"
 )
 
 const (
 	category                = "Spacey"
 	individualCommentsLimit = 3
+	tabLength               = 8
 )
 
 var (
@@ -96,26 +98,32 @@ func checkSpaceMix(path, line string, pos int) *tricium.Data_Comment {
 		log.Printf("Not emitting comments for file: %s", path)
 		return nil
 	}
-	// Three space detectors, each to be set to one if there was an occurence.
-	ws := 0
-	tab := 0
-	other := 0
+
+	// Space detector flags, each to be set to 1 if there was an occurrence.
+	var spaceFlag, tabFlag, otherFlag int
+
+	// Count number of occurrences for different types of spaces.
+	var numSpaces, numTabs int
+
 	// Potential comment position.
 	start := 0
 	end := 0
 	for ; end < len(line) && unicode.IsSpace(rune(line[end])); end++ {
 		switch line[end] {
 		case ' ':
-			ws = 1
+			spaceFlag = 1
+			numSpaces++
 		case '\t':
-			tab = 1
+			tabFlag = 1
+			numTabs++
 		default:
-			other = 1
+			otherFlag = 1
 		}
 	}
-	// Add a comment if there was a whites space section and more than one kind of space.
-	if start != end && (ws+tab+other > 1) {
-		return &tricium.Data_Comment{
+
+	// Add a comment if there was a whitespace section and more than one kind of space.
+	if start != end && (spaceFlag+tabFlag+otherFlag > 1) {
+		comment := &tricium.Data_Comment{
 			Category:  fmt.Sprintf("%s/%s", category, "SpaceMix"),
 			Message:   "Found mix of white space characters",
 			Path:      path,
@@ -124,7 +132,45 @@ func checkSpaceMix(path, line string, pos int) *tricium.Data_Comment {
 			StartChar: int32(start),
 			EndChar:   int32(end - 1),
 		}
+
+		// Whitespace characters that are neither tabs nor spaces are deleted,
+		// indentation starts with either 8 spaces or one tab.
+		indentationSpaces := numTabs*tabLength + numSpaces
+
+		comment.Suggestions = []*tricium.Data_Suggestion{
+			{
+				Replacements: []*tricium.Data_Replacement{
+					{
+						// Suggest using all spaces.
+						Replacement: insertWhitespace(line[end:], indentationSpaces, false),
+						Path:        path,
+						StartLine:   int32(pos),
+						EndLine:     int32(pos),
+						StartChar:   0,
+						EndChar:     int32(len(line)),
+					},
+				},
+				Description: "Replace all whitespace at the beginning of the line with spaces",
+			},
+			{
+				Replacements: []*tricium.Data_Replacement{
+					{
+						// Suggest using all tabs (only multiples of 8, other spaces get ignored).
+						Replacement: insertWhitespace(line[end:], indentationSpaces/tabLength, true),
+						Path:        path,
+						StartLine:   int32(pos),
+						EndLine:     int32(pos),
+						StartChar:   0,
+						EndChar:     int32(len(line)),
+					},
+				},
+				Description: "Replace all whitespace at the beginning of the line with tabs",
+			},
+		}
+
+		return comment
 	}
+
 	return nil
 }
 
@@ -134,15 +180,18 @@ func checkTrailingSpace(path, line string, pos int) *tricium.Data_Comment {
 		log.Printf("Not emitting comments for file: %s", path)
 		return nil
 	}
+
 	if len(line) == 0 {
 		return nil
 	}
+
 	end := len(line) - 1
 	start := end
 	for ; start >= 0 && unicode.IsSpace(rune(line[start])); start-- {
 	}
+
 	if start != end {
-		return &tricium.Data_Comment{
+		comment := &tricium.Data_Comment{
 			Category:  fmt.Sprintf("%s/%s", category, "TrailingSpace"),
 			Message:   "Found trailing space",
 			Path:      path,
@@ -151,7 +200,26 @@ func checkTrailingSpace(path, line string, pos int) *tricium.Data_Comment {
 			StartChar: int32(start + 1),
 			EndChar:   int32(end),
 		}
+
+		comment.Suggestions = []*tricium.Data_Suggestion{
+			{
+				Replacements: []*tricium.Data_Replacement{
+					{
+						Replacement: line[0 : start+1],
+						Path:        path,
+						StartLine:   int32(pos),
+						EndLine:     int32(pos),
+						StartChar:   0,
+						EndChar:     int32(len(line) - 1),
+					},
+				},
+				Description: "Get rid of trailing space",
+			},
+		}
+
+		return comment
 	}
+
 	return nil
 }
 
@@ -166,7 +234,7 @@ func isInBlacklist(path string, blacklist []string) bool {
 	return false
 }
 
-// Groups comments of the same categories together into a map of comment category to list of comments
+// Groups comments of the same categories together into a map of comment category to list of comments.
 func organizeCommentsByCategory(comments []*tricium.Data_Comment) map[string][]*tricium.Data_Comment {
 	commentFreqs := make(map[string][]*tricium.Data_Comment)
 
@@ -182,7 +250,7 @@ func organizeCommentsByCategory(comments []*tricium.Data_Comment) map[string][]*
 	return commentFreqs
 }
 
-// Merges comments with the same category together if their number of occurrences is lower than individualCommentsLimit
+// Merges comments with the same category together if their number of occurrences is lower than individualCommentsLimit.
 func mergeComments(commentFreqs map[string][]*tricium.Data_Comment, path string) []*tricium.Data_Comment {
 	var comments []*tricium.Data_Comment
 
@@ -199,4 +267,13 @@ func mergeComments(commentFreqs map[string][]*tricium.Data_Comment, path string)
 	}
 
 	return comments
+}
+
+// Inserts n tabs or spaces to the beginning of a line.
+func insertWhitespace(line string, n int, tabs bool) string {
+	s := " "
+	if tabs {
+		s = "\t"
+	}
+	return strings.Repeat(s, n) + line
 }
