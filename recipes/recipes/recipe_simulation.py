@@ -52,12 +52,19 @@ def RunSteps(api, project_under_test, auth_with_account):
   # TODO(martiniss): allow recipes.cfg patches to take affect
   # This requires getting the refs.cfg from luci_config, reading the local
   # patched version, etc.
-  result = api.luci_config.get_project_config(project_under_test, 'recipes.cfg')
-  path = api.json.loads(result['content']).get('recipes_path', '').split('/')
+  result = api.luci_config.get_ref_config(
+      project_under_test, 'refs/heads/master', 'recipes.cfg')
+  cfg_path = result['url'].split(result['revision'])[-1]
+  recipes_path = api.json.loads(result['content']).get('recipes_path', '')
 
   api.step(
       'recipe simulation test', [
-          root_dir.join(*([project_under_test] + path + ['recipes.py'])),
+          root_dir.join(
+              project_under_test,
+              *(recipes_path.split('/') + ['recipes.py'])),
+          '--package', root_dir.join(
+              project_under_test,
+              *cfg_path.split('/')),
           '--use-bootstrap', 'test', 'run',
       ])
 
@@ -72,9 +79,10 @@ def GenTests(api):
           project_under_test='build',
       ) +
       api.luci_config.get_projects(('build',)) +
-      api.luci_config.get_project_config(
-          'build', 'recipes.cfg',
-          '{"recipes_path": "foobar"}')
+      api.luci_config.get_ref_config(
+          'build', 'refs/heads/master', 'recipes.cfg',
+          content='{"recipes_path": "foobar"}',
+          found_at_path='infra/config/')
   )
 
   yield (
@@ -87,7 +95,8 @@ def GenTests(api):
           auth_with_account='build_limited',
       ) +
       api.luci_config.get_projects(('build',)) +
-      api.luci_config.get_project_config(
-          'build', 'recipes.cfg',
-          '{"recipes_path": "foobar"}')
+      api.luci_config.get_ref_config(
+          'build', 'refs/heads/master', 'recipes.cfg',
+          content='{}',
+          found_at_path='custom/config/dir/')
   )

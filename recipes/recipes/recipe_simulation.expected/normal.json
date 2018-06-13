@@ -94,6 +94,8 @@
   {
     "cmd": [
       "[CACHE]/builder/build/build/foobar/recipes.py",
+      "--package",
+      "[CACHE]/builder/build/build/infra/config/recipes.cfg",
       "--use-bootstrap",
       "test",
       "run"
