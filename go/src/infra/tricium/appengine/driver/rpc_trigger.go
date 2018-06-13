@@ -7,6 +7,7 @@ package driver
 import (
 	"encoding/base64"
 	"fmt"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"
@@ -103,9 +104,10 @@ func swarmingTags(c context.Context, worker string, runID int64) []string {
 		return nil
 	}
 	tags := []string{
-		"tricium:1",
 		"function:" + function,
 		"platform:" + platform,
+		"run_id:" + strconv.FormatInt(runID, 10),
+		"tricium:1",
 	}
 	// Add Gerrit details if applicable.
 	request := &track.AnalyzeRequest{ID: runID}

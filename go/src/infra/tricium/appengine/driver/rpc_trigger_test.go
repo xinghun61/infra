@@ -68,7 +68,7 @@ func TestHelperFunctions(t *testing.T) {
 		ctx := triciumtest.Context()
 
 		So(ds.Put(ctx, &track.AnalyzeRequest{
-			ID:            1,
+			ID:            123,
 			Project:       "my-luci-config-project-id",
 			GitURL:        "http://my-gerrit.com/my-project",
 			GitRef:        "refs/changes/97/597/2",
@@ -78,7 +78,7 @@ func TestHelperFunctions(t *testing.T) {
 		}), ShouldBeNil)
 
 		So(ds.Put(ctx, &track.AnalyzeRequest{
-			ID:      2,
+			ID:      321,
 			Project: "another-luci-config-project-id",
 			GitURL:  "http://my-nongerrit.com/repo-url",
 			GitRef:  "refs/foo",
@@ -86,10 +86,11 @@ func TestHelperFunctions(t *testing.T) {
 		}), ShouldBeNil)
 
 		Convey("Swarming tags include Gerrit details for Gerrit requests", func() {
-			So(swarmingTags(ctx, "Spacey_UBUNTU", 1), ShouldResemble, []string{
-				"tricium:1",
+			So(swarmingTags(ctx, "Spacey_UBUNTU", 123), ShouldResemble, []string{
 				"function:Spacey",
 				"platform:UBUNTU",
+				"run_id:123",
+				"tricium:1",
 				"gerrit_project:my-project",
 				"gerrit_change:my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
 				"gerrit_cl_number:597",
@@ -99,19 +100,21 @@ func TestHelperFunctions(t *testing.T) {
 		})
 
 		Convey("Swarming tags omit Gerrit details for non-Gerrit requests", func() {
-			So(swarmingTags(ctx, "Pylint_UBUNTU", 2), ShouldResemble, []string{
-				"tricium:1",
+			So(swarmingTags(ctx, "Pylint_UBUNTU", 321), ShouldResemble, []string{
 				"function:Pylint",
 				"platform:UBUNTU",
+				"run_id:321",
+				"tricium:1",
 			})
 
 		})
 
 		Convey("Swarming tags omit Gerrit details if run not found", func() {
-			So(swarmingTags(ctx, "Spacey_UBUNTU", 3), ShouldResemble, []string{
-				"tricium:1",
+			So(swarmingTags(ctx, "Spacey_UBUNTU", 789), ShouldResemble, []string{
 				"function:Spacey",
 				"platform:UBUNTU",
+				"run_id:789",
+				"tricium:1",
 			})
 		})
 
