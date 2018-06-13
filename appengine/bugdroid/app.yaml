@@ -5,7 +5,7 @@ threadsafe: true
 instance_class: F4
 
 handlers:
-- url: /_ah/spi/.*
+- url: /_ah/api/.*
   secure: always
   script: bugdroidapp.endpoint_list
 

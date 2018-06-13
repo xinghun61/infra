@@ -16,6 +16,8 @@ from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
 
+from components import endpoints_webapp2
+
 
 ALLOWED_CLIENT_IDS = [
     endpoints.API_EXPLORER_CLIENT_ID,
@@ -71,4 +73,4 @@ class BugdroidApi(remote.Service):  # pragma: no cover
     return message_types.VoidMessage()
 
 
-endpoint_list = endpoints.api_server([BugdroidApi])
+endpoint_list = endpoints_webapp2.api_server([BugdroidApi])
