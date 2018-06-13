@@ -105,10 +105,12 @@ PROPERTIES = {
 
 
 def RunSteps(api, buildername, official):
-  if buildername.startswith('infra-internal-continuous'):
+  if (buildername.startswith('infra-internal-continuous') or
+      buildername.startswith('infra-internal-packager')):
     project_name = 'infra_internal'
     repo_url = 'https://chrome-internal.googlesource.com/infra/infra_internal'
-  elif buildername.startswith('infra-continuous'):
+  elif (buildername.startswith('infra-continuous') or
+      buildername.startswith('infra-packager')):
     project_name = 'infra'
     repo_url = 'https://chromium.googlesource.com/infra/infra'
   else:  # pragma: no cover
@@ -258,6 +260,36 @@ def GenTests(api):
             "project": "infra-internal",
             "tags": [
               "builder:infra-internal-continuous-trusty-32",
+              ("buildset:commit/gitiles/chrome-internal.googlesource.com/" +
+                "infra/infra_internal/" +
+                "+/2d72510e447ab60a9728aeea2362d8be2cbd7789"),
+              "gitiles_ref:refs/heads/master",
+              "scheduler_invocation_id:9110941813804031728",
+              "user_agent:luci-scheduler",
+            ],
+          },
+          "hostname": "cr-buildbucket.appspot.com"
+        }),
+      )
+
+  for official in [True, False]:
+    yield test(
+        'infra-internal-packager' + ('-official' if official else ''),
+        is_luci=True,
+        is_experimental=True,
+        buildername='infra-internal-packager-linux-32',
+        official=official,
+        repository=
+            'https://chrome-internal.googlesource.com/infra/infra_internal',
+        buildbucket=json.dumps({
+          "build": {
+            "bucket": "luci.infra-internal.prod",
+            "created_by": "user:luci-scheduler@appspot.gserviceaccount.com",
+            "created_ts": 1527292217677440,
+            "id": "8945511751514863184",
+            "project": "infra-internal",
+            "tags": [
+              "builder:infra-internal-packager-linux-32",
               ("buildset:commit/gitiles/chrome-internal.googlesource.com/" +
                 "infra/infra_internal/" +
                 "+/2d72510e447ab60a9728aeea2362d8be2cbd7789"),
