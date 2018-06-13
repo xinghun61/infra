@@ -157,7 +157,17 @@ var RuleMap = map[string]*RepoConfig{
 				Account: "skia-recreate-skps@skia-swarming-bots.iam.gserviceaccount.com",
 				Funcs: []RuleFunc{
 					func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesVersionFile", "infra/bots/assets/skp/VERSION")
+						paths := []*Path{
+							&Path{
+								Name: "infra/bots/assets/skp/VERSION",
+								Type: TYPE_FILE,
+							},
+							&Path{
+								Name: "infra/bots/tasks.json",
+								Type: TYPE_FILE,
+							},
+						}
+						return OnlyModifiesPathsRule(ctx, ap, rc, cs, "OnlyModifiesVersionFile", paths)
 					},
 				},
 				notificationFunction: fileBugForAutoRollViolation,
