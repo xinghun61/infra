@@ -92,42 +92,9 @@ CIPD_PACKAGE_BUILDERS = {
 }
 
 
-# Set of builders that build and upload LUCI binaries to Google Storage, for
-# clients that don't use CIPD (like chromium/src hooks).
-LEGACY_LUCI_BUILDERS = {
-  'infra-continuous-trusty-64',
-  'infra-continuous-mac-10.13-64',
-  'infra-continuous-win-64',
-}
-
-
 # A builder responsible for calling "deps.py bundle" to generate cipd bundles
 # with vendored go code. We need only one.
 GO_DEPS_BUNDLING_BUILDER = 'infra-continuous-trusty-64'
-
-
-def build_luci(api):
-  go_bin = api.path['checkout'].join('go', 'bin')
-  go_env = api.path['checkout'].join('go', 'env.py')
-  api.file.rmcontents('clean go bin', go_bin)
-
-  api.python(
-      'build luci-go', go_env,
-      ['go', 'install', 'go.chromium.org/luci/client/cmd/...'])
-
-  absfiles = api.file.listdir('listing go bin', go_bin,
-                              test_data=['file 1', 'file 2'])
-  with api.context(env={
-      'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')}):
-    api.python(
-        'upload go bin',
-        api.depot_tools.upload_to_google_storage_path,
-        ['-b', 'chromium-luci'] + absfiles)
-  for abspath in absfiles:
-    sha1 = api.file.read_text(
-        '%s sha1' % str(abspath.pieces[-1]), str(abspath) + '.sha1',
-        test_data='0123456789abcdeffedcba987654321012345678')
-    api.step.active_result.presentation.step_text = sha1
 
 
 PROPERTIES = {
@@ -229,9 +196,6 @@ def build_main(api, buildername, official, project_name, repo_url, rev):
       api.infra_cipd.test(skip_if_cross_compiling=True)
       if official:
         api.infra_cipd.upload(api.infra_cipd.tags(repo_url, rev))
-
-  if official and buildername in LEGACY_LUCI_BUILDERS:
-    build_luci(api)
 
 
 def GenTests(api):
