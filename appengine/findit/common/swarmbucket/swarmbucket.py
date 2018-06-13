@@ -9,7 +9,9 @@ from common.findit_http_client import FinditHttpClient
 
 _DEFAULT_SWARMBUCKET_SERVICE_URL = ('https://cr-buildbucket.appspot.com'
                                     '/_ah/api/swarmbucket/v1')
-_DEFAULT_WATERFALL_BUCKET = 'luci.chromium.ci'
+# Note that current trybots only need to match dimensions to build the targets,
+# as the tests themselves happen on regular swarming bots.
+_DIMENSIONS_TO_MATCH_FOR_TRYBOT = frozenset(['os', 'cpu'])
 
 
 def _CallSwarmbucketAPI(base_url, api_name, request_data):
@@ -23,18 +25,23 @@ def _CallSwarmbucketAPI(base_url, api_name, request_data):
   return {}
 
 
-def GetDimensionsForBuilder(builder,
-                            bucket=_DEFAULT_WATERFALL_BUCKET,
-                            service_url=_DEFAULT_SWARMBUCKET_SERVICE_URL):
+def GetDimensionsForBuilder(
+    bucket,
+    builder,
+    service_url=_DEFAULT_SWARMBUCKET_SERVICE_URL,
+    dimensions_whitelist=_DIMENSIONS_TO_MATCH_FOR_TRYBOT):
   """Gets the dimensions for replicating builder's configuration.
 
   Args:
+    bucket(str): The name of the bucket where the builder is configured.
     builder(str): The name of the builder whose dimensions we're after.
-    bucket(str): The name of the bucket where the builder is configured,
-        defaults to luci.chromium.ci.
     service_url(str): The url for the swarmbucket service, defaults to the
         production service url.
-  Returns: A list of colon separated strings of the form "key:value".
+    dimensions_whitelist(iterable of str): Which dimensions to return, set None
+       to return all.
+
+  Returns:
+    A list of colon separated strings of the form "key:value".
   """
   request = {
       'bucket': bucket,
@@ -52,4 +59,13 @@ def GetDimensionsForBuilder(builder,
   # https://cs.chromium.org/search/?q=%22def+_create_task_def_async%22&ssfr=1&sq=package:chromium&type=cs
   task_def = json.loads(response.get('task_definition', '{}'))
   dimensions = task_def.get('properties', {}).get('dimensions', [])
-  return ['%s:%s' % (d.get('key', ''), d.get('value', '')) for d in dimensions]
+  if dimensions_whitelist is None:
+    return [
+        '%s:%s' % (d.get('key', ''), d.get('value', '')) for d in dimensions
+    ]
+  else:
+    return [
+        '%s:%s' % (d.get('key', ''), d.get('value', ''))
+        for d in dimensions
+        if d.get('key') in dimensions_whitelist
+    ]

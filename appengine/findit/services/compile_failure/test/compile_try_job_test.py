@@ -349,6 +349,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     build_number = 223
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     failure_info = {
+        'is_luci': None,
+        'buildbucket_bucket': None,
+        'buildbucket_id': None,
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
@@ -397,6 +400,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 223
     failure_info = {
+        'is_luci': None,
+        'buildbucket_bucket': None,
+        'buildbucket_id': None,
         'failed_steps': {
             'compile': {
                 'current_failure': 223,
@@ -439,6 +445,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 223
     failure_info = {
+        'is_luci': None,
+        'buildbucket_bucket': None,
+        'buildbucket_id': None,
         'failed_steps': {
             'compile': {
                 'current_failure': 223,
@@ -480,6 +489,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 223
     failure_info = {
+        'is_luci': None,
+        'buildbucket_bucket': None,
+        'buildbucket_id': None,
         'failed_steps': {
             'compile': {
                 'current_failure': 223,
@@ -521,6 +533,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 223
     failure_info = {
+        'is_luci': None,
+        'buildbucket_bucket': None,
+        'buildbucket_id': None,
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
@@ -795,6 +810,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     failure_info = {
+        'is_luci': None,
+        'buildbucket_bucket': None,
+        'buildbucket_id': None,
         'failed_steps': {
             'compile': {
                 'first_failure': 1,

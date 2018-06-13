@@ -289,17 +289,10 @@ def GetParametersToScheduleTestTryJob(master_name,
 
   parameters['good_revision'] = _GetGoodRevisionTest(master_name, builder_name,
                                                      build_number, failure_info)
-
   parameters['targeted_tests'] = (
       consistent_failures.consistent_failures.ToSerializable()
       if consistent_failures else {})
 
-  parent_mastername = failure_info.parent_mastername or master_name
-  parent_buildername = failure_info.parent_buildername or builder_name
-  parameters['dimensions'] = waterfall_config.GetTrybotDimensions(
-      parent_mastername, parent_buildername)
-  parameters['cache_name'] = swarmbot_util.GetCacheName(parent_mastername,
-                                                        parent_buildername)
   return RunTestTryJobParameters.FromSerializable(parameters)
 
 

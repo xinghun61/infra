@@ -15,6 +15,7 @@ from google.appengine.ext import ndb
 from common import constants
 from common import exceptions
 from common.findit_http_client import FinditHttpClient
+from common.swarmbucket import swarmbucket
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall import try_job_error
@@ -41,6 +42,8 @@ from waterfall.test import wf_testcase
 
 _GIT_REPO = CachedGitilesRepository(
     FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
+_CACHE_NAME = (
+    'builder_7543a2f22277aaf500e7e9818483b610fa70d34ae4dcf8c4ff9711ff6795d7fd')
 
 
 class TryJobTest(wf_testcase.WaterfallTestCase):
@@ -657,17 +660,80 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
 
-    failure_info = {'builds': {'1': {'chromium_revision': 'rev2'}}}
+    failure_info = {
+        'is_luci': None,
+        'buildbucket_bucket': None,
+        'buildbucket_id': None,
+        'builds': {
+            '1': {
+                'chromium_revision': 'rev2'
+            }
+        }
+    }
+
     expected_parameters = {
         'build_key': {
             'master_name': master_name,
             'builder_name': builder_name,
             'build_number': build_number
         },
-        'bad_revision': 'rev2',
+        'dimensions': [
+            u'os:Mac-10.9', u'cpu:x86-64', 'pool:luci.chromium.findit'
+        ],
+        'cache_name':
+            _CACHE_NAME,
+        'bad_revision':
+            'rev2',
         'suspected_revisions': [],
-        'force_buildbot': False,
-        'urlsafe_try_job_key': 'urlsafe_try_job_key'
+        'force_buildbot':
+            False,
+        'urlsafe_try_job_key':
+            'urlsafe_try_job_key'
+    }
+
+    self.assertEqual(expected_parameters,
+                     try_job_service.PrepareParametersToScheduleTryJob(
+                         master_name, builder_name, build_number, failure_info,
+                         {}, 'urlsafe_try_job_key'))
+
+  @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
+  def testPrepareParametersToScheduleTryJobLUCI(self, mock_fn):
+    mock_fn.return_value = [
+        u'os:Mac-10.9', u'cpu:x86-64', 'pool:luci.chromium.findit'
+    ]
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+
+    failure_info = {
+        'is_luci': True,
+        'buildbucket_bucket': 'luci.chromium.ci',
+        'buildbucket_id': '8000111222333444555666',
+        'builds': {
+            '1': {
+                'chromium_revision': 'rev2'
+            }
+        }
+    }
+
+    expected_parameters = {
+        'build_key': {
+            'master_name': master_name,
+            'builder_name': builder_name,
+            'build_number': build_number
+        },
+        'dimensions': [
+            u'os:Mac-10.9', u'cpu:x86-64', 'pool:luci.chromium.findit'
+        ],
+        'cache_name':
+            _CACHE_NAME,
+        'bad_revision':
+            'rev2',
+        'suspected_revisions': [],
+        'force_buildbot':
+            False,
+        'urlsafe_try_job_key':
+            'urlsafe_try_job_key'
     }
 
     self.assertEqual(expected_parameters,

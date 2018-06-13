@@ -200,13 +200,8 @@ def GetParametersToScheduleCompileTryJob(master_name,
 
   parameters['good_revision'] = _GetGoodRevisionCompile(
       master_name, builder_name, build_number, failure_info)
-
   parameters['compile_targets'] = _GetFailedTargetsFromSignals(
       signals, master_name, builder_name)
-  parameters['dimensions'] = waterfall_config.GetTrybotDimensions(
-      master_name, builder_name)
-  parameters['cache_name'] = swarmbot_util.GetCacheName(master_name,
-                                                        builder_name)
 
   return RunCompileTryJobParameters.FromSerializable(parameters)
 

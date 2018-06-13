@@ -389,6 +389,9 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
+        'is_luci': None,
+        'buildbucket_bucket': None,
+        'buildbucket_id': None,
         'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
         'builds': {
             build_number: {
@@ -468,6 +471,9 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'failure_type': failure_type.UNKNOWN,
         'parent_mastername': None,
         'parent_buildername': None,
+        'is_luci': None,
+        'buildbucket_bucket': None,
+        'buildbucket_id': None,
     }
 
     self.assertEqual(expected_failure_info, failure_info)

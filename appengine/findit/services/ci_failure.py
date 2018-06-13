@@ -230,6 +230,9 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
       'failure_type': build_failure_type,
       'parent_mastername': build_info.parent_mastername,
       'parent_buildername': build_info.parent_buildername,
+      'is_luci': build_info.is_luci,
+      'buildbucket_bucket': build_info.buildbucket_bucket,
+      'buildbucket_id': build_info.buildbucket_id,
   }
 
   if (not failed or not build_info.chromium_revision or

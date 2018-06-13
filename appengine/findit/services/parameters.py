@@ -195,6 +195,9 @@ class BaseFailureInfo(StructuredObject):
   failure_type = int
   failed = bool
   chromium_revision = basestring
+  is_luci = bool
+  buildbucket_bucket = basestring
+  buildbucket_id = basestring
 
 
 class BaseSubFailure(StructuredObject):

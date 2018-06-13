@@ -28,6 +28,7 @@ from common import constants
 from common import exceptions
 from common.findit_http_client import FinditHttpClient
 from common.findit_http_client import HttpClientMetricsInterceptor
+from common.swarmbucket import swarmbucket
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall import try_job_error
@@ -437,6 +438,24 @@ def PrepareParametersToScheduleTryJob(master_name,
       'builder_name': builder_name,
       'build_number': build_number
   }
+
+  # For test failure we need to match the parent builder when possible.
+  match_mastername = failure_info.get('parent_mastername') or master_name
+  match_buildername = failure_info.get('parent_builername') or builder_name
+
+  # Dimensions should be obtained dynamically via the swarmbucket api if the
+  # original failure happened on a LUCI builder. Fallback to the static mapping
+  # otherwise.
+  if failure_info['is_luci'] and not force_buildbot:
+    parameters['dimensions'] = swarmbucket.GetDimensionsForBuilder(
+        failure_info['buildbucket_bucket'], match_buildername)
+  else:
+    parameters['dimensions'] = waterfall_config.GetTrybotDimensions(
+        match_mastername, match_buildername)
+
+  parameters['cache_name'] = swarmbot_util.GetCacheName(match_mastername,
+                                                        match_buildername)
+
   parameters['bad_revision'] = failure_info['builds'][str(build_number)][
       'chromium_revision']
   parameters['suspected_revisions'] = GetSuspectsFromHeuristicResult(
