@@ -346,5 +346,6 @@ def mkbuild(**kwargs):
       created_by=auth.Identity('user', 'john@example.com'),
   )
   args['parameters'].update(kwargs.pop('parameters', {}))
+  args['parameters_actual'] = args['parameters']
   args.update(kwargs)
   return model.Build(**args)

@@ -33,6 +33,9 @@ def build_to_v2_partial(build):
   May raise MalformedBuild.
   """
   result_details = build.result_details or {}
+  params = (
+      build.parameters_actual if build.parameters_actual is not None
+      else build.parameters)
   ret = build_pb2.Build(
       id=build.key.id(),
       builder=_get_builder_id(build),
@@ -43,7 +46,7 @@ def build_to_v2_partial(build):
       end_time=_dt2ts(build.complete_time),
       update_time=_dt2ts(build.update_time),
       input=build_pb2.Build.Input(
-          properties=_dict_to_struct(build.parameters.get('properties')),
+          properties=_dict_to_struct(params.get('properties')),
           experimental=build.experimental,
       ),
       output=build_pb2.Build.Output(

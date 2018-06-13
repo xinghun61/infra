@@ -794,6 +794,8 @@ class SwarmingTest(BaseTest):
     self.assertEqual(build.logdog_project, 'chromium')
     self.assertEqual(build.logdog_prefix,
                      'buildbucket/cr-buildbucket.appspot.com/1')
+    self.assertEqual(
+        build.parameters_actual['properties']['predefined-property'], 'x')
 
     # Test delegation token params.
     self.assertEqual(auth.delegate_async.mock_calls, [

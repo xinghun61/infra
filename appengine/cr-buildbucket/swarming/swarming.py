@@ -386,7 +386,9 @@ def _create_task_def_async(swarming_cfg, builder_cfg, build, build_number,
   """
   assert build.key and build.key.id(), build.key
   assert build.url, 'build.url should have been initialized'
-  params = build.parameters or {}
+  params = copy.deepcopy(build.parameters) or {}
+  build.parameters_actual = params
+  # params is an alias for build.parameters_actual.
   validate_build_parameters(builder_cfg.name, params)
   swarming_param = params.get(PARAM_SWARMING) or {}
 
@@ -443,10 +445,12 @@ def _create_task_def_async(swarming_cfg, builder_cfg, build, build_number,
   extra_cipd_packages = []
 
   if builder_cfg.HasField('recipe'):  # pragma: no branch
-    build_properties = swarmingcfg_module.read_properties(builder_cfg.recipe)
     # Properties specified in build parameters must override those in builder
     # config.
-    build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
+    build_properties = swarmingcfg_module.read_properties(builder_cfg.recipe)
+    build_properties.update(params.get(PARAM_PROPERTIES) or {})
+    params[PARAM_PROPERTIES] = build_properties
+    # build_properties is an alias for params[PARAM_PROPERTIES]
 
     # In order to allow some builders to behave like other builders, we allow
     # builders to explicitly set buildername.
