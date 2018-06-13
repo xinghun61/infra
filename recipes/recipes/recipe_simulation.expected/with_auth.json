@@ -106,7 +106,7 @@
       "--headers-json",
       "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
     ],
-    "name": "Get project 'build' config 'recipes.cfg'"
+    "name": "Get project 'build' 'refs/heads/master' config 'recipes.cfg'"
   },
   {
     "cmd": [

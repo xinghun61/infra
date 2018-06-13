@@ -89,7 +89,7 @@
       "--outfile",
       "/path/to/tmp/json"
     ],
-    "name": "Get project 'build' config 'recipes.cfg'"
+    "name": "Get project 'build' 'refs/heads/master' config 'recipes.cfg'"
   },
   {
     "cmd": [
