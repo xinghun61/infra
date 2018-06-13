@@ -12,7 +12,6 @@ import json
 import logging
 import os
 
-import endpoints
 import jinja2
 import webapp2
 
@@ -22,6 +21,8 @@ from appengine_module.chromium_committers import auth_util
 from appengine_module.chromium_committers import committers
 from appengine_module.chromium_committers import ep_api
 from appengine_module.chromium_committers import hmac_util
+
+from components import endpoints_webapp2
 
 
 TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), 'templates')
@@ -88,4 +89,4 @@ app = webapp2.WSGIApplication([
     ('/update/([a-zA-Z0-9.@_-]+)', UpdateHandler),
     ], debug=True)
 
-ep_server = endpoints.api_server([ep_api.CommittersApi])
+ep_server = endpoints_webapp2.api_server([ep_api.CommittersApi])

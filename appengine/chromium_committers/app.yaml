@@ -15,7 +15,7 @@ libraries:
 handlers:
 
 # Endpoints handler.
-- url: /_ah/spi/.*
+- url: /_ah/api/.*
   script: appengine_module.chromium_committers.app.ep_server
 
 - url: /favicon.ico
