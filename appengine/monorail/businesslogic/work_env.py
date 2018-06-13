@@ -82,6 +82,7 @@ class WorkEnv(object):
       raise permissions.PermissionException(
           'User is not allowed to view this project')
 
+
   def _AssertPermInProject(self, perm, project):
     """Make sure the user may use perm in the given project."""
     permitted = self.mc.perms.CanUsePerm(
@@ -200,7 +201,6 @@ class WorkEnv(object):
     with self.mc.profiler.Phase('getting project %r' % project_id):
       project = self.services.project.GetProject(
           self.mc.cnxn, project_id, use_cache=use_cache)
-
     self._AssertUserCanViewProject(project)
     return project
 
