@@ -286,10 +286,14 @@ def ConvertPhaseDef(phase):
   return phase_def
 
 
-def ConvertAmendment(_amendment, _users_by_id):
+def ConvertAmendment(amendment, users_by_id):
   """Convert a protorpc Amendment to a protoc Amendment."""
-  # TODO(jrobbins): Implement this.
-  return issue_objects_pb2.Amendment()
+  field_name = tracker_bizobj.GetAmendmentFieldName(amendment)
+  new_value = tracker_bizobj.AmendmentString(amendment, users_by_id)
+  result = issue_objects_pb2.Amendment(
+      field_name=field_name, new_or_delta_value=new_value,
+      old_value=amendment.oldvalue)
+  return result
 
 
 def ConvertAttachment(_attachment):

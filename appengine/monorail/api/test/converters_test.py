@@ -392,7 +392,37 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(expected, actual)
 
   def testConvertAmendment(self):
-    pass  # TODO(jrobbins): Implement this.
+    """We can convert various kinds of Amendments."""
+    amend = tracker_pb2.Amendment(
+        field=tracker_pb2.FieldID.SUMMARY, newvalue='new', oldvalue='old')
+    actual = converters.ConvertAmendment(amend, self.users_by_id)
+    self.assertEqual('Summary', actual.field_name)
+    self.assertEqual('new', actual.new_or_delta_value)
+    self.assertEqual('old', actual.old_value)
+
+    amend = tracker_pb2.Amendment(
+        field=tracker_pb2.FieldID.OWNER, added_user_ids=[111L])
+    actual = converters.ConvertAmendment(amend, self.users_by_id)
+    self.assertEqual('Owner', actual.field_name)
+    self.assertEqual('one@example.com', actual.new_or_delta_value)
+    self.assertEqual('', actual.old_value)
+
+    amend = tracker_pb2.Amendment(
+        field=tracker_pb2.FieldID.CC,
+        added_user_ids=[111L], removed_user_ids=[222L])
+    actual = converters.ConvertAmendment(amend, self.users_by_id)
+    self.assertEqual('Cc', actual.field_name)
+    self.assertEqual(
+      '-two@example.com one@example.com', actual.new_or_delta_value)
+    self.assertEqual('', actual.old_value)
+
+    amend = tracker_pb2.Amendment(
+        field=tracker_pb2.FieldID.CUSTOM, custom_field_name='EstDays',
+        newvalue='12')
+    actual = converters.ConvertAmendment(amend, self.users_by_id)
+    self.assertEqual('EstDays', actual.field_name)
+    self.assertEqual('12', actual.new_or_delta_value)
+    self.assertEqual('', actual.old_value)
 
   def testConvertAttachment(self):
     pass  # TODO(jrobbins): Implement this.
