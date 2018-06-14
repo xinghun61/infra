@@ -9,6 +9,7 @@ from common import constants
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from libs import analysis_status
+from libs.list_of_basestring import ListOfBasestring
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
@@ -182,10 +183,11 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key='urlsafe_key',
-        commit_position_range=IntRange(lower=None, upper=start_commit_position),
         analyze_commit_position_parameters=NextCommitPositionOutput(
             culprit_commit_position=None,
             next_commit_position=start_commit_position),
+        commit_position_range=IntRange(lower=None, upper=start_commit_position),
+        dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=manually_triggered,
         retries=0,
         step_metadata=StepMetadata.FromSerializable({}))

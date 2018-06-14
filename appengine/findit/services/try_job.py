@@ -675,6 +675,28 @@ def _UpdateTryJobEntity(urlsafe_try_job_key,
   return result_to_return
 
 
+def GetDimensionsFromBuildInfo(build_info):
+  """Gets dimensions for a bot given a BuildInfo instance.
+
+  Args:
+    build_info (BuildInfo): The build whose dimensions are to be retrieved.
+
+  Returns:
+    ([str]): A list of strings containing the bot's dimensions.
+  """
+  parent_mastername = build_info.parent_mastername or build_info.master_name
+  parent_buildername = build_info.parent_buildername or build_info.builder_name
+
+  if build_info.is_luci and build_info.buildbucket_bucket:
+    # For luci builds, use swarmbucket.
+    return swarmbucket.GetDimensionsForBuilder(build_info.buildbucket_bucket,
+                                               parent_buildername)
+  else:
+    # Fallback to static mapping otherwise.
+    return waterfall_config.GetTrybotDimensions(parent_mastername,
+                                                parent_buildername) or []
+
+
 def GetOrCreateTryJobData(try_job_type, try_job_id, urlsafe_try_job_key):
   if try_job_type == failure_type.FLAKY_TEST:
     try_job_kind = FlakeTryJobData

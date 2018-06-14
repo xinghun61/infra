@@ -22,7 +22,6 @@ from services.flake_failure import flake_constants
 from services.flake_failure import flake_try_job
 from waterfall import build_util
 from waterfall import buildbot
-from waterfall import waterfall_config
 
 
 class GetIsolateShaForCommitPositionParameters(StructuredObject):
@@ -32,6 +31,9 @@ class GetIsolateShaForCommitPositionParameters(StructuredObject):
 
   # The exact commit position being requested for analysis.
   commit_position = int
+
+  # Dimensions of the bot that will be used to trigger try jobs.
+  dimensions = ListOfBasestring
 
   # The exact revision corresponding to commit_position being requested.
   revision = basestring
@@ -153,8 +155,6 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
           parent_mastername,
           parent_buildername,
           suffix=flake_constants.FLAKE_CACHE_SUFFIX)
-      dimensions = waterfall_config.GetTrybotDimensions(parent_mastername,
-                                                        parent_buildername)
       try_job = flake_try_job.GetTryJob(master_name, builder_name, step_name,
                                         test_name, parameters.revision)
       run_flake_try_job_parameters = self.CreateInputObjectInstance(
@@ -162,7 +162,7 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
           analysis_urlsafe_key=parameters.analysis_urlsafe_key,
           revision=parameters.revision,
           flake_cache_name=cache_name,
-          dimensions=ListOfBasestring.FromSerializable(dimensions),
+          dimensions=parameters.dimensions,
           urlsafe_try_job_key=try_job.key.urlsafe())
 
       with pipeline.InOrder():

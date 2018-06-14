@@ -129,6 +129,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
                 GetIsolateShaForCommitPositionParameters,
                 analysis_urlsafe_key=analysis_urlsafe_key,
                 commit_position=most_recent_commit_position,
+                dimensions=None,  # Not used.
                 revision=most_recent_build_info.chromium_revision,
                 upper_bound_build_number=most_recent_build_number))
 

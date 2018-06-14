@@ -11,12 +11,14 @@ from dto.step_metadata import StepMetadata
 from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
+from libs.list_of_basestring import ListOfBasestring
 from model.flake import triggering_sources
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
+from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionOutput)
+from services import try_job as try_job_service
 from waterfall import build_util
 from waterfall import waterfall_config
 
@@ -88,9 +90,8 @@ def _NeedANewAnalysis(normalized_test,
     return saved, analysis
   elif (analysis.status == analysis_status.PENDING or
         analysis.status == analysis_status.RUNNING) and not force:
-    logging.info(
-        'Analysis was in state: %s, can\'t ' +
-        'rerun until state is COMPLETED, or FAILED', analysis.status)
+    logging.info('Analysis was in state: %s, can\'t ' +
+                 'rerun until state is COMPLETED, or FAILED', analysis.status)
     logging.info('Need a new analysis? %r', False)
     logging.info('analysis key: %s', analysis.key)
     return False, analysis
@@ -181,15 +182,20 @@ def ScheduleAnalysisIfNeeded(
         'Failed to get starting build for flake analysis')
     starting_commit_position = starting_build_info.commit_position
 
-    assert starting_commit_position is not None
+    assert starting_commit_position is not None, (
+        'Cannot analyze flake without a starting commit position')
+
+    # Get the dimensions of the bot for when try jobs are needed to compile.
+    dimensions = try_job_service.GetDimensionsFromBuildInfo(starting_build_info)
 
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
-        commit_position_range=IntRange(
-            lower=None, upper=starting_commit_position),
         analyze_commit_position_parameters=NextCommitPositionOutput(
             culprit_commit_position=None,
             next_commit_position=starting_commit_position),
+        commit_position_range=IntRange(
+            lower=None, upper=starting_commit_position),
+        dimensions=ListOfBasestring.FromSerializable(dimensions),
         manually_triggered=manually_triggered,
         retries=0,
         step_metadata=StepMetadata.FromSerializable(step_metadata))

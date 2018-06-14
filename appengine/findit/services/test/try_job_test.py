@@ -38,6 +38,7 @@ from services.parameters import CompileTryJobResult
 from services.parameters import RunCompileTryJobParameters
 from waterfall import build_util
 from waterfall import waterfall_config
+from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
 
 _GIT_REPO = CachedGitilesRepository(
@@ -1149,6 +1150,25 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(
         try_job_service.GetOrCreateTryJobData(failure_type.FLAKY_TEST,
                                               try_job_id, urlsafe_try_job_key))
+
+  @mock.patch.object(swarmbucket, 'GetDimensionsForBuilder')
+  def testGetDimensionsFromBuildInfoLuci(self, mocked_dimensions):
+    build_info = BuildInfo('m', 'b', 123)
+    build_info.is_luci = True
+    build_info.buildbucket_bucket = 'bucket'
+    build_info.parent_buildername = 'pb'
+
+    try_job_service.GetDimensionsFromBuildInfo(build_info)
+    mocked_dimensions.assert_called_once_with('bucket', 'pb')
+
+  @mock.patch.object(waterfall_config, 'GetTrybotDimensions')
+  def testGetDimensionsFromBuildInfoBuildbot(self, mocked_dimensions):
+    build_info = BuildInfo('m', 'b', 123)
+    build_info.parent_buildername = 'pb'
+    build_info.parent_mastername = 'pm'
+
+    try_job_service.GetDimensionsFromBuildInfo(build_info)
+    mocked_dimensions.assert_called_once_with('pm', 'pb')
 
   @mock.patch.object(time, 'time', return_value=1511298536.959618)
   @mock.patch.object(waterfall_config, 'GetTryJobSettings')

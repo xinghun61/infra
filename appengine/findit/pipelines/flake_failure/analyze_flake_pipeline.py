@@ -13,6 +13,7 @@ from gae_libs.pipelines import pipeline
 from infra_api_clients import crrev
 from libs import analysis_status
 from libs import time_util
+from libs.list_of_basestring import ListOfBasestring
 from libs.structured_object import StructuredObject
 from model import result_status
 from pipelines.delay_pipeline import DelayPipeline
@@ -57,11 +58,14 @@ class AnalyzeFlakeInput(StructuredObject):
   # The urlsafe key to the MasterFlakeAnalysis in progress.
   analysis_urlsafe_key = basestring
 
+  # Information on the exact commit position to analyze.
+  analyze_commit_position_parameters = NextCommitPositionOutput
+
   # The lower/upper bound commit positions not to exceed.
   commit_position_range = IntRange
 
-  # Information on the exact commit position to analyze.
-  analyze_commit_position_parameters = NextCommitPositionOutput
+  # Dimensions of the bot that will be used to trigger try jobs.
+  dimensions = ListOfBasestring
 
   # A flag indicating this pipeline was triggered by a human request.
   manually_triggered = bool
@@ -216,6 +220,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
                 GetIsolateShaForCommitPositionParameters,
                 analysis_urlsafe_key=analysis_urlsafe_key,
                 commit_position=commit_position_to_analyze,
+                dimensions=parameters.dimensions,
                 revision=revision_to_analyze,
                 upper_bound_build_number=analysis.build_number))
 
@@ -243,6 +248,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
                 analysis_urlsafe_key=analysis_urlsafe_key,
                 analyze_commit_position_parameters=next_commit_position_output,
                 commit_position_range=parameters.commit_position_range,
+                dimensions=parameters.dimensions,
                 manually_triggered=parameters.manually_triggered,
                 retries=0,
                 step_metadata=parameters.step_metadata))

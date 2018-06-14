@@ -11,6 +11,7 @@ from dto.test_location import TestLocation
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from infra_api_clients import crrev
 from libs import analysis_status
+from libs.list_of_basestring import ListOfBasestring
 from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
@@ -19,12 +20,12 @@ from pipelines.delay_pipeline import DelayPipeline
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from pipelines.flake_failure.analyze_flake_pipeline import (
     AnalyzeFlakePipeline)
+from pipelines.flake_failure.analyze_flake_pipeline import (
+    RecursiveAnalyzeFlakePipeline)
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertPipeline)
-from pipelines.flake_failure.analyze_flake_pipeline import (
-    RecursiveAnalyzeFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
@@ -72,6 +73,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         analyze_commit_position_parameters=NextCommitPositionOutput(
             next_commit_position=None, culprit_commit_position=None),
         commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,
         retries=0,
         step_metadata=None)
@@ -134,6 +136,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
             next_commit_position=None,
             culprit_commit_position=culprit_commit_position),
         commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,
         retries=0,
         step_metadata=None)
@@ -208,6 +211,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
             next_commit_position=start_commit_position,
             culprit_commit_position=None),
         commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
         retries=0,
         step_metadata=step_metadata)
@@ -215,6 +219,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     expected_isolate_sha_input = GetIsolateShaForCommitPositionParameters(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         commit_position=start_commit_position,
+        dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         revision=start_revision,
         upper_bound_build_number=analysis.build_number)
 
@@ -236,6 +241,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=expected_next_commit_position_output,
         commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
         retries=0,
         step_metadata=step_metadata)
@@ -292,6 +298,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
             next_commit_position=start_commit_position,
             culprit_commit_position=None),
         commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
         retries=0,
         step_metadata=step_metadata)
@@ -302,6 +309,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
             next_commit_position=start_commit_position,
             culprit_commit_position=None),
         commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
         retries=1,
         step_metadata=step_metadata)
@@ -325,6 +333,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         analyze_commit_position_parameters=NextCommitPositionOutput(
             next_commit_position=1000, culprit_commit_position=None),
         commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
         retries=0,
         step_metadata=None)
@@ -343,6 +352,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         analyze_commit_position_parameters=NextCommitPositionOutput(
             next_commit_position=1000, culprit_commit_position=None),
         commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
         retries=0,
         step_metadata=None)
@@ -360,6 +370,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         analyze_commit_position_parameters=NextCommitPositionOutput(
             next_commit_position=1000, culprit_commit_position=None),
         commit_position_range=IntRange(lower=None, upper=None),
+        dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,
         retries=0,
         step_metadata=None)

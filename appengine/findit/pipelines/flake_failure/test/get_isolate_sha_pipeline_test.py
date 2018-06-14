@@ -31,8 +31,8 @@ from pipelines.flake_failure.run_flake_try_job_pipeline import (
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
 from services import step_util
-from services import swarming
 from services import swarmbot_util
+from services import swarming
 from waterfall import build_util
 from waterfall import buildbot
 from waterfall import waterfall_config
@@ -149,6 +149,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     get_sha_input = GetIsolateShaForCommitPositionParameters(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         commit_position=requested_commit_position,
+        dimensions=ListOfBasestring.FromSerializable([]),
         revision=requested_revision,
         upper_bound_build_number=analysis.build_number)
 
@@ -213,6 +214,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
         commit_position=requested_commit_position,
         revision=requested_revision,
+        dimensions=ListOfBasestring.FromSerializable(dimensions),
         upper_bound_build_number=analysis.build_number)
 
     expected_try_job_report = FlakeTryJobReport(
