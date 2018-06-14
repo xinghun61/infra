@@ -61,23 +61,7 @@ func main() {
 			}
 		}()
 
-		scanner := bufio.NewScanner(file)
-		pos := 1
-		var comments []*tricium.Data_Comment
-		for scanner.Scan() {
-			line := scanner.Text()
-			if c := checkSpaceMix(p, line, pos); c != nil {
-				comments = append(comments, c)
-			}
-			if c := checkTrailingSpace(p, line, pos); c != nil {
-				comments = append(comments, c)
-			}
-			pos++
-		}
-		if err := scanner.Err(); err != nil {
-			log.Fatalf("Failed to read file: %v, path: %s", err, p)
-		}
-
+		comments := analyzeFile(bufio.NewScanner(file), p)
 		commentFreqs := organizeCommentsByCategory(comments)
 		output.Comments = mergeComments(commentFreqs, p)
 	}
@@ -88,6 +72,49 @@ func main() {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
 	log.Printf("Wrote RESULTS data, path: %q, value: %v\n", path, output)
+}
+
+// Checks the whole file for whitespace issues.
+func analyzeFile(fileScanner *bufio.Scanner, path string) []*tricium.Data_Comment {
+	lineNum, start, end := 1, 1, 1
+	var comments []*tricium.Data_Comment
+	var adjacentEmptyLines int
+	for fileScanner.Scan() {
+		line := fileScanner.Text()
+
+		// Keep track of adjacent empty lines to report
+		// trailing empty lines at the end of the file.
+		if len(line) == 0 {
+			end = lineNum
+			adjacentEmptyLines++
+		} else {
+			start, end = lineNum, lineNum // Reset
+			adjacentEmptyLines = 0
+		}
+
+		if c := checkSpaceMix(path, line, lineNum); c != nil {
+			comments = append(comments, c)
+		}
+		if c := checkTrailingSpace(path, line, lineNum); c != nil {
+			comments = append(comments, c)
+		}
+		lineNum++
+	}
+	if err := fileScanner.Err(); err != nil {
+		log.Fatalf("Failed to read file: %v, path: %s", err, path)
+	}
+
+	if adjacentEmptyLines > 0 {
+		comments = append(comments, &tricium.Data_Comment{
+			Category:  fmt.Sprintf("%s/%s", category, "TrailingLines"),
+			Message:   "Found empty line(s) at the end of the file",
+			Path:      path,
+			StartLine: int32(start + 1),
+			EndLine:   int32(end + 1),
+		})
+	}
+
+	return comments
 }
 
 // checkSpaceMix looks for a mix of white space characters in the start of the provided line.

@@ -7,8 +7,10 @@ package main
 import (
 	"testing"
 
+	"bufio"
 	. "github.com/smartystreets/goconvey/convey"
 	"infra/tricium/api/v1"
+	"strings"
 )
 
 func TestCheckSpaceMix(t *testing.T) {
@@ -247,6 +249,21 @@ func TestCheckTrailingSpace(t *testing.T) {
 	Convey("Produces no comment in blacklisted file types", t, func() {
 		So(checkTrailingSpace("my.patch", " ", 1), ShouldBeNil)
 		So(checkTrailingSpace("my.pdf", " ", 1), ShouldBeNil)
+	})
+}
+
+func TestCheckTrailingLines(t *testing.T) {
+	Convey("Finds trailing lines at the end of a file", t, func() {
+		So(analyzeFile(bufio.NewScanner(strings.NewReader("some code\nsome more code\n\n\n")),
+			"file.path"), ShouldResemble, []*tricium.Data_Comment{
+			{
+				Category:  "Spacey/TrailingLines",
+				Message:   "Found empty line(s) at the end of the file",
+				Path:      "file.path",
+				StartLine: 3,
+				EndLine:   5,
+			},
+		})
 	})
 }
 
