@@ -203,10 +203,7 @@ class IssuesServicerTest(unittest.TestCase):
             approval_id=3,
             status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
             setter_id=333L,
-            approver_ids=[333L, 222L],
-            subfield_values=[
-                tracker_pb2.FieldValue(field_id=1, str_value='string')]
-        ),
+            approver_ids=[333L, 222L]),
         'comment_pb']
 
     actual = self.CallWrapped(self.issues_svcr.UpdateApproval, mc, request)
@@ -225,10 +222,6 @@ class IssuesServicerTest(unittest.TestCase):
           status=issue_objects_pb2.REVIEW_REQUESTED,
           setter_ref=common_pb2.UserRef(
                   user_id=333, display_name='approver3@example.com'),
-          subfield_values=[issue_objects_pb2.FieldValue(
-              field_ref=common_pb2.FieldRef(
-                  field_name='FirstField', type=common_pb2.STR_TYPE),
-              value='string')],
           phase_ref=issue_objects_pb2.PhaseRef()
       )
       )

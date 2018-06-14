@@ -48,7 +48,6 @@ class ApprovalValue(messages.Message):
   setter_id = messages.IntegerField(3)
   set_on = messages.IntegerField(4)
   approver_ids = messages.IntegerField(5, repeated=True)
-  subfield_values = messages.MessageField(FieldValue, 6, repeated=True)
   phase_id = messages.IntegerField(7)
 
 

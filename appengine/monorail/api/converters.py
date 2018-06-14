@@ -51,9 +51,6 @@ def ConvertApproval(approval_value, users_by_id, config, phase=None):
   status = ConvertApprovalStatus(approval_value.status)
   set_on = approval_value.set_on
 
-  subfield_values = ConvertFieldValues(
-      config, [], [], approval_value.subfield_values, users_by_id)
-
   phase_ref = issue_objects_pb2.PhaseRef()
   if phase:
     phase_ref.phase_name = phase.name
@@ -61,7 +58,7 @@ def ConvertApproval(approval_value, users_by_id, config, phase=None):
   result = issue_objects_pb2.Approval(
       field_ref=field_ref, approver_refs=approver_refs,
       status=status, set_on=set_on, setter_ref=setter_ref,
-      subfield_values=subfield_values, phase_ref=phase_ref)
+      phase_ref=phase_ref)
   return result
 
 
@@ -146,8 +143,8 @@ def ConvertIssueRefs(issue_ids, related_refs_dict):
   return [ConvertIssueRef(related_refs_dict[iid]) for iid in issue_ids]
 
 
-def ConvertFieldValue(field_name, value, field_type, phase_name=None,
-                      is_derived=False):
+def ConvertFieldValue(field_name, value, field_type, approval_name=None,
+                      phase_name=None, is_derived=False):
   """Convert one field value view item into a protoc FieldValue."""
   fv = issue_objects_pb2.FieldValue(
       field_ref=ConvertFieldRef(field_name, field_type),
@@ -155,6 +152,8 @@ def ConvertFieldValue(field_name, value, field_type, phase_name=None,
       is_derived=is_derived)
   if phase_name:
     fv.phase_ref.phase_name = phase_name
+  if approval_name:
+    fv.field_ref.approval_name = approval_name
 
   return fv
 
@@ -208,11 +207,17 @@ def ConvertFieldValues(
     field_def = fds_by_id.get(fv.field_id)
     field_name = ''
     field_type = None
+    approval_name = None
     if field_def:
       field_name = field_def.field_name
       field_type = field_def.field_type
+      if field_def.approval_id is not None:
+        approval_def = fds_by_id.get(field_def.approval_id)
+        if approval_def:
+          approval_name = approval_def.field_name
+
     fvs.append(ConvertFieldValue(
-        field_name, value, field_type,
+        field_name, value, field_type, approval_name=approval_name,
         phase_name=phase_names_by_id.get(fv.phase_id), is_derived=fv.derived))
 
   return fvs

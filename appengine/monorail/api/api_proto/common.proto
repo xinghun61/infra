@@ -47,10 +47,11 @@ enum FieldType {
 }
 
 
-// Next available tag: 3
+// Next available tag: 4
 message FieldRef {
   string field_name = 1;
   FieldType type = 2;
+  string approval_name = 3;
 }
 
 

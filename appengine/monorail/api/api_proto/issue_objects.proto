@@ -20,7 +20,6 @@ message Approval {
   ApprovalStatus status = 3;
   fixed32 set_on = 4;
   UserRef setter_ref = 5;
-  repeated FieldValue subfield_values = 6;
   PhaseRef phase_ref = 7;
 }
 

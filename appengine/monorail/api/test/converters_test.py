@@ -84,8 +84,6 @@ class ConverterFunctionsTest(unittest.TestCase):
     av_12 = tracker_pb2.ApprovalValue(  # Note: no approval def, no phase.
         approval_id=12, status=tracker_pb2.ApprovalStatus.NOT_SET,
         setter_id=111L, set_on=now, approver_ids=[111L])
-    av_12.subfield_values.append(tracker_pb2.FieldValue(
-        field_id=1, int_value=123))
     phase_21 = tracker_pb2.Phase(phase_id=21, name='Stable', rank=1)
     actual = converters.ConvertApprovalValues(
         [av_11, av_12], [phase_21], self.users_by_id, self.config)
@@ -113,12 +111,6 @@ class ConverterFunctionsTest(unittest.TestCase):
         set_on=now,
         setter_ref=common_pb2.UserRef(
             user_id=111L, display_name='one@example.com'),
-        subfield_values=[
-            issue_objects_pb2.FieldValue(
-                field_ref=common_pb2.FieldRef(
-                    field_name='EstDays', type=common_pb2.INT_TYPE),
-                value='123'),
-            ],
         phase_ref=issue_objects_pb2.PhaseRef(),
         )
 
@@ -136,11 +128,6 @@ class ConverterFunctionsTest(unittest.TestCase):
     )
 
     self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3]
-    fv_1 = tracker_bizobj.MakeFieldValue(
-        1, None, 'string', None, None, None, False)
-    fv_2 = tracker_bizobj.MakeFieldValue(
-        2, 34, None, None, None, None, False)
-    approval_value.subfield_values = [fv_1, fv_2]
 
     phase = tracker_pb2.Phase(phase_id=1, name='Canary')
 
@@ -157,20 +144,6 @@ class ConverterFunctionsTest(unittest.TestCase):
         setter_ref=common_pb2.UserRef(
             user_id=222L, display_name='two@example.com', is_derived=False
         ),
-        subfield_values=[
-            issue_objects_pb2.FieldValue(
-                field_ref=common_pb2.FieldRef(
-                    field_name='FirstField', type=common_pb2.STR_TYPE),
-                value='string',
-                is_derived=False
-            ),
-            issue_objects_pb2.FieldValue(
-                field_ref=common_pb2.FieldRef(
-                    field_name='SecField', type=common_pb2.INT_TYPE),
-                value='34',
-                is_derived=False
-            )
-        ],
         phase_ref=issue_objects_pb2.PhaseRef(phase_name='Canary')
     )
 
@@ -297,7 +270,7 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertFieldValue(self):
     """We can convert one FieldValueView item to a protoc FieldValue."""
     actual = converters.ConvertFieldValue(
-        'Size', 123, tracker_pb2.FieldTypes.INT_TYPE, 'Canary')
+        'Size', 123, tracker_pb2.FieldTypes.INT_TYPE, phase_name='Canary')
     expected = issue_objects_pb2.FieldValue(
         field_ref=common_pb2.FieldRef(
             field_name='Size', type=common_pb2.INT_TYPE),
@@ -306,16 +279,19 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(expected, actual)
 
     actual = converters.ConvertFieldValue(
-        'Size', 123, tracker_pb2.FieldTypes.INT_TYPE, '', is_derived=True)
+        'Size', 123, tracker_pb2.FieldTypes.INT_TYPE, 'Legal', '',
+        is_derived=True)
     expected = issue_objects_pb2.FieldValue(
         field_ref=common_pb2.FieldRef(
-            field_name='Size', type=common_pb2.INT_TYPE),
+            field_name='Size', type=common_pb2.INT_TYPE, approval_name='Legal'),
         value='123',
         is_derived=True)
     self.assertEqual(expected, actual)
 
   def testConvertFieldValues(self):
-    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4, self.fd_5]
+    self.fd_2.approval_id = 3
+    self.config.field_defs = [
+        self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_5]
     fv_1 = tracker_bizobj.MakeFieldValue(
         1, None, 'string', None, None, None, False)
     fv_2 = tracker_bizobj.MakeFieldValue(
@@ -338,7 +314,8 @@ class ConverterFunctionsTest(unittest.TestCase):
       issue_objects_pb2.FieldValue(
           field_ref=common_pb2.FieldRef(
               field_name='SecField',
-              type=common_pb2.INT_TYPE),
+              type=common_pb2.INT_TYPE,
+              approval_name='LegalApproval'),
           value='34'),
       issue_objects_pb2.FieldValue(
           field_ref=common_pb2.FieldRef(
