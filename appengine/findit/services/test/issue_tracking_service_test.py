@@ -5,16 +5,14 @@ import copy
 import mock
 import datetime
 
-from monorail_api import CustomizedField
-from monorail_api import Issue
-from waterfall.test import wf_testcase
 from libs import analysis_status
 from libs import time_util
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from services.flake_failure import flake_constants
+from monorail_api import Issue
 from services import issue_tracking_service
+from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
@@ -27,6 +25,11 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(['Test-Findit-Analyzed'], issue.labels)
     issue_tracking_service.AddFinditLabelToIssue(issue)
     self.assertEqual(['Test-Findit-Analyzed'], issue.labels)
+
+  def testGenerateAnalysisLink(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    self.assertIn(analysis.key.urlsafe(),
+                  issue_tracking_service.GenerateAnalysisLink(analysis))
 
   def testGenerateCommentWithCulprit(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -44,6 +47,12 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     analysis.status = analysis_status.COMPLETED
     comment = issue_tracking_service.GenerateBugComment(analysis)
     self.assertTrue('longstanding' in comment, comment)
+
+  def testGenerateWrongResultLink(self):
+    test_name = 'test_name'
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', test_name)
+    self.assertIn(test_name,
+                  issue_tracking_service.GenerateWrongResultLink(analysis))
 
   def testGetMinimumConfidenceToFileBugs(self):
     self.UpdateUnitTestConfigSettings('check_flake_settings', {

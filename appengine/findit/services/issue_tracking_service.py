@@ -2,23 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 """Functions for interfacing with Mororail bugs."""
-
-import base64
-import datetime
-import json
-import urllib
 import logging
 import textwrap
 
-from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 from gae_libs import appengine_util
-from libs import analysis_status
 from libs import time_util
 from model.flake import master_flake_analysis
 from monorail_api import CustomizedField
-from monorail_api import IssueTrackerAPI
 from monorail_api import Issue
+from monorail_api import IssueTrackerAPI
 from services import monitoring
 from services.flake_failure import flake_constants
 from waterfall import waterfall_config
@@ -27,17 +20,17 @@ _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE = 'Flaky-Test={} is:open'
 
 _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE = 'summary:{} is:open'
 
-_COMMENT_FOOTER = textwrap.dedent("""
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
-Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness""")
-
 # Comment for culprit template.
-_LINK = 'https://findit-for-me.appspot.com/waterfall/flake?key=%s'
-_CULPRIT_COMMENT_TEMPLATE = textwrap.dedent(
-    """
+_CULPRIT_COMMENT_TEMPLATE = textwrap.dedent("""
 Findit identified the culprit r%s with confidence %.1f%% in the config "%s / %s"
-based on the flakiness trend:"""
-    .lstrip() + '\n\n' + _LINK + '\n\n' + _COMMENT_FOOTER)
+based on the flakiness trend:
+
+https://findit-for-me.appspot.com/waterfall/flake?key=%s
+
+If the culprit above is wrong, please file a bug using this link and hit submit:
+%s
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 
 _FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
 
@@ -65,11 +58,21 @@ _FLAKE_DETECTION_CREATE_BUG_BODY_PREVIOUS_ISSUE = (
 
 _FLAKE_DETECTION_BUG_TITLE = '{test_name} is flaky'
 
-_LOW_FLAKINESS_COMMENT_TEMPLATE = textwrap.dedent(
-    """
+_LOW_FLAKINESS_COMMENT_TEMPLATE = textwrap.dedent("""
 This flake is either a longstanding, has low flakiness, or not reproducible
-based on the flakiness trend in the config "%s / %s":"""
-    .lstrip() + '\n\n' + _LINK + '\n\n' + _COMMENT_FOOTER)
+based on the flakiness trend in the config "%s / %s":
+
+https://findit-for-me.appspot.com/waterfall/flake?key=%s
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
+
+_WRONG_RESULT_LINK_TEMPLATE = (
+    'https://bugs.chromium.org/p/chromium/issues/entry?'
+    'status=Unconfirmed&'
+    'labels=Pri-1,Test-Findit-Wrong&'
+    'components=Tools%3ETest%3EFindit%3EFlakiness&'
+    'summary=%5BFindit%5D%20Flake%20Analyzer%20-%20Wrong%20result%20for%20{}&'
+    'comment=Link%20to%20Analysis%3A%20{}')
 
 
 def AddFinditLabelToIssue(issue):
@@ -104,6 +107,12 @@ def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
   return existing_bug and existing_bug.open
 
 
+def GenerateAnalysisLink(analysis):
+  """Returns a link to Findit's result page of a MasterFlakeAnalysis."""
+  return 'https://findit-for-me.appspot.com/waterfall/flake?key={}'.format(
+      analysis.key.urlsafe())
+
+
 def GenerateBugComment(analysis):
   """Generates a comment to update a bug with based on the analysis' result."""
   assert not analysis.failed
@@ -112,15 +121,23 @@ def GenerateBugComment(analysis):
     culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
     assert culprit
     assert analysis.confidence_in_culprit is not None
+    wrong_result_link = GenerateWrongResultLink(analysis)
     return _CULPRIT_COMMENT_TEMPLATE % (culprit.commit_position,
                                         analysis.confidence_in_culprit * 100,
                                         analysis.original_master_name,
                                         analysis.original_builder_name,
-                                        analysis.key.urlsafe())
+                                        analysis.key.urlsafe(),
+                                        wrong_result_link)
 
   return _LOW_FLAKINESS_COMMENT_TEMPLATE % (analysis.original_master_name,
                                             analysis.original_builder_name,
                                             analysis.key.urlsafe())
+
+
+def GenerateWrongResultLink(analysis):
+  """Returns the test with a link to file a bug agasinst a wrong result."""
+  return _WRONG_RESULT_LINK_TEMPLATE.format(analysis.test_name,
+                                            GenerateAnalysisLink(analysis))
 
 
 def GetMinimumConfidenceToUpdateBugs():
@@ -182,7 +199,7 @@ def ShouldFileBugForAnalysis(analysis):
     analysis.LogInfo('Bug with id {} already exists.'.format(analysis.bug_id))
     return False
 
-  # TODO (crbug.com/808199): Turn off label checking when CTF is offline.
+  # TODO(crbug.com/808199): Turn off label checking when CTF is offline.
   if OpenBugAlreadyExistsForLabel(analysis.test_name):
     analysis.LogInfo('Bug already exists for label {}'.format(
         analysis.test_name))

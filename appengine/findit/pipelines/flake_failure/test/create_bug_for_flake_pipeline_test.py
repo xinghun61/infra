@@ -22,11 +22,11 @@ from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     DetermineApproximatePassRatePipeline)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
-    GetIsolateShaOutput)
-from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionParameters)
 from pipelines.flake_failure.get_isolate_sha_pipeline import (
     GetIsolateShaForCommitPositionPipeline)
+from pipelines.flake_failure.get_isolate_sha_pipeline import (
+    GetIsolateShaOutput)
 from services import issue_tracking_service
 from services import swarmed_test_util
 from services import swarming
@@ -528,13 +528,8 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.data_points = [
-        DataPoint.Create(
-            build_number=200,
-            pass_rate=.5,
-            git_hash='hash',
-            previous_build_git_hash='prev_hash')
+        DataPoint.Create(commit_position=200, pass_rate=.5, git_hash='hash')
     ]
-    analysis.suspected_flake_build_number = 200
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
     analysis.confidence_in_culprit = .5
     analysis.put()
@@ -543,9 +538,4 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
         analysis)
     self.assertEqual('t is Flaky', subject)
     self.assertTrue('(50.0% confidence)' in body)
-    self.assertTrue(
-        'Regression range: https://crrev.com/prev_hash..hash?pretty=fuller' in
-        body)
-    self.assertTrue(
-        'If this result was incorrect, apply the label Test-Findit-Wrong' in
-        body)
+    self.assertTrue('Test-Findit-Wrong' in body)

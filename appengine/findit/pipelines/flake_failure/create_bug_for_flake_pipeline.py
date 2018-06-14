@@ -6,6 +6,8 @@
 
 from google.appengine.ext import ndb
 
+import textwrap
+
 from common.findit_http_client import FinditHttpClient
 from dto.test_location import TestLocation
 from gae_libs import pipelines
@@ -27,14 +29,19 @@ from services import swarming
 from services.flake_failure import pass_rate_util
 from waterfall import build_util
 
+# TODO(crbug.com/850661): Merge CreateBugForFlakePipeline and
+# UpdateMonorailBugPipeline into a single bug handling piepline.
+
 _SUBJECT_TEMPLATE = '{} is Flaky'
-_BODY_TEMPLATE = ('Findit has detected a flake at test {}.\n\n'
-                  'Culprit ({} confidence): {}\n'
-                  'Regression range: {}\n\n'
-                  'Analysis: {}\n\n'
-                  'If this result was incorrect, apply the label '
-                  'Test-Findit-Wrong, mark the bug as Untriaged and the '
-                  'component Tools>Test>Findit>Flakiness.')
+
+_BODY_TEMPLATE = textwrap.dedent("""
+Findit has detected flake occurrences for the test {}
+Culprit ({} confidence): {}
+Analysis: {}
+
+Please revert the culprit, or disable the test and find the appropriate owner.
+
+{}""")
 
 # TODO(crbug.com/783335): Allow these values to be configurable.
 _ITERATIONS_TO_CONFIRM_FLAKE = 30  # 30 iterations.
@@ -150,22 +157,11 @@ def _GenerateSubjectAndBodyForBug(analysis):
     culprit_confidence = "{0:0.1f}%".format(
         analysis.confidence_in_culprit * 100)
 
-  # Find the regression range of the suspected data point.
-  suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
-
-  regression_range_url = 'None'
-  if suspected_data_point:
-    lower_git_hash = suspected_data_point.previous_build_git_hash
-    upper_git_hash = suspected_data_point.git_hash
-
-    regression_range_url = ('https://crrev.com/%s..%s?pretty=fuller' %
-                            (lower_git_hash, upper_git_hash))
-
   subject = _SUBJECT_TEMPLATE.format(analysis.test_name)
-  analysis_link = ('https://findit-for-me.appspot.com/waterfall/flake?key=%s' %
-                   analysis.key.urlsafe())
+  analysis_link = issue_tracking_service.GenerateAnalysisLink(analysis)
+  wrong_result_link = issue_tracking_service.GenerateWrongResultLink(analysis)
   body = _BODY_TEMPLATE.format(analysis.test_name, culprit_confidence,
-                               culprit_url, regression_range_url, analysis_link)
+                               culprit_url, analysis_link, wrong_result_link)
   return subject, body
 
 
