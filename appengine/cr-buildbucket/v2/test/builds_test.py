@@ -32,7 +32,7 @@ class V2BuildsTest(unittest.TestCase):
     )
     self.assertEqual(
         builds._get_builder_id(build),
-        build_pb2.Builder.ID(
+        build_pb2.BuilderID(
             project='chromium',
             bucket='master.tryserver.chromium.linux',
             builder='linux_chromium_rel_ng',
@@ -48,7 +48,7 @@ class V2BuildsTest(unittest.TestCase):
     )
     self.assertEqual(
         builds._get_builder_id(build),
-        build_pb2.Builder.ID(
+        build_pb2.BuilderID(
             project='chromium',
             bucket='try',
             builder='linux-rel',
@@ -117,7 +117,7 @@ class V2BuildsTest(unittest.TestCase):
 
     expected = build_pb2.Build(
         id=1,
-        builder=build_pb2.Builder.ID(
+        builder=build_pb2.BuilderID(
             project='chromium',
             bucket='try',
             builder='linux-rel',

@@ -75,12 +75,12 @@ class BuilderIDTests(BaseTestCase):
   func_name = 'validate_builder_id'
 
   def test_valid(self):
-    msg = build_pb2.Builder.ID(
+    msg = build_pb2.BuilderID(
         project='chromium', bucket='try', builder='linux-rel')
     self.assert_valid(msg)
 
   def test_no_project(self):
-    msg = build_pb2.Builder.ID(project='', bucket='try', builder='linux-rel')
+    msg = build_pb2.BuilderID(project='', bucket='try', builder='linux-rel')
     self.assert_invalid(msg, r'project: not specified')
 
 
@@ -101,7 +101,7 @@ class GetBuildRequestTests(BaseTestCase):
 
   def test_valid_number(self):
     msg = rpc_pb2.GetBuildRequest(
-        builder=build_pb2.Builder.ID(
+        builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'),
         build_number=1,
     )
@@ -110,7 +110,7 @@ class GetBuildRequestTests(BaseTestCase):
   def test_id_and_builder(self):
     msg = rpc_pb2.GetBuildRequest(
         id=1,
-        builder=build_pb2.Builder.ID(project='chromium'),
+        builder=build_pb2.BuilderID(project='chromium'),
     )
     self.assert_invalid(msg, r'mutually exclusive')
 
@@ -121,7 +121,7 @@ class SearchBuildsRequestTests(BaseTestCase):
   def test_valid(self):
     msg = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
-            builder=build_pb2.Builder.ID(
+            builder=build_pb2.BuilderID(
                 project='chromium', bucket='try', builder='linux-rel'),
         ))
     self.assert_valid(msg)
@@ -135,7 +135,7 @@ class SearchBuildsRequestTests(BaseTestCase):
   def test_bad_page_size(self):
     msg = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
-            builder=build_pb2.Builder.ID(
+            builder=build_pb2.BuilderID(
                 project='chromium', bucket='try', builder='linux-rel'),
         ),
         page_size=-1,
@@ -148,7 +148,7 @@ class BuildPredicateTests(BaseTestCase):
 
   def test_valid(self):
     msg = rpc_pb2.BuildPredicate(
-        builder=build_pb2.Builder.ID(
+        builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'))
     self.assert_valid(msg)
 
@@ -158,7 +158,7 @@ class BuildPredicateTests(BaseTestCase):
         msg, r'builder or gerrit_changes is required')
 
   def test_invalid_builder_id(self):
-    msg = rpc_pb2.BuildPredicate(builder=build_pb2.Builder.ID())
+    msg = rpc_pb2.BuildPredicate(builder=build_pb2.BuilderID())
     self.assert_invalid(
         msg, r'builder\.project: not specified')
 
@@ -169,7 +169,7 @@ class BuildPredicateTests(BaseTestCase):
 
   def test_invalid_tags(self):
     msg = rpc_pb2.BuildPredicate(
-        builder=build_pb2.Builder.ID(
+        builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'),
         tags=[common_pb2.StringPair(key='', value='')],
     )

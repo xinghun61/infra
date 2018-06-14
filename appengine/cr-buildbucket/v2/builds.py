@@ -147,7 +147,7 @@ def _get_builder_id(build):
   luci_prefix = 'luci.%s.' % build.project
   if bucket.startswith(luci_prefix):
     bucket = bucket[len(luci_prefix):]
-  return build_pb2.Builder.ID(
+  return build_pb2.BuilderID(
       project=build.project,
       bucket=bucket,
       builder=(build.parameters or {}).get(model.BUILDER_PARAMETER) or '',

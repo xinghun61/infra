@@ -194,7 +194,7 @@ class GetBuildTests(BaseTestCase):
         ],
     )
     service_search.return_value = ([build_v1], None)
-    builder_id = build_pb2.Builder.ID(
+    builder_id = build_pb2.BuilderID(
         project='chromium', bucket='try', builder='linux-try')
     req = rpc_pb2.GetBuildRequest(builder=builder_id, build_number=2)
     res = self.call(self.api.GetBuild, req)
@@ -213,7 +213,7 @@ class GetBuildTests(BaseTestCase):
     self.call(self.api.GetBuild, req, expected_code=prpc.StatusCode.NOT_FOUND)
 
   def test_not_found_by_number(self):
-    builder_id = build_pb2.Builder.ID(
+    builder_id = build_pb2.BuilderID(
         project='chromium', bucket='try', builder='linux-try')
     req = rpc_pb2.GetBuildRequest(builder=builder_id, build_number=2)
     self.call(self.api.GetBuild, req, expected_code=prpc.StatusCode.NOT_FOUND)
@@ -238,7 +238,7 @@ class SearchTests(BaseTestCase):
 
     req = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
-            builder=build_pb2.Builder.ID(
+            builder=build_pb2.BuilderID(
                 project='chromium', bucket='try', builder='linux-try'),),)
     res = self.call(self.api.SearchBuilds, req)
 
