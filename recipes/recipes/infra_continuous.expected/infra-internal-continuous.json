@@ -73,12 +73,14 @@
       "runhooks"
     ],
     "cwd": "[START_DIR]/infra_internal",
-    "env": {
-      "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
-    },
     "env_prefixes": {
       "PATH": [
         "/opt/infra-system/bin"
+      ]
+    },
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
     },
     "name": "gclient runhooks"
