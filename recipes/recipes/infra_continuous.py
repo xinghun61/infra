@@ -75,10 +75,10 @@ CIPD_PACKAGE_BUILDERS = {
     'native',
     'linux-arm',
     'linux-arm64',
-    'linux-mips64'
+    'linux-mips64',
     'linux-ppc64',
     'linux-ppc64le',
-    'linux-s390x'
+    'linux-s390x',
   ],
   'infra-packager-mac-64': ['native'],
   'infra-packager-win-32': ['native'],
