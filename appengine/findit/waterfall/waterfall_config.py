@@ -216,7 +216,7 @@ def GetTrybotDimensions(wf_mastername, wf_buildername):
   Returns:
     (list of str)
     Colon-separated pairs of key:value identifying the swarming dimensions
-    required to match the configuration of the main waterfall builer.
+    required to match the configuration of the main waterfall builder.
   """
 
   bot_config = _GetTrybotConfig(wf_mastername, wf_buildername)

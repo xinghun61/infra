@@ -441,7 +441,7 @@ def PrepareParametersToScheduleTryJob(master_name,
 
   # For test failure we need to match the parent builder when possible.
   match_mastername = failure_info.get('parent_mastername') or master_name
-  match_buildername = failure_info.get('parent_builername') or builder_name
+  match_buildername = failure_info.get('parent_buildername') or builder_name
 
   # Dimensions should be obtained dynamically via the swarmbucket api if the
   # original failure happened on a LUCI builder. Fallback to the static mapping

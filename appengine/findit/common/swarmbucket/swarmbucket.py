@@ -44,10 +44,12 @@ def GetDimensionsForBuilder(
     A list of colon separated strings of the form "key:value".
   """
   request = {
-      'bucket': bucket,
-      'parameters_json': json.dumps({
-          'builder_name': builder
-      })
+      'build_request': {
+          'bucket': bucket,
+          'parameters_json': json.dumps({
+              'builder_name': builder
+          })
+      }
   }
 
   response = _CallSwarmbucketAPI(service_url, 'get_task_def', request)
