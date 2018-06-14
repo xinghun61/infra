@@ -281,6 +281,74 @@ def ConvertPhaseDef(phase):
   return phase_def
 
 
+def ConvertAmendment(_amendment, _users_by_id):
+  """Convert a protorpc Amendment to a protoc Amendment."""
+  # TODO(jrobbins): Implement this.
+  return issue_objects_pb2.Amendment()
+
+
+def ConvertAttachment(_attachment):
+  """Convert a protorpc Attachment to a protoc Attachment."""
+  # TODO(jrobbins): Implement this.
+  return issue_objects_pb2.Attachment()
+
+
+def ConvertComment(
+    issue, comment, users_by_id, config, description_nums,
+    logged_in_user_id):
+  """Convert a protorpc IssueComment to a protoc Comment."""
+  # TODO(jrobbins): Refactor these permission checks into WE.
+  is_deleted = bool(comment.deleted_by or users_by_id[comment.user_id].banned)
+  deletable_by_me = comment.user_id == logged_in_user_id  # TODO: CanDelete().
+  is_viewable = not is_deleted or deletable_by_me
+  inbound_message_visible = comment.user_id == logged_in_user_id
+
+  # TODO(jrobbins): Tell client which comments the current user can delete.
+  result = issue_objects_pb2.Comment(
+      project_name=issue.project_name,
+      local_id=issue.local_id,
+      sequence_num=comment.sequence,
+      is_deleted=is_deleted,
+      timestamp=comment.timestamp,
+      is_spam=comment.is_spam)
+
+  if is_viewable:
+    result.commenter.CopyFrom(
+        ConvertUserRef(comment.user_id, None, users_by_id))
+    result.content = comment.content
+    if inbound_message_visible and comment.inbound_message:
+      result.inbound_message = comment.inbound_message
+    result.amendments.extend([
+        ConvertAmendment(amend, users_by_id)
+        for amend in comment.amendments])
+    result.attachments.extend([
+        ConvertAttachment(attach)
+        for attach in comment.attachments])
+    if comment.id in description_nums:
+      result.description_num = description_nums[comment.id]
+
+  fd = tracker_bizobj.FindFieldDefByID(comment.approval_id, config)
+  if fd:
+    result.approval_ref.field_name = fd.field_name
+
+  return result
+
+
+def ConvertCommentList(issue, comments, users_by_id, config, logged_in_user_id):
+  """Convert a list of protorpc IssueComments to protoc Comments."""
+  description_nums = {}
+  for comment in comments:
+    if comment.is_description:
+      description_nums[comment.id] = len(description_nums) + 1
+
+  result = [
+    ConvertComment(
+        issue, c, users_by_id, config, description_nums,
+        logged_in_user_id)
+    for c in comments]
+  return result
+
+
 def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
   """Ingest a protoc ApprovalDelta and create a protorpc ApprovalDelta."""
 

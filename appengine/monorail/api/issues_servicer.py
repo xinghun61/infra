@@ -62,16 +62,25 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     """Return comments on the specified issue in a response proto."""
     with work_env.WorkEnv(mc, self.services) as we:
       project = we.GetProjectByName(request.issue_ref.project_name)
+      config = we.GetProjectConfig(project.project_id)
       mc.LookupLoggedInUserPerms(project)
-      # Get this issue to prove that the user can view it.
-      we.GetIssueByLocalID(project.project_id, request.issue_ref.local_id)
 
-    with mc.profiler.Phase('getting comments and making user views'):
-      pass  # TODO(jrobbins): implement calls to WE to get all comments.
+    with work_env.WorkEnv(mc, self.services) as we:
+      issue = we.GetIssueByLocalID(
+          project.project_id, request.issue_ref.local_id)
+      comments = we.ListIssueComments(issue)
+
+    with mc.profiler.Phase('making user views'):
+      users_involved_in_comments = tracker_bizobj.UsersInvolvedInCommentList(
+         comments)
+      users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, users_involved_in_comments)
+      framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
 
     with mc.profiler.Phase('converting to response objects'):
-      response = issues_pb2.ListCommentsResponse()
-        # TODO(jrobbins): implement conversion to protoc.
+      converted_comments = converters.ConvertCommentList(
+          issue, comments, users_by_id, config, mc.auth.user_id)
+      response = issues_pb2.ListCommentsResponse(comments=converted_comments)
 
     return response
 

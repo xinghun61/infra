@@ -5,9 +5,9 @@
 
 """Tests for the issues servicer."""
 
+import logging
 import unittest
 
-import mox
 from google.protobuf import empty_pb2
 
 from components.prpc import codes
@@ -15,18 +15,21 @@ from components.prpc import context
 from components.prpc import server
 
 from api import issues_servicer
+from api.api_proto import common_pb2
 from api.api_proto import issues_pb2
 from api.api_proto import issue_objects_pb2
 from framework import authdata
 from framework import monorailcontext
+from proto import tracker_pb2
 from testing import fake
 from services import service_manager
 
 
 class IssuesServicerTest(unittest.TestCase):
 
+  NOW = 1234567890
+
   def setUp(self):
-    self.mox = mox.Mox()
     self.cnxn = fake.MonorailConnection()
     self.services = service_manager.Services(
         config=fake.ConfigService(),
@@ -39,7 +42,8 @@ class IssuesServicerTest(unittest.TestCase):
         'proj', project_id=789, owner_ids=[111L])
     self.user = self.services.user.TestAddUser('owner@example.com', 111L)
     self.issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj')
+        789, 1, 'sum', 'New', 111L, project_name='proj',
+        opened_timestamp=self.NOW)
     self.issue_2 = fake.MakeTestIssue(
         789, 2, 'sum', 'New', 111L, project_name='proj')
     self.issue_1.blocked_on_iids.append(self.issue_2.issue_id)
@@ -49,10 +53,6 @@ class IssuesServicerTest(unittest.TestCase):
         self.services, make_rate_limiter=False)
     self.prpc_context = context.ServicerContext()
     self.prpc_context.set_code(server.StatusCode.OK)
-
-  def tearDown(self):
-    self.mox.UnsetStubs()
-    self.mox.ResetAll()
 
   def CallWrapped(self, wrapped_handler, *args, **kwargs):
     return wrapped_handler.wrapped(self.issues_svcr, *args, **kwargs)
@@ -90,7 +90,34 @@ class IssuesServicerTest(unittest.TestCase):
 
   def testListComments_Normal(self):
     """We can get comments on an issue."""
-    pass  # TODO(jrobbins): Implement this test.
+    comment = tracker_pb2.IssueComment(
+        user_id=111L, timestamp=self.NOW, content='second',
+        project_id=789, issue_id=self.issue_1.issue_id, sequence=1)
+    self.services.issue.TestAddComment(comment, self.issue_1.local_id)
+    request = issues_pb2.ListCommentsRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    response = self.CallWrapped(self.issues_svcr.ListComments, mc, request)
+
+    actual_0 = response.comments[0]
+    actual_1 = response.comments[1]
+    expected_0 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=0, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='owner@example.com'),
+        timestamp=self.NOW, content='sum', is_spam=False,
+        description_num=1)
+    expected_1 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=1, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='owner@example.com'),
+        timestamp=self.NOW, content='second')
+    self.assertEqual(expected_0, actual_0)
+    self.assertEqual(expected_1, actual_1)
 
   def testDoDeleteIssueComment_Normal(self):
     """We can delete a comment."""

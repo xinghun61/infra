@@ -22,8 +22,12 @@ class ConverterFunctionsTest(unittest.TestCase):
   def setUp(self):
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.users_by_id = {
-        111L: testing_helpers.Blank(display_name='one@example.com'),
-        222L: testing_helpers.Blank(display_name='two@example.com'),
+        111L: testing_helpers.Blank(
+            display_name='one@example.com', banned=False),
+        222L: testing_helpers.Blank(
+            display_name='two@example.com', banned=False),
+        333L: testing_helpers.Blank(
+            display_name='banned@example.com', banned=True),
         }
 
     self.services = service_manager.Services(
@@ -409,6 +413,128 @@ class ConverterFunctionsTest(unittest.TestCase):
         rank=2
     )
     self.assertEqual(expected, actual)
+
+  def testConvertAmendment(self):
+    pass  # TODO(jrobbins): Implement this.
+
+  def testConvertAttachment(self):
+    pass  # TODO(jrobbins): Implement this.
+
+  def testConvertComment(self):
+    """We can convert a protorpc IssueComment to a protoc Comment."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=111L, timestamp=now,
+        content='a comment', sequence=12)
+
+    # Normal comment.
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {}, None)
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', is_spam=False)
+    self.assertEqual(expected, actual)
+
+    # Comment that was deleted and now viewed by comment author.
+    comment.deleted_by = 111L
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {}, 111L)
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', is_spam=False)
+    self.assertEqual(expected, actual)
+
+    # Comment that was deleted and now viewed by some other user.
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {}, 222L)
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
+        timestamp=now, is_spam=False)
+    self.assertEqual(expected, actual)
+    comment.deleted_by = None
+
+    # Description.
+    comment.is_description = True
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {101: 1}, None)
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', is_spam=False, description_num=1)
+    self.assertEqual(expected, actual)
+    comment.is_description = False
+
+    # Comment on an approval.
+    self.config.field_defs.append(tracker_pb2.FieldDef(
+        field_id=11, project_id=789, field_name='Accessibility',
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
+        applicable_type='Launch'))
+    self.config.approval_defs.append(tracker_pb2.ApprovalDef(
+        approval_id=11, approver_ids=[111L], survey='survey 1'))
+    comment.approval_id = 11
+    actual = converters.ConvertComment(
+        issue, comment, self.users_by_id, self.config, {}, None)
+    expected = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a comment', is_spam=False,
+        approval_ref=common_pb2.FieldRef(field_name='Accessibility'))
+    self.assertEqual(expected, actual)
+
+  def testConvertCommentList(self):
+    """We can convert a list of comments."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    comment_0 = tracker_pb2.IssueComment(
+        id=100, project_id=789, user_id=111L, timestamp=now,
+        content='a description', sequence=0, is_description=True)
+    comment_1 = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=222L, timestamp=now,
+        content='a comment', sequence=1)
+    comment_2 = tracker_pb2.IssueComment(
+        id=102, project_id=789, user_id=222L, timestamp=now,
+        content='deleted comment', sequence=2, deleted_by=111L)
+    comment_3 = tracker_pb2.IssueComment(
+        id=103, project_id=789, user_id=111L, timestamp=now,
+        content='another desc', sequence=3, is_description=True)
+
+    actual = converters.ConvertCommentList(
+        issue, [comment_0, comment_1, comment_2, comment_3], self.users_by_id,
+        self.config, 222L)
+
+    expected_0 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=0, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='a description', is_spam=False,
+        description_num=1)
+    expected_1 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=1, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=222L, display_name='two@example.com'),
+        timestamp=now, content='a comment', is_spam=False)
+    expected_2 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=2, is_deleted=True,
+        commenter=common_pb2.UserRef(
+            user_id=222L, display_name='two@example.com'),
+        timestamp=now, content='deleted comment', is_spam=False)
+    expected_3 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=3, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111L, display_name='one@example.com'),
+        timestamp=now, content='another desc', is_spam=False,
+        description_num=2)
+    self.assertEqual(expected_0, actual[0])
+    self.assertEqual(expected_1, actual[1])
+    self.assertEqual(expected_2, actual[2])
+    self.assertEqual(expected_3, actual[3])
 
   def testIngestApprovalDelta(self):
     self.services.user.TestAddUser('user1@example.com', 111L)
