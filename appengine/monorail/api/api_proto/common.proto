@@ -32,9 +32,25 @@ message ComponentRef {
   bool is_derived = 2;
 }
 
-// Next available tag: 2
+
+// Next available tag: 9
+enum FieldType {
+  NO_TYPE = 0;
+  ENUM_TYPE = 1;
+  INT_TYPE = 2;
+  STR_TYPE = 3;
+  USER_TYPE = 4;
+  DATE_TYPE = 5;
+  BOOL_TYPE = 6;
+  URL_TYPE = 7;
+  APPROVAL_TYPE = 8;
+}
+
+
+// Next available tag: 3
 message FieldRef {
   string field_name = 1;
+  FieldType type = 2;
 }
 
 

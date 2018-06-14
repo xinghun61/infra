@@ -87,7 +87,8 @@ class ConverterFunctionsTest(unittest.TestCase):
         [av_11, av_12], [phase_21], self.users_by_id, self.config)
 
     expected_av_1 = issue_objects_pb2.Approval(
-        field_ref=common_pb2.FieldRef(field_name='Accessibility'),
+        field_ref=common_pb2.FieldRef(
+            field_name='Accessibility', type=common_pb2.APPROVAL_TYPE),
         approver_refs=[
             common_pb2.UserRef(user_id=111L, display_name='one@example.com'),
             common_pb2.UserRef(user_id=222L, display_name='two@example.com'),
@@ -99,7 +100,8 @@ class ConverterFunctionsTest(unittest.TestCase):
         phase_ref=issue_objects_pb2.PhaseRef(phase_name='Stable'))
 
     expected_av_2 = issue_objects_pb2.Approval(
-        field_ref=common_pb2.FieldRef(field_name=''),
+        field_ref=common_pb2.FieldRef(
+            field_name='', type=common_pb2.APPROVAL_TYPE),
         approver_refs=[
             common_pb2.UserRef(user_id=111L, display_name='one@example.com'),
             ],
@@ -109,7 +111,8 @@ class ConverterFunctionsTest(unittest.TestCase):
             user_id=111L, display_name='one@example.com'),
         subfield_values=[
             issue_objects_pb2.FieldValue(
-                field_ref=common_pb2.FieldRef(field_name='EstDays'),
+                field_ref=common_pb2.FieldRef(
+                    field_name='EstDays', type=common_pb2.INT_TYPE),
                 value='123'),
             ],
         phase_ref=issue_objects_pb2.PhaseRef(),
@@ -140,7 +143,8 @@ class ConverterFunctionsTest(unittest.TestCase):
     actual = converters.ConvertApproval(
         approval_value, self.users_by_id, self.config, phase=phase)
     expected = issue_objects_pb2.Approval(
-        field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
+        field_ref=common_pb2.FieldRef(
+            field_name='LegalApproval', type=common_pb2.APPROVAL_TYPE),
         approver_refs=[common_pb2.UserRef(
             user_id=111L, display_name='one@example.com', is_derived=False)
           ],
@@ -151,12 +155,14 @@ class ConverterFunctionsTest(unittest.TestCase):
         ),
         subfield_values=[
             issue_objects_pb2.FieldValue(
-                field_ref=common_pb2.FieldRef(field_name='FirstField'),
+                field_ref=common_pb2.FieldRef(
+                    field_name='FirstField', type=common_pb2.STR_TYPE),
                 value='string',
                 is_derived=False
             ),
             issue_objects_pb2.FieldValue(
-                field_ref=common_pb2.FieldRef(field_name='SecField'),
+                field_ref=common_pb2.FieldRef(
+                    field_name='SecField', type=common_pb2.INT_TYPE),
                 value='34',
                 is_derived=False
             )
@@ -268,18 +274,40 @@ class ConverterFunctionsTest(unittest.TestCase):
          common_pb2.IssueRef(project_name='proj', local_id=2)],
         actual)
 
+  def testConvertFieldType(self):
+    self.assertEqual(
+        common_pb2.STR_TYPE,
+        converters.ConvertFieldType(tracker_pb2.FieldTypes.STR_TYPE))
+
+    self.assertEqual(
+        common_pb2.URL_TYPE,
+        converters.ConvertFieldType(tracker_pb2.FieldTypes.URL_TYPE))
+
+  def testConvertFieldRef(self):
+    actual = converters.ConvertFieldRef(
+        'SomeName', tracker_pb2.FieldTypes.ENUM_TYPE)
+    self.assertEqual(
+        actual,
+        common_pb2.FieldRef(field_name='SomeName', type=common_pb2.ENUM_TYPE))
+
   def testConvertFieldValue(self):
     """We can convert one FieldValueView item to a protoc FieldValue."""
-    actual = converters.ConvertFieldValue('Size', 123)
+    actual = converters.ConvertFieldValue(
+        'Size', 123, tracker_pb2.FieldTypes.INT_TYPE, 'Canary')
     expected = issue_objects_pb2.FieldValue(
-        field_ref=common_pb2.FieldRef(field_name='Size'),
-        value='123')
+        field_ref=common_pb2.FieldRef(
+            field_name='Size', type=common_pb2.INT_TYPE),
+        value='123',
+        phase_ref=issue_objects_pb2.PhaseRef(phase_name='Canary'))
     self.assertEqual(expected, actual)
 
-    actual = converters.ConvertFieldValue('Size', 123, is_derived=True)
+    actual = converters.ConvertFieldValue(
+        'Size', 123, tracker_pb2.FieldTypes.INT_TYPE, '', is_derived=True)
     expected = issue_objects_pb2.FieldValue(
-        field_ref=common_pb2.FieldRef(field_name='Size'),
-        value='123', is_derived=True)
+        field_ref=common_pb2.FieldRef(
+            field_name='Size', type=common_pb2.INT_TYPE),
+        value='123',
+        is_derived=True)
     self.assertEqual(expected, actual)
 
   def testConvertFieldValues(self):
@@ -290,22 +318,31 @@ class ConverterFunctionsTest(unittest.TestCase):
         2, 34, None, None, None, None, False)
     labels = ['Pre-label', 'not-label-enum', 'prenot-label']
     der_labels =  ['Pre-label2']
+    phases = [tracker_pb2.Phase(name='Canary', phase_id=17)]
+    fv_1.phase_id=17
 
     actual = converters.ConvertFieldValues(
-        self.config, labels, der_labels, [fv_1, fv_2], {})
+        self.config, labels, der_labels, [fv_1, fv_2], {}, phases=phases)
 
     expected = [
       issue_objects_pb2.FieldValue(
-          field_ref=common_pb2.FieldRef(field_name='FirstField'),
-          value='string'),
+          field_ref=common_pb2.FieldRef(
+              field_name='FirstField',
+              type=common_pb2.STR_TYPE),
+          value='string',
+          phase_ref=issue_objects_pb2.PhaseRef(phase_name='Canary')),
       issue_objects_pb2.FieldValue(
-          field_ref=common_pb2.FieldRef(field_name='SecField'),
+          field_ref=common_pb2.FieldRef(
+              field_name='SecField',
+              type=common_pb2.INT_TYPE),
           value='34'),
       issue_objects_pb2.FieldValue(
-          field_ref=common_pb2.FieldRef(field_name='Pre'),
+          field_ref=common_pb2.FieldRef(
+              field_name='Pre', type=common_pb2.ENUM_TYPE),
           value='label'),
       issue_objects_pb2.FieldValue(
-          field_ref=common_pb2.FieldRef(field_name='Pre'),
+          field_ref=common_pb2.FieldRef(
+              field_name='Pre', type=common_pb2.ENUM_TYPE),
           value='label2', is_derived=True),
       ]
     self.assertItemsEqual(expected, actual)

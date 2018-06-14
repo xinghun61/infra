@@ -3,6 +3,7 @@
 
 import sys
 _b=sys.version_info[0]<3 and (lambda x:x) or (lambda x:x.encode('latin1'))
+from google.protobuf.internal import enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
@@ -19,10 +20,70 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/common.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"A\n\x0cRequestTrace\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\x12\x12\n\nrequest_id\x18\x03 \x01(\t\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"\x1e\n\x08\x46ieldRef\x12\x12\n\nfield_name\x18\x01 \x01(\t\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"2\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"A\n\x0cRequestTrace\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\x12\x12\n\nrequest_id\x18\x03 \x01(\t\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"A\n\x08\x46ieldRef\x12\x12\n\nfield_name\x18\x01 \x01(\t\x12!\n\x04type\x18\x02 \x01(\x0e\x32\x13.monorail.FieldType\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"2\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08*\x91\x01\n\tFieldType\x12\x0b\n\x07NO_TYPE\x10\x00\x12\r\n\tENUM_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0c\n\x08STR_TYPE\x10\x03\x12\r\n\tUSER_TYPE\x10\x04\x12\r\n\tDATE_TYPE\x10\x05\x12\r\n\tBOOL_TYPE\x10\x06\x12\x0c\n\x08URL_TYPE\x10\x07\x12\x11\n\rAPPROVAL_TYPE\x10\x08\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
+_FIELDTYPE = _descriptor.EnumDescriptor(
+  name='FieldType',
+  full_name='monorail.FieldType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='NO_TYPE', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='ENUM_TYPE', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='INT_TYPE', index=2, number=2,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='STR_TYPE', index=3, number=3,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='USER_TYPE', index=4, number=4,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DATE_TYPE', index=5, number=5,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='BOOL_TYPE', index=6, number=6,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='URL_TYPE', index=7, number=7,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='APPROVAL_TYPE', index=8, number=8,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=463,
+  serialized_end=608,
+)
+_sym_db.RegisterEnumDescriptor(_FIELDTYPE)
+
+FieldType = enum_type_wrapper.EnumTypeWrapper(_FIELDTYPE)
+NO_TYPE = 0
+ENUM_TYPE = 1
+INT_TYPE = 2
+STR_TYPE = 3
+USER_TYPE = 4
+DATE_TYPE = 5
+BOOL_TYPE = 6
+URL_TYPE = 7
+APPROVAL_TYPE = 8
 
 
 
@@ -123,6 +184,13 @@ _FIELDREF = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='type', full_name='monorail.FieldRef.type', index=1,
+      number=2, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -136,7 +204,7 @@ _FIELDREF = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=157,
-  serialized_end=187,
+  serialized_end=222,
 )
 
 
@@ -173,8 +241,8 @@ _LABELREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=189,
-  serialized_end=234,
+  serialized_start=224,
+  serialized_end=269,
 )
 
 
@@ -218,8 +286,8 @@ _STATUSREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=236,
-  serialized_end=303,
+  serialized_start=271,
+  serialized_end=338,
 )
 
 
@@ -256,8 +324,8 @@ _ISSUEREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=305,
-  serialized_end=355,
+  serialized_start=340,
+  serialized_end=390,
 )
 
 
@@ -301,10 +369,11 @@ _USERREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=357,
-  serialized_end=425,
+  serialized_start=392,
+  serialized_end=460,
 )
 
+_FIELDREF.fields_by_name['type'].enum_type = _FIELDTYPE
 DESCRIPTOR.message_types_by_name['RequestTrace'] = _REQUESTTRACE
 DESCRIPTOR.message_types_by_name['ComponentRef'] = _COMPONENTREF
 DESCRIPTOR.message_types_by_name['FieldRef'] = _FIELDREF
@@ -312,6 +381,7 @@ DESCRIPTOR.message_types_by_name['LabelRef'] = _LABELREF
 DESCRIPTOR.message_types_by_name['StatusRef'] = _STATUSREF
 DESCRIPTOR.message_types_by_name['IssueRef'] = _ISSUEREF
 DESCRIPTOR.message_types_by_name['UserRef'] = _USERREF
+DESCRIPTOR.enum_types_by_name['FieldType'] = _FIELDTYPE
 
 RequestTrace = _reflection.GeneratedProtocolMessageType('RequestTrace', (_message.Message,), dict(
   DESCRIPTOR = _REQUESTTRACE,

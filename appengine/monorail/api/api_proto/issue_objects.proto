@@ -99,11 +99,12 @@ message Comment {
 }
 
 
-// Next available tag: 4
+// Next available tag: 5
 message FieldValue {
   FieldRef field_ref = 1;
   string value = 2;
   bool is_derived = 3;
+  PhaseRef phase_ref = 4;
 }
 
 

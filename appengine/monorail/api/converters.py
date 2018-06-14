@@ -43,7 +43,8 @@ def ConvertApproval(approval_value, users_by_id, config, phase=None):
   if fd:
     approval_name = fd.field_name
 
-  field_ref = common_pb2.FieldRef(field_name=approval_name)
+  field_ref = ConvertFieldRef(
+      approval_name, tracker_pb2.FieldTypes.APPROVAL_TYPE)
   approver_refs = ConvertUserRefs(approval_value.approver_ids, [], users_by_id)
   setter_ref = ConvertUserRef(approval_value.setter_id, None, users_by_id)
 
@@ -145,19 +146,35 @@ def ConvertIssueRefs(issue_ids, related_refs_dict):
   return [ConvertIssueRef(related_refs_dict[iid]) for iid in issue_ids]
 
 
-def ConvertFieldValue(field_name, value, is_derived=False):
-  """Convert one field value into a protoc FieldValue."""
+def ConvertFieldValue(field_name, value, field_type, phase_name=None,
+                      is_derived=False):
+  """Convert one field value view item into a protoc FieldValue."""
   fv = issue_objects_pb2.FieldValue(
-      field_ref=common_pb2.FieldRef(field_name=field_name),
+      field_ref=ConvertFieldRef(field_name, field_type),
       value=str(value),
       is_derived=is_derived)
+  if phase_name:
+    fv.phase_ref.phase_name = phase_name
+
   return fv
 
 
+def ConvertFieldType(field_type):
+  """Use the given protorpc FieldTypes enum to create a protoc FieldType."""
+  return common_pb2.FieldType.Value(field_type.name)
+
+
+def ConvertFieldRef(field_name, field_type):
+  """Convert a field name and protorpc FieldType into a protoc FieldRef."""
+  return common_pb2.FieldRef(field_name=field_name,
+                             type=ConvertFieldType(field_type))
+
+
 def ConvertFieldValues(
-    config, labels, derived_labels, field_values, users_by_id):
+    config, labels, derived_labels, field_values, users_by_id, phases=None):
   """Convert lists of labels and field_values to protoc FieldValues."""
   fvs = []
+  phase_names_by_id = {phase.phase_id: phase.name for phase in phases or []}
   fds_by_id = {fd.field_id:fd for fd in config.field_defs}
   enum_names_by_lower = {
       fd.field_name.lower(): fd.field_name for fd in config.field_defs
@@ -168,13 +185,14 @@ def ConvertFieldValues(
   der_labels_by_prefix = tracker_bizobj.LabelsByPrefix(
       derived_labels, enum_names_by_lower.keys())
 
-  # TODO(jojwang): add field_type: ENUM_TYPE to ConvertFieldValue.
   for lower_field_name, values in labels_by_prefix.iteritems():
     field_name = enum_names_by_lower.get(lower_field_name)
     if not field_name:
       continue
     fvs.extend(
-        [ConvertFieldValue(field_name, value) for value in values])
+        [ConvertFieldValue(
+            field_name, value, tracker_pb2.FieldTypes.ENUM_TYPE) for
+         value in values])
 
   for lower_field_name, values in der_labels_by_prefix.iteritems():
     field_name = enum_names_by_lower.get(lower_field_name)
@@ -182,17 +200,20 @@ def ConvertFieldValues(
       continue
     fvs.extend(
         [ConvertFieldValue(
-            field_name, value, is_derived=True) for value in values])
+            field_name, value, tracker_pb2.FieldTypes.ENUM_TYPE,
+            is_derived=True) for value in values])
 
-  # TODO(jojwang): add field_type fromm fds_by_id
   for fv in field_values:
     value = tracker_bizobj.GetFieldValue(fv, users_by_id)
     field_def = fds_by_id.get(fv.field_id)
     field_name = ''
+    field_type = None
     if field_def:
       field_name = field_def.field_name
+      field_type = field_def.field_type
     fvs.append(ConvertFieldValue(
-        field_name, value, is_derived=fv.derived))
+        field_name, value, field_type,
+        phase_name=phase_names_by_id.get(fv.phase_id), is_derived=fv.derived))
 
   return fvs
 
@@ -230,7 +251,7 @@ def ConvertIssue(issue, users_by_id, related_refs, config):
 
   field_values = ConvertFieldValues(
       config, issue.labels, issue.derived_labels,
-      issue.field_values, users_by_id)
+      issue.field_values, users_by_id, phases=issue.phases)
   approval_values = ConvertApprovalValues(
       issue.approval_values, issue.phases, users_by_id, config)
   reporter_ref = ConvertUserRef(issue.reporter_id, None, users_by_id)
