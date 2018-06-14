@@ -14,6 +14,7 @@ from infra_api_clients import crrev
 from libs import analysis_status
 from libs import time_util
 from libs.structured_object import StructuredObject
+from model import result_status
 from pipelines.delay_pipeline import DelayPipeline
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)
@@ -99,9 +100,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
     # TODO(crbug.com/847644): If error is set, report to ts_mon.
 
     # Monitor completion of pipeline.
-    monitoring.completed_pipelines.increment({
-        'type': 'flake'
-    })
+    monitoring.completed_pipelines.increment({'type': 'flake'})
 
   def RunImpl(self, parameters):
     analysis_urlsafe_key = parameters.analysis_urlsafe_key
@@ -125,6 +124,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
       if culprit_commit_position is None:
         # No culprit was identified. No further action.
         analysis.LogInfo('Analysis completed with no findings')
+        analysis.Update(result_status=result_status.NOT_FOUND_UNTRIAGED)
 
         # Report events to BQ.
         yield ReportAnalysisEventPipeline(
@@ -145,7 +145,8 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
       # Update the analysis' culprit.
       analysis.Update(
           confidence_in_culprit=confidence_score,
-          culprit_urlsafe_key=culprit.key.urlsafe())
+          culprit_urlsafe_key=culprit.key.urlsafe(),
+          result_status=result_status.FOUND_UNTRIAGED)
 
       # Determine the test's location for filing bugs.
       culprit_data_point = analysis.FindMatchingDataPointWithCommitPosition(

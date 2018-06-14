@@ -11,6 +11,7 @@ from dto.test_location import TestLocation
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from infra_api_clients import crrev
 from libs import analysis_status
+from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -86,6 +87,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
 
     self.assertIsNone(analysis.culprit_urlsafe_key)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
+    self.assertEqual(result_status.NOT_FOUND_UNTRIAGED, analysis.result_status)
 
   @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
@@ -167,6 +169,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(mocked_culprit.called)
     self.assertEqual(confidence_score, analysis.confidence_in_culprit)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
+    self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
     mocked_revision.assert_called_once_with(mock.ANY, 999)
 
   @mock.patch.object(
