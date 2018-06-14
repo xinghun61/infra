@@ -557,7 +557,9 @@ class WorkEnv(object):
           self.mc.cnxn, self.mc.auth.user_id, issue, approval_value,
           approval_delta, comment=comment_content)
       send_notifications.PrepareAndSendApprovalChangeNotification(
-          issue_id, approval_id, self.mc.request.host, comment_pb.id)
+          issue_id, approval_id, framework_helpers.GetHostPort(), comment_pb.id)
+
+    return approval_value, comment_pb
 
   def UpdateIssue(self, issue, delta, comment_content, send_email=True):
     """Update an issue, TODO: iff the signed in user may edit it.
