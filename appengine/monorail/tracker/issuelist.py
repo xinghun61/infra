@@ -59,7 +59,7 @@ class IssueList(servlet.Servlet):
       # Check if the user's query is just the ID of an existing issue.
       # TODO(jrobbins): consider implementing this for cross-project search.
       try:
-        we.GetProjectByName(mr.project, True)
+        we.GetProjectByName(mr.project_name, True)
       except exceptions.NoSuchProjectException:
         raise permissions.PermissionException()
       if mr.project and tracker_constants.JUMP_RE.match(mr.query):
