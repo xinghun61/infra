@@ -548,6 +548,39 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(len(idx.entries), 2)
     self.assertEqual(idx.entries[0].bucket, 'chromium')
 
+  @mock.patch('service._add_to_tag_index_async', autospec=True)
+  def test_add_with_tag_index_contention(self, add_to_tag_index_async):
+    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+
+    def mock_create_task_async(build, build_number):
+      build.swarming_hostname = 'swarming.example.com'
+      build.swarming_task_id = str(build_number)
+      return future(None)
+
+    swarming.create_task_async.side_effect = mock_create_task_async
+    add_to_tag_index_async.side_effect = Exception('contention')
+    swarming.cancel_task_async.side_effect = [
+        future(None), future_exception(Exception())]
+
+    with self.assertRaisesRegexp(Exception, 'contention'):
+      service.add_many_async([
+          service.BuildRequest(
+              project=self.chromium_project_id,
+              bucket='chromium',
+              parameters={model.BUILDER_PARAMETER: 'infra'},
+              tags=['buildset:a'],
+          ),
+          service.BuildRequest(
+              project=self.chromium_project_id,
+              bucket='chromium',
+              parameters={model.BUILDER_PARAMETER: 'infra'},
+              tags=['buildset:a'],
+          ),
+      ]).get_result()
+
+    swarming.cancel_task_async.assert_any_call('swarming.example.com', '1')
+    swarming.cancel_task_async.assert_any_call('swarming.example.com', '2')
+
   def test_add_too_many_to_index(self):
     service.add_many_async([
         service.BuildRequest(

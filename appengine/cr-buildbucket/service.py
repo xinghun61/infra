@@ -462,6 +462,23 @@ def add_many_async(build_request_list):
             ctx.memcache_set(r._client_op_memcache_key(), b.key.id(), 60))
     yield memcache_sets
 
+  @ndb.tasklet
+  def cancel_swarming_tasks_async(cancel_all):
+    futures = [
+        (b, swarming.cancel_task_async(b.swarming_hostname, b.swarming_task_id))
+        for i, b in new_builds.iteritems()
+        if (b.swarming_hostname and b.swarming_task_id
+            and (cancel_all or results[i][1]))
+    ]
+    for b, fut in futures:
+      try:
+        yield fut
+      except Exception:
+        # This is best effort.
+        logging.exception(
+            'could not cancel swarming task\nTask: %s/%s',
+            b.swarming_hostname, b.swarming_task_id)
+
   validate_and_normalize()
   yield check_access_async()
   yield check_cached_builds_async()
@@ -469,11 +486,16 @@ def add_many_async(build_request_list):
   if new_builds:
     yield update_builders_async()
     yield create_swarming_tasks_async()
-    # Update tag indexes after swarming tasks are successfully created,
-    # as opposed to before, to avoid creating tag index entries for
-    # nonexistent builds in case swarming task creation fails.
-    yield update_tag_indexes_async()
-    yield put_and_cache_builds_async()
+    success = False
+    try:
+      # Update tag indexes after swarming tasks are successfully created,
+      # as opposed to before, to avoid creating tag index entries for
+      # nonexistent builds in case swarming task creation fails.
+      yield update_tag_indexes_async()
+      yield put_and_cache_builds_async()
+      success = True
+    finally:
+      yield cancel_swarming_tasks_async(not success)
 
   # Validate and return results.
   assert all(results), results
