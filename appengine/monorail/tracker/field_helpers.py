@@ -68,7 +68,7 @@ def ParseFieldDefRequest(post_data, config):
   revised_labels = _ParseChoicesIntoWellKnownLabels(
       choices_text, field_name, config)
   date_action_str = post_data.get('date_action')
-  approvers_str = post_data.get('approver_names', '')
+  approvers_str = post_data.get('approver_names', '').strip().rstrip(',')
   survey = post_data.get('survey', '')
   parent_approval_name = post_data.get('parent_approval_name', '')
   # TODO(jojwang): monorail:3774, remove enum_type condition when

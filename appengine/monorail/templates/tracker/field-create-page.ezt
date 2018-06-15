@@ -55,7 +55,7 @@
   </tr>
 
   [# TODO(jojwang): monorail:3241, evaluate how to use applicable/importance for approval subfields]
-  <tr>
+  <tr id="applicable_row">
     <th>Applicable:</th>
     <td>When issue type is:
       <select id="applicable_type" name="applicable_type">
@@ -69,7 +69,7 @@
     </td>
   </tr>
 
-  <tr>
+  <tr id="importance_row">
     <th>Importance:</th>
     <td>
       <select id="importance" name="importance">
@@ -181,7 +181,7 @@
   <tr id="approval_row" style="display:none">
     <th>Approvers:</th>
     <td>
-      <input id="approvers" name="approver_names" size="75" value="[initial_approvers]"
+      <input id="member_approvers" name="approver_names" size="75" value="[initial_approvers]"
           autocomplete="off">
       <span class="fielderror" style="margin-left:1em">
         [if-any errors.approvers][errors.approvers][end]
@@ -280,7 +280,11 @@ runOnLoad(function() {
     document.getElementById(
         'multi_row').style.display = approval_row_hide;
     document.getElementById(
+        'importance_row').style.display = approval_row_hide;
+    document.getElementById(
         'phase_row').style.display = approval_row_hide;
+    document.getElementById(
+        'applicable_row').style.display = approval_row_hide;
     let subfield_row = document.getElementById('subfield_row');
     if (subfield_row) {
        subfield_row.style.display = approval_row_hide;
@@ -318,6 +322,11 @@ runOnLoad(function() {
          _acof(event);
      });
   }
+
+  $('member_approvers').addEventListener("focus", function(event) {
+    _acof(event);
+  });
+
 });
 </script>
 

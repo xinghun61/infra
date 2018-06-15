@@ -43,56 +43,12 @@
     <td>[field_def.type_name]</td>
   </tr>
 
-  <tr>
-    <th>Issue Gate field:</th>
-    <td>
-      [if-any field_def.is_phase_field]Yes[else]No[end]
-    </td>
-  </tr>
-
-  [is field_def.field_name "Type"][else]
-  <tr>
-    <th>Applicable:</th>
-    <td>When issue type is:
-      [if-any allow_edit]
-        <select id="applicable_type" name="applicable_type">
-          <option value="" [is initial_applicable_type ""]selected="selected"[end]>Anything</option>
-          <option disabled="disabled">----</option>
-          [for well_known_issue_types]
-            <option value="[well_known_issue_types]" [is initial_applicable_type well_known_issue_types]selected="selected"[end]>[well_known_issue_types]</option>
-          [end]
-        </select>
-      [else]
-        [initial_applicable_type]
-      [end]
-      [# TODO(jrobbins): editable applicable_predicate.]
-    </td>
-  </tr>
-  [end]
-
-  <tr>
-    <th>Importance:</th>
-    <td>
-      [if-any allow_edit]
-        <select id="importance" name="importance">
-          <option value="required" [is field_def.importance "required"]selected[end]>Required when applicable</option>
-          <option value="normal" [is field_def.importance "normal"]selected[end]>Offered when applicable</option>
-          <option value="niche" [is field_def.importance "niche"]selected[end]>Under "Show all fields" when applicable</option>
-        </select>
-      [else]
-        [is field_def.importance "required"]Required when applicable[end]
-        [is field_def.importance "normal"]Offered when applicable[end]
-        [is field_def.importance "niche"]Under "Show all fields" when applicable[end]
-      [end]
-    </td>
-  </tr>
-
   [is field_def.type_name "APPROVAL_TYPE"]
     <tr>
       <th>Approvers:</th>
       <td>
         [if-any allow_edit]
-          <input id="approvers" name="approver_names" size="75" value="[initial_approvers]"
+          <input id="member_approvers" name="approver_names" size="75" value="[initial_approvers]"
             autocomplete="off">
           <span class="fielderror" style="margin-left:1em">
           [if-any errors.approvers][errors.approvers][end]
@@ -119,6 +75,51 @@
       </td>
     </tr>
   [else]
+
+    <tr>
+      <th>Issue Gate field:</th>
+      <td>
+        [if-any field_def.is_phase_field]Yes[else]No[end]
+      </td>
+    </tr>
+
+    [is field_def.field_name "Type"][else]
+    <tr>
+      <th>Applicable:</th>
+      <td>When issue type is:
+        [if-any allow_edit]
+          <select id="applicable_type" name="applicable_type">
+            <option value="" [is initial_applicable_type ""]selected="selected"[end]>Anything</option>
+            <option disabled="disabled">----</option>
+            [for well_known_issue_types]
+              <option value="[well_known_issue_types]" [is initial_applicable_type well_known_issue_types]selected="selected"[end]>[well_known_issue_types]</option>
+            [end]
+          </select>
+        [else]
+          [initial_applicable_type]
+        [end]
+        [# TODO(jrobbins): editable applicable_predicate.]
+      </td>
+    </tr>
+    [end]
+
+    <tr>
+      <th>Importance:</th>
+      <td>
+        [if-any allow_edit]
+          <select id="importance" name="importance">
+            <option value="required" [is field_def.importance "required"]selected[end]>Required when applicable</option>
+            <option value="normal" [is field_def.importance "normal"]selected[end]>Offered when applicable</option>
+            <option value="niche" [is field_def.importance "niche"]selected[end]>Under "Show all fields" when applicable</option>
+          </select>
+        [else]
+          [is field_def.importance "required"]Required when applicable[end]
+          [is field_def.importance "normal"]Offered when applicable[end]
+          [is field_def.importance "niche"]Under "Show all fields" when applicable[end]
+        [end]
+      </td>
+    </tr>
+
     <tr>
       <th>Multivalued:</th>
       <td>
@@ -327,6 +328,10 @@ runOnLoad(function() {
          _acof(event);
      });
   }
+
+  $('member_approvers').addEventListener("focus", function(event) {
+    _acof(event);
+  });
 
   if ($("needs_member")) {
     $("needs_member").addEventListener("change", function(event) {
