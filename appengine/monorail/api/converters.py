@@ -371,6 +371,8 @@ def ConvertCommentList(issue, comments, users_by_id, config, logged_in_user_id):
 
 def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
   """Ingest a protoc ApprovalDelta and create a protorpc ApprovalDelta."""
+  fids_by_name = {fd.field_name.lower(): fd.field_id for
+                       fd in config.field_defs}
 
   approver_ids_add = [
       ref.user_id for ref in approval_delta.approver_refs_add]
@@ -380,6 +382,9 @@ def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
       cnxn, user_service, approval_delta.field_vals_add, config)
   sub_fvs_remove = IngestFieldValues(
       cnxn, user_service, approval_delta.field_vals_remove, config)
+  sub_fields_clear = [fids_by_name.get(clear.field_name.lower()) for
+                      clear in approval_delta.fields_clear
+                      if clear.field_name.lower() in fids_by_name]
 
   # protoc ENUMs default to the zero value (in this case: NOT_SET).
   # NOT_SET should only be allowed when an issue is first created.
@@ -390,8 +395,8 @@ def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
     status = IngestApprovalStatus(approval_delta.status)
 
   return tracker_bizobj.MakeApprovalDelta(
-      status, setter_id, approver_ids_add,
-      approver_ids_remove, sub_fvs_add, sub_fvs_remove)
+      status, setter_id, approver_ids_add, approver_ids_remove,
+      sub_fvs_add, sub_fvs_remove, sub_fields_clear)
 
 
 def IngestApprovalStatus(approval_status):

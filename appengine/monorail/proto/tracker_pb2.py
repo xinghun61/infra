@@ -60,6 +60,7 @@ class ApprovalDelta(messages.Message):
   approver_ids_remove = messages.IntegerField(5, repeated=True)
   subfield_vals_add = messages.MessageField(FieldValue, 6, repeated=True)
   subfield_vals_remove = messages.MessageField(FieldValue, 7, repeated=True)
+  subfields_clear = messages.IntegerField(8, repeated=True)
 
 
 class Phase(messages.Message):
