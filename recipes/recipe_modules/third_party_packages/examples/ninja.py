@@ -30,6 +30,8 @@ PLATFORMS = (
   ('linux', 64, 'linux-amd64'),
   ('linux', 32, 'linux-386'),
   ('mac', 64, 'mac-amd64'),
+  ('win', 32, 'windows-386'),
+  ('win', 64, 'windows-amd64'),
 )
 
 
@@ -81,16 +83,10 @@ def GenTests(api):
   )
 
   yield (
-      api.test('windows_skip') +
-      api.platform('win', 64) +
-      api.properties(dry_run=False)
-  )
-
-  yield (
       api.test('mac_specific_tag') +
       api.platform('mac', 64) +
       api.properties(dry_run=False) +
-      api.properties(git_release_tag='v2.12.2')
+      api.properties(ninja_release_tag='v1.7.2')
   )
 
   yield (

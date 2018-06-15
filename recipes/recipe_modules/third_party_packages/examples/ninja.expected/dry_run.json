@@ -183,7 +183,7 @@
       "-json-output",
       "/path/to/tmp/json",
       "-install-mode",
-      "symlink"
+      "copy"
     ],
     "name": "build linux-amd64",
     "~followup_annotations": [

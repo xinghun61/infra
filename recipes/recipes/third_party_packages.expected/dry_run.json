@@ -2612,7 +2612,7 @@
       "-json-output",
       "/path/to/tmp/json",
       "-install-mode",
-      "symlink"
+      "copy"
     ],
     "name": "ninja.build linux-amd64",
     "~followup_annotations": [

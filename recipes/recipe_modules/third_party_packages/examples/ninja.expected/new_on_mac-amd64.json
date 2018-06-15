@@ -180,7 +180,7 @@
       "-json-output",
       "/path/to/tmp/json",
       "-install-mode",
-      "symlink"
+      "copy"
     ],
     "name": "build mac-amd64",
     "~followup_annotations": [

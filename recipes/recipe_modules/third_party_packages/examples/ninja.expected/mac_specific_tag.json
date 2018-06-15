@@ -18,13 +18,13 @@
       "search",
       "infra/ninja/mac-amd64",
       "-tag",
-      "version:2.12.2",
+      "version:1.7.2",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/ninja/mac-amd64 version:2.12.2",
+    "name": "cipd search infra/ninja/mac-amd64 version:1.7.2",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
