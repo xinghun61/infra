@@ -24,9 +24,9 @@ from framework import filecontent
 from framework import permissions
 from framework import servlet
 from framework import template_helpers
+from tracker import attachment_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
-from tracker import tracker_views
 
 
 class AttachmentText(servlet.Servlet):
@@ -67,7 +67,7 @@ class AttachmentText(servlet.Servlet):
 
     # This servlet only displays safe textual attachments. The user should
     # not have been given a link to this servlet for any other kind.
-    if not tracker_views.IsViewableText(attachment.mimetype, filesize):
+    if not attachment_helpers.IsViewableText(attachment.mimetype, filesize):
       self.abort(400, 'not a text file')
 
     u_text, is_binary, too_large = filecontent.DecodeFileContents(content)

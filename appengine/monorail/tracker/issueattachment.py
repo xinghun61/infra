@@ -29,6 +29,7 @@ from framework import gcs_helpers
 from framework import permissions
 from framework import servlet
 from framework import urls
+from tracker import attachment_helpers
 from tracker import tracker_helpers
 from tracker import tracker_views
 
@@ -49,7 +50,7 @@ class AttachmentPage(servlet.Servlet):
 
     Returns: dict of values used by EZT for rendering the page.
     """
-    if mr.signed_aid != tracker_helpers.SignAttachmentID(mr.aid):
+    if mr.signed_aid != attachment_helpers.SignAttachmentID(mr.aid):
       webapp2.abort(400, 'Please reload the issue page')
 
     try:

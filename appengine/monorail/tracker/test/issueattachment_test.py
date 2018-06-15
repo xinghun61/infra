@@ -20,6 +20,7 @@ from proto import tracker_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
+from tracker import attachment_helpers
 from tracker import issueattachment
 from tracker import tracker_helpers
 
@@ -61,8 +62,8 @@ class IssueattachmentTest(unittest.TestCase):
         mimetype='text/plain', gcs_object_id='/pid/attachments/object_id')
     services.issue.TestAddAttachment(
         self.attachment, self.comment.id, self.issue.issue_id)
-    self.orig_sign_attachment_id = tracker_helpers.SignAttachmentID
-    tracker_helpers.SignAttachmentID = (
+    self.orig_sign_attachment_id = attachment_helpers.SignAttachmentID
+    attachment_helpers.SignAttachmentID = (
         lambda aid: 'signed_%d' % aid)
 
   def tearDown(self):
@@ -70,7 +71,7 @@ class IssueattachmentTest(unittest.TestCase):
     self.mox.ResetAll()
     self.testbed.deactivate()
     cloudstorage.open = self._old_gcs_open
-    tracker_helpers.SignAttachmentID = self.orig_sign_attachment_id
+    attachment_helpers.SignAttachmentID = self.orig_sign_attachment_id
 
   def testGatherPageData_NotFound(self):
     aid = 12345

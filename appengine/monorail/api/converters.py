@@ -17,10 +17,10 @@ import logging
 from api.api_proto import common_pb2
 from api.api_proto import issue_objects_pb2
 from framework import framework_constants
+from tracker import attachment_helpers
 from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
-from tracker import tracker_views
 from proto import tracker_pb2
 
 
@@ -296,10 +296,21 @@ def ConvertAmendment(amendment, users_by_id):
   return result
 
 
-def ConvertAttachment(_attachment):
+def ConvertAttachment(attach, project_name):
   """Convert a protorpc Attachment to a protoc Attachment."""
-  # TODO(jrobbins): Implement this.
-  return issue_objects_pb2.Attachment()
+  size, thumbnail_url, view_url, download_url = None, None, None, None
+  if not attach.deleted:
+    size = attach.filesize
+    download_url = attachment_helpers.GetDownloadURL(attach.attachment_id)
+    view_url = attachment_helpers.GetViewURL(attach, download_url, project_name)
+    thumbnail_url = attachment_helpers.GetThumbnailURL(attach, download_url)
+
+  result = issue_objects_pb2.Attachment(
+      attachment_id=attach.attachment_id, filename=attach.filename,
+      size=size, content_type=attach.mimetype,
+      is_deleted=attach.deleted, thumbnail_url=thumbnail_url,
+      view_url=view_url, download_url=download_url)
+  return result
 
 
 def ConvertComment(
@@ -331,7 +342,7 @@ def ConvertComment(
         ConvertAmendment(amend, users_by_id)
         for amend in comment.amendments])
     result.attachments.extend([
-        ConvertAttachment(attach)
+        ConvertAttachment(attach, issue.project_name)
         for attach in comment.attachments])
     if comment.id in description_nums:
       result.description_num = description_nums[comment.id]

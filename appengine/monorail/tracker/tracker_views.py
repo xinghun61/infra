@@ -25,6 +25,7 @@ from framework import template_helpers
 from framework import timestr
 from framework import urls
 from proto import tracker_pb2
+from tracker import attachment_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
@@ -387,16 +388,6 @@ def _ChunkToRun(chunk):
     return template_helpers.TextRun(chunk)
 
 
-VIEWABLE_IMAGE_TYPES = [
-    'image/jpeg', 'image/gif', 'image/png', 'image/x-png', 'image/webp',
-    ]
-VIEWABLE_VIDEO_TYPES = [
-    'video/ogg', 'video/mp4', 'video/mpg', 'video/mpeg', 'video/webm',
-    'video/quicktime',
-    ]
-MAX_PREVIEW_FILESIZE = 15 * 1024 * 1024  # 15 MB
-
-
 class LogoView(template_helpers.PBProxy):
   """Wrapper class to make it easier to display project logos via EZT."""
 
@@ -434,67 +425,16 @@ class AttachmentView(template_helpers.PBProxy):
     """
     super(AttachmentView, self).__init__(attach_pb)
     self.filesizestr = template_helpers.BytesKbOrMb(attach_pb.filesize)
-    self.downloadurl = 'attachment?aid=%s&signed_aid=%s' % (
-        attach_pb.attachment_id,
-        tracker_helpers.SignAttachmentID(attach_pb.attachment_id))
-
-    self.url = None
-    self.thumbnail_url = None
-    self.video_url = None
-    if IsViewableImage(attach_pb.mimetype, attach_pb.filesize):
-      self.url = self.downloadurl + '&inline=1'
-      self.thumbnail_url = self.url + '&thumb=1'
-    elif IsViewableVideo(attach_pb.mimetype, attach_pb.filesize):
-      self.url = self.downloadurl + '&inline=1'
-      self.video_url = self.url
-    elif IsViewableText(attach_pb.mimetype, attach_pb.filesize):
-      self.url = tracker_helpers.FormatRelativeIssueURL(
-          project_name, urls.ISSUE_ATTACHMENT_TEXT,
-          aid=attach_pb.attachment_id)
+    self.downloadurl = attachment_helpers.GetDownloadURL(
+        attach_pb.attachment_id)
+    self.url = attachment_helpers.GetViewURL(
+        attach_pb, self.downloadurl, project_name)
+    self.thumbnail_url = attachment_helpers.GetThumbnailURL(
+        attach_pb, self.downloadurl)
+    self.video_url = attachment_helpers.GetVideoURL(
+        attach_pb, self.downloadurl)
 
     self.iconurl = '/images/paperclip.png'
-
-
-def IsViewableImage(mimetype_charset, filesize):
-  """Return true if we can safely display such an image in the browser.
-
-  Args:
-    mimetype_charset: string with the mimetype string that we got back
-        from the 'file' command.  It may have just the mimetype, or it
-        may have 'foo/bar; charset=baz'.
-    filesize: int length of the file in bytes.
-
-  Returns:
-    True iff we should allow the user to view a thumbnail or safe version
-    of the image in the browser.  False if this might not be safe to view,
-    in which case we only offer a download link.
-  """
-  mimetype = mimetype_charset.split(';', 1)[0]
-  return (mimetype in VIEWABLE_IMAGE_TYPES and
-          filesize < MAX_PREVIEW_FILESIZE)
-
-
-def IsViewableVideo(mimetype_charset, filesize):
-  """Return true if we can safely display such a video in the browser.
-
-  Args:
-    mimetype_charset: string with the mimetype string that we got back
-        from the 'file' command.  It may have just the mimetype, or it
-        may have 'foo/bar; charset=baz'.
-    filesize: int length of the file in bytes.
-
-  Returns:
-    True iff we should allow the user to watch the video in the page.
-  """
-  mimetype = mimetype_charset.split(';', 1)[0]
-  return (mimetype in VIEWABLE_VIDEO_TYPES and
-          filesize < MAX_PREVIEW_FILESIZE)
-
-
-def IsViewableText(mimetype, filesize):
-  """Return true if we can safely display such a file as escaped text."""
-  return (mimetype.startswith('text/') and
-          filesize < MAX_PREVIEW_FILESIZE)
 
 
 class AmendmentView(object):

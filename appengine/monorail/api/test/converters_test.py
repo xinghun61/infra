@@ -5,6 +5,7 @@
 
 """Tests for converting internal protorpc to external protoc."""
 
+from mock import Mock, patch
 import unittest
 
 from api import converters
@@ -424,8 +425,22 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual('12', actual.new_or_delta_value)
     self.assertEqual('', actual.old_value)
 
-  def testConvertAttachment(self):
-    pass  # TODO(jrobbins): Implement this.
+  @patch('tracker.attachment_helpers.SignAttachmentID')
+  def testConvertAttachment(self, mock_SignAttachmentID):
+    mock_SignAttachmentID.return_value = 2
+    attach = tracker_pb2.Attachment(
+        attachment_id=1, mimetype='image/png', filename='example.png',
+        filesize=12345)
+
+    actual = converters.ConvertAttachment(attach, 'proj')
+
+    expected = issue_objects_pb2.Attachment(
+        attachment_id=1, filename='example.png',
+        size=12345, content_type='image/png',
+        thumbnail_url='attachment?aid=1&signed_aid=2&inline=1&thumb=1',
+        view_url='attachment?aid=1&signed_aid=2&inline=1',
+        download_url='attachment?aid=1&signed_aid=2')
+    self.assertEqual(expected, actual)
 
   def testConvertComment(self):
     """We can convert a protorpc IssueComment to a protoc Comment."""

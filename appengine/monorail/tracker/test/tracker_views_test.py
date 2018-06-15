@@ -22,6 +22,7 @@ from proto import tracker_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
+from tracker import attachment_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from tracker import tracker_views
@@ -270,12 +271,12 @@ class DanglingIssueRefViewTest(unittest.TestCase):
 class AttachmentViewTest(unittest.TestCase):
 
   def setUp(self):
-    self.orig_sign_attachment_id = tracker_helpers.SignAttachmentID
-    tracker_helpers.SignAttachmentID = (
+    self.orig_sign_attachment_id = attachment_helpers.SignAttachmentID
+    attachment_helpers.SignAttachmentID = (
         lambda aid: 'signed_%d' % aid)
 
   def tearDown(self):
-    tracker_helpers.SignAttachmentID = self.orig_sign_attachment_id
+    attachment_helpers.SignAttachmentID = self.orig_sign_attachment_id
 
   def MakeViewAndVerifyFields(
       self, size, name, mimetype, expected_size_str, expect_viewable):
@@ -364,58 +365,6 @@ class LogoViewTest(unittest.TestCase):
     view = tracker_views.LogoView(project_pb)
     self.assertEquals('', view.thumbnail_url)
     self.assertEquals('', view.viewurl)
-
-
-class IsViewableImageTest(unittest.TestCase):
-
-  def testIsViewableImage(self):
-    self.assertTrue(tracker_views.IsViewableImage('image/gif', 123))
-    self.assertTrue(tracker_views.IsViewableImage(
-        'image/gif; charset=binary', 123))
-    self.assertTrue(tracker_views.IsViewableImage('image/png', 123))
-    self.assertTrue(tracker_views.IsViewableImage(
-        'image/png; charset=binary', 123))
-    self.assertTrue(tracker_views.IsViewableImage('image/x-png', 123))
-    self.assertTrue(tracker_views.IsViewableImage('image/jpeg', 123))
-    self.assertTrue(tracker_views.IsViewableImage(
-        'image/jpeg; charset=binary', 123))
-    self.assertTrue(tracker_views.IsViewableImage(
-        'image/jpeg', 14 * 1024 * 1024))
-
-    self.assertFalse(tracker_views.IsViewableImage('junk/bits', 123))
-    self.assertFalse(tracker_views.IsViewableImage(
-        'junk/bits; charset=binary', 123))
-    self.assertFalse(tracker_views.IsViewableImage(
-        'image/jpeg', 16 * 1024 * 1024))
-
-
-class IsViewableVideoTest(unittest.TestCase):
-
-  def testIsViewableVideo(self):
-    self.assertTrue(tracker_views.IsViewableVideo('video/ogg', 123))
-    self.assertTrue(tracker_views.IsViewableVideo(
-        'video/ogg; charset=binary', 123))
-    self.assertTrue(tracker_views.IsViewableVideo('video/mp4', 123))
-    self.assertTrue(tracker_views.IsViewableVideo(
-        'video/mp4; charset=binary', 123))
-    self.assertTrue(tracker_views.IsViewableVideo('video/mpg', 123))
-    self.assertTrue(tracker_views.IsViewableVideo(
-        'video/mpg; charset=binary', 123))
-    self.assertTrue(tracker_views.IsViewableVideo('video/mpeg', 123))
-    self.assertTrue(tracker_views.IsViewableVideo(
-        'video/mpeg; charset=binary', 123))
-    self.assertTrue(tracker_views.IsViewableVideo(
-        'video/mpeg', 14 * 1024 * 1024))
-
-    self.assertFalse(tracker_views.IsViewableVideo('junk/bits', 123))
-    self.assertFalse(tracker_views.IsViewableVideo(
-        'junk/bits; charset=binary', 123))
-    self.assertFalse(tracker_views.IsViewableVideo(
-        'video/mp4', 16 * 1024 * 1024))
-
-
-class IsViewableTextTest(unittest.TestCase):
-  pass  # TODO(jrobbins): write tests
 
 
 class AmendmentViewTest(unittest.TestCase):
