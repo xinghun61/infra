@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/issue_objects.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n!api/api_proto/issue_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"\xe3\x01\n\x08\x41pproval\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12(\n\rapprover_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12(\n\x06status\x18\x03 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12\x0e\n\x06set_on\x18\x04 \x01(\x07\x12%\n\nsetter_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12%\n\tphase_ref\x18\x07 \x01(\x0b\x32\x12.monorail.PhaseRef\"\xf7\x01\n\rApprovalDelta\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12,\n\x11\x61pprover_refs_add\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12/\n\x14\x61pprover_refs_remove\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12,\n\x0e\x66ield_vals_add\x18\x04 \x03(\x0b\x32\x14.monorail.FieldValue\x12/\n\x11\x66ield_vals_remove\x18\x05 \x03(\x0b\x32\x14.monorail.FieldValue\"N\n\tAmendment\x12\x12\n\nfield_name\x18\x01 \x01(\t\x12\x1a\n\x12new_or_delta_value\x18\x02 \x01(\t\x12\x11\n\told_value\x18\x03 \x01(\t\"\xac\x01\n\nAttachment\x12\x15\n\rattachment_id\x18\x01 \x01(\x04\x12\x10\n\x08\x66ilename\x18\x02 \x01(\t\x12\x0c\n\x04size\x18\x03 \x01(\x04\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12\x12\n\nis_deleted\x18\x05 \x01(\x08\x12\x15\n\rthumbnail_url\x18\x06 \x01(\t\x12\x10\n\x08view_url\x18\x07 \x01(\t\x12\x14\n\x0c\x64ownload_url\x18\x08 \x01(\t\"\xe6\x02\n\x07\x43omment\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\x12\x14\n\x0csequence_num\x18\x03 \x01(\r\x12\x12\n\nis_deleted\x18\x04 \x01(\x08\x12$\n\tcommenter\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12\x11\n\ttimestamp\x18\x06 \x01(\x07\x12\x0f\n\x07\x63ontent\x18\x07 \x01(\t\x12\x17\n\x0finbound_message\x18\x08 \x01(\t\x12\'\n\namendments\x18\t \x03(\x0b\x32\x13.monorail.Amendment\x12)\n\x0b\x61ttachments\x18\n \x03(\x0b\x32\x14.monorail.Attachment\x12(\n\x0c\x61pproval_ref\x18\x0b \x01(\x0b\x32\x12.monorail.FieldRef\x12\x17\n\x0f\x64\x65scription_num\x18\x0c \x01(\r\x12\x0f\n\x07is_spam\x18\r \x01(\x08\"}\n\nFieldValue\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12\r\n\x05value\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\x12%\n\tphase_ref\x18\x04 \x01(\x0b\x32\x12.monorail.PhaseRef\"\xeb\x05\n\x05Issue\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\x12\x0f\n\x07summary\x18\x03 \x01(\t\x12\'\n\nstatus_ref\x18\x04 \x01(\x0b\x32\x13.monorail.StatusRef\x12$\n\towner_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12\"\n\x07\x63\x63_refs\x18\x06 \x03(\x0b\x32\x11.monorail.UserRef\x12&\n\nlabel_refs\x18\x07 \x03(\x0b\x32\x12.monorail.LabelRef\x12.\n\x0e\x63omponent_refs\x18\x08 \x03(\x0b\x32\x16.monorail.ComponentRef\x12\x31\n\x15\x62locked_on_issue_refs\x18\t \x03(\x0b\x32\x12.monorail.IssueRef\x12/\n\x13\x62locking_issue_refs\x18\n \x03(\x0b\x32\x12.monorail.IssueRef\x12\x31\n\x15merged_into_issue_ref\x18\x0b \x01(\x0b\x32\x12.monorail.IssueRef\x12*\n\x0c\x66ield_values\x18\x0c \x03(\x0b\x32\x14.monorail.FieldValue\x12\x12\n\nis_deleted\x18\r \x01(\x08\x12\'\n\x0creporter_ref\x18\x0e \x01(\x0b\x32\x11.monorail.UserRef\x12\x18\n\x10opened_timestamp\x18\x0f \x01(\x07\x12\x18\n\x10\x63losed_timestamp\x18\x10 \x01(\x07\x12\x1a\n\x12modified_timestamp\x18\x11 \x01(\x07\x12\x12\n\nstar_count\x18\x12 \x01(\r\x12\x0f\n\x07is_spam\x18\x13 \x01(\x08\x12\x18\n\x10\x61ttachment_count\x18\x14 \x01(\r\x12+\n\x0f\x61pproval_values\x18\x15 \x03(\x0b\x32\x12.monorail.Approval\x12\"\n\x06phases\x18\x16 \x03(\x0b\x32\x12.monorail.PhaseDef\"?\n\x08PhaseDef\x12%\n\tphase_ref\x18\x01 \x01(\x0b\x32\x12.monorail.PhaseRef\x12\x0c\n\x04rank\x18\x02 \x01(\r\"\x1e\n\x08PhaseRef\x12\x12\n\nphase_name\x18\x01 \x01(\t*\x90\x01\n\x0e\x41pprovalStatus\x12\x0b\n\x07NOT_SET\x10\x00\x12\x10\n\x0cNEEDS_REVIEW\x10\x01\x12\x06\n\x02NA\x10\x02\x12\x14\n\x10REVIEW_REQUESTED\x10\x03\x12\x12\n\x0eREVIEW_STARTED\x10\x04\x12\r\n\tNEED_INFO\x10\x05\x12\x0c\n\x08\x41PPROVED\x10\x06\x12\x10\n\x0cNOT_APPROVED\x10\x07\x62\x06proto3')
+  serialized_pb=_b('\n!api/api_proto/issue_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"\xe3\x01\n\x08\x41pproval\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12(\n\rapprover_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12(\n\x06status\x18\x03 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12\x0e\n\x06set_on\x18\x04 \x01(\x07\x12%\n\nsetter_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12%\n\tphase_ref\x18\x07 \x01(\x0b\x32\x12.monorail.PhaseRef\"\xa3\x02\n\rApprovalDelta\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12,\n\x11\x61pprover_refs_add\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12/\n\x14\x61pprover_refs_remove\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12,\n\x0e\x66ield_vals_add\x18\x04 \x03(\x0b\x32\x14.monorail.FieldValue\x12/\n\x11\x66ield_vals_remove\x18\x05 \x03(\x0b\x32\x14.monorail.FieldValue\x12*\n\x0c\x66ields_clear\x18\x06 \x03(\x0b\x32\x14.monorail.FieldValue\"N\n\tAmendment\x12\x12\n\nfield_name\x18\x01 \x01(\t\x12\x1a\n\x12new_or_delta_value\x18\x02 \x01(\t\x12\x11\n\told_value\x18\x03 \x01(\t\"\xac\x01\n\nAttachment\x12\x15\n\rattachment_id\x18\x01 \x01(\x04\x12\x10\n\x08\x66ilename\x18\x02 \x01(\t\x12\x0c\n\x04size\x18\x03 \x01(\x04\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12\x12\n\nis_deleted\x18\x05 \x01(\x08\x12\x15\n\rthumbnail_url\x18\x06 \x01(\t\x12\x10\n\x08view_url\x18\x07 \x01(\t\x12\x14\n\x0c\x64ownload_url\x18\x08 \x01(\t\"\xe6\x02\n\x07\x43omment\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\x12\x14\n\x0csequence_num\x18\x03 \x01(\r\x12\x12\n\nis_deleted\x18\x04 \x01(\x08\x12$\n\tcommenter\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12\x11\n\ttimestamp\x18\x06 \x01(\x07\x12\x0f\n\x07\x63ontent\x18\x07 \x01(\t\x12\x17\n\x0finbound_message\x18\x08 \x01(\t\x12\'\n\namendments\x18\t \x03(\x0b\x32\x13.monorail.Amendment\x12)\n\x0b\x61ttachments\x18\n \x03(\x0b\x32\x14.monorail.Attachment\x12(\n\x0c\x61pproval_ref\x18\x0b \x01(\x0b\x32\x12.monorail.FieldRef\x12\x17\n\x0f\x64\x65scription_num\x18\x0c \x01(\r\x12\x0f\n\x07is_spam\x18\r \x01(\x08\"}\n\nFieldValue\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12\r\n\x05value\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\x12%\n\tphase_ref\x18\x04 \x01(\x0b\x32\x12.monorail.PhaseRef\"\xeb\x05\n\x05Issue\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\x12\x0f\n\x07summary\x18\x03 \x01(\t\x12\'\n\nstatus_ref\x18\x04 \x01(\x0b\x32\x13.monorail.StatusRef\x12$\n\towner_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12\"\n\x07\x63\x63_refs\x18\x06 \x03(\x0b\x32\x11.monorail.UserRef\x12&\n\nlabel_refs\x18\x07 \x03(\x0b\x32\x12.monorail.LabelRef\x12.\n\x0e\x63omponent_refs\x18\x08 \x03(\x0b\x32\x16.monorail.ComponentRef\x12\x31\n\x15\x62locked_on_issue_refs\x18\t \x03(\x0b\x32\x12.monorail.IssueRef\x12/\n\x13\x62locking_issue_refs\x18\n \x03(\x0b\x32\x12.monorail.IssueRef\x12\x31\n\x15merged_into_issue_ref\x18\x0b \x01(\x0b\x32\x12.monorail.IssueRef\x12*\n\x0c\x66ield_values\x18\x0c \x03(\x0b\x32\x14.monorail.FieldValue\x12\x12\n\nis_deleted\x18\r \x01(\x08\x12\'\n\x0creporter_ref\x18\x0e \x01(\x0b\x32\x11.monorail.UserRef\x12\x18\n\x10opened_timestamp\x18\x0f \x01(\x07\x12\x18\n\x10\x63losed_timestamp\x18\x10 \x01(\x07\x12\x1a\n\x12modified_timestamp\x18\x11 \x01(\x07\x12\x12\n\nstar_count\x18\x12 \x01(\r\x12\x0f\n\x07is_spam\x18\x13 \x01(\x08\x12\x18\n\x10\x61ttachment_count\x18\x14 \x01(\r\x12+\n\x0f\x61pproval_values\x18\x15 \x03(\x0b\x32\x12.monorail.Approval\x12\"\n\x06phases\x18\x16 \x03(\x0b\x32\x12.monorail.PhaseDef\"?\n\x08PhaseDef\x12%\n\tphase_ref\x18\x01 \x01(\x0b\x32\x12.monorail.PhaseRef\x12\x0c\n\x04rank\x18\x02 \x01(\r\"\x1e\n\x08PhaseRef\x12\x12\n\nphase_name\x18\x01 \x01(\t*\x90\x01\n\x0e\x41pprovalStatus\x12\x0b\n\x07NOT_SET\x10\x00\x12\x10\n\x0cNEEDS_REVIEW\x10\x01\x12\x06\n\x02NA\x10\x02\x12\x14\n\x10REVIEW_REQUESTED\x10\x03\x12\x12\n\x0eREVIEW_STARTED\x10\x04\x12\r\n\tNEED_INFO\x10\x05\x12\x0c\n\x08\x41PPROVED\x10\x06\x12\x10\n\x0cNOT_APPROVED\x10\x07\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -67,8 +67,8 @@ _APPROVALSTATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2146,
-  serialized_end=2290,
+  serialized_start=2190,
+  serialized_end=2334,
 )
 _sym_db.RegisterEnumDescriptor(_APPROVALSTATUS)
 
@@ -192,6 +192,13 @@ _APPROVALDELTA = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='fields_clear', full_name='monorail.ApprovalDelta.fields_clear', index=5,
+      number=6, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -205,7 +212,7 @@ _APPROVALDELTA = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=306,
-  serialized_end=553,
+  serialized_end=597,
 )
 
 
@@ -249,8 +256,8 @@ _AMENDMENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=555,
-  serialized_end=633,
+  serialized_start=599,
+  serialized_end=677,
 )
 
 
@@ -329,8 +336,8 @@ _ATTACHMENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=636,
-  serialized_end=808,
+  serialized_start=680,
+  serialized_end=852,
 )
 
 
@@ -444,8 +451,8 @@ _COMMENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=811,
-  serialized_end=1169,
+  serialized_start=855,
+  serialized_end=1213,
 )
 
 
@@ -496,8 +503,8 @@ _FIELDVALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1171,
-  serialized_end=1296,
+  serialized_start=1215,
+  serialized_end=1340,
 )
 
 
@@ -674,8 +681,8 @@ _ISSUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1299,
-  serialized_end=2046,
+  serialized_start=1343,
+  serialized_end=2090,
 )
 
 
@@ -712,8 +719,8 @@ _PHASEDEF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2048,
-  serialized_end=2111,
+  serialized_start=2092,
+  serialized_end=2155,
 )
 
 
@@ -743,8 +750,8 @@ _PHASEREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2113,
-  serialized_end=2143,
+  serialized_start=2157,
+  serialized_end=2187,
 )
 
 _APPROVAL.fields_by_name['field_ref'].message_type = api_dot_api__proto_dot_common__pb2._FIELDREF
@@ -757,6 +764,7 @@ _APPROVALDELTA.fields_by_name['approver_refs_add'].message_type = api_dot_api__p
 _APPROVALDELTA.fields_by_name['approver_refs_remove'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 _APPROVALDELTA.fields_by_name['field_vals_add'].message_type = _FIELDVALUE
 _APPROVALDELTA.fields_by_name['field_vals_remove'].message_type = _FIELDVALUE
+_APPROVALDELTA.fields_by_name['fields_clear'].message_type = _FIELDVALUE
 _COMMENT.fields_by_name['commenter'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 _COMMENT.fields_by_name['amendments'].message_type = _AMENDMENT
 _COMMENT.fields_by_name['attachments'].message_type = _ATTACHMENT

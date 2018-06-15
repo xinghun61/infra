@@ -561,6 +561,10 @@ class ConverterFunctionsTest(unittest.TestCase):
             issue_objects_pb2.FieldValue(
                 value='34', field_ref=common_pb2.FieldRef(
                     field_name='SecField'))],
+        fields_clear=[
+            issue_objects_pb2.FieldValue(
+                value='string', field_ref=common_pb2.FieldRef(
+                    field_name='FirstField'))],
         )
 
     actual = converters.IngestApprovalDelta(
@@ -574,6 +578,8 @@ class ConverterFunctionsTest(unittest.TestCase):
         str_value='string', field_id=1, derived=False)])
     self.assertEqual(actual.subfield_vals_remove, [tracker_pb2.FieldValue(
         int_value=34, field_id=2, derived=False)])
+    self.assertEqual(actual.subfields_clear, [tracker_pb2.FieldValue(
+        str_value='string', field_id=1, derived=False)])
 
     # test a NOT_SET status is registered as None.
     approval_delta.status = issue_objects_pb2.NOT_SET

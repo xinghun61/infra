@@ -369,6 +369,8 @@ def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
       cnxn, user_service, approval_delta.field_vals_add, config)
   sub_fvs_remove = IngestFieldValues(
       cnxn, user_service, approval_delta.field_vals_remove, config)
+  sub_fields_clear = IngestFieldValues(
+      cnxn, user_service, approval_delta.fields_clear, config)
 
   # protoc ENUMs default to the zero value (in this case: NOT_SET).
   # NOT_SET should only be allowed when an issue is first created.
@@ -380,7 +382,7 @@ def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
 
   return tracker_bizobj.MakeApprovalDelta(
       status, setter_id, approver_ids_add,
-      approver_ids_remove, sub_fvs_add, sub_fvs_remove)
+      approver_ids_remove, sub_fvs_add, sub_fvs_remove, sub_fields_clear)
 
 
 def IngestApprovalStatus(approval_status):
