@@ -661,7 +661,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
         CollectSwarmingTaskResultsOutputs.FromSerializable({}),
         test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
 
-    flake_tests = {'step2': ['TestSuite1.test2', 'TestSuite1.test1']}
+    flake_tests = {'step2': ['TestSuite1.test2']}
     mock_update_analysis.assert_called_once_with(master_name, builder_name,
                                                  build_number, flake_tests)
 

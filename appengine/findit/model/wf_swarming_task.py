@@ -128,7 +128,7 @@ class WfSwarmingTask(BaseBuildModel, BaseSwarmingTask):
 
     So the classification should be:
       * Flaky failure: Any test run succeeded or resulted in an expected status.
-      * Unknown failure: Test is not flaku, and any test run ended with an
+      * Unknown failure: Test is not flaky, and any test run ended with an
         unknown status.
       * Reliable failure: All test runs failed or skipped unexpectedly.
 
@@ -166,6 +166,26 @@ class WfSwarmingTask(BaseBuildModel, BaseSwarmingTask):
   @property
   def flaky_tests(self):
     return self.classified_tests.get('flaky_tests', [])
+
+  @property
+  def reproducible_flaky_tests(self):
+    tests = []
+    if not self.classified_test_results:
+      # For Legacy data.
+      for test_name, test_statuses in self.tests_statuses.iteritems():
+        if (test_statuses.get('SUCCESS') and
+            test_statuses['SUCCESS'] < test_statuses['total_run']):
+          # Test has passed and not passed runs, confirmed to be flaky.
+          tests.append(test_name)
+      return tests
+
+    for classified_test_result in self.classified_test_results:
+      test_name = classified_test_result.test_name
+      if (classified_test_result.num_expected_results > 0 and
+          classified_test_result.num_unexpected_results > 0):
+        # Test has expected and unexpected runs, confirmed to be flaky.
+        tests.append(test_name)
+    return tests
 
   @ndb.ComputedProperty
   def step_name(self):

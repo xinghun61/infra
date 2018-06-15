@@ -43,10 +43,14 @@ class WfSwarmingTaskTest(unittest.TestCase):
         'unknown_tests': ['TestSuite1.test5']
     }
 
+    expected_reproducible_flaky_tests = ['TestSuite1.test2']
+
     self.assertEqual(expected_classified_tests, task.classified_tests)
     self.assertEqual(expected_classified_tests['reliable_tests'],
                      task.reliable_tests)
     self.assertEqual(expected_classified_tests['flaky_tests'], task.flaky_tests)
+    self.assertEqual(expected_reproducible_flaky_tests,
+                     task.reproducible_flaky_tests)
 
   def testStepName(self):
     master_name = 'm'
@@ -117,6 +121,10 @@ class WfSwarmingTaskTest(unittest.TestCase):
     self.assertEqual(expected_classified_tests['reliable_tests'],
                      task.reliable_tests)
     self.assertEqual(expected_classified_tests['flaky_tests'], task.flaky_tests)
+
+    expected_reproducible_flaky_tests = ['Unittest1.Subtest2']
+    self.assertEqual(expected_reproducible_flaky_tests,
+                     task.reproducible_flaky_tests)
 
   def testClassifiedTestsWebkitLayoutTest(self):
     task = WfSwarmingTask.Create('m', 'b', 122, 'webkit_layout_test')
@@ -190,14 +198,16 @@ class WfSwarmingTaskTest(unittest.TestCase):
         },
         'virtual/high-contrast-mode/paint/high-contrast-mode/'
         'image-filter-all/text-on-backgrounds.html': {
-            'total_run': 1,
+            'total_run': 2,
             'num_expected_results': 1,
-            'num_unexpected_results': 0,
+            'num_unexpected_results': 1,
             'results': {
                 'passes': {
                     'PASS': 1
                 },
-                'failures': {},
+                'failures': {
+                    'FAIL': 1
+                },
                 'skips': {},
                 'unknowns': {},
             }
@@ -229,3 +239,10 @@ class WfSwarmingTaskTest(unittest.TestCase):
                           task.reliable_tests)
     self.assertItemsEqual(expected_classified_tests['flaky_tests'],
                           task.flaky_tests)
+
+    expected_reproducible_flaky_tests = [
+        'virtual/high-contrast-mode/paint/high-contrast-mode/'
+        'image-filter-all/text-on-backgrounds.html'
+    ]
+    self.assertEqual(expected_reproducible_flaky_tests,
+                     task.reproducible_flaky_tests)

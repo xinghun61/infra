@@ -340,8 +340,8 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
       consistent_failures[task.canonical_step_name or
                           step_name] = task.reliable_tests
 
-    if task.flaky_tests:  # pragma: no branch
-      flake_failures[step_name] = task.flaky_tests
+    if task.reproducible_flaky_tests:  # pragma: no branch
+      flake_failures[step_name] = task.reproducible_flaky_tests
 
   test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
       master_name, builder_name, build_number, flake_failures)
