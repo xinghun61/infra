@@ -34,7 +34,7 @@ class NinjaApi(util.ModuleShim):
 
       filename = 'SetEnv.%s.json' % {32: 'x86', 64: 'x64'}[platform_bits]
       step_result = self.m.json.read(
-          'read %s' % filename, cipddir.join('winsdk', 'bin', filename),
+          'read %s' % filename, cipddir.join('win_sdk', 'bin', filename),
           step_test_data=lambda: self.m.json.test_api.output({
               'env': {'PATH': [['..', '..', 'win_sdk', 'bin', 'x64']]},
           }))
