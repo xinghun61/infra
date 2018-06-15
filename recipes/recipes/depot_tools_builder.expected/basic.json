@@ -1,49 +1,10 @@
 [
   {
-    "cmd": [],
-    "name": "clean workspace"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[START_DIR]/depot_tools"
-    ],
-    "infra_step": true,
-    "name": "clean workspace.rm depot_tools",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "remove",
-      "[START_DIR]/depot_tools.zip"
-    ],
-    "infra_step": true,
-    "name": "clean workspace.rm depot_tools.zip",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
     "cmd": [
       "mkdir",
       "[START_DIR]/depot_tools"
     ],
-    "name": "clean workspace.mk depot_tools",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "mkdir depot_tools"
   },
   {
     "cmd": [],

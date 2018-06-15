@@ -34,12 +34,7 @@ def RunSteps(api, revision):
   api.path['checkout'] = api.path['start_dir'].join('depot_tools')
   zip_out = api.path['start_dir'].join('depot_tools.zip')
 
-  with api.step.nest('clean workspace'):
-    api.file.rmtree('rm depot_tools', api.path['checkout'])
-    api.file.remove('rm depot_tools.zip', zip_out)
-
-    # generate the new directory
-    api.step('mk depot_tools', ['mkdir', api.path['checkout']])
+  api.step('mkdir depot_tools', ['mkdir', api.path['checkout']])
 
   with api.step.nest('clone + checkout'):
     api.git('clone', '--single-branch', '-n', REPO_URL, api.path['checkout'])
