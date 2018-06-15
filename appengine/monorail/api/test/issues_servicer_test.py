@@ -156,8 +156,9 @@ class IssuesServicerTest(unittest.TestCase):
 
     self.assertTrue(isinstance(response, empty_pb2.Empty))
 
+  @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
   @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
-  def testUpdateApproval(self, _mockPrepareAndSend):
+  def testUpdateApproval(self, _mockPrepareAndSend, mockUpdateIssueApproval):
     """We can update an approval."""
 
     av_3 = tracker_pb2.ApprovalValue(
@@ -197,8 +198,7 @@ class IssuesServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='approver3@example.com',
         auth=self.auth)
 
-    work_env.WorkEnv.UpdateIssueApproval = Mock()
-    work_env.WorkEnv.UpdateIssueApproval.return_value = [
+    mockUpdateIssueApproval.return_value = [
         tracker_pb2.ApprovalValue(
             approval_id=3,
             status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
