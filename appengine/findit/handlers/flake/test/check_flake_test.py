@@ -995,7 +995,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       check_flake.auth_util, 'IsCurrentUserAdmin', return_value=True)
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 6, 12, 0))
   def testRequestRerunWhenAuthorized(self, *_):
+    original_master_name = 'tryserver.m'
+    original_builder_name = 'tryserver.b'
+    original_build_number = 100
+    original_step_name = 's (with patch)'
+    original_test_name = 't'
+
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -1004,17 +1012,28 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
-    analysis.original_master_name = master_name
-    analysis.original_builder_name = builder_name
-    analysis.original_build_number = build_number
-    analysis.original_step_name = step_name
-    analysis.original_test_name = test_name
+    analysis.original_master_name = original_master_name
+    analysis.original_builder_name = original_builder_name
+    analysis.original_build_number = original_build_number
+    analysis.original_step_name = original_step_name
+    analysis.original_test_name = original_test_name
     analysis.bug_id = 1
     analysis.status = analysis_status.COMPLETED
     analysis.try_job_status = analysis_status.COMPLETED
     analysis.Save()
 
     original_key = analysis.key
+
+    request = FlakeAnalysisRequest.Create(analysis.original_test_name, False,
+                                          analysis.bug_id)
+    request.build_steps = [
+        BuildStep(
+            build_number=original_build_number,
+            builder_name=original_builder_name,
+            master_name=original_master_name,
+            reported_time=datetime.datetime(2018, 6, 12, 0),
+            step_name=original_step_name)
+    ]
 
     with mock.patch.object(
         CheckFlake,
@@ -1027,8 +1046,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
               'rerun': '1',
               'format': 'json'
           })
-      scheduler.assert_called_with(master_name, builder_name, build_number,
-                                   step_name, test_name, 1, True)
+      scheduler.assert_called_with(request, master_name, builder_name,
+                                   build_number, step_name, test_name, 1, True)
       self.assertEqual(original_key, analysis.key)
 
   @mock.patch.object(

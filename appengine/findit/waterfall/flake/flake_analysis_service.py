@@ -214,6 +214,8 @@ def ScheduleAnalysisForFlake(request,
     True if an analysis was scheduled; False if a new analysis is not needed;
     None if the user has no permission to.
   """
+  # TODO(crbug.com/853325): Refactor rerun logic.
+
   assert len(request.build_steps), 'At least 1 build step is needed!'
 
   if not IsAuthorizedUser(user_email, is_admin):

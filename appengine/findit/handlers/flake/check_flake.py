@@ -251,7 +251,8 @@ class CheckFlake(BaseHandler):
     return None
 
   @staticmethod
-  def _CreateAndScheduleFlakeAnalysis(master_name,
+  def _CreateAndScheduleFlakeAnalysis(request,
+                                      master_name,
                                       builder_name,
                                       build_number,
                                       step_name,
@@ -262,11 +263,19 @@ class CheckFlake(BaseHandler):
     """Create and schedule a flake analysis.
 
     Args:
-      master_name (string): The name of the master.
-      builder_name (string): The name of the builder.
-      build_number (int): Build number to run against.
-      step_name (string): The name of the step.
-      test_name (string): The name of the test.
+      request (FlakeAnalysisRequest): The requested step to analyze, containing
+          all original fields used to create the request, such as the master,
+          builder, etc. on which the the flaky test was originally detected.
+      master_name (string): The name of the master with which to
+          reference the analysis with.
+      builder_name (string): The name of the builder with which to
+          reference the analysis with.
+      build_number (int): The build number with which to reference
+          the analysis with.
+      step_name (string): The name of the step with which to reference
+          the analysis with.
+      test_name (string): The name of the test with which to reference
+          the analysis with.
       bug_id (int): The bug id.
       rerun (boolean): Is this analysis a rerun.
     Returns:
@@ -276,9 +285,6 @@ class CheckFlake(BaseHandler):
     user_email = auth_util.GetUserEmail()
     is_admin = auth_util.IsCurrentUserAdmin()
 
-    request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
-    request.AddBuildStep(master_name, builder_name, build_number, step_name,
-                         time_util.GetUTCNow())
     scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
         request,
         user_email,
@@ -317,19 +323,21 @@ class CheckFlake(BaseHandler):
       return self.CreateError(
           'Cannot rerun analysis if one is currently running or pending.', 400)
 
-    master_name = analysis.original_master_name
-    builder_name = analysis.original_builder_name
-    build_number = analysis.original_build_number
-    step_name = analysis.original_step_name
-    test_name = analysis.original_test_name
-    bug_id = analysis.bug_id
-
     logging.info('Rerun button pushed, analysis will be reset and triggered.\n'
                  'Analysis key: %s', key)
 
+    request = FlakeAnalysisRequest.Create(analysis.original_test_name, False,
+                                          analysis.bug_id)
+    request.AddBuildStep(
+        analysis.original_master_name, analysis.original_builder_name,
+        analysis.original_build_number, analysis.original_step_name,
+        time_util.GetUTCNow())
+
     analysis, _ = self._CreateAndScheduleFlakeAnalysis(
-        master_name, builder_name, build_number, step_name, test_name, bug_id,
-        True)
+        request, analysis.master_name, analysis.builder_name,
+        analysis.build_number, analysis.step_name, analysis.test_name,
+        analysis.bug_id, True)
+
     return self.CreateRedirect(
         '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
 
@@ -412,9 +420,12 @@ class CheckFlake(BaseHandler):
       build_number = int(build_number)
       bug_id = int(bug_id) if bug_id else None
 
+      request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
+      request.AddBuildStep(master_name, builder_name, build_number, step_name,
+                           time_util.GetUTCNow())
       analysis, scheduled = self._CreateAndScheduleFlakeAnalysis(
-          master_name, builder_name, build_number, step_name, test_name, bug_id,
-          False)
+          request, master_name, builder_name, build_number, step_name,
+          test_name, bug_id, False)
 
       if not analysis:
         if scheduled is None:
