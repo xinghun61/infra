@@ -13,3 +13,7 @@ OTHER_BUILT_IN_COLS = (
     tracker_constants.OTHER_BUILT_IN_COLS + ['Adder', 'Added', 'Note'])
 # pylint: disable=line-too-long
 ISSUE_INPUT_REGEX = "[a-z0-9][-a-z0-9]*[a-z0-9]:\d+(([,]|\s)+[a-z0-9][-a-z0-9]*[a-z0-9]:\d+)*"
+
+QUEUE_NOTIFICATIONS = 'notifications'
+QUEUE_OUTBOUND_EMAIL = 'outboundemail'
+

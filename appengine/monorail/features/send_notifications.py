@@ -10,6 +10,7 @@ import logging
 
 from google.appengine.api import taskqueue
 
+from features import features_constants
 from framework import framework_constants
 from framework import urls
 from tracker import tracker_bizobj
@@ -35,7 +36,9 @@ def PrepareAndSendIssueChangeNotification(
       issue_id=issue_id, commenter_id=commenter_id, comment_id=comment_id,
       hostport=hostport, old_owner_id=old_owner_id, send_email=int(send_email))
   logging.info('adding notify task with params %r', params)
-  taskqueue.add(url=urls.NOTIFY_ISSUE_CHANGE_TASK + '.do', params=params)
+  taskqueue.add(
+      url=urls.NOTIFY_ISSUE_CHANGE_TASK + '.do', params=params,
+      queue_name=features_constants.QUEUE_NOTIFICATIONS)
 
 
 def PrepareAndSendIssueBlockingNotification(
@@ -50,7 +53,9 @@ def PrepareAndSendIssueBlockingNotification(
       delta_blocker_iids=','.join(str(iid) for iid in delta_blocker_iids))
 
   logging.info('adding blocking task with params %r', params)
-  taskqueue.add(url=urls.NOTIFY_BLOCKING_CHANGE_TASK + '.do', params=params)
+  taskqueue.add(
+      url=urls.NOTIFY_BLOCKING_CHANGE_TASK + '.do', params=params,
+      queue_name=features_constants.QUEUE_NOTIFICATIONS)
 
 
 def PrepareAndSendApprovalChangeNotification(
@@ -62,7 +67,9 @@ def PrepareAndSendApprovalChangeNotification(
       comment_id=comment_id, send_email=int(send_email))
 
   logging.info('adding approval notify task with params %r', params)
-  taskqueue.add(url=urls.NOTIFY_APPROVAL_CHANGE_TASK + '.do', params=params)
+  taskqueue.add(
+      url=urls.NOTIFY_APPROVAL_CHANGE_TASK + '.do', params=params,
+      queue_name=features_constants.QUEUE_NOTIFICATIONS)
 
 
 def SendIssueBulkChangeNotification(
@@ -84,4 +91,6 @@ def SendIssueBulkChangeNotification(
       comment_text=comment_text, amendments='\n'.join(amendment_lines))
 
   logging.info('adding bulk task with params %r', params)
-  taskqueue.add(url=urls.NOTIFY_BULK_CHANGE_TASK + '.do', params=params)
+  taskqueue.add(
+      url=urls.NOTIFY_BULK_CHANGE_TASK + '.do', params=params,
+      queue_name=features_constants.QUEUE_NOTIFICATIONS)

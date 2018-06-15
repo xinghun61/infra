@@ -6,10 +6,13 @@
 """Tests for the API v1."""
 
 import endpoints
+from mock import Mock, patch
+import os
 import unittest
 import webtest
+
 from google.appengine.api import oauth
-from mock import Mock, patch
+from google.appengine.ext import testbed
 from protorpc import messages
 from protorpc import message_types
 
@@ -164,6 +167,11 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
   def setUp(self):
     super(MonorailApiTest, self).setUp()
+    # Load queue.yaml.
+    self.taskqueue_stub = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
+    self.taskqueue_stub._root_path = os.path.dirname(
+        os.path.dirname(os.path.dirname( __file__ )))
+
     self.requester = RequesterMock(email='requester@example.com')
     self.mock(endpoints, 'get_current_user', lambda: self.requester)
     self.config = None

@@ -15,6 +15,7 @@ from third_party import ezt
 
 from google.appengine.api import taskqueue
 
+from features import features_constants
 from features import filterrules_helpers
 from features import savedqueries_helpers
 from features import notify_reasons
@@ -90,7 +91,7 @@ def _EnqueueOutboundEmail(message_dict):
   payload = json.dumps(message_dict)
   taskqueue.add(
     url=urls.OUTBOUND_EMAIL_TASK + '.do', payload=payload,
-    queue_name='outboundemail')
+    queue_name=features_constants.QUEUE_OUTBOUND_EMAIL)
 
 
 def AddAllEmailTasks(tasks):

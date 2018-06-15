@@ -5,7 +5,14 @@
 
 queue:
 - name: default
-  rate: 3/s
+  rate: 5/s
+  max_concurrent_requests: 50
+  retry_parameters:
+    task_age_limit: 24h
+    min_backoff_seconds: 60
+
+- name: notifications
+  rate: 5/s
   max_concurrent_requests: 50
   retry_parameters:
     task_age_limit: 24h

@@ -6,6 +6,7 @@
 """Unittests for the issueentry servlet."""
 
 import mox
+import os
 import time
 import unittest
 
@@ -31,6 +32,11 @@ class IssueEntryTest(unittest.TestCase):
     self.testbed.init_taskqueue_stub()
     self.testbed.init_memcache_stub()
     self.testbed.init_datastore_v3_stub()
+    # Load queue.yaml.
+    self.taskqueue_stub = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
+    self.taskqueue_stub._root_path = os.path.dirname(
+        os.path.dirname(os.path.dirname( __file__ )))
+
     self.services = service_manager.Services(
         config=fake.ConfigService(),
         issue=fake.IssueService(),
