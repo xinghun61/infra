@@ -13,16 +13,22 @@ class MrEditMetadata extends Polymer.Element {
 
   static get properties() {
     return {
-      isApprover: Boolean,
+      enums: Array,
       urls: Array,
       users: Array,
       statuses: Array,
       status: String,
-      _newCommentText: String,
-      _statuses: {
-        type: Array,
-        computed: '_filterStatuses(status, statuses, isApprover)',
+      summary: String,
+      priority: String,
+      priorities: Array,
+      blockedOn: Array,
+      blocking: Array,
+      labels: Array,
+      isApproval: {
+        type: Boolean,
+        value: false,
       },
+      _newCommentText: String,
     };
   }
 
@@ -40,7 +46,9 @@ class MrEditMetadata extends Polymer.Element {
           values: this._valuesForField(user.name),
         };
       }),
+      summary: this.$.summaryInput.value,
       status: this.$.statusInput.value,
+      priority: this.$.priorityInput.value,
       comment: this._newCommentText,
     };
   }
@@ -53,8 +61,8 @@ class MrEditMetadata extends Polymer.Element {
     return input.value.split(',').map((str) => (str.trim()));
   }
 
-  _idForField(fieldName) {
-    return `${fieldName.replace(/\W+/g, '')}Input`;
+  _idForField(fieldName, choiceName='') {
+    return `${(fieldName + choiceName).replace(/\W+/g, '')}Input`;
   }
 
   _computeIsSelected(a, b) {
@@ -63,16 +71,6 @@ class MrEditMetadata extends Polymer.Element {
 
   _joinValues(arr) {
     return arr.join(',');
-  }
-
-  _filterStatuses(status, statuses, isApprover) {
-    return statuses.filter((s) => {
-      // These statuses should only be set by approvers.
-      if (!isApprover && ['NA', 'Approved', 'NotApproved'].includes(s)) {
-        return false;
-      }
-      return s === status || s !== 'NotSet';
-    });
   }
 }
 

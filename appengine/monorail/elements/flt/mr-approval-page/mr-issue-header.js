@@ -37,6 +37,7 @@ class MrIssueHeader extends Polymer.Element {
         type: String,
         value: 'Autofill credit card icons',
         computed: '_mockSummary(issueId)',
+        notify: true,
       },
       you: String,
       _flipperCount: {

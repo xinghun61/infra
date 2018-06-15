@@ -1,11 +1,15 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
+<link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
+<link rel="import" href="../shared/mr-flt-styles.html">
+
 <dom-module id="mr-metadata">
   <template>
-    <style>
+    <style include="mr-flt-styles">
       :host {
         box-sizing: border-box;
         padding: 0.5em 8px;
@@ -15,6 +19,13 @@
       a.label {
         color: hsl(120, 100%, 25%);
         text-decoration: none;
+      }
+      chops-button {
+        border: 1px solid hsl(120, 15%, 90%);
+      }
+      mr-edit-metadata {
+        width: 800px;
+        max-width: 100%;
       }
       table {
         table-layout: fixed;
@@ -31,6 +42,15 @@
       }
       th {
         float: left;
+      }
+      .dialog-actions {
+        text-align: right;
+      }
+      .edit-container {
+        text-align: center;
+        box-sizing: border-box;
+        padding: 0.5em 8px;
+        border-top: 1px solid hsl(120, 15%, 90%);
       }
       .restricted {
         background: hsl(30, 100%, 93%);
@@ -156,6 +176,43 @@
       <strong><iron-icon icon="lock"></iron-icon>Restricted</strong>
       Only users with Google permission can see this issue.
     </div>
+
+    <div class="edit-container">
+      <chops-button on-click="edit">
+        <iron-icon icon="create"></iron-icon>
+        Edit feature metadata
+      </chops-button>
+    </div>
+
+    <chops-dialog id="editMetadata" aria-labelledby="metadataDialogTitle">
+      <h3 id="metadataDialogTitle">
+        Editing feature details
+      </h3>
+      <mr-edit-metadata
+        id="metadataForm"
+        enums="[[enums]]"
+        summary="[[summary]]"
+        users="[[users]]"
+        urls="[[urls]]"
+        priorities="[[priorities]]"
+        priority="Pri-[[_priority]]"
+        statuses="[[statuses]]"
+        status="[[_status]]"
+        blocked-on="[[blockedOn]]"
+        blocking="[[blocking]]"
+        labels="[[labels]]"
+      ></mr-edit-metadata>
+      <div class="dialog-actions">
+        <chops-button on-click="cancel" class="de-emphasized">
+          <iron-icon icon="close"></iron-icon>
+          Cancel
+        </chops-button>
+        <chops-button on-click="save" class="emphasized">
+          <iron-icon icon="create"></iron-icon>
+          Save changes
+        </chops-button>
+      </div>
+    </chops-dialog>
   </template>
   <script src="./mr-metadata.js"></script>
 <dom-module>

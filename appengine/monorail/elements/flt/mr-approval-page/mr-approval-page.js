@@ -13,6 +13,7 @@ class MrApprovalPage extends Polymer.Element {
 
   static get properties() {
     return {
+      summary: String,
       issueId: {
         type: Number,
         computed: '_computeIssueId(queryParams.id)',

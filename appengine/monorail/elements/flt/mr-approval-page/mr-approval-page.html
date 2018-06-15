@@ -106,10 +106,10 @@
       <span slot="subheader">&gt; <a href="#">Feature Launch Issue</a></span>
       <chops-login logout-url="/" user="[[user]]"></chops-login>
     </chops-header>
-    <mr-issue-header issue-id="[[issueId]]" you="[[queryParams.you]]"></mr-issue-header>
+    <mr-issue-header summary="{{summary}}" issue-id="[[issueId]]" you="[[queryParams.you]]"></mr-issue-header>
     <div class="container-outside">
       <div class="metadata-container">
-        <mr-metadata></mr-metadata>
+        <mr-metadata summary="[[summary]]"></mr-metadata>
       </div>
       <div class="container-main">
         <mr-issue-details class="main-item"></mr-issue-details>

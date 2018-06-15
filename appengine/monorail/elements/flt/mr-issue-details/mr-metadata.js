@@ -39,10 +39,31 @@ class MrMetadata extends Polymer.Element {
         type: Array,
         value: ['Test>Component'],
       },
+      priorities: {
+        type: Array,
+        value: [
+          '---',
+          'Pri-0',
+          'Pri-1',
+          'Pri-2',
+          'Pri-3',
+        ],
+      },
       status: {
         type: String,
         value: 'Assigned',
       },
+      statuses: {
+        type: Array,
+        value: [
+          'Unconfirmed',
+          'Untriaged',
+          'Available',
+          'Assigned',
+          'Started',
+        ],
+      },
+      summary: String,
       users: {
         type: Array,
         value: [
@@ -59,6 +80,23 @@ class MrMetadata extends Polymer.Element {
           },
         ],
       },
+      enums: {
+        type: Array,
+        value: [
+          {
+            name: 'OS',
+            choices: [
+              'Android',
+              'Chrome',
+              'Fuschia',
+              'iOS',
+              'Linux',
+              'Mac',
+              'Windows',
+            ],
+          }
+        ],
+      },
       _priority: {
         type: String,
         computed: '_computePriority(labels)',
@@ -68,6 +106,14 @@ class MrMetadata extends Polymer.Element {
         computed: '_computeLabelsList(labels)',
       },
     };
+  }
+
+  edit() {
+    this.$.editMetadata.open();
+  }
+
+  cancel() {
+    this.$.editMetadata.close();
   }
 
   _computePriority(labels) {

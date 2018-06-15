@@ -56,6 +56,10 @@ class MrApprovalCard extends Polymer.Element {
           return Object.keys(STATUS_CLASS_MAP);
         },
       },
+      _availableStatuses: {
+        type: Array,
+        computed: '_filterStatuses(_status, statuses, _isApprovalOwner)',
+      },
       _isApprovalOwner: {
         type: Boolean,
         computed: '_computeIsApprovalOwner(users, user)',
@@ -128,6 +132,16 @@ class MrApprovalCard extends Polymer.Element {
       return u.name == 'Approvers';
     });
     return approvers.values.includes(user);
+  }
+
+  _filterStatuses(status, statuses, isApprover) {
+    return statuses.filter((s) => {
+      // These statuses should only be set by approvers.
+      if (!isApprover && ['NA', 'Approved', 'NotApproved'].includes(s)) {
+        return false;
+      }
+      return s === status || s !== 'NotSet';
+    });
   }
 
   _openUserCards(isApprovalOwner) {

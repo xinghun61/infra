@@ -144,15 +144,15 @@
     </iron-collapse>
     <chops-dialog id="editApproval" aria-labelledby="approvalDialogTitle">
       <h3 id="approvalDialogTitle">
-        Editing Approval: [[gateName]] &gt; [[title]]
+        Editing approval: [[gateName]] &gt; [[title]]
       </h3>
       <mr-edit-metadata
         id="metadataForm"
         users="[[users]]"
         urls="[[urls]]"
-        statuses="[[statuses]]"
+        statuses="[[_availableStatuses]]"
         status="[[_status]]"
-        is-approver="[[_isApprovalOwner]]"
+        is-approval
       ></mr-edit-metadata>
       <div class="dialog-actions">
         <chops-button on-click="cancel" class="de-emphasized">

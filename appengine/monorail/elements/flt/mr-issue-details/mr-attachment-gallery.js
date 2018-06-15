@@ -94,11 +94,6 @@ class MrAttachmentGallery extends Polymer.Element {
   _showPrev() {
     const l = this.files.length;
     this._shownIndex = (this._shownIndex - 1 + l) % l;
-
-    // TODO(zhangtiff): This is because paper-dialog doesn't resize when its
-    // content changes. We should remove this eventually.
-    this.$.showFile.close();
-    this.$.showFile.open();
   }
 }
 customElements.define(MrAttachmentGallery.is, MrAttachmentGallery);

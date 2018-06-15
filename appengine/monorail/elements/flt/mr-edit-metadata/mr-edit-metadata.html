@@ -12,9 +12,15 @@
         width: 100%;
         padding: 0.25em 4px;
       }
+      input[type="checkbox"] {
+        width: auto;
+      }
       label {
         font-weight: bold;
         word-wrap: break-word;
+      }
+      label.checkbox {
+        font-weight: normal;
       }
       textarea {
         width: 100%;
@@ -43,13 +49,28 @@
       }
     </style>
     <div class="input-grid">
-      <label for="statusInput">Status:</label>
+      <template is="dom-if" if="[[!isApproval]]">
+        <label for="summaryInput">Summary:</label>
+        <input id="summaryInput" value$="[[summary]]" />
+      </template>
+      <template is="dom-if" if="[[statuses]]">
+        <label for="statusInput">Status:</label>
 
-      <select id="statusInput">
-        <template is="dom-repeat" items="[[_statuses]]">
-          <option value$="[[item]]" selected$="[[_computeIsSelected(status, item)]]">[[item]]</option>
-        </template>
-      </select>
+        <select id="statusInput">
+          <template is="dom-repeat" items="[[statuses]]">
+            <option value$="[[item]]" selected$="[[_computeIsSelected(status, item)]]">[[item]]</option>
+          </template>
+        </select>
+      </template>
+      <template is="dom-if" if="[[priorities]]">
+        <label for="priorityInput">Priority:</label>
+
+        <select id="priorityInput">
+          <template is="dom-repeat" items="[[priorities]]">
+            <option value$="[[item]]" selected$="[[_computeIsSelected(priority, item)]]">[[item]]</option>
+          </template>
+        </select>
+      </template>
       <template is="dom-repeat" items="[[users]]" as="user">
         <label for$="[[_idForField(user.name)]]">[[user.name]]:</label>
 
@@ -60,6 +81,30 @@
       <template is="dom-repeat" items="[[urls]]" as="url">
         <label for$="[[_idForField(url.name)]]">[[url.name]]:</label>
         <input id$="[[_idForField(url.name)]]" value$="[[_joinValues(url.values)]]" />
+      </template>
+      <template is="dom-repeat" items="[[enums]]" as="enum">
+        <label for$="[[_idForField(enum.name)]]">[[enum.name]]:</label>
+        <div>
+          <template is="dom-repeat" items="[[enum.choices]]" as="choice">
+            <label class="checkbox" for$="[[_idForField(enum.name, choice)]]">
+              <input
+                id$="[[_idForField(enum.name, choice)]]"
+                type="checkbox" name="[[enum.name]]" value="choice"
+              />
+              [[choice]]
+            </label>
+          </template>
+        </div>
+      </template>
+      <template is="dom-if" if="[[!isApproval]]">
+        <label for="blockedOnInput">Blocked on:</label>
+        <input id="blockedOnInput" value$="[[_joinValues(blockedOn)]]" />
+
+        <label for="blockingInput">Blocking:</label>
+        <input id="blockingInput" value$="[[_joinValues(blocking)]]" />
+
+        <label for="labelsInput">Labels:</label>
+        <input id="labelsInput" value$="[[_joinValues(labels)]]" />
       </template>
     </div>
     <textarea id="commentText" value="{{_newCommentText::input}}" placeholder="Comment to explain this change"></textarea>
