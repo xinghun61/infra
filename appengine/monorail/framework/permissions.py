@@ -853,7 +853,9 @@ def CanViewRestrictedIssueInVisibleProject(
   if effective_ids:
     if (issue.reporter_id in effective_ids or
         tracker_bizobj.GetOwnerId(issue) in effective_ids or
-        not effective_ids.isdisjoint(tracker_bizobj.GetCcIds(issue))):
+        not effective_ids.isdisjoint(
+            tracker_bizobj.GetCcIds(issue) +
+            tracker_bizobj.GetApproverIds(issue))):
       return True
 
   # Otherwise, apply the usual permission checking.

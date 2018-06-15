@@ -65,6 +65,17 @@ class BizobjTest(unittest.TestCase):
     issue.cc_ids.extend([4, 5, 6])
     self.assertEquals(tracker_bizobj.GetCcIds(issue), [4, 5, 6, 1, 2, 3])
 
+  def testGetApproverIds(self):
+    issue = tracker_pb2.Issue()
+    self.assertEqual(tracker_bizobj.GetApproverIds(issue), [])
+
+    av_1 = tracker_pb2.ApprovalValue(approver_ids=[111L, 222L])
+    av_2 = tracker_pb2.ApprovalValue()
+    av_3 = tracker_pb2.ApprovalValue(approver_ids=[222L, 333L])
+    issue.approval_values = [av_1, av_2, av_3]
+    self.assertItemsEqual(
+        tracker_bizobj.GetApproverIds(issue), [111L, 222L, 333L])
+
   def testGetLabels(self):
     issue = tracker_pb2.Issue()
     self.assertEquals(tracker_bizobj.GetLabels(issue), [])

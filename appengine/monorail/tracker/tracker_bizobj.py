@@ -40,6 +40,15 @@ def GetCcIds(issue):
   return issue.cc_ids + issue.derived_cc_ids
 
 
+def GetApproverIds(issue):
+  """Get the Approvers' ids of an isuses approval_values."""
+  approver_ids = []
+  for av in issue.approval_values:
+    approver_ids.extend(av.approver_ids)
+
+  return list(set(approver_ids))
+
+
 def GetLabels(issue):
   """Get the labels of an issue, whether explicit or derived."""
   return issue.labels + issue.derived_labels

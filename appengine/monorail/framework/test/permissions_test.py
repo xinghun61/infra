@@ -843,6 +843,7 @@ REPORTER_ID = 111L
 OWNER_ID = 222L
 CC_ID = 333L
 OTHER_ID = 444L
+APPROVER_ID = 555L
 
 
 class IssuePermissionsTest(unittest.TestCase):
@@ -858,6 +859,9 @@ class IssuePermissionsTest(unittest.TestCase):
   RESTRICTED_ISSUE.reporter_id = REPORTER_ID
   RESTRICTED_ISSUE.owner_id = OWNER_ID
   RESTRICTED_ISSUE.cc_ids.append(CC_ID)
+  RESTRICTED_ISSUE.approval_values.append(
+      tracker_pb2.ApprovalValue(approver_ids=[APPROVER_ID])
+  )
   RESTRICTED_ISSUE.labels.append('Restrict-View-Commit')
 
   RESTRICTED_ISSUE2 = tracker_pb2.Issue()
@@ -953,6 +957,10 @@ class IssuePermissionsTest(unittest.TestCase):
     self.assertFalse(permissions.CanViewIssue(
         set(), permissions.READ_ONLY_PERMISSIONSET,
         self.PROJECT, self.RESTRICTED_ISSUE2))
+    # Approvers can always view issue
+    self.assertTrue(permissions.CanViewIssue(
+        {APPROVER_ID}, permissions.READ_ONLY_PERMISSIONSET,
+        self.PROJECT, self.RESTRICTED_ISSUE))
 
   def testCannotViewIssueIfCannotViewProject(self):
     """Cross-project search should not be a backdoor to viewing issues."""
