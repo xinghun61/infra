@@ -786,6 +786,54 @@ def MakeIssueDelta(
   return delta
 
 
+def ApplyFieldValueChanges(issue, delta, config):
+  """Updates the PB issue's field_values and returns an amendments list."""
+  (field_vals, update_fields_add,
+   update_fields_remove) = MergeFields(
+       issue.field_values, delta.field_vals_add, delta.field_vals_remove,
+       config.field_defs)
+
+  amendments = []
+  if update_fields_add or update_fields_remove:
+    issue.field_values = field_vals
+    for fd in config.field_defs:
+      added_values_this_field = [
+          fv for fv in update_fields_add if fv.field_id == fd.field_id]
+      if added_values_this_field:
+        amendments.append(MakeFieldAmendment(
+            fd.field_id, config,
+            [GetFieldValue(fv, {})
+             for fv in added_values_this_field],
+            old_values=[]))
+      removed_values_this_field = [
+          fv for fv in update_fields_remove if fv.field_id == fd.field_id]
+      if removed_values_this_field:
+        amendments.append(MakeFieldAmendment(
+            fd.field_id, config, [],
+            old_values=[GetFieldValue(fv, {})
+                        for fv in removed_values_this_field]))
+
+  if delta.fields_clear:
+    field_clear_set = set(delta.fields_clear)
+    revised_fields = []
+    for fd in config.field_defs:
+      if fd.field_id not in field_clear_set:
+        revised_fields.extend(
+            fv for fv in issue.field_values if fv.field_id == fd.field_id)
+      else:
+        amendments.append(
+            MakeFieldClearedAmendment(fd.field_id, config))
+        if fd.field_type == tracker_pb2.FieldTypes.ENUM_TYPE:
+          prefix = fd.field_name.lower() + '-'
+          filtered_labels = [
+              lab for lab in issue.labels
+              if not lab.lower().startswith(prefix)]
+          issue.labels = filtered_labels
+
+    issue.field_values = revised_fields
+  return amendments
+
+
 def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
   """Apply an issue delta to an issue in RAM.
 
@@ -851,48 +899,8 @@ def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
         update_labels_add, update_labels_remove))
 
   # compute the set of custom fields added and removed
-  (field_vals, update_fields_add,
-   update_fields_remove) = MergeFields(
-       issue.field_values, delta.field_vals_add, delta.field_vals_remove,
-       config.field_defs)
-
-  if update_fields_add or update_fields_remove:
-    issue.field_values = field_vals
-    for fd in config.field_defs:
-      added_values_this_field = [
-          fv for fv in update_fields_add if fv.field_id == fd.field_id]
-      if added_values_this_field:
-        amendments.append(MakeFieldAmendment(
-            fd.field_id, config,
-            [GetFieldValue(fv, {})
-             for fv in added_values_this_field],
-            old_values=[]))
-      removed_values_this_field = [
-          fv for fv in update_fields_remove if fv.field_id == fd.field_id]
-      if removed_values_this_field:
-        amendments.append(MakeFieldAmendment(
-            fd.field_id, config, [],
-            old_values=[GetFieldValue(fv, {})
-                        for fv in removed_values_this_field]))
-
-  if delta.fields_clear:
-    field_clear_set = set(delta.fields_clear)
-    revised_fields = []
-    for fd in config.field_defs:
-      if fd.field_id not in field_clear_set:
-        revised_fields.extend(
-            fv for fv in issue.field_values if fv.field_id == fd.field_id)
-      else:
-        amendments.append(
-            MakeFieldClearedAmendment(fd.field_id, config))
-        if fd.field_type == tracker_pb2.FieldTypes.ENUM_TYPE:
-          prefix = fd.field_name.lower() + '-'
-          filtered_labels = [
-              lab for lab in issue.labels
-              if not lab.lower().startswith(prefix)]
-          issue.labels = filtered_labels
-
-    issue.field_values = revised_fields
+  fv_amendments = ApplyFieldValueChanges(issue, delta, config)
+  amendments.extend(fv_amendments)
 
   if delta.blocked_on_add or delta.blocked_on_remove:
     old_blocked_on = issue.blocked_on_iids
