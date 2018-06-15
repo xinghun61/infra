@@ -373,6 +373,9 @@ class WorkEnvTest(unittest.TestCase):
 
     self.SignIn()
 
+    config = fake.MakeTestConfig(789, [], [])
+    self.services.config.StoreConfig('cnxn', config)
+
     av_24 = tracker_pb2.ApprovalValue(
         approval_id=24, approver_ids=[111L],
         status=tracker_pb2.ApprovalStatus.NOT_SET,set_on=1234, setter_id=999L)
@@ -387,7 +390,8 @@ class WorkEnvTest(unittest.TestCase):
     self.work_env.UpdateIssueApproval(78901, 24, delta, 'please review')
 
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
-        self.mr.cnxn, 111L, issue, av_24, delta, comment='please review')
+        self.mr.cnxn, 111L, config, issue, av_24, delta,
+        comment='please review')
 
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Normal(self, fake_pasicn):

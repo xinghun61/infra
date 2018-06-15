@@ -787,11 +787,11 @@ def MakeIssueDelta(
   return delta
 
 
-def ApplyFieldValueChanges(issue, delta, config):
+def ApplyFieldValueChanges(issue, config, fvs_add, fvs_remove, fields_clear):
   """Updates the PB issue's field_values and returns an amendments list."""
   (field_vals, update_fields_add,
    update_fields_remove) = MergeFields(
-       issue.field_values, delta.field_vals_add, delta.field_vals_remove,
+       issue.field_values, fvs_add, fvs_remove,
        config.field_defs)
 
   amendments = []
@@ -814,8 +814,8 @@ def ApplyFieldValueChanges(issue, delta, config):
             old_values=[GetFieldValue(fv, {})
                         for fv in removed_values_this_field]))
 
-  if delta.fields_clear:
-    field_clear_set = set(delta.fields_clear)
+  if fields_clear:
+    field_clear_set = set(fields_clear)
     revised_fields = []
     for fd in config.field_defs:
       if fd.field_id not in field_clear_set:
@@ -900,7 +900,9 @@ def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
         update_labels_add, update_labels_remove))
 
   # compute the set of custom fields added and removed
-  fv_amendments = ApplyFieldValueChanges(issue, delta, config)
+  fv_amendments = ApplyFieldValueChanges(
+      issue, config, delta.field_vals_add, delta.field_vals_remove,
+      delta.fields_clear)
   amendments.extend(fv_amendments)
 
   if delta.blocked_on_add or delta.blocked_on_remove:

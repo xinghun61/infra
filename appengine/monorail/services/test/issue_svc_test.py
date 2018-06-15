@@ -1679,6 +1679,20 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, issue_1.issue_id, 24)
 
   def testUpdateIssueApproval(self):
+    config = self.services.config.GetProjectConfig(
+        self.cnxn, 789)
+    config.field_defs = [
+      tracker_pb2.FieldDef(
+        field_id=1, project_id=789, field_name='EstDays',
+        field_type=tracker_pb2.FieldTypes.INT_TYPE,
+        applicable_type=''),
+      tracker_pb2.FieldDef(
+        field_id=2, project_id=789, field_name='Tag',
+        field_type=tracker_pb2.FieldTypes.STR_TYPE,
+        applicable_type=''),
+        ]
+    self.services.config.StoreConfig(self.cnxn, config)
+
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, summary='summary', status='New',
         owner_id=999L, issue_id=78901)
@@ -1691,18 +1705,29 @@ class IssueServiceTest(unittest.TestCase):
         tracker_bizobj.MakeApprovalStatusAmendment(
             tracker_pb2.ApprovalStatus.REVIEW_REQUESTED),
         tracker_bizobj.MakeApprovalApproversAmendment([222L, 444L], []),
+        tracker_bizobj.MakeFieldAmendment(1, config, [4], []),
+        tracker_bizobj.MakeFieldClearedAmendment(2, config)
     ]
     approval_delta = tracker_pb2.ApprovalDelta(
         status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
-        approver_ids_add=[222L, 444L], set_on=1234)
+        approver_ids_add=[222L, 444L], set_on=1234,
+        subfield_vals_add=[
+          tracker_bizobj.MakeFieldValue(1, 4, None, None, None, None, False)
+          ],
+        subfields_clear=[2]
+    )
 
     self.services.issue.issue2approvalvalue_tbl.Update = Mock()
     self.services.issue.issueapproval2approver_tbl.Delete = Mock()
     self.services.issue.issueapproval2approver_tbl.InsertRows = Mock()
+    self.services.issue.issue2fieldvalue_tbl.Delete = Mock()
+    self.services.issue.issue2fieldvalue_tbl.InsertRows = Mock()
     self.services.issue.CreateIssueComment = Mock()
+    shard = issue.issue_id % settings.num_logical_shards
+    fv_rows = [(78901, 1, 4, None, None, None, None, False, None, shard)]
 
     self.services.issue.DeltaUpdateIssueApproval(
-        self.cnxn, 111L, issue, av, approval_delta, 'some comment',
+        self.cnxn, 111L, config, issue, av, approval_delta, 'some comment',
         commit=False)
 
     self.assertEqual(av, final_av)
@@ -1718,6 +1743,13 @@ class IssueServiceTest(unittest.TestCase):
         InsertRows.assert_called_once_with(
             self.cnxn, issue_svc.ISSUEAPPROVAL2APPROVER_COLS,
             [(23, 222, 78901), (23, 444, 78901)], commit=False)
+    self.services.issue.issue2fieldvalue_tbl.\
+        Delete.assert_called_once_with(
+            self.cnxn, issue_id=[78901], commit=False)
+    self.services.issue.issue2fieldvalue_tbl.\
+        InsertRows.assert_called_once_with(
+            self.cnxn, issue_svc.ISSUE2FIELDVALUE_COLS + ['issue_shard'],
+            fv_rows, commit=False)
     self.services.issue.CreateIssueComment.assert_called_once_with(
         self.cnxn, issue, 111L, 'some comment', amendments=amendments,
         approval_id=23, commit=False)

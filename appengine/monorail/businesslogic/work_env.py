@@ -536,6 +536,7 @@ class WorkEnv(object):
         self.mc.cnxn, issue_id, approval_id)
 
     self._AssertUserCanViewIssue(issue)
+    config = self.GetProjectConfig(issue.project_id)
 
     if approval_delta.status:
       if not permissions.CanUpdateApprovalStatus(
@@ -554,7 +555,7 @@ class WorkEnv(object):
         'updating approval for issue %r, aprpoval %r' % (
             issue_id, approval_id)):
       comment_pb = self.services.issue.DeltaUpdateIssueApproval(
-          self.mc.cnxn, self.mc.auth.user_id, issue, approval_value,
+          self.mc.cnxn, self.mc.auth.user_id, config, issue, approval_value,
           approval_delta, comment=comment_content)
       send_notifications.PrepareAndSendApprovalChangeNotification(
           issue_id, approval_id, framework_helpers.GetHostPort(), comment_pb.id)

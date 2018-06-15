@@ -2464,7 +2464,7 @@ class IssueService(object):
     raise exceptions.NoSuchIssueApprovalException()
 
   def DeltaUpdateIssueApproval(
-      self, cnxn, modifier_id, issue, approval, approval_delta,
+      self, cnxn, modifier_id, config, issue, approval, approval_delta,
       comment_content=None, commit=True):
     """Update the issue's approval in the database."""
     amendments = []
@@ -2500,7 +2500,12 @@ class IssueService(object):
       self._UpdateIssueApprovalApprovers(
           cnxn, issue.issue_id, approval.approval_id, approver_ids)
 
-    # TODO(jojwang): monorail:3263, update approval.sub_field_values
+    fv_amendments = tracker_bizobj.ApplyFieldValueChanges(
+        issue, config, approval_delta.subfield_vals_add,
+        approval_delta.subfield_vals_remove, approval_delta.subfields_clear)
+    amendments.extend(fv_amendments)
+    if(fv_amendments):
+     self._UpdateIssuesFields(cnxn, [issue], commit=False)
 
     comment_pb = self.CreateIssueComment(
         cnxn, issue, modifier_id, comment_content, amendments=amendments,
