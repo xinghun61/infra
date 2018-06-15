@@ -5,7 +5,8 @@
 
 def CommonChecks(input_api, output_api):  # pragma: no cover
   return input_api.canned_checks.CheckPatchFormatted(
-      input_api, output_api, check_python=True)
+      input_api, output_api, check_python=True
+  )
 
 
 def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover

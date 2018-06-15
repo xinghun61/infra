@@ -62,15 +62,17 @@ class MetricsTest(testing.AppengineTestCase):
         ),
     ])
     metrics.set_build_count_metric_async(
-        'chromium', 'release', model.BuildStatus.SCHEDULED, False).get_result()
-    self.assertEqual(2,
-                     metrics.BUILD_COUNT_PROD.get(
-                         {
-                             'bucket': 'chromium',
-                             'builder': 'release',
-                             'status': 'SCHEDULED'
-                         },
-                         target_fields=metrics.GLOBAL_TARGET_FIELDS))
+        'chromium', 'release', model.BuildStatus.SCHEDULED, False
+    ).get_result()
+    self.assertEqual(
+        2,
+        metrics.BUILD_COUNT_PROD.get({
+            'bucket': 'chromium',
+            'builder': 'release',
+            'status': 'SCHEDULED',
+        },
+                                     target_fields=metrics.GLOBAL_TARGET_FIELDS)
+    )
 
   @mock.patch('components.utils.utcnow', autospec=True)
   def test_set_build_lease_latency(self, utcnow):
@@ -140,7 +142,8 @@ class MetricsTest(testing.AppengineTestCase):
             'builder': 'release',
             'must_be_never_leased': True,
         },
-        target_fields=metrics.GLOBAL_TARGET_FIELDS)
+        target_fields=metrics.GLOBAL_TARGET_FIELDS
+    )
     self.assertEqual(max_lease, 3 * 24 * 3600)
     max_start = metrics.MAX_AGE_SCHEDULED.get(
         {
@@ -148,7 +151,8 @@ class MetricsTest(testing.AppengineTestCase):
             'builder': 'release',
             'must_be_never_leased': False,
         },
-        target_fields=metrics.GLOBAL_TARGET_FIELDS)
+        target_fields=metrics.GLOBAL_TARGET_FIELDS
+    )
     self.assertEqual(max_start, 4 * 24 * 3600)
 
   def test_set_build_lease_latency_no_pending_builds(self):
@@ -160,7 +164,8 @@ class MetricsTest(testing.AppengineTestCase):
             'builder': 'release',
             'must_be_never_leased': True,
         },
-        target_fields=metrics.GLOBAL_TARGET_FIELDS)
+        target_fields=metrics.GLOBAL_TARGET_FIELDS
+    )
     self.assertEqual(max_lease, 0)
     max_start = metrics.MAX_AGE_SCHEDULED.get(
         {
@@ -168,13 +173,15 @@ class MetricsTest(testing.AppengineTestCase):
             'builder': 'release',
             'must_be_never_leased': False,
         },
-        target_fields=metrics.GLOBAL_TARGET_FIELDS)
+        target_fields=metrics.GLOBAL_TARGET_FIELDS
+    )
     self.assertEqual(max_start, 0)
 
   @mock.patch('metrics.set_build_latency', autospec=True)
   @mock.patch('metrics.set_build_count_metric_async', autospec=True)
-  def test_update_global_metrics(self, set_build_count_metric_async,
-                                 set_build_latency):
+  def test_update_global_metrics(
+      self, set_build_count_metric_async, set_build_latency
+  ):
     set_build_count_metric_async.return_value = future(None)
     set_build_latency.return_value = future(None)
 
@@ -189,13 +196,17 @@ class MetricsTest(testing.AppengineTestCase):
     set_build_latency.assert_any_call('luci.chromium.try', 'debug', False)
 
     set_build_count_metric_async.assert_any_call(
-        'luci.chromium.try', 'release', model.BuildStatus.SCHEDULED, False)
+        'luci.chromium.try', 'release', model.BuildStatus.SCHEDULED, False
+    )
     set_build_count_metric_async.assert_any_call(
-        'luci.chromium.try', 'release', model.BuildStatus.SCHEDULED, True)
+        'luci.chromium.try', 'release', model.BuildStatus.SCHEDULED, True
+    )
     set_build_count_metric_async.assert_any_call(
-        'luci.chromium.try', 'debug', model.BuildStatus.SCHEDULED, False)
+        'luci.chromium.try', 'debug', model.BuildStatus.SCHEDULED, False
+    )
     set_build_count_metric_async.assert_any_call(
-        'luci.chromium.try', 'debug', model.BuildStatus.SCHEDULED, True)
+        'luci.chromium.try', 'debug', model.BuildStatus.SCHEDULED, True
+    )
 
   def test_fields_for(self):
     build = model.Build(

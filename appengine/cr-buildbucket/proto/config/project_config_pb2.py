@@ -24,7 +24,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     ),
     dependencies=[
         google_dot_protobuf_dot_wrappers__pb2.DESCRIPTOR,
-    ])
+    ]
+)
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _TOGGLE = _descriptor.EnumDescriptor(
@@ -34,11 +35,14 @@ _TOGGLE = _descriptor.EnumDescriptor(
     file=DESCRIPTOR,
     values=[
         _descriptor.EnumValueDescriptor(
-            name='UNSET', index=0, number=0, options=None, type=None),
+            name='UNSET', index=0, number=0, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='YES', index=1, number=1, options=None, type=None),
+            name='YES', index=1, number=1, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='NO', index=2, number=2, options=None, type=None),
+            name='NO', index=2, number=2, options=None, type=None
+        ),
     ],
     containing_type=None,
     options=None,
@@ -59,11 +63,14 @@ _ACL_ROLE = _descriptor.EnumDescriptor(
     file=DESCRIPTOR,
     values=[
         _descriptor.EnumValueDescriptor(
-            name='READER', index=0, number=0, options=None, type=None),
+            name='READER', index=0, number=0, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='SCHEDULER', index=1, number=1, options=None, type=None),
+            name='SCHEDULER', index=1, number=1, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='WRITER', index=2, number=2, options=None, type=None),
+            name='WRITER', index=2, number=2, options=None, type=None
+        ),
     ],
     containing_type=None,
     options=None,
@@ -94,7 +101,8 @@ _ACL = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='group',
             full_name='buildbucket.Acl.group',
@@ -110,7 +118,8 @@ _ACL = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='identity',
             full_name='buildbucket.Acl.identity',
@@ -126,7 +135,8 @@ _ACL = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -164,7 +174,8 @@ _ACLSET = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='acls',
             full_name='buildbucket.AclSet.acls',
@@ -180,7 +191,8 @@ _ACLSET = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -216,7 +228,8 @@ _BUILDER_CACHEENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='path',
             full_name='buildbucket.Builder.CacheEntry.path',
@@ -232,7 +245,8 @@ _BUILDER_CACHEENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -268,7 +282,8 @@ _BUILDER_RECIPE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='name',
             full_name='buildbucket.Builder.Recipe.name',
@@ -284,7 +299,8 @@ _BUILDER_RECIPE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='cipd_package',
             full_name='buildbucket.Builder.Recipe.cipd_package',
@@ -300,7 +316,8 @@ _BUILDER_RECIPE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='cipd_version',
             full_name='buildbucket.Builder.Recipe.cipd_version',
@@ -316,7 +333,8 @@ _BUILDER_RECIPE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='properties',
             full_name='buildbucket.Builder.Recipe.properties',
@@ -332,7 +350,8 @@ _BUILDER_RECIPE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='properties_j',
             full_name='buildbucket.Builder.Recipe.properties_j',
@@ -348,7 +367,8 @@ _BUILDER_RECIPE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -384,7 +404,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='mixins',
             full_name='buildbucket.Builder.mixins',
@@ -400,7 +421,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='category',
             full_name='buildbucket.Builder.category',
@@ -416,7 +438,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='swarming_tags',
             full_name='buildbucket.Builder.swarming_tags',
@@ -432,7 +455,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='dimensions',
             full_name='buildbucket.Builder.dimensions',
@@ -448,7 +472,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='recipe',
             full_name='buildbucket.Builder.recipe',
@@ -464,7 +489,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='priority',
             full_name='buildbucket.Builder.priority',
@@ -480,7 +506,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='execution_timeout_secs',
             full_name='buildbucket.Builder.execution_timeout_secs',
@@ -496,7 +523,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='expiration_secs',
             full_name='buildbucket.Builder.expiration_secs',
@@ -512,7 +540,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='caches',
             full_name='buildbucket.Builder.caches',
@@ -528,7 +557,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='build_numbers',
             full_name='buildbucket.Builder.build_numbers',
@@ -544,7 +574,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='service_account',
             full_name='buildbucket.Builder.service_account',
@@ -560,7 +591,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='auto_builder_dimension',
             full_name='buildbucket.Builder.auto_builder_dimension',
@@ -576,7 +608,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='experimental',
             full_name='buildbucket.Builder.experimental',
@@ -592,7 +625,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='luci_migration_host',
             full_name='buildbucket.Builder.luci_migration_host',
@@ -608,7 +642,8 @@ _BUILDER = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[
@@ -647,7 +682,8 @@ _SWARMING = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='url_format',
             full_name='buildbucket.Swarming.url_format',
@@ -663,7 +699,8 @@ _SWARMING = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='builder_defaults',
             full_name='buildbucket.Swarming.builder_defaults',
@@ -679,7 +716,8 @@ _SWARMING = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='builders',
             full_name='buildbucket.Swarming.builders',
@@ -695,7 +733,8 @@ _SWARMING = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='task_template_canary_percentage',
             full_name='buildbucket.Swarming.task_template_canary_percentage',
@@ -711,7 +750,8 @@ _SWARMING = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -747,7 +787,8 @@ _BUCKET = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='acls',
             full_name='buildbucket.Bucket.acls',
@@ -763,7 +804,8 @@ _BUCKET = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='acl_sets',
             full_name='buildbucket.Bucket.acl_sets',
@@ -779,7 +821,8 @@ _BUCKET = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='swarming',
             full_name='buildbucket.Bucket.swarming',
@@ -795,7 +838,8 @@ _BUCKET = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -831,7 +875,8 @@ _BUILDBUCKETCFG = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='acl_sets',
             full_name='buildbucket.BuildbucketCfg.acl_sets',
@@ -847,7 +892,8 @@ _BUILDBUCKETCFG = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='builder_mixins',
             full_name='buildbucket.BuildbucketCfg.builder_mixins',
@@ -863,7 +909,8 @@ _BUILDBUCKETCFG = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -890,7 +937,8 @@ _BUILDER.fields_by_name['experimental'].enum_type = _TOGGLE
 _SWARMING.fields_by_name['builder_defaults'].message_type = _BUILDER
 _SWARMING.fields_by_name['builders'].message_type = _BUILDER
 _SWARMING.fields_by_name[
-    'task_template_canary_percentage'].message_type = google_dot_protobuf_dot_wrappers__pb2._UINT32VALUE
+    'task_template_canary_percentage'
+].message_type = google_dot_protobuf_dot_wrappers__pb2._UINT32VALUE
 _BUCKET.fields_by_name['acls'].message_type = _ACL
 _BUCKET.fields_by_name['swarming'].message_type = _SWARMING
 _BUILDBUCKETCFG.fields_by_name['buckets'].message_type = _BUCKET
@@ -911,7 +959,8 @@ Acl = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_ACL,
         __module__='project_config_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.Acl)
-    ))
+    )
+)
 _sym_db.RegisterMessage(Acl)
 
 AclSet = _reflection.GeneratedProtocolMessageType(
@@ -921,7 +970,8 @@ AclSet = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_ACLSET,
         __module__='project_config_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.AclSet)
-    ))
+    )
+)
 _sym_db.RegisterMessage(AclSet)
 
 Builder = _reflection.GeneratedProtocolMessageType(
@@ -935,7 +985,8 @@ Builder = _reflection.GeneratedProtocolMessageType(
                 DESCRIPTOR=_BUILDER_CACHEENTRY,
                 __module__='project_config_pb2'
                 # @@protoc_insertion_point(class_scope:buildbucket.Builder.CacheEntry)
-            )),
+            )
+        ),
         Recipe=_reflection.GeneratedProtocolMessageType(
             'Recipe',
             (_message.Message,),
@@ -943,11 +994,13 @@ Builder = _reflection.GeneratedProtocolMessageType(
                 DESCRIPTOR=_BUILDER_RECIPE,
                 __module__='project_config_pb2'
                 # @@protoc_insertion_point(class_scope:buildbucket.Builder.Recipe)
-            )),
+            )
+        ),
         DESCRIPTOR=_BUILDER,
         __module__='project_config_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.Builder)
-    ))
+    )
+)
 _sym_db.RegisterMessage(Builder)
 _sym_db.RegisterMessage(Builder.CacheEntry)
 _sym_db.RegisterMessage(Builder.Recipe)
@@ -959,7 +1012,8 @@ Swarming = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_SWARMING,
         __module__='project_config_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.Swarming)
-    ))
+    )
+)
 _sym_db.RegisterMessage(Swarming)
 
 Bucket = _reflection.GeneratedProtocolMessageType(
@@ -969,7 +1023,8 @@ Bucket = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_BUCKET,
         __module__='project_config_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.Bucket)
-    ))
+    )
+)
 _sym_db.RegisterMessage(Bucket)
 
 BuildbucketCfg = _reflection.GeneratedProtocolMessageType(
@@ -979,11 +1034,13 @@ BuildbucketCfg = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_BUILDBUCKETCFG,
         __module__='project_config_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.BuildbucketCfg)
-    ))
+    )
+)
 _sym_db.RegisterMessage(BuildbucketCfg)
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(
     descriptor_pb2.FileOptions(),
-    _b('Z6go.chromium.org/luci/buildbucket/proto/config;configpb'))
+    _b('Z6go.chromium.org/luci/buildbucket/proto/config;configpb')
+)
 # @@protoc_insertion_point(module_scope)

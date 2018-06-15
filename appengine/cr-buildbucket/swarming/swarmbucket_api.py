@@ -23,12 +23,14 @@ import errors
 import sequence
 
 
-def swarmbucket_api_method(request_message_class, response_message_class,
-                           **kwargs):
+def swarmbucket_api_method(
+    request_message_class, response_message_class, **kwargs
+):
   """Defines a swarmbucket API method."""
 
-  endpoints_decorator = auth.endpoints_method(request_message_class,
-                                              response_message_class, **kwargs)
+  endpoints_decorator = auth.endpoints_method(
+      request_message_class, response_message_class, **kwargs
+  )
 
   def decorator(fn):
     fn = auth.public(fn)
@@ -82,7 +84,8 @@ class SetNextBuildNumberRequest(messages.Message):
 
 
 @auth.endpoints_api(
-    name='swarmbucket', version='v1', title='Buildbucket-Swarming integration')
+    name='swarmbucket', version='v1', title='Buildbucket-Swarming integration'
+)
 class SwarmbucketApi(remote.Service):
   """API specific to swarmbucket."""
 
@@ -93,7 +96,8 @@ class SwarmbucketApi(remote.Service):
       ),
       GetBuildersResponseMessage,
       path='builders',
-      http_method='GET')
+      http_method='GET'
+  )
   def get_builders(self, request):
     """Returns defined swarmbucket builders.
 
@@ -102,7 +106,8 @@ class SwarmbucketApi(remote.Service):
     if request.bucket:
       if len(request.bucket) > 100:
         raise endpoints.BadRequestException(
-            'Number of buckets cannot be greater than 100')
+            'Number of buckets cannot be greater than 100'
+        )
       # Buckets were specified explicitly.
       # Filter out inaccessible ones.
       bucket_names = [b for b in request.bucket if acl.can_access_bucket(b)]
@@ -124,41 +129,49 @@ class SwarmbucketApi(remote.Service):
                       name=builder.name,
                       category=builder.category,
                       properties_json=json.dumps(
-                          swarmingcfg.read_properties(builder.recipe)),
+                          swarmingcfg.read_properties(builder.recipe)
+                      ),
                       swarming_dimensions=[
                           '%s:%s' % (k, v)
                           for k, v in swarmingcfg.read_dimensions(builder)
-                      ])
+                      ]
+                  )
                   for builder in bucket.swarming.builders
               ],
               swarming_hostname=bucket.swarming.hostname,
-          ))
+          )
+      )
     return res
 
-  @swarmbucket_api_method(GetTaskDefinitionRequestMessage,
-                          GetTaskDefinitionResponseMessage)
+  @swarmbucket_api_method(
+      GetTaskDefinitionRequestMessage, GetTaskDefinitionResponseMessage
+  )
   def get_task_def(self, request):
     """Returns a swarming task definition for a build request."""
     try:
       build_request = api.put_request_message_to_build_request(
-          request.build_request)
+          request.build_request
+      )
       build_request = build_request.normalize()
 
       identity = auth.get_current_identity()
       if not acl.can_view_build(build_request):
         raise endpoints.ForbiddenException(
-            '%s cannot view builds in bucket %s' % (identity,
-                                                    build_request.bucket))
+            '%s cannot view builds in bucket %s' %
+            (identity, build_request.bucket)
+        )
 
       build = build_request.create_build(1, identity, utils.utcnow())
       task_def = swarming.prepare_task_def_async(
-          build, build_number=0, fake_build=True).get_result()
+          build, build_number=0, fake_build=True
+      ).get_result()
       task_def_json = json.dumps(task_def)
 
       return GetTaskDefinitionResponseMessage(task_definition=task_def_json)
     except errors.InvalidInputError as ex:
       raise endpoints.BadRequestException(
-          'invalid build request: %s' % ex.message)
+          'invalid build request: %s' % ex.message
+      )
     except errors.BuilderNotFoundError as ex:
       raise endpoints.NotFoundException(ex.message)
 
@@ -171,8 +184,9 @@ class SwarmbucketApi(remote.Service):
 
     if not any(b.name == request.builder for b in bucket.swarming.builders):
       raise endpoints.BadRequestException(
-          'builder "%s" not found in bucket "%s"' % (request.builder,
-                                                     request.bucket))
+          'builder "%s" not found in bucket "%s"' %
+          (request.builder, request.bucket)
+      )
 
     seq_name = sequence.builder_seq_name(request.bucket, request.builder)
     try:

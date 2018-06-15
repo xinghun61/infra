@@ -34,9 +34,7 @@ class IsolateTest(testing.AppengineTestCase):
         method='POST',
         payload={
             'digest': self.loc.digest,
-            'namespace': {
-                'namespace': self.loc.namespace
-            },
+            'namespace': {'namespace': self.loc.namespace},
         },
         scopes=net.EMAIL_SCOPE,
     )

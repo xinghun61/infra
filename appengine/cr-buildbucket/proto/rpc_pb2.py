@@ -27,7 +27,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
         google_dot_protobuf_dot_field__mask__pb2.DESCRIPTOR,
         common__pb2.DESCRIPTOR,
         build__pb2.DESCRIPTOR,
-    ])
+    ]
+)
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _GETBUILDREQUEST = _descriptor.Descriptor(
@@ -52,7 +53,8 @@ _GETBUILDREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='builder',
             full_name='buildbucket.v2.GetBuildRequest.builder',
@@ -68,7 +70,8 @@ _GETBUILDREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='build_number',
             full_name='buildbucket.v2.GetBuildRequest.build_number',
@@ -84,7 +87,8 @@ _GETBUILDREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='fields',
             full_name='buildbucket.v2.GetBuildRequest.fields',
@@ -100,7 +104,8 @@ _GETBUILDREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -136,7 +141,8 @@ _SEARCHBUILDSREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='fields',
             full_name='buildbucket.v2.SearchBuildsRequest.fields',
@@ -152,7 +158,8 @@ _SEARCHBUILDSREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='page_size',
             full_name='buildbucket.v2.SearchBuildsRequest.page_size',
@@ -168,7 +175,8 @@ _SEARCHBUILDSREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='page_token',
             full_name='buildbucket.v2.SearchBuildsRequest.page_token',
@@ -184,7 +192,8 @@ _SEARCHBUILDSREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -220,7 +229,8 @@ _SEARCHBUILDSRESPONSE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='next_page_token',
             full_name='buildbucket.v2.SearchBuildsResponse.next_page_token',
@@ -236,7 +246,8 @@ _SEARCHBUILDSRESPONSE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -272,7 +283,8 @@ _BUILDPREDICATE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='status',
             full_name='buildbucket.v2.BuildPredicate.status',
@@ -288,7 +300,8 @@ _BUILDPREDICATE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='gerrit_changes',
             full_name='buildbucket.v2.BuildPredicate.gerrit_changes',
@@ -304,7 +317,8 @@ _BUILDPREDICATE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='created_by',
             full_name='buildbucket.v2.BuildPredicate.created_by',
@@ -320,7 +334,8 @@ _BUILDPREDICATE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='tags',
             full_name='buildbucket.v2.BuildPredicate.tags',
@@ -336,7 +351,8 @@ _BUILDPREDICATE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='create_time',
             full_name='buildbucket.v2.BuildPredicate.create_time',
@@ -352,7 +368,8 @@ _BUILDPREDICATE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='include_experimental',
             full_name='buildbucket.v2.BuildPredicate.include_experimental',
@@ -368,7 +385,8 @@ _BUILDPREDICATE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -384,18 +402,20 @@ _BUILDPREDICATE = _descriptor.Descriptor(
 
 _GETBUILDREQUEST.fields_by_name['builder'].message_type = build__pb2._BUILDERID
 _GETBUILDREQUEST.fields_by_name[
-    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+    'fields'
+].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _SEARCHBUILDSREQUEST.fields_by_name['predicate'].message_type = _BUILDPREDICATE
 _SEARCHBUILDSREQUEST.fields_by_name[
-    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+    'fields'
+].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _SEARCHBUILDSRESPONSE.fields_by_name['builds'].message_type = build__pb2._BUILD
 _BUILDPREDICATE.fields_by_name['builder'].message_type = build__pb2._BUILDERID
 _BUILDPREDICATE.fields_by_name['status'].enum_type = common__pb2._STATUS
-_BUILDPREDICATE.fields_by_name[
-    'gerrit_changes'].message_type = common__pb2._GERRITCHANGE
+_BUILDPREDICATE.fields_by_name['gerrit_changes'
+                              ].message_type = common__pb2._GERRITCHANGE
 _BUILDPREDICATE.fields_by_name['tags'].message_type = common__pb2._STRINGPAIR
-_BUILDPREDICATE.fields_by_name[
-    'create_time'].message_type = common__pb2._TIMERANGE
+_BUILDPREDICATE.fields_by_name['create_time'
+                              ].message_type = common__pb2._TIMERANGE
 DESCRIPTOR.message_types_by_name['GetBuildRequest'] = _GETBUILDREQUEST
 DESCRIPTOR.message_types_by_name['SearchBuildsRequest'] = _SEARCHBUILDSREQUEST
 DESCRIPTOR.message_types_by_name['SearchBuildsResponse'] = _SEARCHBUILDSRESPONSE
@@ -408,7 +428,8 @@ GetBuildRequest = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_GETBUILDREQUEST,
         __module__='rpc_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.GetBuildRequest)
-    ))
+    )
+)
 _sym_db.RegisterMessage(GetBuildRequest)
 
 SearchBuildsRequest = _reflection.GeneratedProtocolMessageType(
@@ -418,7 +439,8 @@ SearchBuildsRequest = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_SEARCHBUILDSREQUEST,
         __module__='rpc_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.SearchBuildsRequest)
-    ))
+    )
+)
 _sym_db.RegisterMessage(SearchBuildsRequest)
 
 SearchBuildsResponse = _reflection.GeneratedProtocolMessageType(
@@ -428,7 +450,8 @@ SearchBuildsResponse = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_SEARCHBUILDSRESPONSE,
         __module__='rpc_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.SearchBuildsResponse)
-    ))
+    )
+)
 _sym_db.RegisterMessage(SearchBuildsResponse)
 
 BuildPredicate = _reflection.GeneratedProtocolMessageType(
@@ -438,11 +461,13 @@ BuildPredicate = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_BUILDPREDICATE,
         __module__='rpc_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.BuildPredicate)
-    ))
+    )
+)
 _sym_db.RegisterMessage(BuildPredicate)
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(
     descriptor_pb2.FileOptions(),
-    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'))
+    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb')
+)
 # @@protoc_insertion_point(module_scope)

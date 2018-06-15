@@ -104,14 +104,15 @@ FILE_DESCRIPTOR_SET.ParseFromString(
             'Fe1NXhXtTVUb2oq/HGLACw9fg/9EkVJEZv6Xr+3zLg/Q5tFyJDS7xUjr99wSzhzOtTt8W3l/vi'
             'cyTrxHPa4psUipB9/J7FotZLaj9FaNju43fm+PMM9bmV+i6CPgXwRIoTqhxYfoBDPaXUdwLqox'
             'DgBfBhfnLkyQwdf9BguS1bJSzqhwlbnhcXlX6vxTcsf2HkT1MWow/0z5lPlJj4w5PPG+DdomJD'
-            'lpfAyT6t3seTCVnQQu/gG7sV8v0f/mg/8Vn6Xcy5VYb9v6opAjQ=')))
+            'lpfAyT6t3seTCVnQQu/gG7sV8v0f/mg/8Vn6Xcy5VYb9v6opAjQ='
+        )
+    )
+)
 _INDEX = {
     f.name: {
         'descriptor': f,
-        'services': {s.name: s
-                     for s in f.service},
-    }
-    for f in FILE_DESCRIPTOR_SET.file
+        'services': {s.name: s for s in f.service},
+    } for f in FILE_DESCRIPTOR_SET.file
 }
 
 AccessServiceDescription = {

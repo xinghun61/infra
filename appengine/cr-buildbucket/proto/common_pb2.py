@@ -24,7 +24,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     ),
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
-    ])
+    ]
+)
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _STATUS = _descriptor.EnumDescriptor(
@@ -38,21 +39,29 @@ _STATUS = _descriptor.EnumDescriptor(
             index=0,
             number=0,
             options=None,
-            type=None),
+            type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='SCHEDULED', index=1, number=1, options=None, type=None),
+            name='SCHEDULED', index=1, number=1, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='STARTED', index=2, number=2, options=None, type=None),
+            name='STARTED', index=2, number=2, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='ENDED_MASK', index=3, number=4, options=None, type=None),
+            name='ENDED_MASK', index=3, number=4, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='SUCCESS', index=4, number=12, options=None, type=None),
+            name='SUCCESS', index=4, number=12, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='FAILURE', index=5, number=20, options=None, type=None),
+            name='FAILURE', index=5, number=20, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='INFRA_FAILURE', index=6, number=36, options=None, type=None),
+            name='INFRA_FAILURE', index=6, number=36, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='CANCELED', index=7, number=68, options=None, type=None),
+            name='CANCELED', index=7, number=68, options=None, type=None
+        ),
     ],
     containing_type=None,
     options=None,
@@ -93,7 +102,8 @@ _GERRITCHANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='project',
             full_name='buildbucket.v2.GerritChange.project',
@@ -109,7 +119,8 @@ _GERRITCHANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='change',
             full_name='buildbucket.v2.GerritChange.change',
@@ -125,7 +136,8 @@ _GERRITCHANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='patchset',
             full_name='buildbucket.v2.GerritChange.patchset',
@@ -141,7 +153,8 @@ _GERRITCHANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -177,7 +190,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='project',
             full_name='buildbucket.v2.GitilesCommit.project',
@@ -193,7 +207,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='id',
             full_name='buildbucket.v2.GitilesCommit.id',
@@ -209,7 +224,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='ref',
             full_name='buildbucket.v2.GitilesCommit.ref',
@@ -225,7 +241,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -261,7 +278,8 @@ _STRINGPAIR = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='value',
             full_name='buildbucket.v2.StringPair.value',
@@ -277,7 +295,8 @@ _STRINGPAIR = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -313,7 +332,8 @@ _TIMERANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='end_time',
             full_name='buildbucket.v2.TimeRange.end_time',
@@ -329,7 +349,8 @@ _TIMERANGE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -344,9 +365,11 @@ _TIMERANGE = _descriptor.Descriptor(
 )
 
 _TIMERANGE.fields_by_name[
-    'start_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'start_time'
+].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _TIMERANGE.fields_by_name[
-    'end_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'end_time'
+].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 DESCRIPTOR.message_types_by_name['GerritChange'] = _GERRITCHANGE
 DESCRIPTOR.message_types_by_name['GitilesCommit'] = _GITILESCOMMIT
 DESCRIPTOR.message_types_by_name['StringPair'] = _STRINGPAIR
@@ -360,7 +383,8 @@ GerritChange = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_GERRITCHANGE,
         __module__='common_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.GerritChange)
-    ))
+    )
+)
 _sym_db.RegisterMessage(GerritChange)
 
 GitilesCommit = _reflection.GeneratedProtocolMessageType(
@@ -370,7 +394,8 @@ GitilesCommit = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_GITILESCOMMIT,
         __module__='common_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.GitilesCommit)
-    ))
+    )
+)
 _sym_db.RegisterMessage(GitilesCommit)
 
 StringPair = _reflection.GeneratedProtocolMessageType(
@@ -380,7 +405,8 @@ StringPair = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_STRINGPAIR,
         __module__='common_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.StringPair)
-    ))
+    )
+)
 _sym_db.RegisterMessage(StringPair)
 
 TimeRange = _reflection.GeneratedProtocolMessageType(
@@ -390,11 +416,13 @@ TimeRange = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_TIMERANGE,
         __module__='common_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.TimeRange)
-    ))
+    )
+)
 _sym_db.RegisterMessage(TimeRange)
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(
     descriptor_pb2.FileOptions(),
-    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'))
+    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb')
+)
 # @@protoc_insertion_point(module_scope)

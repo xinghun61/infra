@@ -32,8 +32,10 @@ import notifications
 import service
 import swarming
 
-README_MD = ('https://chromium.googlesource.com/infra/infra/+/master/'
-             'appengine/cr-buildbucket/README.md')
+README_MD = (
+    'https://chromium.googlesource.com/infra/infra/+/master/'
+    'appengine/cr-buildbucket/README.md'
+)
 
 
 class MainHandler(webapp2.RequestHandler):  # pragma: no cover
@@ -101,14 +103,17 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       return
     # Do not require -key index by using created_time index.
     last, = (
-        model.Build.query().order(model.Build.create_time).fetch(
-            1, keys_only=True))
+        model.Build.query().order(model.Build.create_time
+                                 ).fetch(1, keys_only=True)
+    )
     space_start, space_end = first.id(), last.id() + 1
     space_size = space_end - space_start
     seg_size = max(1, int(math.ceil(space_size / shards)))
 
-    logging.info('build space [%d..%d), size %d, %d shards, segment size %d',
-                 space_start, space_end, space_size, shards, seg_size)
+    logging.info(
+        'build space [%d..%d), size %d, %d shards, segment size %d',
+        space_start, space_end, space_size, shards, seg_size
+    )
 
     next_seg_start = space_start
     tasks = []
@@ -116,16 +121,18 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       seg_start = next_seg_start
       seg_end = min(space_end, seg_start + seg_size)
       next_seg_start = seg_end
-      tasks.append((None, 'tag:{tag}-seg:{seg_index}-percent:0', {
-          'action': 'segment',
-          'tag': tag,
-          'job_id': self.request.headers['X-AppEngine-TaskName'],
-          'iteration': 0,
-          'seg_index': len(tasks),
-          'seg_start': seg_start,
-          'seg_end': seg_end,
-          'started_ts': utils.datetime_to_timestamp(utils.utcnow()),
-      }))
+      tasks.append((
+          None, 'tag:{tag}-seg:{seg_index}-percent:0', {
+              'action': 'segment',
+              'tag': tag,
+              'job_id': self.request.headers['X-AppEngine-TaskName'],
+              'iteration': 0,
+              'seg_index': len(tasks),
+              'seg_start': seg_start,
+              'seg_end': seg_end,
+              'started_ts': utils.datetime_to_timestamp(utils.utcnow()),
+          }
+      ))
     self._recurse(tasks)
     logging.info('enqueued %d segment tasks for tag %s', len(tasks), tag)
 
@@ -158,7 +165,8 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
     start_from = payload.get('start_from', payload['seg_start'])
     q = model.Build.query(
         model.Build.key >= ndb.Key(model.Build, start_from),
-        model.Build.key < ndb.Key(model.Build, payload['seg_end']))
+        model.Build.key < ndb.Key(model.Build, payload['seg_end'])
+    )
     iterator = q.iter()
 
     entry_count = 0
@@ -176,13 +184,15 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
         if k == payload['tag']:
           new_entries[v].append([b.bucket, b.key.id()])
           entry_count += 1
-    logging.info('collected %d entries from %d builds', entry_count,
-                 build_count)
+    logging.info(
+        'collected %d entries from %d builds', entry_count, build_count
+    )
 
     if new_entries:  # pragma: no branch
       logging.info(
           'enqueuing a task to flush %d tag entries in %d TagIndex entities...',
-          entry_count, len(new_entries))
+          entry_count, len(new_entries)
+      )
       flush_payload = {
           'action': 'flush',
           'tag': payload['tag'],
@@ -210,8 +220,10 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       return
 
     started_time = utils.timestamp_to_datetime(payload['started_ts'])
-    logging.info('segment %d is done in %s', payload['seg_index'],
-                 utils.utcnow() - started_time)
+    logging.info(
+        'segment %d is done in %s', payload['seg_index'],
+        utils.utcnow() - started_time
+    )
 
   def flush(self, payload):
     """Saves new tag index entries.
@@ -221,13 +233,16 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       new_entries: a dict {tag_value: [[bucket, id}]]} of new index entries to
         add. Required.
     """
-    logging.info('flushing %d tag entries in %d TagIndex entities',
-                 sum(len(es) for es in payload['new_entries'].itervalues()),
-                 len(payload['new_entries']))
+    logging.info(
+        'flushing %d tag entries in %d TagIndex entities',
+        sum(len(es) for es in payload['new_entries'].itervalues()),
+        len(payload['new_entries'])
+    )
 
     futs = [
-        self._add_index_entries_async(payload['tag'] + ':' + tag_value, entries)
-        for tag_value, entries in payload['new_entries'].iteritems()
+        self._add_index_entries_async(
+            payload['tag'] + ':' + tag_value, entries
+        ) for tag_value, entries in payload['new_entries'].iteritems()
     ]
     ndb.Future.wait_all(futs)
 
@@ -242,8 +257,10 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
         updated += 1
     logging.info('updated %d TagIndex entities', updated)
     if retry_entries:
-      logging.warning('failed to update %d TagIndex entities, retrying...',
-                      len(retry_entries))
+      logging.warning(
+          'failed to update %d TagIndex entities, retrying...',
+          len(retry_entries)
+      )
       p = payload.copy()
       p['new_entries'] = retry_entries
       self._recurse([(None, 'tag:{tag}-flush', p)])
@@ -261,16 +278,18 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
     for bucket, build_id in entries:
       if build_id not in existing:
         if len(idx.entries) >= model.TagIndex.MAX_ENTRY_COUNT:
-          logging.warning(
-              ('refusing to store more than %d entries in TagIndex(%s); '
-               'marking as incomplete.'), model.TagIndex.MAX_ENTRY_COUNT, tag)
+          logging.warning((
+              'refusing to store more than %d entries in TagIndex(%s); '
+              'marking as incomplete.'
+          ), model.TagIndex.MAX_ENTRY_COUNT, tag)
           idx.permanently_incomplete = True
           idx.entries = []
           yield idx.put_async()
           raise ndb.Return(True)
 
         idx.entries.append(
-            model.TagIndexEntry(bucket=bucket, build_id=build_id))
+            model.TagIndexEntry(bucket=bucket, build_id=build_id)
+        )
         added = True
     if not added:
       raise ndb.Return(False)
@@ -297,10 +316,11 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       name = name_fmt and name_fmt.format(**payload)
       path_suffix = path_suffix_fmt.format(**payload)
       assert '/' not in path_suffix
-      tasks.append((name,
-                    posixpath.join(
-                        posixpath.dirname(self.request.path), path_suffix),
-                    utils.encode_to_json(payload)))
+      tasks.append((
+          name,
+          posixpath.join(posixpath.dirname(self.request.path), path_suffix),
+          utils.encode_to_json(payload)
+      ))
       if len(tasks) > 90:
         # enqueue_tasks accepts up to 100
         enqueue_tasks(queue_name, tasks)
@@ -346,7 +366,8 @@ def get_frontend_routes():  # pragma: no cover
   routes.extend(endpoints_webapp2.api_routes(endpoints_services))
   # /api routes should be removed once clients are hitting /_ah/api.
   routes.extend(
-      endpoints_webapp2.api_routes(endpoints_services, base_path='/api'))
+      endpoints_webapp2.api_routes(endpoints_services, base_path='/api')
+  )
 
   prpc_server = prpc.Server()
   prpc_server.add_interceptor(auth.prpc_interceptor)

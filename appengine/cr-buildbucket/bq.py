@@ -1,6 +1,7 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """Implements export of builds from datastore to BigQuery."""
 
 import datetime
@@ -37,11 +38,10 @@ def enqueue_bq_export_async(build):  # pragma: no cover
   assert build
   assert build.status == model.BuildStatus.COMPLETED
 
-  yield enqueue_pull_task_async('bq-export-experimental'
-                                if build.experimental else 'bq-export-prod',
-                                json.dumps({
-                                    'id': build.key.id()
-                                }))
+  yield enqueue_pull_task_async(
+      'bq-export-experimental' if build.experimental else 'bq-export-prod',
+      json.dumps({'id': build.key.id()})
+  )
 
 
 class CronExportBuilds(webapp2.RequestHandler):  # pragma: no cover
@@ -130,8 +130,9 @@ def _process_pull_task_batch(queue_name, dataset):
       t for bid, t in zip(build_ids, tasks) if bid not in ids_to_retry
   ]
   q.delete_tasks(done_tasks)
-  logging.info('inserted %d rows, processed %d tasks', row_count,
-               len(done_tasks))
+  logging.info(
+      'inserted %d rows, processed %d tasks', row_count, len(done_tasks)
+  )
 
 
 def _build_to_v2(bid, build, build_ann):
@@ -174,9 +175,10 @@ def _export_builds(dataset, v2_builds, deadline):
   # https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
   logging.info('sending %d rows', len(v2_builds))
   res = net.json_request(
-      url=(('https://www.googleapis.com/bigquery/v2/'
-            'projects/%s/datasets/%s/tables/%s/insertAll') %
-           (app_identity.get_application_id(), dataset, table_name)),
+      url=((
+          'https://www.googleapis.com/bigquery/v2/'
+          'projects/%s/datasets/%s/tables/%s/insertAll'
+      ) % (app_identity.get_application_id(), dataset, table_name)),
       method='POST',
       payload={
           'kind':

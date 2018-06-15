@@ -19,6 +19,7 @@ import errors
 class Error(Exception):
   """Raised on validation errors."""
 
+
 ################################################################################
 # Validation of common.proto messages.
 # The order of functions must match the order of messages in common.proto.
@@ -95,6 +96,7 @@ def validate_build_predicate(predicate):
 
 ################################################################################
 # Internals.
+
 
 def _validate_paged_request(req):
   """Validates req.page_size."""

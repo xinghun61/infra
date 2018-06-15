@@ -8,10 +8,11 @@ import os
 import sys
 
 REPO_ROOT_DIR = os.path.abspath(
-    os.path.join(os.path.realpath(__file__), '..', '..', '..', '..'))
-sys.path.insert(0,
-                os.path.join(REPO_ROOT_DIR, 'luci', 'appengine',
-                             'third_party_local'))
+    os.path.join(os.path.realpath(__file__), '..', '..', '..', '..')
+)
+sys.path.insert(
+    0, os.path.join(REPO_ROOT_DIR, 'luci', 'appengine', 'third_party_local')
+)
 
 from components import auth
 from components import utils
@@ -43,7 +44,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     auth.disable_process_cache()
 
     self.patch(
-        'components.utils.utcnow', return_value=datetime.datetime(2017, 1, 1))
+        'components.utils.utcnow', return_value=datetime.datetime(2017, 1, 1)
+    )
     self.future_date = utils.utcnow() + datetime.timedelta(days=1)
     # future_ts is str because INT64 values are formatted as strings.
     self.future_ts = str(utils.datetime_to_timestamp(self.future_date))
@@ -83,8 +85,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.assertEqual(resp['build']['bucket'], self.test_build.bucket)
     self.assertEqual(resp['build']['lease_expiration_ts'], self.future_ts)
     self.assertEqual(resp['build']['status'], 'SCHEDULED')
-    self.assertEqual(resp['build']['parameters_json'],
-                     '{"buildername": "linux_rel"}')
+    self.assertEqual(
+        resp['build']['parameters_json'], '{"buildername": "linux_rel"}'
+    )
 
   @mock.patch('service.get', autospec=True)
   def test_get_auth_error(self, get):
@@ -110,7 +113,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
             'topic': 'projects/foo/topic/bar',
             'user_data': 'hello',
             'auth_token': 'secret',
-        }
+        },
     }
     resp = self.call_api('put', req).json_body
     add.assert_called_once_with(
@@ -124,7 +127,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
                 user_data='hello',
                 auth_token='secret',
             ),
-        ))
+        )
+    )
     self.assertEqual(resp['build']['id'], str(self.test_build.key.id()))
     self.assertEqual(resp['build']['bucket'], req['bucket'])
     self.assertEqual(resp['build']['tags'], req['tags'])
@@ -154,9 +158,11 @@ class EndpointsApiTest(testing.EndpointsTestCase):
             project=self.test_bucket.project_id,
             lease_expiration_date=self.future_date,
             tags=[],
-        ))
-    self.assertEqual(resp['build']['lease_expiration_ts'],
-                     req['lease_expiration_ts'])
+        )
+    )
+    self.assertEqual(
+        resp['build']['lease_expiration_ts'], req['lease_expiration_ts']
+    )
 
   def test_put_with_malformed_parameters_json(self):
     req = {
@@ -185,7 +191,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
             'topic': 'projects/foo/topic/bar',
             'user_data': 'hello',
             'auth_token': 'secret',
-        }
+        },
     }
     resp = self.call_api('retry', req).json_body
     retry.assert_called_once_with(
@@ -201,7 +207,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.assertEqual(resp['build']['id'], str(build.key.id()))
     self.assertEqual(resp['build']['bucket'], build.bucket)
     self.assertEqual(
-        json.loads(resp['build']['parameters_json']), build.parameters)
+        json.loads(resp['build']['parameters_json']), build.parameters
+    )
     self.assertEqual(resp['build']['retry_of'], '2')
 
   @mock.patch('service.retry', autospec=True)
@@ -225,9 +232,10 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         config_content_binary="something",
     ).put()
 
-    add_many_async.return_value = future(
-        [(self.test_build, None), (build2, None),
-         (None, errors.InvalidInputError('Just bad'))])
+    add_many_async.return_value = future([
+        (self.test_build,
+         None), (build2, None), (None, errors.InvalidInputError('Just bad'))
+    ])
     req = {
         'builds': [
             {
@@ -282,19 +290,15 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.assertEqual(
         res2, {
             'client_operation_id': '2',
-            'error': {
-                'reason': 'INVALID_INPUT',
-                'message': 'Just bad'
-            },
-        })
+            'error': {'reason': 'INVALID_INPUT', 'message': 'Just bad'},
+        }
+    )
 
   @mock.patch('service.add_many_async', autospec=True)
   def test_put_batch_with_exception(self, add_many_async):
     add_many_async.return_value = future([(None, Exception())])
     req = {
-        'builds': [{
-            'bucket': 'chromium'
-        }],
+        'builds': [{'bucket': 'chromium'}],
     }
     self.call_api('put_batch', req, status=500)
 
@@ -337,7 +341,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
             canary=True,
             create_time_low=time_low,
             create_time_high=time_high,
-        ))
+        )
+    )
     self.assertEqual(len(res['builds']), 1)
     self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')
@@ -380,8 +385,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.assertIsNone(res.get('error'))
     self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
     self.assertEqual(res['build']['lease_key'], str(self.test_build.lease_key))
-    self.assertEqual(res['build']['lease_expiration_ts'],
-                     req['lease_expiration_ts'])
+    self.assertEqual(
+        res['build']['lease_expiration_ts'], req['lease_expiration_ts']
+    )
 
   def test_lease_with_negative_expiration_date(self):
     req = {
@@ -427,8 +433,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         'canary': True,
     }
     res = self.call_api('start', req).json_body
-    start.assert_called_once_with(req['id'], req['lease_key'], req['url'],
-                                  req['canary'])
+    start.assert_called_once_with(
+        req['id'], req['lease_key'], req['url'], req['canary']
+    )
     self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(res['build']['url'], req['url'])
 
@@ -454,8 +461,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         'lease_expiration_ts': self.future_ts,
     }
     res = self.call_api('heartbeat', req).json_body
-    heartbeat.assert_called_once_with(req['id'], req['lease_key'],
-                                      self.future_date)
+    heartbeat.assert_called_once_with(
+        req['id'], req['lease_key'], self.future_date
+    )
     self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(
         res['build']['lease_expiration_ts'],
@@ -471,9 +479,10 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         lease_expiration_date=self.future_date,
     )
 
-    heartbeat_batch.return_value = [(self.test_build.key.id(), self.test_build,
-                                     None), (build2.key.id(), None,
-                                             errors.LeaseExpiredError())]
+    heartbeat_batch.return_value = [
+        (self.test_build.key.id(), self.test_build,
+         None), (build2.key.id(), None, errors.LeaseExpiredError())
+    ]
     req = {
         'heartbeats': [{
             'build_id': self.test_build.key.id(),
@@ -508,8 +517,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
   def test_heartbeat_batch_with_internal_server_error(self, heartbeat_batch):
     self.test_build.lease_expiration_date = self.future_date
 
-    heartbeat_batch.return_value = [(self.test_build.key.id(), None,
-                                     ValueError())]
+    heartbeat_batch.return_value = [
+        (self.test_build.key.id(), None, ValueError())
+    ]
     req = {
         'heartbeats': [{
             'build_id': self.test_build.key.id(),
@@ -535,7 +545,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         req['lease_key'],
         result_details=None,
         url=None,
-        new_tags=['bot_id:bot42'])
+        new_tags=['bot_id:bot42']
+    )
     self.assertEqual(int(res['build']['id']), req['id'])
 
   @mock.patch('service.succeed', autospec=True)
@@ -551,8 +562,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     res = self.call_api('succeed', req).json_body
     _, kwargs = service.succeed.call_args
     self.assertEqual(kwargs['result_details'], self.test_build.result_details)
-    self.assertEqual(res['build']['result_details_json'],
-                     req['result_details_json'])
+    self.assertEqual(
+        res['build']['result_details_json'], req['result_details_json']
+    )
     self.assertIn('bot_id:bot42', res['build']['tags'])
 
   ####### FAIL #################################################################
@@ -577,11 +589,13 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         result_details=self.test_build.result_details,
         failure_reason=model.FailureReason.INFRA_FAILURE,
         url=None,
-        new_tags=['bot_id:bot42'])
+        new_tags=['bot_id:bot42']
+    )
     self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(res['build']['failure_reason'], req['failure_reason'])
-    self.assertEqual(res['build']['result_details_json'],
-                     req['result_details_json'])
+    self.assertEqual(
+        res['build']['result_details_json'], req['result_details_json']
+    )
 
   ####### CANCEL ###############################################################
 
@@ -605,9 +619,11 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     }
     res = self.call_api('cancel', req).json_body
     cancel.assert_called_once_with(
-        req['id'], result_details=self.test_build.result_details)
-    self.assertEqual(res['build']['result_details_json'],
-                     req['result_details_json'])
+        req['id'], result_details=self.test_build.result_details
+    )
+    self.assertEqual(
+        res['build']['result_details_json'], req['result_details_json']
+    )
 
   def test_cancel_bad_details(self):
     req = {
@@ -633,7 +649,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.assertEqual(int(res0['build_id']), self.test_build.key.id())
     self.assertEqual(int(res0['build']['id']), self.test_build.key.id())
     cancel.assert_any_call(
-        self.test_build.key.id(), result_details=self.test_build.result_details)
+        self.test_build.key.id(), result_details=self.test_build.result_details
+    )
 
     res1 = res['results'][1]
     self.assertEqual(int(res1['build_id']), 2)
@@ -655,7 +672,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         'chromium',
         model.BuildStatus.SCHEDULED,
         tags=['tag:0'],
-        created_by='nodir@google.com')
+        created_by='nodir@google.com'
+    )
 
   ####### PAUSE ################################################################
 
@@ -702,7 +720,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
             'config_file_content': bucket_cfg,
             'config_file_url': 'https://example.com/buildbucket.cfg',
             'config_file_rev': 'deadbeef',
-        })
+        }
+    )
 
   @mock.patch('components.auth.is_admin', autospec=True)
   def test_get_bucket_not_found(self, is_admin):
@@ -755,14 +774,13 @@ class EndpointsApiTest(testing.EndpointsTestCase):
             'action': 'start',
             'tag': 'buildset',
             'shards': 64,
-        }))
+        })
+    )
 
   def test_backfill_tag_index_fails(self):
     auth.bootstrap_group(auth.ADMIN_GROUP, [auth.Anonymous])
     self.call_api('backfill_tag_index', {}, status=400)
     self.call_api('backfill_tag_index', {'tag': 'buildset'}, status=400)
     self.call_api(
-        'backfill_tag_index', {
-            'tag': 'buildset',
-            'shards': 0
-        }, status=400)
+        'backfill_tag_index', {'tag': 'buildset', 'shards': 0}, status=400
+    )

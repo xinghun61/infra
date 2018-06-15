@@ -1,6 +1,7 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """Functions that must be called when important events happen.
 
 on_something_happening functions must be called in a transaction.
@@ -25,9 +26,10 @@ import notifications
 
 def on_build_created(build):  # pragma: no cover
   assert not ndb.in_transaction()
-  logging.info('Build %s for bucket %s was created by %s', build.key.id(),
-               build.bucket,
-               auth.get_current_identity().to_bytes())
+  logging.info(
+      'Build %s for bucket %s was created by %s', build.key.id(), build.bucket,
+      auth.get_current_identity().to_bytes()
+  )
   metrics.inc_created_builds(build)
 
 
@@ -53,10 +55,10 @@ def on_build_completing_async(build):  # pragma: no cover
 
 def on_build_completed(build):  # pragma: no cover
   assert not ndb.in_transaction()
-  logging.info('Build %s was completed by %s. Status: %s. Result: %s',
-               build.key.id(),
-               auth.get_current_identity().to_bytes(), build.status,
-               build.result)
+  logging.info(
+      'Build %s was completed by %s. Status: %s. Result: %s', build.key.id(),
+      auth.get_current_identity().to_bytes(), build.status, build.result
+  )
   metrics.inc_completed_builds(build)
   metrics.add_build_cycle_duration(build)
   if build.start_time:
@@ -86,5 +88,7 @@ def on_build_resetting_async(build):  # pragma: no cover
 
 def on_build_reset(build):  # pragma: no cover
   assert not ndb.in_transaction()
-  logging.info('Build %s was reset by %s', build.key.id(),
-               auth.get_current_identity().to_bytes())
+  logging.info(
+      'Build %s was reset by %s', build.key.id(),
+      auth.get_current_identity().to_bytes()
+  )

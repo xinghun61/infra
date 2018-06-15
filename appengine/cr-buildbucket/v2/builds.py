@@ -1,6 +1,7 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """Provides functions specific to v2 builds."""
 
 import logging
@@ -34,8 +35,9 @@ def build_to_v2_partial(build):
   """
   result_details = build.result_details or {}
   params = (
-      build.parameters_actual if build.parameters_actual is not None
-      else build.parameters)
+      build.parameters_actual
+      if build.parameters_actual is not None else build.parameters
+  )
   ret = build_pb2.Build(
       id=build.key.id(),
       builder=_get_builder_id(build),
@@ -50,7 +52,8 @@ def build_to_v2_partial(build):
           experimental=build.experimental,
       ),
       output=build_pb2.Build.Output(
-          properties=_dict_to_struct(result_details.get('properties')),),
+          properties=_dict_to_struct(result_details.get('properties')),
+      ),
       infra=build_pb2.BuildInfra(
           buildbucket=build_pb2.BuildInfra.Buildbucket(canary=build.canary),
           swarming=build_pb2.BuildInfra.Swarming(

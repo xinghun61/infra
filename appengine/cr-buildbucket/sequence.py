@@ -51,13 +51,16 @@ def generate_async(seq_name, count):
   number = yield txn()
   ellapsed_ms = (utils.utcnow() - started).total_seconds() * 1000
   if ellapsed_ms > 1000:  # pragma: no cover
-    logging.error('sequence number generation took > 1s\n'
-                  'it took %dms\n'
-                  'sequence: %s', ellapsed_ms, seq_name)
+    logging.error(
+        'sequence number generation took > 1s\n'
+        'it took %dms\n'
+        'sequence: %s', ellapsed_ms, seq_name
+    )
   else:
     logging.info('sequence number generation took %dms', ellapsed_ms)
   metrics.SEQUENCE_NUMBER_GEN_DURATION_MS.add(
-      ellapsed_ms, fields={'sequence': seq_name})
+      ellapsed_ms, fields={'sequence': seq_name}
+  )
   raise ndb.Return(number)
 
 

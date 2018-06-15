@@ -27,7 +27,8 @@ class AclTest(testing.AppengineTestCase):
     self.patch(
         'components.auth.get_current_identity',
         autospec=True,
-        return_value=self.current_identity)
+        return_value=self.current_identity
+    )
 
     self.patch('components.auth.is_admin', autospec=True, return_value=False)
 
@@ -36,31 +37,36 @@ class AclTest(testing.AppengineTestCase):
         acls=[
             Acl(role=Acl.WRITER, group='a-writers'),
             Acl(role=Acl.READER, group='a-readers'),
-        ])
+        ]
+    )
     bucket_b = Bucket(
         name='b',
         acls=[
             Acl(role=Acl.WRITER, group='b-writers'),
             Acl(role=Acl.READER, group='b-readers'),
-        ])
+        ]
+    )
     bucket_c = Bucket(
         name='c',
         acls=[
             Acl(role=Acl.READER, group='c-readers'),
             Acl(role=Acl.READER, identity='user:a@example.com'),
             Acl(role=Acl.WRITER, group='c-writers'),
-        ])
+        ]
+    )
     all_buckets = [bucket_a, bucket_b, bucket_c]
     self.patch(
         'config.get_buckets_async',
         autospec=True,
-        return_value=future(all_buckets))
+        return_value=future(all_buckets)
+    )
 
     bucket_map = {b.name: b for b in all_buckets}
     self.patch(
         'config.get_bucket_async',
         autospec=True,
-        side_effect=lambda name: future(('chromium', bucket_map.get(name))))
+        side_effect=lambda name: future(('chromium', bucket_map.get(name)))
+    )
 
   @mock.patch('components.auth.is_admin', autospec=True)
   @mock.patch('components.auth.is_group_member', autospec=True)
@@ -90,7 +96,8 @@ class AclTest(testing.AppengineTestCase):
     is_admin.return_value = False
 
     has_any_of_roles = (
-        lambda *args: acl.has_any_of_roles_async(*args).get_result())
+        lambda *args: acl.has_any_of_roles_async(*args).get_result()
+    )
 
     self.assertTrue(has_any_of_roles('a', [Acl.READER]))
     self.assertTrue(has_any_of_roles('a', [Acl.READER, Acl.WRITER]))
@@ -146,7 +153,8 @@ class AclTest(testing.AppengineTestCase):
     availble_buckets = acl.get_acessible_buckets()  # memcache coverage.
     self.assertEqual(
         availble_buckets,
-        {'available_bucket1', 'available_bucket2', 'available_bucket3'})
+        {'available_bucket1', 'available_bucket2', 'available_bucket3'}
+    )
 
     is_admin.return_value = True
     self.assertIsNone(acl.get_acessible_buckets())

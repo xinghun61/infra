@@ -122,7 +122,8 @@ class Build(ndb.Model):
   status_v2 = ndb.ComputedProperty(lambda self: self._compute_v2_status())
 
   incomplete = ndb.ComputedProperty(
-      lambda self: self.status != BuildStatus.COMPLETED)
+      lambda self: self.status != BuildStatus.COMPLETED
+  )
   status_changed_time = ndb.DateTimeProperty(auto_now_add=True)
   update_time = ndb.DateTimeProperty(auto_now=True)
 
@@ -229,8 +230,10 @@ class Build(ndb.Model):
     assert not is_started or self.start_time
     assert not self.start_time or self.start_time >= self.create_time
     assert not self.complete_time or self.complete_time >= self.create_time
-    assert (not self.complete_time or not self.start_time or
-            self.complete_time >= self.start_time)
+    assert (
+        not self.complete_time or not self.start_time or
+        self.complete_time >= self.start_time
+    )
 
     self.experimental = bool(self.experimental)
     self.initial_tags = sorted(set(self.initial_tags))
@@ -326,7 +329,8 @@ class TagIndex(ndb.Model):
   #
   # It is sorted by build id in descending order.
   entries = ndb.LocalStructuredProperty(
-      TagIndexEntry, repeated=True, indexed=False)
+      TagIndexEntry, repeated=True, indexed=False
+  )
 
 
 _TIME_RESOLUTION = datetime.timedelta(milliseconds=1)

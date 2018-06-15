@@ -1,6 +1,7 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """Utility functions for build tags, colon-delimeted key-value pairs.
 
 Many short functions are annotated with "pragma: no cover" because they are
@@ -29,7 +30,8 @@ BUILDSET_MAX_LENGTH = 1024
 # ('commit/gitiles/chromium.googlesource.com/infra/luci/luci-go/+/'
 #  'b7a757f457487cd5cfe2dae83f65c5bc10e288b7')
 RE_BUILDSET_GITILES_COMMIT = re.compile(
-    r'^commit/gitiles/([^/]+)/(.+?)/\+/([a-f0-9]{40})$')
+    r'^commit/gitiles/([^/]+)/(.+?)/\+/([a-f0-9]{40})$'
+)
 # Gerrit CL buildset pattern. Example:
 # patch/gerrit/chromium-review.googlesource.com/677784/5
 RE_BUILDSET_GERRIT_CL = re.compile(r'^patch/gerrit/([^/]+)/(\d+)/(\d+)$')
@@ -101,11 +103,13 @@ def validate_tags(tags, mode, builder=None):
   seen_gitiles_commit = False
   for t in tags:  # pragma: no branch
     if not isinstance(t, basestring):
-      raise errors.InvalidInputError('Invalid tag "%s": must be a string' %
-                                     (t,))
+      raise errors.InvalidInputError(
+          'Invalid tag "%s": must be a string' % (t,)
+      )
     if ':' not in t:
       raise errors.InvalidInputError(
-          'Invalid tag "%s": does not contain ":"' % t)
+          'Invalid tag "%s": does not contain ":"' % t
+      )
     if t[0] == ':':
       raise errors.InvalidInputError('Invalid tag "%s": starts with ":"' % t)
     k, v = t.split(':', 1)
@@ -117,22 +121,26 @@ def validate_tags(tags, mode, builder=None):
       if RE_BUILDSET_GITILES_COMMIT.match(v):  # pragma: no branch
         if seen_gitiles_commit:
           raise errors.InvalidInputError(
-              'More than one commits/gitiles buildset')
+              'More than one commits/gitiles buildset'
+          )
         seen_gitiles_commit = True
     if k == BUILDER_KEY:
       if mode == 'append':
         raise errors.InvalidInputError(
-            'Tag "builder" cannot be added to an existing build')
+            'Tag "builder" cannot be added to an existing build'
+        )
       if mode == 'new':  # pragma: no branch
         if builder is not None and v != builder:
           raise errors.InvalidInputError(
-              'Tag "%s" conflicts with builder_name parameter "%s"' % (t,
-                                                                       builder))
+              'Tag "%s" conflicts with builder_name parameter "%s"' %
+              (t, builder)
+          )
         if seen_builder_tag is None:
           seen_builder_tag = t
         elif t != seen_builder_tag:  # pragma: no branch
-          raise errors.InvalidInputError('Tag "%s" conflicts with tag "%s"' %
-                                         (t, seen_builder_tag))
+          raise errors.InvalidInputError(
+              'Tag "%s" conflicts with tag "%s"' % (t, seen_builder_tag)
+          )
     if mode != 'search' and k in RESERVED_KEYS:
       raise errors.InvalidInputError('Tag "%s" is reserved' % k)
 
@@ -146,8 +154,9 @@ def validate_buildset(bs):
   if bs.startswith('commit/gitiles/'):
     m = RE_BUILDSET_GITILES_COMMIT.match(bs)
     if not m:
-      raise errors.InvalidInputError('does not match regex "%s"' %
-                                     (RE_BUILDSET_GITILES_COMMIT.pattern))
+      raise errors.InvalidInputError(
+          'does not match regex "%s"' % (RE_BUILDSET_GITILES_COMMIT.pattern)
+      )
     project = m.group(2)
     if project.startswith('a/'):
       raise errors.InvalidInputError('gitiles project must not start with "a/"')
@@ -157,4 +166,5 @@ def validate_buildset(bs):
   elif bs.startswith('patch/gerrit/'):
     if not RE_BUILDSET_GERRIT_CL.match(bs):
       raise errors.InvalidInputError(
-          'does not match regex "%s"' % RE_BUILDSET_GERRIT_CL.pattern)
+          'does not match regex "%s"' % RE_BUILDSET_GERRIT_CL.pattern
+      )

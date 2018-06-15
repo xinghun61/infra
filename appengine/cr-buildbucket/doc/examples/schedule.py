@@ -6,7 +6,8 @@ import json
 
 DISCOVERY_URL = (
     'https://cr-buildbucket-test.appspot.com/_ah/api/discovery/v1/apis/'
-    '{api}/{apiVersion}/rest')
+    '{api}/{apiVersion}/rest'
+)
 AUTH_SCOPE = 'email'
 
 # Create buildbucket client using Google APIs Client for Python
@@ -24,5 +25,6 @@ req = buildbucket.put(
         'parameters_json': json.dumps({
             'builder_name': 'my_builder',
         }),
-    })
+    }
+)
 print req.execute()

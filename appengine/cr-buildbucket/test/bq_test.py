@@ -37,7 +37,8 @@ class BigQueryExportTest(testing.AppengineTestCase):
     self.patch('components.net.json_request', autospec=True, return_value={})
     self.now = datetime.datetime(2018, 1, 1)
     self.patch(
-        'components.utils.utcnow', autospec=True, side_effect=lambda: self.now)
+        'components.utils.utcnow', autospec=True, side_effect=lambda: self.now
+    )
 
     self.queue = taskqueue.Queue('bq-export-prod')
     self.dataset = 'builds'
@@ -47,15 +48,15 @@ class BigQueryExportTest(testing.AppengineTestCase):
     enqueue_pull_task_async.return_value = test_util.future(None)
 
     build = model.Build(
-        id=1, bucket='luci.chromium.try', status=model.BuildStatus.COMPLETED)
+        id=1, bucket='luci.chromium.try', status=model.BuildStatus.COMPLETED
+    )
 
     ndb.transactional(  # pylint: disable=no-value-for-parameter
         lambda: bq.enqueue_bq_export_async(build).get_result())()
 
-    enqueue_pull_task_async.assert_called_once_with('bq-export-prod',
-                                                    json.dumps({
-                                                        'id': 1
-                                                    }))
+    enqueue_pull_task_async.assert_called_once_with(
+        'bq-export-prod', json.dumps({'id': 1})
+    )
 
   def test_cron_export_builds_to_bq(self):
     builds = [
@@ -63,18 +64,21 @@ class BigQueryExportTest(testing.AppengineTestCase):
             id=1,
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.SUCCESS,
-            complete_time=datetime.datetime(2018, 1, 1)),
+            complete_time=datetime.datetime(2018, 1, 1)
+        ),
         mkbuild(
             id=2,
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.FAILURE,
             failure_reason=model.FailureReason.BUILD_FAILURE,
-            complete_time=datetime.datetime(2018, 1, 1)),
+            complete_time=datetime.datetime(2018, 1, 1)
+        ),
         mkbuild(id=3, status=model.BuildStatus.SCHEDULED),
         mkbuild(
             id=4,
             status=model.BuildStatus.STARTED,
-            start_time=datetime.datetime(2018, 1, 1)),
+            start_time=datetime.datetime(2018, 1, 1)
+        ),
     ]
     ndb.put_multi(builds)
 
@@ -84,24 +88,27 @@ class BigQueryExportTest(testing.AppengineTestCase):
                 step=annotations_pb2.Step(
                     name='bot_update',
                     status=annotations_pb2.SUCCESS,
-                ),),
-        ],)
+                ),
+            ),
+        ],
+    )
     model.BuildAnnotations(
         key=model.BuildAnnotations.key_for(builds[0].key),
         annotation_binary=ann_step.SerializeToString(),
         annotation_url='logdog://logdog.example.com/project/prefix/+/name',
     ).put()
     self.queue.add([
-        taskqueue.Task(method='PULL', payload=json.dumps({
-            'id': b.key.id()
-        })) for b in builds
+        taskqueue.Task(method='PULL', payload=json.dumps({'id': b.key.id()}))
+        for b in builds
     ])
 
     bq._process_pull_task_batch(self.queue.name, 'builds')
     net.json_request.assert_called_once_with(
-        url=('https://www.googleapis.com/bigquery/v2/'
-             'projects/testbed-test/datasets/builds/tables/'
-             'completed_BETA/insertAll'),
+        url=(
+            'https://www.googleapis.com/bigquery/v2/'
+            'projects/testbed-test/datasets/builds/tables/'
+            'completed_BETA/insertAll'
+        ),
         method='POST',
         payload={
             'kind':
@@ -111,14 +118,8 @@ class BigQueryExportTest(testing.AppengineTestCase):
             'ignoreUnknownValues':
                 False,
             'rows': [
-                {
-                    'insertId': '1',
-                    'json': mock.ANY
-                },
-                {
-                    'insertId': '2',
-                    'json': mock.ANY
-                },
+                {'insertId': '1', 'json': mock.ANY},
+                {'insertId': '2', 'json': mock.ANY},
             ],
         },
         scopes=bqh.INSERT_ROWS_SCOPE,
@@ -139,31 +140,32 @@ class BigQueryExportTest(testing.AppengineTestCase):
         create_time=datetime.datetime(2018, 1, 1),
         complete_time=datetime.datetime(2018, 1, 1),
     ).put()
-    self.queue.add(
-        [taskqueue.Task(method='PULL', payload=json.dumps({
-            'id': 1
-        }))])
+    self.queue.add([
+        taskqueue.Task(method='PULL', payload=json.dumps({'id': 1}))
+    ])
     bq._process_pull_task_batch(self.queue.name, 'builds')
     self.assertFalse(net.json_request.called)
 
   @mock.patch('v2.build_to_v2_partial', autospec=True)
   @mock.patch(
-      'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True)
-  def test_cron_export_builds_to_bq_exception(self, delete_tasks,
-                                              build_to_v2_partial):
+      'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True
+  )
+  def test_cron_export_builds_to_bq_exception(
+      self, delete_tasks, build_to_v2_partial
+  ):
     builds = [
         mkbuild(
             id=i + 1,
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.SUCCESS,
-            complete_time=datetime.datetime(2018, 1, 1)) for i in xrange(3)
+            complete_time=datetime.datetime(2018, 1, 1)
+        ) for i in xrange(3)
     ]
     ndb.put_multi(builds)
 
     tasks = [
-        taskqueue.Task(method='PULL', payload=json.dumps({
-            'id': b.key.id()
-        })) for b in builds
+        taskqueue.Task(method='PULL', payload=json.dumps({'id': b.key.id()}))
+        for b in builds
     ]
     self.queue.add(tasks)
 
@@ -188,10 +190,9 @@ class BigQueryExportTest(testing.AppengineTestCase):
     )
 
   def test_cron_export_builds_to_bq_not_found(self):
-    self.queue.add(
-        [taskqueue.Task(method='PULL', payload=json.dumps({
-            'id': 1
-        }))])
+    self.queue.add([
+        taskqueue.Task(method='PULL', payload=json.dumps({'id': 1}))
+    ])
     bq._process_pull_task_batch(self.queue.name, 'builds')
     self.assertFalse(net.json_request.called)
 
@@ -200,30 +201,28 @@ class BigQueryExportTest(testing.AppengineTestCase):
     self.assertFalse(net.json_request.called)
 
   @mock.patch(
-      'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True)
+      'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True
+  )
   def test_cron_export_builds_to_bq_insert_errors(self, delete_tasks):
     builds = [
         mkbuild(
             id=i + 1,
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.SUCCESS,
-            complete_time=datetime.datetime(2018, 1, 1)) for i in xrange(3)
+            complete_time=datetime.datetime(2018, 1, 1)
+        ) for i in xrange(3)
     ]
     ndb.put_multi(builds)
     tasks = [
-        taskqueue.Task(method='PULL', payload=json.dumps({
-            'id': b.key.id()
-        })) for b in builds
+        taskqueue.Task(method='PULL', payload=json.dumps({'id': b.key.id()}))
+        for b in builds
     ]
     self.queue.add(tasks)
 
     net.json_request.return_value = {
         'insertErrors': [{
             'index': 1,
-            'errors': [{
-                'reason': 'bad',
-                'message': ':('
-            }],
+            'errors': [{'reason': 'bad', 'message': ':('}],
         }]
     }
 

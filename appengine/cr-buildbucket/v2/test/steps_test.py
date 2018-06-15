@@ -44,4 +44,5 @@ class ParseStepsTest(unittest.TestCase):
     # Compare messages as dicts.
     # assertEqual has better support for dicts than protobufs.
     self.assertEqual(
-        test_util.msg_to_dict(expected), test_util.msg_to_dict(actual))
+        test_util.msg_to_dict(expected), test_util.msg_to_dict(actual)
+    )

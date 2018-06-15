@@ -55,12 +55,15 @@ def validate_bucket_name(bucket, project_id=None):
       not bucket.startswith('luci.%s.' % project_id)):
     raise InvalidInputError(
         'Bucket must start with "luci.%s." because it starts with "luci." '
-        'and is defined in the %s project' % (project_id, project_id))
+        'and is defined in the %s project' % (project_id, project_id)
+    )
 
   if not isinstance(bucket, basestring):
     raise InvalidInputError(
-        'Bucket must be a string. It is %s.' % type(bucket).__name__)
+        'Bucket must be a string. It is %s.' % type(bucket).__name__
+    )
   if not BUCKET_NAME_REGEX.match(bucket):
     raise InvalidInputError(
         'Bucket name "%s" does not match regular expression %s' %
-        (bucket, BUCKET_NAME_REGEX.pattern))
+        (bucket, BUCKET_NAME_REGEX.pattern)
+    )

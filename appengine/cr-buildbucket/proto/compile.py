@@ -2,6 +2,7 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """Copies .proto files from buildbucket Go.
 
 This ugly script copies files from
@@ -26,7 +27,8 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 GO_PROTO_DIR = os.path.normpath(
     os.path.join(
         THIS_DIR,
-        *('../../../go/src/go.chromium.org/luci/buildbucket/proto/').split('/'))
+        *('../../../go/src/go.chromium.org/luci/buildbucket/proto/').split('/')
+    )
 )
 
 
@@ -37,7 +39,8 @@ def modify_proto(src, dest):
   # Rewrite imports.
   contents = re.sub(
       r'import "go\.chromium\.org/luci/buildbucket/proto/([^"]+)";',
-      r'import "\1";', contents)
+      r'import "\1";', contents
+  )
 
   with open(dest, 'w') as f:
     f.write(contents)
@@ -65,7 +68,8 @@ def compile_protos(src_dir, dest_dir):
   # https://github.com/google/yapf/issues/357 is fixed.
   shutil.copyfile(
       os.path.join(THIS_DIR, '..', '.style.yapf'),
-      os.path.join(tmpd, '.style.yapf'))
+      os.path.join(tmpd, '.style.yapf')
+  )
   args = ['yapf', '-i'] + pb2_files
   subprocess.check_call(args, cwd=tmpd)
 
@@ -77,7 +81,8 @@ def compile_protos(src_dir, dest_dir):
 def main():
   compile_protos(GO_PROTO_DIR, THIS_DIR)
   compile_protos(
-      os.path.join(GO_PROTO_DIR, 'config'), os.path.join(THIS_DIR, 'config'))
+      os.path.join(GO_PROTO_DIR, 'config'), os.path.join(THIS_DIR, 'config')
+  )
 
 
 if __name__ == '__main__':

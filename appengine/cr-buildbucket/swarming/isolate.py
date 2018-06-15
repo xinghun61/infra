@@ -1,6 +1,7 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """A minimal isolate client that uses components.net for network IO."""
 
 import base64
@@ -17,8 +18,9 @@ class Error(Exception):
   """An isolated file could not be fetched."""
 
 
-LocationBase = collections.namedtuple('LocationBase',
-                                      'hostname namespace digest')
+LocationBase = collections.namedtuple(
+    'LocationBase', 'hostname namespace digest'
+)
 
 
 class Location(LocationBase):
@@ -48,9 +50,7 @@ def fetch_async(loc):
         method='POST',
         payload={
             'digest': loc.digest,
-            'namespace': {
-                'namespace': loc.namespace
-            },
+            'namespace': {'namespace': loc.namespace},
         },
         scopes=net.EMAIL_SCOPE,
     )
@@ -70,8 +70,9 @@ def fetch_async(loc):
           params=urlparse.parse_qsl(parts.query),
       )
     except net.Error as ex:
-      raise Error('Could not fetch %s from %s: %s' % (loc.human_url, res['url'],
-                                                      ex))
+      raise Error(
+          'Could not fetch %s from %s: %s' % (loc.human_url, res['url'], ex)
+      )
   else:
     raise Error('expected url or content in isolateserver.retrieve response')
 

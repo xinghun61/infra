@@ -48,7 +48,8 @@ class TaskBackfillTagIndexTest(HandlerTest):
     headers['X-AppEngine-QueueName'] = 'backfill-tag-index'
     headers['X-AppEngine-TaskName'] = 'taskname'
     return self.test_app.post(
-        self.task_url + 'rest', utils.encode_to_json(payload), headers=headers)
+        self.task_url + 'rest', utils.encode_to_json(payload), headers=headers
+    )
 
   @mock.patch('handlers.enqueue_tasks')
   def test_start(self, enqueue_tasks):
@@ -56,8 +57,8 @@ class TaskBackfillTagIndexTest(HandlerTest):
         model.Build(
             id=i,
             bucket='chromium',
-            create_time=self.now - datetime.timedelta(minutes=i))
-        for i in xrange(1, 11)
+            create_time=self.now - datetime.timedelta(minutes=i)
+        ) for i in xrange(1, 11)
     ])
     self.post({
         'action': 'start',
@@ -65,64 +66,66 @@ class TaskBackfillTagIndexTest(HandlerTest):
         'shards': 3,
     })
 
-    enqueue_tasks.assert_called_with('backfill-tag-index', [
-        (
-            None,
-            self.task_url + 'tag:buildset-seg:0-percent:0',
-            utils.encode_to_json({
-                'action': 'segment',
-                'tag': 'buildset',
-                'job_id': 'taskname',
-                'iteration': 0,
-                'seg_index': 0,
-                'seg_start': 1,
-                'seg_end': 4,
-                'started_ts': utils.datetime_to_timestamp(self.now),
-            }),
-        ),
-        (
-            None,
-            self.task_url + 'tag:buildset-seg:1-percent:0',
-            utils.encode_to_json({
-                'action': 'segment',
-                'tag': 'buildset',
-                'job_id': 'taskname',
-                'iteration': 0,
-                'seg_index': 1,
-                'seg_start': 4,
-                'seg_end': 7,
-                'started_ts': utils.datetime_to_timestamp(self.now),
-            }),
-        ),
-        (
-            None,
-            self.task_url + 'tag:buildset-seg:2-percent:0',
-            utils.encode_to_json({
-                'action': 'segment',
-                'tag': 'buildset',
-                'job_id': 'taskname',
-                'iteration': 0,
-                'seg_index': 2,
-                'seg_start': 7,
-                'seg_end': 10,
-                'started_ts': utils.datetime_to_timestamp(self.now),
-            }),
-        ),
-        (
-            None,
-            self.task_url + 'tag:buildset-seg:3-percent:0',
-            utils.encode_to_json({
-                'action': 'segment',
-                'tag': 'buildset',
-                'job_id': 'taskname',
-                'iteration': 0,
-                'seg_index': 3,
-                'seg_start': 10,
-                'seg_end': 11,
-                'started_ts': utils.datetime_to_timestamp(self.now),
-            }),
-        ),
-    ])
+    enqueue_tasks.assert_called_with(
+        'backfill-tag-index', [
+            (
+                None,
+                self.task_url + 'tag:buildset-seg:0-percent:0',
+                utils.encode_to_json({
+                    'action': 'segment',
+                    'tag': 'buildset',
+                    'job_id': 'taskname',
+                    'iteration': 0,
+                    'seg_index': 0,
+                    'seg_start': 1,
+                    'seg_end': 4,
+                    'started_ts': utils.datetime_to_timestamp(self.now),
+                }),
+            ),
+            (
+                None,
+                self.task_url + 'tag:buildset-seg:1-percent:0',
+                utils.encode_to_json({
+                    'action': 'segment',
+                    'tag': 'buildset',
+                    'job_id': 'taskname',
+                    'iteration': 0,
+                    'seg_index': 1,
+                    'seg_start': 4,
+                    'seg_end': 7,
+                    'started_ts': utils.datetime_to_timestamp(self.now),
+                }),
+            ),
+            (
+                None,
+                self.task_url + 'tag:buildset-seg:2-percent:0',
+                utils.encode_to_json({
+                    'action': 'segment',
+                    'tag': 'buildset',
+                    'job_id': 'taskname',
+                    'iteration': 0,
+                    'seg_index': 2,
+                    'seg_start': 7,
+                    'seg_end': 10,
+                    'started_ts': utils.datetime_to_timestamp(self.now),
+                }),
+            ),
+            (
+                None,
+                self.task_url + 'tag:buildset-seg:3-percent:0',
+                utils.encode_to_json({
+                    'action': 'segment',
+                    'tag': 'buildset',
+                    'job_id': 'taskname',
+                    'iteration': 0,
+                    'seg_index': 3,
+                    'seg_start': 10,
+                    'seg_end': 11,
+                    'started_ts': utils.datetime_to_timestamp(self.now),
+                }),
+            ),
+        ]
+    )
 
   @mock.patch('handlers.enqueue_tasks')
   def test_start_many_shards(self, enqueue_tasks):
@@ -130,8 +133,8 @@ class TaskBackfillTagIndexTest(HandlerTest):
         model.Build(
             id=i,
             bucket='chromium',
-            create_time=self.now - datetime.timedelta(minutes=i))
-        for i in xrange(1, 150)
+            create_time=self.now - datetime.timedelta(minutes=i)
+        ) for i in xrange(1, 150)
     ])
     self.post({
         'action': 'start',
@@ -157,7 +160,8 @@ class TaskBackfillTagIndexTest(HandlerTest):
             id=i, bucket='chromium', tags=[
                 'buildset:%d' % (i % 3),
                 'a:b',
-            ]) for i in xrange(50, 60)
+            ]
+        ) for i in xrange(50, 60)
     ])
 
     with self.entry_limit(5):
@@ -172,25 +176,27 @@ class TaskBackfillTagIndexTest(HandlerTest):
           'started_ts': utils.datetime_to_timestamp(self.now),
       })
 
-    enqueue_tasks.assert_any_call('backfill-tag-index', [(
-        None,
-        self.task_url + 'tag:buildset-flush',
-        utils.encode_to_json({
-            'action': 'flush',
-            'tag': 'buildset',
-            'new_entries': {
-                '0': [
-                    ['chromium', 51],
-                    ['chromium', 54],
-                ],
-                '1': [['chromium', 52],],
-                '2': [
-                    ['chromium', 50],
-                    ['chromium', 53],
-                ],
-            },
-        }),
-    )])
+    enqueue_tasks.assert_any_call(
+        'backfill-tag-index', [(
+            None,
+            self.task_url + 'tag:buildset-flush',
+            utils.encode_to_json({
+                'action': 'flush',
+                'tag': 'buildset',
+                'new_entries': {
+                    '0': [
+                        ['chromium', 51],
+                        ['chromium', 54],
+                    ],
+                    '1': [['chromium', 52]],
+                    '2': [
+                        ['chromium', 50],
+                        ['chromium', 53],
+                    ],
+                },
+            }),
+        )]
+    )
 
     expected_next_payload = {
         'action': 'segment',
@@ -204,9 +210,11 @@ class TaskBackfillTagIndexTest(HandlerTest):
         'started_ts': utils.datetime_to_timestamp(self.now),
     }
     enqueue_tasks.assert_any_call(
-        'backfill-tag-index',
-        [('jobid-0-1', self.task_url + 'tag:buildset-seg:0-percent:50',
-          utils.encode_to_json(expected_next_payload))])
+        'backfill-tag-index', [(
+            'jobid-0-1', self.task_url + 'tag:buildset-seg:0-percent:50',
+            utils.encode_to_json(expected_next_payload)
+        )]
+    )
 
     self.post(expected_next_payload)
 
@@ -226,18 +234,20 @@ class TaskBackfillTagIndexTest(HandlerTest):
     })
 
     self.assertEqual(enqueue_tasks.call_count, 1)
-    enqueue_tasks.assert_called_with('backfill-tag-index', [(
-        None,
-        self.task_url + 'tag:buildset-flush',
-        utils.encode_to_json({
-            'action': 'flush',
-            'tag': 'buildset',
-            'new_entries': {
-                '0': [['chromium', 51]],
-                '2': [['chromium', 50]],
-            },
-        }),
-    )])
+    enqueue_tasks.assert_called_with(
+        'backfill-tag-index', [(
+            None,
+            self.task_url + 'tag:buildset-flush',
+            utils.encode_to_json({
+                'action': 'flush',
+                'tag': 'buildset',
+                'new_entries': {
+                    '0': [['chromium', 51]],
+                    '2': [['chromium', 50]],
+                },
+            }),
+        )]
+    )
 
   @mock.patch('handlers.enqueue_tasks')
   def test_segment_attempt_2(self, enqueue_tasks):
@@ -250,47 +260,50 @@ class TaskBackfillTagIndexTest(HandlerTest):
       headers = {
           'X-AppEngine-TaskExecutionCount': '1',
       }
-      self.post(
-          {
-              'action': 'segment',
-              'tag': 'buildset',
-              'job_id': 'jobid',
-              'iteration': 0,
-              'seg_index': 0,
-              'seg_start': 50,
-              'seg_end': 60,
-              'started_ts': utils.datetime_to_timestamp(self.now),
-          },
-          headers=headers)
+      self.post({
+          'action': 'segment',
+          'tag': 'buildset',
+          'job_id': 'jobid',
+          'iteration': 0,
+          'seg_index': 0,
+          'seg_start': 50,
+          'seg_end': 60,
+          'started_ts': utils.datetime_to_timestamp(self.now),
+      },
+                headers=headers)
 
-    enqueue_tasks.assert_any_call('backfill-tag-index', [(
-        'jobid-0-1',
-        self.task_url + 'tag:buildset-seg:0-percent:10',
-        utils.encode_to_json({
-            'action': 'segment',
-            'tag': 'buildset',
-            'job_id': 'jobid',
-            'iteration': 1,
-            'seg_index': 0,
-            'seg_start': 50,
-            'seg_end': 60,
-            'start_from': 51,
-            'started_ts': utils.datetime_to_timestamp(self.now),
-        }),
-    )])
+    enqueue_tasks.assert_any_call(
+        'backfill-tag-index', [(
+            'jobid-0-1',
+            self.task_url + 'tag:buildset-seg:0-percent:10',
+            utils.encode_to_json({
+                'action': 'segment',
+                'tag': 'buildset',
+                'job_id': 'jobid',
+                'iteration': 1,
+                'seg_index': 0,
+                'seg_start': 50,
+                'seg_end': 60,
+                'start_from': 51,
+                'started_ts': utils.datetime_to_timestamp(self.now),
+            }),
+        )]
+    )
 
   def test_flush(self):
     model.TagIndex(
         id='buildset:0',
         entries=[
             model.TagIndexEntry(bucket='chormium', build_id=51),
-        ]).put()
+        ]
+    ).put()
     model.TagIndex(
         id='buildset:2',
         entries=[
             model.TagIndexEntry(bucket='chormium', build_id=1),
             model.TagIndexEntry(bucket='chormium', build_id=100),
-        ]).put()
+        ]
+    ).put()
     self.post({
         'action': 'flush',
         'tag': 'buildset',
@@ -327,9 +340,8 @@ class TaskBackfillTagIndexTest(HandlerTest):
         return future_exception(Exception('transient error'))
       return orig_add(tag, entries)
 
-    with mock.patch(
-        'handlers.TaskBackfillTagIndex._add_index_entries_async',
-        side_effect=add):
+    with mock.patch('handlers.TaskBackfillTagIndex._add_index_entries_async',
+                    side_effect=add):
       self.post({
           'action': 'flush',
           'tag': 'buildset',
@@ -350,25 +362,23 @@ class TaskBackfillTagIndexTest(HandlerTest):
     self.assertEqual(len(idx2.entries), 1)
     self.assertEqual(idx2.entries[0].build_id, 50)
 
-    enqueue_tasks.assert_called_with('backfill-tag-index', [(
-        None,
-        self.task_url + 'tag:buildset-flush',
-        utils.encode_to_json({
-            'action': 'flush',
-            'tag': 'buildset',
-            'new_entries': {
-                '1': [['chromium', 52]],
-            },
-        }),
-    )])
+    enqueue_tasks.assert_called_with(
+        'backfill-tag-index', [(
+            None,
+            self.task_url + 'tag:buildset-flush',
+            utils.encode_to_json({
+                'action': 'flush',
+                'tag': 'buildset',
+                'new_entries': {'1': [['chromium', 52]]},
+            }),
+        )]
+    )
 
   def test_flush_too_many(self):
     self.post({
         'action': 'flush',
         'tag': 'buildset',
-        'new_entries': {
-            '0': [['chromium', i] for i in xrange(1, 2001)],
-        },
+        'new_entries': {'0': [['chromium', i] for i in xrange(1, 2001)]},
     })
 
     idx0 = model.TagIndex.get_by_id('buildset:0')
@@ -380,7 +390,5 @@ class TaskBackfillTagIndexTest(HandlerTest):
     self.post({
         'action': 'flush',
         'tag': 'buildset',
-        'new_entries': {
-            '0': [['chromium', 1]],
-        },
+        'new_entries': {'0': [['chromium', 1]]},
     })

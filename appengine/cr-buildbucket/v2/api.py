@@ -78,8 +78,9 @@ def api_method(fn):
       # Require that all RPC requests have "fields" field mask.
       if req.HasField('fields'):
         try:
-          mask = protoutil.Mask.from_field_mask(req.fields,
-                                                res_class.DESCRIPTOR)
+          mask = protoutil.Mask.from_field_mask(
+              req.fields, res_class.DESCRIPTOR
+          )
         except ValueError as ex:
           raise InvalidArgument('invalid fields: %s' % ex)
 
@@ -110,8 +111,9 @@ def builds_to_v2(builds, build_mask):
   builds_msgs = map(v2.build_to_v2_partial, builds)
 
   if build_mask and build_mask.includes('steps'):  # pragma: no branch
-    annotations = ndb.get_multi(
-        [model.BuildAnnotations.key_for(b.key) for b in builds])
+    annotations = ndb.get_multi([
+        model.BuildAnnotations.key_for(b.key) for b in builds
+    ])
     for b, build_ann in zip(builds_msgs, annotations):
       if build_ann:  # pragma: no branch
         b.steps.extend(v2.parse_steps(build_ann))
@@ -125,15 +127,18 @@ def build_predicate_to_search_query(predicate):
       tags=[buildtags.unparse(p.key, p.value) for p in predicate.tags],
       created_by=predicate.created_by or None,
       include_experimental=predicate.include_experimental,
-      status=(service.StatusFilter.COMPLETED if
-              predicate.status == common_pb2.ENDED_MASK else predicate.status),
+      status=(
+          service.StatusFilter.COMPLETED
+          if predicate.status == common_pb2.ENDED_MASK else predicate.status
+      ),
   )
 
   # Filter by builder.
   if predicate.HasField('builder'):
     q.buckets = [v1_bucket(predicate.builder)]
     q.tags.append(
-        buildtags.unparse(buildtags.BUILDER_KEY, predicate.builder.builder))
+        buildtags.unparse(buildtags.BUILDER_KEY, predicate.builder.builder)
+    )
 
   # Filter by gerrit changes.
   buildsets = [
@@ -165,13 +170,15 @@ class BuildsApi(object):
       build_v1 = service.get(req.id)
     else:
       bucket = v1_bucket(req.builder)
-      tag = buildtags.build_address_tag(bucket, req.builder.builder,
-                                        req.build_number)
+      tag = buildtags.build_address_tag(
+          bucket, req.builder.builder, req.build_number
+      )
       build_v1, _ = service.search(
           service.SearchQuery(
               buckets=[bucket],
               tags=[tag],
-          ))
+          )
+      )
       build_v1 = build_v1[0] if build_v1 else None
 
     if not build_v1:

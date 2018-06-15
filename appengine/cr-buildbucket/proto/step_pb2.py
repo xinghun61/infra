@@ -25,7 +25,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
         common__pb2.DESCRIPTOR,
-    ])
+    ]
+)
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _STEP_LOG = _descriptor.Descriptor(
@@ -50,7 +51,8 @@ _STEP_LOG = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='view_url',
             full_name='buildbucket.v2.Step.Log.view_url',
@@ -66,7 +68,8 @@ _STEP_LOG = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -102,7 +105,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='start_time',
             full_name='buildbucket.v2.Step.start_time',
@@ -118,7 +122,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='end_time',
             full_name='buildbucket.v2.Step.end_time',
@@ -134,7 +139,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='status',
             full_name='buildbucket.v2.Step.status',
@@ -150,7 +156,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='logs',
             full_name='buildbucket.v2.Step.logs',
@@ -166,7 +173,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='summary_markdown',
             full_name='buildbucket.v2.Step.summary_markdown',
@@ -182,7 +190,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[
@@ -200,9 +209,11 @@ _STEP = _descriptor.Descriptor(
 
 _STEP_LOG.containing_type = _STEP
 _STEP.fields_by_name[
-    'start_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'start_time'
+].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _STEP.fields_by_name[
-    'end_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'end_time'
+].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _STEP.fields_by_name['status'].enum_type = common__pb2._STATUS
 _STEP.fields_by_name['logs'].message_type = _STEP_LOG
 DESCRIPTOR.message_types_by_name['Step'] = _STEP
@@ -218,16 +229,19 @@ Step = _reflection.GeneratedProtocolMessageType(
                 DESCRIPTOR=_STEP_LOG,
                 __module__='step_pb2'
                 # @@protoc_insertion_point(class_scope:buildbucket.v2.Step.Log)
-            )),
+            )
+        ),
         DESCRIPTOR=_STEP,
         __module__='step_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.Step)
-    ))
+    )
+)
 _sym_db.RegisterMessage(Step)
 _sym_db.RegisterMessage(Step.Log)
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(
     descriptor_pb2.FileOptions(),
-    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'))
+    _b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb')
+)
 # @@protoc_insertion_point(module_scope)

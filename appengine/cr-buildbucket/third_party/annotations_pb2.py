@@ -24,7 +24,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     ),
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
-    ])
+    ]
+)
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _STATUS = _descriptor.EnumDescriptor(
@@ -34,13 +35,17 @@ _STATUS = _descriptor.EnumDescriptor(
     file=DESCRIPTOR,
     values=[
         _descriptor.EnumValueDescriptor(
-            name='RUNNING', index=0, number=0, options=None, type=None),
+            name='RUNNING', index=0, number=0, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='SUCCESS', index=1, number=1, options=None, type=None),
+            name='SUCCESS', index=1, number=1, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='FAILURE', index=2, number=2, options=None, type=None),
+            name='FAILURE', index=2, number=2, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='PENDING', index=3, number=3, options=None, type=None),
+            name='PENDING', index=3, number=3, options=None, type=None
+        ),
     ],
     containing_type=None,
     options=None,
@@ -62,21 +67,27 @@ _FAILUREDETAILS_TYPE = _descriptor.EnumDescriptor(
     file=DESCRIPTOR,
     values=[
         _descriptor.EnumValueDescriptor(
-            name='GENERAL', index=0, number=0, options=None, type=None),
+            name='GENERAL', index=0, number=0, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='EXCEPTION', index=1, number=1, options=None, type=None),
+            name='EXCEPTION', index=1, number=1, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='INFRA', index=2, number=2, options=None, type=None),
+            name='INFRA', index=2, number=2, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
             name='DM_DEPENDENCY_FAILED',
             index=3,
             number=3,
             options=None,
-            type=None),
+            type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='CANCELLED', index=4, number=4, options=None, type=None),
+            name='CANCELLED', index=4, number=4, options=None, type=None
+        ),
         _descriptor.EnumValueDescriptor(
-            name='EXPIRED', index=5, number=5, options=None, type=None),
+            name='EXPIRED', index=5, number=5, options=None, type=None
+        ),
     ],
     containing_type=None,
     options=None,
@@ -107,7 +118,8 @@ _FAILUREDETAILS = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='text',
             full_name='milo.FailureDetails.text',
@@ -123,7 +135,8 @@ _FAILUREDETAILS = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='failed_dm_dependency',
             full_name='milo.FailureDetails.failed_dm_dependency',
@@ -139,7 +152,8 @@ _FAILUREDETAILS = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -177,7 +191,8 @@ _STEP_COMMAND_ENVIRONENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='value',
             full_name='milo.Step.Command.EnvironEntry.value',
@@ -193,13 +208,15 @@ _STEP_COMMAND_ENVIRONENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=_descriptor._ParseOptions(descriptor_pb2.MessageOptions(),
-                                      _b('8\001')),
+    options=_descriptor._ParseOptions(
+        descriptor_pb2.MessageOptions(), _b('8\001')
+    ),
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -230,7 +247,8 @@ _STEP_COMMAND = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='cwd',
             full_name='milo.Step.Command.cwd',
@@ -246,7 +264,8 @@ _STEP_COMMAND = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='environ',
             full_name='milo.Step.Command.environ',
@@ -262,7 +281,8 @@ _STEP_COMMAND = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[
@@ -300,7 +320,8 @@ _STEP_SUBSTEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='annotation_stream',
             full_name='milo.Step.Substep.annotation_stream',
@@ -316,7 +337,8 @@ _STEP_SUBSTEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -331,7 +353,8 @@ _STEP_SUBSTEP = _descriptor.Descriptor(
             full_name='milo.Step.Substep.substep',
             index=0,
             containing_type=None,
-            fields=[]),
+            fields=[]
+        ),
     ],
     serialized_start=923,
     serialized_end=1020,
@@ -359,7 +382,8 @@ _STEP_PROGRESS = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='completed',
             full_name='milo.Step.Progress.completed',
@@ -375,7 +399,8 @@ _STEP_PROGRESS = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -411,7 +436,8 @@ _STEP_PROPERTY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='value',
             full_name='milo.Step.Property.value',
@@ -427,7 +453,8 @@ _STEP_PROPERTY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -463,7 +490,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='command',
             full_name='milo.Step.command',
@@ -479,7 +507,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='status',
             full_name='milo.Step.status',
@@ -495,7 +524,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='failure_details',
             full_name='milo.Step.failure_details',
@@ -511,7 +541,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='substep',
             full_name='milo.Step.substep',
@@ -527,7 +558,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='stdout_stream',
             full_name='milo.Step.stdout_stream',
@@ -543,7 +575,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='stderr_stream',
             full_name='milo.Step.stderr_stream',
@@ -559,7 +592,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='started',
             full_name='milo.Step.started',
@@ -575,7 +609,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='ended',
             full_name='milo.Step.ended',
@@ -591,7 +626,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='text',
             full_name='milo.Step.text',
@@ -607,7 +643,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='progress',
             full_name='milo.Step.progress',
@@ -623,7 +660,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='link',
             full_name='milo.Step.link',
@@ -639,7 +677,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='other_links',
             full_name='milo.Step.other_links',
@@ -655,7 +694,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='property',
             full_name='milo.Step.property',
@@ -671,7 +711,8 @@ _STEP = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[
@@ -712,7 +753,8 @@ _LINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='alias_label',
             full_name='milo.Link.alias_label',
@@ -728,7 +770,8 @@ _LINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='url',
             full_name='milo.Link.url',
@@ -744,7 +787,8 @@ _LINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='logdog_stream',
             full_name='milo.Link.logdog_stream',
@@ -760,7 +804,8 @@ _LINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='isolate_object',
             full_name='milo.Link.isolate_object',
@@ -776,7 +821,8 @@ _LINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='dm_link',
             full_name='milo.Link.dm_link',
@@ -792,7 +838,8 @@ _LINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -807,7 +854,8 @@ _LINK = _descriptor.Descriptor(
             full_name='milo.Link.value',
             index=0,
             containing_type=None,
-            fields=[]),
+            fields=[]
+        ),
     ],
     serialized_start=1110,
     serialized_end=1301,
@@ -835,7 +883,8 @@ _LOGDOGSTREAM = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='prefix',
             full_name='milo.LogdogStream.prefix',
@@ -851,7 +900,8 @@ _LOGDOGSTREAM = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='name',
             full_name='milo.LogdogStream.name',
@@ -867,7 +917,8 @@ _LOGDOGSTREAM = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -903,7 +954,8 @@ _ISOLATEOBJECT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='hash',
             full_name='milo.IsolateObject.hash',
@@ -919,7 +971,8 @@ _ISOLATEOBJECT = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -955,7 +1008,8 @@ _DMLINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='quest',
             full_name='milo.DMLink.quest',
@@ -971,7 +1025,8 @@ _DMLINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='attempt',
             full_name='milo.DMLink.attempt',
@@ -987,7 +1042,8 @@ _DMLINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='execution',
             full_name='milo.DMLink.execution',
@@ -1003,7 +1059,8 @@ _DMLINK = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -1021,21 +1078,24 @@ _FAILUREDETAILS.fields_by_name['type'].enum_type = _FAILUREDETAILS_TYPE
 _FAILUREDETAILS.fields_by_name['failed_dm_dependency'].message_type = _DMLINK
 _FAILUREDETAILS_TYPE.containing_type = _FAILUREDETAILS
 _STEP_COMMAND_ENVIRONENTRY.containing_type = _STEP_COMMAND
-_STEP_COMMAND.fields_by_name[
-    'environ'].message_type = _STEP_COMMAND_ENVIRONENTRY
+_STEP_COMMAND.fields_by_name['environ'
+                            ].message_type = _STEP_COMMAND_ENVIRONENTRY
 _STEP_COMMAND.containing_type = _STEP
 _STEP_SUBSTEP.fields_by_name['step'].message_type = _STEP
 _STEP_SUBSTEP.fields_by_name['annotation_stream'].message_type = _LOGDOGSTREAM
 _STEP_SUBSTEP.containing_type = _STEP
 _STEP_SUBSTEP.oneofs_by_name['substep'].fields.append(
-    _STEP_SUBSTEP.fields_by_name['step'])
+    _STEP_SUBSTEP.fields_by_name['step']
+)
 _STEP_SUBSTEP.fields_by_name[
-    'step'].containing_oneof = _STEP_SUBSTEP.oneofs_by_name['substep']
+    'step'
+].containing_oneof = _STEP_SUBSTEP.oneofs_by_name['substep']
 _STEP_SUBSTEP.oneofs_by_name['substep'].fields.append(
-    _STEP_SUBSTEP.fields_by_name['annotation_stream'])
+    _STEP_SUBSTEP.fields_by_name['annotation_stream']
+)
 _STEP_SUBSTEP.fields_by_name[
-    'annotation_stream'].containing_oneof = _STEP_SUBSTEP.oneofs_by_name[
-        'substep']
+    'annotation_stream'
+].containing_oneof = _STEP_SUBSTEP.oneofs_by_name['substep']
 _STEP_PROGRESS.containing_type = _STEP
 _STEP_PROPERTY.containing_type = _STEP
 _STEP.fields_by_name['command'].message_type = _STEP_COMMAND
@@ -1045,9 +1105,11 @@ _STEP.fields_by_name['substep'].message_type = _STEP_SUBSTEP
 _STEP.fields_by_name['stdout_stream'].message_type = _LOGDOGSTREAM
 _STEP.fields_by_name['stderr_stream'].message_type = _LOGDOGSTREAM
 _STEP.fields_by_name[
-    'started'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'started'
+].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _STEP.fields_by_name[
-    'ended'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'ended'
+].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _STEP.fields_by_name['progress'].message_type = _STEP_PROGRESS
 _STEP.fields_by_name['link'].message_type = _LINK
 _STEP.fields_by_name['other_links'].message_type = _LINK
@@ -1058,13 +1120,15 @@ _LINK.fields_by_name['dm_link'].message_type = _DMLINK
 _LINK.oneofs_by_name['value'].fields.append(_LINK.fields_by_name['url'])
 _LINK.fields_by_name['url'].containing_oneof = _LINK.oneofs_by_name['value']
 _LINK.oneofs_by_name['value'].fields.append(
-    _LINK.fields_by_name['logdog_stream'])
-_LINK.fields_by_name['logdog_stream'].containing_oneof = _LINK.oneofs_by_name[
-    'value']
+    _LINK.fields_by_name['logdog_stream']
+)
+_LINK.fields_by_name['logdog_stream'
+                    ].containing_oneof = _LINK.oneofs_by_name['value']
 _LINK.oneofs_by_name['value'].fields.append(
-    _LINK.fields_by_name['isolate_object'])
-_LINK.fields_by_name['isolate_object'].containing_oneof = _LINK.oneofs_by_name[
-    'value']
+    _LINK.fields_by_name['isolate_object']
+)
+_LINK.fields_by_name['isolate_object'
+                    ].containing_oneof = _LINK.oneofs_by_name['value']
 _LINK.oneofs_by_name['value'].fields.append(_LINK.fields_by_name['dm_link'])
 _LINK.fields_by_name['dm_link'].containing_oneof = _LINK.oneofs_by_name['value']
 DESCRIPTOR.message_types_by_name['FailureDetails'] = _FAILUREDETAILS
@@ -1082,7 +1146,8 @@ FailureDetails = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_FAILUREDETAILS,
         __module__='annotations_pb2'
         # @@protoc_insertion_point(class_scope:milo.FailureDetails)
-    ))
+    )
+)
 _sym_db.RegisterMessage(FailureDetails)
 
 Step = _reflection.GeneratedProtocolMessageType(
@@ -1100,11 +1165,13 @@ Step = _reflection.GeneratedProtocolMessageType(
                         DESCRIPTOR=_STEP_COMMAND_ENVIRONENTRY,
                         __module__='annotations_pb2'
                         # @@protoc_insertion_point(class_scope:milo.Step.Command.EnvironEntry)
-                    )),
+                    )
+                ),
                 DESCRIPTOR=_STEP_COMMAND,
                 __module__='annotations_pb2'
                 # @@protoc_insertion_point(class_scope:milo.Step.Command)
-            )),
+            )
+        ),
         Substep=_reflection.GeneratedProtocolMessageType(
             'Substep',
             (_message.Message,),
@@ -1112,7 +1179,8 @@ Step = _reflection.GeneratedProtocolMessageType(
                 DESCRIPTOR=_STEP_SUBSTEP,
                 __module__='annotations_pb2'
                 # @@protoc_insertion_point(class_scope:milo.Step.Substep)
-            )),
+            )
+        ),
         Progress=_reflection.GeneratedProtocolMessageType(
             'Progress',
             (_message.Message,),
@@ -1120,7 +1188,8 @@ Step = _reflection.GeneratedProtocolMessageType(
                 DESCRIPTOR=_STEP_PROGRESS,
                 __module__='annotations_pb2'
                 # @@protoc_insertion_point(class_scope:milo.Step.Progress)
-            )),
+            )
+        ),
         Property=_reflection.GeneratedProtocolMessageType(
             'Property',
             (_message.Message,),
@@ -1128,11 +1197,13 @@ Step = _reflection.GeneratedProtocolMessageType(
                 DESCRIPTOR=_STEP_PROPERTY,
                 __module__='annotations_pb2'
                 # @@protoc_insertion_point(class_scope:milo.Step.Property)
-            )),
+            )
+        ),
         DESCRIPTOR=_STEP,
         __module__='annotations_pb2'
         # @@protoc_insertion_point(class_scope:milo.Step)
-    ))
+    )
+)
 _sym_db.RegisterMessage(Step)
 _sym_db.RegisterMessage(Step.Command)
 _sym_db.RegisterMessage(Step.Command.EnvironEntry)
@@ -1147,7 +1218,8 @@ Link = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_LINK,
         __module__='annotations_pb2'
         # @@protoc_insertion_point(class_scope:milo.Link)
-    ))
+    )
+)
 _sym_db.RegisterMessage(Link)
 
 LogdogStream = _reflection.GeneratedProtocolMessageType(
@@ -1157,7 +1229,8 @@ LogdogStream = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_LOGDOGSTREAM,
         __module__='annotations_pb2'
         # @@protoc_insertion_point(class_scope:milo.LogdogStream)
-    ))
+    )
+)
 _sym_db.RegisterMessage(LogdogStream)
 
 IsolateObject = _reflection.GeneratedProtocolMessageType(
@@ -1167,7 +1240,8 @@ IsolateObject = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_ISOLATEOBJECT,
         __module__='annotations_pb2'
         # @@protoc_insertion_point(class_scope:milo.IsolateObject)
-    ))
+    )
+)
 _sym_db.RegisterMessage(IsolateObject)
 
 DMLink = _reflection.GeneratedProtocolMessageType(
@@ -1177,10 +1251,12 @@ DMLink = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_DMLINK,
         __module__='annotations_pb2'
         # @@protoc_insertion_point(class_scope:milo.DMLink)
-    ))
+    )
+)
 _sym_db.RegisterMessage(DMLink)
 
 _STEP_COMMAND_ENVIRONENTRY.has_options = True
 _STEP_COMMAND_ENVIRONENTRY._options = _descriptor._ParseOptions(
-    descriptor_pb2.MessageOptions(), _b('8\001'))
+    descriptor_pb2.MessageOptions(), _b('8\001')
+)
 # @@protoc_insertion_point(module_scope)

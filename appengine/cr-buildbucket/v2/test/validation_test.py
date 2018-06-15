@@ -27,7 +27,6 @@ class BaseTestCase(unittest.TestCase):
 
 # Order of test classes must match the order of functions in validation.py
 
-
 ################################################################################
 # Validation of common.proto messages.
 
@@ -37,7 +36,8 @@ class GerritChangeTests(BaseTestCase):
 
   def test_valid(self):
     msg = common_pb2.GerritChange(
-        host='gerrit.example.com', change=1, patchset=1)
+        host='gerrit.example.com', change=1, patchset=1
+    )
     self.assert_valid(msg)
 
   def test_no_host(self):
@@ -76,7 +76,8 @@ class BuilderIDTests(BaseTestCase):
 
   def test_valid(self):
     msg = build_pb2.BuilderID(
-        project='chromium', bucket='try', builder='linux-rel')
+        project='chromium', bucket='try', builder='linux-rel'
+    )
     self.assert_valid(msg)
 
   def test_no_project(self):
@@ -102,7 +103,8 @@ class GetBuildRequestTests(BaseTestCase):
   def test_valid_number(self):
     msg = rpc_pb2.GetBuildRequest(
         builder=build_pb2.BuilderID(
-            project='chromium', bucket='try', builder='linux-rel'),
+            project='chromium', bucket='try', builder='linux-rel'
+        ),
         build_number=1,
     )
     self.assert_valid(msg)
@@ -121,22 +123,24 @@ class SearchBuildsRequestTests(BaseTestCase):
   def test_valid(self):
     msg = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
-            builder=build_pb2.BuilderID(
-                project='chromium', bucket='try', builder='linux-rel'),
-        ))
+            builder=build_pb2.
+            BuilderID(project='chromium', bucket='try', builder='linux-rel'),
+        )
+    )
     self.assert_valid(msg)
 
   def test_empty(self):
     msg = rpc_pb2.SearchBuildsRequest()
     self.assert_invalid(
-        msg,
-        r'predicate: builder or gerrit_changes is required')
+        msg, r'predicate: builder or gerrit_changes is required'
+    )
 
   def test_bad_page_size(self):
     msg = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
             builder=build_pb2.BuilderID(
-                project='chromium', bucket='try', builder='linux-rel'),
+                project='chromium', bucket='try', builder='linux-rel'
+            ),
         ),
         page_size=-1,
     )
@@ -148,29 +152,28 @@ class BuildPredicateTests(BaseTestCase):
 
   def test_valid(self):
     msg = rpc_pb2.BuildPredicate(
-        builder=build_pb2.BuilderID(
-            project='chromium', bucket='try', builder='linux-rel'))
+        builder=build_pb2.
+        BuilderID(project='chromium', bucket='try', builder='linux-rel')
+    )
     self.assert_valid(msg)
 
   def test_empty(self):
     msg = rpc_pb2.BuildPredicate()
-    self.assert_invalid(
-        msg, r'builder or gerrit_changes is required')
+    self.assert_invalid(msg, r'builder or gerrit_changes is required')
 
   def test_invalid_builder_id(self):
     msg = rpc_pb2.BuildPredicate(builder=build_pb2.BuilderID())
-    self.assert_invalid(
-        msg, r'builder\.project: not specified')
+    self.assert_invalid(msg, r'builder\.project: not specified')
 
   def test_gerrit_changes(self):
     msg = rpc_pb2.BuildPredicate(gerrit_changes=[common_pb2.GerritChange()])
-    self.assert_invalid(
-        msg, r'gerrit_changes\[0\].host: not specified')
+    self.assert_invalid(msg, r'gerrit_changes\[0\].host: not specified')
 
   def test_invalid_tags(self):
     msg = rpc_pb2.BuildPredicate(
         builder=build_pb2.BuilderID(
-            project='chromium', bucket='try', builder='linux-rel'),
+            project='chromium', bucket='try', builder='linux-rel'
+        ),
         tags=[common_pb2.StringPair(key='', value='')],
     )
     self.assert_invalid(msg, r'tags: Invalid tag')

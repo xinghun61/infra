@@ -1,6 +1,7 @@
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """Provides a converter from annotations_pb2.Step to step_pb2.Step.
 
 This is a Python port of
@@ -79,9 +80,11 @@ class AnnotationConverter(object):
     assert all(
         isinstance(line, basestring)
         for lines in summary_paragraph_lines
-        for line in lines)
+        for line in lines
+    )
     ret.summary_markdown = '\n\n'.join(
-        '\n'.join(lines) for lines in summary_paragraph_lines if lines)
+        '\n'.join(lines) for lines in summary_paragraph_lines if lines
+    )
     return ret
 
   def parse_substeps(self, ann_substeps, name_prefix=''):
@@ -97,7 +100,9 @@ class AnnotationConverter(object):
         ret.append(v2_step)
         ret.extend(
             self.parse_substeps(
-                substep.step.substep, name_prefix=v2_step.name + STEP_SEP))
+                substep.step.substep, name_prefix=v2_step.name + STEP_SEP
+            )
+        )
     return ret
 
   def _parse_status(self, ann_step):
@@ -122,11 +127,15 @@ class AnnotationConverter(object):
     if ann_step.HasField('stdout_stream'):
       all_links.append(
           annotations_pb2.Link(
-              label='stdout', logdog_stream=ann_step.stdout_stream))
+              label='stdout', logdog_stream=ann_step.stdout_stream
+          )
+      )
     if ann_step.HasField('stderr_stream'):
       all_links.append(
           annotations_pb2.Link(
-              label='stderr', logdog_stream=ann_step.stderr_stream))
+              label='stderr', logdog_stream=ann_step.stderr_stream
+          )
+      )
     all_links += list(ann_step.other_links)
 
     lines = []  # lines in a markdown summary paragraph
@@ -137,7 +146,9 @@ class AnnotationConverter(object):
         logs.append(
             step_pb2.Step.Log(
                 name=link.label,
-                view_url=self._logdog_stream_view_url(link.logdog_stream)))
+                view_url=self._logdog_stream_view_url(link.logdog_stream)
+            )
+        )
       elif link.url:
         lines.append('* [%s](%s)' % (link.label, link.url))
       else:  # pragma: no cover

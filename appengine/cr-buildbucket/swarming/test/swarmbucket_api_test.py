@@ -30,11 +30,13 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     self.patch(
         'components.utils.utcnow',
         autospec=True,
-        return_value=datetime.datetime(2015, 11, 30))
+        return_value=datetime.datetime(2015, 11, 30)
+    )
 
     self.patch(
         'google.appengine.api.app_identity.get_default_version_hostname',
-        return_value='cr-buildbucket.appspot.com')
+        return_value='cr-buildbucket.appspot.com'
+    )
 
     auth_testing.reset_local_state()
     auth.bootstrap_group('all', [auth.Anonymous])
@@ -112,8 +114,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             ],
             'caches': [{
                 'path': '${cache_dir}/builder',
-                'name': 'builder_${builder_hash}'
-            },],
+                'name': 'builder_${builder_hash}',
+            }],
             'cipd_input': {
                 'packages': [
                     {
@@ -128,12 +130,13 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                     },
                 ],
             },
-        }
+        },
     }
 
     self.patch(
         'swarming.swarming.get_task_template_async',
-        return_value=future(('rev', self.task_template, False)))
+        return_value=future(('rev', self.task_template, False))
+    )
 
   def test_get_builders(self):
     secret_cfg = 'name: "secret"'
@@ -147,7 +150,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
     resp = self.call_api('get_builders').json_body
     self.assertEqual(
-        resp, {
+        resp,
+        {
             'buckets': [{
                 'name':
                     'luci.chromium.try',
@@ -160,10 +164,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'category':
                             'Chromium',
                         'properties_json':
-                            json.dumps({
-                                'foo': 'bar',
-                                'baz': 1
-                            }),
+                            json.dumps({'foo': 'bar', 'baz': 1}),
                         'swarming_dimensions': [
                             'baz:baz', 'builder:linux_chromium_rel_ng',
                             'foo:bar'
@@ -174,9 +175,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'category': 'Chromium',
                         'properties_json': json.dumps({}),
                     },
-                ]
-            }]
-        })
+                ],
+            }],
+        },
+    )
 
   def test_get_builders_with_bucket_filtering(self):
     # Add a second bucket with a different name.
@@ -206,7 +208,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
     resp = self.call_api('get_builders', req).json_body
     self.assertEqual(
-        resp, {
+        resp,
+        {
             'buckets': [{
                 'name':
                     'luci.chromium.try',
@@ -219,10 +222,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'category':
                             'Chromium',
                         'properties_json':
-                            json.dumps({
-                                'foo': 'bar',
-                                'baz': 1
-                            }),
+                            json.dumps({'foo': 'bar', 'baz': 1}),
                         'swarming_dimensions': [
                             'baz:baz', 'builder:linux_chromium_rel_ng',
                             'foo:bar'
@@ -233,9 +233,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'category': 'Chromium',
                         'properties_json': json.dumps({}),
                     },
-                ]
-            }]
-        })
+                ],
+            }],
+        },
+    )
 
   def test_get_builders_with_bucket_filtering_limit(self):
     req = {
@@ -275,13 +276,16 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         'expiration_secs':
             '3600',
         'properties': {
-            'env': [{
-                'key': 'BUILDBUCKET_EXPERIMENTAL',
-                'value': 'FALSE',
-            }],
+            'env': [{'key': 'BUILDBUCKET_EXPERIMENTAL', 'value': 'FALSE'}],
             'extra_args': [
-                'cook', '-repository', 'https://example.com', '-revision',
-                'HEAD', '-recipe', 'presubmit', '-properties',
+                'cook',
+                '-repository',
+                'https://example.com',
+                '-revision',
+                'HEAD',
+                '-recipe',
+                'presubmit',
+                '-properties',
                 json.dumps(
                     {
                         'buildbucket': {
@@ -304,7 +308,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'buildername': 'linux_chromium_rel_ng',
                         'buildnumber': 0,
                     },
-                    sort_keys=True), '-logdog-project', 'chromium'
+                    sort_keys=True,
+                ),
+                '-logdog-project',
+                'chromium',
             ],
             'execution_timeout_secs':
                 '3600',
@@ -323,26 +330,18 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 ],
             },
             'dimensions': [
-                {
-                    'key': 'baz',
-                    'value': 'baz'
-                },
-                {
-                    'key': 'builder',
-                    'value': 'linux_chromium_rel_ng'
-                },
-                {
-                    'key': 'foo',
-                    'value': 'bar'
-                },
+                {'key': 'baz', 'value': 'baz'},
+                {'key': 'builder', 'value': 'linux_chromium_rel_ng'},
+                {'key': 'foo', 'value': 'bar'},
             ],
             'caches': [{
                 'path':
                     'cache/builder',
                 'name': (
                     'builder_980988014eb33bf5578a0f44e123402888e39083523bfd921'
-                    '4fea0c8a080db17'),
-            }]
+                    '4fea0c8a080db17'
+                ),
+            }],
         },
     }
     self.assertEqual(actual_task_def, expected_task_def)
@@ -361,16 +360,13 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     self.call_api('get_task_def', req, status=400)
 
     req = {
-        'build_request': {
-            'bucket': 'luci.chromium.try'
-        },
+        'build_request': {'bucket': 'luci.chromium.try'},
     }
     self.call_api('get_task_def', req, status=400)
 
     req = {
         'build_request': {
-            'bucket': 'luci.chromium.try',
-            'parameters_json': '{}'
+            'bucket': 'luci.chromium.try', 'parameters_json': '{}'
         },
     }
     self.call_api('get_task_def', req, status=400)
@@ -398,7 +394,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 json.dumps({
                     model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
                 }),
-        }
+        },
     }
 
     self.call_api('get_task_def', req, status=403)
@@ -412,8 +408,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             swarming=project_config_pb2.Swarming(
                 builders=[
                     project_config_pb2.Builder(name='b'),
-                ],),
-        ))
+                ],
+            ),
+        ),
+    )
 
     seq = sequence.NumberSequence(id='a/b', next_number=10)
     seq.put()

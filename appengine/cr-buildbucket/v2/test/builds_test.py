@@ -36,7 +36,8 @@ class V2BuildsTest(unittest.TestCase):
             project='chromium',
             bucket='master.tryserver.chromium.linux',
             builder='linux_chromium_rel_ng',
-        ))
+        )
+    )
 
   def test_get_builder_id_luci(self):
     build = model.Build(
@@ -52,7 +53,8 @@ class V2BuildsTest(unittest.TestCase):
             project='chromium',
             bucket='try',
             builder='linux-rel',
-        ))
+        )
+    )
 
   def test_build_to_v2(self):
     dt0 = datetime.datetime(2018, 1, 1, 0)
@@ -67,9 +69,7 @@ class V2BuildsTest(unittest.TestCase):
     input_properties = {
         'str': 'a',
         'num': 1,
-        'obj': {
-            'str': 'b',
-        },
+        'obj': {'str': 'b'},
         'arr': [1, 2],
     }
     output_properties = {'x': 1}
@@ -89,21 +89,12 @@ class V2BuildsTest(unittest.TestCase):
             'swarming': {
                 'task_result': {
                     'bot_dimensions': [
-                        {
-                            'key': 'os',
-                            'value': ['Ubuntu', 'Trusty']
-                        },
-                        {
-                            'key': 'pool',
-                            'value': ['luci.chromium.try']
-                        },
-                        {
-                            'key': 'id',
-                            'value': ['bot1']
-                        },
+                        {'key': 'os', 'value': ['Ubuntu', 'Trusty']},
+                        {'key': 'pool', 'value': ['luci.chromium.try']},
+                        {'key': 'id', 'value': ['bot1']},
                     ],
-                }
-            }
+                },
+            },
         },
         experimental=True,
         swarming_hostname='swarming.example.com',
@@ -137,7 +128,8 @@ class V2BuildsTest(unittest.TestCase):
             experimental=True,
         ),
         output=build_pb2.Build.Output(
-            properties=builds._dict_to_struct(output_properties),),
+            properties=builds._dict_to_struct(output_properties),
+        ),
         infra=build_pb2.BuildInfra(
             buildbucket=build_pb2.BuildInfra.Buildbucket(canary=False,),
             swarming=build_pb2.BuildInfra.Swarming(
@@ -148,7 +140,8 @@ class V2BuildsTest(unittest.TestCase):
                     common_pb2.StringPair(key='os', value='Ubuntu'),
                     common_pb2.StringPair(key='os', value='Trusty'),
                     common_pb2.StringPair(
-                        key='pool', value='luci.chromium.try'),
+                        key='pool', value='luci.chromium.try'
+                    ),
                     common_pb2.StringPair(key='id', value='bot1'),
                 ],
             ),
@@ -164,28 +157,32 @@ class V2BuildsTest(unittest.TestCase):
     # assertEqual has better support for dicts.
     self.assertEqual(
         test_util.msg_to_dict(expected),
-        test_util.msg_to_dict(builds.build_to_v2_partial(build)))
+        test_util.msg_to_dict(builds.build_to_v2_partial(build))
+    )
 
   def test_build_to_v2_number_in_result_details(self):
     msg = builds.build_to_v2_partial(
         mkbuild(result_details={
-            'properties': {
-                'buildnumber': 54
-            },
-        },))
+            'properties': {'buildnumber': 54},
+        },)
+    )
     self.assertEqual(msg.number, 54)
 
   def test_parse_tags(self):
     tags = [
         'builder:excluded',
         'buildset:bs',
-        ('buildset:commit/gitiles/chromium.googlesource.com/'
-         'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b7'),
+        (
+            'buildset:commit/gitiles/chromium.googlesource.com/'
+            'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b7'
+        ),
         ('buildset:patch/gerrit/chromium-review.googlesource.com/677784/5'),
         'swarming_dimension:os:Ubuntu',
         'swarming_dimension:pool:luci.chromium.try',
-        ('swarming_tag:buildbucket_template_revision:'
-         '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'),
+        (
+            'swarming_tag:buildbucket_template_revision:'
+            '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'
+        ),
         ('swarming_tag:excluded:1'),
         'swarming_tag:priority:100',
         'build_address:bucket/builder/1',
@@ -215,13 +212,16 @@ class V2BuildsTest(unittest.TestCase):
         infra=build_pb2.BuildInfra(
             buildbucket=build_pb2.BuildInfra.Buildbucket(
                 service_config_revision=(
-                    '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'),),
+                    '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'
+                ),
+            ),
             swarming=build_pb2.BuildInfra.Swarming(
                 priority=100,
                 task_dimensions=[
                     common_pb2.StringPair(key='os', value='Ubuntu'),
                     common_pb2.StringPair(
-                        key='pool', value='luci.chromium.try'),
+                        key='pool', value='luci.chromium.try'
+                    ),
                 ],
             ),
         ),
@@ -232,7 +232,8 @@ class V2BuildsTest(unittest.TestCase):
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
     self.assertEqual(
-        test_util.msg_to_dict(expected), test_util.msg_to_dict(actual))
+        test_util.msg_to_dict(expected), test_util.msg_to_dict(actual)
+    )
 
   def test_build_to_v2_invalid_priority(self):
     build = mkbuild(tags=['swarming_tag:priority:blah'],)
@@ -241,18 +242,25 @@ class V2BuildsTest(unittest.TestCase):
     self.assertEqual(len(msg.tags), 0)
 
   def test_two_gitiles_commits(self):
-    build = mkbuild(tags=[
-        ('buildset:commit/gitiles/chromium.googlesource.com/'
-         'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b7'),
-        ('buildset:commit/gitiles/chromium.googlesource.com/'
-         'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b8'),
-    ])
+    build = mkbuild(
+        tags=[
+            (
+                'buildset:commit/gitiles/chromium.googlesource.com/'
+                'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b7'
+            ),
+            (
+                'buildset:commit/gitiles/chromium.googlesource.com/'
+                'infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b8'
+            ),
+        ]
+    )
     err_pattern = r'more than one commits/gitiles/ buildset'
     with self.assertRaisesRegexp(builds.MalformedBuild, err_pattern):
       builds.build_to_v2_partial(build)
 
 
 class TestStatusConversion(unittest.TestCase):
+
   def compare(self, build_v1, build_v2, test_to_v1=True):
     actual_v2 = build_pb2.Build()
     builds.status_to_v2(build_v1, actual_v2)
@@ -269,72 +277,87 @@ class TestStatusConversion(unittest.TestCase):
     self.assertEqual(actual_v1.cancelation_reason, build_v1.cancelation_reason)
 
   def test_empty(self):
-    self.compare(
-        model.Build(),
-        build_pb2.Build(status=common_pb2.SCHEDULED))
+    self.compare(model.Build(), build_pb2.Build(status=common_pb2.SCHEDULED))
 
   def test_started(self):
     self.compare(
         model.Build(status=model.BuildStatus.STARTED),
-        build_pb2.Build(status=common_pb2.STARTED))
+        build_pb2.Build(status=common_pb2.STARTED)
+    )
 
   def test_success(self):
     self.compare(
         model.Build(
             status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.SUCCESS),
-        build_pb2.Build(status=common_pb2.SUCCESS))
+            result=model.BuildResult.SUCCESS
+        ),
+        build_pb2.Build(status=common_pb2.SUCCESS)
+    )
 
   def test_build_failure(self):
     self.compare(
         model.Build(
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.FAILURE,
-            failure_reason=model.FailureReason.BUILD_FAILURE),
-        build_pb2.Build(status=common_pb2.FAILURE))
+            failure_reason=model.FailureReason.BUILD_FAILURE
+        ),
+        build_pb2.Build(status=common_pb2.FAILURE)
+    )
 
   def test_generic_failure(self):
     self.compare(
         model.Build(
             status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.FAILURE),
+            result=model.BuildResult.FAILURE
+        ),
         build_pb2.Build(
             status=common_pb2.INFRA_FAILURE,
             infra_failure_reason=build_pb2.InfraFailureReason(
                 resource_exhaustion=False,
-            )),
-        test_to_v1=False)
+            )
+        ),
+        test_to_v1=False
+    )
 
   def test_infra_failure(self):
     self.compare(
         model.Build(
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.FAILURE,
-            failure_reason=model.FailureReason.INFRA_FAILURE),
+            failure_reason=model.FailureReason.INFRA_FAILURE
+        ),
         build_pb2.Build(
             status=common_pb2.INFRA_FAILURE,
             infra_failure_reason=build_pb2.InfraFailureReason(
                 resource_exhaustion=False,
-            )))
+            )
+        )
+    )
 
   def test_canceled(self):
     self.compare(
         model.Build(
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.CANCELED,
-            cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY),
-        build_pb2.Build(status=common_pb2.CANCELED))
+            cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY
+        ),
+        build_pb2.Build(status=common_pb2.CANCELED)
+    )
 
   def test_timeout(self):
     self.compare(
         model.Build(
             status=model.BuildStatus.COMPLETED,
             result=model.BuildResult.CANCELED,
-            cancelation_reason=model.CancelationReason.TIMEOUT),
+            cancelation_reason=model.CancelationReason.TIMEOUT
+        ),
         build_pb2.Build(
             status=common_pb2.INFRA_FAILURE,
             infra_failure_reason=build_pb2.InfraFailureReason(
-                resource_exhaustion=True)))
+                resource_exhaustion=True
+            )
+        )
+    )
 
 
 def mkbuild(**kwargs):

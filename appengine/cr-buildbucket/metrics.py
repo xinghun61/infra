@@ -91,8 +91,9 @@ def _incrementer(metric_suffix, description, fields):
   """
 
   def mk_metric(metric_prefix):
-    return gae_ts_mon.CounterMetric(metric_prefix + metric_suffix, description,
-                                    fields)
+    return gae_ts_mon.CounterMetric(
+        metric_prefix + metric_suffix, description, fields
+    )
 
   metric_prod = mk_metric(_METRIC_PREFIX_PROD)
   metric_exp = mk_metric(_METRIC_PREFIX_EXPERIMENTAL)
@@ -120,7 +121,8 @@ def _adder(metric_suffix, description, fields, bucketer, units, value_fn):
         description,
         fields,
         bucketer=bucketer,
-        units=units)
+        units=units
+    )
 
   metric_prod = mk_metric(_METRIC_PREFIX_PROD)
   metric_exp = mk_metric(_METRIC_PREFIX_EXPERIMENTAL)
@@ -134,32 +136,42 @@ def _adder(metric_suffix, description, fields, bucketer, units, value_fn):
 
 
 def _duration_adder(metric_suffix, description, value_fn):
-  return _adder(metric_suffix, description,
-                _build_fields('bucket', 'builder', 'result', 'failure_reason',
-                              'cancelation_reason', 'canary'), BUCKETER_48_HR,
-                gae_ts_mon.MetricsDataUnits.SECONDS, value_fn)
+  return _adder(
+      metric_suffix, description,
+      _build_fields(
+          'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
+          'canary'
+      ), BUCKETER_48_HR, gae_ts_mon.MetricsDataUnits.SECONDS, value_fn
+  )
 
 
-inc_created_builds = _incrementer('created', 'Build creation',
-                                  _build_fields('bucket', 'builder',
-                                                'user_agent'))
-inc_started_builds = _incrementer('started', 'Build start',
-                                  _build_fields('bucket', 'builder', 'canary'))
+inc_created_builds = _incrementer(
+    'created', 'Build creation',
+    _build_fields('bucket', 'builder', 'user_agent')
+)
+inc_started_builds = _incrementer(
+    'started', 'Build start', _build_fields('bucket', 'builder', 'canary')
+)
 inc_completed_builds = _incrementer(
     'completed',
     'Build completion, including success, failure and cancellation',
-    _build_fields('bucket', 'builder', 'result', 'failure_reason',
-                  'cancelation_reason', 'canary'))
-inc_lease_expirations = _incrementer('lease_expired', 'Build lease expirations',
-                                     _build_fields('bucket', 'builder',
-                                                   'status'))
-inc_leases = _incrementer('leases',
-                          'Successful build leases or lease extensions',
-                          _build_fields('bucket', 'builder'))
+    _build_fields(
+        'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
+        'canary'
+    )
+)
+inc_lease_expirations = _incrementer(
+    'lease_expired', 'Build lease expirations',
+    _build_fields('bucket', 'builder', 'status')
+)
+inc_leases = _incrementer(
+    'leases', 'Successful build leases or lease extensions',
+    _build_fields('bucket', 'builder')
+)
 
 inc_heartbeat_failures = gae_ts_mon.CounterMetric(
-    'buildbucket/builds/heartbeats', 'Failures to extend a build lease',
-    []).increment
+    'buildbucket/builds/heartbeats', 'Failures to extend a build lease', []
+).increment
 
 # requires the argument to have non-None create_time and complete_time.
 add_build_cycle_duration = _duration_adder(  # pragma: no branch
@@ -178,37 +190,44 @@ add_build_scheduling_duration = _duration_adder(  # pragma: no branch
 
 BUILD_COUNT_PROD = gae_ts_mon.GaugeMetric(
     _METRIC_PREFIX_PROD + 'count', 'Number of pending/running prod builds',
-    _build_fields('bucket', 'builder', 'status'))
+    _build_fields('bucket', 'builder', 'status')
+)
 BUILD_COUNT_EXPERIMENTAL = gae_ts_mon.GaugeMetric(
     _METRIC_PREFIX_EXPERIMENTAL + 'count',
     'Number of pending/running experimental builds',
-    _build_fields('bucket', 'builder', 'status'))
+    _build_fields('bucket', 'builder', 'status')
+)
 
 MAX_AGE_SCHEDULED = gae_ts_mon.FloatMetric(
     'buildbucket/builds/max_age_scheduled',
-    'Age of the oldest SCHEDULED build.',
-    (_build_fields('bucket', 'builder') +
-     [gae_ts_mon.BooleanField('must_be_never_leased')]),
-    units=gae_ts_mon.MetricsDataUnits.SECONDS)
+    'Age of the oldest SCHEDULED build.', (
+        _build_fields('bucket', 'builder') +
+        [gae_ts_mon.BooleanField('must_be_never_leased')]
+    ),
+    units=gae_ts_mon.MetricsDataUnits.SECONDS
+)
 SEQUENCE_NUMBER_GEN_DURATION_MS = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/sequence_number/gen_duration',
     'Duration of a sequence number generation in ms',
     [gae_ts_mon.StringField('sequence')],
     # Bucketer for 1ms..5s range
     bucketer=BUCKETER_5_SEC,
-    units=gae_ts_mon.MetricsDataUnits.MILLISECONDS)
+    units=gae_ts_mon.MetricsDataUnits.MILLISECONDS
+)
 TAG_INDEX_INCONSISTENT_ENTRIES = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/tag_index/inconsistent_entries',
     'Number of inconsistent entries encountered during build search',
     [gae_ts_mon.StringField('tag')],
     # We can't have more than 1000 entries in a tag index.
-    bucketer=BUCKETER_1K)
+    bucketer=BUCKETER_1K
+)
 TAG_INDEX_SEARCH_SKIPPED_BUILDS = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/tag_index/skipped_builds',
     'Number of builds we fetched, but skipped',
     [gae_ts_mon.StringField('tag')],
     # We can't have more than 1000 entries in a tag index.
-    bucketer=BUCKETER_1K)
+    bucketer=BUCKETER_1K
+)
 
 
 @ndb.tasklet

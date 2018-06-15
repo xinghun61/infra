@@ -16,7 +16,8 @@ import swarming
 def create_frontend_app():  # pragma: no cover
   """Returns WSGI app for frontend."""
   app = webapp2.WSGIApplication(
-      handlers.get_frontend_routes(), debug=utils.is_local_dev_server())
+      handlers.get_frontend_routes(), debug=utils.is_local_dev_server()
+  )
   gae_ts_mon.initialize(app)
   return app
 
@@ -27,8 +28,9 @@ def create_backend_app():  # pragma: no cover
   app = webapp2.WSGIApplication(routes, debug=utils.is_local_dev_server())
   gae_ts_mon.initialize(app, cron_module='backend')
   gae_ts_mon.register_global_metrics(metrics.GLOBAL_METRICS)
-  gae_ts_mon.register_global_metrics_callback('buildbucket_global',
-                                              metrics.update_global_metrics)
+  gae_ts_mon.register_global_metrics_callback(
+      'buildbucket_global', metrics.update_global_metrics
+  )
   return app
 
 

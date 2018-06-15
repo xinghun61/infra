@@ -18,7 +18,8 @@ class ApiCommonTests(testing.AppengineTestCase):
   def setUp(self):
     super(ApiCommonTests, self).setUp()
     self.patch(
-        'components.utils.utcnow', return_value=datetime.datetime(2017, 1, 1))
+        'components.utils.utcnow', return_value=datetime.datetime(2017, 1, 1)
+    )
     self.test_build = model.Build(
         id=1,
         bucket='chromium',
@@ -42,9 +43,7 @@ class ApiCommonTests(testing.AppengineTestCase):
         'bucket': 'chromium',
         'created_ts': '1483228800000000',
         'id': '1',
-        'parameters_json': json.dumps({
-            'buildername': 'linux_rel'
-        }),
+        'parameters_json': json.dumps({'buildername': 'linux_rel'}),
         'result_details_json': 'null',
         'status': 'SCHEDULED',
         'tags': [],
@@ -65,13 +64,9 @@ class ApiCommonTests(testing.AppengineTestCase):
         'completed_ts': '1483315200000000',
         'created_ts': '1483228800000000',
         'id': '1',
-        'parameters_json': json.dumps({
-            'buildername': 'linux_rel'
-        }),
+        'parameters_json': json.dumps({'buildername': 'linux_rel'}),
         'result': 'SUCCESS',
-        'result_details_json': json.dumps({
-            'result': 'nice'
-        }),
+        'result_details_json': json.dumps({'result': 'nice'}),
         'started_ts': '1483315200000000',
         'status': 'COMPLETED',
         'tags': [],

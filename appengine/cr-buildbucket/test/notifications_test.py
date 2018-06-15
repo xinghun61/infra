@@ -26,24 +26,29 @@ class NotificationsTest(testing.AppengineTestCase):
     super(NotificationsTest, self).setUp()
 
     self.app = webtest.TestApp(
-        main.create_backend_app(), extra_environ={'REMOTE_ADDR': '127.0.0.1'})
+        main.create_backend_app(), extra_environ={'REMOTE_ADDR': '127.0.0.1'}
+    )
 
     self.patch(
         'notifications.enqueue_tasks_async',
         autospec=True,
-        return_value=test_util.future(None))
+        return_value=test_util.future(None)
+    )
     self.patch(
         'bq.enqueue_pull_task_async',
         autospec=True,
-        return_value=test_util.future(None))
+        return_value=test_util.future(None)
+    )
 
     self.patch(
         'google.appengine.api.app_identity.get_default_version_hostname',
         return_value='buildbucket.example.com',
-        autospec=True)
+        autospec=True
+    )
 
     self.patch(
-        'components.utils.utcnow', return_value=datetime.datetime(2017, 1, 1))
+        'components.utils.utcnow', return_value=datetime.datetime(2017, 1, 1)
+    )
 
     self.patch('components.pubsub.publish', autospec=True)
 
@@ -87,36 +92,37 @@ class NotificationsTest(testing.AppengineTestCase):
                 'payload': json.dumps(callback_task_payload, sort_keys=True),
                 'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
             },
-        ])
+        ]
+    )
 
     self.app.post_json(
         '/internal/task/buildbucket/notify/1',
         params=global_task_payload,
-        headers={'X-AppEngine-QueueName': 'backend-default'})
+        headers={'X-AppEngine-QueueName': 'backend-default'}
+    )
     pubsub.publish.assert_called_with(
         'projects/testbed-test/topics/builds',
-        json.dumps(
-            {
-                'build': api_common.build_to_dict(build),
-                'hostname': 'buildbucket.example.com',
-            },
-            sort_keys=True),
+        json.dumps({
+            'build': api_common.build_to_dict(build),
+            'hostname': 'buildbucket.example.com',
+        },
+                   sort_keys=True),
         {'build_id': '1'},
     )
 
     self.app.post_json(
         '/internal/task/buildbucket/notify/1',
         params=callback_task_payload,
-        headers={'X-AppEngine-QueueName': 'backend-default'})
+        headers={'X-AppEngine-QueueName': 'backend-default'}
+    )
     pubsub.publish.assert_called_with(
         'projects/example/topics/buildbucket',
-        json.dumps(
-            {
-                'build': api_common.build_to_dict(build),
-                'hostname': 'buildbucket.example.com',
-                'user_data': 'hello',
-            },
-            sort_keys=True),
+        json.dumps({
+            'build': api_common.build_to_dict(build),
+            'hostname': 'buildbucket.example.com',
+            'user_data': 'hello',
+        },
+                   sort_keys=True),
         {
             'build_id': '1',
             'auth_token': 'secret',
@@ -149,19 +155,20 @@ class NotificationsTest(testing.AppengineTestCase):
                 'payload': json.dumps(global_task_payload, sort_keys=True),
                 'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
             },
-        ])
+        ]
+    )
 
     self.app.post_json(
         '/internal/task/buildbucket/notify/1',
         params=global_task_payload,
-        headers={'X-AppEngine-QueueName': 'backend-default'})
+        headers={'X-AppEngine-QueueName': 'backend-default'}
+    )
     pubsub.publish.assert_called_with(
         'projects/testbed-test/topics/builds',
-        json.dumps(
-            {
-                'build': api_common.build_to_dict(build),
-                'hostname': 'buildbucket.example.com',
-            },
-            sort_keys=True),
+        json.dumps({
+            'build': api_common.build_to_dict(build),
+            'hostname': 'buildbucket.example.com',
+        },
+                   sort_keys=True),
         {'build_id': '1'},
     )

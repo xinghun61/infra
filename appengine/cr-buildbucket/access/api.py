@@ -20,7 +20,8 @@ def create_resource_permissions(role):
   if role is None:
     return access_pb2.PermittedActionsResponse.ResourcePermissions()
   return access_pb2.PermittedActionsResponse.ResourcePermissions(
-      actions=[action.name for action in acl.ACTIONS_FOR_ROLE[role]])
+      actions=[action.name for action in acl.ACTIONS_FOR_ROLE[role]]
+  )
 
 
 class AccessServicer(object):
@@ -34,13 +35,13 @@ class AccessServicer(object):
 
   def PermittedActions(self, request, _context):
     """Returns a set of permitted actions for the requested resources."""
-    logging.debug('Received request from %s for: %s',
-                  auth.get_current_identity(), request)
+    logging.debug(
+        'Received request from %s for: %s', auth.get_current_identity(), request
+    )
     if request.resource_kind != 'bucket':
       return access_pb2.PermittedActionsResponse()
     roles = {
-        bucket: acl.get_role_async(bucket)
-        for bucket in request.resource_ids
+        bucket: acl.get_role_async(bucket) for bucket in request.resource_ids
     }
     permitted = {
         bucket: create_resource_permissions(role.get_result())
@@ -62,8 +63,8 @@ class AccessServicer(object):
                 actions={
                     action.name:
                     access_pb2.DescriptionResponse.ResourceDescription.Action(
-                        comment=description,)
-                    for action, description in
+                        comment=description,
+                    ) for action, description in
                     acl.ACTION_DESCRIPTIONS.iteritems()
                 },
                 roles={
@@ -73,8 +74,8 @@ class AccessServicer(object):
                             action.name for action in acl.ACTIONS_FOR_ROLE[role]
                         ],
                         comment=description,
-                    )
-                    for role, description in acl.ROLE_DESCRIPTIONS.iteritems()
+                    ) for role, description in acl.ROLE_DESCRIPTIONS.iteritems()
                 },
             )
-        ],)
+        ],
+    )

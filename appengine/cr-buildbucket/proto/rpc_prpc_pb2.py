@@ -293,14 +293,15 @@ FILE_DESCRIPTOR_SET.ParseFromString(
             'RsntkQJqLppD6QXtSh2NNxD9+OEjHoKIm4vmxJiKqklgZeGIm4u9Kp4NreyLMCDuqIibl00cDv'
             'PosNAaWCqJwpEtrsfFu5DrylM/rBbwDBowaQgIeLlPRRahNf7yoAr5QWv8ZRgFPzBUOM4t83j6'
             'fz4twpP6ojXAkx7+FcR3tgXObq3JE99KOJJcuG66/hkxAlbxEjVRBumoOjV5pSr5Ssv9Bgz4Eq'
-            'EBRBEteMXda0GY0S3zZRXH1B26H0eEGd3qPRIKM7p17AVlef5fcY5P9w==')))
+            'EBRBEteMXda0GY0S3zZRXH1B26H0eEGd3qPRIKM7p17AVlef5fcY5P9w=='
+        )
+    )
+)
 _INDEX = {
     f.name: {
         'descriptor': f,
-        'services': {s.name: s
-                     for s in f.service},
-    }
-    for f in FILE_DESCRIPTOR_SET.file
+        'services': {s.name: s for s in f.service},
+    } for f in FILE_DESCRIPTOR_SET.file
 }
 
 BuildsServiceDescription = {

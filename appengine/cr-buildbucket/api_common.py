@@ -81,7 +81,8 @@ def build_to_message(build, include_lease_key=False):
   )
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(
-        build.lease_expiration_date)
+        build.lease_expiration_date
+    )
   return msg
 
 

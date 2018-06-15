@@ -11,10 +11,12 @@ import v2
 class ParseLogDogURLTest(unittest.TestCase):
 
   def test_success(self):
-    url = ('logdog://luci-logdog-dev.appspot.com/'
-           'infra/'
-           'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048/+/'
-           'annotations')
+    url = (
+        'logdog://luci-logdog-dev.appspot.com/'
+        'infra/'
+        'buildbucket/cr-buildbucket-dev.appspot.com/8952867341410234048/+/'
+        'annotations'
+    )
     expected = (
         'luci-logdog-dev.appspot.com',
         'infra',

@@ -19,3 +19,6 @@ rollback:
 
 format:
 	git cl format --python --full
+
+format-all:
+	find . -iname \*.py -type f | xargs yapf -i

@@ -1,6 +1,7 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """Access to bucket configurations.
 
 Stores bucket list in datastore, synchronizes it with bucket configs in
@@ -91,8 +92,10 @@ def validate_buildbucket_cfg(cfg, ctx):
       if not acl_set.name:
         ctx.error('name is unspecified')
       elif not ACL_SET_NAME_RE.match(acl_set.name):
-        ctx.error('invalid name "%s" does not match regex %r', acl_set.name,
-                  ACL_SET_NAME_RE.pattern)
+        ctx.error(
+            'invalid name "%s" does not match regex %r', acl_set.name,
+            ACL_SET_NAME_RE.pattern
+        )
       elif acl_set.name in acl_set_names:
         ctx.error('duplicate name "%s"', acl_set.name)
       acl_set_names.add(acl_set.name)
@@ -129,17 +132,21 @@ def validate_buildbucket_cfg(cfg, ctx):
       validate_access_list(bucket.acls, ctx)
       for name in bucket.acl_sets:
         if name not in acl_set_names:
-          ctx.error('undefined ACL set "%s". '
-                    'It must be defined in the same file', name)
+          ctx.error(
+              'undefined ACL set "%s". '
+              'It must be defined in the same file', name
+          )
 
       if bucket.HasField('swarming'):  # pragma: no cover
         with ctx.prefix('swarming: '):
-          swarmingcfg.validate_project_cfg(bucket.swarming, mixin_by_name,
-                                           mixins_are_valid, ctx)
+          swarmingcfg.validate_project_cfg(
+              bucket.swarming, mixin_by_name, mixins_are_valid, ctx
+          )
 
 
-@validation.rule(self_config_set(), 'settings.cfg',
-                 service_config_pb2.SettingsCfg)
+@validation.rule(
+    self_config_set(), 'settings.cfg', service_config_pb2.SettingsCfg
+)
 def validate_settings_cfg(cfg, ctx):  # pragma: no cover
   from swarming import swarmingcfg
 
@@ -220,8 +227,10 @@ def get_bucket_async(name):
   bucket = yield Bucket.get_by_id_async(name)
   if bucket is None:
     raise ndb.Return(None, None)
-  raise ndb.Return(bucket.project_id,
-                   parse_binary_bucket_config(bucket.config_content_binary))
+  raise ndb.Return(
+      bucket.project_id,
+      parse_binary_bucket_config(bucket.config_content_binary)
+  )
 
 
 @ndb.non_transactional
@@ -253,8 +262,9 @@ def cron_update_buckets():
   """
   from swarming import swarmingcfg
 
-  config_map = config.get_project_configs(cfg_path(),
-                                          project_config_pb2.BuildbucketCfg)
+  config_map = config.get_project_configs(
+      cfg_path(), project_config_pb2.BuildbucketCfg
+  )
 
   buckets_of_project = {}
   for pid, (_, pcfg, _) in config_map.iteritems():
@@ -275,7 +285,8 @@ def cron_update_buckets():
 
     # revision is None in file-system mode. Use SHA1 of the config as revision.
     revision = revision or 'sha1:%s' % hashlib.sha1(
-        project_cfg.SerializeToString()).hexdigest()
+        project_cfg.SerializeToString()
+    ).hexdigest()
     acl_sets_by_name = {a.name: a for a in project_cfg.acl_sets}
     builder_mixins_by_name = {m.name: m for m in project_cfg.builder_mixins}
 
@@ -291,12 +302,13 @@ def cron_update_buckets():
       for name in bucket_cfg.acl_sets:
         acl_set = acl_sets_by_name.get(name)
         if not acl_set:
-          logging.error('referenced acl_set not found.\n'
-                        'Bucket: %r\n'
-                        'ACL set name: %r\n'
-                        'Project id: %r\n'
-                        'Config revision: %r', bucket_cfg.name, name,
-                        project_id, revision)
+          logging.error(
+              'referenced acl_set not found.\n'
+              'Bucket: %r\n'
+              'ACL set name: %r\n'
+              'Project id: %r\n'
+              'Config revision: %r', bucket_cfg.name, name, project_id, revision
+          )
           continue
         bucket_cfg.acls.extend(acl_set.acls)
       del bucket_cfg.acl_sets[:]
@@ -318,9 +330,11 @@ def cron_update_buckets():
         if bucket and bucket.project_id != project_id:
           # Does bucket.project_id still claim this bucket?
           if bucket_cfg.name in buckets_of_project.get(bucket.project_id, []):
-            logging.error('Failed to reserve bucket %s for project %s: '
-                          'already reserved by %s', bucket_cfg.name, project_id,
-                          bucket.project_id)
+            logging.error(
+                'Failed to reserve bucket %s for project %s: '
+                'already reserved by %s', bucket_cfg.name, project_id,
+                bucket.project_id
+            )
             return
         if (bucket and
             bucket.entity_schema_version == CURRENT_BUCKET_SCHEMA_VERSION and
@@ -338,10 +352,12 @@ def cron_update_buckets():
             config_content_binary=bucket_cfg.SerializeToString(),
         ).put()
         if report_reservation:
-          logging.warning('Reserved bucket %s for project %s', bucket_cfg.name,
-                          project_id)
-        logging.info('Updated bucket %s to revision %s', bucket_cfg.name,
-                     revision)
+          logging.warning(
+              'Reserved bucket %s for project %s', bucket_cfg.name, project_id
+          )
+        logging.info(
+            'Updated bucket %s to revision %s', bucket_cfg.name, revision
+        )
 
       update_bucket()
 
@@ -354,8 +370,9 @@ def cron_update_buckets():
   ]
   to_delete = set(all_bucket_keys).difference(existing_bucket_keys)
   if to_delete:
-    logging.warning('Deleting buckets: %s',
-                    ', '.join(k.id() for k in to_delete))
+    logging.warning(
+        'Deleting buckets: %s', ', '.join(k.id() for k in to_delete)
+    )
     ndb.delete_multi(to_delete)
 
 
@@ -367,8 +384,9 @@ def get_buildbucket_cfg_url(project_id):
   try:
     loc = gitiles.Location.parse(config_url)
   except ValueError:  # pragma: no cover
-    logging.exception('Not a valid Gitiles URL %r of project %s', config_url,
-                      project_id)
+    logging.exception(
+        'Not a valid Gitiles URL %r of project %s', config_url, project_id
+    )
     return None
   return str(loc.join(cfg_path()))
 
@@ -376,5 +394,6 @@ def get_buildbucket_cfg_url(project_id):
 @ndb.tasklet
 def get_settings_async():  # pragma: no cover
   _, global_settings = yield config.get_self_config_async(
-      'settings.cfg', service_config_pb2.SettingsCfg, store_last_good=True)
+      'settings.cfg', service_config_pb2.SettingsCfg, store_last_good=True
+  )
   raise ndb.Return(global_settings or service_config_pb2.SettingsCfg())

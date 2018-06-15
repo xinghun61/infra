@@ -60,8 +60,7 @@ class AccessApiTest(testing.AppengineTestCase):
       self.assertEqual(len(perms.actions), 5)  # Sanity check.
       self.assertEqual(
           set(perms.actions),
-          {action.name
-           for action in acl.ACTIONS_FOR_ROLE[Acl.SCHEDULER]},
+          {action.name for action in acl.ACTIONS_FOR_ROLE[Acl.SCHEDULER]},
       )
 
   def test_description(self):
@@ -72,8 +71,7 @@ class AccessApiTest(testing.AppengineTestCase):
     self.assertEqual(resource.kind, 'bucket')
     self.assertEqual(
         set(resource.actions.keys()),
-        {action.name
-         for action in acl.ACTION_DESCRIPTIONS.keys()},
+        {action.name for action in acl.ACTION_DESCRIPTIONS.keys()},
     )
     self.assertEqual(
         set(resource.roles.keys()),

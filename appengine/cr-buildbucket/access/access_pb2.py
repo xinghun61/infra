@@ -25,7 +25,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     dependencies=[
         google_dot_protobuf_dot_duration__pb2.DESCRIPTOR,
         google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,
-    ])
+    ]
+)
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTION = _descriptor.Descriptor(
@@ -51,7 +52,8 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTION = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -88,7 +90,8 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='comment',
             full_name=
@@ -105,7 +108,8 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -142,7 +146,8 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTIONSENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='value',
             full_name=
@@ -159,13 +164,15 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTIONSENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=_descriptor._ParseOptions(descriptor_pb2.MessageOptions(),
-                                      _b('8\001')),
+    options=_descriptor._ParseOptions(
+        descriptor_pb2.MessageOptions(), _b('8\001')
+    ),
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -197,7 +204,8 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLESENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='value',
             full_name=
@@ -214,13 +222,15 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLESENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=_descriptor._ParseOptions(descriptor_pb2.MessageOptions(),
-                                      _b('8\001')),
+    options=_descriptor._ParseOptions(
+        descriptor_pb2.MessageOptions(), _b('8\001')
+    ),
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -251,7 +261,8 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='comment',
             full_name='access.DescriptionResponse.ResourceDescription.comment',
@@ -267,7 +278,8 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='actions',
             full_name='access.DescriptionResponse.ResourceDescription.actions',
@@ -283,7 +295,8 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='roles',
             full_name='access.DescriptionResponse.ResourceDescription.roles',
@@ -299,7 +312,8 @@ _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[
@@ -340,7 +354,8 @@ _DESCRIPTIONRESPONSE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[
@@ -378,7 +393,8 @@ _PERMITTEDACTIONSREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='resource_ids',
             full_name='access.PermittedActionsRequest.resource_ids',
@@ -394,7 +410,8 @@ _PERMITTEDACTIONSREQUEST = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -431,7 +448,8 @@ _PERMITTEDACTIONSRESPONSE_RESOURCEPERMISSIONS = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -467,7 +485,8 @@ _PERMITTEDACTIONSRESPONSE_PERMITTEDENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='value',
             full_name='access.PermittedActionsResponse.PermittedEntry.value',
@@ -483,13 +502,15 @@ _PERMITTEDACTIONSRESPONSE_PERMITTEDENTRY = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
     enum_types=[],
-    options=_descriptor._ParseOptions(descriptor_pb2.MessageOptions(),
-                                      _b('8\001')),
+    options=_descriptor._ParseOptions(
+        descriptor_pb2.MessageOptions(), _b('8\001')
+    ),
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
@@ -520,7 +541,8 @@ _PERMITTEDACTIONSRESPONSE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='validity_duration',
             full_name='access.PermittedActionsResponse.validity_duration',
@@ -536,7 +558,8 @@ _PERMITTEDACTIONSRESPONSE = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[
@@ -556,31 +579,39 @@ _PERMITTEDACTIONSRESPONSE = _descriptor.Descriptor(
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTION.containing_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLE.containing_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTIONSENTRY.fields_by_name[
-    'value'].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTION
+    'value'
+].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTION
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTIONSENTRY.containing_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLESENTRY.fields_by_name[
-    'value'].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLE
+    'value'
+].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLE
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLESENTRY.containing_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION.fields_by_name[
-    'actions'].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTIONSENTRY
+    'actions'
+].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTIONSENTRY
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION.fields_by_name[
-    'roles'].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLESENTRY
+    'roles'
+].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLESENTRY
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION.containing_type = _DESCRIPTIONRESPONSE
 _DESCRIPTIONRESPONSE.fields_by_name[
-    'resources'].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION
+    'resources'
+].message_type = _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION
 _PERMITTEDACTIONSRESPONSE_RESOURCEPERMISSIONS.containing_type = _PERMITTEDACTIONSRESPONSE
 _PERMITTEDACTIONSRESPONSE_PERMITTEDENTRY.fields_by_name[
-    'value'].message_type = _PERMITTEDACTIONSRESPONSE_RESOURCEPERMISSIONS
+    'value'
+].message_type = _PERMITTEDACTIONSRESPONSE_RESOURCEPERMISSIONS
 _PERMITTEDACTIONSRESPONSE_PERMITTEDENTRY.containing_type = _PERMITTEDACTIONSRESPONSE
 _PERMITTEDACTIONSRESPONSE.fields_by_name[
-    'permitted'].message_type = _PERMITTEDACTIONSRESPONSE_PERMITTEDENTRY
+    'permitted'
+].message_type = _PERMITTEDACTIONSRESPONSE_PERMITTEDENTRY
 _PERMITTEDACTIONSRESPONSE.fields_by_name[
-    'validity_duration'].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
+    'validity_duration'
+].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
 DESCRIPTOR.message_types_by_name['DescriptionResponse'] = _DESCRIPTIONRESPONSE
-DESCRIPTOR.message_types_by_name[
-    'PermittedActionsRequest'] = _PERMITTEDACTIONSREQUEST
-DESCRIPTOR.message_types_by_name[
-    'PermittedActionsResponse'] = _PERMITTEDACTIONSRESPONSE
+DESCRIPTOR.message_types_by_name['PermittedActionsRequest'
+                                ] = _PERMITTEDACTIONSREQUEST
+DESCRIPTOR.message_types_by_name['PermittedActionsResponse'
+                                ] = _PERMITTEDACTIONSRESPONSE
 
 DescriptionResponse = _reflection.GeneratedProtocolMessageType(
     'DescriptionResponse',
@@ -598,7 +629,8 @@ DescriptionResponse = _reflection.GeneratedProtocolMessageType(
                         _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTION,
                         __module__='access_pb2'
                         # @@protoc_insertion_point(class_scope:access.DescriptionResponse.ResourceDescription.Action)
-                    )),
+                    )
+                ),
                 Role=_reflection.GeneratedProtocolMessageType(
                     'Role',
                     (_message.Message,),
@@ -606,7 +638,8 @@ DescriptionResponse = _reflection.GeneratedProtocolMessageType(
                         DESCRIPTOR=_DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLE,
                         __module__='access_pb2'
                         # @@protoc_insertion_point(class_scope:access.DescriptionResponse.ResourceDescription.Role)
-                    )),
+                    )
+                ),
                 ActionsEntry=_reflection.GeneratedProtocolMessageType(
                     'ActionsEntry',
                     (_message.Message,),
@@ -615,7 +648,8 @@ DescriptionResponse = _reflection.GeneratedProtocolMessageType(
                         _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTIONSENTRY,
                         __module__='access_pb2'
                         # @@protoc_insertion_point(class_scope:access.DescriptionResponse.ResourceDescription.ActionsEntry)
-                    )),
+                    )
+                ),
                 RolesEntry=_reflection.GeneratedProtocolMessageType(
                     'RolesEntry',
                     (_message.Message,),
@@ -624,15 +658,18 @@ DescriptionResponse = _reflection.GeneratedProtocolMessageType(
                         _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLESENTRY,
                         __module__='access_pb2'
                         # @@protoc_insertion_point(class_scope:access.DescriptionResponse.ResourceDescription.RolesEntry)
-                    )),
+                    )
+                ),
                 DESCRIPTOR=_DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION,
                 __module__='access_pb2'
                 # @@protoc_insertion_point(class_scope:access.DescriptionResponse.ResourceDescription)
-            )),
+            )
+        ),
         DESCRIPTOR=_DESCRIPTIONRESPONSE,
         __module__='access_pb2'
         # @@protoc_insertion_point(class_scope:access.DescriptionResponse)
-    ))
+    )
+)
 _sym_db.RegisterMessage(DescriptionResponse)
 _sym_db.RegisterMessage(DescriptionResponse.ResourceDescription)
 _sym_db.RegisterMessage(DescriptionResponse.ResourceDescription.Action)
@@ -647,7 +684,8 @@ PermittedActionsRequest = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_PERMITTEDACTIONSREQUEST,
         __module__='access_pb2'
         # @@protoc_insertion_point(class_scope:access.PermittedActionsRequest)
-    ))
+    )
+)
 _sym_db.RegisterMessage(PermittedActionsRequest)
 
 PermittedActionsResponse = _reflection.GeneratedProtocolMessageType(
@@ -661,7 +699,8 @@ PermittedActionsResponse = _reflection.GeneratedProtocolMessageType(
                 DESCRIPTOR=_PERMITTEDACTIONSRESPONSE_RESOURCEPERMISSIONS,
                 __module__='access_pb2'
                 # @@protoc_insertion_point(class_scope:access.PermittedActionsResponse.ResourcePermissions)
-            )),
+            )
+        ),
         PermittedEntry=_reflection.GeneratedProtocolMessageType(
             'PermittedEntry',
             (_message.Message,),
@@ -669,22 +708,27 @@ PermittedActionsResponse = _reflection.GeneratedProtocolMessageType(
                 DESCRIPTOR=_PERMITTEDACTIONSRESPONSE_PERMITTEDENTRY,
                 __module__='access_pb2'
                 # @@protoc_insertion_point(class_scope:access.PermittedActionsResponse.PermittedEntry)
-            )),
+            )
+        ),
         DESCRIPTOR=_PERMITTEDACTIONSRESPONSE,
         __module__='access_pb2'
         # @@protoc_insertion_point(class_scope:access.PermittedActionsResponse)
-    ))
+    )
+)
 _sym_db.RegisterMessage(PermittedActionsResponse)
 _sym_db.RegisterMessage(PermittedActionsResponse.ResourcePermissions)
 _sym_db.RegisterMessage(PermittedActionsResponse.PermittedEntry)
 
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTIONSENTRY.has_options = True
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ACTIONSENTRY._options = _descriptor._ParseOptions(
-    descriptor_pb2.MessageOptions(), _b('8\001'))
+    descriptor_pb2.MessageOptions(), _b('8\001')
+)
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLESENTRY.has_options = True
 _DESCRIPTIONRESPONSE_RESOURCEDESCRIPTION_ROLESENTRY._options = _descriptor._ParseOptions(
-    descriptor_pb2.MessageOptions(), _b('8\001'))
+    descriptor_pb2.MessageOptions(), _b('8\001')
+)
 _PERMITTEDACTIONSRESPONSE_PERMITTEDENTRY.has_options = True
 _PERMITTEDACTIONSRESPONSE_PERMITTEDENTRY._options = _descriptor._ParseOptions(
-    descriptor_pb2.MessageOptions(), _b('8\001'))
+    descriptor_pb2.MessageOptions(), _b('8\001')
+)
 # @@protoc_insertion_point(module_scope)

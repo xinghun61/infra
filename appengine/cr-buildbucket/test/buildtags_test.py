@@ -9,10 +9,12 @@ import errors
 
 
 class BuildAddressTests(unittest.TestCase):
+
   def test_parse_build_address_success(self):
     self.assertEqual(
         buildtags.parse_build_address('luci.chromium.try/linux-rel/2'),
-        ('luci.chromium.try', 'linux-rel', 2))
+        ('luci.chromium.try', 'linux-rel', 2)
+    )
 
   def test_parse_build_address_invalid_number_of_slashes(self):
     with self.assertRaises(ValueError):
@@ -24,24 +26,31 @@ class BuildAddressTests(unittest.TestCase):
 
 
 class BuildsetTests(unittest.TestCase):
+
   def test_gitiles(self):
     buildtags.validate_buildset(
         'commit/gitiles/chromium.googlesource.com/chromium/src/+/'
-        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    )
 
   def test_gerrit(self):
     buildtags.validate_buildset(
-        'patch/gerrit/chromium-review.googlesource.com/123/456')
+        'patch/gerrit/chromium-review.googlesource.com/123/456'
+    )
 
   def test_user_format(self):
     buildtags.validate_buildset('myformat/x')
 
   def test_invalid(self):
     bad = [
-        ('commit/gitiles/chromium.googlesource.com/a/chromium/src/+/'
-         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
-        ('commit/gitiles/chromium.googlesource.com/chromium/src.git/+/'
-         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+        (
+            'commit/gitiles/chromium.googlesource.com/a/chromium/src/+/'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        ),
+        (
+            'commit/gitiles/chromium.googlesource.com/chromium/src.git/+/'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        ),
         'commit/gitiles/chromium.googlesource.com/chromium/src.git/+/aaaaaaaa',
         'patch/gerrit/chromium-review.googlesource.com/aa/bb',
         'a' * 2000,  # too long
@@ -52,6 +61,7 @@ class BuildsetTests(unittest.TestCase):
 
 
 class ValidateTagsTests(unittest.TestCase):
+
   def test_tags_none(self):
     self.assertIsNone(buildtags.validate_tags(None, 'search'))
 
@@ -98,9 +108,13 @@ class ValidateTagsTests(unittest.TestCase):
     err_pattern = r'More than one commits/gitiles buildset'
     with self.assertRaisesRegexp(errors.InvalidInputError, err_pattern):
       tags = [
-          ('buildset:commit/gitiles/chromium.googlesource.com/chromium/src/+/'
-           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
-          ('buildset:commit/gitiles/chromium.googlesource.com/chromium/src/+/'
-           'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),
+          (
+              'buildset:commit/gitiles/chromium.googlesource.com/chromium/src'
+              '/+/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+          ),
+          (
+              'buildset:commit/gitiles/chromium.googlesource.com/chromium/src'
+              '/+/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+          ),
       ]
       buildtags.validate_tags(tags, 'new')

@@ -1,6 +1,7 @@
 # Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 """Access control list implementation.
 
 See Acl message in proto/project_config.proto.
@@ -108,8 +109,8 @@ ACTIONS_FOR_ROLE = {
     project_config_pb2.Acl.WRITER: set(WRITER_ROLE_ACTIONS),
 }
 ROLES_FOR_ACTION = {
-    a: set(r for r, actions in ACTIONS_FOR_ROLE.items() if a in actions)
-    for a in Action
+    a: set(r for r, actions in ACTIONS_FOR_ROLE.items() if a in actions
+          ) for a in Action
 }
 
 ################################################################################

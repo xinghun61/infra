@@ -18,7 +18,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax='proto3',
     serialized_pb=_b(
         '\n\x14service_config.proto\x12\x0b\x62uildbucket\">\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\"`\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05J\x04\x08\x01\x10\x02\x42\x38Z6go.chromium.org/luci/buildbucket/proto/config;configpbb\x06proto3'
-    ))
+    )
+)
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _SETTINGSCFG = _descriptor.Descriptor(
@@ -43,7 +44,8 @@ _SETTINGSCFG = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -79,7 +81,8 @@ _SWARMINGSETTINGS = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
         _descriptor.FieldDescriptor(
             name='default_task_template_canary_percentage',
             full_name=
@@ -96,7 +99,8 @@ _SWARMINGSETTINGS = _descriptor.Descriptor(
             containing_type=None,
             is_extension=False,
             extension_scope=None,
-            options=None),
+            options=None
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -121,7 +125,8 @@ SettingsCfg = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_SETTINGSCFG,
         __module__='service_config_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.SettingsCfg)
-    ))
+    )
+)
 _sym_db.RegisterMessage(SettingsCfg)
 
 SwarmingSettings = _reflection.GeneratedProtocolMessageType(
@@ -131,11 +136,13 @@ SwarmingSettings = _reflection.GeneratedProtocolMessageType(
         DESCRIPTOR=_SWARMINGSETTINGS,
         __module__='service_config_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.SwarmingSettings)
-    ))
+    )
+)
 _sym_db.RegisterMessage(SwarmingSettings)
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(
     descriptor_pb2.FileOptions(),
-    _b('Z6go.chromium.org/luci/buildbucket/proto/config;configpb'))
+    _b('Z6go.chromium.org/luci/buildbucket/proto/config;configpb')
+)
 # @@protoc_insertion_point(module_scope)

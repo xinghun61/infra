@@ -39,18 +39,21 @@ class BaseTestCase(testing.AppengineTestCase):
     self.patch(
         'acl.get_acessible_buckets',
         autospec=True,
-        return_value=['luci.chromium.try'])
+        return_value=['luci.chromium.try']
+    )
 
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
     self.api = api.BuildsApi()
 
-  def call(self,
-           method,
-           req,
-           expected_code=prpc.StatusCode.OK,
-           expected_details=None):
+  def call(
+      self,
+      method,
+      req,
+      expected_code=prpc.StatusCode.OK,
+      expected_details=None
+  ):
     ctx = prpc_context.ServicerContext()
     res = method(req, ctx)
     self.assertEqual(ctx.code, expected_code)
@@ -94,43 +97,49 @@ class ApiMethodDecoratorTests(BaseTestCase):
     self.assertEqual(ctx.details, expected_details)
 
   def test_authorization_error_handling(self):
-    self.error_handling_test(auth.AuthorizationError(),
-                             prpc.StatusCode.NOT_FOUND, 'not found')
+    self.error_handling_test(
+        auth.AuthorizationError(), prpc.StatusCode.NOT_FOUND, 'not found'
+    )
 
   def test_status_code_error_handling(self):
     self.error_handling_test(
-        api.InvalidArgument('bad'), prpc.StatusCode.INVALID_ARGUMENT, 'bad')
+        api.InvalidArgument('bad'), prpc.StatusCode.INVALID_ARGUMENT, 'bad'
+    )
 
   def test_invalid_field_mask(self):
     req = rpc_pb2.GetBuildRequest(
-        fields=field_mask_pb2.FieldMask(paths=['invalid']))
+        fields=field_mask_pb2.FieldMask(paths=['invalid'])
+    )
     self.call(
         self.api.GetBuild,
         req,
         expected_code=prpc.StatusCode.INVALID_ARGUMENT,
-        expected_details=('invalid fields: invalid path "invalid": '
-                          'field "invalid" does not exist in message '
-                          'buildbucket.v2.Build'))
+        expected_details=(
+            'invalid fields: invalid path "invalid": '
+            'field "invalid" does not exist in message '
+            'buildbucket.v2.Build'
+        )
+    )
 
   @mock.patch('service.get', autospec=True)
   def test_trimming_exclude(self, service_get):
     service_get.return_value = self.new_build_v1(
-        parameters={'properties': {
-            'a': 'b'
-        }})
+        parameters={'properties': {'a': 'b'}}
+    )
     req = rpc_pb2.GetBuildRequest(id=1)
     res = self.call(self.api.GetBuild, req)
     self.assertFalse(res.input.HasField('properties'))
 
   @mock.patch('service.get', autospec=True)
   def test_trimming_include(self, service_get):
-    service_get.return_value = self.new_build_v1(parameters={
-        'properties': {
-            'a': 'b',
-        },
-    })
+    service_get.return_value = self.new_build_v1(
+        parameters={
+            'properties': {'a': 'b'},
+        }
+    )
     req = rpc_pb2.GetBuildRequest(
-        id=1, fields=field_mask_pb2.FieldMask(paths=['input.properties']))
+        id=1, fields=field_mask_pb2.FieldMask(paths=['input.properties'])
+    )
     res = self.call(self.api.GetBuild, req)
     self.assertEqual(res.input.properties.items(), [('a', 'b')])
 
@@ -145,13 +154,16 @@ class ToBuildMessagesTests(BaseTestCase):
                 step=annotations_pb2.Step(
                     name='a',
                     status=annotations_pb2.SUCCESS,
-                )),
+                )
+            ),
             annotations_pb2.Step.Substep(
                 step=annotations_pb2.Step(
                     name='b',
                     status=annotations_pb2.RUNNING,
-                )),
-        ],)
+                )
+            ),
+        ],
+    )
     model.BuildAnnotations(
         key=model.BuildAnnotations.key_for(build_v1.key),
         annotation_binary=annotation_step.SerializeToString(),
@@ -195,7 +207,8 @@ class GetBuildTests(BaseTestCase):
     )
     service_search.return_value = ([build_v1], None)
     builder_id = build_pb2.BuilderID(
-        project='chromium', bucket='try', builder='linux-try')
+        project='chromium', bucket='try', builder='linux-try'
+    )
     req = rpc_pb2.GetBuildRequest(builder=builder_id, build_number=2)
     res = self.call(self.api.GetBuild, req)
     self.assertEqual(res.id, build_v1.key.id())
@@ -206,7 +219,8 @@ class GetBuildTests(BaseTestCase):
         service.SearchQuery(
             buckets=['luci.chromium.try'],
             tags=['build_address:luci.chromium.try/linux-try/2'],
-        ))
+        )
+    )
 
   def test_not_found_by_id(self):
     req = rpc_pb2.GetBuildRequest(id=54)
@@ -214,19 +228,22 @@ class GetBuildTests(BaseTestCase):
 
   def test_not_found_by_number(self):
     builder_id = build_pb2.BuilderID(
-        project='chromium', bucket='try', builder='linux-try')
+        project='chromium', bucket='try', builder='linux-try'
+    )
     req = rpc_pb2.GetBuildRequest(builder=builder_id, build_number=2)
     self.call(self.api.GetBuild, req, expected_code=prpc.StatusCode.NOT_FOUND)
 
   def test_empty_request(self):
     req = rpc_pb2.GetBuildRequest()
     self.call(
-        self.api.GetBuild, req, expected_code=prpc.StatusCode.INVALID_ARGUMENT)
+        self.api.GetBuild, req, expected_code=prpc.StatusCode.INVALID_ARGUMENT
+    )
 
   def test_id_with_number(self):
     req = rpc_pb2.GetBuildRequest(id=1, build_number=1)
     self.call(
-        self.api.GetBuild, req, expected_code=prpc.StatusCode.INVALID_ARGUMENT)
+        self.api.GetBuild, req, expected_code=prpc.StatusCode.INVALID_ARGUMENT
+    )
 
 
 class SearchTests(BaseTestCase):
@@ -239,7 +256,10 @@ class SearchTests(BaseTestCase):
     req = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
             builder=build_pb2.BuilderID(
-                project='chromium', bucket='try', builder='linux-try'),),)
+                project='chromium', bucket='try', builder='linux-try'
+            ),
+        ),
+    )
     res = self.call(self.api.SearchBuilds, req)
 
     service_search.assert_called_once_with(
@@ -249,7 +269,8 @@ class SearchTests(BaseTestCase):
             include_experimental=False,
             status=common_pb2.STATUS_UNSPECIFIED,
             start_cursor='',
-        ))
+        )
+    )
     self.assertEqual(len(res.builds), 2)
     self.assertEqual(res.builds[0].id, 54)
     self.assertEqual(res.builds[1].id, 55)
