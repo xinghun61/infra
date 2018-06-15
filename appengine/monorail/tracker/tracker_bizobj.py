@@ -745,14 +745,12 @@ def UsersInvolvedInTemplate(template):
 
 def MakeApprovalDelta(
     status, setter_id, approver_ids_add, approver_ids_remove,
-    subfield_vals_add, subfield_vals_remove, subfields_clear,
-    set_on=None):
+    subfield_vals_add, subfield_vals_remove, set_on=None):
   approval_delta = tracker_pb2.ApprovalDelta(
       approver_ids_add=approver_ids_add,
       approver_ids_remove=approver_ids_remove,
       subfield_vals_add=subfield_vals_add,
-      subfield_vals_remove=subfield_vals_remove,
-      subfields_clear=subfields_clear
+      subfield_vals_remove=subfield_vals_remove
   )
   if status is not None:
     approval_delta.status = status

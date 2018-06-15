@@ -24,14 +24,13 @@ message Approval {
 }
 
 
-// Next available tag: 7
+// Next available tag: 6
 message ApprovalDelta {
   ApprovalStatus status = 1;
   repeated UserRef approver_refs_add = 2;
   repeated UserRef approver_refs_remove = 3;
   repeated FieldValue field_vals_add = 4;
   repeated FieldValue field_vals_remove = 5;
-  repeated FieldValue fields_clear = 6;
 }
 
 
