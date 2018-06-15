@@ -24,8 +24,9 @@ DEPS = [
   'recipe_engine/runtime',
   'recipe_engine/step',
 
-  'infra_system',
+  'infra_checkout',
   'infra_cipd',
+  'infra_system',
 ]
 
 
@@ -117,6 +118,10 @@ def RunSteps(api, buildername, official):
     raise ValueError(
         'This recipe is not intended for builder %s. ' % buildername)
 
+  co = api.infra_checkout.checkout(
+      gclient_config_name=project_name,
+      internal=(project_name=='infra_internal'))
+
   # Prefix the system binary path to PATH so that all Python invocations will
   # use the system Python. This will ensure that packages built will be built
   # aginst the system Python's paths.
@@ -126,15 +131,14 @@ def RunSteps(api, buildername, official):
   # package containing a reference to the Python that was used to create it. In
   # order to control for this, we ensure that the Python is a system Python,
   # which resides at a fixed path.
-  api.gclient.set_config(project_name)
   with api.infra_system.system_env():
-    bot_update_step = api.bot_update.ensure_checkout()
-    api.gclient.runhooks()
+    co.gclient_runhooks()
+    co.ensure_go_env()
 
     # Whatever is checked out by bot_update. It is usually equal to
     # api.properties['revision'] except when the build was triggered manually
     # ('revision' property is missing in that case).
-    rev = bot_update_step.presentation.properties['got_revision']
+    rev = co.bot_update_step.presentation.properties['got_revision']
     build_main(api, buildername, official, project_name, repo_url, rev)
 
 
@@ -156,13 +160,6 @@ def build_main(api, buildername, official, project_name, repo_url, rev):
         api.python(
             'ccompute config test',
             'ccompute/scripts/ccompute_config.py', ['test'])
-
-    # This downloads Go third parties, so that the next step doesn't have junk
-    # output in it.
-    api.python(
-        'go third parties',
-        api.path['checkout'].join('go', 'env.py'),
-        ['go', 'version'])
 
     # Call 'deps.py bundle' to package dependencies specified in deps.lock into
     # a CIPD package. This is not strictly necessary, but it significantly

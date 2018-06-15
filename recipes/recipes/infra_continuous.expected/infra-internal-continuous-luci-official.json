@@ -3,6 +3,21 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/infra_internal_gclient_with_go"
+    ],
+    "infra_step": true,
+    "name": "ensure builder dir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra_internal', 'url': 'https://chrome-internal.googlesource.com/infra/infra_internal.git'}]",
@@ -19,11 +34,7 @@
       "--revision",
       "infra_internal@c14d891d44f0afff64e56ed7c9702df1d807b1ee"
     ],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
+    "cwd": "[CACHE]/infra_internal_gclient_with_go",
     "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -76,7 +87,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[START_DIR]/infra_internal",
+    "cwd": "[CACHE]/infra_internal_gclient_with_go",
     "env_prefixes": {
       "PATH": [
         "/opt/infra-system/bin"
@@ -93,10 +104,27 @@
     "cmd": [
       "python",
       "-u",
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
+      "go",
+      "version"
+    ],
+    "cwd": "[CACHE]/infra_internal_gclient_with_go",
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "init infra go env"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "test.py",
       "test"
     ],
-    "cwd": "[START_DIR]/infra_internal",
+    "cwd": "[CACHE]/infra_internal_gclient_with_go/infra_internal",
     "env_prefixes": {
       "PATH": [
         "/opt/infra-system/bin"
@@ -111,7 +139,7 @@
       "ccompute/scripts/ccompute_config.py",
       "test"
     ],
-    "cwd": "[START_DIR]/infra_internal",
+    "cwd": "[CACHE]/infra_internal_gclient_with_go/infra_internal",
     "env_prefixes": {
       "PATH": [
         "/opt/infra-system/bin"
@@ -123,24 +151,9 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra_internal/go/env.py",
-      "go",
-      "version"
-    ],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
-    "name": "go third parties"
-  },
-  {
-    "cmd": [
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
       "python",
-      "-u",
-      "[START_DIR]/infra_internal/go/env.py",
-      "python",
-      "[START_DIR]/infra_internal/go/test.py"
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/test.py"
     ],
     "env_prefixes": {
       "PATH": [
@@ -153,7 +166,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra_internal/build/build.py",
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/build.py",
       "--builder",
       "infra-internal-continuous-trusty-32"
     ],
@@ -168,7 +181,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra_internal/build/test_packages.py"
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/test_packages.py"
     ],
     "env_prefixes": {
       "PATH": [
@@ -181,7 +194,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra_internal/build/build.py",
+      "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/build.py",
       "--no-rebuild",
       "--upload",
       "--json-output",

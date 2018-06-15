@@ -12,15 +12,19 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
   # Ditto but for builders which use internal gclient checkout.
   INTERNAL_NAMED_CACHE = 'infra_internal_gclient_with_go'
 
-  def checkout(self, gclient_config_name, patch_root,
-               path=None, internal=False,
-               named_cache=None, **kwargs):
+  def checkout(self, gclient_config_name,
+               patch_root=None,
+               path=None,
+               internal=False,
+               named_cache=None,
+               **kwargs):
     """Fetches infra gclient checkout into a given path OR named_cache.
 
     Arguments:
       * gclient_config_name (string) - name of gclient config.
       * patch_root (path or string) - path **inside** infra checkout to git repo
         in which to apply the patch. For example, 'infra/luci' for luci-py repo.
+        If None (default), no patches will be applied.
       * path (path or string) - path to where to create/update infra checkout.
         If None (default) - path is cache with customizable name (see below).
       * internal (bool) - by default, False, meaning infra gclient checkout
@@ -40,7 +44,6 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
       a Checkout object with commands for common actions on infra checkout.
     """
     assert gclient_config_name, gclient_config_name
-    assert patch_root, patch_root
     if named_cache is None:
       named_cache = (self.INTERNAL_NAMED_CACHE if internal else
                      self.PUBLIC_NAMED_CACHE)
@@ -63,10 +66,12 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
 
       @property
       def patch_root_path(self):
+        assert patch_root
         return path.join(patch_root)
 
       @staticmethod
       def commit_change():
+        assert patch_root
         with self.m.context(cwd=path.join(patch_root)):
           self.m.git(
               '-c', 'user.email=commit-bot@chromium.org',
@@ -96,6 +101,7 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
 
       @staticmethod
       def run_presubmit_in_go_env():
+        assert patch_root
         revs = self.m.bot_update.get_project_revision_properties(patch_root)
         upstream = bot_update_step.json.output['properties'].get(revs[0])
         # The presubmit must be run with proper Go environment.
