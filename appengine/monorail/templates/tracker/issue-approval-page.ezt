@@ -19,6 +19,8 @@
   }
 </style>
 
-<mr-approval-page></mr-approval-page>
-
-
+<mr-approval-page [if-any logged_in_user]
+  user="[logged_in_user.email]"[end]
+  login-url="[login_url]"
+  logout-url="[logout_url]"
+></mr-approval-page>

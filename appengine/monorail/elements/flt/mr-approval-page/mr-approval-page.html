@@ -2,10 +2,10 @@
 
 <link rel="import" href="../../../bower_components/app-route/app-location.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-header.html">
-<link rel="import" href="../../../bower_components/chopsui/chops-login.html">
 <link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 
 <link rel="import" href="../mr-approval-page/mr-issue-header.html">
+<link rel="import" href="../mr-dropdown/mr-dropdown.html">
 <link rel="import" href="../mr-issue-details/mr-issue-details.html">
 <link rel="import" href="../mr-issue-details/mr-metadata.html">
 <link rel="import" href="../mr-launch-overview/mr-launch-overview.html">
@@ -104,16 +104,19 @@
     </iron-ajax>
     <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
       <span slot="subheader">&gt; <a href="#">Feature Launch Issue</a></span>
-      <chops-login logout-url="/" user="[[user]]"></chops-login>
+      <template is="dom-if" if="[[_user]]">
+        <mr-dropdown text="[[_user]]" items="[[_userMenuItems]]"></mr-dropdown>
+      </template>
+      <a href$="[[loginUrl]]" hidden$="[[_user]]">Sign in</a>
     </chops-header>
-    <mr-issue-header summary="{{summary}}" issue-id="[[issueId]]" you="[[queryParams.you]]"></mr-issue-header>
+    <mr-issue-header summary="{{summary}}" issue-id="[[issueId]]"></mr-issue-header>
     <div class="container-outside">
       <div class="metadata-container">
         <mr-metadata summary="[[summary]]"></mr-metadata>
       </div>
       <div class="container-main">
         <mr-issue-details class="main-item"></mr-issue-details>
-        <mr-launch-overview class="main-item" user="[[user]]" gates="[[gates]]"></mr-launch-overview>
+        <mr-launch-overview class="main-item" user="[[_user]]" gates="[[gates]]"></mr-launch-overview>
       </div>
     </div>
   </template>

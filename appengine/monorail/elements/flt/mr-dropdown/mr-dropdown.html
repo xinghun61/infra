@@ -1,0 +1,68 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+
+<dom-module id="mr-dropdown">
+  <template>
+    <style>
+      :host {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+        height: 100%;
+        --iron-icon-fill-color: hsl(0, 0%, 66%);
+      }
+      :host(:not([opened])) .menu {
+        display: none;
+        visibility: hidden;
+      }
+      .anchor {
+        width: 100%;
+        height: 100%;
+      }
+      .menu {
+        position: absolute;
+        min-width: 120%;
+        right: 0px;
+        top: 98%;
+        display: block;
+        background: white;
+        border: 1px solid hsl(0, 0%, 80%);
+        min-height: 50px;
+        z-index: 10;
+        box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
+      }
+      .menu hr {
+        width: 96%;
+        margin: 0.25em 2%;
+        border: 0;
+        height: 1px;
+        background: hsl(0, 0%, 80%);
+      }
+      .menu a {
+        box-sizing: border-box;
+        text-decoration: none;
+        display: block;
+        width: 100%;
+        padding: 0.25em 8px;
+        transition: 0.2s background ease-in-out;
+      }
+      .menu a:hover {
+        background: hsl(0, 0%, 90%);
+      }
+    </style>
+    <div class="anchor" on-click="toggle">
+      <iron-icon class="expand-icon" icon="expand-more"></iron-icon>
+      [[text]]
+    </div>
+    <div class="menu">
+      <template is="dom-repeat" items="[[items]]">
+        <hr hidden$="[[!item.separator]]" />
+        <a href$="[[item.url]]" hidden$="[[item.separator]]">
+          [[item.text]]
+        </a>
+      </template>
+    </div>
+  </template>
+  <script src="./mr-dropdown.js"></script>
+</dom-module>

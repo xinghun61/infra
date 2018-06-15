@@ -36,4 +36,3 @@ var accountMenu;
       document.body.appendChild(accountMenu.menu);
   });
 })();
-
