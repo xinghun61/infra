@@ -542,6 +542,13 @@ def _create_task_def_async(
   }
   task = format_obj(task_template, task_template_params)
 
+  # Set 'pool_task_template' to match our build's canary status.
+  # This can be made unconditional after crbug.com/823434 is closed. Right now
+  # we override this with "SKIP" in the templates to allow an atomic transition.
+  task.setdefault(
+      'pool_task_template', 'CANARY_PREFER' if build.canary else 'CANARY_NEVER'
+  )
+
   priority = int(task.get('priority', 0))
   if builder_cfg.priority > 0:  # pragma: no branch
     priority = builder_cfg.priority

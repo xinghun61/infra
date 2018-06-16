@@ -569,6 +569,8 @@ class SwarmingTest(BaseTest):
             'recipe_name:recipe',
             'recipe_repository:https://example.com/repo',
         ],
+        'pool_task_template':
+            'CANARY_NEVER',
         'properties': {
             'env': [{
                 'key': 'BUILDBUCKET_EXPERIMENTAL',
@@ -868,6 +870,8 @@ class SwarmingTest(BaseTest):
             'recipe_name:recipe',
             'recipe_repository:https://example.com/repo',
         ],
+        'pool_task_template':
+            'CANARY_PREFER',
         'properties': {
             'env': [{
                 'key': 'BUILDBUCKET_EXPERIMENTAL',

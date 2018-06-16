@@ -275,6 +275,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             '100',
         'expiration_secs':
             '3600',
+        'pool_task_template':
+            'CANARY_NEVER',
         'properties': {
             'env': [{'key': 'BUILDBUCKET_EXPERIMENTAL', 'value': 'FALSE'}],
             'extra_args': [
