@@ -834,9 +834,7 @@ def search(q):
           (utils.utcnow() - search_start_time).total_seconds() * 1000
       )
       return results
-    except (errors.InvalidIndexEntryOrder, errors.TagIndexIncomplete) as ex:
-      if isinstance(ex, errors.InvalidIndexEntryOrder):
-        logging.exception('invalid index entry order')
+    except errors.TagIndexIncomplete:
       if not can_use_query_search:
         raise
       logging.info('falling back to querying')
@@ -941,8 +939,6 @@ def _tag_index_search(q):
 
   Raises:
     errors.TagIndexIncomplete if the tag index is complete and cannot be used.
-    errors.InvalidIndexEntryOrder if raised when the tag index entry order is
-      invalid.
   """
   assert q.tags
   assert not q.buckets or isinstance(q.buckets, set)
@@ -964,12 +960,7 @@ def _tag_index_search(q):
   if not idx or not idx.entries:
     logging.info('no index/entries for tag %s', indexed_tag)
     return [], None
-  logging.info(
-      'using TagIndex(%s); last build id = %s', indexed_tag,
-      idx.entries[-1].build_id
-  )
-
-  _check_tag_index_entry_order(idx)
+  logging.info('using TagIndex(%s)', indexed_tag)
 
   # If buckets were not specified explicitly, permissions were not checked
   # earlier. In this case, check permissions for each build.
@@ -983,9 +974,9 @@ def _tag_index_search(q):
       has_access_cache[bucket] = has
     return has
 
-  # The order of index entries is descending, i.e. the newest builds are in the
-  # end. Start from the end.
-  entry_index = len(idx.entries) - 1
+  # Sort entries, newest build first, and start from the newest.
+  entries = sorted(idx.entries, key=lambda e: e.build_id)
+  entry_index = 0
 
   id_low, id_high = model.build_id_range(q.create_time_low, q.create_time_high)
 
@@ -1003,11 +994,11 @@ def _tag_index_search(q):
       # If the min id is greater than the requested max, we should give up.
       return [], None
     # TODO(nodir): optimization: use binary search.
-    while entry_index >= 0:
-      if idx.entries[entry_index].build_id > min_id_exclusive:
+    while entry_index < len(entries):
+      if entries[entry_index].build_id > min_id_exclusive:
         break
-      entry_index -= 1
-    if entry_index < 0:
+      entry_index += 1
+    if entry_index == len(entries):
       # We've skipped everything.
       return [], None
 
@@ -1040,9 +1031,9 @@ def _tag_index_search(q):
   while len(result) < q.max_builds:
     fetch_count = q.max_builds - len(result)
     entries_to_fetch = []  # ordered by build id by ascending.
-    while entry_index >= 0:
-      e = idx.entries[entry_index]
-      entry_index -= 1
+    while entry_index < len(entries):
+      e = entries[entry_index]
+      entry_index += 1
       prev = last_considered_entry
       last_considered_entry = e
       if prev and prev.build_id == e.build_id:
@@ -1054,7 +1045,7 @@ def _tag_index_search(q):
       if id_high is not None and e.build_id >= id_high:
         # Since the index is ordered by ascending build ids, if we exceed
         # build_id_high, we should stop and not return a cursor.
-        entry_index = -1
+        entry_index = len(entries)
         eof = True
         break
       # If we filter by bucket, check it here without fetching the build.
@@ -1103,17 +1094,6 @@ def _tag_index_search(q):
   if not eof and last_considered_entry:
     next_cursor = 'id>%d' % last_considered_entry.build_id
   return result, next_cursor
-
-
-def _check_tag_index_entry_order(idx):
-  """Raises errors.InvalidIndexEntryOrder if the order is incorrect."""
-  # The order must be descending.
-  for i in xrange(len(idx.entries) - 1):
-    # Tolerate duplicates.
-    if idx.entries[i].build_id < idx.entries[i + 1].build_id:
-      raise errors.InvalidIndexEntryOrder(
-          'invalid entry order in TagIndex(%r)' % idx.key.id()
-      )
 
 
 def peek(buckets, max_builds=None, start_cursor=None):
@@ -1748,17 +1728,7 @@ def _add_to_tag_index_async(tag, new_entries):
       idx.permanently_incomplete = True
       idx.entries = []
     else:
-      # idx.entries is sorted by descending.
-      # Build ids are monotonically decreasing, so most probably new entries
-      # will be added to the end.
-      fast_path = (
-          not idx.entries or idx.entries[-1].build_id > new_entries[0].build_id
-      )
       idx.entries.extend(new_entries)
-      if not fast_path:
-        # Atypical case
-        logging.warning('hitting slow path in maintaining tag index')
-        idx.entries.sort(key=lambda e: e.build_id, reverse=True)
     yield idx.put_async()
 
   return txn_async()

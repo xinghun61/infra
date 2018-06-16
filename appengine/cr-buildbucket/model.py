@@ -326,8 +326,6 @@ class TagIndex(ndb.Model):
   # entries is a superset of all builds that have the tag equal to the id of
   # this entity. It may contain references to non-existent builds or builds that
   # do not actually have this tag; such builds must be ignored.
-  #
-  # It is sorted by build id in descending order.
   entries = ndb.LocalStructuredProperty(
       TagIndexEntry, repeated=True, indexed=False
   )

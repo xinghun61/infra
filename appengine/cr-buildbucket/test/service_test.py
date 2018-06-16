@@ -451,8 +451,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     index = model.TagIndex.get_by_id('buildset:foo')
     self.assertIsNotNone(index)
     self.assertEqual(len(index.entries), 3)
-    self.assertEqual(index.entries[1].build_id, build.key.id())
-    self.assertEqual(index.entries[1].bucket, 'b')
+    self.assertIn(build.key.id(), [e.build_id for e in index.entries])
+    self.assertIn('b', [e.bucket for e in index.entries])
 
   def test_buildset_index_failed(self):
     with self.assertRaises(errors.InvalidInputError):
@@ -1182,36 +1182,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         tags=[self.INDEXED_TAG], buckets=[self.test_build.bucket]
     )
     self.assertEqual(builds, [self.test_build])
-
-  def test_search_with_invalid_tag_entry_order(self):
-    self.test_build.tags = [self.INDEXED_TAG]
-    self.test_build.put()
-
-    model.TagIndex(
-        id=self.INDEXED_TAG,
-        entries=[
-            model.TagIndexEntry(
-                bucket=self.test_build.bucket,
-                build_id=1,
-            ),
-            model.TagIndexEntry(
-                bucket=self.test_build.bucket,
-                build_id=2,
-            ),
-        ]
-    ).put()
-
-    builds, _ = self.search(
-        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG]
-    )
-    self.assertEqual(builds, [self.test_build])
-
-    with self.assertRaises(errors.InvalidIndexEntryOrder):
-      self.search(
-          buckets=[self.test_build.bucket],
-          tags=[self.INDEXED_TAG],
-          start_cursor='id>0'
-      )
 
   def test_search_with_dup_tag_entries(self):
     self.test_build.tags = [self.INDEXED_TAG]
