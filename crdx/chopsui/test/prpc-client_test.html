@@ -25,7 +25,7 @@
     setup(() => {
       client = new PrpcClient();
       response = new Response(')]}\'{"rutabaga": "response"}');
-      response.headers['X-Prpc-Grpc-Code'] = '0';
+      response.headers.set('X-Prpc-Grpc-Code', '0');
       fetchStub = sinon.stub().returns(Promise.resolve(response));
       message = { rutabaga: 'request' };
     });
@@ -84,7 +84,7 @@
 
     test('gRPC non-OK message', async function() {
       response = new Response('an error message');
-      response.headers['X-Prpc-Grpc-Code'] = '5';
+      response.headers.set('X-Prpc-Grpc-Code', '5');
       fetchStub = sinon.stub().returns(Promise.resolve(response));
       client = new PrpcClient({
         host: 'host',
@@ -120,7 +120,7 @@
         accessToken: 'access-token',
         fetchImpl: fetchStub,
       });
-      response.headers['X-Prpc-Grpc-Code'] = 'rutabaga';
+      response.headers.set('X-Prpc-Grpc-Code', 'rutabaga');
       try {
         await client.call('service', 'method', message);
         assert.fail(true, 'this line should never be reached');
@@ -145,7 +145,7 @@
     test('BYOfetch', async function() {
       const ourFetch = async (url, options) => {
         const response = new Response(')]}\'{"rutabaga": "rutabaga"}');
-        response.headers['X-Prpc-Grpc-Code'] = '0';
+        response.headers.set('X-Prpc-Grpc-Code', '0');
         return response;
       };
       client = new PrpcClient({

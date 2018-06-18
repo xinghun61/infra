@@ -104,12 +104,12 @@
 
       const response = await this.fetchImpl(url, options);
 
-      if (!response.headers.hasOwnProperty('X-Prpc-Grpc-Code')) {
+      if (!response.headers.has('X-Prpc-Grpc-Code')) {
         throw new ProtocolError(response.status,
             'Invalid response: no X-Prpc-Grpc-Code response header');
       }
 
-      const rpcCode = Number.parseInt(response.headers['X-Prpc-Grpc-Code'], 10);
+      const rpcCode = Number.parseInt(response.headers.get('X-Prpc-Grpc-Code'), 10);
       if (Number.isNaN(rpcCode)) {
         throw new ProtocolError(response.status,
             `Invalid X-Prpc-Grpc-Code response header`);
