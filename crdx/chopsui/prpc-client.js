@@ -66,7 +66,7 @@
       this.host = options.host || document.location.host;
       this.accessToken = options.accessToken || null;
       this.insecure = options.hasOwnProperty('insecure') && Boolean(options.insecure);
-      this.fetchImpl = options.fetchImpl || window.fetch;
+      this.fetchImpl = options.fetchImpl || window.fetch.bind(window);
     }
 
     /**
