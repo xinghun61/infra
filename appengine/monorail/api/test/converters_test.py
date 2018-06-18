@@ -664,7 +664,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
     self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3, self.fd_4]
 
-    approval_delta = issue_objects_pb2.ApprovalDelta(
+    approval_delta = issues_pb2.ApprovalDelta(
         status=issue_objects_pb2.APPROVED,
         approver_refs_add=[common_pb2.UserRef(user_id=111L)],
         approver_refs_remove=[common_pb2.UserRef(user_id=222L)],

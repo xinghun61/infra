@@ -176,7 +176,7 @@ class IssuesServicerTest(unittest.TestCase):
 
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     field_ref = common_pb2.FieldRef(field_name='LegalApproval')
-    approval_delta = issue_objects_pb2.ApprovalDelta(
+    approval_delta = issues_pb2.ApprovalDelta(
         status=issue_objects_pb2.REVIEW_REQUESTED,
         approver_refs_add=[
           common_pb2.UserRef(user_id=222L, display_name='approver2@example.com')

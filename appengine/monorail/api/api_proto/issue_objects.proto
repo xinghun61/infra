@@ -24,17 +24,6 @@ message Approval {
 }
 
 
-// Next available tag: 7
-message ApprovalDelta {
-  ApprovalStatus status = 1;
-  repeated UserRef approver_refs_add = 2;
-  repeated UserRef approver_refs_remove = 3;
-  repeated FieldValue field_vals_add = 4;
-  repeated FieldValue field_vals_remove = 5;
-  repeated FieldRef fields_clear = 6;
-}
-
-
 // Next available tag: 8
 enum ApprovalStatus {
   NOT_SET = 0;
