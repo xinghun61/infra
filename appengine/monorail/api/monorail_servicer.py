@@ -79,7 +79,7 @@ class MonorailServicer(object):
     requester = None
     mc = None
     try:
-      requester = auth.email if auth else self.GetRequester()
+      requester = auth.email if auth else self.GetRequester(request)
       logging.info('request proto is:\n%r\n', request)
       logging.info('requester is %r', requester)
 
@@ -105,8 +105,14 @@ class MonorailServicer(object):
 
     return response
 
-  def GetRequester(self):
+  def GetRequester(self, request):
     """Return the email address of the signed in user or None."""
+    # When running on localhost, allow request to specify test account.
+    if settings.dev_mode and hasattr(request, 'trace'):
+      if (request.trace.test_account and
+          request.trace.test_account.endswith('@example.com')):
+        return request.trace.test_account
+
     # TODO(jrobbins): Add oauth support
     user = users.get_current_user()
     return user.email() if user else None

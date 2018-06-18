@@ -39,7 +39,7 @@ class WorkEnvTest(unittest.TestCase):
         template=Mock(spec=template_svc.TemplateService),
         spam=fake.SpamService())
     self.project = self.services.project.TestAddProject(
-        'proj', project_id=789)
+        'proj', project_id=789, committer_ids=[111L])
     self.admin_user = self.services.user.TestAddUser(
         'admin@example.com', 444L)
     self.admin_user.is_site_admin = True
@@ -414,6 +414,33 @@ class WorkEnvTest(unittest.TestCase):
     fake_pasicn.assert_called_with(
         issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
         old_owner_id=111L, comment_id=comment_pb.id)
+
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_PermissionDenied(self, fake_pasicn):
+    """We reject attempts to update an issue when the user lacks permission."""
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta(
+        owner_id=222L, summary='New summary', cc_ids_add=[333L])
+
+    with self.work_env as we:
+      # User is not signed in.
+      with self.assertRaises(permissions.PermissionException):
+        we.UpdateIssue(issue, delta, 'I am anon')
+
+      # User signed in to acconut that can view but not edit.
+      self.SignIn(user_id=222L)
+      with self.assertRaises(permissions.PermissionException):
+        we.UpdateIssue(issue, delta, 'I am not a project member')
+
+      # User signed in to acconut that can view and edit, but issue
+      # restricts edits to a perm that the user lacks.
+      self.SignIn(user_id=111L)
+      issue.labels.append('Restrict-EditIssue-CoreTeam')
+      with self.assertRaises(permissions.PermissionException):
+        we.UpdateIssue(issue, delta, 'I lack CoreTeam')
+
+    fake_pasicn.assert_not_called()
 
   def testDeleteIssue(self):
     """We can mark and unmark an issue as deleted."""

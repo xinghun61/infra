@@ -101,7 +101,7 @@ class MonorailServicerTest(unittest.TestCase):
         'proj', project_id=789, owner_ids=[111L])
     self.user = self.services.user.TestAddUser('nonmember@example.com', 222L)
     self.svcr = TestableServicer(self.services)
-    self.request = UpdateSomethingRequest(exc_class=None)
+    self.request = UpdateSomethingRequest(exc_class=None, trace=None)
     self.prpc_context = context.ServicerContext()
     self.prpc_context.set_code(codes.StatusCode.OK)
     self.auth = authdata.AuthData(user_id=222L, email='nonmember@example.com')
@@ -172,11 +172,37 @@ class MonorailServicerTest(unittest.TestCase):
     self.assertTrue(self.svcr.was_called)
     self.assertIsNone(self.svcr.seen_mc.cnxn)  # Because of CleanUp().
 
-  def testGetRequester(self):
+  def testGetRequester_Normal(self):
     """We get the email address of the signed in user."""
-    self.assertIsNone(self.svcr.GetRequester())
+    self.assertIsNone(self.svcr.GetRequester(self.request))
     self.testbed.setup_env(user_email='user@example.com', overwrite=True)
-    self.assertEqual('user@example.com', self.svcr.GetRequester())
+    self.assertEqual('user@example.com', self.svcr.GetRequester(self.request))
+
+  def testGetRequester_TestAccountOnAppspot(self):
+    """Specifying test_account is ignore on deployed server."""
+    # pylint: disable=attribute-defined-outside-init
+    self.request.trace = testing_helpers.Blank(
+        test_account='test@example.com')
+    self.assertIsNone(self.svcr.GetRequester(self.request))
+
+  def testGetRequester_TestAccountOnDev(self):
+    """For integration testing, we can set test_account on dev_server."""
+    try:
+      orig_dev_mode = settings.dev_mode
+      settings.dev_mode = True
+
+      # pylint: disable=attribute-defined-outside-init
+      self.request.trace = testing_helpers.Blank(
+          test_account='test@example.com')
+      self.assertEqual(
+          'test@example.com', self.svcr.GetRequester(self.request))
+
+      # pylint: disable=attribute-defined-outside-init
+      self.request.trace = testing_helpers.Blank(
+          test_account='test@anythingelse.com')
+      self.assertIsNone(self.svcr.GetRequester(self.request))
+    finally:
+      settings.dev_mode = orig_dev_mode
 
   def testAssertBaseChecks_SiteIsReadOnly_Write(self):
     """We reject writes and allow reads when site is read-only."""

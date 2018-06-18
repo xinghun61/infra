@@ -8,9 +8,13 @@
 from mock import Mock, patch
 import unittest
 
+from google.protobuf import wrappers_pb2
+
 from api import converters
 from api.api_proto import common_pb2
 from api.api_proto import issue_objects_pb2
+from api.api_proto import issues_pb2
+from framework import exceptions
 from proto import tracker_pb2
 from testing import fake
 from testing import testing_helpers
@@ -557,6 +561,102 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(expected_1, actual[1])
     self.assertEqual(expected_2, actual[2])
     self.assertEqual(expected_3, actual[3])
+
+  def testIngestUserRefs(self):
+    """We can look up user IDs for protoc UserRefs."""
+    self.assertEqual([0], converters.IngestUserRefs([common_pb2.UserRef()]))
+
+    ref = common_pb2.UserRef(user_id=111L, display_name='user1@example.com')
+    self.assertEqual([111L], converters.IngestUserRefs([ref]))
+
+  def testIngestComponentRefs(self):
+    """We can look up component IDs for a list of protoc UserRefs."""
+    self.assertEqual([], converters.IngestComponentRefs([], self.config))
+
+    self.config.component_defs = [
+      tracker_pb2.ComponentDef(component_id=1, path='UI'),
+      tracker_pb2.ComponentDef(component_id=2, path='DB')]
+    refs = [common_pb2.ComponentRef(path='UI'),
+            common_pb2.ComponentRef(path='DB')]
+    self.assertEqual(
+        [1, 2], converters.IngestComponentRefs(refs, self.config))
+
+  def testIngestIssueDelta_Empty(self):
+    """An empty protorpc IssueDelta makes an empty protoc IssueDelta."""
+    delta = issues_pb2.IssueDelta()
+    actual = converters.IngestIssueDelta(
+        self.cnxn, 'user svc', delta, self.config)
+    expected = tracker_pb2.IssueDelta()
+    self.assertEqual(expected, actual)
+
+  def testIngestIssueDelta_BuiltInFields(self):
+    """We can create a protorpc IssueDelta from a protoc IssueDelta."""
+    self.config.component_defs = [
+      tracker_pb2.ComponentDef(component_id=1, path='UI')]
+    delta = issues_pb2.IssueDelta(
+        status=wrappers_pb2.StringValue(value='Fixed'),
+        owner_ref=common_pb2.UserRef(user_id=222L),
+        summary=wrappers_pb2.StringValue(value='New summary'),
+        cc_refs_add=[common_pb2.UserRef(user_id=333L)],
+        comp_refs_add=[common_pb2.ComponentRef(path='UI')],
+        label_refs_add=[common_pb2.LabelRef(label='Hot')])
+    actual = converters.IngestIssueDelta(
+        self.cnxn, 'user svc', delta, self.config)
+    expected = tracker_pb2.IssueDelta(
+        status='Fixed', owner_id=222L, summary='New summary',
+        cc_ids_add=[333L], comp_ids_add=[1],
+        labels_add=['Hot'])
+    self.assertEqual(expected, actual)
+
+  def testIngestIssueDelta_InvalidComponent(self):
+    """We reject a protorpc IssueDelta that has an invalid component."""
+    self.config.component_defs = [
+      tracker_pb2.ComponentDef(component_id=1, path='UI')]
+    delta = issues_pb2.IssueDelta(
+        comp_refs_add=[common_pb2.ComponentRef(path='XYZ')])
+    with self.assertRaises(exceptions.NoSuchComponentException):
+      converters.IngestIssueDelta(
+          self.cnxn, 'user svc', delta, self.config)
+
+  def testIngestIssueDelta_CustomFields(self):
+    """We can create a protorpc IssueDelta from a protoc IssueDelta."""
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3, self.fd_4]
+    delta = issues_pb2.IssueDelta(
+        field_vals_add=[
+            issue_objects_pb2.FieldValue(
+                value='string', field_ref=common_pb2.FieldRef(
+                    field_name='FirstField'))],
+        field_vals_remove=[
+            issue_objects_pb2.FieldValue(
+                value='34', field_ref=common_pb2.FieldRef(
+                    field_name='SecField'))],
+        fields_clear=[common_pb2.FieldRef(field_name='FirstField')])
+    actual = converters.IngestIssueDelta(
+        self.cnxn, self.services.user, delta, self.config)
+    self.assertEqual(actual.field_vals_add, [tracker_pb2.FieldValue(
+        str_value='string', field_id=1, derived=False)])
+    self.assertEqual(actual.field_vals_remove, [tracker_pb2.FieldValue(
+        int_value=34, field_id=2, derived=False)])
+    self.assertEqual(actual.fields_clear, [1])
+
+  def testIngestIssueDelta_InvalidCustomFields(self):
+    """We can create a protorpc IssueDelta from a protoc IssueDelta."""
+    # TODO(jrobbins): add and remove.
+    delta = issues_pb2.IssueDelta(
+        fields_clear=[common_pb2.FieldRef(field_name='FirstField')])
+    with self.assertRaises(exceptions.NoSuchFieldDefException):
+      converters.IngestIssueDelta(
+          self.cnxn, self.services.user, delta, self.config)
+
+  def testIngestIssueDelta_RelatedIssues(self):
+    """We can create a protorpc IssueDelta from a protoc IssueDelta."""
+    # TODO(jrobbins): handle related issues.
+    pass
+
+  def testIngestIssueDelta_InvalidRelatedIssues(self):
+    """We can create a protorpc IssueDelta from a protoc IssueDelta."""
+    # TODO(jrobbins): handle related issues.
+    pass
 
   def testIngestApprovalDelta(self):
     self.services.user.TestAddUser('user1@example.com', 111L)

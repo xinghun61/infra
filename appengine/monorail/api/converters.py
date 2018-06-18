@@ -16,6 +16,7 @@ import logging
 
 from api.api_proto import common_pb2
 from api.api_proto import issue_objects_pb2
+from framework import exceptions
 from framework import framework_constants
 from tracker import attachment_helpers
 from tracker import field_helpers
@@ -366,6 +367,86 @@ def ConvertCommentList(issue, comments, users_by_id, config, logged_in_user_id):
         issue, c, users_by_id, config, description_nums,
         logged_in_user_id)
     for c in comments]
+  return result
+
+
+def IngestUserRefs(user_refs):
+  """Return IDs of specified users or raise NoSuchUserException."""
+  # TODO(jrobbins): Handle both specified user_ids and specified email
+  # addresses, with autocreate option.
+  # TODO(jrobbins): Validate that the provided user_ids match existing users
+  # or raise NoSuchUserException.
+  # Note: user_id can be specified as 0 to clear the issue owner.
+  return [user_ref.user_id for user_ref in user_refs]
+
+
+def IngestComponentRefs(comp_refs, config):
+  """Return IDs of specified components or raise NoSuchComponentException."""
+  cids_by_path = {cd.path.lower(): cd.component_id
+                  for cd in config.component_defs}
+  result = []
+  for comp_ref in comp_refs:
+    cid = cids_by_path.get(comp_ref.path.lower())
+    if cid:
+      result.append(cid)
+    else:
+      raise exceptions.NoSuchComponentException()
+  return result
+
+
+def IngestFieldRefs(field_refs, config):
+  """Return IDs of specified fields or raise NoSuchFieldDefException."""
+  fids_by_name = {fd.field_name.lower(): fd.field_id
+                  for fd in config.field_defs}
+  result = []
+  for field_ref in field_refs:
+    fid = fids_by_name.get(field_ref.field_name.lower())
+    if fid:
+      result.append(fid)
+    else:
+      raise exceptions.NoSuchFieldDefException()
+  return result
+
+
+def IngestIssueDelta(cnxn, user_service, delta, config):
+  """Ingest a protoc IssueDelta and create a protorpc IssueDelta."""
+  status = None
+  if delta.HasField('status'):
+    status = delta.status.value
+  owner_id = None
+  if delta.HasField('owner_ref'):
+    owner_id = IngestUserRefs([delta.owner_ref])[0]
+  summary = None
+  if delta.HasField('summary'):
+    summary = delta.summary.value
+
+  cc_ids_add = IngestUserRefs(delta.cc_refs_add)
+  cc_ids_remove = IngestUserRefs(delta.cc_refs_remove)
+
+  comp_ids_add = IngestComponentRefs(delta.comp_refs_add, config)
+  comp_ids_remove = IngestComponentRefs(delta.comp_refs_remove, config)
+
+  labels_add = [lab_ref.label for lab_ref in delta.label_refs_add]
+  labels_remove = [lab_ref.label for lab_ref in delta.label_refs_remove]
+
+  field_vals_add = IngestFieldValues(
+      cnxn, user_service, delta.field_vals_add, config)
+  field_vals_remove = IngestFieldValues(
+      cnxn, user_service, delta.field_vals_remove, config)
+  fields_clear = IngestFieldRefs(delta.fields_clear, config)
+
+  # TODO(jrobbins): handle related issues
+  blocked_on_add = []
+  blocked_on_remove = []
+  blocking_add = []
+  blocking_remove = []
+  merged_into = None
+
+  result = tracker_bizobj.MakeIssueDelta(
+      status, owner_id, cc_ids_add, cc_ids_remove, comp_ids_add,
+      comp_ids_remove, labels_add, labels_remove, field_vals_add,
+      field_vals_remove, fields_clear, blocked_on_add, blocked_on_remove,
+      blocking_add, blocking_remove, merged_into, summary)
   return result
 
 

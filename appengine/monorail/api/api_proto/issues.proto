@@ -8,6 +8,7 @@ syntax = "proto3";
 package monorail;
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
 import "api/api_proto/common.proto";
 import "api/api_proto/issue_objects.proto";
 
@@ -15,6 +16,7 @@ import "api/api_proto/issue_objects.proto";
 service Issues {
   rpc CreateIssue (CreateIssueRequest) returns (IssueResponse) {}
   rpc GetIssue (GetIssueRequest) returns (IssueResponse) {}
+  rpc UpdateIssue (UpdateIssueRequest) returns (IssueResponse) {}
   // There is no CreateComment method because comments are created by updates,
   // which may have just comment content and no delta.
   // There is no GetComment method, clients should use ListComments.
@@ -47,6 +49,16 @@ message IssueResponse {
 }
 
 
+// Next available tag: 6
+message UpdateIssueRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  bool send_email = 3;
+  IssueDelta delta = 4;
+  string comment_content = 5;
+}
+
+
 // Next available tag: 3
 message ListCommentsRequest {
   RequestTrace trace = 1;
@@ -72,6 +84,32 @@ message DeleteIssueCommentRequest {
   int64 local_id = 3;
   int64 comment_id = 4;
   bool delete = 5;
+}
+
+
+// Next available tag: 18
+message IssueDelta {
+  // Note: We use StringValue instead of string so that we can
+  // check if delta.HasField('status').  Proto3 only allows that
+  // for nested messages and provides "boxed" values for this purpose.
+  // In JSON, a StringValue is represented as a simple string.
+  google.protobuf.StringValue status = 1;
+  UserRef owner_ref = 2;
+  repeated UserRef cc_refs_add = 3;
+  repeated UserRef cc_refs_remove = 4;
+  repeated ComponentRef comp_refs_add = 5;
+  repeated ComponentRef comp_refs_remove = 6;
+  repeated LabelRef label_refs_add = 7;
+  repeated LabelRef label_refs_remove = 8;
+  repeated FieldValue field_vals_add = 9;
+  repeated FieldValue field_vals_remove = 10;
+  repeated FieldRef fields_clear = 11;
+  repeated IssueRef blocked_on_refs_add = 12;
+  repeated IssueRef blocked_on_refs_remove = 13;
+  repeated IssueRef blocking__refs_add = 14;
+  repeated IssueRef blocking_refs_remove = 15;
+  IssueRef merged_into_ref = 16;
+  google.protobuf.StringValue summary = 17;
 }
 
 

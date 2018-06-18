@@ -535,7 +535,7 @@ class WorkEnv(object):
     issue, approval_value = self.services.issue.GetIssueApproval(
         self.mc.cnxn, issue_id, approval_id)
 
-    self._AssertUserCanViewIssue(issue)
+    self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
     config = self.GetProjectConfig(issue.project_id)
 
     if approval_delta.status:
@@ -563,7 +563,7 @@ class WorkEnv(object):
     return approval_value, comment_pb
 
   def UpdateIssue(self, issue, delta, comment_content, send_email=True):
-    """Update an issue, TODO: iff the signed in user may edit it.
+    """Update an issue with a set of changes and add a comment.
 
     Args:
       issue: Existing Issue PB for the issue to be modified.
@@ -574,8 +574,7 @@ class WorkEnv(object):
     Returns:
       Nothing.
     """
-    self._AssertUserCanViewIssue(issue)
-
+    self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
     config = self.GetProjectConfig(issue.project_id)
     old_owner_id = tracker_bizobj.GetOwnerId(issue)
 
