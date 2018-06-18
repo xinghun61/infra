@@ -172,12 +172,10 @@ class FieldDetail(servlet.Servlet):
 
     if field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
       if parsed.approvers_str:
-        try:
-          approver_ids_dict = self.services.user.LookupUserIDs(
-              mr.cnxn, re.split('[,;\s]+', parsed.approvers_str))
-          approver_ids = list(set(approver_ids_dict.values()))
-        except exceptions.NoSuchUserException:
-          mr.errors.approvers = 'One or more approvers not found.'
+        approver_ids_dict = self.services.user.LookupUserIDs(
+            mr.cnxn, re.split('[,;\s]+', parsed.approvers_str),
+            autocreate=True)
+        approver_ids = list(set(approver_ids_dict.values()))
       else:
         mr.errors.approvers = 'Please provide at least one default approver.'
 

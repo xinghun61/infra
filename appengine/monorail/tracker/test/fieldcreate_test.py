@@ -112,11 +112,11 @@ class FieldCreateTest(unittest.TestCase):
     self.assertEqual('', fd.applicable_predicate)
     self.assertEqual([], fd.admin_ids)
 
-  def testProcessFormData_RejectApprover(self):
+  def testProcessFormData_RejectNoApprover(self):
     post_data = fake.PostData(
         name=['approvalField'],
         field_type=['approval_type'],
-        approver_names=['doesnotexist@chromium.org'],
+        approver_names=[''],
         admin_names=[''],
         parent_approval_name=['UIApproval'],
         is_phase_field=['on'])
@@ -136,7 +136,7 @@ class FieldCreateTest(unittest.TestCase):
         initial_notify_on=0,
         initial_date_action= post_data.get('date_action'),
         initial_choices=post_data.get('choices', ''),
-        initial_approvers=post_data.get('approver_names', ''),
+        initial_approvers=post_data.get('approver_names'),
         initial_parent_approval_name=post_data.get('parent_approval_name', ''),
         initial_survey=post_data.get('survey', ''),
         initial_is_phase_field=False,
@@ -146,7 +146,8 @@ class FieldCreateTest(unittest.TestCase):
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.mox.VerifyAll()
     self.assertEqual(
-        'One or more approvers not found.', self.mr.errors.approvers)
+        'Please provide at least one default approver.',
+        self.mr.errors.approvers)
     self.assertIsNone(url)
 
 
