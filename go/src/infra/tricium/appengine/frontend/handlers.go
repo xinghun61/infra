@@ -29,17 +29,17 @@ func mainPageHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
 	args, err := templateArgs(c, r)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "Failed to get template args.")
+		logging.WithError(err).Errorf(c, "Failed to get template args")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	mainPage := template.Must(template.ParseFiles("index.html"))
 	if err = mainPage.Execute(w, args); err != nil {
-		logging.WithError(err).Errorf(c, "Failed to render main page.")
+		logging.WithError(err).Errorf(c, "Failed to render frontend UI")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	logging.Infof(c, "[frontend] Successfully rendered frontend UI")
 }
 
 func templateArgs(c context.Context, r *http.Request) (map[string]interface{}, error) {
@@ -99,6 +99,7 @@ func analyzeHandler(ctx *router.Context) {
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}
+		return
 	}
 	logging.Infof(c, "[frontend] Successfully completed analyze")
 	w.WriteHeader(http.StatusOK)
