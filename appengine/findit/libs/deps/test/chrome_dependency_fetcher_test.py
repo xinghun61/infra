@@ -261,8 +261,3 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     self.assertEqual(
         self.chrome_dep_fetcher.GetDependencyRollsDict('4', '5', 'all'),
         expected_deps_rolls_dict)
-
-  def testIsChromeVersion(self):
-    self.assertTrue(chrome_dependency_fetcher.IsChromeVersion('50.0.1234.1'))
-    self.assertFalse(chrome_dependency_fetcher.IsChromeVersion('a.b.c.e'))
-    self.assertFalse(chrome_dependency_fetcher.IsChromeVersion('5.021.2.0.123'))

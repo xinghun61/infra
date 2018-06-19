@@ -10,16 +10,6 @@ from libs.deps import deps_parser
 _CHROMIUM_ROOT_DIR = 'src'
 _CHROMIUM_REPO_MASTER = 'https://chromium.googlesource.com/chromium/src.git'
 
-_CHROME_VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+\.\d+$')
-
-_BUILDSPEC_REPO = ('https://chrome-internal.googlesource.com/chrome/tools/'
-                   'buildspec.git/')
-
-
-def IsChromeVersion(revision):
-  """Determines if a revision is a chrome version."""
-  return bool(_CHROME_VERSION_PATTERN.match(revision))
-
 
 class DEPSDownloader(deps_parser.DEPSLoader):
   """Downloads DEPS from remote Git repo."""
@@ -66,14 +56,6 @@ class ChromeDependencyFetcher(object):
       A map from dependency path to the dependency info.
     """
     deps_repo_info = {'deps_file': 'DEPS'}
-
-    if IsChromeVersion(revision):
-      # For chrome version, get the DEPS file from internal buildspec/ repo
-      # instead of chromium trunk.
-      deps_repo_info['deps_repo_url'] = _BUILDSPEC_REPO
-      deps_repo_info['deps_repo_revision'] = 'master'
-      deps_repo_info['deps_file'] = 'releases/%s/DEPS' % revision
-
     root_dep = dependency.Dependency(_CHROMIUM_ROOT_DIR, _CHROMIUM_REPO_MASTER,
                                      revision, **deps_repo_info)
 
