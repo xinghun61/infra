@@ -21,6 +21,7 @@ from framework import exceptions
 from framework import monorailcontext
 from framework import permissions
 from framework import ratelimiter
+from framework import xsrf
 from services import config_svc
 from services import service_manager
 from testing import fake
@@ -55,7 +56,11 @@ class MonorailServicerFunctionsTest(unittest.TestCase):
 
 
 class UpdateSomethingRequest(testing_helpers.Blank):
-  pass
+
+  def __init__(self, *args, **kwargs):
+    super(UpdateSomethingRequest, self).__init__(*args, **kwargs)
+    self.trace = testing_helpers.Blank(
+        token='fake token', reason='', request_id='')
 
 
 class ListSomethingRequest(testing_helpers.Blank):
@@ -92,6 +97,8 @@ class MonorailServicerTest(unittest.TestCase):
     self.testbed = testbed.Testbed()
     self.testbed.activate()
     self.testbed.init_memcache_stub()
+    self.testbed.init_datastore_v3_stub()
+
     self.cnxn = fake.MonorailConnection()
     self.services = service_manager.Services(
         user=fake.UserService(),
@@ -101,10 +108,11 @@ class MonorailServicerTest(unittest.TestCase):
         'proj', project_id=789, owner_ids=[111L])
     self.user = self.services.user.TestAddUser('nonmember@example.com', 222L)
     self.svcr = TestableServicer(self.services)
-    self.request = UpdateSomethingRequest(exc_class=None, trace=None)
+    self.request = UpdateSomethingRequest(exc_class=None)
     self.prpc_context = context.ServicerContext()
     self.prpc_context.set_code(codes.StatusCode.OK)
     self.auth = authdata.AuthData(user_id=222L, email='nonmember@example.com')
+    self.request.trace.token = xsrf.GenerateToken(222L, xsrf.XHR_SERVLET_PATH)
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -269,6 +277,35 @@ class MonorailServicerTest(unittest.TestCase):
     self.project.committer_ids.append(222L)
     mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
     self.svcr.AssertBaseChecks(mc, self.request)
+
+  def testAssertBaseChecks_XSRFToken(self):
+    """Our API is limited to our client by checking an XSRF token."""
+    # pylint: disable=attribute-defined-outside-init
+    self.request.project_name = 'proj'
+    self.project.committer_ids.append(222L)
+    mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
+
+    # The token set in setUp() works with self.auth.
+    self.svcr.AssertBaseChecks(mc, self.request)
+
+    # Passing no request.trace.token is OK in dev_mode
+    try:
+      orig_dev_mode = settings.dev_mode
+      settings.dev_mode = True
+      self.request.trace.token = ''
+      self.svcr.AssertBaseChecks(mc, self.request)
+    finally:
+      settings.dev_mode = orig_dev_mode
+
+    # We detect a missing token.
+    self.request.trace.token = ''
+    with self.assertRaises(xsrf.TokenIncorrect):
+      self.svcr.AssertBaseChecks(mc, self.request)
+
+    # We detect a malformed, inappropriate, or expired token.
+    self.request.trace.token = 'bad token'
+    with self.assertRaises(xsrf.TokenIncorrect):
+      self.svcr.AssertBaseChecks(mc, self.request)
 
   def testGetRequestProject(self):
     """We get a project specified by request field project_name."""

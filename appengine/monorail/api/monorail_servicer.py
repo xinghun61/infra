@@ -142,7 +142,7 @@ class MonorailServicer(object):
         raise permissions.PermissionException()
       if trace:
         xsrf.ValidateToken(
-          trace.token('token'), mc.auth.user_id, xsrf.XHR_SERVLET_PATH)
+          trace.token, mc.auth.user_id, xsrf.XHR_SERVLET_PATH)
 
       project = self.GetRequestProject(mc.cnxn, request)
       if project:
