@@ -15,6 +15,9 @@ class DetectCQFalseRejectionFlakesCronJob(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
+    # Cron jobs run independently of each other. Therefore, there is no
+    # guarantee that they will run either sequentially or simultaneously.
+    #
     # Running flake detection tasks concurrently doesn't bring much benefits, so
     # use task queue to enforce that at most one detection task can be executed
     # at any time to avoid any potential race condition.
