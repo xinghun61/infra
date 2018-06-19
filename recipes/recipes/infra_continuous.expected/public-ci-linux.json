@@ -32,10 +32,10 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "infra@c14d891d44f0afff64e56ed7c9702df1d807b1ee"
+      "infra@HEAD"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -47,7 +47,7 @@
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra\": \"c14d891d44f0afff64e56ed7c9702df1d807b1ee\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra\": \"HEAD\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"infra\": {@@@",
@@ -192,47 +192,6 @@
       ]
     },
     "name": "cipd - test packages integrity"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/build/build.py",
-      "--service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json",
-      "--no-rebuild",
-      "--upload",
-      "--json-output",
-      "/path/to/tmp/json",
-      "--builder",
-      "infra-continuous-trusty-64",
-      "--tags",
-      "buildbot_build:chromium.infra/infra-continuous-trusty-64/123",
-      "git_repository:https://chromium.googlesource.com/infra/infra",
-      "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
-    ],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
-    "name": "cipd - upload packages",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"failed\": [], @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"succeeded\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"info\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"abcdefabcdef63ad814cd1dfffe2fcfc9f81299c\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/tools/some_tool/os-bitness\"@@@",
-      "@@@STEP_LOG_LINE@json.output@      }, @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"pkg_def_name\": \"some_tool\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LINK@infra/tools/some_tool/os-bitness abcdefabcdef63ad814cd1dfffe2fcfc9f81299c@http://example.com/not-implemented-yet@@@"
-    ]
   },
   {
     "name": "$result",

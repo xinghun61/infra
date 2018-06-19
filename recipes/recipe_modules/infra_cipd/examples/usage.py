@@ -56,15 +56,6 @@ def GenTests(api):
     api.buildbucket.ci_build('infra-internal', 'ci', 'cross') +
     api.runtime(is_luci=True, is_experimental=False))
   yield (
-    api.test('buildbot-legacy') +
-    api.properties(
-      path_config='generic',
-      buildername='buildbot-native',
-      buildnumber=5,
-      mastername='chromium.infra',
-    ) +
-    api.runtime(is_luci=False, is_experimental=False))
-  yield (
     api.test('no-buildnumbers') +
     api.properties(
       path_config='generic',

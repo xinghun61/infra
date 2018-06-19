@@ -16,10 +16,8 @@ class InfraCIPDApi(recipe_api.RecipeApi):
   and its internal counterpart.
   """
 
-  def __init__(self, mastername, buildername, buildnumber, **kwargs):
+  def __init__(self, buildnumber, **kwargs):
     super(InfraCIPDApi, self).__init__(**kwargs)
-    self._mastername = mastername
-    self._buildername = buildername
     self._buildnumber = buildnumber
     self._cur_ctx = None  # (path_to_repo, is_cross_compile)
 
@@ -68,7 +66,7 @@ class InfraCIPDApi(recipe_api.RecipeApi):
     return self.m.python(
         'cipd - build packages',
         self._ctx_path_to_repo.join('build', 'build.py'),
-        ['--builder', self._buildername])
+        ['--builder', self.m.buildbucket.builder_id.builder])
 
   def test(self, skip_if_cross_compiling=False):
     """Tests previously built packages integrity."""
@@ -80,20 +78,13 @@ class InfraCIPDApi(recipe_api.RecipeApi):
 
   def upload(self, tags, step_test_data=None):
     """Uploads previously built packages."""
-    args = []
-    if not self.m.runtime.is_luci:
-      # TODO(tandrii): get rid of these creds once we are on LUCI.
-      args = [
-          '--service-account-json',
-          self.m.cipd.default_bot_service_account_credentials,
-      ]
-    args.extend([
+    args = [
       '--no-rebuild',
       '--upload',
       '--json-output', self.m.json.output(),
-      '--builder', self._buildername,
+      '--builder', self.m.buildbucket.builder_id.builder,
       '--tags',
-    ])
+    ]
     args.extend(tags)
     try:
       return self.m.python(
@@ -116,17 +107,11 @@ class InfraCIPDApi(recipe_api.RecipeApi):
     """Returns tags to be attached to uploaded CIPD packages."""
     if self._buildnumber == -1:
       raise ValueError('buildnumbers must be enabled')  # pragma: no cover
-    if self.m.runtime.is_luci:
-      build_tag_key = 'luci_build'
-      bucket = self.m.buildbucket.properties['build']['bucket']
-    else:
-      # TODO(tandrii): get rid of this once migrated to LUCI.
-      build_tag_key = 'buildbot_build'
-      assert self._mastername
-      bucket = self._mastername
     return [
-      '%s:%s/%s/%s' % (
-        build_tag_key, bucket, self._buildername, self._buildnumber),
+      'luci_build:%s/%s/%s' % (
+        self.m.buildbucket.builder_id.bucket,
+        self.m.buildbucket.builder_id.builder,
+        self._buildnumber),
       'git_repository:%s' % git_repo_url,
       'git_revision:%s' % revision,
     ]

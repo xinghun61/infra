@@ -126,11 +126,11 @@ Essentially a shim around scripts in
 https://chromium.googlesource.com/infra/infra.git/+/master/build/
 and its internal counterpart.
 
-&mdash; **def [build](/recipes/recipe_modules/infra_cipd/api.py#66)(self):**
+&mdash; **def [build](/recipes/recipe_modules/infra_cipd/api.py#64)(self):**
 
 Builds packages.
 
-&emsp; **@contextlib.contextmanager**<br>&mdash; **def [context](/recipes/recipe_modules/infra_cipd/api.py#26)(self, path_to_repo, goos=None, goarch=None):**
+&emsp; **@contextlib.contextmanager**<br>&mdash; **def [context](/recipes/recipe_modules/infra_cipd/api.py#24)(self, path_to_repo, goos=None, goarch=None):**
 
 Sets context building CIPD packages.
 
@@ -142,15 +142,15 @@ Arguments:
 
 Doesn't support nesting.
 
-&mdash; **def [tags](/recipes/recipe_modules/infra_cipd/api.py#115)(self, git_repo_url, revision):**
+&mdash; **def [tags](/recipes/recipe_modules/infra_cipd/api.py#106)(self, git_repo_url, revision):**
 
 Returns tags to be attached to uploaded CIPD packages.
 
-&mdash; **def [test](/recipes/recipe_modules/infra_cipd/api.py#73)(self, skip_if_cross_compiling=False):**
+&mdash; **def [test](/recipes/recipe_modules/infra_cipd/api.py#71)(self, skip_if_cross_compiling=False):**
 
 Tests previously built packages integrity.
 
-&mdash; **def [upload](/recipes/recipe_modules/infra_cipd/api.py#81)(self, tags, step_test_data=None):**
+&mdash; **def [upload](/recipes/recipe_modules/infra_cipd/api.py#79)(self, tags, step_test_data=None):**
 
 Uploads previously built packages.
 ### *recipe_modules* / [infra\_system](/recipes/recipe_modules/infra_system)
@@ -349,9 +349,9 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 
 [DEPS](/recipes/recipes/infra_continuous.py#10): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [infra\_checkout](#recipe_modules-infra_checkout), [infra\_cipd](#recipe_modules-infra_cipd), [infra\_system](#recipe_modules-infra_system), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#108)(api, buildername, official):**
+&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#98)(api):**
 
-&mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#145)(api, buildername, official, project_name, repo_url, rev):**
+&mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#139)(api, buildername, project_name, repo_url, rev):**
 ### *recipes* / [infra\_continuous\_luci](/recipes/recipes/infra_continuous_luci.py)
 
 [DEPS](/recipes/recipes/infra_continuous_luci.py#14): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]

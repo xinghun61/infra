@@ -36,11 +36,11 @@ DEPS = [
 #
 # If the builder is not in this set, or the list of GOOS-GOARCH for it is empty,
 # it won't be used for building CIPD packages.
+#
+# Only builders named '*-packager-*' builders will actually upload CIPD
+# packages, while '*-continuous-*' builders merely verify that CIPD packages can
+# be built.
 CIPD_PACKAGE_BUILDERS = {
-  # trusty-32 is the primary builder for linux-386.
-  'infra-continuous-precise-32': [],
-  'infra-continuous-trusty-32':  ['native'],
-
   # trusty-64 is the primary builder for linux-amd64, and the rest just
   # cross-compile to different platforms (to speed up the overall cycle time by
   # doing stuff in parallel).
@@ -62,7 +62,6 @@ CIPD_PACKAGE_BUILDERS = {
 
   # Internal builders, they use exact same recipe.
   'infra-internal-continuous-trusty-64': ['native', 'linux-arm', 'linux-arm64'],
-  'infra-internal-continuous-trusty-32': ['native'],
   'infra-internal-continuous-win-32': ['native'],
   'infra-internal-continuous-win-64': ['native'],
   'infra-internal-continuous-mac-10.10-64': [],
@@ -71,7 +70,6 @@ CIPD_PACKAGE_BUILDERS = {
 
 
   # Builders also upload CIPD packages.
-  'infra-packager-linux-32': ['native'],
   'infra-packager-linux-64': [
     'native',
     'linux-arm',
@@ -85,7 +83,6 @@ CIPD_PACKAGE_BUILDERS = {
   'infra-packager-win-32': ['native'],
   'infra-packager-win-64': ['native'],
 
-  'infra-internal-packager-linux-32': ['native'],
   'infra-internal-packager-linux-64': ['native', 'linux-arm', 'linux-arm64'],
   'infra-internal-packager-mac-64': ['native'],
   'infra-internal-packager-win-32': ['native'],
@@ -98,22 +95,23 @@ CIPD_PACKAGE_BUILDERS = {
 GO_DEPS_BUNDLING_BUILDER = 'infra-continuous-trusty-64'
 
 
-PROPERTIES = {
-  'buildername': Property(),
-  'official': Property(default=False, kind=bool,
-                       help='if True, uploads packaged artifacts'),
-}
+INTERNAL_REPO = 'https://chrome-internal.googlesource.com/infra/infra_internal'
+PUBLIC_REPO = 'https://chromium.googlesource.com/infra/infra'
 
 
-def RunSteps(api, buildername, official):
+def RunSteps(api):
+  if not api.runtime.is_luci:  # pragma: no cover
+    raise ValueError('This recipe is not supported outside of LUCI.')
+
+  buildername = api.buildbucket.builder_id.builder
   if (buildername.startswith('infra-internal-continuous') or
       buildername.startswith('infra-internal-packager')):
     project_name = 'infra_internal'
-    repo_url = 'https://chrome-internal.googlesource.com/infra/infra_internal'
+    repo_url = INTERNAL_REPO
   elif (buildername.startswith('infra-continuous') or
       buildername.startswith('infra-packager')):
     project_name = 'infra'
-    repo_url = 'https://chromium.googlesource.com/infra/infra'
+    repo_url = PUBLIC_REPO
   else:  # pragma: no cover
     raise ValueError(
         'This recipe is not intended for builder %s. ' % buildername)
@@ -139,21 +137,15 @@ def RunSteps(api, buildername, official):
     # api.properties['revision'] except when the build was triggered manually
     # ('revision' property is missing in that case).
     rev = co.bot_update_step.presentation.properties['got_revision']
-    build_main(api, buildername, official, project_name, repo_url, rev)
+    build_main(api, buildername, project_name, repo_url, rev)
 
 
-def build_main(api, buildername, official, project_name, repo_url, rev):
+def build_main(api, buildername, project_name, repo_url, rev):
   with api.step.defer_results():
     with api.context(cwd=api.path['checkout']):
       # Run Linux tests everywhere, Windows tests only on public CI.
       if api.platform.is_linux or project_name == 'infra':
-        # TODO(tandrii): maybe get back coverage on 32-bit once
-        # http://crbug/766416 is resolved.
-        args = ['test']
-        if (api.platform.is_linux and api.platform.bits == 32 and
-            project_name == 'infra_internal'):  # pragma: no cover
-          args.append('--no-coverage')
-        api.python('infra python tests', 'test.py', args)
+        api.python('infra python tests', 'test.py', ['test'])
 
       # Validate ccompute configs.
       if api.platform.is_linux and project_name == 'infra_internal':
@@ -193,80 +185,38 @@ def build_main(api, buildername, official, project_name, repo_url, rev):
     with api.infra_cipd.context(api.path['checkout'], goos, goarch):
       api.infra_cipd.build()
       api.infra_cipd.test(skip_if_cross_compiling=True)
-      if official:
-        api.infra_cipd.upload(api.infra_cipd.tags(repo_url, rev))
+      if 'packager' in buildername:
+        if api.runtime.is_experimental:
+          api.step('no CIPD package upload in experimental mode', cmd=None)
+        else:
+          api.infra_cipd.upload(api.infra_cipd.tags(repo_url, rev))
 
 
 def GenTests(api):
 
-  def test(name, is_luci=False, is_experimental=False, **properties):
-    default = {
-      'path_config': 'generic',
-      'buildername': 'infra-continuous-trusty-64',
-      'buildnumber': 123,
-      'mastername': 'chromium.infra',
-      'repository': 'https://chromium.googlesource.com/infra/infra',
-    }
-    for k, v in default.iteritems():
-      properties.setdefault(k, v)
+  def test(name, builder, repo, luci_project, bucket, is_experimental=False):
     return (
         api.test(name) +
-        api.runtime(is_luci=is_luci, is_experimental=is_experimental) +
-        api.properties.git_scheduled(**properties)
+        api.runtime(is_luci=True, is_experimental=is_experimental) +
+        api.properties(path_config='generic', buildnumber=123) +
+        api.buildbucket.ci_build(luci_project, bucket, builder, git_repo=repo)
     )
 
-  yield test(
-      'infra-continuous-precise-64',
-      buildername='infra-continuous-precise-64',
-      official=True)
-  yield test(
-      'infra-continuous-trusty-64',
-      buildername='infra-continuous-trusty-64',
-      official=True)
+  yield test('public-ci-linux', 'infra-continuous-trusty-64',
+             PUBLIC_REPO, 'infra', 'ci')
+  yield test('public-ci-win', 'infra-continuous-win-32',
+             PUBLIC_REPO, 'infra', 'ci')
 
-  yield (
-    test(
-      'infra-continuous-win-64',
-      buildername='infra-continuous-win-64',
-      official=True) +
-    api.platform.name('win'))
+  yield test('internal-ci-linux', 'infra-continuous-trusty-64',
+             INTERNAL_REPO, 'infra-internal', 'ci')
+  yield test('internal-ci-mac', 'infra-continuous-mac-64',
+             INTERNAL_REPO, 'infra-internal', 'ci')
 
-  yield test(
-      'infra-internal-continuous',
-      buildername='infra-internal-continuous-trusty-32',
-      official=True,
-      mastername='internal.infra',
-      repository=
-          'https://chrome-internal.googlesource.com/infra/infra_internal')
+  yield test('public-packager-mac', 'infra-packager-mac-64',
+             PUBLIC_REPO, 'infra-internal', 'prod')
+  yield test('public-packager-mac_experimental', 'infra-packager-mac-64',
+             PUBLIC_REPO, 'infra-internal', 'prod',
+             is_experimental=True)
 
-  for official in [True, False]:
-    yield (
-      test(
-        'infra-internal-continuous-luci' + ('-official' if official else ''),
-        is_luci=True,
-        is_experimental=True,
-        buildername='infra-internal-continuous-trusty-32',
-        official=official,
-        repository=
-            'https://chrome-internal.googlesource.com/infra/infra_internal') +
-      api.buildbucket.ci_build(
-        'infra-internal', 'ci', 'infra-internal-continuous-trusty-32',
-        git_repo=(
-          'https://chrome-internal.googlesource.com/infra/infra_internal'))
-      )
-
-  for official in [True, False]:
-    yield (
-      test(
-        'infra-internal-packager' + ('-official' if official else ''),
-        is_luci=True,
-        is_experimental=True,
-        buildername='infra-internal-packager-linux-32',
-        official=official,
-        repository=
-            'https://chrome-internal.googlesource.com/infra/infra_internal') +
-      api.buildbucket.ci_build(
-        'infra-internal', 'prod', 'infra-internal-packager-linux-32',
-        git_repo=(
-          'https://chrome-internal.googlesource.com/infra/infra_internal'))
-    )
+  yield test('internal-packager-linux', 'infra-internal-packager-linux-64',
+             INTERNAL_REPO, 'infra-internal', 'prod')

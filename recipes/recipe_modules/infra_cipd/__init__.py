@@ -16,8 +16,5 @@ DEPS = [
 ]
 
 PROPERTIES = {
-  # TODO(tandrii): get rid of mastername once migrated to LUCI.
-  'mastername': Property(default=None),
-  'buildername': Property(),
   'buildnumber': Property(default=-1, kind=int),
 }

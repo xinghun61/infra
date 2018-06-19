@@ -29,7 +29,7 @@
       "--builder",
       "native",
       "--tags",
-      "luci_build:luci.infra-internal.ci/native/5",
+      "luci_build:ci/native/5",
       "git_repository:https://chromium.googlesource.com/infra/infra",
       "git_revision:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
     ],
