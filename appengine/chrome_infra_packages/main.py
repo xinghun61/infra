@@ -7,7 +7,6 @@
 WSGI apps are actually instantiated in apps.py.
 """
 
-import endpoints
 import hashlib
 import logging
 import os
@@ -22,6 +21,7 @@ from google.appengine.api import memcache
 
 from components import auth
 from components import config
+from components import endpoints_webapp2
 from components import ereporter2
 from components import utils
 
@@ -107,7 +107,7 @@ def create_endpoints_app():
     cipd.PackageRepositoryApi,
     config.ConfigApi,
   ]
-  return endpoints.api_server(apis, restricted=not utils.is_local_dev_server())
+  return endpoints_webapp2.api_server(apis)
 
 
 def create_frontend_app():
