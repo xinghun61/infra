@@ -11,6 +11,8 @@ def GetCountsFromSwarmingRerun(test_results_json):
   """Gets the total number of runs and passes from the test result of a swarming
     rerun determining pass_rate.
 
+  Assumption: only one test is run.
+
   When getting pass counts for a swarming rerun for a flaky test to
   determine pass rate, always assume the test is expected to pass,
   regardless what's currently expected for the test in test results.
@@ -29,8 +31,11 @@ def GetCountsFromSwarmingRerun(test_results_json):
 
   classified_test_results = test_results_obj.GetClassifiedTestResults()
 
-  # There should be exactly 1 test that was run.
   num_tests = len(classified_test_results)
+  if num_tests == 0:  # The test doesn't exist yet, i.e. newly-added tests.
+    return 0, 0
+
+  # There should be exactly 1 test that was run.
   assert num_tests == 1, 'Expecting 1 test in results, but got {}'.format(
       num_tests)
 

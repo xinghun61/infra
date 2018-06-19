@@ -19,6 +19,14 @@ class FlakeTestResultsTest(wf_testcase.WaterfallTestCase):
         (None, None),
         flake_test_results.GetCountsFromSwarmingRerun(test_results))
 
+  def testGetCountsFromSwarmingRerunTestNotExistYet(self):
+    test_results = {
+        'all_tests': [],
+        'per_iteration_data': [],
+    }
+    self.assertEqual(
+        (0, 0), flake_test_results.GetCountsFromSwarmingRerun(test_results))
+
   def testGetCountsFromSwarmingRerun(self):
     test_results = {
         'all_tests': [

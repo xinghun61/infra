@@ -22,7 +22,10 @@ _FINDIT_HTTP_CLIENT = FinditHttpClient()
 
 
 def _ParseFlakeSwarmingTaskOutput(task_data, output_json, error, parameters):
-  """Returns swarming task results as a FlakeswarmingTaskOutput object."""
+  """Returns swarming task results as a FlakeswarmingTaskOutput object.
+
+  Assumption: only 1 test was run in the Swarming task.
+  """
   assert task_data
 
   iterations = parameters.iterations
