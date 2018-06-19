@@ -261,23 +261,20 @@ class GtestTestResults(BaseTestResults):
       return shard_results[0]
 
     def MergeListsOfDicts(merged, shard):
-      """Merges the ith dict each list into one dict."""
-      output = []
-      for i in xrange(max(len(merged), len(shard))):
-        merged_dict = merged[i] if i < len(merged) else {}
-        shard_dict = shard[i] if i < len(shard) else {}
-        # TODO(crbug/846498): optimize this to save memory.
-        output_dict = merged_dict.copy()
-        output_dict.update(shard_dict)
-        output.append(output_dict)
-      return output
+      """Merges the ith dict in shard onto the ith dict of merged."""
+      min_len = min(len(merged), len(shard))
+      for i in xrange(min_len):
+        # Updates merged with data in shard.
+        merged[i].update(shard[i])
+      for k in xrange(min_len, len(shard)):
+        # If shard has a longer length, appends the rest data in shard.
+        merged.append(shard[k])
 
     merged_results = {'all_tests': set(), 'per_iteration_data': []}
     for shard_result in shard_results:
       merged_results['all_tests'].update(shard_result.get('all_tests', []))
-      merged_results['per_iteration_data'] = MergeListsOfDicts(
-          merged_results['per_iteration_data'],
-          shard_result.get('per_iteration_data', []))
+      MergeListsOfDicts(merged_results['per_iteration_data'],
+                        shard_result.get('per_iteration_data', []))
     merged_results['all_tests'] = sorted(merged_results['all_tests'])
     return merged_results
 
