@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from monorail_api import IssueTrackerAPI
 
 from common import monitoring
@@ -32,5 +34,7 @@ class UpdateMonorailMetrics(BaseHandler):
     for metric, client_to_query in METRIC_TO_CLIENT_TO_QUERY.iteritems():
       for client, query in client_to_query.iteritems():
         issues = issue_tracker_api.getIssues(query)
+        logging.info('Fetch %d issues for client %s using query %s',
+                     len(issues), client, query)
         getattr(monitoring, metric).set(len(issues),
                                         fields={'client_id': client})
