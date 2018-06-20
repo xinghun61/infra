@@ -24,12 +24,14 @@ import tempfile
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-GO_PROTO_DIR = os.path.normpath(
+LUCI_GO_DIR = os.path.normpath(
     os.path.join(
         THIS_DIR,
-        *('../../../go/src/go.chromium.org/luci/buildbucket/proto/').split('/')
+        *('../../../go/src/go.chromium.org/luci').split('/')
     )
 )
+RPC_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'grpc', 'proto')
+BUILDBUCKET_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'buildbucket', 'proto')
 
 
 def modify_proto(src, dest):
@@ -59,7 +61,16 @@ def compile_protos(src_dir, dest_dir):
     modify_proto(os.path.join(src_dir, f), os.path.join(tmpd, f))
 
   # Compile them.
-  args = ['protoc', '--python_out=.', '--prpc-python_out=.'] + proto_files
+  args = [
+      'protoc',
+      '-I',
+      RPC_PROTO_DIR,
+      '-I',
+      tmpd,
+      '--python_out=.',
+      '--prpc-python_out=.',
+  ]
+  args += [os.path.join(tmpd, f) for f in proto_files]
   subprocess.check_call(args, cwd=tmpd)
   pb2_files = find_files(tmpd, suffix='_pb2.py')
 
@@ -79,9 +90,10 @@ def compile_protos(src_dir, dest_dir):
 
 
 def main():
-  compile_protos(GO_PROTO_DIR, THIS_DIR)
+  compile_protos(BUILDBUCKET_PROTO_DIR, THIS_DIR)
   compile_protos(
-      os.path.join(GO_PROTO_DIR, 'config'), os.path.join(THIS_DIR, 'config')
+      os.path.join(BUILDBUCKET_PROTO_DIR, 'config'),
+      os.path.join(THIS_DIR, 'config')
   )
 
 
