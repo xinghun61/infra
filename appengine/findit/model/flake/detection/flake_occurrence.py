@@ -62,18 +62,6 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
     return '%s@%s@%s' % (build_id, step_name, test_name)
 
   @classmethod
-  def Get(cls, build_id, step_name, test_name, parent_flake_key):
-    """Gets a cq false rejection flake occurrence if it exists.
-
-    Args:
-      step_name: The original name of a step in a given build.
-      test_name: The original name of a test in a give test binary.
-      parent_flake_key: parent Flake model this occurrence is grouped under.
-    """
-    return cls.get_by_id(
-        cls.GetId(build_id, step_name, test_name), parent=parent_flake_key)
-
-  @classmethod
   def Create(cls, build_id, step_name, test_name, luci_project, luci_bucket,
              luci_builder, legacy_master_name, reference_succeeded_build_id,
              time_happened, parent_flake_key):

@@ -4,6 +4,8 @@
 import logging
 import os
 
+from google.appengine.ext import ndb
+
 from gae_libs import appengine_util
 from model.flake.detection.flake import Flake
 from model.flake.detection.flake_occurrence import (
@@ -16,27 +18,32 @@ PATH_TO_FLAKY_TESTS_QUERY = os.path.realpath(
                  'flaky_tests.cq_false_rejection.sql'))
 
 
-def _StoreFlakeOccurrence(row):
-  """Stores one row fetched from BigQuery as a FlakeOccurrence entity.
-
-  Please refer to the sql query for the format of the fetched rows.
-  """
+def _CreateFlakeFromRow(row):
+  """Creates a Flake entity from a row fetched from BigQuery."""
   luci_project = row['luci_project']
   step_name = row['step_name']
   test_name = row['test_name']
-
   normalized_step_name = Flake.NormalizeStepName(step_name)
   normalized_test_name = Flake.NormalizeTestName(test_name)
-  flake = Flake.Get(
+
+  return Flake.Create(
       luci_project=luci_project,
       normalized_step_name=normalized_step_name,
       normalized_test_name=normalized_test_name)
-  if not flake:
-    flake = Flake.Create(
-        luci_project=luci_project,
-        normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name)
-    flake.put()
+
+
+def _CreateFlakeOccurrenceFromRow(row):
+  """Creates a FlakeOccurrence from a row fetched from BigQuery."""
+  luci_project = row['luci_project']
+  step_name = row['step_name']
+  test_name = row['test_name']
+  normalized_step_name = Flake.NormalizeStepName(step_name)
+  normalized_test_name = Flake.NormalizeTestName(test_name)
+  flake_id = Flake.GetId(
+      luci_project=luci_project,
+      normalized_step_name=normalized_step_name,
+      normalized_test_name=normalized_test_name)
+  flakey_key = ndb.Key(Flake, flake_id)
 
   build_id = row['build_id']
   luci_bucket = row['luci_bucket']
@@ -44,25 +51,49 @@ def _StoreFlakeOccurrence(row):
   legacy_master_name = row['legacy_master_name']
   reference_succeeded_build_id = row['reference_succeeded_build_id']
   time_happened = row['test_start_msec']
-
-  flake_occurrence = CQFalseRejectionFlakeOccurrence.Get(
+  flake_occurrence = CQFalseRejectionFlakeOccurrence.Create(
       build_id=build_id,
       step_name=step_name,
       test_name=test_name,
-      parent_flake_key=flake.key)
-  if not flake_occurrence:
-    flake_occurrence = CQFalseRejectionFlakeOccurrence.Create(
-        build_id=build_id,
-        step_name=step_name,
-        test_name=test_name,
-        luci_project=luci_project,
-        luci_bucket=luci_bucket,
-        luci_builder=luci_builder,
-        legacy_master_name=legacy_master_name,
-        reference_succeeded_build_id=reference_succeeded_build_id,
-        time_happened=time_happened,
-        parent_flake_key=flake.key)
-    flake_occurrence.put()
+      luci_project=luci_project,
+      luci_bucket=luci_bucket,
+      luci_builder=luci_builder,
+      legacy_master_name=legacy_master_name,
+      reference_succeeded_build_id=reference_succeeded_build_id,
+      time_happened=time_happened,
+      parent_flake_key=flakey_key)
+
+  return flake_occurrence
+
+
+def _StoreMultipleLocalEntities(local_entities):
+  """Stores multiple ndb Model entities.
+
+  Args:
+    local_entities: A list of Model entities in local memory. It is OK for
+                    local_entities to have duplicates, this method will
+                    automatically de-duplicate them.
+
+  NOTE: This method doesn't overwrite existing entities.
+  """
+  key_to_local_entities = {}
+  for entity in local_entities:
+    key_to_local_entities[entity.key] = entity
+
+  # |local_entities| may have duplicates, need to de-duplicate them.
+  unique_entity_keys = key_to_local_entities.keys()
+
+  # get_multi returns a list, and a list item is None if the key wasn't found.
+  remote_entities = ndb.get_multi(unique_entity_keys)
+  non_existent_entity_keys = [
+      unique_entity_keys[i]
+      for i in range(len(remote_entities))
+      if not remote_entities[i]
+  ]
+  non_existent_local_entities = [
+      key_to_local_entities[key] for key in non_existent_entity_keys
+  ]
+  ndb.put_multi(non_existent_local_entities)
 
 
 def QueryAndStoreFlakes():
@@ -80,5 +111,9 @@ def QueryAndStoreFlakes():
 
   logging.info('Fetched %d cq false rejection flake occurrences from BigQuery.',
                len(rows))
-  for row in rows:
-    _StoreFlakeOccurrence(row)
+
+  local_flakes = [_CreateFlakeFromRow(row) for row in rows]
+  _StoreMultipleLocalEntities(local_flakes)
+
+  local_flake_occurrences = [_CreateFlakeOccurrenceFromRow(row) for row in rows]
+  _StoreMultipleLocalEntities(local_flake_occurrences)

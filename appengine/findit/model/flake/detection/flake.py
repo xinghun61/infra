@@ -32,15 +32,6 @@ class Flake(ndb.Model):
                          normalized_test_name)
 
   @classmethod
-  def Get(cls, luci_project, normalized_step_name, normalized_test_name):
-    """Gets a Flake entity for a flaky test if it exists."""
-    return cls.get_by_id(
-        cls.GetId(
-            luci_project=luci_project,
-            normalized_step_name=normalized_step_name,
-            normalized_test_name=normalized_test_name))
-
-  @classmethod
   def Create(cls, luci_project, normalized_step_name, normalized_test_name):
     """Creates a Flake entity for a flaky test."""
     flake_id = cls.GetId(

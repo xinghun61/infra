@@ -46,25 +46,6 @@ class FlakeTest(TestCase):
             normalized_step_name=normalized_step_name,
             normalized_test_name=normalized_test_name))
 
-  def testGet(self):
-    luci_project = 'chromium'
-    normalized_step_name = 'normalized_step'
-    normalized_test_name = 'normalized_test'
-
-    flake_id = 'chromium@normalized_step@normalized_test'
-    flake = Flake(
-        luci_project=luci_project,
-        normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name,
-        id=flake_id)
-    flake.put()
-    self.assertEqual(
-        flake,
-        Flake.Get(
-            luci_project=luci_project,
-            normalized_step_name=normalized_step_name,
-            normalized_test_name=normalized_test_name))
-
   def testCreate(self):
     luci_project = 'chromium'
     normalized_step_name = 'normalized_step'
@@ -76,8 +57,6 @@ class FlakeTest(TestCase):
         normalized_test_name=normalized_test_name)
     flake.put()
 
-    fetched_flake = Flake.Get(
-        luci_project=luci_project,
-        normalized_step_name=normalized_step_name,
-        normalized_test_name=normalized_test_name)
-    self.assertEqual(flake, fetched_flake)
+    fetched_flakes = Flake.query().fetch()
+    self.assertEqual(1, len(fetched_flakes))
+    self.assertEqual(flake, fetched_flakes[0])
