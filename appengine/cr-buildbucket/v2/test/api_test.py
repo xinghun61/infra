@@ -37,9 +37,9 @@ class BaseTestCase(testing.AppengineTestCase):
 
     self.patch('acl.can_async', return_value=future(True))
     self.patch(
-        'acl.get_acessible_buckets',
+        'acl.get_acessible_buckets_async',
         autospec=True,
-        return_value=['luci.chromium.try']
+        return_value=future(['luci.chromium.try']),
     )
 
     self.now = datetime.datetime(2015, 1, 1)

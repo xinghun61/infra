@@ -48,7 +48,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.patch('acl.can_async', return_value=future(True))
     self.patch(
-        'acl.get_acessible_buckets', autospec=True, return_value=['chromium']
+        'acl.get_acessible_buckets_async',
+        autospec=True,
+        return_value=future(['chromium']),
     )
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
@@ -754,7 +756,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(builds, [self.test_build])
 
     # All buckets are available.
-    acl.get_acessible_buckets.return_value = None
+    acl.get_acessible_buckets_async.return_value = future(None)
     acl.can_async.side_effect = None
     builds, _ = self.search()
     self.assertEqual(builds, [build2, self.test_build])
@@ -762,7 +764,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(builds, [build2, self.test_build])
 
     # No buckets are available.
-    acl.get_acessible_buckets.return_value = []
+    acl.get_acessible_buckets_async.return_value = future([])
     self.mock_cannot(acl.Action.SEARCH_BUILDS)
     builds, _ = self.search()
     self.assertEqual(builds, [])
@@ -798,13 +800,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.assertEqual(builds, [self.test_build])
 
-  @mock.patch('acl.get_acessible_buckets', autospec=True)
-  def test_search_by_build_address(self, get_acessible_buckets):
+  @mock.patch('acl.get_acessible_buckets_async', autospec=True)
+  def test_search_by_build_address(self, get_acessible_buckets_async):
     build_address = 'build_address:chromium/infra/1'
     self.test_build.tags = [build_address]
     self.put_build(self.test_build)
 
-    get_acessible_buckets.return_value = [self.test_build.bucket]
+    get_acessible_buckets_async.return_value = future([self.test_build.bucket])
     builds, _ = self.search(tags=[build_address])
     self.assertEqual(builds, [self.test_build])
 

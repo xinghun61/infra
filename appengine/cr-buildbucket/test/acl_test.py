@@ -118,7 +118,7 @@ class AclTest(testing.AppengineTestCase):
 
   @mock.patch('components.auth.is_admin', autospec=True)
   @mock.patch('components.auth.is_group_member', autospec=True)
-  def test_get_acessible_buckets(self, is_group_member, is_admin):
+  def test_get_acessible_buckets_async(self, is_group_member, is_admin):
     is_group_member.side_effect = lambda g, _=None: g in ('xxx', 'yyy')
     is_admin.return_value = False
 
@@ -149,15 +149,16 @@ class AclTest(testing.AppengineTestCase):
         ),
     ])
 
-    availble_buckets = acl.get_acessible_buckets()
-    availble_buckets = acl.get_acessible_buckets()  # memcache coverage.
+    availble_buckets = acl.get_acessible_buckets_async().get_result()
+    # memcache coverage.
+    availble_buckets = acl.get_acessible_buckets_async().get_result()
     self.assertEqual(
         availble_buckets,
         {'available_bucket1', 'available_bucket2', 'available_bucket3'}
     )
 
     is_admin.return_value = True
-    self.assertIsNone(acl.get_acessible_buckets())
+    self.assertIsNone(acl.get_acessible_buckets_async().get_result())
 
   def mock_has_any_of_roles(self, current_identity_roles):
     current_identity_roles = set(current_identity_roles)

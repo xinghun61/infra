@@ -220,7 +220,8 @@ def can(bucket, action):
   return can_async(bucket, action).get_result()
 
 
-def get_acessible_buckets():
+@ndb.tasklet
+def get_acessible_buckets_async():
   """Returns buckets accessible to the current identity.
 
   A bucket is accessible if the requester has ACCESS_BUCKET permission.
@@ -231,17 +232,18 @@ def get_acessible_buckets():
     Set of bucket names or None if all buckets are available.
   """
   if auth.is_admin():
-    return None
+    raise ndb.Return(None)
 
   identity = auth.get_current_identity().to_bytes()
   cache_key = 'available_buckets/%s' % identity
-  available_buckets = memcache.get(cache_key)
+  ctx = ndb.get_context()
+  available_buckets = yield ctx.memcache_get(cache_key)
   if available_buckets is not None:
-    return available_buckets
+    raise ndb.Return(available_buckets)
   logging.info('Computing a list of available buckets for %s' % identity)
   group_buckets_map = collections.defaultdict(set)
   available_buckets = set()
-  all_buckets = config.get_buckets_async().get_result()
+  all_buckets = yield config.get_buckets_async()
   for bucket in all_buckets:
     for rule in bucket.acls:
       if rule.identity == identity:
@@ -254,8 +256,8 @@ def get_acessible_buckets():
     if auth.is_group_member(group):
       available_buckets.update(buckets)
   # Cache for 10 min
-  memcache.set(cache_key, available_buckets, 10 * 60)
-  return available_buckets
+  yield ctx.memcache_set(cache_key, available_buckets, 10 * 60)
+  raise ndb.Return(available_buckets)
 
 
 def current_identity_cannot(action_format, *args):  # pragma: no cover
