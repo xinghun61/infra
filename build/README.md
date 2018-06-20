@@ -52,6 +52,10 @@ platforms:
 # specified the package will be build on all CI builders that target platforms
 # specified in the 'platforms' filter. When build.py script is invoked manually
 # (without --builder flag), this filter is ignored.
+# WARNING: as of June 2018, there are two builders:
+#  infra-continuous-x-y which just builds
+#  infra-packager-x-y   which also uploads.
+# You probably want to list both.
 builders:
   - infra-continuous-precise-64
   - ...
