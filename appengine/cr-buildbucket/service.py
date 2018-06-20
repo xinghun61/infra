@@ -758,6 +758,7 @@ class SearchQuery(object):
   def __eq__(self, other):  # pragma: no cover
     # "pragma: no cover" because this code is executed
     # by mock module, not service_test
+    # pylint: disable=unidiomatic-typecheck
     return type(self) == type(other) and self.__dict__ == other.__dict__
 
   def __ne__(self, other):  # pragma: no cover

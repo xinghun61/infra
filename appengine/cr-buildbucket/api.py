@@ -51,7 +51,7 @@ class ErrorMessage(messages.Message):
 
 def exception_to_error_message(ex):
   assert isinstance(ex, errors.Error)
-  assert type(ex) in ERROR_REASON_MAP
+  assert type(ex) in ERROR_REASON_MAP  # pylint: disable=unidiomatic-typecheck
   return ErrorMessage(reason=ERROR_REASON_MAP[type(ex)], message=ex.message)
 
 
