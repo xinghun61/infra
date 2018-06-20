@@ -12,10 +12,12 @@ import logging
 import os
 import threading
 
+from google.appengine.api import app_identity
 from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
 from components import auth
+from components import utils
 
 from protorpc import messages
 from proto.config import project_config_pb2
@@ -266,6 +268,29 @@ def get_acessible_buckets_async():
   return _get_or_create_cached_future('accessible_buckets', impl)
 
 
+@utils.cache
+def self_identity():  # pramga: no cover
+  """Returns identity of the buildbucket app."""
+  return auth.Identity('user', app_identity.get_service_account_name())
+
+
+def delegate_async(target_service_host, tag=''):
+  """Mints a delegation token for the current identity."""
+  tag = tag or ''
+
+  def impl():
+    return auth.delegate_async(
+        audience=[self_identity()],
+        services=['https://%s' % target_service_host],
+        impersonate=auth.get_current_identity(),
+        tags=[tag] if tag else [],
+    )
+
+  return _get_or_create_cached_future(
+      'delegation_token:%s:%s' % (target_service_host, tag), impl
+  )
+
+
 def current_identity_cannot(action_format, *args):  # pragma: no cover
   """Returns AuthorizationError."""
   action = action_format % args
@@ -292,12 +317,18 @@ def _get_or_create_cached_future(key, create_future):
     cache = {'request_id': req_id, 'futures': {}}
     _thread_local.request_cache = cache
 
-  fut = cache['futures'].get(key)
-  if fut is None:
-    fut = create_future()
-    assert fut is not None
-    cache['futures'][key] = fut
-  return fut
+  fut_entry = cache['futures'].get(key)
+  if fut_entry is None:
+    fut_entry = {
+        'future': create_future(),
+        'ndb_context': ndb.get_context(),
+    }
+    cache['futures'][key] = fut_entry
+  assert (
+      fut_entry['future'].done() or
+      ndb.get_context() is fut_entry['ndb_context']
+  )
+  return fut_entry['future']
 
 
 def clear_request_cache():

@@ -233,3 +233,17 @@ class AclTest(testing.AppengineTestCase):
     build = model.Build(bucket='bucket')
     self.assertTrue(user.can_view_build(build))
     self.assertFalse(user.can_lease_build(build))
+
+  @mock.patch('user.auth.delegate_async', autospec=True)
+  def test_delegate_async(self, delegate_async):
+    delegate_async.return_value = future('token')
+    token = user.delegate_async(
+        'swarming.example.com', tag='buildbucket:bucket:x'
+    ).get_result()
+    self.assertEqual(token, 'token')
+    delegate_async.assert_called_with(
+        audience=[user.self_identity()],
+        services=['https://swarming.example.com'],
+        impersonate=auth.get_current_identity(),
+        tags=['buildbucket:bucket:x'],
+    )

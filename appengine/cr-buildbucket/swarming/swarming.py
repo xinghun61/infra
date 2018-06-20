@@ -35,7 +35,6 @@ import posixpath
 import random
 import string
 
-from components import auth
 from components import config as component_config
 from components import decorators
 from components import net
@@ -61,6 +60,7 @@ import events
 import gae_ts_mon
 import logdog
 import model
+import user
 
 PUBSUB_TOPIC = 'swarming'
 PARAM_PROPERTIES = 'properties'
@@ -756,14 +756,14 @@ def create_task_async(build, build_number=None):
 
   assert build.swarming_hostname
   res = yield _call_api_async(
-      auth.get_current_identity(),
-      build.swarming_hostname,
-      'tasks/new',
+      impersonate=True,
+      hostname=build.swarming_hostname,
+      path='tasks/new',
       method='POST',
       payload=task_def,
       # Make Swarming know what bucket the task belong too. Swarming uses
       # this to authorize access to pools assigned to specific buckets only.
-      delegation_tags=['buildbucket:bucket:%s' % build.bucket],
+      delegation_tag='buildbucket:bucket:%s' % build.bucket,
       # Higher timeout than normal because if the task creation request
       # fails, but the task is actually created, later we will receive a
       # notification that the task is completed, but we won't have a build
@@ -812,7 +812,7 @@ def create_task_async(build, build_number=None):
   task_expiration += datetime.timedelta(hours=1)
   build.lease_expiration_date = utils.utcnow() + task_expiration
   build.regenerate_lease_key()
-  build.leasee = _self_identity()
+  build.leasee = user.self_identity()
   build.never_leased = False
 
 
@@ -843,13 +843,13 @@ def cancel_task_async(hostname, task_id):
   Noop if the task started running.
   """
   res = yield _call_api_async(
-      None,
-      hostname,
-      'task/%s/cancel' % task_id,
+      impersonate=False,
+      hostname=hostname,
+      path='task/%s/cancel' % task_id,
       method='POST',
       payload={
           'kill_running': True,
-      }
+      },
   )
 
   if res.get('ok'):
@@ -884,7 +884,11 @@ def cancel_task_transactionally_async(hostname, task_id):  # pragma: no cover
 
 
 def _load_task_result_async(hostname, task_id):  # pragma: no cover
-  return _call_api_async(None, hostname, 'task/%s/result' % task_id)
+  return _call_api_async(
+      impersonate=False,
+      hostname=hostname,
+      path='task/%s/result' % task_id,
+  )
 
 
 @ndb.tasklet
@@ -1326,27 +1330,19 @@ def get_backend_routes():  # pragma: no cover
 
 @ndb.tasklet
 def _call_api_async(
-    impersonated_identity,
+    impersonate,
     hostname,
     path,
     method='GET',
     payload=None,
-    delegation_tags=None,
+    delegation_tag=None,
     deadline=None,
-    max_attempts=None
+    max_attempts=None,
 ):
-  """Calls Swarming API.
-
-  If impersonated_identity is None, does not impersonate.
-  """
+  """Calls Swarming API."""
   delegation_token = None
-  if impersonated_identity:
-    delegation_token = yield auth.delegate_async(
-        audience=[_self_identity()],
-        services=['https://%s' % hostname],
-        impersonate=impersonated_identity,
-        tags=delegation_tags,
-    )
+  if impersonate:
+    delegation_token = yield user.delegate_async(hostname, delegation_tag)
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
   res = yield net.json_request_async(
       url,
@@ -1358,11 +1354,6 @@ def _call_api_async(
       delegation_token=delegation_token,
   )
   raise ndb.Return(res)
-
-
-@utils.cache
-def _self_identity():
-  return auth.Identity('user', app_identity.get_service_account_name())
 
 
 def format_obj(obj, params):
