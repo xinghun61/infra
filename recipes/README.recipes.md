@@ -12,6 +12,7 @@
   * [sync_submodules](#recipe_modules-sync_submodules)
   * [third_party_packages](#recipe_modules-third_party_packages)
   * [wct](#recipe_modules-wct)
+  * [windows_sdk](#recipe_modules-windows_sdk)
 
 **[Recipes](#Recipes)**
   * [build_conda_cipd_pkg](#recipes-build_conda_cipd_pkg) &mdash; Recipe to build CIPD package with sealed Conda environment.
@@ -55,6 +56,7 @@
   * [third_party_packages:examples/ninja](#recipes-third_party_packages_examples_ninja) &mdash; Recipe for 'ninja' building.
   * [third_party_packages:examples/python](#recipes-third_party_packages_examples_python) &mdash; Recipe for 'python' building.
   * [third_party_packages:examples/swig](#recipes-third_party_packages_examples_swig) &mdash; Recipe for 'swig' building.
+  * [windows_sdk:examples/full](#recipes-windows_sdk_examples_full)
   * [wpt_export](#recipes-wpt_export) &mdash; Exports commits in Chromium to the web-platform-tests repo.
   * [wpt_import](#recipes-wpt_import) &mdash; Imports changes from web-platform-tests into Chromium.
 ## Recipe Modules
@@ -210,7 +212,7 @@ Args:
   disable_path_prefix: disable filtering out DEPS by path prefix.
 ### *recipe_modules* / [third\_party\_packages](/recipes/recipe_modules/third_party_packages)
 
-[DEPS](/recipes/recipe_modules/third_party_packages/__init__.py#5): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
+[DEPS](/recipes/recipe_modules/third_party_packages/__init__.py#5): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [windows\_sdk](#recipe_modules-windows_sdk), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
 
 #### **class [ThirdPartyPackagesApi](/recipes/recipe_modules/third_party_packages/api.py#19)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
@@ -260,6 +262,27 @@ WCTApi provides support for running Web Component Tests
 &mdash; **def [install](/recipes/recipe_modules/wct/api.py#14)(self):**
 
 &mdash; **def [run](/recipes/recipe_modules/wct/api.py#29)(self, root, prefix='test/', step_name='Run WCT tests'):**
+### *recipe_modules* / [windows\_sdk](/recipes/recipe_modules/windows_sdk)
+
+[DEPS](/recipes/recipe_modules/windows_sdk/__init__.py#5): [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+#### **class [WindowsSDKApi](/recipes/recipe_modules/windows_sdk/api.py#10)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+API for using Windows SDK distributed via CIPD.
+
+&emsp; **@contextmanager**<br>&mdash; **def [\_\_call\_\_](/recipes/recipe_modules/windows_sdk/api.py#18)(self, path=None, version=None, enabled=True):**
+
+Setups the SDK environment when enabled.
+
+Args:
+  path (path): Path to a directory where to install the SDK
+    (default is '[start_dir]/cipd/windows_sdk')
+  version (str): CIPD instance ID, tag or ref of the SDK
+    (default is set via $infra/windows_sdk.version property)
+  enabled (bool): Whether the SDK should be used or not.
+
+Raises:
+    StepFailure or InfraFailure.
 ## Recipes
 
 ### *recipes* / [build\_conda\_cipd\_pkg](/recipes/recipes/build_conda_cipd_pkg.py)
@@ -560,7 +583,7 @@ Recipe for 'ninja' building.
 During testing, it may be useful to focus on building Ninja. This can be done by
 running this recipe module directly.
 
-&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/ninja.py#46)(api, dry_run):**
+&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/ninja.py#45)(api, dry_run):**
 ### *recipes* / [third\_party\_packages:examples/python](/recipes/recipe_modules/third_party_packages/examples/python.py)
 
 [DEPS](/recipes/recipe_modules/third_party_packages/examples/python.py#14): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
@@ -581,6 +604,11 @@ During testing, it may be useful to focus on building Swig. This can be done by
 running this recipe module directly.
 
 &mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/swig.py#43)(api, dry_run):**
+### *recipes* / [windows\_sdk:examples/full](/recipes/recipe_modules/windows_sdk/examples/full.py)
+
+[DEPS](/recipes/recipe_modules/windows_sdk/examples/full.py#5): [windows\_sdk](#recipe_modules-windows_sdk), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+&mdash; **def [RunSteps](/recipes/recipe_modules/windows_sdk/examples/full.py#13)(api):**
 ### *recipes* / [wpt\_export](/recipes/recipes/wpt_export.py)
 
 [DEPS](/recipes/recipes/wpt_export.py#17): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python]
@@ -635,6 +663,7 @@ Runs a step which adds a link to the current CL if there is one.
 [depot_tools/recipe_modules/presubmit]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/b65b611d7571141fe8c942018b5af3e2c042805d/recipes/README.recipes.md#recipe_modules-presubmit
 [depot_tools/recipe_modules/tryserver]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/b65b611d7571141fe8c942018b5af3e2c042805d/recipes/README.recipes.md#recipe_modules-tryserver
 [recipe_engine/recipe_modules/buildbucket]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/a1a47c8bf997d1f069a3ee088ffa7303a1f8a7cb/README.recipes.md#recipe_modules-buildbucket
+[recipe_engine/recipe_modules/cipd]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/a1a47c8bf997d1f069a3ee088ffa7303a1f8a7cb/README.recipes.md#recipe_modules-cipd
 [recipe_engine/recipe_modules/context]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/a1a47c8bf997d1f069a3ee088ffa7303a1f8a7cb/README.recipes.md#recipe_modules-context
 [recipe_engine/recipe_modules/file]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/a1a47c8bf997d1f069a3ee088ffa7303a1f8a7cb/README.recipes.md#recipe_modules-file
 [recipe_engine/recipe_modules/json]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/a1a47c8bf997d1f069a3ee088ffa7303a1f8a7cb/README.recipes.md#recipe_modules-json
