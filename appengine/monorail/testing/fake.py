@@ -1292,6 +1292,18 @@ class IssueService(object):
         ids.append(iid)
     return ids
 
+  def LookupIssueIDs(self, _cnxn, project_local_id_pairs):
+    hits = []
+    misses = []
+    for (project_id, local_id) in project_local_id_pairs:
+      try:
+        issue = self.issues_by_project[project_id][local_id]
+        hits.append(issue.issue_id)
+      except KeyError:
+        misses.append((project_id, local_id))
+
+    return hits, misses
+
   def LookupIssueID(self, _cnxn, project_id, local_id):
     try:
       issue = self.issues_by_project[project_id][local_id]

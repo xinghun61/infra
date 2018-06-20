@@ -106,7 +106,7 @@ message IssueDelta {
   repeated FieldRef fields_clear = 11;
   repeated IssueRef blocked_on_refs_add = 12;
   repeated IssueRef blocked_on_refs_remove = 13;
-  repeated IssueRef blocking__refs_add = 14;
+  repeated IssueRef blocking_refs_add = 14;
   repeated IssueRef blocking_refs_remove = 15;
   IssueRef merged_into_ref = 16;
   google.protobuf.StringValue summary = 17;

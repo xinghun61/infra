@@ -408,7 +408,25 @@ def IngestFieldRefs(field_refs, config):
   return result
 
 
-def IngestIssueDelta(cnxn, user_service, delta, config):
+def IngestIssueRefs(cnxn, issue_refs, services):
+  """Look up issue IDs for the specified issues."""
+  project_names = set(ref.project_name for ref in issue_refs)
+  project_names_to_id = services.project.LookupProjectIDs(cnxn, project_names)
+  project_local_id_pairs = []
+  for ref in issue_refs:
+    if ref.project_name in project_names_to_id:
+      pair = (project_names_to_id[ref.project_name], ref.local_id)
+      project_local_id_pairs.append(pair)
+    else:
+      raise exceptions.NoSuchProjectException()
+  issue_ids, misses = services.issue.LookupIssueIDs(
+      cnxn, project_local_id_pairs)
+  if misses:
+    raise exceptions.NoSuchIssueException()
+  return issue_ids
+
+
+def IngestIssueDelta(cnxn, services, delta, config):
   """Ingest a protoc IssueDelta and create a protorpc IssueDelta."""
   status = None
   if delta.HasField('status'):
@@ -430,17 +448,22 @@ def IngestIssueDelta(cnxn, user_service, delta, config):
   labels_remove = [lab_ref.label for lab_ref in delta.label_refs_remove]
 
   field_vals_add = IngestFieldValues(
-      cnxn, user_service, delta.field_vals_add, config)
+      cnxn, services.user, delta.field_vals_add, config)
   field_vals_remove = IngestFieldValues(
-      cnxn, user_service, delta.field_vals_remove, config)
+      cnxn, services.user, delta.field_vals_remove, config)
   fields_clear = IngestFieldRefs(delta.fields_clear, config)
 
-  # TODO(jrobbins): handle related issues
-  blocked_on_add = []
-  blocked_on_remove = []
-  blocking_add = []
-  blocking_remove = []
+  blocked_on_add = IngestIssueRefs(
+      cnxn, delta.blocked_on_refs_add, services)
+  blocked_on_remove = IngestIssueRefs(
+      cnxn, delta.blocked_on_refs_remove, services)
+  blocking_add = IngestIssueRefs(
+      cnxn, delta.blocking_refs_add, services)
+  blocking_remove = IngestIssueRefs(
+      cnxn, delta.blocking_refs_remove, services)
   merged_into = None
+  if delta.HasField('merged_into_ref'):
+    merged_into = IngestIssueRefs(cnxn, [delta.merged_into_ref], services)[0]
 
   result = tracker_bizobj.MakeIssueDelta(
       status, owner_id, cc_ids_add, cc_ids_remove, comp_ids_add,

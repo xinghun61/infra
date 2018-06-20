@@ -25,7 +25,6 @@ from services import service_manager
 class ConverterFunctionsTest(unittest.TestCase):
 
   def setUp(self):
-    self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.users_by_id = {
         111L: testing_helpers.Blank(
             display_name='one@example.com', banned=False),
@@ -36,10 +35,13 @@ class ConverterFunctionsTest(unittest.TestCase):
         }
 
     self.services = service_manager.Services(
-        user = fake.UserService()
-    )
-
+        issue=fake.IssueService(),
+        project=fake.ProjectService(),
+        user=fake.UserService())
     self.cnxn = fake.MonorailConnection()
+    self.project = self.services.project.TestAddProject(
+        'proj', project_id=789)
+    self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
 
     self.fd_1 = tracker_pb2.FieldDef(
         field_name='FirstField', field_id=1,
@@ -585,7 +587,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     """An empty protorpc IssueDelta makes an empty protoc IssueDelta."""
     delta = issues_pb2.IssueDelta()
     actual = converters.IngestIssueDelta(
-        self.cnxn, 'user svc', delta, self.config)
+        self.cnxn, self.services, delta, self.config)
     expected = tracker_pb2.IssueDelta()
     self.assertEqual(expected, actual)
 
@@ -601,7 +603,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         comp_refs_add=[common_pb2.ComponentRef(path='UI')],
         label_refs_add=[common_pb2.LabelRef(label='Hot')])
     actual = converters.IngestIssueDelta(
-        self.cnxn, 'user svc', delta, self.config)
+        self.cnxn, self.services, delta, self.config)
     expected = tracker_pb2.IssueDelta(
         status='Fixed', owner_id=222L, summary='New summary',
         cc_ids_add=[333L], comp_ids_add=[1],
@@ -616,7 +618,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         comp_refs_add=[common_pb2.ComponentRef(path='XYZ')])
     with self.assertRaises(exceptions.NoSuchComponentException):
       converters.IngestIssueDelta(
-          self.cnxn, 'user svc', delta, self.config)
+          self.cnxn, self.services, delta, self.config)
 
   def testIngestIssueDelta_CustomFields(self):
     """We can create a protorpc IssueDelta from a protoc IssueDelta."""
@@ -632,7 +634,7 @@ class ConverterFunctionsTest(unittest.TestCase):
                     field_name='SecField'))],
         fields_clear=[common_pb2.FieldRef(field_name='FirstField')])
     actual = converters.IngestIssueDelta(
-        self.cnxn, self.services.user, delta, self.config)
+        self.cnxn, self.services, delta, self.config)
     self.assertEqual(actual.field_vals_add, [tracker_pb2.FieldValue(
         str_value='string', field_id=1, derived=False)])
     self.assertEqual(actual.field_vals_remove, [tracker_pb2.FieldValue(
@@ -646,17 +648,38 @@ class ConverterFunctionsTest(unittest.TestCase):
         fields_clear=[common_pb2.FieldRef(field_name='FirstField')])
     with self.assertRaises(exceptions.NoSuchFieldDefException):
       converters.IngestIssueDelta(
-          self.cnxn, self.services.user, delta, self.config)
+          self.cnxn, self.services, delta, self.config)
 
   def testIngestIssueDelta_RelatedIssues(self):
-    """We can create a protorpc IssueDelta from a protoc IssueDelta."""
-    # TODO(jrobbins): handle related issues.
-    pass
+    """We can create a protorpc IssueDelta that references related issues."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
+    self.services.issue.TestAddIssue(issue)
+    delta = issues_pb2.IssueDelta(
+        blocked_on_refs_add=[common_pb2.IssueRef(
+            project_name='proj', local_id=issue.local_id)],
+        merged_into_ref=common_pb2.IssueRef(
+            project_name='proj', local_id=issue.local_id))
+    actual = converters.IngestIssueDelta(
+          self.cnxn, self.services, delta, self.config)
+    self.assertEqual([issue.issue_id], actual.blocked_on_add)
+    self.assertEqual([], actual.blocking_add)
+    self.assertEqual(issue.issue_id, actual.merged_into)
 
   def testIngestIssueDelta_InvalidRelatedIssues(self):
-    """We can create a protorpc IssueDelta from a protoc IssueDelta."""
-    # TODO(jrobbins): handle related issues.
-    pass
+    """We reject references to related issues that do not exist."""
+    delta = issues_pb2.IssueDelta(
+        merged_into_ref=common_pb2.IssueRef(
+            project_name='not-a-proj', local_id=8))
+    with self.assertRaises(exceptions.NoSuchProjectException):
+      converters.IngestIssueDelta(
+          self.cnxn, self.services, delta, self.config)
+
+    delta = issues_pb2.IssueDelta(
+        merged_into_ref=common_pb2.IssueRef(
+            project_name='proj', local_id=999))
+    with self.assertRaises(exceptions.NoSuchIssueException):
+      converters.IngestIssueDelta(
+          self.cnxn, self.services, delta, self.config)
 
   def testIngestApprovalDelta(self):
     self.services.user.TestAddUser('user1@example.com', 111L)

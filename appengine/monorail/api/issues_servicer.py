@@ -73,9 +73,11 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         mc, request, use_cache=False)
 
     with work_env.WorkEnv(mc, self.services) as we:
-      # @@@ Handle case where no delta is provided.
-      delta = converters.IngestIssueDelta(
-          mc.cnxn, self.services.user, request.delta, config)
+      if request.HasField('delta'):
+        delta = converters.IngestIssueDelta(
+            mc.cnxn, self.services, request.delta, config)
+      else:
+        delta = tracker_pb2.IssueDelta()  # No changes specified.
       we.UpdateIssue(
           issue, delta, request.comment_content, send_email=request.send_email)
       related_refs = we.GetRelatedIssueRefs(issue)
