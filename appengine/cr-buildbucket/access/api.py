@@ -11,7 +11,7 @@ from components import auth
 from access import access_pb2
 from access import access_prpc_pb2
 from proto.config import project_config_pb2
-import acl
+import user
 
 __all__ = ['AccessServicer']
 
@@ -20,7 +20,7 @@ def create_resource_permissions(role):
   if role is None:
     return access_pb2.PermittedActionsResponse.ResourcePermissions()
   return access_pb2.PermittedActionsResponse.ResourcePermissions(
-      actions=[action.name for action in acl.ACTIONS_FOR_ROLE[role]]
+      actions=[action.name for action in user.ACTIONS_FOR_ROLE[role]]
   )
 
 
@@ -41,7 +41,7 @@ class AccessServicer(object):
     if request.resource_kind != 'bucket':
       return access_pb2.PermittedActionsResponse()
     roles = {
-        bucket: acl.get_role_async(bucket) for bucket in request.resource_ids
+        bucket: user.get_role_async(bucket) for bucket in request.resource_ids
     }
     permitted = {
         bucket: create_resource_permissions(role.get_result())
@@ -65,16 +65,18 @@ class AccessServicer(object):
                     access_pb2.DescriptionResponse.ResourceDescription.Action(
                         comment=description,
                     ) for action, description in
-                    acl.ACTION_DESCRIPTIONS.iteritems()
+                    user.ACTION_DESCRIPTIONS.iteritems()
                 },
                 roles={
                     project_config_pb2.Acl.Role.Name(role):
                     access_pb2.DescriptionResponse.ResourceDescription.Role(
                         allowed_actions=[
-                            action.name for action in acl.ACTIONS_FOR_ROLE[role]
+                            action.name
+                            for action in user.ACTIONS_FOR_ROLE[role]
                         ],
                         comment=description,
-                    ) for role, description in acl.ROLE_DESCRIPTIONS.iteritems()
+                    )
+                    for role, description in user.ROLE_DESCRIPTIONS.iteritems()
                 },
             )
         ],

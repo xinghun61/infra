@@ -17,7 +17,6 @@ from proto import common_pb2
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from test.test_util import future, future_exception
-import acl
 import api_common
 import config
 import errors
@@ -25,6 +24,7 @@ import model
 import notifications
 import service
 import swarming
+import user
 import v2
 
 
@@ -46,9 +46,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         'components.auth.get_current_identity',
         side_effect=lambda: self.current_identity
     )
-    self.patch('acl.can_async', return_value=future(True))
+    self.patch('user.can_async', return_value=future(True))
     self.patch(
-        'acl.get_acessible_buckets_async',
+        'user.get_acessible_buckets_async',
         autospec=True,
         return_value=future(['chromium']),
     )
@@ -128,8 +128,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       )
       return future(not match)
 
-    # acl.can_async is patched in setUp()
-    acl.can_async.side_effect = can_async
+    # user.can_async is patched in setUp()
+    user.can_async.side_effect = can_async
 
   def put_many_builds(self, count=100, tags=None):
     tags = tags or []
@@ -252,7 +252,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNotNone(build.lease_key)
 
   def test_add_with_auth_error(self):
-    self.mock_cannot(acl.Action.ADD_BUILD)
+    self.mock_cannot(user.Action.ADD_BUILD)
     with self.assertRaises(auth.AuthorizationError):
       self.add(bucket=self.test_build.bucket)
 
@@ -465,7 +465,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNone(index)
 
   def test_add_many(self):
-    self.mock_cannot(acl.Action.ADD_BUILD, bucket='forbidden')
+    self.mock_cannot(user.Action.ADD_BUILD, bucket='forbidden')
     results = service.add_many_async([
         service.BuildRequest(
             project=self.chromium_project_id,
@@ -525,7 +525,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(index.entries[0].bucket, results[0][0].bucket)
 
   def test_add_many_auth_error(self):
-    self.mock_cannot(acl.Action.ADD_BUILD, bucket='forbidden')
+    self.mock_cannot(user.Action.ADD_BUILD, bucket='forbidden')
     with self.assertRaises(auth.AuthorizationError):
       service.add_many_async([
           service.BuildRequest(
@@ -661,7 +661,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNone(service.get(42))
 
   def test_get_with_auth_error(self):
-    self.mock_cannot(acl.Action.VIEW_BUILD)
+    self.mock_cannot(user.Action.VIEW_BUILD)
     self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
       service.get(self.test_build.key.id())
@@ -695,7 +695,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_cancel_with_auth_error(self):
     self.test_build.put()
-    self.mock_cannot(acl.Action.CANCEL_BUILD)
+    self.mock_cannot(user.Action.CANCEL_BUILD)
     with self.assertRaises(auth.AuthorizationError):
       service.cancel(self.test_build.key.id())
 
@@ -744,7 +744,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(builds, [self.test_build])
 
   def test_search_without_buckets(self):
-    self.mock_cannot(acl.Action.SEARCH_BUILDS, 'other bucket')
+    self.mock_cannot(user.Action.SEARCH_BUILDS, 'other bucket')
 
     build2 = model.Build(bucket='other bucket', tags=[self.INDEXED_TAG])
     self.put_build(self.test_build)
@@ -756,23 +756,23 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(builds, [self.test_build])
 
     # All buckets are available.
-    acl.get_acessible_buckets_async.return_value = future(None)
-    acl.can_async.side_effect = None
+    user.get_acessible_buckets_async.return_value = future(None)
+    user.can_async.side_effect = None
     builds, _ = self.search()
     self.assertEqual(builds, [build2, self.test_build])
     builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [build2, self.test_build])
 
     # No buckets are available.
-    acl.get_acessible_buckets_async.return_value = future([])
-    self.mock_cannot(acl.Action.SEARCH_BUILDS)
+    user.get_acessible_buckets_async.return_value = future([])
+    self.mock_cannot(user.Action.SEARCH_BUILDS)
     builds, _ = self.search()
     self.assertEqual(builds, [])
     builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [])
 
   def test_search_with_auth_error(self):
-    self.mock_cannot(acl.Action.SEARCH_BUILDS)
+    self.mock_cannot(user.Action.SEARCH_BUILDS)
     self.put_build(self.test_build)
 
     with self.assertRaises(auth.AuthorizationError):
@@ -800,7 +800,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.assertEqual(builds, [self.test_build])
 
-  @mock.patch('acl.get_acessible_buckets_async', autospec=True)
+  @mock.patch('user.get_acessible_buckets_async', autospec=True)
   def test_search_by_build_address(self, get_acessible_buckets_async):
     build_address = 'build_address:chromium/infra/1'
     self.test_build.tags = [build_address]
@@ -1073,7 +1073,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(builds, [self.test_build])
 
   def test_search_by_retry_of_with_auth_error(self):
-    self.mock_cannot(acl.Action.SEARCH_BUILDS, bucket=self.test_build.bucket)
+    self.mock_cannot(user.Action.SEARCH_BUILDS, bucket=self.test_build.bucket)
     self.put_build(self.test_build)
     build2 = model.Build(
         bucket=self.test_build.bucket,
@@ -1181,7 +1181,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.put_build(different_bucket)
 
-    self.mock_cannot(acl.Action.SEARCH_BUILDS, 'secret.bucket')
+    self.mock_cannot(user.Action.SEARCH_BUILDS, 'secret.bucket')
     builds, _ = self.search(
         tags=[self.INDEXED_TAG], buckets=[self.test_build.bucket]
     )
@@ -1372,7 +1372,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       service.peek(buckets=[])
 
   def test_peek_with_auth_error(self):
-    self.mock_cannot(acl.Action.SEARCH_BUILDS)
+    self.mock_cannot(user.Action.SEARCH_BUILDS)
     self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
       service.peek(buckets=[self.test_build.bucket])
@@ -1408,7 +1408,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(self.test_build.leasee, self.current_identity)
 
   def test_lease_build_with_auth_error(self):
-    self.mock_cannot(acl.Action.LEASE_BUILD)
+    self.mock_cannot(user.Action.LEASE_BUILD)
     build = self.test_build
     build.put()
     with self.assertRaises(auth.AuthorizationError):
@@ -1486,7 +1486,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_reset_with_auth_error(self):
     self.lease()
-    self.mock_cannot(acl.Action.RESET_BUILD)
+    self.mock_cannot(user.Action.RESET_BUILD)
     with self.assertRaises(auth.AuthorizationError):
       service.reset(self.test_build.key.id())
 
@@ -1862,7 +1862,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNotNone(other_build.key.get())
 
   def test_delete_many_builds_auth_error(self):
-    self.mock_cannot(acl.Action.DELETE_SCHEDULED_BUILDS)
+    self.mock_cannot(user.Action.DELETE_SCHEDULED_BUILDS)
     with self.assertRaises(auth.AuthorizationError):
       service.delete_many_builds(
           self.test_build.bucket, model.BuildStatus.SCHEDULED
@@ -1932,7 +1932,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       service.pause('wharbl|gharbl', True)
 
   def test_pause_bucket_auth_error(self):
-    self.mock_cannot(acl.Action.PAUSE_BUCKET)
+    self.mock_cannot(user.Action.PAUSE_BUCKET)
     with self.assertRaises(auth.AuthorizationError):
       service.pause('test', True)
 

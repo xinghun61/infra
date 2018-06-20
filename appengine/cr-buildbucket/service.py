@@ -25,7 +25,6 @@ import gae_ts_mon
 
 from proto import common_pb2
 from proto.config import project_config_pb2
-import acl
 import buildtags
 import config
 import errors
@@ -34,6 +33,7 @@ import metrics
 import model
 import sequence
 import swarming
+import user
 
 MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
@@ -320,11 +320,11 @@ def add_many_async(build_request_list):
     the exception in results, for backward compatibility.
     """
     buckets = set(r.bucket for _, r in pending_reqs())
-    can_add_futs = {b: acl.can_add_build_async(b) for b in buckets}
+    can_add_futs = {b: user.can_add_build_async(b) for b in buckets}
     yield can_add_futs.values()
     for b, can_fut in can_add_futs.iteritems():
       if not can_fut.get_result():
-        raise acl.current_identity_cannot('add builds to bucket %s', b)
+        raise user.current_identity_cannot('add builds to bucket %s', b)
 
   @ndb.tasklet
   def check_cached_builds_async():
@@ -612,8 +612,8 @@ def get(build_id):
   build = model.Build.get_by_id(build_id)
   if not build:
     return None
-  if not acl.can_view_build(build):
-    raise acl.current_identity_cannot('view build %s', build.key.id())
+  if not user.can_view_build(build):
+    raise user.current_identity_cannot('view build %s', build.key.id())
   return build
 
 
@@ -670,10 +670,10 @@ def _check_search_acls(buckets, inc_metric=None):
     validate_bucket_name(bucket)
 
   for bucket in buckets:
-    if not acl.can_search_builds(bucket):
+    if not user.can_search_builds(bucket):
       if inc_metric:
         inc_metric.increment(fields={'bucket': bucket})
-      raise acl.current_identity_cannot('search builds in bucket %s', bucket)
+      raise user.current_identity_cannot('search builds in bucket %s', bucket)
 
 
 def _log_inconsistent_search_results(error_message):  # pragma: no cover
@@ -869,7 +869,7 @@ def _query_search(q):
   - if bool(buckets), permissions are checked.
   """
   if not q.buckets:
-    q.buckets = acl.get_acessible_buckets_async().get_result()
+    q.buckets = user.get_acessible_buckets_async().get_result()
     if q.buckets is not None and len(q.buckets) == 0:
       return [], None
   # (buckets is None) means the requester has access to all buckets.
@@ -994,7 +994,7 @@ def _tag_index_search(q):
   def has_access(bucket):
     has = has_access_cache.get(bucket)
     if has is None:
-      has = acl.can_search_builds(bucket)
+      has = user.can_search_builds(bucket)
       has_access_cache[bucket] = has
     return has
 
@@ -1138,8 +1138,8 @@ def _get_leasable_build(build_id):
   build = model.Build.get_by_id(build_id)
   if build is None:
     raise errors.BuildNotFoundError()
-  if not acl.can_lease_build(build):
-    raise acl.current_identity_cannot('lease build %s', build.key.id())
+  if not user.can_lease_build(build):
+    raise user.current_identity_cannot('lease build %s', build.key.id())
   return build
 
 
@@ -1204,8 +1204,8 @@ def reset(build_id):
   @ndb.transactional
   def txn():
     build = _get_leasable_build(build_id)
-    if not acl.can_reset_build(build):
-      raise acl.current_identity_cannot('reset build %s', build.key.id())
+    if not user.can_reset_build(build):
+      raise user.current_identity_cannot('reset build %s', build.key.id())
     if build.status == model.BuildStatus.COMPLETED:
       raise errors.BuildIsCompletedError('Cannot reset a completed build')
     build.status = model.BuildStatus.SCHEDULED
@@ -1485,8 +1485,8 @@ def cancel(build_id, result_details=None):
     build = model.Build.get_by_id(build_id)
     if build is None:
       raise errors.BuildNotFoundError()
-    if not acl.can_cancel_build(build):
-      raise acl.current_identity_cannot('cancel build %s', build.key.id())
+    if not user.can_cancel_build(build):
+      raise user.current_identity_cannot('cancel build %s', build.key.id())
     if build.status == model.BuildStatus.COMPLETED:
       if build.result == model.BuildResult.CANCELED:
         return False, build
@@ -1597,8 +1597,8 @@ def delete_many_builds(bucket, status, tags=None, created_by=None):
     raise errors.InvalidInputError(
         'status can be STARTED or SCHEDULED, not %s' % status
     )
-  if not acl.can_delete_scheduled_builds(bucket):
-    raise acl.current_identity_cannot('delete scheduled builds of %s', bucket)
+  if not user.can_delete_scheduled_builds(bucket):
+    raise user.current_identity_cannot('delete scheduled builds of %s', bucket)
   # Validate created_by prior scheduled a push task.
   created_by = parse_identity(created_by)
   deferred.defer(
@@ -1654,8 +1654,8 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
 
 
 def pause(bucket, is_paused):
-  if not acl.can_pause_buckets(bucket):
-    raise acl.current_identity_cannot('pause bucket of %s', bucket)
+  if not user.can_pause_buckets(bucket):
+    raise user.current_identity_cannot('pause bucket of %s', bucket)
 
   validate_bucket_name(bucket)
   _, cfg = config.get_bucket(bucket)

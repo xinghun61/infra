@@ -426,7 +426,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     self.call_api('set_next_build_number', req, status=403)
     self.assertEqual(seq.key.get().next_number, 10)
 
-    self.patch('acl.can_set_next_number', return_value=True)
+    self.patch('user.can_set_next_number', return_value=True)
     self.call_api('set_next_build_number', req)
     self.assertEqual(seq.key.get().next_number, 20)
 

@@ -16,11 +16,11 @@ import gae_ts_mon
 
 from . import swarming
 from . import swarmingcfg
-import acl
 import api
 import config
 import errors
 import sequence
+import user
 
 
 def swarmbucket_api_method(
@@ -110,11 +110,11 @@ class SwarmbucketApi(remote.Service):
         )
       # Buckets were specified explicitly.
       # Filter out inaccessible ones.
-      bucket_names = [b for b in request.bucket if acl.can_access_bucket(b)]
+      bucket_names = [b for b in request.bucket if user.can_access_bucket(b)]
     else:
       # Buckets were not specified explicitly.
       # Use the available ones.
-      bucket_names = acl.get_acessible_buckets_async().get_result()
+      bucket_names = user.get_acessible_buckets_async().get_result()
       # bucket_names is None => all buckets are available.
 
     res = GetBuildersResponseMessage()
@@ -155,7 +155,7 @@ class SwarmbucketApi(remote.Service):
       build_request = build_request.normalize()
 
       identity = auth.get_current_identity()
-      if not acl.can_view_build(build_request):
+      if not user.can_view_build(build_request):
         raise endpoints.ForbiddenException(
             '%s cannot view builds in bucket %s' %
             (identity, build_request.bucket)
@@ -178,7 +178,7 @@ class SwarmbucketApi(remote.Service):
   @swarmbucket_api_method(SetNextBuildNumberRequest, message_types.VoidMessage)
   def set_next_build_number(self, request):
     """Sets the build number that will be used for the next build."""
-    if not acl.can_set_next_number(request.bucket):
+    if not user.can_set_next_number(request.bucket):
       raise endpoints.ForbiddenException('access denied')
     _, bucket = config.get_bucket(request.bucket)
 

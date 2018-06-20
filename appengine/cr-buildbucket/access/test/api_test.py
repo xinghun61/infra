@@ -9,7 +9,7 @@ from testing_utils import testing
 from access import access_pb2
 from access import api
 from proto.config import project_config_pb2
-import acl
+import user
 
 # Alias here for convenience.
 Acl = project_config_pb2.Acl
@@ -29,7 +29,7 @@ class AccessApiTest(testing.AppengineTestCase):
     result = self.servicer.PermittedActions(request, None)
     self.assertEqual(len(result.permitted), 0)
 
-  @mock.patch('acl.get_role_async', autospec=True)
+  @mock.patch('user.get_role_async', autospec=True)
   def test_no_permissions(self, get_role_async):
     get_role_async.return_value = future(None)
 
@@ -42,7 +42,7 @@ class AccessApiTest(testing.AppengineTestCase):
     for perms in result.permitted.itervalues():
       self.assertEqual(len(perms.actions), 0)
 
-  @mock.patch('acl.get_role_async', autospec=True)
+  @mock.patch('user.get_role_async', autospec=True)
   def test_good_request(self, get_role_async):
     get_role_async.return_value = future(Acl.SCHEDULER)
 
@@ -60,7 +60,7 @@ class AccessApiTest(testing.AppengineTestCase):
       self.assertEqual(len(perms.actions), 5)  # Sanity check.
       self.assertEqual(
           set(perms.actions),
-          {action.name for action in acl.ACTIONS_FOR_ROLE[Acl.SCHEDULER]},
+          {action.name for action in user.ACTIONS_FOR_ROLE[Acl.SCHEDULER]},
       )
 
   def test_description(self):
@@ -71,7 +71,7 @@ class AccessApiTest(testing.AppengineTestCase):
     self.assertEqual(resource.kind, 'bucket')
     self.assertEqual(
         set(resource.actions.keys()),
-        {action.name for action in acl.ACTION_DESCRIPTIONS.keys()},
+        {action.name for action in user.ACTION_DESCRIPTIONS.keys()},
     )
     self.assertEqual(
         set(resource.roles.keys()),

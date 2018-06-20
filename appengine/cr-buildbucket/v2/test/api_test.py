@@ -35,9 +35,9 @@ class BaseTestCase(testing.AppengineTestCase):
   def setUp(self):
     super(BaseTestCase, self).setUp()
 
-    self.patch('acl.can_async', return_value=future(True))
+    self.patch('user.can_async', return_value=future(True))
     self.patch(
-        'acl.get_acessible_buckets_async',
+        'user.get_acessible_buckets_async',
         autospec=True,
         return_value=future(['luci.chromium.try']),
     )

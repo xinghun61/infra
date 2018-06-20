@@ -8,10 +8,10 @@ import mock
 
 from proto.config import project_config_pb2
 from test.test_util import future
-import acl
 import config
 import errors
 import model
+import user
 import v2
 
 # Shortcuts
@@ -74,7 +74,7 @@ class AclTest(testing.AppengineTestCase):
     is_group_member.side_effect = lambda g, _=None: g == 'a-writers'
     is_admin.return_value = False
 
-    get_role = (lambda *args: acl.get_role_async(*args).get_result())
+    get_role = (lambda *args: user.get_role_async(*args).get_result())
 
     self.assertEqual(get_role('a'), Acl.WRITER)
     self.assertEqual(get_role('b'), None)
@@ -96,7 +96,7 @@ class AclTest(testing.AppengineTestCase):
     is_admin.return_value = False
 
     has_any_of_roles = (
-        lambda *args: acl.has_any_of_roles_async(*args).get_result()
+        lambda *args: user.has_any_of_roles_async(*args).get_result()
     )
 
     self.assertTrue(has_any_of_roles('a', [Acl.READER]))
@@ -149,16 +149,16 @@ class AclTest(testing.AppengineTestCase):
         ),
     ])
 
-    availble_buckets = acl.get_acessible_buckets_async().get_result()
+    availble_buckets = user.get_acessible_buckets_async().get_result()
     # memcache coverage.
-    availble_buckets = acl.get_acessible_buckets_async().get_result()
+    availble_buckets = user.get_acessible_buckets_async().get_result()
     self.assertEqual(
         availble_buckets,
         {'available_bucket1', 'available_bucket2', 'available_bucket3'}
     )
 
     is_admin.return_value = True
-    self.assertIsNone(acl.get_acessible_buckets_async().get_result())
+    self.assertIsNone(user.get_acessible_buckets_async().get_result())
 
   def mock_has_any_of_roles(self, current_identity_roles):
     current_identity_roles = set(current_identity_roles)
@@ -166,29 +166,31 @@ class AclTest(testing.AppengineTestCase):
     def has_any_of_roles_async(_bucket, roles):
       return future(current_identity_roles.intersection(roles))
 
-    self.patch('acl.has_any_of_roles_async', side_effect=has_any_of_roles_async)
+    self.patch(
+        'user.has_any_of_roles_async', side_effect=has_any_of_roles_async
+    )
 
   def test_can(self):
     self.mock_has_any_of_roles([Acl.READER])
-    self.assertTrue(acl.can('bucket', acl.Action.VIEW_BUILD))
-    self.assertFalse(acl.can('bucket', acl.Action.CANCEL_BUILD))
-    self.assertFalse(acl.can('bucket', acl.Action.WRITE_ACL))
+    self.assertTrue(user.can('bucket', user.Action.VIEW_BUILD))
+    self.assertFalse(user.can('bucket', user.Action.CANCEL_BUILD))
+    self.assertFalse(user.can('bucket', user.Action.WRITE_ACL))
 
     # Memcache coverage
-    self.assertFalse(acl.can('bucket', acl.Action.WRITE_ACL))
-    self.assertFalse(acl.can_add_build_async('bucket').get_result())
+    self.assertFalse(user.can('bucket', user.Action.WRITE_ACL))
+    self.assertFalse(user.can_add_build_async('bucket').get_result())
 
   def test_can_no_roles(self):
     self.mock_has_any_of_roles([])
-    for action in acl.Action:
-      self.assertFalse(acl.can('bucket', action))
+    for action in user.Action:
+      self.assertFalse(user.can('bucket', action))
 
   def test_can_bad_input(self):
     with self.assertRaises(errors.InvalidInputError):
-      acl.can('bad bucket name', acl.Action.VIEW_BUILD)
+      user.can('bad bucket name', user.Action.VIEW_BUILD)
 
   def test_can_view_build(self):
     self.mock_has_any_of_roles([Acl.READER])
     build = model.Build(bucket='bucket')
-    self.assertTrue(acl.can_view_build(build))
-    self.assertFalse(acl.can_lease_build(build))
+    self.assertTrue(user.can_view_build(build))
+    self.assertFalse(user.can_lease_build(build))

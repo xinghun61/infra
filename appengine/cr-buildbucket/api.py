@@ -17,12 +17,12 @@ from components import auth
 from components import utils
 import gae_ts_mon
 
-import acl
 import api_common
 import config
 import errors
 import model
 import service
+import user
 
 
 class ErrorReason(messages.Enum):
@@ -720,8 +720,8 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def get_bucket(self, request):
     """Returns bucket information."""
-    if not acl.can_access_bucket(request.bucket):
-      raise acl.current_identity_cannot('access bucket %s', request.bucket)
+    if not user.can_access_bucket(request.bucket):
+      raise user.current_identity_cannot('access bucket %s', request.bucket)
     bucket = config.Bucket.get_by_id(request.bucket)
     return BucketMessage(
         name=request.bucket,
