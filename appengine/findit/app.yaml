@@ -67,7 +67,7 @@ handlers:
   login: admin
   secure: always
 
-- url: /_ah/spi/.*
+- url: /_ah/api/.*
   script: main.api_application
   secure: always
 

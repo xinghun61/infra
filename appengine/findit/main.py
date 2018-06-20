@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import endpoints
 import webapp2
 
 import gae_ts_mon
@@ -43,6 +42,8 @@ from handlers.flake import list_flakes
 from handlers.flake import triage_flake_analysis
 from handlers.flake.detection import detect_flakes
 
+from components import endpoints_webapp2
+
 # Default module.
 default_web_pages_handler_mappings = [
     ('/_ah/push-handlers/index-isolated-builds',
@@ -59,7 +60,7 @@ default_web_application = webapp2.WSGIApplication(
 gae_ts_mon.initialize(default_web_application)
 
 # Cloud Endpoint apis in the default module.
-api_application = endpoints.api_server([FindItApi])
+api_application = endpoints_webapp2.api_server([FindItApi])
 
 # App Engine pipeline status pages in the default module.
 pipeline_status_handler_mappings = [
