@@ -131,7 +131,7 @@ class FieldDetail(servlet.Servlet):
           'User is not allowed to delete this field')
 
     if 'deletefield' in post_data:
-      return self._ProcessDeleteField(mr, field_def)
+      return self._ProcessDeleteField(mr, config, field_def)
     elif 'cancel' in post_data:
       return framework_helpers.FormatAbsoluteURL(
           mr, urls.ADMIN_LABELS, ts=int(time.time()))
@@ -139,10 +139,15 @@ class FieldDetail(servlet.Servlet):
       return self._ProcessEditField(mr, post_data, config, field_def)
 
 
-  def _ProcessDeleteField(self, mr, field_def):
+  def _ProcessDeleteField(self, mr, config, field_def):
     """The user wants to delete the specified custom field definition."""
-    self.services.config.SoftDeleteFieldDef(
-        mr.cnxn, mr.project_id, field_def.field_id)
+    field_ids = [field_def.field_id]
+    if field_def.field_type is tracker_pb2.FieldTypes.APPROVAL_TYPE:
+      for fd in config.field_defs:
+        if fd.approval_id == field_def.field_id:
+          field_ids.append(fd.field_id)
+    self.services.config.SoftDeleteFieldDefs(
+        mr.cnxn, mr.project_id, field_ids)
 
     return framework_helpers.FormatAbsoluteURL(
           mr, urls.ADMIN_LABELS, deleted=1, ts=int(time.time()))

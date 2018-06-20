@@ -165,21 +165,37 @@ def _GetPhasesAndApprovalsFromParsed(
   return phases, approvals
 
 
-def GatherApprovalsPageData(approval_values, tmpl_phases):
+def GatherApprovalsPageData(approval_values, tmpl_phases, config):
   """Create the page data necessary for filling in the launch-gates-table."""
+  # Remove deleted approvals from list and remove any phases that are
+  # empty as a result of removing the deleted approvals so that phase idxs
+  # can be calculated properly.
+  deleted_approval_ids = [fd.field_id for fd in config.field_defs if
+                          fd.is_deleted and
+                          fd.field_type is tracker_pb2.FieldTypes.APPROVAL_TYPE]
+  approval_values = [av for av in approval_values if
+                     av.approval_id not in deleted_approval_ids]
+
+  av_phase_ids = list(set([av.phase_id for av in approval_values]))
+  phases = [phase for phase in tmpl_phases if phase.phase_id in av_phase_ids]
+
   # TODO(jojwang): monorail:3576, replace this sort by adding order_by
   # when fetching phases at config_svc:488
-  phases = tmpl_phases[:]
   phases.sort(key=lambda phase: phase.rank)
+
   required_approval_ids = []
   prechecked_approvals = []
 
   phase_idx_by_id = {
         phase.phase_id:idx for idx, phase in enumerate(phases)}
   for av in approval_values:
-    if av.phase_id:
+    if av.approval_id in deleted_approval_ids:
+      continue
+    # approval is part of a phase and that phase can be found.
+    elif phase_idx_by_id.get(av.phase_id) is not None:
+      idx = phase_idx_by_id.get(av.phase_id)
       prechecked_approvals.append(
-          '%d_phase_%d' % (av.approval_id, phase_idx_by_id.get(av.phase_id)))
+          '%d_phase_%d' % (av.approval_id, idx))
     else:
       prechecked_approvals.append('%d' % av.approval_id)
     if av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW:

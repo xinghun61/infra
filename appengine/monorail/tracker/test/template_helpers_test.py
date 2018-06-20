@@ -236,25 +236,28 @@ class TemplateHelpers(unittest.TestCase):
                      'Duplicate gate names.')
 
   def testGatherApprovalsPageData(self):
+    self.fd_3.is_deleted = True
+    self.config.field_defs = [self.fd_3, self.fd_4, self.fd_5]
     approval_values = [
-        tracker_pb2.ApprovalValue(approval_id=21, phase_id=8),
+        tracker_pb2.ApprovalValue(approval_id=3, phase_id=8),
         tracker_pb2.ApprovalValue(
-            approval_id=22, phase_id=9,
+            approval_id=4, phase_id=9,
             status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW),
-        tracker_pb2.ApprovalValue(approval_id=23)
+        tracker_pb2.ApprovalValue(approval_id=5)
     ]
     tmpl_phases = [
-        tracker_pb2.Phase(phase_id=8, rank=1),
-        tracker_pb2.Phase(phase_id=9, rank=2)
+        tracker_pb2.Phase(phase_id=8, rank=1, name='deletednoshow'),
+        tracker_pb2.Phase(phase_id=9, rank=2, name='notdeleted')
     ]
 
     (prechecked_approvals, required_approval_ids,
      phases) = template_helpers.GatherApprovalsPageData(
-         approval_values, tmpl_phases)
+         approval_values, tmpl_phases, self.config)
     self.assertItemsEqual(prechecked_approvals,
-                          ['21_phase_0', '22_phase_1', '23'])
-    self.assertEqual(required_approval_ids, [22])
-    self.assertEqual(phases[0], tmpl_phases[0])
+                          ['4_phase_0', '5'])
+    self.assertEqual(required_approval_ids, [4])
+    self.assertEqual(phases[0], tmpl_phases[1])
+    self.assertIsNone(phases[1].name)
     self.assertEqual(len(phases), 6)
 
   def testGetCheckedApprovalsFromParsed(self):

@@ -92,7 +92,7 @@ class TemplateDetail(servlet.Servlet):
 
     (prechecked_approvals, required_approval_ids,
      initial_phases) = template_helpers.GatherApprovalsPageData(
-         template.approval_values, template.phases)
+         template.approval_values, template.phases, config)
 
     allow_edit = permissions.CanEditTemplate(
         mr.auth.effective_ids, mr.perms, mr.project, template)

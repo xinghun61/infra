@@ -998,10 +998,11 @@ class ConfigService(object):
     self.StoreConfig(cnxn, config)
     return field_id
 
-  def SoftDeleteFieldDef(self, cnxn, project_id, field_id):
+  def SoftDeleteFieldDefs(self, cnxn, project_id, field_ids):
     config = self.GetProjectConfig(cnxn, project_id)
-    fd = tracker_bizobj.FindFieldDefByID(field_id, config)
-    fd.is_deleted = True
+    for fd in config.field_defs:
+      if fd.field_id in field_ids:
+        fd.is_deleted = True
     self.StoreConfig(cnxn, config)
 
   def UpdateFieldDef(

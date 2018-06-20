@@ -179,8 +179,19 @@ class FieldDetailTest(unittest.TestCase):
     self.assertEqual(98, fd.max_value)
 
   def testProcessDeleteField(self):
-    self.servlet._ProcessDeleteField(self.mr, self.fd)
+    self.servlet._ProcessDeleteField(self.mr, self.config, self.fd)
     self.assertTrue(self.fd.is_deleted)
+
+  def testProcessDeleteField_subfields(self):
+    approval_fd = tracker_bizobj.MakeFieldDef(
+        3, 789, 'Legal', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
+    self.fd.approval_id=3
+    self.config.field_defs.append(approval_fd)
+    self.servlet._ProcessDeleteField(self.mr, self.config, approval_fd)
+    self.assertTrue(self.fd.is_deleted)
+    self.assertTrue(approval_fd.is_deleted)
 
   def testProcessEditField_Normal(self):
     post_data = fake.PostData(

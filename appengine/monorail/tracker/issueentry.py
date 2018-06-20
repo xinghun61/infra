@@ -148,7 +148,7 @@ class IssueEntry(servlet.Servlet):
     # TODO(jrobbins): remove "or []" after next release.
     (prechecked_approvals, required_approval_ids,
      phases) = issue_tmpl_helpers.GatherApprovalsPageData(
-         wkp.approval_values or [], wkp.phases)
+         wkp.approval_values or [], wkp.phases, config)
     approval_ids = []
     for av in wkp.approval_values or []:
       approval_ids.append(av.approval_id)

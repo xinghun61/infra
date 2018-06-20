@@ -1120,9 +1120,9 @@ class ConfigService(object):
         project_id)
     return field_name_to_id.get(field.lower())
 
-  def SoftDeleteFieldDef(self, cnxn, project_id, field_id):
+  def SoftDeleteFieldDefs(self, cnxn, project_id, field_ids):
     """Mark the specified field as deleted, it will be reaped later."""
-    self.fielddef_tbl.Update(cnxn, {'is_deleted': True}, id=field_id)
+    self.fielddef_tbl.Update(cnxn, {'is_deleted': True}, id=field_ids)
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
     self.InvalidateMemcacheForEntireProject(project_id)
 

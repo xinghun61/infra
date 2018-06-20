@@ -847,15 +847,15 @@ class ConfigServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual(1, field_id)
 
-  def SetUpSoftDeleteFieldDef(self, field_id):
+  def SetUpSoftDeleteFieldDefs(self, field_ids):
     self.config_service.fielddef_tbl.Update(
-        self.cnxn, {'is_deleted': True}, id=field_id)
+        self.cnxn, {'is_deleted': True}, id=field_ids)
 
-  def testSoftDeleteFieldDef(self):
-    self.SetUpSoftDeleteFieldDef(1)
+  def testSoftDeleteFieldDefs(self):
+    self.SetUpSoftDeleteFieldDefs([1])
 
     self.mox.ReplayAll()
-    self.config_service.SoftDeleteFieldDef(self.cnxn, 789, 1)
+    self.config_service.SoftDeleteFieldDefs(self.cnxn, 789, [1])
     self.mox.VerifyAll()
 
   def SetUpUpdateFieldDef(self, field_id, new_values):
