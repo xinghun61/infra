@@ -234,10 +234,9 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[TMP_BASE]/recipes_tmp_1/recipes.py",
-      "--use-bootstrap",
       "--package",
       "[CACHE]/recipe_autoroller/build/infra/config/recipes.cfg",
       "autoroll",

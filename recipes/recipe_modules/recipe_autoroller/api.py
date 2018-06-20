@@ -260,14 +260,13 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # situation we're done with this repo, for now.
       return status
 
-    # Use the recipes bootstrap to checkout coverage.
     roll_step = self.m.python(
         'roll',
         recipes_dir.join('recipes.py'), [
-          '--use-bootstrap',
           '--package', recipes_cfg_path,
           'autoroll',
-          '--output-json', self.m.json.output()])
+          '--output-json', self.m.json.output()],
+        venv=True)
     roll_result = roll_step.json.output
 
     if roll_result['success'] and roll_result['picked_roll_details']:
