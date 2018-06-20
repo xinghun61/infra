@@ -42,6 +42,7 @@ class TaskBackfillTagIndexTest(HandlerTest):
     super(TaskBackfillTagIndexTest, self).setUp()
     self.now = datetime.datetime(2017, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
+    self.patch('model.TagIndex.random_shard_index', return_value=0)
 
   def post(self, payload, headers=None):
     headers = headers or {}
@@ -327,9 +328,7 @@ class TaskBackfillTagIndexTest(HandlerTest):
     idx2 = model.TagIndex.get_by_id('buildset:2')
     self.assertIsNotNone(idx2)
     self.assertEqual(len(idx2.entries), 3)
-    self.assertEqual(idx2.entries[0].build_id, 100)
-    self.assertEqual(idx2.entries[1].build_id, 50)
-    self.assertEqual(idx2.entries[2].build_id, 1)
+    self.assertEqual({e.build_id for e in idx2.entries}, {1, 50, 100})
 
   @mock.patch('handlers.enqueue_tasks')
   def test_flush_retry(self, enqueue_tasks):

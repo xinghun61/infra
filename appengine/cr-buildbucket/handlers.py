@@ -251,7 +251,7 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
     for (tag, entries), f in zip(payload['new_entries'].iteritems(), futs):
       ex = f.get_exception()
       if ex:
-        logging.warning('failed to update TagIndex(%r): %s', tag, ex)
+        logging.warning('failed to update TagIndex for %r: %s', tag, ex)
         retry_entries[tag] = entries
       elif f.get_result():
         updated += 1
@@ -268,8 +268,8 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
   @staticmethod
   @ndb.transactional_tasklet
   def _add_index_entries_async(tag, entries):
-    idx = yield model.TagIndex.get_by_id_async(tag)
-    idx = idx or model.TagIndex(id=tag)
+    idx_key = model.TagIndex.random_shard_key(tag)
+    idx = (yield idx_key.get_async()) or model.TagIndex(key=idx_key)
     if idx.permanently_incomplete:
       # no point in adding entries to an incomplete index.
       raise ndb.Return(False)
@@ -281,7 +281,7 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
           logging.warning((
               'refusing to store more than %d entries in TagIndex(%s); '
               'marking as incomplete.'
-          ), model.TagIndex.MAX_ENTRY_COUNT, tag)
+          ), model.TagIndex.MAX_ENTRY_COUNT, idx_key.id())
           idx.permanently_incomplete = True
           idx.entries = []
           yield idx.put_async()
@@ -293,7 +293,6 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
         added = True
     if not added:
       raise ndb.Return(False)
-    idx.entries.sort(key=lambda e: e.build_id, reverse=True)
     yield idx.put_async()
     raise ndb.Return(True)
 

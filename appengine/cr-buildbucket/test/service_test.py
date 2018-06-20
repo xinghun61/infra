@@ -115,6 +115,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     self.patch('service._should_update_builder', side_effect=lambda p: p > 0.5)
 
+    self.patch('model.TagIndex.random_shard_index', return_value=0)
+
   def mock_cannot(self, action, bucket=None):
 
     def can_async(requested_bucket, requested_action, _identity=None):
@@ -1305,6 +1307,27 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         include_experimental=True
     )
     self.assertEqual(builds, [build2, self.test_build])
+
+  def test_multiple_shard_of_tag_index(self):
+    # Add two builds into shard0 and 2 in shard1.
+    model.TagIndex.random_shard_index.side_effect = [0, 0, 1, 1]
+    shard0_builds = self.put_many_builds(2, tags=[self.INDEXED_TAG])
+    shard1_builds = self.put_many_builds(2, tags=[self.INDEXED_TAG])
+
+    shard0 = model.TagIndex.make_key(0, self.INDEXED_TAG).get()
+    shard1 = model.TagIndex.make_key(1, self.INDEXED_TAG).get()
+
+    self.assertEqual({e.build_id for e in shard0.entries},
+                     {b.key.id() for b in shard0_builds})
+    self.assertEqual({e.build_id for e in shard1.entries},
+                     {b.key.id() for b in shard1_builds})
+
+    # Retrieve all builds from tag indexes.
+    expected = sorted(shard0_builds + shard1_builds, key=lambda b: b.key.id())
+    actual, _ = self.search(
+        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG]
+    )
+    self.assertEqual(expected, actual)
 
   #################################### PEEK ####################################
 

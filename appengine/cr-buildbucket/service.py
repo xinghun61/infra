@@ -5,6 +5,7 @@
 import collections
 import contextlib
 import datetime
+import heapq
 import logging
 import random
 import re
@@ -954,13 +955,35 @@ def _tag_index_search(q):
   q.tags = q.tags[:]
   q.tags.remove(indexed_tag)
 
-  idx = model.TagIndex.get_by_id(indexed_tag)
-  if idx and idx.permanently_incomplete:
-    raise errors.TagIndexIncomplete('TagIndex(%s) is incomplete' % indexed_tag)
-  if not idx or not idx.entries:
-    logging.info('no index/entries for tag %s', indexed_tag)
+  # Determine build id range we are considering.
+  # id_low is inclusive, id_high is exclusive.
+  id_low, id_high = model.build_id_range(q.create_time_low, q.create_time_high)
+  id_low = 0 if id_low is None else id_low
+  id_high = (1 << 64) - 1 if id_high is None else id_high
+  if q.start_cursor:
+    # The cursor is a minimum build id, exclusive. Such cursor is resilient
+    # to duplicates and additions of index entries to beginning or end.
+    assert RE_TAG_INDEX_SEARCH_CURSOR.match(q.start_cursor)
+    min_id_exclusive = int(q.start_cursor[len('id>'):])
+    id_low = max(id_low, min_id_exclusive + 1)
+  if id_low >= id_high:
     return [], None
-  logging.info('using TagIndex(%s)', indexed_tag)
+
+  # Load index entries and put them to a min-heap, sorted by build_id.
+  entry_heap = []  # tuples (build_id, model.TagIndexEntry).
+  for idx in ndb.get_multi(model.TagIndex.all_shard_keys(indexed_tag)):
+    if not idx:
+      continue
+    if idx.permanently_incomplete:
+      raise errors.TagIndexIncomplete(
+          'TagIndex(%s) is incomplete' % idx.key.id()
+      )
+    for e in idx.entries:
+      if id_low <= e.build_id < id_high:
+        entry_heap.append((e.build_id, e))
+  if not entry_heap:
+    return [], None
+  heapq.heapify(entry_heap)
 
   # If buckets were not specified explicitly, permissions were not checked
   # earlier. In this case, check permissions for each build.
@@ -973,34 +996,6 @@ def _tag_index_search(q):
       has = acl.can_search_builds(bucket)
       has_access_cache[bucket] = has
     return has
-
-  # Sort entries, newest build first, and start from the newest.
-  entries = sorted(idx.entries, key=lambda e: e.build_id)
-  entry_index = 0
-
-  id_low, id_high = model.build_id_range(q.create_time_low, q.create_time_high)
-
-  # Skip entries with build ids that are less or equal to the id in the cursor.
-  if q.start_cursor:
-    # The cursor is a minimum build id, exclusive. Such cursor is resilient
-    # to duplicates and additions of index entries to beginning or end.
-    assert RE_TAG_INDEX_SEARCH_CURSOR.match(q.start_cursor)
-    min_id_exclusive = int(q.start_cursor[len('id>'):])
-    if id_low is not None and id_low > min_id_exclusive:
-      # If the minimum build id requested is greater than the cursor, we need
-      # to skip more entries. Subtract 1 because id_low is inclusive.
-      min_id_exclusive = id_low - 1
-    if id_high is not None and min_id_exclusive >= id_high:
-      # If the min id is greater than the requested max, we should give up.
-      return [], None
-    # TODO(nodir): optimization: use binary search.
-    while entry_index < len(entries):
-      if entries[entry_index].build_id > min_id_exclusive:
-        break
-      entry_index += 1
-    if entry_index == len(entries):
-      # We've skipped everything.
-      return [], None
 
   # scalar_filters maps a name of a model.Build attribute to a filter value.
   # Applies only to non-repeated fields.
@@ -1031,23 +1026,13 @@ def _tag_index_search(q):
   while len(result) < q.max_builds:
     fetch_count = q.max_builds - len(result)
     entries_to_fetch = []  # ordered by build id by ascending.
-    while entry_index < len(entries):
-      e = entries[entry_index]
-      entry_index += 1
+    while entry_heap:
+      _, e = heapq.heappop(entry_heap)
       prev = last_considered_entry
       last_considered_entry = e
       if prev and prev.build_id == e.build_id:
         # Tolerate duplicates.
         continue
-      if id_low is not None and e.build_id < id_low:
-        # Skip build ids smaller than the ones requested.
-        continue
-      if id_high is not None and e.build_id >= id_high:
-        # Since the index is ordered by ascending build ids, if we exceed
-        # build_id_high, we should stop and not return a cursor.
-        entry_index = len(entries)
-        eof = True
-        break
       # If we filter by bucket, check it here without fetching the build.
       # This is not a security check.
       if q.buckets and e.bucket not in q.buckets:
@@ -1065,7 +1050,7 @@ def _tag_index_search(q):
     build_keys = [ndb.Key(model.Build, e.build_id) for e in entries_to_fetch]
     for e, b in zip(entries_to_fetch, ndb.get_multi(build_keys)):
       # Check for inconsistent entries.
-      if not (b and b.bucket == e.bucket and idx.key.id() in b.tags):
+      if not (b and b.bucket == e.bucket and indexed_tag in b.tags):
         logging.warning('entry with build_id %d is inconsistent', e.build_id)
         inconsistent_entries += 1
         continue
@@ -1714,11 +1699,10 @@ def _add_to_tag_index_async(tag, new_entries):
   for i in xrange(len(new_entries) - 1):
     assert new_entries[i].build_id != new_entries[i + 1].build_id, 'Duplicate!'
 
-  logging.debug('adding %d entries to tag index %s', len(new_entries), tag)
-
   @ndb.transactional_tasklet
   def txn_async():
-    idx = (yield model.TagIndex.get_by_id_async(tag)) or model.TagIndex(id=tag)
+    idx_key = model.TagIndex.random_shard_key(tag)
+    idx = (yield idx_key.get_async()) or model.TagIndex(key=idx_key)
     if idx.permanently_incomplete:
       return
 
@@ -1728,6 +1712,9 @@ def _add_to_tag_index_async(tag, new_entries):
       idx.permanently_incomplete = True
       idx.entries = []
     else:
+      logging.debug(
+          'adding %d entries to TagIndex(%s)', len(new_entries), idx_key.id()
+      )
       idx.entries.extend(new_entries)
     yield idx.put_async()
 

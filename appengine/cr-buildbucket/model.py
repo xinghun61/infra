@@ -312,11 +312,13 @@ class TagIndex(ndb.Model):
   """A custom index of builds by a tag.
 
   Entity key:
-    Entity id is a build tag in the same "<key>:<value>" format that builds use.
+    Entity id has format "<tag_key>:<tag_value>" or
+    ":<shard_index>:<tag_key>:<tag_value>" for positive values of shard_index.
     TagIndex has no parent.
   """
 
   MAX_ENTRY_COUNT = 1000
+  SHARD_COUNT = 16  # This value MUST NOT decrease.
 
   # if incomplete, this TagIndex should not be used in search.
   # It is set to True if there are more than MAX_ENTRY_COUNT builds
@@ -329,6 +331,27 @@ class TagIndex(ndb.Model):
   entries = ndb.LocalStructuredProperty(
       TagIndexEntry, repeated=True, indexed=False
   )
+
+  @classmethod
+  def make_key(cls, shard_index, tag):
+    """Returns a TagIndex entity key."""
+    assert shard_index >= 0
+    assert not tag.startswith(':')
+    iid = tag if shard_index == 0 else ':%d:%s' % (shard_index, tag)
+    return ndb.Key(TagIndex, iid)
+
+  @classmethod
+  def all_shard_keys(cls, tag):  # pragma: no cover
+    return [cls.make_key(i, tag) for i in xrange(cls.SHARD_COUNT)]
+
+  @classmethod
+  def random_shard_key(cls, tag):
+    """Returns a TagIndex entity key of a random shard."""
+    return cls.make_key(cls.random_shard_index(), tag)
+
+  @classmethod
+  def random_shard_index(cls):  # pragma: no cover
+    return random.randint(0, cls.SHARD_COUNT - 1)
 
 
 _TIME_RESOLUTION = datetime.timedelta(milliseconds=1)

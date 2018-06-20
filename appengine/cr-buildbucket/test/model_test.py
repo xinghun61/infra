@@ -5,6 +5,8 @@
 import datetime
 import mock
 
+from google.appengine.ext import ndb
+
 from components import utils
 from testing_utils import testing
 
@@ -54,3 +56,25 @@ class BuildTest(testing.AppengineTestCase):
       self.assertTrue(in_range(time_high - unit))
       self.assertFalse(in_range(time_high))
       self.assertFalse(in_range(time_high + unit))
+
+
+class TagIndexTest(testing.AppengineTestCase):
+
+  def test_zeroth_shard(self):
+    self.assertEqual(
+        model.TagIndex.make_key(0, 'a:b'),
+        ndb.Key(model.TagIndex, 'a:b'),
+    )
+
+  def test_positive_shard_index(self):
+    self.assertEqual(
+        model.TagIndex.make_key(1, 'a:b'),
+        ndb.Key(model.TagIndex, ':1:a:b'),
+    )
+
+  def test_random_shard_key(self):
+    with mock.patch('model.TagIndex.random_shard_index', return_value=2):
+      self.assertEqual(
+          model.TagIndex.random_shard_key('a:b'),
+          ndb.Key(model.TagIndex, ':2:a:b'),
+      )
