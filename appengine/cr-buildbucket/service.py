@@ -804,7 +804,7 @@ def search(q):
 
   q.tags = q.tags or []
   q.max_builds = fix_max_builds(q.max_builds)
-  q.created_by = parse_identity(q.created_by)
+  q.created_by = user.parse_identity(q.created_by)
   q.status = q.status if q.status != common_pb2.STATUS_UNSPECIFIED else None
 
   if not q.buckets and q.retry_of is not None:
@@ -1600,7 +1600,7 @@ def delete_many_builds(bucket, status, tags=None, created_by=None):
   if not user.can_delete_scheduled_builds(bucket):
     raise user.current_identity_cannot('delete scheduled builds of %s', bucket)
   # Validate created_by prior scheduled a push task.
-  created_by = parse_identity(created_by)
+  created_by = user.parse_identity(created_by)
   deferred.defer(
       _task_delete_many_builds,
       bucket,
@@ -1642,7 +1642,7 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
 
   assert status in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED)
   tags = tags or []
-  created_by = parse_identity(created_by)
+  created_by = user.parse_identity(created_by)
   q = model.Build.query(
       model.Build.bucket == bucket, model.Build.status == status
   )
@@ -1674,19 +1674,6 @@ def pause(bucket, is_paused):
       state.put()
 
   try_set_pause()
-
-
-def parse_identity(identity):
-  if isinstance(identity, basestring):
-    if not identity:  # pragma: no cover
-      return None
-    if ':' not in identity:  # pragma: no branch
-      identity = 'user:%s' % identity
-    try:
-      identity = auth.Identity.from_bytes(identity)
-    except ValueError as ex:
-      raise errors.InvalidInputError('Invalid identity identity: %s' % ex)
-  return identity
 
 
 def _add_to_tag_index_async(tag, new_entries):

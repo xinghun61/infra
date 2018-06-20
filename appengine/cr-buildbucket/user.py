@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Access control list implementation.
+"""User-related functions, including access control list implementation.
 
 See Acl message in proto/project_config.proto.
 """
@@ -297,6 +297,20 @@ def current_identity_cannot(action_format, *args):  # pragma: no cover
   msg = 'User %s cannot %s' % (auth.get_current_identity().to_bytes(), action)
   logging.warning(msg)
   return auth.AuthorizationError(msg)
+
+
+def parse_identity(identity):
+  """Parses an identity string if it is a string."""
+  if isinstance(identity, basestring):
+    if not identity:  # pragma: no cover
+      return None
+    if ':' not in identity:  # pragma: no branch
+      identity = 'user:%s' % identity
+    try:
+      identity = auth.Identity.from_bytes(identity)
+    except ValueError as ex:
+      raise errors.InvalidInputError('Invalid identity: %s' % ex)
+  return identity
 
 
 _thread_local = threading.local()

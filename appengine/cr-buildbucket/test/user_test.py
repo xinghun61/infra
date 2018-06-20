@@ -247,3 +247,21 @@ class AclTest(testing.AppengineTestCase):
         impersonate=auth.get_current_identity(),
         tags=['buildbucket:bucket:x'],
     )
+
+  def test_parse_identity(self):
+    self.assertEqual(
+        user.parse_identity('user:a@example.com'),
+        auth.Identity('user', 'a@example.com'),
+    )
+    self.assertEqual(
+        auth.Identity('user', 'a@example.com'),
+        auth.Identity('user', 'a@example.com'),
+    )
+
+    self.assertEqual(
+        user.parse_identity('a@example.com'),
+        auth.Identity('user', 'a@example.com'),
+    )
+
+    with self.assertRaises(errors.InvalidInputError):
+      user.parse_identity('a:b')
