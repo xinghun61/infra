@@ -63,6 +63,7 @@ WITH
     CROSS JOIN
       UNNEST(ca.contributing_bbucket_ids) AS build_id
   WHERE
+    # cq_attempts table is not partitioned.
     ca.attempt_start_msec >= UNIX_MILLIS(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day))
     AND ca.cq_name in (
       'chromium/angle/angle',
@@ -135,6 +136,7 @@ WITH
       CROSS JOIN
         UNNEST(build.input.gerrit_changes) AS gerrit_change
     WHERE
+      # cr-buildbucket is a partitioned table, but not by ingestion time.
       build.create_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day)
       # Chromium CQ builds should have only one patchset, thus the arrary
       # cr-buildbucket.builds.completed_BETA.input.gerrit_changes would
@@ -236,7 +238,11 @@ WITH
   FROM
     `test-results-hrd.events.test_results`
   WHERE
-    _PARTITIONTIME >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 day)
+    # According to https://cloud.google.com/bigquery/docs/partitioned-tables,
+    # _PARTITIONTIME is always the start of each day, so to make sure all data
+    # within the past 1 day is included, _PARTITIONTIME needs to be greater than
+    # the timestamp of 2 days ago.
+    _PARTITIONTIME >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 day)
     # Only builds going through buildbucket have build ids, including:
     # 1. All Luci-based builds.
     # 2. A subset of buildbot-based builds, e.g. all CQ builds.
