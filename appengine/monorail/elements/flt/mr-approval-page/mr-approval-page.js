@@ -34,6 +34,20 @@ class MrApprovalPage extends Polymer.Element {
     };
   }
 
+  ready() {
+    super.ready();
+    const message = {
+      trace: {token: window.CS_env.token},
+      issue_ref: {
+        project_name: window.CS_env.projectName,
+        local_id: window.CS_env.localId,
+      }
+    };
+    const data = window.prpcClient.call(
+        'monorail.Issues', 'GetIssue', message);
+    console.log(data);
+  }
+
   _computeIssueId(id) {
     return id * 1;
   }

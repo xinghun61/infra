@@ -2,6 +2,24 @@
 <title>Approval Issue</title>
 <meta name=viewport content="width=device-width, user-scalable=no">
 
+<script src="/bower_components/chopsui/prpc-client.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript"  nonce="[nonce]">
+  [# Javascript object containing basic page data. ]
+  window.CS_env = {
+      'token': '[format "js"][xhr_token][end]',
+      'projectName': '[format "js"][projectname][end]',
+      'localId': '[format "js"][local_id][end]',
+  };
+  window.prpcClient = new window.chops.rpc.PrpcClient({
+      insecure: Boolean(location.hostname === 'localhost'),
+      fetchImpl: (url, options) => {
+          options.credentials = 'same-origin';
+          return fetch(url, options);
+      },
+  });
+</script>
+
+
 [if-any dev_mode]
 <link rel="import" href="/elements/flt/mr-approval-page/mr-approval-page.html?version=[app_version]" nonce="[nonce]">
 [else]

@@ -30,4 +30,5 @@ class IssueApproval(servlet.Servlet):
       Dict of values used by EZT for rendering the page.
     """
     return {
+       'local_id': mr.local_id,
         }
