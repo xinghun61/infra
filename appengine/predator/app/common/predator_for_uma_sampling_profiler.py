@@ -47,10 +47,9 @@ class PredatorForUMASamplingProfiler(PredatorApp):
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
             'MinDistance': Weight(2.),
-            'TopFrameIndex': Weight(1.),
+            'TopFrameIndex': Weight(0.),
             'TouchCrashedFile': Weight(1.),
-        }),
-        'NumberOfTouchedFiles': Weight(0.5)
+        })
     })
 
     min_distance_feature = MinDistanceFeature(get_repository)
@@ -60,9 +59,7 @@ class PredatorForUMASamplingProfiler(PredatorApp):
         [TouchCrashedFileMetaFeature([min_distance_feature,
                                       top_frame_index_feature,
                                       touch_crashed_file_feature],
-                                     include_renamed_paths=True),
-         TouchCrashedComponentFeature(self._component_classifier),
-         NumberOfTouchedFilesFeature()])
+                                     include_renamed_paths=True)])
 
     self._predator = Predator(ChangelistClassifier(get_repository,
                                                    meta_feature,
