@@ -17,6 +17,7 @@ from test.test_util import future
 import config
 import model
 import sequence
+import user
 import v2
 
 
@@ -40,6 +41,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
     auth_testing.reset_local_state()
     auth.bootstrap_group('all', [auth.Anonymous])
+    user.clear_request_cache()
 
     chromium_cfg = '''
       name: "luci.chromium.try"

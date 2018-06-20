@@ -29,6 +29,7 @@ class AclTest(testing.AppengineTestCase):
         autospec=True,
         return_value=self.current_identity
     )
+    user.clear_request_cache()
 
     self.patch('components.auth.is_admin', autospec=True, return_value=False)
 
@@ -149,15 +150,53 @@ class AclTest(testing.AppengineTestCase):
         ),
     ])
 
-    availble_buckets = user.get_acessible_buckets_async().get_result()
-    # memcache coverage.
+    # call twice for per-request caching of futures.
+    user.get_acessible_buckets_async()
     availble_buckets = user.get_acessible_buckets_async().get_result()
     self.assertEqual(
         availble_buckets,
-        {'available_bucket1', 'available_bucket2', 'available_bucket3'}
+        {'available_bucket1', 'available_bucket2', 'available_bucket3'},
     )
 
+    # call again for memcache coverage.
+    user.clear_request_cache()
+    availble_buckets = user.get_acessible_buckets_async().get_result()
+    self.assertEqual(
+        availble_buckets,
+        {'available_bucket1', 'available_bucket2', 'available_bucket3'},
+    )
+
+  @mock.patch('components.auth.is_admin', autospec=True)
+  def test_get_acessible_buckets_async_admin(self, is_admin):
     is_admin.return_value = True
+
+    config.get_buckets_async.return_value = future([
+        Bucket(
+            name='available_bucket1',
+            acls=[
+                Acl(role=Acl.READER, group='xxx'),
+                Acl(role=Acl.WRITER, group='yyy')
+            ],
+        ),
+        Bucket(
+            name='available_bucket2',
+            acls=[
+                Acl(role=Acl.READER, group='xxx'),
+                Acl(role=Acl.WRITER, group='zzz')
+            ],
+        ),
+        Bucket(
+            name='available_bucket3',
+            acls=[
+                Acl(role=Acl.READER, identity='user:a@example.com'),
+            ],
+        ),
+        Bucket(
+            name='not_available_bucket',
+            acls=[Acl(role=Acl.WRITER, group='zzz')],
+        ),
+    ])
+
     self.assertIsNone(user.get_acessible_buckets_async().get_result())
 
   def mock_has_any_of_roles(self, current_identity_roles):

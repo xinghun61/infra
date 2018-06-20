@@ -9,6 +9,8 @@ See Acl message in proto/project_config.proto.
 
 import collections
 import logging
+import os
+import threading
 
 from google.appengine.api import memcache
 from google.appengine.ext import ndb
@@ -220,7 +222,6 @@ def can(bucket, action):
   return can_async(bucket, action).get_result()
 
 
-@ndb.tasklet
 def get_acessible_buckets_async():
   """Returns buckets accessible to the current identity.
 
@@ -229,35 +230,40 @@ def get_acessible_buckets_async():
   Results are memcached for 10 minutes per identity.
 
   Returns:
-    Set of bucket names or None if all buckets are available.
+    A future of a set of bucket names or None if all buckets are available.
   """
-  if auth.is_admin():
-    raise ndb.Return(None)
 
-  identity = auth.get_current_identity().to_bytes()
-  cache_key = 'available_buckets/%s' % identity
-  ctx = ndb.get_context()
-  available_buckets = yield ctx.memcache_get(cache_key)
-  if available_buckets is not None:
+  @ndb.tasklet
+  def impl():
+    if auth.is_admin():
+      raise ndb.Return(None)
+
+    identity = auth.get_current_identity().to_bytes()
+    cache_key = 'available_buckets/%s' % identity
+    ctx = ndb.get_context()
+    available_buckets = yield ctx.memcache_get(cache_key)
+    if available_buckets is not None:
+      raise ndb.Return(available_buckets)
+    logging.info('Computing a list of available buckets for %s' % identity)
+    group_buckets_map = collections.defaultdict(set)
+    available_buckets = set()
+    all_buckets = yield config.get_buckets_async()
+    for bucket in all_buckets:
+      for rule in bucket.acls:
+        if rule.identity == identity:
+          available_buckets.add(bucket.name)
+        if rule.group:
+          group_buckets_map[rule.group].add(bucket.name)
+    for group, buckets in group_buckets_map.iteritems():
+      if available_buckets.issuperset(buckets):
+        continue
+      if auth.is_group_member(group):
+        available_buckets.update(buckets)
+    # Cache for 10 min
+    yield ctx.memcache_set(cache_key, available_buckets, 10 * 60)
     raise ndb.Return(available_buckets)
-  logging.info('Computing a list of available buckets for %s' % identity)
-  group_buckets_map = collections.defaultdict(set)
-  available_buckets = set()
-  all_buckets = yield config.get_buckets_async()
-  for bucket in all_buckets:
-    for rule in bucket.acls:
-      if rule.identity == identity:
-        available_buckets.add(bucket.name)
-      if rule.group:
-        group_buckets_map[rule.group].add(bucket.name)
-  for group, buckets in group_buckets_map.iteritems():
-    if available_buckets.issuperset(buckets):
-      continue
-    if auth.is_group_member(group):
-      available_buckets.update(buckets)
-  # Cache for 10 min
-  yield ctx.memcache_set(cache_key, available_buckets, 10 * 60)
-  raise ndb.Return(available_buckets)
+
+  return _get_or_create_cached_future('accessible_buckets', impl)
 
 
 def current_identity_cannot(action_format, *args):  # pragma: no cover
@@ -266,3 +272,33 @@ def current_identity_cannot(action_format, *args):  # pragma: no cover
   msg = 'User %s cannot %s' % (auth.get_current_identity().to_bytes(), action)
   logging.warning(msg)
   return auth.AuthorizationError(msg)
+
+
+_thread_local = threading.local()
+
+
+def _get_or_create_cached_future(key, create_future):
+  """Returns a future cached for the current GAE request.
+
+  Using this function may cause RuntimeError with a deadlock if the returned
+  future is not waited for before leaving an ndb context, but that's a bug
+  in the first place.
+  """
+  # Docs:
+  # https://cloud.google.com/appengine/docs/standard/python/how-requests-are-handled#request-ids
+  req_id = os.environ['REQUEST_LOG_ID']
+  cache = getattr(_thread_local, 'request_cache', {})
+  if cache.get('request_id') != req_id:
+    cache = {'request_id': req_id, 'futures': {}}
+    _thread_local.request_cache = cache
+
+  fut = cache['futures'].get(key)
+  if fut is None:
+    fut = create_future()
+    assert fut is not None
+    cache['futures'][key] = fut
+  return fut
+
+
+def clear_request_cache():
+  _thread_local.request_cache = {}
