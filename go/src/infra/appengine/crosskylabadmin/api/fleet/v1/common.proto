@@ -1,0 +1,21 @@
+// Copyright 2018 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package crosskylabadmin.fleet;
+
+option go_package = "fleet";
+
+// BotSelector is used in various fleet RPCs to filter the Swarming bots that
+// the RPC applies to.
+//
+// For example, it is used to select the bots to summarize by the Tracker RPCs,
+// and to select the bots against which admin tasks are managed by the Tasker
+// RPCs.
+message BotSelector {
+    // dut_ids selects bots by the dut_id dimension.
+    string dut_id = 1;
+}
+

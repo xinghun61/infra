@@ -26,6 +26,23 @@ import (
 	"golang.org/x/net/context"
 )
 
+// swarmingClientFactory implements a single method to obtain a SwarmingClient instance.
+type swarmingClientFactory struct {
+	// swarmingClientHook provides a way to override the swarming client bindings.
+	// Tests should override swarmingClientHook to return a fake SwarmingClient.
+	// If nil, a real SwarmingClient will be used.
+	swarmingClientHook func(c context.Context, host string) (SwarmingClient, error)
+}
+
+// swarmingClient creats a SwarmingClient. All trackerServerImpl methods should
+// use swarmingClient to obtain a SwarmingClient.
+func (tsi *swarmingClientFactory) swarmingClient(c context.Context, host string) (SwarmingClient, error) {
+	if tsi.swarmingClientHook != nil {
+		return tsi.swarmingClientHook(c, host)
+	}
+	return NewSwarmingClient(c, host)
+}
+
 // SwarmingClient exposes Swarming client API used by this package.
 // In prod, a SwarmingClient for interacting with the Swarming service will be used.
 // Tests should use a fake.

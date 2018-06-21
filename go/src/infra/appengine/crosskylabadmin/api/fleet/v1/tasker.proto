@@ -1,0 +1,165 @@
+// Copyright 2018 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+import "infra/appengine/crosskylabadmin/api/fleet/v1/common.proto";
+
+package crosskylabadmin.fleet;
+
+option go_package = "fleet";
+
+// Tasker service exposes rpcs to run administrative tasks on the ChromeOS
+// Skylab Swarming bot fleet.
+service Tasker {
+    // TriggerRepairOnIdle creates administrative tasks to repair the selected
+    // Swarming bots if they are deemed to have been idle for too long. Returned
+    // tasks may be a combination of newly created tasks and already existing
+    // tasks that satisfy the request.
+    //
+    // TriggerRepairOnIdle stops at first error encountered. In case of an
+    // error, some tasks may have already been created. It is safe to retry a
+    // partially succeeded rpc call.
+    rpc TriggerRepairOnIdle(TriggerRepairOnIdleRequest) returns
+            (TaskerTasksResponse);
+
+    // TriggerRepairOnRepairFailed creates administrative tasks to repair the
+    // selected Swarming bots if they are in the repair failed state, and the
+    // last repair attempt is deemed to have been too long ago. Returned tasks
+    // may be a combination of newly created tasks and already existing tasks
+    // that satisfy the request.
+    //
+    // TriggerRepairOnRepairFailed stops at first error encountered. In case of
+    // an error, some tasks may have already been created. It is safe to retry a
+    // partially succeeded rpc call.
+    rpc TriggerRepairOnRepairFailed(TriggerRepairOnRepairFailedRequest) returns
+            (TaskerTasksResponse);
+
+
+    // EnsureBackgroundTasks ensures that the requested number of (usually high
+    // priority) background tasks are enqueued against the requested DUTs.
+    // Returned tasks may be a combination of newly created tasks and already
+    // existing tasks that satisfy the request.
+    //
+    // EnsureBackgroundTasks stops at first error encountered. In case of an
+    // error, some tasks may have already been created. It is safe to retry a
+    // partially succeeded rpc call.
+    rpc EnsureBackgroundTasks(EnsureBackgroundTasksRequest) returns
+            (TaskerTasksResponse);
+}
+
+// TaskerTasksResponse is returned by various Tasker rpcs to report the tasks
+// created to satisfy the rpc.
+message TaskerTasksResponse {
+    // bot_tasks lists the tasks scheduled by Tasker for the bots.
+    //
+    // RPC responses contain bot_tasks for each of the bots selected,
+    // even if no tasks are currently scheduled for some of the bots.
+    repeated TaskerBotTasks bot_tasks = 1;
+}
+
+// TaskerBotTasks lists tasks scheduled by Tasker for a single bot.
+message TaskerBotTasks {
+    // dut_id specifies the dut_id dimension of the bot.
+    string dut_id = 1;
+
+    // tasks lists tasks scheduled by Tasker for this bot.
+    //
+    // If no tasks are currently scheduled for a bot selected in the RPC
+    // request, tasks will be unset.
+    repeated TaskerTask tasks = 2;
+}
+
+// TaskerTask contains information about a single task created by Tasker.
+message TaskerTask {
+    // type specifies what type of the task that was triggered.
+    TaskType type = 2;
+
+    // task_url lists the URL to the Swarming task triggered.
+    string task_url = 3;
+}
+
+enum TaskType {
+    Invalid = 0;
+    Reset = 1;
+    Cleanup = 2;
+    Repair = 3;
+}
+
+// TriggerRepairOnIdleRequest is used to control the behaviour of
+// TriggerRepairOnIdle rpc.
+message TriggerRepairOnIdleRequest {
+    // selectors whitelists the bots to trigger repair taks on.
+    // Bots selected via repeated selectors are unioned together.
+    //
+    // If no selectors are provided, all bots are selected.
+    repeated BotSelector selectors = 1;
+
+    // idle_timeout_seconds specifies the time (in seconds) for which a selected
+    // bot must have been idle for a repair task to be created against it.
+    int32 idle_timeout_seconds = 2;
+
+    // priority forces the tasks to be created at the given priority. Swarming
+    // uses priorities in [0,255], where lower number means higher priority.
+    //
+    // priority should usually not be used by clients. Tasker creates tasks at
+    // a constant priority controlled by Tasker config. priority may be used to
+    // override the default priority in special cases (e.g., you need to
+    // override some incorrectly created high-priority normal jobs).
+    int64 priority = 3;
+}
+
+// TriggerRepairOnRepairFailedRquest is used to control the behaviour of
+// TriggerRepairOnRepairFailed rpc.
+message TriggerRepairOnRepairFailedRequest {
+    // selectors whitelists the bots to trigger repair taks on.
+    // Bots selected via repeated selectors are unioned together.
+    //
+    // If no selectors are provided, all bots are selected.
+    repeated BotSelector selectors = 1;
+
+    // last_repair_timeout_seconds specifies the time (in seconds) that must
+    // have elapsed since the last attempt to repair the failed bot for a repair
+    // task to be created against it.
+    int32 last_repair_timeout_seconds = 2;
+
+    // priority forces the tasks to be created at the given priority. Swarming
+    // uses priorities in [0,255], where lower number means higher priority.
+    //
+    // priority should usually not be used by clients. Tasker creates tasks at
+    // a constant priority controlled by Tasker config. priority may be used to
+    // override the default priority in special cases (e.g., you need to
+    // override some incorrectly created high-priority normal jobs).
+    int64 priority = 3;
+}
+
+// EnsureBackgroundTasksRequest is used to specify background tasks to manage
+// for the selected bots.
+//
+// Any existing tasks for a selected bot not included in this request are left
+// unmodified. To cancel outstanding tasks of a given type, explicitly set
+// task_count to 0.
+message EnsureBackgroundTasksRequest {
+    // type specifies what tasks to manage.
+    TaskType type = 1;
+
+    // selectors whitelists the bots to manage background tasks for.
+    // Bots selected via repeated selectors are unioned together.
+    //
+    // If no selectors are provided, all bots are selected.
+    repeated BotSelector selectors = 2;
+
+    // Number of tasks of the given type to maintain. If more than the given
+    // number of tasks already exist, extra tasks will be canceled.
+    int32 task_count = 3;
+
+    // priority forces the tasks to be created at the given priority. Swarming
+    // uses priorities in [0,255], where lower number means higher priority.
+    //
+    // priority should usually not be used by clients. Tasker creates tasks at
+    // a constant priority controlled by Tasker config. priority may be used to
+    // override the default priority in special cases (e.g., you need to
+    // override some incorrectly created high-priority normal jobs).
+    int64 priority = 4;
+}

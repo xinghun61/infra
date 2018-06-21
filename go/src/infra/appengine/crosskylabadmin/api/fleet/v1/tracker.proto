@@ -4,6 +4,8 @@
 
 syntax = "proto3";
 
+import "infra/appengine/crosskylabadmin/api/fleet/v1/common.proto";
+
 package crosskylabadmin.fleet;
 
 option go_package = "fleet";
@@ -53,13 +55,6 @@ message SummarizeBotsRequest {
     //
     // If no selectors are provided, all bots are selected.
     repeated BotSelector selectors = 1;
-}
-
-// BotSelector is used to whitelist Swarming bots to select for various Tracker
-// rpcs.
-message BotSelector {
-    // dut_ids selects bots by the dut_id dimension.
-    string dut_id = 1;
 }
 
 // SummarizeBotsResponse contains summary information about Swarming bots

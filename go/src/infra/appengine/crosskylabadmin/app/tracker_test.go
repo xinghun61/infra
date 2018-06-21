@@ -20,8 +20,6 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
-	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
-	"go.chromium.org/luci/common/data/strpair"
 	"golang.org/x/net/context"
 
 	"infra/appengine/crosskylabadmin/api/fleet/v1"
@@ -34,22 +32,22 @@ import (
 // Other tests should verify the other fields of returned bots.
 func TestRefreshAndSummarizeBots(t *testing.T) {
 	t.Parallel()
-
 	Convey("In testing context", t, FailureHalts, func() {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
 		datastore.GetTestable(c).Consistent(true)
-		fsc := fakeSwarmingClient{
-			t:    t,
+		fsc := &fakeSwarmingClient{
 			pool: swarmingBotPool,
 		}
 		server := trackerServerImpl{
-			swarmingClientHook: func(context.Context, string) (SwarmingClient, error) {
-				return &fsc, nil
+			swarmingClientFactory{
+				swarmingClientHook: func(context.Context, string) (SwarmingClient, error) {
+					return fsc, nil
+				},
 			},
 		}
 
 		Convey("with no swarming duts available", func() {
-			setAvailableDutIDs(&fsc, []string{})
+			fsc.setAvailableDutIDs([]string{})
 
 			Convey("refresh without filter", func() {
 				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{})
@@ -122,7 +120,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 		})
 
 		Convey("with a single dut available", func() {
-			setAvailableDutIDs(&fsc, []string{"dut_1"})
+			fsc.setAvailableDutIDs([]string{"dut_1"})
 
 			Convey("refresh filtering to available dut", func() {
 				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
@@ -213,7 +211,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 		})
 		Convey("with two duts available", func() {
-			setAvailableDutIDs(&fsc, []string{"dut_1", "dut_2"})
+			fsc.setAvailableDutIDs([]string{"dut_1", "dut_2"})
 
 			Convey("refresh without filter", func() {
 				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{})
@@ -277,7 +275,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			for i := 0; i < numDuts; i++ {
 				dutNames = append(dutNames, fmt.Sprintf("dut_%d", i))
 			}
-			setAvailableDutIDs(&fsc, dutNames)
+			fsc.setAvailableDutIDs(dutNames)
 			Convey("refresh selecting all the DUTs", func() {
 				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts(dutNames),
@@ -294,67 +292,6 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 		})
 	})
-}
-
-// fakeSwarmingClient implements SwarmingClient.
-type fakeSwarmingClient struct {
-	t *testing.T
-
-	// pool is the single common pool that all bots belong to.
-	pool string
-
-	// botInfo maps the dut_id for a bot to its swarming.SwarmingRpcsBotInfo
-	botInfos map[string]*swarming.SwarmingRpcsBotInfo
-}
-
-// ListAliveBotsInPool is a fake implementation of SwarmingClient.ListAliveBotsInPool.
-// This function is intentionally simple. It only supports filtering by dut_id dimension.
-func (fsc *fakeSwarmingClient) ListAliveBotsInPool(c context.Context, pool string, dims strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
-	resp := []*swarming.SwarmingRpcsBotInfo{}
-	if pool != fsc.pool {
-		return resp, nil
-	}
-	switch len(dims) {
-	case 0:
-		for _, bi := range fsc.botInfos {
-			resp = append(resp, bi)
-		}
-	case 1:
-		k := dims.Get("dut_id")
-		if k == "" {
-			fsc.t.Fatalf("got dims %s, want a single key: dut_id", dims)
-		}
-		bi, ok := fsc.botInfos[k]
-		if ok {
-			resp = append(resp, bi)
-		}
-	}
-	return resp, nil
-}
-
-func setAvailableDutIDs(sc *fakeSwarmingClient, duts []string) {
-	sc.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
-	for _, d := range duts {
-		sc.botInfos[d] = &swarming.SwarmingRpcsBotInfo{
-			BotId: fmt.Sprintf("bot_%s", d),
-			Dimensions: []*swarming.SwarmingRpcsStringListPair{
-				{
-					Key:   "dut_id",
-					Value: []string{d},
-				},
-			},
-		}
-	}
-}
-
-// makeBotSelector returns a fleet.BotSelector selecting each of the duts
-// recognized by the given Dut IDs.
-func makeBotSelectorForDuts(duts []string) []*fleet.BotSelector {
-	var bs []*fleet.BotSelector
-	for _, d := range duts {
-		bs = append(bs, &fleet.BotSelector{DutId: d})
-	}
-	return bs
 }
 
 // extractSummarizedDutIDs extracts the DutIDs of the the summarized bots.

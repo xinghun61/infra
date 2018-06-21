@@ -25,25 +25,11 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/sync/parallel"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // trackerServerImpl implements the fleet.TrakerServer interface.
 type trackerServerImpl struct {
-	// swarmingClientHook provides a way to override the swarming client bindings.
-	// Tests should override swarmingClientHook to return a fake SwarmingClient.
-	// If nil, a real SwarmingClient will be used.
-	swarmingClientHook func(c context.Context, host string) (SwarmingClient, error)
-}
-
-// swarmingClient creates a SwarmingClient. All trackerServerImpl methods should
-// use swarmingClient to obtain a SwarmingClient.
-func (tsi *trackerServerImpl) swarmingClient(c context.Context, host string) (SwarmingClient, error) {
-	if tsi.swarmingClientHook != nil {
-		return tsi.swarmingClientHook(c, host)
-	}
-	return NewSwarmingClient(c, host)
+	swarmingClientFactory
 }
 
 const (
@@ -54,7 +40,7 @@ const (
 // RefreshBots implements the fleet.Tracker.RefreshBots() method.
 func (tsi *trackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshBotsRequest) (res *fleet.RefreshBotsResponse, err error) {
 	defer func() {
-		err = grpcfy(err)
+		err = grpcfyRawErrors(err)
 	}()
 
 	sc, err := tsi.swarmingClient(c, swarmingInstance)
@@ -78,7 +64,7 @@ func (tsi *trackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshB
 // SummarizeBots implements the fleet.Tracker.SummarizeBots() method.
 func (tsi *trackerServerImpl) SummarizeBots(c context.Context, req *fleet.SummarizeBotsRequest) (res *fleet.SummarizeBotsResponse, err error) {
 	defer func() {
-		err = grpcfy(err)
+		err = grpcfyRawErrors(err)
 	}()
 
 	bses, err := getBotSummariesFromDatastore(c, req.Selectors)
@@ -283,11 +269,4 @@ func dropDuplicateSelectors(sels []*fleet.BotSelector) []*fleet.BotSelector {
 		usels = append(usels, s)
 	}
 	return usels
-}
-
-func grpcfy(err error) error {
-	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
-	}
-	return nil
 }
