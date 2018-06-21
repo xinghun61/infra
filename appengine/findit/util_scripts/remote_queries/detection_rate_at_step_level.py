@@ -27,10 +27,10 @@ import remote_api
 
 from google.appengine.ext import ndb
 
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
-from waterfall import build_util
 
 
 class Result(object):
@@ -60,8 +60,8 @@ class Result(object):
     }
 
 
-def _CheckIfTestFlaky(master, builder, build, step, checked_test_name):
-  task = WfSwarmingTask.Get(master, builder, build, step)
+def _CheckIfTestFlaky(master_name, builder, build, step, checked_test_name):
+  task = WfSwarmingTask.Get(master_name, builder, build, step)
   if task and task.classified_tests:
     return checked_test_name in task.classified_tests.get('flaky_tests', [])
   return False
@@ -82,8 +82,9 @@ def _GetCompileTryJobCulprit(compile_try_job):
   if not compile_try_job:
     return compile_culprits
 
-  try_job_result = (compile_try_job.compile_results[-1]
-                    if compile_try_job.compile_results else {})
+  try_job_result = (
+      compile_try_job.compile_results[-1]
+      if compile_try_job.compile_results else {})
 
   compile_culprits = try_job_result.get('culprit', {}).get('compile')
   if not compile_culprits:
@@ -98,8 +99,8 @@ def _GetTestTryJobCulprit(test_try_job, step):
   if not test_try_job:
     return culprits
 
-  try_job_result = (test_try_job.test_results[-1]
-                    if test_try_job.test_results else {})
+  try_job_result = (
+      test_try_job.test_results[-1] if test_try_job.test_results else {})
 
   step_culprit = try_job_result.get('culprit', {}).get(step)
   if not step_culprit:
@@ -201,11 +202,11 @@ if __name__ == '__main__':
         continue
 
       build_key = analysis.key.pairs()[0][1]
-      master_name, builder_name, build_number = build_util.GetBuildInfoFromId(
+      master, builder_name, build_number = BaseBuildModel.GetBuildInfoFromId(
           build_key)
       build_number = int(build_number)
 
-      try_job = WfTryJob.Get(master_name, builder_name, build_number)
+      try_job = WfTryJob.Get(master, builder_name, build_number)
 
       for failure in analysis.result.get('failures', {}):
 
@@ -227,7 +228,7 @@ if __name__ == '__main__':
             test_results.append(result)
 
             result.is_flaky = _CheckIfTestFlaky(
-                master_name, builder_name, build_number, step_name, test_name)
+                master, builder_name, build_number, step_name, test_name)
             if result.is_flaky:
               continue
 

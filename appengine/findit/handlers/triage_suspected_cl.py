@@ -15,9 +15,9 @@ from gae_libs.handlers.base_handler import Permission
 from libs import time_util
 from model import result_status
 from model import suspected_cl_status
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import build_util
 from waterfall import buildbot
 from waterfall.suspected_cl_util import GetCLInfo
 
@@ -130,11 +130,13 @@ def _AppendTriageHistoryRecord(master_name, builder_name, build_number, cl_info,
 def _UpdateSuspectedCLAndAnalysis(master_name, builder_name, build_number,
                                   cl_info, cl_status, user_name):
   repo_name, revision = GetCLInfo(cl_info)
-  build_key = build_util.CreateBuildId(master_name, builder_name, build_number)
+  build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                           build_number)
 
-  success = (_UpdateSuspectedCL(repo_name, revision, build_key, cl_status) and
-             _UpdateAnalysis(master_name, builder_name, build_number, repo_name,
-                             revision, cl_status))
+  success = (
+      _UpdateSuspectedCL(repo_name, revision, build_key, cl_status) and
+      _UpdateAnalysis(master_name, builder_name, build_number, repo_name,
+                      revision, cl_status))
 
   if success:
     _AppendTriageHistoryRecord(master_name, builder_name, build_number, cl_info,

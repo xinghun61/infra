@@ -20,6 +20,7 @@ from common.waterfall import failure_type
 from libs import analysis_status
 from model import analysis_approach_type
 from model import result_status
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
@@ -32,7 +33,6 @@ from services.parameters import RunTestTryJobParameters
 from services.parameters import TestTryJobResult
 from services.test_failure import ci_test_failure
 from services.test_failure import test_failure_analysis
-from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
@@ -137,8 +137,8 @@ def _HasBuildKeyForBuildInfoInFailureResultMap(master_name, builder_name,
   """Checks if there is any first failed test."""
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   failure_result_map = analysis.failure_result_map
-  current_build_key = build_util.CreateBuildId(master_name, builder_name,
-                                               build_number)
+  current_build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                                   build_number)
   for step_keys in failure_result_map.itervalues():
     for test_key in step_keys.itervalues():
       if test_key == current_build_key:
@@ -263,9 +263,9 @@ def _GetLastPassTest(build_number, failed_steps):
 def _GetGoodRevisionTest(master_name, builder_name, build_number, failure_info):
   last_pass = _GetLastPassTest(build_number, failure_info.failed_steps)
   if last_pass is None:
-    logging.warning('Couldn"t start try job for build %s, %s, %d because'
-                    ' last_pass is not found.', master_name, builder_name,
-                    build_number)
+    logging.warning(
+        'Couldn"t start try job for build %s, %s, %d because'
+        ' last_pass is not found.', master_name, builder_name, build_number)
     return None
 
   return failure_info.builds[str(last_pass)].chromium_revision

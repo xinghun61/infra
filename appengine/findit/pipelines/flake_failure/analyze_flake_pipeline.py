@@ -16,6 +16,7 @@ from libs import time_util
 from libs.list_of_basestring import ListOfBasestring
 from libs.structured_object import StructuredObject
 from model import result_status
+from model.base_build_model import BaseBuildModel
 from pipelines.delay_pipeline import DelayPipeline
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)
@@ -51,7 +52,6 @@ from pipelines.report_event_pipeline import ReportEventInput
 from services import swarmed_test_util
 from services.flake_failure import confidence_score_util
 from services.flake_failure import flake_analysis_util
-from waterfall import build_util
 
 
 class AnalyzeFlakeInput(StructuredObject):
@@ -113,9 +113,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
     if analysis.request_time:
       monitoring.pipeline_times.increment_by(
           int((time_util.GetUTCNow() - analysis.request_time).total_seconds()),
-          {
-              'type': 'flake'
-          })
+          {'type': 'flake'})
 
     commit_position_parameters = parameters.analyze_commit_position_parameters
     commit_position_to_analyze = commit_position_parameters.next_commit_position
@@ -160,9 +158,9 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
           culprit_data_point.GetSwarmingTaskId(), analysis.test_name)
 
       # Data needed for reverts.
-      build_id = build_util.CreateBuildId(analysis.original_master_name,
-                                          analysis.original_builder_name,
-                                          analysis.original_build_number)
+      build_id = BaseBuildModel.CreateBuildId(analysis.original_master_name,
+                                              analysis.original_builder_name,
+                                              analysis.original_build_number)
 
       with pipeline.InOrder():
         # Log Monorail bug.

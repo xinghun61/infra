@@ -10,6 +10,7 @@ from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
 from model import result_status
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
 from services import ci_failure
@@ -19,7 +20,6 @@ from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicResult
 from services.test_failure import ci_test_failure
 from services.test_failure import extract_test_signal
-from waterfall import build_util
 from waterfall.failure_signal import FailureSignal
 
 
@@ -300,8 +300,8 @@ def UpdateAnalysisWithFlakesFoundBySwarmingReruns(master_name, builder_name,
 
 def GetFirstTimeFailedSteps(master_name, builder_name, build_number):
   """Gets steps that have tests failed first time in the build."""
-  current_build_id = build_util.CreateBuildId(master_name, builder_name,
-                                              build_number)
+  current_build_id = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                                  build_number)
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   assert analysis, "Cannot get WfAnalysis entity for %s" % current_build_id
 

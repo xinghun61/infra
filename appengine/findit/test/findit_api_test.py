@@ -19,6 +19,7 @@ import findit_api
 from libs import analysis_status
 from libs import time_util
 from model import analysis_approach_type
+from model.base_build_model import BaseBuildModel
 from model.base_suspected_cl import RevertCL
 from model.flake import triggering_sources
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -26,7 +27,6 @@ from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
-from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.flake import step_mapper
@@ -898,7 +898,7 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_42 = WfSuspectedCL.Create('chromium', 'r4_2', 42)
     suspected_cl_42.builds = {
-        build_util.CreateBuildId(master_name, builder_name, 5): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, 5): {
             'approaches': [analysis_approach_type.TRY_JOB]
         }
     }
@@ -906,15 +906,15 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_21 = WfSuspectedCL.Create('chromium', 'r2_1', None)
     suspected_cl_21.builds = {
-        build_util.CreateBuildId(master_name, builder_name, 3): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, 3): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         },
-        build_util.CreateBuildId(master_name, builder_name, 4): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, 4): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         },
-        build_util.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         }
@@ -923,14 +923,14 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_410 = WfSuspectedCL.Create('chromium', 'r4_10', None)
     suspected_cl_410.builds = {
-        build_util.CreateBuildId(master_name, builder_name, 4): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, 4): {
             'approaches': [
                 analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB
             ],
             'top_score':
                 5
         },
-        build_util.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         }

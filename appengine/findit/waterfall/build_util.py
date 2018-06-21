@@ -122,14 +122,6 @@ def GetBuildEndTime(master_name, builder_name, build_number):
   return build_info.build_end_time
 
 
-def CreateBuildId(master_name, builder_name, build_number):
-  return '%s/%s/%s' % (master_name, builder_name, build_number)
-
-
-def GetBuildInfoFromId(build_id):
-  return build_id.split('/')
-
-
 def GetFailureType(build_info):
   if not build_info.failed_steps:
     return failure_type.UNKNOWN

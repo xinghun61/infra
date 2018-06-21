@@ -6,6 +6,7 @@ import mock
 
 from common.waterfall import failure_type
 from libs.gitiles.diff import ChangeType
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
 from services import ci_failure
@@ -18,7 +19,6 @@ from services.parameters import TestHeuristicAnalysisParameters
 from services.test.build_failure_analysis_test import ChangeLogFromDict
 from services.test_failure import extract_test_signal
 from services.test_failure import test_failure_analysis
-from waterfall import build_util
 from waterfall.test import wf_testcase
 
 SAMPLE_HEURISTIC_RESULT = {
@@ -700,10 +700,10 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     expected_failure_result_map = {
         'abc_test': {
             'Unittest2.Subtest1':
-                build_util.CreateBuildId(master_name, builder_name,
-                                         build_number),
+                BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                             build_number),
             'Unittest3.Subtest2':
-                build_util.CreateBuildId(master_name, builder_name, 1)
+                BaseBuildModel.CreateBuildId(master_name, builder_name, 1)
         }
     }
 
@@ -864,9 +864,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     build_number = 32
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
-        master_name, builder_name, build_number, {
-            'a': ['b']
-        })
+        master_name, builder_name, build_number, {'a': ['b']})
     self.assertFalse(mock_fn.called)
 
   @mock.patch.object(test_failure_analysis, 'UpdateAnalysisResultWithFlakeInfo')
@@ -889,9 +887,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
-        master_name, builder_name, build_number, {
-            'a': ['b']
-        })
+        master_name, builder_name, build_number, {'a': ['b']})
     self.assertFalse(mock_fn.called)
 
   def testUpdateAnalysisWithFlakeInfo(self):

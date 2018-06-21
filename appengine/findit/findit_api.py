@@ -33,6 +33,7 @@ from libs import analysis_status
 from libs import time_util
 from libs.cache_decorator import Cached
 from model import analysis_approach_type
+from model.base_build_model import BaseBuildModel
 from model.flake import triggering_sources
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
@@ -42,7 +43,6 @@ from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
-from waterfall import build_util
 from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -225,7 +225,7 @@ class FindItApi(remote.Service):
     # So we might need to go to the first failure to get CL information.
     build_info = cl.GetBuildInfo(master_name, builder_name, current_build)
     first_build_info = None if not reference_build_key else cl.GetBuildInfo(
-        *build_util.GetBuildInfoFromId(reference_build_key))
+        *BaseBuildModel.GetBuildInfoFromId(reference_build_key))
     additional_info['confidence'], additional_info['cl_approach'] = (
         suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
             confidences, build_info, first_build_info))
@@ -451,13 +451,14 @@ class FindItApi(remote.Service):
       if isinstance(step_map, basestring):
         swarming_tasks[step_name][step_map] = (
             WfSwarmingTask.Get(
-                *build_util.GetBuildInfoFromId(step_map), step_name=step_name))
+                *BaseBuildModel.GetBuildInfoFromId(step_map),
+                step_name=step_name))
       else:
         for task_key in step_map.values():
           if not swarming_tasks[step_name].get(task_key):
             swarming_tasks[step_name][task_key] = (
                 WfSwarmingTask.Get(
-                    *build_util.GetBuildInfoFromId(task_key),
+                    *BaseBuildModel.GetBuildInfoFromId(task_key),
                     step_name=step_name))
 
     return swarming_tasks

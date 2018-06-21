@@ -5,6 +5,7 @@
 from common.waterfall import failure_type
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import CreateInputObjectInstance
+from model.base_build_model import BaseBuildModel
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from pipelines.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
@@ -16,7 +17,6 @@ from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
 from services.parameters import SendNotificationForCulpritParameters
 from services.parameters import SubmitRevertCLParameters
-from waterfall import build_util
 
 
 class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
@@ -31,7 +31,8 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
 
     master_name, builder_name, build_number = (
         pipeline_input.build_key.GetParts())
-    build_id = build_util.CreateBuildId(master_name, builder_name, build_number)
+    build_id = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                            build_number)
     culprits = pipeline_input.culprits
     build_failure_type = failure_type.TEST
 

@@ -20,6 +20,7 @@ from common.waterfall import failure_type
 from libs import analysis_status
 from model import analysis_approach_type
 from model import result_status
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
@@ -29,7 +30,6 @@ from services import swarmbot_util
 from services import try_job as try_job_service
 from services.parameters import CompileTryJobResult
 from services.parameters import RunCompileTryJobParameters
-from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
@@ -79,7 +79,7 @@ def _NeedANewCompileTryJob(master_name, builder_name, build_number,
   compile_failure = failure_info['failed_steps'].get('compile') or {}
   if compile_failure:
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    analysis.failure_result_map['compile'] = build_util.CreateBuildId(
+    analysis.failure_result_map['compile'] = BaseBuildModel.CreateBuildId(
         master_name, builder_name, compile_failure['first_failure'])
     analysis.put()
 
@@ -178,9 +178,9 @@ def _GetGoodRevisionCompile(master_name, builder_name, build_number,
                             failure_info):
   last_pass = _GetLastPassCompile(build_number, failure_info['failed_steps'])
   if last_pass is None:
-    logging.warning('Couldn"t start try job for build %s, %s, %d because'
-                    ' last_pass is not found.', master_name, builder_name,
-                    build_number)
+    logging.warning(
+        'Couldn"t start try job for build %s, %s, %d because'
+        ' last_pass is not found.', master_name, builder_name, build_number)
     return None
 
   return failure_info['builds'][str(last_pass)]['chromium_revision']

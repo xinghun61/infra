@@ -7,8 +7,8 @@ from google.appengine.ext import ndb
 from gae_libs.handlers.base_handler import BaseHandler, Permission
 from libs import time_util
 from model import analysis_approach_type
+from model.base_build_model import BaseBuildModel
 from model.wf_culprit import WfCulprit
-from waterfall import build_util
 
 
 def _GetBuildInfoAsDict(culprit):
@@ -27,7 +27,7 @@ def _GetBuildInfoAsDict(culprit):
       if analysis_approach_type.TRY_JOB not in build.get('approaches', []):
         continue
 
-      build_info = build_util.GetBuildInfoFromId(build_id)
+      build_info = BaseBuildModel.GetBuildInfoFromId(build_id)
       master_name = build_info[0]
       builder_name = build_info[1]
       build_number = build_info[2]

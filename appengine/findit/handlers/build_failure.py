@@ -18,6 +18,7 @@ from handlers.result_status import NO_TRY_JOB_REASON_MAP
 from libs import analysis_status
 from model import result_status as analysis_result_status
 from model import suspected_cl_status
+from model.base_build_model import BaseBuildModel
 from model.result_status import RESULT_STATUS_TO_DESCRIPTION
 from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.suspected_cl_status import CL_STATUS_TO_DESCRIPTION
@@ -309,7 +310,7 @@ def _PrepareTryJobDataForCompileFailure(analysis):
           constants.COMPILE_STEP_NAME in analysis.failure_result_map):
     return try_job_data  # pragma: no cover.
 
-  referred_build_keys = build_util.GetBuildInfoFromId(
+  referred_build_keys = BaseBuildModel.GetBuildInfoFromId(
       analysis.failure_result_map[constants.COMPILE_STEP_NAME])
   try_job = WfTryJob.Get(*referred_build_keys)
   if not try_job or not try_job.compile_results:
@@ -321,8 +322,8 @@ def _PrepareTryJobDataForCompileFailure(analysis):
   try_job_data['url'] = result.get('url')
   try_job_data['completed'] = try_job.completed
   try_job_data['failed'] = try_job.failed
-  try_job_data['culprit'] = result.get('culprit', {}).get(
-      constants.COMPILE_STEP_NAME)
+  try_job_data['culprit'] = result.get('culprit',
+                                       {}).get(constants.COMPILE_STEP_NAME)
 
   return try_job_data
 
@@ -343,7 +344,8 @@ def _GetAllSuspectedCLsAndCheckStatus(master_name, builder_name, build_number,
                                       analysis):
   if not analysis or not analysis.suspected_cls:
     return []
-  build_key = build_util.CreateBuildId(master_name, builder_name, build_number)
+  build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                           build_number)
   suspected_cls = copy.deepcopy(analysis.suspected_cls)
 
   confidences = SuspectedCLConfidence.Get()

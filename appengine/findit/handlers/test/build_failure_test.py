@@ -18,6 +18,7 @@ from handlers import result_status
 from libs import analysis_status
 from model import analysis_approach_type
 from model import suspected_cl_status
+from model.base_build_model import BaseBuildModel
 from model.suspected_cl_confidence import ConfidenceInformation
 from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_analysis import WfAnalysis
@@ -157,8 +158,8 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
       self.taskqueue_stub.FlushQueue(queue['name'])
 
     def MockedGetAllTryJobResults(master_name, builder_name, build_number, _):
-      build_key = build_util.CreateBuildId(master_name, builder_name,
-                                           build_number)
+      build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                               build_number)
       return SAMPLE_TRY_JOB_INFO.get(build_key, None)
 
     self.mock(handlers_util, 'GetAllTryJobResults', MockedGetAllTryJobResults)
@@ -225,14 +226,13 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     build_url = 'abc'
     self.assertRaisesRegexp(
         webtest.app.AppError,
-        re.compile('.*404 Not Found.*Url &#34;%s&#34; '
-                   'is not pointing to a build.*' % build_url,
-                   re.MULTILINE | re.DOTALL),
+        re.compile(
+            '.*404 Not Found.*Url &#34;%s&#34; '
+            'is not pointing to a build.*' % build_url,
+            re.MULTILINE | re.DOTALL),
         self.test_app.get,
         '/failure',
-        params={
-            'url': build_url
-        })
+        params={'url': build_url})
 
   def testAnalysisNotFound(self):
     master_name = 'm'
@@ -240,8 +240,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     build_url = buildbot.CreateBuildUrl(master_name, builder_name, build_number)
     response = self.test_app.get(
-        '/failure', params={'format': 'json',
-                            'url': build_url}, status=400)
+        '/failure', params={
+            'format': 'json',
+            'url': build_url
+        }, status=400)
     self.assertEqual('Please schedule analyses on home page instead.',
                      response.json_body.get('error_message'))
 
@@ -252,9 +254,11 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     build_url = buildbot.CreateBuildUrl(master_name, builder_name, build_number)
     response = self.test_app.get(
         '/failure',
-        params={'format': 'json',
-                'url': build_url,
-                'redirect': '1'},
+        params={
+            'format': 'json',
+            'url': build_url,
+            'redirect': '1'
+        },
         status=401)
     self.assertEqual('No permission to schedule a new analysis.',
                      response.json_body.get('error_message'))
@@ -288,9 +292,11 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     build_url = 'an/invalid/url'
     response = self.test_app.post(
         '/failure',
-        params={'url': build_url,
-                'xsrf_token': 'abc',
-                'format': 'json'},
+        params={
+            'url': build_url,
+            'xsrf_token': 'abc',
+            'format': 'json'
+        },
         status=404)
     self.assertEqual('Url "%s" is not pointing to a build.' % build_url,
                      response.json_body.get('error_message'))
@@ -307,9 +313,9 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
     self.assertRaisesRegexp(
         webtest.app.AppError,
-        re.compile('.*501 Not Implemented.*Master &#34;%s&#34; '
-                   'is not supported yet.*' % master_name,
-                   re.MULTILINE | re.DOTALL),
+        re.compile(
+            '.*501 Not Implemented.*Master &#34;%s&#34; '
+            'is not supported yet.*' % master_name, re.MULTILINE | re.DOTALL),
         self.test_app.post,
         '/failure',
         params={
@@ -333,8 +339,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
-        '/failure', params={'url': build_url,
-                            'xsrf_token': 'ab'}, status=302)
+        '/failure', params={
+            'url': build_url,
+            'xsrf_token': 'ab'
+        }, status=302)
     redirect_url = '/waterfall/failure?redirect=1&url=%s' % build_url
     self.assertTrue(response.headers.get('Location', '').endswith(redirect_url))
 
@@ -353,10 +361,11 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertRaisesRegexp(
         webtest.app.AppError,
-        re.compile('.*501 Not Implemented.*Can&#39;t get information about'
-                   ' build &#34;%s/%s/%s&#34;.*' % (master_name, builder_name,
-                                                    build_number),
-                   re.MULTILINE | re.DOTALL),
+        re.compile(
+            '.*501 Not Implemented.*Can&#39;t get information about'
+            ' build &#34;%s/%s/%s&#34;.*' % (master_name, builder_name,
+                                             build_number),
+            re.MULTILINE | re.DOTALL),
         self.test_app.post,
         '/failure',
         params={
@@ -381,10 +390,11 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertRaisesRegexp(
         webtest.app.AppError,
-        re.compile('.*501 Not Implemented.*Can&#39;t force a rerun for an '
-                   'incomplete build &#34;%s/%s/%s&#34;.*' %
-                   (master_name, builder_name,
-                    build_number), re.MULTILINE | re.DOTALL),
+        re.compile(
+            '.*501 Not Implemented.*Can&#39;t force a rerun for an '
+            'incomplete build &#34;%s/%s/%s&#34;.*' %
+            (master_name, builder_name, build_number),
+            re.MULTILINE | re.DOTALL),
         self.test_app.post,
         '/failure',
         params={
@@ -418,8 +428,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
     response = self.test_app.post(
-        '/failure', params={'url': build_url,
-                            'xsrf_token': 'ab'}, status=302)
+        '/failure', params={
+            'url': build_url,
+            'xsrf_token': 'ab'
+        }, status=302)
     redirect_url = '/waterfall/failure?redirect=1&url=%s' % build_url
     self.assertTrue(response.headers.get('Location', '').endswith(redirect_url))
 
@@ -442,8 +454,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@chromium.org', is_admin=False)
 
     response = self.test_app.post(
-        '/failure', params={'url': build_url,
-                            'xsrf_token': 'abc'}, status=302)
+        '/failure', params={
+            'url': build_url,
+            'xsrf_token': 'abc'
+        }, status=302)
     redirect_url = '/waterfall/failure?redirect=1&url=%s' % build_url
     self.assertTrue(response.headers.get('Location', '').endswith(redirect_url))
 

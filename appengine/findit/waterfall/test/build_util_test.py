@@ -171,21 +171,9 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
       build.last_crawled_time = self._TimeBeforeNowBySeconds(10)
       build.put()
 
-      self.assertEqual(expected_time,
-                       build_util.GetBuildEndTime(master_name, builder_name,
-                                                  build_number))
-
-  def testCreateBuildId(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    self.assertEqual(
-        build_util.CreateBuildId(master_name, builder_name, build_number),
-        'm/b/1')
-
-  def testGetBuildInfoFromId(self):
-    build_id = 'm/b/1'
-    self.assertEqual(build_util.GetBuildInfoFromId(build_id), ['m', 'b', '1'])
+      self.assertEqual(
+          expected_time,
+          build_util.GetBuildEndTime(master_name, builder_name, build_number))
 
   @mock.patch.object(build_util, 'DownloadBuildData')
   def testGetBuildInfo(self, mocked_fn):
@@ -268,9 +256,8 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
       return []
 
     mock_list_fn.side_effect = ListFnImpl
-    self.assertEqual(8,
-                     build_util.FindValidBuildNumberForStepNearby(
-                         'm', 'b', 's', 5))
+    self.assertEqual(
+        8, build_util.FindValidBuildNumberForStepNearby('m', 'b', 's', 5))
 
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
   def testFindValidBuildNumberForStepNearbyWithExcluded(self, mock_list_fn):
@@ -281,15 +268,13 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
       return []
 
     mock_list_fn.side_effect = ListFnImpl
-    self.assertEqual(8,
-                     build_util.FindValidBuildNumberForStepNearby(
-                         'm', 'b', 's', 5, [6]))
+    self.assertEqual(
+        8, build_util.FindValidBuildNumberForStepNearby('m', 'b', 's', 5, [6]))
 
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags', return_value=[])
   def testFindValidBuildNumberForStepNearbyWhenNoneValid(self, _):
-    self.assertEqual(None,
-                     build_util.FindValidBuildNumberForStepNearby(
-                         'm', 'b', 's', 5))
+    self.assertEqual(
+        None, build_util.FindValidBuildNumberForStepNearby('m', 'b', 's', 5))
 
   @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
@@ -334,18 +319,20 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(logdog_util, '_GetStreamForStep', return_value='stream')
   @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log1/nlog2')
   def testGetStepLogStdio(self, *_):
-    self.assertEqual('log1/nlog2',
-                     build_util.GetWaterfallBuildStepLog(
-                         self.master_name, self.builder_name, self.build_number,
-                         self.step_name, None))
+    self.assertEqual(
+        'log1/nlog2',
+        build_util.GetWaterfallBuildStepLog(self.master_name, self.builder_name,
+                                            self.build_number, self.step_name,
+                                            None))
 
   @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log')
   @mock.patch.object(logging, 'error')
   def testGetStepLogNotJosonLoadable(self, mocked_log, _):
-    self.assertEqual('log',
-                     build_util.GetWaterfallBuildStepLog(
-                         self.master_name, self.builder_name, self.build_number,
-                         self.step_name, None, 'step_metadata'))
+    self.assertEqual(
+        'log',
+        build_util.GetWaterfallBuildStepLog(self.master_name, self.builder_name,
+                                            self.build_number, self.step_name,
+                                            None, 'step_metadata'))
     mocked_log.assert_called_with(
         'Failed to json load data for step_metadata. Data is: log.')
 
@@ -359,10 +346,10 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(logdog_util, 'GetStepLogForBuild', return_value='log')
   @mock.patch.object(build_util, '_ReturnStepLog', return_value='log')
   def testGetTryJobStepLog(self, *_):
-    self.assertEqual('log',
-                     build_util.GetTryJobStepLog(self.buildbucket_id,
-                                                 self.step_name, None,
-                                                 'step_metadata'))
+    self.assertEqual(
+        'log',
+        build_util.GetTryJobStepLog(self.buildbucket_id, self.step_name, None,
+                                    'step_metadata'))
 
   def _PreviousBuilds(self, master_name, builder_name, build_number):
     builds = []
@@ -381,10 +368,8 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
                               _MockedGetBuildInfo(master_name, builder_name,
                                                   123)), (404, None)]
 
-    self.assertEqual(1,
-                     len(
-                         self._PreviousBuilds(master_name, builder_name,
-                                              build_number)))
+    self.assertEqual(
+        1, len(self._PreviousBuilds(master_name, builder_name, build_number)))
 
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testIteratePreviousBuildsFromFailed(self, mock_info):

@@ -13,11 +13,11 @@ from libs import analysis_status
 from libs import time_util
 from model import analysis_approach_type
 from model import suspected_cl_status
+from model.base_build_model import BaseBuildModel
 from model.base_suspected_cl import BaseSuspectedCL
 from model.suspected_cl_confidence import ConfidenceInformation
 from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall.test import wf_testcase
 
@@ -74,7 +74,7 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
         builder_name, build_number, compile_failure_type, failures, top_score)
 
     expected_builds = {
-        build_util.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [approach],
             'failure_type': compile_failure_type,
             'failures': failures,
@@ -108,7 +108,7 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
     suspected_cl = WfSuspectedCL.Create(repo_name, revision, commit_position)
     suspected_cl.approaches = [analysis_approach_type.HEURISTIC]
     suspected_cl.builds = {
-        build_util.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'failure_type': test_failure_type,
             'failures': failures,
@@ -124,7 +124,7 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
         builder_name, build_number, test_failure_type, failures, top_score)
 
     expected_builds = {
-        build_util.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [
                 analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB
             ],
@@ -165,7 +165,7 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
     suspected_cl = WfSuspectedCL.Create(repo_name, revision, commit_position)
     suspected_cl.approaches = [analysis_approach_type.HEURISTIC]
     suspected_cl.builds = {
-        build_util.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'failure_type': test_failure_type,
             'failures': failures,
@@ -181,7 +181,7 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
         builder_name, build_number, test_failure_type, failures, top_score)
 
     expected_builds = {
-        build_util.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'failure_type': test_failure_type,
             'failures': failures,
@@ -214,7 +214,8 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
     suspected_cl = WfSuspectedCL.Create(repo_name, revision, commit_position)
     suspected_cl.approaches = [analysis_approach_type.HEURISTIC]
     suspected_cl.builds = {
-        build_util.CreateBuildId(master_name, builder_name, build_number - 1): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                     build_number - 1): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'failure_type': test_failure_type,
             'failures': {
@@ -223,7 +224,8 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
             'status': suspected_cl_status.CORRECT,
             'top_score': 4
         },
-        build_util.CreateBuildId(master_name, builder_name, build_number - 2): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                     build_number - 2): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'failure_type': test_failure_type,
             'failures': failures,
@@ -239,7 +241,8 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
         builder_name, build_number, test_failure_type, failures, top_score)
 
     expected_builds = {
-        build_util.CreateBuildId(master_name, builder_name, build_number - 1): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                     build_number - 1): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'failure_type': test_failure_type,
             'failures': {
@@ -248,14 +251,15 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
             'status': suspected_cl_status.CORRECT,
             'top_score': 4
         },
-        build_util.CreateBuildId(master_name, builder_name, build_number - 2): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                     build_number - 2): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'failure_type': test_failure_type,
             'failures': failures,
             'status': suspected_cl_status.CORRECT,
             'top_score': 4
         },
-        build_util.CreateBuildId(master_name, builder_name, build_number): {
+        BaseBuildModel.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'failure_type': test_failure_type,
             'failures': failures,

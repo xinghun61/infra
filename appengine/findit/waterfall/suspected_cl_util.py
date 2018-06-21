@@ -9,8 +9,8 @@ from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import time_util
 from model import analysis_approach_type
+from model.base_build_model import BaseBuildModel
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import build_util
 
 
 def GetCLInfo(cl_info_str):
@@ -30,8 +30,9 @@ def UpdateSuspectedCL(repo_name, revision, commit_position, approach,
                       master_name, builder_name, build_number, cl_failure_type,
                       failures, top_score):
 
-  suspected_cl = (WfSuspectedCL.Get(repo_name, revision) or
-                  WfSuspectedCL.Create(repo_name, revision, commit_position))
+  suspected_cl = (
+      WfSuspectedCL.Get(repo_name, revision) or
+      WfSuspectedCL.Create(repo_name, revision, commit_position))
 
   if not suspected_cl.identified_time:  # pragma: no cover.
     suspected_cl.identified_time = time_util.GetUTCNow()
@@ -43,7 +44,8 @@ def UpdateSuspectedCL(repo_name, revision, commit_position, approach,
   if cl_failure_type not in suspected_cl.failure_type:
     suspected_cl.failure_type.append(cl_failure_type)
 
-  build_key = build_util.CreateBuildId(master_name, builder_name, build_number)
+  build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                           build_number)
   if build_key not in suspected_cl.builds:
     suspected_cl.builds[build_key] = {
         'approaches': [approach],

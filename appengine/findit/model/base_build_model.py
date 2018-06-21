@@ -19,6 +19,10 @@ class BaseBuildModel(ndb.Model):  # pragma: no cover
   def CreateBuildId(master_name, builder_name, build_number):
     return '%s/%s/%s' % (master_name, builder_name, build_number)
 
+  @staticmethod
+  def GetBuildInfoFromId(build_id):
+    return build_id.split('/')
+
   @ndb.ComputedProperty
   def master_name(self):
     return self.key.pairs()[0][1].split('/')[0]

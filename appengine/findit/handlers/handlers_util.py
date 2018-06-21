@@ -8,15 +8,17 @@ import logging
 
 from handlers import result_status
 from libs import analysis_status
+from model.base_build_model import BaseBuildModel
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
-from waterfall import build_util
 from waterfall import buildbot
 from waterfall import waterfall_config
 
 
-def _GetResultAndFailureResultMap(master_name, builder_name, build_number,
+def _GetResultAndFailureResultMap(master_name,
+                                  builder_name,
+                                  build_number,
                                   use_group_info=False):
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
@@ -95,7 +97,7 @@ def _GenerateSwarmingTasksData(failure_result_map):
 
       for key in swarming_task_keys:
         task_dict = step_tasks_info[key]
-        referred_build_keys = build_util.GetBuildInfoFromId(key)
+        referred_build_keys = BaseBuildModel.GetBuildInfoFromId(key)
         task = WfSwarmingTask.Get(*referred_build_keys, step_name=step_name)
         all_tests = _GetAllTestsForASwarmingTask(key, failure)
         task_dict['all_tests'] = all_tests
@@ -107,10 +109,10 @@ def _GenerateSwarmingTasksData(failure_result_map):
           # Get the step name without platform.
           # This value should have been saved in task.parameters;
           # in case of no such value saved, split the step_name.
-          task_dict['ref_name'] = (step_name.split()[0]
-                                   if not task.parameters or
-                                   not task.parameters.get('ref_name') else
-                                   task.parameters['ref_name'])
+          task_dict['ref_name'] = (
+              step_name.split()[0]
+              if not task.parameters or not task.parameters.get('ref_name') else
+              task.parameters['ref_name'])
 
           if task.task_id:  # Swarming rerun has started.
             task_info['task_id'] = task.task_id
@@ -206,7 +208,7 @@ def _OrganizeTryJobResultByCulprits(try_job_culprits):
 
 
 def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
-  referred_build_keys = build_util.GetBuildInfoFromId(try_job_key)
+  referred_build_keys = BaseBuildModel.GetBuildInfoFromId(try_job_key)
   try_job = WfTryJob.Get(*referred_build_keys)
 
   if not try_job or try_job.compile_results:
@@ -275,8 +277,8 @@ def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
                 'commit_position':
                     list_of_culprits[0]['commit_position'],
                 'review_url':
-                    list_of_culprits[0].get('url', list_of_culprits[0].get(
-                        'review_url', None))
+                    list_of_culprits[0].get(
+                        'url', list_of_culprits[0].get('review_url', None))
             }
             try_job_info['tests'] = list_of_culprits[0]['failed_tests']
 
@@ -412,15 +414,15 @@ def _GetAllTryJobResultsForTest(failure_result_map,
 
 def _GetTryJobResultForCompile(failure_result_map):
   try_job_key = failure_result_map['compile']
-  referred_build_keys = build_util.GetBuildInfoFromId(try_job_key)
+  referred_build_keys = BaseBuildModel.GetBuildInfoFromId(try_job_key)
   culprit_info = defaultdict(lambda: defaultdict(list))
 
   try_job = WfTryJob.Get(*referred_build_keys)
   if not try_job or try_job.test_results:
     return culprit_info
 
-  try_job_result = (try_job.compile_results[-1]
-                    if try_job.compile_results else None)
+  try_job_result = (
+      try_job.compile_results[-1] if try_job.compile_results else None)
 
   compile_try_job = {'try_job_key': try_job_key, 'status': try_job.status}
 
