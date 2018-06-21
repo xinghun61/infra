@@ -49,30 +49,25 @@ handlers:
   static_dir: static/images
   secure: always
 
-# verification files
-- url: /(google[0-9a-f]*\.html)$
-  static_files: \1
-  upload: google[0-9a-f]*\.html
-
 # Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
-  script: main.pipeline_status_application
+  script: default_main.pipeline_status_application
   secure: always
 
 # Endpoints handler.
 - url: /_ah/push-handlers/.*
-  script: main.default_web_application
+  script: default_main.default_web_application
   # Protect PubSub push endpoints with admin login:
   # https://cloud.google.com/pubsub/docs/push#app-engine-standard-endpoints
   login: admin
   secure: always
 
 - url: /_ah/api/.*
-  script: main.api_application
+  script: default_main.api_application
   secure: always
 
 - url: /.*
-  script: main.default_web_application
+  script: default_main.default_web_application
   secure: always
 
 includes:
@@ -99,5 +94,3 @@ libraries:
   version: latest
 - name: endpoints
   version: 1.0
-- name: numpy
-  version: 1.6.1

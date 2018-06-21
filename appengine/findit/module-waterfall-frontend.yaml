@@ -47,17 +47,12 @@ handlers:
 
 # Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
-  script: main.pipeline_status_application
-  secure: always
-
-# Endpoints handler.
-- url: /_ah/api/.*
-  script: main.api_application
+  script: frontend_main.pipeline_status_application
   secure: always
 
 # Web UI pages.
 - url: /.*
-  script: main.waterfall_frontend_web_application
+  script: frontend_main.waterfall_frontend_web_application
   secure: always
 
 skip_files:
@@ -79,7 +74,5 @@ libraries:
   version: latest
 - name: pycrypto
   version: latest
-- name: endpoints
-  version: 1.0
 - name: numpy
   version: 1.6.1

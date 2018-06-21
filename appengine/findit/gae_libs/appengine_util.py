@@ -8,7 +8,12 @@ from google.appengine.api import app_identity
 from google.appengine.api import modules
 
 
-def IsInProduction():  # pragma: no cover.
+def IsInProductionApp():
+  """Returns True if the code is executed on GAE production app."""
+  return IsInGAE() and not IsStaging()
+
+
+def IsInGAE():  # pragma: no cover.
   """Returns whether the code runs in App Engine production environment."""
   # In unit test environment, SERVER_SOFTWARE="Development/1.0 (testbed)".
   # In dev app server environment, SERVER_SOFTWARE="Development/2.0".
@@ -25,7 +30,7 @@ def IsInDevServer():  # pragma: no cover.
 
 def IsInUnitTestEnvironment():  # pragma: no cover.
   """Returns true if in unittest environment."""
-  return not IsInProduction() and not IsInDevServer()
+  return not IsInGAE() and not IsInDevServer()
 
 
 def GetCurrentVersion():  # pragma: no cover.
@@ -56,7 +61,7 @@ def GetTargetNameForModule(module_name, version=None):  # pragma: no cover.
 
   Version defaults to the one running this code.
   """
-  if not IsInProduction():
+  if not IsInGAE():
     # Dev server doesn't support multiple versions of a module.
     return module_name
   else:

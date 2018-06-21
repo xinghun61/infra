@@ -2,16 +2,16 @@ dispatch:
   - url: "*/robots.txt"
     module: default
 
-  - url: "*/build-failure"
-    module: waterfall-frontend
+  - url: "*/flake/detection/cron/*"
+    module: flake-detection-backend
+
+  - url: "*/flake/detection/task/*"
+    module: flake-detection-backend
 
   - url: "*/flake/detection/ui/*"
     module: waterfall-frontend
 
-  - url: "*/list-analyses"
-    module: waterfall-frontend
-
-  - url: "*/pubsub/*"
+  - url: "*/waterfall/*"
     module: waterfall-frontend
 
   - url: "*/waterfall/cron/*"
@@ -19,9 +19,3 @@ dispatch:
 
   - url: "*/waterfall/task/*"
     module: waterfall-backend
-
-  - url: "*/waterfall/*"
-    module: waterfall-frontend
-
-  - url: "*/flake/detection/cron/*"
-    module: flake-detection-backend

@@ -124,10 +124,10 @@ class PermissionTest(testing.AppengineTestCase):
     handler.request = {'debug': '1'}
     self.assertTrue(handler._ShowDebugInfo())
 
-  @mock.patch('gae_libs.appengine_util.IsInProduction')
-  def testUserInfoWhenLogin(self, mocked_IsInProduction):
+  @mock.patch('gae_libs.appengine_util.IsInGAE')
+  def testUserInfoWhenLogin(self, mocked_IsInGAE):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
-    mocked_IsInProduction.side_effect = [True]
+    mocked_IsInGAE.side_effect = [True]
     self.mock_current_user(user_email='test@chromium.org')
     response = self.test_app.get('/permission?format=json')
     self.assertEquals(200, response.status_int)
@@ -138,12 +138,11 @@ class PermissionTest(testing.AppengineTestCase):
     self.assertIsNotNone(user_info['logout_url'])
     self.assertTrue('login_url' not in user_info)
 
-  @mock.patch('gae_libs.appengine_util.IsInProduction')
+  @mock.patch('gae_libs.appengine_util.IsInGAE')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail')
-  def testUserInfoWhenNotLogin(self, mocked_GetUserEmail,
-                               mocked_IsInProduction):
+  def testUserInfoWhenNotLogin(self, mocked_GetUserEmail, mocked_IsInGAE):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
-    mocked_IsInProduction.side_effect = [True]
+    mocked_IsInGAE.side_effect = [True]
     mocked_GetUserEmail.side_effect = [None]
     response = self.test_app.get('/permission?format=json')
     self.assertEquals(200, response.status_int)
@@ -155,10 +154,10 @@ class PermissionTest(testing.AppengineTestCase):
     self.assertIsNotNone(user_info['login_url'])
     self.assertIsNone(response.json_body.get('xsrf_token'))
 
-  @mock.patch('gae_libs.appengine_util.IsInProduction')
-  def testAutoAddXsrfTokenWhenLogin(self, mocked_IsInProduction):
+  @mock.patch('gae_libs.appengine_util.IsInGAE')
+  def testAutoAddXsrfTokenWhenLogin(self, mocked_IsInGAE):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
-    mocked_IsInProduction.side_effect = [True]
+    mocked_IsInGAE.side_effect = [True]
     self.mock_current_user(user_email='test@chromium.org')
     response = self.test_app.get('/permission?format=json')
     self.assertEquals(200, response.status_int)
@@ -168,34 +167,32 @@ class PermissionTest(testing.AppengineTestCase):
   @mock.patch.object(
       PermissionLevelHandler,
       'HandleGet',
-      return_value={
-          'data': {
-              'xsrf_token': 'abc'
-          }
-      })
-  @mock.patch('gae_libs.appengine_util.IsInProduction')
-  def testNotOverwriteAddXsrfTokenWhenLogin(self, mocked_IsInProduction, _):
+      return_value={'data': {
+          'xsrf_token': 'abc'
+      }})
+  @mock.patch('gae_libs.appengine_util.IsInGAE')
+  def testNotOverwriteAddXsrfTokenWhenLogin(self, mocked_IsInGAE, _):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
-    mocked_IsInProduction.side_effect = [True]
+    mocked_IsInGAE.side_effect = [True]
     self.mock_current_user(user_email='test@chromium.org')
     response = self.test_app.get('/permission?format=json')
     self.assertEquals(200, response.status_int)
 
     self.assertEqual('abc', response.json_body['xsrf_token'])
 
-  @mock.patch('gae_libs.appengine_util.IsInProduction')
-  def testNotIncludeUserEmail(self, mocked_IsInProduction):
+  @mock.patch('gae_libs.appengine_util.IsInGAE')
+  def testNotIncludeUserEmail(self, mocked_IsInGAE):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
-    mocked_IsInProduction.side_effect = [False]
+    mocked_IsInGAE.side_effect = [False]
     self.mock_current_user(user_email='test@google.com')
     response = self.test_app.get('/permission?format=json')
     self.assertEquals(200, response.status_int)
     self.assertEquals({}, response.json_body)
 
-  @mock.patch('gae_libs.appengine_util.IsInProduction')
-  def testNotIncludeUserInfoForConciseResponse(self, mocked_IsInProduction):
+  @mock.patch('gae_libs.appengine_util.IsInGAE')
+  def testNotIncludeUserInfoForConciseResponse(self, mocked_IsInGAE):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
-    mocked_IsInProduction.side_effect = [True]
+    mocked_IsInGAE.side_effect = [True]
     self.mock_current_user(user_email='test@google.com')
     response = self.test_app.get('/permission?format=json&concise=1')
     self.assertEquals(200, response.status_int)
@@ -372,7 +369,5 @@ class InternalExceptionTest(testing.AppengineTestCase):
                    re.MULTILINE | re.DOTALL),
         self.test_app.get,
         '/exception',
-        headers={
-            'user-agent': '...GoogleSecurityScanner...'
-        })
+        headers={'user-agent': '...GoogleSecurityScanner...'})
     self.assertFalse(mocked_log_exception.called)

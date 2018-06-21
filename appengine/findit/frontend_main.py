@@ -1,4 +1,4 @@
-# Copyright 2014 The Chromium Authors. All rights reserved.
+# Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,7 +6,7 @@ import webapp2
 
 import gae_ts_mon
 
-from findit_api import FindItApi
+from gae_libs import appengine_util
 from gae_libs.pipelines import pipeline_handlers
 from gae_libs.pipelines import pipeline_status_ui
 from handlers import auto_revert_metrics
@@ -30,39 +30,17 @@ from handlers import periodic_bot_update
 from handlers import pipeline_errors_dashboard
 from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
-from handlers import step_by_step_comparison
 from handlers import swarming_pubsub_pipeline_callback
 from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
 from handlers import try_job_pubsub_pipeline_callback
-from handlers import version
 from handlers.flake import check_flake
 from handlers.flake import flake_culprit
 from handlers.flake import list_flakes
 from handlers.flake import triage_flake_analysis
 from handlers.flake.detection import detect_flakes
 
-from components import endpoints_webapp2
-
-# Default module.
-default_web_pages_handler_mappings = [
-    ('/_ah/push-handlers/index-isolated-builds',
-     completed_build_pubsub_ingestor.CompletedBuildPubsubIngestor),
-    ('/_ah/push-handlers/swarming',
-     swarming_pubsub_pipeline_callback.SwarmingPubSubPipelineCallback),
-    ('/_ah/push-handlers/tryjob',
-     try_job_pubsub_pipeline_callback.TryJobPubSubPipelineCallback),
-    ('/', home.Home),
-    ('/version', version.Version),
-]
-default_web_application = webapp2.WSGIApplication(
-    default_web_pages_handler_mappings, debug=False)
-gae_ts_mon.initialize(default_web_application)
-
-# Cloud Endpoint apis in the default module.
-api_application = endpoints_webapp2.api_server([FindItApi])
-
-# App Engine pipeline status pages in the default module.
+# App Engine pipeline status pages.
 pipeline_status_handler_mappings = [
     ('/_ah/pipeline/rpc/tree', pipeline_status_ui._TreeStatusHandler),
     ('/_ah/pipeline/rpc/class_paths', pipeline_status_ui._ClassPathListHandler),
@@ -71,19 +49,13 @@ pipeline_status_handler_mappings = [
 ]
 pipeline_status_application = webapp2.WSGIApplication(
     pipeline_status_handler_mappings, debug=False)
-gae_ts_mon.initialize(pipeline_status_application)
-
-# For appengine pipeline running on backend modules.
-pipeline_backend_application = pipeline_handlers._APP
-gae_ts_mon.initialize(pipeline_backend_application)
+if appengine_util.IsInProductionApp():
+  gae_ts_mon.initialize(pipeline_status_application)
 
 # "waterfall-frontend" module.
 waterfall_frontend_web_pages_handler_mappings = [
     ('/', home.Home),
-    ('/build-failure', build_failure.BuildFailure),
-    ('/list-analyses', list_analyses.ListAnalyses),
     ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
-    ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/change-auto-revert-setting',
      change_auto_revert_setting.ChangeAutoRevertSetting),
     ('/waterfall/check-duplicate-failures',
@@ -103,7 +75,6 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/list-analyses', list_analyses.ListAnalyses),
     ('/waterfall/pipeline-errors-dashboard',
      pipeline_errors_dashboard.PipelineErrorsDashboard),
-    ('/waterfall/step-by-step', step_by_step_comparison.StepByStepComparison),
     ('/waterfall/triage-flake-analysis',
      triage_flake_analysis.TriageFlakeAnalysis),
     ('/waterfall/triage-suspected-cl', triage_suspected_cl.TriageSuspectedCl),
@@ -111,35 +82,5 @@ waterfall_frontend_web_pages_handler_mappings = [
 ]
 waterfall_frontend_web_application = webapp2.WSGIApplication(
     waterfall_frontend_web_pages_handler_mappings, debug=False)
-gae_ts_mon.initialize(waterfall_frontend_web_application)
-
-# "waterfall-backend" module.
-waterfall_backend_web_pages_handler_mappings = [
-    ('/waterfall/cron/calculate-confidence-scores',
-     calculate_confidence_scores.CalculateConfidenceScores),
-    ('/waterfall/cron/check-reverted-cls', check_reverted_cls.CheckRevertedCLs),
-    ('/waterfall/cron/collect-tree-closures',
-     collect_tree_closures.CollectTreeClosures),
-    ('/waterfall/cron/obscure-emails', obscure_emails.ObscureEmails),
-    ('/waterfall/cron/periodic-bot-update',
-     periodic_bot_update.PeriodicBotUpdate),
-    ('/waterfall/cron/periodic-build-ahead', build_ahead.BuildAhead),
-    ('/waterfall/task/process-failure-analysis-requests',
-     process_failure_analysis_requests.ProcessFailureAnalysisRequests),
-    ('/waterfall/task/process-flake-analysis-request',
-     process_flake_analysis_request.ProcessFlakeAnalysisRequest),
-]
-waterfall_backend_web_application = webapp2.WSGIApplication(
-    waterfall_backend_web_pages_handler_mappings, debug=False)
-gae_ts_mon.initialize(waterfall_backend_web_application)
-
-# "flake-detection-backend" module.
-flake_detection_backend_web_pages_handler_mappings = [
-    ('/flake/detection/cron/detect-cq-false-rejection-flakes',
-     detect_flakes.DetectCQFalseRejectionFlakesCronJob),
-    ('/flake/detection/detect-cq-false-rejection-flakes',
-     detect_flakes.DetectCQFalseRejectionFlakes)
-]
-flake_detection_backend_web_application = webapp2.WSGIApplication(
-    flake_detection_backend_web_pages_handler_mappings, debug=False)
-gae_ts_mon.initialize(flake_detection_backend_web_application)
+if appengine_util.IsInProductionApp():
+  gae_ts_mon.initialize(waterfall_frontend_web_application)

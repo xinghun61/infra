@@ -25,7 +25,7 @@ class DetectCQFalseRejectionFlakesCronJob(BaseHandler):
         method='GET',
         queue_name=constants.FLAKE_DETECTION_QUEUE,
         target=constants.FLAKE_DETECTION_BACKEND,
-        url='/flake/detection/detect-cq-false-rejection-flakes')
+        url='/flake/detection/task/detect-cq-false-rejection-flakes')
     return {'return_code': 200}
 
 

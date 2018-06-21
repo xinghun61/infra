@@ -10,25 +10,11 @@ basic_scaling:
   idle_timeout: 20m
 
 handlers:
-- url: /robots.txt
-  static_files: robots.txt
-  upload: robots.txt
-
-# Pipeline handler.
-- url: /_ah/pipeline(/.*)?
-  script: main.pipeline_backend_application
-  secure: always
-
 # For cron jobs and task queues, enforce admin permission.
 - url: /flake/detection/(cron|task)/.*
   script: main.flake_detection_backend_web_application
   secure: always
   login: admin
-
-# All other handlers.
-- url: /.*
-  script: main.flake_detection_backend_web_application
-  secure: always
 
 skip_files:
 - ^(.*/)?#.*#$
@@ -40,9 +26,7 @@ skip_files:
 - ^(.*/)?.*\.md$
 - ^(.*/)?Makefile$
 - ^(.*/)?README$
-- ^(.*/)?templates/.*$
 - ^(.*/)?third_party/bower_components/.*$
-- ^(.*/)?ui/.*$
 - ^(.*/)?util_scripts/.*$
 
 libraries:
@@ -52,7 +36,3 @@ libraries:
   version: latest
 - name: pycrypto
   version: latest
-- name: endpoints
-  version: 1.0
-- name: numpy
-  version: 1.6.1
