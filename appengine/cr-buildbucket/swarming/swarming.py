@@ -986,6 +986,7 @@ def _sync_build_in_memory(
       'CANCELED',
       'COMPLETED',
       'KILLED',
+      'NO_RESOURCE',
   }
   state = (task_result or {}).get('state')
   if build_run_result_error:
@@ -1017,7 +1018,7 @@ def _sync_build_in_memory(
     if state in ('CANCELED', 'KILLED'):
       build.result = model.BuildResult.CANCELED
       build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
-    elif state == 'EXPIRED':
+    elif state in ('EXPIRED', 'NO_RESOURCE'):
       # Task did not start.
       build.result = model.BuildResult.CANCELED
       build.cancelation_reason = model.CancelationReason.TIMEOUT

@@ -1423,6 +1423,16 @@ class SwarmingTest(BaseTest):
             'cancelation_reason': model.CancelationReason.CANCELED_EXPLICITLY,
             'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
         },
+        {
+            'task_result': {
+                'state': 'NO_RESOURCE',
+                'abandoned_ts': '2018-01-30T00:15:18.162860',
+            },
+            'status': model.BuildStatus.COMPLETED,
+            'result': model.BuildResult.CANCELED,
+            'cancelation_reason': model.CancelationReason.TIMEOUT,
+            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+        },
     ]
 
     for case in cases:
