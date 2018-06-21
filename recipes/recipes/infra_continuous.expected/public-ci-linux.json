@@ -195,6 +195,25 @@
     "name": "cipd - test packages integrity"
   },
   {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/infra_gclient_with_go/infra/build/build.py",
+      "--builder",
+      "infra-continuous-trusty-64"
+    ],
+    "env": {
+      "GOARCH": "386",
+      "GOOS": "linux"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "name": "[GOOS:linux GOARCH:386].cipd - build packages"
+  },
+  {
     "name": "$result",
     "recipe_result": null,
     "status_code": 0

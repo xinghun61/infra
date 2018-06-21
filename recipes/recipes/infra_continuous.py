@@ -45,7 +45,7 @@ CIPD_PACKAGE_BUILDERS = {
   # cross-compile to different platforms (to speed up the overall cycle time by
   # doing stuff in parallel).
   'infra-continuous-precise-64': ['linux-arm', 'linux-arm64'],
-  'infra-continuous-trusty-64':  ['native'],
+  'infra-continuous-trusty-64':  ['native', 'linux-386'],
   'infra-continuous-xenial-64':  ['linux-mips64'],
   'infra-continuous-yakkety-64': ['linux-s390x'],
   'infra-continuous-zesty-64':   ['linux-ppc64', 'linux-ppc64le'],
@@ -72,6 +72,7 @@ CIPD_PACKAGE_BUILDERS = {
   # Builders also upload CIPD packages.
   'infra-packager-linux-64': [
     'native',
+    'linux-386',
     'linux-arm',
     'linux-arm64',
     'linux-mips64',

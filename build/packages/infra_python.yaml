@@ -1,7 +1,6 @@
 package: infra/infra_python/${platform}
 description: Virtual environment + 'infra' package with infra.git python code.
 platforms:
-  - linux-386
   - linux-amd64
   - mac-amd64
   - windows-386
