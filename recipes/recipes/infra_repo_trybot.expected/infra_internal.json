@@ -81,7 +81,8 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "infra_internal@HEAD"
+      "infra_internal@HEAD",
+      "--no_shallow"
     ],
     "cwd": "[CACHE]/infra_internal_gclient_with_go",
     "env_prefixes": {
