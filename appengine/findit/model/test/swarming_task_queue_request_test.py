@@ -20,7 +20,8 @@ class SwarmingTaskQueueRequestTest(unittest.TestCase):
     self.assertEqual(
         request.taskqueue_priority,
         swarming_task_queue_request.SwarmingTaskQueuePriority.FORCE)
-    self.assertTrue(type(request.taskqueue_request_time) is datetime.datetime)
+    self.assertTrue(
+        isinstance(request.taskqueue_request_time, datetime.datetime))
     self.assertEqual(request.taskqueue_dimensions, None)
     self.assertEqual(request.swarming_task_request, None)
 

@@ -155,10 +155,10 @@ class StructuredObject(BaseSerializableObject):
     if value is not None:
       if not self._type_validation_func:
         assert isinstance(
-            value, attribute_type), ('%s.%s: expected type %s, but got %s' %
-                                     (self.__class__.__name__, name,
-                                      attribute_type.__name__,
-                                      type(value).__name__))
+            value,
+            attribute_type), ('%s.%s: expected type %s, but got %s' %
+                              (self.__class__.__name__, name,
+                               attribute_type.__name__, type(value).__name__))
       elif not isinstance(value, attribute_type):
         assert self._type_validation_func(name, value), (
             'Value of type %s for %s.%s failed a customized type validation' %
@@ -202,7 +202,7 @@ class StructuredObject(BaseSerializableObject):
         value = getattr(cls, name)
         if isinstance(value, property):
           continue  # Ignore properties.
-        if type(value) in (types.MethodType, types.FunctionType):
+        if isinstance(value, (types.MethodType, types.FunctionType)):
           continue  # Ignore functions and methods.
         d[name] = value
       setattr(cls, cache_name, d)
@@ -266,9 +266,9 @@ class StructuredObject(BaseSerializableObject):
     undefined_attributes = set(data.keys()) - set(defined_attributes.keys())
     try:
       if len(undefined_attributes) != 0:
-        raise DeserializationError('%s not defined in %s' %
-                                   (','.join(undefined_attributes),
-                                    cls.__name__))
+        raise DeserializationError(
+            '%s not defined in %s' % (','.join(undefined_attributes),
+                                      cls.__name__))
     except DeserializationError:
       # For error reporting to catch this log record (and notify the team), the
       # logging has to happen inside an except block s.t. logging module can tag

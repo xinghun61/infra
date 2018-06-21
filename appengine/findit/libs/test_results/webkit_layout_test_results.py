@@ -360,7 +360,7 @@ class WebkitLayoutTestResults(BaseTestResults):
       return WebkitLayoutTestResults.FlattenTestResults(shard_results[0])
 
     def MergeAddable(key, merged_value, shard_value):
-      if (merged_value and type(merged_value) != type(shard_value)):
+      if (merged_value and not isinstance(merged_value, type(shard_value))):
         raise Exception('Different value types for key %s when merging '
                         'json test results.' % key)
 

@@ -139,7 +139,7 @@ def _ValidateType(parameter_type, parameter_name):
     parameter_type (types.TypeType): The type of a pipeline parameter.
     parameter_name (str): The name of the parameter to be validated.
   """
-  assert type(parameter_type) == types.TypeType, (
+  assert isinstance(parameter_type, types.TypeType), (
       '%s must be defined with a class or a type' % parameter_name)
   assert any(issubclass(parameter_type, t) for t in _SUPPORTED_TYPES), (
       '%s must be in supported types: %r.' % (parameter_name,
@@ -468,9 +468,9 @@ class AsynchronousPipeline(BasePipeline):
         return 500, 'plain/text', error
       else:  # No error, fill output.
         if result and not isinstance(result, self.output_type):
-          aborted = self.abort('Expected output of type %s, but got %s' %
-                               (self.output_type.__name__,
-                                type(result).__name__))
+          aborted = self.abort(
+              'Expected output of type %s, but got %s' %
+              (self.output_type.__name__, type(result).__name__))
           logging.info('%s aborted: %s', self.__class__.__name__, aborted)
         else:
           # Marks the pipeline as complete with the given result.

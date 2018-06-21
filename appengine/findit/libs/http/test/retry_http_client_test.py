@@ -18,7 +18,7 @@ class RetryRuntimeErrorInterceptor(LoggingInterceptor):
     _ = can_retry
     exception = super(RetryRuntimeErrorInterceptor, self).OnException(
         request, exception, can_retry)
-    if type(exception) == RuntimeError:
+    if isinstance(exception, RuntimeError):
       return None
     return exception
 

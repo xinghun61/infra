@@ -208,7 +208,7 @@ def _GenerateRevertReasonForFlake(build_id, commit_position, revision, culprit):
 
 
 def _GetBugIdForCulprit(culprit):
-  if type(culprit) is not FlakeCulprit:
+  if not isinstance(culprit, FlakeCulprit):
     return None
 
   analysis = ndb.Key(urlsafe=culprit.flake_analysis_urlsafe_keys[-1]).get()
@@ -270,8 +270,8 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
   if reverts is None:  # pragma: no cover
     # if no reverts, reverts should be [], only when some error happens it will
     # be None.
-    logging.error('Failed to find patchset_id for %s/%s' % (repo_name,
-                                                            revision))
+    logging.error(
+        'Failed to find patchset_id for %s/%s' % (repo_name, revision))
     _UpdateCulprit(urlsafe_key, revert_status=status.ERROR)
     return ERROR
 
@@ -297,7 +297,7 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
   # TODO (chanli): Better handle cases where 2 analyses are trying to revert
   # at the same time.
   if not revert_change_id:
-    if type(culprit) is FlakeCulprit:
+    if isinstance(culprit, FlakeCulprit):
       revert_reason = _GenerateRevertReasonForFlake(
           build_id, culprit_commit_position, revision, culprit)
     else:
@@ -483,7 +483,6 @@ def SendNotificationForCulprit(repo_name, revision, revert_status):
   else:
     logging.error('No code-review url for %s/%s', repo_name, revision)
 
-  suspected_cl_util.UpdateCulpritNotificationStatus(culprit.key.urlsafe(),
-                                                    status.COMPLETED
-                                                    if sent else status.ERROR)
+  suspected_cl_util.UpdateCulpritNotificationStatus(
+      culprit.key.urlsafe(), status.COMPLETED if sent else status.ERROR)
   return sent

@@ -38,9 +38,9 @@ class ReportAnalysisEventPipeline(pipelines.GeneratorPipeline):
       return
 
     success = False
-    if type(analysis) is MasterFlakeAnalysis:
+    if isinstance(analysis, MasterFlakeAnalysis):
       success = event_reporting.ReportTestFlakeAnalysisCompletionEvent(analysis)
-    elif type(analysis) is WfAnalysis:
+    elif isinstance(analysis, WfAnalysis):
       if analysis.build_failure_type == failure_type.COMPILE:
         success = event_reporting.ReportCompileFailureAnalysisCompletionEvent(
             analysis)
