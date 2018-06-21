@@ -77,9 +77,9 @@ func (g *gitRepo) resolveSpec(ctx context.Context, spec fetchSpec) (ret fetchSpe
 	return
 }
 
-func (g *gitRepo) ensureFetched(ctx context.Context, spec fetchSpec) (err error) {
-	if !spec.isPinned() || !g.hasCommit(ctx, spec.revision) {
-		err = g.git(ctx, "fetch", "https://"+g.remoteRepo)
+func (g *gitRepo) ensureFetched(ctx context.Context, resolvedSpec fetchSpec) (err error) {
+	if !g.hasCommit(ctx, resolvedSpec.revision) {
+		err = g.git(ctx, "fetch", "https://"+g.remoteRepo, resolvedSpec.ref+":"+resolvedSpec.ref)
 	}
 	return err
 }
