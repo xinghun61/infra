@@ -213,10 +213,10 @@ class AclTest(testing.AppengineTestCase):
     self.mock_has_any_of_roles([Acl.READER])
     self.assertTrue(user.can('bucket', user.Action.VIEW_BUILD))
     self.assertFalse(user.can('bucket', user.Action.CANCEL_BUILD))
-    self.assertFalse(user.can('bucket', user.Action.WRITE_ACL))
+    self.assertFalse(user.can('bucket', user.Action.SET_NEXT_NUMBER))
 
     # Memcache coverage
-    self.assertFalse(user.can('bucket', user.Action.WRITE_ACL))
+    self.assertFalse(user.can('bucket', user.Action.SET_NEXT_NUMBER))
     self.assertFalse(user.can_add_build_async('bucket').get_result())
 
   def test_can_no_roles(self):

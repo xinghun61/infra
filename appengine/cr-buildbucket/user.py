@@ -41,10 +41,6 @@ class Action(messages.Enum):
   RESET_BUILD = 5
   # Search for builds or get a list of scheduled builds.
   SEARCH_BUILDS = 6
-  # View bucket ACLs.
-  READ_ACL = 7
-  # Change bucket ACLs.
-  WRITE_ACL = 8
   # Delete all scheduled builds from a bucket.
   DELETE_SCHEDULED_BUILDS = 9
   # Know about bucket existence and read its info.
@@ -70,10 +66,6 @@ ACTION_DESCRIPTIONS = {
         'Unlease and reset state of an existing build.',
     Action.SEARCH_BUILDS:
         'Search for builds or get a list of scheduled builds.',
-    Action.READ_ACL:
-        'View bucket ACLs.',
-    Action.WRITE_ACL:
-        'Change bucket ACLs.',
     Action.DELETE_SCHEDULED_BUILDS:
         'Delete all scheduled builds from a bucket.',
     Action.ACCESS_BUCKET:
@@ -145,8 +137,6 @@ can_add_build_async = lambda bucket: can_async(bucket, Action.ADD_BUILD)
 can_lease_build = can_fn_for_build(Action.LEASE_BUILD)
 can_cancel_build = can_fn_for_build(Action.CANCEL_BUILD)
 can_reset_build = can_fn_for_build(Action.RESET_BUILD)
-can_read_acl = can_fn(Action.READ_ACL)
-can_write_acl = can_fn(Action.WRITE_ACL)
 can_delete_scheduled_builds = can_fn(Action.DELETE_SCHEDULED_BUILDS)
 can_pause_buckets = can_fn(Action.PAUSE_BUCKET)
 can_access_bucket = can_fn(Action.ACCESS_BUCKET)
