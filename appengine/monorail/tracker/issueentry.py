@@ -306,17 +306,17 @@ class IssueEntry(servlet.Servlet):
 
           template_content = ''
           phases = None
-          tmpl_approval_values = []
+          approval_values = []
           for wkp in template_set.templates:
             if wkp.name == parsed.template_name:
               template_content = wkp.content
-              phases = wkp.phases
-              tmpl_approval_values = wkp.approval_values or []
+              (approval_values,
+               phases) = issue_tmpl_helpers.FilterApprovalsAndPhases(
+                   wkp.approval_values or [], wkp.phases, config)
           marked_description = tracker_helpers.MarkupDescriptionOnInput(
               parsed.comment, template_content)
           has_star = 'star' in post_data and post_data['star'] == '1'
 
-          approval_values = tmpl_approval_values[:]
           if approval_values:
             _AttachDefaultApprovers(config, approval_values)
 

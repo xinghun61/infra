@@ -165,34 +165,37 @@ def _GetPhasesAndApprovalsFromParsed(
   return phases, approvals
 
 
-def GatherApprovalsPageData(approval_values, tmpl_phases, config):
-  """Create the page data necessary for filling in the launch-gates-table."""
-  # Remove deleted approvals from list and remove any phases that are
-  # empty as a result of removing the deleted approvals so that phase idxs
-  # can be calculated properly.
+def FilterApprovalsAndPhases(approval_values, phases, config):
+  """Return lists without deleted approvals and empty phases."""
   deleted_approval_ids = [fd.field_id for fd in config.field_defs if
                           fd.is_deleted and
                           fd.field_type is tracker_pb2.FieldTypes.APPROVAL_TYPE]
-  approval_values = [av for av in approval_values if
+  filtered_avs = [av for av in approval_values if
                      av.approval_id not in deleted_approval_ids]
 
-  av_phase_ids = list(set([av.phase_id for av in approval_values]))
-  phases = [phase for phase in tmpl_phases if phase.phase_id in av_phase_ids]
+  av_phase_ids = list(set([av.phase_id for av in filtered_avs]))
+  filtered_phases = [phase for phase in phases if
+                     phase.phase_id in av_phase_ids]
+  return filtered_avs, filtered_phases
+
+
+def GatherApprovalsPageData(approval_values, tmpl_phases, config):
+  """Create the page data necessary for filling in the launch-gates-table."""
+  filtered_avs, filtered_phases = FilterApprovalsAndPhases(
+      approval_values, tmpl_phases, config)
 
   # TODO(jojwang): monorail:3576, replace this sort by adding order_by
   # when fetching phases at config_svc:488
-  phases.sort(key=lambda phase: phase.rank)
+  filtered_phases.sort(key=lambda phase: phase.rank)
 
   required_approval_ids = []
   prechecked_approvals = []
 
   phase_idx_by_id = {
-        phase.phase_id:idx for idx, phase in enumerate(phases)}
-  for av in approval_values:
-    if av.approval_id in deleted_approval_ids:
-      continue
+        phase.phase_id:idx for idx, phase in enumerate(filtered_phases)}
+  for av in filtered_avs:
     # approval is part of a phase and that phase can be found.
-    elif phase_idx_by_id.get(av.phase_id) is not None:
+    if phase_idx_by_id.get(av.phase_id) is not None:
       idx = phase_idx_by_id.get(av.phase_id)
       prechecked_approvals.append(
           '%d_phase_%d' % (av.approval_id, idx))
@@ -201,10 +204,10 @@ def GatherApprovalsPageData(approval_values, tmpl_phases, config):
     if av.status is tracker_pb2.ApprovalStatus.NEEDS_REVIEW:
       required_approval_ids.append(av.approval_id)
 
-  num_phases = len(phases)
-  phases.extend([tracker_pb2.Phase()] * (
+  num_phases = len(filtered_phases)
+  filtered_phases.extend([tracker_pb2.Phase()] * (
       MAX_NUM_PHASES - num_phases))
-  return prechecked_approvals, required_approval_ids, phases
+  return prechecked_approvals, required_approval_ids, filtered_phases
 
 
 def GetCheckedApprovalsFromParsed(approvals_to_phase_idx):
