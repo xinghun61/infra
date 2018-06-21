@@ -22,6 +22,7 @@ from v2 import validation
 from v2 import default_field_masks
 import buildtags
 import model
+import search
 import service
 import v2
 
@@ -122,13 +123,13 @@ def builds_to_v2(builds, build_mask):
 
 
 def build_predicate_to_search_query(predicate):
-  """Converts a rpc_pb2.BuildPredicate to service.SearchQuery."""
-  q = service.SearchQuery(
+  """Converts a rpc_pb2.BuildPredicate to search.Query."""
+  q = search.Query(
       tags=[buildtags.unparse(p.key, p.value) for p in predicate.tags],
       created_by=predicate.created_by or None,
       include_experimental=predicate.include_experimental,
       status=(
-          service.StatusFilter.COMPLETED
+          search.StatusFilter.COMPLETED
           if predicate.status == common_pb2.ENDED_MASK else predicate.status
       ),
   )
@@ -173,12 +174,10 @@ class BuildsApi(object):
       tag = buildtags.build_address_tag(
           bucket, req.builder.builder, req.build_number
       )
-      build_v1, _ = service.search(
-          service.SearchQuery(
-              buckets=[bucket],
-              tags=[tag],
-          )
-      )
+      build_v1, _ = search.search(search.Query(
+          buckets=[bucket],
+          tags=[tag],
+      ))
       build_v1 = build_v1[0] if build_v1 else None
 
     if not build_v1:
@@ -193,7 +192,7 @@ class BuildsApi(object):
     q = build_predicate_to_search_query(req.predicate)
     q.start_cursor = req.page_token
 
-    builds_v1, cursor = service.search(q)
+    builds_v1, cursor = search.search(q)
     return rpc_pb2.SearchBuildsResponse(
         builds=builds_to_v2(builds_v1, mask.submask('builds.*')),
         next_page_token=cursor,

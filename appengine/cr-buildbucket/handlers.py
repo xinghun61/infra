@@ -29,6 +29,7 @@ import bq
 import config
 import model
 import notifications
+import search
 import service
 import swarming
 
@@ -268,8 +269,8 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
   @staticmethod
   @ndb.transactional_tasklet
   def _add_index_entries_async(tag, entries):
-    idx_key = model.TagIndex.random_shard_key(tag)
-    idx = (yield idx_key.get_async()) or model.TagIndex(key=idx_key)
+    idx_key = search.TagIndex.random_shard_key(tag)
+    idx = (yield idx_key.get_async()) or search.TagIndex(key=idx_key)
     if idx.permanently_incomplete:
       # no point in adding entries to an incomplete index.
       raise ndb.Return(False)
@@ -277,18 +278,18 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
     added = False
     for bucket, build_id in entries:
       if build_id not in existing:
-        if len(idx.entries) >= model.TagIndex.MAX_ENTRY_COUNT:
+        if len(idx.entries) >= search.TagIndex.MAX_ENTRY_COUNT:
           logging.warning((
               'refusing to store more than %d entries in TagIndex(%s); '
               'marking as incomplete.'
-          ), model.TagIndex.MAX_ENTRY_COUNT, idx_key.id())
+          ), search.TagIndex.MAX_ENTRY_COUNT, idx_key.id())
           idx.permanently_incomplete = True
           idx.entries = []
           yield idx.put_async()
           raise ndb.Return(True)
 
         idx.entries.append(
-            model.TagIndexEntry(bucket=bucket, build_id=build_id)
+            search.TagIndexEntry(bucket=bucket, build_id=build_id)
         )
         added = True
     if not added:

@@ -21,6 +21,7 @@ import api_common
 import config
 import errors
 import model
+import search
 import service
 import user
 
@@ -316,7 +317,7 @@ class BuildBucketApi(remote.Service):
       bucket=messages.StringField(2, repeated=True),
       # All specified tags must be present in a build.
       tag=messages.StringField(3, repeated=True),
-      status=messages.EnumField(service.StatusFilter, 4),
+      status=messages.EnumField(search.StatusFilter, 4),
       result=messages.EnumField(model.BuildResult, 5),
       cancelation_reason=messages.EnumField(model.CancelationReason, 6),
       failure_reason=messages.EnumField(model.FailureReason, 7),
@@ -345,8 +346,8 @@ class BuildBucketApi(remote.Service):
   def search(self, request):
     """Searches for builds."""
     assert isinstance(request.tag, list)
-    builds, next_cursor = service.search(
-        service.SearchQuery(
+    builds, next_cursor = search.search(
+        search.Query(
             buckets=request.bucket,
             tags=request.tag,
             status=request.status,

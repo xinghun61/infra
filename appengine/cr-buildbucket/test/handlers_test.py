@@ -15,6 +15,7 @@ from testing_utils import testing
 import handlers
 import main
 import model
+import search
 import v2
 
 
@@ -42,7 +43,7 @@ class TaskBackfillTagIndexTest(HandlerTest):
     super(TaskBackfillTagIndexTest, self).setUp()
     self.now = datetime.datetime(2017, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
-    self.patch('model.TagIndex.random_shard_index', return_value=0)
+    self.patch('search.TagIndex.random_shard_index', return_value=0)
 
   def post(self, payload, headers=None):
     headers = headers or {}
@@ -292,17 +293,17 @@ class TaskBackfillTagIndexTest(HandlerTest):
     )
 
   def test_flush(self):
-    model.TagIndex(
+    search.TagIndex(
         id='buildset:0',
         entries=[
-            model.TagIndexEntry(bucket='chormium', build_id=51),
+            search.TagIndexEntry(bucket='chormium', build_id=51),
         ]
     ).put()
-    model.TagIndex(
+    search.TagIndex(
         id='buildset:2',
         entries=[
-            model.TagIndexEntry(bucket='chormium', build_id=1),
-            model.TagIndexEntry(bucket='chormium', build_id=100),
+            search.TagIndexEntry(bucket='chormium', build_id=1),
+            search.TagIndexEntry(bucket='chormium', build_id=100),
         ]
     ).put()
     self.post({
@@ -315,17 +316,17 @@ class TaskBackfillTagIndexTest(HandlerTest):
         },
     })
 
-    idx0 = model.TagIndex.get_by_id('buildset:0')
+    idx0 = search.TagIndex.get_by_id('buildset:0')
     self.assertIsNotNone(idx0)
     self.assertEqual(len(idx0.entries), 1)
     self.assertEqual(idx0.entries[0].build_id, 51)
 
-    idx1 = model.TagIndex.get_by_id('buildset:1')
+    idx1 = search.TagIndex.get_by_id('buildset:1')
     self.assertIsNotNone(idx1)
     self.assertEqual(len(idx1.entries), 1)
     self.assertEqual(idx1.entries[0].build_id, 52)
 
-    idx2 = model.TagIndex.get_by_id('buildset:2')
+    idx2 = search.TagIndex.get_by_id('buildset:2')
     self.assertIsNotNone(idx2)
     self.assertEqual(len(idx2.entries), 3)
     self.assertEqual({e.build_id for e in idx2.entries}, {1, 50, 100})
@@ -351,12 +352,12 @@ class TaskBackfillTagIndexTest(HandlerTest):
           },
       })
 
-    idx0 = model.TagIndex.get_by_id('buildset:0')
+    idx0 = search.TagIndex.get_by_id('buildset:0')
     self.assertIsNotNone(idx0)
     self.assertEqual(len(idx0.entries), 1)
     self.assertEqual(idx0.entries[0].build_id, 51)
 
-    idx2 = model.TagIndex.get_by_id('buildset:2')
+    idx2 = search.TagIndex.get_by_id('buildset:2')
     self.assertIsNotNone(idx2)
     self.assertEqual(len(idx2.entries), 1)
     self.assertEqual(idx2.entries[0].build_id, 50)
@@ -380,7 +381,7 @@ class TaskBackfillTagIndexTest(HandlerTest):
         'new_entries': {'0': [['chromium', i] for i in xrange(1, 2001)]},
     })
 
-    idx0 = model.TagIndex.get_by_id('buildset:0')
+    idx0 = search.TagIndex.get_by_id('buildset:0')
     self.assertIsNotNone(idx0)
     self.assertTrue(idx0.permanently_incomplete)
     self.assertEqual(len(idx0.entries), 0)

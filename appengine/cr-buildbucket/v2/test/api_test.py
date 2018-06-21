@@ -24,6 +24,7 @@ from test import test_util
 from v2 import api
 import buildtags
 import model
+import search
 import service
 
 future = test_util.future
@@ -195,8 +196,8 @@ class GetBuildTests(BaseTestCase):
     self.assertEqual(res.id, 54)
     service_get.assert_called_once_with(54)
 
-  @mock.patch('service.search', autospec=True)
-  def test_by_number(self, service_search):
+  @mock.patch('search.search', autospec=True)
+  def test_by_number(self, search_search):
     build_v1 = self.new_build_v1(
         project='chromium',
         bucket='luci.chromium.try',
@@ -205,7 +206,7 @@ class GetBuildTests(BaseTestCase):
             buildtags.build_address_tag('luci.chromium.try', 'linux-try', 2),
         ],
     )
-    service_search.return_value = ([build_v1], None)
+    search_search.return_value = ([build_v1], None)
     builder_id = build_pb2.BuilderID(
         project='chromium', bucket='try', builder='linux-try'
     )
@@ -215,8 +216,8 @@ class GetBuildTests(BaseTestCase):
     self.assertEqual(res.builder, builder_id)
     self.assertEqual(res.number, 2)
 
-    service_search.assert_called_once_with(
-        service.SearchQuery(
+    search_search.assert_called_once_with(
+        search.Query(
             buckets=['luci.chromium.try'],
             tags=['build_address:luci.chromium.try/linux-try/2'],
         )
@@ -248,7 +249,7 @@ class GetBuildTests(BaseTestCase):
 
 class SearchTests(BaseTestCase):
 
-  @mock.patch('service.search', autospec=True)
+  @mock.patch('search.search', autospec=True)
   def test_basic(self, service_search):
     builds_v1 = [self.new_build_v1(id=54), self.new_build_v1(id=55)]
     service_search.return_value = (builds_v1, 'next page token')
@@ -263,7 +264,7 @@ class SearchTests(BaseTestCase):
     res = self.call(self.api.SearchBuilds, req)
 
     service_search.assert_called_once_with(
-        service.SearchQuery(
+        search.Query(
             buckets=['luci.chromium.try'],
             tags=['builder:linux-try'],
             include_experimental=False,

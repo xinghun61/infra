@@ -26,6 +26,7 @@ import api
 import config
 import errors
 import model
+import search
 import service
 import v2
 import user
@@ -306,10 +307,10 @@ class EndpointsApiTest(testing.EndpointsTestCase):
 
   ####### SEARCH ###############################################################
 
-  @mock.patch('service.search', autospec=True)
-  def test_search(self, search):
+  @mock.patch('search.search', autospec=True)
+  def test_search(self, search_search):
     self.test_build.put()
-    search.return_value = ([self.test_build], 'the cursor')
+    search_search.return_value = ([self.test_build], 'the cursor')
 
     time_low = model.BEGINING_OF_THE_WORLD
     time_high = datetime.datetime(2120, 5, 4)
@@ -328,11 +329,11 @@ class EndpointsApiTest(testing.EndpointsTestCase):
 
     res = self.call_api('search', req).json_body
 
-    search.assert_called_once_with(
-        service.SearchQuery(
+    search_search.assert_called_once_with(
+        search.Query(
             buckets=req['bucket'],
             tags=req['tag'],
-            status=service.StatusFilter.COMPLETED,
+            status=search.StatusFilter.COMPLETED,
             result=model.BuildResult.CANCELED,
             failure_reason=None,
             cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY,
