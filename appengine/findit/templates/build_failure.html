@@ -98,9 +98,9 @@
         $('#status_message').attr('class', 'running');
         setTimeout(function() {
           {% if show_debug_info %}
-            window.location.href = 'build-failure?url=' + findit.buildUrl + '&debug=1';
+            window.location.href = 'failure?url=' + findit.buildUrl + '&debug=1';
           {% else %}
-            window.location.href = 'build-failure?url=' + findit.buildUrl;
+            window.location.href = 'failure?url=' + findit.buildUrl;
           {% endif %}
         }, 5000);
       } else {
@@ -187,7 +187,7 @@
       </div>
       {% if show_debug_info and analysis_is_duplicate %}
         <div>
-          This analysis was automatically triaged as a duplicate of another build analysis: <a href="/waterfall/build-failure?url=https://luci-milo.appspot.com/buildbot/{{triage_reference_analysis_master_name}}/{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}">{{triage_reference_analysis_master_name}}/{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}</a>
+          This analysis was automatically triaged as a duplicate of another build analysis: <a href="/waterfall/failure?url=https://luci-milo.appspot.com/buildbot/{{triage_reference_analysis_master_name}}/{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}">{{triage_reference_analysis_master_name}}/{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}</a>
         </div>
       {% endif %}
     </div>
