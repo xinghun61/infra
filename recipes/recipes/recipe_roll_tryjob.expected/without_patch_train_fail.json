@@ -190,7 +190,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine/recipes.py",
       "--package",
@@ -210,7 +210,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine/recipes.py",
       "--package",
@@ -394,7 +394,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine/recipes.py",
       "--package",
@@ -414,7 +414,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine/recipes.py",
       "--package",

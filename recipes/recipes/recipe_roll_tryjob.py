@@ -123,6 +123,7 @@ def RunSteps(api, upstream_project, downstream_project):
         ['--package', downstream_recipes_cfg,
          '-O', '%s=%s' % (upstream_project, upstream_checkout),
          'test', 'run', '--json', api.json.output()],
+        venv=True,
         step_test_data=lambda: api.json.test_api.output({}))
   except api.step.StepFailure as ex:
     orig_downstream_test = ex.result
@@ -133,6 +134,7 @@ def RunSteps(api, upstream_project, downstream_project):
         ['--package', downstream_recipes_cfg,
          '-O', '%s=%s' % (upstream_project, upstream_checkout),
          'test', 'train', '--json', api.json.output()],
+        venv=True,
         step_test_data=lambda: api.json.test_api.output({}))
   except api.step.StepFailure as ex:
     orig_downstream_train = ex.result
@@ -168,6 +170,7 @@ def RunSteps(api, upstream_project, downstream_project):
         ['--package', downstream_recipes_cfg,
          '-O', '%s=%s' % (upstream_project, upstream_checkout),
          'test', 'run', '--json', api.json.output()],
+        venv=True,
         step_test_data=lambda: api.json.test_api.output({}))
   except api.step.StepFailure as ex:
     patched_downstream_test = ex.result
@@ -178,6 +181,7 @@ def RunSteps(api, upstream_project, downstream_project):
         ['--package', downstream_recipes_cfg,
          '-O', '%s=%s' % (upstream_project, upstream_checkout),
          'test', 'train', '--json', api.json.output()],
+        venv=True,
         step_test_data=lambda: api.json.test_api.output({}))
   except api.step.StepFailure as ex:
     patched_downstream_train = ex.result
@@ -191,7 +195,8 @@ def RunSteps(api, upstream_project, downstream_project):
         ['--package', downstream_recipes_cfg,
          'test', 'diff',
          '--baseline', api.json.input(orig_downstream_test.json.output),
-         '--actual', api.json.input(patched_downstream_test.json.output)])
+         '--actual', api.json.input(patched_downstream_test.json.output)],
+        venv=True)
   except api.step.StepFailure as ex:
     test_diff = ex.result
 
@@ -221,7 +226,8 @@ def RunSteps(api, upstream_project, downstream_project):
         ['--package', downstream_recipes_cfg,
          'test', 'diff',
          '--baseline', api.json.input(orig_downstream_train.json.output),
-         '--actual', api.json.input(patched_downstream_train.json.output)])
+         '--actual', api.json.input(patched_downstream_train.json.output)],
+        venv=True)
   except api.step.StepFailure as ex:
     train_diff = ex.result
 
