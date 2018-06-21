@@ -16,3 +16,6 @@ infra/tools/luci/logdog/logdog/mac-amd64  git_revision:5cf65fdf804a9b3f3023f79d5
 
 # cloud_sql_proxy tool (https://cloud.google.com/sql/docs/mysql/sql-proxy)
 infra/tools/cloud_sql_proxy/mac-amd64  downloaded:2017_07_25
+
+# Crimson tool.
+infra/machine-db/crimson/mac-amd64 stable
