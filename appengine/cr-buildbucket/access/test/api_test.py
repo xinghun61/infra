@@ -60,7 +60,7 @@ class AccessApiTest(testing.AppengineTestCase):
       self.assertEqual(len(perms.actions), 5)  # Sanity check.
       self.assertEqual(
           set(perms.actions),
-          {action.name for action in user.ACTIONS_FOR_ROLE[Acl.SCHEDULER]},
+          {action.name for action in user.ROLE_TO_ACTIONS[Acl.SCHEDULER]},
       )
 
   def test_description(self):

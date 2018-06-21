@@ -69,59 +69,28 @@ class AclTest(testing.AppengineTestCase):
         side_effect=lambda name: future(('chromium', bucket_map.get(name)))
     )
 
-  @mock.patch('components.auth.is_admin', autospec=True)
   @mock.patch('components.auth.is_group_member', autospec=True)
-  def test_get_role(self, is_group_member, is_admin):
+  def test_get_role(self, is_group_member):
     is_group_member.side_effect = lambda g, _=None: g == 'a-writers'
-    is_admin.return_value = False
 
-    get_role = (lambda *args: user.get_role_async(*args).get_result())
-
+    get_role = lambda *args: user.get_role_async(*args).get_result()
     self.assertEqual(get_role('a'), Acl.WRITER)
     self.assertEqual(get_role('b'), None)
     self.assertEqual(get_role('c'), Acl.READER)
     self.assertEqual(get_role('non.existing'), None)
 
-    is_group_member.side_effect = None
-    is_group_member.return_value = False
-    self.assertEqual(get_role('a'), None)
-
-    is_admin.return_value = True
+    # Memcache test.
+    user.clear_request_cache()
     self.assertEqual(get_role('a'), Acl.WRITER)
-    self.assertEqual(get_role('non.existing'), None)
 
-  @mock.patch('components.auth.is_admin', autospec=True)
+  def test_get_role_admin(self):
+    auth.is_admin.return_value = True
+    self.assertEqual(user.get_role_async('a').get_result(), Acl.WRITER)
+    self.assertEqual(user.get_role_async('non.existing').get_result(), None)
+
   @mock.patch('components.auth.is_group_member', autospec=True)
-  def test_has_any_of_roles(self, is_group_member, is_admin):
-    is_group_member.side_effect = lambda g, _=None: g == 'a-readers'
-    is_admin.return_value = False
-
-    has_any_of_roles = (
-        lambda *args: user.has_any_of_roles_async(*args).get_result()
-    )
-
-    self.assertTrue(has_any_of_roles('a', [Acl.READER]))
-    self.assertTrue(has_any_of_roles('a', [Acl.READER, Acl.WRITER]))
-    self.assertFalse(has_any_of_roles('a', [Acl.WRITER]))
-    self.assertFalse(has_any_of_roles('a', [Acl.WRITER, Acl.SCHEDULER]))
-    self.assertFalse(has_any_of_roles('b', [Acl.READER]))
-    self.assertTrue(has_any_of_roles('c', [Acl.READER]))
-    self.assertFalse(has_any_of_roles('c', [Acl.WRITER]))
-    self.assertFalse(has_any_of_roles('non.existing', [Acl.READER]))
-
-    is_group_member.side_effect = None
-    is_group_member.return_value = False
-    self.assertFalse(has_any_of_roles('a', Acl.Role.values()))
-
-    is_admin.return_value = True
-    self.assertTrue(has_any_of_roles('a', [Acl.WRITER]))
-    self.assertFalse(has_any_of_roles('non-existing', [Acl.WRITER]))
-
-  @mock.patch('components.auth.is_admin', autospec=True)
-  @mock.patch('components.auth.is_group_member', autospec=True)
-  def test_get_acessible_buckets_async(self, is_group_member, is_admin):
+  def test_get_acessible_buckets_async(self, is_group_member):
     is_group_member.side_effect = lambda g, _=None: g in ('xxx', 'yyy')
-    is_admin.return_value = False
 
     config.get_buckets_async.return_value = future([
         Bucket(
@@ -199,18 +168,11 @@ class AclTest(testing.AppengineTestCase):
 
     self.assertIsNone(user.get_acessible_buckets_async().get_result())
 
-  def mock_has_any_of_roles(self, current_identity_roles):
-    current_identity_roles = set(current_identity_roles)
-
-    def has_any_of_roles_async(_bucket, roles):
-      return future(current_identity_roles.intersection(roles))
-
-    self.patch(
-        'user.has_any_of_roles_async', side_effect=has_any_of_roles_async
-    )
+  def mock_role(self, role):
+    self.patch('user.get_role_async', return_value=future(role))
 
   def test_can(self):
-    self.mock_has_any_of_roles([Acl.READER])
+    self.mock_role(Acl.READER)
     self.assertTrue(user.can('bucket', user.Action.VIEW_BUILD))
     self.assertFalse(user.can('bucket', user.Action.CANCEL_BUILD))
     self.assertFalse(user.can('bucket', user.Action.SET_NEXT_NUMBER))
@@ -220,7 +182,7 @@ class AclTest(testing.AppengineTestCase):
     self.assertFalse(user.can_add_build_async('bucket').get_result())
 
   def test_can_no_roles(self):
-    self.mock_has_any_of_roles([])
+    self.mock_role(None)
     for action in user.Action:
       self.assertFalse(user.can('bucket', action))
 
@@ -229,7 +191,7 @@ class AclTest(testing.AppengineTestCase):
       user.can('bad bucket name', user.Action.VIEW_BUILD)
 
   def test_can_view_build(self):
-    self.mock_has_any_of_roles([Acl.READER])
+    self.mock_role(Acl.READER)
     build = model.Build(bucket='bucket')
     self.assertTrue(user.can_view_build(build))
     self.assertFalse(user.can_lease_build(build))

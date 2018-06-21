@@ -20,7 +20,7 @@ def create_resource_permissions(role):
   if role is None:
     return access_pb2.PermittedActionsResponse.ResourcePermissions()
   return access_pb2.PermittedActionsResponse.ResourcePermissions(
-      actions=[action.name for action in user.ACTIONS_FOR_ROLE[role]]
+      actions=sorted(action.name for action in user.ROLE_TO_ACTIONS[role]),
   )
 
 
@@ -70,10 +70,9 @@ class AccessServicer(object):
                 roles={
                     project_config_pb2.Acl.Role.Name(role):
                     access_pb2.DescriptionResponse.ResourceDescription.Role(
-                        allowed_actions=[
-                            action.name
-                            for action in user.ACTIONS_FOR_ROLE[role]
-                        ],
+                        allowed_actions=sorted(
+                            action.name for action in user.ROLE_TO_ACTIONS[role]
+                        ),
                         comment=description,
                     )
                     for role, description in user.ROLE_DESCRIPTIONS.iteritems()
