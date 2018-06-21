@@ -6,7 +6,8 @@
 import os
 import re
 
-import endpoints
+# OAuth2 client_id of the "API Explorer" web app.
+API_EXPLORER_CLIENT_ID = '292824132082.apps.googleusercontent.com'
 
 # Names of all modules.
 WATERFALL_BACKEND = 'waterfall-backend'
@@ -46,7 +47,7 @@ WHITELISTED_STAGING_APP_ACCOUNTS = [
 
 # Whitelisted client ids for authorized access to Findit prod and staging.
 WHITELISTED_CLIENT_IDS = [
-    endpoints.API_EXPLORER_CLIENT_ID,
+    API_EXPLORER_CLIENT_ID,
 ]
 
 # Directory of html templates.

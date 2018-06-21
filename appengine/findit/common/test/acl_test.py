@@ -5,8 +5,6 @@
 import mock
 import unittest
 
-import endpoints
-
 from common import acl
 from common import constants
 from common import exceptions
@@ -24,7 +22,7 @@ class AclTest(unittest.TestCase):
     self.assertFalse(acl.IsPrivilegedUser('test@gmail.com', False))
 
   def testWhitelistedClientId(self):
-    self.assertTrue(acl.IsWhitelistedClientId(endpoints.API_EXPLORER_CLIENT_ID))
+    self.assertTrue(acl.IsWhitelistedClientId(constants.API_EXPLORER_CLIENT_ID))
 
   def testUnknownClientIdIsNotWhitelisted(self):
     self.assertFalse(acl.IsWhitelistedClientId('unknown_id'))
