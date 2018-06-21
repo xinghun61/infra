@@ -11,57 +11,53 @@ REPO_URL = (
   'https://chromium.googlesource.com/external/github.com/Kitware/CMake')
 PACKAGE_PREFIX = 'infra/cmake/'
 
-# This version suffix serves to distinguish different revisions of git built
+# This version suffix serves to distinguish different revisions of CMake built
 # with this recipe.
 PACKAGE_VERSION_SUFFIX = ''
 
 class CMakeApi(util.ModuleShim):
 
   @recipe_api.composite_step
-  def package(self):
-    if self.m.platform.is_win:
-      # TODO(phosek): To build CMake on Windows, we need a CMake (and Ninja)
-      # which is a chicken and egg problem. To solve that problem, someone
-      # will have to manually build and upload CMake package for Windows.
-      self.m.python.succeeding_step('Windows not supported', 'Maybe later.')
+  def package(self, platform_name=None, platform_bits=None):
+    platform_name = platform_name or self.m.platform.name
+    platform_bits = platform_bits or self.m.platform.bits
+
+    if platform_name == 'win' and platform_bits == 32:
+      self.m.step('32-bit Windows build is not supported', cmd=None)
       return
 
     workdir = self.m.path['start_dir'].join('cmake')
     self.m.file.rmtree('rmtree workdir', workdir)
 
+    cipddir = workdir.join('_cipd')
+    packages = {
+      'infra/ninja/${platform}': 'version:1.8.2',
+      'infra/cmake/${platform}': 'version:3.11.4',
+    }
+    self.m.cipd.ensure(cipddir, packages)
+
     def install(target_dir, _tag):
       src_dir = self.m.context.cwd
-
-      bootstrap_dir= workdir.join('bootstrap')
-      self.m.file.ensure_directory('bootstrap_dir', bootstrap_dir)
-
-      with self.m.context(cwd=bootstrap_dir):
-        self.m.step('bootstrap cmake', [src_dir.join('bootstrap')])
-        self.m.step('make cmake', ['make'])
-
-      cipddir = workdir.join('_cipd')
-      self.m.cipd.ensure(cipddir, {
-        'infra/ninja/${platform}': 'version:1.7.2',
-      })
 
       build_dir= workdir.join('build')
       self.m.file.ensure_directory('build_dir', build_dir)
 
       with self.m.context(cwd=build_dir):
-        self.m.step('configure cmake', [
-          bootstrap_dir.join('bin', 'cmake'),
-          '-GNinja',
-          '-DCMAKE_BUILD_TYPE=Release',
-          '-DCMAKE_INSTALL_PREFIX=',
-          '-DCMAKE_MAKE_PROGRAM=%s' % cipddir.join('ninja'),
-          '-DCMAKE_USE_OPENSSL=OFF',
-          src_dir,
-        ])
-        self.m.step('build cmake', [cipddir.join('ninja')])
-        with self.m.context(env={'DESTDIR': target_dir}):
-          self.m.step('install cmake', [cipddir.join('ninja'), 'install'])
+        with self.m.windows_sdk(enabled=self.m.platform.is_win):
+          self.m.step('configure cmake', [
+            cipddir.join('bin', 'cmake'),
+            '-GNinja',
+            '-DCMAKE_BUILD_TYPE=Release',
+            '-DCMAKE_INSTALL_PREFIX=',
+            '-DCMAKE_MAKE_PROGRAM=%s' % cipddir.join('ninja'),
+            '-DCMAKE_USE_OPENSSL=OFF',
+            src_dir,
+          ])
+          self.m.step('build cmake', [cipddir.join('ninja')])
+          with self.m.context(env={'DESTDIR': target_dir}):
+            self.m.step('install cmake', [cipddir.join('ninja'), 'install'])
 
-    tag = self.m.properties.get('git_release_tag')
+    tag = self.m.properties.get('cmake_release_tag')
     if not tag:
       tag = self.get_latest_release_tag(REPO_URL, 'v')
     version = tag.lstrip('v') + PACKAGE_VERSION_SUFFIX
@@ -72,5 +68,5 @@ class CMakeApi(util.ModuleShim):
         install,
         tag,
         version,
-        'symlink',
+        'copy',
     )

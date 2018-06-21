@@ -30,6 +30,7 @@ PLATFORMS = (
   ('linux', 64, 'linux-amd64'),
   ('linux', 32, 'linux-386'),
   ('mac', 64, 'mac-amd64'),
+  ('win', 64, 'windows-amd64'),
 )
 
 
@@ -81,7 +82,7 @@ def GenTests(api):
 
   yield (
       api.test('windows_skip') +
-      api.platform('win', 64) +
+      api.platform('win', 32) +
       api.properties(dry_run=False)
   )
 
@@ -89,7 +90,7 @@ def GenTests(api):
       api.test('mac_specific_tag') +
       api.platform('mac', 64) +
       api.properties(dry_run=False) +
-      api.properties(git_release_tag='v3.2.5')
+      api.properties(cmake_release_tag='v3.2.5')
   )
 
   yield (

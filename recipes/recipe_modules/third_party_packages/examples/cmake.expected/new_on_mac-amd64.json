@@ -14,6 +14,36 @@
   },
   {
     "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/cmake/_cipd",
+      "-ensure-file",
+      "infra/cmake/${platform} version:3.11.4\ninfra/ninja/${platform} version:1.8.2",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:3.11.4--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cmake/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.8.2---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/ninja/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
@@ -150,63 +180,6 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/cmake/bootstrap"
-    ],
-    "cwd": "[START_DIR]/cmake/checkout",
-    "infra_step": true,
-    "name": "bootstrap_dir"
-  },
-  {
-    "cmd": [
-      "[START_DIR]/cmake/checkout/bootstrap"
-    ],
-    "cwd": "[START_DIR]/cmake/bootstrap",
-    "name": "bootstrap cmake"
-  },
-  {
-    "cmd": [
-      "make"
-    ],
-    "cwd": "[START_DIR]/cmake/bootstrap",
-    "name": "make cmake"
-  },
-  {
-    "cmd": [
-      "cipd",
-      "ensure",
-      "-root",
-      "[START_DIR]/cmake/_cipd",
-      "-ensure-file",
-      "infra/ninja/${platform} version:1.7.2",
-      "-json-output",
-      "/path/to/tmp/json",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json"
-    ],
-    "cwd": "[START_DIR]/cmake/checkout",
-    "name": "ensure_installed",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.7.2---\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/ninja/${platform}\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "ensure-directory",
-      "--mode",
-      "0777",
       "[START_DIR]/cmake/build"
     ],
     "cwd": "[START_DIR]/cmake/checkout",
@@ -215,7 +188,7 @@
   },
   {
     "cmd": [
-      "[START_DIR]/cmake/bootstrap/bin/cmake",
+      "[START_DIR]/cmake/_cipd/bin/cmake",
       "-GNinja",
       "-DCMAKE_BUILD_TYPE=Release",
       "-DCMAKE_INSTALL_PREFIX=",
@@ -257,7 +230,7 @@
       "-json-output",
       "/path/to/tmp/json",
       "-install-mode",
-      "symlink"
+      "copy"
     ],
     "name": "build mac-amd64",
     "~followup_annotations": [

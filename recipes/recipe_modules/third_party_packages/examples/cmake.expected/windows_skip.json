@@ -1,14 +1,7 @@
 [
   {
-    "cmd": [
-      "python",
-      "-u",
-      "import sys; sys.exit(0)"
-    ],
-    "name": "Windows not supported",
-    "~followup_annotations": [
-      "@@@STEP_TEXT@Maybe later.@@@"
-    ]
+    "cmd": [],
+    "name": "32-bit Windows build is not supported"
   },
   {
     "name": "$result",
