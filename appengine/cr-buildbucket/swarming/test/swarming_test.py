@@ -31,6 +31,7 @@ from swarming import swarming
 from test.test_util import future, future_exception, ununicide
 import errors
 import model
+import user
 
 LINUX_CHROMIUM_REL_NG_CACHE_NAME = (
     'builder_980988014eb33bf5578a0f44e123402888e39083523bfd9214fea0c8a080db17'
@@ -41,6 +42,7 @@ class BaseTest(testing.AppengineTestCase):
 
   def setUp(self):
     super(BaseTest, self).setUp()
+    user.clear_request_cache()
 
     self.patch(
         'notifications.enqueue_tasks_async',

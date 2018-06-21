@@ -328,8 +328,13 @@ def _get_or_create_cached_future(key, create_future):
   req_id = os.environ['REQUEST_LOG_ID']
   cache = getattr(_thread_local, 'request_cache', {})
   if cache.get('request_id') != req_id:
-    cache = {'request_id': req_id, 'futures': {}}
+    cache = {
+        'request_id': req_id,
+        'futures': {},
+        'current_identity': auth.get_current_identity(),
+    }
     _thread_local.request_cache = cache
+  assert cache['current_identity'] == auth.get_current_identity()
 
   fut_entry = cache['futures'].get(key)
   if fut_entry is None:

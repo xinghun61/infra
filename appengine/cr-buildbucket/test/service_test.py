@@ -37,9 +37,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def setUp(self):
     super(BuildBucketServiceTest, self).setUp()
-    self.patch(
-        'service._log_inconsistent_search_results', side_effect=self.fail
-    )
+    user.clear_request_cache()
 
     self.current_identity = auth.Identity('service', 'unittest')
     self.patch(

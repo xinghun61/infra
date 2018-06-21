@@ -676,10 +676,6 @@ def _check_search_acls(buckets, inc_metric=None):
       raise user.current_identity_cannot('search builds in bucket %s', bucket)
 
 
-def _log_inconsistent_search_results(error_message):  # pragma: no cover
-  logging.error(error_message)
-
-
 class StatusFilter(messages.Enum):
   # A build must have status model.BuildStatus.SCHEDULED.
   SCHEDULED = model.BuildStatus.SCHEDULED.number

@@ -28,6 +28,7 @@ import errors
 import model
 import service
 import v2
+import user
 
 
 class EndpointsApiTest(testing.EndpointsTestCase):
@@ -42,6 +43,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     super(EndpointsApiTest, self).setUp()
     gae_ts_mon.reset_for_unittest(disable=True)
     auth.disable_process_cache()
+    user.clear_request_cache()
 
     self.patch(
         'components.utils.utcnow', return_value=datetime.datetime(2017, 1, 1)
