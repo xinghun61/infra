@@ -142,6 +142,7 @@ var RuleMap = map[string]*RepoConfig{
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
 		Rules: map[string]RuleSet{
 			"autoroll-rules-angle":       AutoRollRulesDEPS("angle-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-chromium":    AutoRollRulesDEPS("chromium-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 			"autoroll-rules-skcms":       AutoRollRulesSKCMS("skcms-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 			"autoroll-rules-swiftshader": AutoRollRulesDEPS("swiftshader-skia-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 			"bookmaker": AccountRules{
