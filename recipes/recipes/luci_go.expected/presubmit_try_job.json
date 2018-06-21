@@ -34,8 +34,7 @@
       "--revision",
       "infra@origin/master",
       "--revision",
-      "infra/go/src/go.chromium.org/luci@origin/master",
-      "--no_shallow"
+      "infra/go/src/go.chromium.org/luci@origin/master"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "env_prefixes": {

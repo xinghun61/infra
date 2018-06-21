@@ -32,8 +32,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "infra@HEAD",
-      "--no_shallow"
+      "infra@HEAD"
     ],
     "cwd": "[CACHE]\\infra_gclient_with_go",
     "env_prefixes": {
