@@ -89,10 +89,12 @@ class GitEntry(object):
     All conflicts are resolved in the favor of the right spec.
     """
     assert left is not None, 'left spec cannot contain None'
+    assert isinstance(left, (tuple, dict)), type(left)
+    assert isinstance(right, (type(None), dict, str)), type(right)
     if right is None:
       return right
 
-    if type(left) != type(right):
+    if not isinstance(left, type(right)):
       return right
 
     assert isinstance(left, dict), (
