@@ -36,7 +36,8 @@ def fix_max_builds(max_builds):
   return min(MAX_RETURN_BUILDS, max_builds)
 
 
-def fetch_page(query, page_size, start_cursor, predicate=None):
+@ndb.tasklet
+def fetch_page_async(query, page_size, start_cursor, predicate=None):
   """Fetches a page of Build entities."""
   assert query
   assert isinstance(page_size, int)
@@ -61,7 +62,7 @@ def fetch_page(query, page_size, start_cursor, predicate=None):
     # entities, and the user will never see them.
     to_fetch = page_size - len(entities)
 
-    page, curs, more = query.fetch_page(to_fetch, start_cursor=curs)
+    page, curs, more = yield query.fetch_page_async(to_fetch, start_cursor=curs)
     pages += 1
     for entity in page:
       if predicate and not predicate(entity):  # pragma: no cover
@@ -80,10 +81,11 @@ def fetch_page(query, page_size, start_cursor, predicate=None):
   curs_str = None
   if more:
     curs_str = curs.urlsafe()
-  return entities, curs_str
+  raise ndb.Return(entities, curs_str)
 
 
-def check_acls(buckets, inc_metric=None):
+@ndb.tasklet
+def check_acls_async(buckets, inc_metric=None):
   """Checks access to the buckets.
 
   Raises an error if the current identity doesn't have access to any of the
@@ -93,8 +95,9 @@ def check_acls(buckets, inc_metric=None):
   for bucket in buckets:
     errors.validate_bucket_name(bucket)
 
-  for bucket in buckets:
-    if not user.can_search_builds(bucket):
+  futs = [user.can_search_builds_async(b) for b in buckets]
+  for bucket, fut in zip(buckets, futs):
+    if not (yield fut):
       if inc_metric:  # pragma: no cover
         inc_metric.increment(fields={'bucket': bucket})
       raise user.current_identity_cannot('search builds in bucket %s', bucket)
@@ -194,7 +197,8 @@ class Query(object):
     return isinstance(self.status, int)
 
 
-def search(q):
+@ndb.tasklet
+def search_async(q):
   """Searches for builds.
 
   Args:
@@ -217,10 +221,10 @@ def search(q):
     q.create_time_low = None
   if q.create_time_high is not None:
     if q.create_time_high <= model.BEGINING_OF_THE_WORLD:
-      return [], None
+      raise ndb.Return([], None)
     if (q.create_time_low is not None and
         q.create_time_low >= q.create_time_high):
-      return [], None
+      raise ndb.Return([], None)
 
   q.tags = q.tags or []
   q.max_builds = fix_max_builds(q.max_builds)
@@ -228,11 +232,11 @@ def search(q):
   q.status = q.status if q.status != common_pb2.STATUS_UNSPECIFIED else None
 
   if not q.buckets and q.retry_of is not None:
-    retry_of_build = model.Build.get_by_id(q.retry_of)
+    retry_of_build = yield model.Build.get_by_id_async(q.retry_of)
     if retry_of_build:
       q.buckets = [retry_of_build.bucket]
   if q.buckets:
-    check_acls(q.buckets)
+    yield check_acls_async(q.buckets)
     q.buckets = set(q.buckets)
 
   is_tag_index_cursor = (
@@ -250,12 +254,12 @@ def search(q):
   if can_use_tag_index:
     try:
       search_start_time = utils.utcnow()
-      results = _tag_index_search(q)
+      results = yield _tag_index_search_async(q)
       logging.info(
           'tag index search took %dms',
           (utils.utcnow() - search_start_time).total_seconds() * 1000
       )
-      return results
+      raise ndb.Return(results)
     except errors.TagIndexIncomplete:
       if not can_use_query_search:
         raise
@@ -264,12 +268,12 @@ def search(q):
   # Searching using datastore query.
   assert can_use_query_search
   search_start_time = utils.utcnow()
-  results = _query_search(q)
+  results = yield _query_search_async(q)
   logging.info(
       'query search took %dms',
       (utils.utcnow() - search_start_time).total_seconds() * 1000
   )
-  return results
+  raise ndb.Return(results)
 
 
 def _between(value, low, high):  # pragma: no cover
@@ -281,7 +285,8 @@ def _between(value, low, high):  # pragma: no cover
   return True
 
 
-def _query_search(q):
+@ndb.tasklet
+def _query_search_async(q):
   """Searches for builds using NDB query. For args doc, see search().
 
   Assumes:
@@ -289,9 +294,9 @@ def _query_search(q):
   - if bool(buckets), permissions are checked.
   """
   if not q.buckets:
-    q.buckets = user.get_acessible_buckets_async().get_result()
+    q.buckets = yield user.get_acessible_buckets_async()
     if q.buckets is not None and len(q.buckets) == 0:
-      return [], None
+      raise ndb.Return([], None)
   # (buckets is None) means the requester has access to all buckets.
   assert q.buckets is None or q.buckets
 
@@ -347,10 +352,15 @@ def _query_search(q):
       return False  # pragma: no cover
     return True
 
-  return fetch_page(dq, q.max_builds, q.start_cursor, predicate=local_predicate)
+  raise ndb.Return((
+      yield fetch_page_async(
+          dq, q.max_builds, q.start_cursor, predicate=local_predicate
+      )
+  ))
 
 
-def _tag_index_search(q):
+@ndb.tasklet
+def _tag_index_search_async(q):
   """Searches for builds using TagIndex entities. For args doc, see search().
 
   Assumes:
@@ -386,11 +396,11 @@ def _tag_index_search(q):
     min_id_exclusive = int(q.start_cursor[len('id>'):])
     id_low = max(id_low, min_id_exclusive + 1)
   if id_low >= id_high:
-    return [], None
+    raise ndb.Return([], None)
 
   # Load index entries and put them to a min-heap, sorted by build_id.
   entry_heap = []  # tuples (build_id, TagIndexEntry).
-  for idx in ndb.get_multi(TagIndex.all_shard_keys(indexed_tag)):
+  for idx in (yield ndb.get_multi_async(TagIndex.all_shard_keys(indexed_tag))):
     if not idx:
       continue
     if idx.permanently_incomplete:
@@ -401,20 +411,13 @@ def _tag_index_search(q):
       if id_low <= e.build_id < id_high:
         entry_heap.append((e.build_id, e))
   if not entry_heap:
-    return [], None
+    raise ndb.Return([], None)
   heapq.heapify(entry_heap)
 
   # If buckets were not specified explicitly, permissions were not checked
   # earlier. In this case, check permissions for each build.
   check_permissions = not q.buckets
   has_access_cache = {}
-
-  def has_access(bucket):
-    has = has_access_cache.get(bucket)
-    if has is None:
-      has = user.can_search_builds(bucket)
-      has_access_cache[bucket] = has
-    return has
 
   # scalar_filters maps a name of a model.Build attribute to a filter value.
   # Applies only to non-repeated fields.
@@ -456,8 +459,13 @@ def _tag_index_search(q):
       # This is not a security check.
       if q.buckets and e.bucket not in q.buckets:
         continue
-      if check_permissions and not has_access(e.bucket):
-        continue
+      if check_permissions:
+        has = has_access_cache.get(e.bucket)
+        if has is None:
+          has = yield user.can_search_builds_async(e.bucket)
+          has_access_cache[e.bucket] = has
+        if not has:
+          continue
       entries_to_fetch.append(e)
       if len(entries_to_fetch) >= fetch_count:
         break
@@ -466,8 +474,10 @@ def _tag_index_search(q):
       eof = True
       break
 
-    build_keys = [ndb.Key(model.Build, e.build_id) for e in entries_to_fetch]
-    for e, b in zip(entries_to_fetch, ndb.get_multi(build_keys)):
+    builds = yield ndb.get_multi_async(
+        ndb.Key(model.Build, e.build_id) for e in entries_to_fetch
+    )
+    for e, b in zip(entries_to_fetch, builds):
       # Check for inconsistent entries.
       if not (b and b.bucket == e.bucket and indexed_tag in b.tags):
         logging.warning('entry with build_id %d is inconsistent', e.build_id)
@@ -497,7 +507,7 @@ def _tag_index_search(q):
   next_cursor = None
   if not eof and last_considered_entry:
     next_cursor = 'id>%d' % last_considered_entry.build_id
-  return result, next_cursor
+  raise ndb.Return(result, next_cursor)
 
 
 def indexed_tags(tags):

@@ -606,7 +606,9 @@ def peek(buckets, max_builds=None, start_cursor=None):
   if not buckets:
     raise errors.InvalidInputError('No buckets specified')
   buckets = sorted(set(buckets))
-  search.check_acls(buckets, inc_metric=PEEK_ACCESS_DENIED_ERROR_COUNTER)
+  search.check_acls_async(
+      buckets, inc_metric=PEEK_ACCESS_DENIED_ERROR_COUNTER
+  ).get_result()
   max_builds = search.fix_max_builds(max_builds)
 
   # Prune any buckets that are paused.
@@ -637,9 +639,9 @@ def peek(buckets, max_builds=None, start_cursor=None):
         b.bucket in active_buckets
     )
 
-  return search.fetch_page(
+  return search.fetch_page_async(
       q, max_builds, start_cursor, predicate=local_predicate
-  )
+  ).get_result()
 
 
 def _get_leasable_build(build_id):

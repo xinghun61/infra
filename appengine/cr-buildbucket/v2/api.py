@@ -174,10 +174,12 @@ class BuildsApi(object):
       tag = buildtags.build_address_tag(
           bucket, req.builder.builder, req.build_number
       )
-      build_v1, _ = search.search(search.Query(
-          buckets=[bucket],
-          tags=[tag],
-      ))
+      build_v1, _ = search.search_async(
+          search.Query(
+              buckets=[bucket],
+              tags=[tag],
+          )
+      ).get_result()
       build_v1 = build_v1[0] if build_v1 else None
 
     if not build_v1:
@@ -192,7 +194,7 @@ class BuildsApi(object):
     q = build_predicate_to_search_query(req.predicate)
     q.start_cursor = req.page_token
 
-    builds_v1, cursor = search.search(q)
+    builds_v1, cursor = search.search_async(q).get_result()
     return rpc_pb2.SearchBuildsResponse(
         builds=builds_to_v2(builds_v1, mask.submask('builds.*')),
         next_page_token=cursor,

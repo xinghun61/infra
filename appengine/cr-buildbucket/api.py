@@ -346,7 +346,7 @@ class BuildBucketApi(remote.Service):
   def search(self, request):
     """Searches for builds."""
     assert isinstance(request.tag, list)
-    builds, next_cursor = search.search(
+    builds, next_cursor = search.search_async(
         search.Query(
             buckets=request.bucket,
             tags=request.tag,
@@ -363,7 +363,7 @@ class BuildBucketApi(remote.Service):
             create_time_high=parse_datetime(request.creation_ts_high),
             include_experimental=request.include_experimental,
         )
-    )
+    ).get_result()
     return self.SearchResponseMessage(
         builds=map(api_common.build_to_message, builds),
         next_cursor=next_cursor,

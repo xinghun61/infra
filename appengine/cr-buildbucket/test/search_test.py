@@ -104,7 +104,7 @@ class SearchTest(testing.AppengineTestCase):
       search.add_to_tag_index_async(t, [index_entry]).get_result()
 
   def search(self, **query_attrs):
-    return search.search(search.Query(**query_attrs))
+    return search.search_async(search.Query(**query_attrs)).get_result()
 
   def test_search(self):
     build2 = model.Build(bucket=self.test_build.bucket)

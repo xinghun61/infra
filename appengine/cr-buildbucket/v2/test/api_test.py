@@ -196,8 +196,8 @@ class GetBuildTests(BaseTestCase):
     self.assertEqual(res.id, 54)
     service_get.assert_called_once_with(54)
 
-  @mock.patch('search.search', autospec=True)
-  def test_by_number(self, search_search):
+  @mock.patch('search.search_async', autospec=True)
+  def test_by_number(self, search_async):
     build_v1 = self.new_build_v1(
         project='chromium',
         bucket='luci.chromium.try',
@@ -206,7 +206,7 @@ class GetBuildTests(BaseTestCase):
             buildtags.build_address_tag('luci.chromium.try', 'linux-try', 2),
         ],
     )
-    search_search.return_value = ([build_v1], None)
+    search_async.return_value = future(([build_v1], None))
     builder_id = build_pb2.BuilderID(
         project='chromium', bucket='try', builder='linux-try'
     )
@@ -216,7 +216,7 @@ class GetBuildTests(BaseTestCase):
     self.assertEqual(res.builder, builder_id)
     self.assertEqual(res.number, 2)
 
-    search_search.assert_called_once_with(
+    search_async.assert_called_once_with(
         search.Query(
             buckets=['luci.chromium.try'],
             tags=['build_address:luci.chromium.try/linux-try/2'],
@@ -249,10 +249,10 @@ class GetBuildTests(BaseTestCase):
 
 class SearchTests(BaseTestCase):
 
-  @mock.patch('search.search', autospec=True)
-  def test_basic(self, service_search):
+  @mock.patch('search.search_async', autospec=True)
+  def test_basic(self, search_async):
     builds_v1 = [self.new_build_v1(id=54), self.new_build_v1(id=55)]
-    service_search.return_value = (builds_v1, 'next page token')
+    search_async.return_value = future((builds_v1, 'next page token'))
 
     req = rpc_pb2.SearchBuildsRequest(
         predicate=rpc_pb2.BuildPredicate(
@@ -263,7 +263,7 @@ class SearchTests(BaseTestCase):
     )
     res = self.call(self.api.SearchBuilds, req)
 
-    service_search.assert_called_once_with(
+    search_async.assert_called_once_with(
         search.Query(
             buckets=['luci.chromium.try'],
             tags=['builder:linux-try'],

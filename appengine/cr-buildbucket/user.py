@@ -121,6 +121,11 @@ ROLES_FOR_ACTION = {
 ## Granular actions. API uses these.
 
 
+def can_async_fn(action):
+  assert isinstance(action, Action)
+  return lambda bucket: can_async(bucket, action)  # pragma: no cover
+
+
 def can_fn(action):
   assert isinstance(action, Action)
   return lambda bucket: can(bucket, action)  # pragma: no cover
@@ -134,7 +139,7 @@ def can_fn_for_build(action):
 # Functions for each Action.
 # Some accept build as first param, others accept bucket name.
 can_view_build = can_fn_for_build(Action.VIEW_BUILD)
-can_search_builds = can_fn(Action.SEARCH_BUILDS)
+can_search_builds_async = can_async_fn(Action.SEARCH_BUILDS)
 can_add_build = can_fn(Action.ADD_BUILD)
 can_add_build_async = lambda bucket: can_async(bucket, Action.ADD_BUILD)
 can_lease_build = can_fn_for_build(Action.LEASE_BUILD)

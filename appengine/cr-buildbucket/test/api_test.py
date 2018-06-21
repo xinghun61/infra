@@ -307,10 +307,10 @@ class EndpointsApiTest(testing.EndpointsTestCase):
 
   ####### SEARCH ###############################################################
 
-  @mock.patch('search.search', autospec=True)
-  def test_search(self, search_search):
+  @mock.patch('search.search_async', autospec=True)
+  def test_search(self, search_async):
     self.test_build.put()
-    search_search.return_value = ([self.test_build], 'the cursor')
+    search_async.return_value = future(([self.test_build], 'the cursor'))
 
     time_low = model.BEGINING_OF_THE_WORLD
     time_high = datetime.datetime(2120, 5, 4)
@@ -329,7 +329,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
 
     res = self.call_api('search', req).json_body
 
-    search_search.assert_called_once_with(
+    search_async.assert_called_once_with(
         search.Query(
             buckets=req['bucket'],
             tags=req['tag'],
