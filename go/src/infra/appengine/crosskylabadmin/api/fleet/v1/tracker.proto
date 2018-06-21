@@ -1,0 +1,76 @@
+// Copyright 2018 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package crosskylabadmin.fleet;
+
+option go_package = "fleet";
+
+// Tracker service exposes rpcs to summarize the state of ChromeOS Skylab
+// Swarming bot fleet.
+service Tracker {
+    // RefreshBots instructs the Tracker service to update Swarming bot
+    // information from the Swarming server hosting ChromeOS Skylab bots.
+    //
+    // RefreshBots stops at the first error encountered and returns the error. A
+    // failed RefreshBots call may have refreshed some of the bots requested.
+    // It is safe to call RefreshBots to continue from a partially failed call.
+    rpc RefreshBots(RefreshBotsRequest) returns (RefreshBotsResponse);
+
+    // SummarizeBots returns summary information about Swarming bots.
+    // This includes ChromeOS Skylab specific dimensions/state information as
+    // well as a summary of the recenty history of administrative tasks.
+    //
+    // SummarizeBots stops at the first error encountered and returns the error.
+    rpc SummarizeBots(SummarizeBotsRequest) returns (SummarizeBotsResponse);
+}
+
+// RefreshBotsRequest can be used to restrict the Swarming bots to refresh via
+// the Tracker.RefreshBots rpc.
+message RefreshBotsRequest {
+    // selectors whitelists the bots to refresh. This includes new bots
+    // discovered from Swarming matching the selectors.
+    // Bots selected via repeated selectors are unioned together.
+    //
+    // If no selectors are provided, all bots are selected.
+    repeated BotSelector selectors = 2;
+}
+
+// RefreshBotsResponse contains information about the Swarming bots actually
+// refreshed in response to a Tracker.RefreshBots rpc.
+message RefreshBotsResponse {
+    // dut_ids lists the dut_id of of the bots refreshed.
+    repeated string dut_ids = 1;
+}
+
+// SummarizeBotsRequest can be used to restrict the Swarming bots to summarize
+// via the Tracker.SummarizeBots rpc.
+message SummarizeBotsRequest {
+    // selectors whitelists the bots to refresh, from the already known bots to
+    // Tracker. Bots selected via repeated selectors are unioned together.
+    //
+    // If no selectors are provided, all bots are selected.
+    repeated BotSelector selectors = 1;
+}
+
+// BotSelector is used to whitelist Swarming bots to select for various Tracker
+// rpcs.
+message BotSelector {
+    // dut_ids selects bots by the dut_id dimension.
+    string dut_id = 1;
+}
+
+// SummarizeBotsResponse contains summary information about Swarming bots
+// returned by the Tracker.SummarizeBots rpc.
+message SummarizeBotsResponse {
+    repeated BotSummary bots = 1;
+}
+
+// BotSummary contains the summary information tracked by Tracker for a single
+// Skylab Swarming bot.
+message BotSummary {
+    // dut_id contains the dut_id dimension for the bot.
+    string dut_id = 1;
+}
