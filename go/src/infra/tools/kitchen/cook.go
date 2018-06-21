@@ -449,7 +449,9 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		}
 	}
 
-	c.updateEnv(&env)
+	if err := c.updateEnv(&env); err != nil {
+		return fail(errors.Annotate(err, "failed to update the environment").Err())
+	}
 
 	// Make kitchen use the new $PATH too. This is needed for exec.LookPath called
 	// by kitchen to pick up binaries in the modified $PATH. In practice, we do it
@@ -503,16 +505,25 @@ func (c *cookRun) flushResult(result *build.BuildRunResult) (err error) {
 	return m.Marshal(f, result)
 }
 
-// updateEnv updates $PATH, $PYTHONPATH and temp path env variables in env.
-func (c *cookRun) updateEnv(env *environ.Env) {
-	// Tell subprocesses to use Kitchen's temp dir.
+// updateEnv updates temp path env variables in env.
+func (c *cookRun) updateEnv(env *environ.Env) error {
 	if c.TempDir == "" {
 		// It should have been initialized in c.run.
-		panic("TempDir was not initialzied earlier")
+		panic("TempDir was not initialized earlier")
+	}
+	// Tell subprocesses to use a subdirectory in Kitchen's temp dir. Note that
+	// we can't use TempDir directly because some overzealous scripts like to
+	// remove everything they find under TEMPDIR, and it breaks Kitchen internals
+	// that keep some files in c.TempDir (in particular git and gsutil configs
+	// setup by AuthContext).
+	tmp := filepath.Join(c.TempDir, "t")
+	if err := os.Mkdir(tmp, 0700); err != nil && !os.IsExist(err) {
+		return errors.Annotate(err, "failed to create temp dir for the task (%s)", tmp).Err()
 	}
 	for _, v := range []string{"TEMPDIR", "TMPDIR", "TEMP", "TMP", "MAC_CHROMIUM_TMPDIR"} {
-		env.Set(v, c.TempDir)
+		env.Set(v, tmp)
 	}
+	return nil
 }
 
 // reportProperties serializes to JSON and logs given properties.

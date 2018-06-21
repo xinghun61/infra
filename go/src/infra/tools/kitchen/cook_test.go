@@ -34,16 +34,21 @@ func TestCook(t *testing.T) {
 		cook := cmdCook.CommandRun().(*cookRun)
 
 		Convey("updateEnv", func() {
-			cook.TempDir = "/tmp"
+			tdir, err := ioutil.TempDir("", "kitchen-test-")
+			So(err, ShouldBeNil)
+			defer os.RemoveAll(tdir)
+
+			cook.TempDir = tdir
+			expected := filepath.Join(tdir, "t")
 
 			env := environ.New(nil)
-			cook.updateEnv(&env)
+			So(cook.updateEnv(&env), ShouldBeNil)
 			So(env.Map(), ShouldResemble, map[string]string{
-				"TEMPDIR": "/tmp",
-				"TMPDIR":  "/tmp",
-				"TEMP":    "/tmp",
-				"TMP":     "/tmp",
-				"MAC_CHROMIUM_TMPDIR": "/tmp",
+				"TEMPDIR": expected,
+				"TMPDIR":  expected,
+				"TEMP":    expected,
+				"TMP":     expected,
+				"MAC_CHROMIUM_TMPDIR": expected,
 			})
 		})
 
