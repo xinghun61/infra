@@ -30,13 +30,14 @@ def GetGitBlame(repo_url, revision, touched_file_path):
   return git_repo.GetBlame(touched_file_path, revision)
 
 
-def PullChangeLogs(start_revision, end_revision):
+def PullChangeLogs(start_revision, end_revision, **kwargs):
   """Pulls change logs for CLs between start_revision and end_revision.
 
   Args:
     start_revision (str): Start revision of the range, excluded.
-    end_revision (str): End revision of the range, included.
-
+    end_revision (str): End revision of the range, included. If end_revision is
+      None, pulls all changes after start_revision.
+    kwargs(dict): Keyword arguments passed as additional params for the query.
   Returns:
     A dict with the following form:
     {
@@ -45,22 +46,13 @@ def PullChangeLogs(start_revision, end_revision):
     }
   """
   if not start_revision:
-    # If cannot find any last_pass to be used as start_revision, return empty
-    # change logs.
-    # Unlike end_revision is None which indicates something is wrong in Findit,
-    # start_revision is None is an unfortunate corner case that failure(s) in
-    # current build kept happening in too many previous builds continuously, and
-    # Findit should end the analysis gracefully.
     return {}
-
-  # End revision is the chromium_revision of the current failed build, it should
-  # not be None.
-  assert end_revision, 'No end_revision when pull change logs'
 
   git_repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
   change_logs = {}
 
-  change_log_list = git_repo.GetChangeLogs(start_revision, end_revision)
+  change_log_list = git_repo.GetChangeLogs(start_revision, end_revision,
+                                           **kwargs)
 
   for change_log in change_log_list:
     change_logs[change_log.revision] = change_log
@@ -146,3 +138,13 @@ def CountRecentCommits(repo_url,
       else:
         return count
   return count
+
+
+def GetCommitsBySameAutherAfterRevision(revision):
+  """Gets later changes that are written by the given revision's author."""
+  git_repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
+  original_cl_change_log = git_repo.GetChangeLog(revision)
+  author_email = original_cl_change_log.author.email
+
+  later_changes = PullChangeLogs(revision, None, author=author_email)
+  return later_changes.keys()

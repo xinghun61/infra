@@ -35,19 +35,19 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
     culprits = pipeline_input.culprits
     build_failure_type = failure_type.TEST
 
-    for culprit in culprits.itervalues():
+    for culprit_revision, culprit_key in culprits.iteritems():
       revert_status = gerrit.SKIPPED
-      if test_culprit_action.CanAutoCreateRevert(culprit, pipeline_input):
+      if test_culprit_action.CanAutoCreateRevert(culprit_key, pipeline_input):
         revert_status = yield CreateRevertCLPipeline(
             CreateRevertCLParameters(
-                cl_key=culprit,
+                cl_key=culprit_key,
                 build_id=build_id,
                 failure_type=build_failure_type))
 
-        if test_culprit_action.CanAutoCommitRevertByFindit():
+        if test_culprit_action.CanAutoCommitRevertByFindit(culprit_revision):
           submit_revert_pipeline_input = self.CreateInputObjectInstance(
               SubmitRevertCLParameters,
-              cl_key=culprit,
+              cl_key=culprit_key,
               revert_status=revert_status,
               failure_type=build_failure_type)
           yield SubmitRevertCLPipeline(submit_revert_pipeline_input)
@@ -56,8 +56,8 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
       # if so send notification right away.
       send_notification_to_culprit_input = CreateInputObjectInstance(
           SendNotificationForCulpritParameters,
-          cl_key=culprit,
-          force_notify=culprit_action.ShouldForceNotify(culprit,
+          cl_key=culprit_key,
+          force_notify=culprit_action.ShouldForceNotify(culprit_key,
                                                         pipeline_input),
           revert_status=revert_status,
           failure_type=build_failure_type)

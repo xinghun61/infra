@@ -17,7 +17,7 @@ from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services import culprit_action
 from services import gerrit
-from services.flake_failure import data_point_util
+from services import git
 from services.flake_failure import flake_constants
 from services.flake_failure import pass_rate_util
 from services.parameters import CreateRevertCLParameters
@@ -105,6 +105,12 @@ def CreateAndSubmitRevert(parameters, runner_id):
         'Not reverting: RevertCulprit wasn\'t able to create a revert.')
     return False
 
+  can_commit, reason = CheckIfCanSubmitRevert(culprit.revision)
+  if not can_commit:
+    analysis.Update(has_created_autorevert=True)
+    analysis.LogInfo('Not reverting: %s' % reason)
+    return False
+
   submit_revert_paramters = SubmitRevertCLParameters(
       cl_key=culprit.key.urlsafe(),
       revert_status=revert_status,
@@ -114,6 +120,7 @@ def CreateAndSubmitRevert(parameters, runner_id):
   if submit_revert_status != gerrit.COMMITTED:
     analysis.LogInfo(
         'Not reverting: CommitRevert wasn\'t able to submit the revert')
+    analysis.Update(has_created_autorevert=True)
     return False
 
   analysis.Update(
@@ -157,6 +164,20 @@ def CanRevertForAnalysis(analysis):
           previous_data_point.pass_rate,
           flake_constants.PASS_RATE_TEST_NOT_FOUND) and
       gerrit.WasCulpritCommittedWithinTime(culprit.repo_name, culprit.revision))
+
+
+def CheckIfCanSubmitRevert(culprit_revision):
+  """Checks criteria to determine if the revision can be committed.
+
+  Criteria:
+    + There should be no later change by the culprit's author.
+    
+  Returns:
+    (bool, str): If the revert can be committed and reason.
+  """
+  if git.GetCommitsBySameAutherAfterRevision(culprit_revision):
+    return False, 'There are changes by the culprit author after the culprit.'
+  return True, 'Criteria are met, can commit the revert.'
 
 
 def CulpritAddedNewFlakyTest(analysis, culprit_commit_position):
@@ -223,9 +244,8 @@ def NotifyCulprit(culprit):
   sent = False
 
   if codereview and review_change_id:
-    message = _NOTIFICATION_MESSAGE_TEMPLATE.format(culprit.commit_position or
-                                                    culprit.revision,
-                                                    culprit.key.urlsafe())
+    message = _NOTIFICATION_MESSAGE_TEMPLATE.format(
+        culprit.commit_position or culprit.revision, culprit.key.urlsafe())
     sent = codereview.PostMessage(review_change_id, message)
   else:
     # Occasionally, a commit was not uploaded for code-review.

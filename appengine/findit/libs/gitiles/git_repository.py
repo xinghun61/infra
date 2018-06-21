@@ -11,8 +11,17 @@ class GitRepository(object):  # pragma: no cover
     """Returns the change log of the given revision."""
     raise NotImplemented()
 
-  def GetChangeLogs(self, start_revision, end_revision, n=1000):
-    """Returns change log list in (start_revision, end_revision]."""
+  def GetChangeLogs(self, start_revision, end_revision, **kwargs):
+    """Returns change log list in (start_revision, end_revision].
+
+    Args:
+      start_revision: The oldest revision in the range. If it's None, we will
+        return all commits before and including end_revision (since the very
+        first commit).
+      end_revision: The latest revision in the range. If it's None, we will
+        return all commits after the start_revision (till the latest commit).
+      kwargs(dict): Keyword arguments passed as additional params for the query.
+    """
     raise NotImplemented()
 
   def GetChangeDiff(self, revision):

@@ -86,9 +86,7 @@ class GitilesRepository(GitRepository):
 
   def _SendRequestForTextResponse(self, url):
     status_code, content, _response_headers = self.http_client.Get(
-        url, {
-            'format': 'text'
-        })
+        url, {'format': 'text'})
     if status_code != 200:
       return None
     return base64.b64decode(content)
@@ -227,7 +225,7 @@ class GitilesRepository(GitRepository):
     url = '%s/+/%s/%s' % (self.repo_url, urllib.quote(revision), path)
     return self._SendRequestForTextResponse(url)
 
-  def GetChangeLogs(self, start_revision, end_revision, n=1000):
+  def GetChangeLogs(self, start_revision, end_revision, **kwargs):
     """Gets a list of ChangeLogs in revision range by batch.
 
     Args:
@@ -236,8 +234,7 @@ class GitilesRepository(GitRepository):
         first commit).
       end_revision: The latest revision in the range. If it's None, we will
         return all commits after the start_revision (till the latest commit).
-      n (int): The maximum number of revisions to request at a time (default
-        to 1000).
+      kwargs(dict): Keyword arguments passed as additional params for the query.
 
     Returns:
       A list of changelogs in (start_revision, end_revision].
@@ -247,11 +244,14 @@ class GitilesRepository(GitRepository):
 
     while True:
       url = self._GetChangeLogUrl(start_revision, next_end_revision)
-      data = self._SendRequestForJsonResponse(
-          url, params={
-              'n': str(n),
-              'name-status': '1'
-          })
+      params = {
+          'n': '1000',  # Default value, could be replaced if n is in kwargs.
+          'name-status': '1'
+      }
+      for k, v in kwargs.iteritems():
+        params[k] = v
+
+      data = self._SendRequestForJsonResponse(url, params=params)
       assert data is not None, '_SendRequestForJsonResponse failed unexpectedly'
 
       for log in data['log']:

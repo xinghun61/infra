@@ -19,6 +19,7 @@ from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)
 from services import culprit_action
 from services import gerrit
+from services import git
 from services.flake_failure import culprit_util
 from services.flake_failure import flake_constants
 from services.parameters import CreateRevertCLParameters
@@ -36,9 +37,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     with mock.patch.object(
         waterfall_config,
         'GetCheckFlakeSettings',
-        return_value={
-            'autorevert_enabled': True
-        }):
+        return_value={'autorevert_enabled': True}):
       self.assertTrue(culprit_util.IsAutorevertEnabled())
 
   def testAbortCreateAndSubmitRevertNothingMatchesNothingChanged(self):
@@ -112,6 +111,8 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(culprit.submit_revert_pipeline_id)
     self.assertEqual(analysis_status.ERROR, culprit.revert_submission_status)
 
+  @mock.patch.object(
+      culprit_util, 'CheckIfCanSubmitRevert', return_value=(True, ''))
   @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
       culprit_action, 'CommitRevert', return_value=gerrit.COMMITTED)
@@ -120,7 +121,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevert(self, under_limit, can_revert, revert_fn,
-                                commit_fn, enabled_fn):
+                                commit_fn, enabled_fn, _):
     build_id = 'mock_build_id'
     repo = 'chromium'
     rev = 'rev1'
@@ -302,14 +303,58 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(analysis.has_created_autorevert)
     self.assertFalse(analysis.has_submitted_autorevert)
 
+  @mock.patch.object(
+      culprit_util,
+      'CheckIfCanSubmitRevert',
+      return_value=(False, 'There are changes by the culprit author after'
+                    ' the culprit.'))
+  @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
+  @mock.patch.object(
+      culprit_action, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
+  @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
+  @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
+  def testCreateAndSubmitRevertCannotSubmit(self, under_limit, can_revert,
+                                            revert_fn, enabled_fn, _):
+    build_id = 'mock_build_id'
+    repo = 'chromium'
+    rev = 'rev1'
+    commit_position = 100
+    pipeline_id = 'foo'
+
+    culprit = FlakeCulprit.Create(repo, rev, commit_position)
+    culprit.put()
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.put()
+
+    revert_expected = CreateRevertCLParameters(
+        cl_key=culprit.key.urlsafe(),
+        build_id=build_id,
+        failure_type=failure_type.FLAKY_TEST)
+
+    pipeline_input = CreateAndSubmitRevertInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
+    culprit_util.CreateAndSubmitRevert(pipeline_input, pipeline_id)
+
+    enabled_fn.assert_called_once()
+    under_limit.assert_called_once()
+    can_revert.assert_called_once_with(analysis)
+    revert_fn.assert_called_once_with(revert_expected, pipeline_id)
+
+    self.assertTrue(analysis.has_created_autorevert)
+    self.assertFalse(analysis.has_submitted_autorevert)
+
+  @mock.patch.object(
+      culprit_util, 'CheckIfCanSubmitRevert', return_value=(True, ''))
   @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(culprit_action, 'CommitRevert', return_value=gerrit.ERROR)
   @mock.patch.object(
       culprit_action, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
-  def testCreateAndSubmitRevertSubmitFailed(self, under_limit, can_revert,
-                                            revert_fn, commit_fn, enabled_fn):
+  def testCreateAndSubmitRevertSubmitFailed(
+      self, under_limit, can_revert, revert_fn, commit_fn, enabled_fn, _):
     build_id = 'mock_build_id'
     repo = 'chromium'
     rev = 'rev1'
@@ -342,7 +387,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     revert_fn.assert_called_once_with(revert_expected, pipeline_id)
     commit_fn.assert_called_once_with(submit_expected, pipeline_id)
 
-    self.assertFalse(analysis.has_created_autorevert)
+    self.assertTrue(analysis.has_created_autorevert)
     self.assertFalse(analysis.has_submitted_autorevert)
     self.assertIsNone(analysis.autorevert_submission_time)
 
@@ -414,15 +459,15 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         culprit_util.GetMinimumConfidenceToNotifyCulprits())
 
   def testIsConfiguredToNotifyCulpritsFalse(self):
-    self.UpdateUnitTestConfigSettings('action_settings', {
-        'cr_notification_should_notify_flake_culprit': False
-    })
+    self.UpdateUnitTestConfigSettings(
+        'action_settings',
+        {'cr_notification_should_notify_flake_culprit': False})
     self.assertFalse(culprit_util.IsConfiguredToNotifyCulprits())
 
   def testIsConfiguredToNotifyCulpritsTrue(self):
-    self.UpdateUnitTestConfigSettings('action_settings', {
-        'cr_notification_should_notify_flake_culprit': True
-    })
+    self.UpdateUnitTestConfigSettings(
+        'action_settings',
+        {'cr_notification_should_notify_flake_culprit': True})
     self.assertTrue(culprit_util.IsConfiguredToNotifyCulprits())
 
   def testPrepareCulpritForSendingNotificationAlreadySent(self):
@@ -628,3 +673,16 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(culprit_util.NotifyCulprit(culprit))
     culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
     self.assertEqual(culprit.cr_notification_status, analysis_status.COMPLETED)
+
+  @mock.patch.object(
+      git, 'GetCommitsBySameAutherAfterRevision', return_value=[])
+  def testCheckIfCanSubmitRevert(self, _):
+    self.assertEqual((True, 'Criteria are met, can commit the revert.'),
+                     culprit_util.CheckIfCanSubmitRevert('rev'))
+
+  @mock.patch.object(
+      git, 'GetCommitsBySameAutherAfterRevision', return_value=['rev2'])
+  def testCheckIfCanSubmitRevert(self, _):
+    self.assertEqual(
+        (False, 'There are changes by the culprit author after the culprit.'),
+        culprit_util.CheckIfCanSubmitRevert('rev'))

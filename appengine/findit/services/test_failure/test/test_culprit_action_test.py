@@ -10,6 +10,7 @@ from dto.dict_of_basestring import DictOfBasestring
 from libs import time_util
 from libs.list_of_basestring import ListOfBasestring
 from model.wf_suspected_cl import WfSuspectedCL
+from services import git
 from services.parameters import CulpritActionParameters
 from services.test_failure import test_culprit_action
 from waterfall import suspected_cl_util
@@ -121,21 +122,21 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       waterfall_config,
       'GetActionSettings',
-      return_value={
-          'auto_commit_revert_test': False
-      })
+      return_value={'auto_commit_revert_test': False})
   def testCanNotCommitRevertFeatureIsOff(self, _):
-    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit())
+    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit('rev'))
 
   @mock.patch.object(
       test_culprit_action, '_GetDailyNumberOfCommits', return_value=10)
   def testCannotCommitRevertFeatureCommitExceeds(self, _):
-    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit())
+    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit('rev'))
 
+  @mock.patch.object(
+      git, 'GetCommitsBySameAutherAfterRevision', return_value=['rev2'])
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
   @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
-  def testCanAutoCommitRevertByFindit(self, mock_info, _):
+  def testCanAutoCommitRevertByFinditAuthorLandedAnotherCL(self, mock_info, *_):
     repo_name = 'chromium'
     revision = 'rev1'
 
@@ -153,4 +154,29 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.revert_committed_time = datetime(2018, 2, 14, 12, 0, 0)
     culprit.put()
 
-    self.assertTrue(test_culprit_action.CanAutoCommitRevertByFindit())
+    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit(revision))
+
+  @mock.patch.object(
+      git, 'GetCommitsBySameAutherAfterRevision', return_value=[])
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
+  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  def testCanAutoCommitRevertByFindit(self, mock_info, *_):
+    repo_name = 'chromium'
+    revision = 'rev1'
+
+    mock_info.return_value = {
+        'commit_position': 123,
+        'code_review_url': 'https://chromium-review.googlesource.com/12345',
+        'review_server_host': 'chromium-review.googlesource.com',
+        'review_change_id': '12345',
+        'author': {
+            'email': 'abc@chromium.org'
+        }
+    }
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.failure_type.append(failure_type.TEST)
+    culprit.revert_committed_time = datetime(2018, 2, 14, 12, 0, 0)
+    culprit.put()
+
+    self.assertTrue(test_culprit_action.CanAutoCommitRevertByFindit(revision))

@@ -205,6 +205,10 @@ def HeuristicAnalysisForCompile(heuristic_params):
   analysis.failure_info = failure_info.ToSerializable()
   analysis.put()
 
+  # Lacking chromium_revision indicates something is wrong in Findit,
+  assert failure_info.chromium_revision, (
+      'No end_revision when pulling change logs.')
+
   # 2. Extracts failure signal.
   signals = extract_compile_signal.ExtractSignalsForCompileFailure(
       failure_info, FinditHttpClient())
