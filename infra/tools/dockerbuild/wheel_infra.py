@@ -5,6 +5,7 @@
 import os
 
 from . import source
+from . import builder
 from . import util
 
 from . import wheel_wheel
@@ -45,6 +46,6 @@ def InfraBuilder(name):
   def build_fn(system, wheel):
     path = _local_path(system)
     src = source.local_directory(name, wheel.spec.version, path)
-    return wheel_wheel.BuildPackageFromPyPiSource(system, wheel, src)
+    return builder.BuildPackageFromSource(system, wheel, src)
 
   return Builder(spec, build_fn, version_fn=version_fn)
