@@ -571,36 +571,49 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual([0], actual)
 
   def testIngestUserRefs_ByExistingID(self):
+    """Users can be specified by user_id."""
     self.services.user.TestAddUser('user1@example.com', 111L)
     ref = common_pb2.UserRef(user_id=111L)
     actual = converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
     self.assertEqual([111L], actual)
 
   def testIngestUserRefs_ByNonExistingID(self):
+    """We reject references to non-existing user IDs."""
     ref = common_pb2.UserRef(user_id=999L)
     with self.assertRaises(exceptions.NoSuchUserException):
       converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
 
   def testIngestUserRefs_ByExistingEmail(self):
+    """Existing users can be specified by email address."""
     self.services.user.TestAddUser('user1@example.com', 111L)
     ref = common_pb2.UserRef(display_name='user1@example.com')
     actual = converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
     self.assertEqual([111L], actual)
 
   def testIngestUserRefs_ByNonExistingEmail(self):
+    """New users can be specified by email address."""
     # Case where autocreate=False
     ref = common_pb2.UserRef(display_name='new@example.com')
     with self.assertRaises(exceptions.NoSuchUserException):
       converters.IngestUserRefs(
           self.cnxn, [ref], self.services.user, autocreate=False)
 
-    # Case where autocreate=False
+    # Case where autocreate=True
     actual = converters.IngestUserRefs(
         self.cnxn, [ref], self.services.user, autocreate=True)
     user_id = self.services.user.LookupUserID(self.cnxn, 'new@example.com')
     self.assertEqual([user_id], actual)
 
+  def testIngestUserRefs_ByMalformedEmail(self):
+    """We ignore malformed user emails."""
+    ref = common_pb2.UserRef(display_name='Bob')
+    converters.IngestUserRefs(
+        self.cnxn, [ref], self.services.user, autocreate=True)
+    with self.assertRaises(exceptions.NoSuchUserException):
+      self.services.user.LookupUserID(self.cnxn, 'Bob')
+
   def testIngestUserRefs_MixOfIDAndEmail(self):
+    """Requests can specify some users by ID and others by email."""
     self.services.user.TestAddUser('user1@example.com', 111L)
     self.services.user.TestAddUser('user2@example.com', 222L)
     self.services.user.TestAddUser('user3@example.com', 333L)

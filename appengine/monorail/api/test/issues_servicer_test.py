@@ -24,6 +24,7 @@ from businesslogic import work_env
 from features import send_notifications
 from framework import authdata
 from framework import monorailcontext
+from framework import permissions
 from proto import tracker_pb2
 from testing import fake
 from services import service_manager
@@ -45,9 +46,9 @@ class IssuesServicerTest(unittest.TestCase):
         features=fake.FeaturesService())
     self.project = self.services.project.TestAddProject(
         'proj', project_id=789, owner_ids=[111L], contrib_ids=[222L, 333L])
-    self.user = self.services.user.TestAddUser('owner@example.com', 111L)
-    self.user = self.services.user.TestAddUser('approver2@example.com', 222L)
-    self.user = self.services.user.TestAddUser('approver3@example.com', 333L)
+    self.user_1 = self.services.user.TestAddUser('owner@example.com', 111L)
+    self.user_2 = self.services.user.TestAddUser('approver2@example.com', 222L)
+    self.user_3 = self.services.user.TestAddUser('approver3@example.com', 333L)
     self.issue_1 = fake.MakeTestIssue(
         789, 1, 'sum', 'New', 111L, project_name='proj',
         opened_timestamp=self.NOW)
@@ -112,6 +113,112 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(1, len(actual.blocked_on_issue_refs))
     self.assertEqual('proj', actual.blocked_on_issue_refs[0].project_name)
     self.assertEqual(2, actual.blocked_on_issue_refs[0].local_id)
+
+  def testUpdateIssue_Denied(self):
+    """We reject requests to update an issue when the user lacks perms."""
+    request = issues_pb2.UpdateIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+
+    # Anon user can never update.
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    # Signed in user cannot view this issue.
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    self.issue_1.labels = ['Restrict-View-CoreTeam']
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    # Signed in user cannot edit this issue.
+    self.issue_1.labels = ['Restrict-EditIssue-CoreTeam']
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_Normal(self, fake_pasicn):
+    """We can update an issue."""
+    request = issues_pb2.UpdateIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    request.delta.summary.value = 'New summary'
+    request.delta.label_refs_add.extend([
+        common_pb2.LabelRef(label='Hot')])
+    request.comment_content = 'test comment'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    response = self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    actual = response.issue
+    # Intended stuff was changed.
+    self.assertEqual(1, len(actual.label_refs))
+    self.assertEqual('Hot', actual.label_refs[0].label)
+    self.assertEqual('New summary', actual.summary)
+
+    # Other stuff didn't change.
+    self.assertEqual('proj', actual.project_name)
+    self.assertEqual(1, actual.local_id)
+    self.assertEqual(1, len(actual.blocked_on_issue_refs))
+    self.assertEqual('proj', actual.blocked_on_issue_refs[0].project_name)
+    self.assertEqual(2, actual.blocked_on_issue_refs[0].local_id)
+
+    # A comment was added.
+    fake_pasicn.assert_called_once()
+    comments = self.services.issue.GetCommentsForIssue(
+        self.cnxn, self.issue_1.issue_id)
+    self.assertEqual(2, len(comments))
+    self.assertEqual('test comment', comments[1].content)
+
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_CommentOnly(self, fake_pasicn):
+    """We can update an issue with a comment w/o making any other changes."""
+    request = issues_pb2.UpdateIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    request.comment_content = 'test comment'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    # A comment was added.
+    fake_pasicn.assert_called_once()
+    comments = self.services.issue.GetCommentsForIssue(
+        self.cnxn, self.issue_1.issue_id)
+    self.assertEqual(2, len(comments))
+    self.assertEqual('test comment', comments[1].content)
+
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_NoOp(self, fake_pasicn):
+    """We gracefully ignore requests that have no delta or comment."""
+    request = issues_pb2.UpdateIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    response = self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    actual = response.issue
+    # Other stuff didn't change.
+    self.assertEqual('proj', actual.project_name)
+    self.assertEqual(1, actual.local_id)
+    self.assertEqual('sum', actual.summary)
+    self.assertEqual('New', actual.status_ref.status)
+
+    # No comment was added.
+    fake_pasicn.assert_not_called()
+    comments = self.services.issue.GetCommentsForIssue(
+        self.cnxn, self.issue_1.issue_id)
+    self.assertEqual(1, len(comments))
 
   def testListComments_Normal(self):
     """We can get comments on an issue."""

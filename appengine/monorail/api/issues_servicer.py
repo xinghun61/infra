@@ -14,9 +14,8 @@ from api.api_proto import issues_pb2
 from api.api_proto import issues_prpc_pb2
 from businesslogic import work_env
 from framework import framework_views
+from proto import tracker_pb2
 from tracker import tracker_bizobj
-
-from proto import tracker_pb2  # @@@
 
 
 class IssuesServicer(monorail_servicer.MonorailServicer):

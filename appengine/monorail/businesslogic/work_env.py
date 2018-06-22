@@ -589,12 +589,13 @@ class WorkEnv(object):
           self.mc.cnxn, issue.project_id)
 
     with self.mc.profiler.Phase('Generating notifications'):
-      hostport = framework_helpers.GetHostPort()
-      reporter_id = self.mc.auth.user_id
-      send_notifications.PrepareAndSendIssueChangeNotification(
-          issue.issue_id, hostport, reporter_id,
-          send_email=send_email, old_owner_id=old_owner_id,
-          comment_id=comment_pb.id)
+      if comment_pb:
+        hostport = framework_helpers.GetHostPort()
+        reporter_id = self.mc.auth.user_id
+        send_notifications.PrepareAndSendIssueChangeNotification(
+            issue.issue_id, hostport, reporter_id,
+            send_email=send_email, old_owner_id=old_owner_id,
+            comment_id=comment_pb.id)
 
   def DeleteIssue(self, issue, delete):
     """Mark or unmark the given issue as deleted."""
