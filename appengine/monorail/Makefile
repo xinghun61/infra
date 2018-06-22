@@ -93,7 +93,6 @@ wct: deps
 wct_debug: deps
 	go run ../../go/src/infra/tools/wct/wct.go ../../go/src/infra/tools/wct/monkeypatch.go -base=. -prefix=elements/test/ -chrome=google-chrome -persist
 
-
 pylint:
 	pylint -f parseable *py {$(PY_DIRS)}{/,/test/}*py
 

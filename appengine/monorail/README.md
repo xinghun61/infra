@@ -75,6 +75,21 @@ For quick debugging, if you need to run just one test you can do the following. 
 ../../test.py test appengine/monorail:services.test.issue_svc_test.IssueServiceTest.testUpdateIssues_Normal --no-coverage
 ```
 
+### Frontend testing
+
+
+To run the frontend tests for Monorail, you first need to set up your Go environment. From the Monorail directory, run:
+
+```
+eval `../../go/env.py`
+```
+
+Then, to run the frontend tests, run:
+
+```
+make wct
+```
+
 ## Troubleshooting
 
 *   **<code>TypeError: connect() got an unexpected keyword argument 'charset'</code></strong>

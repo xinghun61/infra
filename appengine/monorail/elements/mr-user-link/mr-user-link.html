@@ -1,0 +1,18 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="mr-user-link">
+  <template>
+    <template is="dom-if" if="[[userId]]">
+      <a
+        href$="/u/[[userId]]"
+        title$="[[displayName]]"
+      >
+        [[displayName]]
+      </a>
+    </template>
+    <span hidden$="[[userId]]">
+      [[displayName]]
+    </span>
+  </template>
+  <script src="./mr-user-link.js"></script>
+<dom-module>

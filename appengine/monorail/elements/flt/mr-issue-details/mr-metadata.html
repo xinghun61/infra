@@ -1,11 +1,14 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
+<link rel="import" href="../../mr-user-link/mr-user-link.html">
 <link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
+<link rel="import" href="../../mixins/redux-mixin.html">
 
 <dom-module id="mr-metadata">
   <template>
@@ -19,6 +22,9 @@
       a.label {
         color: hsl(120, 100%, 25%);
         text-decoration: none;
+      }
+      a.label[data-derived] {
+        font-style: italic;
       }
       chops-button {
         border: 1px solid hsl(120, 15%, 90%);
@@ -41,7 +47,7 @@
         width: 60%;
       }
       th {
-        float: left;
+        text-align: left;
       }
       .dialog-actions {
         text-align: right;
@@ -71,105 +77,130 @@
       }
     </style>
     <table>
+      <tr>
+        <th>Owner:</th>
+        <td>
+          <mr-user-link
+            display-name="[[issue.ownerRef.displayName]]"
+            user-id="[[issue.ownerRef.userId]]"
+          ></mr-user-link>
+        </td>
+      </tr>
+      <tr hidden$="[[!issue.ccRefs.length]]">
+        <th>CC:</th>
+        <td>
+          <template is="dom-repeat" items="[[issue.ccRefs]]">
+            <mr-user-link
+              display-name="[[item.displayName]]"
+              user-id="[[item.userId]]"
+            ></mr-user-link><br />
+          </template>
+        </td>
+      </tr>
       <template is="dom-repeat" items="[[users]]" as="user">
         <tr>
           <th>[[user.name]]:</th>
           <td>
             <template is="dom-repeat" items="[[user.values]]">
-              <a href$="[[item]]" title$="[[item]]">[[item]]</a><br />
+              <mr-user-link
+                display-name="[[item]]"
+                user-id="[[item]]"
+              ></mr-user-link><br />
             </template>
           </td>
         </tr>
       </template>
 
       <tr>
-        <th>Priority:</th>
-        <td>
-          [[_priority]]
-        </td>
-      </tr>
-
-      <tr>
         <th>Status:</th>
         <td>
-          [[status]]
+          [[issue.statusRef.status]]
+          <em hidden$="[[!issue.statusRef.meansOpen]]">
+            (Open)
+          </em>
+          <em hidden$="[[issue.statusRef.meansOpen]]">
+            (Closed)
+          </em>
         </td>
       </tr>
 
-      <tr>
+      <tr hidden$="[[!issue.componentRefs.length]]">
         <th>Components:</th>
         <td>
-          <template is="dom-repeat" items="[[components]]">
-            <a href$="/p/chromium/issues/list?q=component:[[item]]">
-              [[item]]
+          <template is="dom-repeat" items="[[issue.componentRefs]]">
+            <a href$="/p/[[item.projectName]]/issues/list?q=component:[[item.path]]">
+              [[item.path]]
             </a>
           </template>
         </td>
       </tr>
 
-      <template is="dom-repeat" items="[[links]]" as="link">
+      <template is="dom-repeat" items="[[_fieldList]]" as="field">
         <tr>
-          <th>[[link.name]]:</th>
+          <th>[[field.fieldRef.fieldName]]:</th>
           <td>
-            <template is="dom-repeat" items="[[link.values]]">
-              <a href="[[item]]">[[item]]</a>
+            <template is="dom-if" if="[[_fieldIsUrl(field.fieldRef.type)]]">
+              <template is="dom-repeat" items="[[field.values]]" as="value">
+                <a href$="[[value]]">[[value]]</a>
+              </template>
+            </template>
+
+            <template is="dom-if" if="[[_fieldIsUser(field.fieldRef.type)]]">
+              <template is="dom-repeat" items="[[field.values]]" as="value">
+                <mr-user-link
+                  user-id="[[value]]"
+                  display-name="[[value]]"
+                ></mr-user-link>
+              </template>
+            </template>
+
+            <template is="dom-if" if="[[_fieldIsRemainingTypes(field.fieldRef.type)]]">
+              <template is="dom-repeat" items="[[field.values]]" as="value">
+                <a href$="/p/[[issue.projectName]]/issues/list?q=[[field.fieldRef.fieldName]]=&quot;[[value]]&quot;">
+                  [[value]]</a><span hidden$="[[_isLastItem(field.values.length,index)]]">,</span>
+              </template>
             </template>
           </td>
         </tr>
       </template>
 
-      <template is="dom-repeat" items="[[strings]]" as="string">
-        <tr>
-          <th>[[string.name]]:</th>
-          <td>
-            <template is="dom-repeat" items="[[string.values]]">
-              [[item]]
-            </template>
-          </td>
-        </tr>
-      </template>
-
-      <template is="dom-repeat" items="[[ints]]" as="int">
-        <tr>
-          <th>[[int.name]]:</th>
-          <td>
-            <template is="dom-repeat" items="[[int.values]]">
-              [[item]]
-            </template>
-          </td>
-        </tr>
-      </template>
-
-      <template is="dom-if" if="[[blockedOn.length]]">
+      <template is="dom-if" if="[[issue.blockedOnIssueRefs.length]]">
         <tr>
           <th>BlockedOn:</th>
           <td>
-            <template is="dom-repeat" items="[[blockedOn]]">
-              <a href="/p/chromium/issues/approval?id=[[item]]">
-                Issue [[item]]</a>
+            <template is="dom-repeat" items="[[issue.blockedOnIssueRefs]]">
+              <a href$="/p/[[item.projectName]]/issues/approval?id=[[item.localId]]">
+                Issue [[item.localId]]</a>
               <br />
             </template>
           </td>
         </tr>
       </template>
 
-      <template is="dom-if" if="[[blocking.length]]">
+      <template is="dom-if" if="[[issue.blockingIssueRefs.length]]">
         <tr>
           <th>Blocking:</th>
           <td>
-            <template is="dom-repeat" items="[[blocking]]">
-              <a href="/p/chromium/issues/approval?id=[[item]]">
-                Issue [[item]]</a>
+            <template is="dom-repeat" items="[[issue.blockingIssueRefs]]">
+              <a href$="/p/[[item.projectName]]/issues/approval?id=[[item.localId]]">
+                Issue [[item.localId]]</a>
               <br />
             </template>
           </td>
         </tr>
       </template>
+      <tr>
+        <th>Modified:</th>
+        <td>
+          <chops-timestamp timestamp="[[issue.modifiedTimestamp]]" short></chops-timestamp>
+        </td>
+      </tr>
     </table>
 
     <div class="labels-container">
-      <template is="dom-repeat" items="[[_labelsList]]" as="label">
-        <a href$="/p/chromium/issues/list?q=label:[[label]]" class="label">[[label]]</a><br />
+      <template is="dom-repeat" items="[[issue.labelRefs]]" as="label">
+        <a href$="/p/[[item.projectName]]/issues/list?q=label:[[label.label]]" class="label" data-derived$="[[label.isDerived]]">[[label.label]]</a>
+        <br />
       </template>
     </div>
     <div class="restricted">
@@ -190,17 +221,19 @@
       </h3>
       <mr-edit-metadata
         id="metadataForm"
+        issue="[[issue]]"
         enums="[[enums]]"
-        summary="[[summary]]"
         users="[[users]]"
+        cc="[[issue.ccRefs]]"
+        components="[[issue.componentRefs]]"
+        project-name="[[issue.projectName]]"
         urls="[[urls]]"
-        priorities="[[priorities]]"
-        priority="Pri-[[_priority]]"
         statuses="[[statuses]]"
-        status="[[_status]]"
-        blocked-on="[[blockedOn]]"
-        blocking="[[blocking]]"
-        labels="[[labels]]"
+        status="[[issue.statusRef.status]]"
+        summary="[[issue.summary]]"
+        blocked-on="[[issue.blockedOnIssueRefs]]"
+        blocking="[[issue.blockingIssueRefs]]"
+        labels="[[issue.labelRefs]]"
       ></mr-edit-metadata>
       <div class="dialog-actions">
         <chops-button on-click="cancel" class="de-emphasized">

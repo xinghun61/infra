@@ -7,10 +7,10 @@
     <style>
     </style>
     <template is="dom-if" if="[[!short]]">
-      [[_formattedDate]] ([[_computeRelativeTime(date)]])
+      [[_formattedDate]] ([[_computeRelativeTime(_date)]])
     </template>
     <template is="dom-if" if="[[short]]" title="[[_formattedDate]]">
-      [[_computeRelativeTime(date)]]
+      [[_computeRelativeTime(_date)]]
     </template>
   </template>
   <script>
@@ -30,11 +30,10 @@
 
       static get properties() {
         return {
-          /** The javascript Date object, which is stored in UTC, to be processed. */
-          date: {
-            type: Object,
-            value: () => (new Date()),
-          },
+          /** The data for the time which can be in any format readable by
+           *  Date.parse.
+           */
+          timestamp: String,
           /** When true, a shorter version of the date will be displayed. */
           short: {
             type: Boolean,
@@ -45,20 +44,41 @@
             type: String,
             value: "ddd, D MMM YYYY, h:mm a z",
           },
+          /** The moment object, which is stored in UTC, to be processed. */
+          _date: {
+            type: Object,
+            value: () => (moment()),
+            computed: '_computeDate(timestamp)',
+          },
           /** The formatted date. */
           _formattedDate: {
             type: String,
-            computed: '_computeDisplayedTime(date, dateFormat)',
+            computed: '_computeDisplayedTime(_date, dateFormat)',
           },
         }
       }
 
+      _computeDate(timestamp) {
+        // Check if timestamp is unix time first.
+        let date = Number.parseInt(timestamp);
+        if (Number.isNaN(date)) {
+          // Date.parse returns milliseconds since epoch but we want seconds.
+          date = Date.parse(timestamp) / 1000;
+          if (Number.isNaN(date)) {
+            // Default to now if all else fails.
+            date = (new Date()).getTime() / 1000;
+          }
+        }
+
+        return moment.unix(date).tz('America/Los_Angeles');
+      }
+
       _computeDisplayedTime(date, format) {
-        return moment(date).tz('America/Los_Angeles').format(format);
+        return date.format(format);
       }
 
       _computeRelativeTime(date) {
-        return moment(date).fromNow();
+        return date.fromNow();
       }
 
     }

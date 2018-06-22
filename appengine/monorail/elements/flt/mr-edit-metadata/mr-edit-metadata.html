@@ -62,15 +62,6 @@
           </template>
         </select>
       </template>
-      <template is="dom-if" if="[[priorities]]">
-        <label for="priorityInput">Priority:</label>
-
-        <select id="priorityInput">
-          <template is="dom-repeat" items="[[priorities]]">
-            <option value$="[[item]]" selected$="[[_computeIsSelected(priority, item)]]">[[item]]</option>
-          </template>
-        </select>
-      </template>
       <template is="dom-repeat" items="[[users]]" as="user">
         <label for$="[[_idForField(user.name)]]">[[user.name]]:</label>
 
@@ -98,13 +89,13 @@
       </template>
       <template is="dom-if" if="[[!isApproval]]">
         <label for="blockedOnInput">Blocked on:</label>
-        <input id="blockedOnInput" value$="[[_joinValues(blockedOn)]]" />
+        <input id="blockedOnInput" value$="[[_joinValues(_blockedOnIds)]]" />
 
         <label for="blockingInput">Blocking:</label>
-        <input id="blockingInput" value$="[[_joinValues(blocking)]]" />
+        <input id="blockingInput" value$="[[_joinValues(_blockingIds)]]" />
 
         <label for="labelsInput">Labels:</label>
-        <input id="labelsInput" value$="[[_joinValues(labels)]]" />
+        <input id="labelsInput" value$="[[_joinValues(_labelNames)]]" />
       </template>
     </div>
     <textarea id="commentText" value="{{_newCommentText::input}}" placeholder="Comment to explain this change"></textarea>
