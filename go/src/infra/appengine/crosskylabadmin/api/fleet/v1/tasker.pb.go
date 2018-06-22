@@ -51,7 +51,7 @@ func (x TaskType) String() string {
 	return proto.EnumName(TaskType_name, int32(x))
 }
 func (TaskType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_tasker_e83c8a0d4375d302, []int{0}
+	return fileDescriptor_tasker_061428ba9a0e88d4, []int{0}
 }
 
 // TaskerTasksResponse is returned by various Tasker rpcs to report the tasks
@@ -71,7 +71,7 @@ func (m *TaskerTasksResponse) Reset()         { *m = TaskerTasksResponse{} }
 func (m *TaskerTasksResponse) String() string { return proto.CompactTextString(m) }
 func (*TaskerTasksResponse) ProtoMessage()    {}
 func (*TaskerTasksResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tasker_e83c8a0d4375d302, []int{0}
+	return fileDescriptor_tasker_061428ba9a0e88d4, []int{0}
 }
 func (m *TaskerTasksResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TaskerTasksResponse.Unmarshal(m, b)
@@ -116,7 +116,7 @@ func (m *TaskerBotTasks) Reset()         { *m = TaskerBotTasks{} }
 func (m *TaskerBotTasks) String() string { return proto.CompactTextString(m) }
 func (*TaskerBotTasks) ProtoMessage()    {}
 func (*TaskerBotTasks) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tasker_e83c8a0d4375d302, []int{1}
+	return fileDescriptor_tasker_061428ba9a0e88d4, []int{1}
 }
 func (m *TaskerBotTasks) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TaskerBotTasks.Unmarshal(m, b)
@@ -165,7 +165,7 @@ func (m *TaskerTask) Reset()         { *m = TaskerTask{} }
 func (m *TaskerTask) String() string { return proto.CompactTextString(m) }
 func (*TaskerTask) ProtoMessage()    {}
 func (*TaskerTask) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tasker_e83c8a0d4375d302, []int{2}
+	return fileDescriptor_tasker_061428ba9a0e88d4, []int{2}
 }
 func (m *TaskerTask) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TaskerTask.Unmarshal(m, b)
@@ -227,7 +227,7 @@ func (m *TriggerRepairOnIdleRequest) Reset()         { *m = TriggerRepairOnIdleR
 func (m *TriggerRepairOnIdleRequest) String() string { return proto.CompactTextString(m) }
 func (*TriggerRepairOnIdleRequest) ProtoMessage()    {}
 func (*TriggerRepairOnIdleRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tasker_e83c8a0d4375d302, []int{3}
+	return fileDescriptor_tasker_061428ba9a0e88d4, []int{3}
 }
 func (m *TriggerRepairOnIdleRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TriggerRepairOnIdleRequest.Unmarshal(m, b)
@@ -297,7 +297,7 @@ func (m *TriggerRepairOnRepairFailedRequest) Reset()         { *m = TriggerRepai
 func (m *TriggerRepairOnRepairFailedRequest) String() string { return proto.CompactTextString(m) }
 func (*TriggerRepairOnRepairFailedRequest) ProtoMessage()    {}
 func (*TriggerRepairOnRepairFailedRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tasker_e83c8a0d4375d302, []int{4}
+	return fileDescriptor_tasker_061428ba9a0e88d4, []int{4}
 }
 func (m *TriggerRepairOnRepairFailedRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TriggerRepairOnRepairFailedRequest.Unmarshal(m, b)
@@ -372,7 +372,7 @@ func (m *EnsureBackgroundTasksRequest) Reset()         { *m = EnsureBackgroundTa
 func (m *EnsureBackgroundTasksRequest) String() string { return proto.CompactTextString(m) }
 func (*EnsureBackgroundTasksRequest) ProtoMessage()    {}
 func (*EnsureBackgroundTasksRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tasker_e83c8a0d4375d302, []int{5}
+	return fileDescriptor_tasker_061428ba9a0e88d4, []int{5}
 }
 func (m *EnsureBackgroundTasksRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EnsureBackgroundTasksRequest.Unmarshal(m, b)
@@ -442,7 +442,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type TaskerClient interface {
-	// TriggerRepairOnIdle creates administraitive tasks to repair the selected
+	// TriggerRepairOnIdle creates administrative tasks to repair the selected
 	// Swarming bots if they are deemed to have been idle for too long. Returned
 	// tasks may be a combination of newly created tasks and already existing
 	// tasks that satisfy the request.
@@ -543,7 +543,7 @@ func (c *taskerClient) EnsureBackgroundTasks(ctx context.Context, in *EnsureBack
 
 // TaskerServer is the server API for Tasker service.
 type TaskerServer interface {
-	// TriggerRepairOnIdle creates administraitive tasks to repair the selected
+	// TriggerRepairOnIdle creates administrative tasks to repair the selected
 	// Swarming bots if they are deemed to have been idle for too long. Returned
 	// tasks may be a combination of newly created tasks and already existing
 	// tasks that satisfy the request.
@@ -653,10 +653,10 @@ var _Tasker_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("infra/appengine/crosskylabadmin/api/fleet/v1/tasker.proto", fileDescriptor_tasker_e83c8a0d4375d302)
+	proto.RegisterFile("infra/appengine/crosskylabadmin/api/fleet/v1/tasker.proto", fileDescriptor_tasker_061428ba9a0e88d4)
 }
 
-var fileDescriptor_tasker_e83c8a0d4375d302 = []byte{
+var fileDescriptor_tasker_061428ba9a0e88d4 = []byte{
 	// 544 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0xdd, 0x8a, 0x13, 0x31,
 	0x14, 0x76, 0xda, 0x9d, 0xfe, 0x9c, 0x85, 0xa5, 0x64, 0x2d, 0xd4, 0xae, 0x62, 0x1d, 0x10, 0xca,
