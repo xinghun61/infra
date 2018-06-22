@@ -95,6 +95,38 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return response
 
   @monorail_servicer.PRPCMethod
+  def StarIssue(self, mc, request):
+    """Star (or unstar) the specified issue."""
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request, use_cache=False)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.StarIssue(issue, request.starred)
+      # Reload the issue to get the new star count.
+      issue = we.GetIssue(issue.issue_id)
+
+    with mc.profiler.Phase('converting to response objects'):
+      response = issues_pb2.StarIssueResponse()
+      response.star_count = issue.star_count
+
+    return response
+
+  @monorail_servicer.PRPCMethod
+  def IsIssueStarred(self, mc, request):
+    """Respond true if the signed-in user has starred the specified issue."""
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request, use_cache=False)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      is_starred = we.IsIssueStarred(issue)
+
+    with mc.profiler.Phase('converting to response objects'):
+      response = issues_pb2.IsIssueStarredResponse()
+      response.is_starred = is_starred
+
+    return response
+
+  @monorail_servicer.PRPCMethod
   def ListComments(self, mc, request):
     """Return comments on the specified issue in a response proto."""
     project, issue, config = self._GetProjectIssueAndConfig(mc, request)

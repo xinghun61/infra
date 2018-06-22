@@ -544,7 +544,7 @@ class WorkEnvTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue)
     # Don't sign in.
 
-    with self.assertRaises(exceptions.InputException):
+    with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.StarIssue(issue, True)
 

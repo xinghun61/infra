@@ -671,7 +671,7 @@ class WorkEnv(object):
   def StarIssue(self, issue, starred):
     """Set or clear a star on the given issue for the signed in user."""
     if not self.mc.auth.user_id:
-      raise exceptions.InputException('Anon cannot star issues')
+      raise permissions.PermissionException('Anon cannot star issues')
     self._AssertPermInIssue(issue, permissions.SET_STAR)
 
     with self.mc.profiler.Phase('starring issue %r' % issue.issue_id):

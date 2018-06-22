@@ -17,6 +17,8 @@ service Issues {
   rpc CreateIssue (CreateIssueRequest) returns (IssueResponse) {}
   rpc GetIssue (GetIssueRequest) returns (IssueResponse) {}
   rpc UpdateIssue (UpdateIssueRequest) returns (IssueResponse) {}
+  rpc StarIssue (StarIssueRequest) returns (StarIssueResponse) {}
+  rpc IsIssueStarred (IsIssueStarredRequest) returns (IsIssueStarredResponse) {}
   // There is no CreateComment method because comments are created by updates,
   // which may have just comment content and no delta.
   // There is no GetComment method, clients should use ListComments.
@@ -56,6 +58,33 @@ message UpdateIssueRequest {
   bool send_email = 3;
   IssueDelta delta = 4;
   string comment_content = 5;
+}
+
+
+// Next available tag: 4
+message StarIssueRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  bool starred = 3;  // True to add a star, False to remove one.
+}
+
+
+// Next available tag: 2
+message StarIssueResponse {
+  uint32 star_count = 1;
+}
+
+
+// Next available tag: 3
+message IsIssueStarredRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+}
+
+
+// Next available tag: 2
+message IsIssueStarredResponse {
+  bool is_starred = 1;
 }
 
 

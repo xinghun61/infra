@@ -40,6 +40,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.services = service_manager.Services(
         config=fake.ConfigService(),
         issue=fake.IssueService(),
+        issue_star=fake.IssueStarService(),
         user=fake.UserService(),
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService(),
@@ -219,6 +220,93 @@ class IssuesServicerTest(unittest.TestCase):
     comments = self.services.issue.GetCommentsForIssue(
         self.cnxn, self.issue_1.issue_id)
     self.assertEqual(1, len(comments))
+
+  def testStarIssue_Denied(self):
+    """We reject requests to star an issue if the user lacks perms."""
+    request = issues_pb2.StarIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    request.starred = True
+
+    # Anon user cannot star an issue.
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.StarIssue, mc, request)
+
+    # User star an issue that they cannot view.
+    self.issue_1.labels = ['Restrict-View-CoreTeam']
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.StarIssue, mc, request)
+
+    # The issue was not actually starred.
+    self.assertEqual(0, self.issue_1.star_count)
+
+  def testStarIssue_Normal(self):
+    """Users can star and unstar issues."""
+    request = issues_pb2.StarIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    request.starred = True
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    # First, star it.
+    response = self.CallWrapped(self.issues_svcr.StarIssue, mc, request)
+    self.assertEqual(1, response.star_count)
+
+    # Then, unstar it.
+    request.starred = False
+    response = self.CallWrapped(self.issues_svcr.StarIssue, mc, request)
+    self.assertEqual(0, response.star_count)
+
+  def testIsIssueStared_Anon(self):
+    """Anon users can't star issues, so they always get back False."""
+    request = issues_pb2.IsIssueStarredRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    mc.LookupLoggedInUserPerms(self.project)
+
+    response = self.CallWrapped(self.issues_svcr.IsIssueStarred, mc, request)
+    self.assertFalse(response.is_starred)
+
+  def testIsIssueStared_Denied(self):
+    """Users can't ask about an issue that they cannot currently view."""
+    request = issues_pb2.IsIssueStarredRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    self.issue_1.labels = ['Restrict-View-CoreTeam']
+
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.IsIssueStarred, mc, request)
+
+  def testIsIssueStared_Normal(self):
+    """Users can star and unstar issues."""
+    request = issues_pb2.IsIssueStarredRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    # It is not initially starred by this user.
+    response = self.CallWrapped(self.issues_svcr.IsIssueStarred, mc, request)
+    self.assertFalse(response.is_starred)
+
+    # If we star it, we get response True.
+    self.services.issue_star.SetStar(
+        self.cnxn, self.services, 'fake config', self.issue_1.issue_id,
+        333L, True)
+    response = self.CallWrapped(self.issues_svcr.IsIssueStarred, mc, request)
+    self.assertTrue(response.is_starred)
 
   def testListComments_Normal(self):
     """We can get comments on an issue."""
