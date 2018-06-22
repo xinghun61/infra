@@ -53,7 +53,7 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
     with self.m.context(cwd=path):
       self.m.gclient.set_config(gclient_config_name)
       bot_update_step = self.m.bot_update.ensure_checkout(
-          patch_root=patch_root, no_shallow=True, **kwargs)
+          patch_root=patch_root, **kwargs)
 
     class Checkout(object):
       @property
