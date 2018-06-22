@@ -4,7 +4,7 @@
 
 <link rel="import" href="../mr-approval-card/mr-approval-card.html">
 
-<dom-module id="mr-gate">
+<dom-module id="mr-phase">
   <template>
     <style>
       :host {
@@ -24,26 +24,26 @@
     </style>
     <iron-ajax
         auto
-        url="https://chromepmo.appspot.com/schedule/mstone/json?mstone=[[gate.target]]"
+        url="https://chromepmo.appspot.com/schedule/mstone/json?mstone=[[phase.target]]"
         handle-as="json"
         last-response="{{_milestoneData}}">
     </iron-ajax>
     <h2>
-      Approvals<span hidden$="[[!gate.gateName]]">:
-        [[gate.gateName]]
+      Approvals<span hidden$="[[!phase.phaseName]]">:
+        [[phase.phaseName]]
       </span>
-      <span hidden$="[[!gate.status]]">
-         - [[gate.status]] [[gate.target]]
+      <span hidden$="[[!phase.status]]">
+         - [[phase.status]] [[phase.target]]
       </span>
       <em hidden$="[[!_nextDate]]">
         [[_dateDescriptor]]
         <chops-timestamp date="[[_nextDate]]"></chops-timestamp>
       </em>
     </h2>
-    <template is="dom-repeat" items="[[gate.approvals]]">
+    <template is="dom-repeat" items="[[phase.approvals]]">
       <mr-approval-card
           title="[[item.title]]"
-          gate-name="[[gate.gateName]]"
+          phase-name="[[phase.phaseName]]"
           user="[[user]]"
           approval-comments="[[item.comments]]"
           survey="[[item.survey]]"
@@ -53,9 +53,9 @@
           users="[[item.users]]"
       ></mr-approval-card>
     </template>
-    <template is="dom-if" if="[[!gate.approvals.length]]">
-      No tasks for this gate.
+    <template is="dom-if" if="[[!phase.approvals.length]]">
+      No tasks for this phase.
     </template>
   </template>
-  <script src="./mr-gate.js"></script>
+  <script src="./mr-phase.js"></script>
 <dom-module>

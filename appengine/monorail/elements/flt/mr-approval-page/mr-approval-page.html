@@ -98,9 +98,9 @@
     <app-location query-params="{{queryParams}}" url-space-regex="^/p/chromium/issues/approval"></app-location>
     <iron-ajax
         auto
-        url="/elements/mock-data/gates-chrome.json"
+        url="/elements/mock-data/phases-mock.json"
         handle-as="json"
-        last-response="{{gates}}">
+        last-response="{{phases}}">
     </iron-ajax>
     <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
       <span slot="subheader">&gt; <a href="#">Feature Launch Issue</a></span>
@@ -116,7 +116,7 @@
       </div>
       <div class="container-main">
         <mr-issue-details class="main-item"></mr-issue-details>
-        <mr-launch-overview class="main-item" user="[[_user]]" gates="[[gates]]"></mr-launch-overview>
+        <mr-launch-overview class="main-item" user="[[_user]]" phases="[[phases]]"></mr-launch-overview>
       </div>
     </div>
   </template>

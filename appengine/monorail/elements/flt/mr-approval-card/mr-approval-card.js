@@ -33,7 +33,7 @@ class MrApprovalCard extends Polymer.Element {
     return {
       title: String,
       approvalComments: Array,
-      gateName: String,
+      phaseName: String,
       survey: String,
       surveyTemplate: String,
       urls: Array,

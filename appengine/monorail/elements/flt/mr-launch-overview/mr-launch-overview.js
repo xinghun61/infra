@@ -3,7 +3,7 @@
 /**
  * `<mr-launch-overview>`
  *
- * This is a shorthand view of the gates for a user to see a quick overview.
+ * This is a shorthand view of the phases for a user to see a quick overview.
  *
  */
 class MrLaunchOverview extends Polymer.Element {
@@ -14,7 +14,7 @@ class MrLaunchOverview extends Polymer.Element {
   static get properties() {
     return {
       user: String,
-      gates: {
+      phases: {
         type: Array,
         value: [],
       },

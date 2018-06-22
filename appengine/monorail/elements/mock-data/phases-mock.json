@@ -1,6 +1,6 @@
 [
   {
-    "gateName": "Beta",
+    "phaseName": "Beta",
     "target": 67,
     "status": "Approved",
     "approvals": [
@@ -108,7 +108,7 @@
     ]
   },
   {
-    "gateName": "Stable Exp",
+    "phaseName": "Stable Exp",
     "target": 67,
     "status": "Target",
     "approvals": [
@@ -265,7 +265,7 @@
     ]
   },
   {
-    "gateName": "Stable",
+    "phaseName": "Stable",
     "target": 67,
     "status": "Target",
     "approvals": [

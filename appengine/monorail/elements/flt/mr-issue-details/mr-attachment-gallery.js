@@ -42,7 +42,7 @@ class MrAttachmentGallery extends Polymer.Element {
             fileSize: 514,
           },
           {
-            url: 'gates-mock.json',
+            url: 'phases-mock.json',
             viewUrl: '/p/chromium/issues/attachmentText?aid=341641',
             fileSize: 10000,
           },

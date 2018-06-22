@@ -1,53 +1,53 @@
 'use strict';
 
-const TARGET_GATE_MILESTONE_MAP = {
+const TARGET_PHASE_MILESTONE_MAP = {
   'Beta': 'feature_freeze',
   'Stable Exp': 'final_beta_cut',
   'Stable': 'stable_cut',
 };
 
-const APPROVED_GATE_MILESTONE_MAP = {
+const APPROVED_PHASE_MILESTONE_MAP = {
   'Beta': 'earliest_beta',
   'Stable Exp': 'final_beta',
   'Stable': 'stable_date',
 };
 
 /**
- * `<mr-gate>`
+ * `<mr-phase>`
  *
- * This is the component for a single gate.
+ * This is the component for a single phase.
  *
  */
-class MrGate extends Polymer.Element {
+class MrPhase extends Polymer.Element {
   static get is() {
-    return 'mr-gate';
+    return 'mr-phase';
   }
 
   static get properties() {
     return {
       user: String,
-      gate: Object,
+      phase: Object,
       _nextDate: {
         type: Date,
-        computed: `_computeNextDate(gate.gateName, gate.status,
+        computed: `_computeNextDate(phase.phaseName, phase.status,
           _milestoneData.mstones)`,
       },
       _dateDescriptor: {
         type: String,
-        computed: '_computeDateDescriptor(gate.status)',
+        computed: '_computeDateDescriptor(phase.status)',
       },
       _milestoneData: Object,
     };
   }
 
-  _computeNextDate(gateName, status, data) {
+  _computeNextDate(phaseName, status, data) {
     // Data pulled from https://chromepmo.appspot.com/schedule/mstone/json?mstone=67
-    if (!gateName || !status || !data || !data.length) return null;
+    if (!phaseName || !status || !data || !data.length) return null;
     data = data[0];
 
-    let key = TARGET_GATE_MILESTONE_MAP[gateName];
+    let key = TARGET_PHASE_MILESTONE_MAP[phaseName];
     if (['Approved', 'Launched'].includes(status)) {
-      key = APPROVED_GATE_MILESTONE_MAP[gateName];
+      key = APPROVED_PHASE_MILESTONE_MAP[phaseName];
     }
     return new Date(data[key]);
   }
@@ -61,4 +61,4 @@ class MrGate extends Polymer.Element {
     return 'Due by ';
   }
 }
-customElements.define(MrGate.is, MrGate);
+customElements.define(MrPhase.is, MrPhase);

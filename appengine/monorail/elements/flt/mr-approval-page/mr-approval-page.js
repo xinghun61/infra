@@ -18,7 +18,7 @@ class MrApprovalPage extends Polymer.Element {
         type: Number,
         computed: '_computeIssueId(queryParams.id)',
       },
-      gates: Array,
+      phases: Array,
       loginUrl: String,
       logoutUrl: String,
       queryParams: Object,
