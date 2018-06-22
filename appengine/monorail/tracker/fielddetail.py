@@ -67,13 +67,15 @@ class FieldDetail(servlet.Servlet):
       Dict of values used by EZT for rendering the page.
     """
     config, field_def = self._GetFieldDef(mr)
-    approval_def = None
+    approval_def, subfields = None, []
     if field_def.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
       approval_def = tracker_bizobj.FindApprovalDefByID(
           field_def.field_id, config)
       user_views = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, field_def.admin_ids,
           approval_def.approver_ids)
+      subfields = tracker_bizobj.FindApprovalsSubfields(
+          [field_def.field_id], config)[field_def.field_id]
     else:
       user_views = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, field_def.admin_ids)
@@ -110,6 +112,7 @@ class FieldDetail(servlet.Servlet):
         'initial_applicable_predicate': field_def.applicable_predicate,
         'initial_approvers': initial_approvers,
         'initial_choices': initial_choices,
+        'approval_subfields': [fd for fd in subfields if not fd.is_deleted],
         'well_known_issue_types': well_known_issue_types,
         }
 

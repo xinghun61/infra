@@ -133,6 +133,16 @@ def FindApprovalValueByID(approval_id, approval_values):
   return None
 
 
+def FindApprovalsSubfields(approval_ids, config):
+  """Return a dict of {approval_ids: approval_subfields}."""
+  approval_subfields_dict = collections.defaultdict(list)
+  for fd in config.field_defs:
+    if fd.approval_id in approval_ids:
+      approval_subfields_dict[fd.approval_id].append(fd)
+
+  return approval_subfields_dict
+
+
 def FindPhaseByID(phase_id, phases):
   """Find the specified phase, or return None"""
   for phase in phases:

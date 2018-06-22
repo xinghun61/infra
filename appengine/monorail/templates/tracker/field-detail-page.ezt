@@ -74,6 +74,19 @@
         [end]
       </td>
     </tr>
+
+    [if-any approval_subfields]
+      <tr>
+        <th>Subfields:</th>
+        <td>
+          [for approval_subfields]
+            <div><a href="/p/[projectname]/fields/detail?field=[approval_subfields.field_name]">
+              [approval_subfields.field_name]
+            </a></div>
+          [end]
+        </td>
+      </tr>
+    [end]
   [else]
 
     <tr>

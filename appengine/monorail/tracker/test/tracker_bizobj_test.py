@@ -166,6 +166,19 @@ class BizobjTest(unittest.TestCase):
     av_no_id = tracker_pb2.ApprovalValue()
     self.assertIsNone(tracker_bizobj.FindApprovalValueByID(24, [av_no_id]))
 
+  def testFindApprovalsSubfields(self):
+    config = tracker_pb2.ProjectIssueConfig()
+    subfd_1 = tracker_pb2.FieldDef(approval_id=1)
+    subfd_2 = tracker_pb2.FieldDef(approval_id=2)
+    subfd_3 = tracker_pb2.FieldDef(approval_id=1)
+    subfd_4 = tracker_pb2.FieldDef()
+    config.field_defs = [subfd_1, subfd_2, subfd_3, subfd_4]
+
+    subfields_dict = tracker_bizobj.FindApprovalsSubfields([1, 2], config)
+    self.assertItemsEqual(subfields_dict[1], [subfd_1, subfd_3])
+    self.assertItemsEqual(subfields_dict[2], [subfd_2])
+    self.assertItemsEqual(subfields_dict[3], [])
+
   def testFindPhaseByID_Normal(self):
     canary_phase = tracker_pb2.Phase(phase_id=2, name='Canary')
     stable_phase = tracker_pb2.Phase(name='Stable')

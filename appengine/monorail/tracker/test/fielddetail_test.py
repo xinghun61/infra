@@ -50,7 +50,13 @@ class FieldDetailTest(unittest.TestCase):
 
     # Approvals
     self.approval_def = tracker_pb2.ApprovalDef(
-        approval_id=234, approver_ids=[111L], survey='')
+        approval_id=234, approver_ids=[111L], survey='Question 1?')
+    self.sub_fd = tracker_pb2.FieldDef(
+        field_name='UIMocks', approval_id=234, applicable_type='')
+    self.sub_fd_deleted = tracker_pb2.FieldDef(
+        field_name='UIMocksDeleted', approval_id=234, applicable_type='',
+        is_deleted=True)
+    self.config.field_defs.extend([self.sub_fd, self.sub_fd_deleted])
     self.config.approval_defs.append(self.approval_def)
     self.approval_fd = tracker_bizobj.MakeFieldDef(
         234, 789, 'UIReview', tracker_pb2.FieldTypes.APPROVAL_TYPE, None,
@@ -106,6 +112,8 @@ class FieldDetailTest(unittest.TestCase):
     self.assertEqual('', page_data['initial_admins'])
     field_def_view = page_data['field_def']
     self.assertEqual('CPU', field_def_view.field_name)
+    self.assertEqual(page_data['approval_subfields'], [])
+    self.assertEqual(page_data['initial_approvers'], '')
 
   def testGatherPageData_ReadOnly(self):
     self.mr.perms = permissions.READ_ONLY_PERMISSIONSET
@@ -116,6 +124,17 @@ class FieldDetailTest(unittest.TestCase):
     self.assertEqual('', page_data['initial_admins'])
     field_def_view = page_data['field_def']
     self.assertEqual('CPU', field_def_view.field_name)
+    self.assertEqual(page_data['approval_subfields'], [])
+    self.assertEqual(page_data['initial_approvers'], '')
+
+  def testGatherPageData_Approval(self):
+    self.mr.field_name = 'UIReview'
+    page_data = self.servlet.GatherPageData(self.mr)
+    self.assertEqual(page_data['approval_subfields'], [self.sub_fd])
+    self.assertEqual(page_data['initial_approvers'], 'gatsby@example.com')
+    field_def_view = page_data['field_def']
+    self.assertEqual(field_def_view.field_name, 'UIReview')
+    self.assertEqual(field_def_view.survey, 'Question 1?')
 
   def testProcessFormData_Permission(self):
     """Only owners can edit fields."""
