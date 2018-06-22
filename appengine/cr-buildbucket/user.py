@@ -119,29 +119,23 @@ def can_async_fn(action):
   return lambda bucket: can_async(bucket, action)  # pragma: no cover
 
 
-def can_fn(action):
+def can_async_fn_for_build(action):
   assert isinstance(action, Action)
-  return lambda bucket: can(bucket, action)  # pragma: no cover
-
-
-def can_fn_for_build(action):
-  assert isinstance(action, Action)
-  return lambda build: can(build.bucket, action)
+  return lambda build: can_async(build.bucket, action)
 
 
 # Functions for each Action.
 # Some accept build as first param, others accept bucket name.
-can_view_build = can_fn_for_build(Action.VIEW_BUILD)
+can_view_build_async = can_async_fn_for_build(Action.VIEW_BUILD)
 can_search_builds_async = can_async_fn(Action.SEARCH_BUILDS)
-can_add_build = can_fn(Action.ADD_BUILD)
-can_add_build_async = lambda bucket: can_async(bucket, Action.ADD_BUILD)
-can_lease_build = can_fn_for_build(Action.LEASE_BUILD)
-can_cancel_build = can_fn_for_build(Action.CANCEL_BUILD)
-can_reset_build = can_fn_for_build(Action.RESET_BUILD)
-can_delete_scheduled_builds = can_fn(Action.DELETE_SCHEDULED_BUILDS)
-can_pause_buckets = can_fn(Action.PAUSE_BUCKET)
-can_access_bucket = can_fn(Action.ACCESS_BUCKET)
-can_set_next_number = can_fn(Action.SET_NEXT_NUMBER)
+can_add_build_async = can_async_fn(Action.ADD_BUILD)
+can_lease_build_async = can_async_fn_for_build(Action.LEASE_BUILD)
+can_cancel_build_async = can_async_fn_for_build(Action.CANCEL_BUILD)
+can_reset_build_async = can_async_fn_for_build(Action.RESET_BUILD)
+can_delete_scheduled_builds_async = can_async_fn(Action.DELETE_SCHEDULED_BUILDS)
+can_pause_buckets_async = can_async_fn(Action.PAUSE_BUCKET)
+can_access_bucket_async = can_async_fn(Action.ACCESS_BUCKET)
+can_set_next_number_async = can_async_fn(Action.SET_NEXT_NUMBER)
 
 ################################################################################
 ## Implementation.
@@ -193,10 +187,6 @@ def can_async(bucket, action):
 
   role = yield get_role_async(bucket)
   raise ndb.Return(role is not None and role >= ACTION_TO_MIN_ROLE[action])
-
-
-def can(bucket, action):
-  return can_async(bucket, action).get_result()
 
 
 def get_acessible_buckets_async():

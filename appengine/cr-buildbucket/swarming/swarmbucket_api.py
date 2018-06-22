@@ -110,7 +110,10 @@ class SwarmbucketApi(remote.Service):
         )
       # Buckets were specified explicitly.
       # Filter out inaccessible ones.
-      bucket_names = [b for b in request.bucket if user.can_access_bucket(b)]
+      futs = [user.can_access_bucket_async(b) for b in request.bucket]
+      bucket_names = [
+          b for (b, f) in zip(request.bucket, futs) if f.get_result()
+      ]
     else:
       # Buckets were not specified explicitly.
       # Use the available ones.
@@ -155,7 +158,7 @@ class SwarmbucketApi(remote.Service):
       build_request = build_request.normalize()
 
       identity = auth.get_current_identity()
-      if not user.can_view_build(build_request):
+      if not user.can_view_build_async(build_request).get_result():
         raise endpoints.ForbiddenException(
             '%s cannot view builds in bucket %s' %
             (identity, build_request.bucket)
@@ -178,7 +181,7 @@ class SwarmbucketApi(remote.Service):
   @swarmbucket_api_method(SetNextBuildNumberRequest, message_types.VoidMessage)
   def set_next_build_number(self, request):
     """Sets the build number that will be used for the next build."""
-    if not user.can_set_next_number(request.bucket):
+    if not user.can_set_next_number_async(request.bucket).get_result():
       raise endpoints.ForbiddenException('access denied')
     _, bucket = config.get_bucket(request.bucket)
 

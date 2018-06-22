@@ -581,7 +581,7 @@ def get(build_id):
   build = model.Build.get_by_id(build_id)
   if not build:
     return None
-  if not user.can_view_build(build):
+  if not user.can_view_build_async(build).get_result():
     raise user.current_identity_cannot('view build %s', build.key.id())
   return build
 
@@ -648,7 +648,7 @@ def _get_leasable_build(build_id):
   build = model.Build.get_by_id(build_id)
   if build is None:
     raise errors.BuildNotFoundError()
-  if not user.can_lease_build(build):
+  if not user.can_lease_build_async(build).get_result():
     raise user.current_identity_cannot('lease build %s', build.key.id())
   return build
 
@@ -714,7 +714,7 @@ def reset(build_id):
   @ndb.transactional
   def txn():
     build = _get_leasable_build(build_id)
-    if not user.can_reset_build(build):
+    if not user.can_reset_build_async(build).get_result():
       raise user.current_identity_cannot('reset build %s', build.key.id())
     if build.status == model.BuildStatus.COMPLETED:
       raise errors.BuildIsCompletedError('Cannot reset a completed build')
@@ -995,7 +995,7 @@ def cancel(build_id, result_details=None):
     build = model.Build.get_by_id(build_id)
     if build is None:
       raise errors.BuildNotFoundError()
-    if not user.can_cancel_build(build):
+    if not user.can_cancel_build_async(build).get_result():
       raise user.current_identity_cannot('cancel build %s', build.key.id())
     if build.status == model.BuildStatus.COMPLETED:
       if build.result == model.BuildResult.CANCELED:
@@ -1107,7 +1107,7 @@ def delete_many_builds(bucket, status, tags=None, created_by=None):
     raise errors.InvalidInputError(
         'status can be STARTED or SCHEDULED, not %s' % status
     )
-  if not user.can_delete_scheduled_builds(bucket):
+  if not user.can_delete_scheduled_builds_async(bucket).get_result():
     raise user.current_identity_cannot('delete scheduled builds of %s', bucket)
   # Validate created_by prior scheduled a push task.
   created_by = user.parse_identity(created_by)
@@ -1164,7 +1164,7 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
 
 
 def pause(bucket, is_paused):
-  if not user.can_pause_buckets(bucket):
+  if not user.can_pause_buckets_async(bucket).get_result():
     raise user.current_identity_cannot('pause bucket of %s', bucket)
 
   validate_bucket_name(bucket)

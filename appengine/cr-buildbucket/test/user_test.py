@@ -173,28 +173,29 @@ class AclTest(testing.AppengineTestCase):
 
   def test_can(self):
     self.mock_role(Acl.READER)
-    self.assertTrue(user.can('bucket', user.Action.VIEW_BUILD))
-    self.assertFalse(user.can('bucket', user.Action.CANCEL_BUILD))
-    self.assertFalse(user.can('bucket', user.Action.SET_NEXT_NUMBER))
+    can = lambda bucket, action: user.can_async(bucket, action).get_result()
+    self.assertTrue(can('bucket', user.Action.VIEW_BUILD))
+    self.assertFalse(can('bucket', user.Action.CANCEL_BUILD))
+    self.assertFalse(can('bucket', user.Action.SET_NEXT_NUMBER))
 
     # Memcache coverage
-    self.assertFalse(user.can('bucket', user.Action.SET_NEXT_NUMBER))
+    self.assertFalse(can('bucket', user.Action.SET_NEXT_NUMBER))
     self.assertFalse(user.can_add_build_async('bucket').get_result())
 
   def test_can_no_roles(self):
     self.mock_role(None)
     for action in user.Action:
-      self.assertFalse(user.can('bucket', action))
+      self.assertFalse(user.can_async('bucket', action).get_result())
 
   def test_can_bad_input(self):
     with self.assertRaises(errors.InvalidInputError):
-      user.can('bad bucket name', user.Action.VIEW_BUILD)
+      user.can_async('bad bucket name', user.Action.VIEW_BUILD).get_result()
 
   def test_can_view_build(self):
     self.mock_role(Acl.READER)
     build = model.Build(bucket='bucket')
-    self.assertTrue(user.can_view_build(build))
-    self.assertFalse(user.can_lease_build(build))
+    self.assertTrue(user.can_view_build_async(build).get_result())
+    self.assertFalse(user.can_lease_build_async(build).get_result())
 
   @mock.patch('user.auth.delegate_async', autospec=True)
   def test_delegate_async(self, delegate_async):
