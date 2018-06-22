@@ -1,60 +1,6 @@
 <link rel="import" href="../../bower_components/polymer-redux/polymer-redux.html">
 <script src="../../node_modules/redux/dist/redux.js"></script>
 <script>
-<<<<<<< HEAD
-  const UPDATE_ISSUE_REF = 'UPDATE_ISSUE_REF';
-  const UPDATE_TOKEN = 'UPDATE_TOKEN';
-  const FETCH_ISSUE_START = 'FETCH_ISSUE_START';
-  const FETCH_ISSUE_SUCCESS = 'FETCH_ISSUE_SUCCESS';
-  const FETCH_ISSUE_FAILURE = 'FETCH_ISSUE_FAILURE';
-
-  const initial = {
-    issueId: 0,
-    projectName: '',
-    issue: {},
-    issueLoaded: false,
-    fetchingIssue: false,
-    fetchIssueError: null,
-    token: null,
-  };
-
-  const reducer = (state, action) => {
-    switch (action.type) {
-      case UPDATE_ISSUE_REF:
-        return Object.assign({}, state, {
-          issueId: action.issueId || state.issueId,
-          projectName: action.projectName || state.projectName,
-        });
-      case UPDATE_TOKEN:
-        return Object.assign({}, state, {
-          token: action.token,
-        });
-      case FETCH_ISSUE_START:
-        return Object.assign({}, state, {
-          issue: {},
-          issueLoaded: false,
-          fetchIssueError: null,
-          fetchingIssue: true,
-        });
-      case FETCH_ISSUE_SUCCESS:
-        return Object.assign({}, state, {
-          issue: action.issue,
-          issueLoaded: true,
-          fetchingIssue: false,
-        });
-      case FETCH_ISSUE_FAILURE:
-        return Object.assign({}, state, {
-          fetchIssueError: action.error,
-          fetchingIssue: false,
-        });
-      default:
-        return state;
-    }
-  };
-  const store = Redux.createStore(reducer, initial);
-
-  ReduxMixin = PolymerRedux(store);
-=======
   (function(window) {
     const actionType = {
       UPDATE_ISSUE_REF: 'UPDATE_ISSUE_REF',
@@ -115,5 +61,4 @@
     window.store = store || {};
     window.actionType = actionType || {};
   })(window);
->>>>>>> 484c938071b7c71207cff55b5ebae12e53d9d226
 </script>
