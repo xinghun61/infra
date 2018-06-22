@@ -11,11 +11,12 @@ dispatch:
   - url: "*/flake/detection/ui/*"
     module: waterfall-frontend
 
-  - url: "*/waterfall/*"
-    module: waterfall-frontend
-
   - url: "*/waterfall/cron/*"
     module: waterfall-backend
 
   - url: "*/waterfall/task/*"
     module: waterfall-backend
+
+  - url: "*/waterfall/*"
+    module: waterfall-frontend
+
