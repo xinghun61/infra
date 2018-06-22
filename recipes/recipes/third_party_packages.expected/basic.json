@@ -3743,11 +3743,11 @@
       "search",
       "infra/go/linux-amd64",
       "-tag",
-      "version:1.2.3.test",
+      "version:1.2.3",
       "-json-output",
       "/path/to/tmp/json"
     ],
-    "name": "go.cipd search infra/go/linux-amd64 version:1.2.3.test",
+    "name": "go.cipd search infra/go/linux-amd64 version:1.2.3",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -3823,7 +3823,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:1.2.3.test"
+      "version:1.2.3"
     ],
     "name": "go.register infra/go/linux-amd64",
     "~followup_annotations": [
