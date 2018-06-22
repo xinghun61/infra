@@ -15,6 +15,9 @@
 package app
 
 import (
+	"fmt"
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -23,7 +26,133 @@ import (
 	"golang.org/x/net/context"
 )
 
-func TestTasker(t *testing.T) {
+func TestEnsureBackgroundTasks(t *testing.T) {
+	Convey("In testing context", t, FailureHalts, func() {
+		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
+		datastore.GetTestable(c).Consistent(true)
+		fsc := &fakeSwarmingClient{
+			pool: swarmingBotPool,
+		}
+		server := taskerServerImpl{
+			swarmingClientFactory{
+				swarmingClientHook: func(context.Context, string) (SwarmingClient, error) {
+					return fsc, nil
+				},
+			},
+		}
+
+		Convey("with 2 known bots", func() {
+			setKnownBots(c, fsc, []string{"dut_1", "dut_2"})
+
+			Convey("EnsureBackgroundTasks for unknown bot", func() {
+				resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+					Type:      fleet.TaskType_Reset,
+					Selectors: makeBotSelectorForDuts([]string{"dut_3"}),
+				})
+				Convey("succeeds", func() {
+					So(err, ShouldBeNil)
+				})
+				Convey("returns empty bot tasks", func() {
+					So(resp.BotTasks, ShouldBeEmpty)
+				})
+			})
+
+			Convey("EnsureBackgroundTasks(Reset) for known bot", func() {
+				resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+					Type:      fleet.TaskType_Reset,
+					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
+					TaskCount: 5,
+					Priority:  10,
+				})
+
+				Convey("succeeds", func() {
+					So(err, ShouldBeNil)
+				})
+				Convey("creates expected swarming tasks", func() {
+					So(fsc.taskArgs, ShouldHaveLength, 5)
+					for _, ta := range fsc.taskArgs {
+						So(ta.DutID, ShouldEqual, "dut_1")
+						So(ta.DutState, ShouldEqual, "needs_reset")
+						So(ta.Priority, ShouldEqual, 10)
+
+						cmd := strings.Join(ta.Cmd, " ")
+						So(cmd, ShouldContainSubstring, "-task-name reset")
+					}
+
+				})
+				Convey("returns bot list with requested tasks", func() {
+					So(resp.BotTasks, ShouldHaveLength, 1)
+					botTasks := resp.BotTasks[0]
+					So(botTasks.DutId, ShouldEqual, "dut_1")
+					So(botTasks.Tasks, ShouldHaveLength, 5)
+					for _, t := range botTasks.Tasks {
+						So(t.Type, ShouldEqual, fleet.TaskType_Reset)
+						So(t.TaskUrl, ShouldNotBeNil)
+					}
+				})
+			})
+		})
+
+		Convey("with a large number of known bots", func() {
+			numDuts := 6 * maxConcurrentSwarmingCalls
+			allDuts := make([]string, 0, numDuts)
+			taskDuts := make([]string, 0, numDuts/2)
+			for i := 0; i < numDuts; i++ {
+				allDuts = append(allDuts, fmt.Sprintf("dut_%d", i))
+				if i%2 == 0 {
+					taskDuts = append(taskDuts, allDuts[i])
+				}
+			}
+			setKnownBots(c, fsc, allDuts)
+
+			Convey("EnsureBackgroundTasks(Repair) for some of the known bots", func() {
+				resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+					Type:      fleet.TaskType_Repair,
+					Selectors: makeBotSelectorForDuts(taskDuts),
+					TaskCount: 6,
+					Priority:  9,
+				})
+
+				Convey("succeeds", func() {
+					So(err, ShouldBeNil)
+				})
+				Convey("creates expected swarming tasks", func() {
+					So(fsc.taskArgs, ShouldHaveLength, 6*len(taskDuts))
+					gotDuts := map[string]int{}
+					for _, ta := range fsc.taskArgs {
+						So(ta.DutState, ShouldEqual, "needs_repair")
+						So(ta.Priority, ShouldEqual, 9)
+						gotDuts[ta.DutID] = gotDuts[ta.DutID] + 1
+						cmd := strings.Join(ta.Cmd, " ")
+						So(cmd, ShouldContainSubstring, "-task-name repair")
+					}
+					So(gotDuts, ShouldHaveLength, len(taskDuts))
+					for d, c := range gotDuts {
+						So(d, ShouldBeIn, taskDuts)
+						So(c, ShouldEqual, 6)
+					}
+				})
+				Convey("returns bot list with requested tasks", func() {
+					So(resp.BotTasks, ShouldHaveLength, len(taskDuts))
+					gotDuts := map[string]bool{}
+					for _, bt := range resp.BotTasks {
+						So(bt.Tasks, ShouldHaveLength, 6)
+						for _, t := range bt.Tasks {
+							So(t.Type, ShouldEqual, fleet.TaskType_Repair)
+							So(t.TaskUrl, ShouldNotBeNil)
+						}
+						So(bt.DutId, ShouldBeIn, taskDuts)
+						gotDuts[bt.DutId] = true
+					}
+					So(gotDuts, ShouldHaveLength, len(taskDuts))
+				})
+			})
+
+		})
+	})
+}
+
+func TestTaskerDummy(t *testing.T) {
 	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
@@ -48,10 +177,19 @@ func TestTasker(t *testing.T) {
 			_, err := server.TriggerRepairOnRepairFailed(c, nil)
 			So(err, ShouldNotBeNil)
 		})
-
-		Convey("EnsureBackgroundTasks returns internal error", func() {
-			_, err := server.EnsureBackgroundTasks(c, nil)
-			So(err, ShouldNotBeNil)
-		})
 	})
+}
+
+func setKnownBots(c context.Context, fsc *fakeSwarmingClient, duts []string) {
+	fsc.setAvailableDutIDs(duts)
+	server := trackerServerImpl{
+		swarmingClientFactory{
+			swarmingClientHook: func(context.Context, string) (SwarmingClient, error) {
+				return fsc, nil
+			},
+		},
+	}
+	resp, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{})
+	So(err, ShouldBeNil)
+	So(resp.DutIds, ShouldHaveLength, len(duts))
 }

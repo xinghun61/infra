@@ -32,11 +32,6 @@ type trackerServerImpl struct {
 	swarmingClientFactory
 }
 
-const (
-	dutIDDimensionKey          = "dut_id"
-	maxConcurrentSwarmingCalls = 10
-)
-
 // RefreshBots implements the fleet.Tracker.RefreshBots() method.
 func (tsi *trackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshBotsRequest) (res *fleet.RefreshBotsResponse, err error) {
 	defer func() {

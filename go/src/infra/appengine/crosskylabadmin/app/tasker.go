@@ -15,11 +15,25 @@
 package app
 
 import (
+	"net/url"
+	"strings"
+	"sync"
+
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/sync/parallel"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+)
+
+const (
+	// luciferToolsDeploymentPath is the well known path to infra tools deployed on the drone.
+	luciferToolsDeploymentPath = "/opt/infra-tools/usr/bin"
+	// skylabSwarmingWrokerPath is the path to the binary on the drone
+	// that is the entry point of all tasks.
+	skylabSwarmingWorkerPath = luciferToolsDeploymentPath + "/skylab_swarming_worker"
 )
 
 // taskerServerImpl implements the fleet.TaskerServer interface.
@@ -43,10 +57,97 @@ func (*taskerServerImpl) TriggerRepairOnRepairFailed(context.Context, *fleet.Tri
 	return nil, status.Errorf(codes.Unimplemented, "Not Implemented")
 }
 
-func (*taskerServerImpl) EnsureBackgroundTasks(context.Context, *fleet.EnsureBackgroundTasksRequest) (resp *fleet.TaskerTasksResponse, err error) {
+func (tsi *taskerServerImpl) EnsureBackgroundTasks(c context.Context, req *fleet.EnsureBackgroundTasksRequest) (resp *fleet.TaskerTasksResponse, err error) {
 	defer func() {
 		err = grpcfyRawErrors(err)
 	}()
 
-	return nil, status.Errorf(codes.Unimplemented, "Not Implemented")
+	bses, err := getBotSummariesFromDatastore(c, req.Selectors)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to obtain requested bots from datastore").Err()
+	}
+
+	sc, err := tsi.swarmingClient(c, swarmingInstance)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
+	}
+
+	// Protects access to botTasks
+	m := &sync.Mutex{}
+	botTasks := make([]*fleet.TaskerBotTasks, 0, len(bses))
+	err = parallel.WorkPool(maxConcurrentSwarmingCalls, func(workC chan<- func() error) {
+		for i := range bses {
+			// In-scope variable for goroutine closure.
+			bse := bses[i]
+			workC <- func() error {
+				bt, err := ensureBackgroundTasksForBot(c, sc, req, bse.DutID)
+				if bt != nil {
+					m.Lock()
+					defer m.Unlock()
+					botTasks = append(botTasks, bt)
+				}
+				return err
+			}
+			if c.Err() != nil {
+				return
+			}
+		}
+	})
+
+	resp = &fleet.TaskerTasksResponse{
+		BotTasks: botTasks,
+	}
+	return resp, err
+}
+
+var dutStateForTask = map[fleet.TaskType]string{
+	fleet.TaskType_Cleanup: "needs_cleanup",
+	fleet.TaskType_Repair:  "needs_repair",
+	fleet.TaskType_Reset:   "needs_reset",
+}
+
+func ensureBackgroundTasksForBot(c context.Context, sc SwarmingClient, req *fleet.EnsureBackgroundTasksRequest, dutID string) (*fleet.TaskerBotTasks, error) {
+	ts := make([]*fleet.TaskerTask, 0, req.TaskCount)
+	for i := 0; i < int(req.TaskCount); i++ {
+		tid, err := sc.CreateTask(c, &SwarmingCreateTaskArgs{
+			Cmd:                  luciferAdminTaskCmd(req.Type),
+			DutID:                dutID,
+			DutState:             dutStateForTask[req.Type],
+			ExecutionTimeoutSecs: backgroundTaskExecutionTimeoutSecs,
+			ExpirationSecs:       backgroundTaskExpirationSecs,
+			Pool:                 swarmingBotPool,
+			Priority:             req.Priority,
+			Tags:                 []string{luciProjectTag},
+		})
+		if err != nil {
+			return nil, errors.Annotate(err, "Error when creating %dth task for dut %q", i+1, dutID).Err()
+		}
+		ts = append(ts, &fleet.TaskerTask{
+			TaskUrl: swarmingURLForTask(tid),
+			Type:    req.Type,
+		})
+	}
+	return &fleet.TaskerBotTasks{
+		DutId: dutID,
+		Tasks: ts,
+	}, nil
+}
+
+func luciferAdminTaskCmd(ttype fleet.TaskType) []string {
+	return []string{
+		skylabSwarmingWorkerPath,
+		"-task-name", strings.ToLower(ttype.String()),
+	}
+}
+
+func swarmingURLForTask(tid string) string {
+	u := url.URL{
+		Scheme: "https",
+		Host:   swarmingInstance,
+		Path:   "task",
+	}
+	q := u.Query()
+	q.Set("id", tid)
+	u.RawQuery = q.Encode()
+	return u.String()
 }

@@ -17,6 +17,7 @@ package app
 import (
 	"fmt"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"sync"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
@@ -25,11 +26,17 @@ import (
 
 // fakeSwarmingClient implements SwarmingClient.
 type fakeSwarmingClient struct {
+	m sync.Mutex
 	// pool is the single common pool that all bots belong to.
 	pool string
 
 	// botInfo maps the dut_id for a bot to its swarming.SwarmingRpcsBotInfo
 	botInfos map[string]*swarming.SwarmingRpcsBotInfo
+	// taskArgs accumulates the arguments to CreateTask calls on fakeSwarmingClient
+	taskArgs []*SwarmingCreateTaskArgs
+
+	// nextTaskID is used to construct the next task ID to be returned from CreateTask()
+	nextTaskID int
 }
 
 // ListAliveBotsInPool is a fake implementation of SwarmingClient.ListAliveBotsInPool.
@@ -72,6 +79,16 @@ func (fsc *fakeSwarmingClient) setAvailableDutIDs(duts []string) {
 			},
 		}
 	}
+}
+
+// CreateTask stores the arguments to the CreateTask call in fsc and returns unique task IDs.
+func (fsc *fakeSwarmingClient) CreateTask(c context.Context, args *SwarmingCreateTaskArgs) (string, error) {
+	fsc.m.Lock()
+	defer fsc.m.Unlock()
+	fsc.taskArgs = append(fsc.taskArgs, args)
+	tid := fmt.Sprintf("fake_task_%d", fsc.nextTaskID)
+	fsc.nextTaskID = fsc.nextTaskID + 1
+	return tid, nil
 }
 
 // makeBotSelector returns a fleet.BotSelector selecting each of the duts

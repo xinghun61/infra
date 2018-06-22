@@ -33,14 +33,24 @@ import (
 )
 
 // These are app-wide constants related to the Swarming setup of ChromeOS Skylab.
+//
 // TODO(pprabhu): Use luci-config for these configuration options.
 const (
-	// luci-auth group controlling access to admin app APIs.
+	// accessGroup is the luci-auth group controlling access to admin app APIs.
 	accessGroup = "chromeos-skylab-bot-fleet-access"
-	// Swarming instance hosting skylab bots.
-	swarmingInstance = "chrome-swarming.appspot.com"
-	// Swarming bot pool containing skylab bots.
+	// backgroundTaskExecutionTimeoutSecs is the execution timeout (in
+	// seconds) for background tasks created by tasker.
+	backgroundTaskExecutionTimeoutSecs = 60 * 20
+	// backgroundTaskExpirationSecs is the expiration time (in seconds) for
+	// background tasks created by tasker.
+	backgroundTaskExpirationSecs = 60 * 10
+	// luciProjectTag is the swarming tag that associates the task with a
+	// luci project, allowing milo to work with the swarming UI.
+	luciProjectTag = "luci_project:chromiumos"
+	// swarmingBotPool is the swarming pool containing skylab bots.
 	swarmingBotPool = "ChromeOSSkylab"
+	// swarmingInstance is the swarming instance hosting skylab bots.
+	swarmingInstance = "chrome-swarming.appspot.com"
 )
 
 func init() {

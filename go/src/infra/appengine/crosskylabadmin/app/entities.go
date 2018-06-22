@@ -14,6 +14,7 @@
 
 package app
 
+// botSummaryKind is the datastore entity kind for fleetBotSummaryEntity.
 const botSummaryKind = "fleetBotSummary"
 
 // fleetBotSummaryEntity is a datastore entity that stores the fleet.BotSummary in
