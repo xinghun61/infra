@@ -1228,7 +1228,17 @@ class IssueService(object):
                av in issue.approval_values]
     self.issue2approvalvalue_tbl.InsertRows(
         cnxn, ISSUE2APPROVALVALUE_COLS, av_rows, commit=commit)
-    # TODO(jojwang)monorail:3756, call UpdateIssueApprovalApprovers here
+
+    approver_rows = []
+    for av in issue.approval_values:
+      approver_rows.extend([(av.approval_id, approver_id, issue.issue_id)
+                            for approver_id in av.approver_ids])
+    self.issueapproval2approver_tbl.Delete(
+        cnxn, issue_id=issue.issue_id,
+        approval_id=[av.approval_id for av in issue.approval_values],
+        commit=commit)
+    self.issueapproval2approver_tbl.InsertRows(
+        cnxn, ISSUEAPPROVAL2APPROVER_COLS, approver_rows, commit=commit)
 
   def DeltaUpdateIssue(
       self, cnxn, services, reporter_id, project_id,

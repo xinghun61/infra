@@ -385,12 +385,14 @@ class IssueServiceTest(unittest.TestCase):
   def testCreateIssue(self):
     settings.classifier_spam_thresh = 0.9
     av_23 = tracker_pb2.ApprovalValue(
-        approval_id=23, phase_id=1,
+        approval_id=23, phase_id=1, approver_ids=[111L, 222L],
         status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
-    av_24 = tracker_pb2.ApprovalValue(approval_id=24, phase_id=1)
+    av_24 = tracker_pb2.ApprovalValue(
+        approval_id=24, phase_id=1, approver_ids=[111L])
     approval_values = [av_23, av_24]
     av_rows = [(23, 78901, 1, 'needs_review', None, None),
                (24, 78901, 1, 'not_set', None, None)]
+    approver_rows = [(23, 111L, 78901), (23, 222L, 78901), (24, 111L, 78901)]
     ad_23 = tracker_pb2.ApprovalDef(
         approval_id=23, approver_ids=[111L], survey='Question?')
     ad_24 = tracker_pb2.ApprovalDef(
@@ -401,7 +403,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.config.StoreConfig(self.cnxn, config)
 
     self.SetUpAllocateNextLocalID(789, None, None)
-    self.SetUpInsertIssue(av_rows=av_rows)
+    self.SetUpInsertIssue(av_rows=av_rows, approver_rows=approver_rows)
     self.SetUpInsertComment(7890101, is_description=True)
     self.SetUpInsertComment(7890101, is_description=True, approval_id=23,
         content='<b>Question?</b>')
@@ -595,7 +597,7 @@ class IssueServiceTest(unittest.TestCase):
     self.assertEqual(locations, [(781, 1), (782, 11)])
 
   def SetUpInsertIssue(
-      self, label_rows=None, av_rows=None):
+      self, label_rows=None, av_rows=None, approver_rows=None):
     row = (789, 1, 1, 111L, 111L,
            self.now, 0, self.now, self.now, self.now, self.now,
            None, 0,
@@ -614,7 +616,8 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesCc()
     self.SetUpUpdateIssuesNotify()
     self.SetUpUpdateIssuesRelation()
-    self.SetUpUpdateIssuesApprovals(av_rows=av_rows)
+    self.SetUpUpdateIssuesApprovals(
+        av_rows=av_rows, approver_rows=approver_rows)
     self.services.chart.StoreIssueSnapshots(self.cnxn, mox.IgnoreArg(),
         commit=False)
 
@@ -703,12 +706,19 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, issue_svc.DANGLINGRELATION_COLS, dangling_relation_rows,
         ignore=True, commit=False)
 
-  def SetUpUpdateIssuesApprovals(self, av_rows=None):
+  def SetUpUpdateIssuesApprovals(self, av_rows=None, approver_rows=None):
     av_rows = av_rows or []
+    approver_rows = approver_rows or []
+    approval_ids = [row[0] for row in av_rows]
     self.services.issue.issue2approvalvalue_tbl.Delete(
         self.cnxn, issue_id=78901, commit=False)
     self.services.issue.issue2approvalvalue_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUE2APPROVALVALUE_COLS, av_rows, commit=False)
+    self.services.issue.issueapproval2approver_tbl.Delete(
+        self.cnxn, issue_id=78901, approval_id=approval_ids, commit=False)
+    self.services.issue.issueapproval2approver_tbl.InsertRows(
+        self.cnxn, issue_svc.ISSUEAPPROVAL2APPROVER_COLS, approver_rows,
+        commit=False)
 
   def testInsertIssue(self):
     self.SetUpInsertIssue()
