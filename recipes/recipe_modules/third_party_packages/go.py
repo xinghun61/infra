@@ -17,7 +17,7 @@ PACKAGE_TEMPLATE = 'infra/go/%(platform)s'
 
 # This version suffix serves to distinguish different revisions of go built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = ''
+PACKAGE_VERSION_SUFFIX = '.test'
 
 
 class PlatformNotSupported(Exception):
