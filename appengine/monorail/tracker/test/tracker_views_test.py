@@ -584,15 +584,37 @@ class FVVFunctionsTest(unittest.TestCase):
     labels = ['Priority-Low', 'GoodFirstBug', 'Feature-UI', 'Feature-Installer',
               'Launch-Milestone-66']
     derived_labels = ['OS-Windows', 'OS-Linux']
+    self.config.field_defs.append(tracker_bizobj.MakeFieldDef(
+        4, 789, 'UIMocks', tracker_pb2.FieldTypes.URL_TYPE,
+        'Enhancement', None, False, False, False, None, None, None,
+        False, None, None, None, 'no_action', 'descriptive docstring',
+        False, 23, False))
+    self.config.field_defs.append(tracker_bizobj.MakeFieldDef(
+        5, 789, 'LegalFAQs', tracker_pb2.FieldTypes.URL_TYPE,
+        'Enhancement', None, False, False, False, None, None, None,
+        False, None, None, None, 'no_action', 'descriptive docstring',
+        False, 26, False))
+    self.config.field_defs.append(tracker_bizobj.MakeFieldDef(
+        23, 789, 'Legal', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+        'Enhancement', None, False, False, False, None, None, None,
+        False, None, None, None, 'no_action', 'descriptive docstring',
+        False, None, False))
+    self.config.field_defs.append(tracker_bizobj.MakeFieldDef(
+        26, 789, 'UI', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+        'Enhancement', None, False, False, False, None, None, None,
+        False, None, None, None, 'no_action', 'descriptive docstring',
+        False, None, False))
     field_values = [
-        tracker_bizobj.MakeFieldValue(1, 5, None, None, None, None, False),
+        tracker_bizobj.MakeFieldValue(1, 5, None, None, None, None, False)
         ]
     users_by_id = {}
     fvvs = tracker_views.MakeAllFieldValueViews(
-        self.config, labels, derived_labels, field_values, users_by_id)
-    self.assertEqual(3, len(fvvs))
+        self.config, labels, derived_labels, field_values, users_by_id,
+        parent_approval_ids=[23])
+    self.assertEqual(7, len(fvvs))
     # Values are sorted by (applicable_type, field_name).
-    estdays_fvv, launch_milestone_fvv, os_fvv = fvvs
+    (estdays_fvv, launch_milestone_fvv, legal_fvv, legal_faq_fvv,
+     os_fvv, ui_fvv, ui_mocks_fvv) = fvvs
     self.assertEqual('EstDays', estdays_fvv.field_name)
     self.assertEqual(1, len(estdays_fvv.values))
     self.assertEqual(0, len(estdays_fvv.derived_values))
@@ -602,6 +624,12 @@ class FVVFunctionsTest(unittest.TestCase):
     self.assertEqual('OS', os_fvv.field_name)
     self.assertEqual(0, len(os_fvv.values))
     self.assertEqual(2, len(os_fvv.derived_values))
+    self.assertEqual(ui_mocks_fvv.field_name, 'UIMocks')
+    self.assertTrue(ui_mocks_fvv.applicable)
+    self.assertEqual(legal_faq_fvv.field_name, 'LegalFAQs')
+    self.assertFalse(legal_faq_fvv.applicable)
+    self.assertFalse(legal_fvv.applicable)
+    self.assertFalse(ui_fvv.applicable)
 
   def testMakeFieldValueView(self):
     pass  # Covered by testMakeAllFieldValueViews()
@@ -634,7 +662,7 @@ class FVVFunctionsTest(unittest.TestCase):
                              field_id=23, field_name='Legal',
                              field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)]
     fvs = tracker_views.MakeBounceFieldValueViews(parsed_fvs, config)
-    self.assertFalse(fvs[0].applicable)
+    self.assertTrue(fvs[0].applicable)
 
 
 class ConvertLabelsToFieldValuesTest(unittest.TestCase):

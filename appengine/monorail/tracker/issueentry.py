@@ -140,16 +140,17 @@ class IssueEntry(servlet.Servlet):
     labels = [lab for lab in link_or_template_labels
               if not tracker_bizobj.LabelIsMaskedByField(lab, field_name_set)]
 
+    approval_ids = [av.approval_id for av in wkp.approval_values]
     field_user_views = tracker_views.MakeFieldUserViews(
         mr.cnxn, wkp, self.services.user)
     field_views = tracker_views.MakeAllFieldValueViews(
-        config, link_or_template_labels, [], wkp.field_values, field_user_views)
+        config, link_or_template_labels, [], wkp.field_values, field_user_views,
+        parent_approval_ids=approval_ids)
 
     # TODO(jrobbins): remove "or []" after next release.
     (prechecked_approvals, required_approval_ids,
      phases) = issue_tmpl_helpers.GatherApprovalsPageData(
          wkp.approval_values or [], wkp.phases, config)
-    approval_ids = [av.approval_id for av in wkp.approval_values]
     approvals = [view for view in field_views if view.field_id in
                  approval_ids]
     approval_subfields_present = False

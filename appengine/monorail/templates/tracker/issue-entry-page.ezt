@@ -124,7 +124,7 @@
       <tbody [if-any page_perms.EditIssue][else]style="display:none;"[end] class="collapse">
        [define any_fields_to_reveal]No[end]
        [for fields]
-        [if-any fields.applicable]
+        [if-any fields.applicable][if-any fields.field_def.is_approval_subfield][else]
          [# TODO(jrobbins): determine applicability dynamically and update fields in JS]
          <tr [if-any fields.display][else]class="ifExpand"[define any_fields_to_reveal]Yes[end][end]>
           <th id="[fields.field_id]_label">[fields.field_name]:</th>
@@ -133,7 +133,7 @@
             <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
           </td>
          <tr>
-        [end]
+        [end][end]
        [end]
        [is any_fields_to_reveal "Yes"]
         <tr class="ifCollapse">
@@ -195,13 +195,13 @@
       <tr id="subfield-row">
         <th>Approval subfields:</th>
         <td colspan="2">
-          [for fields]
+          [for fields][if-any fields.applicable]
             [if-any fields.field_def.is_approval_subfield]
               [fields.field_def.parent_approval_name]-[fields.field_name]:
               [include "field-value-widgets.ezt" False "tmpl" False]
             <br>
             [end]
-          [end]
+          [end][end]
         <td>
       </tr>
     [end]

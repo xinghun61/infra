@@ -572,12 +572,19 @@ def _PrecomputeInfoForValueViews(labels, derived_labels, field_values, config):
 
 
 def MakeAllFieldValueViews(
-    config, labels, derived_labels, field_values, users_by_id):
+    config, labels, derived_labels, field_values, users_by_id,
+    parent_approval_ids=None):
   """Return a list of FieldValues, each containing values from the issue."""
+  parent_approval_ids = parent_approval_ids or []
   precomp_view_info = _PrecomputeInfoForValueViews(
       labels, derived_labels, field_values, config)
+  def GetApplicable(fd):
+    if fd.approval_id and fd.approval_id in parent_approval_ids:
+      return True
+    return None
   field_value_views = [
-      _MakeFieldValueView(fd, config, precomp_view_info, users_by_id)
+      _MakeFieldValueView(fd, config, precomp_view_info, users_by_id,
+                          applicable=GetApplicable(fd))
       # TODO(jrobbins): field-level view restrictions, display options
       # TODO(jojwang): monorail:3447, add phase_id to FieldValueView
       for fd in config.field_defs
@@ -587,7 +594,8 @@ def MakeAllFieldValueViews(
   return field_value_views
 
 
-def _MakeFieldValueView(fd, config, precomp_view_info, users_by_id):
+def _MakeFieldValueView(
+    fd, config, precomp_view_info, users_by_id, applicable=None):
   """Return a FieldValueView with all values from the issue for that field."""
   (labels_by_prefix, der_labels_by_prefix, field_values_by_id,
    label_docs) = precomp_view_info
@@ -616,7 +624,8 @@ def _MakeFieldValueView(fd, config, precomp_view_info, users_by_id):
                  der_labels_by_prefix.get('type', []))
   issue_types_lower = [it.lower() for it in issue_types]
 
-  return FieldValueView(fd, config, values, derived_values, issue_types_lower)
+  return FieldValueView(fd, config, values, derived_values, issue_types_lower,
+                        applicable=applicable)
 
 
 def _MakeFieldValueItems(field_values, users_by_id):
@@ -640,7 +649,7 @@ def MakeBounceFieldValueViews(field_vals, config):
           template_helpers.EZTItem(val=v, docstring='', idx=idx)
           for idx, v in enumerate(field_vals[fd.field_id])]
       field_value_views.append(FieldValueView(
-          fd, config, val_items, [], None, applicable=(not fd.approval_id)))
+          fd, config, val_items, [], None, applicable=True))
 
   return field_value_views
 
