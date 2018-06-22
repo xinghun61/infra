@@ -303,7 +303,10 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       av.approver_ids = approvers_dict[av.approval_id, issue_id]
       results_dict[issue_id].approval_values.append(av)
       if av.phase_id:
-        results_dict[issue_id].phases.append(phases_by_id[av.phase_id])
+        phase = phases_by_id[av.phase_id]
+        issue_phases = results_dict[issue_id].phases
+        if phase not in issue_phases:
+          issue_phases.append(phase)
 
     for issue_id, dst_issue_id, kind, rank in relation_rows:
       src_issue = results_dict.get(issue_id)
