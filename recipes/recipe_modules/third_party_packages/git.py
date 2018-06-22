@@ -15,7 +15,7 @@ PACKAGE_PREFIX = 'infra/git/'
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium15'
+PACKAGE_VERSION_SUFFIX = '.chromium16'
 
 
 # A regex for a name of the release asset to package, available at
@@ -44,20 +44,6 @@ class GitApi(util.ModuleShim):
     """Builds Git on Unix and uploads it to a CIPD server."""
 
     def install(target_dir, tag):
-      # Apply any applicable patches.
-      patches = [self.resource('git', 'patches').join(x) for x in (
-          '0001-exec_cmd-self-resolution-and-relative-pathing.patch',
-          '0002-Infra-specific-extensions.patch',
-          # TODO(tandrii, tikuta): remove this for release once git 2.18.0 is
-          # released, because patch below is included in 2.18.0.
-          '0003-fetch-pack.c-use-oidset-to-check-existence-of-loose-.patch',
-      )]
-      self.m.git(*[
-          '-c', 'user.name=third_party_packages',
-          '-c', 'user.email=third_party_packages@example.com',
-          'am'] + patches,
-          name='git apply patches')
-
       zlib = support.ensure_zlib()
       curl = support.ensure_curl()
       pcre2 = support.ensure_pcre2()
@@ -71,19 +57,8 @@ class GitApi(util.ModuleShim):
       support_bin = autoconf.prefix.join('bin')
 
       # cwd is source checkout
-      perl_lib_path = 'share/perl'
       env_prefixes = {
           'PATH': [support_bin],
-      }
-      env = {
-          # This causes Git's Perl module MakeMaker build to install the Git
-          # Perl module at a known path (<package>/share/perl) instead of a path
-          # that is derived from the build system's Perl version. This, in turn,
-          # lets us reference it as a relative path later in our custom
-          # "config.mak" entry (see PERL_LIB_PATH).
-          'PERL_MM_OPT': ' '.join([
-            'INSTALLSITELIB=$(PREFIX)/%s' % (perl_lib_path,),
-          ]),
       }
 
       # Extra environment additions for "configure" step.
@@ -102,31 +77,27 @@ class GitApi(util.ModuleShim):
 
       # Override the autoconfig / system Makefile entries with custom ones.
       custom_make_entries = [
-        # "RUNTIME_PREFIX" is a Windows-only feature that allows Git to probe
-        # for its runtime path relative to its base path.
+        # "RUNTIME_PREFIX" configures Git to be relocatable. This allows it to
+        # be bundled and deployed to arbitrary paths.
         #
-        # Our Git patch (see resources) extends this support to Linux and Mac.
-        #
-        # These variables configure Git to enable and use relative runtime
+        # The other variables configure Git to enable and use relative runtime
         # paths.
-        'RUNTIME_PREFIX = YesPlease',
-        'gitexecdir = libexec/git-core',
-        'template_dir = share/git-core/templates',
-        'sysconfdir = etc',
-
-        # This is a custom Infra directive that can be used to instruct Git to
-        # export a deployment-relative path for Perl script imports. See custom
-        # patches for more details.
-        'PERL_LIB_PATH = %s' % (perl_lib_path,),
+        'RUNTIME_PREFIX=YesPlease',
+        'gitexecdir=libexec/git-core',
+        'template_dir=share/git-core/templates',
+        'sysconfdir=etc',
 
         # CIPD doesn't support hardlinks, so hardlinks become copies of the
         # original file. Use symlinks instead.
-        'NO_INSTALL_HARDLINKS = YesPlease',
+        'NO_INSTALL_HARDLINKS=YesPlease',
 
         # We disable "GECOS" detection. This will make the default commit user
         # name potentially less pretty, but this is acceptable, since users and
         # bots should both be setting that value.
-        'NO_GECOS_IN_PWENT = YesPlease',
+        'NO_GECOS_IN_PWENT=YesPlease',
+
+        # We always supply "curl", so override any automatic detection.
+        'NO_CURL=',
       ]
 
       if self.m.platform.is_linux:
@@ -189,7 +160,7 @@ class GitApi(util.ModuleShim):
           self.m.context.cwd.join('version'),
           '%s%s' % (tag, PACKAGE_VERSION_SUFFIX))
 
-      with self.m.context(env_prefixes=env_prefixes, env=env):
+      with self.m.context(env_prefixes=env_prefixes):
         self.m.step('make configure', ['make', 'configure'])
 
         with self.m.context(env=configure_env):

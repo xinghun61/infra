@@ -83,13 +83,14 @@ class SupportPrefix(util.ModuleShim):
     'infra/third_party/source/automake': 'version:1.15',
     'infra/third_party/source/gnu_sed': 'version:4.2.2',
     'infra/third_party/source/bzip2': 'version:1.0.6',
+    'infra/third_party/source/libidn2': 'version:2.0.4',
     'infra/third_party/source/openssl': 'version:1.1.0f',
     'infra/third_party/source/mac_openssl_headers': 'version:0.9.8zh',
     'infra/third_party/source/pcre': 'version:8.41',
     'infra/third_party/source/pcre2': 'version:10.23',
     'infra/third_party/source/readline': 'version:7.0',
     'infra/third_party/source/zlib': 'version:1.2.11',
-    'infra/third_party/source/curl': 'version:7.54.0',
+    'infra/third_party/source/curl': 'version:7.59.0',
     'infra/third_party/source/ncurses': 'version:6.0',
     'infra/third_party/source/nsl': 'version:1.0.4',
     'infra/third_party/source/sqlite-autoconf': 'version:3.19.3',
@@ -241,6 +242,7 @@ class SupportPrefix(util.ModuleShim):
 
   def ensure_curl(self):
     zlib = self.ensure_zlib()
+    libidn2 = self.ensure_libidn2()
 
     env = {}
     configure_args = [
@@ -248,6 +250,7 @@ class SupportPrefix(util.ModuleShim):
       '--disable-shared',
       '--without-librtmp',
       '--with-zlib=%s' % (str(zlib.prefix,)),
+      '--with-libidn2=%s' % (str(libidn2.prefix,)),
     ]
     deps = []
     shared_deps = []
@@ -261,7 +264,7 @@ class SupportPrefix(util.ModuleShim):
       shared_deps += ['dl', 'pthread']
 
     with self.m.context(env=env):
-      return self._generic_build('curl', 'version:7.54.0',
+      return self._generic_build('curl', 'version:7.59.0',
                                  configure_args=configure_args, deps=deps,
                                  shared_deps=shared_deps)
 
@@ -386,6 +389,11 @@ class SupportPrefix(util.ModuleShim):
   def ensure_zlib(self):
     return self._generic_build('zlib', 'version:1.2.11', libs=['z'],
                                configure_args=['--static'])
+
+  def ensure_libidn2(self):
+    return self._generic_build('libidn2', 'version:2.0.4', libs=['idn2'],
+                               configure_args=['--enable-static=yes',
+                                               '--enable-shared=no'])
 
   def ensure_sqlite(self):
     return self._generic_build('sqlite', 'version:3.19.3', libs=['sqlite3'],

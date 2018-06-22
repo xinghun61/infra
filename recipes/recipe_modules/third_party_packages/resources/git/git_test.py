@@ -12,7 +12,11 @@ import unittest
 class TestGit(unittest.TestCase):
 
   # Public repository that uses HTTPS.
-  HTTPS_REPO_URL = 'https://chromium.googlesource.com/infra/infra'
+  #
+  # This should be highly-available and reachable. As a bonus, it should also
+  # be small in order to reduce testing time on slower networks.
+  HTTPS_REPO_URL = (
+      'https://chromium.googlesource.com/infra/testing/expect_tests')
 
   @classmethod
   def setUpClass(cls):
