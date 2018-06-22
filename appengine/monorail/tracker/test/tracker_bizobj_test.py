@@ -874,13 +874,16 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(set(), tracker_bizobj.UsersInvolvedInIssues([]))
 
   def testUsersInvolvedInIssues_Normal(self):
+    av_1 = tracker_pb2.ApprovalValue(approver_ids=[666L, 222L, 444L])
+    av_2 = tracker_pb2.ApprovalValue(approver_ids=[777L], setter_id=888L)
     issue1 = tracker_pb2.Issue(
-        reporter_id=111L, owner_id=222L, cc_ids=[222L, 333L])
+        reporter_id=111L, owner_id=222L, cc_ids=[222L, 333L],
+        approval_values=[av_1, av_2])
     issue2 = tracker_pb2.Issue(
         reporter_id=333L, owner_id=444L, derived_cc_ids=[222L, 444L])
     issue2.field_values = [tracker_pb2.FieldValue(user_id=555L)]
     self.assertEqual(
-        set([0L, 111L, 222L, 333L, 444L, 555L]),
+        set([0L, 111L, 222L, 333L, 444L, 555L, 666L, 777L, 888L]),
         tracker_bizobj.UsersInvolvedInIssues([issue1, issue2]))
 
   def testUsersInvolvedInTemplate_Empty(self):

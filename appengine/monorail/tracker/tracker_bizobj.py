@@ -738,6 +738,10 @@ def UsersInvolvedInIssues(issues):
     result.update(issue.cc_ids)
     result.update(issue.derived_cc_ids)
     result.update(fv.user_id for fv in issue.field_values if fv.user_id)
+    for av in issue.approval_values:
+      result.update(approver_id for approver_id in av.approver_ids)
+      if av.setter_id:
+        result.update([av.setter_id])
 
   return result
 
