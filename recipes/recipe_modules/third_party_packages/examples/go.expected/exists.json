@@ -37,13 +37,13 @@
       "search",
       "infra/go/linux-386",
       "-tag",
-      "version:1.2.3",
+      "version:1.2.3.test2",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/go/linux-386 version:1.2.3",
+    "name": "cipd search infra/go/linux-386 version:1.2.3.test2",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
