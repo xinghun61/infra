@@ -640,7 +640,7 @@ def MakeBounceFieldValueViews(field_vals, config):
           template_helpers.EZTItem(val=v, docstring='', idx=idx)
           for idx, v in enumerate(field_vals[fd.field_id])]
       field_value_views.append(FieldValueView(
-          fd, config, val_items, [], None, applicable=True))
+          fd, config, val_items, [], None, applicable=(not fd.approval_id)))
 
   return field_value_views
 

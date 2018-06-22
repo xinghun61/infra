@@ -10,6 +10,8 @@ import os
 import time
 import unittest
 
+from third_party import ezt
+
 from google.appengine.ext import testbed
 from mock import Mock, patch
 import webapp2
@@ -123,6 +125,8 @@ class IssueEntryTest(unittest.TestCase):
     self.assertEqual(page_data['initial_status'], 'New')
     self.assertTrue(page_data['clear_summary_on_click'])
     self.assertTrue(page_data['must_edit_summary'])
+    self.assertEqual(page_data['approval_subfields_present'],
+                     ezt.boolean(False))
 
   def testGatherPageData_Approvals(self):
      user = self.services.user.TestAddUser('user@invalid', 100)
@@ -159,6 +163,36 @@ class IssueEntryTest(unittest.TestCase):
                            tracker_pb2.Phase(phase_id=1, name='Canary', rank=4))
      self.assertEqual(page_data['prechecked_approvals'], ['24_phase_0'])
      self.assertEqual(page_data['required_approval_ids'], [24])
+     self.assertEqual(page_data['approval_subfields_present'],
+                      ezt.boolean(False))
+
+     # approval subfields in config shown when chosen
+     # template has the parent approval.
+     config.field_defs.append(
+         tracker_bizobj.MakeFieldDef(
+             25, mr.project_id, 'UXReview-SubField',
+             tracker_pb2.FieldTypes.INT_TYPE, None, '', False, False,
+             False, None, None, '', False, '', '',
+             tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False,
+             approval_id=24))
+     self.services.config.StoreConfig(mr.cnxn, config)
+     templates[1].field_values = [
+         tracker_pb2.FieldValue(field_id=25, int_value=3)]
+     template_set = tracker_pb2.TemplateSet(templates=templates)
+     self.services.template.GetProjectTemplates.return_value = template_set
+     page_data = self.servlet.GatherPageData(mr)
+     self.assertEqual(page_data['approval_subfields_present'],
+                      ezt.boolean(True))
+
+     # approval subfields in config hidden when chosen template does not contain
+     # its parent approval
+     templates = testing_helpers.DefaultTemplates()
+     template_set = tracker_pb2.TemplateSet(templates=templates)
+     self.services.template.GetProjectTemplates.return_value = template_set
+     page_data = self.servlet.GatherPageData(mr)
+     self.assertEqual(page_data['approval_subfields_present'],
+                      ezt.boolean(False))
+     self.assertEqual(page_data['approvals'], [])
 
   def testGatherPageData_DefaultOwnerAvailability(self):
     user = self.services.user.TestAddUser('user@invalid', 100)

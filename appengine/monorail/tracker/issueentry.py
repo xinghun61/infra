@@ -149,9 +149,13 @@ class IssueEntry(servlet.Servlet):
     (prechecked_approvals, required_approval_ids,
      phases) = issue_tmpl_helpers.GatherApprovalsPageData(
          wkp.approval_values or [], wkp.phases, config)
-    approval_ids = []
-    for av in wkp.approval_values or []:
-      approval_ids.append(av.approval_id)
+    approval_ids = [av.approval_id for av in wkp.approval_values]
+    approvals = [view for view in field_views if view.field_id in
+                 approval_ids]
+    approval_subfields_present = False
+    if any(
+        fv.field_def.is_approval_subfield for fv in field_views) and approvals:
+      approval_subfields_present = True
 
     page_data = {
         'issue_tab_mode': 'issueEntry',
@@ -192,11 +196,10 @@ class IssueEntry(servlet.Servlet):
         # this template. These are read-only.
         'allow_edit': ezt.boolean(False),
         'initial_phases': phases,
-        'approvals': [view for view in field_views if view.field_id in
-                      approval_ids],
+        'approvals': approvals,
         'prechecked_approvals': prechecked_approvals,
         'required_approval_ids': required_approval_ids,
-        # TODO(jowjang): monorail:3263, Show approval subfield values.
+        'approval_subfields_present': ezt.boolean(approval_subfields_present),
         }
 
     return page_data
@@ -346,6 +349,7 @@ class IssueEntry(servlet.Servlet):
                 actionlimit.ISSUE_ATTACHMENT: len(parsed.attachments)}
       self.CountRateLimitedActions(mr, counts)
 
+    mr.template_name = parsed.template_name
     if mr.errors.AnyErrors():
       component_required = False
       for wkp in template_set.templates:
