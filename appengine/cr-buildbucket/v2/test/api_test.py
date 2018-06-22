@@ -122,21 +122,21 @@ class ApiMethodDecoratorTests(BaseTestCase):
         )
     )
 
-  @mock.patch('service.get', autospec=True)
-  def test_trimming_exclude(self, service_get):
-    service_get.return_value = self.new_build_v1(
-        parameters={'properties': {'a': 'b'}}
+  @mock.patch('service.get_async', autospec=True)
+  def test_trimming_exclude(self, get_async):
+    get_async.return_value = future(
+        self.new_build_v1(parameters={'properties': {'a': 'b'}})
     )
     req = rpc_pb2.GetBuildRequest(id=1)
     res = self.call(self.api.GetBuild, req)
     self.assertFalse(res.input.HasField('properties'))
 
-  @mock.patch('service.get', autospec=True)
-  def test_trimming_include(self, service_get):
-    service_get.return_value = self.new_build_v1(
-        parameters={
+  @mock.patch('service.get_async', autospec=True)
+  def test_trimming_include(self, get_async):
+    get_async.return_value = future(
+        self.new_build_v1(parameters={
             'properties': {'a': 'b'},
-        }
+        }),
     )
     req = rpc_pb2.GetBuildRequest(
         id=1, fields=field_mask_pb2.FieldMask(paths=['input.properties'])
@@ -188,13 +188,13 @@ class ToBuildMessagesTests(BaseTestCase):
 class GetBuildTests(BaseTestCase):
   """Tests for GetBuild RPC."""
 
-  @mock.patch('service.get', autospec=True)
-  def test_by_id(self, service_get):
-    service_get.return_value = self.new_build_v1(id=54)
+  @mock.patch('service.get_async', autospec=True)
+  def test_by_id(self, get_async):
+    get_async.return_value = future(self.new_build_v1(id=54))
     req = rpc_pb2.GetBuildRequest(id=54)
     res = self.call(self.api.GetBuild, req)
     self.assertEqual(res.id, 54)
-    service_get.assert_called_once_with(54)
+    get_async.assert_called_once_with(54)
 
   @mock.patch('search.search_async', autospec=True)
   def test_by_number(self, search_async):

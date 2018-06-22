@@ -225,7 +225,7 @@ class BuildBucketApi(remote.Service):
   def get(self, request):
     """Returns a build by id."""
     try:
-      build = service.get(request.id)
+      build = service.get_async(request.id).get_result()
     except auth.AuthorizationError:
       build = None
     if build is None:

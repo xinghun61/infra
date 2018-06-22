@@ -573,17 +573,18 @@ def retry(
   )
 
 
-def get(build_id):
+@ndb.tasklet
+def get_async(build_id):
   """Gets a build by |build_id|.
 
   Requires the current user to have permissions to view the build.
   """
-  build = model.Build.get_by_id(build_id)
+  build = yield model.Build.get_by_id_async(build_id)
   if not build:
-    return None
-  if not user.can_view_build_async(build).get_result():
+    raise ndb.Return(None)
+  if not (yield user.can_view_build_async(build)):
     raise user.current_identity_cannot('view build %s', build.key.id())
-  return build
+  raise ndb.Return(build)
 
 
 def peek(buckets, max_builds=None, start_cursor=None):

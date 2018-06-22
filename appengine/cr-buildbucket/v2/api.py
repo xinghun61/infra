@@ -168,7 +168,7 @@ class BuildsApi(object):
     validation.validate_get_build_request(req)
 
     if req.id:
-      build_v1 = service.get(req.id)
+      build_v1 = service.get_async(req.id).get_result()
     else:
       bucket = v1_bucket(req.builder)
       tag = buildtags.build_address_tag(

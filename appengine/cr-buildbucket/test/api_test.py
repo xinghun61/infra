@@ -21,7 +21,7 @@ import mock
 import gae_ts_mon
 
 from test import config_test
-from test.test_util import future
+from test.test_util import future, future_exception
 import api
 import config
 import errors
@@ -75,15 +75,15 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.assertIsNotNone(res.get('error'))
     self.assertEqual(res['error']['reason'], error_reason)
 
-  @mock.patch('service.get', autospec=True)
-  def test_get(self, get):
+  @mock.patch('service.get_async', autospec=True)
+  def test_get(self, get_async):
     self.test_build.lease_expiration_date = self.future_date
 
     build_id = self.test_build.key.id()
-    get.return_value = self.test_build
+    get_async.return_value = future(self.test_build)
 
     resp = self.call_api('get', {'id': build_id}).json_body
-    get.assert_called_once_with(build_id)
+    get_async.assert_called_once_with(build_id)
     self.assertEqual(resp['build']['id'], str(build_id))
     self.assertEqual(resp['build']['bucket'], self.test_build.bucket)
     self.assertEqual(resp['build']['lease_expiration_ts'], self.future_ts)
@@ -92,14 +92,14 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         resp['build']['parameters_json'], '{"buildername": "linux_rel"}'
     )
 
-  @mock.patch('service.get', autospec=True)
-  def test_get_auth_error(self, get):
-    get.side_effect = auth.AuthorizationError
+  @mock.patch('service.get_async', autospec=True)
+  def test_get_auth_error(self, get_async):
+    get_async.return_value = future_exception(auth.AuthorizationError())
     self.expect_error('get', {'id': 1}, 'BUILD_NOT_FOUND')
 
-  @mock.patch('service.get', autospec=True)
-  def test_get_nonexistent_build(self, get):
-    get.return_value = None
+  @mock.patch('service.get_async', autospec=True)
+  def test_get_nonexistent_build(self, get_async):
+    get_async.return_value = future(None)
     self.expect_error('get', {'id': 1}, 'BUILD_NOT_FOUND')
 
   ####### PUT ##################################################################
@@ -743,9 +743,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
 
   ####### ERRORS ###############################################################
 
-  @mock.patch('service.get', autospec=True)
-  def error_test(self, error_class, reason, get):
-    get.side_effect = error_class
+  @mock.patch('service.get_async', autospec=True)
+  def error_test(self, error_class, reason, get_async):
+    get_async.return_value = future_exception(error_class(reason))
     self.expect_error('get', {'id': 123}, reason)
 
   def test_build_not_found_error(self):

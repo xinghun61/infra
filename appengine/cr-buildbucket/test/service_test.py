@@ -618,17 +618,17 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_get(self):
     self.test_build.put()
-    build = service.get(self.test_build.key.id())
+    build = service.get_async(self.test_build.key.id()).get_result()
     self.assertEqual(build, self.test_build)
 
   def test_get_nonexistent_build(self):
-    self.assertIsNone(service.get(42))
+    self.assertIsNone(service.get_async(42).get_result())
 
   def test_get_with_auth_error(self):
     self.mock_cannot(user.Action.VIEW_BUILD)
     self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
-      service.get(self.test_build.key.id())
+      service.get_async(self.test_build.key.id()).get_result()
 
   ################################### CANCEL ###################################
 
