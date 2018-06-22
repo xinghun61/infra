@@ -564,12 +564,52 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(expected_2, actual[2])
     self.assertEqual(expected_3, actual[3])
 
-  def testIngestUserRefs(self):
+  def testIngestUserRefs_ClearTheOwnerField(self):
     """We can look up user IDs for protoc UserRefs."""
-    self.assertEqual([0], converters.IngestUserRefs([common_pb2.UserRef()]))
+    ref = common_pb2.UserRef(user_id=0)
+    actual = converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
+    self.assertEqual([0], actual)
 
-    ref = common_pb2.UserRef(user_id=111L, display_name='user1@example.com')
-    self.assertEqual([111L], converters.IngestUserRefs([ref]))
+  def testIngestUserRefs_ByExistingID(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    ref = common_pb2.UserRef(user_id=111L)
+    actual = converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
+    self.assertEqual([111L], actual)
+
+  def testIngestUserRefs_ByNonExistingID(self):
+    ref = common_pb2.UserRef(user_id=999L)
+    with self.assertRaises(exceptions.NoSuchUserException):
+      converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
+
+  def testIngestUserRefs_ByExistingEmail(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    ref = common_pb2.UserRef(display_name='user1@example.com')
+    actual = converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
+    self.assertEqual([111L], actual)
+
+  def testIngestUserRefs_ByNonExistingEmail(self):
+    # Case where autocreate=False
+    ref = common_pb2.UserRef(display_name='new@example.com')
+    with self.assertRaises(exceptions.NoSuchUserException):
+      converters.IngestUserRefs(
+          self.cnxn, [ref], self.services.user, autocreate=False)
+
+    # Case where autocreate=False
+    actual = converters.IngestUserRefs(
+        self.cnxn, [ref], self.services.user, autocreate=True)
+    user_id = self.services.user.LookupUserID(self.cnxn, 'new@example.com')
+    self.assertEqual([user_id], actual)
+
+  def testIngestUserRefs_MixOfIDAndEmail(self):
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user2@example.com', 222L)
+    self.services.user.TestAddUser('user3@example.com', 333L)
+    ref1 = common_pb2.UserRef(display_name='user1@example.com')
+    ref2 = common_pb2.UserRef(display_name='user2@example.com')
+    ref3 = common_pb2.UserRef(user_id=333L)
+    actual = converters.IngestUserRefs(
+        self.cnxn, [ref1, ref2, ref3], self.services.user)
+    self.assertEqual([111L, 222L, 333L], actual)
 
   def testIngestComponentRefs(self):
     """We can look up component IDs for a list of protoc UserRefs."""
@@ -593,6 +633,9 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestIssueDelta_BuiltInFields(self):
     """We can create a protorpc IssueDelta from a protoc IssueDelta."""
+    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user2@example.com', 222L)
+    self.services.user.TestAddUser('user3@example.com', 333L)
     self.config.component_defs = [
       tracker_pb2.ComponentDef(component_id=1, path='UI')]
     delta = issues_pb2.IssueDelta(

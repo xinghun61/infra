@@ -208,7 +208,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.services.config.StoreConfig('fake cnxn', self.config)
     cd = tracker_bizobj.MakeComponentDef(
         component_id, project_id, component_name, component_doc, deprecated,
-        admin_ids, cc_ids, created, creator)
+        admin_ids, cc_ids, created, creator, modifier_id=creator)
     self.config.component_defs.append(cd)
 
   def SetUpFieldDefs(

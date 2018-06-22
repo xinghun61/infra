@@ -252,9 +252,8 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.assertEquals(404, cm.exception.code)
 
   def testViewedUser_NoSuchUserID(self):
-    with self.assertRaises(webapp2.HTTPException) as cm:
+    with self.assertRaises(exceptions.NoSuchUserException):
       self._MRWithMockRequest('/u/234521111/')
-    self.assertEquals(404, cm.exception.code)
 
   def testGetParam(self):
     mr = testing_helpers.MakeMonorailRequest(

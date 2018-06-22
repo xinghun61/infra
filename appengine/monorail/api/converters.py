@@ -370,14 +370,24 @@ def ConvertCommentList(issue, comments, users_by_id, config, logged_in_user_id):
   return result
 
 
-def IngestUserRefs(user_refs):
+def IngestUserRefs(cnxn, user_refs, user_service, autocreate=False):
   """Return IDs of specified users or raise NoSuchUserException."""
-  # TODO(jrobbins): Handle both specified user_ids and specified email
-  # addresses, with autocreate option.
-  # TODO(jrobbins): Validate that the provided user_ids match existing users
-  # or raise NoSuchUserException.
+  # 1. Verify that all specified user IDs actually match existing users.
+  user_ids_to_verify = [user_ref.user_id for user_ref in user_refs
+                        if user_ref.user_id]
+  user_service.LookupUserEmails(cnxn, user_ids_to_verify)
+
+  # 2. Lookup or create any users that are specified by email address.
+  needed_emails = [user_ref.display_name for user_ref in user_refs
+                   if not user_ref.user_id and user_ref.display_name]
+  emails_to_ids = user_service.LookupUserIDs(
+      cnxn, needed_emails, autocreate=autocreate)
+
+  # 3. Build the result.
   # Note: user_id can be specified as 0 to clear the issue owner.
-  return [user_ref.user_id for user_ref in user_refs]
+  result = [emails_to_ids.get(user_ref.display_name, user_ref.user_id)
+            for user_ref in user_refs]
+  return result
 
 
 def IngestComponentRefs(comp_refs, config):
@@ -433,13 +443,14 @@ def IngestIssueDelta(cnxn, services, delta, config):
     status = delta.status.value
   owner_id = None
   if delta.HasField('owner_ref'):
-    owner_id = IngestUserRefs([delta.owner_ref])[0]
+    owner_id = IngestUserRefs(cnxn, [delta.owner_ref], services.user)[0]
   summary = None
   if delta.HasField('summary'):
     summary = delta.summary.value
 
-  cc_ids_add = IngestUserRefs(delta.cc_refs_add)
-  cc_ids_remove = IngestUserRefs(delta.cc_refs_remove)
+  cc_ids_add = IngestUserRefs(
+      cnxn, delta.cc_refs_add, services.user, autocreate=True)
+  cc_ids_remove = IngestUserRefs(cnxn, delta.cc_refs_remove, services.user)
 
   comp_ids_add = IngestComponentRefs(delta.comp_refs_add, config)
   comp_ids_remove = IngestComponentRefs(delta.comp_refs_remove, config)

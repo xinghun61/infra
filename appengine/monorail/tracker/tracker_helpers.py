@@ -17,6 +17,7 @@ import urllib
 import settings
 
 from framework import authdata
+from framework import exceptions
 from framework import filecontent
 from framework import framework_bizobj
 from framework import framework_constants
@@ -408,9 +409,12 @@ def IsValidIssueOwner(cnxn, project, owner_id, services):
   if owner_id == framework_constants.NO_USER_SPECIFIED:
     return True, None
 
-  auth = authdata.AuthData.FromUserID(cnxn, owner_id, services)
-  if not framework_bizobj.UserIsInProject(project, auth.effective_ids):
-    return False, 'Issue owner must be a project member'
+  try:
+    auth = authdata.AuthData.FromUserID(cnxn, owner_id, services)
+    if not framework_bizobj.UserIsInProject(project, auth.effective_ids):
+      return False, 'Issue owner must be a project member'
+  except exceptions.NoSuchUserException:
+    return False, 'Issue owner user ID not found'
 
   group_ids = services.usergroup.DetermineWhichUserIDsAreGroups(
       cnxn, [owner_id])

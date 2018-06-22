@@ -486,6 +486,8 @@ class UserService(object):
 
   def LookupUserEmail(self, _cnxn, user_id):
     email = self.users_by_id.get(user_id)
+    if not email:
+      raise exceptions.NoSuchUserException('No user has ID %r' % user_id)
     return email
 
   def LookupUserEmails(self, cnxn, user_ids):

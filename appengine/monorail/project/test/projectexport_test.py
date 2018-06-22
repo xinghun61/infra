@@ -42,6 +42,7 @@ class ProjectExportJSONTest(unittest.TestCase):
         project=fake.ProjectService(),
         user=fake.UserService(),
         template=Mock(spec=TemplateService))
+    self.services.user.TestAddUser('user1@example.com', 111L)
     self.servlet = projectexport.ProjectExportJSON(
         'req', 'res', services=self.services)
     self.project = fake.Project(project_id=789)
@@ -130,7 +131,7 @@ class ProjectExportJSONTest(unittest.TestCase):
         'components': [],
         'list_cols': 'ID Type Status Priority Milestone Owner Summary'
       },
-      'emails': [None],
+      'emails': ['user1@example.com'],
       'metadata': {
         'version': 1,
         'when': 123456789,
