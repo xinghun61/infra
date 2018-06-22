@@ -509,11 +509,11 @@ the permission to schedule a Dataflow job for your project.
 &mdash; **def [RunSteps](/recipes/recipes/sync_submodules.py#21)(api, enable_recurse_deps, disable_path_prefix):**
 ### *recipes* / [third\_party\_packages](/recipes/recipes/third_party_packages.py)
 
-[DEPS](/recipes/recipes/third_party_packages.py#10): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/third_party_packages.py#10): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 This recipe builds and packages third party software, such as Git.
 
-&mdash; **def [RunSteps](/recipes/recipes/third_party_packages.py#24)(api, dry_run):**
+&mdash; **def [RunSteps](/recipes/recipes/third_party_packages.py#20)(api):**
 ### *recipes* / [third\_party\_packages:examples/cmake](/recipes/recipe_modules/third_party_packages/examples/cmake.py)
 
 [DEPS](/recipes/recipe_modules/third_party_packages/examples/cmake.py#14): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/url][recipe_engine/recipe_modules/url]

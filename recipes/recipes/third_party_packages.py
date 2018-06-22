@@ -12,18 +12,15 @@ DEPS = [
   'depot_tools/gitiles',
   'recipe_engine/platform',
   'recipe_engine/properties',
+  'recipe_engine/runtime',
   'recipe_engine/step',
   'third_party_packages',
 ]
 
-PROPERTIES = {
-  'dry_run': Property(default=False, kind=bool),
-}
-
-
-def RunSteps(api, dry_run):
-  api.third_party_packages.dry_run = dry_run
-  if not dry_run:
+def RunSteps(api):
+  api.third_party_packages.dry_run = api.runtime.is_experimental
+  if not api.runtime.is_experimental and not api.runtime.is_luci:
+    # TODO(Tandrii): delete with buildbot.
     api.cipd.set_service_account_credentials(
         api.cipd.default_bot_service_account_credentials)
 
@@ -118,10 +115,14 @@ def GenTests(api):
 
   yield (
       api.test('basic') +
+      GenTestData() +
+      api.runtime(is_luci=True, is_experimental=False))
+
+  yield (
+      api.test('basic-buildbot') +
       GenTestData())
 
   yield (
       api.test('dry_run') +
       GenTestData() +
-      api.properties(dry_run=True)
-  )
+      api.runtime(is_luci=True, is_experimental=True))
