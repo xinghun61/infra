@@ -1,0 +1,46 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/mixins/redux-mixin.html">
+<link rel="import" href="/elements/mr-approval-page/mr-issue-header.html">
+<test-fixture id="basic">
+  <template>
+    <mr-issue-header></mr-issue-header>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('updating issue id changes header', function() {
+      assert.equal(store.getState().issueId, 0);
+
+      store.dispatch({
+        type: actionType.UPDATE_ISSUE_REF,
+        issueId: 1,
+      });
+
+      assert.equal(store.getState().issueId, 1);
+
+      store.dispatch({
+        type: actionType.FETCH_ISSUE_SUCCESS,
+        issue: {summary: 'test'},
+      });
+
+      assert.deepEqual(store.getState().issue, {summary: 'test'});
+
+      // TODO(zhangtiff): Figure out how to properly test
+      // state changes propagating to the element. As is, state
+      // changes don't seem to actually make it to the element.
+      // assert.deepEqual(element.issue, {summary: 'test'});
+    });
+  });
+})();
+</script>

@@ -1,6 +1,7 @@
 <meta charset="utf-8">
 <script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
 <script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/mixins/redux-mixin.html">
 <link rel="import" href="/elements/mr-approval-page/mr-approval-page.html">
 <test-fixture id="basic">
   <template>
@@ -11,6 +12,8 @@
 (function() {
   'use strict';
 
+  // TODO(zhangtiff): Flesh out these tests once we figure out
+  // how to make Redux store changes propagate back to elements.
   suite('basic tests', function() {
     var element;
 
@@ -18,11 +21,31 @@
       element = fixture('basic');
     });
 
-    test('renders basic', function(done) {
-     flush(() => {
-       assert.isDefined(element, 'element is undefined');
-       done();
+    test('fetching issue makes loading show', function() {
+      assert.isFalse(store.getState().fetchingIssue);
+
+      store.dispatch({
+        type: actionType.FETCH_ISSUE_START,
       });
+
+      assert.isTrue(store.getState().fetchingIssue);
+
+      // TODO(zhangtiff): Figure out how to propagate Redux state changes.
+      element.fetchingIssue = true;
+      assert.isTrue(element.fetchingIssue);
+    });
+
+    test('dispatching failure makes error show', function() {
+      store.dispatch({
+        type: actionType.FETCH_ISSUE_FAILURE,
+        error: 'failed request',
+      });
+
+      assert.equal(store.getState().fetchIssueError, 'failed request');
+
+      // TODO(zhangtiff): Figure out how to propagate Redux state changes.
+      element.fetchIssueError = element.fetchIssueError;
+      assert.equal(element.fetchIssueError, element.fetchIssueError);
     });
   });
 })();

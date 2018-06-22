@@ -6,26 +6,47 @@
  * The main entry point for a given launch issue.
  *
  */
-class MrApprovalPage extends Polymer.Element {
+class MrApprovalPage extends ReduxMixin(Polymer.Element) {
   static get is() {
     return 'mr-approval-page';
   }
 
   static get properties() {
     return {
-      summary: String,
       issueId: {
         type: Number,
-        computed: '_computeIssueId(queryParams.id)',
+        statePath: 'issueId',
+      },
+      issueLoaded: {
+        type: Boolean,
+        statePath: 'issueLoaded',
+      },
+      projectName: {
+        type: String,
+        statePath: 'projectName',
+      },
+      fetchingIssue: {
+        type: Boolean,
+        statePath: 'fetchingIssue',
+      },
+      fetchIssueError: {
+        type: String,
+        statePath: 'fetchIssueError',
       },
       phases: Array,
       loginUrl: String,
       logoutUrl: String,
       queryParams: Object,
-      user: String,
-      _user: {
+      route: String,
+      routeData: Object,
+      token: {
         type: String,
-        computed: '_computeUser(user, queryParams.you)',
+        observer: '_tokenChanged',
+      },
+      user: String,
+      _token: {
+        type: String,
+        statePath: 'token',
       },
       _userMenuItems: {
         type: Array,
@@ -34,28 +55,53 @@ class MrApprovalPage extends Polymer.Element {
     };
   }
 
-  ready() {
-    super.ready();
+  static get observers() {
+    return [
+      '_issueIdChanged(issueId, projectName)',
+      '_routeChanged(routeData, queryParams)',
+    ];
+  }
+
+  _issueIdChanged(id, projectName) {
+    if (!id || !projectName) return;
+
+    this.dispatch({type: actionType.FETCH_ISSUE_START});
+
     const message = {
-      trace: {token: window.CS_env.token},
+      trace: {token: this._token},
       issue_ref: {
-        project_name: window.CS_env.projectName,
-        local_id: window.CS_env.localId,
-      }
+        project_name: projectName,
+        local_id: id,
+      },
     };
-    const data = window.prpcClient.call(
-        'monorail.Issues', 'GetIssue', message);
-    console.log(data);
+    window.prpcClient.call(
+      'monorail.Issues', 'GetIssue', message
+    ).then((resp) => {
+      this.dispatch({
+        type: actionType.FETCH_ISSUE_SUCCESS,
+        issue: resp.issue,
+      });
+    }, (error) => {
+      this.dispatch({
+        type: actionType.FETCH_ISSUE_FAILURE,
+        error,
+      });
+    });
   }
 
-  _computeIssueId(id) {
-    return id * 1;
+  _routeChanged(routeData, queryParams) {
+    this.dispatch({
+      type: actionType.UPDATE_ISSUE_REF,
+      issueId: Number.parseInt(queryParams.id),
+      projectName: routeData.project,
+    });
   }
 
-  // TODO(zhangtiff): Remove the "you" feature once we have real authentication.
-  _computeUser(user, you) {
-    if (!you) return user;
-    return `${you}@chromium.org`;
+  _tokenChanged(token) {
+    this.dispatch({
+      type: actionType.UPDATE_TOKEN,
+      token,
+    });
   }
 
   _computeUserMenuItems(user, loginUrl, logoutUrl) {

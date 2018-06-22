@@ -1,6 +1,7 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../../bower_components/app-route/app-route.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-header.html">
 <link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 
@@ -9,6 +10,7 @@
 <link rel="import" href="../mr-issue-details/mr-issue-details.html">
 <link rel="import" href="../mr-issue-details/mr-metadata.html">
 <link rel="import" href="../mr-launch-overview/mr-launch-overview.html">
+<link rel="import" href="../../mixins/redux-mixin.html">
 
 <dom-module id="mr-approval-page">
   <template>
@@ -95,7 +97,16 @@
         }
       }
     </style>
-    <app-location query-params="{{queryParams}}" url-space-regex="^/p/chromium/issues/approval"></app-location>
+    <app-location
+      route="{{route}}"
+      query-params="{{queryParams}}"
+      url-space-regex="^/p/(\w+)/issues/approval"
+    ></app-location>
+    <app-route
+      route="{{route}}"
+      pattern="/p/:project/issues/approval"
+      data="{{routeData}}"
+    ></app-route>
     <iron-ajax
         auto
         url="/elements/mock-data/phases-mock.json"
@@ -104,21 +115,33 @@
     </iron-ajax>
     <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
       <span slot="subheader">&gt; <a href="#">Feature Launch Issue</a></span>
-      <template is="dom-if" if="[[_user]]">
-        <mr-dropdown text="[[_user]]" items="[[_userMenuItems]]"></mr-dropdown>
+      <template is="dom-if" if="[[user]]">
+        <mr-dropdown text="[[user]]" items="[[_userMenuItems]]"></mr-dropdown>
       </template>
-      <a href$="[[loginUrl]]" hidden$="[[_user]]">Sign in</a>
+      <a href$="[[loginUrl]]" hidden$="[[user]]">Sign in</a>
     </chops-header>
-    <mr-issue-header summary="{{summary}}" issue-id="[[issueId]]"></mr-issue-header>
-    <div class="container-outside">
-      <div class="metadata-container">
-        <mr-metadata summary="[[summary]]"></mr-metadata>
+    <template is="dom-if" if="[[fetchingIssue]]">
+      <div class="container-outside">
+        Loading...
       </div>
-      <div class="container-main">
-        <mr-issue-details class="main-item"></mr-issue-details>
-        <mr-launch-overview class="main-item" user="[[_user]]" phases="[[phases]]"></mr-launch-overview>
+    </template>
+    <template is="dom-if" if="[[fetchIssueError]]">
+      <div class="container-outside">
+        [[fetchIssueError]]
       </div>
-    </div>
+    </template>
+    <template is="dom-if" if="[[issueLoaded]]">
+      <mr-issue-header></mr-issue-header>
+      <div class="container-outside">
+        <div class="metadata-container">
+          <mr-metadata></mr-metadata>
+        </div>
+        <div class="container-main">
+          <mr-issue-details class="main-item"></mr-issue-details>
+          <mr-launch-overview class="main-item" user="[[user]]" phases="[[phases]]"></mr-launch-overview>
+        </div>
+      </div>
+    </template>
   </template>
   <script src="./mr-approval-page.js"></script>
 </dom-module>
