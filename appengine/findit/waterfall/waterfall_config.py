@@ -154,7 +154,7 @@ def StepIsSupportedForMaster(step_name, master_name):
            step_name not in global_unsupported_steps))
 
 
-def GetFlakeTrybot(wf_mastername, wf_buildername, force_buildbot=False):
+def GetFlakeTrybot(wf_mastername, wf_buildername):
   """Returns tryserver master and builder for running flake try jobs.
 
   Args:
@@ -166,10 +166,9 @@ def GetFlakeTrybot(wf_mastername, wf_buildername, force_buildbot=False):
     The trybot mastername and buildername to re-run flake try jobs, or
     (None, None) if not supported.
   """
-  if not force_buildbot:
-    mastername, trybot = GetSwarmbucketBot(wf_mastername, wf_buildername)
-    if mastername and trybot:
-      return mastername, trybot
+  mastername, trybot = GetSwarmbucketBot(wf_mastername, wf_buildername)
+  if mastername and trybot:
+    return mastername, trybot
 
   bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
   return bot_dict.get('mastername'), bot_dict.get('flake_trybot')
@@ -254,14 +253,12 @@ def GetSwarmbucketBot(wf_mastername, wf_buildername):
   return None, None
 
 
-def GetWaterfallTrybot(wf_mastername, wf_buildername, force_buildbot=False):
+def GetWaterfallTrybot(wf_mastername, wf_buildername):
   """Returns tryserver master and builder for running reliable failure try jobs.
 
   Args:
     wf_mastername: The mastername of a waterfall builder.
     wf_buildername: The buildername of a waterfall builder.
-    force_buildbot(bool): Whether to ignore swarmbucket config and use buildbot
-        instead.
 
   Returns:
     (tryserver_mastername, tryserver_buildername)
@@ -270,10 +267,9 @@ def GetWaterfallTrybot(wf_mastername, wf_buildername, force_buildbot=False):
     builder. If the given waterfall builder is not supported yet, (None, None)
     is returned.
   """
-  if not force_buildbot:
-    mastername, trybot = GetSwarmbucketBot(wf_mastername, wf_buildername)
-    if mastername and trybot:
-      return mastername, trybot
+  mastername, trybot = GetSwarmbucketBot(wf_mastername, wf_buildername)
+  if mastername and trybot:
+    return mastername, trybot
 
   bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
   return bot_dict.get('mastername'), bot_dict.get('waterfall_trybot')

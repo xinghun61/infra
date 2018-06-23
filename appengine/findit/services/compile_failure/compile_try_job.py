@@ -178,25 +178,20 @@ def _GetGoodRevisionCompile(master_name, builder_name, build_number,
                             failure_info):
   last_pass = _GetLastPassCompile(build_number, failure_info['failed_steps'])
   if last_pass is None:
-    logging.warning(
-        'Couldn"t start try job for build %s, %s, %d because'
-        ' last_pass is not found.', master_name, builder_name, build_number)
+    logging.warning('Couldn"t start try job for build %s, %s, %d because'
+                    ' last_pass is not found.', master_name, builder_name,
+                    build_number)
     return None
 
   return failure_info['builds'][str(last_pass)]['chromium_revision']
 
 
-def GetParametersToScheduleCompileTryJob(master_name,
-                                         builder_name,
-                                         build_number,
-                                         failure_info,
-                                         signals,
-                                         heuristic_result,
-                                         urlsafe_try_job_key,
-                                         force_buildbot=False):
+def GetParametersToScheduleCompileTryJob(master_name, builder_name,
+                                         build_number, failure_info, signals,
+                                         heuristic_result, urlsafe_try_job_key):
   parameters = try_job_service.PrepareParametersToScheduleTryJob(
       master_name, builder_name, build_number, failure_info, heuristic_result,
-      urlsafe_try_job_key, force_buildbot)
+      urlsafe_try_job_key)
 
   parameters['good_revision'] = _GetGoodRevisionCompile(
       master_name, builder_name, build_number, failure_info)
@@ -345,8 +340,7 @@ def ScheduleCompileTryJob(parameters, runner_id):
   properties = GetBuildProperties(parameters)
   additional_parameters = {'compile_targets': parameters.compile_targets}
   tryserver_mastername, tryserver_buildername = (
-      waterfall_config.GetWaterfallTrybot(master_name, builder_name,
-                                          parameters.force_buildbot))
+      waterfall_config.GetWaterfallTrybot(master_name, builder_name))
 
   build_id, error = try_job_service.TriggerTryJob(
       master_name, builder_name, tryserver_mastername, tryserver_buildername,

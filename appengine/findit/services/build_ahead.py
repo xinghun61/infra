@@ -16,6 +16,7 @@ from model.build_ahead_try_job import BuildAheadTryJob
 from model.wf_try_bot_cache import WfTryBotCache
 from services import git
 from services import swarmbot_util
+from services import try_job
 from waterfall import waterfall_config
 
 LOW_COMMITS_PER_HOUR = 3
@@ -151,21 +152,14 @@ def TriggerBuildAhead(wf_master, wf_builder, bot):
       master_name=master_name,
       builder_name=builder_name,
       properties={
-          'recipe':
-              recipe,
-          'bad_revision':
-              bad_revision,
-          'good_revision':
-              good_revision,
-          'target_mastername':
-              wf_master,
-          'target_buildername':
-              wf_builder,
-          # TODO(robertocn): Remove this hack. This prop is still required for
-          # chromium_tests recipe module to configure the recipe correctly.
-          'mastername':
-              waterfall_config.GetWaterfallTrybot(
-                  wf_master, wf_builder, force_buildbot=True)[0],
+          'recipe': recipe,
+          'bad_revision': bad_revision,
+          'good_revision': good_revision,
+          'target_mastername': wf_master,
+          'target_buildername': wf_builder,
+          # Setting this explicitly for backwards compatibility with pre-luci
+          # recipe code, which may expect it to be set.
+          'mastername': master_name,
           'suspected_revisions': [],
       },
       tags=[],

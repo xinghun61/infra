@@ -263,29 +263,24 @@ def _GetLastPassTest(build_number, failed_steps):
 def _GetGoodRevisionTest(master_name, builder_name, build_number, failure_info):
   last_pass = _GetLastPassTest(build_number, failure_info.failed_steps)
   if last_pass is None:
-    logging.warning(
-        'Couldn"t start try job for build %s, %s, %d because'
-        ' last_pass is not found.', master_name, builder_name, build_number)
+    logging.warning('Couldn"t start try job for build %s, %s, %d because'
+                    ' last_pass is not found.', master_name, builder_name,
+                    build_number)
     return None
 
   return failure_info.builds[str(last_pass)].chromium_revision
 
 
-def GetParametersToScheduleTestTryJob(master_name,
-                                      builder_name,
-                                      build_number,
-                                      failure_info,
-                                      heuristic_result,
-                                      urlsafe_try_job_key,
-                                      consistent_failures,
-                                      force_buildbot=False):
+def GetParametersToScheduleTestTryJob(master_name, builder_name, build_number,
+                                      failure_info, heuristic_result,
+                                      urlsafe_try_job_key, consistent_failures):
   """Generates RunTestTryJobParameters to trigger a test try job."""
   # TODO(crbug/808699):  update this function call when refactor
   # start_compile_try_job_pipeline.
   parameters = try_job_service.PrepareParametersToScheduleTryJob(
       master_name, builder_name, build_number, failure_info.ToSerializable(),
       heuristic_result.ToSerializable()
-      if heuristic_result else None, urlsafe_try_job_key, force_buildbot)
+      if heuristic_result else None, urlsafe_try_job_key)
 
   parameters['good_revision'] = _GetGoodRevisionTest(master_name, builder_name,
                                                      build_number, failure_info)
@@ -544,8 +539,7 @@ def ScheduleTestTryJob(parameters, notification_id):
   additional_parameters = {'tests': parameters.targeted_tests}
 
   tryserver_mastername, tryserver_buildername = (
-      waterfall_config.GetWaterfallTrybot(master_name, builder_name,
-                                          parameters.force_buildbot))
+      waterfall_config.GetWaterfallTrybot(master_name, builder_name))
 
   build_id, error = try_job_service.TriggerTryJob(
       master_name, builder_name, tryserver_mastername, tryserver_buildername,

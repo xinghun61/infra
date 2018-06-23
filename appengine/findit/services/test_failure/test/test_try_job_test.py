@@ -611,7 +611,6 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         good_revision=None,
         bad_revision='rev2',
         suspected_revisions=[],
-        force_buildbot=False,
         dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
         cache_name='cache',
         targeted_tests={},
@@ -730,7 +729,6 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         good_revision='rev1',
         bad_revision='rev2',
         suspected_revisions=[],
-        force_buildbot=False,
         dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
         cache_name='cache',
         targeted_tests={},
@@ -875,7 +873,6 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         good_revision='rev1',
         bad_revision='rev2',
         suspected_revisions=[],
-        force_buildbot=False,
         dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
         cache_name='cache',
         targeted_tests={'a': ['test1']},
@@ -1017,8 +1014,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             build_number=build_number),
         good_revision='1',
         bad_revision='2',
-        suspected_revisions=[],
-        force_buildbot=False)
+        suspected_revisions=[])
 
     expected_properties = {
         'recipe':
@@ -1945,8 +1941,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         suspected_revisions=[],
         targeted_tests=targeted_tests,
         dimensions=[],
-        cache_name=None,
-        force_buildbot=False)
+        cache_name=None)
 
     try_job_id = test_try_job.ScheduleTestTryJob(parameters, 'pipeline')
 
@@ -1996,8 +1991,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         suspected_revisions=[],
         targeted_tests=targeted_tests,
         dimensions=[],
-        cache_name=None,
-        force_buildbot=False)
+        cache_name=None)
 
     with self.assertRaises(exceptions.RetryException):
       test_try_job.ScheduleTestTryJob(parameters, 'pipeline')

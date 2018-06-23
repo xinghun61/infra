@@ -51,7 +51,6 @@ class RunTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         suspected_revisions=['r5'],
         cache_name=None,
         dimensions=[],
-        force_buildbot=False,
         targeted_tests={},
         urlsafe_try_job_key=job.key.urlsafe())
 

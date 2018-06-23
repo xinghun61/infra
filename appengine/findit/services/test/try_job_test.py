@@ -542,9 +542,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(try_job_service, 'buildbucket_client')
   @mock.patch.object(waterfall_config, 'GetWaterfallTrybot')
-  def testTriggerTryJobSwarming(self, mock_waterfall, mock_client):
+  def testTriggerTryJobSwarming(self, _mock_waterfall, mock_client):
     master_name = 'm'
-    builder_name = 'findit_variable'
+    builder_name = 'b'
     build_number = 1
     build = WfBuild.Create(master_name, builder_name, build_number)
     build.data = {
@@ -563,14 +563,14 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
     results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
     mock_client.TriggerTryJobs.return_value = results
-    mock_waterfall.return_value = ('legacy_try_master', 'ignored_bot_name')
 
     build_id, error = try_job_service.TriggerTryJob(
-        master_name, builder_name, master_name, builder_name, {}, [],
-        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
-        None, None, 'pipeline_id')
+        master_name, builder_name, 'luci.chromium.findit', 'findit_variable',
+        {}, [],
+        failure_type.GetDescriptionForFailureType(
+            failure_type.FLAKY_TEST), None, None, 'pipeline_id')
 
-    self.assertEqual('legacy_try_master',
+    self.assertEqual('luci.chromium.findit',
                      mock_client.TryJob.call_args[0][2]['mastername'])
     self.assertEqual(build_id, '1')
     self.assertIsNone(error)
@@ -578,7 +578,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, 'buildbucket_client')
   def testTriggerTryJobError(self, mock_module):
     master_name = 'm'
-    builder_name = 'b'
+    builder_name = 'Mac tests'
     build_number = 1
     build = WfBuild.Create(master_name, builder_name, build_number)
     build.data = {
@@ -686,8 +686,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         'bad_revision':
             'rev2',
         'suspected_revisions': [],
-        'force_buildbot':
-            False,
         'urlsafe_try_job_key':
             'urlsafe_try_job_key'
     }
@@ -731,8 +729,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         'bad_revision':
             'rev2',
         'suspected_revisions': [],
-        'force_buildbot':
-            False,
         'urlsafe_try_job_key':
             'urlsafe_try_job_key'
     }

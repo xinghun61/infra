@@ -345,20 +345,10 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
       could trigger only one try job.
   """
 
-  # Certain parts of the recipe depend on the 'mastername' property being set
-  # to values like `tryserver.chromium.linux` etc., these values should
-  # eventually be derived from the target mastername, but in order to stabilize
-  # the trybots during the migration to luci-lite, we instead use the names of
-  # the buildbot trybot masters. (As is the practice in other virtual trybot
-  # builders, see for example
-  # https://chromium.googlesource.com/chromium/src.git/+/infra/config/cr-buildbucket.cfg#139
-
-  # TODO(crbug.com/787096): Remove these two lines once we have a better way of
-  # telling the recipe how to configure the builder.
-  if tryserver_buildername == 'findit_variable':
-    # Get the matching buildbot try master.
-    properties['mastername'] = waterfall_config.GetWaterfallTrybot(
-        master_name, builder_name, force_buildbot=True)[0]
+  # This could be a bucket name. Recipe code should use 'target_mastername' to
+  # configure the recipe, 'mastername' may still be used by some code paths and
+  # bucket is the logical successor to mastername.
+  properties['mastername'] = tryserver_mastername
 
   try_job = buildbucket_client.TryJob(
       tryserver_mastername, tryserver_buildername, properties, [],
@@ -424,13 +414,9 @@ def UpdateTryJobResult(result_to_update, new_result, try_job_id):
   return result_to_update
 
 
-def PrepareParametersToScheduleTryJob(master_name,
-                                      builder_name,
-                                      build_number,
-                                      failure_info,
-                                      heuristic_result,
-                                      urlsafe_try_job_key,
-                                      force_buildbot=False):
+def PrepareParametersToScheduleTryJob(master_name, builder_name, build_number,
+                                      failure_info, heuristic_result,
+                                      urlsafe_try_job_key):
   parameters = {}
 
   parameters['build_key'] = {
@@ -446,7 +432,7 @@ def PrepareParametersToScheduleTryJob(master_name,
   # Dimensions should be obtained dynamically via the swarmbucket api if the
   # original failure happened on a LUCI builder. Fallback to the static mapping
   # otherwise.
-  if failure_info['is_luci'] and not force_buildbot:
+  if failure_info['is_luci']:
     parameters['dimensions'] = swarmbucket.GetDimensionsForBuilder(
         failure_info['buildbucket_bucket'], match_buildername)
   else:
@@ -460,7 +446,6 @@ def PrepareParametersToScheduleTryJob(master_name,
       'chromium_revision']
   parameters['suspected_revisions'] = GetSuspectsFromHeuristicResult(
       heuristic_result)
-  parameters['force_buildbot'] = force_buildbot
   parameters['urlsafe_try_job_key'] = urlsafe_try_job_key
   return parameters
 

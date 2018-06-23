@@ -847,7 +847,6 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         'compile_targets': [],
         'dimensions': dimensions,
         'cache_name': 'cache',
-        'force_buildbot': False,
         'urlsafe_try_job_key': 'urlsafe_try_job_key'
     }
 
@@ -862,8 +861,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         cache_name=cache_name,
         dimensions=dimensions,
         compile_targets=[],
-        urlsafe_try_job_key='urlsafe_try_job_key',
-        force_buildbot=False)
+        urlsafe_try_job_key='urlsafe_try_job_key')
 
     parameter = compile_try_job.GetParametersToScheduleCompileTryJob(
         master_name, builder_name, build_number, failure_info, None, None,
@@ -1079,8 +1077,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         good_revision='1',
         bad_revision='2',
         suspected_revisions=[],
-        compile_targets=[],
-        force_buildbot=False)
+        compile_targets=[])
 
     expected_properties = {
         'recipe':
@@ -1179,7 +1176,6 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         suspected_revisions=['r5'],
         cache_name=None,
         dimensions=[],
-        force_buildbot=False,
         compile_targets=[])
     try_job_id = compile_try_job.ScheduleCompileTryJob(parameters, 'pipeline')
 
@@ -1231,7 +1227,6 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         suspected_revisions=['r5'],
         cache_name=None,
         dimensions=[],
-        force_buildbot=False,
         compile_targets=[])
 
     with self.assertRaises(exceptions.RetryException):

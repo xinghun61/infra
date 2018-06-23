@@ -79,7 +79,6 @@ class RunTryJobParameters(StructuredObject):
   suspected_revisions = list
   cache_name = basestring
   dimensions = list
-  force_buildbot = bool
   urlsafe_try_job_key = basestring
 
 

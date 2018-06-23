@@ -87,7 +87,6 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         targeted_tests={'step': ['test']},
         dimensions=[],
         cache_name=None,
-        force_buildbot=False,
         urlsafe_try_job_key='urlsafe_try_job_key')
 
     mock_fn.return_value = (True, run_test_try_job_parameters)
