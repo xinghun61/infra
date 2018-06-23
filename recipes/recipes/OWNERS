@@ -4,6 +4,9 @@ per-file build_*.py=vadimsh@chromium.org
 
 per-file depot_tools_builder.py=iannucci@chromium.org
 
+per-file gae_sdk_cipd_packager.py=tandrii@chromium.org
+per-file gae_sdk_cipd_packager.py=vadimsh@chromium.org
+
 per-file gerrit_cq_test.py=tandrii@chromium.org
 
 per-file goma_hello_world.py=tikuta@chromium.org
