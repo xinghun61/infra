@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -38,7 +39,7 @@ const (
 var cipdPackageLoader = cipd.PackageLoader{
 	Options: cipdClient.ClientOptions{
 		ServiceURL: chromeinfra.CIPDServiceURL,
-		UserAgent:  "vpython",
+		UserAgent:  fmt.Sprintf("vpython, %s", cipdClient.UserAgent),
 	},
 	Template: func(c context.Context, tags []*vpython.PEP425Tag) (map[string]string, error) {
 		tag := pep425TagSelector(tags)
