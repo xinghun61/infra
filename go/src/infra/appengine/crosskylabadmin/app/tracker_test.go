@@ -36,7 +36,8 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
 		datastore.GetTestable(c).Consistent(true)
 		fsc := &fakeSwarmingClient{
-			pool: swarmingBotPool,
+			pool:    swarmingBotPool,
+			taskIDs: map[*SwarmingCreateTaskArgs]string{},
 		}
 		server := trackerServerImpl{
 			swarmingClientFactory{

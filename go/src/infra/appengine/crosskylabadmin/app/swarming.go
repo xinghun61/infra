@@ -17,6 +17,7 @@ package app
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -49,6 +50,7 @@ const (
 // Tests should use a fake.
 type SwarmingClient interface {
 	ListAliveBotsInPool(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error)
+	ListPendingTasks(c context.Context, tags []string) ([]*swarming.SwarmingRpcsTaskResult, error)
 	CreateTask(c context.Context, args *SwarmingCreateTaskArgs) (string, error)
 }
 
@@ -173,4 +175,24 @@ func (sc *swarmingClientImpl) CreateTask(c context.Context, args *SwarmingCreate
 		return "", err
 	}
 	return resp.TaskId, nil
+}
+
+// ListPendingTasks lists tasks with the given tags that are still in the PENDING state.
+func (sc *swarmingClientImpl) ListPendingTasks(c context.Context, tags []string) ([]*swarming.SwarmingRpcsTaskResult, error) {
+	trs := []*swarming.SwarmingRpcsTaskResult{}
+	call := sc.Tasks.List().State("PENDING").Tags(tags...)
+	for {
+		ic, _ := context.WithTimeout(c, 60*time.Second)
+		resp, err := call.Context(ic).Do()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to list tasks with tags %s", strings.Join(tags, " ")).Err()
+		}
+		trs = append(trs, resp.Items...)
+		if resp.Cursor == "" {
+			break
+		}
+		call = call.Cursor(resp.Cursor)
+
+	}
+	return trs, nil
 }

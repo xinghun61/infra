@@ -15,6 +15,7 @@
 package app
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 	"sync"
@@ -108,7 +109,21 @@ var dutStateForTask = map[fleet.TaskType]string{
 
 func ensureBackgroundTasksForBot(c context.Context, sc SwarmingClient, req *fleet.EnsureBackgroundTasksRequest, dutID string) (*fleet.TaskerBotTasks, error) {
 	ts := make([]*fleet.TaskerTask, 0, req.TaskCount)
-	for i := 0; i < int(req.TaskCount); i++ {
+	tags := []string{luciProjectTag, backgroundTaskTag(req.Type, dutID)}
+	oldTasks, err := sc.ListPendingTasks(c, tags)
+	if err != nil {
+		return nil, errors.Annotate(err, "Failed to list existing tasks of type %s for dut %s",
+			req.Type.String(), dutID).Err()
+	}
+	for _, ot := range oldTasks {
+		ts = append(ts, &fleet.TaskerTask{
+			TaskUrl: swarmingURLForTask(ot.TaskId),
+			Type:    req.Type,
+		})
+	}
+
+	newTaskCount := int(req.TaskCount) - len(ts)
+	for i := 0; i < newTaskCount; i++ {
 		tid, err := sc.CreateTask(c, &SwarmingCreateTaskArgs{
 			Cmd:                  luciferAdminTaskCmd(req.Type),
 			DutID:                dutID,
@@ -117,7 +132,7 @@ func ensureBackgroundTasksForBot(c context.Context, sc SwarmingClient, req *flee
 			ExpirationSecs:       backgroundTaskExpirationSecs,
 			Pool:                 swarmingBotPool,
 			Priority:             req.Priority,
-			Tags:                 []string{luciProjectTag},
+			Tags:                 tags,
 		})
 		if err != nil {
 			return nil, errors.Annotate(err, "Error when creating %dth task for dut %q", i+1, dutID).Err()
@@ -131,6 +146,10 @@ func ensureBackgroundTasksForBot(c context.Context, sc SwarmingClient, req *flee
 		DutId: dutID,
 		Tasks: ts,
 	}, nil
+}
+
+func backgroundTaskTag(ttype fleet.TaskType, dutID string) string {
+	return fmt.Sprintf("background_task:%s_%s", ttype.String(), dutID)
 }
 
 func luciferAdminTaskCmd(ttype fleet.TaskType) []string {

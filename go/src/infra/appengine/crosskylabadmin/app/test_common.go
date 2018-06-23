@@ -17,6 +17,7 @@ package app
 import (
 	"fmt"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"sort"
 	"sync"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -37,6 +38,14 @@ type fakeSwarmingClient struct {
 
 	// nextTaskID is used to construct the next task ID to be returned from CreateTask()
 	nextTaskID int
+	// taskIDs accumulates the generated Swarming task ids by CreateTask calls.
+	taskIDs map[*SwarmingCreateTaskArgs]string
+}
+
+// ResetTasks clears away cached information about created tasks.
+func (fsc *fakeSwarmingClient) ResetTasks() {
+	fsc.taskArgs = []*SwarmingCreateTaskArgs{}
+	fsc.taskIDs = map[*SwarmingCreateTaskArgs]string{}
 }
 
 // ListAliveBotsInPool is a fake implementation of SwarmingClient.ListAliveBotsInPool.
@@ -88,7 +97,26 @@ func (fsc *fakeSwarmingClient) CreateTask(c context.Context, args *SwarmingCreat
 	fsc.taskArgs = append(fsc.taskArgs, args)
 	tid := fmt.Sprintf("fake_task_%d", fsc.nextTaskID)
 	fsc.nextTaskID = fsc.nextTaskID + 1
+	fsc.taskIDs[args] = tid
 	return tid, nil
+}
+
+func (fsc *fakeSwarmingClient) ListPendingTasks(c context.Context, tags []string) ([]*swarming.SwarmingRpcsTaskResult, error) {
+	fsc.m.Lock()
+	defer fsc.m.Unlock()
+
+	trs := []*swarming.SwarmingRpcsTaskResult{}
+	for _, ta := range fsc.taskArgs {
+		if tagsMatch(tags, ta.Tags) {
+			trs = append(trs, &swarming.SwarmingRpcsTaskResult{
+				State:  "PENDING",
+				Tags:   tags,
+				TaskId: fsc.taskIDs[ta],
+			})
+
+		}
+	}
+	return trs, nil
 }
 
 // makeBotSelector returns a fleet.BotSelector selecting each of the duts
@@ -99,4 +127,19 @@ func makeBotSelectorForDuts(duts []string) []*fleet.BotSelector {
 		bs = append(bs, &fleet.BotSelector{DutId: d})
 	}
 	return bs
+}
+
+// tagsMatch returns true if ts1 and ts2 contain the same tags.
+func tagsMatch(ts1 []string, ts2 []string) bool {
+	if len(ts1) != len(ts2) {
+		return false
+	}
+	sort.Strings(ts1)
+	sort.Strings(ts2)
+	for i := range ts1 {
+		if ts1[i] != ts2[i] {
+			return false
+		}
+	}
+	return true
 }

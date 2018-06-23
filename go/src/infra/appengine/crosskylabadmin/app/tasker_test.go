@@ -31,7 +31,8 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
 		datastore.GetTestable(c).Consistent(true)
 		fsc := &fakeSwarmingClient{
-			pool: swarmingBotPool,
+			pool:    swarmingBotPool,
+			taskIDs: map[*SwarmingCreateTaskArgs]string{},
 		}
 		server := taskerServerImpl{
 			swarmingClientFactory{
@@ -43,6 +44,10 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 
 		Convey("with 2 known bots", func() {
 			setKnownBots(c, fsc, []string{"dut_1", "dut_2"})
+
+			Reset(func() {
+				fsc.ResetTasks()
+			})
 
 			Convey("EnsureBackgroundTasks for unknown bot", func() {
 				resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
@@ -57,6 +62,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 				})
 			})
 
+			taskURLFirst := []string{}
 			Convey("EnsureBackgroundTasks(Reset) for known bot", func() {
 				resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
 					Type:      fleet.TaskType_Reset,
@@ -88,7 +94,38 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					for _, t := range botTasks.Tasks {
 						So(t.Type, ShouldEqual, fleet.TaskType_Reset)
 						So(t.TaskUrl, ShouldNotBeNil)
+						taskURLFirst = append(taskURLFirst, t.TaskUrl)
 					}
+				})
+
+				Convey("then another EnsureBackgroundTasks(Reset) with more tasks requested", func() {
+					resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+						Type:      fleet.TaskType_Reset,
+						Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
+						TaskCount: 7,
+						Priority:  10,
+					})
+
+					Convey("succeeds", func() {
+						So(err, ShouldBeNil)
+					})
+					Convey("creates remaining swarming tasks", func() {
+						// This includes the 5 created earlier.
+						So(fsc.taskArgs, ShouldHaveLength, 7)
+					})
+					Convey("returns bot list containing tasks created earlier and the new tasks", func() {
+						So(resp.BotTasks, ShouldHaveLength, 1)
+						botTasks := resp.BotTasks[0]
+						So(botTasks.DutId, ShouldEqual, "dut_1")
+						So(botTasks.Tasks, ShouldHaveLength, 7)
+						taskURLSecond := []string{}
+						for _, t := range botTasks.Tasks {
+							taskURLSecond = append(taskURLSecond, t.TaskUrl)
+						}
+						for _, t := range taskURLFirst {
+							So(t, ShouldBeIn, taskURLSecond)
+						}
+					})
 				})
 			})
 		})
@@ -158,7 +195,8 @@ func TestTaskerDummy(t *testing.T) {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
 		datastore.GetTestable(c).Consistent(true)
 		fsc := &fakeSwarmingClient{
-			pool: swarmingBotPool,
+			pool:    swarmingBotPool,
+			taskIDs: map[*SwarmingCreateTaskArgs]string{},
 		}
 		server := taskerServerImpl{
 			swarmingClientFactory{
