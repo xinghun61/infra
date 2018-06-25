@@ -2083,7 +2083,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "RUNTIME_PREFIX=YesPlease\ngitexecdir=libexec/git-core\ntemplate_dir=share/git-core/templates\nsysconfdir=etc\nNO_INSTALL_HARDLINKS=YesPlease\nNO_GECOS_IN_PWENT=YesPlease\nNO_CURL=\nEXTLIBS = -lz -lcurl -ldl -lpthread -lssl -lcrypto -lpcre2-8",
+      "RUNTIME_PREFIX=YesPlease\ngitexecdir=libexec/git-core\ntemplate_dir=share/git-core/templates\nsysconfdir=etc\nNO_INSTALL_HARDLINKS=YesPlease\nNO_GECOS_IN_PWENT=YesPlease\nNO_CURL=\nEXTLIBS = -lz -lcurl -ldl -lpthread -lz -lidn2 -lssl -lcrypto -lpcre2-8",
       "[START_DIR]/git/checkout/config.mak"
     ],
     "cwd": "[START_DIR]/git/checkout",
@@ -2137,9 +2137,9 @@
     "cwd": "[START_DIR]/git/checkout",
     "env": {
       "CFLAGS": "-flto",
-      "CPPFLAGS": "-I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/curl-7.59.0/prefix/include -I[START_DIR]/git/_support/openssl-1.1.0f/prefix/include -I[START_DIR]/git/_support/pcre2-10.23/prefix/include",
-      "LDFLAGS": "-flto -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/git/_support/curl-7.59.0/prefix/lib -L[START_DIR]/git/_support/openssl-1.1.0f/prefix/lib -L[START_DIR]/git/_support/pcre2-10.23/prefix/lib",
-      "LIBS": "-lz -lcurl -ldl -lpthread -lssl -lcrypto -lpcre2-8"
+      "CPPFLAGS": "-I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/curl-7.59.0/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/libidn2-2.0.4/prefix/include -I[START_DIR]/git/_support/openssl-1.1.0f/prefix/include -I[START_DIR]/git/_support/pcre2-10.23/prefix/include",
+      "LDFLAGS": "-flto -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/git/_support/curl-7.59.0/prefix/lib -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/git/_support/libidn2-2.0.4/prefix/lib -L[START_DIR]/git/_support/openssl-1.1.0f/prefix/lib -L[START_DIR]/git/_support/pcre2-10.23/prefix/lib",
+      "LIBS": "-lz -lcurl -ldl -lpthread -lz -lidn2 -lssl -lcrypto -lpcre2-8"
     },
     "env_prefixes": {
       "PATH": [

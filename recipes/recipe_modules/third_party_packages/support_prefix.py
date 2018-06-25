@@ -252,7 +252,7 @@ class SupportPrefix(util.ModuleShim):
       '--with-zlib=%s' % (str(zlib.prefix,)),
       '--with-libidn2=%s' % (str(libidn2.prefix,)),
     ]
-    deps = []
+    deps = [zlib, libidn2]
     shared_deps = []
     if self.m.platform.is_mac:
       configure_args += ['--with-darwinssl']

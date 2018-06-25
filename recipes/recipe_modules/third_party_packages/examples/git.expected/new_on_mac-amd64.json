@@ -607,8 +607,8 @@
     "cwd": "[START_DIR]/git/checkout",
     "env": {
       "CFLAGS": "-flto",
-      "CPPFLAGS": "-I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/curl-7.59.0/prefix/include -I[START_DIR]/git/_support/pcre2-10.23/prefix/include",
-      "LDFLAGS": "-flto -framework Foundation -framework Security -L[START_DIR]/git/_support/pcre2-10.23/prefix/lib [START_DIR]/git/_support/zlib-1.2.11/prefix/lib/libz.a [START_DIR]/git/_support/curl-7.59.0/prefix/lib/libcurl.a [START_DIR]/git/_support/pcre2-10.23/prefix/lib/libpcre2-8.a",
+      "CPPFLAGS": "-I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/curl-7.59.0/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/libidn2-2.0.4/prefix/include -I[START_DIR]/git/_support/pcre2-10.23/prefix/include",
+      "LDFLAGS": "-flto -framework Foundation -framework Security -L[START_DIR]/git/_support/pcre2-10.23/prefix/lib [START_DIR]/git/_support/zlib-1.2.11/prefix/lib/libz.a [START_DIR]/git/_support/curl-7.59.0/prefix/lib/libcurl.a [START_DIR]/git/_support/zlib-1.2.11/prefix/lib/libz.a [START_DIR]/git/_support/libidn2-2.0.4/prefix/lib/libidn2.a [START_DIR]/git/_support/pcre2-10.23/prefix/lib/libpcre2-8.a",
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
       "ac_cv_func_clock_gettime": "n",
       "ac_cv_func_getentropy": "n"
