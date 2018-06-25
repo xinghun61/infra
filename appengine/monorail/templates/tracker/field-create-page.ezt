@@ -255,24 +255,30 @@ runOnLoad(function() {
   setInterval(checkFieldName, 700);
 
   function updateForm(new_type) {
-    var choices_row = document.getElementById('choices_row');
+    let choices_row = document.getElementById('choices_row');
     choices_row.style.display = (new_type == 'enum_type') ? '' : 'none';
-    // TODO(jojwang): monorail:3774, remove this when phases can have labels.
-    document.getElementById(
-        'phase_row').style.display = (new_type == 'enum_type') ? 'none' : '';
 
-    var int_row = document.getElementById('int_row');
+    // For now, phases and approvals cannot have labels.
+    let flt_display = (new_type == 'enum_type' || new_type == 'approval_type') ? 'none' : '';
+    let phase_row = document.getElementById('phase_row');
+    phase_row.style.display = flt_display;
+    let subfield_row = document.getElementById('subfield_row');
+    if (subfield_row) {
+       subfield_row.style.display = flt_display;
+    }
+
+    let int_row = document.getElementById('int_row');
     int_row.style.display = (new_type == 'int_type') ? '' : 'none';
 
-    var str_row = document.getElementById('str_row');
+    let str_row = document.getElementById('str_row');
     str_row.style.display = (new_type == 'str_type') ? '' : 'none';
 
-    var user_row_display = (new_type == 'user_type') ? '' : 'none';
+    let user_row_display = (new_type == 'user_type') ? '' : 'none';
     document.getElementById('user_row').style.display = user_row_display;
     document.getElementById('user_row2').style.display = user_row_display;
     document.getElementById('user_row3').style.display = user_row_display;
 
-    var date_row_display = (new_type == 'date_type') ? '' : 'none';
+    let date_row_display = (new_type == 'date_type') ? '' : 'none';
     document.getElementById('date_row').style.display = date_row_display;
 
     let approval_row_display = (new_type == 'approval_type') ? '' : 'none';
@@ -282,25 +288,19 @@ runOnLoad(function() {
     document.getElementById(
         'importance_row').style.display = approval_row_hide;
     document.getElementById(
-        'phase_row').style.display = approval_row_hide;
-    document.getElementById(
         'applicable_row').style.display = approval_row_hide;
-    let subfield_row = document.getElementById('subfield_row');
-    if (subfield_row) {
-       subfield_row.style.display = approval_row_hide;
-    }
     document.getElementById('approval_row').style.display = approval_row_display;
     document.getElementById('approval_row2').style.display = approval_row_display;
   }
 
-  var type_select = document.getElementById('field_type');
+  let type_select = document.getElementById('field_type');
   updateForm(type_select.value);
   type_select.addEventListener("change", function() {
        updateForm(type_select.value);
   });
 
-  var needs_perm_span = document.getElementById('needs_perm_span');
-  var needs_perm = document.getElementById('needs_perm');
+  let needs_perm_span = document.getElementById('needs_perm_span');
+  let needs_perm = document.getElementById('needs_perm');
   function enableNeedsPerm(enable) {
     needs_perm_span.style.color = enable ? 'inherit' : '#999';
     needs_perm.disabled = enable ? '' : 'disabled';
@@ -308,15 +308,15 @@ runOnLoad(function() {
   }
   enableNeedsPerm(false);
 
-  var needs_member = document.getElementById("needs_member");
+  let needs_member = document.getElementById("needs_member");
   if (needs_member)
     needs_member.addEventListener("change", function() {
        enableNeedsPerm(needs_member.checked);
     });
 
-  var acobElements = document.getElementsByClassName("acob");
-  for (var i = 0; i < acobElements.length; ++i) {
-     var el = acobElements[[]i];
+  let acobElements = document.getElementsByClassName("acob");
+  for (let i = 0; i < acobElements.length; ++i) {
+     let el = acobElements[[]i];
      el.addEventListener("focus", function(event) {
          _acrob(null);
          _acof(event);
