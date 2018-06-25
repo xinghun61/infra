@@ -7,6 +7,7 @@ import logging
 from google.protobuf import duration_pb2
 
 from components import auth
+from components import utils
 
 from access import access_pb2
 from access import access_prpc_pb2
@@ -40,12 +41,9 @@ class AccessServicer(object):
     )
     if request.resource_kind != 'bucket':
       return access_pb2.PermittedActionsResponse()
-    roles = {
-        bucket: user.get_role_async(bucket) for bucket in request.resource_ids
-    }
     permitted = {
-        bucket: create_resource_permissions(role.get_result())
-        for bucket, role in roles.iteritems()
+        bucket: create_resource_permissions(role) for bucket, role in
+        utils.async_apply(request.resource_ids, user.get_role_async)
     }
     logging.debug('Permitted: %s', permitted)
     return access_pb2.PermittedActionsResponse(

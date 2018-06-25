@@ -110,9 +110,9 @@ class SwarmbucketApi(remote.Service):
         )
       # Buckets were specified explicitly.
       # Filter out inaccessible ones.
-      futs = [user.can_access_bucket_async(b) for b in request.bucket]
       bucket_names = [
-          b for (b, f) in zip(request.bucket, futs) if f.get_result()
+          b for b, can in
+          utils.async_apply(request.bucket, user.can_access_bucket_async) if can
       ]
     else:
       # Buckets were not specified explicitly.

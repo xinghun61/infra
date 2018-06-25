@@ -304,11 +304,9 @@ def add_many_async(build_request_list):
     Raise an exception if at least one request is denied, as opposed to saving
     the exception in results, for backward compatibility.
     """
-    buckets = set(r.bucket for _, r in pending_reqs())
-    can_add_futs = {b: user.can_add_build_async(b) for b in buckets}
-    yield can_add_futs.values()
-    for b, can_fut in can_add_futs.iteritems():
-      if not can_fut.get_result():
+    buckets = sorted({r.bucket for _, r in pending_reqs()})
+    for b, can in utils.async_apply(buckets, user.can_add_build_async):
+      if not can:
         raise user.current_identity_cannot('add builds to bucket %s', b)
 
   @ndb.tasklet
@@ -319,19 +317,15 @@ def add_many_async(build_request_list):
     with the same client operation id is in memcache.
     Mark resolved requests as done and save found builds in results.
     """
-    cached_build_id_futs = {
-        i: ctx.memcache_get(r._client_op_memcache_key())
-        for i, r in pending_reqs()
-        if r.client_operation_id is not None
-    }
-    if not cached_build_id_futs:
-      return
-
-    yield cached_build_id_futs.values()
+    with_client_op = ((i, r)
+                      for i, r in pending_reqs()
+                      if r.client_operation_id is not None)
+    fetch_build_ids_results = utils.async_apply(
+        with_client_op,
+        lambda (_, r): ctx.memcache_get(r._client_op_memcache_key()),
+    )
     cached_build_ids = {
-        f.get_result(): i
-        for i, f in cached_build_id_futs.iteritems()
-        if f.get_result() is not None
+        build_id: i for (i, _), build_id in fetch_build_ids_results if build_id
     }
     if not cached_build_ids:
       return
