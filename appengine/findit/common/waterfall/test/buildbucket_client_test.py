@@ -97,11 +97,14 @@ class BuildBucketClientTest(testing.AppengineTestCase):
 
   def testTryJobToSwarmbucketRequestWithOverrides(self):
     try_job = buildbucket_client.TryJob(
-        'luci.c', 'b', {'a': '1',
-                        'recipe': 'b'}, ['a'],
+        'luci.c',
+        'b', {'a': '1',
+              'recipe': 'b'}, ['a'],
         {'tests': {
             'a_tests': ['Test.One', 'Test.Two'],
-        }}, 'builder_abc123', ['os:Linux'])
+        }},
+        'builder_abc123', ['os:Linux'],
+        priority=1)
     expceted_parameters = {
         'builder_name': 'b',
         'swarming': {
@@ -113,7 +116,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
                 'dimensions': ['os:Linux'],
                 'recipe': {
                     'name': 'b'
-                }
+                },
+                'priority': 1
             }
         },
         'properties': {

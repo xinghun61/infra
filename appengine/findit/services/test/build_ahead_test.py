@@ -45,7 +45,9 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
                 'os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit',
                 'id:some_bot'
             ],
-            pubsub_callback=None)
+            pubsub_callback=None,
+            priority=255,
+        )
     ])
     mock_trigger.reset_mock()
 
@@ -69,7 +71,8 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
             dimensions=[
                 'os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'
             ],
-            pubsub_callback=None)
+            pubsub_callback=None,
+            priority=255)
     ])
 
   @mock.patch.object(FinditHttpClient, 'Get')

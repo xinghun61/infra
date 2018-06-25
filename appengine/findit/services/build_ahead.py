@@ -32,6 +32,8 @@ BUILD_AHEAD_PLATFORMS = sorted(PLATFORM_DIMENSION_MAP.keys())
 # stale.
 STALE_CACHE_AGE = 1000  # Nice round number, usually less than a week.
 
+BUILD_AHEAD_PRIORITY = 255  # All other jobs have precedence over build-aheads.
+
 
 def _LowRepoActivity():
   """Returns true if 3 or fewer commits have landed in the last hour.
@@ -165,7 +167,9 @@ def TriggerBuildAhead(wf_master, wf_builder, bot):
       tags=[],
       additional_build_parameters=None,
       cache_name=cache_name,
-      dimensions=dimensions)
+      dimensions=dimensions,
+      priority=BUILD_AHEAD_PRIORITY,
+  )
   return buildbucket_client.TriggerTryJobs([build_ahead_tryjob])[0]
 
 
