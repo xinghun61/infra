@@ -2,9 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
+
 from components import auth
 from testing_utils import testing
 import mock
+
+from google.appengine.ext import ndb
 
 from proto.config import project_config_pb2
 from test.test_util import future
@@ -19,10 +23,10 @@ Bucket = project_config_pb2.Bucket
 Acl = project_config_pb2.Acl
 
 
-class AclTest(testing.AppengineTestCase):
+class UserTest(testing.AppengineTestCase):
 
   def setUp(self):
-    super(AclTest, self).setUp()
+    super(UserTest, self).setUp()
     self.current_identity = auth.Identity.from_bytes('user:a@example.com')
     self.patch(
         'components.auth.get_current_identity',
@@ -228,3 +232,73 @@ class AclTest(testing.AppengineTestCase):
 
     with self.assertRaises(errors.InvalidInputError):
       user.parse_identity('a:b')
+
+
+class GetOrCreateCachedFutureTest(testing.AppengineTestCase):
+  maxDiff = None
+
+  def test_unfinished_future_in_different_context(self):
+    # This test essentially asserts ndb behavior that we assume in
+    # user._get_or_create_cached_future.
+
+    # First define a correct async function that uses caching.
+    log = []
+
+    @ndb.tasklet
+    def compute_async(x):
+      log.append('compute_async(%r) started' % x)
+      yield ndb.sleep(0.001)
+      log.append('compute_async(%r) finishing' % x)
+      raise ndb.Return(x)
+
+    def compute_cached_async(x):
+      log.append('compute_cached_async(%r)' % x)
+      return user._get_or_create_cached_future(x, lambda: compute_async(x))
+
+    # Now call compute_cached_async a few tiems, but stop on the first result,
+    # and exit the current ndb context leaving remaining futures unfinished.
+
+    class Error(Exception):
+      pass
+
+    with self.assertRaises(Error):
+      # This code is intentionally looks realistic.
+      futures = [compute_cached_async(x) for x in xrange(5)]
+      for f in futures:  # pragma: no branch
+        f.get_result()
+        log.append('got result')
+        # Something bad happened during processing.
+        raise Error()
+
+    # Assert that only first compute_async finished.
+    self.assertEqual(
+        log,
+        [
+            'compute_cached_async(0)',
+            'compute_cached_async(1)',
+            'compute_cached_async(2)',
+            'compute_cached_async(3)',
+            'compute_cached_async(4)',
+            'compute_async(0) started',
+            'compute_async(1) started',
+            'compute_async(2) started',
+            'compute_async(3) started',
+            'compute_async(4) started',
+            'compute_async(0) finishing',
+            'got result',
+        ],
+    )
+    log[:] = []
+
+    # Now we assert that waiting for another future, continues execution.
+    self.assertEqual(compute_cached_async(3).get_result(), 3)
+    self.assertEqual(
+        log,
+        [
+            'compute_cached_async(3)',
+            'compute_async(1) finishing',
+            'compute_async(2) finishing',
+            'compute_async(3) finishing',
+        ],
+    )
+    # Note that compute_async(4) didin't finish.
