@@ -76,10 +76,6 @@ deps = {
      "{external_github}/google/google-api-python-client.git@" +
      "49d45a6c3318b75e551c3022020f46c78655f365",
 
-  "infra/appengine/third_party/catapult":
-     "{external_github}/catapult-project/catapult.git@" +
-     "506457cbd726324f327b80ae11f46c1dfeb8710d",
-
   "infra/appengine/third_party/gae-pytz":
      "{chromium_git}/external/code.google.com/p/gae-pytz/@" +
      "4d72fd095c91f874aaafb892859acbe3f927b3cd",
