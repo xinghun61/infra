@@ -4,6 +4,7 @@
 
 import datetime
 
+from google.appengine.ext import ndb
 from google.protobuf import field_mask_pb2
 from google.protobuf import timestamp_pb2
 
@@ -81,19 +82,19 @@ class BaseTestCase(testing.AppengineTestCase):
     return model.Build(**build_kwargs)
 
 
-class ApiMethodDecoratorTests(BaseTestCase):
+class RpcImplTests(BaseTestCase):
 
   def error_handling_test(self, ex, expected_code, expected_details):
 
-    class Service(object):
-
-      @api.api_method
-      def GetBuild(self, _req, _ctx, _mask):
-        raise ex
+    @api.rpc_impl_async('GetBuild')
+    @ndb.tasklet
+    def get_build_async(_req, _ctx, _mask):
+      raise ex
 
     ctx = prpc_context.ServicerContext()
     req = rpc_pb2.GetBuildRequest(id=1)
-    Service().GetBuild(req, ctx)  # pylint: disable=no-value-for-parameter
+    # pylint: disable=no-value-for-parameter
+    get_build_async(req, ctx).get_result()
     self.assertEqual(ctx.code, expected_code)
     self.assertEqual(ctx.details, expected_details)
 
@@ -179,7 +180,7 @@ class ToBuildMessagesTests(BaseTestCase):
         field_mask_pb2.FieldMask(paths=['steps']),
         build_pb2.Build.DESCRIPTOR,
     )
-    actual = api.builds_to_v2([build_v1], mask)
+    actual = api.builds_to_v2_async([build_v1], mask).get_result()
 
     self.assertEqual(len(actual), 1)
     self.assertEqual(list(actual[0].steps), expected_steps)

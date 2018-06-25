@@ -55,8 +55,8 @@ METHODS_BY_NAME = {
 }
 
 
-def api_method(fn):
-  """Decorates a Builds RPC implementation.
+def rpc_impl_async(rpc_name):
+  """Returns a decorator for an async Builds RPC implementation.
 
   Handles auth.AuthorizationError and StatusCodeError.
 
@@ -68,58 +68,64 @@ def api_method(fn):
   The default field masks are defined in default_field_masks.MASKS.
   """
 
-  method_desc = METHODS_BY_NAME[fn.__name__]
+  method_desc = METHODS_BY_NAME[rpc_name]
   res_class = symbol_database.Default().GetSymbol(method_desc.output_type[1:])
   default_mask = default_field_masks.MASKS.get(res_class)
 
-  @functools.wraps(fn)
-  def decorated(self, req, ctx):
-    try:
-      mask = default_mask
-      # Require that all RPC requests have "fields" field mask.
-      if req.HasField('fields'):
-        try:
-          mask = protoutil.Mask.from_field_mask(
-              req.fields, res_class.DESCRIPTOR
-          )
-        except ValueError as ex:
-          raise InvalidArgument('invalid fields: %s' % ex)
+  def decorator(fn_async):
 
+    @functools.wraps(fn_async)
+    @ndb.tasklet
+    def decorated(req, ctx):
       try:
-        res = fn(self, req, ctx, mask)
-        if mask:  # pragma: no branch
-          mask.trim(res)
-        return res
-      except auth.AuthorizationError:
-        raise NotFound()
-      except validation.Error as ex:
-        raise InvalidArgument(ex.message)
+        mask = default_mask
+        # Require that all RPC requests have "fields" field mask.
+        if req.HasField('fields'):
+          try:
+            mask = protoutil.Mask.from_field_mask(
+                req.fields, res_class.DESCRIPTOR
+            )
+          except ValueError as ex:
+            raise InvalidArgument('invalid fields: %s' % ex)
 
-    except StatusCodeError as ex:
-      ctx.set_code(ex.code)
-      ctx.set_details(ex.details)
-      return None
+        try:
+          res = yield fn_async(req, ctx, mask)
+          if mask:  # pragma: no branch
+            mask.trim(res)
+          raise ndb.Return(res)
+        except auth.AuthorizationError:
+          raise NotFound()
+        except validation.Error as ex:
+          raise InvalidArgument(ex.message)
 
-  return decorated
+      except StatusCodeError as ex:
+        ctx.set_code(ex.code)
+        ctx.set_details(ex.details)
+        raise ndb.Return(None)
+
+    return decorated
+
+  return decorator
 
 
 def v1_bucket(builder_id):
   return 'luci.%s.%s' % (builder_id.project, builder_id.bucket)
 
 
-def builds_to_v2(builds, build_mask):
+@ndb.tasklet
+def builds_to_v2_async(builds, build_mask):
   """Converts model.Build instances to build_pb2.Build messages."""
   builds_msgs = map(v2.build_to_v2_partial, builds)
 
   if build_mask and build_mask.includes('steps'):  # pragma: no branch
-    annotations = ndb.get_multi([
+    annotations = yield ndb.get_multi_async([
         model.BuildAnnotations.key_for(b.key) for b in builds
     ])
     for b, build_ann in zip(builds_msgs, annotations):
       if build_ann:  # pragma: no branch
         b.steps.extend(v2.parse_steps(build_ann))
 
-  return builds_msgs
+  raise ndb.Return(builds_msgs)
 
 
 def build_predicate_to_search_query(predicate):
@@ -157,45 +163,58 @@ def build_predicate_to_search_query(predicate):
   return q
 
 
+@rpc_impl_async('GetBuild')
+@ndb.tasklet
+def get_build_async(req, _ctx, mask):
+  """Retrieves a build by id or number."""
+  validation.validate_get_build_request(req)
+
+  if req.id:
+    build_v1 = yield service.get_async(req.id)
+  else:
+    bucket = v1_bucket(req.builder)
+    tag = buildtags.build_address_tag(
+        bucket, req.builder.builder, req.build_number
+    )
+    found, _ = yield search.search_async(
+        search.Query(buckets=[bucket], tags=[tag])
+    )
+    build_v1 = found[0] if found else None
+
+  if not build_v1:
+    raise NotFound()
+  raise ndb.Return((yield builds_to_v2_async([build_v1], mask))[0])
+
+
+@rpc_impl_async('SearchBuilds')
+@ndb.tasklet
+def search_builds_async(req, _ctx, mask):
+  """Searches for builds."""
+  validation.validate_search_builds_request(req)
+  q = build_predicate_to_search_query(req.predicate)
+  q.start_cursor = req.page_token
+
+  builds_v1, cursor = yield search.search_async(q)
+  raise ndb.Return(
+      rpc_pb2.SearchBuildsResponse(
+          builds=(
+              yield builds_to_v2_async(builds_v1, mask.submask('builds.*'))
+          ),
+          next_page_token=cursor,
+      ),
+  )
+
+
 class BuildsApi(object):
   """Implements buildbucket.v2.Builds proto service."""
 
+  # "mask" parameter in RPC implementations is added by rpc_impl_async.
+  # pylint: disable=no-value-for-parameter
+
   DESCRIPTION = rpc_prpc_pb2.BuildsServiceDescription
 
-  @api_method
-  def GetBuild(self, req, _ctx, mask):
-    """Retrieves a build by id or number."""
-    validation.validate_get_build_request(req)
+  def GetBuild(self, req, ctx):
+    return get_build_async(req, ctx).get_result()
 
-    if req.id:
-      build_v1 = service.get_async(req.id).get_result()
-    else:
-      bucket = v1_bucket(req.builder)
-      tag = buildtags.build_address_tag(
-          bucket, req.builder.builder, req.build_number
-      )
-      build_v1, _ = search.search_async(
-          search.Query(
-              buckets=[bucket],
-              tags=[tag],
-          )
-      ).get_result()
-      build_v1 = build_v1[0] if build_v1 else None
-
-    if not build_v1:
-      raise NotFound()
-
-    return builds_to_v2([build_v1], mask)[0]
-
-  @api_method
-  def SearchBuilds(self, req, _ctx, mask):
-    """Searches for builds."""
-    validation.validate_search_builds_request(req)
-    q = build_predicate_to_search_query(req.predicate)
-    q.start_cursor = req.page_token
-
-    builds_v1, cursor = search.search_async(q).get_result()
-    return rpc_pb2.SearchBuildsResponse(
-        builds=builds_to_v2(builds_v1, mask.submask('builds.*')),
-        next_page_token=cursor,
-    )
+  def SearchBuilds(self, req, ctx):
+    return search_builds_async(req, ctx).get_result()
