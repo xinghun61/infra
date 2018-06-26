@@ -145,6 +145,9 @@ class PackageACL(PackageACLBody):
     * ACLs for each roles are stored in separate entities (it allows to easily
       add new roles).
   """
+  # Disable ndb memcache layer in preparation for switching to v2 backend.
+  _use_memcache = False
+
   # Incremented with each change.
   rev = ndb.IntegerProperty(indexed=False, default=0)
 
