@@ -41,12 +41,8 @@ class TemplateDetail(servlet.Servlet):
       mr: commonly used info parsed from the request.
     """
     super(TemplateDetail, self).AssertBasePermission(mr)
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-
-    template_set = self.services.template.GetProjectTemplates(mr.cnxn,
-        config.project_id)
-    template = tracker_bizobj.FindIssueTemplate(mr.template_name,
-        template_set.templates)
+    template = self.services.template.GetTemplateByName(mr.cnxn,
+        mr.template_name, mr.project_id)
 
     if template:
       allow_view = permissions.CanViewTemplate(
@@ -68,10 +64,8 @@ class TemplateDetail(servlet.Servlet):
     """
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    template_set = self.services.template.GetProjectTemplates(mr.cnxn,
-        config.project_id)
-    template = tracker_bizobj.FindIssueTemplate(mr.template_name,
-        template_set.templates)
+    template = self.services.template.GetTemplateByName(mr.cnxn,
+        mr.template_name, mr.project_id)
     template_view = tracker_views.IssueTemplateView(
         mr, template, self.services.user, config)
     with mr.profiler.Phase('making user views'):
@@ -140,10 +134,8 @@ class TemplateDetail(servlet.Servlet):
     parsed = template_helpers.ParseTemplateRequest(post_data, config)
     field_helpers.ShiftEnumFieldsIntoLabels(
         parsed.labels, [], parsed.field_val_strs, [], config)
-    template_set = self.services.template.GetProjectTemplates(mr.cnxn,
-        config.project_id)
-    template = tracker_bizobj.FindIssueTemplate(parsed.name,
-        template_set.templates)
+    template = self.services.template.GetTemplateByName(mr.cnxn,
+        parsed.name, mr.project_id)
     allow_edit = permissions.CanEditTemplate(
         mr.auth.effective_ids, mr.perms, mr.project, template)
     if not allow_edit:

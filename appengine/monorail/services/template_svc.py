@@ -43,7 +43,7 @@ ISSUEPHASEDEF_TABLE_NAME = 'IssuePhaseDef'
 TEMPLATE2APPROVALVALUE_TABLE_NAME = 'Template2ApprovalValue'
 
 
-class TemplateTwoLevelCache(caches.AbstractTwoLevelCache):
+class TemplateSetTwoLevelCache(caches.AbstractTwoLevelCache):
   """Class to manage RAM and memcache for templates.
 
   Holds a dictionary of {project_id: templateset} key value pairs,
@@ -51,9 +51,9 @@ class TemplateTwoLevelCache(caches.AbstractTwoLevelCache):
   """
 
   def __init__(self, cache_manager, template_service):
-    super(TemplateTwoLevelCache, self).__init__(
-        cache_manager, 'project', memcache_prefix='templatesetprotos:',
-        pb_class=tracker_pb2.TemplateSet)
+    super(TemplateSetTwoLevelCache, self).__init__(
+        cache_manager, 'project', memcache_prefix='templateset:',
+        pb_class=None)
     self.template_service = template_service
 
   def _MakeCache(self, cache_manager, kind, max_size=None):
@@ -62,92 +62,126 @@ class TemplateTwoLevelCache(caches.AbstractTwoLevelCache):
 
   def FetchItems(self, cnxn, keys):
     """On RAM and memcache miss, hit the database."""
-    project_templates_dict = {}
-    for key in keys:
-      project_templates_dict.setdefault(key, [])
+    template_set_dict = {}
 
-    # Fetch template rows and relations.
     for project_id in keys:
+      template_set_dict.setdefault(project_id, [])
       template_rows = self.template_service.template_tbl.Select(
           cnxn, cols=TEMPLATE_COLS, project_id=project_id,
           order_by=[('name', [])])
-      template_ids = [row[0] for row in template_rows]
-      template2label_rows = self.template_service.\
-          template2label_tbl.Select(
-              cnxn, cols=TEMPLATE2LABEL_COLS, template_id=template_ids)
-      template2component_rows = self.template_service.\
-          template2component_tbl.Select(
-              cnxn, cols=TEMPLATE2COMPONENT_COLS, template_id=template_ids)
-      template2admin_rows = self.template_service.template2admin_tbl.Select(
-          cnxn, cols=TEMPLATE2ADMIN_COLS, template_id=template_ids)
-      template2fieldvalue_rows = self.template_service.\
-          template2fieldvalue_tbl.Select(
-              cnxn, cols=TEMPLATE2FIELDVALUE_COLS, template_id=template_ids)
-      template2approvalvalue_rows = self.template_service.\
-          template2approvalvalue_tbl.Select(
-              cnxn, cols=TEMPLATE2APPROVALVALUE_COLS, template_id=template_ids)
-      phase_ids = [av_row[2] for av_row in template2approvalvalue_rows]
-      phase_rows = self.template_service.issuephasedef_tbl.Select(
-          cnxn, cols=ISSUEPHASEDEF_COLS, id=list(set(phase_ids)))
+      for (template_id, _project_id, template_name, _content, _summary,
+           _summary_must_be_edited, _owner_id, _status, members_only,
+           _owner_defaults_to_member, _component_required) in template_rows:
+        template_set_row = (template_id, template_name, members_only)
+        template_set_dict[project_id].append(template_set_row)
 
-      # Build TemplateDef with all related data.
-      template_dict = {}
-      for template_row in template_rows:
-        template = UnpackTemplate(template_row)
-        template_dict[template.template_id] = template
+    return template_set_dict
 
-      for template2label_row in template2label_rows:
-        template_id, label = template2label_row
-        template = template_dict.get(template_id)
-        if template:
-          template.labels.append(label)
 
-      for template2component_row in template2component_rows:
-        template_id, component_id = template2component_row
-        template = template_dict.get(template_id)
-        if template:
-          template.component_ids.append(component_id)
+class TemplateDefTwoLevelCache(caches.AbstractTwoLevelCache):
+  """Class to manage RAM and memcache for individual TemplateDef.
 
-      for template2admin_row in template2admin_rows:
-        template_id, admin_id = template2admin_row
-        template = template_dict.get(template_id)
-        if template:
-          template.admin_ids.append(admin_id)
+  Holds a dictionary of {template_id: TemplateDef} key value pairs.
+  """
+  def __init__(self, cache_manager, template_service):
+    super(TemplateDefTwoLevelCache, self).__init__(
+        cache_manager, 'template', memcache_prefix='templatedef:',
+        pb_class=tracker_pb2.TemplateDef)
+    self.template_service = template_service
 
-      for fv_row in template2fieldvalue_rows:
-        (template_id, field_id, int_value, str_value, user_id,
-         date_value, url_value) = fv_row
-        fv = tracker_bizobj.MakeFieldValue(
-            field_id, int_value, str_value, user_id, date_value, url_value,
-            False)
-        template = template_dict.get(template_id)
-        if template:
-          template.field_values.append(fv)
+  def _MakeCache(self, cache_manager, kind, max_size=None):
+    """Make the RAM cache and register it with the cache_manager."""
+    return caches.RamCache(cache_manager, kind, max_size=max_size)
 
-      phases_by_id = {}
-      for phase_row in phase_rows:
-        (phase_id, name, rank) = phase_row
-        phase = tracker_pb2.Phase(
-            phase_id=phase_id, name=name, rank=rank)
-        phases_by_id[phase_id] = phase
+  def FetchItems(self, cnxn, keys):
+    """On RAM and memcache miss, hit the database.
 
-      # Note: there is no templateapproval2approver_tbl.
-      for av_row in template2approvalvalue_rows:
-        (approval_id, template_id, phase_id, status) = av_row
-        approval_value = tracker_pb2.ApprovalValue(
-            approval_id=approval_id, phase_id=phase_id,
-            status=tracker_pb2.ApprovalStatus(status.upper()))
-        template = template_dict.get(template_id)
-        if template:
-          template.approval_values.append(approval_value)
-          phase = phases_by_id.get(phase_id)
-          if phase and phase not in template.phases:
-            template_dict.get(template_id).phases.append(phase)
+    Args:
+      cnxn: A MonorailConnection.
+      keys: A list of template IDs (ints).
 
-      project_templates_dict[project_id] = tracker_pb2.TemplateSet(
-          templates=template_dict.values())
+    Returns:
+      A dict of {template_id: TemplateDef}.
+    """
+    template_dict = {}
 
-    return project_templates_dict
+    # Fetch template rows and relations.
+    template_rows = self.template_service.template_tbl.Select(
+        cnxn, cols=TEMPLATE_COLS, id=keys,
+        order_by=[('name', [])])
+
+    template2label_rows = self.template_service.\
+        template2label_tbl.Select(
+            cnxn, cols=TEMPLATE2LABEL_COLS, template_id=keys)
+    template2component_rows = self.template_service.\
+        template2component_tbl.Select(
+            cnxn, cols=TEMPLATE2COMPONENT_COLS, template_id=keys)
+    template2admin_rows = self.template_service.template2admin_tbl.Select(
+        cnxn, cols=TEMPLATE2ADMIN_COLS, template_id=keys)
+    template2fieldvalue_rows = self.template_service.\
+        template2fieldvalue_tbl.Select(
+            cnxn, cols=TEMPLATE2FIELDVALUE_COLS, template_id=keys)
+    template2approvalvalue_rows = self.template_service.\
+        template2approvalvalue_tbl.Select(
+            cnxn, cols=TEMPLATE2APPROVALVALUE_COLS, template_id=keys)
+    phase_ids = [av_row[2] for av_row in template2approvalvalue_rows]
+    phase_rows = self.template_service.issuephasedef_tbl.Select(
+        cnxn, cols=ISSUEPHASEDEF_COLS, id=list(set(phase_ids)))
+
+    # Build TemplateDef with all related data.
+    for template_row in template_rows:
+      template = UnpackTemplate(template_row)
+      template_dict[template.template_id] = template
+
+    for template2label_row in template2label_rows:
+      template_id, label = template2label_row
+      template = template_dict.get(template_id)
+      if template:
+        template.labels.append(label)
+
+    for template2component_row in template2component_rows:
+      template_id, component_id = template2component_row
+      template = template_dict.get(template_id)
+      if template:
+        template.component_ids.append(component_id)
+
+    for template2admin_row in template2admin_rows:
+      template_id, admin_id = template2admin_row
+      template = template_dict.get(template_id)
+      if template:
+        template.admin_ids.append(admin_id)
+
+    for fv_row in template2fieldvalue_rows:
+      (template_id, field_id, int_value, str_value, user_id,
+       date_value, url_value) = fv_row
+      fv = tracker_bizobj.MakeFieldValue(
+          field_id, int_value, str_value, user_id, date_value, url_value,
+          False)
+      template = template_dict.get(template_id)
+      if template:
+        template.field_values.append(fv)
+
+    phases_by_id = {}
+    for phase_row in phase_rows:
+      (phase_id, name, rank) = phase_row
+      phase = tracker_pb2.Phase(
+          phase_id=phase_id, name=name, rank=rank)
+      phases_by_id[phase_id] = phase
+
+    # Note: there is no templateapproval2approver_tbl.
+    for av_row in template2approvalvalue_rows:
+      (approval_id, template_id, phase_id, status) = av_row
+      approval_value = tracker_pb2.ApprovalValue(
+          approval_id=approval_id, phase_id=phase_id,
+          status=tracker_pb2.ApprovalStatus(status.upper()))
+      template = template_dict.get(template_id)
+      if template:
+        template.approval_values.append(approval_value)
+        phase = phases_by_id.get(phase_id)
+        if phase and phase not in template.phases:
+          template_dict.get(template_id).phases.append(phase)
+
+    return template_dict
 
 
 class TemplateService(object):
@@ -165,7 +199,8 @@ class TemplateService(object):
     self.template2approvalvalue_tbl = sql.SQLTableManager(
         TEMPLATE2APPROVALVALUE_TABLE_NAME)
 
-    self.template_2lc = TemplateTwoLevelCache(cache_manager, self)
+    self.template_set_2lc = TemplateSetTwoLevelCache(cache_manager, self)
+    self.template_def_2lc = TemplateDefTwoLevelCache(cache_manager, self)
 
   def CreateDefaultProjectTemplates(self, cnxn, project_id):
     """Create the default templates for a project.
@@ -184,6 +219,53 @@ class TemplateService(object):
           tpl.labels, tpl.component_ids, tpl.admin_ids, tpl.field_values,
           tpl.phases)
 
+  def GetTemplateByName(self, cnxn, template_name, project_id):
+    """Retrieves a template by name and project_id.
+
+    Args:
+      template_name (string): name of template.
+      project_id (int): ID of project template is under.
+
+    Returns:
+      A Template PB if found, otherwise None.
+    """
+    template_set = self.GetTemplateSetForProject(cnxn, project_id)
+    for tpl_id, name, _members_only in template_set:
+      if template_name == name:
+        return self.GetTemplateById(cnxn, tpl_id)
+
+  def GetTemplateById(self, cnxn, template_id):
+    """Retrieves one template.
+
+    Args:
+      template_id (int): ID of the template.
+
+    Returns:
+      A TemplateDef PB if found, otherwise None.
+    """
+    result_dict, _ = self.template_def_2lc.GetAll(cnxn, [template_id])
+    try:
+      return result_dict[template_id]
+    except KeyError:
+      return None
+
+  def GetTemplatesById(self, cnxn, template_ids):
+    """Retrieves one or more templates by ID.
+
+    Args:
+      template_id (list<int>): IDs of the templates.
+
+    Returns:
+      A list containing any found TemplateDef PBs.
+    """
+    result_dict, _ = self.template_def_2lc.GetAll(cnxn, template_ids)
+    return result_dict.values()
+
+  def GetTemplateSetForProject(self, cnxn, project_id):
+    """Get the TemplateSet for a project."""
+    result_dict, _ = self.template_set_2lc.GetAll(cnxn, [project_id])
+    return result_dict[project_id]
+
   def GetProjectTemplates(self, cnxn, project_id):
     """Gets all templates in a given project.
 
@@ -194,16 +276,16 @@ class TemplateService(object):
     Returns:
       A list of TemplateDefs.
     """
-    result_dict, _ = self.template_2lc.GetAll(cnxn, [project_id])
-    return result_dict[project_id]
+    template_set = self.GetTemplateSetForProject(cnxn, project_id)
+    template_ids = [row[0] for row in template_set]
+    return self.GetTemplatesById(cnxn, template_ids)
 
-  def TemplatesWithComponent(self, cnxn, component_id, config):
+  def TemplatesWithComponent(self, cnxn, component_id):
     """Returns all templates with the specified component.
 
     Args:
       cnxn: connection to SQL database.
       component_id: int component id.
-      config: ProjectIssueConfig instance.
 
     Returns:
       A list of TemplateDefs.
@@ -211,10 +293,7 @@ class TemplateService(object):
     template2component_rows = self.template2component_tbl.Select(
         cnxn, cols=['template_id'], component_id=component_id)
     template_ids = [r[0] for r in template2component_rows]
-
-    # TODO(jeffcarp): Rewrite this method to join on project_id.
-    template_set = self.GetProjectTemplates(cnxn, config.project_id)
-    return [t for t in template_set.templates if t.template_id in template_ids]
+    return self.GetTemplatesById(cnxn, template_ids)
 
   def CreateIssueTemplateDef(
       self, cnxn, project_id, name, content, summary, summary_must_be_edited,
@@ -293,7 +372,7 @@ class TemplateService(object):
           commit=False)
 
     cnxn.Commit()
-    self.template_2lc.InvalidateKeys(cnxn, [project_id])
+    self.template_set_2lc.InvalidateKeys(cnxn, [project_id])
     return template_id
 
   def UpdateIssueTemplateDef(
@@ -396,7 +475,8 @@ class TemplateService(object):
            for av in approval_values], commit=False)
 
     cnxn.Commit()
-    self.template_2lc.InvalidateKeys(cnxn, [project_id])
+    self.template_set_2lc.InvalidateKeys(cnxn, [project_id])
+    self.template_def_2lc.InvalidateKeys(cnxn, [template_id])
 
   def DeleteIssueTemplateDef(self, cnxn, project_id, template_id):
     """Delete the specified issue template definition."""
@@ -417,7 +497,8 @@ class TemplateService(object):
     self.template_tbl.Delete(cnxn, id=template_id, commit=False)
 
     cnxn.Commit()
-    self.template_2lc.InvalidateKeys(cnxn, [project_id])
+    self.template_set_2lc.InvalidateKeys(cnxn, [project_id])
+    self.template_def_2lc.InvalidateKeys(cnxn, [template_id])
 
   def ExpungeProjectTemplates(self, cnxn, project_id):
     template_id_rows = self.template_tbl.Select(

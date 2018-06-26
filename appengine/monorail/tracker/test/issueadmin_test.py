@@ -5,9 +5,10 @@
 
 """Tests for the issue admin pages."""
 
-import mock
 import mox
 import unittest
+
+from mock import Mock, patch
 
 from framework import permissions
 from framework import urls
@@ -30,7 +31,7 @@ class TestBase(unittest.TestCase):
         config=fake.ConfigService(),
         user=fake.UserService(),
         issue=fake.IssueService(),
-        template=mock.Mock(spec=template_svc.TemplateService),
+        template=Mock(spec=template_svc.TemplateService),
         features=fake.FeaturesService())
     self.servlet = servlet_factory('req', 'res', services=self.services)
     self.project = self.services.project.TestAddProject(
@@ -47,7 +48,9 @@ class TestBase(unittest.TestCase):
     self.test_templates = testing_helpers.DefaultTemplates()
     self.test_templates.append(self.test_template)
     self.services.template.GetProjectTemplates\
-        .return_value = tracker_pb2.TemplateSet(templates=self.test_templates)
+        .return_value = self.test_templates
+    self.services.template.GetTemplateSetForProject\
+        .return_value = [(12345, 'Test template', 0)]
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -282,7 +285,7 @@ class AdminComponentsTest(TestBase):
     self.config.component_defs = [
         self.cd_clean, self.cd_with_subcomp, self.subcd, self.cd_with_template]
 
-    def mockTemplatesWithComponent(_cnxn, component_id, _config):
+    def mockTemplatesWithComponent(_cnxn, component_id):
       if component_id == 4:
         return 'template'
     self.services.template.TemplatesWithComponent\

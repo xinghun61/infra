@@ -16,6 +16,7 @@ from third_party import ezt
 
 from framework import exceptions
 from framework import filecontent
+from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
 from framework import framework_views
@@ -804,6 +805,7 @@ class IssueTemplateView(template_helpers.PBProxy):
       setattr(self, 'label%d' % i, '')
 
     field_user_views = MakeFieldUserViews(mr.cnxn, template, user_service)
+
     self.field_values = []
     for fv in template.field_values:
       self.field_values.append(template_helpers.EZTItem(
@@ -838,15 +840,18 @@ def MakeFieldUserViews(cnxn, template, user_service):
 class ConfigView(template_helpers.PBProxy):
   """Make it easy to display most fields of a ProjectIssueConfig in EZT."""
 
-  def __init__(self, mr, services, config):
+  def __init__(self, mr, services, config, template=None,
+               load_all_templates=False):
     """Gather data for the issue section of a project admin page.
 
     Args:
       mr: MonorailRequest, including a database connection, the current
           project, and authenticated user IDs.
-      services: Persist services with ProjectService, ConfigService, and
-          UserService included.
+      services: Persist services with ProjectService, ConfigService,
+          TemplateService and UserService included.
       config: ProjectIssueConfig for the current project..
+      template (TemplateDef, optional): the current template.
+      load_all_templates (boolean): default False. If true loads self.templates.
 
     Returns:
       Project info in a dict suitable for EZT.
@@ -865,13 +870,30 @@ class ConfigView(template_helpers.PBProxy):
       else:
         self.closed_statuses.append(item)
 
-    template_set = services.template.GetProjectTemplates(mr.cnxn,
+    is_member = framework_bizobj.UserIsInProject(
+        mr.project, mr.auth.effective_ids)
+    template_set = services.template.GetTemplateSetForProject(mr.cnxn,
         config.project_id)
-    self.templates = [
-        IssueTemplateView(mr, tmpl, services.user, config)
-        for tmpl in template_set.templates]
-    for index, template in enumerate(self.templates):
-      template.index = index
+
+    # Filter non-viewable templates
+    self.template_names = []
+    for _, template_name, members_only in template_set:
+      if members_only and not is_member:
+        continue
+      self.template_names.append(template_name)
+
+    if load_all_templates:
+      templates = services.template.GetProjectTemplates(mr.cnxn,
+          config.project_id)
+      self.templates = [
+          IssueTemplateView(mr, tmpl, services.user, config)
+          for tmpl in templates]
+      for index, template_view in enumerate(self.templates):
+        template_view.index = index
+
+    if template:
+      self.template_view = IssueTemplateView(mr, template, services.user,
+          config)
 
     self.field_names = [  # TODO(jrobbins): field-level controls
         fd.field_name for fd in config.field_defs if not fd.is_deleted]

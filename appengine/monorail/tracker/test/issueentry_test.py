@@ -16,6 +16,7 @@ from google.appengine.ext import testbed
 from mock import Mock, patch
 import webapp2
 
+from framework import framework_bizobj
 from framework import framework_views
 from framework import permissions
 from services import service_manager
@@ -54,6 +55,10 @@ class IssueEntryTest(unittest.TestCase):
     self.user = self.services.user.TestAddUser('to_pass_tests', 0L)
     self.services.features.TestAddHotlist(
         name='dontcare', summary='', owner_ids=[0L])
+    self.template = testing_helpers.DefaultTemplates()[1]
+    self.services.template.GetTemplateByName = Mock(return_value=self.template)
+    self.services.template.GetTemplateSetForProject = Mock(
+        return_value=[(1, 'name', False)])
 
     # Set-up for testing hotlist parsing.
     # Scenario:
@@ -77,9 +82,6 @@ class IssueEntryTest(unittest.TestCase):
         is_private=False)
 
     self.mox = mox.Mox()
-    template_set = tracker_pb2.TemplateSet(
-        templates=testing_helpers.DefaultTemplates())
-    self.services.template.GetProjectTemplates = Mock(return_value=template_set)
 
   def tearDown(self):
     self.testbed.deactivate()
@@ -113,6 +115,7 @@ class IssueEntryTest(unittest.TestCase):
         path='/p/proj/issues/entry', services=self.services)
     mr.auth.user_view = framework_views.MakeUserView(
         'cnxn', self.services.user, 100)
+    mr.template_name = 'rutabaga'
 
     self.mox.StubOutWithMock(self.services.user, 'GetUser')
     self.services.user.GetUser(
@@ -129,70 +132,68 @@ class IssueEntryTest(unittest.TestCase):
                      ezt.boolean(False))
 
   def testGatherPageData_Approvals(self):
-     user = self.services.user.TestAddUser('user@invalid', 100)
-     mr = testing_helpers.MakeMonorailRequest(
-         path='/p/proj/issues/entry', services=self.services)
-     mr.auth.user_view = framework_views.MakeUserView(
-         'cnxn', self.services.user, 100)
+    user = self.services.user.TestAddUser('user@invalid', 100)
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', services=self.services)
+    mr.auth.user_view = framework_views.MakeUserView(
+        'cnxn', self.services.user, 100)
+    mr.template_name = 'rutabaga'
 
-     self.mox.StubOutWithMock(self.services.user, 'GetUser')
-     self.services.user.GetUser(
-         mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
-     self.mox.ReplayAll()
-     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-     config.field_defs = [
-         tracker_bizobj.MakeFieldDef(
-             24, mr.project_id, 'UXReview',
-             tracker_pb2.FieldTypes.APPROVAL_TYPE, None, '', False, False,
-             False, None, None, '', False, '', '',
-             tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)]
-     self.services.config.StoreConfig(mr.cnxn, config)
-     templates = testing_helpers.DefaultTemplates()
-     templates[1].phases = [tracker_pb2.Phase(
-         phase_id=1, rank=4, name='Canary')]
-     templates[1].approval_values = [tracker_pb2.ApprovalValue(
-         approval_id=24, phase_id=1,
-         status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
-     template_set = tracker_pb2.TemplateSet(templates=templates)
-     self.services.template.GetProjectTemplates.return_value = template_set
+    self.mox.StubOutWithMock(self.services.user, 'GetUser')
+    self.services.user.GetUser(
+        mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
+    self.mox.ReplayAll()
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    config.field_defs = [
+    tracker_bizobj.MakeFieldDef(
+        24, mr.project_id, 'UXReview',
+        tracker_pb2.FieldTypes.APPROVAL_TYPE, None, '', False, False,
+        False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)]
+    self.services.config.StoreConfig(mr.cnxn, config)
+    template = tracker_pb2.TemplateDef()
+    template.phases = [tracker_pb2.Phase(
+        phase_id=1, rank=4, name='Canary')]
+    template.approval_values = [tracker_pb2.ApprovalValue(
+        approval_id=24, phase_id=1,
+        status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
+    self.services.template.GetTemplateByName.return_value = template
 
-     page_data = self.servlet.GatherPageData(mr)
-     self.mox.VerifyAll()
-     self.assertEqual(page_data['approvals'][0].field_name, 'UXReview')
-     self.assertEqual(page_data['initial_phases'][0],
-                           tracker_pb2.Phase(phase_id=1, name='Canary', rank=4))
-     self.assertEqual(page_data['prechecked_approvals'], ['24_phase_0'])
-     self.assertEqual(page_data['required_approval_ids'], [24])
-     self.assertEqual(page_data['approval_subfields_present'],
-                      ezt.boolean(False))
+    page_data = self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+    self.assertEqual(page_data['approvals'][0].field_name, 'UXReview')
+    self.assertEqual(page_data['initial_phases'][0],
+                          tracker_pb2.Phase(phase_id=1, name='Canary', rank=4))
+    self.assertEqual(page_data['prechecked_approvals'], ['24_phase_0'])
+    self.assertEqual(page_data['required_approval_ids'], [24])
+    self.assertEqual(page_data['approval_subfields_present'],
+                     ezt.boolean(False))
 
-     # approval subfields in config shown when chosen
-     # template has the parent approval.
-     config.field_defs.append(
-         tracker_bizobj.MakeFieldDef(
-             25, mr.project_id, 'UXReview-SubField',
-             tracker_pb2.FieldTypes.INT_TYPE, None, '', False, False,
-             False, None, None, '', False, '', '',
-             tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False,
-             approval_id=24))
-     self.services.config.StoreConfig(mr.cnxn, config)
-     templates[1].field_values = [
-         tracker_pb2.FieldValue(field_id=25, int_value=3)]
-     template_set = tracker_pb2.TemplateSet(templates=templates)
-     self.services.template.GetProjectTemplates.return_value = template_set
-     page_data = self.servlet.GatherPageData(mr)
-     self.assertEqual(page_data['approval_subfields_present'],
-                      ezt.boolean(True))
+    # approval subfields in config shown when chosen
+    # template has the parent approval.
+    config.field_defs.append(
+        tracker_bizobj.MakeFieldDef(
+            25, mr.project_id, 'UXReview-SubField',
+            tracker_pb2.FieldTypes.INT_TYPE, None, '', False, False,
+            False, None, None, '', False, '', '',
+            tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False,
+            approval_id=24))
+    self.services.config.StoreConfig(mr.cnxn, config)
+    template.field_values = [
+        tracker_pb2.FieldValue(field_id=25, int_value=3)]
+    self.services.template.GetTemplateByName.return_value = template
+    page_data = self.servlet.GatherPageData(mr)
+    self.assertEqual(page_data['approval_subfields_present'],
+                     ezt.boolean(True))
 
-     # approval subfields in config hidden when chosen template does not contain
-     # its parent approval
-     templates = testing_helpers.DefaultTemplates()
-     template_set = tracker_pb2.TemplateSet(templates=templates)
-     self.services.template.GetProjectTemplates.return_value = template_set
-     page_data = self.servlet.GatherPageData(mr)
-     self.assertEqual(page_data['approval_subfields_present'],
-                      ezt.boolean(False))
-     self.assertEqual(page_data['approvals'], [])
+    # approval subfields in config hidden when chosen template does not contain
+    # its parent approval
+    template = tracker_pb2.TemplateDef()
+    self.services.template.GetTemplateByName.return_value = template
+    page_data = self.servlet.GatherPageData(mr)
+    self.assertEqual(page_data['approval_subfields_present'],
+                     ezt.boolean(False))
+    self.assertEqual(page_data['approvals'], [])
 
   def testGatherPageData_DefaultOwnerAvailability(self):
     user = self.services.user.TestAddUser('user@invalid', 100)
@@ -200,6 +201,7 @@ class IssueEntryTest(unittest.TestCase):
         path='/p/proj/issues/entry', services=self.services)
     mr.auth.user_view = framework_views.MakeUserView(
         'cnxn', self.services.user, 100)
+    mr.template_name = 'rutabaga'
 
     self.mox.StubOutWithMock(self.services.user, 'GetUser')
     self.services.user.GetUser(
@@ -227,6 +229,7 @@ class IssueEntryTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', services=self.services)
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+    mr.template_name = 'rutabaga'
     user = self.services.user.TestAddUser('user@invalid', 100)
 
     self.mox.StubOutWithMock(self.services.user, 'GetUser')
@@ -235,10 +238,7 @@ class IssueEntryTest(unittest.TestCase):
     self.mox.ReplayAll()
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     self.services.config.StoreConfig(mr.cnxn, config)
-    templates = testing_helpers.DefaultTemplates()
-    templates[1].summary_must_be_edited = False
-    template_set = tracker_pb2.TemplateSet(templates=templates)
-    self.services.template.GetProjectTemplates.return_value = template_set
+    self.template.summary_must_be_edited = False
 
     page_data = self.servlet.GatherPageData(mr)
     self.mox.VerifyAll()
@@ -252,6 +252,7 @@ class IssueEntryTest(unittest.TestCase):
         path='/p/proj/issues/entry?summary=foo', services=self.services)
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     user = self.services.user.TestAddUser('user@invalid', 100)
+    mr.template_name = 'rutabaga'
 
     self.mox.StubOutWithMock(self.services.user, 'GetUser')
     self.services.user.GetUser(
@@ -265,12 +266,118 @@ class IssueEntryTest(unittest.TestCase):
     self.assertFalse(page_data['clear_summary_on_click'])
     self.assertTrue(page_data['must_edit_summary'])
 
+  @patch('framework.framework_bizobj.UserIsInProject')
+  def testGatherPageData_MembersOnlyTemplatesExcluded(self,
+        mockUserIsInProject):
+    """Templates with members_only=True are excluded from results
+    when the user is not a member of the project."""
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', services=self.services)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+    user = self.services.user.TestAddUser('user@invalid', 100)
+    mr.template_name = 'rutabaga'
+    self.services.template.GetTemplateSetForProject = Mock(
+        return_value=[(1, 'one', False), (2, 'two', True)])
+    mockUserIsInProject.return_value = False
+
+    self.mox.StubOutWithMock(self.services.user, 'GetUser')
+    self.services.user.GetUser(
+        mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
+    self.mox.ReplayAll()
+
+    page_data = self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+    self.assertEqual(page_data['config'].template_names, ['one'])
+
+  @patch('framework.framework_bizobj.UserIsInProject')
+  def testGatherPageData_DefaultTemplatesMember(self, mockUserIsInProject):
+    """If no template is specified, the default one is used based on
+    whether the user is a project member."""
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', services=self.services)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+    user = self.services.user.TestAddUser('user@invalid', 100)
+    self.services.template.GetTemplateSetForProject = Mock(
+        return_value=[(1, 'one', False), (2, 'two', True)])
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    config.default_template_for_users = 456
+    config.default_template_for_developers = 789
+    self.services.config.StoreConfig(mr.cnxn, config)
+
+    mockUserIsInProject.return_value = True
+    self.services.template.GetTemplateById = Mock(return_value=self.template)
+    self.mox.StubOutWithMock(self.services.user, 'GetUser')
+    self.services.user.GetUser(
+        mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
+
+    self.mox.ReplayAll()
+    self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+
+    call_args = self.services.template.GetTemplateById.call_args[0]
+    self.assertEqual(call_args[1], 789)
+
+  @patch('framework.framework_bizobj.UserIsInProject')
+  def testGatherPageData_DefaultTemplatesNonMember(self, mockUserIsInProject):
+    """If no template is specified, the default one is used based on
+    whether the user is not a project member."""
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', services=self.services)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+    user = self.services.user.TestAddUser('user@invalid', 100)
+    self.services.template.GetTemplateSetForProject = Mock(
+        return_value=[(1, 'one', False), (2, 'two', True)])
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    config.default_template_for_users = 456
+    config.default_template_for_developers = 789
+    self.services.config.StoreConfig(mr.cnxn, config)
+
+    mockUserIsInProject.return_value = False
+    self.services.template.GetTemplateById = Mock(return_value=self.template)
+    self.mox.StubOutWithMock(self.services.user, 'GetUser')
+    self.services.user.GetUser(
+        mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
+
+    self.mox.ReplayAll()
+    self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+
+    call_args = self.services.template.GetTemplateById.call_args[0]
+    self.assertEqual(call_args[1], 456)
+
+  def testGatherPageData_MissingDefaultTemplates(self):
+    """If the default templates were deleted, pick the first template."""
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', services=self.services)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+    user = self.services.user.TestAddUser('user@invalid', 100)
+    self.services.template.GetTemplateSetForProject = Mock(
+        return_value=[(1, 'one', False), (2, 'two', True)])
+
+    self.services.template.GetTemplateById.return_value = None
+    self.services.template.GetProjectTemplates.return_value = [
+        tracker_pb2.TemplateDef(members_only=True),
+        tracker_pb2.TemplateDef(members_only=False)]
+    self.mox.StubOutWithMock(self.services.user, 'GetUser')
+    self.services.user.GetUser(
+        mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
+
+    self.mox.ReplayAll()
+    page_data = self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+
+    self.assertTrue(self.services.template.GetProjectTemplates.called)
+    print dir(page_data['config'].template_view)
+    self.assertTrue(page_data['config'].template_view.members_only)
+
   def testProcessFormData_RedirectToEnteredIssue(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', project=self.project)
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     mr.perms = permissions.USER_PERMISSIONSET
+    mr.template_name = 'rutabaga'
     post_data = fake.PostData(
+        template_name='rutabaga',
         summary=['fake summary'],
         comment=['fake comment'],
         status=['New'])
@@ -288,7 +395,9 @@ class IssueEntryTest(unittest.TestCase):
         path='/p/proj/issues/entry')
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     mr.perms = permissions.USER_PERMISSIONSET
+    mr.template_name = 'rutabaga'
     post_data = fake.PostData(
+        template_name='rutabaga',
         summary=[issueentry.PLACEHOLDER_SUMMARY],
         comment=['fake comment'],
         status=['New'])
@@ -312,17 +421,18 @@ class IssueEntryTest(unittest.TestCase):
         path='/p/proj/issues/entry')
     mr.perms = permissions.USER_PERMISSIONSET
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
-    template = testing_helpers.DefaultTemplates()[0]
     post_data = fake.PostData(
+        template_name='rutabaga',
         summary=['Nya nya I modified the summary'],
-        comment=[template.content],
+        comment=[self.template.content],
         status=['New'])
 
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
         mr, component_required=None, fields=[], initial_blocked_on='',
-        initial_blocking='', initial_cc='', initial_comment=template.content,
-        initial_components='', initial_owner='', initial_status='New',
+        initial_blocking='', initial_cc='',
+        initial_comment=self.template.content, initial_components='',
+        initial_owner='', initial_status='New',
         initial_summary='Nya nya I modified the summary', initial_hotlists='',
         labels=[])
     self.mox.ReplayAll()
@@ -332,23 +442,12 @@ class IssueEntryTest(unittest.TestCase):
     self.assertEqual('Template must be filled out.', mr.errors.comment)
     self.assertIsNone(url)
 
-  def test_SelectTemplate(self):
-    templates = testing_helpers.DefaultTemplates()
-    mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/entry')
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-
-    templ = issueentry._SelectTemplate(None, config, False, templates)
-    self.assertEquals('Defect report from user', templ.name)
-
-    templ = issueentry._SelectTemplate(None, config, True, templates)
-    self.assertEquals('Defect report from developer', templ.name)
-
   def testProcessFormData_RejectNonexistentHotlist(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', user_info={'user_id': 111L})
     entered_hotlists = 'H3'
-    post_data = fake.PostData(hotlists=[entered_hotlists])
+    post_data = fake.PostData(hotlists=[entered_hotlists],
+        template_name='rutabaga')
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
         mr, component_required=None, fields=[], initial_blocked_on='',
@@ -365,7 +464,8 @@ class IssueEntryTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', user_info={'user_id': 111L})
     entered_hotlists = 'abc:H1'
-    post_data = fake.PostData(hotlists=[entered_hotlists])
+    post_data = fake.PostData(hotlists=[entered_hotlists],
+        template_name='rutabaga')
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
         mr, component_required=None, fields=[], initial_blocked_on='',
@@ -382,7 +482,8 @@ class IssueEntryTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', user_info={'user_id': 111L})
     entered_hotlists = 'U1:H2'
-    post_data = fake.PostData(hotlists=[entered_hotlists])
+    post_data = fake.PostData(hotlists=[entered_hotlists],
+        template_name='rutabaga')
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
         mr, component_required=None, fields=[], initial_blocked_on='',

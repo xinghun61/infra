@@ -52,7 +52,8 @@ class IssueAdminBase(servlet.Servlet):
       Dict of values used by EZT for rendering the page.
     """
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    config_view = tracker_views.ConfigView(mr, self.services, config)
+    config_view = tracker_views.ConfigView(mr, self.services, config,
+        template=None, load_all_templates=True)
     return {
         'admin_tab_mode': self._PROCESS_SUBTAB,
         'config': config_view,
@@ -225,10 +226,10 @@ class AdminTemplates(IssueAdminBase):
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
-    template_set = self.services.template.GetProjectTemplates(mr.cnxn,
+    templates = self.services.template.GetProjectTemplates(mr.cnxn,
         config.project_id)
     default_template_id_for_developers, default_template_id_for_users = (
-        self._ParseDefaultTemplateSelections(post_data, template_set.templates))
+        self._ParseDefaultTemplateSelections(post_data, templates))
     if default_template_id_for_developers or default_template_id_for_users:
       self.services.config.UpdateConfig(
           mr.cnxn, mr.project,
@@ -346,7 +347,7 @@ class AdminComponents(IssueAdminBase):
         subcomponents_errors.append(component_def.path)
 
       templates = self.services.template.TemplatesWithComponent(
-          mr.cnxn, component_def.component_id, config)
+          mr.cnxn, component_def.component_id)
       if templates:
         templates_errors.append(component_def.path)
 

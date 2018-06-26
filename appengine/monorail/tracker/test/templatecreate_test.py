@@ -71,7 +71,7 @@ class TemplateCreateTest(unittest.TestCase):
     templates = testing_helpers.DefaultTemplates()
     templates.append(first_tmpl)
     self.services.template.GetProjectTemplates = Mock(
-        return_value=tracker_pb2.TemplateSet(templates=templates))
+        return_value=templates)
 
     self.mr = testing_helpers.MakeMonorailRequest(
         project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
@@ -187,6 +187,7 @@ class TemplateCreateTest(unittest.TestCase):
     self.assertIsNone(url)
 
   def testProcessFormData_Accept(self):
+    self.services.template.GetTemplateByName = Mock(return_value=None)
     post_data = fake.PostData(
       name=['secondtemplate'],
       members_only=['on'],
@@ -219,6 +220,7 @@ class TemplateCreateTest(unittest.TestCase):
     self.assertIsNone(self.mr.errors.phase_approvals)
 
   def testProcessFormData_AcceptPhases(self):
+    self.services.template.GetTemplateByName = Mock(return_value=None)
     post_data = fake.PostData(
       name=['secondtemplate'],
       members_only=['on'],

@@ -53,6 +53,8 @@ class TemplateDetailTest(unittest.TestCase):
         owner_defaults_to_member=True, component_required=False,
         members_only=False)
     self.template.template_id = 12345
+    self.services.template.GetTemplateByName = Mock(
+        return_value=self.template)
 
     self.mr = testing_helpers.MakeMonorailRequest(project=self.project)
     self.mr.template_name = 'TestTemplate'
@@ -101,7 +103,8 @@ class TemplateDetailTest(unittest.TestCase):
     self.templates = testing_helpers.DefaultTemplates()
     self.templates.append(self.template)
     self.services.template.GetProjectTemplates = Mock(
-        return_value=tracker_pb2.TemplateSet(templates=self.templates))
+        return_value=self.templates)
+    self.services.template.FindTemplateByName = Mock(return_value=self.template)
     self.config.component_defs.append(self.cd_1)
     self.config.field_defs.extend([self.fd_1, self.fd_2, self.fd_3, self.fd_4])
     self.config.approval_defs.extend([self.ad_3, self.ad_4])

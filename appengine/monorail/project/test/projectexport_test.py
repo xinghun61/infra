@@ -59,7 +59,7 @@ class ProjectExportJSONTest(unittest.TestCase):
     self.services.config.GetProjectConfig = Mock(return_value=test_config)
     test_templates = testing_helpers.DefaultTemplates()
     self.services.template.GetProjectTemplates = Mock(
-        return_value=tracker_pb2.TemplateSet(templates=test_templates))
+        return_value=test_templates)
     self.services.config.UsersInvolvedInConfig = Mock(return_value=[111L])
 
     json_data = self.servlet.HandleRequest(self.mr)

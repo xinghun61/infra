@@ -1539,3 +1539,8 @@ ALTER TABLE Issue2ApprovalValue MODIFY COLUMN phase_id INT;
 
 ALTER TABLE Template2ApprovalValue DROP PRIMARY KEY, ADD PRIMARY KEY(approval_id, template_id);
 ALTER TABLE Template2ApprovalValue MODIFY COLUMN phase_id INT;
+
+=================================================================
+2018-06-22: Add 'template' to Invalidate.kind_enum
+
+ALTER TABLE Invalidate MODIFY COLUMN kind enum('user', 'project', 'issue', 'issue_id', 'hotlist', 'comment', 'template') NOT NULL;

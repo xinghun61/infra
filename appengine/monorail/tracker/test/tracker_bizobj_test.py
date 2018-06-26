@@ -199,17 +199,6 @@ class BizobjTest(unittest.TestCase):
   def testFindPhase_None(self):
     self.assertIsNone(tracker_bizobj.FindPhase('ghost_phase', []))
 
-  def testFindIssueTemplate_Normal(self):
-    template = tracker_bizobj.MakeIssueTemplate(
-        'template', 'summary', 'Available', 111L, 'content', [], [], [], [])
-    templates = testing_helpers.DefaultTemplates()
-    templates.append(template)
-    self.assertEqual(
-        template, tracker_bizobj.FindIssueTemplate('template', templates))
-
-  def testFindIssueTemplate_Empty(self):
-    self.assertIsNone(tracker_bizobj.FindIssueTemplate('template', []))
-
   def testGetGrantedPerms_Empty(self):
     config = tracker_pb2.ProjectIssueConfig()
     issue = tracker_pb2.Issue()

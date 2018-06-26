@@ -79,35 +79,47 @@ class IssueEntry(servlet.Servlet):
         permissions.EDIT_ISSUE_OWNER,
         permissions.EDIT_ISSUE_CC)
 
-    template_set = self.services.template.GetProjectTemplates(mr.cnxn,
-        config.project_id)
-    wkp = _SelectTemplate(mr.template_name, config, is_member,
-        template_set.templates)
+    if mr.template_name:
+      template = self.services.template.GetTemplateByName(mr.cnxn,
+          mr.template_name, config.project_id)
+    else:
+      if is_member:
+        template_id = config.default_template_for_developers
+      else:
+        template_id = config.default_template_for_users
+      template = self.services.template.GetTemplateById(mr.cnxn,
+          template_id)
+      # If the default templates were deleted, load all and pick the first one.
+      if not template:
+        templates = self.services.template.GetProjectTemplates(mr.cnxn,
+            config.project_id)
+        assert len(templates) > 0, 'Project has no templates!'
+        template = templates[0]
 
-    if wkp.summary:
-      initial_summary = wkp.summary
-      initial_summary_must_be_edited = wkp.summary_must_be_edited
+    if template.summary:
+      initial_summary = template.summary
+      initial_summary_must_be_edited = template.summary_must_be_edited
     else:
       initial_summary = PLACEHOLDER_SUMMARY
       initial_summary_must_be_edited = True
 
-    if wkp.status:
-      initial_status = wkp.status
+    if template.status:
+      initial_status = template.status
     elif is_member:
       initial_status = 'Accepted'
     else:
       initial_status = 'New'  # not offering meta, only used in hidden field.
 
     component_paths = []
-    for component_id in wkp.component_ids:
+    for component_id in template.component_ids:
       component_paths.append(
           tracker_bizobj.FindComponentDefByID(component_id, config).path)
     initial_components = ', '.join(component_paths)
 
-    if wkp.owner_id:
+    if template.owner_id:
       initial_owner = framework_views.MakeUserView(
-          mr.cnxn, self.services.user, wkp.owner_id)
-    elif wkp.owner_defaults_to_member and page_perms.EditIssue:
+          mr.cnxn, self.services.user, template.owner_id)
+    elif template.owner_defaults_to_member and page_perms.EditIssue:
       initial_owner = mr.auth.user_view
     else:
       initial_owner = None
@@ -124,33 +136,32 @@ class IssueEntry(servlet.Servlet):
     # Check whether to allow attachments from the entry page
     allow_attachments = tracker_helpers.IsUnderSoftAttachmentQuota(mr.project)
 
-    config_view = tracker_views.ConfigView(mr, self.services, config)
+    config_view = tracker_views.ConfigView(mr, self.services, config, template)
     # If the user followed a link that specified the template name, make sure
     # that it is also in the menu as the current choice.
-    for template_view in config_view.templates:
-      if template_view.name == mr.template_name:
-        template_view.can_view = ezt.boolean(True)
+    # TODO(jeffcarp): Unit test this.
+    config_view.template_view.can_view = ezt.boolean(True)
 
-    offer_templates = len(list(
-        tmpl for tmpl in config_view.templates if tmpl.can_view)) > 1
+    # TODO(jeffcarp): Unit test this.
+    offer_templates = len(config_view.template_names) > 1
     restrict_to_known = config.restrict_to_known
     field_name_set = {fd.field_name.lower() for fd in config.field_defs
                       if not fd.is_deleted}  # TODO(jrobbins): restrictions
-    link_or_template_labels = mr.GetListParam('labels', wkp.labels)
+    link_or_template_labels = mr.GetListParam('labels', template.labels)
     labels = [lab for lab in link_or_template_labels
               if not tracker_bizobj.LabelIsMaskedByField(lab, field_name_set)]
 
-    approval_ids = [av.approval_id for av in wkp.approval_values]
+    approval_ids = [av.approval_id for av in template.approval_values]
     field_user_views = tracker_views.MakeFieldUserViews(
-        mr.cnxn, wkp, self.services.user)
+        mr.cnxn, template, self.services.user)
     field_views = tracker_views.MakeAllFieldValueViews(
-        config, link_or_template_labels, [], wkp.field_values, field_user_views,
-        parent_approval_ids=approval_ids)
+        config, link_or_template_labels, [], template.field_values,
+        field_user_views, parent_approval_ids=approval_ids)
 
     # TODO(jrobbins): remove "or []" after next release.
     (prechecked_approvals, required_approval_ids,
      phases) = issue_tmpl_helpers.GatherApprovalsPageData(
-         wkp.approval_values or [], wkp.phases, config)
+         template.approval_values or [], template.phases, config)
     approvals = [view for view in field_views if view.field_id in
                  approval_ids]
     approval_subfields_present = False
@@ -167,9 +178,9 @@ class IssueEntry(servlet.Servlet):
             'initial_summary' not in mr.form_overrides),
         'must_edit_summary': ezt.boolean(initial_summary_must_be_edited),
 
-        'initial_description': wkp.content,
-        'template_name': wkp.name,
-        'component_required': ezt.boolean(wkp.component_required),
+        'initial_description': template.content,
+        'template_name': template.name,
+        'component_required': ezt.boolean(template.component_required),
         'initial_status': initial_status,
         'initial_owner': initial_owner_name,
         'owner_avail_state': owner_avail_state,
@@ -273,10 +284,11 @@ class IssueEntry(servlet.Servlet):
     if len(parsed.summary) > tracker_constants.MAX_SUMMARY_CHARS:
       mr.errors.summary = 'Summary is too long'
 
-    template_set = self.services.template.GetProjectTemplates(mr.cnxn,
-        config.project_id)
+    template_name = post_data['template_name'].replace('+', ' ')
+    template = self.services.template.GetTemplateByName(mr.cnxn,
+        template_name, config.project_id)
 
-    if _MatchesTemplate(parsed.comment, template_set.templates):
+    if _MatchesTemplate(parsed.comment, template):
       mr.errors.comment = 'Template must be filled out.'
 
     if parsed.users.owner_id is None:
@@ -308,17 +320,11 @@ class IssueEntry(servlet.Servlet):
                 mr.cnxn, mr.project.project_id,
                 attachment_bytes_used=new_bytes_used)
 
-          template_content = ''
-          phases = None
-          approval_values = []
-          for wkp in template_set.templates:
-            if wkp.name == parsed.template_name:
-              template_content = wkp.content
-              (approval_values,
-               phases) = issue_tmpl_helpers.FilterApprovalsAndPhases(
-                   wkp.approval_values or [], wkp.phases, config)
+          (approval_values,
+           _phases) = issue_tmpl_helpers.FilterApprovalsAndPhases(
+               template.approval_values or [], template.phases, config)
           marked_description = tracker_helpers.MarkupDescriptionOnInput(
-              parsed.comment, template_content)
+              parsed.comment, template.content)
           has_star = 'star' in post_data and post_data['star'] == '1'
 
           if approval_values:
@@ -330,7 +336,7 @@ class IssueEntry(servlet.Servlet):
               component_ids, marked_description,
               blocked_on=parsed.blocked_on.iids,
               blocking=parsed.blocking.iids, attachments=parsed.attachments,
-              approval_values=approval_values, phases=phases)
+              approval_values=approval_values, phases=template.phases)
 
           if has_star:
             we.StarIssue(issue, True)
@@ -352,10 +358,6 @@ class IssueEntry(servlet.Servlet):
 
     mr.template_name = parsed.template_name
     if mr.errors.AnyErrors():
-      component_required = False
-      for wkp in template_set.templates:
-        if wkp.name == parsed.template_name:
-          component_required = wkp.component_required
       self.PleaseCorrect(
           mr, initial_summary=parsed.summary, initial_status=parsed.status,
           initial_owner=parsed.users.owner_username,
@@ -366,7 +368,7 @@ class IssueEntry(servlet.Servlet):
           initial_blocked_on=parsed.blocked_on.entered_str,
           initial_blocking=parsed.blocking.entered_str,
           initial_hotlists=parsed.hotlists.entered_str,
-          component_required=ezt.boolean(component_required))
+          component_required=ezt.boolean(template.component_required))
       return
 
     send_notifications.PrepareAndSendIssueChangeNotification(
@@ -391,15 +393,12 @@ def _AttachDefaultApprovers(config, approval_values):
           av.approval_id)
 
 
-def _MatchesTemplate(content, project_templates):
-    content = content.strip(string.whitespace)
-    for template in project_templates:
-      template_content = template.content.strip(string.whitespace)
-      diff = difflib.unified_diff(content.splitlines(),
-          template_content.splitlines())
-      if len('\n'.join(diff)) == 0:
-        return True
-    return False
+def _MatchesTemplate(content, template):
+  content = content.strip(string.whitespace)
+  template_content = template.content.strip(string.whitespace)
+  diff = difflib.unified_diff(content.splitlines(),
+      template_content.splitlines())
+  return len('\n'.join(diff)) == 0
 
 
 def _DiscardUnusedTemplateLabelPrefixes(labels):
@@ -416,48 +415,6 @@ def _DiscardUnusedTemplateLabelPrefixes(labels):
   """
   return [lab for lab in labels
           if not lab.endswith('-?')]
-
-
-def _SelectTemplate(requested_template_name, config, is_member,
-                    project_templates):
-  """Return the template to show to the user in this situation.
-
-  Args:
-    requested_template_name: name of template requested by user, or None.
-    config: ProjectIssueConfig for this project.
-    is_member: True if user is a project member.
-    project_templates: The templates in the given project.
-
-  Returns:
-    A Template PB with info needed to populate the issue entry form.
-  """
-  if requested_template_name:
-    for template in project_templates:
-      if requested_template_name == template.name:
-        return template
-    logging.info('Issue template name %s not found', requested_template_name)
-
-  # No template was specified, or it was not found, so go with a default.
-  if is_member:
-    default_id = config.default_template_for_developers
-  else:
-    default_id = config.default_template_for_users
-
-  # Newly created projects have no default templates specified, use hard-coded
-  # positions of the templates that are defined in tracker_constants.
-  if default_id == 0:
-    if is_member:
-      return project_templates[0]
-    elif len(project_templates) > 1:
-      return project_templates[1]
-
-  # This project has a relevant default template ID that we can use.
-  for template in project_templates:
-    if template.template_id == default_id:
-      return template
-
-  # If it was not found, just go with a template that we know exists.
-  return project_templates[0]
 
 
 def ProcessParsedHotlistRefs(mr, services, parsed_hotlist_refs):

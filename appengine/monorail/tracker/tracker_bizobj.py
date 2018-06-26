@@ -161,15 +161,6 @@ def FindPhase(name, phases):
   return None
 
 
-def FindIssueTemplate(template_name, project_templates):
-  """Find the specified issue template, or return None."""
-  for template in project_templates:
-    if template.name == template_name:
-      return template
-
-  return None
-
-
 def GetGrantedPerms(issue, effective_ids, config):
   """Return a set of permissions granted by user-valued fields in an issue."""
   granted_perms = set()
