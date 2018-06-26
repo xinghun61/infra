@@ -82,7 +82,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 						So(ta.Priority, ShouldEqual, 10)
 
 						cmd := strings.Join(ta.Cmd, " ")
-						So(cmd, ShouldContainSubstring, "-task-name reset")
+						So(cmd, ShouldContainSubstring, "-task-name admin_reset")
 					}
 
 				})
@@ -161,7 +161,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 						So(ta.Priority, ShouldEqual, 9)
 						gotDuts[ta.DutID] = gotDuts[ta.DutID] + 1
 						cmd := strings.Join(ta.Cmd, " ")
-						So(cmd, ShouldContainSubstring, "-task-name repair")
+						So(cmd, ShouldContainSubstring, "-task-name admin_repair")
 					}
 					So(gotDuts, ShouldHaveLength, len(taskDuts))
 					for d, c := range gotDuts {

@@ -155,7 +155,7 @@ func backgroundTaskTag(ttype fleet.TaskType, dutID string) string {
 func luciferAdminTaskCmd(ttype fleet.TaskType) []string {
 	return []string{
 		skylabSwarmingWorkerPath,
-		"-task-name", strings.ToLower(ttype.String()),
+		"-task-name", fmt.Sprintf("admin_%s", strings.ToLower(ttype.String())),
 	}
 }
 
