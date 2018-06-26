@@ -26,13 +26,20 @@ class CMakeApi(util.ModuleShim):
       self.m.step('32-bit Windows build is not supported', cmd=None)
       return
 
+    # TODO: Remove this conditional when the same bootstrap version exists for
+    # all platforms.
+    bootstrap_cmake_version_tag = 'version:3.11.4'
+    if platform_name == 'mac' and platform_bits == 64:
+      # The "version:3.11.4" package doesn't exist for the "mac-amd64".
+      bootstrap_cmake_version_tag = 'version:3.11.3'
+
     workdir = self.m.path['start_dir'].join('cmake')
     self.m.file.rmtree('rmtree workdir', workdir)
 
     cipddir = workdir.join('_cipd')
     packages = {
       'infra/ninja/${platform}': 'version:1.8.2',
-      'infra/cmake/${platform}': 'version:3.11.4',
+      'infra/cmake/${platform}': bootstrap_cmake_version_tag,
     }
     self.m.cipd.ensure(cipddir, packages)
 
