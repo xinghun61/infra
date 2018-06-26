@@ -176,6 +176,9 @@ class MonorailServicer(object):
     elif exc_type == exceptions.NoSuchIssueException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
       prpc_context.set_details('The issue does not exist.')
+    elif exc_type == exceptions.NoSuchCommentException:
+      prpc_context.set_code(codes.StatusCode.INVALID_ARGUMENT)
+      prpc_context.set_details('No such comment')
     elif exc_type == exceptions.NoSuchComponentException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
       prpc_context.set_details('The component does not exist.')

@@ -23,8 +23,7 @@ service Issues {
   // which may have just comment content and no delta.
   // There is no GetComment method, clients should use ListComments.
   rpc ListComments (ListCommentsRequest) returns (ListCommentsResponse) {}
-  rpc DeleteIssueComment (DeleteIssueCommentRequest)
-      returns (google.protobuf.Empty) {}
+  rpc DeleteComment (DeleteCommentRequest) returns (google.protobuf.Empty) {}
   rpc UpdateApproval (UpdateApprovalRequest)
       returns (UpdateApprovalResponse) {}
 }
@@ -105,14 +104,12 @@ message ListCommentsResponse {
 }
 
 
-
-// Next available tag: 6
-message DeleteIssueCommentRequest {
+// Next available tag: 5
+message DeleteCommentRequest {
   RequestTrace trace = 1;
-  string project_name = 2;
-  int64 local_id = 3;
-  int64 comment_id = 4;
-  bool delete = 5;
+  IssueRef issue_ref = 2;
+  int64 sequence_num = 3;
+  bool delete = 4;  // True to delete, False to undelete.
 }
 
 

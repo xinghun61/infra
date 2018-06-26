@@ -23,6 +23,7 @@ from api.api_proto import common_pb2
 from businesslogic import work_env
 from features import send_notifications
 from framework import authdata
+from framework import exceptions
 from framework import monorailcontext
 from framework import permissions
 from proto import tracker_pb2
@@ -339,17 +340,68 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(expected_0, actual_0)
     self.assertEqual(expected_1, actual_1)
 
-  def testDeleteIssueComment_Normal(self):
-    """We can delete a comment."""
-    request = issues_pb2.DeleteIssueCommentRequest(
-        project_name='proj', local_id=1, comment_id=11, delete=True)
+  @patch('testing.fake.IssueService.SoftDeleteComment')
+  def testDeleteComment_Invalid(self, fake_softdeletecomment):
+    """We reject requests to delete a non-existent comment."""
+    # Note: no comments added to self.issue_1 after the description.
+    request = issues_pb2.DeleteCommentRequest(
+        issue_ref=common_pb2.IssueRef(project_name='proj', local_id=1),
+        sequence_num=2, delete=True)
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
 
-    response = self.CallWrapped(
-        self.issues_svcr.DeleteIssueComment, mc, request)
+    with self.assertRaises(exceptions.NoSuchCommentException):
+      self.CallWrapped(self.issues_svcr.DeleteComment, mc, request)
+
+    fake_softdeletecomment.assert_not_called()
+
+  def testDeleteComment_Normal(self):
+    """An authorized user can delete and undelete a comment."""
+    comment_1 = tracker_pb2.IssueComment(
+        project_id=789, issue_id=self.issue_1.issue_id, content='one')
+    self.services.issue.TestAddComment(comment_1, 1)
+    comment_2 = tracker_pb2.IssueComment(
+        project_id=789, issue_id=self.issue_1.issue_id, content='two')
+    self.services.issue.TestAddComment(comment_2, 1)
+
+    # Delete a comment.
+    request = issues_pb2.DeleteCommentRequest(
+        issue_ref=common_pb2.IssueRef(project_name='proj', local_id=1),
+        sequence_num=2, delete=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    response = self.CallWrapped(self.issues_svcr.DeleteComment, mc, request)
 
     self.assertTrue(isinstance(response, empty_pb2.Empty))
+    self.assertEqual(111L, comment_2.deleted_by)
+
+    # Undelete a comment.
+    request.delete=False
+
+    response = self.CallWrapped(self.issues_svcr.DeleteComment, mc, request)
+
+    self.assertTrue(isinstance(response, empty_pb2.Empty))
+    self.assertEqual(None, comment_2.deleted_by)
+
+  @patch('testing.fake.IssueService.SoftDeleteComment')
+  def testDeleteComment_Denied(self, fake_softdeletecomment):
+    """An unauthorized user cannot delete a comment."""
+    comment_1 = tracker_pb2.IssueComment(
+        project_id=789, issue_id=self.issue_1.issue_id, content='one')
+    self.services.issue.TestAddComment(comment_1, 1)
+
+    request = issues_pb2.DeleteCommentRequest(
+        issue_ref=common_pb2.IssueRef(project_name='proj', local_id=1),
+        sequence_num=1, delete=True)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com')
+
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.DeleteComment, mc, request)
+
+    fake_softdeletecomment.assert_not_called()
+    self.assertIsNone(comment_1.deleted_by)
 
   @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
   @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')

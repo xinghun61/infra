@@ -13,6 +13,7 @@ from api.api_proto import issue_objects_pb2
 from api.api_proto import issues_pb2
 from api.api_proto import issues_prpc_pb2
 from businesslogic import work_env
+from framework import exceptions
 from framework import framework_views
 from proto import tracker_pb2
 from tracker import tracker_bizobj
@@ -148,7 +149,17 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return response
 
   @monorail_servicer.PRPCMethod
-  def DeleteIssueComment(self, _mc, _request):
+  def DeleteComment(self, mc, request):
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request, use_cache=False)
+    with work_env.WorkEnv(mc, self.services) as we:
+      all_comments = we.ListIssueComments(issue)
+      try:
+        comment = all_comments[request.sequence_num]
+      except IndexError:
+        raise exceptions.NoSuchCommentException()
+      we.DeleteComment(issue, comment, request.delete)
+
     return empty_pb2.Empty()
 
   @monorail_servicer.PRPCMethod
