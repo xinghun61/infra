@@ -14,7 +14,6 @@ converts a v1 Build datastore entity to buildbucket.v2.Build message.
 
 from . import builds
 from .builds import *
-from .steps import parse_steps
 import model
 
 model.set_status_to_v2(status_to_v2)

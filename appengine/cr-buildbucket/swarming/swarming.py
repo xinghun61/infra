@@ -53,6 +53,7 @@ from third_party import annotations_pb2
 from . import isolate
 from . import swarmingcfg as swarmingcfg_module
 from proto.config import project_config_pb2
+import annotations
 import buildtags
 import config
 import errors
@@ -1068,11 +1069,11 @@ def _sync_build_in_memory(
       # It significantly increases egress which signficantly increases the risk
       # of hitting daily AppEngine quota.
       small_build_run_result = build_run_result.copy()
-      annotations = small_build_run_result.pop('annotations', {}) or {}
+      ann = small_build_run_result.pop('annotations', {}) or {}
       build.result_details['build_run_result'] = small_build_run_result
       # TODO(nodir,iannucci): define a schema for UI in a proto
       build.result_details['ui'] = {
-          'info': '\n'.join(annotations.get('text', [])),
+          'info': '\n'.join(ann.get('text', [])),
       }
       build.result_details['properties'] = _extract_properties(
           build_run_result.get('annotations') or {}
@@ -1106,8 +1107,8 @@ def _extract_build_annotations(build_key, build_run_result):
   ann_step = annotations_pb2.Step()
   json_format.Parse(json.dumps(ann_dict), ann_step, ignore_unknown_fields=True)
 
-  return model.BuildAnnotations(
-      key=model.BuildAnnotations.key_for(build_key),
+  return annotations.BuildAnnotations(
+      key=annotations.BuildAnnotations.key_for(build_key),
       annotation_binary=ann_step.SerializeToString(),
       annotation_url=ann_url,
   )
@@ -1123,7 +1124,7 @@ def _sync_build_async(build_id, task_result, bucket, builder):
         _load_build_run_result_async(task_result, bucket, builder)
     )
 
-  build_annotations = _extract_build_annotations(
+  build_ann = _extract_build_annotations(
       ndb.Key(model.Build, build_id), build_run_result
   )
 
@@ -1144,8 +1145,8 @@ def _sync_build_async(build_id, task_result, bucket, builder):
       futures.append(events.on_build_starting_async(build))
     elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
       futures.append(events.on_build_completing_async(build))
-      if build_annotations:
-        futures.append(build_annotations.put_async())
+      if build_ann:
+        futures.append(build_ann.put_async())
 
     yield futures
     raise ndb.Return(build)

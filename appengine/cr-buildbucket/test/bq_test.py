@@ -20,6 +20,7 @@ from third_party import annotations_pb2
 from proto import build_pb2
 from proto.config import service_config_pb2
 from test import test_util
+import annotations
 import bq
 import bqh
 import model
@@ -92,8 +93,8 @@ class BigQueryExportTest(testing.AppengineTestCase):
             ),
         ],
     )
-    model.BuildAnnotations(
-        key=model.BuildAnnotations.key_for(builds[0].key),
+    annotations.BuildAnnotations(
+        key=annotations.BuildAnnotations.key_for(builds[0].key),
         annotation_binary=ann_step.SerializeToString(),
         annotation_url='logdog://logdog.example.com/project/prefix/+/name',
     ).put()

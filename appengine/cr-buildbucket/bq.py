@@ -18,6 +18,7 @@ from components import net
 from components import utils
 import bqh
 
+import annotations
 import model
 import v2
 
@@ -103,7 +104,7 @@ def _process_pull_task_batch(queue_name, dataset):
 
   # Fetch builds and build annotations for the tasks.
   build_keys = [ndb.Key(model.Build, bid) for bid in build_ids]
-  build_annotation_keys = map(model.BuildAnnotations.key_for, build_keys)
+  build_annotation_keys = map(annotations.BuildAnnotations.key_for, build_keys)
   entities = ndb.get_multi(build_keys + build_annotation_keys)
   builds = entities[:len(build_keys)]
   build_annotations = entities[len(build_keys):]
@@ -152,7 +153,7 @@ def _build_to_v2(bid, build, build_ann):
     build_v2 = v2.build_to_v2_partial(build)
 
     if build_ann:
-      build_v2.steps.extend(v2.parse_steps(build_ann))
+      build_v2.steps.extend(build_ann.parse_steps())
 
       for s in build_v2.steps:
         s.summary_markdown = ''

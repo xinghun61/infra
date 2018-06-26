@@ -15,9 +15,8 @@ from components import protoutil
 from third_party import annotations_pb2
 
 from proto import build_pb2
-from v2 import steps
 from test import test_util
-import model
+import annotations
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -35,11 +34,11 @@ class ParseStepsTest(unittest.TestCase):
       text = protoutil.parse_multiline(f.read())
       text_format.Merge(text, expected)
 
-    build_ann = model.BuildAnnotations(
+    build_ann = annotations.BuildAnnotations(
         annotation_binary=annotation_step.SerializeToString(),
         annotation_url='logdog://logdog.example.com/project/prefix/+/stream',
     )
-    actual = build_pb2.Build(steps=steps.parse_steps(build_ann))
+    actual = build_pb2.Build(steps=build_ann.parse_steps())
 
     # Compare messages as dicts.
     # assertEqual has better support for dicts than protobufs.

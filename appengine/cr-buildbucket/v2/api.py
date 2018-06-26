@@ -21,6 +21,7 @@ from proto import step_pb2  # pylint: disable=unused-import
 
 from v2 import validation
 from v2 import default_field_masks
+import annotations
 import buildtags
 import model
 import search
@@ -119,12 +120,12 @@ def builds_to_v2_async(builds, build_mask):
   builds_msgs = map(v2.build_to_v2_partial, builds)
 
   if build_mask and build_mask.includes('steps'):  # pragma: no branch
-    annotations = yield ndb.get_multi_async([
-        model.BuildAnnotations.key_for(b.key) for b in builds
+    build_anns = yield ndb.get_multi_async([
+        annotations.BuildAnnotations.key_for(b.key) for b in builds
     ])
-    for b, build_ann in zip(builds_msgs, annotations):
+    for b, build_ann in zip(builds_msgs, build_anns):
       if build_ann:  # pragma: no branch
-        b.steps.extend(v2.parse_steps(build_ann))
+        b.steps.extend(build_ann.parse_steps())
 
   raise ndb.Return(builds_msgs)
 

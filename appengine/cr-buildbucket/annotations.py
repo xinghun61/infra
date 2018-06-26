@@ -1,14 +1,15 @@
-# Copyright 2018 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Provides a converter from annotations_pb2.Step to step_pb2.Step.
+"""Functions specific to annotation protobuf message.
 
-This is a Python port of
-https://chromium.googlesource.com/infra/luci/luci-go/+/82a12f6887aca7c425b26dd6b77329b41617627e/milo/buildsource/buildbot/buildstore/annotations.go
+TODO(nodir): delete this file. Instead accept buidbucket.v2.Build from kitchen.
 """
 
 import urllib
+
+from google.appengine.ext import ndb
 
 from third_party import annotations_pb2
 
@@ -20,20 +21,46 @@ import logdog
 STEP_SEP = '|'
 
 
-def parse_steps(build_ann):
-  """Returns a list of step_pb2.Step parsed from a model.BuildAnnotation."""
-  ann_step = annotations_pb2.Step()
-  ann_step.ParseFromString(build_ann.annotation_binary)
-  host, project, prefix, _ = logdog.parse_url(build_ann.annotation_url)
-  converter = AnnotationConverter(
-      default_logdog_host=host,
-      default_logdog_prefix='%s/%s' % (project, prefix),
-  )
-  return converter.parse_substeps(ann_step.substep)
+class BuildAnnotations(ndb.Model):
+  """Stores annotation_pb2.Step of a build, if available.
+
+  Available only for Swarmbucket builds, if we were able to retrieve it.
+  Created on Build completion.
+
+  Entity key:
+    Parent is Build entity key.
+    ID is 1.
+  """
+
+  ENTITY_ID = 1
+
+  # root annotation_pb2.Step in binary format.
+  annotation_binary = ndb.BlobProperty(compressed=True)
+  # where the annotations_binary came from.
+  annotation_url = ndb.StringProperty(indexed=False)
+
+  @classmethod
+  def key_for(cls, build_key):  # pragma: no cover
+    return ndb.Key(cls, cls.ENTITY_ID, parent=build_key)
+
+  def parse_steps(self):
+    """Returns a list of step_pb2.Step parsed from self."""
+    ann_step = annotations_pb2.Step()
+    ann_step.ParseFromString(self.annotation_binary)
+    host, project, prefix, _ = logdog.parse_url(self.annotation_url)
+    parser = StepParser(
+        default_logdog_host=host,
+        default_logdog_prefix='%s/%s' % (project, prefix),
+    )
+    return parser.parse_substeps(ann_step.substep)
 
 
-class AnnotationConverter(object):
-  """Converts annotation_pb2.Step to step_pb2.Step."""
+class StepParser(object):
+  """Converts annotation_pb2.Step to step_pb2.Step.
+
+  This is a Python port of
+  https://chromium.googlesource.com/infra/luci/luci-go/+/82a12f6887aca7c425b26dd6b77329b41617627e/milo/buildsource/buildbot/buildstore/annotations.go
+  """
 
   def __init__(self, default_logdog_host, default_logdog_prefix):
     self.default_logdog_host = default_logdog_host

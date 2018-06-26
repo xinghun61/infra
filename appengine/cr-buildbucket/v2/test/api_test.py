@@ -24,6 +24,7 @@ from proto import rpc_pb2
 from proto import step_pb2
 from test import test_util
 from v2 import api
+import annotations
 import buildtags
 import model
 import search
@@ -167,8 +168,8 @@ class ToBuildMessagesTests(BaseTestCase):
             ),
         ],
     )
-    model.BuildAnnotations(
-        key=model.BuildAnnotations.key_for(build_v1.key),
+    annotations.BuildAnnotations(
+        key=annotations.BuildAnnotations.key_for(build_v1.key),
         annotation_binary=annotation_step.SerializeToString(),
         annotation_url='logdog://logdog.example.com/project/prefix/+/stream',
     ).put()

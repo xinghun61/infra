@@ -29,6 +29,7 @@ from proto.config import service_config_pb2
 from swarming import isolate
 from swarming import swarming
 from test.test_util import future, future_exception, ununicide
+import annotations
 import errors
 import model
 import user
@@ -1289,7 +1290,7 @@ class SwarmingTest(BaseTest):
             'complete_time':
                 datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
             'build_annotations':
-                model.BuildAnnotations(
+                annotations.BuildAnnotations(
                     annotation_url=ann_url,
                     annotation_binary=ann_step.SerializeToString(),
                 ),
@@ -1438,7 +1439,7 @@ class SwarmingTest(BaseTest):
     for case in cases:
       build = mkBuild(canary=False)
       build.put()
-      ann_key = model.BuildAnnotations.key_for(build.key)
+      ann_key = annotations.BuildAnnotations.key_for(build.key)
 
       # This is cleanup after prev test in this func.
       # TODO(nodir): rewrite all this code in Go.
@@ -1633,30 +1634,29 @@ class SwarmingTest(BaseTest):
     )
 
   def test_extract_properties(self):
-    annotations = {
-        'substep': [
-            {
-                'step': {
-                    'property': [
-                        {'name': 'p1', 'value': '{}'},
-                        {'name': 'p2', 'value': '"s"'},
-                    ]
-                }
-            },
-            {},
-            {'step': {}},
-            {
-                'step': {
-                    'property': [
-                        {'name': 'p2', 'value': '"s2"'},
-                        {'name': 'p3', 'value': '2'},
-                    ]
-                }
-            },
-        ],
-    }
     self.assertEqual(
-        swarming._extract_properties(annotations),
+        swarming._extract_properties({
+            'substep': [
+                {
+                    'step': {
+                        'property': [
+                            {'name': 'p1', 'value': '{}'},
+                            {'name': 'p2', 'value': '"s"'},
+                        ]
+                    }
+                },
+                {},
+                {'step': {}},
+                {
+                    'step': {
+                        'property': [
+                            {'name': 'p2', 'value': '"s2"'},
+                            {'name': 'p3', 'value': '2'},
+                        ]
+                    }
+                },
+            ],
+        }),
         {
             'p1': {},
             'p2': 's2',
