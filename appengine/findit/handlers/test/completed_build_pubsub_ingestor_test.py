@@ -212,8 +212,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     mock_build = Build()
     mock_build.id = 8945610992972640896
     mock_build.status = 12
-    mock_build.output.properties['mastername'] = 'tryserver.chromium.linux'
-    mock_build.output.properties['buildername'] = (
+    mock_build.output.properties['mastername'] = 'luci.chromium.findit'
+    mock_build.output.properties['buildername'] = ('findit_variable')
+    mock_build.output.properties['target_mastername'] = 'chromium.linux'
+    mock_build.output.properties['target_buildername'] = (
         'linux_chromium_compile_dbg_ng')
     mock_build.output.properties.get_or_create_struct(
         'swarm_hashes_ref/heads/mockmaster(at){#123}_with_patch')[
@@ -230,7 +232,7 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     mock_change.patchset = 1
     mock_build.builder.project = 'mock_luci_project'
     mock_build.builder.bucket = 'mock_bucket'
-    mock_build.builder.builder = 'linux_chromium_compile_dbg_ng'
+    mock_build.builder.builder = 'findit_variable'
     mock_headers = {'X-Prpc-Grpc-Code': '0'}
     binary_data = mock_build.SerializeToString()
     mock_post.return_value = (200, binary_data, mock_headers)
@@ -255,6 +257,11 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(123, IsolatedTarget.Get('mock_hash').commit_position)
     self.assertEqual(2, len(json.loads(response.body)['created_rows']))
+
+    # Ensure target values were used.
+    entry = IsolatedTarget.Get('mock_hash')
+    self.assertEqual('chromium.linux', entry.master_name)
+    self.assertEqual('linux_chromium_compile_dbg_ng', entry.builder_name)
 
   @mock.patch.object(FinditHttpClient, 'Post')
   def testPushIgnoreV2Push(self, mock_post):

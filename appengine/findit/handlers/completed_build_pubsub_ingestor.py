@@ -94,7 +94,8 @@ def _IngestProto(build_id):
     logging.debug('Build %d does not have swarm_hashes property', build_id)
     return
 
-  master_name = properties.get('mastername')
+  master_name = properties.get('target_mastername',
+                               properties.get('mastername'))
   if not master_name:
     logging.error('Build %d does not have expected "mastername" property',
                   build_id)
@@ -102,7 +103,7 @@ def _IngestProto(build_id):
 
   luci_project = build.builder.project
   luci_bucket = build.builder.bucket
-  luci_builder = build.builder.builder
+  luci_builder = properties.get('target_buildername') or build.builder.builder
 
   if commit.host:
     gitiles_host = commit.host
