@@ -25,10 +25,8 @@ cron:
 
 - description: Perform full builds on bot compile caches.
   url: /waterfall/cron/periodic-build-ahead
-  # Dummy schedule, only while testing this by hand. Real schedule below.
-  schedule: 3rd sunday of dec 00:00
   # Business hours PDT expressed in UTC.
-  # schedule: every 5 minutes from 16:00 to 00:00
+  schedule: every 5 minutes from 16:00 to 00:00
 
 - description: Query and store flakes that caused false rejections on cq.
   url: /flake/detection/cron/detect-cq-false-rejection-flakes
