@@ -8,6 +8,7 @@ from datetime import timedelta
 import mock
 
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs.gitiles.gitiles_repository import GitilesRepository
 from libs.gitiles.change_log import ChangeLog
 from libs import time_util
 from libs.gitiles.blame import Blame
@@ -198,7 +199,7 @@ class GitTest(wf_testcase.WaterfallTestCase):
 
   def testCountRecentCommitsFew(self):
     self.mock(
-        CachedGitilesRepository,
+        GitilesRepository,
         'GetNChangeLogs',
         self._GenerateGetNChangeLogsMock(timedelta(minutes=25)))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
@@ -206,7 +207,7 @@ class GitTest(wf_testcase.WaterfallTestCase):
 
   def testCountRecentCommitsMany(self):
     self.mock(
-        CachedGitilesRepository,
+        GitilesRepository,
         'GetNChangeLogs',
         self._GenerateGetNChangeLogsMock(timedelta(minutes=1)))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
@@ -214,7 +215,7 @@ class GitTest(wf_testcase.WaterfallTestCase):
 
   def testCountRecentCommitsNormal(self):
     self.mock(
-        CachedGitilesRepository,
+        GitilesRepository,
         'GetNChangeLogs',
         self._GenerateGetNChangeLogsMock(timedelta(minutes=10)))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
@@ -222,13 +223,13 @@ class GitTest(wf_testcase.WaterfallTestCase):
 
   def testCountRecentCommitsNoNext(self):
     self.mock(
-        CachedGitilesRepository, 'GetNChangeLogs',
+        GitilesRepository, 'GetNChangeLogs',
         self._GenerateGetNChangeLogsMock(timedelta(minutes=1), next_rev=None))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
     self.assertTrue(10 <= git.CountRecentCommits('url'))
 
   def testCountRecentCommitsNoLogs(self):
-    self.mock(CachedGitilesRepository, 'GetNChangeLogs',
+    self.mock(GitilesRepository, 'GetNChangeLogs',
               lambda self, r, n: ([], None))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
     self.assertEqual(0, git.CountRecentCommits('url'))

@@ -13,6 +13,8 @@ import datetime
 
 from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs.gitiles.gitiles_repository import (GitilesRepository as
+                                             NonCachedGitilesRepository)
 from libs import time_util
 
 _CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'
@@ -125,7 +127,7 @@ def CountRecentCommits(repo_url,
   """
   count = 0
   cutoff = time_util.GetUTCNow() - time_period
-  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+  git_repo = NonCachedGitilesRepository(FinditHttpClient(), repo_url)
   next_rev = ref
   while next_rev:
     # 100 is a reasonable size for a page.
