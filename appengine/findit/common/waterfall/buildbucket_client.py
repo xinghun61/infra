@@ -77,7 +77,7 @@ class TryJob(
             'cache_name',  # Optional. Nme of the cache in the Swarmingbot.
             'dimensions',  # Optional. Dimensions used to match a Swarmingbot.
             'pubsub_callback',  # Optional. PubSub callback info.
-            'priority',  # Optional swarming priority 1 (high) thru 255 (low).
+            'priority',  # Optional swarming priority 1 (high) thru 200 (low).
         ))):
   """Represents a try-job to be triggered through Buildbucket.
 
@@ -311,9 +311,7 @@ def GetV2Build(build_id, fields=None):
   status_code, content, response_headers = FinditHttpClient().Post(
       _BUILDBUCKET_V2_GET_BUILD_ENDPOINT,
       request.SerializeToString(),
-      headers={
-          'Content-Type': 'application/prpc; encoding=binary'
-      })
+      headers={'Content-Type': 'application/prpc; encoding=binary'})
   if status_code == 200 and response_headers.get('X-Prpc-Grpc-Code') == GRPC_OK:
     result = Build()
     result.ParseFromString(content)

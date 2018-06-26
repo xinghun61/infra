@@ -32,7 +32,7 @@ BUILD_AHEAD_PLATFORMS = sorted(PLATFORM_DIMENSION_MAP.keys())
 # stale.
 STALE_CACHE_AGE = 1000  # Nice round number, usually less than a week.
 
-BUILD_AHEAD_PRIORITY = 255  # All other jobs have precedence over build-aheads.
+BUILD_AHEAD_PRIORITY = 200  # All other jobs have precedence over build-aheads.
 
 
 def _LowRepoActivity():
