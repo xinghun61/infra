@@ -5,7 +5,13 @@
 package crauditcommits
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"golang.org/x/net/context"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"go.chromium.org/luci/common/proto/git"
 )
@@ -41,6 +47,16 @@ type RepoConfig struct { // These are expected to be hard-coded.
 	Rules              map[string]RuleSet
 	NotifierEmail      string
 	DynamicRefFunction DynamicRefFunc
+}
+
+// BranchInfo represents the main branch information of a specific Chrome release
+type BranchInfo struct {
+	PdfiumBranch   string `json:"pdfium_branch"`
+	SkiaBranch     string `json:"skia_branch"`
+	WebrtcBranch   string `json:"webrtc_branch"`
+	V8Branch       string `json:"v8_branch"`
+	ChromiumBranch string `json:"chromium_branch"`
+	Milestone      int    `json:"milestone"`
 }
 
 // RepoURL composes the url of the repository by appending the branch.
@@ -258,16 +274,57 @@ type RuleFunc func(context.Context, *AuditParams, *RelevantCommit, *Clients) *Ru
 // ReleaseConfig is the skeleton of a function to get the ref and milestone
 // dynamically.
 func ReleaseConfig(ctx context.Context, cfg RepoConfig) ([]*RepoConfig, error) {
-	var err error
-	concreteConfigs := []*RepoConfig{&cfg}
-	// Here you would call chromiumdash and populate these with values parsed from
-	// its response.
-	//
+
+	var branchRefsURLContents []string
 	// ------------------
 	// OMAHAPROXY||CHROMIUMDASH MAGIC
 	// ------------------
-	concreteConfigs[0].BranchName = "refs/branch-heads/3325"
-	concreteConfigs[0].StartingCommit = "1593920eed56dee727e7f78ae5d206052e4ad7e0"
-	concreteConfigs[0].Metadata, err = SetToken(ctx, "MilestoneNumber", "65", concreteConfigs[0].Metadata)
+
+	// https://chromiumdash.appspot.com/fetch_milestones is a legacy API that needs some clean up. Here,
+	// the platform could be any Chrome platform orther than Android and the result will still be the same.
+	contents, err := getURLAsString("https://chromiumdash.appspot.com/fetch_milestones?platform=Android")
+	if err != nil {
+		return nil, err
+	}
+	branchInfos := []BranchInfo{}
+	err = json.Unmarshal([]byte(contents), &branchInfos)
+	if err != nil {
+		return nil, err
+	}
+	// We only need Stable and Beta branch details.
+	for i := range branchInfos[:2] {
+		branchRefsURL := fmt.Sprintf("https://chromium.googlesource.com/chromium/src.git/+log/refs/heads/master..refs/branch-heads/%s/?format=json&n=1000", branchInfos[i].ChromiumBranch)
+		// When scanning a branch for the first time, it's unlikely that there'll be more than 1000 commits in it. In subsequent scans, the starting commit will be ignored,
+		// but instead the last scanned commit will be used. So even if the commits in the branch exceed 1000 there will be no effect in the auditing.
+		branchContents, err := getURLAsString(branchRefsURL)
+		if err != nil {
+			return nil, err
+		}
+		branchRefsURLContents = append(branchRefsURLContents, branchContents)
+	}
+
+	return GetReleaseConfig(ctx, cfg, branchRefsURLContents, branchInfos)
+}
+
+// GetReleaseConfig is a helper function to get the ref and milestone dynamically.
+func GetReleaseConfig(ctx context.Context, cfg RepoConfig, branchRefsURLContents []string, branchInfos []BranchInfo) ([]*RepoConfig, error) {
+	concreteConfigs := []*RepoConfig{&cfg}
+	var err error
+	r := regexp.MustCompile(`"commit": "(.+)?"`)
+	for i := range branchRefsURLContents {
+		temp := strings.Split(branchRefsURLContents[i], "\n")
+		lastCommit := ""
+		for i := 0; i < len(temp); i++ {
+			if r.MatchString(temp[i]) {
+				lastCommit = temp[i]
+			}
+		}
+		if lastCommit == "" {
+			return nil, errors.New("commit not found or invalid")
+		}
+		concreteConfigs[i].StartingCommit = r.FindStringSubmatch(lastCommit)[1]
+		concreteConfigs[i].BranchName = fmt.Sprintf("refs/branch-heads/%s", branchInfos[i].ChromiumBranch)
+		concreteConfigs[i].Metadata, err = SetToken(ctx, "MilestoneNumber", strconv.Itoa(branchInfos[i].Milestone), concreteConfigs[i].Metadata)
+	}
 	return concreteConfigs, err
 }

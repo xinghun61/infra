@@ -7,6 +7,7 @@ package crauditcommits
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"sort"
@@ -411,4 +412,17 @@ func (rr *RuleResult) SetToken(ctx context.Context, tokenName, tokenValue string
 	var err error
 	rr.MetaData, err = SetToken(ctx, tokenName, tokenValue, rr.MetaData)
 	return err
+}
+
+func getURLAsString(url string) (string, error) {
+	response, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+	contents, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(contents), nil
 }
