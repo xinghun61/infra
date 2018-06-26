@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from libs import gtest_name_util
+from model.flake.detection.flake_issue import FlakeIssue
 
 
 class Flake(ndb.Model):
@@ -25,6 +26,9 @@ class Flake(ndb.Model):
   # For example: 'A/ColorSpaceTest.PRE_PRE_testNullTransform/137 maps' ->
   # 'ColorSpaceTest.testNullTransform'.
   normalized_test_name = ndb.StringProperty(required=True)
+
+  # The FlakeIssue entity that this flake is associated with.
+  flake_issue_key = ndb.KeyProperty(FlakeIssue)
 
   @staticmethod
   def GetId(luci_project, normalized_step_name, normalized_test_name):

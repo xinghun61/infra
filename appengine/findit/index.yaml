@@ -206,12 +206,6 @@ indexes:
     - name: start_time
       direction: desc
 
-# Flake detection
-- kind: FlakeOccurrence
-  ancestor: yes
-  properties:
-  - name: time_reported
-
 # Isolated build index
 - kind: IsolatedTarget
   properties:

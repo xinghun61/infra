@@ -57,6 +57,13 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   # detection for this occurrence.
   time_detected = ndb.DateTimeProperty(required=True, auto_now_add=True)
 
+  # The id of the gerrit cl this occurrence is associated with.
+  gerrit_cl_id = ndb.IntegerProperty(required=True)
+
+  # Indicates whether this flake occurrence has been reported to any issue on
+  # Monorail.
+  has_been_reported_to_monorail = ndb.BooleanProperty(default=False)
+
   @staticmethod
   def GetId(build_id, step_name, test_name):
     return '%s@%s@%s' % (build_id, step_name, test_name)
@@ -64,7 +71,7 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
   @classmethod
   def Create(cls, build_id, step_name, test_name, luci_project, luci_bucket,
              luci_builder, legacy_master_name, reference_succeeded_build_id,
-             time_happened, parent_flake_key):
+             time_happened, gerrit_cl_id, parent_flake_key):
     """Creates a cq false rejection flake occurrence.
 
     Args:
@@ -72,6 +79,8 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
       test_name: The original name of a test in a give test binary.
       parent_flake_key: parent Flake model this occurrence is grouped under.
                         This method assumes that the parent Flake entity exists.
+
+    For other args, please see model properties.
     """
     flake_occurrence_id = cls.GetId(build_id, step_name, test_name)
     build_configuration = BuildConfiguration(
@@ -87,5 +96,6 @@ class CQFalseRejectionFlakeOccurrence(ndb.Model):
         build_configuration=build_configuration,
         reference_succeeded_build_id=reference_succeeded_build_id,
         time_happened=time_happened,
+        gerrit_cl_id=gerrit_cl_id,
         id=flake_occurrence_id,
         parent=parent_flake_key)

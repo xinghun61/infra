@@ -64,6 +64,10 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                 'type': 'TIMESTAMP',
                 'name': 'test_start_msec',
                 'mode': 'NULLABLE'
+            }, {
+                'type': 'INTEGER',
+                'name': 'gerrit_cl_id',
+                'mode': 'NULLABLE'
             }]
         }
     }
@@ -78,7 +82,8 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
                              reference_succeeded_build_id='456',
                              step_name='fake_step',
                              test_name='fake_test',
-                             test_start_msec='0'):
+                             test_start_msec='0',
+                             gerrit_cl_id='98765'):
     """Adds a row to the provided query response for testing.
 
     To obtain a query response for testing for the initial time, please call
@@ -114,6 +119,9 @@ class DetectCQFalseRejectionFlakesTest(WaterfallTestCase):
             },
             {
                 'v': test_start_msec
+            },
+            {
+                'v': gerrit_cl_id
             },
         ]
     }

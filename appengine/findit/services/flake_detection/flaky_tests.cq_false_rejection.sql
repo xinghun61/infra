@@ -336,9 +336,9 @@ SELECT
   # Info about the patch.
   entire_build.gerrit_change.host AS gerrit_host,
   entire_build.gerrit_change.project AS gerrit_project,
-  entire_build.gerrit_change.change AS change_id,
-  entire_build.patchset_group_id,
-  entire_build.gerrit_change.patchset AS patchset_id,
+  entire_build.gerrit_change.change AS gerrit_cl_id,
+  entire_build.gerrit_change.patchset AS gerrit_cl_patchset_number,
+  entire_build.patchset_group_id AS gerrit_cl_patchset_group_number,
   entire_build.committed,
   # Info about the code checkout.
   entire_build.gitiles_repository,
