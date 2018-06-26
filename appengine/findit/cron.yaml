@@ -19,10 +19,6 @@ cron:
   url: /waterfall/cron/obscure-emails
   schedule: every day 00:00
 
-- description: Refresh bot git caches
-  url: /waterfall/cron/periodic-bot-update
-  schedule: every 4 hours
-
 - description: Perform full builds on bot compile caches.
   url: /waterfall/cron/periodic-build-ahead
   # Business hours PDT expressed in UTC.

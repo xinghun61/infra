@@ -13,7 +13,6 @@ from handlers import calculate_confidence_scores
 from handlers import check_reverted_cls
 from handlers import collect_tree_closures
 from handlers import obscure_emails
-from handlers import periodic_bot_update
 from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
 from handlers.flake.detection import detect_flakes
@@ -31,8 +30,6 @@ waterfall_backend_web_pages_handler_mappings = [
     ('/waterfall/cron/collect-tree-closures',
      collect_tree_closures.CollectTreeClosures),
     ('/waterfall/cron/obscure-emails', obscure_emails.ObscureEmails),
-    ('/waterfall/cron/periodic-bot-update',
-     periodic_bot_update.PeriodicBotUpdate),
     ('/waterfall/cron/periodic-build-ahead', build_ahead.BuildAhead),
     ('/waterfall/task/process-failure-analysis-requests',
      process_failure_analysis_requests.ProcessFailureAnalysisRequests),

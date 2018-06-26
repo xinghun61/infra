@@ -26,7 +26,6 @@ from handlers import help_triage
 from handlers import home
 from handlers import list_analyses
 from handlers import obscure_emails
-from handlers import periodic_bot_update
 from handlers import pipeline_errors_dashboard
 from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
