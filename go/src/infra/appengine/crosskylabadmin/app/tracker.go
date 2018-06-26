@@ -16,6 +16,7 @@ package app
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/gae/service/datastore"
@@ -92,65 +93,42 @@ func getBotsFromSwarming(c context.Context, sc SwarmingClient, sels []*fleet.Bot
 		return bots, nil
 	}
 
-	// Closed by the master goroutine when all bots have been listed.
-	botsC := make(chan *swarming.SwarmingRpcsBotInfo, 1)
-	errC := make(chan error, 1)
-	defer close(errC)
-	go func() {
-		// This goroutine is referred to as the "master goroutine".
-		defer close(botsC)
-		sels = dropDuplicateSelectors(sels)
-		errC <- parallel.WorkPool(maxConcurrentSwarmingCalls, func(workC chan<- func() error) {
-			for i := range sels {
-				// In-scope variable for goroutine closure.
-				sel := sels[i]
-				f := func() error {
-					return getFilteredBotsFromSwarming(c, sc, sel, botsC)
-				}
-				select {
-				case <-c.Done():
-					return
-				case workC <- f:
-					continue
-				}
-			}
-		})
-	}()
+	sels = dropDuplicateSelectors(sels)
 
 	// For now, each selector can only yield 0 or 1 bot to update.
 	bots := make([]*swarming.SwarmingRpcsBotInfo, 0, len(sels))
-	for b := range botsC {
-		bots = append(bots, b)
-	}
-	select {
-	case err := <-errC:
-		return bots, err
-	default:
-		// WorkPool may terminate silently due to c.Done().
-		return bots, c.Err()
-	}
+	// Protects access to bots
+	m := &sync.Mutex{}
+	err := parallel.WorkPool(maxConcurrentSwarmingCalls, func(workC chan<- func() error) {
+		for i := range sels {
+			// In-scope variable for goroutine closure.
+			sel := sels[i]
+			workC <- func() error {
+				bs, ierr := getFilteredBotsFromSwarming(c, sc, sel)
+				if ierr != nil {
+					return ierr
+				}
+				m.Lock()
+				defer m.Unlock()
+				bots = append(bots, bs...)
+				return nil
+			}
+		}
+	})
+	return bots, err
 }
 
 // getFilteredBotsFromSwarming lists bots for a single selector by calling the Swarming service.
 // This function is intended to be used in a parallel.WorkPool().
-func getFilteredBotsFromSwarming(c context.Context, sc SwarmingClient, sel *fleet.BotSelector, botsC chan *swarming.SwarmingRpcsBotInfo) error {
+func getFilteredBotsFromSwarming(c context.Context, sc SwarmingClient, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	dims := strpair.Map{
 		dutIDDimensionKey: []string{sel.DutId},
 	}
 	bs, err := sc.ListAliveBotsInPool(c, swarmingBotPool, dims)
 	if err != nil {
-		return errors.Annotate(err, "failed to get bots in pool %s with dimensions %s", swarmingBotPool, dims).Err()
+		return nil, errors.Annotate(err, "failed to get bots in pool %s with dimensions %s", swarmingBotPool, dims).Err()
 	}
-	for _, b := range bs {
-		select {
-		case <-c.Done():
-			// Context error will be returned only once, outside of the WorkPool.
-			return nil
-		case botsC <- b:
-			continue
-		}
-	}
-	return nil
+	return bs, nil
 }
 
 // insertBotSummary returns the dut_ids of bots inserted.
