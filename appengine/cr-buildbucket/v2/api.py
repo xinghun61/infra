@@ -10,6 +10,7 @@ from google.protobuf import symbol_database
 from components import auth
 from components import protoutil
 from components import prpc
+from components import utils
 
 # Some of these imports are required to populate proto symbol db.
 from proto import common_pb2
@@ -205,6 +206,17 @@ def search_builds_async(req, _ctx, mask):
   )
 
 
+# Maps an rpc_pb2.BatchRequest.Request field name to an async function
+#   (req, ctx) => ndb.Future of res.
+BATCH_REQUEST_TYPE_TO_RPC_IMPL = {
+    'get_build': get_build_async,
+    'search_builds': search_builds_async,
+}
+assert set(BATCH_REQUEST_TYPE_TO_RPC_IMPL) == set(
+    rpc_pb2.BatchRequest.Request.DESCRIPTOR.fields_by_name
+)
+
+
 class BuildsApi(object):
   """Implements buildbucket.v2.Builds proto service."""
 
@@ -218,3 +230,30 @@ class BuildsApi(object):
 
   def SearchBuilds(self, req, ctx):
     return search_builds_async(req, ctx).get_result()
+
+  def Batch(self, req, ctx):
+
+    @ndb.tasklet
+    def serve_subrequest_async(sub_req):
+      request_type = sub_req.WhichOneof('request')
+      sub_res = rpc_pb2.BatchResponse.Response()
+      if not request_type:
+        sub_res.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
+        sub_res.error.message = 'request is not specified'
+        raise ndb.Return(sub_res)
+      rpc_impl = BATCH_REQUEST_TYPE_TO_RPC_IMPL[request_type]
+      sub_ctx = ctx.clone()
+      rpc_res = yield rpc_impl(getattr(sub_req, request_type), sub_ctx)
+      if sub_ctx.code != prpc.StatusCode.OK:
+        sub_res.error.code = sub_ctx.code.value
+        sub_res.error.message = sub_ctx.details
+      else:
+        getattr(sub_res, request_type).MergeFrom(rpc_res)
+      raise ndb.Return(sub_res)
+
+    return rpc_pb2.BatchResponse(
+        responses=[
+            r
+            for _, r in utils.async_apply(req.requests, serve_subrequest_async)
+        ],
+    )

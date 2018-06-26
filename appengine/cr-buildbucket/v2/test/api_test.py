@@ -7,6 +7,7 @@ import datetime
 from google.appengine.ext import ndb
 from google.protobuf import field_mask_pb2
 from google.protobuf import timestamp_pb2
+from google.rpc import status_pb2
 
 from components import auth
 from components import prpc
@@ -277,6 +278,86 @@ class SearchTests(BaseTestCase):
     self.assertEqual(res.builds[0].id, 54)
     self.assertEqual(res.builds[1].id, 55)
     self.assertEqual(res.next_page_token, 'next page token')
+
+
+class BatchTests(BaseTestCase):
+
+  @mock.patch('service.get_async', autospec=True)
+  @mock.patch('search.search_async', autospec=True)
+  def test_get_and_search(self, search_async, get_async):
+    search_async.return_value = future(([
+        self.new_build_v1(id=1),
+        self.new_build_v1(id=2)
+    ], ''))
+    get_async.return_value = future(self.new_build_v1(id=3))
+
+    req = rpc_pb2.BatchRequest(
+        requests=[
+            rpc_pb2.BatchRequest.Request(
+                search_builds=rpc_pb2.SearchBuildsRequest(
+                    predicate=rpc_pb2.BuildPredicate(
+                        builder=build_pb2.BuilderID(
+                            project='chromium',
+                            bucket='try',
+                            builder='linux-rel',
+                        ),
+                    ),
+                ),
+            ),
+            rpc_pb2.BatchRequest.Request(
+                get_build=rpc_pb2.GetBuildRequest(id=3),
+            ),
+        ],
+    )
+    res = self.call(self.api.Batch, req)
+    search_async.assert_called_once_with(
+        search.Query(
+            buckets=['luci.chromium.try'],
+            tags=['builder:linux-rel'],
+            status=common_pb2.STATUS_UNSPECIFIED,
+            include_experimental=False,
+            start_cursor='',
+        ),
+    )
+    get_async.assert_called_once_with(3)
+    self.assertEqual(len(res.responses), 2)
+    self.assertEqual(len(res.responses[0].search_builds.builds), 2)
+    self.assertEqual(res.responses[0].search_builds.builds[0].id, 1L)
+    self.assertEqual(res.responses[0].search_builds.builds[1].id, 2L)
+    self.assertEqual(res.responses[1].get_build.id, 3L)
+
+  @mock.patch('service.get_async', autospec=True)
+  def test_errors(self, get_async):
+    get_async.return_value = future(None)
+
+    req = rpc_pb2.BatchRequest(
+        requests=[
+            rpc_pb2.BatchRequest.Request(
+                get_build=rpc_pb2.GetBuildRequest(id=1),
+            ),
+            rpc_pb2.BatchRequest.Request(),
+        ],
+    )
+    res = self.call(self.api.Batch, req)
+    self.assertEqual(
+        res,
+        rpc_pb2.BatchResponse(
+            responses=[
+                rpc_pb2.BatchResponse.Response(
+                    error=status_pb2.Status(
+                        code=prpc.StatusCode.NOT_FOUND.value,
+                        message='not found',
+                    ),
+                ),
+                rpc_pb2.BatchResponse.Response(
+                    error=status_pb2.Status(
+                        code=prpc.StatusCode.INVALID_ARGUMENT.value,
+                        message='request is not specified',
+                    ),
+                ),
+            ]
+        )
+    )
 
 
 class BuildPredicateToSearchQueryTests(BaseTestCase):
