@@ -16,13 +16,14 @@ package app
 
 import (
 	"fmt"
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"sort"
 	"sync"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"golang.org/x/net/context"
+
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 )
 
 // fakeSwarmingClient implements SwarmingClient.
@@ -31,7 +32,7 @@ type fakeSwarmingClient struct {
 	// pool is the single common pool that all bots belong to.
 	pool string
 
-	// botInfo maps the dut_id for a bot to its swarming.SwarmingRpcsBotInfo
+	// botInfos maps the dut_id for a bot to its swarming.SwarmingRpcsBotInfo
 	botInfos map[string]*swarming.SwarmingRpcsBotInfo
 	// taskArgs accumulates the arguments to CreateTask calls on fakeSwarmingClient
 	taskArgs []*SwarmingCreateTaskArgs
@@ -49,6 +50,7 @@ func (fsc *fakeSwarmingClient) ResetTasks() {
 }
 
 // ListAliveBotsInPool is a fake implementation of SwarmingClient.ListAliveBotsInPool.
+//
 // This function is intentionally simple. It only supports filtering by dut_id dimension.
 func (fsc *fakeSwarmingClient) ListAliveBotsInPool(c context.Context, pool string, dims strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	resp := []*swarming.SwarmingRpcsBotInfo{}

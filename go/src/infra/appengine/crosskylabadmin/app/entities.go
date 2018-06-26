@@ -17,13 +17,17 @@ package app
 // botSummaryKind is the datastore entity kind for fleetBotSummaryEntity.
 const botSummaryKind = "fleetBotSummary"
 
-// fleetBotSummaryEntity is a datastore entity that stores the fleet.BotSummary in
-// JSON format. In effect, this is a cache of task and bot history information
+// fleetBotSummaryEntity is a datastore entity that stores fleet.BotSummary in
+// protobuf binary format.
+//
+// In effect, this is a cache of task and bot history information
 // from the Swarming server over a fixed time period.
 type fleetBotSummaryEntity struct {
 	_kind string `gae:"$kind,fleetBotSummary"`
-	// Swarming bot's dut_id dimension. This dimension is an opaque reference
-	// to the managed DUT's uuid in skylab inventory data.
+	// Swarming bot's dut_id dimension.
+	//
+	// This dimension is an opaque reference to the managed DUT's uuid in skylab
+	// inventory data.
 	DutID string `gae:"$id"`
 	// Data is the fleet.BotSummary object serialized to protobuf binary format.
 	Data []byte `gae:",noindex"`

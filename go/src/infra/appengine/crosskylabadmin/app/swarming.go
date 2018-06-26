@@ -73,13 +73,15 @@ type SwarmingCreateTaskArgs struct {
 // swarmingClientFactory implements a single method to obtain a SwarmingClient instance.
 type swarmingClientFactory struct {
 	// swarmingClientHook provides a way to override the swarming client bindings.
+	//
 	// Tests should override swarmingClientHook to return a fake SwarmingClient.
 	// If nil, a real SwarmingClient will be used.
 	swarmingClientHook func(c context.Context, host string) (SwarmingClient, error)
 }
 
-// swarmingClient creats a SwarmingClient. All trackerServerImpl methods should
-// use swarmingClient to obtain a SwarmingClient.
+// swarmingClient creats a SwarmingClient.
+//
+// All trackerServerImpl methods should use swarmingClient to obtain a SwarmingClient.
 func (tsi *swarmingClientFactory) swarmingClient(c context.Context, host string) (SwarmingClient, error) {
 	if tsi.swarmingClientHook != nil {
 		return tsi.swarmingClientHook(c, host)
@@ -106,6 +108,7 @@ func NewSwarmingClient(c context.Context, host string) (SwarmingClient, error) {
 }
 
 // ListAliveBotsInPool lists the Swarming bots in the given pool.
+//
 // Use dims to restrict to dimensions beyond pool.
 func (sc *swarmingClientImpl) ListAliveBotsInPool(c context.Context, pool string, dims strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	bis := []*swarming.SwarmingRpcsBotInfo{}
@@ -115,7 +118,7 @@ func (sc *swarmingClientImpl) ListAliveBotsInPool(c context.Context, pool string
 		ic, _ := context.WithTimeout(c, 60*time.Second)
 		response, err := call.Context(ic).Do()
 		if err != nil {
-			return nil, errors.Annotate(err, "failed to list alive bots in pool %s", pool).Err()
+			return nil, errors.Reason("failed to list alive bots in pool %s", pool).InternalReason(err.Error()).Err()
 		}
 		bis = append(bis, response.Items...)
 		if response.Cursor == "" {
@@ -172,7 +175,7 @@ func (sc *swarmingClientImpl) CreateTask(c context.Context, args *SwarmingCreate
 	ic, _ := context.WithTimeout(c, 60*time.Second)
 	resp, err := sc.Tasks.New(ntr).Context(ic).Do()
 	if err != nil {
-		return "", err
+		return "", errors.Reason("Failed to create task").InternalReason(err.Error()).Err()
 	}
 	return resp.TaskId, nil
 }
@@ -185,7 +188,7 @@ func (sc *swarmingClientImpl) ListPendingTasks(c context.Context, tags []string)
 		ic, _ := context.WithTimeout(c, 60*time.Second)
 		resp, err := call.Context(ic).Do()
 		if err != nil {
-			return nil, errors.Annotate(err, "failed to list tasks with tags %s", strings.Join(tags, " ")).Err()
+			return nil, errors.Reason("failed to list tasks with tags %s", strings.Join(tags, " ")).InternalReason(err.Error()).Err()
 		}
 		trs = append(trs, resp.Items...)
 		if resp.Cursor == "" {

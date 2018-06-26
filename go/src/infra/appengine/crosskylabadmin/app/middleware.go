@@ -22,15 +22,16 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// checkAccess verifies that the request is from an authenticated user who has access to
-// this app. Servers should use checkAccess as a Prelude while handling requests to uniformly
+// checkAccess verifies that the request is from an authorized user.
+//
+// Servers should use checkAccess as a Prelude while handling requests to uniformly
 // check access across the API.
 func checkAccess(c context.Context, _ string, _ proto.Message) (context.Context, error) {
 	switch allow, err := auth.IsMember(c, accessGroup); {
 	case err != nil:
-		return nil, status.Errorf(codes.Internal, "can't check ACL - %s", err)
+		return c, status.Errorf(codes.Internal, "can't check ACL - %s", err)
 	case !allow:
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		return c, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
 	return c, nil
 }

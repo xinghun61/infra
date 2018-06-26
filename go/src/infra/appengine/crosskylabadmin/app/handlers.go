@@ -26,10 +26,8 @@ import (
 	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
-	"infra/appengine/crosskylabadmin/api/fleet/v1"
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 )
 
 // These are app-wide constants related to the Swarming setup of ChromeOS Skylab.
@@ -85,12 +83,4 @@ func init() {
 	discovery.Enable(&api)
 	api.InstallHandlers(r, mwAuthenticated)
 	http.DefaultServeMux.Handle("/", r)
-}
-
-// grpcfyRawErrors converts errors to grpc errors.
-func grpcfyRawErrors(err error) error {
-	if status.Code(err) == codes.Unknown {
-		return status.Errorf(codes.Internal, err.Error())
-	}
-	return err
 }

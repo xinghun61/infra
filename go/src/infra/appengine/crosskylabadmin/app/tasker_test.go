@@ -16,7 +16,6 @@ package app
 
 import (
 	"fmt"
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"strings"
 	"testing"
 
@@ -24,6 +23,8 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"golang.org/x/net/context"
+
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 )
 
 func TestEnsureBackgroundTasks(t *testing.T) {

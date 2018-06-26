@@ -22,6 +22,7 @@ import (
 
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/sync/parallel"
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -42,17 +43,17 @@ type taskerServerImpl struct {
 	swarmingClientFactory
 }
 
-func (*taskerServerImpl) TriggerRepairOnIdle(context.Context, *fleet.TriggerRepairOnIdleRequest) (resp *fleet.TaskerTasksResponse, err error) {
+func (*taskerServerImpl) TriggerRepairOnIdle(c context.Context, req *fleet.TriggerRepairOnIdleRequest) (resp *fleet.TaskerTasksResponse, err error) {
 	defer func() {
-		err = grpcfyRawErrors(err)
+		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 
 	return nil, status.Errorf(codes.Unimplemented, "Not Implemented")
 }
 
-func (*taskerServerImpl) TriggerRepairOnRepairFailed(context.Context, *fleet.TriggerRepairOnRepairFailedRequest) (resp *fleet.TaskerTasksResponse, err error) {
+func (*taskerServerImpl) TriggerRepairOnRepairFailed(c context.Context, req *fleet.TriggerRepairOnRepairFailedRequest) (resp *fleet.TaskerTasksResponse, err error) {
 	defer func() {
-		err = grpcfyRawErrors(err)
+		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 
 	return nil, status.Errorf(codes.Unimplemented, "Not Implemented")
@@ -60,7 +61,7 @@ func (*taskerServerImpl) TriggerRepairOnRepairFailed(context.Context, *fleet.Tri
 
 func (tsi *taskerServerImpl) EnsureBackgroundTasks(c context.Context, req *fleet.EnsureBackgroundTasksRequest) (resp *fleet.TaskerTasksResponse, err error) {
 	defer func() {
-		err = grpcfyRawErrors(err)
+		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 
 	bses, err := getBotSummariesFromDatastore(c, req.Selectors)

@@ -16,7 +16,6 @@ package app
 
 import (
 	"fmt"
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/gae/service/datastore"
@@ -24,10 +23,13 @@ import (
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/sync/parallel"
+	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
+
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 )
 
-// trackerServerImpl implements the fleet.TrakerServer interface.
+// trackerServerImpl implements the fleet.TrackerServer interface.
 type trackerServerImpl struct {
 	swarmingClientFactory
 }
@@ -35,7 +37,7 @@ type trackerServerImpl struct {
 // RefreshBots implements the fleet.Tracker.RefreshBots() method.
 func (tsi *trackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshBotsRequest) (res *fleet.RefreshBotsResponse, err error) {
 	defer func() {
-		err = grpcfyRawErrors(err)
+		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 
 	sc, err := tsi.swarmingClient(c, swarmingInstance)
@@ -59,7 +61,7 @@ func (tsi *trackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshB
 // SummarizeBots implements the fleet.Tracker.SummarizeBots() method.
 func (tsi *trackerServerImpl) SummarizeBots(c context.Context, req *fleet.SummarizeBotsRequest) (res *fleet.SummarizeBotsResponse, err error) {
 	defer func() {
-		err = grpcfyRawErrors(err)
+		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 
 	bses, err := getBotSummariesFromDatastore(c, req.Selectors)
@@ -151,7 +153,6 @@ func getFilteredBotsFromSwarming(c context.Context, sc SwarmingClient, sel *flee
 	return nil
 }
 
-// datastore as botSummaryEntity structs.
 // insertBotSummary returns the dut_ids of bots inserted.
 func insertBotSummary(c context.Context, bots []*swarming.SwarmingRpcsBotInfo) ([]string, error) {
 	updated := make([]string, 0, len(bots))
@@ -238,7 +239,7 @@ func filterNotFoundEntities(bses []*fleetBotSummaryEntity, merr errors.MultiErro
 	}
 	filtered := make([]*fleetBotSummaryEntity, 0, len(bses))
 	errs := make(errors.MultiError, 0, len(merr))
-	for i := range bses {
+	for i, bse := range bses {
 		err := merr[i]
 		if err != nil {
 			if !datastore.IsErrNoSuchEntity(err) {
@@ -246,7 +247,7 @@ func filterNotFoundEntities(bses []*fleetBotSummaryEntity, merr errors.MultiErro
 			}
 			continue
 		}
-		filtered = append(filtered, bses[i])
+		filtered = append(filtered, bse)
 	}
 	if errs.First() != nil {
 		return nil, errs

@@ -18,13 +18,12 @@ import (
 	"fmt"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"golang.org/x/net/context"
 
 	"infra/appengine/crosskylabadmin/api/fleet/v1"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 // TestRefreshAndSummarizeBots tests the RefreshBots-SummarizeBots API.
