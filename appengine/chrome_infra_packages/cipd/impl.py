@@ -955,6 +955,8 @@ class Package(ndb.Model):
   """
   # Disable useless in-memory per-request cache. It's harmful in tests.
   _use_cache = False
+  # Disable ndb memcache layer in preparation for switching to v2 backend.
+  _use_memcache = False
 
   # Who registered the package.
   registered_by = auth.IdentityProperty()
@@ -978,6 +980,8 @@ class PackageInstance(ndb.Model):
   """
   # Disable useless in-memory per-request cache. It's harmful in tests.
   _use_cache = False
+  # Disable ndb memcache layer in preparation for switching to v2 backend.
+  _use_memcache = False
 
   # Who registered the instance.
   registered_by = auth.IdentityProperty()
@@ -1030,6 +1034,8 @@ class PackageRef(ndb.Model):
   """
   # Disable useless in-memory per-request cache. It's harmful in tests.
   _use_cache = False
+  # Disable ndb memcache layer in preparation for switching to v2 backend.
+  _use_memcache = False
 
   # PackageInstance the ref points to.
   instance_id = ndb.StringProperty()
@@ -1076,6 +1082,8 @@ class InstanceTag(ndb.Model):
   """
   # Disable useless in-memory per-request cache. It's harmful in tests.
   _use_cache = False
+  # Disable ndb memcache layer in preparation for switching to v2 backend.
+  _use_memcache = False
 
   # The tag itself, as key:value string.
   tag = ndb.StringProperty()
@@ -1125,6 +1133,8 @@ class ProcessingResult(ndb.Model):
   """
   # Disable useless in-memory per-request cache. It's harmful in tests.
   _use_cache = False
+  # Disable ndb memcache layer in preparation for switching to v2 backend.
+  _use_memcache = False
 
   # When the entity was created.
   created_ts = ndb.DateTimeProperty()
