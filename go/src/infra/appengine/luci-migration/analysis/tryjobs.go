@@ -19,8 +19,10 @@ package analysis
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -192,6 +194,18 @@ type properties struct {
 	GotRevision string `json:"got_revision"`
 }
 
+func parseOutputProperties(msg *bbapi.ApiCommonBuildMessage) (properties, error) {
+	if msg.ResultDetailsJson == "" {
+		return properties{}, nil
+	}
+
+	var resultDetails struct {
+		Properties properties `json:"properties"`
+	}
+	err := json.NewDecoder(strings.NewReader(msg.ResultDetailsJson)).Decode(&resultDetails)
+	return resultDetails.Properties, err
+}
+
 // fetchGroupKeys fetches group keys of completed LUCI builds
 // until c is cancelled.
 func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
@@ -216,33 +230,34 @@ func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 
 	seen := make(map[groupKey]struct{}, DefaultMaxGroups+groupFetchWorkers)
 	for msg := range foundBuilds {
-		var b buildbucket.Build
-		var props properties
-		b.Output.Properties = &props
-		if err := b.ParseMessage(msg); err != nil {
-			return errors.Annotate(err, "parsing build %d", msg.Id).Err()
-		}
-
 		var change *buildbucketpb.GerritChange
-		for _, bs := range b.BuildSets {
-			if cl, ok := bs.(*buildbucketpb.GerritChange); ok {
-				if change != nil {
-					logging.Warningf(c, "build %d has multiple Gerrit changes; using first one, %q", b.ID, change)
-					break
+		for _, t := range msg.Tags {
+			if k, v := strpair.Parse(t); k == bbapi.TagBuildSet {
+				if cl, _ := buildbucketpb.ParseBuildSet(v).(*buildbucketpb.GerritChange); cl != nil {
+					if change == nil {
+						change = cl
+					} else {
+						logging.Warningf(c, "build %d has multiple Gerrit changes; using first one, %q", msg.Id, change)
+						break
+					}
 				}
-				change = cl
 			}
 		}
 		if change == nil {
-			logging.Infof(c, "skipped build %d: no gerrit change", b.ID)
+			logging.Infof(c, "skipped build %d: no gerrit change", msg.Id)
 			continue
+		}
+
+		outProps, err := parseOutputProperties(msg)
+		if err != nil {
+			return errors.Annotate(err, "parsing result details of build %d", msg.Id).Err()
 		}
 
 		key := groupKey{
 			Host:        change.Host,
 			Change:      change.Change,
 			Patchset:    change.Patchset,
-			GotRevision: props.GotRevision,
+			GotRevision: outProps.GotRevision,
 		}
 		if _, ok := seen[key]; !ok {
 			keys <- key
@@ -382,28 +397,28 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 
 		builds := make(groupSide, 0, len(msgs))
 		for _, msg := range msgs {
-			var props properties
-			b := &buildbucket.Build{}
-			b.Output.Properties = &props
-
-			if *err = b.ParseMessage(msg); *err != nil {
+			var outProps properties
+			switch outProps, *err = parseOutputProperties(msg); {
+			case *err != nil:
 				return
-			}
-
-			if props.GotRevision != g.Key.GotRevision {
+			case outProps.GotRevision != g.Key.GotRevision:
 				// This is very inefficient, but this whole file should be
 				// rewritten in SQL anyway.
 				continue
 			}
 
-			dur, _ := b.RunDuration()
-			builds = append(builds, &build{
-				Status:         b.Status,
-				CreationTime:   b.CreationTime,
-				CompletionTime: b.CompletionTime,
-				RunDuration:    dur,
-				URL:            b.URL,
-			})
+			b := &build{
+				CreationTime:   bbapi.ParseTimestamp(msg.CreatedTs),
+				CompletionTime: bbapi.ParseTimestamp(msg.CompletedTs),
+				URL:            msg.Url,
+			}
+			if b.Status, *err = buildbucket.StatusToV2(msg); *err != nil {
+				return
+			}
+			if msg.StartedTs != 0 && !b.CompletionTime.IsZero() {
+				b.RunDuration = b.CompletionTime.Sub(bbapi.ParseTimestamp(msg.StartedTs))
+			}
+			builds = append(builds, b)
 		}
 
 		// Reverse order to make it oldest-to-newest.

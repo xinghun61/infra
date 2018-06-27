@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -53,17 +54,75 @@ const (
 	buildbotBuildIDTagKey = "luci_migration_buildbot_build_id"
 )
 
-// Build is buildbucket.Build plus
-// original ParametersJSON.
+// Build is a buildbucket Build.
 type Build struct {
-	buildbucket.Build
-	ParametersJSON string // original ParametersJSON
+	ID             int64
+	Bucket         string
+	Builder        string
+	ParametersJSON string
+	CreationTime   time.Time
+	Change         *buildbucketpb.GerritChange
+	Status         buildbucketpb.Status
+	GotRevision    string
+	DryRun         interface{}
+
+	// Luci-migration-specific info:
+
+	Attempt         int   // migration-app's attempt. -1 if unknown.
+	BuildbotBuildID int64 // buildbucket id of the original buildbot build
 }
 
-// OutputProperties is used for parsing Build.Output.Properties.
-type OutputProperties struct {
-	GotRevision string      `json:"got_revision"`
-	DryRun      interface{} `json:"dry_run"`
+// ParseBuild parses a raw buildbucket build message to a Build.
+func ParseBuild(msg *bbapi.ApiCommonBuildMessage) (*Build, error) {
+	tags := strpair.ParseMap(msg.Tags)
+	build := &Build{
+		ID:             msg.Id,
+		Bucket:         msg.Bucket,
+		Builder:        tags.Get(bbapi.TagBuilder),
+		ParametersJSON: msg.ParametersJson,
+		CreationTime:   bbapi.ParseTimestamp(msg.CreatedTs),
+		Attempt:        -1,
+	}
+
+	for _, bss := range tags[bbapi.TagBuildSet] {
+		build.Change = buildbucketpb.ParseBuildSet(bss).(*buildbucketpb.GerritChange)
+		if build.Change != nil {
+			break
+		}
+	}
+
+	var err error
+	if build.Status, err = buildbucket.StatusToV2(msg); err != nil {
+		return nil, errors.Annotate(err, "failed to parse build status").Err()
+	}
+
+	if msg.ResultDetailsJson != "" {
+		var resultDetails struct {
+			Properties struct {
+				GotRevision string      `json:"got_revision"`
+				DryRun      interface{} `json:"dry_run"`
+			} `json:"properties"`
+		}
+		if err := json.NewDecoder(strings.NewReader(msg.ResultDetailsJson)).Decode(&resultDetails); err != nil {
+			return nil, errors.Annotate(err, "failed to parse result details").Err()
+		}
+		build.GotRevision = resultDetails.Properties.GotRevision
+		build.DryRun = resultDetails.Properties.DryRun
+	}
+
+	if attemptStr := tags.Get(attemptTagKey); attemptStr != "" {
+		if build.Attempt, err = strconv.Atoi(attemptStr); err != nil {
+			return nil, errors.Annotate(err, "invalid %s tag: %s", attemptTagKey, attemptStr).Err()
+		}
+	}
+
+	if buildbotIdStr := tags.Get(buildbotBuildIDTagKey); buildbotIdStr != "" {
+		if build.BuildbotBuildID, err = strconv.ParseInt(buildbotIdStr, 10, 64); err != nil {
+			return nil, errors.Annotate(err, "invalid %s tag: %s", buildbotBuildIDTagKey, buildbotIdStr).Err()
+		}
+	}
+
+	return build, nil
 }
 
 // Scheduler schedules Buildbot builds on LUCI.
@@ -113,20 +172,19 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 	}
 
 	// Should we experiment with this CL?
-	if !shouldExperiment(build.Tags.Get(bbapi.TagBuildSet), builder.ExperimentPercentage) {
+	if !shouldExperiment(build.Change, builder.ExperimentPercentage) {
 		return nil
 	}
 
 	// This build should be scheduled on LUCI.
 	// Prepare new build request.
-	outProps := (build.Output.Properties).(*OutputProperties)
 	props := map[string]interface{}{
-		"revision": outProps.GotRevision,
+		"revision": build.GotRevision,
 		// Mark the build as experimental, so it does not confuse users of Rietveld and Gerrit.
 		"category": "cq_experimental",
 	}
-	if outProps.DryRun != nil {
-		props["dry_run"] = outProps.DryRun
+	if build.DryRun != nil {
+		props["dry_run"] = build.DryRun
 	}
 	newParamsJSON, err := setProps(build.ParametersJSON, props)
 	if err != nil {
@@ -135,7 +193,7 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 	newTags := strpair.Map{}
 	newTags.Set(buildbotBuildIDTagKey, strconv.FormatInt(build.ID, 10))
 	newTags.Set(attemptTagKey, "0")
-	newTags[bbapi.TagBuildSet] = build.Tags[bbapi.TagBuildSet]
+	newTags.Set(bbapi.TagBuildSet, build.Change.BuildSetString())
 	newBuild := &bbapi.ApiPutRequestMessage{
 		Bucket:            master.LuciBucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
@@ -145,23 +203,20 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 	return withLock(c, build.ID, func() error {
 		logging.Infof(
 			c,
-			"scheduling Buildbot build %d on LUCI for builder %q and buildset %q",
-			build.ID, &builder.ID, build.Tags.Get(bbapi.TagBuildSet))
+			"scheduling Buildbot build %d on LUCI for builder %q and %q",
+			build.ID, &builder.ID, build.Change.URL())
 		return h.schedule(c, builder.ID.Builder, newBuild)
 	})
 }
 
 func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
-	attempt, attemptErr := strconv.Atoi(build.Tags.Get(attemptTagKey))
-	buildSet := build.Tags.Get(bbapi.TagBuildSet)
-	buildbotBuildID := build.Tags.Get(buildbotBuildIDTagKey)
 	switch {
-	case attemptErr != nil || buildSet == "" || buildbotBuildID == "":
+	case build.Attempt < 0 || build.Change == nil || build.BuildbotBuildID == 0:
 		return nil // we don't recognize this build
 
 	// Do at most 3 attempts.
-	case attempt >= 2:
-		logging.Infof(c, "enough retries for build %s", buildbotBuildID)
+	case build.Attempt >= 2:
+		logging.Infof(c, "hit max retries for build %d", build.BuildbotBuildID)
 		return nil
 	}
 
@@ -173,7 +228,7 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	req.CreationTsLow(bbapi.FormatTimestamp(build.CreationTime) + 1)
 	req.IncludeExperimental(true)
 	req.Tag(
-		strpair.Format(bbapi.TagBuildSet, buildSet),
+		strpair.Format(bbapi.TagBuildSet, build.Change.BuildSetString()),
 		strpair.Format(bbapi.TagBuilder, build.Builder),
 	)
 	switch newerBuilds, _, err := req.Fetch(1, nil); {
@@ -185,9 +240,9 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	}
 
 	newTags := strpair.Map{}
-	newTags.Set(buildbotBuildIDTagKey, buildbotBuildID)
-	newTags.Set(attemptTagKey, strconv.Itoa(attempt+1))
-	newTags.Set(bbapi.TagBuildSet, buildSet)
+	newTags.Set(buildbotBuildIDTagKey, strconv.FormatInt(build.BuildbotBuildID, 10))
+	newTags.Set(attemptTagKey, strconv.Itoa(build.Attempt+1))
+	newTags.Set(bbapi.TagBuildSet, build.Change.BuildSetString())
 	newBuild := &bbapi.ApiPutRequestMessage{
 		Bucket:            build.Bucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
@@ -271,15 +326,15 @@ func (h *Scheduler) schedule(c context.Context, builder string, req *bbapi.ApiPu
 }
 
 // shouldExperiment deterministically returns true if experiments must be done
-// for the buildset.
-func shouldExperiment(buildSet string, percentage int) bool {
+// for the CL.
+func shouldExperiment(change *buildbucketpb.GerritChange, percentage int) bool {
 	switch {
 	case percentage <= 0:
 		return false
 	case percentage >= 100:
 		return true
 	default:
-		aByte := sha256.Sum256([]byte(buildSet))[0]
+		aByte := sha256.Sum256([]byte(change.BuildSetString()))[0]
 		return int(aByte)*100 <= percentage*255
 	}
 }

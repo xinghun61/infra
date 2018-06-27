@@ -19,12 +19,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/buildbucket"
 	"go.chromium.org/luci/buildbucket/proto"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/data/strpair"
@@ -39,6 +39,49 @@ import (
 func TestScheduling(t *testing.T) {
 	t.Parallel()
 
+	Convey("ParseBuild", t, func() {
+		msg := &bbapi.ApiCommonBuildMessage{
+			Id:     1,
+			Bucket: "luci.chromium.ci",
+			Tags: []string{
+				"builder:linux",
+				"buildset:patch/gerrit/example.com/1/2",
+				"luci_migration_attempt:1",
+				"luci_migration_buildbot_build_id:54",
+			},
+			ParametersJson: `{"a": "b"}`,
+			CreatedTs:      1514764800000000,
+			Status:         bbapi.StatusCompleted,
+			Result:         bbapi.ResultSuccess,
+			ResultDetailsJson: `{
+				"properties": {
+					"got_revision": "deadbeef",
+					"dry_run": true
+				}
+			}`,
+		}
+		build, err := ParseBuild(msg)
+		So(err, ShouldBeNil)
+		So(build, ShouldResemble, &Build{
+			ID:             1,
+			Bucket:         "luci.chromium.ci",
+			Builder:        "linux",
+			ParametersJSON: `{"a": "b"}`,
+			CreationTime:   time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC),
+			Change: &buildbucketpb.GerritChange{
+				Host:     "example.com",
+				Change:   1,
+				Patchset: 2,
+			},
+			Status:      buildbucketpb.Status_SUCCESS,
+			GotRevision: "deadbeef",
+			DryRun:      true,
+
+			Attempt:         1,
+			BuildbotBuildID: 54,
+		})
+	})
+
 	Convey("Scheduling", t, func(testCtx C) {
 		c := context.Background()
 		c = memory.Use(c)
@@ -51,7 +94,7 @@ func TestScheduling(t *testing.T) {
 			},
 		})
 
-		buildSet := &buildbucketpb.GerritChange{
+		change := &buildbucketpb.GerritChange{
 			Host:     "gerrit.example.com",
 			Change:   1,
 			Patchset: 1,
@@ -100,8 +143,13 @@ func TestScheduling(t *testing.T) {
 
 		Convey("schedules buildbot builds on LUCI", func() {
 			Convey("shouldExperiment is deterministic", func() {
-				So(shouldExperiment("foo", 50), ShouldBeTrue)
-				So(shouldExperiment("foo", 1), ShouldBeFalse)
+				change := &buildbucketpb.GerritChange{
+					Host:     "gerrit.example.com",
+					Change:   1,
+					Patchset: 1,
+				}
+				So(shouldExperiment(change, 50), ShouldBeTrue)
+				So(shouldExperiment(change, 1), ShouldBeFalse)
 			})
 
 			c = config.Use(c, &config.Config{
@@ -126,22 +174,12 @@ func TestScheduling(t *testing.T) {
 			}
 
 			b := &Build{
-				Build: buildbucket.Build{
-					ID:        54,
-					Bucket:    "master.tryserver.chromium.linux",
-					Builder:   "linux_chromium_rel_ng",
-					Status:    buildbucketpb.Status_SUCCESS,
-					BuildSets: []buildbucketpb.BuildSet{buildSet},
-					Tags: strpair.Map{
-						bbapi.TagBuildSet: []string{buildSet.BuildSetString()},
-						"master":          []string{"tryserver.chromium.linux"},
-					},
-					Output: buildbucket.Output{
-						Properties: &OutputProperties{
-							GotRevision: "deadbeef",
-						},
-					},
-				},
+				ID:             54,
+				Bucket:         "master.tryserver.chromium.linux",
+				Builder:        "linux_chromium_rel_ng",
+				Status:         buildbucketpb.Status_SUCCESS,
+				Change:         change,
+				GotRevision:    "deadbeef",
 				ParametersJSON: `{"builder_name": "linux_chromium_rel_ng", "properties":{"revision": "HEAD"}}`,
 			}
 
@@ -169,7 +207,7 @@ func TestScheduling(t *testing.T) {
 						ClientOperationId: "luci-migration-retry-54",
 						ParametersJson:    actualPutRequests[0].ParametersJson,
 						Tags: []string{
-							strpair.Format(bbapi.TagBuildSet, buildSet.BuildSetString()),
+							strpair.Format(bbapi.TagBuildSet, change.BuildSetString()),
 							strpair.Format(attemptTagKey, "0"),
 							strpair.Format(buildbotBuildIDTagKey, "54"),
 							"user_agent:luci-migration",
@@ -181,7 +219,7 @@ func TestScheduling(t *testing.T) {
 
 			Convey("dry_run property is propagated, if set", func() {
 				// dry_run may be set by CQ only on presubmit builds.
-				b.Build.Output.Properties.(*OutputProperties).DryRun = "true"
+				b.DryRun = "true"
 				putBuilder(100)
 				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
@@ -206,20 +244,14 @@ func TestScheduling(t *testing.T) {
 		})
 
 		Convey("retries builds", func() {
-			luciMigrationBuildTags := strpair.Map{}
-			luciMigrationBuildTags.Set(buildbotBuildIDTagKey, "53")
-			luciMigrationBuildTags.Set(attemptTagKey, "0")
-			luciMigrationBuildTags.Set("buildset", buildSet.BuildSetString())
-			luciMigrationBuildTags.Set("master", "masterX")
-
 			Convey("retries LUCI builds", func() {
 				b := &Build{
-					Build: buildbucket.Build{
-						ID:     54,
-						Bucket: "luci.test.x",
-						Status: buildbucketpb.Status_FAILURE,
-						Tags:   luciMigrationBuildTags,
-					},
+					ID:              54,
+					Bucket:          "luci.test.x",
+					Status:          buildbucketpb.Status_FAILURE,
+					Change:          change,
+					BuildbotBuildID: 53,
+					Attempt:         0,
 				}
 				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
@@ -230,7 +262,7 @@ func TestScheduling(t *testing.T) {
 						ClientOperationId: "luci-migration-retry-54",
 						ParametersJson:    b.ParametersJSON,
 						Tags: []string{
-							strpair.Format(bbapi.TagBuildSet, buildSet.BuildSetString()),
+							strpair.Format(bbapi.TagBuildSet, change.BuildSetString()),
 							strpair.Format(attemptTagKey, "1"),
 							strpair.Format(buildbotBuildIDTagKey, "53"),
 							"user_agent:luci-migration",
@@ -242,17 +274,13 @@ func TestScheduling(t *testing.T) {
 
 			Convey("retries second time", func() {
 				b := &Build{
-					Build: buildbucket.Build{
-						ID:      54,
-						Bucket:  "luci.test.x",
-						Builder: "some",
-						Status:  buildbucketpb.Status_FAILURE,
-						Tags: strpair.Map{
-							buildbotBuildIDTagKey: []string{"53"},
-							attemptTagKey:         []string{"0"},
-							bbapi.TagBuildSet:     []string{buildSet.BuildSetString()},
-						},
-					},
+					ID:              54,
+					Bucket:          "luci.test.x",
+					Builder:         "some",
+					Status:          buildbucketpb.Status_FAILURE,
+					Change:          change,
+					BuildbotBuildID: 53,
+					Attempt:         0,
 				}
 				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
@@ -263,12 +291,12 @@ func TestScheduling(t *testing.T) {
 
 			Convey("does not retry if there is a newer one", func() {
 				b := &Build{
-					Build: buildbucket.Build{
-						ID:     54,
-						Bucket: "luci.test.x",
-						Status: buildbucketpb.Status_FAILURE,
-						Tags:   luciMigrationBuildTags,
-					},
+					ID:              54,
+					Bucket:          "luci.test.x",
+					Status:          buildbucketpb.Status_FAILURE,
+					Change:          change,
+					BuildbotBuildID: 53,
+					Attempt:         0,
 				}
 				searchResults = []*bbapi.ApiCommonBuildMessage{{
 					CreatedTs: bbapi.FormatTimestamp(b.CreationTime) + 1, // 1 newer Build
@@ -280,16 +308,12 @@ func TestScheduling(t *testing.T) {
 
 			Convey("does not retry too many times", func() {
 				b := &Build{
-					Build: buildbucket.Build{
-						ID:        54,
-						Bucket:    "luci.test.x",
-						Status:    buildbucketpb.Status_FAILURE,
-						BuildSets: []buildbucketpb.BuildSet{buildSet},
-						Tags: strpair.Map{
-							buildbotBuildIDTagKey: []string{"53"},
-							attemptTagKey:         []string{"2"},
-						},
-					},
+					ID:              54,
+					Bucket:          "luci.test.x",
+					Status:          buildbucketpb.Status_FAILURE,
+					Change:          change,
+					BuildbotBuildID: 53,
+					Attempt:         2,
 				}
 				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
@@ -298,12 +322,10 @@ func TestScheduling(t *testing.T) {
 
 			Convey("does not retry unrecognized builds", func() {
 				b := &Build{
-					Build: buildbucket.Build{
-						ID:     54,
-						Bucket: "luci.chromium.try",
-						Status: buildbucketpb.Status_FAILURE,
-						// no attempt tag
-					},
+					ID:     54,
+					Bucket: "luci.chromium.try",
+					Status: buildbucketpb.Status_FAILURE,
+					// no attempt tag
 				}
 				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
@@ -312,12 +334,12 @@ func TestScheduling(t *testing.T) {
 
 			Convey("does not retry non-failed builds", func() {
 				b := &Build{
-					Build: buildbucket.Build{
-						ID:     54,
-						Bucket: "luci.chromium.try",
-						Status: buildbucketpb.Status_SUCCESS,
-						Tags:   luciMigrationBuildTags,
-					},
+					ID:              54,
+					Bucket:          "luci.chromium.try",
+					Status:          buildbucketpb.Status_SUCCESS,
+					Change:          change,
+					BuildbotBuildID: 53,
+					Attempt:         0,
 				}
 				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
@@ -326,12 +348,12 @@ func TestScheduling(t *testing.T) {
 
 			Convey("returns transient error on Buildbucket HTTP 500", func() {
 				b := &Build{
-					Build: buildbucket.Build{
-						ID:     54,
-						Bucket: "luci.test.x",
-						Status: buildbucketpb.Status_FAILURE,
-						Tags:   luciMigrationBuildTags,
-					},
+					ID:              54,
+					Bucket:          "luci.test.x",
+					Status:          buildbucketpb.Status_FAILURE,
+					Change:          change,
+					BuildbotBuildID: 53,
+					Attempt:         0,
 				}
 				putResponseCode = 500
 				err := h.BuildCompleted(c, b)
@@ -341,12 +363,12 @@ func TestScheduling(t *testing.T) {
 
 			Convey("returns non-transient error on Buildbucket HTTP 403", func() {
 				b := &Build{
-					Build: buildbucket.Build{
-						ID:     54,
-						Bucket: "luci.test.x",
-						Status: buildbucketpb.Status_FAILURE,
-						Tags:   luciMigrationBuildTags,
-					},
+					ID:              54,
+					Bucket:          "luci.test.x",
+					Status:          buildbucketpb.Status_FAILURE,
+					Change:          change,
+					BuildbotBuildID: 53,
+					Attempt:         0,
 				}
 				putResponseCode = 403
 				err := h.BuildCompleted(c, b)
@@ -356,12 +378,12 @@ func TestScheduling(t *testing.T) {
 
 			Convey("returns non-transient error on Buildbucket HTTP 404", func() {
 				b := &Build{
-					Build: buildbucket.Build{
-						ID:     54,
-						Bucket: "luci.test.x",
-						Status: buildbucketpb.Status_FAILURE,
-						Tags:   luciMigrationBuildTags,
-					},
+					ID:              54,
+					Bucket:          "luci.test.x",
+					Status:          buildbucketpb.Status_FAILURE,
+					Change:          change,
+					BuildbotBuildID: 53,
+					Attempt:         0,
 				}
 				putResponseCode = 404
 				err := h.BuildCompleted(c, b)
