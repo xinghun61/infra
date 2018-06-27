@@ -133,9 +133,10 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     recipes_dir = self.m.path['start_dir'].join('recipe_engine')
     self.m.file.rmtree('ensure recipe_dir gone', recipes_dir)
 
-    self.m.git('clone', '--depth', '1',
-               'https://chromium.googlesource.com/infra/luci/recipes-py',
-               recipes_dir, name='clone recipe engine')
+    with self.m.context(cwd=self.m.path['start_dir']):
+      self.m.git('clone', '--depth', '1',
+                 'https://chromium.googlesource.com/infra/luci/recipes-py',
+                 recipes_dir, name='clone recipe engine')
 
     results = []
     with recipe_api.defer_results():
