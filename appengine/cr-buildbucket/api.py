@@ -18,6 +18,7 @@ from components import utils
 import gae_ts_mon
 
 import api_common
+import bulkproc
 import config
 import errors
 import model
@@ -747,15 +748,12 @@ class BuildBucketApi(remote.Service):
     if request.shards <= 0:
       raise endpoints.BadRequestException('shards must be positive')
     enqueue_task(
-        'backfill-tag-index', (
-            '/internal/task/buildbucket/backfill-tag-index/tag:%s-start' %
-            request.tag
-        ),
+        'backfill-tag-index',
+        bulkproc.PATH_PREFIX + 'start',
         utils.encode_to_json({
-            'action': 'start',
             'tag': request.tag,
             'shards': request.shards,
-        })
+        }),
     )
     return message_types.VoidMessage()
 

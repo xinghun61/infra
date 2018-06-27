@@ -19,26 +19,32 @@ import search
 import v2
 
 
-class TaskBackfillTagIndexTest(testing.AppengineTestCase):
-  task_url = '/internal/task/buildbucket/backfill-tag-index/'
+class TestBase(testing.AppengineTestCase):
+  path_suffix = ''
 
   @property
   def app_module(self):
     return main.create_backend_app()
 
   def setUp(self):
-    super(TaskBackfillTagIndexTest, self).setUp()
+    super(TestBase, self).setUp()
     self.now = datetime.datetime(2017, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
     self.patch('search.TagIndex.random_shard_index', return_value=0)
 
   def post(self, payload, headers=None):
+    assert self.path_suffix
     headers = headers or {}
     headers['X-AppEngine-QueueName'] = 'backfill-tag-index'
     headers['X-AppEngine-TaskName'] = 'taskname'
+    task_url = bulkproc.PATH_PREFIX + self.path_suffix
     return self.test_app.post(
-        self.task_url + 'rest', utils.encode_to_json(payload), headers=headers
+        task_url, utils.encode_to_json(payload), headers=headers
     )
+
+
+class StartTest(TestBase):
+  path_suffix = 'start'
 
   @mock.patch('bulkproc.enqueue_tasks')
   def test_start(self, enqueue_tasks):
@@ -49,19 +55,15 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
             create_time=self.now - datetime.timedelta(minutes=i)
         ) for i in xrange(1, 11)
     ])
-    self.post({
-        'action': 'start',
-        'tag': 'buildset',
-        'shards': 3,
-    })
+    self.post({'tag': 'buildset', 'shards': 3})
 
+    seg_path_prefix = bulkproc.PATH_PREFIX + 'segment/'
     enqueue_tasks.assert_called_with(
         'backfill-tag-index', [
             (
                 None,
-                self.task_url + 'tag:buildset-seg:0-percent:0',
+                seg_path_prefix + 'seg:0-percent:0',
                 utils.encode_to_json({
-                    'action': 'segment',
                     'tag': 'buildset',
                     'job_id': 'taskname',
                     'iteration': 0,
@@ -73,9 +75,8 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
             ),
             (
                 None,
-                self.task_url + 'tag:buildset-seg:1-percent:0',
+                seg_path_prefix + 'seg:1-percent:0',
                 utils.encode_to_json({
-                    'action': 'segment',
                     'tag': 'buildset',
                     'job_id': 'taskname',
                     'iteration': 0,
@@ -87,9 +88,8 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
             ),
             (
                 None,
-                self.task_url + 'tag:buildset-seg:2-percent:0',
+                seg_path_prefix + 'seg:2-percent:0',
                 utils.encode_to_json({
-                    'action': 'segment',
                     'tag': 'buildset',
                     'job_id': 'taskname',
                     'iteration': 0,
@@ -101,9 +101,8 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
             ),
             (
                 None,
-                self.task_url + 'tag:buildset-seg:3-percent:0',
+                seg_path_prefix + 'seg:3-percent:0',
                 utils.encode_to_json({
-                    'action': 'segment',
                     'tag': 'buildset',
                     'job_id': 'taskname',
                     'iteration': 0,
@@ -126,21 +125,24 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
         ) for i in xrange(1, 150)
     ])
     self.post({
-        'action': 'start',
         'tag': 'buildset',
         'shards': 100,
     })
 
     self.assertEqual(enqueue_tasks.call_count, 2)
 
+
+class SegmentTest(TestBase):
+  path_suffix = 'segment/rest'
+
   @contextlib.contextmanager
   def entry_limit(self, limit):
-    orig_entry_limit = bulkproc.TaskBackfillTagIndex.ENTRY_LIMIT
-    bulkproc.TaskBackfillTagIndex.ENTRY_LIMIT = limit
+    orig_entry_limit = bulkproc.TaskSegment.ENTRY_LIMIT
+    bulkproc.TaskSegment.ENTRY_LIMIT = limit
     try:
       yield
     finally:
-      bulkproc.TaskBackfillTagIndex.ENTRY_LIMIT = orig_entry_limit
+      bulkproc.TaskSegment.ENTRY_LIMIT = orig_entry_limit
 
   @mock.patch('bulkproc.enqueue_tasks')
   def test_segment_partial(self, enqueue_tasks):
@@ -155,7 +157,6 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
 
     with self.entry_limit(5):
       self.post({
-          'action': 'segment',
           'tag': 'buildset',
           'job_id': 'jobid',
           'iteration': 0,
@@ -168,9 +169,8 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
     enqueue_tasks.assert_any_call(
         'backfill-tag-index', [(
             None,
-            self.task_url + 'tag:buildset-flush',
+            bulkproc.PATH_PREFIX + 'flush',
             utils.encode_to_json({
-                'action': 'flush',
                 'tag': 'buildset',
                 'new_entries': {
                     '0': [
@@ -188,7 +188,6 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
     )
 
     expected_next_payload = {
-        'action': 'segment',
         'tag': 'buildset',
         'job_id': 'jobid',
         'iteration': 1,
@@ -198,11 +197,14 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
         'start_from': 55,
         'started_ts': utils.datetime_to_timestamp(self.now),
     }
+    print enqueue_tasks.call_args_list
     enqueue_tasks.assert_any_call(
-        'backfill-tag-index', [(
-            'jobid-0-1', self.task_url + 'tag:buildset-seg:0-percent:50',
-            utils.encode_to_json(expected_next_payload)
-        )]
+        'backfill-tag-index',
+        [(
+            'jobid-0-1',
+            bulkproc.PATH_PREFIX + 'segment/seg:0-percent:50',
+            utils.encode_to_json(expected_next_payload),
+        )],
     )
 
     self.post(expected_next_payload)
@@ -214,7 +216,6 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
         for i in xrange(50, 52)
     ])
     self.post({
-        'action': 'segment',
         'tag': 'buildset',
         'seg_index': 0,
         'seg_start': 50,
@@ -224,18 +225,18 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
 
     self.assertEqual(enqueue_tasks.call_count, 1)
     enqueue_tasks.assert_called_with(
-        'backfill-tag-index', [(
+        'backfill-tag-index',
+        [(
             None,
-            self.task_url + 'tag:buildset-flush',
+            bulkproc.PATH_PREFIX + 'flush',
             utils.encode_to_json({
-                'action': 'flush',
                 'tag': 'buildset',
                 'new_entries': {
                     '0': [['chromium', 51]],
                     '2': [['chromium', 50]],
                 },
             }),
-        )]
+        )],
     )
 
   @mock.patch('bulkproc.enqueue_tasks')
@@ -249,24 +250,24 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
       headers = {
           'X-AppEngine-TaskExecutionCount': '1',
       }
-      self.post({
-          'action': 'segment',
-          'tag': 'buildset',
-          'job_id': 'jobid',
-          'iteration': 0,
-          'seg_index': 0,
-          'seg_start': 50,
-          'seg_end': 60,
-          'started_ts': utils.datetime_to_timestamp(self.now),
-      },
-                headers=headers)
+      self.post(
+          {
+              'tag': 'buildset',
+              'job_id': 'jobid',
+              'iteration': 0,
+              'seg_index': 0,
+              'seg_start': 50,
+              'seg_end': 60,
+              'started_ts': utils.datetime_to_timestamp(self.now),
+          },
+          headers=headers,
+      )
 
     enqueue_tasks.assert_any_call(
         'backfill-tag-index', [(
             'jobid-0-1',
-            self.task_url + 'tag:buildset-seg:0-percent:10',
+            bulkproc.PATH_PREFIX + 'segment/seg:0-percent:10',
             utils.encode_to_json({
-                'action': 'segment',
                 'tag': 'buildset',
                 'job_id': 'jobid',
                 'iteration': 1,
@@ -278,6 +279,10 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
             }),
         )]
     )
+
+
+class FlushTest(TestBase):
+  path_suffix = 'flush'
 
   def test_flush(self):
     search.TagIndex(
@@ -294,7 +299,6 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
         ]
     ).put()
     self.post({
-        'action': 'flush',
         'tag': 'buildset',
         'new_entries': {
             '0': [['chromium', 51]],
@@ -320,17 +324,18 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
 
   @mock.patch('bulkproc.enqueue_tasks')
   def test_flush_retry(self, enqueue_tasks):
-    orig_add = bulkproc.TaskBackfillTagIndex._add_index_entries_async
+    orig_add = bulkproc.TaskFlushTagIndexEntries._add_index_entries_async
 
     def add(tag, entries):
       if tag == 'buildset:1':
         return future_exception(Exception('transient error'))
       return orig_add(tag, entries)
 
-    with mock.patch('bulkproc.TaskBackfillTagIndex._add_index_entries_async',
-                    side_effect=add):
+    with mock.patch(
+        'bulkproc.TaskFlushTagIndexEntries._add_index_entries_async',
+        side_effect=add,
+    ):
       self.post({
-          'action': 'flush',
           'tag': 'buildset',
           'new_entries': {
               '0': [['chromium', 51]],
@@ -352,9 +357,8 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
     enqueue_tasks.assert_called_with(
         'backfill-tag-index', [(
             None,
-            self.task_url + 'tag:buildset-flush',
+            bulkproc.PATH_PREFIX + 'flush',
             utils.encode_to_json({
-                'action': 'flush',
                 'tag': 'buildset',
                 'new_entries': {'1': [['chromium', 52]]},
             }),
@@ -363,7 +367,6 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
 
   def test_flush_too_many(self):
     self.post({
-        'action': 'flush',
         'tag': 'buildset',
         'new_entries': {'0': [['chromium', i] for i in xrange(1, 2001)]},
     })
@@ -375,7 +378,6 @@ class TaskBackfillTagIndexTest(testing.AppengineTestCase):
 
     # Again, for code coverage.
     self.post({
-        'action': 'flush',
         'tag': 'buildset',
         'new_entries': {'0': [['chromium', 1]]},
     })

@@ -772,12 +772,11 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.call_api('backfill_tag_index', req, status=(200, 204))
     enqueue_task.assert_called_once_with(
         'backfill-tag-index',
-        '/internal/task/buildbucket/backfill-tag-index/tag:buildset-start',
+        '/internal/task/backfill-tag-index/start',
         utils.encode_to_json({
-            'action': 'start',
             'tag': 'buildset',
             'shards': 64,
-        })
+        }),
     )
 
   def test_backfill_tag_index_fails(self):

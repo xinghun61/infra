@@ -24,36 +24,49 @@ import config
 import model
 import search
 
+PATH_PREFIX = '/internal/task/backfill-tag-index/'
 
-class TaskBackfillTagIndex(webapp2.RequestHandler):
-  """Backfills tag indexes.
 
-  This task creates more tasks to process all builds. It uses backfill-tag-index
-  task queue, so we can pause/resume the processing.
+class TaskBase(webapp2.RequestHandler):
 
-  Payload must be a JSON object with a property "action" that has a value of
-  "start", "segment" or "flush". Other properties of the object depend on
-  "action" value, see a method of the same name, e.g. start.
+  def _recurse(self, jobs):
+    queue_name = self.request.headers['X-AppEngine-QueueName']
+    tasks = []
+    for name_fmt, path_suffix_fmt, payload in jobs:
+      name = name_fmt and name_fmt.format(**payload)
+      path_suffix = path_suffix_fmt.format(**payload)
+      tasks.append((
+          name,
+          posixpath.join(PATH_PREFIX, path_suffix),
+          utils.encode_to_json(payload),
+      ))
+      if len(tasks) > 90:
+        # enqueue_tasks accepts up to 100
+        enqueue_tasks(queue_name, tasks)
+        tasks = []
+    if tasks:  # pragma: no branch
+      enqueue_tasks(queue_name, tasks)
+
+  def post(self, **_rest):
+    if 'X-AppEngine-QueueName' not in self.request.headers:  # pragma: no cover
+      self.abort(403)
+    self.do(json.loads(self.request.body))
+
+  def do(self, payload):
+    raise NotImplementedError()
+
+
+class TaskStart(TaskBase):
+  """Splits build space into segments and enqueues TaskSegment for each.
+
+  Assumes that build creation rate was about the same forever.
+
+  Payload properties:
+    tag: tag to reindex. Required.
+    shards: number of workers to create. Must be positive. Required.
   """
 
-  # Maximum number of entries to collect in a single iteration.
-  # This helps avoiding hitting the limit of task size and caps the number of
-  # transactions we need to do in a flush task.
-  ENTRY_LIMIT = 500
-  # Maximum number of builds to process in a single iteration.
-  # Value 3000 is derived from experimentation on the dev server.
-  # It prevents "Exceeded soft private memory limit" error.
-  BUILD_LIMIT = 3000
-
-  def start(self, payload):
-    """Splits build space into segments and enqueues a task for each segment.
-
-    Assumes that build creation rate was about the same forever.
-
-    Payload properties:
-      tag: tag to reindex. Required.
-      shards: number of workers to create. Must be positive. Required.
-    """
+  def do(self, payload):
     tag = payload['tag']
     shards = payload['shards']
     assert isinstance(tag, basestring), tag
@@ -86,8 +99,9 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       seg_end = min(space_end, seg_start + seg_size)
       next_seg_start = seg_end
       tasks.append((
-          None, 'tag:{tag}-seg:{seg_index}-percent:0', {
-              'action': 'segment',
+          None,
+          'segment/seg:{seg_index}-percent:0',
+          {
               'tag': tag,
               'job_id': self.request.headers['X-AppEngine-TaskName'],
               'iteration': 0,
@@ -95,41 +109,55 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
               'seg_start': seg_start,
               'seg_end': seg_end,
               'started_ts': utils.datetime_to_timestamp(utils.utcnow()),
-          }
+          },
       ))
     self._recurse(tasks)
     logging.info('enqueued %d segment tasks for tag %s', len(tasks), tag)
 
-  def segment(self, payload):
-    """Processes a chunk of builds in a segment.
 
-    When finished, enqueues a flush task to persist new tag index entires.
-    If there are more builds in the segment to process, enqueues itself with a
-    new query cursor.
+class TaskSegment(TaskBase):
+  """Processes a chunk of builds in a segment.
 
-    Payload properties:
-      tag: tag to reindex. Required.
-      job_id: id of this backfill job. Required.
-      iteration: segment task iteration. Required.
-      seg_index: index of this shard. Required.
-      seg_start: id of the first build in this segment. Required.
-      seg_end: id of the first build in the next segment. Required.
-      start_from: start from this build towards seg_end. Defaults to seg_start.
-      started_ts: timestamp when we started to process this segment.
-    """
+  When finished, enqueues a flush task to persist new tag index entries.
+  If there are more builds in the segment to process, enqueues itself with a
+  new query cursor.
+
+  Payload properties:
+    tag: tag to reindex. Required.
+    job_id: id of this backfill job. Required.
+    iteration: segment task iteration. Required.
+    seg_index: index of this shard. Required.
+    seg_start: id of the first build in this segment. Required.
+    seg_end: id of the first build in the next segment. Required.
+    start_from: start from this build towards seg_end. Defaults to seg_start.
+    started_ts: timestamp when we started to process this segment.
+  """
+
+  # Maximum number of entries to collect in a single iteration.
+  # This helps avoiding hitting the limit of task size and caps the number of
+  # transactions we need to do in a flush task.
+  ENTRY_LIMIT = 500
+  # Maximum number of builds to process in a single iteration.
+  # Value 3000 is derived from experimentation on the dev server.
+  # It prevents "Exceeded soft private memory limit" error.
+  BUILD_LIMIT = 3000
+
+  def do(self, payload):
     attempt = int(self.request.headers.get('X-AppEngine-TaskExecutionCount', 0))
 
-    logging.info('range %d-%d', payload['seg_start'], payload['seg_end'])
-    if 'start_from' in payload:
-      logging.info('starting from %s', payload['start_from'])
+    seg_start = payload['seg_start']
+    seg_end = payload['seg_end']
+    start_from = payload.get('start_from', seg_start)
+
+    logging.info('range %d-%d', seg_start, seg_end)
+    logging.info('starting from %s', start_from)
 
     if attempt > 0:
       logging.warning('attempt %d', attempt)
 
-    start_from = payload.get('start_from', payload['seg_start'])
     q = model.Build.query(
         model.Build.key >= ndb.Key(model.Build, start_from),
-        model.Build.key < ndb.Key(model.Build, payload['seg_end'])
+        model.Build.key < ndb.Key(model.Build, seg_end)
     )
     iterator = q.iter()
 
@@ -158,11 +186,10 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
           entry_count, len(new_entries)
       )
       flush_payload = {
-          'action': 'flush',
           'tag': payload['tag'],
           'new_entries': new_entries,
       }
-      self._recurse([(None, 'tag:{tag}-flush', flush_payload)])
+      self._recurse([(None, 'flush', flush_payload)])
     if iterator.has_next():
       logging.info('enqueuing a task for the next iteration...')
 
@@ -170,13 +197,13 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       p['iteration'] += 1
       p['start_from'] = iterator.next().key.id()
 
-      seg_len = payload['seg_end'] - payload['seg_start']
-      percent = 100 * (p['start_from'] - payload['seg_start']) / seg_len
+      seg_len = seg_end - seg_start
+      percent = 100 * (p['start_from'] - seg_start) / seg_len
 
       try:
         self._recurse([(
             '{job_id}-{seg_index}-{iteration}',
-            'tag:{tag}-seg:{seg_index}-percent:%d' % percent,
+            'segment/seg:{seg_index}-percent:%d' % percent,
             p,
         )])
       except taskqueue.TaskAlreadyExistsError:  # pragma: no cover
@@ -185,34 +212,38 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
 
     started_time = utils.timestamp_to_datetime(payload['started_ts'])
     logging.info(
-        'segment %d is done in %s', payload['seg_index'],
-        utils.utcnow() - started_time
+        'segment %d is done in %s',
+        payload['seg_index'],
+        utils.utcnow() - started_time,
     )
 
-  def flush(self, payload):
-    """Saves new tag index entries.
 
-    Payload properties:
-      tag: tag to reindex. Required.
-      new_entries: a dict {tag_value: [[bucket, id}]]} of new index entries to
-        add. Required.
-    """
+class TaskFlushTagIndexEntries(TaskBase):
+  """Saves new tag index entries.
+
+  Payload properties:
+    tag: tag to reindex. Required.
+    new_entries: a dict {tag_value: [[bucket, id}]]} of new index entries to
+      add. Required.
+  """
+
+  def do(self, payload):
+    new_entries = payload['new_entries']
     logging.info(
         'flushing %d tag entries in %d TagIndex entities',
-        sum(len(es) for es in payload['new_entries'].itervalues()),
-        len(payload['new_entries'])
+        sum(len(es) for es in new_entries.itervalues()), len(new_entries)
     )
 
     futs = [
         self._add_index_entries_async(
             payload['tag'] + ':' + tag_value, entries
-        ) for tag_value, entries in payload['new_entries'].iteritems()
+        ) for tag_value, entries in new_entries.iteritems()
     ]
     ndb.Future.wait_all(futs)
 
     retry_entries = {}
     updated = 0
-    for (tag, entries), f in zip(payload['new_entries'].iteritems(), futs):
+    for (tag, entries), f in zip(new_entries.iteritems(), futs):
       ex = f.get_exception()
       if ex:
         logging.warning('failed to update TagIndex for %r: %s', tag, ex)
@@ -227,7 +258,7 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
       )
       p = payload.copy()
       p['new_entries'] = retry_entries
-      self._recurse([(None, 'tag:{tag}-flush', p)])
+      self._recurse([(None, 'flush', p)])
 
   @staticmethod
   @ndb.transactional_tasklet
@@ -260,37 +291,6 @@ class TaskBackfillTagIndex(webapp2.RequestHandler):
     yield idx.put_async()
     raise ndb.Return(True)
 
-  def post(self, **_rest):
-    payload = json.loads(self.request.body)
-    action = payload.get('action')
-    if action == 'start':
-      self.start(payload)
-    elif action == 'segment':
-      self.segment(payload)
-    elif action == 'flush':
-      self.flush(payload)
-    else:  # pragma: no cover
-      self.abort(400, 'invalid action: %r' % action)
-
-  def _recurse(self, jobs):
-    queue_name = self.request.headers['X-AppEngine-QueueName']
-    tasks = []
-    for name_fmt, path_suffix_fmt, payload in jobs:
-      name = name_fmt and name_fmt.format(**payload)
-      path_suffix = path_suffix_fmt.format(**payload)
-      assert '/' not in path_suffix
-      tasks.append((
-          name,
-          posixpath.join(posixpath.dirname(self.request.path), path_suffix),
-          utils.encode_to_json(payload)
-      ))
-      if len(tasks) > 90:
-        # enqueue_tasks accepts up to 100
-        enqueue_tasks(queue_name, tasks)
-        tasks = []
-    if tasks:  # pragma: no branch
-      enqueue_tasks(queue_name, tasks)
-
 
 # mocked in tests.
 def enqueue_tasks(queue_name, tasks):  # pragma: no cover
@@ -307,8 +307,7 @@ def enqueue_tasks(queue_name, tasks):  # pragma: no cover
 def get_routes():  # pragma: no cover
   """Returns webapp2 routes provided by this module."""
   return [
-      webapp2.Route(
-          r'/internal/task/buildbucket/backfill-tag-index/<rest>',
-          TaskBackfillTagIndex,
-      ),
+      webapp2.Route(PATH_PREFIX + r'start', TaskStart),
+      webapp2.Route(PATH_PREFIX + r'segment/<rest>', TaskSegment),
+      webapp2.Route(PATH_PREFIX + r'flush', TaskFlushTagIndexEntries),
   ]
