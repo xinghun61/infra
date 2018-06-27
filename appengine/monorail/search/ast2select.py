@@ -478,6 +478,8 @@ def _ProcessApprovalFieldCond(cond, alias, user_alias, snapshot_mode):
     op = cond.op
     if op == ast_pb2.QueryOp.NE:
       op = ast_pb2.QueryOp.EQ  # Negation is done in WHERE clause.
+    elif op == ast_pb2.QueryOp.NOT_TEXT_HAS:
+      op = ast_pb2.QueryOp.TEXT_HAS
 
     if (not cond.key_suffix) or cond.key_suffix == query2ast.STATUS_SUFFIX:
       tbl_str = 'Issue2ApprovalValue'
@@ -507,8 +509,8 @@ def _ProcessApprovalFieldCond(cond, alias, user_alias, snapshot_mode):
               user_alias=user_alias, email_cond=email_cond_str),
           email_cond_args))
 
-        cond_str = '{alias}.setter_id = {user_alias}.user_id'.format(
-            alias=alias, user_alias=user_alias)
+        cond_str = '{alias}.{col_name} = {user_alias}.user_id'.format(
+            alias=alias, col_name=col_name, user_alias=user_alias)
         cond_args = []
     if cond_str or cond_args:
       join_str = join_str_tmpl.format(tbl_name=tbl_str, alias=alias)

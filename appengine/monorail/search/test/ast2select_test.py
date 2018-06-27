@@ -1043,7 +1043,7 @@ class AST2SelectTest(unittest.TestCase):
         field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
     int_time = int(time.mktime(datetime.datetime(2016, 10, 5).timetuple()))
     cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [approval_fd], [], [int_time],
+        ast_pb2.QueryOp.NOT_TEXT_HAS, [approval_fd], [], [int_time],
         key_suffix=query2ast.SET_ON_SUFFIX)
     left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
         cond, 'Cond1', 'Spare1', False)
@@ -1053,7 +1053,7 @@ class AST2SelectTest(unittest.TestCase):
           [1, int_time])],
         left_joins)
     self.assertEqual(
-        [('Cond1.approval_id IS NOT NULL', [])],
+        [('Cond1.approval_id IS NULL', [])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 

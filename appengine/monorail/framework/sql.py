@@ -767,6 +767,14 @@ SHORTHAND = {
                    r'( (AND|OR) )?'
                    r')+'
                    r'\)?' % COMPARE_OP_PAT),
+    'approval_cond': (r'\(?'
+                      r'('
+                      r'(LOWER\(Cond\d+\.status\) IS NULL OR )?'
+                      r'LOWER\(Cond\d+\.status\) '
+                      r'(%s %%s|IN \(%%s(, ?%%s)*\))'
+                      r'( (AND|OR) )?'
+                      r')+'
+                      r'\)?' % COMPARE_OP_PAT),
     }
 
 
@@ -847,6 +855,9 @@ JOIN_RE_LIST = [
         r'^\({table} AS {table} JOIN IssuePhaseDef AS {table} '
         r'ON {tab_col} = {tab_col} AND {phase_cond}\) '
         r'ON Issue.id = {tab_col}?'),
+    _MakeRE(
+        r'^Issue2ApprovalValue AS {table} ON {tab_col} = {tab_col} '
+        r'AND {tab_col} = {placeholder} AND {approval_cond}'),
     _MakeRE(
         r'^{table} AS {table} ON {tab_col} = {tab_col} '
         r'LEFT JOIN {table} AS {table} ON {tab_col} = {tab_col}'),
