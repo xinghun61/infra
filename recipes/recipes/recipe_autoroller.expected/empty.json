@@ -15,27 +15,29 @@
   },
   {
     "cmd": [
-      "cipd",
-      "ensure",
-      "-root",
-      "[TMP_BASE]/recipes_tmp_1",
-      "-ensure-file",
-      "infra/recipes-py latest",
-      "-json-output",
-      "/path/to/tmp/json"
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/recipe_engine"
     ],
-    "name": "ensure_installed",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/recipes-py\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
+    "infra_step": true,
+    "name": "ensure recipe_dir gone"
+  },
+  {
+    "cmd": [
+      "git",
+      "clone",
+      "--depth",
+      "1",
+      "https://chromium.googlesource.com/infra/luci/recipes-py",
+      "[START_DIR]/recipe_engine"
+    ],
+    "cwd": "None",
+    "infra_step": true,
+    "name": "clone recipe engine"
   },
   {
     "cmd": [],
@@ -236,7 +238,7 @@
     "cmd": [
       "vpython",
       "-u",
-      "[TMP_BASE]/recipes_tmp_1/recipes.py",
+      "[START_DIR]/recipe_engine/recipes.py",
       "--package",
       "[CACHE]/recipe_autoroller/build/infra/config/recipes.cfg",
       "autoroll",
@@ -256,19 +258,6 @@
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
     ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[TMP_BASE]/recipes_tmp_1"
-    ],
-    "infra_step": true,
-    "name": "rmtree [TMP_BASE]/recipes_tmp_1"
   },
   {
     "name": "$result",

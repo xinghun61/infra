@@ -1,4 +1,4 @@
-# Copyright 2016 The Chromium Authors. All rights reserved.
+# Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -130,34 +130,34 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     projects are not affected.
     """
     project_data = self.m.luci_config.get_projects()
+    recipes_dir = self.m.path['start_dir'].join('recipe_engine')
+    self.m.file.rmtree('ensure recipe_dir gone', recipes_dir)
 
-    with self.m.tempfile.temp_dir('recipes') as recipes_dir:
-      self.m.cipd.ensure(recipes_dir, {
-          'infra/recipes-py': 'latest',
-      })
+    self.m.git('clone', '--depth', '1',
+               'https://chromium.googlesource.com/infra/luci/recipes-py',
+               recipes_dir, name='clone recipe engine')
 
-      results = []
-      with recipe_api.defer_results():
-        for project in projects:
-          with self.m.step.nest(str(project)):
-            results.append(self._roll_project(
-                project_data[project], recipes_dir))
+    results = []
+    with recipe_api.defer_results():
+      for project in projects:
+        with self.m.step.nest(str(project)):
+          results.append(self._roll_project(project_data[project], recipes_dir))
 
-      # We need to unwrap |DeferredResult|s.
-      results = [r.get_result() for r in results]
+    # We need to unwrap |DeferredResult|s.
+    results = [r.get_result() for r in results]
 
-      # Failures to roll are OK as long as at least one of the repos is moving
-      # forward. For example, with repos with following dependencies:
-      #
-      #   A    <- B
-      #   A, B <- C
-      #
-      # New commit in A repo will need to get rolled into B first. However,
-      # it'd also appear as a candidate for C roll, leading to a failure there.
-      if ROLL_FAILURE in results and ROLL_SUCCESS not in results:
-        self.m.python.failing_step(
-            'roll result',
-            'manual intervention needed: automated roll attempt failed')
+    # Failures to roll are OK as long as at least one of the repos is moving
+    # forward. For example, with repos with following dependencies:
+    #
+    #   A    <- B
+    #   A, B <- C
+    #
+    # New commit in A repo will need to get rolled into B first. However,
+    # it'd also appear as a candidate for C roll, leading to a failure there.
+    if ROLL_FAILURE in results and ROLL_SUCCESS not in results:
+      self.m.python.failing_step(
+          'roll result',
+          'manual intervention needed: automated roll attempt failed')
 
   def _prepare_checkout(self, project_data):
     # Keep persistent checkout. Speeds up the roller for large repos
