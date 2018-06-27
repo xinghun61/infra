@@ -668,8 +668,14 @@ def _ProcessHotlistCond(cond, alias, _spare_alias, snapshot_mode):
 def _ProcessPhaseCond(cond, alias, phase_alias, _snapshot_mode):
   """Convert gate:<phase_name> to SQL."""
 
+  op = cond.op
+  if cond.op == ast_pb2.QueryOp.NE:
+    op = ast_pb2.QueryOp.EQ
+  elif cond.op == ast_pb2.QueryOp.NOT_TEXT_HAS:
+    op = ast_pb2.QueryOp.TEXT_HAS
+
   cond_str, cond_args = _Compare(
-      phase_alias, cond.op, tracker_pb2.FieldTypes.STR_TYPE,
+      phase_alias, op, tracker_pb2.FieldTypes.STR_TYPE,
       'name', cond.str_values)
   left_joins = [(
       '(Issue2ApprovalValue AS {alias} JOIN IssuePhaseDef AS {phase_alias} '

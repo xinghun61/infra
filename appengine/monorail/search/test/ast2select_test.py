@@ -1474,7 +1474,7 @@ class AST2SelectTest(unittest.TestCase):
     self.assertEqual([('Cond1.name IS NULL', [])], where)
     self.assertEqual([], unsupported)
 
-  def testProcessPhaseCond_HasGate(self):
+  def testProcessPhaseCond_HasGateEQ(self):
     fd = BUILTIN_ISSUE_FIELDS['gate']
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.EQ, [fd], ['canary', 'stable'], [])
@@ -1487,6 +1487,22 @@ class AST2SelectTest(unittest.TestCase):
           'ON Issue.id = Cond1.issue_id', ['canary', 'stable'])],
         left_joins)
     self.assertEqual([('Phase1.name IS NOT NULL', [])], where)
+    self.assertEqual([], unsupported)
+
+  def testProcessPhaseCond_NoGateTEXT(self):
+    fd = BUILTIN_ISSUE_FIELDS['gate']
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.NOT_TEXT_HAS, [fd], ['canary', 'stable'], [])
+    left_joins, where, unsupported = ast2select._ProcessPhaseCond(
+        cond, 'Cond1', 'Phase1', False)
+    self.assertEqual(
+        [('(Issue2ApprovalValue AS Cond1 JOIN IssuePhaseDef AS Phase1 '
+          'ON Cond1.phase_id = Phase1.id AND '
+          '(LOWER(Phase1.name) LIKE %s '
+          'OR LOWER(Phase1.name) LIKE %s)) '
+          'ON Issue.id = Cond1.issue_id', ['%canary%', '%stable%'])],
+        left_joins)
+    self.assertEqual([('Phase1.name IS NULL', [])], where)
     self.assertEqual([], unsupported)
 
   def testCompare_IntTypes(self):
