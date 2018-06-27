@@ -2,9 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Bulk processing of Build entities."""
+"""Build bulk processing of builds, a miniature map-reduce."""
 
-import collections
 import datetime
 import json
 import logging
@@ -15,16 +14,64 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 import webapp2
 
+from components import decorators
 from components import utils
 
 import webapp2
 
-from v2 import api as v2_api
-import config
 import model
-import search
 
-PATH_PREFIX = '/internal/task/backfill-tag-index/'
+QUEUE_NAME = 'bulkproc'
+PATH_PREFIX = '/internal/task/bulkproc/'
+SHARD_COUNT = 64
+
+# See register().
+PROCESSOR_REGISTRY = {}
+
+
+def register(name, processor, keys_only=False):
+  """Registers a processor.
+
+  Args:
+    name: identifies the processor.
+    processor: functiton (builds, payload),
+      where builds is an iterable of builds and payload is the payload specified
+      in start(). Builds not read from the iterable will be rescheduled for
+      processing in a separate job.
+      processor is eventually executed on all builds in the datastore.
+    keys_only: whether the builds passed to processor are only a ndb key, not
+      Build entity.
+  """
+
+  assert name not in PROCESSOR_REGISTRY
+  PROCESSOR_REGISTRY[name] = {
+      'func': processor,
+      'keys_only': keys_only,
+  }
+
+
+def start(name, payload):  # pragma: no cover
+  """Starts a processor by name. See register docstring for params.
+
+  It should be called by a module that calls register().
+  """
+  assert name in PROCESSOR_REGISTRY
+  task = (
+      None,
+      PATH_PREFIX + 'start',
+      utils.encode_to_json({
+          'shards': SHARD_COUNT,
+          'proc': {
+              'name': name,
+              'payload': payload,
+          },
+      }),
+  )
+  enqueue_tasks(QUEUE_NAME, [task])
+
+
+def _get_proc(name):  # pragma: no cover
+  return PROCESSOR_REGISTRY[name]
 
 
 class TaskBase(webapp2.RequestHandler):
@@ -62,17 +109,15 @@ class TaskStart(TaskBase):
   Assumes that build creation rate was about the same forever.
 
   Payload properties:
-    tag: tag to reindex. Required.
     shards: number of workers to create. Must be positive. Required.
+    proc: processor to run, see TaskSegment docstring.
   """
 
   def do(self, payload):
-    tag = payload['tag']
     shards = payload['shards']
-    assert isinstance(tag, basestring), tag
-    assert tag
     assert isinstance(shards, int)
     assert shards > 0
+    proc = payload['proc']
 
     first, = model.Build.query().fetch(1, keys_only=True) or [None]
     if not first:  # pragma: no cover
@@ -102,28 +147,26 @@ class TaskStart(TaskBase):
           None,
           'segment/seg:{seg_index}-percent:0',
           {
-              'tag': tag,
               'job_id': self.request.headers['X-AppEngine-TaskName'],
               'iteration': 0,
               'seg_index': len(tasks),
               'seg_start': seg_start,
               'seg_end': seg_end,
               'started_ts': utils.datetime_to_timestamp(utils.utcnow()),
+              'proc': proc,
           },
       ))
     self._recurse(tasks)
-    logging.info('enqueued %d segment tasks for tag %s', len(tasks), tag)
+    logging.info('enqueued %d segment tasks with proc %r', len(tasks), proc)
 
 
 class TaskSegment(TaskBase):
   """Processes a chunk of builds in a segment.
 
-  When finished, enqueues a flush task to persist new tag index entries.
-  If there are more builds in the segment to process, enqueues itself with a
+  If didn't finish processing entire segment, enqueues itself with a
   new query cursor.
 
   Payload properties:
-    tag: tag to reindex. Required.
     job_id: id of this backfill job. Required.
     iteration: segment task iteration. Required.
     seg_index: index of this shard. Required.
@@ -131,12 +174,11 @@ class TaskSegment(TaskBase):
     seg_end: id of the first build in the next segment. Required.
     start_from: start from this build towards seg_end. Defaults to seg_start.
     started_ts: timestamp when we started to process this segment.
+    proc: processor to run on the segment. A JSON object with two properties:
+      name: name of the processor, see register()
+      payload: processor payload, see register() and start().
   """
 
-  # Maximum number of entries to collect in a single iteration.
-  # This helps avoiding hitting the limit of task size and caps the number of
-  # transactions we need to do in a flush task.
-  ENTRY_LIMIT = 500
   # Maximum number of builds to process in a single iteration.
   # Value 3000 is derived from experimentation on the dev server.
   # It prevents "Exceeded soft private memory limit" error.
@@ -144,10 +186,11 @@ class TaskSegment(TaskBase):
 
   def do(self, payload):
     attempt = int(self.request.headers.get('X-AppEngine-TaskExecutionCount', 0))
-
     seg_start = payload['seg_start']
     seg_end = payload['seg_end']
     start_from = payload.get('start_from', seg_start)
+    proc = payload['proc']
+    proc_def = _get_proc(proc['name'])
 
     logging.info('range %d-%d', seg_start, seg_end)
     logging.info('starting from %s', start_from)
@@ -159,43 +202,30 @@ class TaskSegment(TaskBase):
         model.Build.key >= ndb.Key(model.Build, start_from),
         model.Build.key < ndb.Key(model.Build, seg_end)
     )
-    iterator = q.iter()
+    iterator = q.iter(keys_only=proc_def['keys_only'])
 
-    entry_count = 0
-    build_count = 0
-    new_entries = collections.defaultdict(list)
+    build_count = [0]
 
-    # Datastore query timeout is 60 sec. Limit it to 50 sec.
-    deadline = utils.utcnow() + datetime.timedelta(seconds=50)
-    while (utils.utcnow() < deadline and entry_count < self.ENTRY_LIMIT and
-           build_count < self.BUILD_LIMIT and iterator.has_next()):
-      b = iterator.next()
-      build_count += 1
-      for t in b.tags:
-        k, v = t.split(':', 1)
-        if k == payload['tag']:
-          new_entries[v].append([b.bucket, b.key.id()])
-          entry_count += 1
-    logging.info(
-        'collected %d entries from %d builds', entry_count, build_count
-    )
+    def iterate_segment():
+      # Datastore query timeout is 60 sec. Limit it to 50 sec.
+      deadline = utils.utcnow() + datetime.timedelta(seconds=50)
+      while (utils.utcnow() < deadline and build_count[0] < self.BUILD_LIMIT and
+             iterator.has_next()):
+        b = iterator.next()
+        yield b
+        build_count[0] += 1
 
-    if new_entries:  # pragma: no branch
-      logging.info(
-          'enqueuing a task to flush %d tag entries in %d TagIndex entities...',
-          entry_count, len(new_entries)
-      )
-      flush_payload = {
-          'tag': payload['tag'],
-          'new_entries': new_entries,
-      }
-      self._recurse([(None, 'flush', flush_payload)])
+    proc_def['func'](iterate_segment(), proc['payload'])
+    logging.info('processed %d builds', build_count[0])
+
     if iterator.has_next():
       logging.info('enqueuing a task for the next iteration...')
 
       p = payload.copy()
       p['iteration'] += 1
-      p['start_from'] = iterator.next().key.id()
+      p['start_from'] = (
+          iterator.next() if proc_def['keys_only'] else iterator.next().key.id()
+      )
 
       seg_len = seg_end - seg_start
       percent = 100 * (p['start_from'] - seg_start) / seg_len
@@ -218,90 +248,17 @@ class TaskSegment(TaskBase):
     )
 
 
-class TaskFlushTagIndexEntries(TaskBase):
-  """Saves new tag index entries.
-
-  Payload properties:
-    tag: tag to reindex. Required.
-    new_entries: a dict {tag_value: [[bucket, id}]]} of new index entries to
-      add. Required.
-  """
-
-  def do(self, payload):
-    new_entries = payload['new_entries']
-    logging.info(
-        'flushing %d tag entries in %d TagIndex entities',
-        sum(len(es) for es in new_entries.itervalues()), len(new_entries)
-    )
-
-    futs = [
-        self._add_index_entries_async(
-            payload['tag'] + ':' + tag_value, entries
-        ) for tag_value, entries in new_entries.iteritems()
-    ]
-    ndb.Future.wait_all(futs)
-
-    retry_entries = {}
-    updated = 0
-    for (tag, entries), f in zip(new_entries.iteritems(), futs):
-      ex = f.get_exception()
-      if ex:
-        logging.warning('failed to update TagIndex for %r: %s', tag, ex)
-        retry_entries[tag] = entries
-      elif f.get_result():
-        updated += 1
-    logging.info('updated %d TagIndex entities', updated)
-    if retry_entries:
-      logging.warning(
-          'failed to update %d TagIndex entities, retrying...',
-          len(retry_entries)
-      )
-      p = payload.copy()
-      p['new_entries'] = retry_entries
-      self._recurse([(None, 'flush', p)])
-
-  @staticmethod
-  @ndb.transactional_tasklet
-  def _add_index_entries_async(tag, entries):
-    idx_key = search.TagIndex.random_shard_key(tag)
-    idx = (yield idx_key.get_async()) or search.TagIndex(key=idx_key)
-    if idx.permanently_incomplete:
-      # no point in adding entries to an incomplete index.
-      raise ndb.Return(False)
-    existing = {e.build_id for e in idx.entries}
-    added = False
-    for bucket, build_id in entries:
-      if build_id not in existing:
-        if len(idx.entries) >= search.TagIndex.MAX_ENTRY_COUNT:
-          logging.warning((
-              'refusing to store more than %d entries in TagIndex(%s); '
-              'marking as incomplete.'
-          ), search.TagIndex.MAX_ENTRY_COUNT, idx_key.id())
-          idx.permanently_incomplete = True
-          idx.entries = []
-          yield idx.put_async()
-          raise ndb.Return(True)
-
-        idx.entries.append(
-            search.TagIndexEntry(bucket=bucket, build_id=build_id)
-        )
-        added = True
-    if not added:
-      raise ndb.Return(False)
-    yield idx.put_async()
-    raise ndb.Return(True)
-
-
 # mocked in tests.
 def enqueue_tasks(queue_name, tasks):  # pragma: no cover
   """Adds tasks to the queue.
 
   tasks must be a list of tuples (name, url, payload).
   """
-  taskqueue.Queue(queue_name).add([
-      taskqueue.Task(name=name, url=url, payload=payload)
-      for name, url, payload in tasks
-  ])
+  if tasks:
+    taskqueue.Queue(queue_name).add([
+        taskqueue.Task(name=name, url=url, payload=payload)
+        for name, url, payload in tasks
+    ])
 
 
 def get_routes():  # pragma: no cover
@@ -309,5 +266,4 @@ def get_routes():  # pragma: no cover
   return [
       webapp2.Route(PATH_PREFIX + r'start', TaskStart),
       webapp2.Route(PATH_PREFIX + r'segment/<rest>', TaskSegment),
-      webapp2.Route(PATH_PREFIX + r'flush', TaskFlushTagIndexEntries),
   ]

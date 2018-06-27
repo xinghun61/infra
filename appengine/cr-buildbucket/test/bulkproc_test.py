@@ -4,6 +4,7 @@
 
 import contextlib
 import datetime
+import itertools
 import mock
 
 from google.appengine.ext import ndb
@@ -30,12 +31,11 @@ class TestBase(testing.AppengineTestCase):
     super(TestBase, self).setUp()
     self.now = datetime.datetime(2017, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
-    self.patch('search.TagIndex.random_shard_index', return_value=0)
 
   def post(self, payload, headers=None):
     assert self.path_suffix
     headers = headers or {}
-    headers['X-AppEngine-QueueName'] = 'backfill-tag-index'
+    headers['X-AppEngine-QueueName'] = bulkproc.QUEUE_NAME
     headers['X-AppEngine-TaskName'] = 'taskname'
     task_url = bulkproc.PATH_PREFIX + self.path_suffix
     return self.test_app.post(
@@ -46,7 +46,7 @@ class TestBase(testing.AppengineTestCase):
 class StartTest(TestBase):
   path_suffix = 'start'
 
-  @mock.patch('bulkproc.enqueue_tasks')
+  @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_start(self, enqueue_tasks):
     ndb.put_multi([
         model.Build(
@@ -55,67 +55,71 @@ class StartTest(TestBase):
             create_time=self.now - datetime.timedelta(minutes=i)
         ) for i in xrange(1, 11)
     ])
-    self.post({'tag': 'buildset', 'shards': 3})
+    proc = {'name': 'foo', 'payload': 'bar'}
+    self.post({
+        'shards': 3,
+        'proc': proc,
+    })
 
     seg_path_prefix = bulkproc.PATH_PREFIX + 'segment/'
     enqueue_tasks.assert_called_with(
-        'backfill-tag-index', [
+        'bulkproc', [
             (
                 None,
                 seg_path_prefix + 'seg:0-percent:0',
                 utils.encode_to_json({
-                    'tag': 'buildset',
                     'job_id': 'taskname',
                     'iteration': 0,
                     'seg_index': 0,
                     'seg_start': 1,
                     'seg_end': 4,
                     'started_ts': utils.datetime_to_timestamp(self.now),
+                    'proc': proc,
                 }),
             ),
             (
                 None,
                 seg_path_prefix + 'seg:1-percent:0',
                 utils.encode_to_json({
-                    'tag': 'buildset',
                     'job_id': 'taskname',
                     'iteration': 0,
                     'seg_index': 1,
                     'seg_start': 4,
                     'seg_end': 7,
                     'started_ts': utils.datetime_to_timestamp(self.now),
+                    'proc': proc,
                 }),
             ),
             (
                 None,
                 seg_path_prefix + 'seg:2-percent:0',
                 utils.encode_to_json({
-                    'tag': 'buildset',
                     'job_id': 'taskname',
                     'iteration': 0,
                     'seg_index': 2,
                     'seg_start': 7,
                     'seg_end': 10,
                     'started_ts': utils.datetime_to_timestamp(self.now),
+                    'proc': proc,
                 }),
             ),
             (
                 None,
                 seg_path_prefix + 'seg:3-percent:0',
                 utils.encode_to_json({
-                    'tag': 'buildset',
                     'job_id': 'taskname',
                     'iteration': 0,
                     'seg_index': 3,
                     'seg_start': 10,
                     'seg_end': 11,
                     'started_ts': utils.datetime_to_timestamp(self.now),
+                    'proc': proc,
                 }),
             ),
         ]
     )
 
-  @mock.patch('bulkproc.enqueue_tasks')
+  @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_start_many_shards(self, enqueue_tasks):
     ndb.put_multi([
         model.Build(
@@ -125,8 +129,8 @@ class StartTest(TestBase):
         ) for i in xrange(1, 150)
     ])
     self.post({
-        'tag': 'buildset',
         'shards': 100,
+        'proc': {'name': 'foo', 'payload': 'bar'},
     })
 
     self.assertEqual(enqueue_tasks.call_count, 2)
@@ -135,16 +139,15 @@ class StartTest(TestBase):
 class SegmentTest(TestBase):
   path_suffix = 'segment/rest'
 
-  @contextlib.contextmanager
-  def entry_limit(self, limit):
-    orig_entry_limit = bulkproc.TaskSegment.ENTRY_LIMIT
-    bulkproc.TaskSegment.ENTRY_LIMIT = limit
-    try:
-      yield
-    finally:
-      bulkproc.TaskSegment.ENTRY_LIMIT = orig_entry_limit
+  def setUp(self):
+    super(SegmentTest, self).setUp()
+    self.proc = {
+        'func': lambda builds, _: list(builds),  # process all
+        'keys_only': False,
+    }
+    self.patch('bulkproc._get_proc', return_value=self.proc)
 
-  @mock.patch('bulkproc.enqueue_tasks')
+  @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_segment_partial(self, enqueue_tasks):
     ndb.put_multi([
         model.Build(
@@ -155,40 +158,25 @@ class SegmentTest(TestBase):
         ) for i in xrange(50, 60)
     ])
 
-    with self.entry_limit(5):
-      self.post({
-          'tag': 'buildset',
-          'job_id': 'jobid',
-          'iteration': 0,
-          'seg_index': 0,
-          'seg_start': 50,
-          'seg_end': 60,
-          'started_ts': utils.datetime_to_timestamp(self.now),
-      })
+    def process(builds, payload):
+      # process 5 builds
+      page = list(itertools.islice(builds, 5))
+      self.assertEqual([b.key.id() for b in page], range(50, 55))
+      self.assertEqual(payload, 'bar')
 
-    enqueue_tasks.assert_any_call(
-        'backfill-tag-index', [(
-            None,
-            bulkproc.PATH_PREFIX + 'flush',
-            utils.encode_to_json({
-                'tag': 'buildset',
-                'new_entries': {
-                    '0': [
-                        ['chromium', 51],
-                        ['chromium', 54],
-                    ],
-                    '1': [['chromium', 52]],
-                    '2': [
-                        ['chromium', 50],
-                        ['chromium', 53],
-                    ],
-                },
-            }),
-        )]
-    )
+    self.proc['func'] = process
+
+    self.post({
+        'job_id': 'jobid',
+        'iteration': 0,
+        'seg_index': 0,
+        'seg_start': 50,
+        'seg_end': 60,
+        'started_ts': utils.datetime_to_timestamp(self.now),
+        'proc': {'name': 'foo', 'payload': 'bar'},
+    })
 
     expected_next_payload = {
-        'tag': 'buildset',
         'job_id': 'jobid',
         'iteration': 1,
         'seg_index': 0,
@@ -196,10 +184,10 @@ class SegmentTest(TestBase):
         'seg_end': 60,
         'start_from': 55,
         'started_ts': utils.datetime_to_timestamp(self.now),
+        'proc': {'name': 'foo', 'payload': 'bar'},
     }
-    print enqueue_tasks.call_args_list
-    enqueue_tasks.assert_any_call(
-        'backfill-tag-index',
+    enqueue_tasks.assert_called_with(
+        'bulkproc',
         [(
             'jobid-0-1',
             bulkproc.PATH_PREFIX + 'segment/seg:0-percent:50',
@@ -207,177 +195,63 @@ class SegmentTest(TestBase):
         )],
     )
 
-    self.post(expected_next_payload)
-
-  @mock.patch('bulkproc.enqueue_tasks')
+  @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_segment_full(self, enqueue_tasks):
     ndb.put_multi([
         model.Build(id=i, bucket='chromium', tags=['buildset:%d' % (i % 3)])
         for i in xrange(50, 52)
     ])
     self.post({
-        'tag': 'buildset',
+        'job_id': 'jobid',
+        'iteration': 0,
         'seg_index': 0,
         'seg_start': 50,
         'seg_end': 60,
         'started_ts': utils.datetime_to_timestamp(self.now),
+        'proc': {'name': 'foo', 'payload': 'bar'},
     })
 
-    self.assertEqual(enqueue_tasks.call_count, 1)
-    enqueue_tasks.assert_called_with(
-        'backfill-tag-index',
-        [(
-            None,
-            bulkproc.PATH_PREFIX + 'flush',
-            utils.encode_to_json({
-                'tag': 'buildset',
-                'new_entries': {
-                    '0': [['chromium', 51]],
-                    '2': [['chromium', 50]],
-                },
-            }),
-        )],
-    )
+    self.assertEqual(enqueue_tasks.call_count, 0)
 
-  @mock.patch('bulkproc.enqueue_tasks')
+  @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_segment_attempt_2(self, enqueue_tasks):
     ndb.put_multi([
         model.Build(id=i, bucket='chromium', tags=['buildset:%d' % (i % 3)])
         for i in xrange(50, 60)
     ])
 
-    with self.entry_limit(1):
-      headers = {
-          'X-AppEngine-TaskExecutionCount': '1',
-      }
-      self.post(
-          {
-              'tag': 'buildset',
-              'job_id': 'jobid',
-              'iteration': 0,
-              'seg_index': 0,
-              'seg_start': 50,
-              'seg_end': 60,
-              'started_ts': utils.datetime_to_timestamp(self.now),
-          },
-          headers=headers,
-      )
+    # process 5 builds
+    self.proc['func'] = lambda builds, _: list(itertools.islice(builds, 5))
 
-    enqueue_tasks.assert_any_call(
-        'backfill-tag-index', [(
+    self.post(
+        {
+            'job_id': 'jobid',
+            'iteration': 0,
+            'seg_index': 0,
+            'seg_start': 50,
+            'seg_end': 60,
+            'started_ts': utils.datetime_to_timestamp(self.now),
+            'proc': {'name': 'foo', 'payload': 'bar'},
+        },
+        headers={
+            'X-AppEngine-TaskExecutionCount': '1',
+        },
+    )
+
+    enqueue_tasks.assert_called_with(
+        'bulkproc',
+        [(
             'jobid-0-1',
-            bulkproc.PATH_PREFIX + 'segment/seg:0-percent:10',
+            bulkproc.PATH_PREFIX + 'segment/seg:0-percent:50',
             utils.encode_to_json({
-                'tag': 'buildset',
                 'job_id': 'jobid',
                 'iteration': 1,
                 'seg_index': 0,
                 'seg_start': 50,
                 'seg_end': 60,
-                'start_from': 51,
+                'start_from': 55,
                 'started_ts': utils.datetime_to_timestamp(self.now),
+                'proc': {'name': 'foo', 'payload': 'bar'},
             }),
-        )]
+        )],
     )
-
-
-class FlushTest(TestBase):
-  path_suffix = 'flush'
-
-  def test_flush(self):
-    search.TagIndex(
-        id='buildset:0',
-        entries=[
-            search.TagIndexEntry(bucket='chormium', build_id=51),
-        ]
-    ).put()
-    search.TagIndex(
-        id='buildset:2',
-        entries=[
-            search.TagIndexEntry(bucket='chormium', build_id=1),
-            search.TagIndexEntry(bucket='chormium', build_id=100),
-        ]
-    ).put()
-    self.post({
-        'tag': 'buildset',
-        'new_entries': {
-            '0': [['chromium', 51]],
-            '1': [['chromium', 52]],
-            '2': [['chromium', 50]],
-        },
-    })
-
-    idx0 = search.TagIndex.get_by_id('buildset:0')
-    self.assertIsNotNone(idx0)
-    self.assertEqual(len(idx0.entries), 1)
-    self.assertEqual(idx0.entries[0].build_id, 51)
-
-    idx1 = search.TagIndex.get_by_id('buildset:1')
-    self.assertIsNotNone(idx1)
-    self.assertEqual(len(idx1.entries), 1)
-    self.assertEqual(idx1.entries[0].build_id, 52)
-
-    idx2 = search.TagIndex.get_by_id('buildset:2')
-    self.assertIsNotNone(idx2)
-    self.assertEqual(len(idx2.entries), 3)
-    self.assertEqual({e.build_id for e in idx2.entries}, {1, 50, 100})
-
-  @mock.patch('bulkproc.enqueue_tasks')
-  def test_flush_retry(self, enqueue_tasks):
-    orig_add = bulkproc.TaskFlushTagIndexEntries._add_index_entries_async
-
-    def add(tag, entries):
-      if tag == 'buildset:1':
-        return future_exception(Exception('transient error'))
-      return orig_add(tag, entries)
-
-    with mock.patch(
-        'bulkproc.TaskFlushTagIndexEntries._add_index_entries_async',
-        side_effect=add,
-    ):
-      self.post({
-          'tag': 'buildset',
-          'new_entries': {
-              '0': [['chromium', 51]],
-              '1': [['chromium', 52]],
-              '2': [['chromium', 50]],
-          },
-      })
-
-    idx0 = search.TagIndex.get_by_id('buildset:0')
-    self.assertIsNotNone(idx0)
-    self.assertEqual(len(idx0.entries), 1)
-    self.assertEqual(idx0.entries[0].build_id, 51)
-
-    idx2 = search.TagIndex.get_by_id('buildset:2')
-    self.assertIsNotNone(idx2)
-    self.assertEqual(len(idx2.entries), 1)
-    self.assertEqual(idx2.entries[0].build_id, 50)
-
-    enqueue_tasks.assert_called_with(
-        'backfill-tag-index', [(
-            None,
-            bulkproc.PATH_PREFIX + 'flush',
-            utils.encode_to_json({
-                'tag': 'buildset',
-                'new_entries': {'1': [['chromium', 52]]},
-            }),
-        )]
-    )
-
-  def test_flush_too_many(self):
-    self.post({
-        'tag': 'buildset',
-        'new_entries': {'0': [['chromium', i] for i in xrange(1, 2001)]},
-    })
-
-    idx0 = search.TagIndex.get_by_id('buildset:0')
-    self.assertIsNotNone(idx0)
-    self.assertTrue(idx0.permanently_incomplete)
-    self.assertEqual(len(idx0.entries), 0)
-
-    # Again, for code coverage.
-    self.post({
-        'tag': 'buildset',
-        'new_entries': {'0': [['chromium', 1]]},
-    })

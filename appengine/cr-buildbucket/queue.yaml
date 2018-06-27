@@ -3,7 +3,7 @@ queue:
 - name: backend-default
   target: backend
   rate: 100/s
-- name: backfill-tag-index
+- name: bulkproc
   target: backend
   rate: 100/s
   max_concurrent_requests: 128

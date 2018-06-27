@@ -23,6 +23,7 @@ import gae_ts_mon
 from test import config_test
 from test.test_util import future, future_exception
 import api
+import backfill_tag_index
 import config
 import creation
 import errors
@@ -763,27 +764,14 @@ class EndpointsApiTest(testing.EndpointsTestCase):
 
   ####### BACKFILL_TAG_INDEX ###################################################
 
-  @mock.patch('api.enqueue_task')
-  def test_backfill_tag_index(self, enqueue_task):
+  @mock.patch('backfill_tag_index.launch')
+  def test_backfill_tag_index(self, launch_tag_index_backfilling):
     auth.bootstrap_group(auth.ADMIN_GROUP, [auth.Anonymous])
-    req = {
-        'tag': 'buildset',
-        'shards': '64',
-    }
+    req = {'tag_key': 'buildset'}
     self.call_api('backfill_tag_index', req, status=(200, 204))
-    enqueue_task.assert_called_once_with(
-        'backfill-tag-index',
-        '/internal/task/backfill-tag-index/start',
-        utils.encode_to_json({
-            'tag': 'buildset',
-            'shards': 64,
-        }),
-    )
+    launch_tag_index_backfilling.assert_called_once_with('buildset')
 
   def test_backfill_tag_index_fails(self):
     auth.bootstrap_group(auth.ADMIN_GROUP, [auth.Anonymous])
     self.call_api('backfill_tag_index', {}, status=400)
-    self.call_api('backfill_tag_index', {'tag': 'buildset'}, status=400)
-    self.call_api(
-        'backfill_tag_index', {'tag': 'buildset', 'shards': 0}, status=400
-    )
+    self.call_api('backfill_tag_index', {'tag_key': 'a:b'}, status=400)

@@ -18,7 +18,7 @@ from components import utils
 import gae_ts_mon
 
 import api_common
-import bulkproc
+import backfill_tag_index
 import config
 import creation
 import errors
@@ -740,27 +740,13 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
-          tag=messages.StringField(1, required=True),
-          shards=messages.IntegerField(2, required=True),
+          tag_key=messages.StringField(1, required=True),
       ), message_types.VoidMessage
   )
   @auth.require(auth.is_admin)
   def backfill_tag_index(self, request):
     """Backfills TagIndex entites from builds."""
-    if request.shards <= 0:
-      raise endpoints.BadRequestException('shards must be positive')
-    enqueue_task(
-        'backfill-tag-index',
-        bulkproc.PATH_PREFIX + 'start',
-        utils.encode_to_json({
-            'tag': request.tag,
-            'shards': request.shards,
-        }),
-    )
+    if ':' in request.tag_key:
+      raise endpoints.BadRequestException('invalid tag_key')
+    backfill_tag_index.launch(request.tag_key)
     return message_types.VoidMessage()
-
-
-# mocked in tests.
-def enqueue_task(queue_name, url, payload):  # pragma: no cover
-  task = taskqueue.Task(url=url, payload=payload)
-  return task.add(queue_name=queue_name)
