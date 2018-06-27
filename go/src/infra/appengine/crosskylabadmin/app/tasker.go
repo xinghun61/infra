@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/clients"
 )
 
 const (
@@ -40,7 +41,7 @@ const (
 
 // taskerServerImpl implements the fleet.TaskerServer interface.
 type taskerServerImpl struct {
-	swarmingClientFactory
+	clients.SwarmingFactory
 }
 
 func (*taskerServerImpl) TriggerRepairOnIdle(c context.Context, req *fleet.TriggerRepairOnIdleRequest) (resp *fleet.TaskerTasksResponse, err error) {
@@ -69,7 +70,7 @@ func (tsi *taskerServerImpl) EnsureBackgroundTasks(c context.Context, req *fleet
 		return nil, errors.Annotate(err, "failed to obtain requested bots from datastore").Err()
 	}
 
-	sc, err := tsi.swarmingClient(c, swarmingInstance)
+	sc, err := tsi.SwarmingClient(c, swarmingInstance)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
@@ -77,7 +78,7 @@ func (tsi *taskerServerImpl) EnsureBackgroundTasks(c context.Context, req *fleet
 	// Protects access to botTasks
 	m := &sync.Mutex{}
 	botTasks := make([]*fleet.TaskerBotTasks, 0, len(bses))
-	err = parallel.WorkPool(maxConcurrentSwarmingCalls, func(workC chan<- func() error) {
+	err = parallel.WorkPool(clients.MaxConcurrentSwarmingCalls, func(workC chan<- func() error) {
 		for i := range bses {
 			// In-scope variable for goroutine closure.
 			bse := bses[i]
@@ -108,7 +109,7 @@ var dutStateForTask = map[fleet.TaskType]string{
 	fleet.TaskType_Reset:   "needs_reset",
 }
 
-func ensureBackgroundTasksForBot(c context.Context, sc SwarmingClient, req *fleet.EnsureBackgroundTasksRequest, dutID string) (*fleet.TaskerBotTasks, error) {
+func ensureBackgroundTasksForBot(c context.Context, sc clients.SwarmingClient, req *fleet.EnsureBackgroundTasksRequest, dutID string) (*fleet.TaskerBotTasks, error) {
 	ts := make([]*fleet.TaskerTask, 0, req.TaskCount)
 	tags := []string{luciProjectTag, backgroundTaskTag(req.Type, dutID)}
 	oldTasks, err := sc.ListPendingTasks(c, tags)
@@ -125,7 +126,7 @@ func ensureBackgroundTasksForBot(c context.Context, sc SwarmingClient, req *flee
 
 	newTaskCount := int(req.TaskCount) - len(ts)
 	for i := 0; i < newTaskCount; i++ {
-		tid, err := sc.CreateTask(c, &SwarmingCreateTaskArgs{
+		tid, err := sc.CreateTask(c, &clients.SwarmingCreateTaskArgs{
 			Cmd:                  luciferAdminTaskCmd(req.Type),
 			DutID:                dutID,
 			DutState:             dutStateForTask[req.Type],

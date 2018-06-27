@@ -25,6 +25,7 @@ import (
 	"golang.org/x/net/context"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/clients"
 )
 
 func TestEnsureBackgroundTasks(t *testing.T) {
@@ -33,11 +34,11 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 		datastore.GetTestable(c).Consistent(true)
 		fsc := &fakeSwarmingClient{
 			pool:    swarmingBotPool,
-			taskIDs: map[*SwarmingCreateTaskArgs]string{},
+			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
 		server := taskerServerImpl{
-			swarmingClientFactory{
-				swarmingClientHook: func(context.Context, string) (SwarmingClient, error) {
+			clients.SwarmingFactory{
+				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
 					return fsc, nil
 				},
 			},
@@ -132,7 +133,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 		})
 
 		Convey("with a large number of known bots", func() {
-			numDuts := 6 * maxConcurrentSwarmingCalls
+			numDuts := 6 * clients.MaxConcurrentSwarmingCalls
 			allDuts := make([]string, 0, numDuts)
 			taskDuts := make([]string, 0, numDuts/2)
 			for i := 0; i < numDuts; i++ {
@@ -197,11 +198,11 @@ func TestTaskerDummy(t *testing.T) {
 		datastore.GetTestable(c).Consistent(true)
 		fsc := &fakeSwarmingClient{
 			pool:    swarmingBotPool,
-			taskIDs: map[*SwarmingCreateTaskArgs]string{},
+			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
 		server := taskerServerImpl{
-			swarmingClientFactory{
-				swarmingClientHook: func(context.Context, string) (SwarmingClient, error) {
+			clients.SwarmingFactory{
+				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
 					return fsc, nil
 				},
 			},
@@ -222,8 +223,8 @@ func TestTaskerDummy(t *testing.T) {
 func setKnownBots(c context.Context, fsc *fakeSwarmingClient, duts []string) {
 	fsc.setAvailableDutIDs(duts)
 	server := trackerServerImpl{
-		swarmingClientFactory{
-			swarmingClientHook: func(context.Context, string) (SwarmingClient, error) {
+		clients.SwarmingFactory{
+			SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
 				return fsc, nil
 			},
 		},

@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package app
+// package clients exports wrappers for client side bindings for API used by
+// crosskylabadmin app. These interfaces provide a way to fake/stub out the API
+// calls for tests.
+//
+// The package is named clients instead of swarming etc because callers often
+// need to also reference names from the underlying generated bindings.
+
+package clients
 
 import (
 	"fmt"
@@ -28,20 +35,20 @@ import (
 )
 
 const (
-	// maxConcurrentSwarmingCalls is the maximum number of concurrent swarming calls
+	// MaxConcurrentSwarmingCalls is the maximum number of concurrent swarming calls
 	// made within the context of a single RPC call to this app.
 	//
 	// There is no per-instance limit (yet).
-	maxConcurrentSwarmingCalls = 10
+	MaxConcurrentSwarmingCalls = 10
 
-	// dutIDDimensionKey identifies the swarming dimension containing the ID for
+	// DutIDDimensionKey identifies the swarming dimension containing the ID for
 	// the DUT corresponding to a bot.
-	dutIDDimensionKey = "dut_id"
-	// dutStateDimensionKey identifies the swarming dimension containing the
+	DutIDDimensionKey = "dut_id"
+	// DutStateDimensionKey identifies the swarming dimension containing the
 	// autotest DUT state for a bot.
-	dutStateDimensionKey = "dut_state"
-	// poolDimensionKey identifies the swarming pool dimension.
-	poolDimensionKey = "pool"
+	DutStateDimensionKey = "dut_state"
+	// PoolDimensionKey identifies the swarming pool dimension.
+	PoolDimensionKey = "pool"
 )
 
 // SwarmingClient exposes Swarming client API used by this package.
@@ -70,21 +77,21 @@ type SwarmingCreateTaskArgs struct {
 	Tags                 []string
 }
 
-// swarmingClientFactory implements a single method to obtain a SwarmingClient instance.
-type swarmingClientFactory struct {
-	// swarmingClientHook provides a way to override the swarming client bindings.
+// SwarmingFactory implements a single method to obtain a SwarmingClient instance.
+type SwarmingFactory struct {
+	// SwarmingClientHook provides a way to override the swarming client bindings.
 	//
-	// Tests should override swarmingClientHook to return a fake SwarmingClient.
+	// Tests should override SwarmingClientHook to return a fake SwarmingClient.
 	// If nil, a real SwarmingClient will be used.
-	swarmingClientHook func(c context.Context, host string) (SwarmingClient, error)
+	SwarmingClientHook func(c context.Context, host string) (SwarmingClient, error)
 }
 
-// swarmingClient creats a SwarmingClient.
+// SwarmingClient returns a SwarmingClient.
 //
-// All trackerServerImpl methods should use swarmingClient to obtain a SwarmingClient.
-func (tsi *swarmingClientFactory) swarmingClient(c context.Context, host string) (SwarmingClient, error) {
-	if tsi.swarmingClientHook != nil {
-		return tsi.swarmingClientHook(c, host)
+// All Swarming users should use SwarmingClient to obtain a SwarmingClient.
+func (sf *SwarmingFactory) SwarmingClient(c context.Context, host string) (SwarmingClient, error) {
+	if sf.SwarmingClientHook != nil {
+		return sf.SwarmingClientHook(c, host)
 	}
 	return NewSwarmingClient(c, host)
 }
@@ -112,7 +119,7 @@ func NewSwarmingClient(c context.Context, host string) (SwarmingClient, error) {
 // Use dims to restrict to dimensions beyond pool.
 func (sc *swarmingClientImpl) ListAliveBotsInPool(c context.Context, pool string, dims strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	bis := []*swarming.SwarmingRpcsBotInfo{}
-	dims.Set(poolDimensionKey, pool)
+	dims.Set(PoolDimensionKey, pool)
 	call := sc.Bots.List().Dimensions(dims.Format()...).IsDead("FALSE")
 	for {
 		ic, _ := context.WithTimeout(c, 60*time.Second)
@@ -135,17 +142,17 @@ func (sc *swarmingClientImpl) ListAliveBotsInPool(c context.Context, pool string
 func (sc *swarmingClientImpl) CreateTask(c context.Context, args *SwarmingCreateTaskArgs) (string, error) {
 	dims := []*swarming.SwarmingRpcsStringPair{
 		{
-			Key:   dutIDDimensionKey,
+			Key:   DutIDDimensionKey,
 			Value: args.DutID,
 		},
 		{
-			Key:   poolDimensionKey,
+			Key:   PoolDimensionKey,
 			Value: args.Pool,
 		},
 	}
 	if args.DutState != "" {
 		dims = append(dims, &swarming.SwarmingRpcsStringPair{
-			Key:   dutStateDimensionKey,
+			Key:   DutStateDimensionKey,
 			Value: args.DutState,
 		})
 	}

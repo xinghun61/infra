@@ -24,6 +24,7 @@ import (
 	"golang.org/x/net/context"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/clients"
 )
 
 // fakeSwarmingClient implements SwarmingClient.
@@ -35,18 +36,18 @@ type fakeSwarmingClient struct {
 	// botInfos maps the dut_id for a bot to its swarming.SwarmingRpcsBotInfo
 	botInfos map[string]*swarming.SwarmingRpcsBotInfo
 	// taskArgs accumulates the arguments to CreateTask calls on fakeSwarmingClient
-	taskArgs []*SwarmingCreateTaskArgs
+	taskArgs []*clients.SwarmingCreateTaskArgs
 
 	// nextTaskID is used to construct the next task ID to be returned from CreateTask()
 	nextTaskID int
 	// taskIDs accumulates the generated Swarming task ids by CreateTask calls.
-	taskIDs map[*SwarmingCreateTaskArgs]string
+	taskIDs map[*clients.SwarmingCreateTaskArgs]string
 }
 
 // ResetTasks clears away cached information about created tasks.
 func (fsc *fakeSwarmingClient) ResetTasks() {
-	fsc.taskArgs = []*SwarmingCreateTaskArgs{}
-	fsc.taskIDs = map[*SwarmingCreateTaskArgs]string{}
+	fsc.taskArgs = []*clients.SwarmingCreateTaskArgs{}
+	fsc.taskIDs = map[*clients.SwarmingCreateTaskArgs]string{}
 }
 
 // ListAliveBotsInPool is a fake implementation of SwarmingClient.ListAliveBotsInPool.
@@ -93,7 +94,7 @@ func (fsc *fakeSwarmingClient) setAvailableDutIDs(duts []string) {
 }
 
 // CreateTask stores the arguments to the CreateTask call in fsc and returns unique task IDs.
-func (fsc *fakeSwarmingClient) CreateTask(c context.Context, args *SwarmingCreateTaskArgs) (string, error) {
+func (fsc *fakeSwarmingClient) CreateTask(c context.Context, args *clients.SwarmingCreateTaskArgs) (string, error) {
 	fsc.m.Lock()
 	defer fsc.m.Unlock()
 	fsc.taskArgs = append(fsc.taskArgs, args)

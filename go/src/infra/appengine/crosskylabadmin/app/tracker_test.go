@@ -24,6 +24,7 @@ import (
 	"golang.org/x/net/context"
 
 	"infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/clients"
 )
 
 // TestRefreshAndSummarizeBots tests the RefreshBots-SummarizeBots API.
@@ -36,11 +37,11 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 		datastore.GetTestable(c).Consistent(true)
 		fsc := &fakeSwarmingClient{
 			pool:    swarmingBotPool,
-			taskIDs: map[*SwarmingCreateTaskArgs]string{},
+			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
 		server := trackerServerImpl{
-			swarmingClientFactory{
-				swarmingClientHook: func(context.Context, string) (SwarmingClient, error) {
+			clients.SwarmingFactory{
+				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
 					return fsc, nil
 				},
 			},
@@ -270,7 +271,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 
 		// More DUTs to refresh than WorkPool concurrency.
 		Convey("with a large number of duts available", func() {
-			numDuts := 3 * maxConcurrentSwarmingCalls
+			numDuts := 3 * clients.MaxConcurrentSwarmingCalls
 			dutNames := make([]string, 0, numDuts)
 			for i := 0; i < numDuts; i++ {
 				dutNames = append(dutNames, fmt.Sprintf("dut_%d", i))

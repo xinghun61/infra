@@ -28,11 +28,12 @@ import (
 	"golang.org/x/net/context"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/clients"
 )
 
 // trackerServerImpl implements the fleet.TrackerServer interface.
 type trackerServerImpl struct {
-	swarmingClientFactory
+	clients.SwarmingFactory
 }
 
 // RefreshBots implements the fleet.Tracker.RefreshBots() method.
@@ -41,7 +42,7 @@ func (tsi *trackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshB
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 
-	sc, err := tsi.swarmingClient(c, swarmingInstance)
+	sc, err := tsi.SwarmingClient(c, swarmingInstance)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
@@ -83,7 +84,7 @@ func (tsi *trackerServerImpl) SummarizeBots(c context.Context, req *fleet.Summar
 }
 
 // getBotsFromSwarming lists bots by calling the Swarming service.
-func getBotsFromSwarming(c context.Context, sc SwarmingClient, sels []*fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
+func getBotsFromSwarming(c context.Context, sc clients.SwarmingClient, sels []*fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	// No filters implies get all bots.
 	if len(sels) == 0 {
 		bots, err := sc.ListAliveBotsInPool(c, swarmingBotPool, strpair.Map{})
@@ -99,7 +100,7 @@ func getBotsFromSwarming(c context.Context, sc SwarmingClient, sels []*fleet.Bot
 	bots := make([]*swarming.SwarmingRpcsBotInfo, 0, len(sels))
 	// Protects access to bots
 	m := &sync.Mutex{}
-	err := parallel.WorkPool(maxConcurrentSwarmingCalls, func(workC chan<- func() error) {
+	err := parallel.WorkPool(clients.MaxConcurrentSwarmingCalls, func(workC chan<- func() error) {
 		for i := range sels {
 			// In-scope variable for goroutine closure.
 			sel := sels[i]
@@ -120,9 +121,9 @@ func getBotsFromSwarming(c context.Context, sc SwarmingClient, sels []*fleet.Bot
 
 // getFilteredBotsFromSwarming lists bots for a single selector by calling the Swarming service.
 // This function is intended to be used in a parallel.WorkPool().
-func getFilteredBotsFromSwarming(c context.Context, sc SwarmingClient, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
+func getFilteredBotsFromSwarming(c context.Context, sc clients.SwarmingClient, sel *fleet.BotSelector) ([]*swarming.SwarmingRpcsBotInfo, error) {
 	dims := strpair.Map{
-		dutIDDimensionKey: []string{sel.DutId},
+		clients.DutIDDimensionKey: []string{sel.DutId},
 	}
 	bs, err := sc.ListAliveBotsInPool(c, swarmingBotPool, dims)
 	if err != nil {
@@ -160,18 +161,18 @@ func insertBotSummary(c context.Context, bots []*swarming.SwarmingRpcsBotInfo) (
 
 func dutIDFromBotInfo(bi *swarming.SwarmingRpcsBotInfo) (string, error) {
 	for _, dim := range bi.Dimensions {
-		if dim.Key == dutIDDimensionKey {
+		if dim.Key == clients.DutIDDimensionKey {
 			switch len(dim.Value) {
 			case 1:
 				return dim.Value[0], nil
 			case 0:
-				return "", fmt.Errorf("no value for dimension %s", dutIDDimensionKey)
+				return "", fmt.Errorf("no value for dimension %s", clients.DutIDDimensionKey)
 			default:
-				return "", fmt.Errorf("multiple values for dimension %s", dutIDDimensionKey)
+				return "", fmt.Errorf("multiple values for dimension %s", clients.DutIDDimensionKey)
 			}
 		}
 	}
-	return "", fmt.Errorf("failed to find dimension %s", dutIDDimensionKey)
+	return "", fmt.Errorf("failed to find dimension %s", clients.DutIDDimensionKey)
 }
 
 func getBotSummariesFromDatastore(c context.Context, sels []*fleet.BotSelector) ([]*fleetBotSummaryEntity, error) {
