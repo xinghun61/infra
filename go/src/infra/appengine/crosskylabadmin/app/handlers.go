@@ -15,40 +15,12 @@
 package app
 
 import (
+	"infra/appengine/crosskylabadmin/app/frontend"
 	"net/http"
 
-	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/data/rand/mathrand"
-	"go.chromium.org/luci/grpc/discovery"
-	"go.chromium.org/luci/grpc/grpcmon"
-	"go.chromium.org/luci/grpc/grpcutil"
-	"go.chromium.org/luci/grpc/prpc"
-	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
-
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
-)
-
-// These are app-wide constants related to the Swarming setup of ChromeOS Skylab.
-//
-// TODO(pprabhu): Use luci-config for these configuration options.
-const (
-	// accessGroup is the luci-auth group controlling access to admin app APIs.
-	accessGroup = "chromeos-skylab-bot-fleet-access"
-	// backgroundTaskExecutionTimeoutSecs is the execution timeout (in
-	// seconds) for background tasks created by tasker.
-	backgroundTaskExecutionTimeoutSecs = 60 * 20
-	// backgroundTaskExpirationSecs is the expiration time (in seconds) for
-	// background tasks created by tasker.
-	backgroundTaskExpirationSecs = 60 * 10
-	// luciProjectTag is the swarming tag that associates the task with a
-	// luci project, allowing milo to work with the swarming UI.
-	luciProjectTag = "luci_project:chromiumos"
-	// swarmingBotPool is the swarming pool containing skylab bots.
-	swarmingBotPool = "ChromeOSSkylab"
-	// swarmingInstance is the swarming instance hosting skylab bots.
-	swarmingInstance = "chrome-swarming.appspot.com"
 )
 
 func init() {
@@ -58,29 +30,10 @@ func init() {
 	mathrand.SeedRandomly()
 
 	r := router.New()
-	mwAuthenticated := standard.Base().Extend(
-		auth.Authenticate(
-			server.UsersAPIAuthMethod{},
-			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
-		),
-	)
 
 	// Install auth, config and tsmon handlers.
 	standard.InstallHandlers(r)
+	frontend.InstallHandlers(r, standard.Base())
 
-	api := prpc.Server{
-		UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(grpcutil.NewUnaryServerPanicCatcher(nil)),
-	}
-	fleet.RegisterTrackerServer(&api, &fleet.DecoratedTracker{
-		Service: &trackerServerImpl{},
-		Prelude: checkAccess,
-	})
-	fleet.RegisterTaskerServer(&api, &fleet.DecoratedTasker{
-		Service: &taskerServerImpl{},
-		Prelude: checkAccess,
-	})
-
-	discovery.Enable(&api)
-	api.InstallHandlers(r, mwAuthenticated)
 	http.DefaultServeMux.Handle("/", r)
 }

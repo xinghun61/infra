@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package app
+package frontend
 
 // botSummaryKind is the datastore entity kind for fleetBotSummaryEntity.
 const botSummaryKind = "fleetBotSummary"
