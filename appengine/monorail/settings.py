@@ -108,10 +108,10 @@ read_only = False
 # described in the banner message takes effect.  It is
 # expressed as a 5-tuple of ints: (year, month, day, hour, minute),
 # e.g. (2009, 3, 20, 21, 45) represents March 20 2009 9:45PM.
-banner_time = None
+banner_time = (2018, 6, 30, 8, 0)
 
 # Display a site maintenance banner on every monorail page.
-banner_message = ''
+banner_message = 'This site will be read-only for 3-4 hours starting at '
 
 # User accounts with email addresses at these domains are all banned.
 banned_user_domains = []
