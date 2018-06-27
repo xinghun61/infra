@@ -79,22 +79,7 @@ class IssueEntry(servlet.Servlet):
         permissions.EDIT_ISSUE_OWNER,
         permissions.EDIT_ISSUE_CC)
 
-    if mr.template_name:
-      template = self.services.template.GetTemplateByName(mr.cnxn,
-          mr.template_name, config.project_id)
-    else:
-      if is_member:
-        template_id = config.default_template_for_developers
-      else:
-        template_id = config.default_template_for_users
-      template = self.services.template.GetTemplateById(mr.cnxn,
-          template_id)
-      # If the default templates were deleted, load all and pick the first one.
-      if not template:
-        templates = self.services.template.GetProjectTemplates(mr.cnxn,
-            config.project_id)
-        assert len(templates) > 0, 'Project has no templates!'
-        template = templates[0]
+    template = self._GetTemplate(mr.cnxn, config, mr.template_name, is_member)
 
     if template.summary:
       initial_summary = template.summary
@@ -284,9 +269,10 @@ class IssueEntry(servlet.Servlet):
     if len(parsed.summary) > tracker_constants.MAX_SUMMARY_CHARS:
       mr.errors.summary = 'Summary is too long'
 
-    template_name = post_data['template_name'].replace('+', ' ')
-    template = self.services.template.GetTemplateByName(mr.cnxn,
-        template_name, config.project_id)
+    is_member = framework_bizobj.UserIsInProject(
+        mr.project, mr.auth.effective_ids)
+    template = self._GetTemplate(mr.cnxn, config,
+        post_data.get('template_name'), is_member)
 
     if _MatchesTemplate(parsed.comment, template):
       mr.errors.comment = 'Template must be filled out.'
@@ -380,6 +366,28 @@ class IssueEntry(servlet.Servlet):
     # format a redirect url
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.ISSUE_DETAIL, id=issue.local_id)
+
+  def _GetTemplate(self, cnxn, config, template_name, is_member):
+    """Tries to fetch template by name and implements default template logic
+    if not found."""
+    if template_name:
+      template_name = template_name.replace('+', ' ')
+      template = self.services.template.GetTemplateByName(cnxn,
+          template_name, config.project_id)
+    else:
+      if is_member:
+        template_id = config.default_template_for_developers
+      else:
+        template_id = config.default_template_for_users
+      template = self.services.template.GetTemplateById(cnxn, template_id)
+      # If the default templates were deleted, load all and pick the first one.
+      if not template:
+        templates = self.services.template.GetProjectTemplates(cnxn,
+            config.project_id)
+        assert len(templates) > 0, 'Project has no templates!'
+        template = templates[0]
+
+    return template
 
 
 def _AttachDefaultApprovers(config, approval_values):

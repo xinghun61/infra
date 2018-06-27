@@ -496,6 +496,29 @@ class IssueEntryTest(unittest.TestCase):
     self.assertEqual('Not in your hotlist(s): U1:H2', mr.errors.hotlists)
     self.assertIsNone(url)
 
+  def testProcessFormData_TemplateNameMissing(self):
+    """POST doesn't fail if no template_name is passed."""
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', project=self.project)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+
+    self.services.template.GetTemplateById.return_value = None
+    self.services.template.GetProjectTemplates.return_value = [
+        tracker_pb2.TemplateDef(members_only=True, content=''),
+        tracker_pb2.TemplateDef(members_only=False, content='')]
+    post_data = fake.PostData(
+        summary=['fake summary'],
+        comment=['fake comment'],
+        status=['New'])
+
+    self.mox.StubOutWithMock(self.servlet, 'CheckCaptcha')
+    self.servlet.CheckCaptcha(mr, mox.IgnoreArg())
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessFormData(mr, post_data)
+
+    self.mox.VerifyAll()
+    self.assertTrue('/p/proj/issues/detail?id=' in url)
+
   def testAttachDefaultApprovers(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     config.approval_defs = [
