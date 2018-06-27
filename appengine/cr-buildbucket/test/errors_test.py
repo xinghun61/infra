@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
+
+from components import utils
+
 from testing_utils import testing
 import errors
 
@@ -25,3 +29,32 @@ class ErrorsTest(testing.AppengineTestCase):
   def test_default_message(self):
     ex = errors.BuildIsCompletedError()
     self.assertEqual(ex.message, 'Build is complete and cannot be changed.')
+
+
+class ValidateLeaseExpirationDateTest(testing.AppengineTestCase):
+
+  def setUp(self):
+    super(ValidateLeaseExpirationDateTest, self).setUp()
+    self.now = datetime.datetime(2018, 1, 1)
+    self.patch('components.utils.utcnow', side_effect=lambda: self.now)
+
+  def test_past(self):
+    with self.assertRaises(errors.InvalidInputError):
+      yesterday = utils.utcnow() - datetime.timedelta(days=1)
+      errors.validate_lease_expiration_date(yesterday)
+
+  def test_not_datetime(self):
+    with self.assertRaises(errors.InvalidInputError):
+      errors.validate_lease_expiration_date(1)
+
+  def test_limit(self):
+    with self.assertRaises(errors.InvalidInputError):
+      dt = utils.utcnow() + datetime.timedelta(days=1)
+      errors.validate_lease_expiration_date(dt)
+
+  def test_none(self):
+    errors.validate_lease_expiration_date(None)
+
+  def test_valid(self):
+    dt = utils.utcnow() + datetime.timedelta(minutes=5)
+    errors.validate_lease_expiration_date(dt)

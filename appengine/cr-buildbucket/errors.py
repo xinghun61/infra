@@ -2,9 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import re
 
+from components import utils
+
 BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z_\.\-/]{1,100}$')
+MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 
 
 class Error(Exception):
@@ -62,4 +66,19 @@ def validate_bucket_name(bucket, project_id=None):
     raise InvalidInputError(
         'Bucket name "%s" does not match regular expression %s' %
         (bucket, BUCKET_NAME_REGEX.pattern)
+    )
+
+
+def validate_lease_expiration_date(expiration_date):
+  """Raises errors.InvalidInputError if |expiration_date| is invalid."""
+  if expiration_date is None:
+    return
+  if not isinstance(expiration_date, datetime.datetime):
+    raise InvalidInputError('Lease expiration date must be datetime.datetime')
+  duration = expiration_date - utils.utcnow()
+  if duration <= datetime.timedelta(0):
+    raise InvalidInputError('Lease expiration date cannot be in the past')
+  if duration > MAX_LEASE_DURATION:
+    raise InvalidInputError(
+        'Lease duration cannot exceed %s' % MAX_LEASE_DURATION
     )

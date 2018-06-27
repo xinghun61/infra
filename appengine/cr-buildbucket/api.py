@@ -20,6 +20,7 @@ import gae_ts_mon
 import api_common
 import bulkproc
 import config
+import creation
 import errors
 import model
 import search
@@ -107,7 +108,7 @@ def put_request_messages_to_build_requests(requests):
   bucket_keys = [ndb.Key(config.Bucket, b) for b in buckets]
   bucket_entities = dict(zip(buckets, ndb.get_multi(bucket_keys)))
   return [
-      service.BuildRequest(
+      creation.BuildRequest(
           project=(
               bucket_entities[r.bucket].project_id
               if bucket_entities[r.bucket] else None
@@ -241,7 +242,8 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def put(self, request):
     """Creates a new build."""
-    build = service.add(put_request_message_to_build_request(request))
+    build_req = put_request_message_to_build_request(request)
+    build = creation.add_async(build_req).get_result()
     return build_to_response_message(build, include_lease_key=True)
 
   ####### PUT_BATCH ############################################################
@@ -268,7 +270,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def put_batch(self, request):
     """Creates builds."""
-    results = service.add_many_async(
+    results = creation.add_many_async(
         put_request_messages_to_build_requests(request.builds)
     ).get_result()
 
@@ -302,7 +304,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def retry(self, request):
     """Retries an existing build."""
-    build = service.retry(
+    build = creation.retry(
         request.id,
         lease_expiration_date=parse_datetime(request.lease_expiration_ts),
         client_operation_id=request.client_operation_id,

@@ -24,6 +24,7 @@ from test import config_test
 from test.test_util import future, future_exception
 import api
 import config
+import creation
 import errors
 import model
 import search
@@ -104,10 +105,10 @@ class EndpointsApiTest(testing.EndpointsTestCase):
 
   ####### PUT ##################################################################
 
-  @mock.patch('service.add', autospec=True)
-  def test_put(self, add):
+  @mock.patch('creation.add_async', autospec=True)
+  def test_put(self, add_async):
     self.test_build.tags = ['owner:ivan']
-    add.return_value = self.test_build
+    add_async.return_value = future(self.test_build)
     req = {
         'client_operation_id': '42',
         'bucket': self.test_build.bucket,
@@ -119,8 +120,8 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         },
     }
     resp = self.call_api('put', req).json_body
-    add.assert_called_once_with(
-        service.BuildRequest(
+    add_async.assert_called_once_with(
+        creation.BuildRequest(
             bucket=self.test_build.bucket,
             project=self.test_bucket.project_id,
             tags=req['tags'],
@@ -136,9 +137,9 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     self.assertEqual(resp['build']['bucket'], req['bucket'])
     self.assertEqual(resp['build']['tags'], req['tags'])
 
-  @mock.patch('service.add', autospec=True)
-  def test_put_with_parameters(self, add):
-    add.return_value = self.test_build
+  @mock.patch('creation.add_async', autospec=True)
+  def test_put_with_parameters(self, add_async):
+    add_async.return_value = future(self.test_build)
     req = {
         'bucket': self.test_build.bucket,
         'parameters_json': json.dumps(self.test_build.parameters),
@@ -146,17 +147,17 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     resp = self.call_api('put', req).json_body
     self.assertEqual(resp['build']['parameters_json'], req['parameters_json'])
 
-  @mock.patch('service.add', autospec=True)
-  def test_put_with_leasing(self, add):
+  @mock.patch('creation.add_async', autospec=True)
+  def test_put_with_leasing(self, add_async):
     self.test_build.lease_expiration_date = self.future_date
-    add.return_value = self.test_build
+    add_async.return_value = future(self.test_build)
     req = {
         'bucket': self.test_build.bucket,
         'lease_expiration_ts': self.future_ts,
     }
     resp = self.call_api('put', req).json_body
-    add.assert_called_once_with(
-        service.BuildRequest(
+    add_async.assert_called_once_with(
+        creation.BuildRequest(
             bucket=self.test_build.bucket,
             project=self.test_bucket.project_id,
             lease_expiration_date=self.future_date,
@@ -176,7 +177,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
 
   ####### RETRY ################################################################
 
-  @mock.patch('service.retry', autospec=True)
+  @mock.patch('creation.retry', autospec=True)
   def test_retry(self, retry):
     build = model.Build(
         bucket='chromium',
@@ -214,14 +215,14 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     )
     self.assertEqual(resp['build']['retry_of'], '2')
 
-  @mock.patch('service.retry', autospec=True)
+  @mock.patch('creation.retry', autospec=True)
   def test_retry_not_found(self, retry):
     retry.side_effect = errors.BuildNotFoundError
     self.expect_error('retry', {'id': 42}, 'BUILD_NOT_FOUND')
 
   ####### PUT_BATCH ############################################################
 
-  @mock.patch('service.add_many_async', autospec=True)
+  @mock.patch('creation.add_many_async', autospec=True)
   def test_put_batch(self, add_many_async):
     self.test_build.tags = ['owner:ivan']
 
@@ -258,19 +259,19 @@ class EndpointsApiTest(testing.EndpointsTestCase):
     }
     resp = self.call_api('put_batch', req).json_body
     add_many_async.assert_called_once_with([
-        service.BuildRequest(
+        creation.BuildRequest(
             bucket=self.test_build.bucket,
             project=self.test_bucket.project_id,
             tags=self.test_build.tags,
             client_operation_id='0',
         ),
-        service.BuildRequest(
+        creation.BuildRequest(
             bucket=build2.bucket,
             project=self.test_bucket.project_id,
             tags=[],
             client_operation_id='1',
         ),
-        service.BuildRequest(
+        creation.BuildRequest(
             bucket='bad name',
             project=None,
             tags=[],
@@ -297,7 +298,7 @@ class EndpointsApiTest(testing.EndpointsTestCase):
         }
     )
 
-  @mock.patch('service.add_many_async', autospec=True)
+  @mock.patch('creation.add_many_async', autospec=True)
   def test_put_batch_with_exception(self, add_many_async):
     add_many_async.return_value = future([(None, Exception())])
     req = {
