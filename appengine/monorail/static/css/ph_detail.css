@@ -43,13 +43,15 @@ pre.prettyprint {
     white-space: nowrap;
 }
 
-#meta-float, #summary-float {
+@media (min-width: 425px) {
+  #meta-float, #summary-float {
     position: sticky;
     top: 0;
-}
-#summary-float {
+  }
+  #summary-float {
     border-bottom: 2px solid white;
     height: 0;
+  }
 }
 #meta-float th { white-space: nowrap; }
 .labelediting input { margin: 0 3px 4px 0; }
