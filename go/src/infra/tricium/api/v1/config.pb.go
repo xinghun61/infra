@@ -41,7 +41,7 @@ func (x Acl_Role) String() string {
 	return proto.EnumName(Acl_Role_name, int32(x))
 }
 func (Acl_Role) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_5fa7c2373c4c2a8a, []int{5, 0}
+	return fileDescriptor_config_db972729f6d889c6, []int{5, 0}
 }
 
 // Tricium service configuration.
@@ -82,7 +82,7 @@ func (m *ServiceConfig) Reset()         { *m = ServiceConfig{} }
 func (m *ServiceConfig) String() string { return proto.CompactTextString(m) }
 func (*ServiceConfig) ProtoMessage()    {}
 func (*ServiceConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5fa7c2373c4c2a8a, []int{0}
+	return fileDescriptor_config_db972729f6d889c6, []int{0}
 }
 func (m *ServiceConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServiceConfig.Unmarshal(m, b)
@@ -182,7 +182,7 @@ func (m *ProjectConfig) Reset()         { *m = ProjectConfig{} }
 func (m *ProjectConfig) String() string { return proto.CompactTextString(m) }
 func (*ProjectConfig) ProtoMessage()    {}
 func (*ProjectConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5fa7c2373c4c2a8a, []int{1}
+	return fileDescriptor_config_db972729f6d889c6, []int{1}
 }
 func (m *ProjectConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProjectConfig.Unmarshal(m, b)
@@ -244,16 +244,15 @@ func (m *ProjectConfig) GetSwarmingServiceAccount() string {
 	return ""
 }
 
-// Repository details for a project.
-// DEPRECATED, see https://crbug.com/824558
+// Repository details for one repository.
 type RepoDetails struct {
-	// Could be renamed to kind when the above kind is removed.
+	// The repository type.
 	//
 	// Types that are valid to be assigned to Source:
 	//	*RepoDetails_GerritProject
 	//	*RepoDetails_GitRepo
 	Source isRepoDetails_Source `protobuf_oneof:"source"`
-	// Whether to disable reporting results back.
+	// Whether to disable reporting results back (default: enabled).
 	DisableReporting bool `protobuf:"varint,6,opt,name=disable_reporting,json=disableReporting" json:"disable_reporting,omitempty"`
 	// Whitelisted groups.
 	//
@@ -273,7 +272,7 @@ func (m *RepoDetails) Reset()         { *m = RepoDetails{} }
 func (m *RepoDetails) String() string { return proto.CompactTextString(m) }
 func (*RepoDetails) ProtoMessage()    {}
 func (*RepoDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5fa7c2373c4c2a8a, []int{2}
+	return fileDescriptor_config_db972729f6d889c6, []int{2}
 }
 func (m *RepoDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RepoDetails.Unmarshal(m, b)
@@ -435,7 +434,7 @@ func (m *GerritProject) Reset()         { *m = GerritProject{} }
 func (m *GerritProject) String() string { return proto.CompactTextString(m) }
 func (*GerritProject) ProtoMessage()    {}
 func (*GerritProject) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5fa7c2373c4c2a8a, []int{3}
+	return fileDescriptor_config_db972729f6d889c6, []int{3}
 }
 func (m *GerritProject) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GerritProject.Unmarshal(m, b)
@@ -488,7 +487,7 @@ func (m *GitRepo) Reset()         { *m = GitRepo{} }
 func (m *GitRepo) String() string { return proto.CompactTextString(m) }
 func (*GitRepo) ProtoMessage()    {}
 func (*GitRepo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5fa7c2373c4c2a8a, []int{4}
+	return fileDescriptor_config_db972729f6d889c6, []int{4}
 }
 func (m *GitRepo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GitRepo.Unmarshal(m, b)
@@ -535,7 +534,7 @@ func (m *Acl) Reset()         { *m = Acl{} }
 func (m *Acl) String() string { return proto.CompactTextString(m) }
 func (*Acl) ProtoMessage()    {}
 func (*Acl) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5fa7c2373c4c2a8a, []int{5}
+	return fileDescriptor_config_db972729f6d889c6, []int{5}
 }
 func (m *Acl) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Acl.Unmarshal(m, b)
@@ -593,7 +592,7 @@ func (m *Selection) Reset()         { *m = Selection{} }
 func (m *Selection) String() string { return proto.CompactTextString(m) }
 func (*Selection) ProtoMessage()    {}
 func (*Selection) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5fa7c2373c4c2a8a, []int{6}
+	return fileDescriptor_config_db972729f6d889c6, []int{6}
 }
 func (m *Selection) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Selection.Unmarshal(m, b)
@@ -649,7 +648,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5fa7c2373c4c2a8a, []int{7}
+	return fileDescriptor_config_db972729f6d889c6, []int{7}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -696,10 +695,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/v1/config.proto", fileDescriptor_config_5fa7c2373c4c2a8a)
+	proto.RegisterFile("infra/tricium/api/v1/config.proto", fileDescriptor_config_db972729f6d889c6)
 }
 
-var fileDescriptor_config_5fa7c2373c4c2a8a = []byte{
+var fileDescriptor_config_db972729f6d889c6 = []byte{
 	// 721 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xcb, 0x6e, 0xdb, 0x38,
 	0x14, 0x8d, 0xfc, 0xf6, 0x75, 0xec, 0x38, 0x44, 0x90, 0xd1, 0x64, 0x16, 0xe3, 0x68, 0x10, 0x8c,

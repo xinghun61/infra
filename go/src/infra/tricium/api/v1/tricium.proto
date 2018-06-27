@@ -45,16 +45,10 @@ service Tricium {
 
 // AnalyzeRequest contains the details needed for an analysis request.
 message AnalyzeRequest {
-  // Name of the project hosting the paths listed in the request. The name
-  // should map to the project name as it is connected to Tricium.
-  // This is used to get the project config, which determines how Tricium
-  // will behave for this request.
+  // Name of the project in luci-config, used to get the project config.
   string project = 1;
 
-  // Files to analyze in the project. Listed from the root of the Git
-  // repository.
-  // TODO(emso): document path separators or add listing of path segments.
-  // repeated string paths = 4;
+  // Files to analyze in the project, with metadata.
   repeated Data.File files = 5;
 
   oneof source {
@@ -231,7 +225,7 @@ message ResultsRequest {
 }
 
 message ResultsResponse {
-  // TODO(emso): Support paging of results to deal with large number of results.
+  // TODO(qyearsley): Support paging of results to deal with large number of results.
   Data.Results results = 1;
 
   // Whether the returned results are merged.

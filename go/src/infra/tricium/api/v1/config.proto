@@ -76,16 +76,15 @@ message ProjectConfig {
   string swarming_service_account = 7;
 }
 
-// Repository details for a project.
-// DEPRECATED, see https://crbug.com/824558
+// Repository details for one repository.
 message RepoDetails {
-  // Could be renamed to kind when the above kind is removed.
+  // The repository type.
   oneof source {
     GerritProject gerrit_project = 4;
     GitRepo git_repo = 5;
   }
 
-  // Whether to disable reporting results back.
+  // Whether to disable reporting results back (default: enabled).
   bool disable_reporting = 6;
 
   // Whitelisted groups.

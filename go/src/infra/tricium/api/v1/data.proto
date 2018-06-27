@@ -64,10 +64,12 @@ message Data {
     // Files from the root of the isolated input.
     repeated File files = 3;
   }
-  
+
   message File {
-    // Path to the file from the root of the isolated input. The path is
-    // relative to the root of the repository being analyzed.
+    // Path to the file from the root of the isolated input.
+    //
+    // The path is relative to the root of the repository being analyzed,
+    // and the path separator character is "/".
     string path = 1;
 
     // Whether or not this file contains binary content (not text)

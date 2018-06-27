@@ -80,20 +80,14 @@ func (x State) String() string {
 	return proto.EnumName(State_name, int32(x))
 }
 func (State) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{0}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{0}
 }
 
 // AnalyzeRequest contains the details needed for an analysis request.
 type AnalyzeRequest struct {
-	// Name of the project hosting the paths listed in the request. The name
-	// should map to the project name as it is connected to Tricium.
-	// This is used to get the project config, which determines how Tricium
-	// will behave for this request.
+	// Name of the project in luci-config, used to get the project config.
 	Project string `protobuf:"bytes,1,opt,name=project" json:"project,omitempty"`
-	// Files to analyze in the project. Listed from the root of the Git
-	// repository.
-	// TODO(emso): document path separators or add listing of path segments.
-	// repeated string paths = 4;
+	// Files to analyze in the project, with metadata.
 	Files []*Data_File `protobuf:"bytes,5,rep,name=files" json:"files,omitempty"`
 	// Types that are valid to be assigned to Source:
 	//	*AnalyzeRequest_GerritRevision
@@ -108,7 +102,7 @@ func (m *AnalyzeRequest) Reset()         { *m = AnalyzeRequest{} }
 func (m *AnalyzeRequest) String() string { return proto.CompactTextString(m) }
 func (*AnalyzeRequest) ProtoMessage()    {}
 func (*AnalyzeRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{0}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{0}
 }
 func (m *AnalyzeRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AnalyzeRequest.Unmarshal(m, b)
@@ -288,7 +282,7 @@ func (m *GerritRevision) Reset()         { *m = GerritRevision{} }
 func (m *GerritRevision) String() string { return proto.CompactTextString(m) }
 func (*GerritRevision) ProtoMessage()    {}
 func (*GerritRevision) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{1}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{1}
 }
 func (m *GerritRevision) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GerritRevision.Unmarshal(m, b)
@@ -358,7 +352,7 @@ func (m *GitCommit) Reset()         { *m = GitCommit{} }
 func (m *GitCommit) String() string { return proto.CompactTextString(m) }
 func (*GitCommit) ProtoMessage()    {}
 func (*GitCommit) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{2}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{2}
 }
 func (m *GitCommit) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GitCommit.Unmarshal(m, b)
@@ -406,7 +400,7 @@ func (m *AnalyzeResponse) Reset()         { *m = AnalyzeResponse{} }
 func (m *AnalyzeResponse) String() string { return proto.CompactTextString(m) }
 func (*AnalyzeResponse) ProtoMessage()    {}
 func (*AnalyzeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{3}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{3}
 }
 func (m *AnalyzeResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AnalyzeResponse.Unmarshal(m, b)
@@ -472,7 +466,7 @@ func (m *ProgressRequest) Reset()         { *m = ProgressRequest{} }
 func (m *ProgressRequest) String() string { return proto.CompactTextString(m) }
 func (*ProgressRequest) ProtoMessage()    {}
 func (*ProgressRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{4}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{4}
 }
 func (m *ProgressRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProgressRequest.Unmarshal(m, b)
@@ -613,7 +607,7 @@ func (m *ProgressResponse) Reset()         { *m = ProgressResponse{} }
 func (m *ProgressResponse) String() string { return proto.CompactTextString(m) }
 func (*ProgressResponse) ProtoMessage()    {}
 func (*ProgressResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{5}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{5}
 }
 func (m *ProgressResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProgressResponse.Unmarshal(m, b)
@@ -681,7 +675,7 @@ func (m *FunctionProgress) Reset()         { *m = FunctionProgress{} }
 func (m *FunctionProgress) String() string { return proto.CompactTextString(m) }
 func (*FunctionProgress) ProtoMessage()    {}
 func (*FunctionProgress) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{6}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{6}
 }
 func (m *FunctionProgress) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FunctionProgress.Unmarshal(m, b)
@@ -757,7 +751,7 @@ func (m *ProjectProgressRequest) Reset()         { *m = ProjectProgressRequest{}
 func (m *ProjectProgressRequest) String() string { return proto.CompactTextString(m) }
 func (*ProjectProgressRequest) ProtoMessage()    {}
 func (*ProjectProgressRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{7}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{7}
 }
 func (m *ProjectProgressRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProjectProgressRequest.Unmarshal(m, b)
@@ -799,7 +793,7 @@ func (m *ProjectProgressResponse) Reset()         { *m = ProjectProgressResponse
 func (m *ProjectProgressResponse) String() string { return proto.CompactTextString(m) }
 func (*ProjectProgressResponse) ProtoMessage()    {}
 func (*ProjectProgressResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{8}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{8}
 }
 func (m *ProjectProgressResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProjectProgressResponse.Unmarshal(m, b)
@@ -839,7 +833,7 @@ func (m *RunProgress) Reset()         { *m = RunProgress{} }
 func (m *RunProgress) String() string { return proto.CompactTextString(m) }
 func (*RunProgress) ProtoMessage()    {}
 func (*RunProgress) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{9}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{9}
 }
 func (m *RunProgress) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RunProgress.Unmarshal(m, b)
@@ -906,7 +900,7 @@ func (m *ResultsRequest) Reset()         { *m = ResultsRequest{} }
 func (m *ResultsRequest) String() string { return proto.CompactTextString(m) }
 func (*ResultsRequest) ProtoMessage()    {}
 func (*ResultsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{10}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{10}
 }
 func (m *ResultsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResultsRequest.Unmarshal(m, b)
@@ -948,7 +942,7 @@ func (m *ResultsRequest) GetPlatform() Platform_Name {
 }
 
 type ResultsResponse struct {
-	// TODO(emso): Support paging of results to deal with large number of results.
+	// TODO(qyearsley): Support paging of results to deal with large number of results.
 	Results *Data_Results `protobuf:"bytes,1,opt,name=results" json:"results,omitempty"`
 	// Whether the returned results are merged.
 	//
@@ -966,7 +960,7 @@ func (m *ResultsResponse) Reset()         { *m = ResultsResponse{} }
 func (m *ResultsResponse) String() string { return proto.CompactTextString(m) }
 func (*ResultsResponse) ProtoMessage()    {}
 func (*ResultsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{11}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{11}
 }
 func (m *ResultsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResultsResponse.Unmarshal(m, b)
@@ -1032,7 +1026,7 @@ func (m *FeedbackRequest) Reset()         { *m = FeedbackRequest{} }
 func (m *FeedbackRequest) String() string { return proto.CompactTextString(m) }
 func (*FeedbackRequest) ProtoMessage()    {}
 func (*FeedbackRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{12}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{12}
 }
 func (m *FeedbackRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FeedbackRequest.Unmarshal(m, b)
@@ -1093,7 +1087,7 @@ func (m *FeedbackResponse) Reset()         { *m = FeedbackResponse{} }
 func (m *FeedbackResponse) String() string { return proto.CompactTextString(m) }
 func (*FeedbackResponse) ProtoMessage()    {}
 func (*FeedbackResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{13}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{13}
 }
 func (m *FeedbackResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FeedbackResponse.Unmarshal(m, b)
@@ -1150,7 +1144,7 @@ func (m *ReportNotUsefulRequest) Reset()         { *m = ReportNotUsefulRequest{}
 func (m *ReportNotUsefulRequest) String() string { return proto.CompactTextString(m) }
 func (*ReportNotUsefulRequest) ProtoMessage()    {}
 func (*ReportNotUsefulRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{14}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{14}
 }
 func (m *ReportNotUsefulRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReportNotUsefulRequest.Unmarshal(m, b)
@@ -1198,7 +1192,7 @@ func (m *ReportNotUsefulResponse) Reset()         { *m = ReportNotUsefulResponse
 func (m *ReportNotUsefulResponse) String() string { return proto.CompactTextString(m) }
 func (*ReportNotUsefulResponse) ProtoMessage()    {}
 func (*ReportNotUsefulResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tricium_f7a59ad663c62930, []int{15}
+	return fileDescriptor_tricium_30a7dda4c84ace3f, []int{15}
 }
 func (m *ReportNotUsefulResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReportNotUsefulResponse.Unmarshal(m, b)
@@ -1582,10 +1576,10 @@ var _Tricium_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/v1/tricium.proto", fileDescriptor_tricium_f7a59ad663c62930)
+	proto.RegisterFile("infra/tricium/api/v1/tricium.proto", fileDescriptor_tricium_30a7dda4c84ace3f)
 }
 
-var fileDescriptor_tricium_f7a59ad663c62930 = []byte{
+var fileDescriptor_tricium_30a7dda4c84ace3f = []byte{
 	// 1001 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0x5d, 0x6e, 0xdb, 0x46,
 	0x10, 0x36, 0x23, 0x4b, 0xa4, 0x86, 0xae, 0xcc, 0x2c, 0x12, 0x9b, 0x56, 0x11, 0xc4, 0x65, 0xfb,
