@@ -45,6 +45,8 @@ const (
 	// backgroundTaskExpirationSecs is the expiration time (in seconds) for
 	// background tasks created by tasker.
 	backgroundTaskExpirationSecs = 60 * 10
+	// fleetAdminTaskTag identifies all tasks created by the fleet admin app.
+	fleetAdminTaskTag = "skylab:fleet_admin"
 	// luciProjectTag is the swarming tag that associates the task with a
 	// luci project, allowing milo to work with the swarming UI.
 	luciProjectTag = "luci_project:chromiumos"
