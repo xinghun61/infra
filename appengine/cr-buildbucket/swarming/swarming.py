@@ -52,6 +52,7 @@ from third_party import annotations_pb2
 
 from . import isolate
 from . import swarmingcfg as swarmingcfg_module
+from proto import build_pb2
 from proto.config import project_config_pb2
 import annotations
 import buildtags
@@ -1098,6 +1099,7 @@ def _extract_properties(annotation_step):
 
 
 def _extract_build_annotations(build_key, build_run_result):
+  # TODO(nodir): remove this function.
   build_run_result = build_run_result or {}
   ann_dict = build_run_result.get('annotations')
   ann_url = build_run_result.get('annotationUrl')
@@ -1114,6 +1116,26 @@ def _extract_build_annotations(build_key, build_run_result):
   )
 
 
+def _extract_build_steps(build_run_result):
+  """Extracts a list of buildbucket.v2.Step from build_run_result."""
+  # TODO(crbug.com/853450): remove, accept build steps from kitchen directly.
+  build_run_result = build_run_result or {}
+  ann_dict = build_run_result.get('annotations')
+  ann_url = build_run_result.get('annotationUrl')
+  if not ann_dict or not ann_url:  # pragma: no cover
+    return []
+
+  ann_step = annotations_pb2.Step()
+  json_format.Parse(json.dumps(ann_dict), ann_step, ignore_unknown_fields=True)
+
+  host, project, prefix, _ = logdog.parse_url(ann_url)
+  parser = annotations.StepParser(
+      default_logdog_host=host,
+      default_logdog_prefix='%s/%s' % (project, prefix),
+  )
+  return parser.parse_substeps(ann_step.substep)
+
+
 @ndb.tasklet
 def _sync_build_async(build_id, task_result, bucket, builder):
   """Syncs Build entity in the datastore with the swarming task."""
@@ -1124,13 +1146,19 @@ def _sync_build_async(build_id, task_result, bucket, builder):
         _load_build_run_result_async(task_result, bucket, builder)
     )
 
-  build_ann = _extract_build_annotations(
-      ndb.Key(model.Build, build_id), build_run_result
+  build_key = ndb.Key(model.Build, build_id)
+  # TODO(nodir): remove this statement.
+  build_ann = _extract_build_annotations(build_key, build_run_result)
+  # TODO(nodir): accept build steps via a separate RPC.
+  step_container = build_pb2.Build(steps=_extract_build_steps(build_run_result))
+  build_steps = model.BuildSteps(
+      key=model.BuildSteps.key_for(build_key),
+      steps=step_container.SerializeToString(),
   )
 
   @ndb.transactional_tasklet
   def txn_async():
-    build = yield model.Build.get_by_id_async(build_id)
+    build = yield build_key.get_async()
     if not build:  # pragma: no cover
       raise ndb.Return(None)
     made_change = _sync_build_in_memory(
@@ -1144,7 +1172,12 @@ def _sync_build_async(build_id, task_result, bucket, builder):
     if build.status == model.BuildStatus.STARTED:
       futures.append(events.on_build_starting_async(build))
     elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
-      futures.append(events.on_build_completing_async(build))
+      futures += [
+          build_steps.put_async(),
+          events.on_build_completing_async(build),
+      ]
+
+      # TODO(nodir): remove this.
       if build_ann:
         futures.append(build_ann.put_async())
 

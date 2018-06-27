@@ -259,6 +259,23 @@ class Build(ndb.Model):
     self.leasee = None
 
 
+class BuildDetailEntity(ndb.Model):
+  """A base class for a Datastore entity that stores some details of one Build.
+
+  Entity key: Parent is Build entity key. ID is 1.
+  """
+
+  @classmethod
+  def key_for(cls, build_key):  # pragma: no cover
+    return ndb.Key(cls, 1, parent=build_key)
+
+
+class BuildSteps(BuildDetailEntity):
+  """Stores buildbucket.v2.Steps of a build, if available."""
+  # buildbucket.v2.Build binary protobuf message with only "steps" field set.
+  steps = ndb.BlobProperty()
+
+
 class Builder(ndb.Model):
   """A builder in a bucket.
 

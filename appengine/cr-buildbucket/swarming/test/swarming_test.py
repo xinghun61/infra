@@ -24,6 +24,9 @@ import webapp2
 
 from third_party import annotations_pb2
 
+from proto import build_pb2
+from proto import common_pb2
+from proto import step_pb2
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from swarming import isolate
@@ -1226,18 +1229,6 @@ class SwarmingTest(BaseTest):
 
   @mock.patch('swarming.swarming._load_build_run_result_async', autospec=True)
   def test_sync(self, load_build_run_result_async):
-    ann_step = annotations_pb2.Step(
-        substep=[
-            annotations_pb2.Step.Substep(
-                step=annotations_pb2.Step(
-                    name='bot_update',
-                    status=annotations_pb2.SUCCESS,
-                ),
-            ),
-        ],
-    )
-    ann_url = 'logdog://url'
-
     load_build_run_result_async.return_value = future((None, None))
     cases = [
         {
@@ -1278,8 +1269,23 @@ class SwarmingTest(BaseTest):
                 'completed_ts': '2018-01-30T00:15:18.162860',
             },
             'build_run_result': {
-                'annotationUrl': ann_url,
-                'annotations': json.loads(json_format.MessageToJson(ann_step)),
+                'annotationUrl':
+                    'logdog://logdog.example.com/chromium/prefix/+/annotations',
+                'annotations':
+                    json.loads(
+                        json_format.MessageToJson(
+                            annotations_pb2.Step(
+                                substep=[
+                                    annotations_pb2.Step.Substep(
+                                        step=annotations_pb2.Step(
+                                            name='bot_update',
+                                            status=annotations_pb2.SUCCESS,
+                                        ),
+                                    ),
+                                ],
+                            )
+                        )
+                    ),
             },
             'status':
                 model.BuildStatus.COMPLETED,
@@ -1289,11 +1295,9 @@ class SwarmingTest(BaseTest):
                 datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
             'complete_time':
                 datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-            'build_annotations':
-                annotations.BuildAnnotations(
-                    annotation_url=ann_url,
-                    annotation_binary=ann_step.SerializeToString(),
-                ),
+            'build_steps': [
+                step_pb2.Step(name='bot_update', status=common_pb2.SUCCESS)
+            ],
         },
         {
             'task_result': {
@@ -1439,11 +1443,11 @@ class SwarmingTest(BaseTest):
     for case in cases:
       build = mkBuild(canary=False)
       build.put()
-      ann_key = annotations.BuildAnnotations.key_for(build.key)
+      steps_key = model.BuildSteps.key_for(build.key)
 
       # This is cleanup after prev test in this func.
-      # TODO(nodir): rewrite all this code in Go.
-      ann_key.delete()
+      # TODO(nodir): split the test.
+      steps_key.delete()
 
       load_build_run_result_async.return_value = future((
           case.get('build_run_result'),
@@ -1461,18 +1465,16 @@ class SwarmingTest(BaseTest):
       self.assertEqual(build.start_time, case.get('start_time'))
       self.assertEqual(build.complete_time, case.get('complete_time'))
 
-      expected_annotations = case.get('build_annotations')
-      actual_annotations = ann_key.get()
-      self.assertEqual(expected_annotations is None, actual_annotations is None)
-      if actual_annotations:
-        self.assertEqual(
-            actual_annotations.annotation_url,
-            expected_annotations.annotation_url
-        )
-        self.assertEqual(
-            actual_annotations.annotation_binary,
-            expected_annotations.annotation_binary
-        )
+      expected_steps = case.get('build_steps') or []
+      actual_build_steps = steps_key.get()
+      self.assertTrue(
+          build.status != model.BuildStatus.COMPLETED or
+          actual_build_steps is not None
+      )
+      step_container = build_pb2.Build()
+      if actual_build_steps:
+        step_container.MergeFromString(actual_build_steps.steps)
+      self.assertEqual(list(step_container.steps), expected_steps)
 
   @mock.patch('swarming.isolate.fetch_async')
   def test_load_build_run_result_async(self, fetch_isolate_async):

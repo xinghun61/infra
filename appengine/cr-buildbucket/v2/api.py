@@ -120,6 +120,7 @@ def builds_to_v2_async(builds, build_mask):
   builds_msgs = map(v2.build_to_v2_partial, builds)
 
   if build_mask and build_mask.includes('steps'):  # pragma: no branch
+    # TODO(nodir): read model.BuildSteps instead.
     build_anns = yield ndb.get_multi_async([
         annotations.BuildAnnotations.key_for(b.key) for b in builds
     ])

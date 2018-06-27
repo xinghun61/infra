@@ -104,6 +104,7 @@ def _process_pull_task_batch(queue_name, dataset):
 
   # Fetch builds and build annotations for the tasks.
   build_keys = [ndb.Key(model.Build, bid) for bid in build_ids]
+  # TODO(nodir): read model.BuildSteps instead.
   build_annotation_keys = map(annotations.BuildAnnotations.key_for, build_keys)
   entities = ndb.get_multi(build_keys + build_annotation_keys)
   builds = entities[:len(build_keys)]
