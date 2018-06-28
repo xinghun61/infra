@@ -11,7 +11,7 @@ from google.appengine.api import urlfetch_errors
 from gae_libs.http import auth_util
 from libs.http.retry_http_client import RetryHttpClient
 
-_GAE_RETRIABLE_EXCEPTIONS = [
+GAE_RETRIABLE_EXCEPTIONS = [
     urlfetch_errors.DownloadError,
     urlfetch_errors.InternalTransientError,
 ]
@@ -23,7 +23,7 @@ class HttpClientAppengine(RetryHttpClient):
   def __init__(self,
                follow_redirects=True,
                interceptor=auth_util.AuthenticatingInterceptor(
-                   retriable_exceptions=_GAE_RETRIABLE_EXCEPTIONS),
+                   retriable_exceptions=GAE_RETRIABLE_EXCEPTIONS),
                *args,
                **kwargs):
     """Create a new client suitable for use within the app engine app."""

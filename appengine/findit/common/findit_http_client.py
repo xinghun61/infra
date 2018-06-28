@@ -39,10 +39,12 @@ class FinditHttpClient(http_client_appengine.HttpClientAppengine):
   libs/http/interceptor.py).
   """
 
-  def __init__(self,
-               interceptor=HttpClientMetricsInterceptor(),
-               *args,
-               **kwargs):
+  def __init__(
+      self,
+      interceptor=HttpClientMetricsInterceptor(
+          retriable_exceptions=http_client_appengine.GAE_RETRIABLE_EXCEPTIONS),
+      *args,
+      **kwargs):
     """Constructor for the http client.
 
     We set the interceptor by default to HttpClientMetricsInterceptor which,
