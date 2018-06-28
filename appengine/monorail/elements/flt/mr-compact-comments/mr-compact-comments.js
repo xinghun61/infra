@@ -69,5 +69,9 @@ class MrCompactComments extends Polymer.Element {
 
     this.$.commentText.value = '';
   }
+
+  _showDiff(comment) {
+    return comment.descriptionNum || comment.amendments;
+  }
 }
 customElements.define(MrCompactComments.is, MrCompactComments);

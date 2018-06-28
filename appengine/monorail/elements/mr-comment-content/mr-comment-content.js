@@ -1,14 +1,14 @@
 'use strict';
 
 /**
- * `<mr-comment>`
+ * `<mr-comment-content>`
  *
  * Displays text for a comment.
  *
  */
-class MrComment extends Polymer.Element {
+class MrCommentContent extends Polymer.Element {
   static get is() {
-    return 'mr-comment';
+    return 'mr-comment-content';
   }
 
   static get properties() {
@@ -33,4 +33,4 @@ class MrComment extends Polymer.Element {
     return temp.textContent || temp.innerText;
   }
 }
-customElements.define(MrComment.is, MrComment);
+customElements.define(MrCommentContent.is, MrCommentContent);

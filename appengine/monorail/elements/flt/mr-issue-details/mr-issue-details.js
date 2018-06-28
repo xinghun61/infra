@@ -30,11 +30,16 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
   }
 
   _filterComments(comments) {
-    return comments.filter((c) => (!c.descriptionNum && !c.approvalRef));
+    return comments.filter((c) => (!c.approvalRef && c.sequenceNum));
   }
 
   _computeDescription(comments) {
-    return comments.find((c) => (c.descriptionNum === 1));
+    for (let i = comments.length - 1; i >= 0; i--) {
+      if (!comments[i].approvalRef && comments[i].descriptionNum) {
+        return comments[i];
+      }
+    }
+    return {};
   }
 }
 customElements.define(MrIssueDetails.is, MrIssueDetails);

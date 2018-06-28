@@ -173,17 +173,22 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   _filterComments(comments, title) {
     if (!comments || !title) return;
     return comments.filter((c) => (
-      !c.descriptionNum && c.approvalRef && c.approvalRef.fieldName === title)
-    );
+      c.approvalRef && c.approvalRef.fieldName === title
+    )).splice(1);
   }
 
   // TODO(zhangtiff): Change data flow here so that this is only computed
   // once for all approvals.
   _computeSurvey(comments, title) {
     if (!comments || !title) return;
-    return comments.find((c) => (
-      c.descriptionNum > 0 && c.approvalRef && c.approvalRef.fieldName === title
-    ));
+    for (let i = comments.length - 1; i >= 0; i--) {
+      if (comments[i].approvalRef
+          && comments[i].approvalRef.fieldName === title
+          && comments[i].descriptionNum) {
+        return comments[i];
+      }
+    }
+    return {};
   }
 
   // TODO(zhangtiff): Change data flow here so that approvals are only

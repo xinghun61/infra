@@ -2,7 +2,8 @@
 
 <link rel="import" href="../../../bower_components/chopsui/chops-button.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
-<link rel="import" href="../../mr-comment/mr-comment.html">
+
+<link rel="import" href="../../mr-comment-content/mr-comment-content.html">
 
 <dom-module id="mr-compact-comments">
   <template>
@@ -50,6 +51,16 @@
         color: hsl(0, 0%, 39%);
         margin-bottom: 0.5em;
       }
+      .issue-diff {
+        display: inline-block;
+        font-size: 80%;
+        border-radius: 5px;
+        padding: 0.5em 8px;
+        width: auto;
+        background: hsl(227, 100%, 98%);
+        border: 1px solid hsl(227, 10%, 92%);
+        margin-bottom: 0.5em;
+      }
     </style>
     <button on-click="toggleComments" class="toggle" hidden$="[[_hideToggle]]">
       Toggle [[_commentsHiddenCount]] older comments collapsed by default.
@@ -61,7 +72,21 @@
           <mr-user-link display-name="[[comment.commenter.displayName]]" user-id="[[comment.commenter.userId]]"></mr-user-link> on
           <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
         </div>
-        <mr-comment content="[[comment.content]]"></mr-comment>
+        <template is="dom-if" if="[[_showDiff(comment)]]">
+          <div class="issue-diff">
+            <template is="dom-repeat" items="[[comment.amendments]]" as="delta">
+              <strong>[[delta.fieldName]]:</strong> [[delta.newOrDeltaValue]]
+              <template is="dom-if" if="[[delta.oldValue]]">
+                (was: [[delta.oldValue]])
+              </template>
+              <br />
+            </template>
+            <template is="dom-if" if="[[comment.descriptionNum]]">
+              Description was changed.
+            </template>
+          </div><br />
+        </template>
+        <mr-comment-content hidden$="[[comment.descriptionNum]]" content="[[comment.content]]"></mr-comment-content>
       </div>
     </template>
     <textarea id="commentText" value="{{_newCommentText::input}}" placeholder="Add a comment"></textarea>

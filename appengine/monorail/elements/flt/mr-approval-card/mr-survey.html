@@ -4,7 +4,8 @@
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 
 <link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
-<link rel="import" href="../../mr-comment/mr-comment.html">
+
+<link rel="import" href="../../mr-comment-content/mr-comment-content.html">
 
 <dom-module id="mr-survey">
   <template>
@@ -38,7 +39,7 @@
         edit-text="Edit responses"
         placeholder="Survey content and answer">
       <div class="survey">
-        <mr-comment content="[[survey.content]]"></mr-comment>
+        <mr-comment-content content="[[survey.content]]"></mr-comment-content>
       </div>
     </mr-inline-editor>
   </template>
