@@ -37,6 +37,14 @@ BLACKLISTED_VERSIONS = [
     '67.0.3376.1',
 ]
 
+EXTRA_CUSTOM_VARS = {
+  # This tag's DEPS file uses a variable that is not defined, as explained in
+  # https://crbug.com/856344
+  '67.0.3396.99': {
+    'chrome_git': 'https://chrome-internal.googlesource.com',
+  },
+}
+
 def gsutil_upload(api, source, bucket, dest, args):
   api.gsutil.upload(source, bucket, dest, args, name=str('upload ' + dest))
 
@@ -230,6 +238,9 @@ def RunSteps(api):
   api.gclient.set_config('chromium')
   solution = api.gclient.c.solutions[0]
   solution.revision = 'refs/tags/%s' % version
+  extra_custom_vars = EXTRA_CUSTOM_VARS.get(version, {})
+  solution.custom_vars.update(extra_custom_vars)
+
   api.bot_update.ensure_checkout(
       with_branch_heads=True, with_tags=True, suffix=version)
 
@@ -315,6 +326,13 @@ def GenTests(api):
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
     api.path.exists(api.path['checkout'].join(
         'third_party', 'node', 'node_modules.tar.gz.sha1'))
+  )
+
+  yield (
+    api.test('extra_config_params') +
+    api.properties.generic(version='67.0.3396.99') +
+    api.platform('linux', 64) +
+    api.step_data('gsutil ls', stdout=api.raw_io.output(''))
   )
 
   yield (
