@@ -128,9 +128,9 @@ func getCommitLog(ctx context.Context, cfg *RepoConfig, repoState *RepoState, cs
 		return []*git.Commit{}, err
 	}
 	logReq := gitilespb.LogRequest{
-		Project:  project,
-		Ancestor: repoState.LastKnownCommit,
-		Treeish:  cfg.BranchName,
+		Project:            project,
+		ExcludeAncestorsOf: repoState.LastKnownCommit,
+		Treeish:            cfg.BranchName,
 	}
 
 	gc, err := cs.NewGitilesClient(host)

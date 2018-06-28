@@ -100,10 +100,10 @@ func TestAuditor(t *testing.T) {
 
 				Convey("No revisions", func() {
 					gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-						Project:  "dummy",
-						Treeish:  "refs/heads/master",
-						Ancestor: "123456",
-						PageSize: 6000,
+						Project:            "dummy",
+						Treeish:            "refs/heads/master",
+						ExcludeAncestorsOf: "123456",
+						PageSize:           6000,
 					}).Return(&gitilespb.LogResponse{
 						Log: []*git.Commit{},
 					}, nil)
@@ -118,10 +118,10 @@ func TestAuditor(t *testing.T) {
 				})
 				Convey("No interesting revisions", func() {
 					gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-						Project:  "dummy",
-						Treeish:  "refs/heads/master",
-						Ancestor: "123456",
-						PageSize: 6000,
+						Project:            "dummy",
+						Treeish:            "refs/heads/master",
+						ExcludeAncestorsOf: "123456",
+						PageSize:           6000,
 					}).Return(&gitilespb.LogResponse{
 						Log: []*git.Commit{{Id: "abcdef000123123"}},
 					}, nil)
@@ -136,10 +136,10 @@ func TestAuditor(t *testing.T) {
 				})
 				Convey("Interesting revisions", func() {
 					gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-						Project:  "dummy",
-						Treeish:  "refs/heads/master",
-						Ancestor: "123456",
-						PageSize: 6000,
+						Project:            "dummy",
+						Treeish:            "refs/heads/master",
+						ExcludeAncestorsOf: "123456",
+						PageSize:           6000,
 					}).Return(&gitilespb.LogResponse{
 						Log: []*git.Commit{
 							{Id: "deadbeef"},
@@ -185,10 +185,10 @@ func TestAuditor(t *testing.T) {
 
 				So(err, ShouldBeNil)
 				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-					Project:  "dummy",
-					Treeish:  "refs/heads/master",
-					Ancestor: "222222",
-					PageSize: 6000,
+					Project:            "dummy",
+					Treeish:            "refs/heads/master",
+					ExcludeAncestorsOf: "222222",
+					PageSize:           6000,
 				}).Return(&gitilespb.LogResponse{
 					Log: []*git.Commit{},
 				}, nil)
