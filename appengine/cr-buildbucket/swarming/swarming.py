@@ -778,7 +778,7 @@ def create_task_async(build, build_number=None):
   )
 
   task_id = res['task_id']
-  logging.info('Created a swarming task %s: %r', task_id, res)
+  logging.info('Created a swarming task %s', task_id)
 
   build.swarming_task_id = task_id
 
