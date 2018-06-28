@@ -13,6 +13,7 @@ from model.flake.detection.flake import Flake
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
 from model.flake.detection.flake_issue import FlakeIssue
+from services import issue_tracking_service
 
 # Maximum number of Monorail issues allowed to be created or updated in any 24h
 # window.
@@ -195,3 +196,179 @@ def GetFlakesNeedToReportToMonorail():
                len(flake_tuples_to_report))
 
   return flake_tuples_to_report
+
+
+def SearchExistingOpenIssuesForFlakyTest(normalized_test_name,
+                                         monorail_project):
+  """Searches for an existing open issue for this flaky test.
+
+  Args:
+    normalized_test_name: The normalized test name to search for.
+    monorail_project: The Monorail project to search for.
+
+  Returns:
+    id of the issue if it exists, otherwise None.
+  """
+  # Check for open bug without customized field first because a bug that was
+  # created manually is more likely to gain attentions, so it is preferred.
+  issue = issue_tracking_service.GetExistingOpenBugForTest(
+      normalized_test_name, monorail_project)
+  if issue:
+    return issue.id
+
+  issue = issue_tracking_service.GetExistingBugForCustomizedField(
+      normalized_test_name, monorail_project)
+  if issue:
+    return issue.id
+
+  return None
+
+
+def _GetLinkForIssue(monorail_project, issue_id):
+  """Given a project and issue id, gets a link to the issue on Monorail.
+
+  Args:
+    monorail_project: Project name of the issue on Monorail.
+    issue_id: Id of the issue.
+
+  Returns:
+    A link to the issue on Monorail.
+  """
+  assert monorail_project, "Unsupported monorail project: %s" % monorail_project
+
+  if monorail_project == 'chromium':
+    return 'crbug.com/%d' % issue_id
+
+  return 'https://bugs.chromium.org/p/%s/issues/detail?id=%d' % (
+      monorail_project, issue_id)
+
+
+def CreateIssueForFlake(flake, occurrences, previous_tracking_bug_id):
+  """Creates an issue for a flaky test.
+
+  This method is a wrapper around issue_tracking_service, plus taking care of
+  model updates.
+
+  Args:
+    flake: A Flake Model entity.
+    occurrences: The newly detected flake occurrences to report.
+    previous_tracking_bug_id: id of the previous bug that was used to track this
+                              flaky test.
+  """
+  monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
+      flake.luci_project)
+  issue_id = issue_tracking_service.CreateBugForFlakeDetection(
+      normalized_step_name=flake.normalized_step_name,
+      normalized_test_name=flake.normalized_test_name,
+      num_occurrences=len(occurrences),
+      monorail_project=monorail_project,
+      previous_tracking_bug_id=previous_tracking_bug_id)
+
+  logging.info('%s was created for flake: %s.',
+               _GetLinkForIssue(monorail_project, issue_id), flake.key)
+  flake_issue = FlakeIssue.Create(monorail_project, issue_id)
+  flake_issue.put()
+  flake.flake_issue_key = flake_issue.key
+  flake.put()
+
+
+def UpdateIssueForFlake(flake, occurrences, previous_tracking_bug_id):
+  """Updates the issue for a flaky test with new occurrences.
+
+  This method is a wrapper around issue_tracking_service, plus taking care of
+  model updates.
+
+  Args:
+    flake: A Flake Model entity.
+    occurrences: The newly detected flake occurrences to report.
+    previous_tracking_bug_id: id of the previous bug that was used to track this
+                              flaky test.
+  """
+  flake_issue = flake.flake_issue_key.get()
+  monorail_project = flake_issue.monorail_project
+  issue_tracking_service.UpdateBugForFlakeDetection(
+      bug_id=flake_issue.issue_id,
+      normalized_test_name=flake.normalized_test_name,
+      num_occurrences=len(occurrences),
+      monorail_project=monorail_project,
+      previous_tracking_bug_id=previous_tracking_bug_id)
+
+  logging.info('%s was updated for flake: %s.',
+               _GetLinkForIssue(monorail_project, flake_issue.issue_id),
+               flake.key)
+  flake_issue.last_updated_time = time_util.GetUTCNow()
+  flake_issue.put()
+
+
+def _ReportFlakeToMonorail(flake, occurrences):
+  """Reports a flake and its new occurrences to Monorail.
+
+  Args:
+    flake: A Flake Model entity.
+    occurrences: A list of new occurrences.
+  """
+  logging.info('Reporting Flake: %s to Monorail.', flake.key)
+
+  monorail_project = FlakeIssue.GetMonorailProjectFromLuciProject(
+      flake.luci_project)
+  flake_issue = _GetFlakeIssue(flake)
+  if flake_issue:
+    merged_issue = issue_tracking_service.GetBugForId(flake_issue.issue_id)
+    previous_tracking_bug_id = None
+    if flake_issue.issue_id != merged_issue.id:
+      logging.info(
+          'Currently attached issue %s was merged to %s, attach the new issue '
+          'id to this flake.',
+          _GetLinkForIssue(monorail_project, flake_issue.issue_id),
+          _GetLinkForIssue(monorail_project, merged_issue.id))
+      previous_tracking_bug_id = flake_issue.issue_id
+      flake_issue.issue_id = merged_issue.id
+      flake_issue.put()
+
+    if merged_issue.open:
+      logging.info(
+          'Currently attached issue %s is open, update it with new '
+          'occurrences.',
+          _GetLinkForIssue(monorail_project, merged_issue.id))
+      UpdateIssueForFlake(flake, occurrences, previous_tracking_bug_id)
+      return
+
+    previous_tracking_bug_id = merged_issue.id
+
+    # TODO(crbug.com/856652): Implement logic to decide if it's better to
+    # re-open a closed bug than create a new one.
+    logging.info(
+        'Currently attached %s was closed or deleted, create a new one.',
+        _GetLinkForIssue(monorail_project, previous_tracking_bug_id))
+    CreateIssueForFlake(flake, occurrences, previous_tracking_bug_id)
+    return
+
+  logging.info('This flake has no issue attached.')
+
+  # Re-use an existing open bug if possible.
+  issue_id = SearchExistingOpenIssuesForFlakyTest(flake.normalized_test_name,
+                                                  monorail_project)
+  if issue_id:
+    logging.info(
+        'An existing issue %s was found, attach it to this flake and update it '
+        'with new occurrences.', _GetLinkForIssue(monorail_project, issue_id))
+    flake_issue = FlakeIssue.Create(monorail_project, issue_id)
+    flake_issue.put()
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+    UpdateIssueForFlake(flake, occurrences, None)
+  else:
+    logging.info('No existing open issue was found, create a new one.')
+    CreateIssueForFlake(flake, occurrences, None)
+
+
+def ReportFlakesToMonorail(flake_tuples_to_report):
+  """Reports newly detected flakes and occurrences to Monorail.
+
+  Args:
+    flake_tuples_to_report: A list of tuples whose first element is a Flake
+                            entity and second element is a list of corresponding
+                            occurrences to report.
+  """
+  for flake, occurrences in flake_tuples_to_report:
+    _ReportFlakeToMonorail(flake, occurrences)

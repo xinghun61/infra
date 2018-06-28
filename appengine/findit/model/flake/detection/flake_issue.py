@@ -4,6 +4,9 @@
 
 from google.appengine.ext import ndb
 
+# Mapping between luci project and monorail project.
+_LUCI_PROJECT_TO_MONORAIL_PROJECT = {'chromium': 'chromium'}
+
 
 class FlakeIssue(ndb.Model):
   """Tracks a Monorail issue for a particular Flake."""
@@ -28,3 +31,16 @@ class FlakeIssue(ndb.Model):
     flake_issue_id = cls.GetId(monorail_project, issue_id)
     return cls(
         monorail_project=monorail_project, issue_id=issue_id, id=flake_issue_id)
+
+  @staticmethod
+  def GetMonorailProjectFromLuciProject(luci_project):
+    """Given a luci project, returns the corresponding monorail project.
+
+    Args:
+      luci_project: A luci project name.
+
+    Returns:
+      The corresponding monorail project name if it exists in the mapping,
+      otherwise None.
+    """
+    return _LUCI_PROJECT_TO_MONORAIL_PROJECT.get(luci_project, None)
