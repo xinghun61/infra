@@ -38,9 +38,7 @@
         <option value="user_type" [is initial_type "user_type"]selected="selected"[end]>User</option>
         <option value="date_type" [is initial_type "date_type"]selected="selected"[end]>Date</option>
         <option value="url_type" [is initial_type "url_type"]selected="selected"[end]>URL</option>
-        [if-any dev_mode]
         <option value="approval_type" [is initial_type "approval_type"]selected="selected"[end]>Approval</option>
-        [end]
       </select>
     </td>
   </tr>

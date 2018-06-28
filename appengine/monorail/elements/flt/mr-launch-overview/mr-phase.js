@@ -25,16 +25,17 @@ class MrPhase extends Polymer.Element {
 
   static get properties() {
     return {
-      user: String,
-      phase: Object,
+      phaseName: String,
+      status: String,
+      target: Number,
+      approvals: Array,
       _nextDate: {
         type: Date,
-        computed: `_computeNextDate(phase.phaseName, phase.status,
-          _milestoneData.mstones)`,
+        computed: `_computeNextDate(phaseName, status, _milestoneData.mstones)`,
       },
       _dateDescriptor: {
         type: String,
-        computed: '_computeDateDescriptor(phase.status)',
+        computed: '_computeDateDescriptor(status)',
       },
       _milestoneData: Object,
     };

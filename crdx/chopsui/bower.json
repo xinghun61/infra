@@ -34,7 +34,8 @@
     "paper-item": "PolymerElements/paper-item#~2.0",
     "paper-input": "PolymerElements/paper-input#~2.0",
     "polymer": "Polymer/polymer#^2.0.0",
-    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1"
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1",
+    "marked": "^0.4.0"
   },
   "devDependencies": {
     "iron-test-helpers": "PolymerElements/iron-test-helpers",
@@ -43,6 +44,7 @@
   },
   "resolutions": {
     "polymer": "^2.0.0",
-    "iron-behaviors": "1 - 2"
+    "iron-behaviors": "1 - 2",
+    "marked": "^0.4.0"
   }
 }

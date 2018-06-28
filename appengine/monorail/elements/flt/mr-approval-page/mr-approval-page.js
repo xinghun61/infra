@@ -33,7 +33,6 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'fetchIssueError',
       },
-      phases: Array,
       loginUrl: String,
       logoutUrl: String,
       queryParams: Object,
@@ -43,10 +42,13 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
         type: String,
         observer: '_tokenChanged',
       },
-      user: String,
-      _token: {
+      user: {
         type: String,
-        statePath: 'token',
+        observer: '_userChanged',
+      },
+      _user: {
+        type: String,
+        statePath: 'user',
       },
       _userMenuItems: {
         type: Array,
@@ -63,23 +65,31 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
   }
 
   _issueIdChanged(id, projectName) {
-    if (!id || !projectName) return;
+    if (!id || !projectName || this.fetchingIssue) return;
 
     this.dispatch({type: actionType.FETCH_ISSUE_START});
 
     const message = {
-      trace: {token: this._token},
+      trace: {token: this.token},
       issue_ref: {
         project_name: projectName,
         local_id: id,
       },
     };
-    window.prpcClient.call(
+
+    const getIssue = window.prpcClient.call(
       'monorail.Issues', 'GetIssue', message
-    ).then((resp) => {
+    );
+
+    const getComments = window.prpcClient.call(
+      'monorail.Issues', 'ListComments', message
+    );
+
+    Promise.all([getIssue, getComments]).then((resp) => {
       this.dispatch({
         type: actionType.FETCH_ISSUE_SUCCESS,
-        issue: resp.issue,
+        issue: resp[0].issue,
+        comments: resp[1].comments,
       });
     }, (error) => {
       this.dispatch({
@@ -101,6 +111,13 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     this.dispatch({
       type: actionType.UPDATE_TOKEN,
       token,
+    });
+  }
+
+  _userChanged(user) {
+    this.dispatch({
+      type: actionType.UPDATE_USER,
+      user,
     });
   }
 

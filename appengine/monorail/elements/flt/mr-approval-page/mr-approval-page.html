@@ -8,7 +8,7 @@
 <link rel="import" href="../mr-approval-page/mr-issue-header.html">
 <link rel="import" href="../mr-dropdown/mr-dropdown.html">
 <link rel="import" href="../mr-issue-details/mr-issue-details.html">
-<link rel="import" href="../mr-issue-details/mr-metadata.html">
+<link rel="import" href="../mr-metadata/mr-issue-metadata.html">
 <link rel="import" href="../mr-launch-overview/mr-launch-overview.html">
 <link rel="import" href="../../mixins/redux-mixin.html">
 
@@ -107,12 +107,6 @@
       pattern="/p/:project/issues/approval"
       data="{{routeData}}"
     ></app-route>
-    <iron-ajax
-        auto
-        url="/elements/mock-data/phases-mock.json"
-        handle-as="json"
-        last-response="{{phases}}">
-    </iron-ajax>
     <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
       <span slot="subheader">&gt; <a href="#">Feature Launch Issue</a></span>
       <template is="dom-if" if="[[user]]">
@@ -134,11 +128,11 @@
       <mr-issue-header></mr-issue-header>
       <div class="container-outside">
         <div class="metadata-container">
-          <mr-metadata></mr-metadata>
+          <mr-issue-metadata></mr-issue-metadata>
         </div>
         <div class="container-main">
           <mr-issue-details class="main-item"></mr-issue-details>
-          <mr-launch-overview class="main-item" user="[[user]]" phases="[[phases]]"></mr-launch-overview>
+          <mr-launch-overview class="main-item"></mr-launch-overview>
         </div>
       </div>
     </template>

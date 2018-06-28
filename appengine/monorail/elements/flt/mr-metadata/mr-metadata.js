@@ -3,7 +3,7 @@
 /**
  * `<mr-metadata>`
  *
- * The metadata view for a single issue. Contains information such as the owner.
+ * Generalized metadata for either approvals or issues.
  *
  */
 class MrMetadata extends ReduxMixin(Polymer.Element) {
@@ -13,35 +13,27 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
 
   static get properties() {
     return {
-      issue: {
-        type: Object,
-        statePath: 'issue',
+      approvalStatus: String,
+      approvers: Array,
+      setter: Object,
+      cc: Array,
+      components: Array,
+      fields: Array,
+      issueStatus: String,
+      blockedOn: Array,
+      blocking: Array,
+      owner: Object,
+      projectName: {
+        type: String,
+        statePath: 'issue.projectName',
       },
-      statuses: {
-        type: Array,
-        value: [
-          'Unconfirmed',
-          'Untriaged',
-          'Available',
-          'Assigned',
-          'Started',
-        ],
-      },
-      // issue.fieldValues is an array with one entry per values.
+      // fields (from issue.fieldValues) is an array with one entry per values.
       // We want to remap each fieldRef into its own list entry.
       _fieldList: {
         type: Array,
-        computed: '_computeFieldList(issue.fieldValues)',
+        computed: '_computeFieldList(fields)',
       },
     };
-  }
-
-  edit() {
-    this.$.editMetadata.open();
-  }
-
-  cancel() {
-    this.$.editMetadata.close();
   }
 
   _computeFieldList(values) {

@@ -2,6 +2,7 @@
 
 <link rel="import" href="../../../bower_components/chopsui/chops-button.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
+<link rel="import" href="../../mr-comment/mr-comment.html">
 
 <dom-module id="mr-compact-comments">
   <template>
@@ -55,10 +56,12 @@
     </button>
     <template is="dom-repeat" items="[[comments]]" as="comment">
       <div class="card-comment" hidden$=[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]>
-        <div class="comment-header">Comment [[index]] by [[comment.user]] on <chops-timestamp></chops-timestamp></div>
-        <template is="dom-repeat" items="[[_computeCommentLines(comment.content)]]" as="line">
-          [[line]]<br />
-        </template>
+        <div class="comment-header">
+          Comment [[comment.sequenceNum]] by
+          <mr-user-link display-name="[[comment.commenter.displayName]]" user-id="[[comment.commenter.userId]]"></mr-user-link> on
+          <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
+        </div>
+        <mr-comment content="[[comment.content]]"></mr-comment>
       </div>
     </template>
     <textarea id="commentText" value="{{_newCommentText::input}}" placeholder="Add a comment"></textarea>

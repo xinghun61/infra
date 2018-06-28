@@ -1,9 +1,10 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../../mixins/redux-mixin.html">
+<link rel="import" href="../../mr-comment/mr-comment.html">
 <link rel="import" href="../mr-compact-comments/mr-compact-comments.html">
 <link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
 <link rel="import" href="../mr-issue-details/mr-attachment-gallery.html">
-<link rel="import" href="../mr-issue-details/mr-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
 
 <dom-module id="mr-issue-details">
@@ -33,14 +34,14 @@
     </style>
     <mr-attachment-gallery></mr-attachment-gallery>
     <mr-inline-editor
-        content="{{description}}"
+        content="[[_description.content]]"
         title="Feature description"
         edit-text="Edit description"
         placeholder="Feature description">
-      [[description]]
+      <mr-comment content="[[_description.content]]"></mr-comment>
     </mr-inline-editor>
     <h3>Feature discussion / Changelog</h3>
-    <mr-compact-comments comments="[[comments]]" comments-shown-count=5></mr-compact-comments>
+    <mr-compact-comments comments="[[_comments]]" comments-shown-count=5></mr-compact-comments>
   </template>
   <script src="./mr-issue-details.js"></script>
 <dom-module>

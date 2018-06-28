@@ -5,9 +5,12 @@
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
+<link rel="import" href="../../mixins/redux-mixin.html">
+<link rel="import" href="../../mr-user-link/mr-user-link.html">
 <link rel="import" href="../mr-approval-card/mr-survey.html">
 <link rel="import" href="../mr-compact-comments/mr-compact-comments.html">
-<link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
+<link rel="import" href="../mr-metadata/mr-edit-metadata.html">
+<link rel="import" href="../mr-metadata/mr-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
 
 <dom-module id="mr-approval-card">
@@ -44,13 +47,6 @@
       mr-edit-metadata {
         width: 600px;
         max-width: 100%;
-      }
-      td, th {
-        padding: 0.5em 0;
-        padding-right: 8px;
-      }
-      th {
-        text-align: left;
       }
       .approver-notice {
         padding: 0.25em 0;
@@ -110,37 +106,15 @@
           </chops-button>
         </div>
       </template>
-      <table>
-        <tr>
-          <th>Status:</th>
-          <td>
-            [[_status]]
-          </td>
-        </tr>
-        <template is="dom-repeat" items="[[users]]" as="user">
-          <tr>
-            <th>[[user.name]]:</th>
-            <td>
-              <template is="dom-repeat" items="[[user.values]]">
-                <a href="[[item]]">[[item]]</a>
-              </template>
-            </td>
-          </tr>
-        </template>
-        <template is="dom-repeat" items="[[urls]]" as="link">
-          <tr>
-            <th>[[link.name]]:</th>
-            <td>
-              <template is="dom-repeat" items="[[link.values]]">
-                <a href="[[item]]" target="_blank">[[item]]</a>
-              </template>
-            </td>
-          </tr>
-        </template>
-      </table>
-      <mr-survey survey="[[survey]]" survey-template="[[surveyTemplate]]"></mr-survey>
+      <mr-metadata
+        approval-status="[[_status]]"
+        approvers="[[approvers]]"
+        setter="[[setter]]"
+        fields="[[_fields]]"
+      ></mr-metadata>
+      <mr-survey survey="[[_survey]]"></mr-survey>
       <h3>Approval comments / Changelog</h3>
-      <mr-compact-comments comments="[[approvalComments]]"></mr-compact-comments>
+      <mr-compact-comments comments="[[_comments]]"></mr-compact-comments>
     </iron-collapse>
     <chops-dialog id="editApproval" aria-labelledby="approvalDialogTitle">
       <h3 id="approvalDialogTitle">

@@ -4,6 +4,7 @@
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 
 <link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
+<link rel="import" href="../../mr-comment/mr-comment.html">
 
 <dom-module id="mr-survey">
   <template>
@@ -32,20 +33,12 @@
       }
     </style>
     <mr-inline-editor
-        content="{{survey}}"
+        content="{{survey.content}}"
         title$="[[title]] Survey"
         edit-text="Edit responses"
         placeholder="Survey content and answer">
       <div class="survey">
-        <template is="dom-repeat" items="[[_surveyLines]]" as="line">
-          <template is="dom-if" if="[[line.bold]]">
-            <strong>[[line.text]]</strong>
-          </template>
-          <template is="dom-if" if="[[!line.bold]]">
-           [[line.text]]
-          </template>
-          <br />
-        </template>
+        <mr-comment content="[[survey.content]]"></mr-comment>
       </div>
     </mr-inline-editor>
   </template>

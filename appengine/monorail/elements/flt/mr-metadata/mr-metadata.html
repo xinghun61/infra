@@ -1,0 +1,185 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-timestamp.html">
+<link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
+
+<link rel="import" href="../../mr-user-link/mr-user-link.html">
+<link rel="import" href="./mr-edit-metadata.html">
+<link rel="import" href="../shared/mr-flt-styles.html">
+<link rel="import" href="../../mixins/redux-mixin.html">
+
+<dom-module id="mr-metadata">
+  <template>
+    <style include="mr-flt-styles">
+      :host {
+        display: table;
+        table-layout: fixed;
+        width: 100%;
+      }
+      td, th {
+        padding: 0.5em 4px;
+        vertical-align: top;
+      }
+      td {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        width: 60%;
+      }
+      th {
+        text-align: left;
+      }
+    </style>
+    <template is="dom-if" if="[[approvalStatus]]">
+      <tr>
+        <th>Status:</th>
+        <td>
+          [[approvalStatus]]
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-if" if="[[approvers.length]]">
+      <tr>
+        <th>Approvers:</th>
+        <td>
+          <template is="dom-repeat" items="[[approvers]]">
+            <mr-user-link
+              display-name="[[item.displayName]]"
+              user-id="[[item.userId]]"
+            ></mr-user-link><br />
+          </template>
+        </td>
+      </tr>
+    </template>
+    <template is="dom-if" if="[[setter]]">
+      <th>Setter:</th>
+      <td>
+        <mr-user-link
+          display-name="[[setter.displayName]]"
+          user-id="[[setter.userId]]"
+        ></mr-user-link>
+      </td>
+    </template>
+
+    <template is="dom-if" if="[[owner]]">
+      <tr>
+        <th>Owner:</th>
+        <td>
+          <mr-user-link
+            display-name="[[owner.displayName]]"
+            user-id="[[owner.userId]]"
+          ></mr-user-link>
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-if" if="[[cc.length]]">
+      <tr>
+        <th>CC:</th>
+        <td>
+          <template is="dom-repeat" items="[[cc]]">
+            <mr-user-link
+              display-name="[[item.displayName]]"
+              user-id="[[item.userId]]"
+            ></mr-user-link><br />
+          </template>
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-if" if="[[issueStatus]]">
+      <tr>
+        <th>Status:</th>
+        <td>
+          [[issueStatus.status]]
+          <em hidden$="[[!issueStatus.meansOpen]]">
+            (Open)
+          </em>
+          <em hidden$="[[issueStatus.meansOpen]]">
+            (Closed)
+          </em>
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-if" if="[[components.length]]">
+      <tr>
+        <th>Components:</th>
+        <td>
+          <template is="dom-repeat" items="[[components]]">
+            <a href$="/p/[[item.projectName]]/issues/list?q=component:[[item.path]]">
+              [[item.path]]
+            </a>
+          </template>
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-repeat" items="[[_fieldList]]" as="field">
+      <tr>
+        <th>[[field.fieldRef.fieldName]]:</th>
+        <td>
+          <template is="dom-if" if="[[_fieldIsUrl(field.fieldRef.type)]]">
+            <template is="dom-repeat" items="[[field.values]]" as="value">
+              <a href$="[[value]]">[[value]]</a>
+            </template>
+          </template>
+
+          <template is="dom-if" if="[[_fieldIsUser(field.fieldRef.type)]]">
+            <template is="dom-repeat" items="[[field.values]]" as="value">
+              <mr-user-link
+                user-id="[[value]]"
+                display-name="[[value]]"
+              ></mr-user-link>
+            </template>
+          </template>
+
+          <template is="dom-if" if="[[_fieldIsRemainingTypes(field.fieldRef.type)]]">
+            <template is="dom-repeat" items="[[field.values]]" as="value">
+              <a href$="/p/[[projectName]]/issues/list?q=[[field.fieldRef.fieldName]]=&quot;[[value]]&quot;">
+                [[value]]</a><span hidden$="[[_isLastItem(field.values.length,index)]]">,</span>
+            </template>
+          </template>
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-if" if="[[blockedOn]]">
+      <tr>
+        <th>BlockedOn:</th>
+        <td>
+          <template is="dom-repeat" items="[[blockedOn]]">
+            <a href$="/p/[[item.projectName]]/issues/approval?id=[[item.localId]]">
+              Issue [[item.localId]]</a>
+            <br />
+          </template>
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-if" if="[[blocking]]">
+      <tr>
+        <th>Blocking:</th>
+        <td>
+          <template is="dom-repeat" items="[[blocking]]">
+            <a href$="/p/[[item.projectName]]/issues/approval?id=[[item.localId]]">
+              Issue [[item.localId]]</a>
+            <br />
+          </template>
+        </td>
+      </tr>
+    </template>
+
+    <template is="dom-if" if="[[modifiedTimestamp]]">
+      <tr>
+        <th>Modified:</th>
+        <td>
+          <chops-timestamp timestamp="[[modifiedTimestamp]]" short></chops-timestamp>
+        </td>
+      </tr>
+    </template>
+  </template>
+  <script src="./mr-metadata.js"></script>
+<dom-module>

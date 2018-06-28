@@ -55,10 +55,6 @@ class MrCompactComments extends Polymer.Element {
     return Math.max(numComments - shownCount, 0);
   }
 
-  _computeCommentLines(comment) {
-    return comment.trim().split(/(\r?\n){2}/);
-  }
-
   _computeHideToggle(hiddenCount) {
     return hiddenCount <= 0;
   }

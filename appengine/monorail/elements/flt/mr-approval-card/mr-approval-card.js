@@ -1,5 +1,16 @@
 'use strict';
 
+const STATUS_ENUM_TO_TEXT = {
+  '': 'NotSet',
+  'NEEDS_REVIEW': 'NeedsReview',
+  'NA': 'NA',
+  'REVIEW_REQUESTED': 'ReviewRequested',
+  'REVIEW_STARTED': 'ReviewStarted',
+  'NEED_INFO': 'NeedInfo',
+  'APPROVED': 'Approved',
+  'NOT_APPROVED': 'NotApproved',
+};
+
 const STATUS_CLASS_MAP = {
   'NotSet': 'status-notset',
   'NeedsReview': 'status-pending',
@@ -24,7 +35,7 @@ const CLASS_ICON_MAP = {
  * This element shows a card for a single approval.
  *
  */
-class MrApprovalCard extends Polymer.Element {
+class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   static get is() {
     return 'mr-approval-card';
   }
@@ -32,23 +43,35 @@ class MrApprovalCard extends Polymer.Element {
   static get properties() {
     return {
       title: String,
+      approvers: Array,
       approvalComments: Array,
       phaseName: String,
-      survey: String,
-      surveyTemplate: String,
-      urls: Array,
-      labels: Array,
-      users: Array,
-      user: String,
+      setter: Object,
+      fields: {
+        type: Array,
+        statePath: 'issue.fieldValues',
+      },
+      user: {
+        type: String,
+        statePath: 'user',
+      },
       class: {
         type: String,
         reflectToAttribute: true,
         computed: '_computeClass(_status)',
       },
+      comments: {
+        type: Array,
+        statePath: 'comments',
+      },
       opened: {
         type: Boolean,
         reflectToAttribute: true,
         value: false,
+      },
+      statusEnum: {
+        type: String,
+        value: '',
       },
       statuses: {
         type: Array,
@@ -60,10 +83,22 @@ class MrApprovalCard extends Polymer.Element {
         type: Array,
         computed: '_filterStatuses(_status, statuses, _isApprovalOwner)',
       },
+      _comments: {
+        type: Array,
+        computed: '_filterComments(comments, title)',
+      },
+      _survey: {
+        type: String,
+        computed: '_computeSurvey(comments, title)',
+      },
       _isApprovalOwner: {
         type: Boolean,
-        computed: '_computeIsApprovalOwner(users, user)',
+        computed: '_computeIsApprovalOwner(approvers, user)',
         observer: '_openUserCards',
+      },
+      _fields: {
+        type: Array,
+        computed: '_filterFields(fields, title)',
       },
       _expandIcon: {
         type: String,
@@ -71,7 +106,7 @@ class MrApprovalCard extends Polymer.Element {
       },
       _status: {
         type: String,
-        computed: '_computeStatus(labels)',
+        computed: '_computeStatus(statusEnum)',
       },
       _statusIcon: {
         type: String,
@@ -118,9 +153,8 @@ class MrApprovalCard extends Polymer.Element {
     return 'expand-more';
   }
 
-  _computeStatus(labels) {
-    let status = labels.find((l) => (l.name === 'Status'));
-    return status.values[0];
+  _computeStatus(statusEnum) {
+    return STATUS_ENUM_TO_TEXT[statusEnum || ''];
   }
 
   _computeStatusIcon(cl) {
@@ -128,10 +162,37 @@ class MrApprovalCard extends Polymer.Element {
   }
 
   _computeIsApprovalOwner(users, user) {
-    const approvers = users.find((u) => {
-      return u.name == 'Approvers';
+    if (!user || !users) return;
+    return users.find((u) => {
+      return u.displayName === user;
     });
-    return approvers.values.includes(user);
+  }
+
+  // TODO(zhangtiff): Change data flow here so that this is only computed
+  // once for all approvals.
+  _filterComments(comments, title) {
+    if (!comments || !title) return;
+    return comments.filter((c) => (
+      !c.descriptionNum && c.approvalRef && c.approvalRef.fieldName === title)
+    );
+  }
+
+  // TODO(zhangtiff): Change data flow here so that this is only computed
+  // once for all approvals.
+  _computeSurvey(comments, title) {
+    if (!comments || !title) return;
+    return comments.find((c) => (
+      c.descriptionNum > 0 && c.approvalRef && c.approvalRef.fieldName === title
+    ));
+  }
+
+  // TODO(zhangtiff): Change data flow here so that approvals are only
+  // separated once then passed around later.
+  _filterFields(fields, title) {
+    if (!fields) return;
+    return fields.filter((f) => {
+      return f.fieldRef.approvalName === title;
+    });
   }
 
   _filterStatuses(status, statuses, isApprover) {

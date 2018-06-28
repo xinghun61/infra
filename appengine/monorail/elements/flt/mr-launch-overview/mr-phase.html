@@ -29,23 +29,26 @@
         last-response="{{_milestoneData}}">
     </iron-ajax>
     <h2>
-      Approvals<span hidden$="[[!phase.phaseName]]">:
-        [[phase.phaseName]]
+      Approvals<span hidden$="[[!phaseName]]">:
+        [[phaseName]]
       </span>
-      <span hidden$="[[!phase.status]]">
-         - [[phase.status]] [[phase.target]]
-      </span>
+      <template is="if" dom-if="[[status]]">
+        <span hidden>
+           - [[status]] [[target]]
+        </span>
+      </template>
       <em hidden$="[[!_nextDate]]">
         [[_dateDescriptor]]
         <chops-timestamp date="[[_nextDate]]"></chops-timestamp>
       </em>
     </h2>
-    <template is="dom-repeat" items="[[phase.approvals]]">
+    <template is="dom-repeat" items="[[approvals]]">
       <mr-approval-card
-          title="[[item.title]]"
-          phase-name="[[phase.phaseName]]"
-          user="[[user]]"
-          approval-comments="[[item.comments]]"
+          approvers="[[item.approverRefs]]"
+          setter="[[item.setterRef]]"
+          title="[[item.fieldRef.fieldName]]"
+          phase-name="[[phaseName]]"
+          status-enum="[[item.status]]"
           survey="[[item.survey]]"
           survey-template="[[item.surveyTemplate]]"
           urls="[[item.urls]]"
@@ -53,7 +56,7 @@
           users="[[item.users]]"
       ></mr-approval-card>
     </template>
-    <template is="dom-if" if="[[!phase.approvals.length]]">
+    <template is="dom-if" if="[[!approvals.length]]">
       No tasks for this phase.
     </template>
   </template>

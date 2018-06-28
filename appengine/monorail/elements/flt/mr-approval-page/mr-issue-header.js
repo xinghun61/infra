@@ -24,11 +24,6 @@ class MrIssueHeader extends ReduxMixin(Polymer.Element) {
         value: {},
         statePath: 'issue',
       },
-      reporter: {
-        type: String,
-        value: 'reporter@chromium.org',
-      },
-      you: String,
       _flipperCount: {
         type: Number,
         value: 20,
