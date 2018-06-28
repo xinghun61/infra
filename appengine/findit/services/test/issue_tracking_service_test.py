@@ -2,8 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 import copy
-import mock
 import datetime
+import mock
+import textwrap
 
 from libs import analysis_status
 from libs import time_util
@@ -55,39 +56,33 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
                   issue_tracking_service.GenerateWrongResultLink(analysis))
 
   def testGetMinimumConfidenceToFileBugs(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'minimum_confidence_to_create_bugs': 0.9
-    })
+    self.UpdateUnitTestConfigSettings(
+        'check_flake_settings', {'minimum_confidence_to_create_bugs': 0.9})
     self.assertEqual(0.9,
                      issue_tracking_service.GetMinimumConfidenceToFileBugs())
 
   def testGetMinimumConfidenceToUpdateBugs(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'minimum_confidence_to_update_cr': 0.8
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'minimum_confidence_to_update_cr': 0.8})
     self.assertEqual(0.8,
                      issue_tracking_service.GetMinimumConfidenceToUpdateBugs())
 
   def testIsBugFilingEnabled(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'create_monorail_bug': False
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'create_monorail_bug': False})
     self.assertFalse(issue_tracking_service.IsBugFilingEnabled())
 
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'create_monorail_bug': True
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'create_monorail_bug': True})
     self.assertTrue(issue_tracking_service.IsBugFilingEnabled())
 
   def testIsBugUpdatingEnabled(self):
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'update_monorail_bug': False
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'update_monorail_bug': False})
     self.assertFalse(issue_tracking_service.IsBugUpdatingEnabled())
 
-    self.UpdateUnitTestConfigSettings('check_flake_settings', {
-        'update_monorail_bug': True
-    })
+    self.UpdateUnitTestConfigSettings('check_flake_settings',
+                                      {'update_monorail_bug': True})
     self.assertTrue(issue_tracking_service.IsBugUpdatingEnabled())
 
   @mock.patch.object(
@@ -655,7 +650,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(issue_tracking_service.OpenBugAlreadyExistsForTest('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
-    self.assertEqual(('summary:test is:open',), args)
+    self.assertEqual(('summary:test is:open label:Test-Flaky',), args)
     mock_api.reset_mock()
 
     mock_issue = mock.MagicMock()
@@ -666,7 +661,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(issue_tracking_service.OpenBugAlreadyExistsForTest('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
-    self.assertEqual(('summary:test is:open',), args)
+    self.assertEqual(('summary:test is:open label:Test-Flaky',), args)
     mock_api.reset_mock()
 
     mock_issue = mock.MagicMock()
@@ -677,7 +672,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(issue_tracking_service.OpenBugAlreadyExistsForTest('test'))
     self.assertTrue(mock_api.return_value.getIssues.called)
     args, _ = mock_api.return_value.getIssues.call_args
-    self.assertEqual(('summary:test is:open',), args)
+    self.assertEqual(('summary:test is:open label:Test-Flaky',), args)
     mock_api.reset_mock()
 
   @mock.patch('services.issue_tracking_service.IssueTrackerAPI')
@@ -946,3 +941,156 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
                      issue_tracking_service.GetPriorityLabelForConfidence(.9))
     self.assertEqual('Pri-1',
                      issue_tracking_service.GetPriorityLabelForConfidence(.85))
+
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testCreateBugForFlakeDetection(self, mock_create_bug_fn):
+
+    def assign_issue_id(issue, _):
+      issue.id = 12345
+      return issue.id
+
+    mock_create_bug_fn.side_effect = assign_issue_id
+
+    normalized_step_name = 'target'
+    normalized_test_name = 'suite.test'
+    num_occurrences = 5
+    monorail_project = 'chromium'
+    previous_tracking_bug_id = None
+
+    issue_id = issue_tracking_service.CreateBugForFlakeDetection(
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name,
+        num_occurrences=num_occurrences,
+        monorail_project=monorail_project,
+        previous_tracking_bug_id=previous_tracking_bug_id)
+    mock_create_bug_fn.assert_called_once()
+    self.assertEqual(12345, issue_id)
+
+    expected_status = 'Untriaged'
+    expected_summary = 'suite.test is flaky'
+
+    expected_description = textwrap.dedent("""
+target: suite.test is flaky.
+
+Findit detected 5 flake occurrences of this test within the past
+24 hours. List of all flake occurrences can be found at:
+https://www.place_holder_url.com.
+
+Flaky tests should be disabled within 30 minutes unless culprit CL is found and
+reverted, please disable it first and then find an appropriate owner.
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N). If this
+result was incorrect, please apply the label Test-Findit-Wrong and mark the bug
+as untriaged.""")
+
+    expected_labels = [
+        'Test-Findit-Detected', 'Sheriff-Chromium', 'Pri-1', 'Type-Bug',
+        'Test-Flaky'
+    ]
+
+    issue = mock_create_bug_fn.call_args_list[0][0][0]
+    self.assertEqual(expected_status, issue.status)
+    self.assertEqual(expected_summary, issue.summary)
+    self.assertEqual(expected_description, issue.description)
+    self.assertEqual(expected_labels, issue.labels)
+    self.assertEqual(1, len(issue.field_values))
+    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
+    self.assertEqual('suite.test',
+                     issue.field_values[0].to_dict()['fieldValue'])
+
+  @mock.patch.object(issue_tracking_service, 'CreateBug')
+  def testCreateBugForFlakeDetectionWithPreviousBugId(self, mock_create_bug_fn):
+    normalized_step_name = 'target'
+    normalized_test_name = 'suite.test'
+    num_occurrences = 5
+    monorail_project = 'chromium'
+    previous_tracking_bug_id = 56789
+
+    issue_tracking_service.CreateBugForFlakeDetection(
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name,
+        num_occurrences=num_occurrences,
+        monorail_project=monorail_project,
+        previous_tracking_bug_id=previous_tracking_bug_id)
+
+    expected_previous_bug_description = (
+        '\n\nThis flaky test was previously tracked in bug 56789.\n\n')
+    issue = mock_create_bug_fn.call_args_list[0][0][0]
+    self.assertIn(expected_previous_bug_description, issue.description)
+
+  @mock.patch.object(issue_tracking_service, 'GetBugForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  def testUpdateBugForFlakeDetection(self, mock_update_bug_fn,
+                                     mock_get_bug_for_id):
+    normalized_test_name = 'suite.test'
+    num_occurrences = 5
+    monorail_project = 'chromium'
+    issue_id = 12345
+    issue = Issue({
+        'status': 'Available',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': monorail_project,
+        'labels': [],
+        'fieldValues': [],
+        'state': 'open',
+    })
+
+    mock_get_bug_for_id.return_value = issue
+    issue_tracking_service.UpdateBugForFlakeDetection(
+        bug_id=issue_id,
+        normalized_test_name=normalized_test_name,
+        num_occurrences=num_occurrences,
+        monorail_project=monorail_project)
+
+    expected_labels = ['Test-Findit-Detected', 'Sheriff-Chromium', 'Test-Flaky']
+    issue = mock_update_bug_fn.call_args_list[0][0][0]
+    self.assertEqual(expected_labels, issue.labels)
+    self.assertEqual(1, len(issue.field_values))
+    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
+    self.assertEqual('suite.test',
+                     issue.field_values[0].to_dict()['fieldValue'])
+
+    expected_comment = textwrap.dedent("""
+Findit detected 5 new flake occurrences of this test. To see the
+list of flake occurrences, please visit: https://www.place_holder_url.com.
+Since flakiness is ongoing, the issue was moved back into the Sheriff Bug Queue
+(unless already there).
+
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
+Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
+
+    comment = mock_update_bug_fn.call_args_list[0][0][1]
+    self.assertEqual(expected_comment, comment)
+
+  @mock.patch.object(issue_tracking_service, 'GetBugForId')
+  @mock.patch.object(issue_tracking_service, 'UpdateBug')
+  def testUpdateBugForFlakeDetectionWithPreviousBugId(self, mock_update_bug_fn,
+                                                      mock_get_bug_for_id):
+    normalized_test_name = 'suite.test'
+    num_occurrences = 5
+    monorail_project = 'chromium'
+    issue_id = 12345
+    previous_tracking_bug_id = 56789
+    issue = Issue({
+        'status': 'Available',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': monorail_project,
+        'labels': [],
+        'fieldValues': [],
+        'state': 'open',
+    })
+
+    mock_get_bug_for_id.return_value = issue
+    issue_tracking_service.UpdateBugForFlakeDetection(
+        bug_id=issue_id,
+        normalized_test_name=normalized_test_name,
+        num_occurrences=num_occurrences,
+        monorail_project=monorail_project,
+        previous_tracking_bug_id=previous_tracking_bug_id)
+
+    expected_previous_bug_description = (
+        '\n\nThis flaky test was previously tracked in bug 56789.\n\n')
+    comment = mock_update_bug_fn.call_args_list[0][0][1]
+    self.assertIn(expected_previous_bug_description, comment)

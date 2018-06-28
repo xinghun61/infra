@@ -16,9 +16,22 @@ from services import monitoring
 from services.flake_failure import flake_constants
 from waterfall import waterfall_config
 
+# Label for Chromium Sheriff bug queue.
+_SHERIFF_CHROMIUM_LABEL = 'Sheriff-Chromium'
+
+# Label for Type-Bug.
+_TYPE_BUG_LABEL = 'Type-Bug'
+
+# Label for flaky tests.
+_TEST_FLAKY_Label = 'Test-Flaky'
+
+# Customized field for flaky test.
+_FLAKY_TEST_CUSTOMIZED_FIELD = 'Flaky-Test'
+
 _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE = 'Flaky-Test={} is:open'
 
-_BUG_SUMMARY_SEARCH_QUERY_TEMPLATE = 'summary:{} is:open'
+_BUG_SUMMARY_SEARCH_QUERY_TEMPLATE = (
+    'summary:{} is:open label:%s' % _TEST_FLAKY_Label)
 
 # Comment for culprit template.
 _CULPRIT_COMMENT_TEMPLATE = textwrap.dedent("""
@@ -33,30 +46,6 @@ If the culprit above is wrong, please file a bug using this link and hit submit:
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 
 _FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
-
-# Flake detection templates.
-_FINDIT_DETECTED_LABEL_TEXT = 'Test-Findit-Detected'
-
-_FLAKE_DETECTION_CREATE_BUG_BODY = (
-    'We have found {flake_count} recent flakes. List of all flakes '
-    'can be found at {flake_url}.')
-
-_FLAKE_DETECTION_CREATE_BUG_BODY_FOOTER = (
-    'This issue was created automatically by Findit. Please find the right '
-    'owner to fix the respective test/step and assign this issue accordingly.')
-
-_FLAKE_DETECTION_CREATE_BUG_BODY_HEADER = '{test_name} is flaky.'
-
-_FLAKE_DETECTION_COMMENT_BODY = (
-    'Findit detected {flake_count} new flakes for test/step {test_name}. To see'
-    'the actual flakes, please visit {flake_url}. Since flakiness is ongoing, '
-    'the issue was moved back into the Sheriff Bug Queue '
-    '(unless already there).')
-
-_FLAKE_DETECTION_CREATE_BUG_BODY_PREVIOUS_ISSUE = (
-    'This flaky test/step was previously tracked in issue {old_issue_id}.')
-
-_FLAKE_DETECTION_BUG_TITLE = '{test_name} is flaky'
 
 _LOW_FLAKINESS_COMMENT_TEMPLATE = textwrap.dedent("""
 This flake is either a longstanding, has low flakiness, or not reproducible
@@ -74,6 +63,37 @@ _WRONG_RESULT_LINK_TEMPLATE = (
     'summary=%5BFindit%5D%20Flake%20Analyzer%20-%20Wrong%20result%20for%20{}&'
     'comment=Link%20to%20Analysis%3A%20{}')
 
+# Flake detection bug templates.
+_FLAKE_DETECTION_BUG_SUMMARY = '{test_name} is flaky'
+
+_FLAKE_DETECTION_BUG_DESCRIPTION = textwrap.dedent("""
+{test_target}: {test_name} is flaky.
+
+Findit detected {num_occurrences} flake occurrences of this test within the past
+24 hours. List of all flake occurrences can be found at:
+{flake_url}.
+
+Flaky tests should be disabled within 30 minutes unless culprit CL is found and
+reverted, please disable it first and then find an appropriate owner.
+{previous_tracking_bug_text}
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N). If this
+result was incorrect, please apply the label Test-Findit-Wrong and mark the bug
+as untriaged.""")
+
+_FLAKE_DETECTION_PREVIOUS_TRACKING_BUG = (
+    '\nThis flaky test was previously tracked in bug {}.\n')
+
+_FLAKE_DETECTION_BUG_COMMENT = textwrap.dedent("""
+Findit detected {num_occurrences} new flake occurrences of this test. To see the
+list of flake occurrences, please visit: {flake_url}.
+Since flakiness is ongoing, the issue was moved back into the Sheriff Bug Queue
+(unless already there).
+{previous_tracking_bug_text}
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
+Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
+
+_FLAKE_DETECTION_LABEL_TEXT = 'Test-Findit-Detected'
+
 
 def AddFinditLabelToIssue(issue):
   """Ensures an issue's label has been marked as analyzed by Findit."""
@@ -82,28 +102,41 @@ def AddFinditLabelToIssue(issue):
     issue.labels.append(_FINDIT_ANALYZED_LABEL_TEXT)
 
 
-def OpenBugAlreadyExistsForLabel(test_name):
+def _GetOpenIssues(query, monorail_project):
+  """Searches for open bugs that match the query.
+
+  This method wraps a call IssueTrackerAPI.getIssues(), it is needed because
+  it's unclear from the API name and the documentation whether the returned
+  issues are all open issues or not, so check the property to make sure that
+  only open bugs are considered.
+
+  Args:
+    query: A query to search for bugs on Monorail.
+    monorail_project: The monorail project to search for.
+
+  Returns:
+    A list of open bugs that match the query.
+  """
+  issue_tracker_api = IssueTrackerAPI(
+      monorail_project, use_staging=appengine_util.IsStaging())
+  issues = issue_tracker_api.getIssues(query)
+  if not issues:
+    return []
+
+  return [issue for issue in issues if issue.open]
+
+
+def OpenBugAlreadyExistsForLabel(
+    test_name, monorail_project=flake_constants.CHROMIUM_PROJECT_NAME):
   """Returns True if the bug with the given label exists on monorail."""
   assert test_name
-
-  issue_tracker_api = IssueTrackerAPI(
-      flake_constants.CHROMIUM_PROJECT_NAME,
-      use_staging=appengine_util.IsStaging())
-  issues = issue_tracker_api.getIssues('label:%s' % test_name)
-  if issues is None:
-    return False
-
-  open_issues = [issue for issue in issues if issue.open]
-  if open_issues:
-    return True
-
-  return False
+  open_issues = _GetOpenIssues('label:%s' % test_name, monorail_project)
+  return len(open_issues) > 0
 
 
 def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
   """Returns True if the bug exists and is open on monorail."""
   existing_bug = GetBugForId(bug_id, project_id)
-
   return existing_bug and existing_bug.open
 
 
@@ -122,12 +155,10 @@ def GenerateBugComment(analysis):
     assert culprit
     assert analysis.confidence_in_culprit is not None
     wrong_result_link = GenerateWrongResultLink(analysis)
-    return _CULPRIT_COMMENT_TEMPLATE % (culprit.commit_position,
-                                        analysis.confidence_in_culprit * 100,
-                                        analysis.original_master_name,
-                                        analysis.original_builder_name,
-                                        analysis.key.urlsafe(),
-                                        wrong_result_link)
+    return _CULPRIT_COMMENT_TEMPLATE % (
+        culprit.commit_position, analysis.confidence_in_culprit * 100,
+        analysis.original_master_name, analysis.original_builder_name,
+        analysis.key.urlsafe(), wrong_result_link)
 
   return _LOW_FLAKINESS_COMMENT_TEMPLATE % (analysis.original_master_name,
                                             analysis.original_builder_name,
@@ -186,8 +217,8 @@ def ShouldFileBugForAnalysis(analysis):
   if not HasSufficientConfidenceInCulprit(analysis,
                                           GetMinimumConfidenceToFileBugs()):
     analysis.LogInfo('''Analysis has confidence {:.2%}
-        which isn\'t high enough to file a bug.'''.format(
-        analysis.confidence_in_culprit))
+        which isn\'t high enough to file a bug.'''
+                     .format(analysis.confidence_in_culprit))
     return False
 
   if not UnderDailyLimit(analysis):
@@ -285,9 +316,17 @@ def TraverseMergedIssues(bug_id, issue_tracker):
 
 
 def GetBugForId(bug_id, project_id='chromium'):
-  """Gets a bug by id."""
+  """Gets a bug by bug id.
+
+  If the bug was marked as Duplicate, then this method traverses the chain to
+  find the last merged one.
+
+  Args:
+    bug_id: Id of the bug.
+    project_id: The project that bug was filed for.
+   """
   if bug_id is None:
-    return False
+    return None
 
   issue_tracker_api = IssueTrackerAPI(
       project_id, use_staging=appengine_util.IsStaging())
@@ -319,16 +358,11 @@ def GetExistingBugForCustomizedField(field, project_id='chromium'):
   """Returns the existing bug for this test if any, None otherwise."""
   assert field
   query = _BUG_CUSTOM_FIELD_SEARCH_QUERY_TEMPLATE.format(field)
+  open_issues = _GetOpenIssues(query, project_id)
+  if open_issues:
+    return open_issues[0]
 
-  issue_tracker_api = IssueTrackerAPI(
-      project_id, use_staging=appengine_util.IsStaging())
-  issues = issue_tracker_api.getIssues(query)
-
-  # If there are issues, find the root one, and return the id of it.
-  if issues and issues[0]:
-    return issues[0]
-  else:
-    return None
+  return None
 
 
 def GetExistingBugIdForCustomizedField(test_name, project_id='chromium'):
@@ -342,26 +376,35 @@ def BugAlreadyExistsForCustomField(test_name):
   return GetExistingBugIdForCustomizedField(test_name) is not None
 
 
-def OpenBugAlreadyExistsForTest(test_name):
-  """Search for test_name issues that are about flakiness.
+def GetExistingOpenBugForTest(test_name, project_id='chromium'):
+  """Search for test_name issues that are about flakiness
 
   Args:
-    test_name (str): The test name to search for.
+    test_name: The test name to search for.
+    project_id: The Monorail project to search for.
+
+  Returns:
+    Bug id if exists, otherwise None.
+  """
+  assert test_name
+  query = _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE.format(test_name)
+  open_issues = _GetOpenIssues(query, project_id)
+  if open_issues:
+    return open_issues[0]
+
+  return None
+
+
+def OpenBugAlreadyExistsForTest(test_name):
+  """Returns True if a bug about test_name being flaky exists on Monorail.
+
+  Args:
+    test_name: The test name to search for.
 
   Returns:
     True is there is already a bug about this test being flaky, False otherwise.
   """
-  assert test_name
-
-  query = _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE.format(test_name)
-
-  issue_tracker_api = IssueTrackerAPI(
-      'chromium', use_staging=appengine_util.IsStaging())
-  issues = issue_tracker_api.getIssues(query)
-  if not issues:
-    return False
-
-  return True
+  return GetExistingOpenBugForTest(test_name) is not None
 
 
 def GetPriorityLabelForConfidence(confidence):
@@ -400,12 +443,10 @@ def CreateBugForFlakeAnalyzer(test_name, subject, description,
       'projectId':
           'chromium',
       'labels': [
-          _FINDIT_ANALYZED_LABEL_TEXT, 'Sheriff-Chromium', priority, 'Type-Bug'
+          _FINDIT_ANALYZED_LABEL_TEXT, _SHERIFF_CHROMIUM_LABEL, priority,
+          _TYPE_BUG_LABEL, _TEST_FLAKY_Label
       ],
-      'state':
-          'open',
-      'components': ['Tests>Flaky'],
-      'fieldValues': [CustomizedField('Flaky-Test', test_name)]
+      'fieldValues': [CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD, test_name)]
   })
   issue_id = CreateBug(issue)
 
@@ -453,3 +494,103 @@ def HasSufficientConfidenceInCulprit(analysis, required_confidence):
 
   return (analysis.confidence_in_culprit + flake_constants.EPSILON >=
           required_confidence)
+
+
+def CreateBugForFlakeDetection(normalized_step_name,
+                               normalized_test_name,
+                               num_occurrences,
+                               monorail_project,
+                               previous_tracking_bug_id=None,
+                               priority='Pri-1'):
+  """Creates a bug for a detected flaky test.
+
+  Args:
+    normalized_step_name: Normalized name of the flaky step, please see Flake
+                          Model for the definitions.
+    normalized_test_name: Normalized name of the flaky test, please see Flake
+                          Model for the definitions.
+    num_occurrences: Number of new occurrences to report.
+    monorail_project: The project the bug is created for.
+    previous_tracking_bug_id: id of the previous bug that was used to track this
+                              flaky test.
+    priority: Priority of the bug.
+
+  Returns:
+    id of the newly created bug.
+  """
+  # TODO(crbug.com/845581): Replace with front end url once it's ready.
+  flake_url = 'https://www.place_holder_url.com'
+  summary = _FLAKE_DETECTION_BUG_SUMMARY.format(test_name=normalized_test_name)
+
+  previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
+      previous_tracking_bug_id) if previous_tracking_bug_id else ''
+
+  description = _FLAKE_DETECTION_BUG_DESCRIPTION.format(
+      test_target=normalized_step_name,
+      test_name=normalized_test_name,
+      num_occurrences=num_occurrences,
+      flake_url=flake_url,
+      previous_tracking_bug_text=previous_tracking_bug_text)
+
+  issue = Issue({
+      'status':
+          'Untriaged',
+      'summary':
+          summary,
+      'description':
+          description,
+      'projectId':
+          monorail_project,
+      'labels': [
+          _FLAKE_DETECTION_LABEL_TEXT, _SHERIFF_CHROMIUM_LABEL, priority,
+          _TYPE_BUG_LABEL, _TEST_FLAKY_Label
+      ],
+      'fieldValues': [
+          CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD, normalized_test_name)
+      ]
+  })
+
+  return CreateBug(issue, monorail_project)
+
+
+def UpdateBugForFlakeDetection(bug_id,
+                               normalized_test_name,
+                               num_occurrences,
+                               monorail_project,
+                               previous_tracking_bug_id=None):
+  """Updates the bug with newly detected flake occurrences.
+
+  Args:
+    bug_id: id of the bug to update.
+    normalized_test_name: Normalized name of the flaky test, please see Flake
+                          Model for the definitions.
+    num_occurrences: Number of new occurrences to report.
+    monorail_project: The project the bug is created for.
+    previous_tracking_bug_id: id of the previous bug that was used to track this
+                              flaky test.
+  """
+  # TODO(crbug.com/845581): Replace with front end url once it's ready.
+  flake_url = 'https://www.place_holder_url.com'
+  previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
+      previous_tracking_bug_id) if previous_tracking_bug_id else ''
+  comment = _FLAKE_DETECTION_BUG_COMMENT.format(
+      num_occurrences=num_occurrences,
+      flake_url=flake_url,
+      previous_tracking_bug_text=previous_tracking_bug_text)
+
+  issue = GetBugForId(bug_id)
+  if _FLAKE_DETECTION_LABEL_TEXT not in issue.labels:
+    issue.labels.append(_FLAKE_DETECTION_LABEL_TEXT)
+
+  if _SHERIFF_CHROMIUM_LABEL not in issue.labels:
+    issue.labels.append(_SHERIFF_CHROMIUM_LABEL)
+
+  if _TEST_FLAKY_Label not in issue.labels:
+    issue.labels.append(_TEST_FLAKY_Label)
+
+  # Set Flaky-Test field. If it's already there, it's a no-op.
+  flaky_field = CustomizedField(_FLAKY_TEST_CUSTOMIZED_FIELD,
+                                normalized_test_name)
+  issue.field_values.append(flaky_field)
+
+  UpdateBug(issue, comment, monorail_project)
