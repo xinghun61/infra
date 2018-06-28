@@ -77,6 +77,7 @@ TRIM_VISITED_PAGES_CRON = '/_cron/trimVisitedPages'
 DATE_ACTION_CRON = '/_cron/dateAction'
 SPAM_TRAINING_CRON = '/_cron/spamTraining'
 COMPONENT_DATA_EXPORT_CRON = '/_cron/componentDataExport'
+COMMIT_DATA_CRON = '/_cron/getCommitsCron'
 
 # URLs of handlers needed for GAE instance management.
 WARMUP = '/_ah/warmup'

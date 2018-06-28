@@ -77,6 +77,7 @@ from sitewide import userprojects
 from sitewide import usersettings
 from sitewide import userclearbouncing
 from sitewide import userupdates
+from sitewide import usercommits
 
 from tracker import componentcreate
 from tracker import componentdetail
@@ -223,7 +224,8 @@ class ServletRegistry(object):
         urls.COMPONENT_DATA_EXPORT_CRON:
           componentexport.ComponentTrainingDataExport,
         urls.COMPONENT_DATA_EXPORT_TASK:
-          componentexport.ComponentTrainingDataExportTask
+          componentexport.ComponentTrainingDataExportTask,
+        urls.COMMIT_DATA_CRON: usercommits.GetCommitsCron
         })
 
     self._SetupProjectServlets({
