@@ -1264,9 +1264,17 @@ class SwarmingTest(BaseTest):
         },
         {
             'task_result': {
-                'state': 'COMPLETED',
-                'started_ts': '2018-01-29T21:15:02.649750',
-                'completed_ts': '2018-01-30T00:15:18.162860',
+                'state':
+                    'COMPLETED',
+                'started_ts':
+                    '2018-01-29T21:15:02.649750',
+                'completed_ts':
+                    '2018-01-30T00:15:18.162860',
+                'bot_dimensions': [
+                    {'key': 'os', 'value': ['Ubuntu', 'Trusty']},
+                    {'key': 'pool', 'value': ['luci.chromium.try']},
+                    {'key': 'id', 'value': ['bot1']},
+                ],
             },
             'build_run_result': {
                 'annotationUrl':
@@ -1291,6 +1299,11 @@ class SwarmingTest(BaseTest):
                 model.BuildStatus.COMPLETED,
             'result':
                 model.BuildResult.SUCCESS,
+            'bot_dimensions': {
+                'os': ['Ubuntu', 'Trusty'],
+                'pool': ['luci.chromium.try'],
+                'id': ['bot1'],
+            },
             'start_time':
                 datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
             'complete_time':
@@ -1464,6 +1477,10 @@ class SwarmingTest(BaseTest):
       self.assertEqual(build.cancelation_reason, case.get('cancelation_reason'))
       self.assertEqual(build.start_time, case.get('start_time'))
       self.assertEqual(build.complete_time, case.get('complete_time'))
+      self.assertEqual(
+          build.result_details.get('swarming', {}).get('bot_dimensions'),
+          case.get('bot_dimensions', {})
+      )
 
       expected_steps = case.get('build_steps') or []
       actual_build_steps = steps_key.get()

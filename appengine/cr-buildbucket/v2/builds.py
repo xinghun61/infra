@@ -70,10 +70,19 @@ def build_to_v2_partial(build):
   )
   status_to_v2(build, ret)
 
-  task_result = result_details.get('swarming', {}).get('task_result', {})
-  for d in task_result.get('bot_dimensions', []):
-    for v in d['value']:
-      ret.infra.swarming.bot_dimensions.add(key=d['key'], value=v)
+  # TODO(nodir): delete task_result after 2018-06-01
+  task_result = result_details.get('swarming', {}).get('task_result')
+  if task_result:  # pragma: no cover
+    for d in task_result.get('bot_dimensions', []):
+      for v in d['value']:
+        ret.infra.swarming.bot_dimensions.add(key=d['key'], value=v)
+  else:
+    bot_dimensions = (
+        result_details.get('swarming', {}).get('bot_dimensions', {})
+    )
+    for k, values in sorted(bot_dimensions.iteritems()):
+      for v in sorted(values):
+        ret.infra.swarming.bot_dimensions.add(key=k, value=v)
 
   _parse_tags(ret, build.tags)
   return ret

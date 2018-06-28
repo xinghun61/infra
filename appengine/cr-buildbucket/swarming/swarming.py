@@ -975,9 +975,12 @@ def _sync_build_in_memory(
   build.result = None
   build.failure_reason = None
   build.cancelation_reason = None
-  build.result_details = {
-      'swarming': {'task_result': task_result},
-  }
+  build.result_details = {'swarming': {'bot_dimensions': {}}}
+
+  bot_dimensions = build.result_details['swarming']['bot_dimensions']
+  for d in (task_result or {}).get('bot_dimensions', []):
+    bot_dimensions[d['key']] = d['value']  # this is a list of values
+
   # error message to include in result_details. Used only if build is complete.
   errmsg = ''
 

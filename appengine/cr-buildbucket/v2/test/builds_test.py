@@ -20,7 +20,7 @@ import model
 
 
 class V2BuildsTest(unittest.TestCase):
-  max_diff = None
+  maxDiff = None
 
   def test_get_builder_id(self):
     build = model.Build(
@@ -87,12 +87,10 @@ class V2BuildsTest(unittest.TestCase):
         result_details={
             'properties': output_properties,
             'swarming': {
-                'task_result': {
-                    'bot_dimensions': [
-                        {'key': 'os', 'value': ['Ubuntu', 'Trusty']},
-                        {'key': 'pool', 'value': ['luci.chromium.try']},
-                        {'key': 'id', 'value': ['bot1']},
-                    ],
+                'bot_dimensions': {
+                    'os': ['Ubuntu', 'Trusty'],
+                    'pool': ['luci.chromium.try'],
+                    'id': ['bot1'],
                 },
             },
         },
@@ -137,12 +135,12 @@ class V2BuildsTest(unittest.TestCase):
                 task_id='deadbeef',
                 task_service_account='service-account@example.com',
                 bot_dimensions=[
-                    common_pb2.StringPair(key='os', value='Ubuntu'),
+                    common_pb2.StringPair(key='id', value='bot1'),
                     common_pb2.StringPair(key='os', value='Trusty'),
+                    common_pb2.StringPair(key='os', value='Ubuntu'),
                     common_pb2.StringPair(
                         key='pool', value='luci.chromium.try'
                     ),
-                    common_pb2.StringPair(key='id', value='bot1'),
                 ],
             ),
             logdog=build_pb2.BuildInfra.LogDog(
