@@ -39,7 +39,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			pool:    swarmingBotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
-		server := trackerServerImpl{
+		server := TrackerServerImpl{
 			clients.SwarmingFactory{
 				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
 					return fsc, nil

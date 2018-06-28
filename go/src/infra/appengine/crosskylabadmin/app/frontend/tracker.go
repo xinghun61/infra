@@ -31,13 +31,13 @@ import (
 	"infra/appengine/crosskylabadmin/app/clients"
 )
 
-// trackerServerImpl implements the fleet.TrackerServer interface.
-type trackerServerImpl struct {
+// TrackerServerImpl implements the fleet.TrackerServer interface.
+type TrackerServerImpl struct {
 	clients.SwarmingFactory
 }
 
 // RefreshBots implements the fleet.Tracker.RefreshBots() method.
-func (tsi *trackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshBotsRequest) (res *fleet.RefreshBotsResponse, err error) {
+func (tsi *TrackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshBotsRequest) (res *fleet.RefreshBotsResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
@@ -61,7 +61,7 @@ func (tsi *trackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshB
 }
 
 // SummarizeBots implements the fleet.Tracker.SummarizeBots() method.
-func (tsi *trackerServerImpl) SummarizeBots(c context.Context, req *fleet.SummarizeBotsRequest) (res *fleet.SummarizeBotsResponse, err error) {
+func (tsi *TrackerServerImpl) SummarizeBots(c context.Context, req *fleet.SummarizeBotsRequest) (res *fleet.SummarizeBotsResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()

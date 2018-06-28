@@ -39,12 +39,13 @@ const (
 	skylabSwarmingWorkerPath = luciferToolsDeploymentPath + "/skylab_swarming_worker"
 )
 
-// taskerServerImpl implements the fleet.TaskerServer interface.
-type taskerServerImpl struct {
+// TaskerServerImpl implements the fleet.TaskerServer interface.
+type TaskerServerImpl struct {
 	clients.SwarmingFactory
 }
 
-func (*taskerServerImpl) TriggerRepairOnIdle(c context.Context, req *fleet.TriggerRepairOnIdleRequest) (resp *fleet.TaskerTasksResponse, err error) {
+// TriggerRepairOnIdle implements the fleet.TaskerService method.
+func (*TaskerServerImpl) TriggerRepairOnIdle(c context.Context, req *fleet.TriggerRepairOnIdleRequest) (resp *fleet.TaskerTasksResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
@@ -52,7 +53,8 @@ func (*taskerServerImpl) TriggerRepairOnIdle(c context.Context, req *fleet.Trigg
 	return nil, status.Errorf(codes.Unimplemented, "Not Implemented")
 }
 
-func (*taskerServerImpl) TriggerRepairOnRepairFailed(c context.Context, req *fleet.TriggerRepairOnRepairFailedRequest) (resp *fleet.TaskerTasksResponse, err error) {
+// TriggerRepairOnRepairFailed implements the fleet.TaskerService method.
+func (*TaskerServerImpl) TriggerRepairOnRepairFailed(c context.Context, req *fleet.TriggerRepairOnRepairFailedRequest) (resp *fleet.TaskerTasksResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
@@ -60,7 +62,8 @@ func (*taskerServerImpl) TriggerRepairOnRepairFailed(c context.Context, req *fle
 	return nil, status.Errorf(codes.Unimplemented, "Not Implemented")
 }
 
-func (tsi *taskerServerImpl) EnsureBackgroundTasks(c context.Context, req *fleet.EnsureBackgroundTasksRequest) (resp *fleet.TaskerTasksResponse, err error) {
+// EnsureBackgroundTasks implements the fleet.TaskerService method.
+func (tsi *TaskerServerImpl) EnsureBackgroundTasks(c context.Context, req *fleet.EnsureBackgroundTasksRequest) (resp *fleet.TaskerTasksResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()

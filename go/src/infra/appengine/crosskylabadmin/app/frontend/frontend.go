@@ -62,11 +62,11 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 		UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(grpcutil.NewUnaryServerPanicCatcher(nil)),
 	}
 	fleet.RegisterTrackerServer(&api, &fleet.DecoratedTracker{
-		Service: &trackerServerImpl{},
+		Service: &TrackerServerImpl{},
 		Prelude: checkAccess,
 	})
 	fleet.RegisterTaskerServer(&api, &fleet.DecoratedTasker{
-		Service: &taskerServerImpl{},
+		Service: &TaskerServerImpl{},
 		Prelude: checkAccess,
 	})
 

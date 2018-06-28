@@ -36,7 +36,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 			pool:    swarmingBotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
-		server := taskerServerImpl{
+		server := TaskerServerImpl{
 			clients.SwarmingFactory{
 				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
 					return fsc, nil
@@ -200,7 +200,7 @@ func TestTaskerDummy(t *testing.T) {
 			pool:    swarmingBotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
-		server := taskerServerImpl{
+		server := TaskerServerImpl{
 			clients.SwarmingFactory{
 				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
 					return fsc, nil
@@ -222,7 +222,7 @@ func TestTaskerDummy(t *testing.T) {
 
 func setKnownBots(c context.Context, fsc *fakeSwarmingClient, duts []string) {
 	fsc.setAvailableDutIDs(duts)
-	server := trackerServerImpl{
+	server := TrackerServerImpl{
 		clients.SwarmingFactory{
 			SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
 				return fsc, nil

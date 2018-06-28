@@ -15,6 +15,7 @@
 package app
 
 import (
+	"infra/appengine/crosskylabadmin/app/cron"
 	"infra/appengine/crosskylabadmin/app/frontend"
 	"net/http"
 
@@ -30,10 +31,12 @@ func init() {
 	mathrand.SeedRandomly()
 
 	r := router.New()
+	mwBase := standard.Base()
 
 	// Install auth, config and tsmon handlers.
 	standard.InstallHandlers(r)
 	frontend.InstallHandlers(r, standard.Base())
+	cron.InstallHandlers(r, mwBase)
 
 	http.DefaultServeMux.Handle("/", r)
 }
