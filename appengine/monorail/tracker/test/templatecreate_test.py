@@ -55,13 +55,18 @@ class TemplateCreateTest(unittest.TestCase):
         tracker_pb2.FieldTypes.APPROVAL_TYPE, None, '', False, False, False,
         None, None, '', False, '', '', tracker_pb2.NotifyTriggers.NEVER,
         'no_action', 'Approval for Test review', False)
+    self.fd_4 =  tracker_bizobj.MakeFieldDef(
+        4, self.project.project_id, 'Target',
+        tracker_pb2.FieldTypes.INT_TYPE, None, '', False, False, False, None,
+        None, '', False, '', '', tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'milestone target', False, is_phase_field=True)
     ad_2 = tracker_pb2.ApprovalDef(approval_id=2)
     ad_3 = tracker_pb2.ApprovalDef(approval_id=3)
 
     self.config = self.services.config.GetProjectConfig(
         'fake cnxn', self.project.project_id)
     self.config.approval_defs.extend([ad_2, ad_3])
-    self.config.field_defs.extend([self.fd_1, self.fd_2, self.fd_3])
+    self.config.field_defs.extend([self.fd_1, self.fd_2, self.fd_3, self.fd_4])
 
     first_tmpl = tracker_bizobj.MakeIssueTemplate(
         'sometemplate', 'summary', None, None, 'content', [], [], [],
@@ -124,7 +129,8 @@ class TemplateCreateTest(unittest.TestCase):
     self.assertFalse(page_data['initial_component_required'])
     self.assertEqual(page_data['fields'][0].field_name, fv.field_name)
     self.assertEqual(page_data['initial_admins'], '')
-    self.assertTrue(page_data['approval_subfields_present'])
+    self.assertEqual(page_data['approval_subfields_present'], ezt.boolean(True))
+    self.assertEqual(page_data['phase_fields_present'], ezt.boolean(True))
 
   def testProcessFormData_Reject(self):
     post_data = fake.PostData(

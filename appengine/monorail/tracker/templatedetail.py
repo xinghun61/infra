@@ -80,9 +80,10 @@ class TemplateDetail(servlet.Servlet):
 
     field_views = tracker_views.MakeAllFieldValueViews(
       config, template.labels, [], template.field_values, users_by_id)
-    approval_subfields_present = False
-    if any(fv.field_def.is_approval_subfield for fv in field_views):
-      approval_subfields_present = True
+    approval_subfields_present = any(
+        fv.field_def.is_approval_subfield for fv in field_views)
+    phase_fields_present = any(
+        fv.field_def.is_phase_field for fv in field_views)
 
     (prechecked_approvals, required_approval_ids,
      initial_phases) = template_helpers.GatherApprovalsPageData(
@@ -117,6 +118,7 @@ class TemplateDetail(servlet.Servlet):
         'labels': non_masked_labels,
         'initial_admins': template_view.admin_names,
         'approval_subfields_present': ezt.boolean(approval_subfields_present),
+        'phase_fields_present': ezt.boolean(phase_fields_present),
         }
 
   def ProcessFormData(self, mr, post_data):

@@ -191,6 +191,27 @@
     </tr>
   [end]
 
+  [if-any phase_fields_present]
+    <tr id="phasefield-row">
+      <th>Gate fields:</th>
+      <td colspan="2">
+       [for fields]
+         [if-any fields.field_def.is_phase_field]
+           [fields.field_name]:
+           [if-any allow_edit]
+             [include "field-value-widgets.ezt" False "tmpl" False]
+           [else]
+             [for fields.values]
+               [fields.values.val]
+             [end]
+           [end]
+         <br>
+         [end]
+       [end]
+      </td>
+    </tr>
+  [end]
+
 
   [if-any allow_edit]
     <tr>
@@ -242,12 +263,15 @@ runOnLoad(function() {
   function toggleGatesView() {
     let addPhases = document.getElementById('cb_add_phases').checked;
     let subfieldRow = $('subfield-row');
+    let phasefieldRow = $('phasefield-row');
     if (addPhases) {
       $('launch-gates-table').classList.remove('hidden');
       subfieldRow && subfieldRow.classList.remove('hidden');
+      phasefieldRow && phasefieldRow.classList.remove('hidden');
     } else{
       $('launch-gates-table').classList.add('hidden');
       subfieldRow && subfieldRow.classList.add('hidden');
+      phasefieldRow && phasefieldRow.classList.add('hidden');
     }
   }
 

@@ -57,9 +57,10 @@ class TemplateCreate(servlet.Servlet):
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     field_views = tracker_views.MakeAllFieldValueViews(
         config, [], [], [], {})
-    approval_subfields_present = False
-    if any(fv.field_def.is_approval_subfield for fv in field_views):
-      approval_subfields_present = True
+    approval_subfields_present = any(
+        fv.field_def.is_approval_subfield for fv in field_views)
+    phase_fields_present = any(
+        fv.field_def.is_phase_field for fv in field_views)
 
     initial_phases = [tracker_pb2.Phase()] * template_helpers.MAX_NUM_PHASES
     return {
@@ -86,6 +87,7 @@ class TemplateCreate(servlet.Servlet):
         'prechecked_approvals': [],
         'required_approval_ids': [],
         'approval_subfields_present': ezt.boolean(approval_subfields_present),
+        'phase_fields_present': ezt.boolean(phase_fields_present),
         }
 
   def ProcessFormData(self, mr, post_data):

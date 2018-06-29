@@ -204,6 +204,21 @@
       </tr>
     [end]
 
+    [if-any phase_fields_present]
+      <tr id="phasefield-row">
+        <th>Gate fields:</th>
+        <td colspan="2">
+         [for fields]
+           [if-any fields.field_def.is_phase_field]
+             [fields.field_name]:
+             [include "field-value-widgets.ezt" False "tmpl" False]
+           <br>
+           [end]
+         [end]
+        </td>
+      </tr>
+    [end]
+
      [if-any show_captcha]
       <tr><th style="white-space:nowrap">Human Verification:</th>
        <td colspan="2">

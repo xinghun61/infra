@@ -81,6 +81,11 @@ class TemplateDetailTest(unittest.TestCase):
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'Approval for Security',
         False)
+    self.fd_5 =  tracker_bizobj.MakeFieldDef(
+        5, 789, 'GateTarget', tracker_pb2.FieldTypes.INT_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+        'milestone target', False, is_phase_field=True)
 
     self.ad_3 = tracker_pb2.ApprovalDef(approval_id=3)
     self.ad_4 = tracker_pb2.ApprovalDef(approval_id=4)
@@ -106,7 +111,8 @@ class TemplateDetailTest(unittest.TestCase):
         return_value=self.templates)
     self.services.template.FindTemplateByName = Mock(return_value=self.template)
     self.config.component_defs.append(self.cd_1)
-    self.config.field_defs.extend([self.fd_1, self.fd_2, self.fd_3, self.fd_4])
+    self.config.field_defs.extend(
+        [self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_5])
     self.config.approval_defs.extend([self.ad_3, self.ad_4])
     self.services.config.StoreConfig(None, self.config)
 
@@ -171,6 +177,7 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertItemsEqual(page_data['prechecked_approvals'],
                           ['3_phase_0', '4_phase_1'])
     self.assertTrue(page_data['approval_subfields_present'])
+    self.assertTrue(page_data['phase_fields_present'])
 
   def testProcessFormData_Reject(self):
     post_data = fake.PostData(

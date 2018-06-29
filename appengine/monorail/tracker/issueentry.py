@@ -149,10 +149,11 @@ class IssueEntry(servlet.Servlet):
          template.approval_values or [], template.phases, config)
     approvals = [view for view in field_views if view.field_id in
                  approval_ids]
-    approval_subfields_present = False
-    if any(
-        fv.field_def.is_approval_subfield for fv in field_views) and approvals:
-      approval_subfields_present = True
+    approval_subfields_present = any(
+        fv.field_def.approval_id in approval_ids for fv in field_views)
+    phase_fields_present = any(
+        fv.field_def.is_phase_field for fv in field_views) and any(
+            phase.name for phase in phases)
 
     page_data = {
         'issue_tab_mode': 'issueEntry',
@@ -197,6 +198,7 @@ class IssueEntry(servlet.Servlet):
         'prechecked_approvals': prechecked_approvals,
         'required_approval_ids': required_approval_ids,
         'approval_subfields_present': ezt.boolean(approval_subfields_present),
+        'phase_fields_present': ezt.boolean(phase_fields_present),
         }
 
     return page_data
