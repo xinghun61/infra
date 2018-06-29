@@ -14,7 +14,6 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 import webapp2
 
-from components import decorators
 from components import utils
 
 import webapp2
@@ -23,6 +22,7 @@ import model
 
 QUEUE_NAME = 'bulkproc'
 PATH_PREFIX = '/internal/task/bulkproc/'
+_MAX_BUILD_ID = 2L**63 - 1
 
 # See register().
 PROCESSOR_REGISTRY = {}
@@ -129,11 +129,12 @@ class TaskStart(TaskBase):
     q = model.Build.query().order(model.Build.create_time)
     last, = q.fetch(1, keys_only=True)
 
-    space_start, space_end = first.id(), last.id() + 1
-    space_size = space_end - space_start
+    space_start, space_end = first.id(), last.id()
+    assert space_end <= _MAX_BUILD_ID
+    space_size = space_end - space_start + 1
 
     logging.info(
-        'build space [%d..%d), size %d, %d shards',
+        'build space [%d..%d], size %d, %d shards',
         space_start,
         space_end,
         space_size,
@@ -142,10 +143,10 @@ class TaskStart(TaskBase):
 
     next_seg_start = space_start
     tasks = []
-    while next_seg_start < space_end:
+    while next_seg_start <= space_end:
       seg_start = next_seg_start
-      seg_end = seg_start + SEGMENT_SIZE
-      next_seg_start = seg_end
+      seg_end = min(_MAX_BUILD_ID, seg_start + SEGMENT_SIZE - 1)
+      next_seg_start = seg_end + 1
       tasks.append((
           None,
           'segment/seg:{seg_index}-percent:0',
@@ -174,7 +175,7 @@ class TaskSegment(TaskBase):
     iteration: segment task iteration. Required.
     seg_index: index of this shard. Required.
     seg_start: id of the first build in this segment. Required.
-    seg_end: id of the first build in the next segment. Required.
+    seg_end: id of the last build in this segment. Required.
     start_from: start from this build towards seg_end. Defaults to seg_start.
     started_ts: timestamp when we started to process this segment.
     proc: processor to run on the segment. A JSON object with two properties:
@@ -190,7 +191,8 @@ class TaskSegment(TaskBase):
   def do(self, payload):
     attempt = int(self.request.headers.get('X-AppEngine-TaskExecutionCount', 0))
     seg_start = payload['seg_start']
-    seg_end = payload['seg_end']
+    # Check _MAX_BUILD_ID again in case the task was already scheduled.
+    seg_end = min(_MAX_BUILD_ID, payload['seg_end'])
     start_from = payload.get('start_from', seg_start)
     proc = payload['proc']
     proc_def = _get_proc(proc['name'])
@@ -205,7 +207,7 @@ class TaskSegment(TaskBase):
         kind=proc_def['entity_kind'],
         filters=ndb.ConjunctionNode(
             ndb.FilterNode('__key__', '>=', ndb.Key(model.Build, start_from)),
-            ndb.FilterNode('__key__', '<', ndb.Key(model.Build, seg_end)),
+            ndb.FilterNode('__key__', '<=', ndb.Key(model.Build, seg_end)),
         ),
     )
     iterator = q.iter(keys_only=proc_def['keys_only'])
@@ -236,7 +238,7 @@ class TaskSegment(TaskBase):
       p['iteration'] += 1
       p['start_from'] = build_key.id()
 
-      seg_len = seg_end - seg_start
+      seg_len = seg_end - seg_start + 1
       percent = 100 * (p['start_from'] - seg_start) / seg_len
 
       try:
