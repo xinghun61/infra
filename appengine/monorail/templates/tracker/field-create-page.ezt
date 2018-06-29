@@ -43,14 +43,30 @@
     </td>
   </tr>
 
-  <tr id="phase_row">
+  <tr class="js-make_subfield">
     <th>Issue Gate field:</th>
     <td>
-      <input type="checkbox" name="is_phase_field" class="acob"
+      <input id="phase_input" type="checkbox" name="is_phase_field" class="acob"
              [if-any initial_is_phase_field]checked="checked"[end]>
       This field can only belong to issue gates.
     </td>
   </tr>
+
+  [if-any approval_names]
+  <tr class="js-make_subfield">
+    <th>Parent Approval:</th>
+    <td>
+      <select id="parent_input" name="parent_approval_name">
+        <option value="" [is initial_parent_approval_name ""]selected[end]>Not an approval's subfield</option>
+        [for approval_names]
+          <option value="[approval_names]"
+                  [is initial_parent_approval_name approval_names]selected[end]
+                  >[approval_names]</option>
+        [end]
+      </select>
+    </td>
+  </tr>
+  [end]
 
   [# TODO(jojwang): monorail:3241, evaluate how to use applicable/importance for approval subfields]
   <tr id="applicable_row">
@@ -85,22 +101,6 @@
              [if-any initial_is_multivalued]checked="checked"[end]>
     </td>
   </tr>
-
-  [if-any approval_names]
-  <tr id="subfield_row">
-    <th>Parent Approval:</th>
-    <td>
-      <select name="parent_approval_name">
-        <option value="" [is initial_parent_approval_name ""]selected[end]>Not an approval's subfield</option>
-        [for approval_names]
-          <option value="[approval_names]"
-                  [is initial_parent_approval_name approval_names]selected[end]
-                  >[approval_names]</option>
-        [end]
-      </select>
-    </td>
-  </tr>
-  [end]
 
   <tr id="choices_row" style="display:none">
     <th>Choices:</th>
@@ -258,12 +258,30 @@ runOnLoad(function() {
 
     // For now, phases and approvals cannot have labels.
     let flt_display = (new_type == 'enum_type' || new_type == 'approval_type') ? 'none' : '';
-    let phase_row = document.getElementById('phase_row');
-    phase_row.style.display = flt_display;
-    let subfield_row = document.getElementById('subfield_row');
-    if (subfield_row) {
-       subfield_row.style.display = flt_display;
-    }
+    let subfield_rows = document.getElementsByClassName('js-make_subfield');
+    Array.prototype.forEach.call(subfield_rows, row => {
+      row.style.display = flt_display;
+    });
+
+    // Prevent users from making a field a Gate and Approval subfield.
+    if ($('parent_input')) {
+      let phase_input = $('phase_input');
+      let parent_input = $('parent_input');
+      parent_input.addEventListener('change', () => {
+        if (parent_input.value === '') {
+          phase_input.disabled = false;
+        } else {
+          phase_input.disabled = true;
+        }
+      });
+      phase_input.addEventListener('change', () => {
+        if (phase_input.checked) {
+          parent_input.disabled = true;
+        } else {
+          parent_input.disabled = false;
+        }
+      });
+    };
 
     let int_row = document.getElementById('int_row');
     int_row.style.display = (new_type == 'int_type') ? '' : 'none';
