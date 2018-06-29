@@ -13,11 +13,12 @@ from testing_utils import testing
 
 from proto import common_pb2
 from proto.config import project_config_pb2
-from test.test_util import future, future_exception
+from test.test_util import future
 import errors
 import model
 import search
 import user
+import v2  # pylint: disable=unused-import
 
 
 class SearchTest(testing.AppengineTestCase):
