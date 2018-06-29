@@ -623,7 +623,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 				buildNumberInURL = result.BuildNumber
 			}
 			buildURL := client.BuildURLDeprecated(master, builderName, buildNumberInURL).String()
-			mergedBF.FinditURL = fmt.Sprintf("https://findit-for-me.appspot.com/waterfall/build-failure?url=%s", buildURL)
+			mergedBF.FinditURL = fmt.Sprintf("https://findit-for-me.appspot.com/waterfall/failure?url=%s", buildURL)
 		}
 
 		mergedAlert.Extension = mergedBF
