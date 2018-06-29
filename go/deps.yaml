@@ -217,9 +217,10 @@ import:
   subpackages:
   - errgroup
 - package: golang.org/x/sys
-  version: 52ba35ddf9b65dc3ad27218743aa2444fe13b690
+  version: 13d03a9a82fba647c21a0ef8fba44a795d0f0835
   repo: https://go.googlesource.com/sys.git
   subpackages:
+  - unix
   - windows
 - package: github.com/kisielk/gotool
   version: master
@@ -356,4 +357,13 @@ import:
   - tiff
 - package: github.com/google/skylark
   repo: https://chromium.googlesource.com/external/github.com/google/skylark.git
+  version: master
+- package: github.com/xeipuuv/gojsonpointer
+  repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonpointer.git
+  version: master
+- package: github.com/xeipuuv/gojsonreference
+  repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonreference.git
+  version: master
+- package: github.com/xeipuuv/gojsonschema
+  repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonschema.git
   version: master
