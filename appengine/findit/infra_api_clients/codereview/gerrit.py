@@ -5,6 +5,7 @@
 import json
 import logging
 import re
+import urllib
 
 from common.findit_http_client import FinditHttpClient
 from infra_api_clients.codereview import cl_info
@@ -42,12 +43,12 @@ class Gerrit(codereview.CodeReview):
     # Prepend /a/ to make the request authenticated.
     if path_parts[0] != 'a':
       path_parts = ['a'] + list(path_parts)
+    path_parts = [urllib.quote(p, safe='~') for p in path_parts]
     url = 'https://%s/%s' % (self._server_hostname, '/'.join(path_parts))
     headers = headers or {}
     # This header tells gerrit to send compact (non-pretty) JSON which is
     # more efficient and encouraged for automated tools.
     headers['Accept'] = 'application/json'
-    headers.setdefault('Accept', 'application/json')
     if method == 'GET':
       return self.HTTP_CLIENT.Get(url, params=payload, headers=headers)
     elif method == 'POST':
@@ -215,10 +216,13 @@ class Gerrit(codereview.CodeReview):
       return False
     return True
 
-  def GetClDetails(self, change_id):
-    # Create cl info based on the url.
+  def GetClDetails(self, change_id, project='chromium/src', branch='master'):
+    assert project, 'project name is invalid'
+    assert branch, 'branch name is invalid'
     params = [('o', 'CURRENT_REVISION'), ('o', 'CURRENT_COMMIT')]
-    change_info = self._Get(['changes', change_id, 'detail'], params=params)
+    full_change_id = '%s~%s~%s' % (project, branch, change_id)
+    change_info = self._Get(
+        ['changes', full_change_id, 'detail'], params=params)
     return self._ParseClInfo(change_info, change_id)
 
   def _ParseClInfo(self, change_info, change_id):

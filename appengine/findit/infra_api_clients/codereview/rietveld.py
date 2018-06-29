@@ -208,7 +208,7 @@ class Rietveld(codereview.CodeReview):
     cl.owner_email = data['owner_email']
     return cl
 
-  def GetClDetails(self, change_id):
+  def GetClDetails(self, change_id, _unused_project=None, _unused_branch=None):
     params = {'messages': 'true'}
     url = 'https://%s/api/%s' % (self._server_hostname, change_id)
     status_code, content, _response_headers = self.HTTP_CLIENT.Get(

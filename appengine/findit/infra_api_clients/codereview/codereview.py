@@ -98,12 +98,14 @@ class CodeReview(object):  # pragma: no cover.
     """
     raise NotImplementedError()
 
-  def GetClDetails(self, change_id):
+  def GetClDetails(self, change_id, project=None, branch=None):
     """Retrieves information about commits and reverts for a given CL.
 
     Args:
       change_id (str or int): The change id of the CL on Gerrit or the issue
           number of the CL on Rietveld.
+      project (str): The project name tracking the CL on the code review server.
+      branch (str): The branch name tracking the CL on the code review server.
 
     Returns:
       An object that has a `commits` and a `reverts` properties which are lists
