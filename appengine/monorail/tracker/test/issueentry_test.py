@@ -378,8 +378,41 @@ class IssueEntryTest(unittest.TestCase):
     self.mox.VerifyAll()
 
     self.assertTrue(self.services.template.GetProjectTemplates.called)
-    print dir(page_data['config'].template_view)
     self.assertTrue(page_data['config'].template_view.members_only)
+
+  def testGatherPageData_IncorrectTemplate(self):
+    """The handler shouldn't error out if passed a non-existent template."""
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', services=self.services)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+    mr.template_name = 'rutabaga'
+
+    user = self.services.user.TestAddUser('user@invalid', 100)
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    config.default_template_for_users = 456
+    config.default_template_for_developers = 789
+    self.services.config.StoreConfig(mr.cnxn, config)
+
+    self.services.template.GetTemplateSetForProject.return_value = [
+        (1, 'one', False), (2, 'two', True)]
+    self.services.template.GetTemplateByName.return_value = None
+    self.services.template.GetTemplateById.return_value = \
+        tracker_pb2.TemplateDef(template_id=123, labels=['yo'])
+    self.services.template.GetProjectTemplates.return_value = [
+        tracker_pb2.TemplateDef(labels=['no']),
+        tracker_pb2.TemplateDef(labels=['maybe'])]
+    self.mox.StubOutWithMock(self.services.user, 'GetUser')
+    self.services.user.GetUser(
+        mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
+
+    self.mox.ReplayAll()
+    page_data = self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+
+    self.assertTrue(self.services.template.GetTemplateByName.called)
+    self.assertTrue(self.services.template.GetTemplateById.called)
+    self.assertFalse(self.services.template.GetProjectTemplates.called)
+    self.assertEqual(page_data['config'].template_view.label0, 'yo')
 
   def testProcessFormData_RedirectToEnteredIssue(self):
     mr = testing_helpers.MakeMonorailRequest(

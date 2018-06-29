@@ -372,11 +372,13 @@ class IssueEntry(servlet.Servlet):
   def _GetTemplate(self, cnxn, config, template_name, is_member):
     """Tries to fetch template by name and implements default template logic
     if not found."""
+    template = None
     if template_name:
       template_name = template_name.replace('+', ' ')
       template = self.services.template.GetTemplateByName(cnxn,
           template_name, config.project_id)
-    else:
+
+    if not template:
       if is_member:
         template_id = config.default_template_for_developers
       else:
