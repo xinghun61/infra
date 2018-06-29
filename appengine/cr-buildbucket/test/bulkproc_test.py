@@ -48,19 +48,24 @@ class StartTest(TestBase):
 
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_start(self, enqueue_tasks):
-    ndb.put_multi([
+    # create a build a day for 3 days
+    day0 = model.BEGINING_OF_THE_WORLD + datetime.timedelta(days=7)
+
+    day_date = lambda day: day0 + datetime.timedelta(days=day)
+    builds = [
         model.Build(
-            id=i,
+            id=model.create_build_ids(day_date(day), 1, randomness=False)[0],
             bucket='chromium',
-            create_time=self.now - datetime.timedelta(minutes=i)
-        ) for i in xrange(1, 11)
-    ])
+            create_time=day_date(day),
+        ) for day in xrange(3)
+    ]
+    ndb.put_multi(builds)
     proc = {'name': 'foo', 'payload': 'bar'}
     self.post({
-        'shards': 3,
         'proc': proc,
     })
 
+    # Expect a segment for each day.
     seg_path_prefix = bulkproc.PATH_PREFIX + 'segment/'
     enqueue_tasks.assert_called_with(
         'bulkproc', [
@@ -71,8 +76,8 @@ class StartTest(TestBase):
                     'job_id': 'taskname',
                     'iteration': 0,
                     'seg_index': 0,
-                    'seg_start': 1,
-                    'seg_end': 4,
+                    'seg_start': builds[2].key.id(),
+                    'seg_end': builds[1].key.id(),
                     'started_ts': utils.datetime_to_timestamp(self.now),
                     'proc': proc,
                 }),
@@ -84,8 +89,8 @@ class StartTest(TestBase):
                     'job_id': 'taskname',
                     'iteration': 0,
                     'seg_index': 1,
-                    'seg_start': 4,
-                    'seg_end': 7,
+                    'seg_start': builds[1].key.id(),
+                    'seg_end': builds[0].key.id(),
                     'started_ts': utils.datetime_to_timestamp(self.now),
                     'proc': proc,
                 }),
@@ -97,21 +102,8 @@ class StartTest(TestBase):
                     'job_id': 'taskname',
                     'iteration': 0,
                     'seg_index': 2,
-                    'seg_start': 7,
-                    'seg_end': 10,
-                    'started_ts': utils.datetime_to_timestamp(self.now),
-                    'proc': proc,
-                }),
-            ),
-            (
-                None,
-                seg_path_prefix + 'seg:3-percent:0',
-                utils.encode_to_json({
-                    'job_id': 'taskname',
-                    'iteration': 0,
-                    'seg_index': 3,
-                    'seg_start': 10,
-                    'seg_end': 11,
+                    'seg_start': builds[0].key.id(),
+                    'seg_end': builds[0].key.id() + bulkproc.SEGMENT_SIZE,
                     'started_ts': utils.datetime_to_timestamp(self.now),
                     'proc': proc,
                 }),
@@ -120,14 +112,17 @@ class StartTest(TestBase):
     )
 
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
-  def test_start_many_shards(self, enqueue_tasks):
+  def test_start_many_tasks(self, enqueue_tasks):
+    day0 = model.BEGINING_OF_THE_WORLD + datetime.timedelta(days=7)
+    day_date = lambda day: day0 + datetime.timedelta(days=day)
     ndb.put_multi([
         model.Build(
-            id=i,
+            id=model.create_build_ids(day_date(day), 1, randomness=False)[0],
             bucket='chromium',
-            create_time=self.now - datetime.timedelta(minutes=i)
-        ) for i in xrange(1, 150)
+            create_time=day_date(day),
+        ) for day in xrange(150)
     ])
+
     self.post({
         'shards': 100,
         'proc': {'name': 'foo', 'payload': 'bar'},

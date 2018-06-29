@@ -295,6 +295,8 @@ class Builder(ndb.Model):
 
 _TIME_RESOLUTION = datetime.timedelta(milliseconds=1)
 _BUILD_ID_SUFFIX_LEN = 20
+# Size of a build id segment covering one millisecond.
+ONE_MS_BUILD_ID_RANGE = 1 << _BUILD_ID_SUFFIX_LEN
 
 
 def _id_time_segment(dtime):
@@ -305,14 +307,15 @@ def _id_time_segment(dtime):
   return (~now & ((1 << 43) - 1)) << 20
 
 
-def create_build_ids(dtime, count):
+def create_build_ids(dtime, count, randomness=True):
   """Returns a range of valid build ids, as integers and based on a datetime.
 
   See model.Build's docstring, "Build key" section.
   """
   # Build ID bits: "0N{43}R{16}V{4}"
   # where N is now bits, R is random bits and V is version bits.
-  build_id = int(_id_time_segment(dtime) | (random.getrandbits(16) << 4))
+  build_id = int(_id_time_segment(dtime))
+  build_id = build_id | ((random.getrandbits(16) << 4) if randomness else 0)
   return [build_id - i * (1 << 4) for i in xrange(count)]
 
 

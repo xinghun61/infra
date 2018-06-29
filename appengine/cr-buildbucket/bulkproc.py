@@ -23,10 +23,12 @@ import model
 
 QUEUE_NAME = 'bulkproc'
 PATH_PREFIX = '/internal/task/bulkproc/'
-SHARD_COUNT = 64
 
 # See register().
 PROCESSOR_REGISTRY = {}
+
+# Chunk all builds into segments each worth of 1 day.
+SEGMENT_SIZE = model.ONE_MS_BUILD_ID_RANGE * 1000 * 60 * 60 * 24
 
 
 def register(name, processor, entity_kind='Build', keys_only=False):
@@ -68,7 +70,6 @@ def start(name, payload):  # pragma: no cover
       None,
       PATH_PREFIX + 'start',
       utils.encode_to_json({
-          'shards': SHARD_COUNT,
           'proc': {
               'name': name,
               'payload': payload,
@@ -114,17 +115,11 @@ class TaskBase(webapp2.RequestHandler):
 class TaskStart(TaskBase):
   """Splits build space into segments and enqueues TaskSegment for each.
 
-  Assumes that build creation rate was about the same forever.
-
   Payload properties:
-    shards: number of workers to create. Must be positive. Required.
     proc: processor to run, see TaskSegment docstring.
   """
 
   def do(self, payload):
-    shards = payload['shards']
-    assert isinstance(shards, int)
-    assert shards > 0
     proc = payload['proc']
 
     first, = model.Build.query().fetch(1, keys_only=True) or [None]
@@ -139,18 +134,20 @@ class TaskStart(TaskBase):
 
     space_start, space_end = first.id(), last.id() + 1
     space_size = space_end - space_start
-    seg_size = max(1, int(math.ceil(space_size / shards)))
 
     logging.info(
-        'build space [%d..%d), size %d, %d shards, segment size %d',
-        space_start, space_end, space_size, shards, seg_size
+        'build space [%d..%d), size %d, %d shards',
+        space_start,
+        space_end,
+        space_size,
+        int(math.ceil(float(space_size) / SEGMENT_SIZE)),
     )
 
     next_seg_start = space_start
     tasks = []
     while next_seg_start < space_end:
       seg_start = next_seg_start
-      seg_end = min(space_end, seg_start + seg_size)
+      seg_end = seg_start + SEGMENT_SIZE
       next_seg_start = seg_end
       tasks.append((
           None,
