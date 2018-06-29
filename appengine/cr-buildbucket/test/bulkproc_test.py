@@ -68,47 +68,43 @@ class StartTest(TestBase):
     # Expect a segment for each day.
     seg_path_prefix = bulkproc.PATH_PREFIX + 'segment/'
     enqueue_tasks.assert_called_with(
-        'bulkproc', [
-            (
-                None,
-                seg_path_prefix + 'seg:0-percent:0',
-                utils.encode_to_json({
-                    'job_id': 'taskname',
-                    'iteration': 0,
-                    'seg_index': 0,
-                    'seg_start': builds[2].key.id(),
-                    'seg_end': builds[1].key.id(),
-                    'started_ts': utils.datetime_to_timestamp(self.now),
-                    'proc': proc,
-                }),
-            ),
-            (
-                None,
-                seg_path_prefix + 'seg:1-percent:0',
-                utils.encode_to_json({
-                    'job_id': 'taskname',
-                    'iteration': 0,
-                    'seg_index': 1,
-                    'seg_start': builds[1].key.id(),
-                    'seg_end': builds[0].key.id(),
-                    'started_ts': utils.datetime_to_timestamp(self.now),
-                    'proc': proc,
-                }),
-            ),
-            (
-                None,
-                seg_path_prefix + 'seg:2-percent:0',
-                utils.encode_to_json({
-                    'job_id': 'taskname',
-                    'iteration': 0,
-                    'seg_index': 2,
-                    'seg_start': builds[0].key.id(),
-                    'seg_end': builds[0].key.id() + bulkproc.SEGMENT_SIZE,
-                    'started_ts': utils.datetime_to_timestamp(self.now),
-                    'proc': proc,
-                }),
-            ),
-        ]
+        'bulkproc', [(
+            None,
+            seg_path_prefix + 'seg:0-percent:0',
+            utils.encode_to_json({
+                'job_id': 'taskname',
+                'iteration': 0,
+                'seg_index': 0,
+                'seg_start': builds[2].key.id(),
+                'seg_end': builds[1].key.id(),
+                'started_ts': utils.datetime_to_timestamp(self.now),
+                'proc': proc,
+            }),
+        ), (
+            None,
+            seg_path_prefix + 'seg:1-percent:0',
+            utils.encode_to_json({
+                'job_id': 'taskname',
+                'iteration': 0,
+                'seg_index': 1,
+                'seg_start': builds[1].key.id(),
+                'seg_end': builds[0].key.id(),
+                'started_ts': utils.datetime_to_timestamp(self.now),
+                'proc': proc,
+            }),
+        ), (
+            None,
+            seg_path_prefix + 'seg:2-percent:0',
+            utils.encode_to_json({
+                'job_id': 'taskname',
+                'iteration': 0,
+                'seg_index': 2,
+                'seg_start': builds[0].key.id(),
+                'seg_end': builds[0].key.id() + bulkproc.SEGMENT_SIZE,
+                'started_ts': utils.datetime_to_timestamp(self.now),
+                'proc': proc,
+            }),
+        )]
     )
 
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)

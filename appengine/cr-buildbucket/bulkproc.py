@@ -37,17 +37,14 @@ def register(name, processor, entity_kind='Build', keys_only=False):
   Args:
     name: identifies the processor.
     entity_kind: kind of the entity to process, a string. Must be "Build"
-      or its descendant. Multiple descendant entities of the kind under a single
-      build are not supported. Instead, do not specify entity_kind, consume
-      build keys and do ancestor query for each.
-    processor: function (results, payload),
+      or its descendant.
+    processor: functiton (results, payload),
       where results is an iterable of entities or their keys
       and payload is the payload specified in start().
       Entities not read from the iterable will be rescheduled for processing in
       a separate job.
       processor is eventually executed on all entities of the kind that exist in
       the datastore.
-      Must be idempotent.
     keys_only: whether the results passed to processor are only a ndb key, not
       entire entity.
   """
@@ -60,7 +57,7 @@ def register(name, processor, entity_kind='Build', keys_only=False):
   }
 
 
-def start(name, payload):  # pragma: no cover
+def start(name, payload=None):  # pragma: no cover
   """Starts a processor by name. See register docstring for params.
 
   It should be called by a module that calls register().

@@ -36,7 +36,7 @@ class BuildAnnotations(model.BuildDetailEntity):
   def parse_steps(self):
     """Returns a list of step_pb2.Step parsed from self."""
     ann_step = annotations_pb2.Step()
-    ann_step.ParseFromString(self.annotation_binary)
+    ann_step.ParseFromString(self.annotation_binary or '')
     host, project, prefix, _ = logdog.parse_url(self.annotation_url)
     parser = StepParser(
         default_logdog_host=host,
