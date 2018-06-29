@@ -159,6 +159,29 @@ def catch_errors(fn, response_message_class):
   return decorated
 
 
+def trace(name):
+  """Logs duration of function execution."""
+
+  def decorator(fn):
+
+    @functools.wraps(fn)
+    def decorated(svc, *args, **kwargs):
+      start = utils.utcnow()
+      logging.debug('trace [%s] started', name)
+      try:
+        return fn(svc, *args, **kwargs)
+      finally:
+        end = utils.utcnow()
+        logging.debug(
+            'trace [%s] ended, duration: %dms', name,
+            (end - start).total_seconds() * 1000
+        )
+
+    return decorated
+
+  return decorator
+
+
 def buildbucket_api_method(
     request_message_class, response_message_class, **kwargs
 ):
@@ -175,13 +198,18 @@ def buildbucket_api_method(
     ts_mon_time = lambda: utils.datetime_to_timestamp(utils.utcnow()) / 1e6
     fn = gae_ts_mon.instrument_endpoint(time_fn=ts_mon_time)(fn)
 
-    # ndb.toplevel must be the last one.
+    fn = trace('inside_ndb_toplevel')(fn)
+
+    # Call ndb.toplevel after other decorators that deal with ndb.
     # We use it because codebase uses the following pattern:
     #   results = [f.get_result() for f in futures]
     # without ndb.Future.wait_all.
     # If a future has an exception, get_result won't be called successive
     # futures, and thus may be left running.
-    return ndb.toplevel(fn)
+    fn = ndb.toplevel(fn)
+
+    fn = trace('outside_ndb_toplevel')(fn)
+    return fn
 
   return decorator
 
