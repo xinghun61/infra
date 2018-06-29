@@ -22,7 +22,7 @@ handlers:
   script: monorailapp.app
   login: admin
 
-- url: /_ah/api/.*
+- url: /_ah/spi/.*
   script: monorailapp.endpoints
 
 - url: /_task/.*
