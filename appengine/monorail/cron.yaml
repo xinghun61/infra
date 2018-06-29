@@ -42,6 +42,6 @@ cron:
   timezone: US/Pacific
   schedule: every mon 1:00
 - description: add commit data to database
-  url: /_cron/usercommits
+  url: /_cron/getCommitsCron
   timezone: US/Pacific
   schedule: every mon 1:00
