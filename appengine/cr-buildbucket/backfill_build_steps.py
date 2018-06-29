@@ -4,6 +4,8 @@
 
 """Migrates model.BuildAnnotations to model.BuildSteps."""
 
+import logging
+
 from google.appengine.ext import ndb
 
 from components import utils
@@ -48,4 +50,10 @@ def _migrate_annotations_async(build_ann_key):  # pragma: no cover
       key=model.BuildSteps.key_for(build_ann_key.parent()),
       steps=container.SerializeToString(),
   )
-  yield build_steps.put_async()
+  try:
+    yield build_steps.put_async()
+  except ndb.RequestTooLargeError:
+    logging.warning(
+        'steps of build %d are too large. Skipping',
+        build_ann_key.parent().id(),
+    )
