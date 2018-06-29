@@ -7,6 +7,7 @@
 import logging
 
 from google.appengine.ext import ndb
+from google.appengine.runtime import apiproxy_errors
 
 from components import utils
 
@@ -52,7 +53,7 @@ def _migrate_annotations_async(build_ann_key):  # pragma: no cover
   )
   try:
     yield build_steps.put_async()
-  except ndb.RequestTooLargeError:
+  except apiproxy_errors.RequestTooLargeError:
     logging.warning(
         'steps of build %d are too large. Skipping',
         build_ann_key.parent().id(),
