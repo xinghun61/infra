@@ -66,6 +66,11 @@ func (*mockPollRestAPI) PostRobotComments(c context.Context, host, change, revis
 	return nil
 }
 
+func (m *mockPollRestAPI) GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
+	// not used by the poller
+	return ChangedLinesInfo{}, nil
+}
+
 func (m *mockPollRestAPI) addChanges(host, project string, c []gr.ChangeInfo) {
 	m.Lock()
 	defer m.Unlock()

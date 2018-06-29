@@ -5,6 +5,7 @@
 package gerrit
 
 import (
+	"encoding/base64"
 	"fmt"
 	"testing"
 	"time"
@@ -106,5 +107,79 @@ func TestCreateRobotComment(t *testing.T) {
 			})
 		})
 
+	})
+}
+
+func TestGetChangedLinesFromPatch(t *testing.T) {
+	Convey("Extract changed lines", t, func() {
+		patch := `commit 29943c31812f582bd174740d9f9414a99632c687 (HEAD -> master)
+Author: Foo Bar <foobar@google.com>
+Date:   Tue Jun 26 17:58:25 2018 -0700
+
+    new commit
+
+diff --git a/test.cpp b/test.cpp
+new file mode 100644
+index 0000000..382e810
+--- /dev/null
++++ b/test.cpp
+@@ -0,0 +1,6 @@
++#include <iostream>
++
++int main(int argc, char **arg) {
++  std::cout << "Hello, World!";
++  return 0;
++}
+diff --git a/test2.cpp b/test2.cpp
+new file mode 100644
+index 0000000..ab8dadd
+--- a/test2.cpp
++++ b/test2.cpp
+@@ -1,7 +1,7 @@
+ #include <iostream>
+
+-int main() {
++int main(int argc, char **arg) {
++
+   std::cout << "Hello, World!";
+-  return 0;
+ }
+`
+
+		base64Patch := base64.StdEncoding.EncodeToString([]byte(patch))
+		expectedLines := ChangedLinesInfo{}
+		expectedLines["test.cpp"] = []int{1, 2, 3, 4, 5, 6}
+		expectedLines["test2.cpp"] = []int{2, 3}
+		actualLines, err := getChangedLinesFromPatch(base64Patch)
+		So(err, ShouldBeNil)
+		So(actualLines, ShouldResemble, expectedLines)
+	})
+
+	Convey("Extract changed lines", t, func() {
+		patch := `commit 29943c31812f582bd174740d9f9414a99632c687 (HEAD -> master)
+Author: Foo Bar <foobar@google.com>
+Date:   Tue Jun 26 17:58:25 2018 -0700
+
+		delete commit
+
+diff --git a/test.cpp b/test.cpp
+deleted file mode 100644
+index 382e810..0000000
+--- a/test.cpp
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#include <iostream>
+-
+-int main(int argc, char **arg) {
+-  std::cout << "Hello, World!";
+-  return 0;
+-}
+`
+
+		base64Patch := base64.StdEncoding.EncodeToString([]byte(patch))
+		expectedLines := ChangedLinesInfo{}
+		actualLines, err := getChangedLinesFromPatch(base64Patch)
+		So(err, ShouldBeNil)
+		So(actualLines, ShouldResemble, expectedLines)
 	})
 }

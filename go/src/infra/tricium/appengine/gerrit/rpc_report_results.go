@@ -5,6 +5,7 @@
 package gerrit
 
 import (
+	"encoding/json"
 	"fmt"
 
 	ds "go.chromium.org/gae/service/datastore"
@@ -17,6 +18,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -59,8 +61,35 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 			if err := ds.GetAll(c, ds.NewQuery("Comment").Ancestor(analyzerKey), &comms); err != nil {
 				return fmt.Errorf("failed to retrieve comments: %v", err)
 			}
+
+			// Get the changed lines for this revision
+			changedLines, err := gerrit.GetChangedLines(c, request.GerritHost, request.GerritChange, request.GitRef)
+			if err != nil {
+				return fmt.Errorf("failed to get changed lines: %v", err)
+			}
+
 			// Only include selected comments.
 			for _, comment := range comms {
+				var data tricium.Data_Comment
+				if comment.Comment != nil {
+					if err := json.Unmarshal([]byte(comment.Comment), &data); err != nil {
+						fmt.Printf("failed to unmarshal comment: %v", err)
+						continue
+					}
+
+					// If the file has changed lines tracked, pass over comments that aren't in the diff.
+					if lines, ok := changedLines[data.Path]; ok {
+						if data.StartLine != 0 && !isInChangedLines(int(data.StartLine), int(data.EndLine), lines) {
+							continue
+						}
+					} else {
+						// If the file isn't present in changedLines, it means it was deleted in the patch and therefore has no applicable lines.
+						// In this case, we pass over everything that isn't file-level.
+						if data.StartLine != 0 || data.EndLine != 0 {
+							continue
+						}
+					}
+				}
 				commentKey := ds.KeyForObj(c, comment)
 				cr := &track.CommentSelection{ID: 1, Parent: commentKey}
 				if err := ds.Get(c, cr); err != nil {
@@ -85,4 +114,13 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 		return nil
 	}
 	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GitRef, req.RunId, comments)
+}
+
+func isInChangedLines(start, end int, changedLines []int) bool {
+	for _, line := range changedLines {
+		if line >= start && line <= end {
+			return true
+		}
+	}
+	return false
 }

@@ -356,7 +356,10 @@ import:
   - bmp
   - tiff
 - package: github.com/google/skylark
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/google/skylark.git
+- package: github.com/waigani/diffparser
+  repo: https://chromium.googlesource.com/external/github.com/waigani/diffparser.git
   version: master
 - package: github.com/xeipuuv/gojsonpointer
   repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonpointer.git
@@ -365,5 +368,8 @@ import:
   repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonreference.git
   version: master
 - package: github.com/xeipuuv/gojsonschema
+  version: master
   repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonschema.git
+- package: github.com/juju/errors
+  repo: https://chromium.googlesource.com/external/github.com/juju/errors.git
   version: master

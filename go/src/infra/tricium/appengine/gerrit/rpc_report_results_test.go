@@ -12,6 +12,7 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 	"infra/tricium/appengine/common/triciumtest"
 )
@@ -50,8 +51,20 @@ func TestReportResultsRequest(t *testing.T) {
 
 		// Add example Comment and associated CommentSelection entities.
 		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
-		json1, err := json.Marshal("{\"category\":\"L\",\"message\":\"Line too long\"}")
-		json2, err := json.Marshal("{\"category\":\"L\",\"message\":\"Line too short\"}")
+
+		changedLines := ChangedLinesInfo{"file": {2, 5, 6}}
+		json1, err := json.Marshal(tricium.Data_Comment{
+			Category: "L",
+			Message:  "Line too long",
+			Path:     "deleted_file",
+		})
+		json2, err := json.Marshal(tricium.Data_Comment{
+			Category:  "L",
+			Message:   "Line too short",
+			Path:      "file",
+			StartLine: 2,
+			EndLine:   3,
+		})
 		So(err, ShouldBeNil)
 		comments := []*track.Comment{
 			{Parent: workerKey, Comment: json1},
@@ -77,7 +90,7 @@ func TestReportResultsRequest(t *testing.T) {
 		}), ShouldBeNil)
 
 		Convey("Reports only included comments", func() {
-			mock := &mockRestAPI{}
+			mock := &mockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: "MyLinter",
@@ -90,7 +103,7 @@ func TestReportResultsRequest(t *testing.T) {
 		Convey("Does not report results when reporting is disabled", func() {
 			request.GerritReportingDisabled = true
 			So(ds.Put(ctx, request), ShouldBeNil)
-			mock := &mockRestAPI{}
+			mock := &mockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: functionName,
@@ -114,7 +127,35 @@ func TestReportResultsRequest(t *testing.T) {
 		So(len(comments), ShouldEqual, maxComments+1)
 
 		Convey("Reports when number of comments is at maximum", func() {
-			mock := &mockRestAPI{}
+			mock := &mockRestAPI{ChangedLines: changedLines}
+			err := reportResults(ctx, &admin.ReportResultsRequest{
+				RunId:    run.ID,
+				Analyzer: functionName,
+			}, mock)
+			So(err, ShouldBeNil)
+			So(len(mock.LastComments), ShouldEqual, maxComments)
+		})
+
+		json3, err := json.Marshal(tricium.Data_Comment{
+			Category:  "L",
+			Message:   "Line too short",
+			Path:      "file",
+			StartLine: 3,
+			EndLine:   3,
+		})
+		// Put the new comment with line numbers in;
+		comment3 := &track.Comment{Parent: workerKey, Comment: json3}
+		comments = append(comments, comment3)
+		So(ds.Put(ctx, comment3), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{
+			ID:       1,
+			Parent:   ds.KeyForObj(ctx, comment3),
+			Included: true,
+		}), ShouldBeNil)
+		So(len(comments), ShouldEqual, maxComments+2)
+
+		Convey("Does not report comments that are not on changed lines", func() {
+			mock := &mockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: functionName,
@@ -132,10 +173,10 @@ func TestReportResultsRequest(t *testing.T) {
 			Parent:   ds.KeyForObj(ctx, comment),
 			Included: true,
 		}), ShouldBeNil)
-		So(len(comments), ShouldEqual, maxComments+2)
+		So(len(comments), ShouldEqual, maxComments+3)
 
 		Convey("Does not report when number of comments exceeds maximum", func() {
-			mock := &mockRestAPI{}
+			mock := &mockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: functionName,
