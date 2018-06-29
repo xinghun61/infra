@@ -284,7 +284,8 @@ else:
     db_cloud_project = app_id
     analytics_id = 'UA-55762617-14'
     db_replica_names = [
-        'replica-00', 'replica-01', 'replica-02', 'replica-03',
+        # 'replica-00',  This replica hung when I tried to stop and restart.
+        'replica-01', 'replica-02', 'replica-03',
         'replica-04', 'replica-05', 'replica-06', 'replica-07',
         'replica-08a', # Replacement for replica-08.
         'replica-09']
