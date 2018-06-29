@@ -1,6 +1,6 @@
 # Contacting troopers
 
-This page can be found at: [g.co/bugatrooper](http://g.co/bugatrooper)
+This page can be found at: [g.co/bugatrooper](https://g.co/bugatrooper)
 
 Have an issue with a piece of build infrastructure?
 Our troopers are here to help.
@@ -16,10 +16,12 @@ visit the [ChOps Status Dashboard](https://chopsdash.appspot.com) first.
 If the "Current Status" of the service shows red/yellow, that means there is a known
 disruption or outage, and the Trooper is already aware. No need to contact us further!
 
-The primary way to contact a trooper is via [crbug.com](http://crbug.com) using
+The primary way to contact a trooper is via [crbug.com](https://crbug.com) using
 the templates and priorities established below. If you need to find the current
 trooper, check [build.chromium.org](https://build.chromium.org), or
-[vi/chrome_infra](http://vi/chrome_infra) (internal link).
+[vi/chrome_infra](http://vi/chrome_infra) (internal link). If crbug.com is down
+and you are unable to file a bug, please contact the team on
+[infra-dev@chromium.org](mailto:infra-dev@chromium.org).
 
 If you know your issue is with the physical hardware, or otherwise should be
 handled by the Systems team, please follow their
