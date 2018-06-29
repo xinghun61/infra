@@ -138,6 +138,22 @@
       "-u",
       "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "python",
+      "[CACHE]/infra_gclient_with_go/infra/go/deps.py",
+      "bundle"
+    ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "name": "bundle go deps"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
+      "python",
       "[CACHE]/infra_gclient_with_go/infra/go/test.py"
     ],
     "env_prefixes": {

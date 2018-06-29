@@ -93,7 +93,7 @@ CIPD_PACKAGE_BUILDERS = {
 
 # A builder responsible for calling "deps.py bundle" to generate cipd bundles
 # with vendored go code. We need only one.
-GO_DEPS_BUNDLING_BUILDER = 'infra-continuous-trusty-64'
+GO_DEPS_BUNDLING_BUILDER = 'infra-packager-mac-64'
 
 
 INTERNAL_REPO = 'https://chrome-internal.googlesource.com/infra/infra_internal'
@@ -161,7 +161,8 @@ def build_main(api, buildername, project_name, repo_url, rev):
     # When the recipe runs with outdated deps bundle, 'env.py' call above falls
     # back to fetching dependencies from git directly. When the bundle is
     # up-to-date, 'deps.py bundle' finishes right away not doing anything.
-    if buildername == GO_DEPS_BUNDLING_BUILDER:
+    if (buildername == GO_DEPS_BUNDLING_BUILDER and
+        not api.runtime.is_experimental):
       api.python(
           'bundle go deps',
           api.path['checkout'].join('go', 'env.py'),
@@ -169,8 +170,6 @@ def build_main(api, buildername, project_name, repo_url, rev):
             'python',  # env.py knows how to expand 'python' into sys.executable
             api.path['checkout'].join('go', 'deps.py'),
             'bundle',
-            '--service-account-json',
-            api.cipd.default_bot_service_account_credentials,
           ])
 
     api.python(
@@ -208,9 +207,9 @@ def GenTests(api):
   yield test('public-ci-win', 'infra-continuous-win-32',
              PUBLIC_REPO, 'infra', 'ci')
 
-  yield test('internal-ci-linux', 'infra-continuous-trusty-64',
+  yield test('internal-ci-linux', 'infra-internal-continuous-trusty-64',
              INTERNAL_REPO, 'infra-internal', 'ci')
-  yield test('internal-ci-mac', 'infra-continuous-mac-64',
+  yield test('internal-ci-mac', 'infra-internal-continuous-mac-64',
              INTERNAL_REPO, 'infra-internal', 'ci')
 
   yield test('public-packager-mac', 'infra-packager-mac-64',

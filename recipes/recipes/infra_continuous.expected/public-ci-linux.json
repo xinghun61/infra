@@ -138,24 +138,6 @@
       "-u",
       "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "python",
-      "[CACHE]/infra_gclient_with_go/infra/go/deps.py",
-      "bundle",
-      "--service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json"
-    ],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
-    "name": "bundle go deps"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
-      "python",
       "[CACHE]/infra_gclient_with_go/infra/go/test.py"
     ],
     "env_prefixes": {
