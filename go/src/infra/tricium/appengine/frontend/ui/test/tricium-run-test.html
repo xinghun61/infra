@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="../node_modules/web-component-tester/browser.js"></script>
+
+<script type="module" src="../src/tricium-run.js"></script>
+
+<test-fixture id="element">
+  <template>
+    <tricium-run run="1234"></tricium-run>
+  </template>
+</test-fixture>
+
+<script>
+suite('<tricium-run>', () => {
+  let element;
+
+  setup(() => {
+    sinon.stub(window, 'fetch');
+    window.fetch.returns(Promise.resolve());
+    element = fixture('element');
+  });
+
+  teardown(() => {
+    window.fetch.restore();
+  });
+
+  test('properties', () => {
+    assert.equal(element.run, '1234');
+    assert.isUndefined(element.data);
+    assert.isUndefined(element.error);
+  });
+
+  test('_refresh updates data', async () => {
+    const data = {
+      'runId': '12345',
+      'state': 'SUCCESS',
+      'functionProgress': [
+        {
+          'name': 'Spacey',
+          'state': 'SUCCESS',
+          'swarmingUrl': 'https://chromium-swarm.appspot.com',
+          'swarmingTaskId': '3e2d03fcebd87610',
+          'numComments': 1
+        },
+      ],
+    };
+    window.fetch.returns(Promise.resolve(newSuccessResponse(data)));
+    await element._refresh();
+    console.log(element.data);
+    assert.deepEqual(data, element.data);
+  });
+
+  function newSuccessResponse(data) {
+    return new window.Response(')]}\'' + JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Prpc-Grpc-Code': '0',
+      },
+    });
+  }
+});
+</script>

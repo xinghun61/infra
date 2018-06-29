@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="../node_modules/web-component-tester/browser.js"></script>
+
+<script type="module" src="../src/tricium-app.js"></script>
+
+<test-fixture id="element">
+  <template>
+    <tricium-app></tricium-app>
+  </template>
+</test-fixture>
+
+<script>
+suite('<tricium-app>', () => {
+  let element;
+
+  setup(() => {
+    element = fixture('element');
+  });
+
+  test('path property', () => {
+    assert.equal(element.path, document.location.pathname);
+  });
+});
+</script>

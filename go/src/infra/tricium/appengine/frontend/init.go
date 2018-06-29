@@ -29,6 +29,7 @@ func init() {
 
 	r.GET("/", base, mainPageHandler)
 	r.GET("/run/*runID", base, mainPageHandler)
+	r.GET("/feedback/*runID", base, mainPageHandler)
 
 	// Configure pRPC server.
 	s := common.NewRPCServer()

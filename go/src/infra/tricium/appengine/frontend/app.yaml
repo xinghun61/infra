@@ -10,15 +10,22 @@ handlers:
   secure: always
   login: admin
 
-- url: /bower_components
-  static_dir: bower_components
+- url: /_ah/push-handlers/.*
+  script: _go_app
+  secure: always
+  login: admin
+
+- url: /src
+  static_dir: ui/build/default/src/
+  secure: always
+
+- url: /node_modules
+  static_dir: ui/build/default/node_modules/
   secure: always
 
 - url: /.*
   script: _go_app
   secure: always
 
-- url: /_ah/push-handlers/.*
-  script: _go_app
-  secure: always
-  login: admin
+skip_files:
+  - ui/node_modules/

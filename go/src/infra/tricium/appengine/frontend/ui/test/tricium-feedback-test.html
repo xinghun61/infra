@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="../node_modules/web-component-tester/browser.js"></script>
+
+<script type="module" src="../src/tricium-feedback.js"></script>
+
+<test-fixture id="element">
+  <template>
+    <tricium-feedback category="Spacey"></tricium-feedback>
+  </template>
+</test-fixture>
+
+<script>
+
+suite('<tricium-feedback>', () => {
+  let element;
+
+  setup(() => {
+    sinon.stub(window, 'fetch');
+    window.fetch.returns(Promise.resolve());
+    element = fixture('element');
+  });
+
+  teardown(() => {
+    window.fetch.restore();
+  });
+
+  test('properties', () => {
+    assert.equal(element.category, 'Spacey');
+    assert.isUndefined(element.data);
+    assert.isUndefined(element.error);
+  });
+
+  test('_refresh updates data', async () => {
+    const data = {
+      'comments': 126,
+      'notUsefulReports': 14
+    };
+    window.fetch.returns(Promise.resolve(newSuccessResponse(data)));
+    await element._refresh();
+    assert.deepEqual(element.data, data)
+  });
+
+  function newSuccessResponse(data) {
+    return new window.Response(')]}\'' + JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Prpc-Grpc-Code': '0',
+      },
+    });
+  }
+});
+</script>

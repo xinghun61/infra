@@ -1,0 +1,27 @@
+{
+  "name": "tricium",
+  "version": "1.0.0",
+  "description": "Tricium Frontend Web UI",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra"
+  },
+  "main": "src/tricium-app.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {},
+  "devDependencies": {
+    "polymer-cli": "^1.7.0-pre.17",
+    "wct-browser-legacy": "^1.0.1",
+    "web-component-tester": "^6.6.0",
+    "async": "^2.6.1"
+  },
+  "dependencies": {
+    "@polymer/lit-element": "^0.5.2",
+    "@polymer/test-fixture": "3.0.0-pre.21",
+    "pwa-helpers": "^0.8.2",
+    "@webcomponents/webcomponentsjs": "^2.0.2"
+  }
+}

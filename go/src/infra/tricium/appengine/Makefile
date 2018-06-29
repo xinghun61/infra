@@ -13,7 +13,7 @@ help:
 
 build:
 	cd ../../../go.chromium.org/luci/web && ./web.py build rpcexplorer
-	cd frontend && make deps
+	cd frontend/ui && make build
 
 deploy_prod: build
 	gae.py upload --switch --app-id=tricium-prod

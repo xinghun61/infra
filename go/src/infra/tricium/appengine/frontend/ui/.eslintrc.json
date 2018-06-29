@@ -1,0 +1,29 @@
+{
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2017
+  },
+  "plugins": [
+    "html"
+  ],
+  "extends": ["eslint:recommended", "google"],
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "globals": {
+    "assert": false,
+    "fixture": false,
+    "Polymer": false,
+    "setup": false,
+    "suite": false,
+    "test": false,
+    "WCT": false
+  },
+  "rules": {
+    "require-jsdoc": "off",
+    "no-console": "off"
+  }
+}

@@ -33,8 +33,12 @@ func mainPageHandler(ctx *router.Context) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	mainPage := template.Must(template.ParseFiles("index.html"))
-	if err = mainPage.Execute(w, args); err != nil {
+	t, err := template.ParseFiles("ui/build/default/index.html")
+	if err != nil {
+		logging.Errorf(c, "Failed to get parse built HTML, falling back.")
+		t = template.Must(template.ParseFiles("ui/index.html"))
+	}
+	if err = t.Execute(w, args); err != nil {
 		logging.WithError(err).Errorf(c, "Failed to render frontend UI")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
