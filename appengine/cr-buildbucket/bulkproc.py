@@ -29,23 +29,31 @@ SHARD_COUNT = 64
 PROCESSOR_REGISTRY = {}
 
 
-def register(name, processor, keys_only=False):
+def register(name, processor, entity_kind='Build', keys_only=False):
   """Registers a processor.
 
   Args:
     name: identifies the processor.
-    processor: functiton (builds, payload),
-      where builds is an iterable of builds and payload is the payload specified
-      in start(). Builds not read from the iterable will be rescheduled for
-      processing in a separate job.
-      processor is eventually executed on all builds in the datastore.
-    keys_only: whether the builds passed to processor are only a ndb key, not
-      Build entity.
+    entity_kind: kind of the entity to process, a string. Must be "Build"
+      or its descendant. Multiple descendant entities of the kind under a single
+      build are not supported. Instead, do not specify entity_kind, consume
+      build keys and do ancestor query for each.
+    processor: function (results, payload),
+      where results is an iterable of entities or their keys
+      and payload is the payload specified in start().
+      Entities not read from the iterable will be rescheduled for processing in
+      a separate job.
+      processor is eventually executed on all entities of the kind that exist in
+      the datastore.
+      Must be idempotent.
+    keys_only: whether the results passed to processor are only a ndb key, not
+      entire entity.
   """
 
   assert name not in PROCESSOR_REGISTRY
   PROCESSOR_REGISTRY[name] = {
       'func': processor,
+      'entity_kind': entity_kind,
       'keys_only': keys_only,
   }
 
@@ -124,10 +132,11 @@ class TaskStart(TaskBase):
       logging.warning('no builds to backfill')
       return
     # Do not require -key index by using created_time index.
-    last, = (
-        model.Build.query().order(model.Build.create_time
-                                 ).fetch(1, keys_only=True)
-    )
+    # This still determines the range on the Build entity, although
+    # proc may specify a different entity kind.
+    q = model.Build.query().order(model.Build.create_time)
+    last, = q.fetch(1, keys_only=True)
+
     space_start, space_end = first.id(), last.id() + 1
     space_size = space_end - space_start
     seg_size = max(1, int(math.ceil(space_size / shards)))
@@ -161,7 +170,7 @@ class TaskStart(TaskBase):
 
 
 class TaskSegment(TaskBase):
-  """Processes a chunk of builds in a segment.
+  """Processes a chunk of entities in a segment.
 
   If didn't finish processing entire segment, enqueues itself with a
   new query cursor.
@@ -179,10 +188,10 @@ class TaskSegment(TaskBase):
       payload: processor payload, see register() and start().
   """
 
-  # Maximum number of builds to process in a single iteration.
+  # Maximum number of entities to process in a single iteration.
   # Value 3000 is derived from experimentation on the dev server.
   # It prevents "Exceeded soft private memory limit" error.
-  BUILD_LIMIT = 3000
+  ENTITY_LIMIT = 3000
 
   def do(self, payload):
     attempt = int(self.request.headers.get('X-AppEngine-TaskExecutionCount', 0))
@@ -198,34 +207,40 @@ class TaskSegment(TaskBase):
     if attempt > 0:
       logging.warning('attempt %d', attempt)
 
-    q = model.Build.query(
-        model.Build.key >= ndb.Key(model.Build, start_from),
-        model.Build.key < ndb.Key(model.Build, seg_end)
+    q = ndb.Query(
+        kind=proc_def['entity_kind'],
+        filters=ndb.ConjunctionNode(
+            ndb.FilterNode('__key__', '>=', ndb.Key(model.Build, start_from)),
+            ndb.FilterNode('__key__', '<', ndb.Key(model.Build, seg_end)),
+        ),
     )
     iterator = q.iter(keys_only=proc_def['keys_only'])
 
-    build_count = [0]
+    entity_count = [0]
 
     def iterate_segment():
       # Datastore query timeout is 60 sec. Limit it to 50 sec.
       deadline = utils.utcnow() + datetime.timedelta(seconds=50)
-      while (utils.utcnow() < deadline and build_count[0] < self.BUILD_LIMIT and
-             iterator.has_next()):
-        b = iterator.next()
-        yield b
-        build_count[0] += 1
+      while (utils.utcnow() < deadline and
+             entity_count[0] < self.ENTITY_LIMIT and iterator.has_next()):
+        yield iterator.next()
+        entity_count[0] += 1
 
     proc_def['func'](iterate_segment(), proc['payload'])
-    logging.info('processed %d builds', build_count[0])
+    logging.info('processed %d entities', entity_count[0])
 
     if iterator.has_next():
       logging.info('enqueuing a task for the next iteration...')
 
+      build_key = (
+          iterator.next() if proc_def['keys_only'] else iterator.next().key
+      )
+      while build_key.parent() is not None:
+        build_key = build_key.parent()
+
       p = payload.copy()
       p['iteration'] += 1
-      p['start_from'] = (
-          iterator.next() if proc_def['keys_only'] else iterator.next().key.id()
-      )
+      p['start_from'] = build_key.id()
 
       seg_len = seg_end - seg_start
       percent = 100 * (p['start_from'] - seg_start) / seg_len

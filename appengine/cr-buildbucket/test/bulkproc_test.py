@@ -142,10 +142,11 @@ class SegmentTest(TestBase):
   def setUp(self):
     super(SegmentTest, self).setUp()
     self.proc = {
+        'entity_kind': 'Build',
         'func': lambda builds, _: list(builds),  # process all
         'keys_only': False,
     }
-    self.patch('bulkproc._get_proc', return_value=self.proc)
+    self.patch('bulkproc._get_proc', side_effect=lambda _: self.proc)
 
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_segment_partial(self, enqueue_tasks):
@@ -253,5 +254,54 @@ class SegmentTest(TestBase):
                 'started_ts': utils.datetime_to_timestamp(self.now),
                 'proc': {'name': 'foo', 'payload': 'bar'},
             }),
+        )],
+    )
+
+  @mock.patch('bulkproc.enqueue_tasks', autospec=True)
+  def test_build_steps_keys_only(self, enqueue_tasks):
+    build_steps = [
+        model.BuildSteps(parent=ndb.Key(model.Build, i))
+        for i in xrange(50, 60)
+    ]
+    ndb.put_multi(build_steps)
+
+    def processor(results, payload):
+      # Take 5
+      page = list(itertools.islice(results, 5))
+      self.assertEqual(page, [b.key for b in build_steps[:5]])
+      self.assertEqual(payload, 'bar')
+
+    self.proc = {
+        'entity_kind': 'BuildSteps',
+        'func': processor,
+        'keys_only': True,
+    }
+
+    self.post({
+        'job_id': 'jobid',
+        'iteration': 0,
+        'seg_index': 0,
+        'seg_start': 50,
+        'seg_end': 60,
+        'started_ts': utils.datetime_to_timestamp(self.now),
+        'proc': {'name': 'foo', 'payload': 'bar'},
+    })
+
+    expected_next_payload = {
+        'job_id': 'jobid',
+        'iteration': 1,
+        'seg_index': 0,
+        'seg_start': 50,
+        'seg_end': 60,
+        'start_from': 55,
+        'started_ts': utils.datetime_to_timestamp(self.now),
+        'proc': {'name': 'foo', 'payload': 'bar'},
+    }
+    enqueue_tasks.assert_called_with(
+        'bulkproc',
+        [(
+            'jobid-0-1',
+            bulkproc.PATH_PREFIX + 'segment/seg:0-percent:50',
+            utils.encode_to_json(expected_next_payload),
         )],
     )
