@@ -49,7 +49,13 @@ const (
 	DutStateDimensionKey = "dut_state"
 	// PoolDimensionKey identifies the swarming pool dimension.
 	PoolDimensionKey = "pool"
+	// SwarmingTimeLayout is the layout used by swarming RPCs to specify timestamps.
+	SwarmingTimeLayout = "2006-01-02T15:04:05.999999999"
 )
+
+// paginationChunkSize is the number of items requested in a single page in various
+// Swarming RPC calls.
+const paginationChunkSize = 100
 
 // SwarmingClient exposes Swarming client API used by this package.
 //
@@ -58,6 +64,7 @@ const (
 type SwarmingClient interface {
 	ListAliveBotsInPool(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error)
 	ListPendingTasks(c context.Context, tags []string) ([]*swarming.SwarmingRpcsTaskResult, error)
+	ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
 	CreateTask(c context.Context, args *SwarmingCreateTaskArgs) (string, error)
 }
 
@@ -202,7 +209,37 @@ func (sc *swarmingClientImpl) ListPendingTasks(c context.Context, tags []string)
 			break
 		}
 		call = call.Cursor(resp.Cursor)
+	}
+	return trs, nil
+}
 
+// ListSortedRecentTasksForBot lists the most recent tasks for the bot with given dutID.
+//
+// duration specifies how far in the back are the tasks allowed to have started. limit limits the number of tasks returned.
+func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
+	trs := []*swarming.SwarmingRpcsTaskResult{}
+	// TODO(pprabhu) These should really be sorted by STARTED_TS.
+	// See crbug.com/857595 and crbug.com/857598
+	call := sc.Bot.Tasks(botID).Sort("CREATED_TS")
+
+	// Limit() only limits the number of tasks returned in a single page. The
+	// client must keep track of the total number returned across the calls.
+	for limit > 0 {
+		chunk := paginationChunkSize
+		if limit < paginationChunkSize {
+			chunk = limit
+		}
+		ic, _ := context.WithTimeout(c, 60*time.Second)
+		resp, err := call.Limit(int64(chunk)).Context(ic).Do()
+		if err != nil {
+			return nil, errors.Reason("failed to list tasks for dut %s", botID).InternalReason(err.Error()).Err()
+		}
+		trs = append(trs, resp.Items...)
+		limit -= len(resp.Items)
+		if resp.Cursor == "" {
+			break
+		}
+		call = call.Cursor(resp.Cursor)
 	}
 	return trs, nil
 }

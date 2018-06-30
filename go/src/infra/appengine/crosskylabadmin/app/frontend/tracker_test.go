@@ -21,6 +21,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"golang.org/x/net/context"
 
 	"infra/appengine/crosskylabadmin/api/fleet/v1"
@@ -289,6 +290,148 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 					for _, d := range dutNames {
 						So(refreshed.DutIds, ShouldContain, d)
 					}
+				})
+			})
+		})
+	})
+}
+
+func TestRefreshAndSummarizeBotsFields(t *testing.T) {
+	t.Parallel()
+	Convey("In testing context", t, FailureHalts, func() {
+		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
+		datastore.GetTestable(c).Consistent(true)
+		fsc := &fakeSwarmingClient{
+			pool:    swarmingBotPool,
+			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
+		}
+		server := TrackerServerImpl{
+			clients.SwarmingFactory{
+				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
+					return fsc, nil
+				},
+			},
+		}
+
+		Convey("with a swarming dut in state needs_reset", func() {
+			fsc.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
+			fsc.botInfos["bot_dut_1"] = &swarming.SwarmingRpcsBotInfo{
+				BotId: "bot_dut_1",
+				Dimensions: []*swarming.SwarmingRpcsStringListPair{
+					{
+						Key:   "dut_id",
+						Value: []string{"dut_1"},
+					},
+					{
+						Key:   "dut_state",
+						Value: []string{"needs_reset"},
+					},
+				},
+			}
+			Convey("refresh with empty filter", func() {
+				_, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+					Selectors: makeBotSelectorForDuts([]string{}),
+				})
+				Convey("should refresh the dut", func() {
+					So(err, ShouldBeNil)
+				})
+				Convey("then summarizing without filter", func() {
+					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+						Selectors: makeBotSelectorForDuts([]string{}),
+					})
+					Convey("should summarize available dut with the right state", func() {
+						So(err, ShouldBeNil)
+						So(summarized.Bots, ShouldHaveLength, 1)
+						bot := summarized.Bots[0]
+						So(bot.DutId, ShouldEqual, "dut_1")
+						So(bot.DutState, ShouldEqual, fleet.DutState_NeedsReset)
+					})
+				})
+			})
+		})
+
+		Convey("with a swarming dut with no recent tasks", func() {
+			fsc.setAvailableDutIDs([]string{"dut_task_1"})
+			Convey("refresh with empty filter", func() {
+				_, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+					Selectors: makeBotSelectorForDuts([]string{}),
+				})
+				Convey("should refresh the dut", func() {
+					So(err, ShouldBeNil)
+				})
+				Convey("then summarizing without filter", func() {
+					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+						Selectors: makeBotSelectorForDuts([]string{}),
+					})
+					Convey("should summarize available dut with nil IdleDuration", func() {
+						So(err, ShouldBeNil)
+						So(summarized.Bots, ShouldHaveLength, 1)
+						bot := summarized.Bots[0]
+						So(bot.DutId, ShouldEqual, "dut_task_1")
+						So(bot.IdleDuration, ShouldBeNil)
+					})
+				})
+			})
+		})
+
+		Convey("with a swarming dut with one recent completed task", func() {
+			fsc.setAvailableDutIDs([]string{"dut_task_1"})
+			fsc.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+				{
+					State:       "COMPLETED",
+					CompletedTs: "2016-01-02T10:04:05.999999999",
+				},
+			}
+			Convey("refresh with empty filter", func() {
+				_, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+					Selectors: makeBotSelectorForDuts([]string{}),
+				})
+				Convey("should refresh the dut", func() {
+					So(err, ShouldBeNil)
+				})
+				Convey("then summarizing without filter", func() {
+					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+						Selectors: makeBotSelectorForDuts([]string{}),
+					})
+					Convey("should summarize available dut with positive IdleDuration", func() {
+						So(err, ShouldBeNil)
+						So(summarized.Bots, ShouldHaveLength, 1)
+						bot := summarized.Bots[0]
+						So(bot.DutId, ShouldEqual, "dut_task_1")
+						So(bot.IdleDuration, ShouldNotBeNil)
+						So(bot.IdleDuration.Seconds, ShouldBeGreaterThan, 0)
+					})
+				})
+			})
+		})
+
+		Convey("with a swarming dut with one running task", func() {
+			fsc.setAvailableDutIDs([]string{"dut_task_1"})
+			fsc.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+				{
+					State: "RUNNING",
+				},
+			}
+			Convey("refresh with empty filter", func() {
+				_, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+					Selectors: makeBotSelectorForDuts([]string{}),
+				})
+				Convey("should refresh the dut", func() {
+					So(err, ShouldBeNil)
+				})
+				Convey("then summarizing without filter", func() {
+					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+						Selectors: makeBotSelectorForDuts([]string{}),
+					})
+					Convey("should summarize available dut with zero IdleDuration", func() {
+						So(err, ShouldBeNil)
+						So(summarized.Bots, ShouldHaveLength, 1)
+						bot := summarized.Bots[0]
+						So(bot.DutId, ShouldEqual, "dut_task_1")
+						So(bot.IdleDuration, ShouldNotBeNil)
+						So(bot.IdleDuration.Seconds, ShouldEqual, 0)
+						So(bot.IdleDuration.Nanos, ShouldEqual, 0)
+					})
 				})
 			})
 		})

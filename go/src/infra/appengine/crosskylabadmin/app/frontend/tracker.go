@@ -17,12 +17,15 @@ package frontend
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/duration"
 	"go.chromium.org/gae/service/datastore"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
@@ -51,7 +54,14 @@ func (tsi *TrackerServerImpl) RefreshBots(c context.Context, req *fleet.RefreshB
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get bots from Swarming").Err()
 	}
-	updated, err := insertBotSummary(c, bots)
+	bsm, err := botInfoToSummary(bots)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to extract bot summary from bot info").Err()
+	}
+	if err := setIdleDuration(c, sc, bsm); err != nil {
+		return nil, errors.Annotate(err, "failed to set idle time for bots").Err()
+	}
+	updated, err := insertBotSummary(c, bsm)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to insert bots").Err()
 	}
@@ -132,47 +142,121 @@ func getFilteredBotsFromSwarming(c context.Context, sc clients.SwarmingClient, s
 	return bs, nil
 }
 
-// insertBotSummary returns the dut_ids of bots inserted.
-func insertBotSummary(c context.Context, bots []*swarming.SwarmingRpcsBotInfo) ([]string, error) {
-	updated := make([]string, 0, len(bots))
-	bss := make([]*fleetBotSummaryEntity, 0, len(bots))
+var dutStateMap = map[string]fleet.DutState{
+	"ready":         fleet.DutState_Ready,
+	"needs_cleanup": fleet.DutState_NeedsCleanup,
+	"needs_repair":  fleet.DutState_NeedsRepair,
+	"needs_reset":   fleet.DutState_NeedsReset,
+}
+
+// botInfoToSummary initializes fleet.BotSummary for each bot.
+//
+// This function returns a map from the bot ID to fleet.BotSummary object for it.
+func botInfoToSummary(bots []*swarming.SwarmingRpcsBotInfo) (map[string]*fleet.BotSummary, error) {
+	bsm := make(map[string]*fleet.BotSummary, len(bots))
 	for _, bi := range bots {
-		dutID, err := dutIDFromBotInfo(bi)
+		dutID, err := extractSingleValuedDimension(bi, clients.DutIDDimensionKey)
 		if err != nil {
-			return nil, errors.Annotate(err, "failed to obtain dutID for bot %q", bi.BotId).Err()
+			return bsm, errors.Annotate(err, "failed to obtain dutID for bot %q", bi.BotId).Err()
 		}
-		data, err := proto.Marshal(&fleet.BotSummary{
-			DutId: dutID,
-		})
+		dutStateStr, err := extractSingleValuedDimension(bi, clients.DutStateDimensionKey)
 		if err != nil {
-			return nil, errors.Annotate(err, "failed to marshal BotSummary for dut %q", dutID).Err()
+			return bsm, errors.Annotate(err, "failed to obtain DutState for bot %q", bi.BotId).Err()
 		}
-		bss = append(bss, &fleetBotSummaryEntity{
-			DutID: dutID,
+		dutState, ok := dutStateMap[dutStateStr]
+		if !ok {
+			dutState = fleet.DutState_DutStateInvalid
+		}
+		bsm[bi.BotId] = &fleet.BotSummary{
+			DutId:    dutID,
+			DutState: dutState,
+		}
+	}
+	return bsm, nil
+}
+
+// setIdleDuration updates the bot summaries with the duration each bot has been idle.
+func setIdleDuration(c context.Context, sc clients.SwarmingClient, bsm map[string]*fleet.BotSummary) error {
+	return parallel.WorkPool(clients.MaxConcurrentSwarmingCalls, func(workC chan<- func() error) {
+		for bid := range bsm {
+			// In-scope variable for goroutine closure.
+			bid := bid
+			bs := bsm[bid]
+			workC <- func() error {
+				trs, err := sc.ListSortedRecentTasksForBot(c, bid, 1)
+				if err != nil {
+					return errors.Annotate(err, "failed to list recent tasks for dut %s", bs.DutId).Err()
+				}
+				if len(trs) == 0 {
+					return nil
+				}
+
+				tr := trs[0]
+				switch tr.State {
+				case "RUNNING":
+					bs.IdleDuration = &duration.Duration{
+						Seconds: 0,
+						Nanos:   0,
+					}
+				case "COMPLETED":
+					fallthrough
+				case "KILLED":
+					ts, err := time.Parse(clients.SwarmingTimeLayout, tr.CompletedTs)
+					if err != nil {
+						return errors.Annotate(err, "swarming returned corrupted completed timestamp").Err()
+					}
+					bs.IdleDuration = google.NewDuration(time.Now().Sub(ts))
+				case "TIMED_OUT":
+					ts, err := time.Parse(clients.SwarmingTimeLayout, tr.AbandonedTs)
+					if err != nil {
+						return errors.Annotate(err, "swarming returned corrupted abandoned timestamp").Err()
+					}
+					bs.IdleDuration = google.NewDuration(time.Now().Sub(ts))
+				default:
+					// Other states - BOT_DIED, CANCELED, EXPIRED, NO_RESOURCE and PENDING - do not indicate
+					// any actual run of a task on the dut.
+				}
+				return nil
+			}
+		}
+	})
+}
+
+// insertBotSummary returns the dut_ids of bots inserted.
+func insertBotSummary(c context.Context, bsm map[string]*fleet.BotSummary) ([]string, error) {
+	updated := make([]string, 0, len(bsm))
+	bses := make([]*fleetBotSummaryEntity, 0, len(bsm))
+	for _, bs := range bsm {
+		data, err := proto.Marshal(bs)
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to marshal BotSummary for dut %q", bs.DutId).Err()
+		}
+		bses = append(bses, &fleetBotSummaryEntity{
+			DutID: bs.DutId,
 			Data:  data,
 		})
-		updated = append(updated, dutID)
+		updated = append(updated, bs.DutId)
 	}
-	if err := datastore.Put(c, bss); err != nil {
+	if err := datastore.Put(c, bses); err != nil {
 		return nil, errors.Annotate(err, "failed to put BotSummaries").Err()
 	}
 	return updated, nil
 }
 
-func dutIDFromBotInfo(bi *swarming.SwarmingRpcsBotInfo) (string, error) {
+func extractSingleValuedDimension(bi *swarming.SwarmingRpcsBotInfo, key string) (string, error) {
 	for _, dim := range bi.Dimensions {
-		if dim.Key == clients.DutIDDimensionKey {
+		if dim.Key == key {
 			switch len(dim.Value) {
 			case 1:
 				return dim.Value[0], nil
 			case 0:
-				return "", fmt.Errorf("no value for dimension %s", clients.DutIDDimensionKey)
+				return "", fmt.Errorf("no value for dimension %s", key)
 			default:
-				return "", fmt.Errorf("multiple values for dimension %s", clients.DutIDDimensionKey)
+				return "", fmt.Errorf("multiple values for dimension %s", key)
 			}
 		}
 	}
-	return "", fmt.Errorf("failed to find dimension %s", clients.DutIDDimensionKey)
+	return "", fmt.Errorf("failed to find dimension %s", key)
 }
 
 func getBotSummariesFromDatastore(c context.Context, sels []*fleet.BotSelector) ([]*fleetBotSummaryEntity, error) {

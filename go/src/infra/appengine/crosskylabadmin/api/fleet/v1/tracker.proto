@@ -4,6 +4,8 @@
 
 syntax = "proto3";
 
+import "google/protobuf/duration.proto";
+
 import "infra/appengine/crosskylabadmin/api/fleet/v1/common.proto";
 
 package crosskylabadmin.fleet;
@@ -68,4 +70,23 @@ message SummarizeBotsResponse {
 message BotSummary {
     // dut_id contains the dut_id dimension for the bot.
     string dut_id = 1;
+
+    // dut_state contains the current Autotest state of the dut corresponding to
+    // this bot.
+    DutState dut_state = 2;
+
+    // idle_duration contains the time since this bot last ran a task.
+    //
+    // A bot is considered idle for the time that it wasn't running any task.
+    // Killed tasks are counted as legitimate tasks (i.e., time spent running a
+    // task that is then killed does not count as idle time)
+    google.protobuf.Duration idle_duration = 3;
+}
+
+enum DutState {
+    DutStateInvalid = 0;
+    Ready = 1;
+    NeedsCleanup = 2;
+    NeedsRepair = 3;
+    NeedsReset = 4;
 }

@@ -35,9 +35,11 @@ type fakeSwarmingClient struct {
 
 	// botInfos maps the dut_id for a bot to its swarming.SwarmingRpcsBotInfo
 	botInfos map[string]*swarming.SwarmingRpcsBotInfo
+	// botTasks maps the bot_id for a bot to the known tasks for the bot.
+	botTasks map[string][]*swarming.SwarmingRpcsTaskResult
+
 	// taskArgs accumulates the arguments to CreateTask calls on fakeSwarmingClient
 	taskArgs []*clients.SwarmingCreateTaskArgs
-
 	// nextTaskID is used to construct the next task ID to be returned from CreateTask()
 	nextTaskID int
 	// taskIDs accumulates the generated Swarming task ids by CreateTask calls.
@@ -78,8 +80,11 @@ func (fsc *fakeSwarmingClient) ListAliveBotsInPool(c context.Context, pool strin
 
 // setAvailableDutIDs sets the bot list returned by fakeSwarmingClient.ListAliveBotsInPool
 // to be the bots corresponding to the given dut IDs.
+//
+// Default values are used for other dimensions / tasks for the bot.
 func (fsc *fakeSwarmingClient) setAvailableDutIDs(duts []string) {
 	fsc.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
+	fsc.botTasks = make(map[string][]*swarming.SwarmingRpcsTaskResult)
 	for _, d := range duts {
 		fsc.botInfos[d] = &swarming.SwarmingRpcsBotInfo{
 			BotId: fmt.Sprintf("bot_%s", d),
@@ -87,6 +92,10 @@ func (fsc *fakeSwarmingClient) setAvailableDutIDs(duts []string) {
 				{
 					Key:   "dut_id",
 					Value: []string{d},
+				},
+				{
+					Key:   "dut_state",
+					Value: []string{"ready"},
 				},
 			},
 		}
@@ -120,6 +129,10 @@ func (fsc *fakeSwarmingClient) ListPendingTasks(c context.Context, tags []string
 		}
 	}
 	return trs, nil
+}
+
+func (fsc *fakeSwarmingClient) ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
+	return fsc.botTasks[botID], nil
 }
 
 // makeBotSelector returns a fleet.BotSelector selecting each of the duts
