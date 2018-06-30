@@ -5,9 +5,9 @@
 package gerrit
 
 import (
-	"encoding/json"
 	"testing"
 
+	"github.com/golang/protobuf/jsonpb"
 	. "github.com/smartystreets/goconvey/convey"
 	ds "go.chromium.org/gae/service/datastore"
 
@@ -53,12 +53,12 @@ func TestReportResultsRequest(t *testing.T) {
 		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
 
 		changedLines := ChangedLinesInfo{"file": {2, 5, 6}}
-		json1, err := json.Marshal(tricium.Data_Comment{
+		json1, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
 			Category: "L",
 			Message:  "Line too long",
 			Path:     "deleted_file",
 		})
-		json2, err := json.Marshal(tricium.Data_Comment{
+		json2, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
 			Category:  "L",
 			Message:   "Line too short",
 			Path:      "file",
@@ -67,9 +67,9 @@ func TestReportResultsRequest(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 		comments := []*track.Comment{
-			{Parent: workerKey, Comment: json1},
-			{Parent: workerKey, Comment: json2},
-			{Parent: workerKey, Comment: json2},
+			{Parent: workerKey, Comment: []byte(json1)},
+			{Parent: workerKey, Comment: []byte(json2)},
+			{Parent: workerKey, Comment: []byte(json2)},
 		}
 		So(ds.Put(ctx, comments), ShouldBeNil)
 		So(ds.Put(ctx, &track.CommentSelection{
@@ -115,7 +115,7 @@ func TestReportResultsRequest(t *testing.T) {
 		// Put more comments in until the number of included comments
 		// has reached the maximum comment number threshold.
 		for len(comments) < maxComments+1 {
-			comment := &track.Comment{Parent: workerKey, Comment: json1}
+			comment := &track.Comment{Parent: workerKey, Comment: []byte(json1)}
 			comments = append(comments, comment)
 			So(ds.Put(ctx, comment), ShouldBeNil)
 			So(ds.Put(ctx, &track.CommentSelection{
@@ -136,7 +136,7 @@ func TestReportResultsRequest(t *testing.T) {
 			So(len(mock.LastComments), ShouldEqual, maxComments)
 		})
 
-		json3, err := json.Marshal(tricium.Data_Comment{
+		json3, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
 			Category:  "L",
 			Message:   "Line too short",
 			Path:      "file",
@@ -144,7 +144,7 @@ func TestReportResultsRequest(t *testing.T) {
 			EndLine:   3,
 		})
 		// Put the new comment with line numbers in;
-		comment3 := &track.Comment{Parent: workerKey, Comment: json3}
+		comment3 := &track.Comment{Parent: workerKey, Comment: []byte(json3)}
 		comments = append(comments, comment3)
 		So(ds.Put(ctx, comment3), ShouldBeNil)
 		So(ds.Put(ctx, &track.CommentSelection{
@@ -161,11 +161,11 @@ func TestReportResultsRequest(t *testing.T) {
 				Analyzer: functionName,
 			}, mock)
 			So(err, ShouldBeNil)
-			So(len(mock.LastComments), ShouldEqual, maxComments)
+			So(len(mock.LastComments), ShouldEqual, 0)
 		})
 
 		// Put one more comment in;
-		comment := &track.Comment{Parent: workerKey, Comment: json1}
+		comment := &track.Comment{Parent: workerKey, Comment: []byte(json1)}
 		comments = append(comments, comment)
 		So(ds.Put(ctx, comment), ShouldBeNil)
 		So(ds.Put(ctx, &track.CommentSelection{

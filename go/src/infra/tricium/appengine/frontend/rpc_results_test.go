@@ -5,12 +5,11 @@
 package frontend
 
 import (
-	"encoding/json"
 	"testing"
 
-	ds "go.chromium.org/gae/service/datastore"
-
+	"github.com/golang/protobuf/jsonpb"
 	. "github.com/smartystreets/goconvey/convey"
+	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
@@ -68,7 +67,7 @@ func TestResults(t *testing.T) {
 			State:       tricium.State_SUCCESS,
 			NumComments: 1,
 		}), ShouldBeNil)
-		json, err := json.Marshal(tricium.Data_Comment{
+		json, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
 			Category: functionName,
 			Message:  "Hello",
 		})
@@ -76,7 +75,7 @@ func TestResults(t *testing.T) {
 		comment := &track.Comment{
 			Parent:    workerKey,
 			Category:  functionName,
-			Comment:   json,
+			Comment:   []byte(json),
 			Platforms: 0,
 		}
 		So(ds.Put(ctx, comment), ShouldBeNil)
@@ -89,7 +88,7 @@ func TestResults(t *testing.T) {
 		comment = &track.Comment{
 			Parent:    workerKey,
 			Category:  functionName,
-			Comment:   json,
+			Comment:   []byte(json),
 			Platforms: 0,
 		}
 		So(ds.Put(ctx, comment), ShouldBeNil)

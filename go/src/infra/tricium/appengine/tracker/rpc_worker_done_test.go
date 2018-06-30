@@ -5,7 +5,6 @@
 package tracker
 
 import (
-	"encoding/json"
 	"errors"
 	"testing"
 
@@ -13,6 +12,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"github.com/golang/protobuf/jsonpb"
 	"golang.org/x/net/context"
 
 	"infra/tricium/api/admin/v1"
@@ -37,15 +37,17 @@ func (*mockIsolator) FetchIsolatedResults(c context.Context, serverURL, isolated
 	result := &tricium.Data_Results{
 		Comments: []*tricium.Data_Comment{
 			{
-				Message: "Hello",
+				Message:   "Hello",
+				StartLine: 3,
+				EndLine:   5,
 			},
 		},
 	}
-	res, err := json.Marshal(result)
+	res, err := (&jsonpb.Marshaler{}).MarshalToString(result)
 	if err != nil {
 		return "", errors.New("failed to marshal mock result")
 	}
-	return string(res), nil
+	return res, nil
 }
 
 func TestWorkerDoneRequest(t *testing.T) {

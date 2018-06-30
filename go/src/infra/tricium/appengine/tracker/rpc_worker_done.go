@@ -5,9 +5,9 @@
 package tracker
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	ds "go.chromium.org/gae/service/datastore"
@@ -306,7 +306,7 @@ func collectComments(c context.Context, state tricium.State, t tricium.Data_Type
 		}
 		logging.Infof(c, "Fetched isolated result (%q): %q", isolatedOutputHash, resultsStr)
 		results := tricium.Data_Results{}
-		if err := json.Unmarshal([]byte(resultsStr), &results); err != nil {
+		if err := jsonpb.UnmarshalString(resultsStr, &results); err != nil {
 			return comments, fmt.Errorf("failed to unmarshal results data: %v", err)
 		}
 		for _, comment := range results.Comments {
@@ -315,7 +315,7 @@ func collectComments(c context.Context, state tricium.State, t tricium.Data_Type
 				return comments, fmt.Errorf("failed to generated UUID for comment: %v", err)
 			}
 			comment.Id = uuid.String()
-			j, err := json.Marshal(comment)
+			j, err := (&jsonpb.Marshaler{}).MarshalToString(comment)
 			if err != nil {
 				return comments, fmt.Errorf("failed to marshal comment data: %v", err)
 			}
@@ -323,7 +323,7 @@ func collectComments(c context.Context, state tricium.State, t tricium.Data_Type
 				Parent:       workerKey,
 				UUID:         uuid.String(),
 				CreationTime: clock.Now(c).UTC(),
-				Comment:      j,
+				Comment:      []byte(j),
 				Analyzer:     analyzerName,
 				Category:     comment.Category,
 				Platforms:    results.Platforms,
