@@ -247,7 +247,8 @@ class TaskSegment(TaskBase):
             'segment/seg:{seg_index}-percent:%d' % percent,
             p,
         )])
-      except taskqueue.TaskAlreadyExistsError:  # pragma: no cover
+      except (taskqueue.TaskAlreadyExistsError,
+              taskqueue.TombstonedTaskError):  # pragma: no cover
         pass
       return
 
