@@ -283,12 +283,12 @@ else:
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
     analytics_id = 'UA-55762617-14'
+    db_master_name = 'master-g2'
+    db_region = 'us-central1'
     db_replica_names = [
-        # 'replica-00',  This replica hung when I tried to stop and restart.
-        'replica-01', 'replica-02', 'replica-03',
-        'replica-04', 'replica-05', 'replica-06', 'replica-07',
-        'replica-08a', # Replacement for replica-08.
-        'replica-09']
+        'replica-g2-00', 'replica-g2-01', 'replica-g2-02', 'replica-g2-03',
+        'replica-g2-04', 'replica-g2-05', 'replica-g2-06', 'replica-g2-07',
+        'replica-g2-08', 'replica-g2-09']
 
 if dev_mode:
   site_name = 'Monorail Dev'
