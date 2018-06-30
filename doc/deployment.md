@@ -53,9 +53,9 @@ and mastermon) are deployed across a wide variety of hosts.
 These services are not deployed via source checkouts. Instead, they are
 packaged by [CIPD](/appengine/chrome_infra_packages) (the Chrome Infra Package
 Deployer). The CIPD packages are built for every green revision by the
-continuous builders on the [Infra
-Continuous](https://build.chromium.org/p/chromium.infra/console) Buildbot
-waterfall. Selected versions of these packages (not the packages themselves) are
+infra-packager-* builders in the [luci.infra-internal.prod
+bucket/pool](https://ci.chromium.org/p/infra-internal/builders).
+Selected versions of these packages (not the packages themselves) are
 deployed to specific hosts by Puppet. For instructions on how to update the
 version of the CIPD package for these services, see the documentation in the
 Puppet repository.
