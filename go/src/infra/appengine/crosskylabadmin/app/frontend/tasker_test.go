@@ -186,7 +186,6 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					So(gotDuts, ShouldHaveLength, len(taskDuts))
 				})
 			})
-
 		})
 	})
 }

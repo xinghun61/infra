@@ -226,13 +226,14 @@ func setIdleDuration(c context.Context, sc clients.SwarmingClient, bsm map[strin
 func insertBotSummary(c context.Context, bsm map[string]*fleet.BotSummary) ([]string, error) {
 	updated := make([]string, 0, len(bsm))
 	bses := make([]*fleetBotSummaryEntity, 0, len(bsm))
-	for _, bs := range bsm {
+	for bid, bs := range bsm {
 		data, err := proto.Marshal(bs)
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to marshal BotSummary for dut %q", bs.DutId).Err()
 		}
 		bses = append(bses, &fleetBotSummaryEntity{
 			DutID: bs.DutId,
+			BotID: bid,
 			Data:  data,
 		})
 		updated = append(updated, bs.DutId)

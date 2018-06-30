@@ -29,6 +29,8 @@ type fleetBotSummaryEntity struct {
 	// This dimension is an opaque reference to the managed DUT's uuid in skylab
 	// inventory data.
 	DutID string `gae:"$id"`
+	// BotID is the unique ID of the swarming bot.
+	BotID string
 	// Data is the fleet.BotSummary object serialized to protobuf binary format.
 	Data []byte `gae:",noindex"`
 }
