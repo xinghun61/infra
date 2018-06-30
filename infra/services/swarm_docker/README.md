@@ -53,7 +53,7 @@ Deploying the script
 --------------------------
 The script and its dependencies are deployed as a CIPD package via puppet. The
 package (infra/swarm_docker/$platform) is continously built on this
-[bot](https://build.chromium.org/p/chromium.infra/builders/infra-continuous-precise-64).
+[bot](https://ci.chromium.org/p/infra-internal/builders/luci.infra-internal.prod/infra-packager-linux-64).
 Puppet deploys it to the relevant bots at [these revisions](https://chrome-internal.googlesource.com/infra/puppet/+/68e440335c27aaf092df437c78fefa363c7ea19c/puppetm/etc/puppet/hieradata/cipd.yaml#479).
 The canary pin, which tracks latest version in the repository, affects a single
 [bot on chromium-swarm-dev](https://chromium-swarm-dev.appspot.com/botlist?f=pool%3AMultibot),

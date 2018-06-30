@@ -20,8 +20,8 @@ from .util import call, rmtree
 IS_WINDOWS = sys.platform.startswith('win')
 
 
-# This is built via https://build.chromium.org/p/chromium.infra/builders/
-# depot_tools%20zip%20uploader
+# This is built via
+# https://ci.chromium.org/p/infra/builders/luci.infra.ci/depot_tools%20zip%20uploader
 # We assume this is reasonably updated.
 DEPOT_TOOLS_URL = (
     'https://storage.googleapis.com/chrome-infra/depot_tools.zip')

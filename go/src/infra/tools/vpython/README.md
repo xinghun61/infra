@@ -144,7 +144,7 @@ the directory that is used to accumulate VirtualEnv deployments.
 
 ## Building
 
-`vpython` is built by the [Infra continuous
-builder](https://build.chromium.org/p/chromium.infra/console) set. It is built
+`vpython` is built by the [set of infra-packager-* builders](
+https://ci.chromium.org/p/infra-internal/g/infra-packagers/console). It is built
 by the [infra_continuous](/recipes/recipes/infra_continuous.py) recipe, and is
 configured in [vpython.yaml](/build/packages/vpython.yaml).

@@ -8,6 +8,6 @@ recipe. Its command line is specified in
 ## CIPD package
 
 Kitchen CIPD packages have prefix "infra/tools/luci/kitchen/".
-They are being continuously created by master.chromium.infra master for each
-platform, e.g.
-[for OS X](https://build.chromium.org/p/chromium.infra/builders/infra-continuous-mac-10.11-64).
+They are being continuously created by
+[infra-packager-* builders for each
+platform](https://ci.chromium.org/p/infra-internal/g/infra-packagers/console)
