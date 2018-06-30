@@ -228,9 +228,13 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
   def _UnpackApprovalValue(self, av_row):
     """Contruct an ApprovalValue PB from a DB row."""
     (approval_id, issue_id, phase_id, status, setter_id, set_on) = av_row
+    if status:
+      status_enum = tracker_pb2.ApprovalStatus(status.upper())
+    else:
+      status_enum = tracker_pb2.ApprovalStatus.NOT_SET
     av = tracker_pb2.ApprovalValue(
         approval_id=approval_id, setter_id=setter_id, set_on=set_on,
-        status=tracker_pb2.ApprovalStatus(status.upper()), phase_id=phase_id)
+        status=status_enum, phase_id=phase_id)
     return av, issue_id
 
   def _UnpackPhase(self, phase_row):

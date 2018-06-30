@@ -189,6 +189,11 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual(issue_id, 78901)
     self.assertEqual(av.phase_id, 1)
 
+  def testUnpackApprovalValue_MissingStatus(self):
+    av, _issue_id = self.issue_2lc._UnpackApprovalValue(
+        (21, 78901, 1, '', None, None))
+    self.assertEqual(av.status, tracker_pb2.ApprovalStatus.NOT_SET)
+
   def testUnpackPhase(self):
     phase = self.issue_2lc._UnpackPhase(
         self.phase_rows[0])
