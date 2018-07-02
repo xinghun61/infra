@@ -66,7 +66,7 @@ type RefreshBotsRequest struct {
 	// Bots selected via repeated selectors are unioned together.
 	//
 	// If no selectors are provided, all bots are selected.
-	Selectors            []*BotSelector `protobuf:"bytes,2,rep,name=selectors" json:"selectors,omitempty"`
+	Selectors            []*BotSelector `protobuf:"bytes,2,rep,name=selectors,proto3" json:"selectors,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -107,7 +107,7 @@ func (m *RefreshBotsRequest) GetSelectors() []*BotSelector {
 // refreshed in response to a Tracker.RefreshBots rpc.
 type RefreshBotsResponse struct {
 	// dut_ids lists the dut_id of of the bots refreshed.
-	DutIds               []string `protobuf:"bytes,1,rep,name=dut_ids,json=dutIds" json:"dut_ids,omitempty"`
+	DutIds               []string `protobuf:"bytes,1,rep,name=dut_ids,json=dutIds,proto3" json:"dut_ids,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -151,7 +151,7 @@ type SummarizeBotsRequest struct {
 	// Tracker. Bots selected via repeated selectors are unioned together.
 	//
 	// If no selectors are provided, all bots are selected.
-	Selectors            []*BotSelector `protobuf:"bytes,1,rep,name=selectors" json:"selectors,omitempty"`
+	Selectors            []*BotSelector `protobuf:"bytes,1,rep,name=selectors,proto3" json:"selectors,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -191,7 +191,7 @@ func (m *SummarizeBotsRequest) GetSelectors() []*BotSelector {
 // SummarizeBotsResponse contains summary information about Swarming bots
 // returned by the Tracker.SummarizeBots rpc.
 type SummarizeBotsResponse struct {
-	Bots                 []*BotSummary `protobuf:"bytes,1,rep,name=bots" json:"bots,omitempty"`
+	Bots                 []*BotSummary `protobuf:"bytes,1,rep,name=bots,proto3" json:"bots,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -232,16 +232,16 @@ func (m *SummarizeBotsResponse) GetBots() []*BotSummary {
 // Skylab Swarming bot.
 type BotSummary struct {
 	// dut_id contains the dut_id dimension for the bot.
-	DutId string `protobuf:"bytes,1,opt,name=dut_id,json=dutId" json:"dut_id,omitempty"`
+	DutId string `protobuf:"bytes,1,opt,name=dut_id,json=dutId,proto3" json:"dut_id,omitempty"`
 	// dut_state contains the current Autotest state of the dut corresponding to
 	// this bot.
-	DutState DutState `protobuf:"varint,2,opt,name=dut_state,json=dutState,enum=crosskylabadmin.fleet.DutState" json:"dut_state,omitempty"`
+	DutState DutState `protobuf:"varint,2,opt,name=dut_state,json=dutState,proto3,enum=crosskylabadmin.fleet.DutState" json:"dut_state,omitempty"`
 	// idle_duration contains the time since this bot last ran a task.
 	//
 	// A bot is considered idle for the time that it wasn't running any task.
 	// Killed tasks are counted as legitimate tasks (i.e., time spent running a
 	// task that is then killed does not count as idle time)
-	IdleDuration         *duration.Duration `protobuf:"bytes,3,opt,name=idle_duration,json=idleDuration" json:"idle_duration,omitempty"`
+	IdleDuration         *duration.Duration `protobuf:"bytes,3,opt,name=idle_duration,json=idleDuration,proto3" json:"idle_duration,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`

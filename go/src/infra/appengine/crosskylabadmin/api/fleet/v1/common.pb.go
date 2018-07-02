@@ -26,7 +26,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // RPCs.
 type BotSelector struct {
 	// dut_ids selects bots by the dut_id dimension.
-	DutId                string   `protobuf:"bytes,1,opt,name=dut_id,json=dutId" json:"dut_id,omitempty"`
+	DutId                string   `protobuf:"bytes,1,opt,name=dut_id,json=dutId,proto3" json:"dut_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

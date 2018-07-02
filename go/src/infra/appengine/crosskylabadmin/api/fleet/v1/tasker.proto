@@ -4,6 +4,8 @@
 
 syntax = "proto3";
 
+import "google/protobuf/duration.proto";
+
 import "infra/appengine/crosskylabadmin/api/fleet/v1/common.proto";
 
 package crosskylabadmin.fleet;
@@ -96,9 +98,9 @@ message TriggerRepairOnIdleRequest {
     // If no selectors are provided, all bots are selected.
     repeated BotSelector selectors = 1;
 
-    // idle_timeout_seconds specifies the time (in seconds) for which a selected
-    // bot must have been idle for a repair task to be created against it.
-    int32 idle_timeout_seconds = 2;
+    // idle_duration specifies the duration for which a selected bot must have
+    // been idle for a repair task to be created against it.
+    google.protobuf.Duration idle_duration = 2;
 
     // priority forces the tasks to be created at the given priority. Swarming
     // uses priorities in [0,255], where lower number means higher priority.
@@ -119,10 +121,11 @@ message TriggerRepairOnRepairFailedRequest {
     // If no selectors are provided, all bots are selected.
     repeated BotSelector selectors = 1;
 
-    // last_repair_timeout_seconds specifies the time (in seconds) that must
-    // have elapsed since the last attempt to repair the failed bot for a repair
-    // task to be created against it.
-    int32 last_repair_timeout_seconds = 2;
+    // time_since_last_repair specifies the time since the last repair attempt.
+    //
+    // time_since_last_repair is capped at 7 days. If the last repair attempt
+    // was more than 7 days ago, a new repair will be triggered.
+    google.protobuf.Duration time_since_last_repair = 2;
 
     // priority forces the tasks to be created at the given priority. Swarming
     // uses priorities in [0,255], where lower number means higher priority.
