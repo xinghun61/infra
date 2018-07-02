@@ -147,6 +147,7 @@ var dutStateMap = map[string]fleet.DutState{
 	"needs_cleanup": fleet.DutState_NeedsCleanup,
 	"needs_repair":  fleet.DutState_NeedsRepair,
 	"needs_reset":   fleet.DutState_NeedsReset,
+	"repair_failed": fleet.DutState_RepairFailed,
 }
 
 // botInfoToSummary initializes fleet.BotSummary for each bot.
