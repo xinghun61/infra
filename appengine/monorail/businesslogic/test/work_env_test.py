@@ -391,7 +391,7 @@ class WorkEnvTest(unittest.TestCase):
 
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
         self.mr.cnxn, 111L, config, issue, av_24, delta,
-        comment='please review')
+        comment_content='please review')
 
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Normal(self, fake_pasicn):

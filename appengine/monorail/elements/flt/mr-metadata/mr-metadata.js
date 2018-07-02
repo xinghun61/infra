@@ -25,7 +25,7 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
       owner: Object,
       projectName: {
         type: String,
-        statePath: 'issue.projectName',
+        statePath: 'projectName',
       },
       // fields (from issue.fieldValues) is an array with one entry per values.
       // We want to remap each fieldRef into its own list entry.

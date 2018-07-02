@@ -11,7 +11,6 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
     return 'mr-issue-details';
   }
 
-  // TODO(zhangtiff): Replace this with real data.
   static get properties() {
     return {
       comments: {

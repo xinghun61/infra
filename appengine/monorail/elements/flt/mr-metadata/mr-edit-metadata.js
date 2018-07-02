@@ -45,23 +45,14 @@ class MrEditMetadata extends Polymer.Element {
   }
 
   getData() {
-    return {
-      urls: this.urls.map((url) => {
-        return {
-          name: url.name,
-          values: this._valuesForField(url.name),
-        };
-      }),
-      users: this.users.map((user) => {
-        return {
-          name: user.name,
-          values: this._valuesForField(user.name),
-        };
-      }),
-      summary: this.$.summaryInput.value,
+    const result = {
       status: this.$.statusInput.value,
       comment: this._newCommentText,
     };
+    if (!this.isApproval) {
+      result[summary] = this.$.summaryInput.value;
+    }
+    return result;
   }
 
   _valuesForField(fieldName) {

@@ -6,9 +6,14 @@
       UPDATE_ISSUE_REF: 'UPDATE_ISSUE_REF',
       UPDATE_TOKEN: 'UPDATE_TOKEN',
       UPDATE_USER: 'UPDATE_USER',
+
       FETCH_ISSUE_START: 'FETCH_ISSUE_START',
       FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
       FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
+
+      UPDATE_APPROVAL_START: 'UPDATE_APPROVAL_START',
+      UPDATE_APPROVAL_SUCCESS: 'UPDATE_APPROVAL_SUCCESS',
+      UPDATE_APPROVAL_FAILURE: 'UPDATE_APPROVAL_FAILURE',
     };
 
     const initial = {
@@ -20,7 +25,27 @@
       fetchingIssue: false,
       fetchIssueError: null,
       token: null,
+
+      // Assumption: It's okay to prevent the user from sending multiple
+      // approval update requests at once, even for different approvals.
+      updatingApproval: false,
+      updateApprovalError: null,
     };
+
+    // Helpers for the reducers.
+    const updateIssueApproval = (issue, approval) => {
+      if (!issue.approvalValues) return issue;
+      const newApprovals = issue.approvalValues.map((item, i) => {
+        if (item.fieldRef.fieldName === approval.fieldRef.fieldName) {
+          // PhaseRef isn't populated on the response so we want to make sure
+          // it doesn't overwrite the original phaseRef with {}.
+          const a = Object.assign({}, approval, {phaseRef: item.phaseRef});
+          return a;
+        }
+        return item;
+      });
+      return Object.assign({}, issue, {approvalValues: newApprovals});
+    }
 
     const reducer = (state, action) => {
       switch (action.type) {
@@ -37,6 +62,8 @@
           return Object.assign({}, state, {
             user: action.user,
           });
+
+        // Request for getting an issue.
         case actionType.FETCH_ISSUE_START:
           return Object.assign({}, state, {
             issue: {},
@@ -57,6 +84,23 @@
             fetchIssueError: action.error,
             fetchingIssue: false,
           });
+
+        // Request for updating an approval.
+        case actionType.UPDATE_APPROVAL_START:
+          return Object.assign({}, state, {
+            updatingApproval: true,
+          });
+        case actionType.UPDATE_APPROVAL_SUCCESS:
+          return Object.assign({}, state, {
+            issue: updateIssueApproval(state.issue, action.approval),
+            updatingApproval: false,
+          });
+        case actionType.UPDATE_APPROVAL_FAILURE:
+          return Object.assign({}, state, {
+            updateApprovalError: action.error,
+            updatingApproval: false,
+          });
+
         default:
           return state;
       }

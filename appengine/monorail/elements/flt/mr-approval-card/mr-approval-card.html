@@ -90,22 +90,22 @@
     </style>
     <button class="header" on-click="toggleCard">
       <iron-icon class="expand-icon" icon="[[_expandIcon]]"></iron-icon>
-      [[title]]
+      [[fieldName]]
       <span class="status">
         <iron-icon class="status-icon" icon=[[_statusIcon]]></iron-icon>
         [[_status]]
       </span>
     </button>
     <iron-collapse class="card-content" id="cardCollapse" opened="[[opened]]">
-      <template is="dom-if" if="[[_isApprovalOwner]]">
-        <div class="approver-notice">
+      <div class="approver-notice">
+        <template is="dom-if" if="[[_isApprovalOwner]]">
           You are an approver for this bit.
-          <chops-button on-click="edit">
-            <iron-icon icon="create"></iron-icon>
-            Edit approval data
-          </chops-button>
-        </div>
-      </template>
+        </template>
+        <chops-button on-click="edit">
+          <iron-icon icon="create"></iron-icon>
+          Edit approval data
+        </chops-button>
+      </div>
       <mr-metadata
         approval-status="[[_status]]"
         approvers="[[approvers]]"
@@ -118,7 +118,7 @@
     </iron-collapse>
     <chops-dialog id="editApproval" aria-labelledby="approvalDialogTitle">
       <h3 id="approvalDialogTitle">
-        Editing approval: [[phaseName]] &gt; [[title]]
+        Editing approval: [[phaseName]] &gt; [[fieldName]]
       </h3>
       <mr-edit-metadata
         id="metadataForm"

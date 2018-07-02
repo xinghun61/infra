@@ -556,7 +556,7 @@ class WorkEnv(object):
             issue_id, approval_id)):
       comment_pb = self.services.issue.DeltaUpdateIssueApproval(
           self.mc.cnxn, self.mc.auth.user_id, config, issue, approval_value,
-          approval_delta, comment=comment_content)
+          approval_delta, comment_content=comment_content)
       send_notifications.PrepareAndSendApprovalChangeNotification(
           issue_id, approval_id, framework_helpers.GetHostPort(), comment_pb.id)
 

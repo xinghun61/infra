@@ -109,7 +109,7 @@
         <th>Components:</th>
         <td>
           <template is="dom-repeat" items="[[components]]">
-            <a href$="/p/[[item.projectName]]/issues/list?q=component:[[item.path]]">
+            <a href$="/p/[[projectName]]/issues/list?q=component:[[item.path]]">
               [[item.path]]
             </a>
           </template>

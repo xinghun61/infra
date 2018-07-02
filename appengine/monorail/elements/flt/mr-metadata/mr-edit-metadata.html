@@ -53,15 +53,13 @@
         <label for="summaryInput">Summary:</label>
         <input id="summaryInput" value$="[[summary]]" />
       </template>
-      <template is="dom-if" if="[[statuses]]">
-        <label for="statusInput">Status:</label>
+      <label for="statusInput">Status:</label>
 
-        <select id="statusInput">
-          <template is="dom-repeat" items="[[statuses]]">
-            <option value$="[[item]]" selected$="[[_computeIsSelected(status, item)]]">[[item]]</option>
-          </template>
-        </select>
-      </template>
+      <select id="statusInput">
+        <template is="dom-repeat" items="[[statuses]]">
+          <option value$="[[item]]" selected$="[[_computeIsSelected(status, item)]]">[[item]]</option>
+        </template>
+      </select>
       <template is="dom-repeat" items="[[users]]" as="user">
         <label for$="[[_idForField(user.name)]]">[[user.name]]:</label>
 

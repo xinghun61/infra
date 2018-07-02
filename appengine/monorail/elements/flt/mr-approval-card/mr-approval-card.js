@@ -11,6 +11,17 @@ const STATUS_ENUM_TO_TEXT = {
   'NOT_APPROVED': 'NotApproved',
 };
 
+const TEXT_TO_STATUS_ENUM = {
+  'NotSet': 'NOT_SET',
+  'NeedsReview': 'NEEDS_REVIEW',
+  'NA': 'NA',
+  'ReviewRequested': 'REVIEW_REQUESTED',
+  'ReviewStarted': 'REVIEW_STARTED',
+  'NeedInfo': 'NEED_INFO',
+  'Approved': 'APPROVED',
+  'NotApproved': 'NOT_APPROVED',
+};
+
 const STATUS_CLASS_MAP = {
   'NotSet': 'status-notset',
   'NeedsReview': 'status-pending',
@@ -42,7 +53,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
   static get properties() {
     return {
-      title: String,
+      fieldName: String,
       approvers: Array,
       approvalComments: Array,
       phaseName: String,
@@ -51,9 +62,21 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: Array,
         statePath: 'issue.fieldValues',
       },
+      token: {
+        type: String,
+        statePath: 'token',
+      },
       user: {
         type: String,
         statePath: 'user',
+      },
+      issueId: {
+        type: String,
+        statePath: 'issueId',
+      },
+      projectName: {
+        type: String,
+        statePath: 'projectName',
       },
       class: {
         type: String,
@@ -85,11 +108,11 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       },
       _comments: {
         type: Array,
-        computed: '_filterComments(comments, title)',
+        computed: '_filterComments(comments, fieldName)',
       },
       _survey: {
         type: String,
-        computed: '_computeSurvey(comments, title)',
+        computed: '_computeSurvey(comments, fieldName)',
       },
       _isApprovalOwner: {
         type: Boolean,
@@ -98,7 +121,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
       },
       _fields: {
         type: Array,
-        computed: '_filterFields(fields, title)',
+        computed: '_filterFields(fields, fieldName)',
       },
       _expandIcon: {
         type: String,
@@ -125,15 +148,40 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
   save() {
     const data = this.$.metadataForm.getData();
-    let newLabels = Object.assign([], this.labels);
-    newLabels.forEach((l) => {
-      if (l.name === 'Status') {
-        l.values = [data.status];
-      }
+
+    // TODO(zhangtiff): Compute a diff with current data and only send a
+    // request if the data actually changed.
+    const message = {
+      trace: {token: this.token},
+      issue_ref: {
+        project_name: this.projectName,
+        local_id: this.issueId,
+      },
+      field_ref: {
+        type: 'APPROVAL_TYPE',
+        field_name: this.fieldName,
+      },
+      approval_delta: {
+        status: TEXT_TO_STATUS_ENUM[data.status],
+      },
+      comment_content: data.comment || '',
+    };
+
+    this.dispatch({type: actionType.UPDATE_APPROVAL_START});
+
+    window.prpcClient.call(
+      'monorail.Issues', 'UpdateApproval', message
+    ).then((resp) => {
+      this.dispatch({
+        type: actionType.UPDATE_APPROVAL_SUCCESS,
+        approval: resp.approval,
+      });
+    }, (error) => {
+      this.dispatch({
+        type: actionType.UPDATE_APPROVAL_FAILURE,
+        error: error,
+      });
     });
-    this.labels = newLabels;
-    this.users = data.users;
-    this.urls = data.urls;
 
     this.cancel();
   }
@@ -170,20 +218,20 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
   // TODO(zhangtiff): Change data flow here so that this is only computed
   // once for all approvals.
-  _filterComments(comments, title) {
-    if (!comments || !title) return;
+  _filterComments(comments, fieldName) {
+    if (!comments || !fieldName) return;
     return comments.filter((c) => (
-      c.approvalRef && c.approvalRef.fieldName === title
+      c.approvalRef && c.approvalRef.fieldName === fieldName
     )).splice(1);
   }
 
   // TODO(zhangtiff): Change data flow here so that this is only computed
   // once for all approvals.
-  _computeSurvey(comments, title) {
-    if (!comments || !title) return;
+  _computeSurvey(comments, fieldName) {
+    if (!comments || !fieldName) return;
     for (let i = comments.length - 1; i >= 0; i--) {
       if (comments[i].approvalRef
-          && comments[i].approvalRef.fieldName === title
+          && comments[i].approvalRef.fieldName === fieldName
           && comments[i].descriptionNum) {
         return comments[i];
       }
@@ -193,10 +241,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
   // TODO(zhangtiff): Change data flow here so that approvals are only
   // separated once then passed around later.
-  _filterFields(fields, title) {
+  _filterFields(fields, fieldName) {
     if (!fields) return;
     return fields.filter((f) => {
-      return f.fieldRef.approvalName === title;
+      return f.fieldRef.fieldName === fieldName;
     });
   }
 
