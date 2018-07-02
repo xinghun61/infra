@@ -9,6 +9,7 @@ from gae_libs.appengine_util import IsStaging
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from services.flake_detection import detect_cq_false_rejection_flakes
+from services.flake_detection import flake_report_util
 
 
 class DetectCQFalseRejectionFlakesCronJob(BaseHandler):
@@ -39,4 +40,6 @@ class DetectCQFalseRejectionFlakes(BaseHandler):
       return {'return_code': 200}
 
     detect_cq_false_rejection_flakes.QueryAndStoreFlakes()
+    flake_tuples_to_report = flake_report_util.GetFlakesNeedToReportToMonorail()
+    flake_report_util.ReportFlakesToMonorail(flake_tuples_to_report)
     return {'return_code': 200}
