@@ -414,8 +414,9 @@ func (rr *RuleResult) SetToken(ctx context.Context, tokenName, tokenValue string
 	return err
 }
 
-func getURLAsString(url string) (string, error) {
-	response, err := http.Get(url)
+func getURLAsString(ctx context.Context, url string) (string, error) {
+	httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope, emailScope)
+	response, err := httpClient.Get(url)
 	if err != nil {
 		return "", err
 	}

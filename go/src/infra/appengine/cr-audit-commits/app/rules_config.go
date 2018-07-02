@@ -282,7 +282,7 @@ func ReleaseConfig(ctx context.Context, cfg RepoConfig) ([]*RepoConfig, error) {
 
 	// https://chromiumdash.appspot.com/fetch_milestones is a legacy API that needs some clean up. Here,
 	// the platform could be any Chrome platform orther than Android and the result will still be the same.
-	contents, err := getURLAsString("https://chromiumdash.appspot.com/fetch_milestones?platform=Android")
+	contents, err := getURLAsString(ctx, "https://chromiumdash.appspot.com/fetch_milestones?platform=Android")
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func ReleaseConfig(ctx context.Context, cfg RepoConfig) ([]*RepoConfig, error) {
 		branchRefsURL := fmt.Sprintf("https://chromium.googlesource.com/chromium/src.git/+log/refs/heads/master..refs/branch-heads/%s/?format=json&n=1000", branchInfos[i].ChromiumBranch)
 		// When scanning a branch for the first time, it's unlikely that there'll be more than 1000 commits in it. In subsequent scans, the starting commit will be ignored,
 		// but instead the last scanned commit will be used. So even if the commits in the branch exceed 1000 there will be no effect in the auditing.
-		branchContents, err := getURLAsString(branchRefsURL)
+		branchContents, err := getURLAsString(ctx, branchRefsURL)
 		if err != nil {
 			return nil, err
 		}
@@ -308,23 +308,25 @@ func ReleaseConfig(ctx context.Context, cfg RepoConfig) ([]*RepoConfig, error) {
 
 // GetReleaseConfig is a helper function to get the ref and milestone dynamically.
 func GetReleaseConfig(ctx context.Context, cfg RepoConfig, branchRefsURLContents []string, branchInfos []BranchInfo) ([]*RepoConfig, error) {
-	concreteConfigs := []*RepoConfig{&cfg}
+	concreteConfigs := []*RepoConfig{}
 	var err error
 	r := regexp.MustCompile(`"commit": "(.+)?"`)
 	for i := range branchRefsURLContents {
 		temp := strings.Split(branchRefsURLContents[i], "\n")
 		lastCommit := ""
-		for i := 0; i < len(temp); i++ {
-			if r.MatchString(temp[i]) {
-				lastCommit = temp[i]
+		for j := 0; j < len(temp); j++ {
+			if r.MatchString(temp[j]) {
+				lastCommit = temp[j]
 			}
 		}
 		if lastCommit == "" {
 			return nil, errors.New("commit not found or invalid")
 		}
-		concreteConfigs[i].StartingCommit = r.FindStringSubmatch(lastCommit)[1]
-		concreteConfigs[i].BranchName = fmt.Sprintf("refs/branch-heads/%s", branchInfos[i].ChromiumBranch)
-		concreteConfigs[i].Metadata, err = SetToken(ctx, "MilestoneNumber", strconv.Itoa(branchInfos[i].Milestone), concreteConfigs[i].Metadata)
+		concreteConfig := cfg
+		concreteConfig.StartingCommit = r.FindStringSubmatch(lastCommit)[1]
+		concreteConfig.BranchName = fmt.Sprintf("refs/branch-heads/%s", branchInfos[i].ChromiumBranch)
+		concreteConfig.Metadata, err = SetToken(ctx, "MilestoneNumber", strconv.Itoa(branchInfos[i].Milestone), concreteConfig.Metadata)
+		concreteConfigs = append(concreteConfigs, &concreteConfig)
 	}
 	return concreteConfigs, err
 }
