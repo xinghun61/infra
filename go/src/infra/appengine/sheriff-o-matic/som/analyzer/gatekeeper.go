@@ -1,6 +1,8 @@
 package analyzer
 
 import (
+	"path/filepath"
+
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/logging"
@@ -131,15 +133,23 @@ func (r *GatekeeperRules) ExcludeFailure(ctx context.Context, tree string, maste
 	mc := mcs[0]
 
 	for _, ebName := range mc.ExcludedBuilders {
-		if ebName == "*" || ebName == builder {
+		switch matched, err := filepath.Match(ebName, builder); {
+		case err != nil:
+			logging.Errorf(ctx, "Malformed builder pattern: %s", ebName)
+			return false
+		case matched:
 			return true
 		}
 	}
 
 	// Not clear that builder_alerts even looks at the rest of these conditions
 	// even though they're specified in gatekeeper.json
-	for _, s := range mc.ExcludedSteps {
-		if step == s {
+	for _, esName := range mc.ExcludedSteps {
+		switch matched, err := filepath.Match(esName, step); {
+		case err != nil:
+			logging.Errorf(ctx, "Malformed step pattern: %s", esName)
+			return false
+		case matched:
 			return true
 		}
 	}
@@ -153,7 +163,11 @@ func (r *GatekeeperRules) ExcludeFailure(ctx context.Context, tree string, maste
 	}
 
 	for _, esName := range bc.ExcludedSteps {
-		if esName == step || esName == "*" {
+		switch matched, err := filepath.Match(esName, step); {
+		case err != nil:
+			logging.Errorf(ctx, "Malformed step pattern: %s", esName)
+			return false
+		case matched:
 			return true
 		}
 	}

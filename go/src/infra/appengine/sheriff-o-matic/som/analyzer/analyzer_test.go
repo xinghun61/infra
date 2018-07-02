@@ -1868,6 +1868,34 @@ func TestExcludeFailure(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name:    "partial glob step excluded",
+			tree:    "test_tree9",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step (experimental)",
+			gk: messages.GatekeeperConfig{Masters: map[string][]messages.MasterConfig{
+				"https://ci.chromium.org/p/fake.master": {{
+					Builders: map[string]messages.BuilderConfig{
+						"*": {},
+					},
+					ExcludedSteps: []string{
+						"* (experimental)",
+					},
+				}},
+			}},
+			gkt: map[string][]messages.TreeMasterConfig{
+				"test_tree9": {
+					messages.TreeMasterConfig{
+						Masters: map[messages.MasterLocation][]string{
+							{URL: *urlParse(
+								"https://ci.chromium.org/p/fake.master", t)}: {"*"},
+						},
+					},
+				},
+			},
+			want: true,
+		},
 	}
 
 	ctx := context.Background()
