@@ -126,6 +126,9 @@ func LookupPlatform(sc *ServiceConfig, platform Platform_Name) *Platform_Details
 // SupportsPlatform checks if the provided function has an implementation providing
 // data for the provided platform.
 func SupportsPlatform(f *Function, platform Platform_Name) bool {
+	if platform == Platform_ANY {
+		return true
+	}
 	for _, i := range f.Impls {
 		if i.ProvidesForPlatform == platform {
 			return true

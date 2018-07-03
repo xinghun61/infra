@@ -160,7 +160,6 @@ func TestLookupFunction(t *testing.T) {
 }
 
 func TestSupportsPlatform(t *testing.T) {
-	platform := Platform_UBUNTU
 	analyzer := &Function{
 		Type: Function_ANALYZER,
 		Name: "PyLint",
@@ -169,17 +168,21 @@ func TestSupportsPlatform(t *testing.T) {
 				ProvidesForPlatform: Platform_WINDOWS,
 			},
 			{
-				ProvidesForPlatform: platform,
+				ProvidesForPlatform: Platform_UBUNTU,
 			},
 		},
 	}
 
 	Convey("Supported platform is supported", t, func() {
-		So(SupportsPlatform(analyzer, platform), ShouldBeTrue)
+		So(SupportsPlatform(analyzer, Platform_UBUNTU), ShouldBeTrue)
 	})
 
 	Convey("Unsupported platform is not supported", t, func() {
 		So(SupportsPlatform(analyzer, Platform_MAC), ShouldBeFalse)
+	})
+
+	Convey("ANY platform always supported", t, func() {
+		So(SupportsPlatform(analyzer, Platform_ANY), ShouldBeTrue)
 	})
 }
 
