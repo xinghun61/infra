@@ -12,7 +12,7 @@ basic_scaling:
 handlers:
 # For cron jobs and task queues, enforce admin permission.
 - url: /flake/detection/(cron|task)/.*
-  script: main.flake_detection_backend_web_application
+  script: backend_main.flake_detection_backend_web_application
   secure: always
   login: admin
 
@@ -36,3 +36,5 @@ libraries:
   version: latest
 - name: pycrypto
   version: latest
+- name: numpy
+  version: 1.6.1
