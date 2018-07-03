@@ -169,6 +169,29 @@ func (c *epClient) GetIssue(ctx context.Context, req *GetIssueRequest, options .
 	return res, nil
 }
 
+func (c *epClient) ListComments(ctx context.Context, req *ListCommentsRequest, options ...grpc.CallOption) (*ListCommentsResponse, error) {
+	if err := checkOptions(options); err != nil {
+		return nil, err
+	}
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
+	args := url.Values{}
+	if req.MaxResults > 0 {
+		args.Set("maxResults", fmt.Sprintf("%d", req.MaxResults))
+	}
+	args.Set("startIndex", fmt.Sprintf("%d", req.StartIndex))
+
+	u := fmt.Sprintf("/projects/%s/issues/%d/comments?%s", req.Issue.ProjectId, req.Issue.IssueId, args.Encode())
+	res := &ListCommentsResponse{}
+	err := c.call(ctx, "GET", u, nil, res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func checkOptions(options []grpc.CallOption) error {
 	if len(options) > 0 {
 		return errGrpcOptions

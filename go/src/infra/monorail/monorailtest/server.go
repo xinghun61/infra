@@ -13,6 +13,7 @@ type ServerMock struct {
 	InsertCommentImpl func(context.Context, *monorail.InsertCommentRequest) (*monorail.InsertCommentResponse, error)
 	IssuesListImpl    func(context.Context, *monorail.IssuesListRequest) (*monorail.IssuesListResponse, error)
 	GetIssueImpl      func(context.Context, *monorail.GetIssueRequest) (*monorail.Issue, error)
+	ListCommentsImpl  func(context.Context, *monorail.ListCommentsRequest) (*monorail.ListCommentsResponse, error)
 }
 
 // InsertIssue implements MonorailServer.
@@ -33,4 +34,9 @@ func (s *ServerMock) IssuesList(c context.Context, in *monorail.IssuesListReques
 // GetIssue implements MonorailServer.
 func (s *ServerMock) GetIssue(c context.Context, in *monorail.GetIssueRequest) (*monorail.Issue, error) {
 	return s.GetIssueImpl(c, in)
+}
+
+// ListComments implements MonorailServer.
+func (s *ServerMock) ListComments(c context.Context, in *monorail.ListCommentsRequest) (*monorail.ListCommentsResponse, error) {
+	return s.ListCommentsImpl(c, in)
 }

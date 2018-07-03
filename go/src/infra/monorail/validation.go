@@ -91,3 +91,20 @@ func (i *InsertIssueRequest) Validate() error {
 	}
 	return nil
 }
+
+// Validate checks the message for errors.
+func (l *ListCommentsRequest) Validate() error {
+	if l == nil {
+		return fmt.Errorf("is nil")
+	}
+	if l.GetMaxResults() < 0 {
+		return fmt.Errorf("max_results must be >= 0")
+	}
+	if l.GetStartIndex() < 0 {
+		return fmt.Errorf("start_index must be >= 0")
+	}
+	if err := l.Issue.Validate(); err != nil {
+		return fmt.Errorf("issue: %s", err)
+	}
+	return nil
+}

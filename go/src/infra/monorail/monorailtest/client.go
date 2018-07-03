@@ -28,3 +28,6 @@ func (c *testClient) IssuesList(ctx context.Context, in *monorail.IssuesListRequ
 func (c *testClient) GetIssue(ctx context.Context, in *monorail.GetIssueRequest, opts ...grpc.CallOption) (*monorail.Issue, error) {
 	return c.impl.GetIssue(ctx, in)
 }
+func (c *testClient) ListComments(ctx context.Context, in *monorail.ListCommentsRequest, opts ...grpc.CallOption) (*monorail.ListCommentsResponse, error) {
+	return c.impl.ListComments(ctx, in)
+}

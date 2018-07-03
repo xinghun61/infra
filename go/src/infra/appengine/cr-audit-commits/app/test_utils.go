@@ -5,6 +5,7 @@
 package crauditcommits
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -96,4 +97,8 @@ func (c mockMonorailClient) IssuesList(ctx context.Context, in *mr.IssuesListReq
 
 func (c mockMonorailClient) GetIssue(ctx context.Context, in *mr.GetIssueRequest, opts ...grpc.CallOption) (*mr.Issue, error) {
 	return c.gi, c.e
+}
+
+func (c mockMonorailClient) ListComments(ctx context.Context, in *mr.ListCommentsRequest, opts ...grpc.CallOption) (*mr.ListCommentsResponse, error) {
+	return nil, errors.New("not implemented")
 }

@@ -22,6 +22,8 @@ service Monorail {
     rpc IssuesList(IssuesListRequest) returns (IssuesListResponse){};
     // GetIssue gets an issue by id.
     rpc GetIssue(GetIssueRequest) returns (Issue){};
+    // ListComments returns comments of an issue.
+    rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse){};
 }
 
 // A monorail issue.
@@ -60,7 +62,7 @@ message Issue {
     string status = 17;
     // A one line description of the issue.
     string summary = 18;
-    //Last updated datetime of this issue.
+    // Last updated datetime of this issue.
     string updated = 19;
 }
 
@@ -187,4 +189,49 @@ message AtomPerson {
 
 message GetIssueRequest {
   IssueRef issue = 1;
+}
+
+message ListCommentsRequest {
+  IssueRef issue = 1;
+  int32 max_results = 2;
+  int32 start_index = 3;
+}
+
+message ListCommentsResponse {
+  ErrorMessage error = 1;
+  // Actual comments.
+  repeated Comment items = 2;
+
+  // Total size of matching result set, regardless of how many are included
+  // in this response. Includes deleted comments.
+  int32 totalResults = 3;
+}
+
+// Comment represents monorail comment.
+// This field is partial.
+// Derived from `IssueCommentWrapper` type in api_pb2_v1.py.
+message Comment {
+  // Field `attachment` is not supported yet.
+
+  // Who authored the comment.
+  AtomPerson author = 2;
+
+  // Field `canDelete` is not supported yet.
+
+  // Content of the comment.
+  string content = 4;
+
+  // If the comment has been deleted, who deleted it.
+  AtomPerson deletedBy = 5;
+
+  // Comment ID, scoped to its parent issue.
+  int32 id = 6;
+
+  // Datetime of when this comment was published.
+  string published = 7;
+
+  // Field `updates` is not supported yet.
+
+  // If true, this comment is actually an issue description.
+  bool is_description = 10;
 }

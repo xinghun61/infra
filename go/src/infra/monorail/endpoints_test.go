@@ -19,10 +19,10 @@ import (
 	. "go.chromium.org/luci/common/testing/assertions"
 )
 
-func TestEndpointsClient(t *testing.T) {
+func TestEndpointsInsertIssue(t *testing.T) {
 	t.Parallel()
 
-	Convey("Endpoints client", t, func() {
+	Convey("Endpoints client: InsertIssue", t, func() {
 		ctx := context.Background()
 
 		Convey("Insert issue request succeeds", func(c C) {
@@ -150,6 +150,79 @@ func TestEndpointsClient(t *testing.T) {
 				Convey("With HTTP 503", func() {
 					test(503)
 				})
+			})
+		})
+	})
+}
+
+func TestEndpointsListComments(t *testing.T) {
+	t.Parallel()
+
+	Convey("Endpoints client: ListComments", t, func() {
+		ctx := context.Background()
+
+		Convey("succeeds", func(c C) {
+			req := &ListCommentsRequest{Issue: &IssueRef{IssueId: 859707, ProjectId: "chromium"}}
+
+			var srv *httptest.Server
+			srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				c.So(r.URL.String(), ShouldEqual, "/projects/chromium/issues/859707/comments?startIndex=0")
+				_, err := w.Write([]byte(`{
+					"items": [
+						{
+						 "canDelete": false,
+						 "author": { "kind": "monorail#issuePerson", "name": "a@example.com" },
+						 "is_description": true,
+						 "content": "Actually, this is description\n",
+						 "published": "2018-07-02T23:12:47",
+						 "id": 0
+						},
+						{
+						 "canDelete": false,
+						 "author": { "kind": "monorail#issuePerson", "name": "b@example.com" },
+						 "is_description": false,
+						 "content": "lol",
+						 "updates": {
+							"status": "Started",
+							"kind": "monorail#issueCommentUpdate",
+							"labels": [
+							 "-Type-Task",
+							 "Type-Feature"
+							]
+						 },
+						 "published": "2018-07-02T23:14:59",
+						 "id": 1
+						}
+					 ] ,
+					 "kind": "monorail#issueCommentList",
+					 "totalResults": 2,
+					 "etag": "\"se1Lh8IyiCDwsGaF9fqPeVscq_I/rYRAvt40qdVXvtOjNLeqW1ZMUjA\""
+				}`))
+				c.So(err, ShouldBeNil)
+			}))
+			defer srv.Close()
+
+			client := NewEndpointsClient(&http.Client{Timeout: time.Second}, srv.URL)
+			res, err := client.ListComments(ctx, req)
+			So(err, ShouldBeNil)
+			So(res, ShouldResemble, &ListCommentsResponse{
+				TotalResults: 2,
+				Items: []*Comment{
+					&Comment{
+						Author:        &AtomPerson{Name: "a@example.com"},
+						IsDescription: true,
+						Content:       "Actually, this is description\n",
+						Published:     "2018-07-02T23:12:47",
+						Id:            0,
+					},
+					&Comment{
+						Author:        &AtomPerson{Name: "b@example.com"},
+						IsDescription: false,
+						Content:       "lol",
+						Published:     "2018-07-02T23:14:59",
+						Id:            1,
+					},
+				},
 			})
 		})
 	})
