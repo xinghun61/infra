@@ -140,8 +140,11 @@ func (s swarmingServer) Collect(c context.Context, serverURL, taskID string) (st
 		logging.Infof(c, "Swarming task failed, exit code: %d, task id: %s", res.ExitCode, taskID)
 		return "", res.ExitCode, nil
 	}
-	if res.OutputsRef == nil {
-		return "", 0, fmt.Errorf("missing isolated output, task id: %s", taskID)
+	if res.OutputsRef == nil || res.OutputsRef.Isolated == "" {
+		logging.Fields{
+			"task ID": taskID,
+		}.Infof(c, "No isolated output found at this time.")
+		return "", res.ExitCode, nil
 	}
 	return res.OutputsRef.Isolated, res.ExitCode, nil
 }
