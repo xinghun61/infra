@@ -29,7 +29,7 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*adm
 		return nil, err
 	}
 	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to collect: %v", err)
+		return nil, grpc.Errorf(codes.Internal, "failed to trigger worker: %v", err)
 	}
 	return &admin.CollectResponse{}, nil
 }
@@ -52,10 +52,6 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCac
 	isolatedOutput, exitCode, err := sw.Collect(c, wf.SwarmingServer, req.TaskId)
 	if err != nil {
 		return fmt.Errorf("failed to collect swarming task result: %v", err)
-	}
-	if isolatedOutput == "" {
-		// No isolated output was found. The task may not be done yet.
-		return nil
 	}
 	w, err := wf.GetWorker(req.Worker)
 	if err != nil {

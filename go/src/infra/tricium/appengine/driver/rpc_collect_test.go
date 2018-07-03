@@ -24,7 +24,7 @@ func (mockSwarmingFailure) Trigger(c context.Context, serverURL, isolateServerUR
 	return "mockmockmock", nil
 }
 func (mockSwarmingFailure) Collect(c context.Context, serverURL string, taskID string) (string, int64, error) {
-	return "mockmockmock", 1, nil
+	return "", 1, nil
 }
 
 func TestCollectRequest(t *testing.T) {
