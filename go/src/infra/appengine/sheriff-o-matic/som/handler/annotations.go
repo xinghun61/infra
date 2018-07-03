@@ -359,7 +359,7 @@ func FileBugHandler(ctx *router.Context) {
 
 	ccList := make([]*monorail.AtomPerson, len(rawJSON.Cc))
 	for i, cc := range rawJSON.Cc {
-		ccList[i] = &monorail.AtomPerson{cc}
+		ccList[i] = &monorail.AtomPerson{Name: cc}
 	}
 
 	sa, err := info.ServiceAccount(c)

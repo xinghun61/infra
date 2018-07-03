@@ -15,7 +15,7 @@ func TestExt(t *testing.T) {
 
 	Convey("FindCC", t, func() {
 		issue := &Issue{
-			Cc: []*AtomPerson{{"a"}, {"b"}},
+			Cc: []*AtomPerson{{Name: "a"}, {Name: "b"}},
 		}
 		b := issue.FindCC("b")
 		So(b, ShouldNotBeNil)

@@ -42,10 +42,10 @@ func TestValidation(t *testing.T) {
 			good(&Issue{Status: StatusStarted})
 			good(&Issue{
 				Summary:     "Write tests for monorail client",
-				Author:      &AtomPerson{"seanmccullough@chromium.org"},
-				Owner:       &AtomPerson{"nodir@chromium.org"},
+				Author:      &AtomPerson{Name: "seanmccullough@chromium.org"},
+				Owner:       &AtomPerson{Name: "nodir@chromium.org"},
 				Status:      StatusStarted,
-				Cc:          []*AtomPerson{{"agable@chromium.org"}},
+				Cc:          []*AtomPerson{{Name: "agable@chromium.org"}},
 				Description: "We should keep our code coverage high, so write tests",
 				Components:  []string{"Infra"},
 				Labels:      []string{"M-53"},
@@ -79,10 +79,10 @@ func TestValidation(t *testing.T) {
 				ProjectId: "chromium",
 				Issue: &Issue{
 					Summary:     "Write tests for monorail client",
-					Author:      &AtomPerson{"seanmccullough@chromium.org"},
-					Owner:       &AtomPerson{"nodir@chromium.org"},
+					Author:      &AtomPerson{Name: "seanmccullough@chromium.org"},
+					Owner:       &AtomPerson{Name: "nodir@chromium.org"},
 					Status:      StatusStarted,
-					Cc:          []*AtomPerson{{"agable@chromium.org"}},
+					Cc:          []*AtomPerson{{Name: "agable@chromium.org"}},
 					Description: "We should keep our code coverage high, so write tests",
 					Components:  []string{"Infra"},
 					Labels:      []string{"M-53"},
