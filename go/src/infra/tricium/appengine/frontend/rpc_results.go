@@ -5,15 +5,13 @@
 package frontend
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 
+	"github.com/golang/protobuf/jsonpb"
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
-
 	"golang.org/x/net/context"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
@@ -55,7 +53,7 @@ func results(c context.Context, runID int64) (*tricium.Data_Results, bool, error
 		}
 		if cr.Included {
 			comm := &tricium.Data_Comment{}
-			if err := json.Unmarshal(comment.Comment, comm); err != nil {
+			if err := jsonpb.UnmarshalString(string(comment.Comment), comm); err != nil {
 				return nil, false, fmt.Errorf("failed to unmarshal comment: %v", err)
 			}
 			res.Comments = append(res.Comments, comm)

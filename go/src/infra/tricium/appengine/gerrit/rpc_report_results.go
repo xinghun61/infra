@@ -5,15 +5,13 @@
 package gerrit
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/golang/protobuf/jsonpb"
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
-
 	"golang.org/x/net/context"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
@@ -72,7 +70,7 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 			for _, comment := range comms {
 				var data tricium.Data_Comment
 				if comment.Comment != nil {
-					if err := json.Unmarshal([]byte(comment.Comment), &data); err != nil {
+					if err := jsonpb.UnmarshalString(string(comment.Comment), &data); err != nil {
 						fmt.Printf("failed to unmarshal comment: %v", err)
 						continue
 					}

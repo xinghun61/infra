@@ -161,7 +161,7 @@ func TestReportResultsRequest(t *testing.T) {
 				Analyzer: functionName,
 			}, mock)
 			So(err, ShouldBeNil)
-			So(len(mock.LastComments), ShouldEqual, 0)
+			So(len(mock.LastComments), ShouldEqual, maxComments)
 		})
 
 		// Put one more comment in;
