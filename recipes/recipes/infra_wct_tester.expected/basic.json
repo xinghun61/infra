@@ -125,6 +125,18 @@
     "cmd": [
       "[START_DIR]/packages/bin/npm",
       "install",
+      "--no-save"
+    ],
+    "cwd": "[START_DIR]/infra/appengine/monorail",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "Install node modules"
+  },
+  {
+    "cmd": [
+      "[START_DIR]/packages/bin/npm",
+      "install",
       "-g",
       "bower"
     ],
@@ -170,6 +182,18 @@
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
     "name": "Print chrome version (2)"
+  },
+  {
+    "cmd": [
+      "[START_DIR]/packages/bin/npm",
+      "install",
+      "--no-save"
+    ],
+    "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "Install node modules (2)"
   },
   {
     "cmd": [

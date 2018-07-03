@@ -43,6 +43,10 @@ class WCTApi(recipe_api.RecipeApi):
     with self.m.context(env=env):
       self.m.step('Print chrome version', [chrome_bin, '--version'])
 
+    with self.m.context(env=env, cwd=root):
+      self.m.step('Install node modules', [node_path.join('npm'), 'install',
+          '--no-save'])
+
     with self.m.context(env=env):
       self.m.step('Install bower', [node_path.join('npm'), 'install', '-g',
           'bower'])
