@@ -49,7 +49,9 @@ type API interface {
 	QueryChanges(c context.Context, host, project string, lastTimestamp time.Time, offset int) ([]gr.ChangeInfo, bool, error)
 	// PostRobotComments posts robot comments to a change.
 	PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error
-	// GetChangedLines requests the diff info for a particular revision and extracts the lines
+	// GetChangedLines requests the diff info for all files for a
+	// particular revision and extracts the lines in the "new" post-patch
+	// version that are considered changed.
 	GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error)
 }
 
@@ -132,8 +134,10 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 }
 
 func (g gerritServer) GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
-	url := fmt.Sprintf("https://%s/a/changes/%s/revisions/%s/patch", host, change, revision)
-	logging.Debugf(c, "Using URL: %s", url)
+	url := fmt.Sprintf(
+		"https://%s/a/changes/%s/revisions/%s/patch",
+		host, change, common.PatchSetNumber(revision))
+	logging.Debugf(c, "Fetching patch using URL: %s", url)
 	response, err := fetchResponse(c, url, map[string]string{
 		"Content-Disposition":    "attachment",
 		"Content-Type":           "text/plain; charset=ISO-8859-1",
@@ -142,6 +146,9 @@ func (g gerritServer) GetChangedLines(c context.Context, host, change, revision 
 	})
 	if err != nil {
 		return ChangedLinesInfo{}, err
+	}
+	if string(response) == "" {
+		return ChangedLinesInfo{}, fmt.Errorf("empty patch response")
 	}
 	changedLines, err := getChangedLinesFromPatch(string(response))
 	if err != nil {
@@ -275,7 +282,6 @@ func getChangedLinesFromPatch(encodedPatch string) (ChangedLinesInfo, error) {
 	if err != nil {
 		return ChangedLinesInfo{}, err
 	}
-
 	diff, err := diffparser.Parse(string(rawDiff))
 	if err != nil {
 		return ChangedLinesInfo{}, err

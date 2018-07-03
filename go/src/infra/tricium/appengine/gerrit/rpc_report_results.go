@@ -37,18 +37,13 @@ func (r *gerritReporter) ReportResults(c context.Context, req *admin.ReportResul
 }
 
 func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit API) error {
+	// Get Git details first, since other things depend on this.
 	request := &track.AnalyzeRequest{ID: req.RunId}
+	if err := ds.Get(c, request); err != nil {
+		return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %d): %v", req.RunId, err)
+	}
 	var comments []*track.Comment
 	err := parallel.FanOutIn(func(taskC chan<- func() error) {
-		// Get Git details.
-		taskC <- func() error {
-			// The Git repo and ref in the service request should correspond to the Gerrit
-			// repo for the project. This request is typically done by the Gerrit poller.
-			if err := ds.Get(c, request); err != nil {
-				return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %d): %v", req.RunId, err)
-			}
-			return nil
-		}
 
 		// Get comments.
 		taskC <- func() error {
@@ -60,30 +55,34 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 				return fmt.Errorf("failed to retrieve comments: %v", err)
 			}
 
-			// Get the changed lines for this revision
+			// Get the changed lines for this revision.
 			changedLines, err := gerrit.GetChangedLines(c, request.GerritHost, request.GerritChange, request.GitRef)
+
 			if err != nil {
 				return fmt.Errorf("failed to get changed lines: %v", err)
 			}
-
 			// Only include selected comments.
 			for _, comment := range comms {
 				var data tricium.Data_Comment
 				if comment.Comment != nil {
 					if err := jsonpb.UnmarshalString(string(comment.Comment), &data); err != nil {
-						fmt.Printf("failed to unmarshal comment: %v", err)
+						logging.WithError(err).Errorf(c, "Failed to unmarshal comment.")
 						continue
 					}
 
 					// If the file has changed lines tracked, pass over comments that aren't in the diff.
 					if lines, ok := changedLines[data.Path]; ok {
+						logging.Debugf(c, "Num changed lines for %s is %d.", data.Path, len(lines))
 						if data.StartLine != 0 && !isInChangedLines(int(data.StartLine), int(data.EndLine), lines) {
+							logging.Debugf(c, "Filtering out comment on lines %d-%d.", data.StartLine, data.EndLine)
 							continue
 						}
 					} else {
-						// If the file isn't present in changedLines, it means it was deleted in the patch and therefore has no applicable lines.
-						// In this case, we pass over everything that isn't file-level.
-						if data.StartLine != 0 || data.EndLine != 0 {
+						logging.Debugf(c, "File %q is not in changed lines.", data.Path)
+						// If the file isn't present in changedLines, it means it was deleted in
+						// the patch and therefore has no applicable lines. In this case, filter
+						// out all comments that aren't file-level.
+						if data.StartLine != 0 {
 							continue
 						}
 					}
@@ -109,6 +108,10 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 	}
 	if len(comments) > maxComments {
 		logging.Infof(c, "Too many comments (%d), not reporting results (run ID: %s)", len(comments), req.RunId)
+		return nil
+	}
+	if len(comments) == 0 {
+		logging.Infof(c, "No comments to report.")
 		return nil
 	}
 	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GitRef, req.RunId, comments)
