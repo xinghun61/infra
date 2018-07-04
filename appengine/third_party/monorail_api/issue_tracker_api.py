@@ -49,6 +49,7 @@ class IssueTrackerAPI(object):
       body['fieldValues'] = [field.to_dict() for
                              field in issue.field_values]
 
+    body['projectId'] = self.project_name
     request = self.client.issues().insert(
         projectId=self.project_name, sendEmail=send_email, body=body)
     tmp = endpoints.retry_request(request)
