@@ -164,5 +164,4 @@ message ApprovalDelta {
 // Next available tag: 2
 message UpdateApprovalResponse {
   Approval approval = 1;
-  // TODO(jojwang): monorail:3895, add new_comment field.
 }

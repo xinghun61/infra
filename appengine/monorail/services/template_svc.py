@@ -457,9 +457,8 @@ class TemplateService(object):
                fv.date_value, fv.url_value) for fv in field_values],
           commit=False)
 
+    # we need to keep track of tmp phase_ids created at the servlet.
     phase_id_by_tmp = {}
-    # TODO(jojwang): monorail:3756, when approval_values are separated from
-    # phases, we need to keep track of tmp phase_ids created at the servlet.
     if phases is not None:
       self.template2approvalvalue_tbl.Delete(
           cnxn, template_id=template_id, commit=False)
@@ -480,8 +479,6 @@ class TemplateService(object):
 
   def DeleteIssueTemplateDef(self, cnxn, project_id, template_id):
     """Delete the specified issue template definition."""
-    # TODO(jojwang): monorail:3241, soft delete may be required for launch
-    # process templates
     self.template2label_tbl.Delete(cnxn, template_id=template_id, commit=False)
     self.template2component_tbl.Delete(
         cnxn, template_id=template_id, commit=False)
@@ -492,7 +489,7 @@ class TemplateService(object):
         cnxn, template_id=template_id, commit=False)
     # We do not delete issuephasedef rows becuase these rows will be used by
     # issues that were created with this template. template2approvalvalue rows
-    # can be deleted becuase those rows are copied over to issue2approvalvalue
+    # can be deleted because those rows are copied over to issue2approvalvalue
     # during issue creation.
     self.template_tbl.Delete(cnxn, id=template_id, commit=False)
 

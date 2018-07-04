@@ -587,7 +587,6 @@ def MakeAllFieldValueViews(
       _MakeFieldValueView(fd, config, precomp_view_info, users_by_id,
                           applicable=GetApplicable(fd))
       # TODO(jrobbins): field-level view restrictions, display options
-      # TODO(jojwang): monorail:3447, add phase_id to FieldValueView
       for fd in config.field_defs
       if not fd.is_deleted]
   field_value_views = sorted(

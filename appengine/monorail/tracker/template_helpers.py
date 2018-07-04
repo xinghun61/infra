@@ -157,9 +157,6 @@ def _GetPhasesAndApprovalsFromParsed(
         approval_id=approval_id, phase_id=phase_idx)
     if approval_id in required_approval_ids:
       av.status = tracker_pb2.ApprovalStatus.NEEDS_REVIEW
-      # TODO(jojwang): monorail:3655, add default sub_field_values
-      # TODO(jojwang): monorail:3656, add option for default approvers
-      # per template
     approvals.append(av)
 
   return phases, approvals
@@ -183,9 +180,6 @@ def GatherApprovalsPageData(approval_values, tmpl_phases, config):
   """Create the page data necessary for filling in the launch-gates-table."""
   filtered_avs, filtered_phases = FilterApprovalsAndPhases(
       approval_values, tmpl_phases, config)
-
-  # TODO(jojwang): monorail:3576, replace this sort by adding order_by
-  # when fetching phases at config_svc:488
   filtered_phases.sort(key=lambda phase: phase.rank)
 
   required_approval_ids = []

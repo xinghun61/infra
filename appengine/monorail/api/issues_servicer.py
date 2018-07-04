@@ -170,7 +170,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     with work_env.WorkEnv(mc, self.services) as we:
       approval_fd = tracker_bizobj.FindFieldDef(
           request.field_ref.field_name, config)
-      # TODO(jojwang): monorail:3895, check approval_fd was actually found.
+      if not approval_fd:
+        raise exceptions.NoSuchFieldDefException()
 
       approval_delta = converters.IngestApprovalDelta(
           mc.cnxn, self.services.user, request.approval_delta,
@@ -181,7 +182,6 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
           issue.issue_id, approval_fd.field_id,
           approval_delta, request.comment_content)
 
-    # TODO(jojwang): monorail:3895, add comment to reponse.
     with mc.profiler.Phase('converting to response objects'):
       users_by_id = framework_views.MakeAllUserViews(
           mc.cnxn, self.services.user, av.approver_ids, [av.setter_id])

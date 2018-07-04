@@ -403,6 +403,24 @@ class IssuesServicerTest(unittest.TestCase):
     fake_softdeletecomment.assert_not_called()
     self.assertIsNone(comment_1.deleted_by)
 
+  def testUpdateApproval_MissingFieldDef(self):
+    """Missing Approval Field Def throwns exception."""
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    field_ref = common_pb2.FieldRef(field_name='LegalApproval')
+    approval_delta = issues_pb2.ApprovalDelta(
+        status=issue_objects_pb2.REVIEW_REQUESTED)
+    request = issues_pb2.UpdateApprovalRequest(
+        issue_ref=issue_ref, field_ref=field_ref, approval_delta=approval_delta)
+
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com',
+        auth=self.auth)
+
+    with self.assertRaises(exceptions.NoSuchFieldDefException):
+      self.CallWrapped(self.issues_svcr.UpdateApproval, mc, request)
+
   @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
   @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
   def testUpdateApproval(self, _mockPrepareAndSend, mockUpdateIssueApproval):
