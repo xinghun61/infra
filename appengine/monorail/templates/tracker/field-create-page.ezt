@@ -48,7 +48,7 @@
     <td>
       <input id="phase_input" type="checkbox" name="is_phase_field" class="acob"
              [if-any initial_is_phase_field]checked="checked"[end]>
-      This field can only belong to issue gates.
+      <label for="phase_input">This field can only belong to issue gates.</label>
     </td>
   </tr>
 

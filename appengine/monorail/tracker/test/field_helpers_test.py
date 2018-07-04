@@ -275,8 +275,32 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual(fv.field_id, 123)
     self.assertEqual(fv.url_value, 'http://www.google.com')
 
+  def testParseOneFieldValue(self):
+    fd = tracker_bizobj.MakeFieldDef(
+        123, 789, 'Target', tracker_pb2.FieldTypes.INT_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'milestone target',
+        False, is_phase_field=True)
+    phase_fvs = field_helpers.ParseOnePhaseFieldValue(
+        self.mr.cnxn, self.services.user, fd, '70', [30, 40])
+    self.assertEqual(len(phase_fvs), 2)
+    self.assertEqual(phase_fvs[0].phase_id, 30)
+    self.assertEqual(phase_fvs[1].phase_id, 40)
+
   def testParseFieldValues_Empty(self):
     field_val_strs = {}
+    field_values = field_helpers.ParseFieldValues(
+        self.mr.cnxn, self.services.user, field_val_strs, self.config)
+    self.assertEqual([], field_values)
+
+  def testParseFieldValues_EmptyPhases(self):
+    field_val_strs = {126: ['70']}
+    fd_phase = tracker_bizobj.MakeFieldDef(
+        126, 789, 'Target', tracker_pb2.FieldTypes.INT_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'milestone target',
+        False, is_phase_field=True)
+    self.config.field_defs.extend([fd_phase])
     field_values = field_helpers.ParseFieldValues(
         self.mr.cnxn, self.services.user, field_val_strs, self.config)
     self.assertEqual([], field_values)
@@ -294,13 +318,21 @@ class FieldHelpersTest(unittest.TestCase):
         125, 789, 'Design Doc', tracker_pb2.FieldTypes.URL_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
-    self.config.field_defs.extend([fd_int, fd_date, fd_url])
+    fd_phase = tracker_bizobj.MakeFieldDef(
+        126, 789, 'Target', tracker_pb2.FieldTypes.INT_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'milestone target',
+        False, is_phase_field=True)
+    self.config.field_defs.extend([fd_int, fd_date, fd_url, fd_phase])
     field_val_strs = {
         123: ['80386', '68040'],
         124: ['2009-02-13'],
-        125: ['www.google.com']}
+        125: ['www.google.com'],
+        126: ['70'],
+    }
     field_values = field_helpers.ParseFieldValues(
-        self.mr.cnxn, self.services.user, field_val_strs, self.config)
+        self.mr.cnxn, self.services.user, field_val_strs, self.config,
+        phase_ids=[30, 40])
     fv1 = tracker_bizobj.MakeFieldValue(
         123, 80386, None, None, None, None, False)
     fv2 = tracker_bizobj.MakeFieldValue(
@@ -309,7 +341,11 @@ class FieldHelpersTest(unittest.TestCase):
         124, None, None, None, 1234483200, None, False)
     fv4 = tracker_bizobj.MakeFieldValue(
         125, None, None, None, None, 'http://www.google.com', False)
-    self.assertEqual([fv1, fv2, fv3, fv4], field_values)
+    fv5 = tracker_bizobj.MakeFieldValue(
+        126, 70, None, None, None, None, False, phase_id=30)
+    fv6 = tracker_bizobj.MakeFieldValue(
+        126, 70, None, None, None, None, False, phase_id=40)
+    self.assertEqual([fv1, fv2, fv3, fv4, fv5, fv6], field_values)
 
   def testValidateOneCustomField_IntType(self):
     fd = tracker_bizobj.MakeFieldDef(

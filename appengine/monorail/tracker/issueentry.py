@@ -250,8 +250,19 @@ class IssueEntry(servlet.Servlet):
     field_helpers.ShiftEnumFieldsIntoLabels(
         parsed.labels, parsed.labels_remove, parsed.fields.vals,
         parsed.fields.vals_remove, config)
+
+    is_member = framework_bizobj.UserIsInProject(
+        mr.project, mr.auth.effective_ids)
+    template = self._GetTemplate(
+        mr.cnxn, config, post_data.get('template_name'), is_member)
+
+    (approval_values,
+     phases) = issue_tmpl_helpers.FilterApprovalsAndPhases(
+         template.approval_values or [], template.phases, config)
+
     field_values = field_helpers.ParseFieldValues(
-        mr.cnxn, self.services.user, parsed.fields.vals, config)
+        mr.cnxn, self.services.user, parsed.fields.vals, config,
+        phase_ids=[phase.phase_id for phase in phases])
 
     labels = _DiscardUnusedTemplateLabelPrefixes(parsed.labels)
     component_ids = tracker_helpers.LookupComponentIDs(
@@ -270,11 +281,6 @@ class IssueEntry(servlet.Servlet):
       mr.errors.comment = 'Comment is too long'
     if len(parsed.summary) > tracker_constants.MAX_SUMMARY_CHARS:
       mr.errors.summary = 'Summary is too long'
-
-    is_member = framework_bizobj.UserIsInProject(
-        mr.project, mr.auth.effective_ids)
-    template = self._GetTemplate(mr.cnxn, config,
-        post_data.get('template_name'), is_member)
 
     if _MatchesTemplate(parsed.comment, template):
       mr.errors.comment = 'Template must be filled out.'
@@ -308,9 +314,6 @@ class IssueEntry(servlet.Servlet):
                 mr.cnxn, mr.project.project_id,
                 attachment_bytes_used=new_bytes_used)
 
-          (approval_values,
-           _phases) = issue_tmpl_helpers.FilterApprovalsAndPhases(
-               template.approval_values or [], template.phases, config)
           marked_description = tracker_helpers.MarkupDescriptionOnInput(
               parsed.comment, template.content)
           has_star = 'star' in post_data and post_data['star'] == '1'
@@ -324,7 +327,7 @@ class IssueEntry(servlet.Servlet):
               component_ids, marked_description,
               blocked_on=parsed.blocked_on.iids,
               blocking=parsed.blocking.iids, attachments=parsed.attachments,
-              approval_values=approval_values, phases=template.phases)
+              approval_values=approval_values, phases=phases)
 
           if has_star:
             we.StarIssue(issue, True)

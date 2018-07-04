@@ -197,17 +197,35 @@ def ParseOneFieldValue(cnxn, user_service, fd, val_str):
     logging.error('Cant parse field with unexpected type %r', fd.field_type)
     return None
 
+def ParseOnePhaseFieldValue(cnxn, user_service, fd, val_str, phase_ids):
+  """Return a list containing a FieldValue PB for each phase."""
+  phase_fvs = []
+  for phase_id in phase_ids:
+    # TODO(jojwang): monorail:3970, create the FieldValue once and find some
+    # proto2 CopyFrom() method to create a new one for each phase.
+    fv = ParseOneFieldValue(cnxn, user_service, fd, val_str)
+    fv.phase_id = phase_id
+    phase_fvs.append(fv)
 
-def ParseFieldValues(cnxn, user_service, field_val_strs, config):
+  return phase_fvs
+
+def ParseFieldValues(
+    cnxn, user_service, field_val_strs, config, phase_ids=None):
   """Return a list of FieldValue PBs based on the given dict of strings."""
   field_values = []
   for fd in config.field_defs:
     if fd.field_id not in field_val_strs:
       continue
     for val_str in field_val_strs[fd.field_id]:
-      fv = ParseOneFieldValue(cnxn, user_service, fd, val_str)
-      if fv:
-        field_values.append(fv)
+      if fd.is_phase_field and phase_ids:
+        phase_fvs = ParseOnePhaseFieldValue(
+            cnxn, user_service, fd, val_str, phase_ids)
+        field_values.extend(phase_fvs)
+        # We do not save phase fields when there are no phases.
+      elif not fd.is_phase_field:
+        fv = ParseOneFieldValue(cnxn, user_service, fd, val_str)
+        if fv:
+          field_values.append(fv)
 
   return field_values
 
