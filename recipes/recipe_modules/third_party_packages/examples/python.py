@@ -21,30 +21,12 @@ DEPS = [
 
 PROPERTIES = {
   'dry_run': Property(default=True, kind=bool),
+  'cross_platform': Property(default=None, kind=str),
 }
 
 
-PLATFORMS = (
-  ('linux', 64, 'linux-amd64'),
-  ('linux', 32, 'linux-386'),
-  ('mac', 64, 'mac-amd64'),
-  ('win', 64, 'windows-amd64'),
-  ('win', 32, 'windows-386'),
-)
-
-
-REFS = [
-    'HEAD',
-    'refs/heads/master',
-    'refs/tags/not-a-version',
-    'refs/tags/v2.1.1',
-    'refs/tags/v2.1.2',
-    'refs/tags/v2.1.3rc1',
-    'refs/tags/v3.0.0',
-]
-
-
-def RunSteps(api, dry_run):
+def RunSteps(api, dry_run, cross_platform):
+  api.third_party_packages.init_cross_platform(cross_platform)
   api.third_party_packages.dry_run = dry_run
   if not dry_run:
     api.cipd.set_service_account_credentials(
@@ -55,6 +37,25 @@ def RunSteps(api, dry_run):
 
 def GenTests(api):
   python = api.third_party_packages.python
+
+  # Testing fixtures
+  REFS = [
+      'HEAD',
+      'refs/heads/master',
+      'refs/tags/not-a-version',
+      'refs/tags/v2.1.1',
+      'refs/tags/v2.1.2',
+      'refs/tags/v2.1.3rc1',
+      'refs/tags/v3.0.0',
+  ]
+  PLATFORMS = (
+    ('linux', 64, 'linux-amd64', None),
+    ('linux', 64, 'linux-amd64', 'linux-arm64'),
+    ('linux', 32, 'linux-386', None),
+    ('mac', 64, 'mac-amd64', None),
+    ('win', 64, 'windows-amd64', None),
+    ('win', 32, 'windows-386', None),
+  )
 
   def GenTest(platform_name, bits, platform_suffix, exists=False):
     package_name = python.PACKAGE_PREFIX + platform_suffix
@@ -74,9 +75,12 @@ def GenTests(api):
 
     return test_data
 
-  for (platform_name, bits, platform_suffix) in PLATFORMS:
-    test = api.test('new_on_%s' % (platform_suffix,))
+  for (platform_name, bits, platform_suffix, cross_platform) in PLATFORMS:
+    test_suffix = ('-for-%s' % (cross_platform,)) if cross_platform else ''
+    test = api.test('new_on_%s%s' % (platform_suffix, test_suffix))
     test += GenTest(platform_name, bits, platform_suffix)
+    if cross_platform:
+      test += api.properties(cross_platform=cross_platform)
     yield test
 
   yield (

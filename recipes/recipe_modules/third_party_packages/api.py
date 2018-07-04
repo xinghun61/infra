@@ -16,11 +16,15 @@ from .support_prefix import SupportPrefix
 from recipe_engine import recipe_api
 
 
+UNSET_CROSS_PLATFORM = object()
+
+
 class ThirdPartyPackagesApi(recipe_api.RecipeApi):
 
   def __init__(self, *args, **kwargs):
     super(ThirdPartyPackagesApi, self).__init__(*args, **kwargs)
     self._dry_run = True
+    self._cross_platform = UNSET_CROSS_PLATFORM
     self._singletons = {}
 
   @property
@@ -29,6 +33,25 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
   @dry_run.setter
   def dry_run(self, v):
     self._dry_run = bool(v)
+
+  @property
+  def cross_platform(self): # pragma: no cover
+    if self._cross_platform is UNSET_CROSS_PLATFORM:
+      return None
+    return self._cross_platform
+
+  def init_cross_platform(self, cross_platform):
+    if self._cross_platform is not UNSET_CROSS_PLATFORM: # pragma: no cover
+      raise self.m.step.StepFailure('cross_platform may not be set twice')
+    assert isinstance(cross_platform, (str, type(None)))
+    if cross_platform is not None:  # catch empty-string
+      assert cross_platform in (
+        'linux-arm64', 'linux-armv6l', 'linux-mips32', 'linux-mips64'), (
+          'unsupported platform %r' % (cross_platform,))
+      assert not self.m.platform.is_win, (
+        'cross_platform not supported on windows')
+    # TODO(iannucci): assert cross-compile toolchain docker files at this point.
+    self._cross_platform = cross_platform
 
   def _get_singleton(self, cls):
     cur = self._singletons.get(cls)

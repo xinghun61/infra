@@ -17,7 +17,16 @@ DEPS = [
   'third_party_packages',
 ]
 
-def RunSteps(api):
+PROPERTIES = {
+  'cross_platform': Property(
+      kind=str, default=None,
+      help=('Target cross-compile platform. Must be in '
+            '("linux-arm64", "linux-armv6l", "linux-mips32", "linux-mips64"). '
+            'Requires working docker implementation on $PATH.')),
+}
+
+def RunSteps(api, cross_platform):
+  api.third_party_packages.init_cross_platform(cross_platform)
   api.third_party_packages.dry_run = api.runtime.is_experimental
   if not api.runtime.is_experimental and not api.runtime.is_luci:
     # TODO(Tandrii): delete with buildbot.
@@ -124,5 +133,11 @@ def GenTests(api):
 
   yield (
       api.test('dry_run') +
+      GenTestData() +
+      api.runtime(is_luci=True, is_experimental=True))
+
+  yield (
+      api.test('cross_compile') +
+      api.properties(cross_platform='linux-arm64') +
       GenTestData() +
       api.runtime(is_luci=True, is_experimental=True))

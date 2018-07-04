@@ -1,0 +1,3861 @@
+[
+  {
+    "cmd": [],
+    "name": "python"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/python/cpython/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "python.refs",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.2\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.2@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/python"
+    ],
+    "infra_step": true,
+    "name": "python.rmtree workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/python/cpython/linux-amd64",
+      "-tag",
+      "version:2.1.2.chromium14",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium14",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/python/checkout",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/python/cpython"
+    ],
+    "name": "python.git setup",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "refs/tags/v2.1.2",
+      "--progress"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "python.git fetch",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/package"
+    ],
+    "infra_step": true,
+    "name": "python.package_dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "-c",
+      "user.name=third_party_packages",
+      "-c",
+      "user.email=third_party_packages@example.com",
+      "am",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/patches/0001-Update-Python-to-build-static-modules.patch",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/patches/0002-Enable-manual-version-specification.patch"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.git apply patches",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/python/_support/sources",
+      "-ensure-file",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/automake version:1.15\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.59.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/libidn2 version:2.0.4\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0f\ninfra/third_party/source/pcre version:8.41\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:9.0.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/pip-packages\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.15----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/automake\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.6---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/bzip2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.59.0--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/curl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:4.2.2---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/gnu_sed\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.0.4---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/libidn2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:0.9.8zh-\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/mac_openssl_headers\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:6.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/ncurses\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.4---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/nsl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0f--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/openssl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:8.41----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/pcre\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:10.23---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/pcre2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/readline\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:3.19.3--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/sqlite-autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.2.11--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/zlib\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.bzip2-1.0.6",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/bzip2-1.0.6"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.bzip2-1.0.6.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/bzip2-1.0.6.tar.gz",
+      "[START_DIR]/python/_support/bzip2-1.0.6"
+    ],
+    "cwd": "[START_DIR]/python/_support/bzip2-1.0.6",
+    "name": "python.bzip2-1.0.6.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "PREFIX=[START_DIR]/python/_support/bzip2-1.0.6/prefix"
+    ],
+    "cwd": "[START_DIR]/python/_support/bzip2-1.0.6/bzip2-1.0.6",
+    "name": "python.bzip2-1.0.6.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.ncurses-6.0",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/ncurses-6.0"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.ncurses-6.0.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/ncurses-6.0.tar.gz",
+      "[START_DIR]/python/_support/ncurses-6.0"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0",
+    "name": "python.ncurses-6.0.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/ncurses-6.0/tic_build"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
+    "infra_step": true,
+    "name": "python.ncurses-6.0.makedirs tic build",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0/configure",
+      "--prefix=[START_DIR]/python/_support/ncurses-6.0/tic_prefix"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/tic_build",
+    "name": "python.ncurses-6.0.configure tic",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/tic_build",
+    "name": "python.ncurses-6.0.make tic",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/_support/ncurses-6.0/tic_prefix/bin/toe"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
+    "name": "python.ncurses-6.0.get profiles",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_TEXT@Embedding 2 profile(s)@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/ncurses-6.0/prefix",
+      "--disable-database",
+      "--disable-db-install",
+      "--enable-termcap",
+      "--with-fallbacks=foo,bar"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/ncurses-6.0/tic_prefix/bin"
+      ]
+    },
+    "name": "python.ncurses-6.0.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install.libs",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/ncurses-6.0/tic_prefix/bin"
+      ]
+    },
+    "name": "python.ncurses-6.0.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.readline-7.0",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/readline-7.0"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.readline-7.0.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/readline-7.0.tar.gz",
+      "[START_DIR]/python/_support/readline-7.0"
+    ],
+    "cwd": "[START_DIR]/python/_support/readline-7.0",
+    "name": "python.readline-7.0.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/readline-7.0/prefix"
+    ],
+    "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
+    "name": "python.readline-7.0.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
+    "name": "python.readline-7.0.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.zlib-1.2.11",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/zlib-1.2.11"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.zlib-1.2.11.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/zlib-1.2.11.tar.gz",
+      "[START_DIR]/python/_support/zlib-1.2.11"
+    ],
+    "cwd": "[START_DIR]/python/_support/zlib-1.2.11",
+    "name": "python.zlib-1.2.11.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/zlib-1.2.11/prefix",
+      "--static"
+    ],
+    "cwd": "[START_DIR]/python/_support/zlib-1.2.11/zlib-1.2.11",
+    "name": "python.zlib-1.2.11.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/python/_support/zlib-1.2.11/zlib-1.2.11",
+    "name": "python.zlib-1.2.11.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.sqlite-autoconf-3190300",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/sqlite-autoconf-3190300"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.sqlite-autoconf-3190300.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/sqlite-autoconf-3190300.tar.gz",
+      "[START_DIR]/python/_support/sqlite-autoconf-3190300"
+    ],
+    "cwd": "[START_DIR]/python/_support/sqlite-autoconf-3190300",
+    "name": "python.sqlite-autoconf-3190300.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix",
+      "--enable-static",
+      "--disable-shared",
+      "--with-pic",
+      "--enable-fts5",
+      "--enable-json1",
+      "--enable-session"
+    ],
+    "cwd": "[START_DIR]/python/_support/sqlite-autoconf-3190300/sqlite-autoconf-3190300",
+    "name": "python.sqlite-autoconf-3190300.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/python/_support/sqlite-autoconf-3190300/sqlite-autoconf-3190300",
+    "name": "python.sqlite-autoconf-3190300.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.libnsl-1.0.4",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/libnsl-1.0.4"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.libnsl-1.0.4.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/libnsl-1.0.4.tar.gz",
+      "[START_DIR]/python/_support/libnsl-1.0.4"
+    ],
+    "cwd": "[START_DIR]/python/_support/libnsl-1.0.4",
+    "name": "python.libnsl-1.0.4.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/libnsl-1.0.4/prefix",
+      "--disable-shared"
+    ],
+    "cwd": "[START_DIR]/python/_support/libnsl-1.0.4/libnsl-1.0.4",
+    "name": "python.libnsl-1.0.4.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/python/_support/libnsl-1.0.4/libnsl-1.0.4",
+    "name": "python.libnsl-1.0.4.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.openssl-1.1.0f",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/openssl-1.1.0f"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.openssl-1.1.0f.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/openssl-1.1.0f.tar.gz",
+      "[START_DIR]/python/_support/openssl-1.1.0f"
+    ],
+    "cwd": "[START_DIR]/python/_support/openssl-1.1.0f",
+    "name": "python.openssl-1.1.0f.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./Configure",
+      "--prefix=[START_DIR]/python/_support/openssl-1.1.0f/prefix",
+      "no-shared",
+      "linux-x86_64"
+    ],
+    "cwd": "[START_DIR]/python/_support/openssl-1.1.0f/openssl-1.1.0f",
+    "name": "python.openssl-1.1.0f.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/python/_support/openssl-1.1.0f/openssl-1.1.0f",
+    "name": "python.openssl-1.1.0f.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install_sw"
+    ],
+    "cwd": "[START_DIR]/python/_support/openssl-1.1.0f/openssl-1.1.0f",
+    "name": "python.openssl-1.1.0f.install",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.libffi",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/tpp_libffi"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.libffi.makedirs libffi",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/checkout/Modules/_ctypes/libffi/configure"
+    ],
+    "cwd": "[START_DIR]/python/tpp_libffi",
+    "name": "python.libffi.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.sed-4.2.2",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/sed-4.2.2"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.sed-4.2.2.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/sed-4.2.2.tar.gz",
+      "[START_DIR]/python/_support/sed-4.2.2"
+    ],
+    "cwd": "[START_DIR]/python/_support/sed-4.2.2",
+    "name": "python.sed-4.2.2.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/sed-4.2.2/prefix"
+    ],
+    "cwd": "[START_DIR]/python/_support/sed-4.2.2/sed-4.2.2",
+    "name": "python.sed-4.2.2.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/python/_support/sed-4.2.2/sed-4.2.2",
+    "name": "python.sed-4.2.2.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.autoconf-2.69",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.autoconf-2.69.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/autoconf-2.69.tar.gz",
+      "[START_DIR]/python/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/python/_support/autoconf-2.69",
+    "name": "python.autoconf-2.69.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/autoconf-2.69/prefix"
+    ],
+    "cwd": "[START_DIR]/python/_support/autoconf-2.69/autoconf-2.69",
+    "name": "python.autoconf-2.69.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/python/_support/autoconf-2.69/autoconf-2.69",
+    "name": "python.autoconf-2.69.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "autoconf"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "python.generate configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/tpp_python_bootstrap"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "python.makedirs bootstrap",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/checkout/configure",
+      "--prefix",
+      "[START_DIR]/python/tpp_python_bootstrap/.prefix",
+      "--disable-shared",
+      "--without-system-ffi",
+      "--enable-ipv6",
+      "--enable-py-version-override=2.1.2+chromium14",
+      "--enable-unicode=ucs4",
+      "--with-fpectl",
+      "--with-dbmliborder=bdb:gdbm",
+      "--enable-optimizations"
+    ],
+    "cwd": "[START_DIR]/python/tpp_python_bootstrap",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "python.configure bootstrap",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "sharedmods"
+    ],
+    "cwd": "[START_DIR]/python/tpp_python_bootstrap",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "python.make bootstrap",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix",
+      "[START_DIR]/python/package",
+      "--disable-shared",
+      "--without-system-ffi",
+      "--enable-ipv6",
+      "--enable-py-version-override=2.1.2+chromium14",
+      "--enable-unicode=ucs4",
+      "--with-fpectl",
+      "--with-dbmliborder=bdb:gdbm",
+      "--enable-optimizations"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "CPPFLAGS": "-I[START_DIR]/python/_support/bzip2-1.0.6/prefix/include -I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/ncurses-6.0/prefix/include -I[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include -I[START_DIR]/python/_support/libnsl-1.0.4/prefix/include -I[START_DIR]/python/_support/openssl-1.1.0f/prefix/include -I[START_DIR]/python/tpp_libffi -I[START_DIR]/python/tpp_libffi/include",
+      "LDFLAGS": "-L[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib -L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/ncurses-6.0/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/_support/libnsl-1.0.4/prefix/lib -L[START_DIR]/python/_support/openssl-1.1.0f/prefix/lib -Wl,--version-script=RECIPE_MODULE[infra::third_party_packages]/resources/python/gnu_version_script.txt"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "python.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "platform"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "CPPFLAGS": "-I[START_DIR]/python/_support/bzip2-1.0.6/prefix/include -I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/ncurses-6.0/prefix/include -I[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include -I[START_DIR]/python/_support/libnsl-1.0.4/prefix/include -I[START_DIR]/python/_support/openssl-1.1.0f/prefix/include -I[START_DIR]/python/tpp_libffi -I[START_DIR]/python/tpp_libffi/include",
+      "LDFLAGS": "-L[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib -L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/ncurses-6.0/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/_support/libnsl-1.0.4/prefix/lib -L[START_DIR]/python/_support/openssl-1.1.0f/prefix/lib -Wl,--version-script=RECIPE_MODULE[infra::third_party_packages]/resources/python/gnu_version_script.txt"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "python.make platform",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/tpp_python_bootstrap/python",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_build_bootstrap.py",
+      "--root",
+      "[START_DIR]/python/checkout",
+      "--",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_mod_gen.py",
+      "--output",
+      "[START_DIR]/python/checkout/Modules/Setup.local",
+      "--skip",
+      "_testcapi",
+      "--attach",
+      "[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib/libbz2.a",
+      "--attach",
+      "[START_DIR]/python/_support/readline-7.0/prefix/lib/libreadline.a",
+      "--attach",
+      "[START_DIR]/python/_support/ncurses-6.0/prefix/lib/libpanel.a",
+      "--attach",
+      "[START_DIR]/python/_support/ncurses-6.0/prefix/lib/libncurses.a",
+      "--attach",
+      "[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib/libsqlite3.a",
+      "--attach",
+      "[START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a",
+      "--attach",
+      "[START_DIR]/python/_support/libnsl-1.0.4/prefix/lib/libnsl.a",
+      "--attach",
+      "crypt::-lcrypt",
+      "--attach",
+      "[START_DIR]/python/_support/openssl-1.1.0f/prefix/lib/libssl.a",
+      "--attach",
+      "[START_DIR]/python/_support/openssl-1.1.0f/prefix/lib/libcrypto.a"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "python.static modules",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "python.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.provision SSL",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[START_DIR]/python/package/lib/python2.7/ssl.py",
+      "/path/to/tmp/"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.provision SSL.read ssl.py",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_ssl_suffix.py",
+      "/path/to/tmp/"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.provision SSL.read ssl.py addendum",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "\n",
+      "[START_DIR]/python/package/lib/python2.7/ssl.py"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.provision SSL.write ssl.py",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/package/bin/python",
+      "[START_DIR]/python/_support/sources/get-pip.py",
+      "--ignore-installed",
+      "--no-cache-dir",
+      "--no-index",
+      "--find-links",
+      "[START_DIR]/python/_support/sources",
+      "--prefix",
+      "[START_DIR]/python/package",
+      "pip==9.0.1",
+      "setuptools==36.0.1",
+      "wheel==0.30.0a0"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.pip",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/python/package/lib/libpython2.7.a"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.cleanup lib/libpython2.7.a",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/python/package/lib/python2.7/test"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.cleanup lib/python2.7/test",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/python/package/lib/python2.7/config"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.cleanup lib/python2.7/config",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmglob",
+      "[START_DIR]/python/package/lib/python2.7/lib-dynload",
+      "*.so"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.cleanup shared objects from lib-dynload",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/python/package",
+      "-name",
+      "infra/python/cpython/linux-amd64",
+      "-out",
+      "[START_DIR]/python/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
+    ],
+    "name": "python.build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/python/cpython/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[START_DIR]/python/package",
+      "[START_DIR]/python/package.built"
+    ],
+    "infra_step": true,
+    "name": "python.rename package for tests",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_test.py"
+    ],
+    "cwd": "[START_DIR]/python",
+    "env": {
+      "PYTHON_TEST_CIPD_PACKAGE": "[START_DIR]/python/package.cipd",
+      "PYTHON_TEST_EXPECTED_VERSION": "2.1.2+chromium14"
+    },
+    "name": "python.test",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "git"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/git"
+    ],
+    "infra_step": true,
+    "name": "git.rmtree workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/git/git/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "git.refs",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.12.2.2\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v2.12.2.2@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/git/linux-amd64",
+      "-tag",
+      "version:2.12.2.2.chromium16",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "git.cipd search infra/git/linux-amd64 version:2.12.2.2.chromium16",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/git/checkout",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/git/git"
+    ],
+    "name": "git.git setup",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "refs/tags/v2.12.2.2",
+      "--progress"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "git.git fetch",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/package"
+    ],
+    "infra_step": true,
+    "name": "git.package_dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/git/_support/sources",
+      "-ensure-file",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/automake version:1.15\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.59.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/libidn2 version:2.0.4\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0f\ninfra/third_party/source/pcre version:8.41\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:9.0.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/pip-packages\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.15----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/automake\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.6---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/bzip2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.59.0--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/curl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:4.2.2---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/gnu_sed\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.0.4---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/libidn2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:0.9.8zh-\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/mac_openssl_headers\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:6.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/ncurses\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.4---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/nsl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0f--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/openssl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:8.41----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/pcre\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:10.23---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/pcre2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/readline\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:3.19.3--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/sqlite-autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.2.11--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/zlib\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.zlib-1.2.11",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/_support/zlib-1.2.11"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.zlib-1.2.11.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/git/_support/sources/zlib-1.2.11.tar.gz",
+      "[START_DIR]/git/_support/zlib-1.2.11"
+    ],
+    "cwd": "[START_DIR]/git/_support/zlib-1.2.11",
+    "name": "git.zlib-1.2.11.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/git/_support/zlib-1.2.11/prefix",
+      "--static"
+    ],
+    "cwd": "[START_DIR]/git/_support/zlib-1.2.11/zlib-1.2.11",
+    "name": "git.zlib-1.2.11.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/git/_support/zlib-1.2.11/zlib-1.2.11",
+    "name": "git.zlib-1.2.11.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.libidn2-2.0.4",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/_support/libidn2-2.0.4"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.libidn2-2.0.4.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/git/_support/sources/libidn2-2.0.4.tar.gz",
+      "[START_DIR]/git/_support/libidn2-2.0.4"
+    ],
+    "cwd": "[START_DIR]/git/_support/libidn2-2.0.4",
+    "name": "git.libidn2-2.0.4.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/git/_support/libidn2-2.0.4/prefix",
+      "--enable-static=yes",
+      "--enable-shared=no"
+    ],
+    "cwd": "[START_DIR]/git/_support/libidn2-2.0.4/libidn2-2.0.4",
+    "name": "git.libidn2-2.0.4.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/git/_support/libidn2-2.0.4/libidn2-2.0.4",
+    "name": "git.libidn2-2.0.4.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.openssl-1.1.0f",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/_support/openssl-1.1.0f"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.openssl-1.1.0f.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/git/_support/sources/openssl-1.1.0f.tar.gz",
+      "[START_DIR]/git/_support/openssl-1.1.0f"
+    ],
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0f",
+    "name": "git.openssl-1.1.0f.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./Configure",
+      "--prefix=[START_DIR]/git/_support/openssl-1.1.0f/prefix",
+      "no-shared",
+      "linux-x86_64"
+    ],
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0f/openssl-1.1.0f",
+    "name": "git.openssl-1.1.0f.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0f/openssl-1.1.0f",
+    "name": "git.openssl-1.1.0f.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install_sw"
+    ],
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0f/openssl-1.1.0f",
+    "name": "git.openssl-1.1.0f.install",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "name": "git.curl-7.59.0",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/_support/curl-7.59.0"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "infra_step": true,
+    "name": "git.curl-7.59.0.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/git/_support/sources/curl-7.59.0.tar.gz",
+      "[START_DIR]/git/_support/curl-7.59.0"
+    ],
+    "cwd": "[START_DIR]/git/_support/curl-7.59.0",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "name": "git.curl-7.59.0.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/git/_support/curl-7.59.0/prefix",
+      "--disable-ldap",
+      "--disable-shared",
+      "--without-librtmp",
+      "--with-zlib=[START_DIR]/git/_support/zlib-1.2.11/prefix",
+      "--with-libidn2=[START_DIR]/git/_support/libidn2-2.0.4/prefix",
+      "--with-ssl=[START_DIR]/git/_support/openssl-1.1.0f/prefix"
+    ],
+    "cwd": "[START_DIR]/git/_support/curl-7.59.0/curl-7.59.0",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "name": "git.curl-7.59.0.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/git/_support/curl-7.59.0/curl-7.59.0",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "name": "git.curl-7.59.0.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.pcre2-10.23",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/_support/pcre2-10.23"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.pcre2-10.23.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/git/_support/sources/pcre2-10.23.tar.gz",
+      "[START_DIR]/git/_support/pcre2-10.23"
+    ],
+    "cwd": "[START_DIR]/git/_support/pcre2-10.23",
+    "name": "git.pcre2-10.23.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/git/_support/pcre2-10.23/prefix",
+      "--enable-static",
+      "--disable-shared"
+    ],
+    "cwd": "[START_DIR]/git/_support/pcre2-10.23/pcre2-10.23",
+    "name": "git.pcre2-10.23.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/git/_support/pcre2-10.23/pcre2-10.23",
+    "name": "git.pcre2-10.23.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.autoconf-2.69",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.autoconf-2.69.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/git/_support/sources/autoconf-2.69.tar.gz",
+      "[START_DIR]/git/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/git/_support/autoconf-2.69",
+    "name": "git.autoconf-2.69.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/git/_support/autoconf-2.69/prefix"
+    ],
+    "cwd": "[START_DIR]/git/_support/autoconf-2.69/autoconf-2.69",
+    "name": "git.autoconf-2.69.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/git/_support/autoconf-2.69/autoconf-2.69",
+    "name": "git.autoconf-2.69.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "RUNTIME_PREFIX=YesPlease\ngitexecdir=libexec/git-core\ntemplate_dir=share/git-core/templates\nsysconfdir=etc\nNO_INSTALL_HARDLINKS=YesPlease\nNO_GECOS_IN_PWENT=YesPlease\nNO_CURL=\nEXTLIBS = -lz -lcurl -ldl -lpthread -lz -lidn2 -lssl -lcrypto -lpcre2-8",
+      "[START_DIR]/git/checkout/config.mak"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.Makefile specialization",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "v2.12.2.2.chromium16",
+      "[START_DIR]/git/checkout/version"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.Version file",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "configure"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/git/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "git.make configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix",
+      "[START_DIR]/git/package",
+      "--with-libpcre2"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "env": {
+      "CFLAGS": "-flto",
+      "CPPFLAGS": "-I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/curl-7.59.0/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/libidn2-2.0.4/prefix/include -I[START_DIR]/git/_support/openssl-1.1.0f/prefix/include -I[START_DIR]/git/_support/pcre2-10.23/prefix/include",
+      "LDFLAGS": "-flto -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/git/_support/curl-7.59.0/prefix/lib -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/git/_support/libidn2-2.0.4/prefix/lib -L[START_DIR]/git/_support/openssl-1.1.0f/prefix/lib -L[START_DIR]/git/_support/pcre2-10.23/prefix/lib",
+      "LIBS": "-lz -lcurl -ldl -lpthread -lz -lidn2 -lssl -lcrypto -lpcre2-8"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/git/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "git.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/git/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "git.make install",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/git/package",
+      "-name",
+      "infra/git/linux-amd64",
+      "-out",
+      "[START_DIR]/git/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
+    ],
+    "name": "git.build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/git/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[START_DIR]/git/package",
+      "[START_DIR]/git/package.built"
+    ],
+    "infra_step": true,
+    "name": "git.rename package for tests",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/git/git_test.py"
+    ],
+    "cwd": "[START_DIR]/git",
+    "env": {
+      "GIT_TEST_CIPD_PACKAGE": "[START_DIR]/git/package.cipd"
+    },
+    "name": "git.test",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "gcloud"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/gcloud_linux_64"
+    ],
+    "infra_step": true,
+    "name": "gcloud.workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
+      "https://dl.google.com/dl/cloudsdk/channels/rapid/components-2.json",
+      "--status-json",
+      "/path/to/tmp/json",
+      "--outfile",
+      "/path/to/tmp/json"
+    ],
+    "name": "gcloud.components",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LINK@gcloud '1.2.3'@https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-1.2.3-linux-x86_64.tar.gz@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/gcloud/linux-amd64",
+      "-tag",
+      "version:1.2.3.chromium0",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "gcloud.cipd search infra/gcloud/linux-amd64 version:1.2.3.chromium0",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
+      "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-1.2.3-linux-x86_64.tar.gz",
+      "--status-json",
+      "/path/to/tmp/json",
+      "--outfile",
+      "[START_DIR]/gcloud_linux_64/google-cloud-sdk-1.2.3-linux-x86_64.tar.gz"
+    ],
+    "name": "gcloud.download",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/gcloud_linux_64/google-cloud-sdk-1.2.3-linux-x86_64.tar.gz",
+      "[START_DIR]/gcloud_linux_64"
+    ],
+    "name": "gcloud.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[START_DIR]/gcloud_linux_64/google-cloud-sdk/properties",
+      "/path/to/tmp/"
+    ],
+    "infra_step": true,
+    "name": "gcloud.read instance config",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[core]\ndisable_usage_reporting = True\n\n[component_manager]\ndisable_update_check = true",
+      "[START_DIR]/gcloud_linux_64/google-cloud-sdk/properties"
+    ],
+    "infra_step": true,
+    "name": "gcloud.write instance config",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/gcloud_linux_64/google-cloud-sdk",
+      "-name",
+      "infra/gcloud/linux-amd64",
+      "-out",
+      "[START_DIR]/gcloud_linux_64/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
+    ],
+    "name": "gcloud.build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/gcloud/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "gsutil"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/gsutil"
+    ],
+    "infra_step": true,
+    "name": "gsutil.workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
+      "https://raw.githubusercontent.com/GoogleCloudPlatform/gsutil/master/VERSION",
+      "--status-json",
+      "/path/to/tmp/json",
+      "--outfile",
+      "/path/to/tmp/"
+    ],
+    "name": "gsutil.version",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LINK@gsutil '4.21'@https://storage.googleapis.com/pub/gsutil_4.21.tar.gz@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/gsutil",
+      "-tag",
+      "version:4.21",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "gsutil.cipd search infra/gsutil version:4.21",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
+      "https://storage.googleapis.com/pub/gsutil_4.21.tar.gz",
+      "--status-json",
+      "/path/to/tmp/json",
+      "--outfile",
+      "[START_DIR]/gsutil/gsutil_4.21.tar.gz"
+    ],
+    "name": "gsutil.download",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/gsutil/gsutil_4.21.tar.gz",
+      "[START_DIR]/gsutil"
+    ],
+    "name": "gsutil.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/gsutil/gsutil",
+      "-name",
+      "infra/gsutil",
+      "-out",
+      "[START_DIR]/gsutil/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
+    ],
+    "name": "gsutil.build gsutil",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/gsutil\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "ninja"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/ninja"
+    ],
+    "infra_step": true,
+    "name": "ninja.rmtree workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/ninja-build/ninja/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "ninja.refs",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v1.7.2\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v1.7.2@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/ninja/linux-amd64",
+      "-tag",
+      "version:1.7.2",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "ninja.cipd search infra/ninja/linux-amd64 version:1.7.2",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/ninja/checkout",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/ninja-build/ninja"
+    ],
+    "name": "ninja.git setup",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "refs/tags/v1.7.2",
+      "--progress"
+    ],
+    "cwd": "[START_DIR]/ninja/checkout",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "ninja.git fetch",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[START_DIR]/ninja/checkout",
+    "infra_step": true,
+    "name": "ninja.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/ninja/checkout",
+    "infra_step": true,
+    "name": "ninja.read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/ninja/checkout",
+    "infra_step": true,
+    "name": "ninja.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/ninja/package"
+    ],
+    "infra_step": true,
+    "name": "ninja.package_dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/ninja/checkout/configure.py",
+      "--bootstrap"
+    ],
+    "cwd": "[START_DIR]/ninja/checkout",
+    "name": "ninja.bootstrap",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[START_DIR]/ninja/checkout/ninja",
+      "[START_DIR]/ninja/package"
+    ],
+    "cwd": "[START_DIR]/ninja/checkout",
+    "infra_step": true,
+    "name": "ninja.install ninja",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/ninja/package",
+      "-name",
+      "infra/ninja/linux-amd64",
+      "-out",
+      "[START_DIR]/ninja/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
+    ],
+    "name": "ninja.build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/ninja/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "cmake"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/cmake"
+    ],
+    "infra_step": true,
+    "name": "cmake.rmtree workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/cmake/_cipd",
+      "-ensure-file",
+      "infra/cmake/${platform} version:3.11.4\ninfra/ninja/${platform} version:1.8.2",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "cmake.ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:3.11.4--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cmake/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.8.2---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/ninja/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/Kitware/CMake/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "cmake.refs",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v3.9.1\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v3.9.1@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/cmake/linux-amd64",
+      "-tag",
+      "version:3.9.1",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "cmake.cipd search infra/cmake/linux-amd64 version:3.9.1",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/cmake/checkout",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/Kitware/CMake"
+    ],
+    "name": "cmake.git setup",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "refs/tags/v3.9.1",
+      "--progress"
+    ],
+    "cwd": "[START_DIR]/cmake/checkout",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "cmake.git fetch",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[START_DIR]/cmake/checkout",
+    "infra_step": true,
+    "name": "cmake.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/cmake/checkout",
+    "infra_step": true,
+    "name": "cmake.read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/cmake/checkout",
+    "infra_step": true,
+    "name": "cmake.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/cmake/package"
+    ],
+    "infra_step": true,
+    "name": "cmake.package_dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/cmake/build"
+    ],
+    "cwd": "[START_DIR]/cmake/checkout",
+    "infra_step": true,
+    "name": "cmake.build_dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cmake/_cipd/bin/cmake",
+      "-GNinja",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_INSTALL_PREFIX=",
+      "-DCMAKE_MAKE_PROGRAM=[START_DIR]/cmake/_cipd/ninja",
+      "-DCMAKE_USE_OPENSSL=OFF",
+      "[START_DIR]/cmake/checkout"
+    ],
+    "cwd": "[START_DIR]/cmake/build",
+    "name": "cmake.configure cmake",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cmake/_cipd/ninja"
+    ],
+    "cwd": "[START_DIR]/cmake/build",
+    "name": "cmake.build cmake",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/cmake/_cipd/ninja",
+      "install"
+    ],
+    "cwd": "[START_DIR]/cmake/build",
+    "env": {
+      "DESTDIR": "[START_DIR]/cmake/package"
+    },
+    "name": "cmake.install cmake",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/cmake/package",
+      "-name",
+      "infra/cmake/linux-amd64",
+      "-out",
+      "[START_DIR]/cmake/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
+    ],
+    "name": "cmake.build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/cmake/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "swig"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/swig"
+    ],
+    "infra_step": true,
+    "name": "swig.rmtree workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/swig/swig/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "swig.refs",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/rel-3.0.12\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/rel-3.0.12@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/swig/linux-amd64",
+      "-tag",
+      "version:3.0.12",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "swig.cipd search infra/swig/linux-amd64 version:3.0.12",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/swig/checkout",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/swig/swig"
+    ],
+    "name": "swig.git setup",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "refs/tags/rel-3.0.12",
+      "--progress"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "swig.git fetch",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "swig.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "swig.read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "swig.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/swig/package"
+    ],
+    "infra_step": true,
+    "name": "swig.package_dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "-c",
+      "user.name=third_party_packages",
+      "-c",
+      "user.email=third_party_packages@example.com",
+      "am",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/swig/patches/0001-Use-relative-path-to-swiglib-on-Darwin-and-Linux.patch"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "swig.git apply patches",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/swig/_support/sources",
+      "-ensure-file",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/automake version:1.15\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.59.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/libidn2 version:2.0.4\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0f\ninfra/third_party/source/pcre version:8.41\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "name": "swig.ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:9.0.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/pip-packages\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.15----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/automake\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.6---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/bzip2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.59.0--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/curl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:4.2.2---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/gnu_sed\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.0.4---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/libidn2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:0.9.8zh-\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/mac_openssl_headers\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:6.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/ncurses\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.4---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/nsl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0f--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/openssl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:8.41----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/pcre\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:10.23---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/pcre2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/readline\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:3.19.3--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/sqlite-autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.2.11--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/zlib\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/swig/checkout",
+    "name": "swig.autoconf-2.69",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/swig/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "swig.autoconf-2.69.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/swig/_support/sources/autoconf-2.69.tar.gz",
+      "[START_DIR]/swig/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/swig/_support/autoconf-2.69",
+    "name": "swig.autoconf-2.69.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/swig/_support/autoconf-2.69/prefix"
+    ],
+    "cwd": "[START_DIR]/swig/_support/autoconf-2.69/autoconf-2.69",
+    "name": "swig.autoconf-2.69.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/swig/_support/autoconf-2.69/autoconf-2.69",
+    "name": "swig.autoconf-2.69.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "swig.automake-1.15",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/swig/_support/automake-1.15"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "swig.automake-1.15.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/swig/_support/sources/automake-1.15.tar.gz",
+      "[START_DIR]/swig/_support/automake-1.15"
+    ],
+    "cwd": "[START_DIR]/swig/_support/automake-1.15",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "swig.automake-1.15.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/swig/_support/automake-1.15/prefix"
+    ],
+    "cwd": "[START_DIR]/swig/_support/automake-1.15/automake-1.15",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "swig.automake-1.15.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/swig/_support/automake-1.15/automake-1.15",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "swig.automake-1.15.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/swig/checkout",
+    "name": "swig.pcre-8.41",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/swig/_support/pcre-8.41"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "swig.pcre-8.41.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/swig/_support/sources/pcre-8.41.tar.gz",
+      "[START_DIR]/swig/_support/pcre-8.41"
+    ],
+    "cwd": "[START_DIR]/swig/_support/pcre-8.41",
+    "name": "swig.pcre-8.41.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/swig/_support/pcre-8.41/prefix",
+      "--enable-static",
+      "--disable-shared"
+    ],
+    "cwd": "[START_DIR]/swig/_support/pcre-8.41/pcre-8.41",
+    "name": "swig.pcre-8.41.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "-j",
+      "2"
+    ],
+    "cwd": "[START_DIR]/swig/_support/pcre-8.41/pcre-8.41",
+    "name": "swig.pcre-8.41.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./autogen.sh"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin",
+        "[START_DIR]/swig/_support/automake-1.15/prefix/bin"
+      ]
+    },
+    "name": "swig.autogen",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=",
+      "--with-pcre-prefix=[START_DIR]/swig/_support/pcre-8.41/prefix"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin",
+        "[START_DIR]/swig/_support/automake-1.15/prefix/bin"
+      ]
+    },
+    "name": "swig.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin",
+        "[START_DIR]/swig/_support/automake-1.15/prefix/bin"
+      ]
+    },
+    "name": "swig.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env": {
+      "DESTDIR": "[START_DIR]/swig/package"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin",
+        "[START_DIR]/swig/_support/automake-1.15/prefix/bin"
+      ]
+    },
+    "name": "swig.make install",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/swig/package",
+      "-name",
+      "infra/swig/linux-amd64",
+      "-out",
+      "[START_DIR]/swig/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "symlink"
+    ],
+    "name": "swig.build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/swig/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "go"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/go_linux_64"
+    ],
+    "infra_step": true,
+    "name": "go.workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
+      "https://golang.org/VERSION?m=text",
+      "--status-json",
+      "/path/to/tmp/json",
+      "--outfile",
+      "/path/to/tmp/"
+    ],
+    "name": "go.version",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LINK@go '1.2.3'@https://storage.googleapis.com/golang/go1.2.3.linux-amd64.tar.gz@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/go/linux-amd64",
+      "-tag",
+      "version:1.2.3",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "go.cipd search infra/go/linux-amd64 version:1.2.3",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
+      "https://storage.googleapis.com/golang/go1.2.3.linux-amd64.tar.gz",
+      "--status-json",
+      "/path/to/tmp/json",
+      "--outfile",
+      "[START_DIR]/go_linux_64/go1.2.3.linux-amd64.tar.gz"
+    ],
+    "name": "go.download",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/go_linux_64/go1.2.3.linux-amd64.tar.gz",
+      "[START_DIR]/go_linux_64"
+    ],
+    "name": "go.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/go_linux_64/go",
+      "-name",
+      "infra/go/linux-amd64",
+      "-out",
+      "[START_DIR]/go_linux_64/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
+    ],
+    "name": "go.build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/go/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "dep"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/golang/dep/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "dep.refs",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v0.3.1\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v0.3.1@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "go/cmd/github.com/golang/dep/linux-amd64",
+      "-tag",
+      "version:0.3.1",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "dep.cipd search go/cmd/github.com/golang/dep/linux-amd64 version:0.3.1",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/dep"
+    ],
+    "infra_step": true,
+    "name": "dep.rmtree workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/dep/src/github.com/golang/dep",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/golang/dep"
+    ],
+    "name": "dep.git setup",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "refs/tags/v0.3.1",
+      "--progress"
+    ],
+    "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "dep.git fetch",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
+    "infra_step": true,
+    "name": "dep.git checkout",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
+    "infra_step": true,
+    "name": "dep.read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
+    "infra_step": true,
+    "name": "dep.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/dep/_cipd",
+      "-ensure-file",
+      "infra/go/${platform} version:1.9.4",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "dep.ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.9.4---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/go/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/dep/_cipd/bin/go",
+      "get",
+      "github.com/golang/dep/cmd/dep"
+    ],
+    "env": {
+      "GOBIN": "[START_DIR]/dep/bin",
+      "GOPATH": "[START_DIR]/dep",
+      "GOROOT": "[START_DIR]/dep/_cipd"
+    },
+    "name": "dep.go get",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/dep/bin",
+      "-name",
+      "go/cmd/github.com/golang/dep/linux-amd64",
+      "-out",
+      "[START_DIR]/dep/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "symlink"
+    ],
+    "name": "dep.build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"go/cmd/github.com/golang/dep/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
