@@ -771,7 +771,7 @@ class MonorailApi(remote.Service):
   @monorail_api_method(
       api_pb2_v1.GROUPS_SETTINGS_LIST_REQUEST_RESOURCE_CONTAINER,
       api_pb2_v1.GroupsSettingsListResponse,
-      path='groups/settings',
+      path='groupsettings',
       http_method='GET',
       name='groups.settings.list')
   def groups_settings_list(self, mar, request):
