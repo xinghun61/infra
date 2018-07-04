@@ -27,7 +27,7 @@ _NO_PHASE_VALUE = 'no_phase'
 ParsedTemplate = collections.namedtuple(
     'ParsedTemplate', 'name, members_only, summary, summary_must_be_edited, '
     'content, status, owner_str, labels, field_val_strs, component_paths, '
-    'component_required, owner_defaults_to_member, admin_str, add_phases, '
+    'component_required, owner_defaults_to_member, admin_str, add_approvals, '
     'phase_names, approvals_to_phase_idx, required_approval_ids')
 
 
@@ -61,7 +61,7 @@ def ParseTemplateRequest(post_data, config):
 
   admin_str = post_data.get('admin_names', '')
 
-  add_phases = post_data.get('add_phases') == 'on'
+  add_approvals = post_data.get('add_approvals') == 'on'
   phase_names = [post_data.get(phase_input, '') for phase_input in PHASE_INPUTS]
 
   required_approval_ids = []
@@ -84,7 +84,7 @@ def ParseTemplateRequest(post_data, config):
   return ParsedTemplate(
       name, members_only, summary, summary_must_be_edited, content, status,
       owner_str, labels, field_val_strs, component_paths, component_required,
-      owner_defaults_to_member, admin_str, add_phases, phase_names,
+      owner_defaults_to_member, admin_str, add_approvals, phase_names,
       approvals_to_phase_idx, required_approval_ids)
 
 
@@ -117,7 +117,7 @@ def GetTemplateInfoFromParsed(mr, services, parsed, config):
 
   phases = []
   approvals = []
-  if parsed.add_phases:
+  if parsed.add_approvals:
     phases, approvals = _GetPhasesAndApprovalsFromParsed(
         mr, parsed.phase_names, parsed.approvals_to_phase_idx,
         parsed.required_approval_ids)

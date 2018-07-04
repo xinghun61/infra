@@ -169,7 +169,7 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertFalse(page_data['initial_component_required'])
     self.assertItemsEqual(page_data['labels'], ['label1', 'label2'])
     self.assertEqual(page_data['initial_admins'], 'sport@example.com')
-    self.assertTrue(page_data['initial_add_phases'])
+    self.assertTrue(page_data['initial_add_approvals'])
     self.assertEqual(len(page_data['initial_phases']), 6)
     phases = [phase for phase in page_data['initial_phases'] if phase.name]
     self.assertEqual(len(phases), 2)
@@ -194,7 +194,7 @@ class TemplateDetailTest(unittest.TestCase):
       components=['hey, hey2,he3'],
       component_required=['on'],
       owner_defaults_to_member=['no'],
-      add_phases = ['on'],
+      add_approvals = ['on'],
       phase_0=['Canary'],
       phase_1=['Stable-Exp'],
       phase_2=['Stable'],
@@ -221,7 +221,7 @@ class TemplateDetailTest(unittest.TestCase):
         initial_admins='',
         labels=['label-One', 'label-Two'],
         fields=mox.IgnoreArg(),
-        initial_add_phases=ezt.boolean(True),
+        initial_add_approvals=ezt.boolean(True),
         initial_phases=[tracker_pb2.Phase(name=name) for
                         name in ['Canary', 'Stable-Exp', 'Stable', '', '', '']],
         approvals=mox.IgnoreArg(),
@@ -252,7 +252,7 @@ class TemplateDetailTest(unittest.TestCase):
       components=['BackEnd'],
       component_required=['on'],
       owner_defaults_to_member=['on'],
-      add_phases = ['no'],
+      add_approvals = ['no'],
       phase_0=[''],
       phase_1=[''],
       phase_2=[''],
@@ -291,7 +291,7 @@ class TemplateDetailTest(unittest.TestCase):
       components=['BackEnd'],
       component_required=['on'],
       owner_defaults_to_member=['on'],
-      add_phases = ['on'],
+      add_approvals = ['on'],
       phase_0=['Canary'],
       phase_1=['Stable'],
       phase_2=[''],

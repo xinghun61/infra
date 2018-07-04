@@ -147,7 +147,7 @@ class TemplateCreateTest(unittest.TestCase):
       components=['hey, hey2,he3'],
       component_required=['on'],
       owner_defaults_to_member=['no'],
-      add_phases = ['on'],
+      add_approvals = ['on'],
       phase_0=['Canary'],
       phase_1=['Stable-Exp'],
       phase_2=['Stable'],
@@ -174,7 +174,7 @@ class TemplateCreateTest(unittest.TestCase):
         initial_admins='',
         labels=['label-One', 'label-Two'],
         fields=mox.IgnoreArg(),
-        initial_add_phases=ezt.boolean(True),
+        initial_add_approvals=ezt.boolean(True),
         initial_phases=[tracker_pb2.Phase(name=name) for
                         name in ['Canary', 'Stable-Exp', 'Stable', '', '', '']],
         approvals=mox.IgnoreArg(),
@@ -205,7 +205,7 @@ class TemplateCreateTest(unittest.TestCase):
       custom_1=['NO'],
       component_required=['on'],
       owner_defaults_to_member=['no'],
-      add_phases = ['no'],
+      add_approvals = ['no'],
       phase_0=[''],
       phase_1=[''],
       phase_2=[''],
@@ -222,7 +222,7 @@ class TemplateCreateTest(unittest.TestCase):
     self.assertEqual(0,
         self.services.template.UpdateIssueTemplateDef.call_count)
 
-    # errors in phases should not matter if add_phases is not 'on'
+    # errors in phases should not matter if add_approvals is not 'on'
     self.assertIsNone(self.mr.errors.phase_approvals)
 
   def testProcessFormData_AcceptPhases(self):
@@ -238,7 +238,7 @@ class TemplateCreateTest(unittest.TestCase):
       custom_1=['NO'],
       component_required=['on'],
       owner_defaults_to_member=['no'],
-      add_phases = ['on'],
+      add_approvals = ['on'],
       phase_0=['Canary'],
       phase_1=['Stable'],
       phase_2=[''],

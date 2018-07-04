@@ -83,7 +83,7 @@ class TemplateHelpers(unittest.TestCase):
     self.assertEqual(parsed.component_paths, [])
     self.assertFalse(parsed.component_required)
     self.assertFalse(parsed.owner_defaults_to_member)
-    self.assertFalse(parsed.add_phases)
+    self.assertFalse(parsed.add_approvals)
     self.assertItemsEqual(parsed.phase_names, ['', '', '', '', '', ''])
     self.assertEqual(parsed.approvals_to_phase_idx, {})
     self.assertEqual(parsed.required_approval_ids, [])
@@ -106,7 +106,7 @@ class TemplateHelpers(unittest.TestCase):
         component_required=['on'],
         owner_defaults_to_memeber=['no'],
         admin_names=['jojwang@test.com, annajo@test.com'],
-        add_phases=['on'],
+        add_approvals=['on'],
         phase_0=['Canary'],
         phase_1=['Stable-Exp'],
         phase_2=['Stable'],
@@ -134,7 +134,7 @@ class TemplateHelpers(unittest.TestCase):
     self.assertEqual(parsed.component_paths, ['hey', 'hey2', 'he3'])
     self.assertTrue(parsed.component_required)
     self.assertFalse(parsed.owner_defaults_to_member)
-    self.assertTrue(parsed.add_phases)
+    self.assertTrue(parsed.add_approvals)
     self.assertEqual(parsed.admin_str, 'jojwang@test.com, annajo@test.com')
     self.assertItemsEqual(parsed.phase_names,
                           ['Canary', 'Stable-Exp', 'Stable', '', '', 'Oops'])

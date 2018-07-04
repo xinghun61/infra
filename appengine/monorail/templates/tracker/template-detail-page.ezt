@@ -160,8 +160,8 @@
      <tr>
        <th>Launch Gates:</th>
        <td colspan="7">
-         <input type="checkbox" name="add_phases" id="cb_add_phases" [if-any allow_edit][else]disabled[end] [if-any initial_add_phases]checked="checked"[end]>
-         <label for="cb_add_phases">Include Gates and Approval Tasks in issue</label>
+         <input type="checkbox" name="add_approvals" id="cb_add_approvals" [if-any allow_edit][else]disabled[end] [if-any initial_add_approvals]checked="checked"[end]>
+         <label for="cb_add_approvals">Include Gates and Approval Tasks in issue</label>
          [include "launch-gates-widget.ezt"]
          <span id="fieldnamefeedback" class="fielderror" style="margin-left:1em">
               [if-any errors.phase_approvals][errors.phase_approvals][end]
@@ -240,7 +240,7 @@ runOnLoad(function() {
       [project.cached_content_timestamp]);
     _onload();
 
-    let addPhasesCheckbox = document.getElementById('cb_add_phases');
+    let addPhasesCheckbox = document.getElementById('cb_add_approvals');
     addPhasesCheckbox.addEventListener('change', toggleGatesView);
 
     var acobElements = document.getElementsByClassName("acob");
@@ -261,7 +261,7 @@ runOnLoad(function() {
 
   toggleGatesView();
   function toggleGatesView() {
-    let addPhases = document.getElementById('cb_add_phases').checked;
+    let addPhases = document.getElementById('cb_add_approvals').checked;
     let subfieldRow = $('subfield-row');
     let phasefieldRow = $('phasefield-row');
     if (addPhases) {

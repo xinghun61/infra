@@ -109,7 +109,7 @@ class TemplateDetail(servlet.Servlet):
         'initial_component_required': template_view.component_required,
         'fields': [view for view in field_views
                    if view.field_def.type_name is not 'APPROVAL_TYPE'],
-        'initial_add_phases': ezt.boolean(template.phases),
+        'initial_add_approvals': ezt.boolean(prechecked_approvals),
         'initial_phases': initial_phases,
         'approvals': [view for view in field_views
                       if view.field_def.type_name is 'APPROVAL_TYPE'],
@@ -179,7 +179,7 @@ class TemplateDetail(servlet.Servlet):
           labels=parsed.labels,
           fields=[view for view in field_views
                   if view.field_def.type_name is not 'APPROVAL_TYPE'],
-          initial_add_phases=ezt.boolean(parsed.add_phases),
+          initial_add_approvals=ezt.boolean(parsed.add_approvals),
           initial_phases=[tracker_pb2.Phase(name=name) for name in
                           parsed.phase_names],
           approvals=[view for view in field_views
