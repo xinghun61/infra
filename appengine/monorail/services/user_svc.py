@@ -28,6 +28,7 @@ ACTIONLIMIT_TABLE_NAME = 'ActionLimit'
 DISMISSEDCUES_TABLE_NAME = 'DismissedCues'
 HOTLISTVISITHISTORY_TABLE_NAME = 'HotlistVisitHistory'
 LINKEDACCOUNT_TABLE_NAME = 'LinkedAccount'
+USERCOMMITS_TABLE_NAME = 'UserCommits'
 
 USER_COLS = [
     'user_id', 'email', 'is_site_admin', 'notify_issue_change',
@@ -166,6 +167,7 @@ class UserService(object):
     self.hotlistvisithistory_tbl = sql.SQLTableManager(
         HOTLISTVISITHISTORY_TABLE_NAME)
     self.linkedaccount_tbl = sql.SQLTableManager(LINKEDACCOUNT_TABLE_NAME)
+    self.usercommits_tbl = sql.SQLTableManager(USERCOMMITS_TABLE_NAME)
 
     # Like a dictionary {user_id: email}
     self.email_cache = caches.RamCache(cache_manager, 'user', max_size=50000)

@@ -1522,7 +1522,7 @@ ALTER TABLE AutocompleteExclusion
   ADD COLUMN ac_exclude BOOLEAN DEFAULT TRUE,
   ADD COLUMN no_expand BOOLEAN DEFAULT FALSE;
 
-==============================================================
+==================================================================
 2018-05-30: Add comment to Invalidate table
 
 ALTER TABLE Invalidate CHANGE kind
@@ -1544,3 +1544,19 @@ ALTER TABLE Template2ApprovalValue MODIFY COLUMN phase_id INT;
 2018-06-22: Add 'template' to Invalidate.kind_enum
 
 ALTER TABLE Invalidate MODIFY COLUMN kind enum('user', 'project', 'issue', 'issue_id', 'hotlist', 'comment', 'template') NOT NULL;
+
+==================================================================
+2018-07-02: Add UserCommits table to keep track of commits.
+
+CREATE TABLE UserCommits (
+  commit_sha VARCHAR(40),
+  parent_sha VARCHAR(40),
+  author_id INT UNSIGNED NOT NULL,
+  commit_time INT NOT NULL,
+  commit_message TEXT,
+  commit_repo VARCHAR(255),
+
+  PRIMARY KEY (commit_sha),
+  INDEX (author_id, commit_time),
+  INDEX (commit_time)
+) ENGINE=INNODB;

@@ -10,9 +10,7 @@ import logging
 from google.appengine.api import urlfetch
 import webapp2
 
-
 class GetCommitsCron(webapp2.RequestHandler):
-
   """Fetches commit data from Gitiles and adds it to the CloudSQL database
   """
   def get(self):
