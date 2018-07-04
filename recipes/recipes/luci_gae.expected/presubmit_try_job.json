@@ -20,13 +20,13 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--patch_root",
       "infra/go/src/go.chromium.org/gae",
       "--revision_mapping_file",
       "{\"got_revision\": \"infra/go/src/go.chromium.org/gae\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[CACHE]/git",
       "--cleanup-dir",
       "[CLEANUP]/bot_update",
       "--output_json",
@@ -39,7 +39,7 @@
       "infra/go/src/go.chromium.org/luci@origin/master"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -146,7 +146,7 @@
       "--patchset",
       "2",
       "--gerrit_url",
-      "https://chromium-review.googlesource.com",
+      "chromium-review.googlesource.com",
       "--gerrit_fetch",
       "--upstream",
       "0af4f7a7096d34672a3d020e29d0335f47b1b242",
