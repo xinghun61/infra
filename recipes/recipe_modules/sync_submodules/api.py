@@ -59,6 +59,12 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
       # Retrieve/refresh the source solution.
       self.m.gclient.use_mirror = True
       src_cfg = self.m.gclient.make_config(CACHE_DIR=git_cache)
+      # Target every OS. This enables us to check out most of the conditional
+      # dependencies in the DEPS file so they can be shown in Code Search.
+      # TODO(crbug.com/860379): Remove this once we can tell gclient to evaluate
+      # all dependencies regardless of conditions.
+      src_cfg.target_os = [
+          'android', 'chromeos', 'fuchsia', 'ios', 'unix', 'mac', 'win']
       soln = src_cfg.solutions.add()
       soln.name = solution_name
       soln.url = source
