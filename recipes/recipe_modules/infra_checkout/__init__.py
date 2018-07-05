@@ -7,10 +7,10 @@ DEPS = [
     'depot_tools/gclient',
     'depot_tools/git',
     'depot_tools/presubmit',
-    'recipe_engine/buildbucket',
+    'depot_tools/tryserver',
     'recipe_engine/context',
     'recipe_engine/file',
     'recipe_engine/path',
+    'recipe_engine/properties',
     'recipe_engine/python',
-    'recipe_engine/runtime',
 ]
