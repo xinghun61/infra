@@ -116,6 +116,10 @@ def WriteGitmodules(submods):
         logging.warning('Skipping svn url %s', url)
         continue
 
+      if sha1 and sha1.startswith('version:'):
+        logging.warning('Skipping CIPD url %s', url)
+        continue
+
       print >> fh, '[submodule "%s"]' % name
       print >> fh, '\tpath = %s' % name
       print >> fh, '\turl = %s' % url
