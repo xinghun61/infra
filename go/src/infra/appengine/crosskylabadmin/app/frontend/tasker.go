@@ -115,7 +115,7 @@ var dutStateForTask = map[fleet.TaskType]string{
 func ensureBackgroundTasksForBot(c context.Context, sc clients.SwarmingClient, req *fleet.EnsureBackgroundTasksRequest, dutID string) (*fleet.TaskerBotTasks, error) {
 	ts := make([]*fleet.TaskerTask, 0, req.TaskCount)
 	tags := []string{luciProjectTag, fleetAdminTaskTag, backgroundTaskTag(req.Type, dutID)}
-	oldTasks, err := sc.ListPendingTasks(c, tags)
+	oldTasks, err := sc.ListRecentTasks(c, tags, "PENDING", int(req.TaskCount))
 	if err != nil {
 		return nil, errors.Annotate(err, "Failed to list existing tasks of type %s for dut %s",
 			req.Type.String(), dutID).Err()

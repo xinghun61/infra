@@ -63,7 +63,7 @@ const paginationChunkSize = 100
 // Tests should use a fake.
 type SwarmingClient interface {
 	ListAliveBotsInPool(context.Context, string, strpair.Map) ([]*swarming.SwarmingRpcsBotInfo, error)
-	ListPendingTasks(c context.Context, tags []string) ([]*swarming.SwarmingRpcsTaskResult, error)
+	ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
 	ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
 	CreateTask(c context.Context, args *SwarmingCreateTaskArgs) (string, error)
 }
@@ -194,17 +194,35 @@ func (sc *swarmingClientImpl) CreateTask(c context.Context, args *SwarmingCreate
 	return resp.TaskId, nil
 }
 
-// ListPendingTasks lists tasks with the given tags that are still in the PENDING state.
-func (sc *swarmingClientImpl) ListPendingTasks(c context.Context, tags []string) ([]*swarming.SwarmingRpcsTaskResult, error) {
+// ListRecentTasks lists tasks with the given tags and in the given state.
+//
+// The most recent |limit| tasks are returned.
+// state may be left "" to skip filtering by state.
+func (sc *swarmingClientImpl) ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
+	if limit < 0 {
+		panic(fmt.Sprintf("limit set to %d which is < 0", limit))
+	}
+
 	trs := []*swarming.SwarmingRpcsTaskResult{}
-	call := sc.Tasks.List().State("PENDING").Tags(tags...)
-	for {
+	call := sc.Tasks.List().Tags(tags...)
+	if state != "" {
+		call.State(state)
+	}
+
+	// Limit() only limits the number of tasks returned in a single page. The
+	// client must keep track of the total number returned across the calls.
+	for limit > 0 {
+		chunk := paginationChunkSize
+		if limit < paginationChunkSize {
+			chunk = limit
+		}
 		ic, _ := context.WithTimeout(c, 60*time.Second)
-		resp, err := call.Context(ic).Do()
+		resp, err := call.Limit(int64(chunk)).Context(ic).Do()
 		if err != nil {
 			return nil, errors.Reason("failed to list tasks with tags %s", strings.Join(tags, " ")).InternalReason(err.Error()).Err()
 		}
 		trs = append(trs, resp.Items...)
+		limit -= len(resp.Items)
 		if resp.Cursor == "" {
 			break
 		}

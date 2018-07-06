@@ -113,19 +113,24 @@ func (fsc *fakeSwarmingClient) CreateTask(c context.Context, args *clients.Swarm
 	return tid, nil
 }
 
-func (fsc *fakeSwarmingClient) ListPendingTasks(c context.Context, tags []string) ([]*swarming.SwarmingRpcsTaskResult, error) {
+// ListRecentTasks is a simplistic implementation of SwarmingClient.ListRecentTasks.
+//
+// This function simply returns all created tasks in the requested state (default: PENDING)
+func (fsc *fakeSwarmingClient) ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error) {
 	fsc.m.Lock()
 	defer fsc.m.Unlock()
 
+	if state == "" {
+		state = "PENDING"
+	}
 	trs := []*swarming.SwarmingRpcsTaskResult{}
 	for _, ta := range fsc.taskArgs {
 		if tagsMatch(tags, ta.Tags) {
 			trs = append(trs, &swarming.SwarmingRpcsTaskResult{
-				State:  "PENDING",
+				State:  state,
 				Tags:   tags,
 				TaskId: fsc.taskIDs[ta],
 			})
-
 		}
 	}
 	return trs, nil
