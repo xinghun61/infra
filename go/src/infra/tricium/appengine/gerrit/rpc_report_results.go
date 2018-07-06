@@ -42,7 +42,7 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 	if err := ds.Get(c, request); err != nil {
 		return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %d): %v", req.RunId, err)
 	}
-	var comments []*track.Comment
+	var includedComments []*track.Comment
 	err := parallel.FanOutIn(func(taskC chan<- func() error) {
 
 		// Get comments.
@@ -50,8 +50,8 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 			requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 			runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
 			analyzerKey := ds.NewKey(c, "FunctionRun", req.Analyzer, 0, runKey)
-			var comms []*track.Comment
-			if err := ds.GetAll(c, ds.NewQuery("Comment").Ancestor(analyzerKey), &comms); err != nil {
+			var fetchedComments []*track.Comment
+			if err := ds.GetAll(c, ds.NewQuery("Comment").Ancestor(analyzerKey), &fetchedComments); err != nil {
 				return fmt.Errorf("failed to retrieve comments: %v", err)
 			}
 
@@ -62,7 +62,7 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 				return fmt.Errorf("failed to get changed lines: %v", err)
 			}
 			// Only include selected comments.
-			for _, comment := range comms {
+			for _, comment := range fetchedComments {
 				var data tricium.Data_Comment
 				if comment.Comment != nil {
 					if err := jsonpb.UnmarshalString(string(comment.Comment), &data); err != nil {
@@ -88,12 +88,12 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 					}
 				}
 				commentKey := ds.KeyForObj(c, comment)
-				cr := &track.CommentSelection{ID: 1, Parent: commentKey}
-				if err := ds.Get(c, cr); err != nil {
+				selection := &track.CommentSelection{ID: 1, Parent: commentKey}
+				if err := ds.Get(c, selection); err != nil {
 					return fmt.Errorf("failed to get CommentSelection: %v", err)
 				}
-				if cr.Included {
-					comments = append(comments, comment)
+				if selection.Included {
+					includedComments = append(includedComments, comment)
 				}
 			}
 			return nil
@@ -106,15 +106,15 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 		logging.Infof(c, "Gerrit reporting disabled, not reporting results (run ID: %s, project: %s)", req.RunId, request.Project)
 		return nil
 	}
-	if len(comments) > maxComments {
-		logging.Infof(c, "Too many comments (%d), not reporting results (run ID: %s)", len(comments), req.RunId)
+	if len(includedComments) > maxComments {
+		logging.Infof(c, "Too many comments (%d), not reporting results (run ID: %s)", len(includedComments), req.RunId)
 		return nil
 	}
-	if len(comments) == 0 {
+	if len(includedComments) == 0 {
 		logging.Infof(c, "No comments to report.")
 		return nil
 	}
-	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GitRef, req.RunId, comments)
+	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GitRef, req.RunId, includedComments)
 }
 
 func isInChangedLines(start, end int, changedLines []int) bool {
