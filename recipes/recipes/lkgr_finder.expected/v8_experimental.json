@@ -120,6 +120,21 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/builder/lw"
+    ],
+    "infra_step": true,
+    "name": "mkdirs builder/lw"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "[CACHE]/builder/infra/run.py",
       "infra.services.lkgr_finder",
       "--project=v8",
@@ -128,6 +143,8 @@
       "97ab2f7d6e7bab812309e05884bdeeaef11962f7",
       "--write-to-file",
       "/path/to/tmp/",
+      "--workdir",
+      "[CACHE]/builder/lw",
       "--allowed-lag=4",
       "--html",
       "/path/to/tmp/"

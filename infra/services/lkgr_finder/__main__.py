@@ -129,6 +129,11 @@ def ParseArgs(argv):
                       help='Project for which to calculate the LKGR.Currently '
                            'accepted projects are those with a <project>.cfg '
                            'file in this directory.')
+  parser.add_argument('--workdir',
+                      default=os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)),
+                        'workdir'),
+                      help='Path to workdir where to do a checkout.')
   parser.add_argument('--force', action='store_true',
                       help='Force updating the lkgr to the found (or manually '
                            'specified) value. Skips checking for validity '
@@ -164,8 +169,7 @@ def main(argv):
 
   repo = lkgr_lib.GitWrapper(
       config['source_url'],
-      os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                   'workdir', args.project))
+      os.path.join(args.workdir, args.project))
 
   monkeypatch_rev_map = config.get('monkeypatch_rev_map')
   if monkeypatch_rev_map:

@@ -6,8 +6,6 @@ from recipe_engine.recipe_api import Property
 from recipe_engine.types import freeze
 
 DEPS = [
-  'build/v8',
-  'build/webrtc',
   'build/chromium_checkout',
   'depot_tools/bot_update',
   'depot_tools/gclient',
@@ -15,6 +13,7 @@ DEPS = [
   'depot_tools/gitiles',
   'depot_tools/gsutil',
   'recipe_engine/context',
+  'recipe_engine/file',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
@@ -77,12 +76,14 @@ def RunSteps(api, buildername):
   current_lkgr = api.gitiles.commit_log(
       repo, ref, step_name='read lkgr from ref')['commit']
 
+  api.file.ensure_directory('mkdirs builder/lw', checkout_dir.join('lw'))
   args = [
     'infra.services.lkgr_finder',
     '--project=%s' % botconfig['project'],
     '--verbose',
     '--read-from-file', api.raw_io.input_text(current_lkgr),
     '--write-to-file', api.raw_io.output_text(name='lkgr_hash'),
+    '--workdir', checkout_dir.join('lw'),
   ]
   if not api.runtime.is_experimental:
     args.append('--email-errors')
@@ -133,11 +134,15 @@ def RunSteps(api, buildername):
 
   # We check out regularly, not only on lkgr update, to catch infra failures
   # on check-out early.
+  # TODO(machenbach,tandrii): re-use checkout that the lkgr_finder tool has
+  # already made inside its own workdir. Furthermore, one can execute git push
+  # command even without having full checkout.
   api.git.checkout(
       url=repo,
       dir_path=checkout_dir.join('workdir'),
       submodules=False,
       submodule_update_recursive=False,
+      # For some reason, git cache doesn't make this faster crbug.com/860112.
       use_git_cache=True,
   )
 
