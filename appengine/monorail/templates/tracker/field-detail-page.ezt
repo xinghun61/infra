@@ -262,7 +262,9 @@
     <tr>
       <th>Parent Approval:</th>
       <td>
-        [field_def.parent_approval_name]
+        <a href="/p/[projectname]/fields/detail?field=[field_def.parent_approval_name]">
+          [field_def.parent_approval_name]
+        </a>
       </td>
     </tr>
   [end]
@@ -327,6 +329,7 @@ runOnLoad(function() {
     $("deletefield").addEventListener("click", function(event) {
         var msg = ("Are you sure you want to delete [field_def.field_name]?\n" +
                    "This operation cannot be undone. " +
+                   "[if-any approval_subfields]\nAll subfields will also be deleted.[end]" +
                    "[is field_def.type_name "ENUM_TYPE"]\nEnum values will be retained on issues as labels.[end]");
         if (!confirm(msg))
           event.preventDefault();
