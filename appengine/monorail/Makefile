@@ -35,6 +35,8 @@ help:
 	@sed -n '/^[a-zA-Z0-9_.]*:/s/:.*//p' <Makefile
 
 prpc_proto:
+	touch ../../ENV/lib/python2.7/site-packages/google/__init__.py
+	PYTHONPATH=../../ENV/lib/python2.7/site-packages \
 	PATH=../../luci/appengine/components/tools:$(PATH) \
 	../../cipd/protoc \
 	--python_out=. --prpc-python_out=. api/api_proto/*.proto
