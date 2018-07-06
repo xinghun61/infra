@@ -40,6 +40,7 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
   }
 
   cancel() {
+    this.$.metadataForm.reset();
     this.$.editMetadata.close();
   }
 

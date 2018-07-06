@@ -44,6 +44,10 @@ class MrEditMetadata extends Polymer.Element {
     };
   }
 
+  reset() {
+    this.$.editForm.reset();
+  }
+
   getData() {
     const result = {
       status: this.$.statusInput.value,

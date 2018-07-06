@@ -114,7 +114,10 @@
       ></mr-metadata>
       <mr-survey survey="[[_survey]]"></mr-survey>
       <h3>Approval comments / Changelog</h3>
-      <mr-compact-comments comments="[[_comments]]"></mr-compact-comments>
+      <mr-compact-comments
+        comments="[[_comments]]"
+        on-submit-comment="[[_onSubmitComment]]"
+      ></mr-compact-comments>
     </iron-collapse>
     <chops-dialog id="editApproval" aria-labelledby="approvalDialogTitle">
       <h3 id="approvalDialogTitle">

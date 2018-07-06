@@ -22,6 +22,7 @@ class MrCompactComments extends Polymer.Element {
         type: Array,
         value: [],
       },
+      onSubmitComment: Function,
       user: {
         type: String,
         value: 'you@google.com',
@@ -60,13 +61,9 @@ class MrCompactComments extends Polymer.Element {
   }
 
   _submitComment() {
-    this.push('comments', {
-      user: this.user,
-      diffs: [],
-      content: this._newCommentText,
-      date: new Date(),
-    });
-
+    if (this.onSubmitComment) {
+      this.onSubmitComment(this._newCommentText);
+    }
     this.$.commentText.value = '';
   }
 

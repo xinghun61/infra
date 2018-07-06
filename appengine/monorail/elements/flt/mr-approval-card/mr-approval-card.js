@@ -135,6 +135,12 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: String,
         computed: '_computeStatusIcon(class)',
       },
+      _onSubmitComment: {
+        type: Function,
+        value: function() {
+          return this._submitCommentHandler.bind(this);
+        },
+      },
     };
   }
 
@@ -143,14 +149,33 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   }
 
   cancel() {
+    this.$.metadataForm.reset();
     this.$.editApproval.close();
   }
 
   save() {
     const data = this.$.metadataForm.getData();
 
-    // TODO(zhangtiff): Compute a diff with current data and only send a
-    // request if the data actually changed.
+    if (data.comment || data.status !== this._status) {
+      const delta = {
+        status: TEXT_TO_STATUS_ENUM[data.status],
+      };
+
+      this._updateApproval(data.comment, delta);
+    }
+
+    this.cancel();
+  }
+
+  toggleCard(evt) {
+    this.opened = !this.opened;
+  }
+
+  _submitCommentHandler(comment) {
+    this._updateApproval(comment);
+  }
+
+  _updateApproval(commentData, delta) {
     const message = {
       trace: {token: this.token},
       issue_ref: {
@@ -161,11 +186,12 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: 'APPROVAL_TYPE',
         field_name: this.fieldName,
       },
-      approval_delta: {
-        status: TEXT_TO_STATUS_ENUM[data.status],
-      },
-      comment_content: data.comment || '',
+      comment_content: commentData || '',
     };
+
+    if (delta) {
+      message.approval_delta = delta;
+    }
 
     this.dispatch({type: actionType.UPDATE_APPROVAL_START});
 
@@ -182,12 +208,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         error: error,
       });
     });
-
-    this.cancel();
-  }
-
-  toggleCard(evt) {
-    this.opened = !this.opened;
   }
 
   _computeClass(status) {
