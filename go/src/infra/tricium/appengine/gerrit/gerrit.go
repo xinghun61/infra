@@ -102,6 +102,8 @@ func (gerritServer) QueryChanges(c context.Context, host, project string, lastTi
 		"Content-Disposition": "application/json",
 		"Content-Type":        "application/json",
 	})
+	// Remove the magic Gerrit JSONP prefix.
+	body = bytes.TrimPrefix(body, []byte(")]}'\n"))
 	if err != nil {
 		return changes, false, err
 	}
@@ -182,12 +184,7 @@ func fetchResponse(c context.Context, url string, headerSettings map[string]stri
 		return nil, err
 	}
 	// Read and convert response.
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	// Remove the magic Gerrit prefix.
-	return bytes.TrimPrefix(body, []byte(")]}'\n")), nil
+	return ioutil.ReadAll(resp.Body)
 }
 
 // createRobotComment creates a Gerrit robot comment from a Tricium comment.
