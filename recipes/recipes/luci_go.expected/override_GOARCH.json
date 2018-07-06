@@ -20,19 +20,15 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--patch_root",
       "infra/go/src/go.chromium.org/luci",
       "--revision_mapping_file",
       "{\"got_revision\": \"infra/go/src/go.chromium.org/luci\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[CACHE]/git",
       "--cleanup-dir",
       "[CLEANUP]/bot_update",
-      "--gerrit_repo",
-      "https://chromium.googlesource.com/chromium/src",
-      "--gerrit_ref",
-      "refs/changes/89/456789/12",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -41,7 +37,7 @@
       "infra/go/src/go.chromium.org/luci@origin/master"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]

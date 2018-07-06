@@ -20,13 +20,13 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--patch_root",
       "infra/go/src/go.chromium.org/gae",
       "--revision_mapping_file",
       "{\"got_revision\": \"infra/go/src/go.chromium.org/gae\"}",
       "--git-cache-dir",
-      "[GIT_CACHE]",
+      "[CACHE]/git",
       "--cleanup-dir",
       "[CLEANUP]/bot_update",
       "--output_json",
@@ -34,12 +34,12 @@
       "--revision",
       "infra@origin/master",
       "--revision",
-      "infra/go/src/go.chromium.org/gae@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
+      "infra/go/src/go.chromium.org/gae@1111111111111111111111111111111111111111",
       "--revision",
       "infra/go/src/go.chromium.org/luci@origin/master"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
       ]
@@ -52,7 +52,7 @@
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"infra\": \"origin/master\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/gae\": \"c14d891d44f0afff64e56ed7c9702df1d807b1ee\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/gae\": \"1111111111111111111111111111111111111111\", @@@",
       "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/luci\": \"origin/master\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",

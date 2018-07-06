@@ -5,12 +5,12 @@
 DEPS = [
     'depot_tools/tryserver',
     'infra_checkout',
+    'recipe_engine/buildbucket',
     'recipe_engine/context',
     'recipe_engine/json',
     'recipe_engine/platform',
-    'recipe_engine/properties',
     'recipe_engine/python',
-    'recipe_engine/step',
+    'recipe_engine/runtime',
 ]
 
 
@@ -32,7 +32,7 @@ def RunSteps(api):
         print '\n'.join(os.listdir('./'))
     ''')
 
-  if 'presubmit' in api.properties.get('buildername', '').lower():
+  if 'presubmit' in api.buildbucket.builder_id.builder.lower():
     with api.tryserver.set_failure_hash():
       co.run_presubmit_in_go_env()
 
@@ -42,15 +42,15 @@ def GenTests(api):
     yield (
         api.test(plat) +
         api.platform(plat, 64) +
-        api.properties(path_config='generic'))
+        api.runtime(is_luci=True, is_experimental=False) +
+        api.buildbucket.ci_build('infra', 'ci')
+    )
 
-  yield (api.test('presubmit') +
-         api.platform('linux', 64) +
-         api.properties(
-           path_config='generic',
-           buildername='presubmit',
-           patch_gerrit_url='https://chromium-review.googlesource.com',
-           patch_issue=607472,
-           patch_set=2,
-         ) +
-         api.step_data('presubmit', api.json.output([[]])))
+  yield (
+      api.test('presubmit') +
+      api.platform('linux', 64) +
+      api.runtime(is_luci=True, is_experimental=False) +
+      api.buildbucket.try_build(
+          'infra', 'try', 'presubmit', change_number=607472, patch_set=2) +
+      api.step_data('presubmit', api.json.output([[]]))
+  )
