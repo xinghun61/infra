@@ -29,7 +29,7 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*adm
 		return nil, err
 	}
 	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to trigger worker: %v", err)
+		return nil, grpc.Errorf(codes.Internal, "failed to collect: %v", err)
 	}
 	return &admin.CollectResponse{}, nil
 }
@@ -44,15 +44,34 @@ func validateCollectRequest(req *admin.CollectRequest) error {
 	return nil
 }
 
-func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCacheAPI, sw common.SwarmingAPI, isolator common.IsolateAPI) error {
+func collect(c context.Context, req *admin.CollectRequest,
+	wp config.WorkflowCacheAPI, sw common.SwarmingAPI, isolator common.IsolateAPI) error {
 	wf, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}
-	isolatedOutput, exitCode, err := sw.Collect(c, wf.SwarmingServer, req.TaskId)
+	taskResult, err := sw.Collect(c, wf.SwarmingServer, req.TaskId)
 	if err != nil {
-		return fmt.Errorf("failed to collect swarming task result: %v", err)
+		return fmt.Errorf("failed to collect task: %v", err)
 	}
+
+	if taskResult.State == "PENDING" || taskResult.State == "RUNNING" {
+		if err = enqueueCollectRequest(c, req); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	isolatedOutput := ""
+	if taskResult.OutputsRef == nil || taskResult.OutputsRef.Isolated == "" {
+		logging.Fields{
+			"task ID":    req.TaskId,
+			"task state": taskResult.State,
+		}.Warningf(c, "Task had no output.")
+	} else {
+		isolatedOutput = taskResult.OutputsRef.Isolated
+	}
+
 	w, err := wf.GetWorker(req.Worker)
 	if err != nil {
 		return fmt.Errorf("failed to get worker output type: %v", err)
@@ -60,7 +79,11 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCac
 
 	// Worker state.
 	workerState := tricium.State_SUCCESS
-	if exitCode != 0 {
+	if taskResult.ExitCode != 0 {
+		logging.Fields{
+			"exit code": taskResult.ExitCode,
+			"task ID":   req.TaskId,
+		}.Infof(c, "Swarming task failed.")
 		workerState = tricium.State_FAILURE
 	}
 
@@ -83,7 +106,11 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCac
 
 	// Abort here if worker failed and mark descendants as failures.
 	if workerState == tricium.State_FAILURE {
-		logging.Warningf(c, "Execution of worker failed, exit code: %d, worker: %s, run ID: %s", exitCode, req.Worker, req.RunId)
+		logging.Fields{
+			"exit code": taskResult.ExitCode,
+			"worker":    req.Worker,
+			"run ID":    req.RunId,
+		}.Warningf(c, "Execution of worker failed.")
 		var tasks []*tq.Task
 		for _, worker := range wf.GetWithDescendants(req.Worker) {
 			if worker == req.Worker {
@@ -110,7 +137,8 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCac
 
 	// Create layered isolated input, include the input in the collect request and
 	// massage the isolated output into new isolated input.
-	isolatedInput, err := isolator.LayerIsolates(c, wf.IsolateServer, req.IsolatedInputHash, isolatedOutput)
+	isolatedInput, err := isolator.LayerIsolates(
+		c, wf.IsolateServer, req.IsolatedInputHash, isolatedOutput)
 	if err != nil {
 		return fmt.Errorf("failed layer isolates: %v", err)
 	}

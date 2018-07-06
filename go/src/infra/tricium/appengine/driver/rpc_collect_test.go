@@ -9,6 +9,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/api/swarming/swarming/v1"
 
 	"golang.org/x/net/context"
 
@@ -17,14 +18,16 @@ import (
 	"infra/tricium/appengine/common/triciumtest"
 )
 
-type mockSwarmingFailure struct {
+// Mock Swarming API that returns a canned task result.
+type mockSwarming struct {
+	Result *swarming.SwarmingRpcsTaskResult
 }
 
-func (mockSwarmingFailure) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error) {
-	return "mockmockmock", nil
+func (mockSwarming) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error) {
+	return "mocktaskid", nil
 }
-func (mockSwarmingFailure) Collect(c context.Context, serverURL string, taskID string) (string, int64, error) {
-	return "", 1, nil
+func (m mockSwarming) Collect(c context.Context, serverURL string, taskID string) (*swarming.SwarmingRpcsTaskResult, error) {
+	return m.Result, nil
 }
 
 func TestCollectRequest(t *testing.T) {
@@ -52,7 +55,15 @@ func TestCollectRequest(t *testing.T) {
 			err := collect(ctx, &admin.CollectRequest{
 				RunId:  runID,
 				Worker: "World",
-			}, mockWorkflowProvider{}, &mockSwarmingFailure{}, common.MockIsolator)
+			}, mockWorkflowProvider{}, mockSwarming{
+				Result: &swarming.SwarmingRpcsTaskResult{
+					State: "COMPLETED",
+					OutputsRef: &swarming.SwarmingRpcsFilesRef{
+						Isolated: "mockisolatedoutput",
+					},
+					ExitCode: 1,
+				},
+			}, common.MockIsolator)
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track requests", func() {
@@ -77,6 +88,22 @@ func TestCollectRequest(t *testing.T) {
 
 			Convey("Enqueues no driver request", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 0)
+			})
+
+			Convey("Driver collect request for incomplete worker without successors", func() {
+				err := collect(ctx, &admin.CollectRequest{
+					RunId:  runID,
+					Worker: "Hello",
+				}, mockWorkflowProvider{}, mockSwarming{
+					Result: &swarming.SwarmingRpcsTaskResult{
+						State: "PENDING",
+					},
+				}, common.MockIsolator)
+				So(err, ShouldBeNil)
+
+				Convey("Re-enqueues the a driver (collect) request", func() {
+					So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 1)
+				})
 			})
 		})
 	})

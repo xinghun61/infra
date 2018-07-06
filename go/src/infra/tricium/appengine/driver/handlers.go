@@ -187,12 +187,21 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 		return nil
 	}
 	// Enqueue collect request.
-	b, err := proto.Marshal(&admin.CollectRequest{
+	err = enqueueCollectRequest(c, &admin.CollectRequest{
 		RunId:             tr.RunId,
 		IsolatedInputHash: tr.IsolatedInputHash,
 		Worker:            tr.Worker,
 		TaskId:            taskID,
 	})
+	if err != nil {
+		return err
+	}
+	logging.Infof(c, "[driver] Enqueued collect request, runID: %d, worker: %s", tr.RunId, tr.Worker)
+	return nil
+}
+
+func enqueueCollectRequest(c context.Context, request *admin.CollectRequest) error {
+	b, err := proto.Marshal(request)
 	if err != nil {
 		return fmt.Errorf("failed to marshal collect request: %v", err)
 	}
@@ -201,7 +210,6 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 	if err := tq.Add(c, common.DriverQueue, t); err != nil {
 		return fmt.Errorf("failed to enqueue collect request: %v", err)
 	}
-	logging.Infof(c, "[driver] Enqueued collect request, runID: %d, worker: %s", tr.RunId, tr.Worker)
 	return nil
 }
 
