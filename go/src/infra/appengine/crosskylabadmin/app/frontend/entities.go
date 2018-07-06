@@ -14,6 +14,13 @@
 
 package frontend
 
+import (
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+
+	"github.com/golang/protobuf/proto"
+	"go.chromium.org/luci/common/errors"
+)
+
 // botSummaryKind is the datastore entity kind for fleetBotSummaryEntity.
 const botSummaryKind = "fleetBotSummary"
 
@@ -33,4 +40,12 @@ type fleetBotSummaryEntity struct {
 	BotID string
 	// Data is the fleet.BotSummary object serialized to protobuf binary format.
 	Data []byte `gae:",noindex"`
+}
+
+func (bse *fleetBotSummaryEntity) Decode() (*fleet.BotSummary, error) {
+	bs := &fleet.BotSummary{}
+	if err := proto.Unmarshal(bse.Data, bs); err != nil {
+		return nil, errors.Annotate(err, "failed to unmarshal bot summary for bot with dut_id %q", bse.DutID).Err()
+	}
+	return bs, nil
 }

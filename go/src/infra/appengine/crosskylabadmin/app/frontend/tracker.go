@@ -17,7 +17,6 @@ package frontend
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -25,7 +24,6 @@ import (
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
@@ -82,8 +80,8 @@ func (tsi *TrackerServerImpl) SummarizeBots(c context.Context, req *fleet.Summar
 	}
 	bss := make([]*fleet.BotSummary, 0, len(bses))
 	for _, bse := range bses {
-		bs := &fleet.BotSummary{}
-		if err := proto.Unmarshal(bse.Data, bs); err != nil {
+		bs, err := bse.Decode()
+		if err != nil {
 			return nil, errors.Annotate(err, "failed to unmarshal bot summary for bot with dut_id %q", bse.DutID).Err()
 		}
 		bss = append(bss, bs)
@@ -184,43 +182,27 @@ func setIdleDuration(c context.Context, sc clients.SwarmingClient, bsm map[strin
 			bid := bid
 			bs := bsm[bid]
 			workC <- func() error {
-				trs, err := sc.ListSortedRecentTasksForBot(c, bid, 1)
+				idle, err := getIdleDuration(c, sc, bid)
 				if err != nil {
-					return errors.Annotate(err, "failed to list recent tasks for dut %s", bs.DutId).Err()
+					return err
 				}
-				if len(trs) == 0 {
-					return nil
-				}
-
-				tr := trs[0]
-				switch tr.State {
-				case "RUNNING":
-					bs.IdleDuration = &duration.Duration{
-						Seconds: 0,
-						Nanos:   0,
-					}
-				case "COMPLETED":
-					fallthrough
-				case "KILLED":
-					ts, err := time.Parse(clients.SwarmingTimeLayout, tr.CompletedTs)
-					if err != nil {
-						return errors.Annotate(err, "swarming returned corrupted completed timestamp").Err()
-					}
-					bs.IdleDuration = google.NewDuration(time.Now().Sub(ts))
-				case "TIMED_OUT":
-					ts, err := time.Parse(clients.SwarmingTimeLayout, tr.AbandonedTs)
-					if err != nil {
-						return errors.Annotate(err, "swarming returned corrupted abandoned timestamp").Err()
-					}
-					bs.IdleDuration = google.NewDuration(time.Now().Sub(ts))
-				default:
-					// Other states - BOT_DIED, CANCELED, EXPIRED, NO_RESOURCE and PENDING - do not indicate
-					// any actual run of a task on the dut.
-				}
+				bs.IdleDuration = idle
 				return nil
 			}
 		}
 	})
+}
+
+// getIdleDuration queries swarming for the duration since last task on the bot.
+func getIdleDuration(c context.Context, sc clients.SwarmingClient, botID string) (*duration.Duration, error) {
+	trs, err := sc.ListSortedRecentTasksForBot(c, botID, 1)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to list recent tasks for bot %s", botID).Err()
+	}
+	if len(trs) == 0 {
+		return nil, nil
+	}
+	return clients.TimeSinceBotTask(trs[0])
 }
 
 // insertBotSummary returns the dut_ids of bots inserted.

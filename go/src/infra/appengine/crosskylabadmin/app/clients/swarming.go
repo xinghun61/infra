@@ -27,9 +27,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/duration"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"
 )
@@ -211,7 +213,7 @@ func (sc *swarmingClientImpl) ListRecentTasks(c context.Context, tags []string, 
 
 	// Limit() only limits the number of tasks returned in a single page. The
 	// client must keep track of the total number returned across the calls.
-	for limit > 0 {
+	for {
 		chunk := paginationChunkSize
 		if limit < paginationChunkSize {
 			chunk = limit
@@ -222,7 +224,6 @@ func (sc *swarmingClientImpl) ListRecentTasks(c context.Context, tags []string, 
 			return nil, errors.Reason("failed to list tasks with tags %s", strings.Join(tags, " ")).InternalReason(err.Error()).Err()
 		}
 		trs = append(trs, resp.Items...)
-		limit -= len(resp.Items)
 		if resp.Cursor == "" {
 			break
 		}
@@ -260,4 +261,33 @@ func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(c context.Context, bot
 		call = call.Cursor(resp.Cursor)
 	}
 	return trs, nil
+}
+
+// TimeSinceBotTask returns the duration.Duration elapsed since the given task completed on a bot.
+//
+// This function only considers tasks that were executed by Swarming to a specific bot. For tasks
+// that were never executed on a bot, this function returns nil duration.
+func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, error) {
+	switch tr.State {
+	case "RUNNING":
+		return &duration.Duration{}, nil
+	case "COMPLETED":
+		fallthrough
+	case "KILLED":
+		ts, err := time.Parse(SwarmingTimeLayout, tr.CompletedTs)
+		if err != nil {
+			return nil, errors.Annotate(err, "swarming returned corrupted completed timestamp").Err()
+		}
+		return google.NewDuration(time.Now().Sub(ts)), nil
+	case "TIMED_OUT":
+		ts, err := time.Parse(SwarmingTimeLayout, tr.AbandonedTs)
+		if err != nil {
+			return nil, errors.Annotate(err, "swarming returned corrupted abandoned timestamp").Err()
+		}
+		return google.NewDuration(time.Now().Sub(ts)), nil
+	default:
+		// Other states - BOT_DIED, CANCELED, EXPIRED, NO_RESOURCE and PENDING - do not indicate
+		// any actual run of a task on the dut.
+	}
+	return nil, nil
 }

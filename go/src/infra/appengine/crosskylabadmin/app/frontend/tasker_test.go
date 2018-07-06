@@ -18,10 +18,13 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/proto/google"
 	"golang.org/x/net/context"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
@@ -29,6 +32,7 @@ import (
 )
 
 func TestEnsureBackgroundTasks(t *testing.T) {
+	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
 		datastore.GetTestable(c).Consistent(true)
@@ -190,31 +194,212 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 	})
 }
 
-func TestTaskerDummy(t *testing.T) {
+func TestTriggerRepairOnIdle(t *testing.T) {
 	t.Parallel()
 	Convey("In testing context", t, FailureHalts, func() {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
 		datastore.GetTestable(c).Consistent(true)
-		fsc := &fakeSwarmingClient{
+		fakeSwarming := &fakeSwarmingClient{
 			pool:    swarmingBotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
-		server := TaskerServerImpl{
-			clients.SwarmingFactory{
-				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-					return fsc, nil
-				},
+		sf := clients.SwarmingFactory{
+			SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
+				return fakeSwarming, nil
 			},
 		}
+		tasker := TaskerServerImpl{sf}
+		tracker := TrackerServerImpl{sf}
 
-		Convey("TriggerRepairOnIdle returns internal error", func() {
-			_, err := server.TriggerRepairOnIdle(c, nil)
-			So(err, ShouldNotBeNil)
+		Convey("with one known bot", func() {
+			setKnownBots(c, fakeSwarming, []string{"dut_1"})
+
+			Reset(func() {
+				fakeSwarming.ResetTasks()
+			})
+
+			Convey("TriggerRepairOnIdle triggers a task for the dut", func() {
+				resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+					Selectors:    []*fleet.BotSelector{},
+					IdleDuration: google.NewDuration(4),
+					Priority:     20,
+				})
+				So(err, ShouldBeNil)
+				So(resp.BotTasks, ShouldHaveLength, 1)
+				botTask := resp.BotTasks[0]
+				So(botTask.DutId, ShouldEqual, "dut_1")
+				So(botTask.Tasks, ShouldHaveLength, 1)
+				taskURL := botTask.Tasks[0].TaskUrl
+
+				Convey("second TriggerRepairOnIdle returns the already scheduled task", func() {
+					resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+						Selectors:    []*fleet.BotSelector{},
+						IdleDuration: google.NewDuration(4),
+						Priority:     20,
+					})
+					So(err, ShouldBeNil)
+					So(resp.BotTasks, ShouldHaveLength, 1)
+					botTask := resp.BotTasks[0]
+					So(botTask.DutId, ShouldEqual, "dut_1")
+					So(botTask.Tasks, ShouldHaveLength, 1)
+					So(botTask.Tasks[0].TaskUrl, ShouldEqual, taskURL)
+				})
+			})
+
+			Convey("and one task in the long past", func() {
+				fakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
+					{
+						State:       "COMPLETED",
+						CompletedTs: "2016-01-02T10:04:05.999999999",
+					},
+				}
+				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				So(err, ShouldBeNil)
+
+				Convey("TriggerRepairOnIdle triggers a task for the dut", func() {
+					resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+						Selectors:    []*fleet.BotSelector{},
+						IdleDuration: google.NewDuration(4),
+						Priority:     20,
+					})
+					So(err, ShouldBeNil)
+					So(resp.BotTasks, ShouldHaveLength, 1)
+					botTask := resp.BotTasks[0]
+					So(botTask.DutId, ShouldEqual, "dut_1")
+					So(botTask.Tasks, ShouldHaveLength, 1)
+				})
+			})
+
+			Convey("and one task in recent past", func() {
+				yyyy, mm, dd := time.Now().Date()
+				fakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
+					{
+						State:       "COMPLETED",
+						CompletedTs: fmt.Sprintf("%04d-%02d-%02dT00:00:00.00000000", yyyy, mm, dd),
+					},
+				}
+				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				So(err, ShouldBeNil)
+
+				Convey("TriggerRepairOnIdle does not trigger a task", func() {
+					resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+						Selectors:    []*fleet.BotSelector{},
+						IdleDuration: google.NewDuration(4 * 24 * time.Hour),
+						Priority:     20,
+					})
+					So(err, ShouldBeNil)
+					So(resp.BotTasks, ShouldHaveLength, 1)
+					botTask := resp.BotTasks[0]
+					So(botTask.Tasks, ShouldHaveLength, 0)
+				})
+			})
+
+			Convey("and one running task", func() {
+				fakeSwarming.botTasks["bot_dut_1"] = []*swarming.SwarmingRpcsTaskResult{
+					{
+						State: "RUNNING",
+					},
+				}
+				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				So(err, ShouldBeNil)
+
+				Convey("TriggerRepairOnIdle does not trigger a task", func() {
+					resp, err := tasker.TriggerRepairOnIdle(c, &fleet.TriggerRepairOnIdleRequest{
+						Selectors:    []*fleet.BotSelector{},
+						IdleDuration: google.NewDuration(4 * 24 * time.Hour),
+						Priority:     20,
+					})
+					So(err, ShouldBeNil)
+					So(resp.BotTasks, ShouldHaveLength, 1)
+					botTask := resp.BotTasks[0]
+					So(botTask.Tasks, ShouldHaveLength, 0)
+				})
+			})
+		})
+	})
+}
+
+func TestTriggerRepairOnRepairFailed(t *testing.T) {
+	t.Parallel()
+	Convey("In testing context", t, FailureHalts, func() {
+		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
+		datastore.GetTestable(c).Consistent(true)
+		fakeSwarming := &fakeSwarmingClient{
+			pool:    swarmingBotPool,
+			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
+		}
+		sf := clients.SwarmingFactory{
+			SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
+				return fakeSwarming, nil
+			},
+		}
+		tracker := TrackerServerImpl{sf}
+		tasker := TaskerServerImpl{sf}
+
+		Convey("with one known bot in state ready", func() {
+			setKnownBots(c, fakeSwarming, []string{"dut_1"})
+
+			Convey("TriggerRepairOnRepairFailed does not trigger a task for the dut", func() {
+				resp, err := tasker.TriggerRepairOnRepairFailed(c, &fleet.TriggerRepairOnRepairFailedRequest{
+					Selectors:           []*fleet.BotSelector{},
+					TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
+					Priority:            20,
+				})
+				So(err, ShouldBeNil)
+				So(resp.BotTasks, ShouldHaveLength, 1)
+				botTask := resp.BotTasks[0]
+				So(botTask.Tasks, ShouldHaveLength, 0)
+			})
 		})
 
-		Convey("TriggerRepairOnRepairFailed returns internal error", func() {
-			_, err := server.TriggerRepairOnRepairFailed(c, nil)
-			So(err, ShouldNotBeNil)
+		Convey("with one known bot in state repair_failed", func() {
+			fakeSwarming.botInfos = map[string]*swarming.SwarmingRpcsBotInfo{
+				"bot_dut_1": {
+					BotId: "bot_dut_1",
+					Dimensions: []*swarming.SwarmingRpcsStringListPair{
+						{
+							Key:   "dut_id",
+							Value: []string{"dut_1"},
+						},
+						{
+							Key:   "dut_state",
+							Value: []string{"repair_failed"},
+						},
+					},
+				},
+			}
+			_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
+			So(err, ShouldBeNil)
+
+			Convey("TriggerRepairOnRepairFailed triggers a task for the dut", func() {
+				resp, err := tasker.TriggerRepairOnRepairFailed(c, &fleet.TriggerRepairOnRepairFailedRequest{
+					Selectors:           []*fleet.BotSelector{},
+					TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
+					Priority:            20,
+				})
+				So(err, ShouldBeNil)
+				So(resp.BotTasks, ShouldHaveLength, 1)
+				botTask := resp.BotTasks[0]
+				So(botTask.Tasks, ShouldHaveLength, 1)
+				taskURL := botTask.Tasks[0].TaskUrl
+
+				Convey("another TriggerRepairOnRepairFailed returns the same task", func() {
+					resp, err := tasker.TriggerRepairOnRepairFailed(c, &fleet.TriggerRepairOnRepairFailedRequest{
+						Selectors:           []*fleet.BotSelector{},
+						TimeSinceLastRepair: google.NewDuration(24 * time.Hour),
+						Priority:            20,
+					})
+					So(err, ShouldBeNil)
+					So(resp.BotTasks, ShouldHaveLength, 1)
+					botTask := resp.BotTasks[0]
+					So(botTask.Tasks, ShouldHaveLength, 1)
+					So(botTask.Tasks[0].TaskUrl, ShouldEqual, taskURL)
+				})
+
+				// TODO(pprabhu) Add a case where the intial repair task has completed,
+				// but is within TimeSinceLastRepair. No new tasks should be created,
+				// and no task should be returned.
+			})
 		})
 	})
 }
