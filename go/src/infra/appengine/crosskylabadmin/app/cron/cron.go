@@ -25,9 +25,11 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"time"
 
 	"go.chromium.org/luci/appengine/gaemiddleware"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/server/router"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
@@ -38,12 +40,19 @@ import (
 const (
 	// crosskylabadminProdHost is the prod AE instance of this app.
 	crosskylabadminProdHost = "chromeos-skylab-bot-fleet.appspot.com"
-	// backgroundTasksCount is the number of background tasks maintained against each bot.
-	backgroundTasksCount = 3
+
 	// backgroundTasksPriority is the swarming task priority of the created background tasks.
 	//
 	// This must be numerically smaller (i.e. more important) than the default task priority of 20.
 	backgroundTasksPriority = 10
+	// ensureTasksCount is the number of background tasks maintained against each bot.
+	ensureTasksCount = 3
+	// repairIdleDuration is the duration for which a bot in the fleet must have
+	// been idle for a repair task to be created against it.
+	repairIdleDuration = 10 * time.Minute
+	// repairAttemptDelayDuration is the time between successive attempts at repairing
+	// repair failed bots in the fleet.
+	repairAttemptDelayDuration = 1 * time.Hour
 )
 
 const (
@@ -59,6 +68,8 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	mwCron := mwBase.Extend(gaemiddleware.RequireCron)
 	r.GET("/internal/cron/refresh-bots", mwCron, logAndSetHTTPErr(refreshBotsCronHandler))
 	r.GET("/internal/cron/ensure-background-tasks", mwCron, logAndSetHTTPErr(ensureBackgroundTasksCronHandler))
+	r.GET("/internal/cron/trigger-repair-on-idle", mwCron, logAndSetHTTPErr(triggerRepairOnIdleCronHandler))
+	r.GET("/internal/cron/trigger-repair-on-repair-failed", mwCron, logAndSetHTTPErr(triggerRepairOnRepairFailedCronHandler))
 }
 
 // refreshBotsCronHandler refreshes the swarming bot information about the whole fleet.
@@ -75,9 +86,8 @@ func refreshBotsCronHandler(c *router.Context) error {
 // ensureBackgroundTasksCronHandler ensures that the configured number of admin tasks
 // are pending against the fleet.
 func ensureBackgroundTasksCronHandler(c *router.Context) error {
-	count := int32(backgroundTasksCount)
-	priority := int64(backgroundTasksPriority)
-	if int(count) != backgroundTasksCount {
+	count := int32(ensureTasksCount)
+	if int(count) != ensureTasksCount {
 		return fmt.Errorf("Requested too many tasks: %d. Must be less than %d", count, math.MaxInt32)
 	}
 
@@ -85,9 +95,9 @@ func ensureBackgroundTasksCronHandler(c *router.Context) error {
 	tsi := frontend.TaskerServerImpl{}
 	for _, ttype := range ttypes {
 		resp, err := tsi.EnsureBackgroundTasks(c.Context, &fleet.EnsureBackgroundTasksRequest{
-			Type:      ttype,
+			Priority:  int64(backgroundTasksPriority),
 			TaskCount: count,
-			Priority:  priority,
+			Type:      ttype,
 		})
 		if err != nil {
 			return err
@@ -106,10 +116,50 @@ func ensureBackgroundTasksCronHandler(c *router.Context) error {
 	return nil
 }
 
+// triggerRepairOnIdleCronHandler triggers repair tasks on idle bots in the fleet.
+func triggerRepairOnIdleCronHandler(c *router.Context) error {
+	tsi := frontend.TaskerServerImpl{}
+	resp, err := tsi.TriggerRepairOnIdle(c.Context, &fleet.TriggerRepairOnIdleRequest{
+		IdleDuration: google.NewDuration(repairIdleDuration),
+		Priority:     int64(backgroundTasksPriority),
+	})
+	if err != nil {
+		return err
+	}
+	bc, tc := countBotsAndTasks(resp)
+	logging.Infof(c.Context, "Triggered %d tasks on %d bots", tc, bc)
+	return nil
+}
+
+// triggerRepairOnIdleCronHandler triggers repair tasks on idle bots in the fleet.
+func triggerRepairOnRepairFailedCronHandler(c *router.Context) error {
+	tsi := frontend.TaskerServerImpl{}
+	resp, err := tsi.TriggerRepairOnRepairFailed(c.Context, &fleet.TriggerRepairOnRepairFailedRequest{
+		Priority:            int64(backgroundTasksPriority),
+		TimeSinceLastRepair: google.NewDuration(repairAttemptDelayDuration),
+	})
+	if err != nil {
+		return err
+	}
+	bc, tc := countBotsAndTasks(resp)
+	logging.Infof(c.Context, "Triggered %d tasks on %d bots", tc, bc)
+	return nil
+}
+
 func logAndSetHTTPErr(f func(c *router.Context) error) func(*router.Context) {
 	return func(c *router.Context) {
 		if err := f(c); err != nil {
 			http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
 		}
 	}
+}
+
+func countBotsAndTasks(resp *fleet.TaskerTasksResponse) (int, int) {
+	bc := 0
+	tc := 0
+	for _, bt := range resp.BotTasks {
+		bc++
+		tc += len(bt.Tasks)
+	}
+	return bc, tc
 }

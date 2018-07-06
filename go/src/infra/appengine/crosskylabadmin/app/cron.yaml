@@ -9,10 +9,25 @@ cron:
     job_retry_limit: 3
 - description: ensure background tasks
   url: /internal/cron/ensure-background-tasks
-  schedule: every 15 minutes
+  schedule: every 5 minutes
   retry_parameters:
     # The cron handlers are idempotent, and called frequently. A small number of
     # retries is enough to paper over trasient Swarming service failures. Beyond
     # that, we can always catch the next cron train.
     job_retry_limit: 3
-
+- description: trigger repair on idle bots
+  url: /internal/cron/trigger-repair-on-idle
+  schedule: every 5 minutes
+  retry_parameters:
+    # The cron handlers are idempotent, and called frequently. A small number of
+    # retries is enough to paper over trasient Swarming service failures. Beyond
+    # that, we can always catch the next cron train.
+    job_retry_limit: 3
+- description: trigger repair on repair failed bots
+  url: /internal/cron/trigger-repair-on-repair-failed
+  schedule: every 5 minutes
+  retry_parameters:
+    # The cron handlers are idempotent, and called frequently. A small number of
+    # retries is enough to paper over trasient Swarming service failures. Beyond
+    # that, we can always catch the next cron train.
+    job_retry_limit: 3
