@@ -36,23 +36,23 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
 		datastore.GetTestable(c).Consistent(true)
-		fsc := &fakeSwarmingClient{
+		fakeSwarming := &fakeSwarmingClient{
 			pool:    swarmingBotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
-		server := TrackerServerImpl{
+		tracker := TrackerServerImpl{
 			clients.SwarmingFactory{
 				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-					return fsc, nil
+					return fakeSwarming, nil
 				},
 			},
 		}
 
 		Convey("with no swarming duts available", func() {
-			fsc.setAvailableDutIDs([]string{})
+			fakeSwarming.setAvailableDutIDs([]string{})
 
 			Convey("refresh without filter", func() {
-				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
 				Convey("should succeed", func() {
 					So(err, ShouldBeNil)
 				})
@@ -63,7 +63,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 
 			Convey("refresh with empty filter", func() {
-				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				Convey("should succeed", func() {
@@ -75,7 +75,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 
 			Convey("refresh with non-empty filter", func() {
-				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 				})
 				Convey("should succeed", func() {
@@ -86,7 +86,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize without filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
 					Convey("should succeed", func() {
 						So(err, ShouldBeNil)
 					})
@@ -96,7 +96,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize with empty filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					Convey("should succeed", func() {
@@ -108,7 +108,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize with non-empty filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 					})
 					Convey("should succeed", func() {
@@ -122,10 +122,10 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 		})
 
 		Convey("with a single dut available", func() {
-			fsc.setAvailableDutIDs([]string{"dut_1"})
+			fakeSwarming.setAvailableDutIDs([]string{"dut_1"})
 
 			Convey("refresh filtering to available dut", func() {
-				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 				})
 
@@ -139,7 +139,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 
 			Convey("refresh filtering to unknown dut", func() {
-				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{"dut_2"}),
 				})
 				Convey("should succeed", func() {
@@ -151,7 +151,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 
 			Convey("refresh without filter", func() {
-				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
 				Convey("should succeed", func() {
 					So(err, ShouldBeNil)
 				})
@@ -162,7 +162,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize without filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
 					Convey("should succeed", func() {
 						So(err, ShouldBeNil)
 					})
@@ -174,7 +174,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize with empty filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: []*fleet.BotSelector{{}},
 					})
 					Convey("should succeed", func() {
@@ -186,7 +186,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize filtering to available dut", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 					})
 					Convey("should succeed", func() {
@@ -200,7 +200,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize filtering to unknown dut", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{"dut_2"}),
 					})
 					Convey("should succeed", func() {
@@ -213,10 +213,10 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 		})
 		Convey("with two duts available", func() {
-			fsc.setAvailableDutIDs([]string{"dut_1", "dut_2"})
+			fakeSwarming.setAvailableDutIDs([]string{"dut_1", "dut_2"})
 
 			Convey("refresh without filter", func() {
-				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{})
+				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{})
 				Convey("should succeed", func() {
 					So(err, ShouldBeNil)
 				})
@@ -228,7 +228,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize without filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{})
 					Convey("should succeed", func() {
 						So(err, ShouldBeNil)
 					})
@@ -242,7 +242,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			})
 
 			Convey("refresh with 2 filters matching existing duts", func() {
-				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{"dut_1", "dut_2"}),
 				})
 				Convey("should succeed", func() {
@@ -255,7 +255,7 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 				})
 
 				Convey("then summarize filtering one available dut and one unknown dut", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{"dut_1", "dut_non_existent"}),
 					})
 					Convey("should succeed", func() {
@@ -277,9 +277,9 @@ func TestRefreshAndSummarizeBots(t *testing.T) {
 			for i := 0; i < numDuts; i++ {
 				dutNames = append(dutNames, fmt.Sprintf("dut_%d", i))
 			}
-			fsc.setAvailableDutIDs(dutNames)
+			fakeSwarming.setAvailableDutIDs(dutNames)
 			Convey("refresh selecting all the DUTs", func() {
-				refreshed, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				refreshed, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts(dutNames),
 				})
 				Convey("should succeed", func() {
@@ -301,21 +301,21 @@ func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
 		datastore.GetTestable(c).Consistent(true)
-		fsc := &fakeSwarmingClient{
+		fakeSwarming := &fakeSwarmingClient{
 			pool:    swarmingBotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
-		server := TrackerServerImpl{
+		tracker := TrackerServerImpl{
 			clients.SwarmingFactory{
 				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-					return fsc, nil
+					return fakeSwarming, nil
 				},
 			},
 		}
 
 		Convey("with a swarming dut in state needs_reset", func() {
-			fsc.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
-			fsc.botInfos["bot_dut_1"] = &swarming.SwarmingRpcsBotInfo{
+			fakeSwarming.botInfos = make(map[string]*swarming.SwarmingRpcsBotInfo)
+			fakeSwarming.botInfos["bot_dut_1"] = &swarming.SwarmingRpcsBotInfo{
 				BotId: "bot_dut_1",
 				Dimensions: []*swarming.SwarmingRpcsStringListPair{
 					{
@@ -329,14 +329,14 @@ func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 				},
 			}
 			Convey("refresh with empty filter", func() {
-				_, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				Convey("should refresh the dut", func() {
 					So(err, ShouldBeNil)
 				})
 				Convey("then summarizing without filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					Convey("should summarize available dut with the right state", func() {
@@ -351,16 +351,16 @@ func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 		})
 
 		Convey("with a swarming dut with no recent tasks", func() {
-			fsc.setAvailableDutIDs([]string{"dut_task_1"})
+			fakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
 			Convey("refresh with empty filter", func() {
-				_, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				Convey("should refresh the dut", func() {
 					So(err, ShouldBeNil)
 				})
 				Convey("then summarizing without filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					Convey("should summarize available dut with nil IdleDuration", func() {
@@ -375,22 +375,22 @@ func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 		})
 
 		Convey("with a swarming dut with one recent completed task", func() {
-			fsc.setAvailableDutIDs([]string{"dut_task_1"})
-			fsc.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+			fakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
+			fakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
 				{
 					State:       "COMPLETED",
 					CompletedTs: "2016-01-02T10:04:05.999999999",
 				},
 			}
 			Convey("refresh with empty filter", func() {
-				_, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				Convey("should refresh the dut", func() {
 					So(err, ShouldBeNil)
 				})
 				Convey("then summarizing without filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					Convey("should summarize available dut with positive IdleDuration", func() {
@@ -406,21 +406,21 @@ func TestRefreshAndSummarizeBotsFields(t *testing.T) {
 		})
 
 		Convey("with a swarming dut with one running task", func() {
-			fsc.setAvailableDutIDs([]string{"dut_task_1"})
-			fsc.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
+			fakeSwarming.setAvailableDutIDs([]string{"dut_task_1"})
+			fakeSwarming.botTasks["bot_dut_task_1"] = []*swarming.SwarmingRpcsTaskResult{
 				{
 					State: "RUNNING",
 				},
 			}
 			Convey("refresh with empty filter", func() {
-				_, err := server.RefreshBots(c, &fleet.RefreshBotsRequest{
+				_, err := tracker.RefreshBots(c, &fleet.RefreshBotsRequest{
 					Selectors: makeBotSelectorForDuts([]string{}),
 				})
 				Convey("should refresh the dut", func() {
 					So(err, ShouldBeNil)
 				})
 				Convey("then summarizing without filter", func() {
-					summarized, err := server.SummarizeBots(c, &fleet.SummarizeBotsRequest{
+					summarized, err := tracker.SummarizeBots(c, &fleet.SummarizeBotsRequest{
 						Selectors: makeBotSelectorForDuts([]string{}),
 					})
 					Convey("should summarize available dut with zero IdleDuration", func() {

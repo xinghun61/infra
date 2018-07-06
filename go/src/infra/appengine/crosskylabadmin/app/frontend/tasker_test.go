@@ -36,27 +36,27 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 	Convey("In testing context", t, FailureHalts, func() {
 		c := gaetesting.TestingContextWithAppID("dev~infra-crosskylabadmin")
 		datastore.GetTestable(c).Consistent(true)
-		fsc := &fakeSwarmingClient{
+		fakeSwarming := &fakeSwarmingClient{
 			pool:    swarmingBotPool,
 			taskIDs: map[*clients.SwarmingCreateTaskArgs]string{},
 		}
-		server := TaskerServerImpl{
+		tasker := TaskerServerImpl{
 			clients.SwarmingFactory{
 				SwarmingClientHook: func(context.Context, string) (clients.SwarmingClient, error) {
-					return fsc, nil
+					return fakeSwarming, nil
 				},
 			},
 		}
 
 		Convey("with 2 known bots", func() {
-			setKnownBots(c, fsc, []string{"dut_1", "dut_2"})
+			setKnownBots(c, fakeSwarming, []string{"dut_1", "dut_2"})
 
 			Reset(func() {
-				fsc.ResetTasks()
+				fakeSwarming.ResetTasks()
 			})
 
 			Convey("EnsureBackgroundTasks for unknown bot", func() {
-				resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+				resp, err := tasker.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
 					Type:      fleet.TaskType_Reset,
 					Selectors: makeBotSelectorForDuts([]string{"dut_3"}),
 				})
@@ -70,7 +70,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 
 			taskURLFirst := []string{}
 			Convey("EnsureBackgroundTasks(Reset) for known bot", func() {
-				resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+				resp, err := tasker.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
 					Type:      fleet.TaskType_Reset,
 					Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 					TaskCount: 5,
@@ -81,8 +81,8 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					So(err, ShouldBeNil)
 				})
 				Convey("creates expected swarming tasks", func() {
-					So(fsc.taskArgs, ShouldHaveLength, 5)
-					for _, ta := range fsc.taskArgs {
+					So(fakeSwarming.taskArgs, ShouldHaveLength, 5)
+					for _, ta := range fakeSwarming.taskArgs {
 						So(ta.DutID, ShouldEqual, "dut_1")
 						So(ta.DutState, ShouldEqual, "needs_reset")
 						So(ta.Priority, ShouldEqual, 10)
@@ -105,7 +105,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 				})
 
 				Convey("then another EnsureBackgroundTasks(Reset) with more tasks requested", func() {
-					resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+					resp, err := tasker.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
 						Type:      fleet.TaskType_Reset,
 						Selectors: makeBotSelectorForDuts([]string{"dut_1"}),
 						TaskCount: 7,
@@ -117,7 +117,7 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					})
 					Convey("creates remaining swarming tasks", func() {
 						// This includes the 5 created earlier.
-						So(fsc.taskArgs, ShouldHaveLength, 7)
+						So(fakeSwarming.taskArgs, ShouldHaveLength, 7)
 					})
 					Convey("returns bot list containing tasks created earlier and the new tasks", func() {
 						So(resp.BotTasks, ShouldHaveLength, 1)
@@ -146,10 +146,10 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					taskDuts = append(taskDuts, allDuts[i])
 				}
 			}
-			setKnownBots(c, fsc, allDuts)
+			setKnownBots(c, fakeSwarming, allDuts)
 
 			Convey("EnsureBackgroundTasks(Repair) for some of the known bots", func() {
-				resp, err := server.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
+				resp, err := tasker.EnsureBackgroundTasks(c, &fleet.EnsureBackgroundTasksRequest{
 					Type:      fleet.TaskType_Repair,
 					Selectors: makeBotSelectorForDuts(taskDuts),
 					TaskCount: 6,
@@ -160,9 +160,9 @@ func TestEnsureBackgroundTasks(t *testing.T) {
 					So(err, ShouldBeNil)
 				})
 				Convey("creates expected swarming tasks", func() {
-					So(fsc.taskArgs, ShouldHaveLength, 6*len(taskDuts))
+					So(fakeSwarming.taskArgs, ShouldHaveLength, 6*len(taskDuts))
 					gotDuts := map[string]int{}
-					for _, ta := range fsc.taskArgs {
+					for _, ta := range fakeSwarming.taskArgs {
 						So(ta.DutState, ShouldEqual, "needs_repair")
 						So(ta.Priority, ShouldEqual, 9)
 						gotDuts[ta.DutID] = gotDuts[ta.DutID] + 1
