@@ -139,12 +139,7 @@ func (g gerritServer) GetChangedLines(c context.Context, host, change, revision 
 		"https://%s/a/changes/%s/revisions/%s/patch",
 		host, change, common.PatchSetNumber(revision))
 	logging.Debugf(c, "Fetching patch using URL: %s", url)
-	response, err := fetchResponse(c, url, map[string]string{
-		"Content-Disposition":    "attachment",
-		"Content-Type":           "text/plain; charset=ISO-8859-1",
-		"X-FYI-Content-Encoding": "base64",
-		"X-FYI-Content-Type":     "application/mbox",
-	})
+	response, err := fetchResponse(c, url, nil)
 	if err != nil {
 		return ChangedLinesInfo{}, err
 	}
@@ -158,14 +153,14 @@ func (g gerritServer) GetChangedLines(c context.Context, host, change, revision 
 	return changedLines, nil
 }
 
-func fetchResponse(c context.Context, url string, headerSettings map[string]string) ([]byte, error) {
+func fetchResponse(c context.Context, url string, headers map[string]string) ([]byte, error) {
 	// Compose, connect, and send.
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	for setting, value := range headerSettings {
-		req.Header.Set(setting, value)
+	for name, value := range headers {
+		req.Header.Set(name, value)
 	}
 	c, cancel := context.WithTimeout(c, 60*time.Second)
 	defer cancel()
