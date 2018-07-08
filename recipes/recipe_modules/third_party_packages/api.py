@@ -50,8 +50,22 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
           'unsupported platform %r' % (cross_platform,))
       assert not self.m.platform.is_win, (
         'cross_platform not supported on windows')
-    # TODO(iannucci): assert cross-compile toolchain docker files at this point.
+
     self._cross_platform = cross_platform
+
+    if self._cross_platform:
+      self.m.python(
+        'setup cross compile for %r' % cross_platform,
+        '-m',
+        self._dx_args + ['echo', 'test_command']
+      )
+
+  @property
+  def _dx_args(self):
+    """Returns python argument prefix for the current cross-compile
+    environment."""
+    assert self.cross_platform, "cross_platform is unconfigured"
+    return ['infra.tools.dockerbuild', 'run', '--platform', self.cross_platform]
 
   def _get_singleton(self, cls):
     cur = self._singletons.get(cls)

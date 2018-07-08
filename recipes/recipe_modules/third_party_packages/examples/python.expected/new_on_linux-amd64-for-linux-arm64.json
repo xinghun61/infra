@@ -3,6 +3,20 @@
     "cmd": [
       "python",
       "-u",
+      "-m",
+      "infra.tools.dockerbuild",
+      "run",
+      "--platform",
+      "linux-arm64",
+      "echo",
+      "test_command"
+    ],
+    "name": "setup cross compile for 'linux-arm64'"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
       "--json-file",
       "/path/to/tmp/json",
