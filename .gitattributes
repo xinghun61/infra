@@ -5,3 +5,8 @@
 
 # Used by "third_party_packages"'s Python unit test.
 /go/src/infra/tools/vpython/test_data/test_requests_get.py.vpython  recipes
+
+# Used by "third_party_packages" recipe module for cross-compile
+/infra/__init__.py            recipes
+/infra/tools/__init__.py      recipes
+/infra/tools/dockerbuild/**   recipes
