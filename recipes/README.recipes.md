@@ -57,6 +57,7 @@
   * [third_party_packages:examples/ninja](#recipes-third_party_packages_examples_ninja) &mdash; Recipe for 'ninja' building.
   * [third_party_packages:examples/python](#recipes-third_party_packages_examples_python) &mdash; Recipe for 'python' building.
   * [third_party_packages:examples/swig](#recipes-third_party_packages_examples_swig) &mdash; Recipe for 'swig' building.
+  * [tricium_noop](#recipes-tricium_noop) &mdash; Recipe for Tricium that outputs no results.
   * [windows_sdk:examples/full](#recipes-windows_sdk_examples_full)
   * [wpt_export](#recipes-wpt_export) &mdash; Exports commits in Chromium to the web-platform-tests repo.
   * [wpt_import](#recipes-wpt_import) &mdash; Imports changes from web-platform-tests into Chromium.
@@ -613,6 +614,13 @@ During testing, it may be useful to focus on building Swig. This can be done by
 running this recipe module directly.
 
 &mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/swig.py#43)(api, dry_run):**
+### *recipes* / [tricium\_noop](/recipes/recipes/tricium_noop.py)
+
+[DEPS](/recipes/recipes/tricium_noop.py#7): [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/tricium][recipe_engine/recipe_modules/tricium]
+
+Recipe for Tricium that outputs no results.
+
+&mdash; **def [RunSteps](/recipes/recipes/tricium_noop.py#16)(api):**
 ### *recipes* / [windows\_sdk:examples/full](/recipes/recipe_modules/windows_sdk/examples/full.py)
 
 [DEPS](/recipes/recipe_modules/windows_sdk/examples/full.py#5): [windows\_sdk](#recipe_modules-windows_sdk), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -685,5 +693,6 @@ Runs a step which adds a link to the current CL if there is one.
 [recipe_engine/recipe_modules/step]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/782ed0377a0a23f393a3a873194954825972b961/README.recipes.md#recipe_modules-step
 [recipe_engine/recipe_modules/tempfile]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/782ed0377a0a23f393a3a873194954825972b961/README.recipes.md#recipe_modules-tempfile
 [recipe_engine/recipe_modules/time]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/782ed0377a0a23f393a3a873194954825972b961/README.recipes.md#recipe_modules-time
+[recipe_engine/recipe_modules/tricium]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/782ed0377a0a23f393a3a873194954825972b961/README.recipes.md#recipe_modules-tricium
 [recipe_engine/recipe_modules/url]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/782ed0377a0a23f393a3a873194954825972b961/README.recipes.md#recipe_modules-url
 [recipe_engine/wkt/RecipeApi]: https://chromium.googlesource.com/infra/luci/recipes-py.git/+/782ed0377a0a23f393a3a873194954825972b961/recipe_engine/recipe_api.py#1006

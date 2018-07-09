@@ -1,0 +1,14 @@
+[
+  {
+    "cmd": [],
+    "name": "write results",
+    "~followup_annotations": [
+      "@@@SET_BUILD_PROPERTY@tricium@{\"comments\": []}@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
