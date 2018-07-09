@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	scope = "https://www.googleapis.com/auth/gerritcodereview"
+	scope         = "https://www.googleapis.com/auth/gerritcodereview"
+	gerritTimeout = 60 * time.Second
 )
 
 // API specifies the Gerrit REST API tuned to the needs of Tricium.
@@ -162,7 +163,7 @@ func fetchResponse(c context.Context, url string, headers map[string]string) ([]
 	for name, value := range headers {
 		req.Header.Set(name, value)
 	}
-	c, cancel := context.WithTimeout(c, 60*time.Second)
+	c, cancel := context.WithTimeout(c, gerritTimeout)
 	defer cancel()
 	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(scope))
 	if err != nil {
@@ -248,8 +249,7 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	// TODO(emso): Extract timeout to a common config for all Gerrit connections.
-	c, cancel := context.WithTimeout(c, 60*time.Second)
+	c, cancel := context.WithTimeout(c, gerritTimeout)
 	defer cancel()
 	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(scope))
 	if err != nil {
