@@ -147,7 +147,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       response = issues_pb2.ListCommentsResponse(comments=converted_comments)
 
     return response
-
+  
   @monorail_servicer.PRPCMethod
   def DeleteComment(self, mc, request):
     _project, issue, _config = self._GetProjectIssueAndConfig(

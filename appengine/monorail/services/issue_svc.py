@@ -936,6 +936,43 @@ class IssueService(object):
         is_description=False, limit=10000)
     return comments
 
+  def GetIssueActivity(self, cnxn, num=50, before=None, after=None,
+      project_ids=None, user_ids=None, ascending=False):
+
+    if project_ids:
+      use_clause = (
+        'USE INDEX (project_id) USE INDEX FOR ORDER BY (project_id)')
+    elif user_ids:
+      use_clause = (
+        'USE INDEX (commenter_id) USE INDEX FOR ORDER BY (commenter_id)')
+    else:
+      use_clause = ''
+
+    # TODO(jrobbins): make this into a persist method.
+    # TODO(jrobbins): this really needs permission checking in SQL, which
+    # will be slow.
+    where_conds = [('Issue.id = Comment.issue_id', [])]
+    if project_ids is not None:
+      cond_str = 'Comment.project_id IN (%s)' % sql.PlaceHolders(project_ids)
+      where_conds.append((cond_str, project_ids))
+    if user_ids is not None:
+      cond_str = 'Comment.commenter_id IN (%s)' % sql.PlaceHolders(user_ids)
+      where_conds.append((cond_str, user_ids))
+
+    if before:
+      where_conds.append(('created < %s', [before]))
+    if after:
+      where_conds.append(('created > %s', [after]))
+    if ascending:
+      order_by = [('created', [])]
+    else:
+      order_by = [('created DESC', [])]
+
+    comments = self.GetComments(
+      cnxn, joins=[('Issue', [])], deleted_by=None, where=where_conds,
+      use_clause=use_clause, order_by=order_by, limit=num + 1)
+    return comments
+
   def GetIssueIDsReportedByUser(self, cnxn, user_id):
     """Get all issue IDs created by a user"""
     rows = self.issue_tbl.Select(cnxn, cols=['id'], reporter_id=user_id,

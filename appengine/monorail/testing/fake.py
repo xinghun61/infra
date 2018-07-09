@@ -1120,6 +1120,7 @@ class IssueService(object):
     self.get_all_issues_in_project_called = False
     self.update_issues_called = False
     self.enqueue_issues_called = False
+    self.get_issue_acitivity_called = False
 
     # The next id to return if it is > 0.
     self.next_id = -1
@@ -1130,6 +1131,12 @@ class IssueService(object):
     self.update_issues_called = True
     assert all(issue.assume_stale == False for issue in issues)
     self.updated_issues.extend(issues)
+
+  def GetIssueActivity(
+      self, cnxn, num=50, before=None, after=None,
+      project_ids=None, user_ids=None, ascending=False):
+    self.get_issue_acitivity_called = True
+    return []
 
   def EnqueueIssuesForIndexing(self, _cnxn, issues):
     self.enqueue_issues_called = True

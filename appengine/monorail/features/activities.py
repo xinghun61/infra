@@ -21,7 +21,6 @@ from proto import tracker_pb2
 from tracker import tracker_helpers
 from tracker import tracker_views
 
-
 UPDATES_PER_PAGE = 50
 MAX_UPDATES_PER_PAGE = 200
 
@@ -142,8 +141,6 @@ def GatherUpdatesData(
     highlight: What to highlight in the middle column on user updates pages
         i.e. 'project', 'user', or None.
   """
-  ascending = bool(mr.after)
-
   # num should be non-negative number
   num = mr.GetPositiveIntParam('num', UPDATES_PER_PAGE)
   num = min(num, MAX_UPDATES_PER_PAGE)
@@ -159,46 +156,23 @@ def GatherUpdatesData(
   if not user_ids and not project_ids:
     updates_data['no_stars'] = ezt.boolean(True)
     return updates_data
-
+    
+  ascending = bool(mr.after)
   with mr.profiler.Phase('get activities'):
-    # TODO(jrobbins): make this into a persist method.
-    # TODO(jrobbins): this really needs permission checking in SQL, which will
-    # be slow.
-    where_conds = [('Issue.id = Comment.issue_id', [])]
-    if project_ids is not None:
-      cond_str = 'Comment.project_id IN (%s)' % sql.PlaceHolders(project_ids)
-      where_conds.append((cond_str, project_ids))
-    if user_ids is not None:
-      cond_str = 'Comment.commenter_id IN (%s)' % sql.PlaceHolders(user_ids)
-      where_conds.append((cond_str, user_ids))
-
-    if project_ids:
-      use_clause = 'USE INDEX (project_id) USE INDEX FOR ORDER BY (project_id)'
-    elif user_ids:
-      use_clause = (
-          'USE INDEX (commenter_id) USE INDEX FOR ORDER BY (commenter_id)')
-    else:
-      use_clause = ''
-
-    if mr.before:
-      where_conds.append(('created < %s', [mr.before]))
-    if mr.after:
-      where_conds.append(('created > %s', [mr.after]))
-    if ascending:
-      order_by = [('created', [])]
-    else:
-      order_by = [('created DESC', [])]
-
-    comments = services.issue.GetComments(
-        mr.cnxn, joins=[('Issue', [])], deleted_by=None, where=where_conds,
-        use_clause=use_clause, order_by=order_by, limit=num + 1)
-
+    comments = services.issue.GetIssueActivity(mr.cnxn, num=num,
+        before=mr.before, after=mr.after, project_ids=project_ids,
+        user_ids=user_ids, ascending=ascending)
+    # Filter the comments based on permission to view the issue.
+    # TODO(jrobbins): push permission checking in the query so that
+    # pagination pages never become underfilled, or use backends to shard.
+    # TODO(jrobbins): come back to this when I implement private comments.
     # TODO(jrobbins): it would be better if we could just get the dict directly.
     prefetched_issues_list = services.issue.GetIssues(
         mr.cnxn, {c.issue_id for c in comments})
     prefetched_issues = {
         issue.issue_id: issue for issue in prefetched_issues_list}
-    needed_project_ids = {issue.project_id for issue in prefetched_issues_list}
+    needed_project_ids = {issue.project_id for issue
+        in prefetched_issues_list}
     prefetched_projects = services.project.GetProjects(
         mr.cnxn, needed_project_ids)
     prefetched_configs = services.config.GetProjectConfigs(
@@ -207,14 +181,8 @@ def GatherUpdatesData(
         mr.auth.effective_ids, mr.auth.user_pb, prefetched_projects,
         prefetched_configs, prefetched_issues_list)
     viewable_iids = {issue.issue_id for issue in viewable_issues_list}
-
-    # Filter the comments based on permission to view the issue.
-    # TODO(jrobbins): push permission checking in the query so that pagination
-    # pages never become underfilled, or use backends to shard.
-    # TODO(jrobbins): come back to this when I implement private comments.
     comments = [
         c for c in comments if c.issue_id in viewable_iids]
-
     if ascending:
       comments.reverse()
 

@@ -75,26 +75,14 @@ class ActivitiesTest(unittest.TestCase):
         project_id=self.project_id, user_id=self.user_id,
         content='this is the 1st comment',
         timestamp=self.comment_timestamp)
-    self.mox.StubOutWithMock(self.services.issue, 'GetComments')
+    self.mox.StubOutWithMock(self.services.issue, 'GetIssueActivity')
 
-    created_order = 'created'
-    field = 'project_id' if project_ids else 'commenter_id'
-    where_clauses = [('Issue.id = Comment.issue_id', [])]
-    if project_ids:
-      where_clauses.append(('Comment.project_id IN (%s)', project_ids))
-    if user_ids:
-      where_clauses.append(('Comment.commenter_id IN (%s)', user_ids))
+    after = 0
     if ascending:
-      where_clauses.append(('created > %s', [self.mr_after]))
-    else:
-      created_order += ' DESC'
-    self.services.issue.GetComments(
-        mox.IgnoreArg(), deleted_by=None,
-        joins=[('Issue', [])], limit=activities.UPDATES_PER_PAGE + 1,
-               order_by=[(created_order, [])],
-        use_clause='USE INDEX (%s) USE INDEX FOR ORDER BY (%s)' % (field,
-                                                                   field),
-        where=where_clauses).AndReturn([comment_1])
+        after = self.mr_after
+    self.services.issue.GetIssueActivity(
+        mox.IgnoreArg(), num=50, before=0, after=after, project_ids=project_ids,
+        user_ids=user_ids, ascending=ascending).AndReturn([comment_1])
 
     self.mox.StubOutWithMock(framework_views, 'MakeAllUserViews')
     framework_views.MakeAllUserViews(
@@ -152,4 +140,3 @@ class ActivitiesTest(unittest.TestCase):
   def testActivities_SpecifyProjectAndUser(self):
     self.createAndAssertUpdates(
         project_ids=[self.project_id], user_ids=[self.user_id], ascending=False)
-
