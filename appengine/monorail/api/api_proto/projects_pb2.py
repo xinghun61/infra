@@ -13,14 +13,17 @@ from google.protobuf import descriptor_pb2
 _sym_db = _symbol_database.Default()
 
 
+from api.api_proto import common_pb2 as api_dot_api__proto_dot_common__pb2
+from api.api_proto import project_objects_pb2 as api_dot_api__proto_dot_project__objects__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/projects.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x1c\x61pi/api_proto/projects.proto\x12\x08monorail\"<\n\x13ListProjectsRequest\x12\x11\n\tpage_size\x18\x01 \x01(\x05\x12\x12\n\npage_token\x18\x02 \x01(\t\"T\n\x14ListProjectsResponse\x12#\n\x08projects\x18\x01 \x03(\x0b\x32\x11.monorail.Project\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"=\n\x07Project\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07summary\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\"Y\n$UpdateProjectConfiguredLabelsRequest\x12\x0f\n\x07project\x18\x01 \x01(\t\x12 \n\x06labels\x18\x02 \x01(\x0b\x32\x10.monorail.Labels\"\x86\x01\n#PatchProjectConfiguredLabelsRequest\x12\x0f\n\x07project\x18\x01 \x01(\t\x12%\n\x0c\x61\x64\x64\x65\x64_labels\x18\x02 \x03(\x0b\x32\x0f.monorail.Label\x12\'\n\x0eremoved_labels\x18\x03 \x03(\x0b\x32\x0f.monorail.Label\")\n\x06Labels\x12\x1f\n\x06labels\x18\x01 \x03(\x0b\x32\x0f.monorail.Label\"#\n\x05Label\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04rank\x18\x02 \x01(\x03\x32\xa3\x02\n\x08Projects\x12O\n\x0cListProjects\x12\x1d.monorail.ListProjectsRequest\x1a\x1e.monorail.ListProjectsResponse\"\x00\x12\x63\n\x1dUpdateProjectConfiguredLabels\x12..monorail.UpdateProjectConfiguredLabelsRequest\x1a\x10.monorail.Labels\"\x00\x12\x61\n\x1cPatchProjectConfiguredLabels\x12-.monorail.PatchProjectConfiguredLabelsRequest\x1a\x10.monorail.Labels\"\x00\x62\x06proto3')
-)
+  serialized_pb=_b('\n\x1c\x61pi/api_proto/projects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\x1a#api/api_proto/project_objects.proto\"<\n\x13ListProjectsRequest\x12\x11\n\tpage_size\x18\x01 \x01(\x05\x12\x12\n\npage_token\x18\x02 \x01(\t\"T\n\x14ListProjectsResponse\x12#\n\x08projects\x18\x01 \x03(\x0b\x32\x11.monorail.Project\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t\"O\n\x10GetConfigRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t2\x98\x01\n\x08Projects\x12O\n\x0cListProjects\x12\x1d.monorail.ListProjectsRequest\x1a\x1e.monorail.ListProjectsResponse\"\x00\x12;\n\tGetConfig\x12\x1a.monorail.GetConfigRequest\x1a\x10.monorail.Config\"\x00\x62\x06proto3')
+  ,
+  dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,api_dot_api__proto_dot_project__objects__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
@@ -59,8 +62,8 @@ _LISTPROJECTSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=42,
-  serialized_end=102,
+  serialized_start=107,
+  serialized_end=167,
 )
 
 
@@ -97,39 +100,32 @@ _LISTPROJECTSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=104,
-  serialized_end=188,
+  serialized_start=169,
+  serialized_end=253,
 )
 
 
-_PROJECT = _descriptor.Descriptor(
-  name='Project',
-  full_name='monorail.Project',
+_GETCONFIGREQUEST = _descriptor.Descriptor(
+  name='GetConfigRequest',
+  full_name='monorail.GetConfigRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='monorail.Project.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      name='trace', full_name='monorail.GetConfigRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='summary', full_name='monorail.Project.summary', index=1,
+      name='project_name', full_name='monorail.GetConfigRequest.project_name', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
-    _descriptor.FieldDescriptor(
-      name='description', full_name='monorail.Project.description', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
   ],
   extensions=[
   ],
@@ -142,174 +138,15 @@ _PROJECT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=190,
-  serialized_end=251,
+  serialized_start=255,
+  serialized_end=334,
 )
 
-
-_UPDATEPROJECTCONFIGUREDLABELSREQUEST = _descriptor.Descriptor(
-  name='UpdateProjectConfiguredLabelsRequest',
-  full_name='monorail.UpdateProjectConfiguredLabelsRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='project', full_name='monorail.UpdateProjectConfiguredLabelsRequest.project', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='labels', full_name='monorail.UpdateProjectConfiguredLabelsRequest.labels', index=1,
-      number=2, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=253,
-  serialized_end=342,
-)
-
-
-_PATCHPROJECTCONFIGUREDLABELSREQUEST = _descriptor.Descriptor(
-  name='PatchProjectConfiguredLabelsRequest',
-  full_name='monorail.PatchProjectConfiguredLabelsRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='project', full_name='monorail.PatchProjectConfiguredLabelsRequest.project', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='added_labels', full_name='monorail.PatchProjectConfiguredLabelsRequest.added_labels', index=1,
-      number=2, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='removed_labels', full_name='monorail.PatchProjectConfiguredLabelsRequest.removed_labels', index=2,
-      number=3, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=345,
-  serialized_end=479,
-)
-
-
-_LABELS = _descriptor.Descriptor(
-  name='Labels',
-  full_name='monorail.Labels',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='labels', full_name='monorail.Labels.labels', index=0,
-      number=1, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=481,
-  serialized_end=522,
-)
-
-
-_LABEL = _descriptor.Descriptor(
-  name='Label',
-  full_name='monorail.Label',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='name', full_name='monorail.Label.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='rank', full_name='monorail.Label.rank', index=1,
-      number=2, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=524,
-  serialized_end=559,
-)
-
-_LISTPROJECTSRESPONSE.fields_by_name['projects'].message_type = _PROJECT
-_UPDATEPROJECTCONFIGUREDLABELSREQUEST.fields_by_name['labels'].message_type = _LABELS
-_PATCHPROJECTCONFIGUREDLABELSREQUEST.fields_by_name['added_labels'].message_type = _LABEL
-_PATCHPROJECTCONFIGUREDLABELSREQUEST.fields_by_name['removed_labels'].message_type = _LABEL
-_LABELS.fields_by_name['labels'].message_type = _LABEL
+_LISTPROJECTSRESPONSE.fields_by_name['projects'].message_type = api_dot_api__proto_dot_project__objects__pb2._PROJECT
+_GETCONFIGREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 DESCRIPTOR.message_types_by_name['ListProjectsRequest'] = _LISTPROJECTSREQUEST
 DESCRIPTOR.message_types_by_name['ListProjectsResponse'] = _LISTPROJECTSRESPONSE
-DESCRIPTOR.message_types_by_name['Project'] = _PROJECT
-DESCRIPTOR.message_types_by_name['UpdateProjectConfiguredLabelsRequest'] = _UPDATEPROJECTCONFIGUREDLABELSREQUEST
-DESCRIPTOR.message_types_by_name['PatchProjectConfiguredLabelsRequest'] = _PATCHPROJECTCONFIGUREDLABELSREQUEST
-DESCRIPTOR.message_types_by_name['Labels'] = _LABELS
-DESCRIPTOR.message_types_by_name['Label'] = _LABEL
+DESCRIPTOR.message_types_by_name['GetConfigRequest'] = _GETCONFIGREQUEST
 
 ListProjectsRequest = _reflection.GeneratedProtocolMessageType('ListProjectsRequest', (_message.Message,), dict(
   DESCRIPTOR = _LISTPROJECTSREQUEST,
@@ -325,40 +162,12 @@ ListProjectsResponse = _reflection.GeneratedProtocolMessageType('ListProjectsRes
   ))
 _sym_db.RegisterMessage(ListProjectsResponse)
 
-Project = _reflection.GeneratedProtocolMessageType('Project', (_message.Message,), dict(
-  DESCRIPTOR = _PROJECT,
+GetConfigRequest = _reflection.GeneratedProtocolMessageType('GetConfigRequest', (_message.Message,), dict(
+  DESCRIPTOR = _GETCONFIGREQUEST,
   __module__ = 'api.api_proto.projects_pb2'
-  # @@protoc_insertion_point(class_scope:monorail.Project)
+  # @@protoc_insertion_point(class_scope:monorail.GetConfigRequest)
   ))
-_sym_db.RegisterMessage(Project)
-
-UpdateProjectConfiguredLabelsRequest = _reflection.GeneratedProtocolMessageType('UpdateProjectConfiguredLabelsRequest', (_message.Message,), dict(
-  DESCRIPTOR = _UPDATEPROJECTCONFIGUREDLABELSREQUEST,
-  __module__ = 'api.api_proto.projects_pb2'
-  # @@protoc_insertion_point(class_scope:monorail.UpdateProjectConfiguredLabelsRequest)
-  ))
-_sym_db.RegisterMessage(UpdateProjectConfiguredLabelsRequest)
-
-PatchProjectConfiguredLabelsRequest = _reflection.GeneratedProtocolMessageType('PatchProjectConfiguredLabelsRequest', (_message.Message,), dict(
-  DESCRIPTOR = _PATCHPROJECTCONFIGUREDLABELSREQUEST,
-  __module__ = 'api.api_proto.projects_pb2'
-  # @@protoc_insertion_point(class_scope:monorail.PatchProjectConfiguredLabelsRequest)
-  ))
-_sym_db.RegisterMessage(PatchProjectConfiguredLabelsRequest)
-
-Labels = _reflection.GeneratedProtocolMessageType('Labels', (_message.Message,), dict(
-  DESCRIPTOR = _LABELS,
-  __module__ = 'api.api_proto.projects_pb2'
-  # @@protoc_insertion_point(class_scope:monorail.Labels)
-  ))
-_sym_db.RegisterMessage(Labels)
-
-Label = _reflection.GeneratedProtocolMessageType('Label', (_message.Message,), dict(
-  DESCRIPTOR = _LABEL,
-  __module__ = 'api.api_proto.projects_pb2'
-  # @@protoc_insertion_point(class_scope:monorail.Label)
-  ))
-_sym_db.RegisterMessage(Label)
+_sym_db.RegisterMessage(GetConfigRequest)
 
 
 # @@protoc_insertion_point(module_scope)

@@ -3,9 +3,14 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
+import logging
+
 from api import monorail_servicer
+from api import converters
 from api.api_proto import projects_pb2
+from api.api_proto import project_objects_pb2
 from api.api_proto import projects_prpc_pb2
+from businesslogic import work_env
 
 
 class ProjectsServicer(monorail_servicer.MonorailServicer):
@@ -18,28 +23,31 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
   DESCRIPTION = projects_prpc_pb2.ProjectsServiceDescription
 
+  def _GetProject(self, mc, request, use_cache=True):
+    """Get the project object specified in the request."""
+    with work_env.WorkEnv(mc, self.services, phase='getting project') as we:
+      project = we.GetProjectByName(request.project_name, use_cache=use_cache)
+      # Perms in this project are already looked up in MonorailServicer.
+    return project
+
   @monorail_servicer.PRPCMethod
   def ListProjects(self, _mc, _request):
     return projects_pb2.ListProjectsResponse(
         projects=[
-            projects_pb2.Project(name='One'),
-            projects_pb2.Project(name='Two')],
+            project_objects_pb2.Project(name='One'),
+            project_objects_pb2.Project(name='Two')],
         next_page_token='next...')
 
-  @monorail_servicer.PRPCMethod
-  def UpdateProjectConfiguredLabels(self, _mc, _request):
-    return projects_pb2.Labels(
-        labels=[
-            projects_pb2.Label(name='Priority-Critical', rank=1),
-            projects_pb2.Label(name='Priority-High', rank=2),
-            projects_pb2.Label(name='Priority-Medium', rank=3),
-            projects_pb2.Label(name='Priority-Low', rank=4)])
 
   @monorail_servicer.PRPCMethod
-  def PatchProjectConfiguredLabels(self, _mc, _request):
-    return projects_pb2.Labels(
-        labels=[
-            projects_pb2.Label(name='Priority-Critical', rank=1),
-            projects_pb2.Label(name='Priority-High', rank=2),
-            projects_pb2.Label(name='Priority-Medium', rank=3),
-            projects_pb2.Label(name='Priority-Low', rank=4)])
+  def GetConfig(self, mc, request):
+    """Return the specified project config."""
+    project = self._GetProject(mc, request)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      config = we.GetProjectConfig(project.project_id)
+
+    result = converters.ConvertConfig(
+        mc.cnxn, self.services.user, project, config)
+    return result
+

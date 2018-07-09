@@ -15,7 +15,10 @@ from components.prpc import server
 from api import projects_servicer
 from api.api_proto import projects_pb2
 from framework import authdata
+from framework import exceptions
 from framework import monorailcontext
+from framework import permissions
+from proto import project_pb2
 from testing import fake
 from services import service_manager
 
@@ -32,7 +35,8 @@ class ProjectsServicerTest(unittest.TestCase):
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService(),
         features=fake.FeaturesService())
-    self.project = self.services.project.TestAddProject('proj', project_id=789)
+    self.project = self.services.project.TestAddProject(
+        'proj', project_id=789, owner_ids=[111L])
     self.user = self.services.user.TestAddUser('owner@example.com', 111L)
     self.projects_svcr = projects_servicer.ProjectsServicer(
         self.services, make_rate_limiter=False)
@@ -46,7 +50,7 @@ class ProjectsServicerTest(unittest.TestCase):
   def CallWrapped(self, wrapped_handler, *args, **kwargs):
     return wrapped_handler.wrapped(self.projects_svcr, *args, **kwargs)
 
-  def testDoListProjects_Normal(self):
+  def testListProjects_Normal(self):
     """We can get a list of all projects on the site."""
     request = projects_pb2.ListProjectsRequest()
     mc = monorailcontext.MonorailContext(
@@ -54,20 +58,36 @@ class ProjectsServicerTest(unittest.TestCase):
     response = self.CallWrapped(self.projects_svcr.ListProjects, mc, request)
     self.assertEqual(2, len(response.projects))
 
-  def testDoUpdateProjectConfiguredLabels_Normal(self):
-    """We can replace all label definitions in a project."""
-    request = projects_pb2.UpdateProjectConfiguredLabelsRequest(project='proj')
+  def testGetConfig_Normal(self):
+    """We can get a project config."""
+    request = projects_pb2.GetConfigRequest(project_name='proj')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    response = self.CallWrapped(
-        self.projects_svcr.UpdateProjectConfiguredLabels, mc, request)
-    self.assertEqual(4, len(response.labels))
+    response = self.CallWrapped(self.projects_svcr.GetConfig, mc, request)
+    self.assertEqual('proj', response.project_name)
 
-  def testDoPatchProjectConfiguredLabels_Normal(self):
-    """We can modify label definitions in a project."""
-    request = projects_pb2.PatchProjectConfiguredLabelsRequest(project='proj')
+  def testGetConfig_NoSuchProject(self):
+    """We reject a request to get a config for a non-existent project."""
+    request = projects_pb2.GetConfigRequest(project_name='unknown-proj')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    response = self.CallWrapped(
-        self.projects_svcr.PatchProjectConfiguredLabels, mc, request)
-    self.assertEqual(4, len(response.labels))
+    with self.assertRaises(exceptions.NoSuchProjectException):
+      self.CallWrapped(self.projects_svcr.GetConfig, mc, request)
+
+
+  def testGetConfig_PermissionDenied(self):
+    """We reject a request to get a config for a non-viewable project."""
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+
+    # User is a member of the members-only project.
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(self.projects_svcr.GetConfig, mc, request)
+    self.assertEqual('proj', response.project_name)
+
+    # User is not a member of the members-only project.
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='nonmember@example.com')
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.projects_svcr.GetConfig, mc, request)

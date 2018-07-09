@@ -1,0 +1,100 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is govered by a BSD-style
+// license that can be found in the LICENSE file or at
+// https://developers.google.com/open-source/licenses/bsd
+
+// This file defines protobufs for issues and related business
+// objects, e.g., field values, comments, and attachments.
+
+syntax = "proto3";
+
+package monorail;
+
+import "api/api_proto/common.proto";
+
+
+// Next available tag: 4
+message Project {
+  string name = 1;
+  string summary = 2;
+  string description = 3;
+}
+
+
+// Next available tag: 6
+message StatusDef {
+  string status = 1;
+  bool means_open = 2;
+  uint32 rank = 3;
+  string docstring = 4;
+  bool deprecated = 5;
+}
+
+
+// Next available tag: 5
+message LabelDef {
+  string label = 1;
+  uint32 rank = 2;
+  string docstring = 3;
+  bool deprecated = 4;
+}
+
+
+// Next available tag: 11
+message ComponentDef {
+  string path = 1;
+  string docstring = 2;
+  repeated UserRef admin_refs = 3;
+  repeated UserRef cc_refs = 4;
+  bool deprecated = 5;
+  fixed32 created = 6;
+  UserRef creator_ref = 7;
+  fixed32 modified = 8;
+  UserRef modifier_ref = 9;
+  repeated LabelRef label_refs = 10;
+}
+
+
+// Next available tag: 12
+message FieldDef {
+  FieldRef field_ref = 1;
+  FieldType field_type = 2;
+  string applicable_type = 3;
+  // TODO(jrobbins): applicable_predicate
+  bool is_required = 4;
+  bool is_niche = 5;
+  bool is_multivalued = 6;
+  string docstring = 7;
+  bool is_deleted = 8;
+  repeated UserRef admin_refs = 9;
+  // TODO(jrobbins): validation, permission granting, and notification options.
+  FieldRef parent_approval_field_ref = 10;
+  bool is_phase_field = 11;
+}
+
+
+// Next available tag: 4
+message ApprovalDef {
+  FieldRef field_ref = 1;
+  repeated UserRef approver_refs = 2;
+  string survey = 3;
+}
+
+
+// Next available tag: 11
+message Config {
+  string project_name = 1;
+  repeated StatusDef status_defs = 2;
+  repeated StatusRef statuses_offer_merge = 3;
+  repeated LabelDef label_defs = 4;
+  repeated string exclusive_label_prefixes = 5;
+  repeated ComponentDef component_defs = 6;
+  repeated FieldDef field_defs = 7;
+  repeated ApprovalDef approval_defs = 8;
+  // TODO(jrobbins): Templates, maybe keep them separate.
+  // TODO(jrobbins): Default query and grid options.
+  // TODO(jrobbins): restrict-to-known
+  // TODO(jrobbins): custom_issue_entry_url
+}
+
+

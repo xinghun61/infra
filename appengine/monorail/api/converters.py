@@ -16,6 +16,7 @@ import logging
 
 from api.api_proto import common_pb2
 from api.api_proto import issue_objects_pb2
+from api.api_proto import project_objects_pb2
 from framework import exceptions
 from framework import framework_constants
 from tracker import attachment_helpers
@@ -23,6 +24,9 @@ from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from proto import tracker_pb2
+
+
+# Convert and ingest objects in issue_objects.proto.
 
 
 def ConvertApprovalValues(approval_values, phases, users_by_id, config):
@@ -544,3 +548,13 @@ def IngestFieldValues(cnxn, user_service, field_values, config):
               cnxn, user_service, fd, str(fv.value)))
 
   return ejected_fvs
+
+
+# Convert and ingest objects in project_objects.proto.
+
+
+def ConvertConfig(_cnxn, _user_service, project, _config):
+  """Convert a protorpc ProjectIssueConfig into a protoc Config."""
+  result = project_objects_pb2.Config(project_name=project.project_name)
+  # TODO(jrobbins): Convert all details of the config.
+  return result
