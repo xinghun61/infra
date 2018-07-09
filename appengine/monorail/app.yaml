@@ -17,7 +17,7 @@ automatic_scaling:
   max_pending_latency: 0.2s
 
 handlers:
-- url: /_ah/spi/.*
+- url: /_ah/api/.*
   script: monorailapp.endpoints
 
 - url: /robots.txt

@@ -9,10 +9,10 @@ Monorail is an issue tracking tool that is based on the code.google.com
 issue tracker, but it has been ported to Google AppEngine and Google Cloud SQL.
 """
 
-import endpoints
 import logging
 import webapp2
 
+from components import endpoints_webapp2
 from components import utils
 utils.fix_protobuf_package()
 
@@ -32,5 +32,5 @@ app = webapp2.WSGIApplication(
     app_routes, config={'services': services})
 gae_ts_mon.initialize(app)
 
-endpoints = endpoints.api_server(
+endpoints = endpoints_webapp2.api_server(
     [api_svc_v1.MonorailApi, api_svc_v1.ClientConfigApi])
