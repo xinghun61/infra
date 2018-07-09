@@ -96,7 +96,7 @@ func (gerritServer) QueryChanges(c context.Context, host, project string, lastTi
 	var changes []gr.ChangeInfo
 	// Compose, connect, and send.
 	url := composeChangesQueryURL(host, project, lastTimestamp, offset)
-	logging.Debugf(c, "Using URL: %s", url)
+	logging.Debugf(c, "Using changes query URL %q.", url)
 	body, err := fetchResponse(c, url, map[string]string{
 		"Content-Disposition": "application/json",
 		"Content-Type":        "application/json",
@@ -119,7 +119,7 @@ func (g gerritServer) PostRobotComments(c context.Context, host, change, revisio
 	for _, storedComment := range storedComments {
 		var comment tricium.Data_Comment
 		if err := jsonpb.UnmarshalString(string(storedComment.Comment), &comment); err != nil {
-			logging.Warningf(c, "Failed to unmarshal comment: %v", err)
+			logging.WithError(err).Warningf(c, "Failed to unmarshal comment.")
 			break
 		}
 		if _, ok := robos[comment.Path]; !ok {
@@ -138,7 +138,7 @@ func (g gerritServer) GetChangedLines(c context.Context, host, change, revision 
 	url := fmt.Sprintf(
 		"https://%s/a/changes/%s/revisions/%s/patch",
 		host, change, common.PatchSetNumber(revision))
-	logging.Debugf(c, "Fetching patch using URL: %s", url)
+	logging.Debugf(c, "Fetching patch using URL %q", url)
 	response, err := fetchResponse(c, url, nil)
 	if err != nil {
 		return ChangedLinesInfo{}, err
@@ -240,9 +240,8 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 	if err != nil {
 		return fmt.Errorf("failed to marshal ReviewInput: %v", err)
 	}
-	logging.Debugf(c, "[gerrit] JSON body: %s", data)
 	url := fmt.Sprintf("https://%s/a/changes/%s/revisions/%s/review", host, change, common.PatchSetNumber(revision))
-	logging.Infof(c, "Using Gerrit Set Review URL: %s", url)
+	logging.Debugf(c, "Using set review URL %q.", url)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("failed to create POST request: %v", err)

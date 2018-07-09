@@ -26,7 +26,9 @@ const (
 
 // ReportResults processes one report results request.
 func (r *gerritReporter) ReportResults(c context.Context, req *admin.ReportResultsRequest) (*admin.ReportResultsResponse, error) {
-	logging.Debugf(c, "[gerrit-reporter] ReportResults request (run ID: %d)", req.RunId)
+	logging.Fields{
+		"run ID": req.RunId,
+	}.Infof(c, "[gerrit] ReportResults request received.")
 	if req.RunId == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
@@ -103,11 +105,16 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 		return err
 	}
 	if request.GerritReportingDisabled {
-		logging.Infof(c, "Gerrit reporting disabled, not reporting results (run ID: %s, project: %s)", req.RunId, request.Project)
+		logging.Fields{
+			"project": request.Project,
+		}.Infof(c, "Gerrit reporting disabled, not reporting results.")
 		return nil
 	}
 	if len(includedComments) > maxComments {
-		logging.Infof(c, "Too many comments (%d), not reporting results (run ID: %s)", len(includedComments), req.RunId)
+
+		logging.Fields{
+			"num comments": len(includedComments),
+		}.Infof(c, "Too many comments, not reporting results.")
 		return nil
 	}
 	if len(includedComments) == 0 {

@@ -114,8 +114,13 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 		logging.WithError(err).Errorf(c, "failed to trigger swarming task")
 		return "", fmt.Errorf("failed to trigger swarming task: %v", err)
 	}
-	logging.Infof(c, "Worker triggered, ID: %q, name: %q, dimensions: %v, pubsub topic: %q, input isolate: %q",
-		res.TaskId, worker.Name, dims, pubsubTopic, workerIsolate)
+	logging.Fields{
+		"task ID":       res.TaskId,
+		"worker":        worker.Name,
+		"dimensions":    dims,
+		"pubsub topic":  pubsubTopic,
+		"input isolate": workerIsolate,
+	}.Infof(c, "Worker triggered")
 	return res.TaskId, nil
 }
 

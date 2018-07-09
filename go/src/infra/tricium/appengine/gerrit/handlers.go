@@ -49,7 +49,10 @@ func resultsHandler(ctx *router.Context) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	logging.Debugf(c, "[gerrit] Report results request for run ID: %d, analyzer: %s", rr.RunId, rr.Analyzer)
+	logging.Fields{
+		"run ID":   rr.RunId,
+		"analyzer": rr.Analyzer,
+	}.Infof(c, "[gerrit] Report results request received")
 	if _, err := reporter.ReportResults(c, rr); err != nil {
 		logging.WithError(err).Errorf(c, "[gerrit] Failed to call Gerrit.ReportResults")
 		switch grpc.Code(err) {

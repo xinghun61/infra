@@ -109,7 +109,11 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 				repo := repo // Again, a new variable for the closure below
 				repoURL := tricium.RepoURL(repo)
 				if seen.Has(repoURL) {
-					logging.Errorf(c, "Found duplicate repo %s", repoURL)
+
+					logging.Fields{
+						"project name": name,
+						"repo URL":     repoURL,
+					}.Errorf(c, "Found duplicate repository URL.")
 					continue
 				}
 				seen.Add(repoURL)
@@ -139,7 +143,9 @@ func pollProject(c context.Context, triciumProject string, repo *tricium.RepoDet
 		if err != ds.ErrNoSuchEntity {
 			return fmt.Errorf("failed to get Project entity: %v", err)
 		}
-		logging.Infof(c, "Found no previous entry for id:%s", p.ID)
+		logging.Fields{
+			"gerrit project ID": p.ID,
+		}.Infof(c, "Found no previous poll for gerrit project.")
 		err = nil
 		p.Instance = gerritProject.Host
 		p.Project = gerritProject.Project
@@ -285,7 +291,7 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 				}
 			}
 		} else if err != ds.ErrNoSuchEntity {
-			logging.Errorf(c, "Getting tracked changes failed: %v", err)
+			logging.WithError(err).Errorf(c, "Getting tracked changes failed.")
 			return diff, uchanges, dchanges, err
 		}
 	}
@@ -298,7 +304,7 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 	}
 	// TODO(emso): Consider depending on the order provided by datastore.
 	// That is, depend on keys and values being in the same order from Get.
-	logging.Debugf(c, "Found the following tracked changes: %v", t)
+	logging.Debugf(c, "Found %d tracked changes.", len(t))
 	// Compare polled changes to tracked changes, update tracking and add to the
 	// diff list when there is an updated revision change.
 	for _, change := range changes {
@@ -336,7 +342,7 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 
 // enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
 func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tricium.RepoDetails, changes []gr.ChangeInfo) error {
-	logging.Debugf(ctx, "Enqueue Analyze requests for %d changes", len(changes))
+	logging.Infof(ctx, "Enqueue Analyze requests for %d changes.", len(changes))
 	if len(changes) == 0 {
 		return nil
 	}
@@ -354,7 +360,9 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 			}
 		}
 		if len(files) == 0 {
-			logging.Infof(ctx, "Not making Analyze request for change %s; changes has no files", c.ID)
+			logging.Fields{
+				"change ID": c.ID,
+			}.Infof(ctx, "Not making Analyze request for change; changes has no files.")
 			continue
 		}
 		// Sorting files according to their paths to account for random enumeration in go maps.
@@ -381,7 +389,7 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, repo *tr
 		}
 		t := tq.NewPOSTTask("/internal/analyze", nil)
 		t.Payload = b
-		logging.Debugf(ctx, "Converted change details (%v) to Tricium request (%v)", c, req)
+		logging.Debugf(ctx, "Converted change details (%v) to Tricium request (%v).", c, req)
 		tasks = append(tasks, t)
 	}
 	if err := tq.Add(ctx, common.AnalyzeQueue, tasks...); err != nil {
@@ -404,12 +412,12 @@ func filterByWhitelist(ctx context.Context, whitelistedGroups []string, changes 
 	// The auth DB should be set in state by middleware.
 	state := auth.GetState(ctx)
 	if state == nil {
-		logging.Errorf(ctx, "failed to check auth, no State in context")
+		logging.Errorf(ctx, "failed to check auth, no State in context.")
 		return nil
 	}
 	authDB := state.DB()
 	if authDB == nil {
-		logging.Errorf(ctx, "Failed to check auth, nil auth DB in State")
+		logging.Errorf(ctx, "Failed to check auth, nil auth DB in State.")
 		return nil
 	}
 
@@ -426,16 +434,16 @@ func filterByWhitelist(ctx context.Context, whitelistedGroups []string, changes 
 			owners[email] = false
 			ident, err := identity.MakeIdentity("user:" + email)
 			if err != nil {
-				logging.WithError(err).Errorf(ctx, "Failed to create identity for %q", email)
+				logging.WithError(err).Errorf(ctx, "Failed to create identity for %q.", email)
 				continue
 			}
 			authOK, err := authDB.IsMember(ctx, ident, whitelistedGroups)
 			if err != nil {
-				logging.WithError(err).Errorf(ctx, "Failed to check auth for %q", email)
+				logging.WithError(err).Errorf(ctx, "Failed to check auth for %q.", email)
 			}
 			whitelisted = authOK
 			if !whitelisted {
-				logging.Infof(ctx, "Owner %q is not whitelisted, skipping Analyze", email)
+				logging.Infof(ctx, "Owner %q is not whitelisted, skipping Analyze.", email)
 			}
 			owners[email] = whitelisted
 		}

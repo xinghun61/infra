@@ -26,10 +26,13 @@ func (r *TriciumServer) ReportNotUseful(c context.Context, req *tricium.ReportNo
 	}
 	issue, err := report(c, req.CommentId, req.MoreDetails)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "report not useful failed")
+		logging.WithError(err).Errorf(c, "[frontend] Report not useful failed.")
 		return nil, grpc.Errorf(codes.Internal, "failed to process report not useful request")
 	}
-	logging.Infof(c, "[frontend] Report not useful, comment ID: %q, issue: %s", req.CommentId, issue)
+	logging.Fields{
+		"comment ID": req.CommentId,
+		"issue":      issue,
+	}.Infof(c, "[frontend] Report not useful request received.")
 	return &tricium.ReportNotUsefulResponse{Issue: issue}, nil
 }
 

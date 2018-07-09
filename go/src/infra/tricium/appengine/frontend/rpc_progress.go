@@ -23,15 +23,18 @@ import (
 // Progress implements Tricium.Progress.
 func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest) (*tricium.ProgressResponse, error) {
 	runID, err := validateProgressRequest(c, req)
+	logging.Fields{
+		"run ID": runID,
+	}.Infof(c, "[frontend] Progress request received and validated.")
+
 	if err != nil {
 		return nil, err
 	}
 	runState, functionProgress, errCode, err := progress(c, runID)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "progress failed, run ID: %d", runID)
+		logging.WithError(err).Errorf(c, "Progress request failed.")
 		return nil, grpc.Errorf(errCode, "failed to execute progress request")
 	}
-	logging.Infof(c, "[frontend] Function progress: %v", functionProgress)
 	return &tricium.ProgressResponse{
 		RunId:            strconv.FormatInt(runID, 10),
 		State:            runState,
@@ -74,10 +77,10 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 			if err == ds.ErrNoSuchEntity {
 				logging.Fields{
 					"gerrit mapping ID": g.ID,
-				}.Infof(c, "No GerritChangeToRunID found in datastore")
+				}.Infof(c, "No GerritChangeToRunID found in datastore.")
 				return 0, grpc.Errorf(codes.NotFound, "no run ID found")
 			}
-			logging.WithError(err).Errorf(c, "Failed to fetch GerritChangeToRunID entity")
+			logging.WithError(err).Errorf(c, "Failed to fetch GerritChangeToRunID entity.")
 			return 0, grpc.Errorf(codes.Internal, "failed to fetch run ID")
 		}
 		return g.RunID, nil
@@ -88,7 +91,7 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 		}
 		runID, err := strconv.ParseInt(req.RunId, 10, 64)
 		if err != nil {
-			logging.WithError(err).Errorf(c, "failed to parse run ID: %s", req.RunId)
+			logging.WithError(err).Errorf(c, "Failed to parse run ID %q.", req.RunId)
 			return 0, grpc.Errorf(codes.InvalidArgument, "invalid run ID")
 		}
 		return runID, nil
@@ -119,7 +122,7 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 			workerResults = append(workerResults, &track.WorkerRunResult{ID: 1, Parent: workerKey})
 		}
 	}
-	logging.Debugf(c, "Reading worker results for %v", workerResults)
+	logging.Debugf(c, "Reading worker results for %v.", workerResults)
 	if err := ds.Get(c, workerResults); err != nil && err != ds.ErrNoSuchEntity {
 		return tricium.State_PENDING, nil, codes.Internal, fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}

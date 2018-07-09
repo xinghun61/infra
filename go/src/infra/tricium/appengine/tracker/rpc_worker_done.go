@@ -44,8 +44,11 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 }
 
 func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.IsolateAPI) error {
-	logging.Debugf(c, "[tracker] Worker done (run ID: %d, worker: %q, isolated output: %q)",
-		req.RunId, req.Worker, req.IsolatedOutputHash)
+	logging.Fields{
+		"run ID":          req.RunId,
+		"worker":          req.Worker,
+		"isolated output": req.IsolatedOutputHash,
+	}.Infof(c, "[tracker] Worker done request received.")
 
 	// Get keys for entities.
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
@@ -63,7 +66,9 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return fmt.Errorf("failed to read state of WorkerRunResult: %v", err)
 	}
 	if tricium.IsDone(workerRes.State) {
-		logging.Infof(c, "Worker (%s) already tracked as done", workerRes.Name)
+		logging.Fields{
+			"worker": workerRes.Name,
+		}.Infof(c, "Worker already tracked as done.")
 		return nil
 	}
 
@@ -118,7 +123,10 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 
 	// If function is done then we should merge results if needed.
 	if tricium.IsDone(functionState) {
-		logging.Infof(c, "Analyzer %s completed with %d comments", functionName, functionNumComments)
+		logging.Fields{
+			"analyzer":     functionName,
+			"num comments": functionNumComments,
+		}.Infof(c, "Analyzer completed.")
 		// TODO(emso): merge results.
 		// Review comments in this invocation and stored comments from sibling workers.
 		// Comments are included by default. For conflicting comments, select which comments
@@ -218,7 +226,10 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 				if fr.State != functionState {
 					fr.State = functionState
 					fr.NumComments = functionNumComments
-					logging.Debugf(c, "[tracker] Updating state of function %s, num comments: %d", fr.Name, fr.NumComments)
+					logging.Fields{
+						"function":     fr.Name,
+						"num comments": fr.NumComments,
+					}.Debugf(c, "[tracker] Updating state of function.")
 					if err := ds.Put(c, fr); err != nil {
 						return fmt.Errorf("failed to update FunctionRunResult: %v", err)
 					}

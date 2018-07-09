@@ -31,7 +31,9 @@ var server = &launcherServer{}
 
 // Launch processes one launch request to the Tricium Launcher.
 func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*admin.LaunchResponse, error) {
-	logging.Infof(c, "[launcher] Launch request (run ID: %d)", req.RunId)
+	logging.Fields{
+		"run ID": req.RunId,
+	}.Infof(c, "[launcher] Launch request received.")
 	if req.RunId == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
@@ -60,7 +62,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 	// in the request; if so stop here.
 	w := &config.Workflow{ID: req.RunId}
 	if err := ds.Get(c, w); err != ds.ErrNoSuchEntity {
-		logging.Infof(c, "[launcher] Launch request for launched workflow, run ID: %s", req.RunId)
+		logging.Infof(c, "[launcher] Launch request for already-launched workflow")
 		return nil
 	}
 

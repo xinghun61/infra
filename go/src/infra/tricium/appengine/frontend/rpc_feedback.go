@@ -26,6 +26,9 @@ const longForm = "2006-01-02T08:04:05Z"
 
 // Feedback processes one feedback request to Tricium.
 func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest) (*tricium.FeedbackResponse, error) {
+	logging.Fields{
+		"category": req.Category,
+	}.Infof(c, "[frontend] Feedback request received.")
 	stime, etime, err := validateFeedbackRequest(c, req)
 	if err != nil {
 		return nil, err
@@ -35,7 +38,6 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 		logging.WithError(err).Errorf(c, "feedback failed")
 		return nil, grpc.Errorf(codes.Internal, "failed to execute feedback request")
 	}
-	logging.Infof(c, "[frontend] Feedback, category: %q, not useful: %d, issues: %s", req.Category, count, issues)
 	return &tricium.FeedbackResponse{Comments: int32(count), NotUsefulReports: int32(reports), Issues: issues}, nil
 }
 
@@ -83,7 +85,11 @@ func feedback(c context.Context, category string, stime, etime time.Time) (int, 
 		return 0, 0, nil, fmt.Errorf("failed to retrieve Comment entities: %v", err)
 	}
 	if len(comments) == 0 {
-		logging.Infof(c, "Found no comments, category: %s, stime: %s, etime: %s", category, stime.String(), etime.String())
+		logging.Fields{
+			"category":   category,
+			"start time": stime.String(),
+			"end time":   etime.String(),
+		}.Infof(c, "Found no comments.")
 	}
 	var entities []interface{}
 	for _, comment := range comments {

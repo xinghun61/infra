@@ -41,7 +41,12 @@ func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunche
 }
 
 func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
-	logging.Debugf(c, "[tracker] Worker launched (run ID: %d, worker: %s, taskID: %s, IsolatedInput: %s)", req.RunId, req.Worker, req.SwarmingTaskId, req.IsolatedInputHash)
+	logging.Fields{
+		"run ID":         req.RunId,
+		"worker":         req.Worker,
+		"task ID":        req.SwarmingTaskId,
+		"isolated input": req.IsolatedInputHash,
+	}.Infof(c, "[tracker] Worker launched request received.")
 	// Compute needed keys.
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
@@ -67,7 +72,10 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 						return fmt.Errorf("failed to update WorkerRunResult: %v", err)
 					}
 				} else {
-					logging.Warningf(c, "worker not in PENDING state when launched, run.ID: %d, worker: %s", req.RunId, req.Worker)
+					logging.Fields{
+						"run ID": req.RunId,
+						"worker": req.Worker,
+					}.Warningf(c, "Worker not in PENDING state when launched.")
 				}
 				return nil
 			}

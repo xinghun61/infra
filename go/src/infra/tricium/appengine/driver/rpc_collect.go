@@ -24,7 +24,11 @@ import (
 
 // Collect processes one collect request to the Tricium driver.
 func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*admin.CollectResponse, error) {
-	logging.Infof(c, "[driver]: Received collect request (run ID: %d, worker: %s, task ID: %s)", req.RunId, req.Worker, req.TaskId)
+	logging.Fields{
+		"run ID":  req.RunId,
+		"worker":  req.Worker,
+		"task ID": req.TaskId,
+	}.Infof(c, "[driver] Collect request received.")
 	if err := validateCollectRequest(req); err != nil {
 		return nil, err
 	}

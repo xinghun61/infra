@@ -244,11 +244,14 @@ func (s isolateServer) fetch(c context.Context, serverURL, digest string, buf *b
 func (s isolateServer) fetchIsolated(c context.Context, serverURL, digest string) (*isolated.Isolated, error) {
 	buf := &buffer{}
 	if err := s.fetch(c, serverURL, digest, buf); err != nil {
-		return nil, fmt.Errorf("failed to fetch isolate: %v", err)
+		return nil, fmt.Errorf("failed to fetch isolated: %v", err)
 	}
 	iso := &isolated.Isolated{}
 	json.Unmarshal(buf.Bytes(), iso)
-	logging.Infof(c, "Fetched isolate: %q, iso: %v", string(buf.Bytes()), iso)
+	logging.Fields{
+		"isolated contents": string(buf.Bytes()),
+		"isolated":          iso,
+	}.Infof(c, "Fetched isolated.")
 	return iso, nil
 }
 
