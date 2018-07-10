@@ -174,7 +174,7 @@ class IssueList(servlet.Servlet):
         'edit_hotlist_token': '',
         'add_local_ids': '',
         'placeholder': '',
-        'col_spec': ''
+        'col_spec': '',
     })
 
     return page_data

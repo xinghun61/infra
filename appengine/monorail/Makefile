@@ -83,7 +83,7 @@ deps:
 vulcanize: clean_vulcanized
 	$(call VULCANIZE, elements/flt/mr-approval-page/mr-approval-page)
 	$(call VULCANIZE, elements/chdir/mr-profile-page/mr-profile-page)
-	$(call VULCANIZE, elements/bar-chart)
+	$(call VULCANIZE, elements/mr-bar-chart/mr-bar-chart)
 	$(call VULCANIZE, elements/mr-flipper/mr-flipper)
 
 clean_vulcanized:

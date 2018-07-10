@@ -1,0 +1,135 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="mr-bar-chart">
+  <template>
+    <style>
+      .chart-container {
+        margin: 0 auto;
+        padding: 2em 1em;
+        max-width: 800px;
+        height: 400px;
+        background-color: #eee;
+      }
+      .bars {
+        height: 350px;
+        border-bottom: solid 1px #333;
+        display: flex;
+        justify-content: stretch;
+      }
+      .bar {
+        background-color: #3674e5;
+        margin: 0 3em;
+        flex: 1;
+        position: relative;
+        align-self: flex-end;
+      }
+      .bar b {
+        color: white;
+        text-align: center;
+        position: absolute;
+        width: 100%;
+        top: 4px;
+      }
+      .indices {
+        display: flex;
+      }
+      .index {
+        margin: 0 16px;
+        flex: 1;
+        text-align: center;
+        font-weight: bold;
+        font-size: 14px;
+      }
+    </style>
+
+    <div class="chart-container">
+      <div class="bars">
+        <template is="dom-repeat" items="[[heightsAndOffsets]]" as="val">
+          <div class="bar"
+            style="height: [[val.height]]px;">
+            <b>[[ val.value ]]</b></div>
+        </template>
+      </div>
+
+      <div class="indices">
+        <template is="dom-repeat" items="[[indices]]" as="idx">
+          <div class="index">[[ idx ]]</div>
+        </template>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    'use strict';
+    const CHART_HEIGHT_PX = 350;
+
+    class MrBarChart extends Polymer.Element {
+      static get is() { return 'mr-bar-chart'; }
+
+      static get properties() {
+        return {
+          projectName: String,
+          values: {
+            type: Array,
+            value: [],
+          },
+          indices: {
+            type: Array,
+            value: [],
+          },
+          heightsAndOffsets: {
+            type: Array,
+            value: [],
+          },
+        };
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this.fetchData();
+      }
+
+      fetchData() {
+        const currentUnixSeconds = Math.round((new Date()).getTime() / 1000);
+        const secondsInWeek = 7 * 24 * 60 * 60;
+        const timestamps = [
+          currentUnixSeconds - (secondsInWeek * 2),
+          currentUnixSeconds - (secondsInWeek * 1),
+          currentUnixSeconds,
+        ];
+        this.indices = timestamps.map(ts => (new Date(ts * 1000)).toDateString());
+        const fetchPromises = timestamps.map((ts) => this.fetchDataAtTimestamp(ts));
+        Promise.all(fetchPromises).then(chartData => {
+          this.values = chartData.map((data) => data.issues);
+          const maxVal = this.values.reduce((acc, val) => (
+            (val > acc) ? val : acc
+          ), 0);
+          this.heightsAndOffsets = this.values.map(value => {
+            const height = (value / maxVal) * CHART_HEIGHT_PX;
+            return {
+              value: value,
+              height: height,
+            };
+          });
+        });
+      }
+
+      fetchDataAtTimestamp(timestamp) {
+        return new Promise((resolve, reject) => {
+          const params = new URLSearchParams(document.location.search.substring(1));
+          const q = params.get('q');
+          const options = { credentials: 'same-origin' };
+          const url = `/p/${this.projectName}/feeds/snapshotCounts?timestamp=${timestamp}&q=${q}`;
+          return fetch(url, options).then(response => {
+            response.text().then(responseText => {
+              const data = JSON.parse(responseText.substr(5));
+              resolve({date: timestamp * 1000, issues: data.results.total});
+            });
+          });
+        });
+      }
+    }
+
+    customElements.define(MrBarChart.is, MrBarChart);
+  </script>
+</dom-module>
