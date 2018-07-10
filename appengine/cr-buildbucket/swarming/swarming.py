@@ -72,14 +72,21 @@ PARAM_CHANGES = 'changes'
 BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
 BUILD_RUN_RESULT_CORRUPTED = 'corrupted'
 BUILD_RUN_RESULT_MAX_SIZE_MB = 1
-BUILD_RUN_RESULT_MAX_SIZE = BUILD_RUN_RESULT_MAX_SIZE_MB * (1 << 20)
+BUILD_RUN_RESULT_MAX_SIZE = BUILD_RUN_RESULT_MAX_SIZE_MB * (1e6)
 BUILD_RUN_RESULT_TOO_LARGE = '>= %d MB' % BUILD_RUN_RESULT_MAX_SIZE_MB
 BUILD_RUN_RESULT_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/build_run_result_size',
     'Size of the build result JSON file fetched from isolate',
     [gae_ts_mon.StringField('bucket'),
      gae_ts_mon.StringField('builder')],
-    units=gae_ts_mon.MetricsDataUnits.KILOBYTES
+    units=gae_ts_mon.MetricsDataUnits.KILOBYTES,
+)
+BUILD_STEPS_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
+    'buildbucket/build_steps_size',
+    'Size of the build steps',
+    [gae_ts_mon.StringField('bucket'),
+     gae_ts_mon.StringField('builder')],
+    units=gae_ts_mon.MetricsDataUnits.KILOBYTES,
 )
 
 # The default percentage of builds that use canary swarming task template.
@@ -941,7 +948,7 @@ def _load_build_run_result_async(task_result, bucket, builder):
   if result_size >= BUILD_RUN_RESULT_MAX_SIZE:
     raise ndb.Return(None, BUILD_RUN_RESULT_TOO_LARGE)
   BUILD_RUN_RESULT_SIZE_METRIC.add(
-      result_size >> 10, {
+      result_size / 1000, {
           'bucket': bucket,
           'builder': builder,
       }
@@ -1150,14 +1157,33 @@ def _sync_build_async(build_id, task_result, bucket, builder):
     )
 
   build_key = ndb.Key(model.Build, build_id)
-  # TODO(nodir): remove this statement.
-  build_ann = _extract_build_annotations(build_key, build_run_result)
+
   # TODO(nodir): accept build steps via a separate RPC.
   step_container = build_pb2.Build(steps=_extract_build_steps(build_run_result))
   build_steps = model.BuildSteps(
       key=model.BuildSteps.key_for(build_key),
       steps=step_container.SerializeToString(),
   )
+  BUILD_STEPS_SIZE_METRIC.add(
+      len(build_steps.steps) / 1000,  # convert to Kb
+      {
+          'bucket': bucket,
+          'builder': builder,
+      },
+  )
+  too_large = len(build_steps.steps) > model.BuildSteps.MAX_STEPS_LEN
+  if too_large:  # pragma: no cover
+    # piggy back on the existing error handling mechanism
+    build_run_result = None
+    build_run_result_error = (
+        'build steps are %d bytes which is more than %d' %
+        (len(build_steps.steps), model.BuildSteps.MAX_STEPS_LEN)
+    )
+    build_run_result_error = BUILD_RUN_RESULT_TOO_LARGE
+    build_steps.steps = ''
+
+  # TODO(nodir): remove this statement.
+  build_ann = _extract_build_annotations(build_key, build_run_result)
 
   @ndb.transactional_tasklet
   def txn_async():

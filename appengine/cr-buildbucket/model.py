@@ -272,8 +272,18 @@ class BuildDetailEntity(ndb.Model):
 
 class BuildSteps(BuildDetailEntity):
   """Stores buildbucket.v2.Steps of a build, if available."""
+
+  # max length of steps attribute.
+  MAX_STEPS_LEN = 512 * 1024
+
   # buildbucket.v2.Build binary protobuf message with only "steps" field set.
   steps = ndb.BlobProperty()
+
+
+def _pre_put_hook(self):  # pragma: no cover
+  """Checks BuildSteps invariants before putting."""
+  assert isinstance(self.steps, str)
+  assert len(self.steps) <= self.MAX_STEPS_LEN
 
 
 class Builder(ndb.Model):
