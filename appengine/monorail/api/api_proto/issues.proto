@@ -57,6 +57,7 @@ message UpdateIssueRequest {
   bool send_email = 3;
   IssueDelta delta = 4;
   string comment_content = 5;
+  bool is_description = 6;
 }
 
 
