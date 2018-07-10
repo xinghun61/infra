@@ -98,7 +98,11 @@ class CodeReview(object):  # pragma: no cover.
     """
     raise NotImplementedError()
 
-  def GetClDetails(self, change_id, project=None, branch=None):
+  def GetClDetails(self,
+                   change_id,
+                   project=None,
+                   branch=None,
+                   additional_fields=None):
     """Retrieves information about commits and reverts for a given CL.
 
     Args:
@@ -106,6 +110,8 @@ class CodeReview(object):  # pragma: no cover.
           number of the CL on Rietveld.
       project (str): The project name tracking the CL on the code review server.
       branch (str): The branch name tracking the CL on the code review server.
+      additional_fields (list): A list of additional_fields that need to be
+        included in response.
 
     Returns:
       An object that has a `commits` and a `reverts` properties which are lists
@@ -122,5 +128,15 @@ class CodeReview(object):  # pragma: no cover.
 
     Returns:
       A boolean indicating success.
+    """
+    raise NotImplementedError()
+
+  def QueryCls(self, query_params, additional_fields=None):
+    """Queries changes by provided parameters.
+
+    Args:
+      query_params(dict): query parameters.
+      additional_fields (list): A list of additional_fields that need to be
+        included in response.
     """
     raise NotImplementedError()

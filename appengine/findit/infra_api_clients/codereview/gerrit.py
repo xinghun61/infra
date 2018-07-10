@@ -216,11 +216,54 @@ class Gerrit(codereview.CodeReview):
       return False
     return True
 
-  def GetClDetails(self, change_id, project='chromium/src', branch='master'):
-    assert project, 'project name is invalid'
-    assert branch, 'branch name is invalid'
-    params = [('o', 'CURRENT_REVISION'), ('o', 'CURRENT_COMMIT')]
-    full_change_id = '%s~%s~%s' % (project, branch, change_id)
+  def QueryCls(self, query_params, query_options=None):
+    """Queries changes by provided parameters.
+
+    Args:
+      query_params(dict): query parameters.
+      query_options (list): A list of query_options that need to be
+        included in response.
+
+    Returns:
+      A list of ClInfo objects.
+    """
+    if not query_params:
+      logging.error('Empty query parameters')
+      return []
+
+    query = ' '.join(['%s:"%s"' % (k, v) for k, v in query_params.iteritems()])
+    params = [('q', query)]
+
+    # Parameters to include additional fields in response.
+    # See https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#query-options  # pylint:disable=line-too-long
+    query_options = query_options or ['CURRENT_REVISION', 'CURRENT_COMMIT']
+    params.extend([('o', field) for field in query_options])
+
+    # The query url should look like:
+    # https://host/a/changes/?q=k1:v1+k2:v2&o=ALL_REVISIONS&o=ALL_COMMITS
+    changes_info = self._Get(['changes', ''], params=params)
+
+    return [
+        self._ParseClInfo(
+            change_info,
+            change_info.get('change_id') or change_info.get('_number'))
+        for change_info in changes_info
+    ]
+
+  def GetClDetails(self,
+                   change_id,
+                   project='chromium/src',
+                   branch='master',
+                   query_options=None):
+    assert project, 'project name is required'
+    assert branch, 'branch name is required'
+
+    query_options = query_options or ['CURRENT_REVISION', 'CURRENT_COMMIT']
+    params = [('o', field) for field in query_options]
+
+    # Uses full_change_id or the legacy numeric ID of the change.
+    full_change_id = change_id if change_id.isdigit() else (
+        '%s~%s~%s' % (project, branch, change_id))
     change_info = self._Get(
         ['changes', full_change_id, 'detail'], params=params)
     return self._ParseClInfo(change_info, change_id)
@@ -231,11 +274,14 @@ class Gerrit(codereview.CodeReview):
     result = cl_info.ClInfo(self._server_hostname, change_id)
 
     result.reviewers = [
-        x['email'] for x in change_info['reviewers'].get('REVIEWER', [])
+        x['email']
+        for x in change_info.get('reviewers', {}).get('REVIEWER', [])
     ]
-    result.cc = [x['email'] for x in change_info['reviewers'].get('CC', [])]
+    result.cc = [
+        x['email'] for x in change_info.get('reviewers', {}).get('CC', [])
+    ]
     result.closed = change_info['status'] == 'MERGED'
-    result.owner_email = change_info['owner']['email']
+    result.owner_email = change_info['owner'].get('email')
     result.subject = change_info['subject']
     result.revert_of = change_info.get('revert_of')
 
@@ -246,9 +292,13 @@ class Gerrit(codereview.CodeReview):
       revision_info = change_info['revisions'][current_revision]
       patchset_id = revision_info['_number']
       commit_timestamp = time_util.DatetimeFromString(change_info['submitted'])
-      result.commits.append(
-          cl_info.Commit(patchset_id, current_revision, commit_timestamp))
       revision_commit = revision_info['commit']
+      parent_revisions = [c['commit'] for c in revision_commit['parents']
+                         ] if revision_commit else []
+      result.commits.append(
+          cl_info.Commit(patchset_id, current_revision, parent_revisions,
+                         commit_timestamp))
+
       # Detect manual commits.
       committer = revision_commit['committer']['email']
       if committer not in self.commit_bot_emails:
@@ -259,6 +309,15 @@ class Gerrit(codereview.CodeReview):
       # Checks for if the culprit owner has turned off auto revert.
       result.auto_revert_off = codereview.IsAutoRevertOff(result.description)
 
+    # Saves information for each patch set.
+    for revision, revision_info in change_info['revisions'].iteritems():
+      patchset_id = revision_info['_number']
+      commit_info = revision_info.get('commit') or {}
+      parent_revisions = [c['commit'] for c in commit_info['parents']
+                         ] if commit_info else []
+      result.patchsets[revision] = cl_info.PatchSet(patchset_id, revision,
+                                                    parent_revisions)
+
     # TO FIND COMMIT ATTEMPTS:
     # In messages look for "Patch Set 1: Commit-Queue+2"
     # or "Patch Set 4: Code-Review+1 Commit-Queue+2".
@@ -267,7 +326,7 @@ class Gerrit(codereview.CodeReview):
     revert_pattern = re.compile(
         'Created a revert of this change as (?P<change_id>I[a-f\d]{40})')
 
-    for message in change_info['messages']:
+    for message in change_info.get('messages', []):
       if cq_pattern.match(message['message'].splitlines()[0]):
         patchset_id = message['_revision_number']
         author = message['author']['email']

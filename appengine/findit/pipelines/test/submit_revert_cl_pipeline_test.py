@@ -64,7 +64,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     mock_fn.return_value = cl_info
     mock_commit.return_value = True
 

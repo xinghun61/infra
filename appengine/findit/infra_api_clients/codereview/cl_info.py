@@ -6,28 +6,41 @@
 from libs import time_util
 
 
-class Commit(object):
+class PatchSet(object):
 
-  def __init__(self, patchset_id, revision, timestamp):
-    # A string such as '20001'.
+  def __init__(self, patchset_id, revision, parent_revisions):
+    # A string such as '1'.
     self.patchset_id = patchset_id
     # A commit hash e.g. 'abcd0123abcd0123abcd0123abcd0123abcd0123'.
     self.revision = revision
-    # The timestamp of the message as stored in the code review issue.
-    self.timestamp = timestamp
+    # A list of commit hashes this patchset depends on.
+    self.parent_revisions = parent_revisions
 
   def serialize(self):
     return {
         'patchset_id': self.patchset_id,
         'revision': self.revision,
-        'timestamp': time_util.FormatDatetime(self.timestamp),
+        'parent_revisions': self.parent_revisions,
     }
+
+
+class Commit(PatchSet):
+
+  def __init__(self, patchset_id, revision, parent_revisions, timestamp):
+    super(Commit, self).__init__(patchset_id, revision, parent_revisions)
+    # The timestamp of the message as stored in the code review issue.
+    self.timestamp = timestamp
+
+  def serialize(self):
+    data = super(Commit, self).serialize()
+    data['timestamp'] = time_util.FormatDatetime(self.timestamp)
+    return data
 
 
 class CommitAttempt(object):
 
   def __init__(self, patchset_id, user_email, timestamp):
-    # A string such as '20001'.
+    # A string such as '1'.
     self.patchset_id = patchset_id
     # The timestamp of the message as stored in the code review issue.
     self.last_cq_timestamp = timestamp
@@ -46,7 +59,7 @@ class Revert(object):
 
   def __init__(self, patchset_id, reverting_cl, reverting_user_email,
                timestamp):
-    # A string such as '20001'
+    # A string such as '1'
     self.patchset_id = patchset_id
     # A ClInfo object
     self.reverting_cl = reverting_cl
@@ -111,6 +124,9 @@ class ClInfo(object):
     # the value should always be None.
     self.revert_of = None
 
+    # A map of revision to PatchSet objects.
+    self.patchsets = {}
+
   def AddCqAttempt(self, patchset_id, committer, timestamp):
     if patchset_id not in self.commit_attempts.keys():
       self.commit_attempts[patchset_id] = CommitAttempt(patchset_id, committer,
@@ -147,7 +163,8 @@ class ClInfo(object):
         'description':
             self.description,
         'revert_of':
-            self.revert_of
+            self.revert_of,
+        'patchsets': {k: v.serialize() for k, v in self.patchsets.iteritems()},
     }
 
   def GetPatchsetIdByRevision(self, revision):

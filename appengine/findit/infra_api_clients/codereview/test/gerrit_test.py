@@ -225,7 +225,12 @@ class GerritTest(testing.AppengineTestCase):
                         'committer': {
                             'email': 'commit-bot@chromium.org'
                         },
-                        'message': 'some message'
+                        'message':
+                            'some message',
+                        'parents': [{
+                            'commit': (
+                                'ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f'),
+                        }]
                     }
                 }
             },
@@ -271,7 +276,12 @@ class GerritTest(testing.AppengineTestCase):
                         'committer': {
                             'email': 'one@chromium.org',
                         },
-                        'message': 'some message'
+                        'message':
+                            'some message',
+                        'parents': [{
+                            'commit': (
+                                'ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f'),
+                        }]
                     }
                 }
             },
@@ -336,11 +346,16 @@ class GerritTest(testing.AppengineTestCase):
                         'committer': {
                             'email': 'commit-bot@chromium.org',
                         },
-                        'message': 'cl title\n\nsome description\n\n'
-                                   'NOAUTOREVERT= True\n\nChange-Id: '
-                                   'someid\nReviewed-on: cl_url\nCommit-Queue: '
-                                   'owner\nReviewed-by: reviewers\n\n'
-                                   'BUGS : 12345, 67890'
+                        'message':
+                            'cl title\n\nsome description\n\n'
+                            'NOAUTOREVERT= True\n\nChange-Id: '
+                            'someid\nReviewed-on: cl_url\nCommit-Queue: '
+                            'owner\nReviewed-by: reviewers\n\n'
+                            'BUGS : 12345, 67890',
+                        'parents': [{
+                            'commit': (
+                                'ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f'),
+                        }]
                     },
                 }
             },
@@ -387,11 +402,16 @@ class GerritTest(testing.AppengineTestCase):
                             'date': '2017-02-27 19:05:03.000000000',
                             'tz': 0
                         },
-                        'message': 'cl title\n\nsome description\n\n'
-                                   'NOAUTOREVERT=TRUE\n\nChange-Id: '
-                                   'someid\nReviewed-on: cl_url\nCommit-Queue: '
-                                   'owner\nReviewed-by: reviewers\n\n'
-                                   'BUG: 123455'
+                        'message':
+                            'cl title\n\nsome description\n\n'
+                            'NOAUTOREVERT=TRUE\n\nChange-Id: '
+                            'someid\nReviewed-on: cl_url\nCommit-Queue: '
+                            'owner\nReviewed-by: reviewers\n\n'
+                            'BUG: 123455',
+                        'parents': [{
+                            'commit': (
+                                'b63383e4e3f2b774ce0e6d3bfafb4adc84e48f2b'),
+                        }]
                     },
                 }
             },
@@ -401,88 +421,117 @@ class GerritTest(testing.AppengineTestCase):
                 446905
         }]):
       cl_info = self.gerrit.GetClDetails(change_id)
-    self.assertEqual(
-        cl_info.serialize(), {
-            'server_hostname':
-                'server.host.name',
-            'auto_revert_off':
-                True,
-            'owner_email':
-                'abc@chromium.org',
-            'reviewers': [
-                'one@chromium.org', 'commit-bot@chromium.org',
-                'two@chromium.org'
-            ],
-            'closed':
-                True,
-            'commits': [{
-                'patchset_id': 2,
-                'timestamp': '2017-02-27 18:56:54 UTC',
-                'revision': 'edda1046ce724695004242e943f59f5e1b2d00ff'
-            }],
-            'cc': [],
-            'subject':
-                'subject',
-            'description':
-                'cl title\n\nsome description\n\n'
-                'NOAUTOREVERT= True\n\nChange-Id: '
-                'someid\nReviewed-on: cl_url\nCommit-Queue: '
-                'owner\nReviewed-by: reviewers\n\n'
-                'BUGS : 12345, 67890',
-            'change_id':
-                'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
-            'reverts': [{
-                'patchset_id': 2,
-                'reverting_user_email': 'one@chromium.org',
-                'timestamp': '2017-02-27 19:04:51 UTC',
-                'reverting_cl': {
-                    'server_hostname':
-                        'server.host.name',
-                    'auto_revert_off':
-                        True,
-                    'owner_email':
-                        'abc@chromium.org',
-                    'reviewers': [
-                        'one@chromium.org', 'commit-bot@chromium.org',
-                        'two@chromium.org'
-                    ],
-                    'closed':
-                        True,
-                    'commits': [{
-                        'patchset_id': 2,
-                        'timestamp': '2017-02-27 19:05:03 UTC',
-                        'revision': 'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824'
-                    }],
-                    'cc': [],
-                    'subject':
-                        'subject',
-                    'description':
-                        'cl title\n\nsome description\n\n'
-                        'NOAUTOREVERT=TRUE\n\nChange-Id: '
-                        'someid\nReviewed-on: cl_url\n'
-                        'Commit-Queue: '
-                        'owner\nReviewed-by: reviewers\n\n'
-                        'BUG: 123455',
-                    'change_id':
-                        'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
-                    'reverts': [],
-                    'commit_attempts': [{
-                        'patchset_id': 1,
-                        'timestamp': '2017-02-27 19:04:53 UTC',
-                        'committing_user_email': 'one@chromium.org'
-                    }],
-                    'revert_of':
-                        446905
-                }
-            }],
-            'commit_attempts': [{
-                'patchset_id': 1,
-                'timestamp': '2017-02-27 18:47:15 UTC',
-                'committing_user_email': 'one@chromium.org'
-            }],
-            'revert_of':
-                None
-        })
+
+      expected_cl_info = {
+          'server_hostname':
+              'server.host.name',
+          'auto_revert_off':
+              True,
+          'owner_email':
+              'abc@chromium.org',
+          'reviewers': [
+              'one@chromium.org', 'commit-bot@chromium.org', 'two@chromium.org'
+          ],
+          'closed':
+              True,
+          'commits': [{
+              'patchset_id': 2,
+              'timestamp': '2017-02-27 18:56:54 UTC',
+              'revision': 'edda1046ce724695004242e943f59f5e1b2d00ff',
+              'parent_revisions': ['ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f']
+          }],
+          'cc': [],
+          'subject':
+              'subject',
+          'description':
+              'cl title\n\nsome description\n\n'
+              'NOAUTOREVERT= True\n\nChange-Id: '
+              'someid\nReviewed-on: cl_url\nCommit-Queue: '
+              'owner\nReviewed-by: reviewers\n\n'
+              'BUGS : 12345, 67890',
+          'change_id':
+              'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
+          'reverts': [{
+              'patchset_id': 2,
+              'reverting_user_email': 'one@chromium.org',
+              'timestamp': '2017-02-27 19:04:51 UTC',
+              'reverting_cl': {
+                  'server_hostname':
+                      'server.host.name',
+                  'auto_revert_off':
+                      True,
+                  'owner_email':
+                      'abc@chromium.org',
+                  'reviewers': [
+                      'one@chromium.org', 'commit-bot@chromium.org',
+                      'two@chromium.org'
+                  ],
+                  'closed':
+                      True,
+                  'commits': [{
+                      'patchset_id':
+                          2,
+                      'timestamp':
+                          '2017-02-27 19:05:03 UTC',
+                      'revision':
+                          'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824',
+                      'parent_revisions': [
+                          'b63383e4e3f2b774ce0e6d3bfafb4adc84e48f2b'
+                      ]
+                  }],
+                  'cc': [],
+                  'subject':
+                      'subject',
+                  'description':
+                      'cl title\n\nsome description\n\n'
+                      'NOAUTOREVERT=TRUE\n\nChange-Id: '
+                      'someid\nReviewed-on: cl_url\n'
+                      'Commit-Queue: '
+                      'owner\nReviewed-by: reviewers\n\n'
+                      'BUG: 123455',
+                  'change_id':
+                      'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
+                  'reverts': [],
+                  'commit_attempts': [{
+                      'patchset_id': 1,
+                      'timestamp': '2017-02-27 19:04:53 UTC',
+                      'committing_user_email': 'one@chromium.org'
+                  }],
+                  'revert_of':
+                      446905,
+                  'patchsets': {
+                      'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824': {
+                          'patchset_id':
+                              2,
+                          'revision':
+                              'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824',
+                          'parent_revisions': [
+                              'b63383e4e3f2b774ce0e6d3bfafb4adc84e48f2b'
+                          ]
+                      }
+                  }
+              }
+          }],
+          'commit_attempts': [{
+              'patchset_id': 1,
+              'timestamp': '2017-02-27 18:47:15 UTC',
+              'committing_user_email': 'one@chromium.org'
+          }],
+          'revert_of':
+              None,
+          'patchsets': {
+              'edda1046ce724695004242e943f59f5e1b2d00ff': {
+                  'patchset_id':
+                      2,
+                  'revision':
+                      'edda1046ce724695004242e943f59f5e1b2d00ff',
+                  'parent_revisions': [
+                      'ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f'
+                  ]
+              }
+          }
+      }
+    self.assertEqual(cl_info.serialize(), expected_cl_info)
 
   def testCreateRevertSuccessful(self):
     change_id = 'I123456'
@@ -608,7 +657,12 @@ class GerritTest(testing.AppengineTestCase):
                         'committer': {
                             'email': 'commit-bot@chromium.org',
                         },
-                        'message': original_cl_description
+                        'message':
+                            original_cl_description,
+                        'parents': [{
+                            'commit': (
+                                'ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f'),
+                        }]
                     },
                 }
             },
@@ -616,9 +670,9 @@ class GerritTest(testing.AppengineTestCase):
                 'cl title'
         }):
 
-      self.assertEqual(expected_description,
-                       self.gerrit._GenerateRevertCLDescription(
-                           change_id, reason))
+      self.assertEqual(
+          expected_description,
+          self.gerrit._GenerateRevertCLDescription(change_id, reason))
 
   @mock.patch.object(
       time_util,
@@ -712,7 +766,12 @@ class GerritTest(testing.AppengineTestCase):
                         'committer': {
                             'email': 'commit-bot@chromium.org',
                         },
-                        'message': original_cl_description
+                        'message':
+                            original_cl_description,
+                        'parents': [{
+                            'commit': (
+                                'ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f'),
+                        }]
                     },
                 }
             },
@@ -720,9 +779,9 @@ class GerritTest(testing.AppengineTestCase):
                 'cl title'
         }):
 
-      self.assertEqual(expected_description,
-                       self.gerrit._GenerateRevertCLDescription(
-                           change_id, reason))
+      self.assertEqual(
+          expected_description,
+          self.gerrit._GenerateRevertCLDescription(change_id, reason))
 
   def testGetBugLine(self):
     expected_results = {
@@ -734,6 +793,10 @@ class GerritTest(testing.AppengineTestCase):
 
     for k, v in expected_results.iteritems():
       self.assertEqual(v, self.gerrit._GetBugLine(k))
+
+    self.assertEqual('Bug: 12345\n', self.gerrit._GetBugLine('', '12345'))
+    self.assertEqual('BUG: 12345, 67890\n',
+                     self.gerrit._GetBugLine('BUG: 12345\n', '67890'))
 
   def testGetCQTryBotLine(self):
     expected_results = {
@@ -786,3 +849,266 @@ class GerritTest(testing.AppengineTestCase):
     with mock.patch.object(
         self.gerrit, '_HandleResponse', return_value='return_value'):
       self.assertEqual(self.gerrit._Get(path_parts), 'return_value')
+
+  def testQueryClsNoQueryParames(self):
+    self.assertEquals([], self.gerrit.QueryCls({}))
+
+  def testQueryCls(self):
+    with mock.patch.object(
+        self.gerrit,
+        '_Get',
+        return_value=[{
+            'change_id':
+                'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
+            'status':
+                'MERGED',
+            'owner': {
+                'email': 'abc@chromium.org'
+            },
+            'submitted':
+                '2017-02-27 18:56:54.000000000',
+            '_number':
+                446905,
+            'reviewers': {
+                'REVIEWER': [{
+                    'email': 'one@chromium.org'
+                }, {
+                    'email': 'commit-bot@chromium.org'
+                }, {
+                    'email': 'two@chromium.org'
+                }],
+                'CC': []
+            },
+            'messages': [{
+                'id': 'b7d6785c324297ec4f1e6b2de34cf83f4c58e87c',
+                'author': {
+                    'email': 'one@chromium.org'
+                },
+                'date': '2017-02-27 18:47:15.000000000',
+                'message': 'Patch Set 1: Commit-Queue+2',
+                '_revision_number': 1
+            }, {
+                'id': 'b9e04aec4bffed0284c1f53cc5a9c88818807368',
+                'author': {
+                    'email': 'one@chromium.org'
+                },
+                'date': '2017-02-27 19:04:51.000000000',
+                'message': 'Created a revert of this change as '
+                           'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
+                '_revision_number': 2
+            }],
+            'current_revision':
+                'edda1046ce724695004242e943f59f5e1b2d00ff',
+            'revisions': {
+                'edda1046ce724695004242e943f59f5e1b2d00ff': {
+                    '_number': 2,
+                    'commit': {
+                        'committer': {
+                            'email': 'commit-bot@chromium.org',
+                        },
+                        'message':
+                            'cl title\n\nsome description\n\n'
+                            'NOAUTOREVERT= True\n\nChange-Id: '
+                            'someid\nReviewed-on: cl_url\nCommit-Queue: '
+                            'owner\nReviewed-by: reviewers\n\n'
+                            'BUGS : 12345, 67890',
+                        'parents': [{
+                            'commit': (
+                                'ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f'),
+                        }]
+                    },
+                }
+            },
+            'subject':
+                'subject'
+        }, {
+            'change_id':
+                'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
+            'status':
+                'MERGED',
+            'submitted':
+                '2017-02-27 19:05:03.000000000',
+            'owner': {
+                'email': 'abc@chromium.org'
+            },
+            '_number':
+                446788,
+            'reviewers': {
+                'REVIEWER': [{
+                    'email': 'one@chromium.org',
+                }, {
+                    'email': 'commit-bot@chromium.org',
+                }, {
+                    'email': 'two@chromium.org',
+                }]
+            },
+            'messages': [{
+                'id': '30496ce351a43c0b74d812e9e40b440f5acff9d5',
+                'author': {
+                    'email': 'one@chromium.org',
+                },
+                'date': '2017-02-27 19:04:53.000000000',
+                'message': 'Patch Set 1: Code-Review+1 Commit-Queue+2',
+                '_revision_number': 1
+            },],
+            'current_revision':
+                'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824',
+            'revisions': {
+                'bd1db4534d7dc3f3f9c693ca0ac3e67caf56789': {
+                    '_number': 1,
+                    'commit': {
+                        'committer': {
+                            'email': 'commit-bot@chromium.org',
+                            'date': '2017-02-27 19:05:03.000000000',
+                            'tz': 0
+                        },
+                        'message':
+                            'cl title\n\nsome description\n\n'
+                            'NOAUTOREVERT=TRUE\n\nChange-Id: '
+                            'someid\nReviewed-on: cl_url\nCommit-Queue: '
+                            'owner\nReviewed-by: reviewers\n\n'
+                            'BUG: 123455',
+                        'parents': [{
+                            'commit': (
+                                'b63383e4e3f2b774ce0e6d3bfafb4adc84e48f2b'),
+                        }]
+                    },
+                },
+                'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824': {
+                    '_number': 2,
+                    'commit': {
+                        'committer': {
+                            'email': 'commit-bot@chromium.org',
+                            'date': '2017-02-27 19:05:03.000000000',
+                            'tz': 0
+                        },
+                        'message':
+                            'cl title\n\nsome description\n\n'
+                            'NOAUTOREVERT=TRUE\n\nChange-Id: '
+                            'someid\nReviewed-on: cl_url\nCommit-Queue: '
+                            'owner\nReviewed-by: reviewers\n\n'
+                            'BUG: 123455',
+                        'parents': [{
+                            'commit': (
+                                'b63383e4e3f2b774ce0e6d3bfafb4adc84e48f2b'),
+                        }]
+                    },
+                }
+            },
+            'subject':
+                'subject',
+            'revert_of':
+                446905
+        }]):
+      cls_info = self.gerrit.QueryCls({'author': 'abc@chromium.org'})
+
+      expected_cl_info = [{
+          'server_hostname':
+              'server.host.name',
+          'auto_revert_off':
+              True,
+          'owner_email':
+              'abc@chromium.org',
+          'reviewers': [
+              'one@chromium.org', 'commit-bot@chromium.org', 'two@chromium.org'
+          ],
+          'closed':
+              True,
+          'commits': [{
+              'patchset_id': 2,
+              'timestamp': '2017-02-27 18:56:54 UTC',
+              'revision': 'edda1046ce724695004242e943f59f5e1b2d00ff',
+              'parent_revisions': ['ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f']
+          }],
+          'cc': [],
+          'subject':
+              'subject',
+          'description':
+              'cl title\n\nsome description\n\n'
+              'NOAUTOREVERT= True\n\nChange-Id: '
+              'someid\nReviewed-on: cl_url\nCommit-Queue: '
+              'owner\nReviewed-by: reviewers\n\n'
+              'BUGS : 12345, 67890',
+          'change_id':
+              'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
+          'reverts': [],
+          'commit_attempts': [{
+              'patchset_id': 1,
+              'timestamp': '2017-02-27 18:47:15 UTC',
+              'committing_user_email': 'one@chromium.org'
+          }],
+          'revert_of':
+              None,
+          'patchsets': {
+              'edda1046ce724695004242e943f59f5e1b2d00ff': {
+                  'patchset_id':
+                      2,
+                  'revision':
+                      'edda1046ce724695004242e943f59f5e1b2d00ff',
+                  'parent_revisions': [
+                      'ef9ced2eee002d8c143d64d1e66e0a8eaeb8078f'
+                  ]
+              }
+          }
+      }, {
+          'server_hostname':
+              'server.host.name',
+          'auto_revert_off':
+              True,
+          'owner_email':
+              'abc@chromium.org',
+          'reviewers': [
+              'one@chromium.org', 'commit-bot@chromium.org', 'two@chromium.org'
+          ],
+          'closed':
+              True,
+          'commits': [{
+              'patchset_id': 2,
+              'timestamp': '2017-02-27 19:05:03 UTC',
+              'revision': 'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824',
+              'parent_revisions': ['b63383e4e3f2b774ce0e6d3bfafb4adc84e48f2b']
+          }],
+          'cc': [],
+          'subject':
+              'subject',
+          'description':
+              'cl title\n\nsome description\n\n'
+              'NOAUTOREVERT=TRUE\n\nChange-Id: '
+              'someid\nReviewed-on: cl_url\n'
+              'Commit-Queue: '
+              'owner\nReviewed-by: reviewers\n\n'
+              'BUG: 123455',
+          'change_id':
+              'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
+          'reverts': [],
+          'commit_attempts': [{
+              'patchset_id': 1,
+              'timestamp': '2017-02-27 19:04:53 UTC',
+              'committing_user_email': 'one@chromium.org'
+          }],
+          'revert_of':
+              446905,
+          'patchsets': {
+              'bd1db4534d7dc3f3f9c693ca0ac3e67caf56789': {
+                  'patchset_id':
+                      1,
+                  'revision':
+                      'bd1db4534d7dc3f3f9c693ca0ac3e67caf56789',
+                  'parent_revisions': [
+                      'b63383e4e3f2b774ce0e6d3bfafb4adc84e48f2b'
+                  ]
+              },
+              'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824': {
+                  'patchset_id':
+                      2,
+                  'revision':
+                      'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824',
+                  'parent_revisions': [
+                      'b63383e4e3f2b774ce0e6d3bfafb4adc84e48f2b'
+                  ]
+              }
+          }
+      }]
+
+      s_results = [cl_info.serialize() for cl_info in cls_info]
+      self.assertEqual(expected_cl_info, s_results)

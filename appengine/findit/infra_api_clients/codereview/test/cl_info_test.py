@@ -14,15 +14,18 @@ class ClInfoTest(unittest.TestCase):
   change_id = '20002000'
   patchset_id = '2000'
   revision = 'abcd'
+  parent_revisions = ['parent']
   timestamp = datetime.datetime(2017, 1, 2, 3, 4, 5)
   formatted_ts = '2017-01-02 03:04:05 UTC'
   email = 'developer@test.com'
 
   def testCommit(self):
-    commit = cl_info.Commit(self.patchset_id, self.revision, self.timestamp)
+    commit = cl_info.Commit(self.patchset_id, self.revision,
+                            self.parent_revisions, self.timestamp)
     self.assertEqual({
         'patchset_id': self.patchset_id,
         'revision': self.revision,
+        'parent_revisions': self.parent_revisions,
         'timestamp': self.formatted_ts
     }, commit.serialize())
 
@@ -63,7 +66,8 @@ class ClInfoTest(unittest.TestCase):
             'reviewers': [],
             'server_hostname': 'codereview.chromium.org',
             'subject': None,
-            'revert_of': None
+            'revert_of': None,
+            'patchsets': {}
         }
     }, revert.serialize())
 
@@ -83,7 +87,7 @@ class ClInfoTest(unittest.TestCase):
         self.timestamp + datetime.timedelta(hours=1))
 
     commit_1 = cl_info.Commit(self.patchset_id, self.revision,
-                              self.timestamp + hours(1))
+                              self.parent_revisions, self.timestamp + hours(1))
     cl.commits.append(commit_1)
     self.assertEqual(commit_1, cl.GetCommitInfoByRevision(self.revision))
     self.assertIsNone(cl.GetCommitInfoByRevision('randomrevision'))
@@ -91,18 +95,19 @@ class ClInfoTest(unittest.TestCase):
                      cl.GetPatchsetIdByRevision(self.revision))
 
     cl.commits.append(
-        cl_info.Commit('3000', 'ef1234', self.timestamp + hours(2)))
+        cl_info.Commit('3000', 'ef1234', [], self.timestamp + hours(2)))
     self.assertEqual('3000', cl.GetPatchsetIdByRevision('ef1234'))
     self.assertIsNone(cl.GetPatchsetIdByRevision('deadc0de'))
 
     revert_cl_1 = cl_info.ClInfo(self.server, 'revert1')
     revert_cl_1.commits.append(
-        cl_info.Commit('r1p1', '007c0de', self.timestamp + hours(3)))
+        cl_info.Commit('r1p1', '007c0de', [], self.timestamp + hours(3)))
     revert1 = cl_info.Revert(self.patchset_id, revert_cl_1, 'reverter@test.com',
                              self.timestamp + hours(3))
     cl.reverts.append(revert1)
-    self.assertEqual('007c0de',
-                     cl.GetRevertCLsByRevision(self.revision)[0]
-                     .reverting_cl.commits[0].revision)
+    self.assertEqual(
+        '007c0de',
+        cl.GetRevertCLsByRevision(self.revision)[0]
+        .reverting_cl.commits[0].revision)
     self.assertEqual([], cl.GetRevertCLsByRevision('ef1234'))
     self.assertIsNone(cl.GetRevertCLsByRevision('deadc0de'))

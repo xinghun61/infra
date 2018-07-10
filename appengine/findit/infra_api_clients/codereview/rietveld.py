@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(crbug/859726): Remove this since all code review are on Gerrit now.
 # TODO: In the new layout, this should move to the ./services or
 # ./services/waterfall_app directories, since it is only used by Waterfall.
 
@@ -155,7 +156,7 @@ class Rietveld(codereview.CodeReview):
       patchset_id = str(message.get('patchset'))
       revision = matches_any.group('revision')
       timestamp = time_util.DatetimeFromString(message['date'])
-      commit = cl_info.Commit(patchset_id, revision, timestamp)
+      commit = cl_info.Commit(patchset_id, revision, [], timestamp)
       cl.commits.append(commit)
       if matches_manual:
         committer = message['sender']
@@ -208,7 +209,11 @@ class Rietveld(codereview.CodeReview):
     cl.owner_email = data['owner_email']
     return cl
 
-  def GetClDetails(self, change_id, _unused_project=None, _unused_branch=None):
+  def GetClDetails(self,
+                   change_id,
+                   _unused_project=None,
+                   _unused_branch=None,
+                   _additional_fields=None):
     params = {'messages': 'true'}
     url = 'https://%s/api/%s' % (self._server_hostname, change_id)
     status_code, content, _response_headers = self.HTTP_CLIENT.Get(
@@ -247,3 +252,7 @@ class Rietveld(codereview.CodeReview):
 
   def SubmitRevert(self, _):
     logging.error('Should not auto submit rietveld reverts.')
+
+  def QueryCls(self, _query_params,
+               _additional_fields=None):  # pragma: no cover
+    return []

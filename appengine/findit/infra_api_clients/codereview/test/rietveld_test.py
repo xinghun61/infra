@@ -145,14 +145,14 @@ class RietveldTest(testing.AppengineTestCase):
     with open(os.path.join(os.path.dirname(__file__),
                            'testissuedetails.json')) as f:
       response = 200, f.read()
-    self.http_client.SetResponse('%s/api/%s?messages=true' %
-                                 (rietveld_url, change_id), response)
+    self.http_client.SetResponse(
+        '%s/api/%s?messages=true' % (rietveld_url, change_id), response)
     with open(
         os.path.join(os.path.dirname(__file__),
                      'reverttestissuedetails.json')) as f:
       response = 200, f.read()
-    self.http_client.SetResponse('%s/api/%s?messages=true' %
-                                 (rietveld_url, revert_change_id), response)
+    self.http_client.SetResponse(
+        '%s/api/%s?messages=true' % (rietveld_url, revert_change_id), response)
     cl_info = self.rietveld.GetClDetails(change_id)
     expected_cl_info = {
         'server_hostname':
@@ -166,11 +166,13 @@ class RietveldTest(testing.AppengineTestCase):
         'commits': [{
             'patchset_id': '100001',
             'timestamp': '2017-02-23 02:41:16 UTC',
-            'revision': 'c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb'
+            'revision': 'c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb',
+            'parent_revisions': []
         }, {
             'patchset_id': '120001',
             'timestamp': '2017-02-23 23:17:54 UTC',
-            'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
+            'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa',
+            'parent_revisions': []
         }],
         'commit_attempts': [{
             'committing_user_email': u'author@chromium.org',
@@ -197,7 +199,8 @@ class RietveldTest(testing.AppengineTestCase):
                 'commits': [{
                     'patchset_id': '20001',
                     'timestamp': '2017-02-23 23:17:54 UTC',
-                    'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
+                    'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa',
+                    'parent_revisions': []
                 }],
                 'commit_attempts': [{
                     'committing_user_email': u'author@chromium.org',
@@ -212,7 +215,8 @@ class RietveldTest(testing.AppengineTestCase):
                 'description':
                     None,
                 'revert_of':
-                    None
+                    None,
+                'patchsets': {}
             },
             'reverting_user_email': 'reviewer@chromium.org',
             'timestamp': '2017-02-23 03:09:25 UTC'
@@ -226,7 +230,8 @@ class RietveldTest(testing.AppengineTestCase):
         'description':
             None,
         'revert_of':
-            None
+            None,
+        'patchsets': {}
     }
     self.assertEqual(cl_info.serialize(), expected_cl_info)
 
@@ -239,8 +244,8 @@ class RietveldTest(testing.AppengineTestCase):
         os.path.join(os.path.dirname(__file__),
                      'manualtestissuedetails.json')) as f:
       response = 200, f.read()
-    self.http_client.SetResponse('%s/api/%s?messages=true' %
-                                 (rietveld_url, change_id), response)
+    self.http_client.SetResponse(
+        '%s/api/%s?messages=true' % (rietveld_url, change_id), response)
     cl_info = self.rietveld.GetClDetails(change_id)
 
     self.assertEqual(2, len(cl_info.commits))
@@ -254,8 +259,8 @@ class RietveldTest(testing.AppengineTestCase):
         os.path.join(os.path.dirname(__file__),
                      'reverttestissuedetails.json')) as f:
       response = 200, f.read(), {}
-    self.http_client.SetResponse('%s/api/%s?messages=true' %
-                                 (rietveld_url, change_id), response)
+    self.http_client.SetResponse(
+        '%s/api/%s?messages=true' % (rietveld_url, change_id), response)
     self.rietveld.AddReviewers(change_id, ['dummy@dummy.com'])
     mock_send.assert_called_once()
     url, data = mock_send.call_args[0]

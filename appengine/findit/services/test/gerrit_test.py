@@ -75,7 +75,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     cl_info.owner_email = 'abc@chromium.org'
     mock_fn.return_value = cl_info
     mock_gerrit.return_value = '54321'
@@ -118,9 +118,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     mock_gerrit.assert_called_once_with(
         reason, self.review_change_id, '20001', bug_id=None)
 
-    culprit_link = (
-        'https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
-        (culprit.key.urlsafe()))
+    culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s'
+                    % (culprit.key.urlsafe()))
     false_positive_bug_query = urllib.urlencode({
         'status': 'Available',
         'labels': 'Test-Findit-Wrong',
@@ -152,10 +151,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         For more information about Findit auto-revert: %s.
 
         Sheriffs, it'll be much appreciated if you could take several minutes
-        to fill out this survey: %s.""") % (false_positive_bug_link,
-                                            auto_revert_bug_link,
-                                            gerrit._MANUAL_LINK,
-                                            gerrit._SURVEY_LINK)
+        to fill out this survey: %s.""") % (
+        false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK,
+        gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
@@ -175,7 +173,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     cl_info.owner_email = 'abc@chromium.org'
     mock_fn.return_value = cl_info
     mock_gerrit.return_value = '54321'
@@ -216,10 +214,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
       https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key=%s\n
       Sample Failed Build: %s\n
       Sample Failed Step: %s\n
-      Sample Flaky Test: %s""") % (commit_position or revision,
-                                   culprit.key.urlsafe(),
-                                   buildbot.CreateBuildUrl('m', 'b', '1'),
-                                   sample_failed_step, test_name)
+      Sample Flaky Test: %s""") % (
+        commit_position or revision, culprit.key.urlsafe(),
+        buildbot.CreateBuildUrl('m', 'b', '1'), sample_failed_step, test_name)
     mock_gerrit.assert_called_once_with(
         reason, self.review_change_id, '20001', bug_id=1)
 
@@ -232,7 +229,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     cl_info.owner_email = 'abc@chromium.org'
     revert_cl = ClInfo('revert_review_host', '123V3137')
     cl_info.reverts.append(
@@ -259,7 +256,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     cl_info.owner_email = 'abc@chromium.org'
     revert_cl = ClInfo('revert_review_host', '123V3127')
     revert_cl.url = 'https://chromium-review.googlesource.com/54321'
@@ -294,7 +291,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.revert_of = 123456
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     mock_fn.return_value = cl_info
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
@@ -320,7 +317,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.auto_revert_off = True
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     mock_fn.return_value = cl_info
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
@@ -344,7 +341,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
 
     culprit = WfSuspectedCL.Create(repo_name, revision, commit_position)
     revert_for_culprit = RevertCL()
@@ -380,7 +377,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     mock_fn.return_value = cl_info
     mock_commit.return_value = False
 
@@ -436,10 +433,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         For more information about Findit auto-revert: %s.
 
         Sheriffs, it'll be much appreciated if you could take several minutes
-        to fill out this survey: %s.""") % (false_positive_bug_link,
-                                            auto_revert_bug_link,
-                                            gerrit._MANUAL_LINK,
-                                            gerrit._SURVEY_LINK)
+        to fill out this survey: %s.""") % (
+        false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK,
+        gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(
@@ -457,7 +453,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     mock_fn.return_value = cl_info
     mock_commit.return_value = True
 
@@ -496,7 +492,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
     mock_fn.return_value = cl_info
     mock_commit.return_value = True
 
@@ -520,9 +516,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     mock_commit.assert_called_once_with(revert_change_id)
 
-    culprit_link = (
-        'https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
-        (culprit.key.urlsafe()))
+    culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s'
+                    % (culprit.key.urlsafe()))
     false_positive_bug_query = urllib.urlencode({
         'status': 'Available',
         'labels': 'Test-Findit-Wrong',
