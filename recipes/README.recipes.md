@@ -348,9 +348,9 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 &mdash; **def [RunSteps](/recipes/recipes/gerrit_hello_world.py#22)(api):**
 ### *recipes* / [git\_hash\_metric](/recipes/recipes/git_hash_metric.py)
 
-[DEPS](/recipes/recipes/git_hash_metric.py#7): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]
+[DEPS](/recipes/recipes/git_hash_metric.py#7): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime]
 
-&mdash; **def [RunSteps](/recipes/recipes/git_hash_metric.py#15)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/git_hash_metric.py#14)(api):**
 ### *recipes* / [goma\_hello\_world](/recipes/recipes/goma_hello_world.py)
 
 [DEPS](/recipes/recipes/goma_hello_world.py#12): [build/goma][build/recipe_modules/goma], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]

@@ -6,21 +6,16 @@ from recipe_engine.recipe_api import Property
 
 DEPS = [
     'recipe_engine/buildbucket',
-    'recipe_engine/properties',
     'recipe_engine/python',
     'recipe_engine/runtime',
 ]
 
 
 def RunSteps(api):
-  if api.runtime.is_luci:
-    gc = api.buildbucket.build_input.gitiles_commit
-    git_revision = gc.id
-    repository = 'https://%s/%s' % (gc.host, gc.project)
-  else:
-    # TODO(tandrii): remove this after builder is migrated to buildbot.
-    git_revision = api.properties['git_revision']
-    repository = api.properties['repository']
+  assert api.runtime.is_luci
+  gc = api.buildbucket.build_input.gitiles_commit
+  git_revision = gc.id
+  repository = 'https://%s/%s' % (gc.host, gc.project)
 
   api.python(
     'send hash to ts_mon',
@@ -37,13 +32,6 @@ def RunSteps(api):
 
 
 def GenTests(api):
-  # TODO(tandrii): remove this after bug 790404 is complete.
-  yield (api.test('infra_bbot') +
-         api.properties.git_scheduled(
-           git_revision='deadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
-           repository='https://chromium.googlesource.com/infra/infra'
-         )
-  )
   yield (api.test('infra') +
          api.runtime(is_luci=True, is_experimental=False) +
          api.buildbucket.ci_build(
