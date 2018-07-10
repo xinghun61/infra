@@ -138,7 +138,7 @@ message Data {
 
     // Position information. This information can be left out if the comment is
     // on file level. If position is given, then at least the start line should
-    // be included.
+    // be included. Lines are 1-based; chars are 0-based.
     int32 start_line = 6;
     int32 end_line = 7;
     int32 start_char = 8;
