@@ -42,7 +42,11 @@
       <mr-comment-content content="[[_description.content]]"></mr-comment-content>
     </mr-inline-editor>
     <h3>Feature discussion / Changelog</h3>
-    <mr-compact-comments comments="[[_comments]]" comments-shown-count=5></mr-compact-comments>
+    <mr-compact-comments
+      comments="[[_comments]]"
+      comments-shown-count=5
+      on-submit-comment="[[_onSubmitComment]]"
+    ></mr-compact-comments>
   </template>
   <script src="./mr-issue-details.js"></script>
 <dom-module>

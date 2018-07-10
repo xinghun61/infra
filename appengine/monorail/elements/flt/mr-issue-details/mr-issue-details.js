@@ -17,6 +17,18 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
         type: Array,
         statePath: 'comments',
       },
+      issueId: {
+        type: Number,
+        statePath: 'issueId',
+      },
+      projectName: {
+        type: String,
+        statePath: 'projectName',
+      },
+      token: {
+        type: String,
+        statePath: 'token',
+      },
       _description: {
         type: String,
         computed: '_computeDescription(comments)',
@@ -25,7 +37,48 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
         type: Array,
         computed: '_filterComments(comments)',
       },
+      _onSubmitComment: {
+        type: Function,
+        value: function() {
+          return this._submitCommentHandler.bind(this);
+        },
+      },
     };
+  }
+
+  _submitCommentHandler(comment) {
+    this._updateIssue(comment);
+  }
+
+  _updateIssue(commentData, delta) {
+    const message = {
+      trace: {token: this.token},
+      issue_ref: {
+        project_name: this.projectName,
+        local_id: this.issueId,
+      },
+      comment_content: commentData || '',
+    };
+
+    if (delta) {
+      message.delta = delta;
+    }
+
+    this.dispatch({type: actionType.UPDATE_ISSUE_START});
+
+    window.prpcClient.call(
+      'monorail.Issues', 'UpdateIssue', message
+    ).then((resp) => {
+      this.dispatch({
+        type: actionType.UPDATE_ISSUE_SUCCESS,
+        issue: resp.issue,
+      });
+    }, (error) => {
+      this.dispatch({
+        type: actionType.UPDATE_ISSUE_FAILURE,
+        error: error,
+      });
+    });
   }
 
   _filterComments(comments) {

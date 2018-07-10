@@ -11,6 +11,14 @@
       FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
       FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
 
+      FETCH_COMMENTS_START: 'FETCH_COMMENTS_START',
+      FETCH_COMMENTS_SUCCESS: 'FETCH_COMMENTS_SUCCESS',
+      FETCH_COMMENTS_FAILURE: 'FETCH_COMMENTS_FAILURE',
+
+      UPDATE_ISSUE_START: 'UPDATE_ISSUE_START',
+      UPDATE_ISSUE_SUCCESS: 'UPDATE_ISSUE_SUCCESS',
+      UPDATE_ISSUE_FAILURE: 'UPDATE_ISSUE_FAILURE',
+
       UPDATE_APPROVAL_START: 'UPDATE_APPROVAL_START',
       UPDATE_APPROVAL_SUCCESS: 'UPDATE_APPROVAL_SUCCESS',
       UPDATE_APPROVAL_FAILURE: 'UPDATE_APPROVAL_FAILURE',
@@ -21,10 +29,17 @@
       projectName: '',
       issue: {},
       comments: [],
+      token: null,
+
       issueLoaded: false,
       fetchingIssue: false,
       fetchIssueError: null,
-      token: null,
+
+      fetchingComments: false,
+      fetchCommentsError: null,
+
+      updatingIssue: false,
+      updateIssueError: null,
 
       // Assumption: It's okay to prevent the user from sending multiple
       // approval update requests at once, even for different approvals.
@@ -75,7 +90,6 @@
         case actionType.FETCH_ISSUE_SUCCESS:
           return Object.assign({}, state, {
             issue: action.issue,
-            comments: action.comments,
             issueLoaded: true,
             fetchingIssue: false,
           });
@@ -83,6 +97,39 @@
           return Object.assign({}, state, {
             fetchIssueError: action.error,
             fetchingIssue: false,
+          });
+
+        // Request for getting comments for an issue.
+        case actionType.FETCH_COMMENTS_START:
+          return Object.assign({}, state, {
+            fetchCommentsError: null,
+            fetchingComments: true,
+          });
+        case actionType.FETCH_COMMENTS_SUCCESS:
+          return Object.assign({}, state, {
+            comments: action.comments,
+            fetchingComments: false,
+          });
+        case actionType.FETCH_COMMENTS_FAILURE:
+          return Object.assign({}, state, {
+            fetchCommentsError: action.error,
+            fetchingComments: false,
+          });
+
+        // Request for updating an issue.
+        case actionType.UPDATE_ISSUE_START:
+          return Object.assign({}, state, {
+            updatingIssue: true,
+          });
+        case actionType.UPDATE_ISSUE_SUCCESS:
+          return Object.assign({}, state, {
+            issue: action.issue,
+            updatingIssue: false,
+          });
+        case actionType.UPDATE_ISSUE_FAILURE:
+          return Object.assign({}, state, {
+            updateIssueError: action.error,
+            updatingIssue: false,
           });
 
         // Request for updating an approval.

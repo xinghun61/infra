@@ -13,6 +13,11 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
 
   static get properties() {
     return {
+      issue: {
+        type: Object,
+        statePath: 'issue',
+        observer: '_fetchComments',
+      },
       issueId: {
         type: Number,
         statePath: 'issueId',
@@ -81,19 +86,46 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       'monorail.Issues', 'GetIssue', message
     );
 
-    const getComments = window.prpcClient.call(
-      'monorail.Issues', 'ListComments', message
-    );
-
-    Promise.all([getIssue, getComments]).then((resp) => {
+    getIssue.then((resp) => {
       this.dispatch({
         type: actionType.FETCH_ISSUE_SUCCESS,
-        issue: resp[0].issue,
-        comments: resp[1].comments,
+        issue: resp.issue,
       });
     }, (error) => {
       this.dispatch({
         type: actionType.FETCH_ISSUE_FAILURE,
+        error,
+      });
+    });
+  }
+
+  // TODO(zhangtiff): Replace this with middleware that fetches comments
+  // after specific actions are dispatched.
+  _fetchComments(issue) {
+    if (!this.issueLoaded) return;
+
+    this.dispatch({type: actionType.FETCH_COMMENTS_START});
+
+    const message = {
+      trace: {token: this.token},
+      issue_ref: {
+        project_name: this.projectName,
+        local_id: this.issueId,
+      },
+    };
+
+    const getComments = window.prpcClient.call(
+      'monorail.Issues', 'ListComments', message
+    );
+
+    getComments.then((resp) => {
+      this.dispatch({
+        type: actionType.FETCH_COMMENTS_SUCCESS,
+        comments: resp.comments,
+      });
+    }, (error) => {
+      this.dispatch({
+        type: actionType.FETCH_COMMENTS_FAILURE,
         error,
       });
     });
