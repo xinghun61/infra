@@ -11,8 +11,8 @@ basic_scaling:
 
 handlers:
 # Endpoints handler.
-- url: /_ah/spi/.*
-  script: appengine_module.cr_rev.cr_rev_api.APPLICATION
+- url: /_ah/api/.*
+  script: appengine_module.cr_rev.app.api
   secure: always
 
 # Pipeline handler.

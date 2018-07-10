@@ -3,12 +3,12 @@
 # found in the LICENSE file.
 
 from appengine_module.testing_utils import testing
-from appengine_module.cr_rev import app
+from appengine_module.cr_rev import views
 from appengine_module.cr_rev.test import model_helpers
 
 
 class TestViews(testing.AppengineTestCase):
-  app_module = app.app
+  app_module = views.get_routes()
 
   def test_main_page(self):
     """Test that the root page renders."""

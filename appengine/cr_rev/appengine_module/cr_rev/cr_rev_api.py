@@ -9,6 +9,8 @@ from google.appengine.api import oauth
 from google.appengine.ext import ndb
 from protorpc import remote
 
+from components import endpoints_webapp2
+
 from appengine_module.cr_rev import controller
 from appengine_module.cr_rev import models
 
@@ -234,4 +236,5 @@ class CrRevApi(remote.Service):
             models.RepoScanPipeline.started)))
 
 
-APPLICATION = endpoints.api_server([CrRevApi])
+def get_routes():
+  return endpoints_webapp2.api_server([CrRevApi])

@@ -2,7 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import endpoints
+from test_support import test_env
+test_env.setup_test_env()
+
+from test_support import test_case
 
 from appengine_module.testing_utils import testing
 from appengine_module.cr_rev import controller
@@ -11,16 +14,15 @@ from appengine_module.cr_rev import models
 from appengine_module.cr_rev.test import model_helpers
 
 
-class TestCrRevApi(testing.AppengineTestCase):
-  # restricted=False is needed for testing.
-  app_module = endpoints.api_server(
-      [cr_rev_api.CrRevApi], restricted=False)
+class TestCrRevApi(test_case.EndpointsTestCase):
+  api_service_cls = cr_rev_api.CrRevApi
 
   def _make_api_call(self, funcname, params=None, status=None):
-    params = params or {}
-    response = self.test_app.post_json(
-        '/_ah/spi/CrRevApi.%s' % funcname, params, status=status)
-    return response
+    return self.call_api(funcname, body=params, status=status)
+
+  def test_get_routes(self):
+    """Test that the endpoints webapp2 adapter works."""
+    self.assertTrue(cr_rev_api.get_routes())
 
   def test_get_projects(self):
     """Test that all projects are listed."""
@@ -42,24 +44,6 @@ class TestCrRevApi(testing.AppengineTestCase):
     self.assertEqual(expected, response.json)
 
   def test_repo_list(self):
-    """Test that calling repo.list yields an list of scanned repos."""
-    my_repo = model_helpers.create_repo()
-    my_repo.put()
-    second_repo = model_helpers.create_repo()
-    second_repo.repo = 'cooler_src'
-    second_repo.put()
-
-    response = self._make_api_call('get_repos')
-
-    expected = {u'items': [
-      my_repo.ToMessage(),
-      second_repo.ToMessage(),
-    ]}
-
-    resp = model_helpers.convert_items_to_protos(models.Repo, response.json)
-    self.assertEqual(expected, resp)
-
-  def test_repo_project_filter(self):
     """Test that calling repo.list yields an list of scanned repos."""
     my_repo = model_helpers.create_repo()
     my_repo.put()
@@ -256,13 +240,17 @@ class TestCrRevApi(testing.AppengineTestCase):
     }, status=401)
 
   def test_insert_project_not_admin(self):
-    self.mock_endpoints_user(user_id='cool@whatever.nothing')
+    self.mock(
+        cr_rev_api.endpoints, 'get_current_user', lambda: 'user@example.com')
+    self.mock(cr_rev_api.oauth, 'is_current_user_admin', lambda _: False)
     self._make_api_call('insert_project', params={
         'name': 'cool',
     }, status=403)
 
   def test_insert_project(self):
-    self.mock_endpoints_user(user_id='cool@whatever.nothing', is_admin=True)
+    self.mock(
+        cr_rev_api.endpoints, 'get_current_user', lambda: 'user@example.com')
+    self.mock(cr_rev_api.oauth, 'is_current_user_admin', lambda _: True)
     self._make_api_call('insert_project', params={
         'name': 'cool',
     })

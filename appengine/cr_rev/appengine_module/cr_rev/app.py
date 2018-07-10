@@ -4,13 +4,8 @@
 
 import webapp2
 
+from appengine_module.cr_rev import cr_rev_api
 from appengine_module.cr_rev import views
 
-app = webapp2.WSGIApplication([
-    ('/_ah/warmup', views.StartPage),
-    ('/_ah/start', views.StartPage),
-    ('/admin/scan_projects', views.ScanProjects),
-    ('/admin/scan_repos', views.ScanRepos),
-    (r'/([^/]+)(/.*)?', views.Redirect),
-    ('/', views.MainPage),
-])
+api = cr_rev_api.get_routes()
+app = views.get_routes()

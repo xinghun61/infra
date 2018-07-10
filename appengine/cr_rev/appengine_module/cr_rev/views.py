@@ -78,3 +78,13 @@ class Redirect(BaseHandler):
       self.redirect(redirect_url)
     else:
       self.abort(404)
+
+def get_routes():
+  return webapp2.WSGIApplication([
+      ('/_ah/warmup', StartPage),
+      ('/_ah/start', StartPage),
+      ('/admin/scan_projects', ScanProjects),
+      ('/admin/scan_repos', ScanRepos),
+      (r'/([^/]+)(/.*)?', Redirect),
+      ('/', MainPage),
+  ])
