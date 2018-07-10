@@ -16,7 +16,7 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       issue: {
         type: Object,
         statePath: 'issue',
-        observer: '_fetchComments',
+        observer: '_fetchCommentsAndStarState',
       },
       issueId: {
         type: Number,
@@ -101,10 +101,12 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
 
   // TODO(zhangtiff): Replace this with middleware that fetches comments
   // after specific actions are dispatched.
-  _fetchComments(issue) {
+  _fetchCommentsAndStarState(issue) {
     if (!this.issueLoaded) return;
 
+    // TODO(zhangtiff): Figure out patterns for batching actions in Redux.
     this.dispatch({type: actionType.FETCH_COMMENTS_START});
+    this.dispatch({type: actionType.FETCH_IS_STARRED_START});
 
     const message = {
       trace: {token: this.token},
@@ -118,6 +120,10 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       'monorail.Issues', 'ListComments', message
     );
 
+    const getIsStarred = window.prpcClient.call(
+      'monorail.Issues', 'IsIssueStarredRequest', message
+    );
+
     getComments.then((resp) => {
       this.dispatch({
         type: actionType.FETCH_COMMENTS_SUCCESS,
@@ -126,6 +132,18 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     }, (error) => {
       this.dispatch({
         type: actionType.FETCH_COMMENTS_FAILURE,
+        error,
+      });
+    });
+
+    getIsStarred.then((resp) => {
+      this.dispatch({
+        type: actionType.FETCH_IS_STARRED_SUCCESS,
+        isStarred: resp.isStarred,
+      });
+    }, (error) => {
+      this.dispatch({
+        type: actionType.FETCH_IS_STARRED_FAILURE,
         error,
       });
     });

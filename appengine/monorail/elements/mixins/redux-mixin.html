@@ -11,6 +11,10 @@
       FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
       FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
 
+      FETCH_IS_STARRED_START: 'FETCH_IS_STARRED_START',
+      FETCH_IS_STARRED_SUCCESS: 'FETCH_IS_STARRED_SUCCESS',
+      FETCH_IS_STARRED_FAILURE: 'FETCH_IS_STARRED_FAILURE',
+
       FETCH_COMMENTS_START: 'FETCH_COMMENTS_START',
       FETCH_COMMENTS_SUCCESS: 'FETCH_COMMENTS_SUCCESS',
       FETCH_COMMENTS_FAILURE: 'FETCH_COMMENTS_FAILURE',
@@ -29,6 +33,7 @@
       projectName: '',
       issue: {},
       comments: [],
+      isStarred: false,
       token: null,
 
       issueLoaded: false,
@@ -37,6 +42,9 @@
 
       fetchingComments: false,
       fetchCommentsError: null,
+
+      fetchingIsStarred: false,
+      fetchIsStarredError: null,
 
       updatingIssue: false,
       updateIssueError: null,
@@ -114,6 +122,23 @@
           return Object.assign({}, state, {
             fetchCommentsError: action.error,
             fetchingComments: false,
+          });
+
+        // Request for getting whether an issue is starred.
+        case actionType.FETCH_IS_STARRED_START:
+          return Object.assign({}, state, {
+            fetchIsStarredError: null,
+            fetchingIsStarred: true,
+          });
+        case actionType.FETCH_IS_STARRED_SUCCESS:
+          return Object.assign({}, state, {
+            isStarred: action.isStarred,
+            fetchingIsStarred: false,
+          });
+        case actionType.FETCH_IS_STARRED_FAILURE:
+          return Object.assign({}, state, {
+            fetchIsStarredError: action.error,
+            fetchingIsStarred: false,
           });
 
         // Request for updating an issue.

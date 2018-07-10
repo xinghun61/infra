@@ -62,7 +62,21 @@
         width: 100%;
         margin-bottom: 0.5em;
       }
+      .star-line {
+        width: 100%;
+        text-align: center;
+        --iron-icon-fill-color: hsl(120, 5%, 66%);
+      }
     </style>
+    <div class="star-line">
+      <template is="dom-if" if="[[isStarred]]">
+        <iron-icon icon="star" title="You've starred this issue"></iron-icon>
+      </template>
+      <template is="dom-if" if="[[!isStarred]]">
+        <iron-icon icon="star-border" title="Click to star this issue"></iron-icon>
+      </template>
+      Starred by [[issue.starCount]] users
+    </div>
     <mr-metadata
       owner="[[issue.ownerRef]]"
       cc="[[issue.ccRefs]]"

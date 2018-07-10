@@ -17,6 +17,11 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
         type: Object,
         statePath: 'issue',
       },
+      isStarred: {
+        type: Boolean,
+        value: false,
+        statePath: 'isStarred',
+      },
       // TODO(zhangtiff): Get real data from jsonfeed API.
       statuses: {
         type: Array,
