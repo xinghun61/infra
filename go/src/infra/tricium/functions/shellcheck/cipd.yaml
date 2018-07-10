@@ -1,0 +1,7 @@
+package: infra/tricium/function/shellcheck
+install_mode: copy
+data:
+  - file: shellcheck_tricium
+
+  # Third party dependencies
+  - dir: bin/shellcheck

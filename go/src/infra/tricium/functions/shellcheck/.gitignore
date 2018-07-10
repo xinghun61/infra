@@ -1,0 +1,4 @@
+bin/
+shellcheck_tricium
+shellcheck-*.tar.xz
+testout/

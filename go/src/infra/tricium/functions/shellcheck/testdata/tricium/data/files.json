@@ -1,0 +1,6 @@
+{
+	"files": [
+		{ "path": "good.sh" },
+		{ "path": "bad.sh" }
+	]
+}
