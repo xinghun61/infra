@@ -4,7 +4,7 @@
 
 OUT_BASE=pylint-deps
 
-.PHONY: test
+.PHONY: test python pylint
 
 pylint_parser: python pylint
 	go build -o pylint_parser

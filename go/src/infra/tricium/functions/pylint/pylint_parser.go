@@ -25,8 +25,9 @@ const msgRegex = `^(.+?):([0-9]+):([0-9]+) \[(.+)/(.+)\] (.+)$`
 
 // Paths to the required resources relative to the executable directory.
 const (
-	pythonPath = "python/bin/python"
-	pylintPath = "pylint/bin/pylint"
+	pythonPath        = "python/bin/python"
+	pylintPath        = "pylint/bin/pylint"
+	pylintPackagePath = "pylint/lib/python2.7/site-packages"
 )
 
 func main() {
@@ -64,14 +65,19 @@ func main() {
 	cmd := exec.Command(cmdName, cmdArgs...)
 	log.Printf("Command args: %#v", cmdArgs)
 
-	cmdReader, err := cmd.StdoutPipe()
+	// Set PYTHONPATH for the command to run so that the bundled version of pylint and its dependencies are used.
+	env := os.Environ()
+	env = append(env, fmt.Sprintf("PYTHONPATH=%s", pylintPackagePath))
+	cmd.Env = env
+
+	stdoutReader, err := cmd.StdoutPipe()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error creating StdoutPipe for Cmd", err)
 		os.Exit(1)
 	}
 
 	// Creates a scanner from pylint's output to stdout.
-	scanner := bufio.NewScanner(cmdReader)
+	scanner := bufio.NewScanner(stdoutReader)
 	output := &tricium.Data_Results{}
 
 	// Prepare to parse the pylint output in a separate goroutine in case it is very large.
@@ -112,9 +118,9 @@ func scanPylintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, don
 		line := scanner.Text()
 		comment := parsePylintLine(line)
 		if comment == nil {
-			log.Printf("Skipping line %#v\n", line)
-		}
-		if comment != nil {
+			log.Printf("Skipping line %q\n", line)
+		} else {
+			log.Printf("Adding comments from line %q\n", line)
 			results.Comments = append(results.Comments, comment)
 		}
 	}
