@@ -1,4 +1,5 @@
 {
   "expected_coverage_min": 10.0,
-  "expected_coverage_max": 100.0
+  "expected_coverage_max": 100.0,
+  "skip_testing": ["darwin", "windows"]
 }

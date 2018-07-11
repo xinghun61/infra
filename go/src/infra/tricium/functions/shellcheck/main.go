@@ -1,16 +1,16 @@
 package main
 
 import (
-	"bytes"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	tricium "infra/tricium/api/v1"
+	"infra/tricium/functions/shellcheck/runner"
 )
 
 const (
@@ -18,57 +18,51 @@ const (
 	bundledBinPath = "bin/shellcheck/shellcheck"
 )
 
-func findShellCheckBin() (string, error) {
-	// Look for bundled shellcheck next to this executable.
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	bundledPath := filepath.Join(filepath.Dir(ex), bundledBinPath)
-	if path, err := exec.LookPath(bundledPath); err == nil {
-		return path, nil
-	}
-
-	// Look in PATH.
-	if path, err := exec.LookPath("shellcheck"); err == nil {
-		// Check --version output to make sure this is an acceptable binary.
-		output, err := exec.Command(path, "--version").Output()
-		if err != nil {
-			return "", fmt.Errorf("`%s --version` failed: %v", path, err)
-		}
-		if !bytes.Contains(output, []byte("ShellCheck")) {
-			return "", fmt.Errorf("`%s --version` bad output:\n%s", path, output)
-		}
-		if !bytes.Contains(output, []byte("version: 0.4.")) {
-			return "", fmt.Errorf("`%s --version` bad version:\n%s", path, output)
-		}
-		return path, nil
-	}
-
-	return "", errors.New("shellcheck bin not found")
-}
+var (
+	runnerLogger = log.New(os.Stderr, "shellcheck", log.LstdFlags)
+)
 
 func main() {
 	inputDir := flag.String("input", "", "Path to root of Tricium input")
 	outputDir := flag.String("output", "", "Path to root of Tricium output")
-	binPath := flag.String("shellcheck_bin", "", "Path to shellcheck binary")
+	shellCheckPath := flag.String("shellcheck_path", "", "Path to shellcheck binary")
+
+	exclude := flag.String("exclude", "", "Exclude warnings (see shellcheck")
+	shell := flag.String("shell", "", "Specify dialect (see shellcheck")
+
 	flag.Parse()
 	if flag.NArg() != 0 {
 		log.Fatalf("Unexpected argument")
 	}
 
-	if *binPath == "" {
-		var err error
-		*binPath, err = findShellCheckBin()
+	r := &runner.Runner{
+		Path:    *shellCheckPath,
+		Dir:     *inputDir,
+		Exclude: *exclude,
+		Shell:   *shell,
+		Logger:  runnerLogger,
+	}
+
+	if r.Path == "" {
+		// No explicit shellcheck_bin; try to find one.
+		r.Path = findShellCheckBin()
+		if r.Path == "" {
+			log.Fatal("Couldn't find shellcheck bin!")
+		}
+		// Validate that the found binary is a supported version of shellcheck.
+		version, err := r.Version()
 		if err != nil {
-			log.Fatalf("Couldn't find shellcheck bin: %v", err)
+			log.Fatalf("Error checking shellcheck version: %v", err)
+		}
+		if !strings.HasPrefix(version, "0.") || version < "0.4" {
+			log.Fatalf("Found shellcheck with unsupported version %q", version)
 		}
 	}
 
-	run(*inputDir, *outputDir, *binPath)
+	run(r, *inputDir, *outputDir)
 }
 
-func run(inputDir, outputDir, binPath string) {
+func run(r *runner.Runner, inputDir, outputDir string) {
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
 	if err := tricium.ReadDataType(inputDir, input); err != nil {
@@ -76,23 +70,54 @@ func run(inputDir, outputDir, binPath string) {
 	}
 	log.Printf("Read FILES data: %#v", input)
 
-	// Invoke shellcheck on the given paths.
-	args := []string{"--format=json"}
-	for _, f := range input.Files {
-		args = append(args, f.Path)
+	// Run shellcheck on input files.
+	paths := make([]string, len(input.Files))
+	for i, f := range input.Files {
+		paths[i] = f.Path
 	}
 
-	log.Printf("Executing %s %v", binPath, args)
-	scErrs, err := runShellCheck(binPath, inputDir, args)
+	warns, err := r.Warnings(paths...)
 	if err != nil {
-		log.Fatalf("shellcheck failed: %v", err)
+		log.Fatalf("Error running shellcheck: %v", err)
+	}
+
+	// Convert shellcheck warnings into Tricium results.
+	results := &tricium.Data_Results{}
+	for _, warn := range warns {
+		results.Comments = append(results.Comments, &tricium.Data_Comment{
+			// e.g. "ShellCheck/SC1234"
+			Category:  fmt.Sprintf("%s/SC%d", analyzerName, warn.Code),
+			Message:   fmt.Sprintf("%s: %s", warn.Level, warn.Message),
+			Url:       warn.WikiURL(),
+			Path:      warn.File,
+			StartLine: warn.Line,
+			EndLine:   warn.EndLine,
+			// shellcheck uses 1-based columns; Tricium needs 0-based.
+			StartChar: warn.Column - 1,
+			EndChar:   warn.EndColumn - 1,
+		})
 	}
 
 	// Write Tricium RESULTS data.
-	results := scErrs.toTriciumResults()
 	path, err := tricium.WriteDataType(outputDir, results)
 	if err != nil {
 		log.Fatalf("Failed to write RESULTS data: %v", err)
 	}
 	log.Printf("Wrote RESULTS data, path: %q, value: %+v\n", path, results)
+}
+
+func findShellCheckBin() string {
+	// Look for bundled shellcheck next to this executable.
+	ex, err := os.Executable()
+	if err == nil {
+		bundledPath := filepath.Join(filepath.Dir(ex), bundledBinPath)
+		if path, err := exec.LookPath(bundledPath); err == nil {
+			return path
+		}
+	}
+	// Look in PATH.
+	if path, err := exec.LookPath("shellcheck"); err == nil {
+		return path
+	}
+	return ""
 }

@@ -6,13 +6,29 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
+
+	"infra/tricium/functions/shellcheck/runner"
+)
+
+const (
+	testInputDir       = "testdata"
+	triciumResultsPath = "tricium/data/results.json"
 )
 
 func TestRun(t *testing.T) {
-	binPath, err := findShellCheckBin()
+	r := &runner.Runner{
+		Path:   findShellCheckBin(),
+		Dir:    testInputDir,
+		Logger: runnerLogger,
+	}
+	version, err := r.Version()
 	if err != nil {
-		t.Skip("no shellcheck bin found; skipping test")
+		t.Skip("no valid shellcheck bin found; skipping test")
+	}
+	if !strings.HasPrefix(version, "0.4.") {
+		t.Skipf("got shellcheck version %q want 0.4.x; skipping test", version)
 	}
 
 	outputDir, err := ioutil.TempDir("", "tricium-shellcheck-test")
@@ -21,9 +37,9 @@ func TestRun(t *testing.T) {
 	}
 	defer os.RemoveAll(outputDir)
 
-	run("testdata", outputDir, binPath)
+	run(r, testInputDir, outputDir)
 
-	resultsData, err := ioutil.ReadFile(filepath.Join(outputDir, "tricium/data/results.json"))
+	resultsData, err := ioutil.ReadFile(filepath.Join(outputDir, triciumResultsPath))
 	if err != nil {
 		panic(err)
 	}
