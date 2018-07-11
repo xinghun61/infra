@@ -11,6 +11,8 @@ from api.api_proto import projects_pb2
 from api.api_proto import project_objects_pb2
 from api.api_proto import projects_prpc_pb2
 from businesslogic import work_env
+from framework import framework_views
+from tracker import tracker_bizobj
 
 
 class ProjectsServicer(monorail_servicer.MonorailServicer):
@@ -47,7 +49,18 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
     with work_env.WorkEnv(mc, self.services) as we:
       config = we.GetProjectConfig(project.project_id)
 
+    with mc.profiler.Phase('making user views'):
+      users_involved = tracker_bizobj.UsersInvolvedInConfig(config)
+      users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, users_involved)
+      framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
+      label_ids = tracker_bizobj.LabelIDsInvolvedInConfig(config)
+      labels_by_id = {
+        label_id: self.services.config.LookupLabel(
+            mc.cnxn, config.project_id, label_id)
+        for label_id in label_ids}
+
     result = converters.ConvertConfig(
-        mc.cnxn, self.services.user, project, config)
+        project, config, users_by_id, labels_by_id)
     return result
 

@@ -55,21 +55,18 @@ message ComponentDef {
 }
 
 
-// Next available tag: 12
+// Next available tag: 9
 message FieldDef {
   FieldRef field_ref = 1;
-  FieldType field_type = 2;
-  string applicable_type = 3;
+  string applicable_type = 2;
   // TODO(jrobbins): applicable_predicate
-  bool is_required = 4;
-  bool is_niche = 5;
-  bool is_multivalued = 6;
-  string docstring = 7;
-  bool is_deleted = 8;
-  repeated UserRef admin_refs = 9;
+  bool is_required = 3;
+  bool is_niche = 4;
+  bool is_multivalued = 5;
+  string docstring = 6;
+  repeated UserRef admin_refs = 7;
   // TODO(jrobbins): validation, permission granting, and notification options.
-  FieldRef parent_approval_field_ref = 10;
-  bool is_phase_field = 11;
+  bool is_phase_field = 8;
 }
 
 

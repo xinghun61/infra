@@ -757,6 +757,30 @@ def UsersInvolvedInTemplate(template):
   return result
 
 
+def UsersInvolvedInConfig(config):
+  """Return a set of all user IDs referenced in the config."""
+  result = set()
+  for ad in config.approval_defs:
+    result.update(ad.approver_ids)
+  for fd in config.field_defs:
+    result.update(fd.admin_ids)
+  for cd in config.component_defs:
+    result.update(cd.admin_ids)
+    if cd.creator_id:
+      result.add(cd.creator_id)
+    if cd.modifier_id:
+      result.add(cd.modifier_id)
+  return result
+
+
+def LabelIDsInvolvedInConfig(config):
+  """Return a set of all label IDs referenced in the config."""
+  result = set()
+  for cd in config.component_defs:
+    result.update(cd.label_ids)
+  return result
+
+
 def MakeApprovalDelta(
     status, setter_id, approver_ids_add, approver_ids_remove,
     subfield_vals_add, subfield_vals_remove, subfields_clear, set_on=None):

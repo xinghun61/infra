@@ -902,6 +902,32 @@ class BizobjTest(unittest.TestCase):
         set([111L, 333L, 444L]),
         tracker_bizobj.UsersInvolvedInTemplate(template))
 
+  def testUsersInvolvedInConfig_Empty(self):
+    """There are no user IDs mentioned in a default config."""
+    actual = tracker_bizobj.UsersInvolvedInConfig(self.config)
+    self.assertEqual(set(), actual)
+
+  def testUsersInvolvedInConfig_Normal(self):
+    """We find user IDs mentioned components, fields, and approvals."""
+    self.config.component_defs[0].admin_ids = [111L]
+    self.config.field_defs[0].admin_ids = [111L, 222L]
+    approval_def = tracker_pb2.ApprovalDef(
+        approval_id=1, approver_ids=[111L, 333L], survey='')
+    self.config.approval_defs = [approval_def]
+    actual = tracker_bizobj.UsersInvolvedInConfig(self.config)
+    self.assertEqual({111L, 222L, 333L}, actual)
+
+  def testLabelIDsInvolvedInConfig_Empty(self):
+    """There are no label IDs mentioned in a default config."""
+    actual = tracker_bizobj.LabelIDsInvolvedInConfig(self.config)
+    self.assertEqual(set(), actual)
+
+  def testLabelIDsInvolvedInConfig_Normal(self):
+    """We find label IDs added by components."""
+    self.config.component_defs[0].label_ids = [1, 2, 3]
+    actual = tracker_bizobj.LabelIDsInvolvedInConfig(self.config)
+    self.assertEqual({1, 2, 3}, actual)
+
   def testMakeApprovalDelta_AllSpecified(self):
     added_fv = tracker_bizobj.MakeFieldValue(
       1, None, 'added str', None, None, None, False)

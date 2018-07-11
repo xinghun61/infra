@@ -49,7 +49,7 @@ def ConvertApproval(approval_value, users_by_id, config, phase=None):
     approval_name = fd.field_name
 
   field_ref = ConvertFieldRef(
-      approval_name, tracker_pb2.FieldTypes.APPROVAL_TYPE)
+      approval_name, tracker_pb2.FieldTypes.APPROVAL_TYPE, None)
   approver_refs = ConvertUserRefs(approval_value.approver_ids, [], users_by_id)
   setter_ref = ConvertUserRef(approval_value.setter_id, None, users_by_id)
 
@@ -152,13 +152,11 @@ def ConvertFieldValue(field_name, value, field_type, approval_name=None,
                       phase_name=None, is_derived=False):
   """Convert one field value view item into a protoc FieldValue."""
   fv = issue_objects_pb2.FieldValue(
-      field_ref=ConvertFieldRef(field_name, field_type),
+      field_ref=ConvertFieldRef(field_name, field_type, approval_name),
       value=str(value),
       is_derived=is_derived)
   if phase_name:
     fv.phase_ref.phase_name = phase_name
-  if approval_name:
-    fv.field_ref.approval_name = approval_name
 
   return fv
 
@@ -168,10 +166,11 @@ def ConvertFieldType(field_type):
   return common_pb2.FieldType.Value(field_type.name)
 
 
-def ConvertFieldRef(field_name, field_type):
+def ConvertFieldRef(field_name, field_type, approval_name):
   """Convert a field name and protorpc FieldType into a protoc FieldRef."""
   return common_pb2.FieldRef(field_name=field_name,
-                             type=ConvertFieldType(field_type))
+                             type=ConvertFieldType(field_type),
+                             approval_name=approval_name)
 
 
 def ConvertFieldValues(
@@ -552,9 +551,102 @@ def IngestFieldValues(cnxn, user_service, field_values, config):
 
 # Convert and ingest objects in project_objects.proto.
 
+def ConvertStatusDef(status_def, rank):
+  """Convert a protorpc StatusDef into a protoc StatusDef."""
+  return project_objects_pb2.StatusDef(
+      status=status_def.status,
+      means_open=status_def.means_open,
+      rank=rank,
+      docstring=status_def.status_docstring,
+      deprecated=status_def.deprecated)
 
-def ConvertConfig(_cnxn, _user_service, project, _config):
+
+def ConvertLabelDef(label_def, rank):
+  """Convert a protorpc LabelDef into a protoc LabelDef."""
+  return project_objects_pb2.LabelDef(
+      label=label_def.label,
+      rank=rank,
+      docstring=label_def.label_docstring,
+      deprecated=label_def.deprecated)
+
+
+def ConvertComponentDef(component_def, users_by_id, labels_by_id):
+  """Convert a protorpc ComponentDef into a protoc ComponentDef."""
+  admin_refs = ConvertUserRefs(component_def.admin_ids, [], users_by_id)
+  cc_refs = ConvertUserRefs(component_def.cc_ids, [], users_by_id)
+  labels = [labels_by_id[lid] for lid in component_def.label_ids]
+  label_refs = ConvertLabels(labels, [])
+  creator_ref = ConvertUserRef(component_def.creator_id, None, users_by_id)
+  modifier_ref = ConvertUserRef(component_def.modifier_id, None, users_by_id)
+  return project_objects_pb2.ComponentDef(
+      path=component_def.path,
+      docstring=component_def.docstring,
+      admin_refs=admin_refs,
+      cc_refs=cc_refs,
+      deprecated=component_def.deprecated,
+      created=component_def.created,
+      creator_ref=creator_ref,
+      modified=component_def.modified,
+      modifier_ref=modifier_ref,
+      label_refs=label_refs)
+
+
+def ConvertFieldDef(field_def, users_by_id, config):
+  """Convert a protorpc FieldDef into a protoc FieldDef."""
+  parent_approval_name = None
+  if field_def.approval_id:
+    parent_fd = tracker_bizobj.FindFieldDefByID(field_def.approval_id, config)
+    parent_approval_name = parent_fd.field_name
+  field_ref = ConvertFieldRef(
+      field_def.field_name, field_def.field_type, parent_approval_name)
+  admin_refs = ConvertUserRefs(field_def.admin_ids, [], users_by_id)
+  # TODO(jrobbins): validation, permission granting, and notification options.
+
+  return project_objects_pb2.FieldDef(
+      field_ref=field_ref,
+      applicable_type=field_def.applicable_type,
+      is_required=field_def.is_required,
+      is_niche=field_def.is_niche,
+      is_multivalued=field_def.is_multivalued,
+      docstring=field_def.docstring,
+      admin_refs=admin_refs,
+      is_phase_field=field_def.is_phase_field)
+
+
+def ConvertApprovalDef(approval_def, users_by_id, config):
+  """Convert a protorpc ApprovalDef into a protoc ApprovalDef."""
+  field_def = tracker_bizobj.FindFieldDefByID(approval_def.approval_id, config)
+  field_ref = ConvertFieldRef(field_def.field_name, field_def.field_type, None)
+  approver_refs = ConvertUserRefs(approval_def.approver_ids, [], users_by_id)
+  return project_objects_pb2.ApprovalDef(
+      field_ref=field_ref,
+      approver_refs=approver_refs,
+      survey=approval_def.survey)
+
+
+def ConvertConfig(project, config, users_by_id, labels_by_id):
   """Convert a protorpc ProjectIssueConfig into a protoc Config."""
-  result = project_objects_pb2.Config(project_name=project.project_name)
-  # TODO(jrobbins): Convert all details of the config.
+  status_defs = [
+      ConvertStatusDef(sd, rank)
+      for rank, sd in enumerate(config.well_known_statuses)]
+  label_defs = [
+      ConvertLabelDef(ld, rank)
+      for rank, ld in enumerate(config.well_known_labels)]
+  component_defs = [
+      ConvertComponentDef(cd, users_by_id, labels_by_id)
+      for cd in config.component_defs]
+  field_defs = [
+      ConvertFieldDef(fd, users_by_id, config)
+      for fd in config.field_defs]
+  approval_defs = [
+      ConvertApprovalDef(ad, users_by_id, config)
+      for ad in config.approval_defs]
+  result = project_objects_pb2.Config(
+      project_name=project.project_name,
+      status_defs=status_defs,
+      label_defs=label_defs,
+      exclusive_label_prefixes=config.exclusive_label_prefixes,
+      component_defs=component_defs,
+      field_defs=field_defs,
+      approval_defs=approval_defs)
   return result

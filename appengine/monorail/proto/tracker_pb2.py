@@ -428,7 +428,7 @@ class LabelDef(messages.Message):
 
 class ApprovalDef(messages.Message):
   """Definition of an approval type field def."""
-  # Note: approval_id and is semantically required
+  # Note: approval_id is semantically required
   approval_id = messages.IntegerField(1)
   approver_ids = messages.IntegerField(4, repeated=True)
   survey = messages.StringField(5)
