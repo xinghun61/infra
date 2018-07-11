@@ -1,0 +1,90 @@
+{
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "command": {
+      "$ref": "#/definitions/known_commands"
+    },
+    "arguments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/known_args"
+      }
+    },
+    "execution_time": {
+      "type": "number",
+      "minimum": 0
+    },
+    "exit_code": {
+      "type": "integer"
+    },
+    "host_os": {
+      "$ref": "#/definitions/known_os"
+    },
+    "host_arch": {
+      "$ref": "#/definitions/known_archs"
+    },
+    "depot_tools_age": {
+      "type": "number"
+    },
+    "python_version": {
+      "type": "string",
+      "pattern": "^\\d\\.\\d.\\d{2}$"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "known_commands": {
+      "enum": [
+        "gclient config",
+        "gclient diff",
+        "gclient fetch",
+        "gclient flatten",
+        "gclient getdep",
+        "gclient grep",
+        "gclient help",
+        "gclient pack",
+        "gclient recurse",
+        "gclient revert",
+        "gclient revinfo",
+        "gclient root",
+        "gclient runhooks",
+        "gclient setdep",
+        "gclient status",
+        "gclient sync",
+        "gclient validate",
+        "gclient verify"
+      ]
+    },
+    "known_args": {
+      "enum": [
+        "--foo",
+        "--bar"
+      ]
+    },
+    "known_os": {
+      "enum": [
+        "win",
+        "mac",
+        "linux",
+        "android",
+        "fuchsia",
+        "ios"
+      ]
+    },
+    "known_archs": {
+      "enum": [
+        "ia32",
+        "x64",
+        "arm",
+        "arm64",
+        "mips",
+        "ppc",
+        "s390"
+      ]
+    }
+  }
+}

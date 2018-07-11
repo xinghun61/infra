@@ -1,0 +1,13 @@
+syntax = "proto2";
+package metrics;
+message MetricsSchema {
+  repeated string arguments = 1;
+  optional string command = 2;
+  optional double depot_tools_age = 3;
+  optional double execution_time = 4;
+  optional int64 exit_code = 5;
+  optional string host_arch = 6;
+  optional string host_os = 7;
+  optional string python_version = 8;
+  optional int64 timestamp = 9;
+}
