@@ -202,7 +202,12 @@ func getIdleDuration(c context.Context, sc clients.SwarmingClient, botID string)
 	if len(trs) == 0 {
 		return nil, nil
 	}
-	return clients.TimeSinceBotTask(trs[0])
+	tr := trs[0]
+	d, err := clients.TimeSinceBotTask(tr)
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to determine time since task %s", tr.TaskId).Err()
+	}
+	return d, nil
 }
 
 // insertBotSummary returns the dut_ids of bots inserted.

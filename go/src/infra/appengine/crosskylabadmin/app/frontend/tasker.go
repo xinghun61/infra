@@ -155,7 +155,7 @@ func triggerRepairOnRepairFailedForBot(c context.Context, sc clients.SwarmingCli
 		}
 		switch t, err := clients.TimeSinceBotTask(ot); {
 		case err != nil:
-			return nil, errors.Annotate(err, "failed to determine time since last attempt").Err()
+			return nil, errors.Annotate(err, "failed to determine time since last repair task %s", ot.TaskId).Err()
 		case t != nil && t.Seconds < req.TimeSinceLastRepair.Seconds:
 			return repairTasksWithIDs(bse.DutID, []string{}), nil
 		default:

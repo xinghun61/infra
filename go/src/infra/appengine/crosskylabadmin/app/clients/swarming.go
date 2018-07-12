@@ -276,13 +276,13 @@ func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, 
 	case "KILLED":
 		ts, err := time.Parse(SwarmingTimeLayout, tr.CompletedTs)
 		if err != nil {
-			return nil, errors.Annotate(err, "swarming returned corrupted completed timestamp").Err()
+			return nil, errors.Annotate(err, "swarming returned corrupted completed timestamp %s", tr.CompletedTs).Err()
 		}
 		return google.NewDuration(time.Now().Sub(ts)), nil
 	case "TIMED_OUT":
 		ts, err := time.Parse(SwarmingTimeLayout, tr.AbandonedTs)
 		if err != nil {
-			return nil, errors.Annotate(err, "swarming returned corrupted abandoned timestamp").Err()
+			return nil, errors.Annotate(err, "swarming returned corrupted abandoned timestamp %s", tr.AbandonedTs).Err()
 		}
 		return google.NewDuration(time.Now().Sub(ts)), nil
 	default:
