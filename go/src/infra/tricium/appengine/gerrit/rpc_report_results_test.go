@@ -186,3 +186,29 @@ func TestReportResultsRequest(t *testing.T) {
 		})
 	})
 }
+
+func TestHelperFunctions(t *testing.T) {
+	Convey("Single line comment is in changed lines", t, func() {
+		So(isInChangedLines(1, 0, []int{1, 2, 3}), ShouldBeTrue)
+		So(isInChangedLines(2, 0, []int{1, 2, 3}), ShouldBeTrue)
+		So(isInChangedLines(3, 0, []int{1, 2, 3}), ShouldBeTrue)
+	})
+
+	Convey("Single line comment outside range is not in changed lines", t, func() {
+		So(isInChangedLines(4, 0, []int{1, 2, 3}), ShouldBeFalse)
+	})
+
+	Convey("File comment is not in changed lines", t, func() {
+		// This is OK because for file-level comments we check separately.
+		So(isInChangedLines(0, 0, []int{1, 2, 3}), ShouldBeFalse)
+	})
+	Convey("Range comment is in changed lines when it overlaps", t, func() {
+		So(isInChangedLines(1, 3, []int{2, 3, 4}), ShouldBeTrue)
+		So(isInChangedLines(4, 5, []int{2, 3, 4}), ShouldBeTrue)
+	})
+	Convey("Range comment is not in changed lines when it does not overlap", t, func() {
+		// The end line is exclusive.
+		So(isInChangedLines(1, 2, []int{2, 3, 4}), ShouldBeFalse)
+		So(isInChangedLines(5, 6, []int{2, 3, 4}), ShouldBeFalse)
+	})
+}

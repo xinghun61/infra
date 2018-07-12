@@ -59,6 +59,9 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 
 			// Get the changed lines for this revision.
 			changedLines, err := gerrit.GetChangedLines(c, request.GerritHost, request.GerritChange, request.GitRef)
+			for path, lines := range changedLines {
+				logging.Debugf(c, "Num changed lines for %s is %d.", path, len(lines))
+			}
 
 			if err != nil {
 				return fmt.Errorf("failed to get changed lines: %v", err)
@@ -74,9 +77,8 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 
 					// If the file has changed lines tracked, pass over comments that aren't in the diff.
 					if lines, ok := changedLines[data.Path]; ok {
-						logging.Debugf(c, "Num changed lines for %s is %d.", data.Path, len(lines))
 						if data.StartLine != 0 && !isInChangedLines(int(data.StartLine), int(data.EndLine), lines) {
-							logging.Debugf(c, "Filtering out comment on lines %d-%d.", data.StartLine, data.EndLine)
+							logging.Debugf(c, "Filtering out comment on lines [%d, %d).", data.StartLine, data.EndLine)
 							continue
 						}
 					} else {
@@ -125,8 +127,12 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 }
 
 func isInChangedLines(start, end int, changedLines []int) bool {
+	if end == 0 {
+		// Single-line comment.
+		end = start + 1
+	}
 	for _, line := range changedLines {
-		if line >= start && line <= end {
+		if line >= start && line < end {
 			return true
 		}
 	}
