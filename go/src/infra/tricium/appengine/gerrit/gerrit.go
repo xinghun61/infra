@@ -75,15 +75,16 @@ type reviewInput struct {
 }
 
 type robotCommentInput struct {
-	RobotID    string            `json:"robot_id"`
-	RobotRunID string            `json:"robot_run_id"`
-	URL        string            `json:"url,omitempty"`
-	Properties map[string]string `json:"properties"`
-	ID         string            `json:"id"`
-	Path       string            `json:"path"`
-	Line       int               `json:"line,omitempty"`
-	Range      *commentRange     `json:"range,omitempty"`
-	Message    string            `json:"message"`
+	RobotID        string            `json:"robot_id"`
+	RobotRunID     string            `json:"robot_run_id"`
+	URL            string            `json:"url,omitempty"`
+	Properties     map[string]string `json:"properties"`
+	FixSuggestions []*suggestion     `json:"fix_suggestions"`
+	ID             string            `json:"id"`
+	Path           string            `json:"path"`
+	Line           int               `json:"line,omitempty"`
+	Range          *commentRange     `json:"range,omitempty"`
+	Message        string            `json:"message"`
 }
 
 type commentRange struct {
@@ -91,6 +92,17 @@ type commentRange struct {
 	StartCharacter int `json:"start_character,omitempty"`
 	EndLine        int `json:"end_line,omitempty"`
 	EndCharacter   int `json:"end_character,omitempty"`
+}
+
+type suggestion struct {
+	Description  string         `json:"description"`
+	Replacements []*replacement `json:"replacements"`
+}
+
+type replacement struct {
+	Path        string        `json:"path"`
+	Replacement string        `json:"replacement"`
+	Range       *commentRange `json:"range,omitempty"`
 }
 
 func (gerritServer) QueryChanges(c context.Context, host, project string, lastTimestamp time.Time, offset int) ([]gr.ChangeInfo, bool, error) {
@@ -188,12 +200,13 @@ func fetchResponse(c context.Context, url string, headers map[string]string) ([]
 // comments, and comments with character ranges.
 func createRobotComment(c context.Context, runID int64, comment tricium.Data_Comment) *robotCommentInput {
 	roco := &robotCommentInput{
-		Message:    comment.Message,
-		RobotID:    comment.Category,
-		RobotRunID: strconv.FormatInt(runID, 10),
-		URL:        composeRunURL(c, runID),
-		Path:       comment.Path,
-		Properties: map[string]string{"tricium_comment_uuid": comment.Id},
+		Message:        comment.Message,
+		RobotID:        comment.Category,
+		RobotRunID:     strconv.FormatInt(runID, 10),
+		URL:            composeRunURL(c, runID),
+		Path:           comment.Path,
+		Properties:     map[string]string{"tricium_comment_uuid": comment.Id},
+		FixSuggestions: createFillSuggestions(comment.Suggestions),
 	}
 	if comment.StartLine > 0 {
 		roco.Line = int(comment.StartLine)
@@ -207,6 +220,30 @@ func createRobotComment(c context.Context, runID int64, comment tricium.Data_Com
 		}
 	}
 	return roco
+}
+
+func createFillSuggestions(suggestions []*tricium.Data_Suggestion) []*suggestion {
+	var suggs []*suggestion
+	for _, s := range suggestions {
+		var replacements []*replacement
+		for _, r := range s.Replacements {
+			replacements = append(replacements, &replacement{
+				Path:        r.Path,
+				Replacement: r.Replacement,
+				Range: &commentRange{
+					StartLine:      int(r.StartLine),
+					EndLine:        int(r.EndLine),
+					StartCharacter: int(r.StartChar),
+					EndCharacter:   int(r.EndChar),
+				},
+			})
+		}
+		suggs = append(suggs, &suggestion{
+			Description:  s.Description,
+			Replacements: replacements,
+		})
+	}
+	return suggs
 }
 
 // composeRunURL returns the URL for viewing details about a Tricium run.

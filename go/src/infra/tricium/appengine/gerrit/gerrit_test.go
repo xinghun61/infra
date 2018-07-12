@@ -12,6 +12,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"encoding/json"
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/triciumtest"
 )
@@ -107,6 +108,45 @@ func TestCreateRobotComment(t *testing.T) {
 			})
 		})
 
+		Convey("Comment gets marshaled correctly", func() {
+			startLine := 10
+			endLine := 20
+			startChar := 2
+			endChar := 18
+			roco := createRobotComment(ctx, runID, tricium.Data_Comment{
+				Id:        uuid,
+				Path:      "README.md",
+				Message:   "Message",
+				Category:  "Hello",
+				StartLine: int32(startLine),
+				EndLine:   int32(endLine),
+				StartChar: int32(startChar),
+				EndChar:   int32(endChar),
+				Suggestions: []*tricium.Data_Suggestion{
+					{
+						Replacements: []*tricium.Data_Replacement{
+							{
+								Replacement: "",
+								Path:        "README.md",
+								StartLine:   int32(startLine),
+								EndLine:     int32(endLine),
+								StartChar:   int32(startChar),
+								EndChar:     int32(endChar),
+							},
+						},
+						Description: "Suggestion 1",
+					},
+				},
+			})
+
+			marshaledRoco, _ := json.Marshal(roco)
+
+			So(string(marshaledRoco), ShouldEqual, `{"robot_id":"Hello","robot_run_id":"1234567",`+
+				`"url":"https://app.example.com/run/1234567","properties":{"tricium_comment_uuid":"7ae6f43d-22e9-4350-ace4-1fee9014509a"},`+
+				`"fix_suggestions":[{"description":"Suggestion 1","replacements":[{"path":"README.md","replacement":"",`+
+				`"range":{"start_line":10,"start_character":2,"end_line":20,"end_character":18}}]}],"id":"","path":"README.md"`+
+				`,"line":10,"range":{"start_line":10,"start_character":2,"end_line":20,"end_character":18},"message":"Message"}`)
+		})
 	})
 }
 
