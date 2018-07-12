@@ -116,11 +116,12 @@ func scanPylintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, don
 	// Read line by line, adding comments to the output.
 	for scanner.Scan() {
 		line := scanner.Text()
+
 		comment := parsePylintLine(line)
 		if comment == nil {
-			log.Printf("Skipping line %q\n", line)
+			log.Printf("SKIPPING %q", line)
 		} else {
-			log.Printf("Adding comments from line %q\n", line)
+			log.Printf("ADDING   %q", line)
 			results.Comments = append(results.Comments, comment)
 		}
 	}
