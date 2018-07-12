@@ -293,7 +293,7 @@ class SwarmingTest(BaseTest):
     task_def = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(
-        task_def['properties']['caches'], [
+        task_def['task_slices'][0]['properties']['caches'], [
             {'path': 'cache/a', 'name': 'a'},
             {'path': 'cache/builder', 'name': 'shared_builder_cache'},
             {'path': 'cache/git_cache', 'name': 'git_chromium'},
@@ -322,7 +322,7 @@ class SwarmingTest(BaseTest):
             'version':
                 'refs/heads/master',
         },
-        task_def['properties']['cipd_input']['packages'],
+        task_def['task_slices'][0]['properties']['cipd_input']['packages'],
     )
 
   def test_execution_timeout(self):
@@ -338,11 +338,16 @@ class SwarmingTest(BaseTest):
 
     task_def = swarming.prepare_task_def_async(build).get_result()
 
-    self.assertEqual(task_def['properties']['execution_timeout_secs'], '120')
+    self.assertEqual(
+        task_def['task_slices'][0]['properties']['execution_timeout_secs'],
+        '120'
+    )
 
     builder_cfg.execution_timeout_secs = 60
     task_def = swarming.prepare_task_def_async(build).get_result()
-    self.assertEqual(task_def['properties']['execution_timeout_secs'], '60')
+    self.assertEqual(
+        task_def['task_slices'][0]['properties']['execution_timeout_secs'], '60'
+    )
 
   def test_expiration(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
@@ -357,11 +362,11 @@ class SwarmingTest(BaseTest):
 
     task_def = swarming.prepare_task_def_async(build).get_result()
 
-    self.assertEqual(task_def['expiration_secs'], '120')
+    self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '120')
 
     builder_cfg.expiration_secs = 60
     task_def = swarming.prepare_task_def_async(build).get_result()
-    self.assertEqual(task_def['expiration_secs'], '60')
+    self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '60')
 
   def test_auto_builder_dimension(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
@@ -376,7 +381,7 @@ class SwarmingTest(BaseTest):
 
     task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
-        task_def['properties']['dimensions'], [
+        task_def['task_slices'][0]['properties']['dimensions'], [
             {'key': 'builder', 'value': 'linux_chromium_rel_ng'},
             {'key': 'cores', 'value': '8'},
             {'key': 'os', 'value': 'Ubuntu'},
@@ -388,7 +393,7 @@ class SwarmingTest(BaseTest):
     builder_cfg.dimensions.append('builder:custom')
     task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
-        task_def['properties']['dimensions'], [
+        task_def['task_slices'][0]['properties']['dimensions'], [
             {'key': 'builder', 'value': 'custom'},
             {'key': 'cores', 'value': '8'},
             {'key': 'os', 'value': 'Ubuntu'},
@@ -512,17 +517,18 @@ class SwarmingTest(BaseTest):
     self.json_response = {
         'task_id': 'deadbeef',
         'request': {
-            'expiration_secs':
-                3600,
-            'properties': {
-                'execution_timeout_secs':
-                    1800,
-                'dimensions': [
-                    {'key': 'cores', 'value': '8'},
-                    {'key': 'os', 'value': 'Ubuntu'},
-                    {'key': 'pool', 'value': 'Chrome'},
-                ],
-            },
+            'task_slices': [{
+                'expiration_secs': 3600,
+                'properties': {
+                    'execution_timeout_secs':
+                        1800,
+                    'dimensions': [
+                        {'key': 'cores', 'value': '8'},
+                        {'key': 'os', 'value': 'Ubuntu'},
+                        {'key': 'pool', 'value': 'Chrome'},
+                    ],
+                },
+            }],
             'tags': [
                 'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
                 'builder:linux_chromium_rel_ng',
@@ -550,13 +556,94 @@ class SwarmingTest(BaseTest):
         'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
     )
     actual_task_def = net.json_request_async.call_args[1]['payload']
+    props_def = {
+        'env': [{
+            'key': 'BUILDBUCKET_EXPERIMENTAL',
+            'value': 'FALSE',
+        }],
+        'execution_timeout_secs':
+            '3600',
+        'extra_args': [
+            'cook',
+            '-repository',
+            'https://example.com/repo',
+            '-revision',
+            'HEAD',
+            '-recipe',
+            'recipe',
+            '-properties',
+            json.dumps(
+                {
+                    'a':
+                        'b',
+                    'blamelist': ['bob@example.com'],
+                    'buildbucket': {
+                        'hostname': 'cr-buildbucket.appspot.com',
+                        'build': {
+                            'project':
+                                'chromium',
+                            'bucket':
+                                'luci.chromium.try',
+                            'created_by':
+                                'user:john@example.com',
+                            'created_ts':
+                                utils.datetime_to_timestamp(build.create_time),
+                            'id':
+                                '1',
+                            'tags': [],
+                        },
+                    },
+                    'buildername':
+                        'linux_chromium_rel_ng',
+                    'buildnumber':
+                        1,
+                    'predefined-property':
+                        'x',
+                    'predefined-property-bool':
+                        True,
+                    'repository':
+                        'https://chromium.googlesource.com/chromium/src',
+                    '$recipe_engine/runtime': {
+                        'is_experimental': False,
+                        'is_luci': True,
+                    },
+                },
+                sort_keys=True,
+            ),
+            '-logdog-project',
+            'chromium',
+        ],
+        'dimensions': [
+            {'key': 'cores', 'value': '8'},
+            {'key': 'os', 'value': 'Ubuntu'},
+            {'key': 'pool', 'value': 'Chrome'},
+        ],
+        'caches': [
+            {'path': 'cache/a', 'name': 'a'},
+            {'path': 'cache/builder', 'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {'path': 'cache/git_cache', 'name': 'git_chromium'},
+            {'path': 'cache/out', 'name': 'build_chromium'},
+        ],
+        'cipd_input': {
+            'packages': [
+                {
+                    'package_name': 'infra/test/bar/${os_ver}',
+                    'path': '.',
+                    'version': 'latest',
+                },
+                {
+                    'package_name': 'infra/test/foo/${platform}',
+                    'path': 'third_party',
+                    'version': 'stable',
+                },
+            ],
+        },
+    }
     expected_task_def = {
         'name':
             'buildbucket:luci.chromium.try:linux_chromium_rel_ng',
         'priority':
             '108',
-        'expiration_secs':
-            '3600',
         'tags': [
             'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
             'buildbucket_bucket:luci.chromium.try',
@@ -577,94 +664,11 @@ class SwarmingTest(BaseTest):
         ],
         'pool_task_template':
             'CANARY_NEVER',
-        'properties': {
-            'env': [{
-                'key': 'BUILDBUCKET_EXPERIMENTAL',
-                'value': 'FALSE',
-            }],
-            'execution_timeout_secs':
-                '3600',
-            'extra_args': [
-                'cook',
-                '-repository',
-                'https://example.com/repo',
-                '-revision',
-                'HEAD',
-                '-recipe',
-                'recipe',
-                '-properties',
-                json.dumps(
-                    {
-                        'a':
-                            'b',
-                        'blamelist': ['bob@example.com'],
-                        'buildbucket': {
-                            'hostname': 'cr-buildbucket.appspot.com',
-                            'build': {
-                                'project':
-                                    'chromium',
-                                'bucket':
-                                    'luci.chromium.try',
-                                'created_by':
-                                    'user:john@example.com',
-                                'created_ts':
-                                    utils.datetime_to_timestamp(
-                                        build.create_time
-                                    ),
-                                'id':
-                                    '1',
-                                'tags': [],
-                            },
-                        },
-                        'buildername':
-                            'linux_chromium_rel_ng',
-                        'buildnumber':
-                            1,
-                        'predefined-property':
-                            'x',
-                        'predefined-property-bool':
-                            True,
-                        'repository':
-                            'https://chromium.googlesource.com/chromium/src',
-                        '$recipe_engine/runtime': {
-                            'is_experimental': False,
-                            'is_luci': True,
-                        },
-                    },
-                    sort_keys=True,
-                ),
-                '-logdog-project',
-                'chromium',
-            ],
-            'dimensions': [
-                {'key': 'cores', 'value': '8'},
-                {'key': 'os', 'value': 'Ubuntu'},
-                {'key': 'pool', 'value': 'Chrome'},
-            ],
-            'caches': [
-                {'path': 'cache/a', 'name': 'a'},
-                {
-                    'path': 'cache/builder',
-                    'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME
-                },
-                {'path': 'cache/git_cache', 'name': 'git_chromium'},
-                {'path': 'cache/out', 'name': 'build_chromium'},
-            ],
-            'cipd_input': {
-                'packages': [
-                    {
-                        'package_name': 'infra/test/bar/${os_ver}',
-                        'path': '.',
-                        'version': 'latest',
-                    },
-                    {
-                        'package_name': 'infra/test/foo/${platform}',
-                        'path': 'third_party',
-                        'version': 'stable',
-                    },
-                ],
-            },
-        },
+        'task_slices': [{
+            'expiration_secs': '3600',
+            'properties': props_def,
+            'wait_for_capacity': False,
+        }],
         'pubsub_topic':
             'projects/testbed-test/topics/swarming',
         'pubsub_userdata':
@@ -747,9 +751,10 @@ class SwarmingTest(BaseTest):
     self.json_response = {
         'task_id': 'deadbeef',
         'request': {
-            'expiration_secs':
-                3600,
-            'properties': {'execution_timeout_secs': 1800},
+            'task_slices': [{
+                'expiration_secs': 3600,
+                'properties': {'execution_timeout_secs': 1800},
+            }],
             'tags': [
                 'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
                 'builder:linux_chromium_rel_ng',
@@ -770,7 +775,93 @@ class SwarmingTest(BaseTest):
     self.assertIn({
         'key': 'BUILDBUCKET_EXPERIMENTAL',
         'value': 'TRUE',
-    }, actual_task_def['properties']['env'])
+    }, actual_task_def['task_slices'][0]['properties']['env'])
+
+  def test_create_task_async_new_swarming_template_format(self):
+    self.task_template = {
+        'name':
+            'buildbucket:${bucket}:${builder}',
+        'priority':
+            '100',
+        'task_slices': [{
+            'expiration_secs': '3600',
+            'properties': {
+                'execution_timeout_secs':
+                    '3600',
+                'extra_args': [
+                    'cook',
+                    '-repository',
+                    '${repository}',
+                    '-revision',
+                    '${revision}',
+                    '-recipe',
+                    '${recipe}',
+                    '-properties',
+                    '${properties_json}',
+                    '-logdog-project',
+                    '${project}',
+                ],
+                'caches': [{
+                    'path': '${cache_dir}/builder',
+                    'name': 'builder_${builder_hash}'
+                }],
+                'cipd_input': {
+                    'packages': [
+                        {
+                            'package_name': 'infra/test/bar/${os_ver}',
+                            'path': '.',
+                            'version': 'latest',
+                        },
+                        {
+                            'package_name': 'infra/test/foo/${platform}',
+                            'path': 'third_party',
+                            'version': 'stable',
+                        },
+                    ],
+                },
+            },
+        }],
+        'tags': [
+            (
+                'log_location:logdog://luci-logdog-dev.appspot.com/${project}/'
+                'buildbucket/${hostname}/${build_id}/+/annotations'
+            ),
+            'luci_project:${project}',
+        ],
+    }
+
+    build = mkBuild(
+        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
+    )
+
+    self.json_response = {
+        'task_id': 'deadbeef',
+        'request': {
+            'task_slices': [{
+                'expiration_secs': 3600,
+                'properties': {'execution_timeout_secs': 1800},
+            }],
+            'tags': [
+                'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
+                'builder:linux_chromium_rel_ng',
+                'buildertag:yes',
+                'priority:108',
+                'recipe_name:recipe',
+                'recipe_repository:https://example.com/repo',
+            ],
+            'service_account':
+                'robot@example.com',
+        },
+    }
+
+    swarming.create_task_async(build, 1).get_result()
+
+    actual_task_def = net.json_request_async.call_args[1]['payload']
+    self.assertEqual(actual_task_def['priority'], '108')
+    self.assertIn({
+        'key': 'BUILDBUCKET_EXPERIMENTAL',
+        'value': 'FALSE',
+    }, actual_task_def['task_slices'][0]['properties']['env'])
 
   def test_create_task_async_for_non_swarming_bucket(self):
     self.bucket_cfg.ClearField('swarming')
@@ -822,17 +913,18 @@ class SwarmingTest(BaseTest):
     self.json_response = {
         'task_id': 'deadbeef',
         'request': {
-            'expiration_secs':
-                3600,
-            'properties': {
-                'execution_timeout_secs':
-                    1800,
-                'dimensions': [
-                    {'key': 'cores', 'value': '8'},
-                    {'key': 'os', 'value': 'Ubuntu'},
-                    {'key': 'pool', 'value': 'Chrome'},
-                ],
-            },
+            'task_slices': [{
+                'expiration_secs': 3600,
+                'properties': {
+                    'execution_timeout_secs':
+                        1800,
+                    'dimensions': [
+                        {'key': 'cores', 'value': '8'},
+                        {'key': 'os', 'value': 'Ubuntu'},
+                        {'key': 'pool', 'value': 'Chrome'},
+                    ],
+                },
+            }],
             'tags': [
                 'builder:linux_chromium_rel_ng',
                 'buildertag:yes',
@@ -852,13 +944,84 @@ class SwarmingTest(BaseTest):
         'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
     )
     actual_task_def = net.json_request_async.call_args[1]['payload']
+    props_def = {
+        'env': [{
+            'key': 'BUILDBUCKET_EXPERIMENTAL',
+            'value': 'FALSE',
+        }],
+        'execution_timeout_secs':
+            '3600',
+        'extra_args': [
+            'cook',
+            '-repository',
+            'https://example.com/repo',
+            '-revision',
+            'HEAD',
+            '-recipe',
+            'recipe',
+            '-properties',
+            json.dumps(
+                {
+                    'buildbucket': {
+                        'hostname': 'cr-buildbucket.appspot.com',
+                        'build': {
+                            'project':
+                                'chromium',
+                            'bucket':
+                                'luci.chromium.try',
+                            'created_by':
+                                'user:john@example.com',
+                            'created_ts':
+                                utils.datetime_to_timestamp(build.create_time),
+                            'id':
+                                '1',
+                            'tags': [],
+                        },
+                    },
+                    '$recipe_engine/runtime': {
+                        'is_experimental': False,
+                        'is_luci': True,
+                    },
+                    'buildername': 'linux_chromium_rel_ng',
+                    'predefined-property': 'x',
+                    'predefined-property-bool': True,
+                },
+                sort_keys=True,
+            ),
+            '-logdog-project',
+            'chromium',
+        ],
+        'dimensions': [
+            {'key': 'cores', 'value': '8'},
+            {'key': 'os', 'value': 'Ubuntu'},
+            {'key': 'pool', 'value': 'Chrome'},
+        ],
+        'caches': [
+            {'path': 'cache/a', 'name': 'a'},
+            {'path': 'cache/builder', 'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {'path': 'cache/git_cache', 'name': 'git_chromium'},
+            {'path': 'cache/out', 'name': 'build_chromium'},
+        ],
+        'cipd_input': {
+            'packages': [
+                {
+                    'package_name': 'infra/test/bar/${os_ver}',
+                    'path': '.',
+                    'version': 'latest',
+                },
+                {
+                    'package_name': 'infra/test/foo/${platform}',
+                    'path': 'third_party',
+                    'version': 'stable',
+                },
+            ],
+        },
+    }
     expected_task_def = {
         'name':
             'buildbucket:luci.chromium.try:linux_chromium_rel_ng-canary',
         'priority':
             '108',
-        'expiration_secs':
-            '3600',
         'tags': [
             'buildbucket_bucket:luci.chromium.try',
             'buildbucket_build_id:1',
@@ -878,84 +1041,11 @@ class SwarmingTest(BaseTest):
         ],
         'pool_task_template':
             'CANARY_PREFER',
-        'properties': {
-            'env': [{
-                'key': 'BUILDBUCKET_EXPERIMENTAL',
-                'value': 'FALSE',
-            }],
-            'execution_timeout_secs':
-                '3600',
-            'extra_args': [
-                'cook',
-                '-repository',
-                'https://example.com/repo',
-                '-revision',
-                'HEAD',
-                '-recipe',
-                'recipe',
-                '-properties',
-                json.dumps(
-                    {
-                        'buildbucket': {
-                            'hostname': 'cr-buildbucket.appspot.com',
-                            'build': {
-                                'project':
-                                    'chromium',
-                                'bucket':
-                                    'luci.chromium.try',
-                                'created_by':
-                                    'user:john@example.com',
-                                'created_ts':
-                                    utils.datetime_to_timestamp(
-                                        build.create_time
-                                    ),
-                                'id':
-                                    '1',
-                                'tags': [],
-                            },
-                        },
-                        '$recipe_engine/runtime': {
-                            'is_experimental': False,
-                            'is_luci': True,
-                        },
-                        'buildername': 'linux_chromium_rel_ng',
-                        'predefined-property': 'x',
-                        'predefined-property-bool': True,
-                    },
-                    sort_keys=True,
-                ),
-                '-logdog-project',
-                'chromium',
-            ],
-            'dimensions': [
-                {'key': 'cores', 'value': '8'},
-                {'key': 'os', 'value': 'Ubuntu'},
-                {'key': 'pool', 'value': 'Chrome'},
-            ],
-            'caches': [
-                {'path': 'cache/a', 'name': 'a'},
-                {
-                    'path': 'cache/builder',
-                    'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME
-                },
-                {'path': 'cache/git_cache', 'name': 'git_chromium'},
-                {'path': 'cache/out', 'name': 'build_chromium'},
-            ],
-            'cipd_input': {
-                'packages': [
-                    {
-                        'package_name': 'infra/test/bar/${os_ver}',
-                        'path': '.',
-                        'version': 'latest',
-                    },
-                    {
-                        'package_name': 'infra/test/foo/${platform}',
-                        'path': 'third_party',
-                        'version': 'stable',
-                    },
-                ],
-            },
-        },
+        'task_slices': [{
+            'expiration_secs': '3600',
+            'properties': props_def,
+            'wait_for_capacity': False,
+        }],
         'pubsub_topic':
             'projects/testbed-test/topics/swarming',
         'pubsub_userdata':
@@ -1013,17 +1103,18 @@ class SwarmingTest(BaseTest):
     self.json_response = {
         'task_id': 'deadbeef',
         'request': {
-            'expiration_secs':
-                3600,
-            'properties': {
-                'execution_timeout_secs':
-                    1800,
-                'dimensions': [
-                    {'key': 'cores', 'value': '8'},
-                    {'key': 'os', 'value': 'Ubuntu'},
-                    {'key': 'pool', 'value': 'Chrome'},
-                ],
-            },
+            'task_slices': [{
+                'expiration_secs': 3600,
+                'properties': {
+                    'execution_timeout_secs':
+                        1800,
+                    'dimensions': [
+                        {'key': 'cores', 'value': '8'},
+                        {'key': 'os', 'value': 'Ubuntu'},
+                        {'key': 'pool', 'value': 'Chrome'},
+                    ],
+                },
+            }],
             'tags': [
                 'builder:linux_chromium_rel_ng',
                 'buildertag:yes',
@@ -1063,17 +1154,18 @@ class SwarmingTest(BaseTest):
     self.json_response = {
         'task_id': 'deadbeef',
         'request': {
-            'expiration_secs':
-                3600,
-            'properties': {
-                'execution_timeout_secs':
-                    1800,
-                'dimensions': [
-                    {'key': 'cores', 'value': '16'},
-                    {'key': 'os', 'value': 'Ubuntu'},
-                    {'key': 'pool', 'value': 'Chrome'},
-                ],
-            },
+            'task_slices': [{
+                'expiration_secs': 3600,
+                'properties': {
+                    'execution_timeout_secs':
+                        1800,
+                    'dimensions': [
+                        {'key': 'cores', 'value': '16'},
+                        {'key': 'os', 'value': 'Ubuntu'},
+                        {'key': 'pool', 'value': 'Chrome'},
+                    ],
+                },
+            }],
             'tags': [
                 'builder:linux_chromium_rel_ng',
                 'buildertag:yes',
@@ -1090,7 +1182,7 @@ class SwarmingTest(BaseTest):
     actual_task_def = net.json_request_async.call_args[1]['payload']
     self.assertIn(
         {'key': 'cores', 'value': '16'},
-        actual_task_def['properties']['dimensions'],
+        actual_task_def['task_slices'][0]['properties']['dimensions'],
     )
 
   def test_create_task_async_override_cfg_malformed(self):
@@ -1184,13 +1276,15 @@ class SwarmingTest(BaseTest):
     self.json_response = {
         'task_id': 'deadbeef',
         'request': {
-            'properties': {
-                'dimensions': [
-                    {'key': 'cores', 'value': '16'},
-                    {'key': 'os', 'value': 'Ubuntu'},
-                    {'key': 'pool', 'value': 'Chrome'},
-                ],
-            },
+            'task_slices': [{
+                'properties': {
+                    'dimensions': [
+                        {'key': 'cores', 'value': '16'},
+                        {'key': 'os', 'value': 'Ubuntu'},
+                        {'key': 'pool', 'value': 'Chrome'},
+                    ],
+                },
+            }],
             'tags': [
                 'builder:linux_chromium_rel_ng',
                 'buildertag:yes',

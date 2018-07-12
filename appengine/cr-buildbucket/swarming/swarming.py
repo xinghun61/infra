@@ -588,8 +588,42 @@ def _create_task_def_async(
 
   task = apply_if_tags(task)
 
-  task_properties = task.setdefault('properties', {})
+  # Upgrade old style properties into task_slices.
+  if task.get('properties') and not task.get('task_slices'):
+    task['task_slices'] = [
+        {
+            'expiration_secs': task.pop('expiration_secs', '3600'),
+            'properties': task.pop('properties'),
+            'wait_for_capacity': False,
+        },
+    ]
+  if builder_cfg.expiration_secs > 0:
+    task['task_slices'][-1]['expiration_secs'] = str(
+        builder_cfg.expiration_secs
+    )
+  for t in task['task_slices']:
+    _setup_props(build, builder_cfg, extra_cipd_packages, t['properties'])
 
+  if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
+    task['pubsub_topic'] = (
+        'projects/%s/topics/%s' %
+        (app_identity.get_application_id(), PUBSUB_TOPIC)
+    )
+    task['pubsub_userdata'] = json.dumps(
+        {
+            'build_id': build.key.id(),
+            'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
+            'swarming_hostname': build.swarming_hostname,
+        },
+        sort_keys=True,
+    )
+  # Format is
+  # https://cs.chromium.org/chromium/infra/luci/appengine/swarming/swarming_rpcs.py?q=NewTaskRequest
+  raise ndb.Return(task)
+
+
+def _setup_props(build, builder_cfg, extra_cipd_packages, task_properties):
+  """Fills a TaskProperties."""
   task_properties.setdefault('env', []).append({
       'key': 'BUILDBUCKET_EXPERIMENTAL',
       'value': str(build.experimental).upper(),
@@ -600,33 +634,19 @@ def _create_task_def_async(
       .extend(extra_cipd_packages)
   )
 
-  if builder_cfg.expiration_secs > 0:
-    task['expiration_secs'] = str(builder_cfg.expiration_secs)
-
   # Add in all of the swarming dimensions to the task properties.
   task_properties['dimensions'] = [{
       'key': k, 'value': v
   } for k, v in swarmingcfg_module.read_dimensions(builder_cfg)]
 
+  # TODO(maruel): Enable task slice for optional named cache;
+  # https://crbug.com/847602.
   _add_named_caches(builder_cfg, task_properties)
 
   if builder_cfg.execution_timeout_secs > 0:
     task_properties['execution_timeout_secs'] = str(
         builder_cfg.execution_timeout_secs
     )
-
-  if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
-    task['pubsub_topic'] = (
-        'projects/%s/topics/%s' %
-        (app_identity.get_application_id(), PUBSUB_TOPIC)
-    )
-    task['pubsub_userdata'] = json.dumps({
-        'build_id': build.key.id(),
-        'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
-        'swarming_hostname': build.swarming_hostname,
-    },
-                                         sort_keys=True)
-  raise ndb.Return(task)
 
 
 def _add_named_caches(builder_cfg, task_properties):
@@ -802,24 +822,22 @@ def create_task_async(build, build_number=None):
       build.logdog_project = project
       build.logdog_prefix = prefix
     build.tags.append(buildtags.unparse(buildtags.SWARMING_TAG_KEY, t))
-  for d in task_req.get('properties', {}).get('dimensions', []):
+  task_slices = task_req.get('task_slices') or [{}]
+  for d in task_slices[0].get('properties', {}).get('dimensions', []):
     dt = buildtags.unparse(d['key'], d['value'])
     build.tags.append(buildtags.unparse(buildtags.SWARMING_DIMENSION_KEY, dt))
 
   build.service_account = task_req.get('service_account')
 
   # Mark the build as leased.
-  assert 'expiration_secs' in task_def, task_def
-  # task_def['expiration_secs'] is max time for the task to be pending
-  # It is encoded as string.
-  task_expiration = datetime.timedelta(seconds=int(task_def['expiration_secs']))
-  # task_def['properties']['execution_timeout_secs'] is max time for the task
-  # to run.
-  task_expiration += datetime.timedelta(
-      seconds=int(task_def['properties']['execution_timeout_secs'])
+  exp = sum(int(t['expiration_secs']) for t in task_def['task_slices'])
+  # This is not exactly true but #closeenough.
+  exp += int(
+      task_def['task_slices'][-1]['properties']['execution_timeout_secs']
   )
-  task_expiration += datetime.timedelta(hours=1)
-  build.lease_expiration_date = utils.utcnow() + task_expiration
+  # Adding an hour definitely helps with the #closeenough.
+  exp += 24 * 60 * 60
+  build.lease_expiration_date = utils.utcnow() + datetime.timedelta(seconds=exp)
   build.regenerate_lease_key()
   build.leasee = user.self_identity()
   build.never_leased = False

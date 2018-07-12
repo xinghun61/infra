@@ -94,45 +94,51 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         config_content_binary=config_test.text_to_binary(v8_cfg),
     ).put()
 
-    self.task_template = {
-        'name': 'buildbucket:${bucket}:${builder}',
-        'priority': '100',
-        'expiration_secs': '3600',
-        'properties': {
-            'execution_timeout_secs':
-                '3600',
-            'extra_args': [
-                'cook',
-                '-repository',
-                '${repository}',
-                '-revision',
-                '${revision}',
-                '-recipe',
-                '${recipe}',
-                '-properties',
-                '${properties_json}',
-                '-logdog-project',
-                '${project}',
+    props_def = {
+        'execution_timeout_secs':
+            '3600',
+        'extra_args': [
+            'cook',
+            '-repository',
+            '${repository}',
+            '-revision',
+            '${revision}',
+            '-recipe',
+            '${recipe}',
+            '-properties',
+            '${properties_json}',
+            '-logdog-project',
+            '${project}',
+        ],
+        'caches': [{
+            'path': '${cache_dir}/builder',
+            'name': 'builder_${builder_hash}',
+        }],
+        'cipd_input': {
+            'packages': [
+                {
+                    'package_name': 'infra/test/bar/${os_ver}',
+                    'path': '.',
+                    'version': 'latest',
+                },
+                {
+                    'package_name': 'infra/test/foo/${platform}',
+                    'path': 'third_party',
+                    'version': 'stable',
+                },
             ],
-            'caches': [{
-                'path': '${cache_dir}/builder',
-                'name': 'builder_${builder_hash}',
-            }],
-            'cipd_input': {
-                'packages': [
-                    {
-                        'package_name': 'infra/test/bar/${os_ver}',
-                        'path': '.',
-                        'version': 'latest',
-                    },
-                    {
-                        'package_name': 'infra/test/foo/${platform}',
-                        'path': 'third_party',
-                        'version': 'stable',
-                    },
-                ],
-            },
         },
+    }
+    self.task_template = {
+        'name':
+            'buildbucket:${bucket}:${builder}',
+        'priority':
+            '100',
+        'task_slices': [{
+            'expiration_secs': '3600',
+            'properties': props_def,
+            'wait_for_capacity': False,
+        }],
     }
 
     self.patch(
@@ -259,94 +265,97 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
     resp = self.call_api('get_task_def', req).json_body
     actual_task_def = json.loads(resp['task_definition'])
-    expected_task_def = {
-        'name':
-            'buildbucket:luci.chromium.try:linux_chromium_rel_ng',
-        'tags': [
-            'build_address:luci.chromium.try/linux_chromium_rel_ng/0',
-            'buildbucket_bucket:luci.chromium.try',
-            'buildbucket_build_id:1',
-            'buildbucket_hostname:cr-buildbucket.appspot.com',
-            'buildbucket_template_canary:0',
-            'buildbucket_template_revision:rev',
-            'builder:linux_chromium_rel_ng',
-            'recipe_name:presubmit',
-            'recipe_repository:https://example.com',
+    props_def = {
+        u'env': [{u'key': u'BUILDBUCKET_EXPERIMENTAL', u'value': u'FALSE'}],
+        u'extra_args': [
+            u'cook',
+            u'-repository',
+            u'https://example.com',
+            u'-revision',
+            u'HEAD',
+            u'-recipe',
+            u'presubmit',
+            u'-properties',
+            json.dumps(
+                {
+                    'buildbucket': {
+                        'hostname': 'cr-buildbucket.appspot.com',
+                        'build': {
+                            'project': 'chromium',
+                            'bucket': 'luci.chromium.try',
+                            'created_by': 'anonymous:anonymous',
+                            'created_ts': 1448841600000000,
+                            'id': '1',
+                            'tags': [],
+                        },
+                    },
+                    '$recipe_engine/runtime': {
+                        'is_experimental': False,
+                        'is_luci': True,
+                    },
+                    'foo': 'bar',
+                    'baz': 1,
+                    'buildername': 'linux_chromium_rel_ng',
+                    'buildnumber': 0,
+                },
+                sort_keys=True,
+            ),
+            u'-logdog-project',
+            u'chromium',
         ],
-        'priority':
-            '100',
-        'expiration_secs':
-            '3600',
-        'pool_task_template':
-            'CANARY_NEVER',
-        'properties': {
-            'env': [{'key': 'BUILDBUCKET_EXPERIMENTAL', 'value': 'FALSE'}],
-            'extra_args': [
-                'cook',
-                '-repository',
-                'https://example.com',
-                '-revision',
-                'HEAD',
-                '-recipe',
-                'presubmit',
-                '-properties',
-                json.dumps(
-                    {
-                        'buildbucket': {
-                            'hostname': 'cr-buildbucket.appspot.com',
-                            'build': {
-                                'project': 'chromium',
-                                'bucket': 'luci.chromium.try',
-                                'created_by': 'anonymous:anonymous',
-                                'created_ts': 1448841600000000,
-                                'id': '1',
-                                'tags': [],
-                            },
-                        },
-                        '$recipe_engine/runtime': {
-                            'is_experimental': False,
-                            'is_luci': True,
-                        },
-                        'foo': 'bar',
-                        'baz': 1,
-                        'buildername': 'linux_chromium_rel_ng',
-                        'buildnumber': 0,
-                    },
-                    sort_keys=True,
-                ),
-                '-logdog-project',
-                'chromium',
+        u'execution_timeout_secs':
+            u'3600',
+        u'cipd_input': {
+            u'packages': [
+                {
+                    u'path': u'.',
+                    u'package_name': u'infra/test/bar/${os_ver}',
+                    u'version': u'latest',
+                },
+                {
+                    u'path': u'third_party',
+                    u'package_name': u'infra/test/foo/${platform}',
+                    u'version': u'stable',
+                },
             ],
-            'execution_timeout_secs':
-                '3600',
-            'cipd_input': {
-                'packages': [
-                    {
-                        'path': '.',
-                        'package_name': 'infra/test/bar/${os_ver}',
-                        'version': 'latest',
-                    },
-                    {
-                        'path': 'third_party',
-                        'package_name': 'infra/test/foo/${platform}',
-                        'version': 'stable',
-                    },
-                ],
-            },
-            'dimensions': [
-                {'key': 'baz', 'value': 'baz'},
-                {'key': 'builder', 'value': 'linux_chromium_rel_ng'},
-                {'key': 'foo', 'value': 'bar'},
-            ],
-            'caches': [{
-                'path':
-                    'cache/builder',
-                'name': (
-                    'builder_980988014eb33bf5578a0f44e123402888e39083523bfd921'
-                    '4fea0c8a080db17'
-                ),
-            }],
         },
+        u'dimensions': [
+            {u'key': u'baz', u'value': u'baz'},
+            {u'key': u'builder', u'value': u'linux_chromium_rel_ng'},
+            {u'key': u'foo', u'value': u'bar'},
+        ],
+        u'caches': [{
+            u'path':
+                u'cache/builder',
+            u'name': (
+                u'builder_980988014eb33bf5578a0f44e123402888e39083523bfd921'
+                u'4fea0c8a080db17'
+            ),
+        }],
+    }
+    expected_task_def = {
+        u'name':
+            u'buildbucket:luci.chromium.try:linux_chromium_rel_ng',
+        u'tags': [
+            u'build_address:luci.chromium.try/linux_chromium_rel_ng/0',
+            u'buildbucket_bucket:luci.chromium.try',
+            u'buildbucket_build_id:1',
+            u'buildbucket_hostname:cr-buildbucket.appspot.com',
+            u'buildbucket_template_canary:0',
+            u'buildbucket_template_revision:rev',
+            u'builder:linux_chromium_rel_ng',
+            u'recipe_name:presubmit',
+            u'recipe_repository:https://example.com',
+        ],
+        u'priority':
+            u'100',
+        u'pool_task_template':
+            u'CANARY_NEVER',
+        u'task_slices': [{
+            u'expiration_secs': u'3600',
+            u'properties': props_def,
+            u'wait_for_capacity': False,
+        }],
     }
     self.assertEqual(actual_task_def, expected_task_def)
 
