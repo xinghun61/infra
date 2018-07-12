@@ -31,6 +31,7 @@ class MrInlineEditor extends Polymer.Element {
         type: String,
         value: 'Editable content',
       },
+      onSave: Function,
       _newContent: String,
     };
   }
@@ -45,8 +46,10 @@ class MrInlineEditor extends Polymer.Element {
   }
 
   save() {
+    if (this.onSave) {
+      this.onSave(this._newContent);
+    }
     this.cancel();
-    this.content = this._newContent;
   }
 }
 customElements.define(MrInlineEditor.is, MrInlineEditor);

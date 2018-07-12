@@ -43,6 +43,12 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
           return this._submitCommentHandler.bind(this);
         },
       },
+      _updateDescription: {
+        type: Function,
+        value: function() {
+          return this._updateDescriptionHandler.bind(this);
+        },
+      },
     };
   }
 
@@ -50,18 +56,29 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
     this._updateIssue(comment);
   }
 
-  _updateIssue(commentData, delta) {
-    const message = {
+  _updateDescriptionHandler(content) {
+    this._updateIssue(content, null, true);
+  }
+
+  _updateIssue(commentData, delta, isDescription) {
+    const baseMessage = {
       trace: {token: this.token},
       issue_ref: {
         project_name: this.projectName,
         local_id: this.issueId,
       },
-      comment_content: commentData || '',
     };
+
+    const message = Object.assign({}, baseMessage, {
+      comment_content: commentData || '',
+    });
 
     if (delta) {
       message.delta = delta;
+    }
+
+    if (isDescription) {
+      message.is_description = true;
     }
 
     this.dispatch({type: actionType.UPDATE_ISSUE_START});
@@ -73,6 +90,7 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
         type: actionType.UPDATE_ISSUE_SUCCESS,
         issue: resp.issue,
       });
+      actionCreator.fetchComments(this.dispatch.bind(this), baseMessage);
     }, (error) => {
       this.dispatch({
         type: actionType.UPDATE_ISSUE_FAILURE,

@@ -65,17 +65,31 @@
       .star-line {
         width: 100%;
         text-align: center;
+      }
+      /* Wrap the star icon around a button for accessibility. */
+      .star-line button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        margin: 0;
         --iron-icon-fill-color: hsl(120, 5%, 66%);
+      }
+      .star-line button[disabled] {
+        opacity: 0.5;
+        cursor: default;
       }
     </style>
     <div class="star-line">
-      <template is="dom-if" if="[[isStarred]]">
-        <iron-icon icon="star" title="You've starred this issue"></iron-icon>
-      </template>
-      <template is="dom-if" if="[[!isStarred]]">
-        <iron-icon icon="star-border" title="Click to star this issue"></iron-icon>
-      </template>
-      Starred by [[issue.starCount]] users
+      <button on-click="toggleStar" disabled$="[[!_canStar]]">
+        <template is="dom-if" if="[[isStarred]]">
+          <iron-icon icon="star" title="You've starred this issue"></iron-icon>
+        </template>
+        <template is="dom-if" if="[[!isStarred]]">
+          <iron-icon icon="star-border" title="Click to star this issue"></iron-icon>
+        </template>
+      </button>
+      Starred by [[_renderCount(issue.starCount)]] user[[_renderPluralS(issue.starCount)]]
     </div>
     <mr-metadata
       owner="[[issue.ownerRef]]"

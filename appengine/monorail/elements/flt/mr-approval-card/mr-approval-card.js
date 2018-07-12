@@ -176,18 +176,20 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   }
 
   _updateApproval(commentData, delta) {
-    const message = {
+    const baseMessage = {
       trace: {token: this.token},
       issue_ref: {
         project_name: this.projectName,
         local_id: this.issueId,
       },
+    };
+    const message = Object.assign({}, baseMessage, {
       field_ref: {
         type: 'APPROVAL_TYPE',
         field_name: this.fieldName,
       },
       comment_content: commentData || '',
-    };
+    });
 
     if (delta) {
       message.approval_delta = delta;
@@ -202,6 +204,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: actionType.UPDATE_APPROVAL_SUCCESS,
         approval: resp.approval,
       });
+      actionCreator.fetchComments(this.dispatch.bind(this), baseMessage);
     }, (error) => {
       this.dispatch({
         type: actionType.UPDATE_APPROVAL_FAILURE,

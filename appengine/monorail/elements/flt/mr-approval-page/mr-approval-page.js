@@ -16,7 +16,6 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       issue: {
         type: Object,
         statePath: 'issue',
-        observer: '_fetchCommentsAndStarState',
       },
       issueId: {
         type: Number,
@@ -82,6 +81,9 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       },
     };
 
+    actionCreator.fetchComments(this.dispatch.bind(this), message);
+    actionCreator.fetchIsStarred(this.dispatch.bind(this), message);
+
     const getIssue = window.prpcClient.call(
       'monorail.Issues', 'GetIssue', message
     );
@@ -94,56 +96,6 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     }, (error) => {
       this.dispatch({
         type: actionType.FETCH_ISSUE_FAILURE,
-        error,
-      });
-    });
-  }
-
-  // TODO(zhangtiff): Replace this with middleware that fetches comments
-  // after specific actions are dispatched.
-  _fetchCommentsAndStarState(issue) {
-    if (!this.issueLoaded) return;
-
-    // TODO(zhangtiff): Figure out patterns for batching actions in Redux.
-    this.dispatch({type: actionType.FETCH_COMMENTS_START});
-    this.dispatch({type: actionType.FETCH_IS_STARRED_START});
-
-    const message = {
-      trace: {token: this.token},
-      issue_ref: {
-        project_name: this.projectName,
-        local_id: this.issueId,
-      },
-    };
-
-    const getComments = window.prpcClient.call(
-      'monorail.Issues', 'ListComments', message
-    );
-
-    const getIsStarred = window.prpcClient.call(
-      'monorail.Issues', 'IsIssueStarredRequest', message
-    );
-
-    getComments.then((resp) => {
-      this.dispatch({
-        type: actionType.FETCH_COMMENTS_SUCCESS,
-        comments: resp.comments,
-      });
-    }, (error) => {
-      this.dispatch({
-        type: actionType.FETCH_COMMENTS_FAILURE,
-        error,
-      });
-    });
-
-    getIsStarred.then((resp) => {
-      this.dispatch({
-        type: actionType.FETCH_IS_STARRED_SUCCESS,
-        isStarred: resp.isStarred,
-      });
-    }, (error) => {
-      this.dispatch({
-        type: actionType.FETCH_IS_STARRED_FAILURE,
         error,
       });
     });

@@ -11,6 +11,10 @@
       FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
       FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
 
+      STAR_ISSUE_START: 'STAR_ISSUE_START',
+      STAR_ISSUE_SUCCESS: 'STAR_ISSUE_SUCCESS',
+      STAR_ISSUE_FAILURE: 'STAR_ISSUE_FAILURE',
+
       FETCH_IS_STARRED_START: 'FETCH_IS_STARRED_START',
       FETCH_IS_STARRED_SUCCESS: 'FETCH_IS_STARRED_SUCCESS',
       FETCH_IS_STARRED_FAILURE: 'FETCH_IS_STARRED_FAILURE',
@@ -28,6 +32,47 @@
       UPDATE_APPROVAL_FAILURE: 'UPDATE_APPROVAL_FAILURE',
     };
 
+    const actionCreator = {
+      fetchComments: (dispatch, message) => {
+        dispatch({type: actionType.FETCH_COMMENTS_START});
+
+        const getComments = window.prpcClient.call(
+          'monorail.Issues', 'ListComments', message
+        );
+
+        getComments.then((resp) => {
+          dispatch({
+            type: actionType.FETCH_COMMENTS_SUCCESS,
+            comments: resp.comments,
+          });
+        }, (error) => {
+          this.dispatch({
+            type: actionType.FETCH_COMMENTS_FAILURE,
+            error,
+          });
+        });
+      },
+      fetchIsStarred: (dispatch, message) => {
+        dispatch({type: actionType.FETCH_IS_STARRED_START});
+
+        const getIsStarred = window.prpcClient.call(
+          'monorail.Issues', 'IsIssueStarred', message
+        );
+
+        getIsStarred.then((resp) => {
+          dispatch({
+            type: actionType.FETCH_IS_STARRED_SUCCESS,
+            isStarred: resp.isStarred,
+          });
+        }, (error) => {
+          dispatch({
+            type: actionType.FETCH_IS_STARRED_FAILURE,
+            error,
+          });
+        });
+      },
+    };
+
     const initial = {
       issueId: 0,
       projectName: '',
@@ -42,6 +87,9 @@
 
       fetchingComments: false,
       fetchCommentsError: null,
+
+      starringIssue: false,
+      starIssueError: null,
 
       fetchingIsStarred: false,
       fetchIsStarredError: null,
@@ -105,6 +153,24 @@
           return Object.assign({}, state, {
             fetchIssueError: action.error,
             fetchingIssue: false,
+          });
+
+        // Request for starring an issue.
+        case actionType.STAR_ISSUE_START:
+          return Object.assign({}, state, {
+            starIssueError: null,
+            starringIssue: true,
+          });
+        case actionType.STAR_ISSUE_SUCCESS:
+          return Object.assign({}, state, {
+            issue: Object.assign({}, state.issue, {starCount: action.starCount}),
+            isStarred: action.isStarred,
+            starringIssue: false,
+          });
+        case actionType.STAR_ISSUE_FAILURE:
+          return Object.assign({}, state, {
+            starIssueError: action.error,
+            starringIssue: false,
           });
 
         // Request for getting comments for an issue.
@@ -184,5 +250,6 @@
     window.ReduxMixin = ReduxMixin || {};
     window.store = store || {};
     window.actionType = actionType || {};
+    window.actionCreator = actionCreator || {};
   })(window);
 </script>
