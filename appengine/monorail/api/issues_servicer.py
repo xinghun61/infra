@@ -13,9 +13,11 @@ from api.api_proto import issue_objects_pb2
 from api.api_proto import issues_pb2
 from api.api_proto import issues_prpc_pb2
 from businesslogic import work_env
+from features import savedqueries_helpers
 from framework import exceptions
 from framework import framework_views
 from proto import tracker_pb2
+from search import searchpipeline
 from tracker import tracker_bizobj
 
 
@@ -147,7 +149,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       response = issues_pb2.ListCommentsResponse(comments=converted_comments)
 
     return response
-  
+
   @monorail_servicer.PRPCMethod
   def DeleteComment(self, mc, request):
     _project, issue, _config = self._GetProjectIssueAndConfig(
@@ -190,4 +192,42 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       response.approval.CopyFrom(converters.ConvertApproval(
           av, users_by_id, config))
 
+    return response
+
+  @monorail_servicer.PRPCMethod
+  def IssueSnapshot(self, mc, request):
+    """Fetch IssueSnapshot counts for charting."""
+    warnings = []
+
+    if not request.timestamp:
+      raise exceptions.InputException('Param `timestamp` required.')
+
+    if not request.project_name:
+      raise exceptions.InputException('Param `project_name` required.')
+
+    if request.group_by == 'label' and not request.label_prefix:
+      raise exceptions.InputException('Param `label_prefix` required.')
+
+    if request.canned_query:
+      canned_query = savedqueries_helpers.SavedQueryIDToCond(
+          mc.cnxn, self.services.features, request.canned_query)
+      canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserID(
+          mc.auth.user_id, canned_query)
+    else:
+      canned_query = None
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      project = we.GetProjectByName(request.project_name)
+      results, unsupported_fields = we.SnapshotCountsQuery(
+          project, request.timestamp, request.group_by, request.label_prefix,
+          request.query, canned_query)
+
+    snapshot_counts = [
+      issues_pb2.IssueSnapshotCount(dimension=key, count=result)
+      for key, result in results.iteritems()
+    ]
+    response = issues_pb2.IssueSnapshotResponse()
+    response.snapshot_count.extend(snapshot_counts)
+    response.unsupported_field.extend(unsupported_fields)
+    response.unsupported_field.extend(warnings)
     return response

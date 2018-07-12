@@ -86,7 +86,18 @@
 
       connectedCallback() {
         super.connectedCallback();
+        this.initClient();
         this.fetchData();
+      }
+
+      initClient() {
+        this.prpcClient = new window.chops.rpc.PrpcClient({
+          insecure: Boolean(location.hostname === 'localhost'),
+          fetchImpl: (url, options) => {
+            options.credentials = 'same-origin';
+            return fetch(url, options);
+          },
+        });
       }
 
       fetchData() {
@@ -116,14 +127,20 @@
 
       fetchDataAtTimestamp(timestamp) {
         return new Promise((resolve, reject) => {
-          const params = new URLSearchParams(document.location.search.substring(1));
-          const q = params.get('q');
-          const options = { credentials: 'same-origin' };
-          const url = `/p/${this.projectName}/feeds/snapshotCounts?timestamp=${timestamp}&q=${q}`;
-          return fetch(url, options).then(response => {
-            response.text().then(responseText => {
-              const data = JSON.parse(responseText.substr(5));
-              resolve({date: timestamp * 1000, issues: data.results.total});
+          const params = new URLSearchParams(
+              document.location.search.substring(1));
+          const query = params.get('q');
+          const message = {
+            timestamp: timestamp,
+            project_name: this.projectName,
+            query: query,
+          };
+          const callPromise = this.prpcClient.call('monorail.Issues',
+              'IssueSnapshot', message);
+          return callPromise.then(response => {
+            resolve({
+              date: timestamp * 1000,
+              issues: response.snapshotCount[0].count,
             });
           });
         });

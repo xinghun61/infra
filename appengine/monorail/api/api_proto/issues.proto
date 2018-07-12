@@ -26,6 +26,7 @@ service Issues {
   rpc DeleteComment (DeleteCommentRequest) returns (google.protobuf.Empty) {}
   rpc UpdateApproval (UpdateApprovalRequest)
       returns (UpdateApprovalResponse) {}
+  rpc IssueSnapshot (IssueSnapshotRequest) returns (IssueSnapshotResponse) {}
 }
 
 
@@ -165,4 +166,27 @@ message ApprovalDelta {
 message UpdateApprovalResponse {
   Approval approval = 1;
   // TODO(jojwang): monorail:3895, add new_comment field.
+}
+
+// Next available tag: 8
+message IssueSnapshotRequest {
+  RequestTrace trace = 1;
+  int32 timestamp = 2;
+  string query = 3;
+  int32 canned_query = 4;
+  string group_by = 5;
+  string label_prefix = 6;
+  string project_name = 7;
+}
+
+// Next available tag: 3
+message IssueSnapshotCount {
+  string dimension = 1;
+  int32 count = 2;
+}
+
+// Next available tag: 3
+message IssueSnapshotResponse {
+  repeated IssueSnapshotCount snapshot_count = 1;
+  repeated string unsupported_field = 2;
 }

@@ -168,4 +168,3 @@ CSP_REPORT = '/csp'
 TOKEN_REFRESH = '/hosting/tokenRefresh'
 
 SPAM_MODERATION_QUEUE = '/spamqueue'
-SNAPSHOT_COUNTS = '/feeds/snapshotCounts'

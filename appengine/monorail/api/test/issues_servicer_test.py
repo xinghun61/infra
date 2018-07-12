@@ -492,4 +492,96 @@ class IssuesServicerTest(unittest.TestCase):
       )
 
     work_env.WorkEnv(mc, self.services).UpdateIssueApproval.assert_called_once()
-    self.assertEqual(actual, expected)
+    self.assertEqual(expected, actual)
+
+  @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
+  def testSnapshotCounts_RequiredFields(self, mockSnapshotCountsQuery):
+    """Test that timestamp is required at all times.
+    And that label_prefix is required when group_by is 'label'.
+    """
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    # Test timestamp is required.
+    request = issues_pb2.IssueSnapshotRequest(project_name='proj')
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    # Test project_name is required.
+    request = issues_pb2.IssueSnapshotRequest(timestamp=1531334109)
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    # Test label_prefix is required when group_by is 'label'.
+    request = issues_pb2.IssueSnapshotRequest(timestamp=1531334109,
+        project_name='proj', group_by='label')
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    mockSnapshotCountsQuery.assert_not_called()
+
+  @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
+  def testSnapshotCounts_Basic(self, mockSnapshotCountsQuery):
+    """Tests the happy path case."""
+    request = issues_pb2.IssueSnapshotRequest(
+        timestamp=1531334109, project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mockSnapshotCountsQuery.return_value = ({'total': 123}, [])
+
+    response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    self.assertEqual(123, response.snapshot_count[0].count)
+    self.assertEqual(0, len(response.unsupported_field))
+    mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
+        '', '', '', None)
+
+  @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
+  def testSnapshotCounts_GroupByLabel(self, mockSnapshotCountsQuery):
+    """Tests grouping by label with label_prefix and a query.
+    But no canned_query.
+    """
+    request = issues_pb2.IssueSnapshotRequest(timestamp=1531334109,
+        project_name='proj', group_by='label', label_prefix='Type',
+        query='rutabaga:rutabaga')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mockSnapshotCountsQuery.return_value = (
+        {'label1': 123, 'label2': 987},
+        ['rutabaga'])
+
+    response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    self.assertEqual(2, len(response.snapshot_count))
+    self.assertEqual('label1', response.snapshot_count[0].dimension)
+    self.assertEqual(123, response.snapshot_count[0].count)
+    self.assertEqual('label2', response.snapshot_count[1].dimension)
+    self.assertEqual(987, response.snapshot_count[1].count)
+    self.assertEqual(1, len(response.unsupported_field))
+    self.assertEqual('rutabaga', response.unsupported_field[0])
+    mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
+        'label', 'Type', 'rutabaga:rutabaga', None)
+
+  @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
+  def testSnapshotCounts_GroupByComponent(self, mockSnapshotCountsQuery):
+    """Tests grouping by component with a query and a canned_query."""
+    request = issues_pb2.IssueSnapshotRequest(timestamp=1531334109,
+        project_name='proj', group_by='component', query='rutabaga:rutabaga',
+        canned_query=2)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mockSnapshotCountsQuery.return_value = (
+        {'component1': 123, 'component2': 987},
+        ['rutabaga'])
+
+    response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
+
+    self.assertEqual(2, len(response.snapshot_count))
+    self.assertEqual('component1', response.snapshot_count[0].dimension)
+    self.assertEqual(123, response.snapshot_count[0].count)
+    self.assertEqual('component2', response.snapshot_count[1].dimension)
+    self.assertEqual(987, response.snapshot_count[1].count)
+    self.assertEqual(1, len(response.unsupported_field))
+    self.assertEqual('rutabaga', response.unsupported_field[0])
+    mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
+        'component', '', 'rutabaga:rutabaga', 'is:open')
