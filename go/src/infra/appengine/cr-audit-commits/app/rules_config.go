@@ -8,10 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/proto/git"
 )
@@ -189,6 +190,20 @@ var RuleMap = map[string]*RepoConfig{
 				},
 				notificationFunction: fileBugForAutoRollViolation,
 			},
+		},
+	},
+	"skia-lottie-ci": {
+		BaseRepoURL: "https://skia.googlesource.com/lottie-ci.git",
+		GerritURL:   "https://skia-review.googlesource.com",
+		BranchName:  "refs/heads/master",
+		// No special meaning, ToT as of the time this line was added.
+		StartingCommit:  "6844651ced137fd86d73a11cd0c4d74e71c6fb98",
+		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
+		MonorailProject: "chromium",
+		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
+		Rules: map[string]RuleSet{
+			"autoroll-rules-lottie-web": AutoRollRulesDEPS("lottie-web-lottie-ci-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-skia":       AutoRollRulesDEPS("skia-lottie-ci-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 		},
 	},
 	"fuchsia-topaz-master": {
