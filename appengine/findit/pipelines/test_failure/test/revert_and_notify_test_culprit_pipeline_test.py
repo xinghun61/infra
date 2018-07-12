@@ -17,6 +17,7 @@ from pipelines.test_failure import revert_and_notify_test_culprit_pipeline
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
 from services import ci_failure
+from services import constants as services_constants
 from services import culprit_action
 from services import gerrit
 from services.parameters import BuildKey
@@ -113,24 +114,24 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
 
-    self.MockSynchronousPipeline(CreateRevertCLPipeline,
-                                 CreateRevertCLParameters(
-                                     cl_key=cl_key,
-                                     build_id=build_id,
-                                     failure_type=failure_type.TEST),
-                                 gerrit.CREATED_BY_FINDIT)
-    self.MockSynchronousPipeline(SubmitRevertCLPipeline,
-                                 SubmitRevertCLParameters(
-                                     cl_key=cl_key,
-                                     revert_status=gerrit.CREATED_BY_FINDIT,
-                                     failure_type=failure_type.TEST),
-                                 gerrit.COMMITTED)
-    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
-                                 SendNotificationForCulpritParameters(
-                                     cl_key=cl_key,
-                                     force_notify=True,
-                                     revert_status=gerrit.CREATED_BY_FINDIT,
-                                     failure_type=failure_type.TEST), True)
+    self.MockSynchronousPipeline(
+        CreateRevertCLPipeline,
+        CreateRevertCLParameters(
+            cl_key=cl_key, build_id=build_id, failure_type=failure_type.TEST),
+        services_constants.CREATED_BY_FINDIT)
+    self.MockSynchronousPipeline(
+        SubmitRevertCLPipeline,
+        SubmitRevertCLParameters(
+            cl_key=cl_key,
+            revert_status=services_constants.CREATED_BY_FINDIT,
+            failure_type=failure_type.TEST), services_constants.COMMITTED)
+    self.MockSynchronousPipeline(
+        SendNotificationForCulpritPipeline,
+        SendNotificationForCulpritParameters(
+            cl_key=cl_key,
+            force_notify=True,
+            revert_status=services_constants.CREATED_BY_FINDIT,
+            failure_type=failure_type.TEST), True)
 
     pipeline = RevertAndNotifyTestCulpritPipeline(
         CulpritActionParameters(
@@ -161,18 +162,18 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
 
-    self.MockSynchronousPipeline(CreateRevertCLPipeline,
-                                 CreateRevertCLParameters(
-                                     cl_key=cl_key,
-                                     build_id=build_id,
-                                     failure_type=failure_type.TEST),
-                                 gerrit.CREATED_BY_FINDIT)
-    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
-                                 SendNotificationForCulpritParameters(
-                                     cl_key=cl_key,
-                                     force_notify=True,
-                                     revert_status=gerrit.CREATED_BY_FINDIT,
-                                     failure_type=failure_type.TEST), True)
+    self.MockSynchronousPipeline(
+        CreateRevertCLPipeline,
+        CreateRevertCLParameters(
+            cl_key=cl_key, build_id=build_id, failure_type=failure_type.TEST),
+        services_constants.CREATED_BY_FINDIT)
+    self.MockSynchronousPipeline(
+        SendNotificationForCulpritPipeline,
+        SendNotificationForCulpritParameters(
+            cl_key=cl_key,
+            force_notify=True,
+            revert_status=services_constants.CREATED_BY_FINDIT,
+            failure_type=failure_type.TEST), True)
 
     pipeline = RevertAndNotifyTestCulpritPipeline(
         CulpritActionParameters(

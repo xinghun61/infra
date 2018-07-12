@@ -15,6 +15,7 @@ from libs import analysis_status
 from libs import floating_point_util
 from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from services import constants
 from services import culprit_action
 from services import gerrit
 from services import git
@@ -100,7 +101,7 @@ def CreateAndSubmitRevert(parameters, runner_id):
       failure_type=failure_type.FLAKY_TEST)
   revert_status = culprit_action.RevertCulprit(revert_culprit_parameters,
                                                runner_id)
-  if revert_status != gerrit.CREATED_BY_FINDIT:
+  if revert_status != constants.CREATED_BY_FINDIT:
     analysis.LogInfo(
         'Not reverting: RevertCulprit wasn\'t able to create a revert.')
     return False
@@ -117,7 +118,7 @@ def CreateAndSubmitRevert(parameters, runner_id):
       failure_type=failure_type.FLAKY_TEST)
   submit_revert_status = culprit_action.CommitRevert(submit_revert_paramters,
                                                      runner_id)
-  if submit_revert_status != gerrit.COMMITTED:
+  if submit_revert_status != constants.COMMITTED:
     analysis.LogInfo(
         'Not reverting: CommitRevert wasn\'t able to submit the revert')
     analysis.Update(has_created_autorevert=True)

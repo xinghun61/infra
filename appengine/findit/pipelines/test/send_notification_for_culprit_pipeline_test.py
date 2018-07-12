@@ -7,8 +7,8 @@ import mock
 from common.waterfall import failure_type
 from pipelines.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
+from services import constants
 from services import culprit_action
-from services import gerrit
 from services.parameters import SendNotificationForCulpritParameters
 from waterfall.test import wf_testcase
 
@@ -21,7 +21,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_input = SendNotificationForCulpritParameters(
         cl_key='mockurlsafekey',
         force_notify=True,
-        revert_status=gerrit.CREATED_BY_SHERIFF,
+        revert_status=constants.CREATED_BY_SHERIFF,
         failure_type=failure_type.COMPILE)
 
     pipeline = SendNotificationForCulpritPipeline(pipeline_input)

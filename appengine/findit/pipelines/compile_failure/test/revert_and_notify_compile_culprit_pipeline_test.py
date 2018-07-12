@@ -15,8 +15,8 @@ from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from pipelines.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
+from services import constants as services_constants
 from services import culprit_action
-from services import gerrit
 from services.compile_failure import compile_culprit_action
 from services.parameters import BuildKey
 from services.parameters import CreateRevertCLParameters
@@ -50,30 +50,32 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
 
-    self.MockSynchronousPipeline(CreateRevertCLPipeline,
-                                 CreateRevertCLParameters(
-                                     cl_key=cl_key,
-                                     build_id=build_id,
-                                     failure_type=failure_type.COMPILE),
-                                 gerrit.CREATED_BY_FINDIT)
-    self.MockSynchronousPipeline(SubmitRevertCLPipeline,
-                                 SubmitRevertCLParameters(
-                                     cl_key=cl_key,
-                                     revert_status=gerrit.CREATED_BY_FINDIT,
-                                     failure_type=failure_type.COMPILE),
-                                 gerrit.COMMITTED)
-    self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
-                                 SendNotificationToIrcParameters(
-                                     cl_key=cl_key,
-                                     revert_status=gerrit.CREATED_BY_FINDIT,
-                                     commit_status=gerrit.COMMITTED,
-                                     failure_type=failure_type.COMPILE), True)
-    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
-                                 SendNotificationForCulpritParameters(
-                                     cl_key=cl_key,
-                                     force_notify=True,
-                                     revert_status=gerrit.CREATED_BY_FINDIT,
-                                     failure_type=failure_type.COMPILE), True)
+    self.MockSynchronousPipeline(
+        CreateRevertCLPipeline,
+        CreateRevertCLParameters(
+            cl_key=cl_key, build_id=build_id,
+            failure_type=failure_type.COMPILE),
+        services_constants.CREATED_BY_FINDIT)
+    self.MockSynchronousPipeline(
+        SubmitRevertCLPipeline,
+        SubmitRevertCLParameters(
+            cl_key=cl_key,
+            revert_status=services_constants.CREATED_BY_FINDIT,
+            failure_type=failure_type.COMPILE), services_constants.COMMITTED)
+    self.MockSynchronousPipeline(
+        SendNotificationToIrcPipeline,
+        SendNotificationToIrcParameters(
+            cl_key=cl_key,
+            revert_status=services_constants.CREATED_BY_FINDIT,
+            commit_status=services_constants.COMMITTED,
+            failure_type=failure_type.COMPILE), True)
+    self.MockSynchronousPipeline(
+        SendNotificationForCulpritPipeline,
+        SendNotificationForCulpritParameters(
+            cl_key=cl_key,
+            force_notify=True,
+            revert_status=services_constants.CREATED_BY_FINDIT,
+            failure_type=failure_type.COMPILE), True)
 
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
         CulpritActionParameters(
@@ -106,24 +108,26 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
 
-    self.MockSynchronousPipeline(CreateRevertCLPipeline,
-                                 CreateRevertCLParameters(
-                                     cl_key=cl_key,
-                                     build_id=build_id,
-                                     failure_type=failure_type.COMPILE),
-                                 gerrit.CREATED_BY_FINDIT)
-    self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
-                                 SendNotificationToIrcParameters(
-                                     cl_key=cl_key,
-                                     revert_status=gerrit.CREATED_BY_FINDIT,
-                                     commit_status=gerrit.SKIPPED,
-                                     failure_type=failure_type.COMPILE), True)
-    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
-                                 SendNotificationForCulpritParameters(
-                                     cl_key=cl_key,
-                                     force_notify=True,
-                                     revert_status=gerrit.CREATED_BY_FINDIT,
-                                     failure_type=failure_type.COMPILE), True)
+    self.MockSynchronousPipeline(
+        CreateRevertCLPipeline,
+        CreateRevertCLParameters(
+            cl_key=cl_key, build_id=build_id,
+            failure_type=failure_type.COMPILE),
+        services_constants.CREATED_BY_FINDIT)
+    self.MockSynchronousPipeline(
+        SendNotificationToIrcPipeline,
+        SendNotificationToIrcParameters(
+            cl_key=cl_key,
+            revert_status=services_constants.CREATED_BY_FINDIT,
+            commit_status=services_constants.SKIPPED,
+            failure_type=failure_type.COMPILE), True)
+    self.MockSynchronousPipeline(
+        SendNotificationForCulpritPipeline,
+        SendNotificationForCulpritParameters(
+            cl_key=cl_key,
+            force_notify=True,
+            revert_status=services_constants.CREATED_BY_FINDIT,
+            failure_type=failure_type.COMPILE), True)
 
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
         CulpritActionParameters(
@@ -151,18 +155,20 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls = ListOfBasestring()
     heuristic_cls.append(cl_key)
 
-    self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
-                                 SendNotificationToIrcParameters(
-                                     cl_key=cl_key,
-                                     revert_status=gerrit.SKIPPED,
-                                     commit_status=gerrit.SKIPPED,
-                                     failure_type=failure_type.COMPILE), True)
-    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
-                                 SendNotificationForCulpritParameters(
-                                     cl_key=cl_key,
-                                     force_notify=True,
-                                     revert_status=gerrit.SKIPPED,
-                                     failure_type=failure_type.COMPILE), True)
+    self.MockSynchronousPipeline(
+        SendNotificationToIrcPipeline,
+        SendNotificationToIrcParameters(
+            cl_key=cl_key,
+            revert_status=services_constants.SKIPPED,
+            commit_status=services_constants.SKIPPED,
+            failure_type=failure_type.COMPILE), True)
+    self.MockSynchronousPipeline(
+        SendNotificationForCulpritPipeline,
+        SendNotificationForCulpritParameters(
+            cl_key=cl_key,
+            force_notify=True,
+            revert_status=services_constants.SKIPPED,
+            failure_type=failure_type.COMPILE), True)
 
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
         CulpritActionParameters(

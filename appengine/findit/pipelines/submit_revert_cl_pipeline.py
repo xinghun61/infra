@@ -2,12 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from google.appengine.ext import ndb
-
 from gae_libs.pipelines import SynchronousPipeline
 from libs import analysis_status as status
 from model import entity_util
-from model.wf_suspected_cl import WfSuspectedCL
 from services import culprit_action
 from services.parameters import SubmitRevertCLParameters
 

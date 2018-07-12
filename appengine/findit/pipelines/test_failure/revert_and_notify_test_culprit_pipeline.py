@@ -10,8 +10,8 @@ from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from pipelines.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
+from services import constants
 from services import culprit_action
-from services import gerrit
 from services.test_failure import test_culprit_action
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
@@ -37,7 +37,7 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
     build_failure_type = failure_type.TEST
 
     for culprit_revision, culprit_key in culprits.iteritems():
-      revert_status = gerrit.SKIPPED
+      revert_status = constants.SKIPPED
       if test_culprit_action.CanAutoCreateRevert(culprit_key, pipeline_input):
         revert_status = yield CreateRevertCLPipeline(
             CreateRevertCLParameters(

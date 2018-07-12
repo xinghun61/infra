@@ -9,8 +9,8 @@ from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from pipelines.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
+from services import constants
 from services import culprit_action
-from services import gerrit
 from services.compile_failure import compile_culprit_action
 from services.parameters import CreateRevertCLParameters
 from services.parameters import CulpritActionParameters
@@ -39,8 +39,8 @@ class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):
                                             build_number)
 
     build_failure_type = failure_type.COMPILE
-    revert_status = gerrit.SKIPPED
-    commit_status = gerrit.SKIPPED
+    revert_status = constants.SKIPPED
+    commit_status = constants.SKIPPED
     if compile_culprit_action.CanAutoCreateRevert():
       revert_status = yield CreateRevertCLPipeline(
           CreateRevertCLParameters(

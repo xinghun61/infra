@@ -12,10 +12,9 @@ from infra_api_clients.codereview.cl_info import Commit
 from infra_api_clients.codereview.gerrit import Gerrit
 from libs import analysis_status as status
 from libs import time_util
-from model import entity_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
-from services import culprit_action
+from services import constants
 from services import gerrit
 from services.parameters import SubmitRevertCLParameters
 from waterfall import suspected_cl_util
@@ -76,13 +75,13 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_cl = revert
     culprit.revert_status = status.COMPLETED
     culprit.put()
-    revert_status = gerrit.CREATED_BY_FINDIT
+    revert_status = constants.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,
         failure_type=failure_type.COMPILE)
     pipeline = SubmitRevertCLPipeline(pipeline_input)
-    self.assertEqual(gerrit.COMMITTED, pipeline.run(pipeline_input))
+    self.assertEqual(constants.COMMITTED, pipeline.run(pipeline_input))
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_submission_status, status.COMPLETED)
@@ -95,7 +94,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_submission_status = status.RUNNING
     culprit.put()
-    revert_status = gerrit.CREATED_BY_FINDIT
+    revert_status = constants.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,
@@ -110,7 +109,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = gerrit.CREATED_BY_FINDIT
+    revert_status = constants.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,
@@ -126,7 +125,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.submit_revert_pipeline_id = 'pipeline_id'
     culprit.put()
 
-    revert_status = gerrit.CREATED_BY_FINDIT
+    revert_status = constants.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
         revert_status=revert_status,

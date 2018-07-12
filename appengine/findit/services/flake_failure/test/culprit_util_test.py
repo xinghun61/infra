@@ -17,6 +17,7 @@ from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)
+from services import constants
 from services import culprit_action
 from services import gerrit
 from services import git
@@ -115,9 +116,9 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
       culprit_util, 'CheckIfCanSubmitRevert', return_value=(True, ''))
   @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
-      culprit_action, 'CommitRevert', return_value=gerrit.COMMITTED)
+      culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(
-      culprit_action, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
+      culprit_action, 'RevertCulprit', return_value=constants.CREATED_BY_FINDIT)
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevert(self, under_limit, can_revert, revert_fn,
@@ -141,7 +142,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         failure_type=failure_type.FLAKY_TEST)
     submit_expected = SubmitRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        revert_status=gerrit.CREATED_BY_FINDIT,
+        revert_status=constants.CREATED_BY_FINDIT,
         failure_type=failure_type.FLAKY_TEST)
 
     pipeline_input = CreateAndSubmitRevertInput(
@@ -159,9 +160,9 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=False)
   @mock.patch.object(
-      culprit_action, 'CommitRevert', return_value=gerrit.COMMITTED)
+      culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(
-      culprit_action, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
+      culprit_action, 'RevertCulprit', return_value=constants.CREATED_BY_FINDIT)
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertNotEnabled(self, under_limit, can_revert,
@@ -194,9 +195,9 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
-      culprit_action, 'CommitRevert', return_value=gerrit.COMMITTED)
+      culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(
-      culprit_action, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
+      culprit_action, 'RevertCulprit', return_value=constants.CREATED_BY_FINDIT)
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(
       culprit_util, 'UnderLimitForAutorevert', return_value=False)
@@ -230,9 +231,9 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
-      culprit_action, 'CommitRevert', return_value=gerrit.COMMITTED)
+      culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(
-      culprit_action, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
+      culprit_action, 'RevertCulprit', return_value=constants.CREATED_BY_FINDIT)
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=False)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertCannotRevert(self, under_limit, can_revert,
@@ -265,9 +266,11 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
-      culprit_action, 'CommitRevert', return_value=gerrit.COMMITTED)
+      culprit_action, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(
-      culprit_action, 'RevertCulprit', return_value=gerrit.CREATED_BY_SHERIFF)
+      culprit_action,
+      'RevertCulprit',
+      return_value=constants.CREATED_BY_SHERIFF)
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertCreateFailed(self, under_limit, can_revert,
@@ -310,7 +313,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
                     ' the culprit.'))
   @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
   @mock.patch.object(
-      culprit_action, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
+      culprit_action, 'RevertCulprit', return_value=constants.CREATED_BY_FINDIT)
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertCannotSubmit(self, under_limit, can_revert,
@@ -348,9 +351,10 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       culprit_util, 'CheckIfCanSubmitRevert', return_value=(True, ''))
   @mock.patch.object(culprit_util, 'IsAutorevertEnabled', return_value=True)
-  @mock.patch.object(culprit_action, 'CommitRevert', return_value=gerrit.ERROR)
   @mock.patch.object(
-      culprit_action, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
+      culprit_action, 'CommitRevert', return_value=constants.ERROR)
+  @mock.patch.object(
+      culprit_action, 'RevertCulprit', return_value=constants.CREATED_BY_FINDIT)
   @mock.patch.object(culprit_util, 'CanRevertForAnalysis', return_value=True)
   @mock.patch.object(culprit_util, 'UnderLimitForAutorevert', return_value=True)
   def testCreateAndSubmitRevertSubmitFailed(
@@ -374,7 +378,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         failure_type=failure_type.FLAKY_TEST)
     submit_expected = SubmitRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        revert_status=gerrit.CREATED_BY_FINDIT,
+        revert_status=constants.CREATED_BY_FINDIT,
         failure_type=failure_type.FLAKY_TEST)
 
     pipeline_input = CreateAndSubmitRevertInput(
@@ -682,7 +686,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       git, 'GetCommitsBySameAutherAfterRevision', return_value=['rev2'])
-  def testCheckIfCanSubmitRevert(self, _):
+  def testCheckIfCanSubmitRevertNewChangeFromSameAuthor(self, _):
     self.assertEqual(
         (False, 'There are changes by the culprit author after the culprit.'),
         culprit_util.CheckIfCanSubmitRevert('rev'))

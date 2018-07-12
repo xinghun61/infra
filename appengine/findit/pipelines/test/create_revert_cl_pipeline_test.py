@@ -16,8 +16,8 @@ from libs import analysis_status as status
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
+from services import constants
 from services import culprit_action
-from services import gerrit
 from services.parameters import CreateRevertCLParameters
 from waterfall import buildbot
 from waterfall import suspected_cl_util
@@ -86,7 +86,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
 
-    self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
+    self.assertEquals(revert_status, constants.CREATED_BY_FINDIT)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.COMPLETED)
@@ -121,7 +121,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
 
-    self.assertEqual(gerrit.SKIPPED, revert_status)
+    self.assertEqual(constants.SKIPPED, revert_status)
 
   def testLogUnexpectedAborting(self):
     repo_name = 'chromium'

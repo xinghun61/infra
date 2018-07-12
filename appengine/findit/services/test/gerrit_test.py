@@ -17,13 +17,12 @@ from infra_api_clients.codereview.cl_info import Revert
 from infra_api_clients.codereview.gerrit import Gerrit
 from libs import analysis_status as status
 from libs import time_util
-from model import entity_util
 from model.base_suspected_cl import RevertCL
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
+from services import constants as services_constants
 from services import gerrit
-from services.parameters import CreateRevertCLParameters
 from services.parameters import SubmitRevertCLParameters
 from waterfall import buildbot
 from waterfall import suspected_cl_util
@@ -97,15 +96,11 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     }
     culprit.put()
 
-    revert_status = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
-                                         failure_type.COMPILE,
-                                         sample_failed_step)
+    revert_status, _, _ = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
+                                               failure_type.COMPILE,
+                                               sample_failed_step)
 
-    self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.COMPLETED)
-    self.assertIsNotNone(culprit.revert_cl)
+    self.assertEquals(revert_status, services_constants.CREATED_BY_FINDIT)
 
     reason = textwrap.dedent("""
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
@@ -198,15 +193,13 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.flake_analysis_urlsafe_keys = [analysis.key.urlsafe()]
     culprit.put()
 
-    revert_status = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
-                                         failure_type.FLAKY_TEST,
-                                         sample_failed_step)
+    revert_status, revert, reason = gerrit.RevertCulprit(
+        culprit.key.urlsafe(), 'm/b/1', failure_type.FLAKY_TEST,
+        sample_failed_step)
 
-    self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
-
-    culprit = FlakeCulprit.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.COMPLETED)
-    self.assertIsNotNone(culprit.revert_cl)
+    self.assertEquals(revert_status, services_constants.CREATED_BY_FINDIT)
+    self.assertIsNotNone(revert)
+    self.assertIsNone(reason)
 
     reason = textwrap.dedent("""
       Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
@@ -239,10 +232,11 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     suspect_cl = WfSuspectedCL.Create(repo_name, revision, 123)
     suspect_cl.put()
 
-    revert_status = gerrit.RevertCulprit(suspect_cl.key.urlsafe(), 'm/b/1',
-                                         failure_type.COMPILE, 'compile')
-
-    self.assertEquals(revert_status, gerrit.CREATED_BY_SHERIFF)
+    revert_status, revert, reason = gerrit.RevertCulprit(
+        suspect_cl.key.urlsafe(), 'm/b/1', failure_type.COMPILE, 'compile')
+    self.assertIsNone(revert)
+    self.assertEqual(services_constants.REVERTED_BY_SHERIFF, reason)
+    self.assertEquals(revert_status, services_constants.CREATED_BY_SHERIFF)
 
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
@@ -271,14 +265,10 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.cr_notification_status = status.COMPLETED
     culprit.put()
 
-    revert_status = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
-                                         failure_type.COMPILE, 'compile')
+    revert_status, _, _ = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
+                                               failure_type.COMPILE, 'compile')
 
-    self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.COMPLETED)
-    self.assertIsNotNone(culprit.revert_cl)
+    self.assertEquals(revert_status, services_constants.CREATED_BY_FINDIT)
     mock_send.assert_has_not_called()
 
   @mock.patch.object(
@@ -297,15 +287,12 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
-                                         failure_type.COMPILE, 'compile')
+    revert_status, revert, reason = gerrit.RevertCulprit(
+        culprit.key.urlsafe(), 'm/b/1', failure_type.COMPILE, 'compile')
 
-    self.assertEquals(revert_status, gerrit.SKIPPED)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.SKIPPED)
-    self.assertIsNone(culprit.revert_cl)
-    self.assertEqual(culprit.skip_revert_reason, gerrit.CULPRIT_IS_A_REVERT)
+    self.assertEquals(services_constants.SKIPPED, revert_status)
+    self.assertEqual(services_constants.CULPRIT_IS_A_REVERT, reason)
+    self.assertIsNone(revert)
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
@@ -323,15 +310,12 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
-                                         failure_type.COMPILE, 'compile')
+    revert_status, revert, reason = gerrit.RevertCulprit(
+        culprit.key.urlsafe(), 'm/b/1', failure_type.COMPILE, 'compile')
 
-    self.assertEquals(revert_status, gerrit.SKIPPED)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.SKIPPED)
-    self.assertIsNone(culprit.revert_cl)
-    self.assertEqual(culprit.skip_revert_reason, gerrit.AUTO_REVERT_OFF)
+    self.assertEquals(services_constants.SKIPPED, revert_status)
+    self.assertEquals(services_constants.AUTO_REVERT_OFF, reason)
+    self.assertIsNone(revert)
 
   @mock.patch.object(codereview_util, 'IsCodeReviewGerrit', return_value=False)
   def testSubmitRevertForRietveld(self, _):
@@ -352,14 +336,11 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = gerrit.CREATED_BY_FINDIT
+    revert_status = services_constants.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
             cl_key=culprit.key.urlsafe(), revert_status=revert_status))
-    self.assertEqual(gerrit.SKIPPED, commit_status)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_submission_status, status.SKIPPED)
+    self.assertEqual(services_constants.SKIPPED, commit_status)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
@@ -390,16 +371,14 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = gerrit.CREATED_BY_FINDIT
+    revert_status = services_constants.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
             cl_key=culprit.key.urlsafe(), revert_status=revert_status))
 
-    self.assertEqual(gerrit.ERROR, commit_status)
+    self.assertEqual(services_constants.ERROR, commit_status)
     mock_commit.assert_called_once_with(revert_change_id)
 
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_submission_status, status.ERROR)
     culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s'
                     % culprit.key.urlsafe())
     false_positive_bug_query = urllib.urlencode({
@@ -466,15 +445,12 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = gerrit.CREATED_BY_FINDIT
+    revert_status = services_constants.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
             cl_key=culprit.key.urlsafe(), revert_status=revert_status))
 
-    self.assertEqual(gerrit.SKIPPED, commit_status)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_submission_status, status.SKIPPED)
+    self.assertEqual(services_constants.SKIPPED, commit_status)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
@@ -504,15 +480,12 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.revert_cl = revert_for_culprit
     culprit.revert_status = status.COMPLETED
     culprit.put()
-    revert_status = gerrit.CREATED_BY_FINDIT
+    revert_status = services_constants.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
             cl_key=culprit.key.urlsafe(), revert_status=revert_status))
 
-    self.assertEqual(gerrit.COMMITTED, commit_status)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_submission_status, status.COMPLETED)
+    self.assertEqual(services_constants.COMMITTED, commit_status)
 
     mock_commit.assert_called_once_with(revert_change_id)
 
@@ -540,17 +513,6 @@ class GerritTest(wf_testcase.WaterfallTestCase):
                                             gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with(revert_change_id, ['a@b.com'], message)
 
-  def testUpdateCulprit(self):
-    repo_name = 'chromium'
-    revision = 'rev1'
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.revert_submission_status = status.RUNNING
-    culprit.submit_revert_pipeline_id = 'some_id'
-    culprit.put()
-
-    culprit = gerrit._UpdateCulprit(culprit.key.urlsafe())
-    self.assertEqual(culprit.submit_revert_pipeline_id, 'some_id')
-
   @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
   def testShouldNotCommitRevertForAutoRoll(self, mock_info):
     repo_name = 'chromium'
@@ -576,7 +538,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
   def testSendNotificationForCulpritNoCodeReview(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
-    revert_status = gerrit.CREATED_BY_SHERIFF
+    revert_status = services_constants.CREATED_BY_SHERIFF
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
@@ -590,7 +552,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
   def testSendNotificationForCulpritConfirm(self, mock_post, _):
     repo_name = 'chromium'
     revision = 'rev1'
-    revert_status = gerrit.CREATED_BY_SHERIFF
+    revert_status = services_constants.CREATED_BY_SHERIFF
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()

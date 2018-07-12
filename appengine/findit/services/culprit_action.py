@@ -13,9 +13,11 @@ from google.appengine.ext import ndb
 
 from common.waterfall import failure_type
 from libs import analysis_status
+from libs import time_util
 from model import entity_util
 from model.wf_suspected_cl import WfSuspectedCL
 from services import ci_failure
+from services import constants
 from services import gerrit
 from services import irc
 from services import monitoring
@@ -26,16 +28,16 @@ from waterfall import waterfall_config
 def MonitorRevertAction(build_failure_type, revert_status, commit_status):
   build_failure_type = failure_type.GetDescriptionForFailureType(
       build_failure_type)
-  if revert_status == gerrit.CREATED_BY_FINDIT:
-    if commit_status == gerrit.COMMITTED:
+  if revert_status == constants.CREATED_BY_FINDIT:
+    if commit_status == constants.COMMITTED:
       monitoring.OnCulpritAction(build_failure_type, 'revert_committed')
-    elif commit_status == gerrit.ERROR:
+    elif commit_status == constants.ERROR:
       monitoring.OnCulpritAction(build_failure_type, 'revert_commit_error')
     else:
       monitoring.OnCulpritAction(build_failure_type, 'revert_created')
-  elif revert_status == gerrit.CREATED_BY_SHERIFF:
+  elif revert_status == constants.CREATED_BY_SHERIFF:
     monitoring.OnCulpritAction(build_failure_type, 'revert_confirmed')
-  elif revert_status == gerrit.ERROR:
+  elif revert_status == constants.ERROR:
     monitoring.OnCulpritAction(build_failure_type, 'revert_status_error')
 
 
@@ -56,12 +58,49 @@ def ShouldTakeActionsOnCulprit(parameters):
 
   if ci_failure.AnyNewBuildSucceeded(master_name, builder_name, build_number):
     # The builder has turned green, don't need to revert or send notification.
-    logging.info('No revert or notification needed for culprit(s) for '
-                 '%s/%s/%s since the builder has turned green.', master_name,
-                 builder_name, build_number)
+    logging.info(
+        'No revert or notification needed for culprit(s) for '
+        '%s/%s/%s since the builder has turned green.', master_name,
+        builder_name, build_number)
     return False
 
   return True
+
+
+@ndb.transactional
+def _UpdateCulprit(culprit_urlsafe_key,
+                   revert_status=None,
+                   revert_cl=None,
+                   skip_revert_reason=None,
+                   revert_submission_status=None):
+  """Updates culprit entity."""
+  culprit = ndb.Key(urlsafe=culprit_urlsafe_key).get()
+  assert culprit
+  culprit.should_be_reverted = True
+
+  culprit.revert_status = revert_status or culprit.revert_status
+  culprit.revert_cl = revert_cl or culprit.revert_cl
+  culprit.skip_revert_reason = skip_revert_reason or culprit.skip_revert_reason
+  culprit.revert_submission_status = (
+      revert_submission_status or culprit.revert_submission_status)
+
+  if culprit.revert_status != analysis_status.RUNNING:  # pragma: no branch
+    # Only stores revert_pipeline_id when the revert is ongoing.
+    culprit.revert_pipeline_id = None
+
+  if revert_cl:
+    culprit.cr_notification_status = analysis_status.COMPLETED
+    culprit.revert_created_time = time_util.GetUTCNow()
+    culprit.cr_notification_time = time_util.GetUTCNow()
+
+  if (culprit.revert_submission_status !=
+      analysis_status.RUNNING):  # pragma: no branch
+    culprit.submit_revert_pipeline_id = None
+
+  if culprit.revert_submission_status == analysis_status.COMPLETED:
+    culprit.revert_committed_time = time_util.GetUTCNow()
+
+  culprit.put()
 
 
 # Functions to create a revert.
@@ -100,9 +139,10 @@ def GetSampleFailedStepName(repo_name, revision, build_id):
         culprit.builds[build_id].get('failures')):
       failures = culprit.builds[build_id]['failures']
     else:
-      logging.warning('%s is not found in culprit %s/%s\'s build,'
-                      ' using another build to get a sample failed step.',
-                      build_id, repo_name, revision)
+      logging.warning(
+          '%s is not found in culprit %s/%s\'s build,'
+          ' using another build to get a sample failed step.', build_id,
+          repo_name, revision)
       failures = culprit.builds.values()[0]['failures']
     return failures.keys()[0]
   logging.error('Cannot get a sample failed step for culprit %s/%s.', repo_name,
@@ -119,10 +159,17 @@ def RevertCulprit(parameters, analysis_id):
   build_id = parameters.build_id
 
   if _CanCreateRevertForCulprit(parameters, analysis_id):
-    return gerrit.RevertCulprit(
+    revert_status, revert_cl, skip_reason = gerrit.RevertCulprit(
         parameters.cl_key, build_id, parameters.failure_type,
         GetSampleFailedStepName(repo_name, revision, build_id))
-  return gerrit.SKIPPED
+    _UpdateCulprit(
+        parameters.cl_key,
+        revert_status=constants.AUTO_REVERT_STATUS_TO_ANALYSIS_STATUS[
+            revert_status],
+        revert_cl=revert_cl,
+        skip_revert_reason=skip_reason)
+    return revert_status
+  return constants.SKIPPED
 
 
 # Functions to commit the auto_created revert.
@@ -139,7 +186,7 @@ def _CanCommitRevert(parameters, pipeline_id):
     4. No other pipeline is committing the revert;
     5. No other pipeline is supposed to handle the auto commit.
   """
-  if not parameters.revert_status == gerrit.CREATED_BY_FINDIT:
+  if not parameters.revert_status == constants.CREATED_BY_FINDIT:
     return False
 
   culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
@@ -162,12 +209,16 @@ def _CanCommitRevert(parameters, pipeline_id):
 
 
 def CommitRevert(parameters, analysis_id):
-  commit_status = gerrit.SKIPPED
+  commit_status = constants.SKIPPED
   if _CanCommitRevert(parameters, analysis_id):
     commit_status = gerrit.CommitRevert(parameters)
 
   MonitorRevertAction(parameters.failure_type, parameters.revert_status,
                       commit_status)
+  revert_submission_status = constants.AUTO_REVERT_STATUS_TO_ANALYSIS_STATUS[
+      commit_status]
+  _UpdateCulprit(
+      parameters.cl_key, revert_submission_status=revert_submission_status)
   return commit_status
 
 
@@ -178,7 +229,7 @@ def SendMessageToIRC(parameters):
   commit_status = parameters.commit_status
   sent = False
 
-  if revert_status == gerrit.CREATED_BY_FINDIT:
+  if revert_status == constants.CREATED_BY_FINDIT:
     culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
 
     if not culprit:
@@ -237,11 +288,11 @@ def _ShouldSendNotification(repo_name, revision, force_notify, revert_status,
     A boolean indicating whether we should send the notification.
 
   """
-  if revert_status == gerrit.CREATED_BY_FINDIT:
+  if revert_status == constants.CREATED_BY_FINDIT:
     # Already notified when revert, bail out.
     return False
 
-  if revert_status == gerrit.CREATED_BY_SHERIFF:
+  if revert_status == constants.CREATED_BY_SHERIFF:
     force_notify = True
 
   # TODO (chanli): Add check for if confidence for the culprit is

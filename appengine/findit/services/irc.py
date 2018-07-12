@@ -11,7 +11,7 @@ import logging
 import textwrap
 
 from libs.irc_client import IRCClient
-from services import gerrit
+from services import constants
 
 _IRC_HOST = 'irc.freenode.net'
 _IRC_CHANNEL = '#chromium'
@@ -21,7 +21,7 @@ _IRC_DISC = 'CulpritFinder'
 
 def _GenerateMessage(revert_cl_url, commit_position, revision, culprit_key,
                      commit_status):
-  action = 'submitted' if commit_status == gerrit.COMMITTED else 'created'
+  action = 'submitted' if commit_status == constants.COMMITTED else 'created'
   return textwrap.dedent("""
       Findit (https://goo.gl/kROfz5) has %s a revert (%s) for CL %s,
       because it was identified as the culprit for failures in the build

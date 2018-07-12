@@ -8,8 +8,8 @@ import textwrap
 
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
+from services import constants
 from services import irc
-from services import gerrit
 from waterfall.test import wf_testcase
 
 
@@ -38,7 +38,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     revision = 'rev'
     commit_position = 123
     revert_cl_url = 'revert_url'
-    commit_status = gerrit.SKIPPED
+    commit_status = constants.SKIPPED
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.revert_cl = RevertCL()
@@ -56,7 +56,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     revision = 'rev'
     commit_position = 123
     revert_cl_url = 'revert_url'
-    commit_status = gerrit.SKIPPED
+    commit_status = constants.SKIPPED
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.revert_cl = RevertCL()
@@ -82,6 +82,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
         revert_cl_url, commit_position, culprit_key)
 
-    self.assertEqual(expected_message,
-                     irc._GenerateMessage(revert_cl_url, commit_position, None,
-                                          culprit_key, gerrit.ERROR))
+    self.assertEqual(
+        expected_message,
+        irc._GenerateMessage(revert_cl_url, commit_position, None, culprit_key,
+                             constants.ERROR))

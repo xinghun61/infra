@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import logging
 import mock
 
@@ -13,6 +14,7 @@ from libs.list_of_basestring import ListOfBasestring
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from services import ci_failure
+from services import constants
 from services import culprit_action
 from services import gerrit
 from services import irc
@@ -132,7 +134,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
   def testCannotCommitRevertIfNotRevertByFindit(self):
     parameters = SubmitRevertCLParameters(
-        cl_key='mockurlsafekey', revert_status=gerrit.CREATED_BY_SHERIFF)
+        cl_key='mockurlsafekey', revert_status=constants.CREATED_BY_SHERIFF)
     pipeline_id = 'pipeline_id'
 
     self.assertFalse(culprit_action._CanCommitRevert(parameters, pipeline_id))
@@ -147,7 +149,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     parameters = SubmitRevertCLParameters(
-        cl_key=culprit.key.urlsafe(), revert_status=gerrit.CREATED_BY_FINDIT)
+        cl_key=culprit.key.urlsafe(), revert_status=constants.CREATED_BY_FINDIT)
     pipeline_id = 'pipeline_id'
 
     self.assertTrue(culprit_action._CanCommitRevert(parameters, pipeline_id))
@@ -164,56 +166,56 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     parameters = SubmitRevertCLParameters(
-        cl_key=culprit.key.urlsafe(), revert_status=gerrit.CREATED_BY_FINDIT)
+        cl_key=culprit.key.urlsafe(), revert_status=constants.CREATED_BY_FINDIT)
     pipeline_id = 'another_pipeline'
 
     self.assertFalse(culprit_action._CanCommitRevert(parameters, pipeline_id))
 
   @mock.patch.object(monitoring.culprit_found, 'increment')
   def testMonitorRevertActionCreated(self, mock_mo):
-    culprit_action.MonitorRevertAction(failure_type.COMPILE,
-                                       gerrit.CREATED_BY_FINDIT, gerrit.SKIPPED)
+    culprit_action.MonitorRevertAction(
+        failure_type.COMPILE, constants.CREATED_BY_FINDIT, constants.SKIPPED)
     parameters = {'type': 'compile', 'action_taken': 'revert_created'}
     mock_mo.assert_called_once_with(parameters)
 
   @mock.patch.object(monitoring.culprit_found, 'increment')
   def testMonitorRevertActionConfirmed(self, mock_mo):
     culprit_action.MonitorRevertAction(
-        failure_type.COMPILE, gerrit.CREATED_BY_SHERIFF, gerrit.SKIPPED)
+        failure_type.COMPILE, constants.CREATED_BY_SHERIFF, constants.SKIPPED)
     parameters = {'type': 'compile', 'action_taken': 'revert_confirmed'}
     mock_mo.assert_called_once_with(parameters)
 
   @mock.patch.object(monitoring.culprit_found, 'increment')
   def testMonitorRevertActionSkipped(self, mock_mo):
-    culprit_action.MonitorRevertAction(failure_type.COMPILE, gerrit.SKIPPED,
-                                       gerrit.SKIPPED)
+    culprit_action.MonitorRevertAction(failure_type.COMPILE, constants.SKIPPED,
+                                       constants.SKIPPED)
     self.assertFalse(mock_mo.called)
 
   @mock.patch.object(monitoring.culprit_found, 'increment')
   def testMonitorRevertActionError(self, mock_mo):
-    culprit_action.MonitorRevertAction(failure_type.COMPILE, gerrit.ERROR,
-                                       gerrit.SKIPPED)
+    culprit_action.MonitorRevertAction(failure_type.COMPILE, constants.ERROR,
+                                       constants.SKIPPED)
     parameters = {'type': 'compile', 'action_taken': 'revert_status_error'}
     mock_mo.assert_called_once_with(parameters)
 
   @mock.patch.object(monitoring.culprit_found, 'increment')
   def testMonitorRevertActionSubmitted(self, mock_mo):
     culprit_action.MonitorRevertAction(
-        failure_type.COMPILE, gerrit.CREATED_BY_FINDIT, gerrit.COMMITTED)
+        failure_type.COMPILE, constants.CREATED_BY_FINDIT, constants.COMMITTED)
     parameters = {'type': 'compile', 'action_taken': 'revert_committed'}
     mock_mo.assert_called_once_with(parameters)
 
   @mock.patch.object(monitoring.culprit_found, 'increment')
   def testMonitorCommitRevertActionError(self, mock_mo):
-    culprit_action.MonitorRevertAction(failure_type.COMPILE,
-                                       gerrit.CREATED_BY_FINDIT, gerrit.ERROR)
+    culprit_action.MonitorRevertAction(
+        failure_type.COMPILE, constants.CREATED_BY_FINDIT, constants.ERROR)
     parameters = {'type': 'compile', 'action_taken': 'revert_commit_error'}
     mock_mo.assert_called_once_with(parameters)
 
   @mock.patch.object(irc, 'SendMessageToIrc')
   def testNoNeedToSendNotification(self, mocked_irc):
-    revert_status = gerrit.CREATED_BY_SHERIFF
-    commit_status = gerrit.SKIPPED
+    revert_status = constants.CREATED_BY_SHERIFF
+    commit_status = constants.SKIPPED
     pipeline_input = SendNotificationToIrcParameters(
         cl_key='mockurlsafekey',
         revert_status=revert_status,
@@ -224,8 +226,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(irc, 'SendMessageToIrc')
   def testSendNotificationNoCulprit(self, mocked_irc):
-    revert_status = gerrit.CREATED_BY_FINDIT
-    commit_status = gerrit.ERROR
+    revert_status = constants.CREATED_BY_FINDIT
+    commit_status = constants.ERROR
     pipeline_input = SendNotificationToIrcParameters(
         cl_key='mockurlsafekey',
         revert_status=revert_status,
@@ -239,8 +241,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
   def testSendNotificationNoRevert(self, mocked_irc):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = gerrit.CREATED_BY_FINDIT
-    commit_status = gerrit.ERROR
+    revert_status = constants.CREATED_BY_FINDIT
+    commit_status = constants.ERROR
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.put()
@@ -258,8 +260,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
   def testSendNotificationToIRC(self, _):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = gerrit.CREATED_BY_FINDIT
-    commit_status = gerrit.SKIPPED
+    revert_status = constants.CREATED_BY_FINDIT
+    commit_status = constants.SKIPPED
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.revert_cl = RevertCL()
@@ -289,10 +291,10 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.put()
     self.assertTrue(
         culprit_action._ShouldSendNotification('chromium', 'r2', True,
-                                               gerrit.CREATED_BY_SHERIFF, 2))
+                                               constants.CREATED_BY_SHERIFF, 2))
     self.assertFalse(
         culprit_action._ShouldSendNotification('chromium', 'r2', True,
-                                               gerrit.CREATED_BY_SHERIFF, 2))
+                                               constants.CREATED_BY_SHERIFF, 2))
     culprit = WfSuspectedCL.Get('chromium', 'r2')
     self.assertEqual(analysis_status.RUNNING, culprit.cr_notification_status)
 
@@ -319,7 +321,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(
         culprit_action._ShouldSendNotification('chromium', 'r1', True,
-                                               gerrit.CREATED_BY_FINDIT, 2))
+                                               constants.CREATED_BY_FINDIT, 2))
     self.assertFalse(culprit.cr_notification_processed)
 
   @mock.patch.object(
@@ -328,7 +330,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     force_notify = True
-    revert_status = gerrit.CREATED_BY_SHERIFF
+    revert_status = constants.CREATED_BY_SHERIFF
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.put()
@@ -347,7 +349,7 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     force_notify = True
-    revert_status = gerrit.CREATED_BY_SHERIFF
+    revert_status = constants.CREATED_BY_SHERIFF
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.put()
@@ -373,18 +375,23 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         cl_key=culprit.key.urlsafe(),
         build_id=build_id,
         failure_type=failure_type.COMPILE)
-    self.assertEqual(gerrit.SKIPPED,
-                     culprit_action.RevertCulprit(pipeline_input,
-                                                  'pipeline_id'))
+    self.assertEqual(
+        constants.SKIPPED,
+        culprit_action.RevertCulprit(pipeline_input, 'pipeline_id'))
 
   @mock.patch.object(
-      gerrit, 'RevertCulprit', return_value=gerrit.CREATED_BY_FINDIT)
-  @mock.patch.object(
       culprit_action, '_CanCreateRevertForCulprit', return_value=True)
-  def testRevertCulprit(self, *_):
+  @mock.patch.object(gerrit, 'RevertCulprit')
+  def testRevertCulprit(self, mock_revert, _):
     repo_name = 'chromium'
     revision = 'rev1'
     build_id = 'm/b/123'
+
+    revert_cl = RevertCL()
+    revert_cl.revert_cl_url = 'url'
+    revert_cl.created_time = datetime.datetime(2018, 6, 20, 0, 0, 0)
+
+    mock_revert.return_value = (constants.CREATED_BY_FINDIT, revert_cl, None)
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.put()
@@ -393,9 +400,12 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         cl_key=culprit.key.urlsafe(),
         build_id=build_id,
         failure_type=failure_type.COMPILE)
-    self.assertEqual(gerrit.CREATED_BY_FINDIT,
-                     culprit_action.RevertCulprit(pipeline_input,
-                                                  'pipeline_id'))
+    self.assertEqual(
+        constants.CREATED_BY_FINDIT,
+        culprit_action.RevertCulprit(pipeline_input, 'pipeline_id'))
+    culprit = WfSuspectedCL.Get(repo_name, revision)
+    self.assertEqual(revert_cl, culprit.revert_cl)
+    self.assertEqual(analysis_status.COMPLETED, culprit.revert_status)
 
   @mock.patch.object(culprit_action, '_CanCommitRevert', return_value=False)
   def testCommitSkipped(self, _):
@@ -407,22 +417,29 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
     pipeline_input = SubmitRevertCLParameters(
         cl_key=culprit.key.urlsafe(),
-        revert_status=gerrit.CREATED_BY_FINDIT,
+        revert_status=constants.CREATED_BY_FINDIT,
         failure_type=failure_type.COMPILE)
 
-    self.assertEqual(gerrit.SKIPPED,
+    self.assertEqual(constants.SKIPPED,
                      culprit_action.CommitRevert(pipeline_input, 'pipeline_id'))
 
-  @mock.patch.object(gerrit, 'CommitRevert', return_value=gerrit.COMMITTED)
+  @mock.patch.object(gerrit, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(culprit_action, '_CanCommitRevert', return_value=True)
   def testCommit(self, *_):
+    culprit = WfSuspectedCL.Create('chromium', 'rev1', 1)
+    culprit.put()
+
     pipeline_input = SubmitRevertCLParameters(
-        cl_key='mockurlsafekey',
-        revert_status=gerrit.CREATED_BY_FINDIT,
+        cl_key=culprit.key.urlsafe(),
+        revert_status=constants.CREATED_BY_FINDIT,
         failure_type=failure_type.COMPILE)
 
-    self.assertEqual(gerrit.COMMITTED,
+    self.assertEqual(constants.COMMITTED,
                      culprit_action.CommitRevert(pipeline_input, 'pipeline_id'))
+
+    culprit = WfSuspectedCL.Get('chromium', 'rev1')
+    self.assertEqual(analysis_status.COMPLETED,
+                     culprit.revert_submission_status)
 
   def testGetSampleFailedStepName(self):
     repo_name = 'chromium'
@@ -431,9 +448,9 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     build_id = 'm/b/123'
     culprit.builds = {build_id: {'failures': {'step': ['test1', 'test2']}}}
     culprit.put()
-    self.assertEqual('step',
-                     culprit_action.GetSampleFailedStepName(
-                         repo_name, revision, build_id))
+    self.assertEqual(
+        'step',
+        culprit_action.GetSampleFailedStepName(repo_name, revision, build_id))
 
   @mock.patch.object(logging, 'warning')
   def testGetSampleFailedStepNameUseAnotherBuild(self, mock_log):
@@ -443,9 +460,9 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     build_id = 'm/b/123'
     culprit.builds = {'m/b/124': {'failures': {'step': ['test1', 'test2']}}}
     culprit.put()
-    self.assertEqual('step',
-                     culprit_action.GetSampleFailedStepName(
-                         repo_name, revision, build_id))
+    self.assertEqual(
+        'step',
+        culprit_action.GetSampleFailedStepName(repo_name, revision, build_id))
     mock_log.assert_called_once_with(
         '%s is not found in culprit %s/%s\'s build,'
         ' using another build to get a sample failed step.', build_id,
@@ -459,9 +476,9 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     build_id = 'm/b/123'
     culprit.builds = None
     culprit.put()
-    self.assertEqual('',
-                     culprit_action.GetSampleFailedStepName(
-                         repo_name, revision, build_id))
+    self.assertEqual(
+        '', culprit_action.GetSampleFailedStepName(repo_name, revision,
+                                                   build_id))
     mock_log.assert_called_once_with(
         'Cannot get a sample failed step for culprit %s/%s.', repo_name,
         revision)
