@@ -399,6 +399,8 @@ func TestTriggerRepairOnRepairFailed(t *testing.T) {
 				// TODO(pprabhu) Add a case where the intial repair task has completed,
 				// but is within TimeSinceLastRepair. No new tasks should be created,
 				// and no task should be returned.
+
+				// TODO(pprabhu) Add a case where the initial repair task times out instead of completing.
 			})
 		})
 	})
