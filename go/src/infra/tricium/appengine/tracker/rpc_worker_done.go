@@ -212,7 +212,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 				if req.State == tricium.State_SUCCESS {
 					workerSuccessCount.Add(c, 1, functionName, platformName)
 				} else {
-					workerFailureCount.Add(c, 1, functionName, platformName, req.State)
+					workerFailureCount.Add(c, 1, functionName, platformName, req.State.String())
 				}
 				return nil
 			}
