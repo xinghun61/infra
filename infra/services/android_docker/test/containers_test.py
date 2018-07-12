@@ -21,7 +21,6 @@ class FakeDevice(object):
     self.minor = 0
     self.bus = 0
     self.dev_file_path = ''
-    self.battor = None
 
 
 class FakeBattor(object):
@@ -196,48 +195,6 @@ class TestAddDevice(unittest.TestCase):
     self.assertEquals(mock_write.call_args[0][1], 'c 111:9 rwm')
     self.assertTrue(mock_close.called)
     self.assertEquals(len(self.container_backend.exec_inputs), 1)
-    self.assertFalse(self.container_backend.is_paused)
-
-  @mock.patch('os.open')
-  @mock.patch('os.write')
-  @mock.patch('os.close')
-  def test_add_device_with_battor(self, mock_close, mock_write, mock_open):
-    self.container_backend.exec_outputs = ['', '', '']
-    self.device.major = 111
-    self.device.minor = 9
-    self.device.bus = 1
-    self.device.dev_file_path = '/dev/bus/usb/001/123'
-    battor = FakeBattor('/dev/ttyBattor', 'battorSerial1')
-    battor.major = 189
-    battor.minor = 0
-    battor.syspath = '/devices/usb/1/2/3/pci123/'
-    self.device.battor = battor
-    self.client.add_device(self.desc)
-
-    self.assertTrue('abc123' in mock_open.call_args[0][0])
-    # Ensure the device's major and minor numbers were written to the
-    # cgroup file, followed by the battor's major and minor numbers.
-    self.assertEqual(
-        mock_write.call_args_list[0],
-        mock.call(mock_open.return_value, 'c 111:9 rwm'))
-    self.assertEqual(
-        mock_write.call_args_list[1],
-        mock.call(mock_open.return_value, 'c 189:0 rwm'))
-
-    # Ensure the device's and battor's dev files were removed then created and
-    # the battor's udevadm db entry was updated.
-    self.assertEquals(self.container_backend.exec_inputs[0], 'rm -rf /dev/bus')
-    self.assertEquals(
-        self.container_backend.exec_inputs[1], 'rm /dev/ttyBattor')
-    self.assertTrue(
-        'mknod /dev/bus/usb/001/123' in self.container_backend.exec_inputs[2])
-    self.assertTrue(
-        'mknod /dev/ttyBattor' in self.container_backend.exec_inputs[2])
-    self.assertTrue(
-        'udevadm test /devices/usb/1/2/3/pci123/' in
-        self.container_backend.exec_inputs[2])
-
-    self.assertTrue(mock_close.called)
     self.assertFalse(self.container_backend.is_paused)
 
   def test_container_not_running(self):
