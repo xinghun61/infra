@@ -271,9 +271,13 @@ func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, 
 	switch tr.State {
 	case "RUNNING":
 		return &duration.Duration{}, nil
-	case "COMPLETED", "KILLED", "TIMED_OUT":
+	case "COMPLETED":
+		fallthrough
+	case "TIMED_OUT":
 		// TIMED_OUT tasks are considered to have completed as opposed to
 		// EXPIRED tasks, which set tr.AbandonedTs
+		fallthrough
+	case "KILLED":
 		ts, err := time.Parse(SwarmingTimeLayout, tr.CompletedTs)
 		if err != nil {
 			return nil, errors.Annotate(err, "swarming returned corrupted completed timestamp %s", tr.CompletedTs).Err()

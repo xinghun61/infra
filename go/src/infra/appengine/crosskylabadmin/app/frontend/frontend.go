@@ -41,7 +41,10 @@ const (
 	accessGroup = "chromeos-skylab-bot-fleet-access"
 	// backgroundTaskExecutionTimeoutSecs is the execution timeout (in
 	// seconds) for background tasks created by tasker.
-	backgroundTaskExecutionTimeoutSecs = 60 * 20
+	//
+	// Repair tasks can take ~90 minutes to complete in the worst case (two AU
+	// attempts and one USB install attempt).
+	backgroundTaskExecutionTimeoutSecs = 60 * 90
 	// backgroundTaskExpirationSecs is the expiration time (in seconds) for
 	// background tasks created by tasker.
 	backgroundTaskExpirationSecs = 60 * 10
