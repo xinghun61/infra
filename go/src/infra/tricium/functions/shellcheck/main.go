@@ -30,6 +30,9 @@ func main() {
 	exclude := flag.String("exclude", "", "Exclude warnings (see shellcheck")
 	shell := flag.String("shell", "", "Specify dialect (see shellcheck")
 
+	// This is needed until/unless crbug.com/863106 is fixed.
+	pathFilters := flag.String("path_filters", "", "Patterns to filter file list")
+
 	flag.Parse()
 	if flag.NArg() != 0 {
 		log.Fatalf("Unexpected argument")
@@ -59,10 +62,10 @@ func main() {
 		}
 	}
 
-	run(r, *inputDir, *outputDir)
+	run(r, *inputDir, *outputDir, *pathFilters)
 }
 
-func run(r *runner.Runner, inputDir, outputDir string) {
+func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 	// Read Tricium input FILES data.
 	input := &tricium.Data_Files{}
 	if err := tricium.ReadDataType(inputDir, input); err != nil {
@@ -76,9 +79,33 @@ func run(r *runner.Runner, inputDir, outputDir string) {
 		paths[i] = f.Path
 	}
 
-	warns, err := r.Warnings(paths...)
-	if err != nil {
-		log.Fatalf("Error running shellcheck: %v", err)
+	// Filter input file list.
+	if pathFilters != "" {
+		var filteredPaths []string
+		filters := strings.Split(pathFilters, ",")
+		for _, p := range paths {
+			for _, filter := range filters {
+				matched, err := filepath.Match(filter, filepath.Base(p))
+				if err != nil {
+					log.Fatalf("Bad path_filters pattern %q: %v", filter, err)
+				}
+				if matched {
+					filteredPaths = append(filteredPaths, p)
+				}
+			}
+		}
+		paths = filteredPaths
+	}
+
+	var warns []runner.Warning
+	if len(paths) > 0 {
+		var err error
+		warns, err = r.Warnings(paths...)
+		if err != nil {
+			log.Fatalf("Error running shellcheck: %v", err)
+		}
+	} else {
+		log.Printf("No files to check.")
 	}
 
 	// Convert shellcheck warnings into Tricium results.

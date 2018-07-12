@@ -37,7 +37,7 @@ func TestRun(t *testing.T) {
 	}
 	defer os.RemoveAll(outputDir)
 
-	run(r, testInputDir, outputDir)
+	run(r, testInputDir, outputDir, "*.other,*.sh")
 
 	resultsData, err := ioutil.ReadFile(filepath.Join(outputDir, triciumResultsPath))
 	if err != nil {
