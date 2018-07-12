@@ -94,7 +94,6 @@ func triggerRepairOnIdleForBot(c context.Context, sc clients.SwarmingClient, req
 	tid, err := sc.CreateTask(c, &clients.SwarmingCreateTaskArgs{
 		Cmd:                  luciferAdminTaskCmd(fleet.TaskType_Repair),
 		DutID:                bse.DutID,
-		DutState:             "ready",
 		ExecutionTimeoutSecs: backgroundTaskExecutionTimeoutSecs,
 		ExpirationSecs:       backgroundTaskExpirationSecs,
 		Pool:                 swarmingBotPool,
