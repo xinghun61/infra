@@ -137,29 +137,32 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "copy",
+      "luci-auth",
+      "token",
+      "-service-account-json",
       "/creds/service_accounts/service-account-container_registry_pusher.json",
-      "/path/to/tmp/"
+      "-scopes",
+      "https://www.googleapis.com/auth/cloud-platform",
+      "-lifetime",
+      "3m"
     ],
     "infra_step": true,
-    "name": "Read service account creds"
+    "name": "get access token for service-account-container_registry_pusher.json",
+    "stdout": "/path/to/tmp/"
   },
   {
     "cmd": [
-      "/usr/bin/docker",
-      "login",
+      "python",
       "-u",
-      "_json_key",
-      "-p",
-      "",
-      "https://gcr.io"
+      "RECIPE_MODULE[build::docker]/resources/docker_login.py",
+      "--server",
+      "gcr.io",
+      "--service-account-token-file",
+      "extra.secret.token.should.not.be.logged",
+      "--config-file",
+      "[CLEANUP]/.docker"
     ],
-    "name": "Login to registry"
+    "name": "docker login"
   },
   {
     "cmd": [

@@ -326,9 +326,9 @@ Recipe to build windows depot_tools bootstrap zipfile.
 &mdash; **def [RunSteps](/recipes/recipes/depot_tools_builder.py#32)(api, revision):**
 ### *recipes* / [docker\_image\_builder](/recipes/recipes/docker_image_builder.py)
 
-[DEPS](/recipes/recipes/docker_image_builder.py#6): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
+[DEPS](/recipes/recipes/docker_image_builder.py#6): [build/docker][build/recipe_modules/docker], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/service\_account][recipe_engine/recipe_modules/service_account], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
 
-&mdash; **def [RunSteps](/recipes/recipes/docker_image_builder.py#24)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/docker_image_builder.py#26)(api):**
 ### *recipes* / [gae\_sdk\_cipd\_packager](/recipes/recipes/gae_sdk_cipd_packager.py)
 
 [DEPS](/recipes/recipes/gae_sdk_cipd_packager.py#9): [build/gae\_sdk][build/recipe_modules/gae_sdk], [build/zip][build/recipe_modules/zip], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -665,6 +665,7 @@ Runs a step which adds a link to the current CL if there is one.
 
 [build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/3036a6b10657596f608ae8f6c036f8fa4a7cedb9/scripts/slave/README.recipes.md#recipe_modules-chromium
 [build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/3036a6b10657596f608ae8f6c036f8fa4a7cedb9/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
+[build/recipe_modules/docker]: https://chromium.googlesource.com/chromium/tools/build.git/+/3036a6b10657596f608ae8f6c036f8fa4a7cedb9/scripts/slave/README.recipes.md#recipe_modules-docker
 [build/recipe_modules/gae_sdk]: https://chromium.googlesource.com/chromium/tools/build.git/+/3036a6b10657596f608ae8f6c036f8fa4a7cedb9/scripts/slave/README.recipes.md#recipe_modules-gae_sdk
 [build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/3036a6b10657596f608ae8f6c036f8fa4a7cedb9/scripts/slave/README.recipes.md#recipe_modules-goma
 [build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/3036a6b10657596f608ae8f6c036f8fa4a7cedb9/scripts/slave/README.recipes.md#recipe_modules-luci_config

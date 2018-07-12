@@ -4,12 +4,14 @@
 
 
 DEPS = [
+    'build/docker',
     'depot_tools/bot_update',
     'depot_tools/gclient',
     'recipe_engine/file',
     'recipe_engine/path',
     'recipe_engine/properties',
     'recipe_engine/raw_io',
+    'recipe_engine/service_account',
     'recipe_engine/step',
     'recipe_engine/time',
 ]
@@ -75,20 +77,11 @@ def RunSteps(api):
   build_script = api.path['checkout'].join('docker', dir_name, 'build.sh')
   api.step('Build image', ['/bin/bash', build_script])
 
-  # Read service account creds.
-  service_account_creds = api.file.read_text(
-      'Read service account creds', _CONTAINER_REGISTRY_CREDENTIAL_PATH)
-
-  # Login to the container registry. Pass the contents of the credentials file
-  # as the password. Probably want to run this only internally.
-  # See https://cloud.google.com/container-registry/docs/advanced-authentication
-  login_cmd = [
-      docker_bin, 'login',
-      '-u', '_json_key',
-      '-p', '%s' % service_account_creds,
-      'https://gcr.io'
-  ]
-  api.step('Login to registry', login_cmd)
+  creds = api.service_account.from_credentials_json(
+      _CONTAINER_REGISTRY_CREDENTIAL_PATH)
+  api.docker.login(
+      server='gcr.io', project='chromium-container-registry',
+      service_account=creds)
 
   # Tag the image with the registry's url and the date.
   registry_url = 'gcr.io/%s' % _CONTAINER_REGISTRY_PROJECT
