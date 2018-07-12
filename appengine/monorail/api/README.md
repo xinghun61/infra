@@ -12,11 +12,10 @@ supports communication over HTTP/1.1, as well as text and JSON IO.
 ## Regenerating Python from Protocol Buffers
 
 In order to regenerate the python server and client stubs from the `.proto`
-files, follow these steps:
+files, run this command:
 
 ```bash
-$ PATH=../../../luci/appengine/components/tools:$PATH ../../../cipd/protoc \
-  --python_out=. --prpc-python_out=. api_proto/*.proto
+$ make prpc_proto
 ```
 
 
@@ -28,4 +27,12 @@ You can make anonymous requests to a server running locally like this:
 $ curl -i -X POST localhost:8080/prpc/monorail.Users/GetUser \
   -H "Content-Type: application/json" -H "Accept: application/json" \
   --data '{"email": "test@example.com"}'
+```
+
+Requests that require a signed-in user can be tested locally like this
+(done with an alias so that the command is shorter):
+
+```bash
+$ alias capi-dc='curl -i -X POST localhost:8080/prpc/monorail.Issues/DeleteComment -H "Content-Type: application/json" -H "Accept: application/json"'
+$ capi-dc --data '{"trace": {"test_account": "test@example.com"}, "issue_ref": {"project_name": "proj", "local_id": 21}, "sequence_num": 1}'
 ```
