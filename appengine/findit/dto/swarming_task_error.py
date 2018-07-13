@@ -12,12 +12,14 @@ BOT_DIED = 30
 CANCELED = 40
 EXPIRED = 50
 TIMED_OUT = 60
+NO_RESOURCE = 70
 
 STATES_NOT_RUNNING_TO_ERROR_CODES = {
     'BOT_DIED': BOT_DIED,
     'CANCELED': CANCELED,
     'EXPIRED': EXPIRED,
     'TIMED_OUT': TIMED_OUT,
+    'NO_RESOURCE': NO_RESOURCE,
 }
 
 # Customized error codes when getting results of a task.
@@ -46,6 +48,7 @@ ERROR_CODE_TO_MESSAGE = {
     NO_OUTPUT_JSON: 'No swarming task failure log',
     UNKNOWN: 'Unknown error',
     NO_ISOLATED_FILES: 'No files in isolated response',
+    NO_RESOURCE: 'There is no bot that can serve the requested swarming task',
     UNRECOGNIZABLE: 'Test results format is unrecognized, cannot find a parser.'
 }
 

@@ -62,7 +62,8 @@ def GetSwarmingTaskDataAndResult(task_id, http_client=_FINDIT_HTTP_CLIENT):
               swarming_task_error.NO_OUTPUT_JSON)
     else:
       # The swarming task did not complete successfully.
-      logging.error('Swarming task stopped with status: %s', task_state)
+      logging.error('Swarming task %s stopped with status: %s', task_id,
+                    task_state)
       error = SwarmingTaskError.GenerateError(
           swarming_task_error.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state])
   return data, output_json, error
