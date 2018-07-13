@@ -81,7 +81,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       else:
         delta = tracker_pb2.IssueDelta()  # No changes specified.
       we.UpdateIssue(
-          issue, delta, request.comment_content, send_email=request.send_email)
+          issue, delta, request.comment_content, send_email=request.send_email,
+          is_description=request.is_description)
       related_refs = we.GetRelatedIssueRefs(issue)
 
     with mc.profiler.Phase('making user views'):

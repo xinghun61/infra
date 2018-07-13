@@ -196,6 +196,29 @@ class IssuesServicerTest(unittest.TestCase):
         self.cnxn, self.issue_1.issue_id)
     self.assertEqual(2, len(comments))
     self.assertEqual('test comment', comments[1].content)
+    self.assertFalse(comments[1].is_description)
+
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_Description(self, fake_pasicn):
+    """We can update an issue's description."""
+    request = issues_pb2.UpdateIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    request.comment_content = 'new description'
+    request.is_description = True
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    # A comment was added.
+    fake_pasicn.assert_called_once()
+    comments = self.services.issue.GetCommentsForIssue(
+        self.cnxn, self.issue_1.issue_id)
+    self.assertEqual(2, len(comments))
+    self.assertEqual('new description', comments[1].content)
+    self.assertTrue(comments[1].is_description)
 
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_NoOp(self, fake_pasicn):

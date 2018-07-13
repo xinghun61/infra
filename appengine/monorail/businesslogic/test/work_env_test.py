@@ -411,6 +411,26 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
     comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
     comment_pb = comments[-1]
+    self.assertFalse(comment_pb.is_description)
+    fake_pasicn.assert_called_with(
+        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
+        old_owner_id=111L, comment_id=comment_pb.id)
+
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_Normal(self, fake_pasicn):
+    """We can update an issue's description."""
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta()
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, 'Description2', is_description=True)
+
+    self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    self.assertTrue(comment_pb.is_description)
     fake_pasicn.assert_called_with(
         issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
         old_owner_id=111L, comment_id=comment_pb.id)

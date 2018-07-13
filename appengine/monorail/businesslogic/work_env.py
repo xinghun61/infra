@@ -562,7 +562,8 @@ class WorkEnv(object):
 
     return approval_value, comment_pb
 
-  def UpdateIssue(self, issue, delta, comment_content, send_email=True):
+  def UpdateIssue(self, issue, delta, comment_content, send_email=True,
+                  is_description=False):
     """Update an issue with a set of changes and add a comment.
 
     Args:
@@ -581,7 +582,8 @@ class WorkEnv(object):
     with self.mc.profiler.Phase('Updating issue %r' % (issue.issue_id)):
       _amendments, comment_pb = self.services.issue.DeltaUpdateIssue(
           self.mc.cnxn, self.services, self.mc.auth.user_id, issue.project_id,
-          config, issue, delta, comment=comment_content)
+          config, issue, delta, comment=comment_content,
+          is_description=is_description)
 
     with self.mc.profiler.Phase('Following up after issue update'):
       # TODO(jrobbins): side effects of setting merged_into.
