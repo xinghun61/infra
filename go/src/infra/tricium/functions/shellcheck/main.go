@@ -113,15 +113,16 @@ func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 	for _, warn := range warns {
 		results.Comments = append(results.Comments, &tricium.Data_Comment{
 			// e.g. "ShellCheck/SC1234"
-			Category:  fmt.Sprintf("%s/SC%d", analyzerName, warn.Code),
-			Message:   fmt.Sprintf("%s: %s", warn.Level, warn.Message),
-			Url:       warn.WikiURL(),
-			Path:      warn.File,
+			Category: fmt.Sprintf("%s/SC%d", analyzerName, warn.Code),
+			Message:  fmt.Sprintf("%s: %s", warn.Level, warn.Message),
+			Url:      warn.WikiURL(),
+			Path:     warn.File,
+			// shellcheck uses 1-based columns and inclusive end positions;
+			// Tricium needs 0-based columns and exclusive end positions.
 			StartLine: warn.Line,
-			EndLine:   warn.EndLine,
-			// shellcheck uses 1-based columns; Tricium needs 0-based.
+			EndLine:   warn.EndLine + 1,
 			StartChar: warn.Column - 1,
-			EndChar:   warn.EndColumn - 1,
+			EndChar:   warn.EndColumn,
 		})
 	}
 
