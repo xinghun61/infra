@@ -41,10 +41,12 @@ const (
 	// crosskylabadminProdHost is the prod AE instance of this app.
 	crosskylabadminProdHost = "chromeos-skylab-bot-fleet.appspot.com"
 
-	// backgroundTasksPriority is the swarming task priority of the created background tasks.
+	// fleetAdminTaskPriority is the swarming task priority of the created background tasks.
 	//
-	// This must be numerically smaller (i.e. more important) than the default task priority of 20.
-	backgroundTasksPriority = 10
+	// This must be numerically smaller (i.e. more important) than Skylab's test
+	// task priority range [49-255] and numerically larger than the minimum
+	// allowed Swarming priority (20) for non administrator users.
+	fleetAdminTaskPriority = 30
 	// ensureTasksCount is the number of background tasks maintained against each bot.
 	ensureTasksCount = 3
 	// repairIdleDuration is the duration for which a bot in the fleet must have
@@ -95,7 +97,7 @@ func ensureBackgroundTasksCronHandler(c *router.Context) error {
 	tsi := frontend.TaskerServerImpl{}
 	for _, ttype := range ttypes {
 		resp, err := tsi.EnsureBackgroundTasks(c.Context, &fleet.EnsureBackgroundTasksRequest{
-			Priority:  int64(backgroundTasksPriority),
+			Priority:  int64(fleetAdminTaskPriority),
 			TaskCount: count,
 			Type:      ttype,
 		})
@@ -121,7 +123,7 @@ func triggerRepairOnIdleCronHandler(c *router.Context) error {
 	tsi := frontend.TaskerServerImpl{}
 	resp, err := tsi.TriggerRepairOnIdle(c.Context, &fleet.TriggerRepairOnIdleRequest{
 		IdleDuration: google.NewDuration(repairIdleDuration),
-		Priority:     int64(backgroundTasksPriority),
+		Priority:     int64(fleetAdminTaskPriority),
 	})
 	if err != nil {
 		return err
@@ -135,7 +137,7 @@ func triggerRepairOnIdleCronHandler(c *router.Context) error {
 func triggerRepairOnRepairFailedCronHandler(c *router.Context) error {
 	tsi := frontend.TaskerServerImpl{}
 	resp, err := tsi.TriggerRepairOnRepairFailed(c.Context, &fleet.TriggerRepairOnRepairFailedRequest{
-		Priority:            int64(backgroundTasksPriority),
+		Priority:            int64(fleetAdminTaskPriority),
 		TimeSinceLastRepair: google.NewDuration(repairAttemptDelayDuration),
 	})
 	if err != nil {
