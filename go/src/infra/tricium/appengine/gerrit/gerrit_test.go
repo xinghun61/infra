@@ -139,13 +139,42 @@ func TestCreateRobotComment(t *testing.T) {
 				},
 			})
 
-			marshaledRoco, _ := json.Marshal(roco)
+			marshaledRoco, _ := json.MarshalIndent(roco, "", "  ")
+			So(string(marshaledRoco), ShouldEqual, `{
+  "robot_id": "Hello",
+  "robot_run_id": "1234567",
+  "url": "https://app.example.com/run/1234567",
+  "properties": {
+    "tricium_comment_uuid": "7ae6f43d-22e9-4350-ace4-1fee9014509a"
+  },
+  "fix_suggestions": [
+    {
+      "description": "Suggestion 1",
+      "replacements": [
+        {
+          "path": "README.md",
+          "replacement": "",
+          "range": {
+            "start_line": 10,
+            "start_character": 2,
+            "end_line": 20,
+            "end_character": 18
+          }
+        }
+      ]
+    }
+  ],
+  "path": "README.md",
+  "line": 10,
+  "range": {
+    "start_line": 10,
+    "start_character": 2,
+    "end_line": 20,
+    "end_character": 18
+  },
+  "message": "Message"
+}`)
 
-			So(string(marshaledRoco), ShouldEqual, `{"robot_id":"Hello","robot_run_id":"1234567",`+
-				`"url":"https://app.example.com/run/1234567","properties":{"tricium_comment_uuid":"7ae6f43d-22e9-4350-ace4-1fee9014509a"},`+
-				`"fix_suggestions":[{"description":"Suggestion 1","replacements":[{"path":"README.md","replacement":"",`+
-				`"range":{"start_line":10,"start_character":2,"end_line":20,"end_character":18}}]}],"id":"","path":"README.md"`+
-				`,"line":10,"range":{"start_line":10,"start_character":2,"end_line":20,"end_character":18},"message":"Message"}`)
 		})
 	})
 }

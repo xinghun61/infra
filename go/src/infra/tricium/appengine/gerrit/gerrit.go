@@ -80,7 +80,7 @@ type robotCommentInput struct {
 	URL            string            `json:"url,omitempty"`
 	Properties     map[string]string `json:"properties"`
 	FixSuggestions []*suggestion     `json:"fix_suggestions"`
-	ID             string            `json:"id"`
+	ID             string            `json:"id,omitempty"`
 	Path           string            `json:"path"`
 	Line           int               `json:"line,omitempty"`
 	Range          *commentRange     `json:"range,omitempty"`
