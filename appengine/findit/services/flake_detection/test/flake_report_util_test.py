@@ -197,6 +197,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
         normalized_test_name='test',
         num_occurrences=3,
         monorail_project='chromium',
+        flake_url='https://findit-for-me.appspot.com/flake/detection/show-flake?key=agx0ZXN0YmVkLXRlc3RyHQsSBUZsYWtlIhJjaHJvbWl1bUBzdGVwQHRlc3QM', # pylint: disable=line-too-long
         previous_tracking_bug_id=56789)
 
     flake_issue = flake.flake_issue_key.get()
@@ -221,6 +222,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
         normalized_test_name='test',
         num_occurrences=3,
         monorail_project='chromium',
+        flake_url='https://findit-for-me.appspot.com/flake/detection/show-flake?key=agx0ZXN0YmVkLXRlc3RyHQsSBUZsYWtlIhJjaHJvbWl1bUBzdGVwQHRlc3QM', # pylint: disable=line-too-long
         previous_tracking_bug_id=56789)
 
     flake_issue = flake.flake_issue_key.get()

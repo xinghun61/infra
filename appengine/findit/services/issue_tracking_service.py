@@ -85,7 +85,9 @@ _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG = (
 
 _FLAKE_DETECTION_BUG_COMMENT = textwrap.dedent("""
 Findit detected {num_occurrences} new flake occurrences of this test. To see the
-list of flake occurrences, please visit: {flake_url}.
+list of flake occurrences, please visit:
+{flake_url}.
+
 Since flakiness is ongoing, the issue was moved back into the Sheriff Bug Queue
 (unless already there).
 {previous_tracking_bug_text}
@@ -500,6 +502,7 @@ def CreateBugForFlakeDetection(normalized_step_name,
                                normalized_test_name,
                                num_occurrences,
                                monorail_project,
+                               flake_url,
                                previous_tracking_bug_id=None,
                                priority='Pri-1'):
   """Creates a bug for a detected flaky test.
@@ -511,6 +514,7 @@ def CreateBugForFlakeDetection(normalized_step_name,
                           Model for the definitions.
     num_occurrences: Number of new occurrences to report.
     monorail_project: The project the bug is created for.
+    flake_url: The URL that points to this flake on the flake detection UI.
     previous_tracking_bug_id: id of the previous bug that was used to track this
                               flaky test.
     priority: Priority of the bug.
@@ -518,8 +522,6 @@ def CreateBugForFlakeDetection(normalized_step_name,
   Returns:
     id of the newly created bug.
   """
-  # TODO(crbug.com/845581): Replace with front end url once it's ready.
-  flake_url = 'https://www.place_holder_url.com'
   summary = _FLAKE_DETECTION_BUG_SUMMARY.format(test_name=normalized_test_name)
 
   previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
@@ -557,6 +559,7 @@ def UpdateBugForFlakeDetection(bug_id,
                                normalized_test_name,
                                num_occurrences,
                                monorail_project,
+                               flake_url,
                                previous_tracking_bug_id=None):
   """Updates the bug with newly detected flake occurrences.
 
@@ -566,11 +569,10 @@ def UpdateBugForFlakeDetection(bug_id,
                           Model for the definitions.
     num_occurrences: Number of new occurrences to report.
     monorail_project: The project the bug is created for.
+    flake_url: The URL that points to this flake on the flake detection UI.
     previous_tracking_bug_id: id of the previous bug that was used to track this
                               flaky test.
   """
-  # TODO(crbug.com/845581): Replace with front end url once it's ready.
-  flake_url = 'https://www.place_holder_url.com'
   previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
       previous_tracking_bug_id) if previous_tracking_bug_id else ''
   comment = _FLAKE_DETECTION_BUG_COMMENT.format(

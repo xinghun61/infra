@@ -955,6 +955,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     normalized_test_name = 'suite.test'
     num_occurrences = 5
     monorail_project = 'chromium'
+    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212' # pylint: disable=line-too-long
     previous_tracking_bug_id = None
 
     issue_id = issue_tracking_service.CreateBugForFlakeDetection(
@@ -962,6 +963,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
         normalized_test_name=normalized_test_name,
         num_occurrences=num_occurrences,
         monorail_project=monorail_project,
+        flake_url=flake_url,
         previous_tracking_bug_id=previous_tracking_bug_id)
     mock_create_bug_fn.assert_called_once()
     self.assertEqual(12345, issue_id)
@@ -974,7 +976,7 @@ target: suite.test is flaky.
 
 Findit detected 5 flake occurrences of this test within the past
 24 hours. List of all flake occurrences can be found at:
-https://www.place_holder_url.com.
+https://findit-for-me-staging.com/flake/detection/show-flake?key=1212.
 
 Flaky tests should be disabled within 30 minutes unless culprit CL is found and
 reverted, please disable it first and then find an appropriate owner.
@@ -1005,12 +1007,14 @@ as untriaged.""")
     num_occurrences = 5
     monorail_project = 'chromium'
     previous_tracking_bug_id = 56789
+    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212' # pylint: disable=line-too-long
 
     issue_tracking_service.CreateBugForFlakeDetection(
         normalized_step_name=normalized_step_name,
         normalized_test_name=normalized_test_name,
         num_occurrences=num_occurrences,
         monorail_project=monorail_project,
+        flake_url=flake_url,
         previous_tracking_bug_id=previous_tracking_bug_id)
 
     expected_previous_bug_description = (
@@ -1025,6 +1029,7 @@ as untriaged.""")
     normalized_test_name = 'suite.test'
     num_occurrences = 5
     monorail_project = 'chromium'
+    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212' # pylint: disable=line-too-long
     issue_id = 12345
     issue = Issue({
         'status': 'Available',
@@ -1041,7 +1046,8 @@ as untriaged.""")
         bug_id=issue_id,
         normalized_test_name=normalized_test_name,
         num_occurrences=num_occurrences,
-        monorail_project=monorail_project)
+        monorail_project=monorail_project,
+        flake_url=flake_url)
 
     expected_labels = ['Test-Findit-Detected', 'Sheriff-Chromium', 'Test-Flaky']
     issue = mock_update_bug_fn.call_args_list[0][0][0]
@@ -1053,7 +1059,9 @@ as untriaged.""")
 
     expected_comment = textwrap.dedent("""
 Findit detected 5 new flake occurrences of this test. To see the
-list of flake occurrences, please visit: https://www.place_holder_url.com.
+list of flake occurrences, please visit:
+https://findit-for-me-staging.com/flake/detection/show-flake?key=1212.
+
 Since flakiness is ongoing, the issue was moved back into the Sheriff Bug Queue
 (unless already there).
 
@@ -1070,6 +1078,7 @@ Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
     normalized_test_name = 'suite.test'
     num_occurrences = 5
     monorail_project = 'chromium'
+    flake_url = 'https://findit-for-me-staging.com/flake/detection/show-flake?key=1212' # pylint: disable=line-too-long
     issue_id = 12345
     previous_tracking_bug_id = 56789
     issue = Issue({
@@ -1088,6 +1097,7 @@ Feedback is welcome! Please use component Tools>Test>FindIt>Flakiness.""")
         normalized_test_name=normalized_test_name,
         num_occurrences=num_occurrences,
         monorail_project=monorail_project,
+        flake_url=flake_url,
         previous_tracking_bug_id=previous_tracking_bug_id)
 
     expected_previous_bug_description = (

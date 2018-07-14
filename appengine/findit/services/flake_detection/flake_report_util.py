@@ -7,7 +7,7 @@ import logging
 
 from google.appengine.ext import ndb
 
-from gae_libs import appengine_util
+from gae_libs.appengine_util import IsStaging
 from libs import time_util
 from model.flake.detection.flake import Flake
 from model.flake.detection.flake_occurrence import (
@@ -243,6 +243,22 @@ def _GetLinkForIssue(monorail_project, issue_id):
       monorail_project, issue_id)
 
 
+def _GetLinkForFlake(flake):
+  """Given a flake, gets a link to the flake on flake detection UI.
+
+  Args:
+    flake: A Flake Model entity.
+
+  Returns:
+    A link to the flake on flake detection UI.
+  """
+  assert flake, 'The given flake is None.'
+
+  url_template = "https://findit-for-me%s.appspot.com/flake/detection/show-flake?key=%s"  # pylint: disable=line-too-long
+  suffix = '-staging' if IsStaging() else ''
+  return url_template % (suffix, flake.key.urlsafe())
+
+
 def CreateIssueForFlake(flake, occurrences, previous_tracking_bug_id):
   """Creates an issue for a flaky test.
 
@@ -262,6 +278,7 @@ def CreateIssueForFlake(flake, occurrences, previous_tracking_bug_id):
       normalized_test_name=flake.normalized_test_name,
       num_occurrences=len(occurrences),
       monorail_project=monorail_project,
+      flake_url=_GetLinkForFlake(flake),
       previous_tracking_bug_id=previous_tracking_bug_id)
 
   logging.info('%s was created for flake: %s.',
@@ -291,6 +308,7 @@ def UpdateIssueForFlake(flake, occurrences, previous_tracking_bug_id):
       normalized_test_name=flake.normalized_test_name,
       num_occurrences=len(occurrences),
       monorail_project=monorail_project,
+      flake_url=_GetLinkForFlake(flake),
       previous_tracking_bug_id=previous_tracking_bug_id)
 
   logging.info('%s was updated for flake: %s.',
@@ -328,8 +346,7 @@ def _ReportFlakeToMonorail(flake, occurrences):
     if merged_issue.open:
       logging.info(
           'Currently attached issue %s is open, update it with new '
-          'occurrences.',
-          _GetLinkForIssue(monorail_project, merged_issue.id))
+          'occurrences.', _GetLinkForIssue(monorail_project, merged_issue.id))
       UpdateIssueForFlake(flake, occurrences, previous_tracking_bug_id)
       return
 
