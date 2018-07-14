@@ -53,13 +53,19 @@ func main() {
 	}
 	log.Printf("Read FILES data: %#v", input)
 
+	// Filter the files to include only .py files.
+	files, err := tricium.FilterFiles(input.Files, "*.py")
+	if err != nil {
+		log.Fatalf("Failed to filter files: %v", err)
+	}
+
 	// Invoke Pylint on the given paths.
 	// In the output, we want relative paths from the repository root, which
 	// will be the same as relative paths from the input directory root.
 	cmdName := filepath.Join(exPath, pythonPath)
 	cmdArgs := []string{filepath.Join(exPath, pylintPath), "--rcfile",
 		filepath.Join(exPath, "pylintrc")}
-	for _, file := range input.Files {
+	for _, file := range files {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
 	}
 	cmd := exec.Command(cmdName, cmdArgs...)

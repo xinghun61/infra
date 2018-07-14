@@ -73,28 +73,15 @@ func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 	}
 	log.Printf("Read FILES data: %#v", input)
 
-	// Run shellcheck on input files.
-	paths := make([]string, len(input.Files))
-	for i, f := range input.Files {
-		paths[i] = f.Path
+	filtered, err := tricium.FilterFiles(input.Files, strings.Split(pathFilters, ",")...)
+	if err != nil {
+		log.Fatalf("Failed to filter files: %v", err)
 	}
 
-	// Filter input file list.
-	if pathFilters != "" {
-		var filteredPaths []string
-		filters := strings.Split(pathFilters, ",")
-		for _, p := range paths {
-			for _, filter := range filters {
-				matched, err := filepath.Match(filter, filepath.Base(p))
-				if err != nil {
-					log.Fatalf("Bad path_filters pattern %q: %v", filter, err)
-				}
-				if matched {
-					filteredPaths = append(filteredPaths, p)
-				}
-			}
-		}
-		paths = filteredPaths
+	// Run shellcheck on input files.
+	paths := make([]string, len(filtered))
+	for i, f := range filtered {
+		paths[i] = f.Path
 	}
 
 	var warns []runner.Warning

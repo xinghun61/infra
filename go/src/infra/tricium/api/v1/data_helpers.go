@@ -89,3 +89,21 @@ func ReadDataType(prefix string, t proto.Message) error {
 	}
 	return nil
 }
+
+// FilterFiles returns files whose basename matches any of the given patterns.
+func FilterFiles(files []*Data_File, filters ...string) ([]*Data_File, error) {
+	var filteredFiles []*Data_File
+	for _, f := range files {
+		for _, filter := range filters {
+			matched, err := filepath.Match(filter, filepath.Base(f.Path))
+			if err != nil {
+				return nil, fmt.Errorf("bad path_filters pattern %q: %v", filter, err)
+			}
+			if matched {
+				filteredFiles = append(filteredFiles, f)
+				break
+			}
+		}
+	}
+	return filteredFiles, nil
+}
