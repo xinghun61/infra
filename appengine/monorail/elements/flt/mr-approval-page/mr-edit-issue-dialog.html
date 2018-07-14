@@ -1,0 +1,58 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../../bower_components/chopsui/chops-button.html">
+<link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
+<link rel="import" href="../../mixins/redux-mixin.html">
+<link rel="import" href="../mr-metadata/mr-edit-metadata.html">
+<link rel="import" href="../shared/mr-flt-styles.html">
+
+<dom-module id="mr-edit-issue-dialog">
+  <template>
+    <style include="mr-flt-styles">
+      :host {
+        font-size: 85%;
+      }
+      mr-edit-metadata {
+        width: 800px;
+        max-width: 100%;
+      }
+      .dialog-actions {
+        text-align: right;
+      }
+    </style>
+    <chops-dialog
+      id="editDialog"
+      aria-labelledby="metadataDialogTitle"
+      opened="[[_opened]]"
+      on-opened-change="[[_openedChange]]"
+    >
+      <h3 id="metadataDialogTitle">
+        Editing feature details
+      </h3>
+      <mr-edit-metadata
+        id="metadataForm"
+        issue="[[issue]]"
+        cc="[[issue.ccRefs]]"
+        components="[[issue.componentRefs]]"
+        project-name="[[issue.projectName]]"
+        statuses="[[statuses]]"
+        status="[[issue.statusRef.status]]"
+        summary="[[issue.summary]]"
+        blocked-on="[[issue.blockedOnIssueRefs]]"
+        blocking="[[issue.blockingIssueRefs]]"
+        labels="[[issue.labelRefs]]"
+      ></mr-edit-metadata>
+      <div class="dialog-actions">
+        <chops-button on-click="cancel" class="de-emphasized">
+          <iron-icon icon="close"></iron-icon>
+          Cancel
+        </chops-button>
+        <chops-button on-click="save" class="emphasized">
+          <iron-icon icon="create"></iron-icon>
+          Save changes
+        </chops-button>
+      </div>
+    </chops-dialog>
+  </template>
+  <script src="./mr-edit-issue-dialog.js"></script>
+</dom-module>

@@ -38,17 +38,6 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
         type: Boolean,
         statePath: 'starringIssue',
       },
-      // TODO(zhangtiff): Get real data from jsonfeed API.
-      statuses: {
-        type: Array,
-        value: [
-          'Unconfirmed',
-          'Untriaged',
-          'Available',
-          'Assigned',
-          'Started',
-        ],
-      },
       token: {
         type: String,
         statePath: 'token',
@@ -65,12 +54,10 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
   }
 
   edit() {
-    this.$.editMetadata.open();
-  }
-
-  cancel() {
-    this.$.metadataForm.reset();
-    this.$.editMetadata.close();
+    this.dispatch({
+      type: actionType.OPEN_DIALOG,
+      dialog: DialogState.EDIT_ISSUE,
+    });
   }
 
   toggleStar() {

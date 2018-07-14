@@ -73,6 +73,7 @@
             notify: true,
             value: false,
             reflectToAttribute: true,
+            observer: '_openedChanged',
           },
           /**
            * A boolean that determines whether clicking outside of the dialog
@@ -83,6 +84,12 @@
             value: true,
             reflectToAttribute: true,
           },
+          /**
+           * A function fired when the element tries to change its own opened
+           * state. This is useful if you want the dialog state managed outside
+           * of the dialog instead of with internal state. (ie: with Redux)
+           */
+          onOpenedChange: Function,
           /**
            * Allow people to exit the dialog using keyboard shortcuts. Defaults
            * to the escape key.
@@ -104,7 +111,7 @@
       ready() {
         super.ready();
         this.addEventListener('click', (evt) => {
-          if (!this.opened) return;
+          if (!this.opened || !this.closeOnOutsideClick) return;
 
           const hasDialog = evt.composedPath().find(
             (node) => {
@@ -164,42 +171,23 @@
       }
 
       close() {
-        this.opened = false;
-        if (this._previousFocusedElement) {
-          const element = this._previousFocusedElement;
-          setTimeout(function() {
-            // HACK. This is to prevent a possible accessibility bug where
-            // using a keypress to trigger a button that exits a modal causes
-            // the modal to immediately re-open because the button that
-            // originally opened the modal refocuses, and the keypress
-            // propagates.
-            element.focus();
-          }, 1);
+        if (this.onOpenedChange) {
+          this.onOpenedChange(false);
+        } else {
+          this.opened = false;
         }
       }
 
       open() {
-        this.opened = true;
-
-        // For accessibility, we want to ensure we remember the element that was
-        // focused before this dialog opened.
-        this._previousFocusedElement = this._getActiveElement();
-
-        // Focus the first element within the dialog when its opened.
-        const tabbables = this.getTabbableNodes(this);
-        if (tabbables && tabbables.length) {
-          tabbables[0].focus();
-        } else if (this._previousFocusedElement) {
-          this._previousFocusedElement.blur();
+        if (this.onOpenedChange) {
+          this.onOpenedChange(true);
+        } else {
+          this.opened = true;
         }
       }
 
       toggle() {
-        if (this.opened) {
-          this.close();
-        } else {
-          this.open();
-        }
+        this.opened = !this.opened;
       }
 
       _getActiveElement() {
@@ -210,6 +198,34 @@
           active = Polymer.dom(active.root).activeElement;
         }
         return active;
+      }
+
+      _openedChanged(opened) {
+        if (opened) {
+          // For accessibility, we want to ensure we remember the element that was
+          // focused before this dialog opened.
+          this._previousFocusedElement = this._getActiveElement();
+
+          // Focus the first element within the dialog when it's opened.
+          const tabbables = this.getTabbableNodes(this);
+          if (tabbables && tabbables.length) {
+            tabbables[0].focus();
+          } else if (this._previousFocusedElement) {
+            this._previousFocusedElement.blur();
+          }
+        } else {
+          if (this._previousFocusedElement) {
+            const element = this._previousFocusedElement;
+            setTimeout(function() {
+              // HACK. This is to prevent a possible accessibility bug where
+              // using a keypress to trigger a button that exits a modal causes
+              // the modal to immediately re-open because the button that
+              // originally opened the modal refocuses, and the keypress
+              // propagates.
+              element.focus();
+            }, 1);
+          }
+        }
       }
     }
     customElements.define(ChopsDialog.is, ChopsDialog);
