@@ -71,8 +71,9 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
       self.m.gclient.c = src_cfg
       self.m.bot_update.ensure_checkout()
 
-      revinfo_step = self.m.gclient(
-          'get revinfo', ('revinfo', '--output-json', self.m.json.output()))
+      revinfo_params = ['revinfo', '--output-json', self.m.json.output(),
+                        '--ignore-dep-type=cipd']
+      revinfo_step = self.m.gclient('get revinfo', revinfo_params)
 
     # Checkout the gitlink overlay repository.
     overlay_repo_dir = self.m.path['start_dir'].join('overlay')

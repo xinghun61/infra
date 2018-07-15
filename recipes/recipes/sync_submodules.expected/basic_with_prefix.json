@@ -70,7 +70,8 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "revinfo",
       "--output-json",
-      "/path/to/tmp/json"
+      "/path/to/tmp/json",
+      "--ignore-dep-type=cipd"
     ],
     "cwd": "[CACHE]/foo_builder",
     "env_suffixes": {
