@@ -1,5 +1,5 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
-<link rel="import" href="/ui/elements/detection/flake-occurrence.html">
+<link rel="import" href="/ui/elements/flake_detection/flake-occurrence.html">
 
 
 <dom-module id="flaky-test">
@@ -16,20 +16,20 @@
     </style>
     <table>
         <tr>
-            <td>step name</td>
-            <td>[[flake_json.step_name]]</td>
+            <td>Test Target:</td>
+            <td>[[flake_json.normalized_step_name]]</td>
         </tr>
 
         <tr>
-          <td>test name</td>
-          <td>[[flake_json.test_name]]</td>
+          <td>Test Name:</td>
+          <td>[[flake_json.normalized_test_name]]</td>
         </tr>
 
         <template is="dom-if" if="[[hasBug([[flake_json]])]]">
           <tr>
-              <td>bug</td>
+              <td>Bug:</td>
               <td>
-                <a href="https://bugs.chromium.org/p/[[flake_json.project_id]]/[[flake_json.flake_issue.issue_id]]">[[flake_json.flake_issue.issue_id]]</a>
+                <a href="https://bugs.chromium.org/p/[[flake_json.flake_issue.monorail_project]]/issues/detail?id=[[flake_json.flake_issue.issue_id]]">[[flake_json.flake_issue.issue_id]]</a>
               </td>
           </tr>
         </template>

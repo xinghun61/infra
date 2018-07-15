@@ -1,0 +1,30 @@
+<!doctype html>
+
+<head>
+  <head>
+      <link rel="import" href="/ui/elements/flake_detection/flake.html">
+  </head>
+</head>
+<flaky-test flake_json='{
+  "flake_issue": {
+    "monorail_project": "chromium",
+    "issue_id": "859430",
+    "last_updated_time": "2018-03-29 21:19:53.550140"},
+  "occurrences": [
+    {
+      "build_configuration": {
+        "luci_project": "chromium",
+        "luci_bucket": "try",
+        "luci_builder": "mac_chromium_rel_ng"
+      },
+      "build_id": "8941290266081829792",
+      "step_name": "content_browsertests (with patch)",
+      "test_name": "AccessibilityFullscreenBrowserTest.InsideIFrame",
+      "time_happened": "2018-01-01"
+    }
+  ],
+  "luci_project": "chromium",
+  "normalized_step_name": "content_browsertests",
+  "normalized_test_name": "AccessibilityFullscreenBrowserTest.InsideIFrame"
+  }'>
+</flaky-test>

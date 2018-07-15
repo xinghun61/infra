@@ -17,29 +17,33 @@
     <!-- Expanded by default. -->
     <expandable-card show-more>
       <div slot="expandable-card-header" class="header">
-        Flake occurrence ([[occurrence_json.flake_type]]) on [[occurrence_json.builder_name]]
+        CQ false rejection flake occurrence on luci.[[occurrence_json.build_configuration.luci_project]].[[occurrence_json.build_configuration.luci_bucket]]/[[occurrence_json.build_configuration.luci_builder]]
       </div>
       <div slot="expandable-card-content">
         <table>
           <tr>
-              <td>flake_type</td>
-              <td>[[occurrence_json.flake_type]]</td>
+              <td>Step Name:</td>
+              <td>[[occurrence_json.step_name]]</td>
+          </tr>
+
+          <tr>
+              <td>Test Name:</td>
+              <td>[[occurrence_json.test_name]]</td>
+          </tr>
+
+          <tr>
+            <td>Build Id:</td>
+            <td>
+              <a href="http://ci.chromium.org/b/[[occurrence_json.build_id]]">[[occurrence_json.build_id]]</a>
+            </td>
           </tr>
 
           <tr>
             <!-- TODO(crbug.com/831708) display local times. -->
-            <td>time_reported</td>
-            <td>[[occurrence_json.time_reported]]</td>
+            <td>Time Occurred:</td>
+            <td>[[occurrence_json.time_happened]]</td>
           </tr>
 
-          <tr>
-            <td>build_id</td>
-            <td>
-              <a href="https://cr-buildbucket.appspot.com/b/[[occurrence_json.build_id]]">
-                [[occurrence_json.master_name]]/[[occurrence_json.builder_name]]/[[occurrence_json.build_number]]
-              </a>
-            </td>
-          </tr>
           </table>
         </div>
     </expandable-card>

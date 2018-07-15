@@ -8,8 +8,8 @@ dispatch:
   - url: "*/flake/detection/task/*"
     module: flake-detection-backend
 
-  - url: "*/flake/detection/ui/*"
-    module: waterfall-frontend
+  - url: "*/flake/detection/*"
+    module: flake-detection-frontend
 
   - url: "*/waterfall/cron/*"
     module: waterfall-backend
@@ -19,4 +19,3 @@ dispatch:
 
   - url: "*/waterfall/*"
     module: waterfall-frontend
-
