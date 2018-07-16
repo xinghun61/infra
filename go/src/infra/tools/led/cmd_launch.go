@@ -33,7 +33,8 @@ func launchCmd(authOpts auth.Options) *subcommands.Command {
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
 
-			ret.Flags.BoolVar(&ret.dump, "dump", false, "dump swarming task to stdout instead of running it.")
+			ret.Flags.BoolVar(&ret.dump, "dump", false, "Dump swarming task to stdout instead of running it.")
+			ret.Flags.StringVar(&ret.json, "json", "", "Output structured information about the launched swarming task as json to this file.")
 
 			return ret
 		},
@@ -47,6 +48,7 @@ type cmdLaunch struct {
 	authFlags authcli.Flags
 
 	dump bool
+	json string
 }
 
 func (c *cmdLaunch) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
@@ -54,7 +56,21 @@ func (c *cmdLaunch) validateFlags(ctx context.Context, args []string) (authOpts 
 		err = errors.Reason("unexpected positional arguments: %q", args).Err()
 		return
 	}
+	if c.dump && c.json != "" {
+		err = errors.Reason("-dump and -json are mutually exclusive").Err()
+		return
+	}
 	return c.authFlags.Options()
+}
+
+type launchedTaskInfo struct {
+	Swarming struct {
+		// The swarming task ID of the launched task.
+		TaskID string `json:"task_id"`
+
+		// The hostname of the swarming server
+		Hostname string `json:"host_name"`
+	} `json:"swarming"`
 }
 
 func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -128,5 +144,21 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		jd.SwarmingHostname, req.TaskId)
 	logging.Infof(ctx, "LUCI UI: https://ci.chromium.org/swarming/task/%s?server=%s",
 		req.TaskId, jd.SwarmingHostname)
+
+	if c.json != "" {
+		f, err := os.Create(c.json)
+		if err != nil {
+			errors.Log(ctx, err)
+			return 1
+		}
+		defer f.Close()
+		lti := launchedTaskInfo{}
+		lti.Swarming.TaskID = req.TaskId
+		lti.Swarming.Hostname = jd.SwarmingHostname
+		if err = json.NewEncoder(f).Encode(lti); err != nil {
+			errors.Log(ctx, err)
+			return 1
+		}
+	}
 	return 0
 }
