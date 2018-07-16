@@ -29,8 +29,8 @@ class WfStep(BaseBuildModel):
   @classmethod
   def Create(cls, master_name, builder_name, build_number,
              step_name):  # pragma: no cover
-    return cls(key=cls._CreateKey(master_name, builder_name, build_number,
-                                  step_name))
+    return cls(
+        key=cls._CreateKey(master_name, builder_name, build_number, step_name))
 
   @classmethod
   def Get(cls, master_name, builder_name, build_number,

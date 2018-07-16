@@ -38,7 +38,7 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
     step = (
         WfStep.Get(master_name, builder_name, build_number, step_name) or
         WfStep.Create(master_name, builder_name, build_number, step_name))
-    if step.log_data:
+    if step.log_data and step.log_data != constants.TOO_LARGE_LOG:
       failure_log = step.log_data
     else:
       json_formatted_log = True
@@ -68,10 +68,9 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
                         (step_name, master_name))
 
       # Save step log in datastore and avoid downloading again during retry.
-      # TODO(chanli): add a new field "is_json_data" to the WfStep to indicate
-      # format of the log.
       step.log_data = extract_signal.ExtractStorablePortionOfLog(
-          failure_log, json_formatted_log)
+          failure_log, json_formatted_log
+      ) if step.log_data != constants.TOO_LARGE_LOG else step.log_data
 
       try:
         step.put()

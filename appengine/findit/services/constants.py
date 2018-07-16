@@ -9,6 +9,7 @@ from libs import analysis_status
 INVALID_FAILURE_LOG = 'invalid'
 FLAKY_FAILURE_LOG = 'flaky'
 WRONG_FORMAT_LOG = 'not in desired test result formats'
+TOO_LARGE_LOG = 'too large'
 
 # Swarming task states.
 STATE_PENDING = 'PENDING'
@@ -34,3 +35,10 @@ AUTO_REVERT_STATUS_TO_ANALYSIS_STATUS = namedtuple(
 CULPRIT_IS_A_REVERT = 'Culprit is a revert.'
 AUTO_REVERT_OFF = 'Author of the culprit revision has turned off auto-revert.'
 REVERTED_BY_SHERIFF = 'Culprit has been reverted by a sheriff or the CL owner.'
+
+# Limit stored log data to 1000 KB, because a datastore entity has a size
+# limit of 1 MB. And Leave 24 KB for other possible usage later.
+# The stored log data in datastore will be compressed with gzip, backed by
+# zlib. With the minimum compress level, the log data will usually be reduced
+# to less than 20%. So for uncompressed data, a safe limit could be 4000 KB.
+LOG_DATA_BYTE_LIMIT = 4000 * 1024

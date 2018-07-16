@@ -71,7 +71,7 @@ COMPILE_FAILURE_INFO = {
 class ExtractSignalTest(wf_testcase.WaterfallTestCase):
 
   def testExtractStorablePortionOfLogWithSmallLogData(self):
-    self.mock(extract_signal, '_LOG_DATA_BYTE_LIMIT', 500)
+    self.mock(extract_signal, 'LOG_DATA_BYTE_LIMIT', 500)
     lines = [str(i) * 99 for i in range(3)]
     log_data = '\n'.join(lines)
     expected_result = log_data
@@ -79,7 +79,7 @@ class ExtractSignalTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_result, result)
 
   def testExtractStorablePortionOfLogWithBigLogData(self):
-    self.mock(extract_signal, '_LOG_DATA_BYTE_LIMIT', 500)
+    self.mock(extract_signal, 'LOG_DATA_BYTE_LIMIT', 500)
     lines = [str(9 - i) * 99 for i in range(9)]
     log_data = '\n'.join(lines)
     expected_result = '\n'.join(lines[-5:])
@@ -87,7 +87,7 @@ class ExtractSignalTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_result, result)
 
   def testExtractStorablePortionOfNinjaInfoLogWithBigLogData(self):
-    self.mock(extract_signal, '_LOG_DATA_BYTE_LIMIT', 500)
+    self.mock(extract_signal, 'LOG_DATA_BYTE_LIMIT', 500)
     lines = [str(9 - i) * 99 for i in range(9)]
     log_data = '\n'.join(lines)
     result = extract_signal.ExtractStorablePortionOfLog(log_data, True)

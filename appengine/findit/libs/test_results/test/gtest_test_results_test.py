@@ -17,25 +17,31 @@ _SAMPLE_TEST_RESULTS = {
     'per_iteration_data': [{
         'Unittest1.Subtest1': [{
             'status': 'SUCCESS',
-            'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            'output_snippet_base64': 'WyAgICAgICBPSyBdCg==',
+            'output_snippet': ''
         }],
         'Unittest1.Subtest2': [{
             'status': 'FAILURE',
-            'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDog'
+            'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDo=',
+            'output_snippet': 'a/b/u1s2.cc:1234:'
         }, {
-            'status': 'FAILURE',
-            'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDog'
+            'status': 'CRASH',
+            'output_snippet_base64': 'Y3Jhc2hsb2c=',
+            'output_snippet': 'crashlog'
         }],
         'Unittest2.PRE_Subtest1': [{
             'status': 'FAILURE',
-            'output_snippet_base64': 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+            'output_snippet_base64': 'RVJST1I6eF90ZXN0LmNjOjEyMz==',
+            'output_snippet': 'ERROR:x_test.cc:123'
         }, {
             'status': 'FAILURE',
-            'output_snippet_base64': 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+            'output_snippet_base64': 'RVJST1I6eF90ZXN0LmNjOjEyMz==',
+            'output_snippet': 'ERROR:x_test.cc:123'
         }],
         'Unittest2.Subtest2': [{
             'status': 'SUCCESS',
-            'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            'output_snippet_base64': 'WyAgICAgICBPSyBdCg==',
+            'output_snippet': ''
         }]
     }]
 }
@@ -152,23 +158,6 @@ _SAMPLE_TEST_RESULTS_FLAKE = {
 
 
 class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
-
-  def testConcatenateTestLogOneStringContainsAnother(self):
-    string1 = base64.b64encode('This string should contain string2.')
-    string2 = base64.b64encode('string2.')
-    self.assertEqual(
-        string1,
-        GtestTestResults(None).ConcatenateTestLog(string1, string2))
-    self.assertEqual(
-        string1,
-        GtestTestResults(None).ConcatenateTestLog(string2, string1))
-
-  def testConcatenateTestLog(self):
-    string1 = base64.b64encode('string1.')
-    string2 = base64.b64encode('string2.')
-    self.assertEqual(
-        base64.b64encode('string1.string2.'),
-        GtestTestResults(None).ConcatenateTestLog(string1, string2))
 
   def testGetTestLevelFailures(self):
     expected_failure_log = ('ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
@@ -301,25 +290,87 @@ class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
   def testGetFailedTestsInformation(self):
     test_results = _SAMPLE_TEST_RESULTS
 
-    side_effect = [
-        'YS9iL3UxczIuY2M6MTIzNDog', 'YS9iL3UxczIuY2M6MTIzNDog',
-        'RVJST1I6eF90ZXN0LmNjOjEyMz', 'RVJST1I6eF90ZXN0LmNjOjEyMz'
-    ]
-
     expected_log = {
-        'Unittest1.Subtest2': 'YS9iL3UxczIuY2M6MTIzNDog',
-        'Unittest2.PRE_Subtest1': 'RVJST1I6eF90ZXN0LmNjOjEyMz'
+        'Unittest1.Subtest2': 'YS9iL3UxczIuY2M6MTIzNDoKY3Jhc2hsb2c=',
+        'Unittest2.PRE_Subtest1': 'RVJST1I6eF90ZXN0LmNjOjEyMw=='
     }
     expected_tests = {
         'Unittest1.Subtest2': 'Unittest1.Subtest2',
         'Unittest2.PRE_Subtest1': 'Unittest2.Subtest1'
     }
     test_results_object = GtestTestResults(test_results)
-    with mock.patch.object(
-        test_results_object, 'ConcatenateTestLog', side_effect=side_effect):
-      log, tests = test_results_object.GetFailedTestsInformation()
-      self.assertEqual(expected_log, log)
-      self.assertEqual(expected_tests, tests)
+    log, tests = test_results_object.GetFailedTestsInformation()
+    self.assertEqual(expected_log, log)
+    self.assertEqual(expected_tests, tests)
+
+  def testGetFailedTestsInformationMultipleIterationsSuccess(self):
+    test_results = {
+        'disabled_tests': [],
+        'global_tags': [],
+        'all_tests': [
+            'Unittest1.Subtest1', 'Unittest1.Subtest2', 'Unittest2.Subtest1',
+            'Unittest2.Subtest2'
+        ],
+        'per_iteration_data': [
+            {
+                'Unittest1.Subtest2': [{
+                    'status': 'SUCCESS',
+                    'output_snippet_base64': 'success Unittest1.Subtest2'
+                }]
+            },
+            {
+                'Unittest1.Subtest2': [{
+                    'status': 'FAILURE',
+                    'output_snippet_base64': 'fail Unittest1.Subtest2'
+                }, {
+                    'status': 'FAILURE',
+                    'output_snippet_base64': 'fail Unittest1.Subtest2'
+                }]
+            },
+        ]
+    }
+
+    test_results_object = GtestTestResults(test_results)
+    log, tests = test_results_object.GetFailedTestsInformation()
+    self.assertEqual({}, log)
+    self.assertEqual({}, tests)
+
+  def testGetFailedTestsInformationMultipleIterationsFail(self):
+    test_results = {
+        'disabled_tests': [],
+        'global_tags': [],
+        'all_tests': [
+            'Unittest1.Subtest1', 'Unittest1.Subtest2', 'Unittest2.Subtest1',
+            'Unittest2.Subtest2'
+        ],
+        'per_iteration_data': [
+            {
+                'Unittest1.Subtest2': [{
+                    'status': 'CRASH',
+                    'output_snippet': 'crash Unittest1.Subtest2'
+                }]
+            },
+            {
+                'Unittest1.Subtest2': [{
+                    'status': 'FAILURE',
+                    'output_snippet': 'fail Unittest1.Subtest2'
+                }, {
+                    'status': 'FAILURE',
+                    'output_snippet': 'fail Unittest1.Subtest2'
+                }]
+            },
+        ]
+    }
+
+    test_results_object = GtestTestResults(test_results)
+    log, tests = test_results_object.GetFailedTestsInformation()
+
+    expected_log = {
+        'Unittest1.Subtest2': ('ZmFpbCBVbml0dGVzdDEuU3VidGVzdDI'
+                               'KY3Jhc2ggVW5pdHRlc3QxLlN1YnRlc3Qy')
+    }
+    self.assertEqual(expected_log, log)
+    self.assertEqual({'Unittest1.Subtest2': 'Unittest1.Subtest2'}, tests)
 
   def testIsTestResultUseful(self):
     self.assertTrue(GtestTestResults(_SAMPLE_TEST_RESULTS).IsTestResultUseful())

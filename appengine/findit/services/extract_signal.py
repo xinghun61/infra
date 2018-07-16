@@ -11,30 +11,25 @@ import logging
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
 from model.wf_analysis import WfAnalysis
+from services.constants import LOG_DATA_BYTE_LIMIT
 from waterfall import build_util
-
-# Limit stored log data to 1000 KB, because a datastore entity has a size
-# limit of 1 MB. And Leave 24 KB for other possible usage later.
-# The stored log data in datastore will be compressed with gzip, backed by
-# zlib. With the minimum compress level, the log data will usually be reduced
-# to less than 20%. So for uncompressed data, a safe limit could 4000 KB.
-_LOG_DATA_BYTE_LIMIT = 4000 * 1024
 
 
 def ExtractStorablePortionOfLog(log_data, json_format=False):
   # For the log of a failed step in a build, the error messages usually show
   # up at the end of the whole log. So if the log is too big to fit into a
   # datastore entity, it's safe to just save the ending portion of the log.
-  if len(log_data) <= _LOG_DATA_BYTE_LIMIT:
+  if len(log_data) <= LOG_DATA_BYTE_LIMIT:
     return log_data
   if json_format:
+    # TODO (crbug/806406): Parse and save useful log in json_formatted logs.
     return ''
 
   lines = log_data.split('\n')
   size = 0
   for line_index in reversed(range(len(lines))):
     size += len(lines[line_index]) + 1
-    if size > _LOG_DATA_BYTE_LIMIT:
+    if size > LOG_DATA_BYTE_LIMIT:
       return '\n'.join(lines[line_index + 1:])
   else:
     return log_data  # pragma: no cover - this won't be reached.

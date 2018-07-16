@@ -4,11 +4,12 @@
 
 import json
 import mock
-import os
+
+from google.appengine.api import datastore_errors
 
 from common.findit_http_client import FinditHttpClient
 from model.wf_step import WfStep
-from services import step_util
+from services import constants
 from services import swarmed_test_util
 from services import swarming
 from services.parameters import TestFailureInfo
@@ -28,26 +29,11 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     with self.mock_urlfetch() as urlfetch:
       self.mocked_urlfetch = urlfetch
 
-  def _GetSwarmingData(self, data_type, file_name=None):
-    file_name_map = {
-        'build': 'sample_swarming_build_tasks.json',
-        'step': 'sample_swarming_build_abctest_tasks.json'
-    }
-    file_name = file_name_map.get(data_type, file_name)
-    swarming_tasks_file = os.path.join(
-        os.path.dirname(__file__), os.pardir, os.pardir, 'test', 'data',
-        file_name)
-    with open(swarming_tasks_file, 'r') as f:
-      return f.read()
-
   def testInitiateTestLevelFirstFailureAndSaveLog(self):
-    json_data = json.loads(
-        self._GetSwarmingData('isolated-plain', 'm_b_223_abc_test.json'))
-
-    step = WfStep.Create('m', 'b', 223, 'abc_test')
-    step.isolated = True
-    step.put()
-
+    reliable_failed_tests = {
+        'Unittest2.Subtest1': 'Unittest2.Subtest1',
+        'Unittest3.Subtest2': 'Unittest3.Subtest2'
+    }
     failed_step = {
         'current_failure': 223,
         'first_failure': 221,
@@ -55,8 +41,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     }
     failed_step = TestFailedStep.FromSerializable(failed_step)
 
-    ci_test_failure._InitiateTestLevelFirstFailureAndSaveLog(
-        json_data, step, failed_step)
+    ci_test_failure._InitiateTestLevelFirstFailure(reliable_failed_tests,
+                                                   failed_step)
 
     expected_failed_step = {
         'current_failure': 223,
@@ -83,12 +69,10 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
   def testInitiateTestLevelFirstFailureAndSaveLogwithLastPass(self):
-    json_data = json.loads(
-        self._GetSwarmingData('isolated-plain', 'm_b_223_abc_test.json'))
-
-    step = WfStep.Create('m', 'b', 223, 'abc_test')
-    step.isolated = True
-    step.put()
+    reliable_failed_tests = {
+        'Unittest2.Subtest1': 'Unittest2.Subtest1',
+        'Unittest3.Subtest2': 'Unittest3.Subtest2'
+    }
 
     failed_step = {
         'current_failure': 223,
@@ -99,8 +83,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     }
     failed_step = TestFailedStep.FromSerializable(failed_step)
 
-    ci_test_failure._InitiateTestLevelFirstFailureAndSaveLog(
-        json_data, step, failed_step)
+    ci_test_failure._InitiateTestLevelFirstFailure(reliable_failed_tests,
+                                                   failed_step)
 
     expected_failed_step = {
         'current_failure': 223,
@@ -179,10 +163,49 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     step.isolated = True
     step.put()
 
-    mock_module.RetrieveShardedTestResultsFromIsolatedServer.return_value = (
-        json.loads(
-            self._GetSwarmingData('isolated-plain',
-                                  'm_b_223_abc_test_flaky.json')))
+    mock_module.RetrieveShardedTestResultsFromIsolatedServer.return_value = {
+        'disabled_tests': [],
+        'all_tests': [
+            'Unittest1.Subtest1',
+            'Unittest1.Subtest2',
+            'Unittest2.Subtest1',
+        ],
+        'per_iteration_data': [{
+            'Unittest1.Subtest1': [{
+                'elapsed_time_ms': 1,
+                'losless_snippet': True,
+                'output_snippet': '[       OK ]\\n',
+                'status': 'SUCCESS',
+                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            }],
+            'Unittest1.Subtest2': [{
+                'elapsed_time_ms': 66,
+                'losless_snippet': True,
+                'output_snippet': 'a/b/u1s2.cc:1234: Failure\\n',
+                'status': 'FAILURE',
+                'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDogRmF'
+            }, {
+                'elapsed_time_ms': 50,
+                'losless_snippet': True,
+                'output_snippet': '[       OK ]\\n',
+                'status': 'SUCCESS',
+                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            }],
+            'Unittest2.Subtest1': [{
+                'elapsed_time_ms': 56,
+                'losless_snippet': True,
+                'output_snippet': 'ERROR',
+                'status': 'FAILURE',
+                'output_snippet_base64': 'RVJST1I6eF90ZXN0LmN'
+            }, {
+                'elapsed_time_ms': 1,
+                'losless_snippet': True,
+                'output_snippet': '[       OK ]\\n',
+                'status': 'SUCCESS',
+                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            }],
+        }]
+    }
 
     mock_module.GetFailedTestsInformation.return_value = ({}, {})
 
@@ -251,11 +274,10 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
 
     ci_test_failure.CheckFirstKnownFailureForSwarmingTests(
         master_name, builder_name, build_number, failure_info)
-    mock_fun.assert_called_once_with(master_name, builder_name, build_number,
-                                     step_name,
-                                     TestFailedStep.FromSerializable(
-                                         failed_steps[step_name]),
-                                     ['223', '222', '221'], None)
+    mock_fun.assert_called_once_with(
+        master_name, builder_name, build_number, step_name,
+        TestFailedStep.FromSerializable(failed_steps[step_name]),
+        ['223', '222', '221'], None)
 
   @mock.patch.object(ci_test_failure, 'UpdateSwarmingSteps', return_value=False)
   def testCheckFirstKnownFailureForSwarmingTestsNoResult(self, _):
@@ -277,7 +299,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, failure_info)
     self.assertEqual({}, failure_info.failed_steps.ToSerializable())
 
-  @mock.patch.object(ci_test_failure, '_GetSameStepFromBuild')
+  @mock.patch.object(ci_test_failure, '_GetLogForTheSameStepFromBuild')
   def testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self, mock_steps):
     master_name = 'm'
     builder_name = 'b'
@@ -303,30 +325,16 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         }
     }
     failed_step = TestFailedStep.FromSerializable(failed_step)
-    step_223 = WfStep.Create(master_name, builder_name, 223, step_name)
-    step_223.isolated = True
-    step_223.log_data = 'log'
-    step_223.put()
-
-    step_222 = WfStep.Create(master_name, builder_name, 222, step_name)
-    step_222.isolated = True
     log_data_222 = {
         'Unittest2.Subtest1': 'test_failure_log',
         'Unittest3.Subtest2': 'test_failure_log'
     }
-    step_222.log_data = json.dumps(log_data_222)
-    step_222.put()
-
-    step_221 = WfStep.Create(master_name, builder_name, 221, step_name)
-    step_221.isolated = True
     log_data_221 = {
         'Unittest3.Subtest1': 'test_failure_log',
         'Unittest3.Subtest2': 'test_failure_log'
     }
-    step_221.log_data = json.dumps(log_data_221)
-    step_221.put()
 
-    mock_steps.side_effect = [step_223, step_222, step_221]
+    mock_steps.side_effect = [None, log_data_222, log_data_221]
 
     ci_test_failure._UpdateFirstFailureOnTestLevel(
         master_name, builder_name, build_number, step_name, failed_step,
@@ -420,10 +428,26 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         }
     }
     failed_step = TestFailedStep.FromSerializable(failed_step_serializable)
-    with self.assertRaises(Exception):
-      ci_test_failure._UpdateFirstFailureOnTestLevel(
-          master_name, builder_name, build_number, step_name, failed_step,
-          [223, 222, 221], FinditHttpClient())
+    ci_test_failure._UpdateFirstFailureOnTestLevel(master_name, builder_name,
+                                                   build_number, step_name,
+                                                   failed_step, [223, 222, 221],
+                                                   FinditHttpClient())
+    expected_failed_step = {
+        'current_failure': 223,
+        'first_failure': 223,
+        'last_pass': 221,
+        'supported': True,
+        'list_isolated_data': None,
+        'tests': {
+            'Unittest2.Subtest1': {
+                'current_failure': 223,
+                'first_failure': 223,
+                'last_pass': 221,
+                'base_test_name': 'Unittest2.Subtest1'
+            }
+        }
+    }
+    self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
   def testUpdateFailureInfoBuildsUpdateBuilds(self):
     failed_steps = {
@@ -524,24 +548,68 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             master_name, builder_name, build_number, step_name, failed_step,
             None))
 
+  def testSaveLogToStepLogTooBig(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 250
+    step_name = 'atest'
+
+    original_step_put = WfStep.put
+    calls = []
+
+    def MockNdbTransaction(func, **options):
+      if len(calls) < 1:
+        calls.append(1)
+        raise datastore_errors.BadRequestError('log_data is too long')
+      return original_step_put(func, **options)
+
+    self.mock(WfStep, 'put', MockNdbTransaction)
+
+    ci_test_failure._SaveIsolatedResultToStep(master_name, builder_name,
+                                              build_number, step_name, {})
+    step = WfStep.Get(master_name, builder_name, build_number, step_name)
+    self.assertEqual(step.log_data, constants.TOO_LARGE_LOG)
+
+  def testSaveLogToStepLogFailForSomethingElse(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 250
+    step_name = 'atest'
+
+    original_step_put = WfStep.put
+    calls = []
+
+    def MockNdbTransaction(func, **options):
+      if len(calls) < 1:
+        calls.append(1)
+        raise datastore_errors.BadRequestError('Other reason')
+      return original_step_put(func, **options)
+
+    self.mock(WfStep, 'put', MockNdbTransaction)
+
+    ci_test_failure._SaveIsolatedResultToStep(master_name, builder_name,
+                                              build_number, step_name, {})
+    step = WfStep.Get(master_name, builder_name, build_number, step_name)
+    self.assertEqual(constants.TOO_LARGE_LOG, step.log_data)
+    self.assertTrue(step.isolated)
+
   @mock.patch.object(swarming, 'GetIsolatedDataForStep', return_value=None)
-  def testGetSameStepFromBuildNotIsolated(self, _):
+  def testGetLogForTheSameStepFromBuildNotIsolated(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 121
     step_name = 'atest'
     self.assertIsNone(
-        ci_test_failure._GetSameStepFromBuild(master_name, builder_name,
-                                              build_number, step_name, None))
+        ci_test_failure._GetLogForTheSameStepFromBuild(
+            master_name, builder_name, build_number, step_name, None))
 
   @mock.patch.object(
       swarmed_test_util,
       'RetrieveShardedTestResultsFromIsolatedServer',
-      return_value={
-          'per_iteration_data': 'invalid'
-      })
+      return_value={'per_iteration_data': 'invalid'})
   @mock.patch.object(swarming, 'GetIsolatedDataForStep')
-  def testGetSameStepFromBuildReslutLogInvalid(self, mock_isolated_data, _):
+  def testGetLogForTheSameStepFromBuildReslutLogInvalid(self,
+                                                        mock_isolated_data, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 121
@@ -555,13 +623,29 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'digest': 'isolatedhashabctest'
     }]
     self.assertIsNone(
-        ci_test_failure._GetSameStepFromBuild(master_name, builder_name,
-                                              build_number, step_name, None))
+        ci_test_failure._GetLogForTheSameStepFromBuild(
+            master_name, builder_name, build_number, step_name, None))
+
+  def testGetLogForTheSameStepFromBuildNotNotJsonLoadable(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 121
+    step_name = 'atest'
+
+    step = WfStep.Create(master_name, builder_name, build_number, step_name)
+    step.isolated = True
+    step.log_data = 'log'
+    step.put()
+
+    self.assertIsNone(
+        ci_test_failure._GetLogForTheSameStepFromBuild(
+            master_name, builder_name, build_number, step_name, None))
 
   @mock.patch.object(swarming, 'GetIsolatedDataForStep')
   @mock.patch.object(swarmed_test_util,
                      'RetrieveShardedTestResultsFromIsolatedServer')
-  def testGetSameStepFromBuild(self, mock_step_log, mock_isolated_data):
+  def testGetLogForTheSameStepFromBuild(self, mock_step_log,
+                                        mock_isolated_data):
     master_name = 'm'
     builder_name = 'b'
     build_number = 222
@@ -575,16 +659,49 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'digest': 'isolatedhashabctest'
     }]
 
-    mock_step_log.return_value = json.loads(
-        self._GetSwarmingData('isolated-plain',
-                              '%s_%s_%d_%s.json' % (master_name, builder_name,
-                                                    build_number, step_name)))
+    mock_step_log.return_value = {
+        'disabled_tests': [],
+        'global_tags': [],
+        'all_tests': [
+            'Unittest1.Subtest1', 'Unittest1.Subtest2', 'Unittest2.Subtest1',
+            'Unittest2.Subtest2', 'Unittest3.Subtest1', 'Unittest3.Subtest2',
+            'Unittest3.Subtest3'
+        ],
+        'per_iteration_data': [{
+            'Unittest2.Subtest1': [{
+                'elapsed_time_ms':
+                    56,
+                'losless_snippet':
+                    True,
+                'output_snippet': ('ERROR:x_test.cc:1234\\na/b/u2s1.cc'
+                                   ':567: Failure\\n'),
+                'status':
+                    'FAILURE',
+                'output_snippet_base64': (
+                    'RVJST1I6eF90ZXN0LmNjOjEyMzRcbmEvYi91MnMxLmNj'
+                    'OjU2NzogRmFpbHVyZVxu')
+            }],
+            'Unittest3.Subtest2': [{
+                'elapsed_time_ms': 80,
+                'losless_snippet': True,
+                'output_snippet': 'a/b/u3s2.cc:110: Failure\\n',
+                'status': 'FAILURE',
+                'output_snippet_base64': 'YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlXG4='
+            }]
+        }]
+    }
 
-    step = ci_test_failure._GetSameStepFromBuild(master_name, builder_name,
-                                                 build_number, step_name, None)
+    expected_failure_log = {
+        'Unittest2.Subtest1': (
+            'RVJST1I6eF90ZXN0LmNjOjEyMzRcbmEvYi91MnMxLmNjOjU2NzogRmFpbHVyZVxu'),
+        'Unittest3.Subtest2':
+            'YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlXG4='
+    }
 
-    self.assertIsNotNone(step)
-    self.assertTrue(step.isolated)
+    failure_log = ci_test_failure._GetLogForTheSameStepFromBuild(
+        master_name, builder_name, build_number, step_name, None)
+
+    self.assertEqual(failure_log, expected_failure_log)
 
   def testStepNotHaveFirstTimeFailure(self):
     build_number = 1

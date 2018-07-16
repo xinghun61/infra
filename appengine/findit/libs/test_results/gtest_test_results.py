@@ -10,6 +10,7 @@ It provides functions to:
 """
 
 import base64
+from collections import defaultdict
 import cStringIO
 
 from libs.gtest_name_util import RemoveAllPrefixesFromTestName
@@ -31,30 +32,6 @@ _NON_FAILURE_STATUSES = [SUCCESS, SKIPPED, UNKNOWN]
 
 
 class GtestTestResults(BaseTestResults):
-
-  # TODO(crbug/805732): Get rid of repeated decode/encode operations.
-  def ConcatenateTestLog(self, string1, string2):
-    """Concatenates the base64 encoded log.
-
-    Tests if one string is a substring of another,
-        if yes, returns the longer string,
-        otherwise, returns the concatenation.
-
-    Args:
-      string1: base64-encoded string.
-      string2: base64-encoded string.
-
-    Returns:
-      base64-encoded string.
-    """
-    str1 = base64.b64decode(string1)
-    str2 = base64.b64decode(string2)
-    if str2 in str1:
-      return string1
-    elif str1 in str2:
-      return string2
-    else:
-      return base64.b64encode(str1 + str2)
 
   def GetConsistentTestFailureLog(self):
     """Analyzes the archived gtest json results and extract reliable failures.
@@ -115,26 +92,33 @@ class GtestTestResults(BaseTestResults):
 
   def GetFailedTestsInformation(self):
     """Parses the json data to get all the reliable failures' information."""
-    failed_test_log = {}
+    failed_test_log = defaultdict(dict)
     reliable_failed_tests = {}
+    tests_has_non_failed_runs = {}
 
     for iteration in (self.test_results_json.get('per_iteration_data') or []):
-      for test_name in iteration.keys():
-
-        if (any(test['status'] in _NON_FAILURE_STATUSES
-                for test in iteration[test_name])):
+      for test_name, test_results in iteration.iteritems():
+        if (tests_has_non_failed_runs.get(test_name) or any(
+            test['status'] in _NON_FAILURE_STATUSES for test in test_results)):
           # Ignore the test if any of the attempts didn't fail.
           # If a test is skipped, that means it was not run at all.
           # Treats it as success since the status cannot be determined.
+          tests_has_non_failed_runs[test_name] = True
+          failed_test_log.pop(test_name, None)
+          reliable_failed_tests.pop(test_name, None)
           continue
 
         # Stores the output to the step's log_data later.
-        failed_test_log[test_name] = ''
-        for test in iteration[test_name]:
-          failed_test_log[test_name] = self.ConcatenateTestLog(
-              failed_test_log[test_name], test.get('output_snippet_base64', ''))
+        for test in test_results:
+          failed_test_log[test_name][test['status']] = test.get(
+              'output_snippet')
         reliable_failed_tests[test_name] = RemoveAllPrefixesFromTestName(
             test_name)
+
+    for test_name in failed_test_log:
+      test_logs = failed_test_log[test_name]
+      merged_test_log = '\n'.join(test_logs.itervalues())
+      failed_test_log[test_name] = base64.b64encode(merged_test_log)
 
     return failed_test_log, reliable_failed_tests
 

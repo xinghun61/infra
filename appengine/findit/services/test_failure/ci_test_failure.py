@@ -6,12 +6,15 @@
 import json
 import logging
 
+from google.appengine.api.datastore_errors import BadRequestError
 from google.appengine.ext import ndb
+from google.appengine.runtime.apiproxy_errors import RequestTooLargeError
 
 from common.findit_http_client import FinditHttpClient
 from libs.test_results import test_results_util
 from model.wf_step import WfStep
 from services import ci_failure
+from services import constants
 from services import step_util
 from services import swarmed_test_util
 from services import swarming
@@ -20,36 +23,47 @@ from services.parameters import FailedTests
 from services.parameters import IsolatedDataList
 
 
-def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
-  """Parses the json data and saves all the reliable failures to the step."""
+def _InitiateTestLevelFirstFailure(reliable_failed_tests, failed_step):
+  """Adds all the reliable failures to the failed_step."""
 
-  test_results = test_results_util.GetTestResultObject(json_data)
-  failed_test_log, reliable_failed_tests = (
-      test_results.GetFailedTestsInformation()) if test_results else ({}, {})
-  if failed_step:
-    failed_step.tests = failed_step.tests or FailedTests.FromSerializable({})
+  failed_step.tests = failed_step.tests or FailedTests.FromSerializable({})
+  for test_name, base_test_name in reliable_failed_tests.iteritems():
+    # Adds the test to failed_step.
+    failed_test_info = {
+        'current_failure': failed_step.current_failure,
+        'first_failure': failed_step.current_failure,
+        'base_test_name': base_test_name,
+    }
+    failed_step.tests[test_name] = FailedTest.FromSerializable(failed_test_info)
 
-    for test_name, base_test_name in reliable_failed_tests.iteritems():
-      # Adds the test to failed_step.
-      failed_test_info = {
-          'current_failure': failed_step.current_failure,
-          'first_failure': failed_step.current_failure,
-          'base_test_name': base_test_name,
-      }
-      failed_step.tests[test_name] = FailedTest.FromSerializable(
-          failed_test_info)
-
-      if failed_step.last_pass:
-        failed_step.tests[test_name].last_pass = failed_step.last_pass
-
-  step.log_data = json.dumps(failed_test_log) if failed_test_log else 'flaky'
-  step.put()
+    if failed_step.last_pass:
+      failed_step.tests[test_name].last_pass = failed_step.last_pass
 
   if failed_step and not failed_step.tests:  # All flaky.
     failed_step.tests = None
     return False
-
   return True
+
+
+def _SaveIsolatedResultToStep(master_name, builder_name, build_number,
+                              step_name, failed_test_log):
+  """Parses the json data and saves all the reliable failures to the step."""
+  step = (
+      WfStep.Get(master_name, builder_name, build_number, step_name) or
+      WfStep.Create(master_name, builder_name, build_number, step_name))
+
+  step.isolated = True
+  step.log_data = json.dumps(
+      failed_test_log) if failed_test_log else constants.FLAKY_FAILURE_LOG
+  try:
+    step.put()
+  except (BadRequestError, RequestTooLargeError) as e:
+    step.isolated = True
+    step.log_data = constants.TOO_LARGE_LOG
+    logging.warning(
+        'Failed to save data in %s/%s/%d/%s: %s' %
+        (master_name, builder_name, build_number, step_name, e.message))
+    step.put()
 
 
 def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
@@ -68,38 +82,56 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
                                       step_name), master_name):
     return False
 
-  step = WfStep.Get(master_name, builder_name, build_number, step_name)
+  failed_test_log, reliable_failed_tests = (
+      test_results_object.GetFailedTestsInformation())
 
-  return _InitiateTestLevelFirstFailureAndSaveLog(result_log, step, failed_step)
+  _SaveIsolatedResultToStep(master_name, builder_name, build_number, step_name,
+                            failed_test_log)
+  return _InitiateTestLevelFirstFailure(reliable_failed_tests, failed_step)
 
 
-def _GetSameStepFromBuild(master_name, builder_name, build_number, step_name,
-                          http_client):
+def _GetLogForTheSameStepFromBuild(master_name, builder_name, build_number,
+                                   step_name, http_client):
   """Downloads swarming test results for a step from previous build."""
   step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
-  if step and step.isolated and step.log_data:
+  if (step and step.isolated and step.log_data and
+      step.log_data != constants.TOO_LARGE_LOG):
     # Test level log has been saved for this step.
-    return step
+    try:
+      return json.loads(
+          step.log_data
+      ) if step.log_data != constants.FLAKY_FAILURE_LOG else {}
+    except ValueError:
+      logging.error(
+          'log_data %s of step %s/%s/%d/%s is not json loadable.' %
+          (step.log_data, master_name, builder_name, build_number, step_name))
+      return None
 
   # Sends request to swarming server for isolated data.
   step_isolated_data = swarming.GetIsolatedDataForStep(
       master_name, builder_name, build_number, step_name, http_client)
 
   if not step_isolated_data:
+    logging.warning('Failed to get step_isolated_data for build %s/%s/%d/%s.' %
+                    (master_name, builder_name, build_number, step_name))
     return None
 
   result_log = swarmed_test_util.RetrieveShardedTestResultsFromIsolatedServer(
       step_isolated_data, http_client)
+  test_results = test_results_util.GetTestResultObject(result_log)
 
-  if not test_results_util.IsTestResultsValid(result_log):
+  if not test_results:
+    logging.warning('Failed to get swarming test results for build %s/%s/%d/%s.'
+                    % (master_name, builder_name, build_number, step_name))
     return None
 
-  step = WfStep.Create(master_name, builder_name, build_number, step_name)
-  step.isolated = True
-  _InitiateTestLevelFirstFailureAndSaveLog(result_log, step)
+  failed_test_log, _ = test_results.GetFailedTestsInformation()
 
-  return step
+  _SaveIsolatedResultToStep(master_name, builder_name, build_number, step_name,
+                            failed_test_log)
+
+  return failed_test_log
 
 
 def _UpdateFirstFailureInfoForStep(current_build_number, failed_step):
@@ -156,24 +188,14 @@ def _UpdateFirstFailureOnTestLevel(master_name, builder_name,
       continue
     # Checks back until farthest_first_failure or build 1, don't use build 0
     # since there might be some abnormalities in build 0.
-    step = _GetSameStepFromBuild(master_name, builder_name, build_number,
-                                 step_name, http_client)
+    failed_test_log = _GetLogForTheSameStepFromBuild(
+        master_name, builder_name, build_number, step_name, http_client)
 
-    if not step or not step.log_data:
-      raise Exception(
-          'Failed to get swarming test results for build %s/%s/%d.' %
-          (master_name, builder_name, build_number))
+    if failed_test_log is None:
+      # Step might not run in the build or run into an exception, keep
+      # trying previous builds.
+      continue
 
-    if step.log_data.lower() == 'flaky':
-      failed_test_log = {}
-    else:
-      try:
-        failed_test_log = json.loads(step.log_data)
-      except ValueError:
-        logging.error('log_data %s of step %s/%s/%d/%s is not json loadable.' %
-                      (step.log_data, master_name, builder_name, build_number,
-                       step_name))
-        continue
     test_checking_list = unfinished_tests[:]
 
     for test_name in test_checking_list:
