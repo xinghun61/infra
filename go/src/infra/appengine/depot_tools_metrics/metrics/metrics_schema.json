@@ -100,7 +100,6 @@
         "no_progress",
         "no_rebase_patch_ref",
         "no_reset_patch_ref",
-        "no_bootstrap",
         "nohooks",
         "noprehooks",
         "null",
