@@ -103,7 +103,7 @@ A bucket entry in buildbucket config may have `swarming` key, for example:
     }
 
 For the format and documentation see `Swarming` message in the
-[project_config.proto](../proto/project_config.proto).
+[project_config.proto].
 Real world configuration example:
 ["luci.infra.try" bucket](https://chromium.googlesource.com/infra/infra/+/infra/config/cr-buildbucket.cfg)
 
@@ -132,7 +132,7 @@ defined on the server. For example, value
 (re)defines "cores" dimension to be "64" for this particular build.
 
 The format is defined by the Builder message in
-[project_config.proto](../proto/project_config.proto); in practice, it is JSONPB
+[project_config.proto]; in practice, it is JSONPB
 of the message.
 
 ## Tags
@@ -190,3 +190,4 @@ A swarming task created by buildbucket has extra recipe properties:
 [kitchen]: https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/tools/kitchen/
 [swarming_task_template.json]: https://chrome-internal.googlesource.com/infradata/config/+/master/configs/cr-buildbucket/swarming_task_template.json
 [projects.cfg]: https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config/projects.cfg
+[project_config.proto]: https://chromium.googlesource.com/infra/luci/luci-go/+/master/buildbucket/proto/config/project_config.proto
