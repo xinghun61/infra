@@ -175,6 +175,13 @@ indexes:
   - name: has_submitted_autorevert
   - name: autorevert_submission_time
 
+# For flake detection.
+- kind: CQFalseRejectionFlakeOccurrence
+  ancestor: yes
+  properties:
+  - name: time_happened
+    direction: desc
+
 # For query on tree closures.
 - kind: TreeClosure
   properties:
