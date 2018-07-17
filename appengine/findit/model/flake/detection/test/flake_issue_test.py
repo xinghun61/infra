@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
+
+from google.appengine.api import app_identity
+
 from gae_libs.testcase import TestCase
 from model.flake.detection.flake_issue import FlakeIssue
 
@@ -32,3 +36,21 @@ class FlakeIssueTest(TestCase):
     self.assertEqual('chromium',
                      FlakeIssue.GetMonorailProjectFromLuciProject('chromium'))
     self.assertIsNone(FlakeIssue.GetMonorailProjectFromLuciProject('NA'))
+
+  @mock.patch.object(
+      app_identity, 'get_application_id', return_value='findit-for-me-staging')
+  def testGetLinkForStagingIssue(self, _):
+    monorail_project = 'chromium'
+    issue_id = 12345
+    self.assertEqual(
+        'https://monorail-staging.appspot.com/p/chromium/issues/detail?id=12345',  # pylint: disable=line-too-long
+        FlakeIssue.GetLinkForIssue(monorail_project, issue_id))
+
+  @mock.patch.object(
+      app_identity, 'get_application_id', return_value='findit-for-me')
+  def testGetLinkForProdIssue(self, _):
+    monorail_project = 'chromium'
+    issue_id = 12345
+    self.assertEqual(
+        'https://monorail-prod.appspot.com/p/chromium/issues/detail?id=12345',
+        FlakeIssue.GetLinkForIssue(monorail_project, issue_id))

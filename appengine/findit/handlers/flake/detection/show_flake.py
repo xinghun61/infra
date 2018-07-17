@@ -9,6 +9,7 @@ from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from model import entity_util
 from model.flake.detection.flake import Flake
+from model.flake.detection.flake_issue import FlakeIssue
 from model.flake.detection.flake_occurrence import (
     CQFalseRejectionFlakeOccurrence)
 
@@ -39,6 +40,8 @@ class ShowFlake(BaseHandler):
     if flake.flake_issue_key:
       flake_issue = flake.flake_issue_key.get()
       flake_dict['flake_issue'] = flake_issue.to_dict()
+      flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
+          flake_issue.monorail_project, flake_issue.issue_id)
 
     data = {'flake_json': flake_dict}
     return {'template': 'flake/detection/show_flake.html', 'data': data}

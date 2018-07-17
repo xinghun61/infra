@@ -4,6 +4,8 @@
 
 from google.appengine.ext import ndb
 
+from gae_libs.appengine_util import IsStaging
+
 # Mapping between luci project and monorail project.
 _LUCI_PROJECT_TO_MONORAIL_PROJECT = {'chromium': 'chromium'}
 
@@ -44,3 +46,21 @@ class FlakeIssue(ndb.Model):
       otherwise None.
     """
     return _LUCI_PROJECT_TO_MONORAIL_PROJECT.get(luci_project, None)
+
+  @staticmethod
+  def GetLinkForIssue(monorail_project, issue_id):
+    """Given a project and issue id, gets a link to the issue on Monorail.
+
+    Args:
+      monorail_project: Project name of the issue on Monorail.
+      issue_id: Id of the issue.
+
+    Returns:
+      A link to the issue on Monorail.
+    """
+    assert monorail_project, "A valid project is required."
+
+    url_template = 'https://monorail-%s.appspot.com/p/%s/issues/detail?id=%d'
+    suffix = 'staging' if IsStaging() else 'prod'
+
+    return url_template % (suffix, monorail_project, issue_id)

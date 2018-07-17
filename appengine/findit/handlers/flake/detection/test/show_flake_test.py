@@ -91,6 +91,8 @@ class ShowFlakeTest(WaterfallTestCase):
     flake_dict = flake.to_dict()
     flake_dict['occurrences'] = [occurrence.to_dict()]
     flake_dict['flake_issue'] = flake_issue.to_dict()
+    flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
+        flake_issue.monorail_project, flake_issue.issue_id)
     self.assertEqual(
         json.dumps({
             'flake_json': flake_dict

@@ -224,25 +224,6 @@ def SearchExistingOpenIssuesForFlakyTest(normalized_test_name,
   return None
 
 
-def _GetLinkForIssue(monorail_project, issue_id):
-  """Given a project and issue id, gets a link to the issue on Monorail.
-
-  Args:
-    monorail_project: Project name of the issue on Monorail.
-    issue_id: Id of the issue.
-
-  Returns:
-    A link to the issue on Monorail.
-  """
-  assert monorail_project, "Unsupported monorail project: %s" % monorail_project
-
-  if monorail_project == 'chromium':
-    return 'crbug.com/%d' % issue_id
-
-  return 'https://bugs.chromium.org/p/%s/issues/detail?id=%d' % (
-      monorail_project, issue_id)
-
-
 def _GetLinkForFlake(flake):
   """Given a flake, gets a link to the flake on flake detection UI.
 
@@ -282,7 +263,8 @@ def CreateIssueForFlake(flake, occurrences, previous_tracking_bug_id):
       previous_tracking_bug_id=previous_tracking_bug_id)
 
   logging.info('%s was created for flake: %s.',
-               _GetLinkForIssue(monorail_project, issue_id), flake.key)
+               FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
+               flake.key)
   flake_issue = FlakeIssue.Create(monorail_project, issue_id)
   flake_issue.put()
   flake.flake_issue_key = flake_issue.key
@@ -311,9 +293,10 @@ def UpdateIssueForFlake(flake, occurrences, previous_tracking_bug_id):
       flake_url=_GetLinkForFlake(flake),
       previous_tracking_bug_id=previous_tracking_bug_id)
 
-  logging.info('%s was updated for flake: %s.',
-               _GetLinkForIssue(monorail_project, flake_issue.issue_id),
-               flake.key)
+  logging.info(
+      '%s was updated for flake: %s.',
+      FlakeIssue.GetLinkForIssue(monorail_project, flake_issue.issue_id),
+      flake.key)
   flake_issue.last_updated_time = time_util.GetUTCNow()
   flake_issue.put()
 
@@ -337,8 +320,8 @@ def _ReportFlakeToMonorail(flake, occurrences):
       logging.info(
           'Currently attached issue %s was merged to %s, attach the new issue '
           'id to this flake.',
-          _GetLinkForIssue(monorail_project, flake_issue.issue_id),
-          _GetLinkForIssue(monorail_project, merged_issue.id))
+          FlakeIssue.GetLinkForIssue(monorail_project, flake_issue.issue_id),
+          FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id))
       previous_tracking_bug_id = flake_issue.issue_id
       flake_issue.issue_id = merged_issue.id
       flake_issue.put()
@@ -346,7 +329,8 @@ def _ReportFlakeToMonorail(flake, occurrences):
     if merged_issue.open:
       logging.info(
           'Currently attached issue %s is open, update it with new '
-          'occurrences.', _GetLinkForIssue(monorail_project, merged_issue.id))
+          'occurrences.',
+          FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id))
       UpdateIssueForFlake(flake, occurrences, previous_tracking_bug_id)
       return
 
@@ -356,7 +340,7 @@ def _ReportFlakeToMonorail(flake, occurrences):
     # re-open a closed bug than create a new one.
     logging.info(
         'Currently attached %s was closed or deleted, create a new one.',
-        _GetLinkForIssue(monorail_project, previous_tracking_bug_id))
+        FlakeIssue.GetLinkForIssue(monorail_project, previous_tracking_bug_id))
     CreateIssueForFlake(flake, occurrences, previous_tracking_bug_id)
     return
 
@@ -368,7 +352,8 @@ def _ReportFlakeToMonorail(flake, occurrences):
   if issue_id:
     logging.info(
         'An existing issue %s was found, attach it to this flake and update it '
-        'with new occurrences.', _GetLinkForIssue(monorail_project, issue_id))
+        'with new occurrences.',
+        FlakeIssue.GetLinkForIssue(monorail_project, issue_id))
     flake_issue = FlakeIssue.Create(monorail_project, issue_id)
     flake_issue.put()
     flake.flake_issue_key = flake_issue.key
