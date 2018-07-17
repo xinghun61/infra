@@ -25,8 +25,9 @@ def ExtractSignalsForCompileFailure(failure_info, http_client):
   step_name = 'compile'
 
   if step_name not in (failure_info.failed_steps or {}):
-    logging.debug('No compile failure found when extracting signals for failed '
-                  'build %s/%s/%d', master_name, builder_name, build_number)
+    logging.debug(
+        'No compile failure found when extracting signals for failed '
+        'build %s/%s/%d', master_name, builder_name, build_number)
     return signals
 
   if not failure_info.failed_steps[step_name].supported:
@@ -60,9 +61,14 @@ def ExtractSignalsForCompileFailure(failure_info, http_client):
       from_ninja_output = False
       failure_log = extract_signal.GetStdoutLog(
           master_name, builder_name, build_number, step_name, http_client)
-    if not failure_log:
-      raise Exception('Failed to pull failure log (stdio or ninja output) of '
-                      'step %s of master %s' % (step_name, master_name))
+
+    try:
+      if not failure_log:
+        raise extract_signal.FailedToGetFailureLogError(
+            'Failed to pull failure log (stdio or ninja output) of step %s of'
+            ' %s/%s/%d' % (step_name, master_name, builder_name, build_number))
+    except extract_signal.FailedToGetFailureLogError:
+      return {}
 
     # Save step log in datastore and avoid downloading again during retry.
     step.log_data = extract_signal.ExtractStorablePortionOfLog(

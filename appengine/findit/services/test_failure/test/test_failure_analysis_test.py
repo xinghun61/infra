@@ -409,6 +409,11 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual([], suspected_cls)
 
+  def testAnalyzeTestFailureNoSignal(self):
+    self.assertEqual(({
+        'failures': []
+    }, []), test_failure_analysis.AnalyzeTestFailure({}, {}, {}, {}))
+
   @mock.patch.object(
       extract_test_signal,
       'ExtractSignalsForTestFailure',

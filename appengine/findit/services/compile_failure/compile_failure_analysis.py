@@ -115,11 +115,15 @@ def AnalyzeCompileFailure(failure_info, change_logs, deps_info,
         ...
     ]
   """
-
   analysis_result = {'failures': []}
   cl_failure_map = defaultdict(build_failure_analysis.CLInfo)
 
   step_name = constants.COMPILE_STEP_NAME
+
+  if not failure_signals:
+    logging.debug('No failure signals when analyzing a compile failure.')
+    return analysis_result, []
+
   if step_name not in failure_info.failed_steps:
     logging.debug('No failed compile step when analyzing a compile failure.')
     return analysis_result, []

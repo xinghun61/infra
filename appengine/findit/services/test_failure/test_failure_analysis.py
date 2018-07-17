@@ -5,6 +5,7 @@
 
 import copy
 from collections import defaultdict
+import logging
 
 from google.appengine.ext import ndb
 
@@ -102,6 +103,10 @@ def AnalyzeTestFailure(failure_info, change_logs, deps_info, failure_signals):
     ]
   """
   analysis_result = {'failures': []}
+
+  if not failure_signals:
+    logging.debug('No failure signals when analyzing a test failure.')
+    return analysis_result, []
 
   failed_steps = failure_info.failed_steps
   builds = failure_info.builds

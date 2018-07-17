@@ -255,17 +255,25 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   def testAnalyzeCompileFailureNoCompileFailure(self, mock_logging):
     failure_info = {'failed_steps': {'a': {}}}
     analysis_result, _ = compile_failure_analysis.AnalyzeCompileFailure(
-        CompileFailureInfo.FromSerializable(failure_info), None, None, None)
+        CompileFailureInfo.FromSerializable(failure_info), None, None,
+        {'compile': {}})
     self.assertEqual({'failures': []}, analysis_result)
     mock_logging.assert_has_called_with(
         'No failed compile step when analyzing a compile failure.')
 
+  @mock.patch.object(logging, 'debug')
+  def testAnalyzeCompileFailureNoSignal(self, mock_logging):
+    failure_info = {'failed_steps': {'a': {}}}
+    analysis_result, _ = compile_failure_analysis.AnalyzeCompileFailure(
+        CompileFailureInfo.FromSerializable(failure_info), None, None, {})
+    self.assertEqual({'failures': []}, analysis_result)
+    mock_logging.assert_has_called_with(
+        'No failure signals when analyzing a compile failure.')
+
   @mock.patch.object(
       build_failure_analysis,
       'InitializeStepLevelResult',
-      return_value={
-          'supported': False
-      })
+      return_value={'supported': False})
   def testAnalyzeCompileFailureNotSupported(self, _):
     failure_info = {
         'master_name': 'm',
@@ -280,15 +288,14 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'builds': {}
     }
     analysis_result, _ = compile_failure_analysis.AnalyzeCompileFailure(
-        CompileFailureInfo.FromSerializable(failure_info), None, None, None)
+        CompileFailureInfo.FromSerializable(failure_info), None, None,
+        {'compile': {}})
     self.assertEqual({'failures': []}, analysis_result)
 
   @mock.patch.object(
       waterfall_config,
       'GetDownloadBuildDataSettings',
-      return_value={
-          'use_ninja_output_log': False
-      })
+      return_value={'use_ninja_output_log': False})
   def testAnalyzeCompileFailureNotUsingNinjaOutput(self, _):
     failure_info = {
         'master_name': 'm',

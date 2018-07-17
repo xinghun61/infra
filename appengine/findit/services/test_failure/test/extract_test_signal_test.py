@@ -443,6 +443,6 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    with self.assertRaises(Exception):
-      extract_test_signal.ExtractSignalsForTestFailure(
-          TestFailureInfo.FromSerializable(failure_info), None)
+    self.assertEqual({},
+                     extract_test_signal.ExtractSignalsForTestFailure(
+                         TestFailureInfo.FromSerializable(failure_info), None))

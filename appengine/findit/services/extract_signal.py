@@ -15,6 +15,10 @@ from services.constants import LOG_DATA_BYTE_LIMIT
 from waterfall import build_util
 
 
+class FailedToGetFailureLogError(Exception):
+  pass
+
+
 def ExtractStorablePortionOfLog(log_data, json_format=False):
   # For the log of a failed step in a build, the error messages usually show
   # up at the end of the whole log. So if the log is too big to fit into a

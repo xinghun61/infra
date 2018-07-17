@@ -122,6 +122,7 @@ class ExtractCompileSignalTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       waterfall_config, 'GetDownloadBuildDataSettings', return_value={})
   def testFailedToGetFailureLog(self, *_):
-    with self.assertRaises(Exception):
-      extract_compile_signal.ExtractSignalsForCompileFailure(
-          CompileFailureInfo.FromSerializable(_COMPILE_FAILURE_INFO), None)
+    self.assertEqual(
+        {},
+        extract_compile_signal.ExtractSignalsForCompileFailure(
+            CompileFailureInfo.FromSerializable(_COMPILE_FAILURE_INFO), None))

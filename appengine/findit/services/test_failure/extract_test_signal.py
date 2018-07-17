@@ -63,9 +63,14 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
         failure_log = extract_signal.GetStdoutLog(
             master_name, builder_name, build_number, step_name, http_client)
 
-      if not failure_log:
-        raise Exception('Failed to pull stdio of step %s of master %s' %
-                        (step_name, master_name))
+      try:
+        if not failure_log:
+          raise extract_signal.FailedToGetFailureLogError(
+              'Failed to pull failure log (stdio or ninja output) of step %s of'
+              ' %s/%s/%d' % (step_name, master_name, builder_name,
+                             build_number))
+      except extract_signal.FailedToGetFailureLogError:
+        return {}
 
       # Save step log in datastore and avoid downloading again during retry.
       step.log_data = extract_signal.ExtractStorablePortionOfLog(
