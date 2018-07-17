@@ -51,7 +51,7 @@ pipeline_status_application = webapp2.WSGIApplication(
 if appengine_util.IsInProductionApp():
   gae_ts_mon.initialize(pipeline_status_application)
 
-# "waterfall-frontend" module.
+# waterfall frontend.
 waterfall_frontend_web_pages_handler_mappings = [
     ('/', home.Home),
     ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
@@ -84,7 +84,7 @@ waterfall_frontend_web_application = webapp2.WSGIApplication(
 if appengine_util.IsInProductionApp():
   gae_ts_mon.initialize(waterfall_frontend_web_application)
 
-# "flake-detection-frontend" module.
+# flake detection frontend.
 flake_detection_frontend_web_pages_handler_mappings = [
     ('/flake/detection/show-flake', show_flake.ShowFlake),
 ]

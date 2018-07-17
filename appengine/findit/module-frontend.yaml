@@ -3,7 +3,7 @@ version: 1
 runtime: python27
 api_version: 1
 threadsafe: true
-module: waterfall-frontend
+module: frontend
 instance_class: F2
 automatic_scaling:
   min_idle_instances: 1
@@ -51,7 +51,11 @@ handlers:
   secure: always
 
 # Web UI pages.
-- url: /.*
+- url: /flake/detection/.*
+  script: frontend_main.flake_detection_frontend_web_application
+  secure: always
+
+- url: /waterfall/.*
   script: frontend_main.waterfall_frontend_web_application
   secure: always
 

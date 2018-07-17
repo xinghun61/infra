@@ -9,7 +9,7 @@ dispatch:
     module: flake-detection-backend
 
   - url: "*/flake/detection/*"
-    module: flake-detection-frontend
+    module: frontend
 
   - url: "*/waterfall/cron/*"
     module: waterfall-backend
@@ -18,4 +18,4 @@ dispatch:
     module: waterfall-backend
 
   - url: "*/waterfall/*"
-    module: waterfall-frontend
+    module: frontend

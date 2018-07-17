@@ -9,7 +9,7 @@ STAGING_APPID := "findit-for-me-staging"
 # Should come with infra repository, if this step fails run
 # ...$ gclient sync
 PROTOC := "../../cipd/protoc"
-MODULES := default waterfall-frontend waterfall-backend flake-detection-backend
+MODULES := default frontend waterfall-backend flake-detection-backend
 LOCAL_VERSION := `$(INFRAPYTHON) $(GAE_PY) version`
 LOCAL_HASH := `git rev-parse --short HEAD`
 REMOTE_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID)`
@@ -38,16 +38,16 @@ deploy-prod: _deploy
 	      "deployed to $(APPID)."
 	@echo
 	@echo "Please force a re-run of a recent build failure on dashboard: "\
-	"https://$(LOCAL_VERSION)-dot-waterfall-frontend-"\
+	"https://$(LOCAL_VERSION)-dot-frontend-"\
 	"dot-$(APPID).appspot.com/waterfall/list-analyses"
 	@echo "Choose a first failure to make sure a new try job is triggered."
 	@echo "Please also force a re-run of a recent flake analysis on dashboard: "\
-	"https://$(LOCAL_VERSION)-dot-waterfall-frontend-"\
+	"https://$(LOCAL_VERSION)-dot-frontend-"\
 	"dot-$(APPID).appspot.com/waterfall/list-flakes"
 	@echo "ensure that the analyses are run in the new-version waterfall" \
 	      "frontend & backend and gives correct results,"
-	@echo "and then set the new version as default for three modules" \
-	      "default, waterfall-frontend and waterfall-backend."
+	@echo "and then set the new version as default for four modules" \
+	      "default, frontend, waterfall-backend and flake-detection-backend."
 	@echo "You can do this by running \`make migrate\`"
 	@echo
 	@echo "If the release is for findit-for-me, please email" \
