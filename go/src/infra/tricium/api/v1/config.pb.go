@@ -50,29 +50,29 @@ func (Acl_Role) EnumDescriptor() ([]byte, []int) {
 // to Tricium.
 type ServiceConfig struct {
 	// Supported platforms.
-	Platforms []*Platform_Details `protobuf:"bytes,1,rep,name=platforms" json:"platforms,omitempty"`
+	Platforms []*Platform_Details `protobuf:"bytes,1,rep,name=platforms,proto3" json:"platforms,omitempty"`
 	// Supported data types.
-	DataDetails []*Data_TypeDetails `protobuf:"bytes,2,rep,name=data_details,json=dataDetails" json:"data_details,omitempty"`
+	DataDetails []*Data_TypeDetails `protobuf:"bytes,2,rep,name=data_details,json=dataDetails,proto3" json:"data_details,omitempty"`
 	// List of shared functions.
-	Functions []*Function `protobuf:"bytes,3,rep,name=functions" json:"functions,omitempty"`
+	Functions []*Function `protobuf:"bytes,3,rep,name=functions,proto3" json:"functions,omitempty"`
 	// Base recipe command used for workers implemented as recipes.
 	//
 	// Specific recipe details for the worker will be added as flags at the
 	// end of the argument list.
-	RecipeCmd *Cmd `protobuf:"bytes,5,opt,name=recipe_cmd,json=recipeCmd" json:"recipe_cmd,omitempty"`
+	RecipeCmd *Cmd `protobuf:"bytes,5,opt,name=recipe_cmd,json=recipeCmd,proto3" json:"recipe_cmd,omitempty"`
 	// Base recipe packages used for workers implemented as recipes.
 	//
 	// These packages will be adjusted for the platform in question, by appending
 	// platform name details to the end of the package name.
-	RecipePackages []*CipdPackage `protobuf:"bytes,6,rep,name=recipe_packages,json=recipePackages" json:"recipe_packages,omitempty"`
+	RecipePackages []*CipdPackage `protobuf:"bytes,6,rep,name=recipe_packages,json=recipePackages,proto3" json:"recipe_packages,omitempty"`
 	// Swarming server to use for this service instance.
 	//
 	// This should be a full URL with no trailing slash.
-	SwarmingServer string `protobuf:"bytes,7,opt,name=swarming_server,json=swarmingServer" json:"swarming_server,omitempty"`
+	SwarmingServer string `protobuf:"bytes,7,opt,name=swarming_server,json=swarmingServer,proto3" json:"swarming_server,omitempty"`
 	// Isolate server to use for this service instance.
 	//
 	// This should be a full URL with no trailing slash.
-	IsolateServer        string   `protobuf:"bytes,8,opt,name=isolate_server,json=isolateServer" json:"isolate_server,omitempty"`
+	IsolateServer        string   `protobuf:"bytes,8,opt,name=isolate_server,json=isolateServer,proto3" json:"isolate_server,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -158,21 +158,21 @@ func (m *ServiceConfig) GetIsolateServer() string {
 // implementations.
 type ProjectConfig struct {
 	// Access control rules for the project.
-	Acls []*Acl `protobuf:"bytes,2,rep,name=acls" json:"acls,omitempty"`
+	Acls []*Acl `protobuf:"bytes,2,rep,name=acls,proto3" json:"acls,omitempty"`
 	// Project-specific function details.
 	//
 	// This includes project-specific analyzer implementations and full
 	// project-specific analyzer specifications.
-	Functions []*Function `protobuf:"bytes,3,rep,name=functions" json:"functions,omitempty"`
+	Functions []*Function `protobuf:"bytes,3,rep,name=functions,proto3" json:"functions,omitempty"`
 	// Selection of function implementations to run for this project.
-	Selections []*Selection `protobuf:"bytes,4,rep,name=selections" json:"selections,omitempty"`
+	Selections []*Selection `protobuf:"bytes,4,rep,name=selections,proto3" json:"selections,omitempty"`
 	// Repositories, including Git and Gerrit details.
-	Repos []*RepoDetails `protobuf:"bytes,5,rep,name=repos" json:"repos,omitempty"`
+	Repos []*RepoDetails `protobuf:"bytes,5,rep,name=repos,proto3" json:"repos,omitempty"`
 	// General service account for this project.
 	// Used for any service interaction, with the exception of swarming.
-	ServiceAccount string `protobuf:"bytes,6,opt,name=service_account,json=serviceAccount" json:"service_account,omitempty"`
+	ServiceAccount string `protobuf:"bytes,6,opt,name=service_account,json=serviceAccount,proto3" json:"service_account,omitempty"`
 	// Project-specific swarming service account.
-	SwarmingServiceAccount string   `protobuf:"bytes,7,opt,name=swarming_service_account,json=swarmingServiceAccount" json:"swarming_service_account,omitempty"`
+	SwarmingServiceAccount string   `protobuf:"bytes,7,opt,name=swarming_service_account,json=swarmingServiceAccount,proto3" json:"swarming_service_account,omitempty"`
 	XXX_NoUnkeyedLiteral   struct{} `json:"-"`
 	XXX_unrecognized       []byte   `json:"-"`
 	XXX_sizecache          int32    `json:"-"`
@@ -253,7 +253,7 @@ type RepoDetails struct {
 	//	*RepoDetails_GitRepo
 	Source isRepoDetails_Source `protobuf_oneof:"source"`
 	// Whether to disable reporting results back (default: enabled).
-	DisableReporting bool `protobuf:"varint,6,opt,name=disable_reporting,json=disableReporting" json:"disable_reporting,omitempty"`
+	DisableReporting bool `protobuf:"varint,6,opt,name=disable_reporting,json=disableReporting,proto3" json:"disable_reporting,omitempty"`
 	// Whitelisted groups.
 	//
 	// The owner of a change will be checked for membership of a whitelisted
@@ -262,7 +262,7 @@ type RepoDetails struct {
 	// Group names must be known to the Chrome infra auth service,
 	// https://chrome-infra-auth.appspot.com. Contact a Chromium trooper
 	// if you need to add or modify a group: g.co/bugatrooper.
-	WhitelistedGroup     []string `protobuf:"bytes,7,rep,name=whitelisted_group,json=whitelistedGroup" json:"whitelisted_group,omitempty"`
+	WhitelistedGroup     []string `protobuf:"bytes,7,rep,name=whitelisted_group,json=whitelistedGroup,proto3" json:"whitelisted_group,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -297,10 +297,10 @@ type isRepoDetails_Source interface {
 }
 
 type RepoDetails_GerritProject struct {
-	GerritProject *GerritProject `protobuf:"bytes,4,opt,name=gerrit_project,json=gerritProject,oneof"`
+	GerritProject *GerritProject `protobuf:"bytes,4,opt,name=gerrit_project,json=gerritProject,proto3,oneof"`
 }
 type RepoDetails_GitRepo struct {
-	GitRepo *GitRepo `protobuf:"bytes,5,opt,name=git_repo,json=gitRepo,oneof"`
+	GitRepo *GitRepo `protobuf:"bytes,5,opt,name=git_repo,json=gitRepo,proto3,oneof"`
 }
 
 func (*RepoDetails_GerritProject) isRepoDetails_Source() {}
@@ -420,11 +420,11 @@ type GerritProject struct {
 	// The Gerrit host to connect to.
 	//
 	// Value must not include the schema part; it will be assumed to be "https".
-	Host string `protobuf:"bytes,1,opt,name=host" json:"host,omitempty"`
+	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
 	// Gerrit project name.
-	Project string `protobuf:"bytes,2,opt,name=project" json:"project,omitempty"`
+	Project string `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
 	// Full URL for the corresponding git repo.
-	GitUrl               string   `protobuf:"bytes,3,opt,name=git_url,json=gitUrl" json:"git_url,omitempty"`
+	GitUrl               string   `protobuf:"bytes,3,opt,name=git_url,json=gitUrl,proto3" json:"git_url,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -477,7 +477,7 @@ func (m *GerritProject) GetGitUrl() string {
 
 type GitRepo struct {
 	// Full repository url, including schema.
-	Url                  string   `protobuf:"bytes,3,opt,name=url" json:"url,omitempty"`
+	Url                  string   `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -517,14 +517,14 @@ func (m *GitRepo) GetUrl() string {
 // Access control rules.
 type Acl struct {
 	// Role of a group or identity.
-	Role Acl_Role `protobuf:"varint,1,opt,name=role,enum=tricium.Acl_Role" json:"role,omitempty"`
+	Role Acl_Role `protobuf:"varint,1,opt,name=role,proto3,enum=tricium.Acl_Role" json:"role,omitempty"`
 	// Name of group, as defined in the auth service. Specify either group or
 	// identity, not both.
-	Group string `protobuf:"bytes,2,opt,name=group" json:"group,omitempty"`
+	Group string `protobuf:"bytes,2,opt,name=group,proto3" json:"group,omitempty"`
 	// Identity, as defined by the auth service. Can be either an email address
 	// or an identity string, for instance, "anonymous:anonymous" for anonymous
 	// users. Specify either group or identity, not both.
-	Identity             string   `protobuf:"bytes,3,opt,name=identity" json:"identity,omitempty"`
+	Identity             string   `protobuf:"bytes,3,opt,name=identity,proto3" json:"identity,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -578,11 +578,11 @@ func (m *Acl) GetIdentity() string {
 // Selection of function implementations to run for a project.
 type Selection struct {
 	// Name of function to run.
-	Function string `protobuf:"bytes,1,opt,name=function" json:"function,omitempty"`
+	Function string `protobuf:"bytes,1,opt,name=function,proto3" json:"function,omitempty"`
 	// Name of platform to retrieve results from.
-	Platform Platform_Name `protobuf:"varint,2,opt,name=platform,enum=tricium.Platform_Name" json:"platform,omitempty"`
+	Platform Platform_Name `protobuf:"varint,2,opt,name=platform,proto3,enum=tricium.Platform_Name" json:"platform,omitempty"`
 	// Function configuration to use on this platform.
-	Configs              []*Config `protobuf:"bytes,3,rep,name=configs" json:"configs,omitempty"`
+	Configs              []*Config `protobuf:"bytes,3,rep,name=configs,proto3" json:"configs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`
@@ -636,9 +636,9 @@ func (m *Selection) GetConfigs() []*Config {
 // Function configuration used when selecting a function implementation.
 type Config struct {
 	// Name of the configuration option.
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Value of the configuration.
-	Value                string   `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

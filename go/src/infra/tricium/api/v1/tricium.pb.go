@@ -86,9 +86,9 @@ func (State) EnumDescriptor() ([]byte, []int) {
 // AnalyzeRequest contains the details needed for an analysis request.
 type AnalyzeRequest struct {
 	// Name of the project in luci-config, used to get the project config.
-	Project string `protobuf:"bytes,1,opt,name=project" json:"project,omitempty"`
+	Project string `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
 	// Files to analyze in the project, with metadata.
-	Files []*Data_File `protobuf:"bytes,5,rep,name=files" json:"files,omitempty"`
+	Files []*Data_File `protobuf:"bytes,5,rep,name=files,proto3" json:"files,omitempty"`
 	// Types that are valid to be assigned to Source:
 	//	*AnalyzeRequest_GerritRevision
 	//	*AnalyzeRequest_GitCommit
@@ -127,10 +127,10 @@ type isAnalyzeRequest_Source interface {
 }
 
 type AnalyzeRequest_GerritRevision struct {
-	GerritRevision *GerritRevision `protobuf:"bytes,7,opt,name=gerrit_revision,json=gerritRevision,oneof"`
+	GerritRevision *GerritRevision `protobuf:"bytes,7,opt,name=gerrit_revision,json=gerritRevision,proto3,oneof"`
 }
 type AnalyzeRequest_GitCommit struct {
-	GitCommit *GitCommit `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,oneof"`
+	GitCommit *GitCommit `protobuf:"bytes,8,opt,name=git_commit,json=gitCommit,proto3,oneof"`
 }
 
 func (*AnalyzeRequest_GerritRevision) isAnalyzeRequest_Source() {}
@@ -253,11 +253,11 @@ type GerritRevision struct {
 	// This value must not include the URL schema and is assumed to not include
 	// literal string "##", since this string is used internally as a separator.
 	// The schema is assumed to be "https".
-	Host string `protobuf:"bytes,1,opt,name=host" json:"host,omitempty"`
+	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
 	// Gerrit project name.
 	//
 	// This value is assumed to not include "##".
-	Project string `protobuf:"bytes,2,opt,name=project" json:"project,omitempty"`
+	Project string `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
 	// Gerrit change ID.
 	//
 	// This value should be of the form "<project>~<branch>~<Change-Id>", where
@@ -265,14 +265,14 @@ type GerritRevision struct {
 	// number. Note that "refs/heads/" can be omitted from the branch.
 	//
 	// Example: "myProject~master~I8473b95934b5732ac55d26311a706c9c2bde9940"
-	Change string `protobuf:"bytes,3,opt,name=change" json:"change,omitempty"`
+	Change string `protobuf:"bytes,3,opt,name=change,proto3" json:"change,omitempty"`
 	// The full URL to the Git repository for this project, e.g. on Gitiles.
-	GitUrl string `protobuf:"bytes,4,opt,name=git_url,json=gitUrl" json:"git_url,omitempty"`
+	GitUrl string `protobuf:"bytes,4,opt,name=git_url,json=gitUrl,proto3" json:"git_url,omitempty"`
 	// Gerrit change revision ref string.
 	//
 	// This value should be the fetch URL for a revision of a change. Note that
 	// the last number of a change revision ref is the corresponding patch set.
-	GitRef               string   `protobuf:"bytes,5,opt,name=git_ref,json=gitRef" json:"git_ref,omitempty"`
+	GitRef               string   `protobuf:"bytes,5,opt,name=git_ref,json=gitRef,proto3" json:"git_ref,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -339,10 +339,10 @@ func (m *GerritRevision) GetGitRef() string {
 
 type GitCommit struct {
 	// Full repository URL, including schema, host and path.
-	Url string `protobuf:"bytes,1,opt,name=url" json:"url,omitempty"`
+	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	// A git commit-ish, such as a refname like "refs/heads/master".
 	// This can also be a tag or git commit hash.
-	Ref                  string   `protobuf:"bytes,2,opt,name=ref" json:"ref,omitempty"`
+	Ref                  string   `protobuf:"bytes,2,opt,name=ref,proto3" json:"ref,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -390,7 +390,7 @@ type AnalyzeResponse struct {
 	// ID of the run started for this request.
 	//
 	// This ID can be used to track progress and request results.
-	RunId                string   `protobuf:"bytes,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	RunId                string   `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -435,7 +435,7 @@ type ProgressRequest struct {
 	//
 	// TODO(qyearsley): remove this field and make it one of the choices in
 	// "source", below.
-	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	// An optional function name.
 	//
 	// If provided, only progress for the provided function will be returned.
@@ -443,13 +443,13 @@ type ProgressRequest struct {
 	// configuration.
 	//
 	// NB! Currently not supported.
-	Function string `protobuf:"bytes,2,opt,name=function" json:"function,omitempty"`
+	Function string `protobuf:"bytes,2,opt,name=function,proto3" json:"function,omitempty"`
 	// Optional platform that may be provided together with an function name.
 	//
 	// If provided, only progress for the provided function and platform will be provided.
 	//
 	// NB! Currently not supported.
-	Platform *Platform `protobuf:"bytes,3,opt,name=platform" json:"platform,omitempty"`
+	Platform *Platform `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
 	// The information that's used to look up the run. If this request is for a
 	// particular Gerrit revision, then that can be provided; otherwise the run
 	// ID can be used.
@@ -491,7 +491,7 @@ type isProgressRequest_Source interface {
 }
 
 type ProgressRequest_GerritRevision struct {
-	GerritRevision *GerritRevision `protobuf:"bytes,4,opt,name=gerrit_revision,json=gerritRevision,oneof"`
+	GerritRevision *GerritRevision `protobuf:"bytes,4,opt,name=gerrit_revision,json=gerritRevision,proto3,oneof"`
 }
 
 func (*ProgressRequest_GerritRevision) isProgressRequest_Source() {}
@@ -588,16 +588,16 @@ func _ProgressRequest_OneofSizer(msg proto.Message) (n int) {
 
 type ProgressResponse struct {
 	// ID of the run progress is reported for.
-	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	// Overall state for the run provided in the progress request.
-	State State `protobuf:"varint,2,opt,name=state,enum=tricium.State" json:"state,omitempty"`
+	State State `protobuf:"varint,2,opt,name=state,proto3,enum=tricium.State" json:"state,omitempty"`
 	// Function progress matching the requested progress report.
 	//
 	// For a provided run ID this corresponds to all functions and platforms, and
 	// for any selection of these, a subset is returned.
 	//
 	// NB! Selection of a subset is currently not supported.
-	FunctionProgress     []*FunctionProgress `protobuf:"bytes,3,rep,name=function_progress,json=functionProgress" json:"function_progress,omitempty"`
+	FunctionProgress     []*FunctionProgress `protobuf:"bytes,3,rep,name=function_progress,json=functionProgress,proto3" json:"function_progress,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -650,22 +650,22 @@ func (m *ProgressResponse) GetFunctionProgress() []*FunctionProgress {
 
 type FunctionProgress struct {
 	// The function name.
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The platform for which the function progress is reported.
-	Platform Platform_Name `protobuf:"varint,2,opt,name=platform,enum=tricium.Platform_Name" json:"platform,omitempty"`
+	Platform Platform_Name `protobuf:"varint,2,opt,name=platform,proto3,enum=tricium.Platform_Name" json:"platform,omitempty"`
 	// The state of the function.
 	//
 	// For an function on a specific platform this state corresponds to the state
 	// of the worker, else it is the aggregated state of all workers for the function.
-	State State `protobuf:"varint,3,opt,name=state,enum=tricium.State" json:"state,omitempty"`
+	State State `protobuf:"varint,3,opt,name=state,proto3,enum=tricium.State" json:"state,omitempty"`
 	// URL to the swarming server running tasks for the workers of the function.
-	SwarmingUrl string `protobuf:"bytes,4,opt,name=swarming_url,json=swarmingUrl" json:"swarming_url,omitempty"`
+	SwarmingUrl string `protobuf:"bytes,4,opt,name=swarming_url,json=swarmingUrl,proto3" json:"swarming_url,omitempty"`
 	// The ID of the swarming task triggered for the function worker.
-	SwarmingTaskId string `protobuf:"bytes,5,opt,name=swarming_task_id,json=swarmingTaskId" json:"swarming_task_id,omitempty"`
+	SwarmingTaskId string `protobuf:"bytes,5,opt,name=swarming_task_id,json=swarmingTaskId,proto3" json:"swarming_task_id,omitempty"`
 	// Number of comments.
 	//
 	// For analyzers that are done and produce comments.
-	NumComments          int32    `protobuf:"varint,6,opt,name=num_comments,json=numComments" json:"num_comments,omitempty"`
+	NumComments          int32    `protobuf:"varint,6,opt,name=num_comments,json=numComments,proto3" json:"num_comments,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -741,7 +741,7 @@ type ProjectProgressRequest struct {
 	// Project to get progress for.
 	//
 	// The provided project name must be known to the queried Tricium instance.
-	Project              string   `protobuf:"bytes,1,opt,name=project" json:"project,omitempty"`
+	Project              string   `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -783,7 +783,7 @@ type ProjectProgressResponse struct {
 	//
 	// The returned list is sorted based on state and detailed run progress
 	// can be requested using the run ID of each listed run.
-	RunProgress          []*RunProgress `protobuf:"bytes,1,rep,name=run_progress,json=runProgress" json:"run_progress,omitempty"`
+	RunProgress          []*RunProgress `protobuf:"bytes,1,rep,name=run_progress,json=runProgress,proto3" json:"run_progress,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -821,9 +821,9 @@ func (m *ProjectProgressResponse) GetRunProgress() []*RunProgress {
 }
 
 type RunProgress struct {
-	RunId                string   `protobuf:"bytes,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
-	State                State    `protobuf:"varint,2,opt,name=state,enum=tricium.State" json:"state,omitempty"`
-	NumComments          int32    `protobuf:"varint,3,opt,name=num_comments,json=numComments" json:"num_comments,omitempty"`
+	RunId                string   `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	State                State    `protobuf:"varint,2,opt,name=state,proto3,enum=tricium.State" json:"state,omitempty"`
+	NumComments          int32    `protobuf:"varint,3,opt,name=num_comments,json=numComments,proto3" json:"num_comments,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -876,7 +876,7 @@ func (m *RunProgress) GetNumComments() int32 {
 
 type ResultsRequest struct {
 	// Run ID returned by an analyze request.
-	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	RunId string `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	// An optional function name.
 	//
 	// If provided, only results for the provided function are returned.
@@ -884,13 +884,13 @@ type ResultsRequest struct {
 	// results of the function can be returned by exclusion of a specific platform.
 	//
 	// NB! Currently not supported.
-	Function string `protobuf:"bytes,2,opt,name=function" json:"function,omitempty"`
+	Function string `protobuf:"bytes,2,opt,name=function,proto3" json:"function,omitempty"`
 	// Optional platform that can be provided together with an function name.
 	//
 	// If provided, only results for the provided platform and function are returned.
 	//
 	// NB! Currently not supported.
-	Platform             Platform_Name `protobuf:"varint,3,opt,name=platform,enum=tricium.Platform_Name" json:"platform,omitempty"`
+	Platform             Platform_Name `protobuf:"varint,3,opt,name=platform,proto3,enum=tricium.Platform_Name" json:"platform,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -943,14 +943,14 @@ func (m *ResultsRequest) GetPlatform() Platform_Name {
 
 type ResultsResponse struct {
 	// TODO(qyearsley): Support paging of results to deal with large number of results.
-	Results *Data_Results `protobuf:"bytes,1,opt,name=results" json:"results,omitempty"`
+	Results *Data_Results `protobuf:"bytes,1,opt,name=results,proto3" json:"results,omitempty"`
 	// Whether the returned results are merged.
 	//
 	// Results may be merged if a result request for an function running on multiple
 	// platforms was made and the request did not include a specific platform.
 	// Results for a run with no specific function selected will be marked as merged
 	// if any included analyzer results were merged.
-	IsMerged             bool     `protobuf:"varint,2,opt,name=is_merged,json=isMerged" json:"is_merged,omitempty"`
+	IsMerged             bool     `protobuf:"varint,2,opt,name=is_merged,json=isMerged,proto3" json:"is_merged,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1002,21 +1002,21 @@ type FeedbackRequest struct {
 	//
 	// Required field. Must include at least the analyzer name and should not
 	// end with a slash.
-	Category string `protobuf:"bytes,1,opt,name=category" json:"category,omitempty"`
+	Category string `protobuf:"bytes,1,opt,name=category,proto3" json:"category,omitempty"`
 	// Start of time period to report feedback for.
 	//
 	// Feedback for comments created from this time will be included.
 	// Must be on the form "2006-01-02T08:04:05Z" (RFC 3339) and before end_time.
 	//
 	// Optional field. Defaults to epoch start of time (Jan 1, 1970).
-	StartTime string `protobuf:"bytes,2,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
+	StartTime string `protobuf:"bytes,2,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	// End of time period to report feedback for.
 	//
 	// Feedback from comments created before this time will be included.
 	// Must be on the form "2006-01-02T08:04:05Z" (RFC 3339) and after start_time.
 	//
 	// Optional field. Defaults to now.
-	EndTime              string   `protobuf:"bytes,3,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
+	EndTime              string   `protobuf:"bytes,3,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1073,11 +1073,11 @@ type FeedbackResponse struct {
 	// In any case where an analyzer was run on multiple platforms and the resulting
 	// comments were merged, only merged comments are returned in this count. Note that
 	// only merged comments are ever returned from the Tricium service.
-	Comments int32 `protobuf:"varint,1,opt,name=comments" json:"comments,omitempty"`
+	Comments int32 `protobuf:"varint,1,opt,name=comments,proto3" json:"comments,omitempty"`
 	// Number of collected 'not useful' reports.
-	NotUsefulReports int32 `protobuf:"varint,2,opt,name=not_useful_reports,json=notUsefulReports" json:"not_useful_reports,omitempty"`
+	NotUsefulReports int32 `protobuf:"varint,2,opt,name=not_useful_reports,json=notUsefulReports,proto3" json:"not_useful_reports,omitempty"`
 	// List of URLs to 'not useful' bug reports.
-	Issues               []string `protobuf:"bytes,3,rep,name=issues" json:"issues,omitempty"`
+	Issues               []string `protobuf:"bytes,3,rep,name=issues,proto3" json:"issues,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1130,11 +1130,11 @@ func (m *FeedbackResponse) GetIssues() []string {
 
 type ReportNotUsefulRequest struct {
 	// ID of comment as returned by the Results endpoint.
-	CommentId string `protobuf:"bytes,1,opt,name=comment_id,json=commentId" json:"comment_id,omitempty"`
+	CommentId string `protobuf:"bytes,1,opt,name=comment_id,json=commentId,proto3" json:"comment_id,omitempty"`
 	// More feedback information.
 	//
 	// Optional field.
-	MoreDetails          string   `protobuf:"bytes,2,opt,name=more_details,json=moreDetails" json:"more_details,omitempty"`
+	MoreDetails          string   `protobuf:"bytes,2,opt,name=more_details,json=moreDetails,proto3" json:"more_details,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1182,7 +1182,7 @@ type ReportNotUsefulResponse struct {
 	// URL to issue if created.
 	//
 	// Only created if there were feedback details.
-	Issue                string   `protobuf:"bytes,1,opt,name=issue" json:"issue,omitempty"`
+	Issue                string   `protobuf:"bytes,1,opt,name=issue,proto3" json:"issue,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

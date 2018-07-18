@@ -50,7 +50,7 @@ func (x Data_Type) String() string {
 	return proto.EnumName(Data_Type_name, int32(x))
 }
 func (Data_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 0}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 0}
 }
 
 // Tricium data types.
@@ -66,7 +66,7 @@ func (m *Data) Reset()         { *m = Data{} }
 func (m *Data) String() string { return proto.CompactTextString(m) }
 func (*Data) ProtoMessage()    {}
 func (*Data) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0}
+	return fileDescriptor_data_485864e58cb946d1, []int{0}
 }
 func (m *Data) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data.Unmarshal(m, b)
@@ -92,8 +92,8 @@ var xxx_messageInfo_Data proto.InternalMessageInfo
 // These type details are used to resolve data dependencies when
 // generating workflows.
 type Data_TypeDetails struct {
-	Type                 Data_Type `protobuf:"varint,1,opt,name=type,enum=tricium.Data_Type" json:"type,omitempty"`
-	IsPlatformSpecific   bool      `protobuf:"varint,2,opt,name=is_platform_specific,json=isPlatformSpecific" json:"is_platform_specific,omitempty"`
+	Type                 Data_Type `protobuf:"varint,1,opt,name=type,proto3,enum=tricium.Data_Type" json:"type,omitempty"`
+	IsPlatformSpecific   bool      `protobuf:"varint,2,opt,name=is_platform_specific,json=isPlatformSpecific,proto3" json:"is_platform_specific,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`
@@ -103,7 +103,7 @@ func (m *Data_TypeDetails) Reset()         { *m = Data_TypeDetails{} }
 func (m *Data_TypeDetails) String() string { return proto.CompactTextString(m) }
 func (*Data_TypeDetails) ProtoMessage()    {}
 func (*Data_TypeDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 0}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 0}
 }
 func (m *Data_TypeDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_TypeDetails.Unmarshal(m, b)
@@ -148,10 +148,10 @@ type Data_GitFileDetails struct {
 	//
 	// This includes the ANY platform, encoded as zero, which should
 	// be used for any data that is not platform-specific.
-	Platforms            int64        `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
-	Repository           string       `protobuf:"bytes,2,opt,name=repository" json:"repository,omitempty"`
-	Ref                  string       `protobuf:"bytes,3,opt,name=ref" json:"ref,omitempty"`
-	Files                []*Data_File `protobuf:"bytes,4,rep,name=files" json:"files,omitempty"`
+	Platforms            int64        `protobuf:"varint,1,opt,name=platforms,proto3" json:"platforms,omitempty"`
+	Repository           string       `protobuf:"bytes,2,opt,name=repository,proto3" json:"repository,omitempty"`
+	Ref                  string       `protobuf:"bytes,3,opt,name=ref,proto3" json:"ref,omitempty"`
+	Files                []*Data_File `protobuf:"bytes,4,rep,name=files,proto3" json:"files,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
@@ -161,7 +161,7 @@ func (m *Data_GitFileDetails) Reset()         { *m = Data_GitFileDetails{} }
 func (m *Data_GitFileDetails) String() string { return proto.CompactTextString(m) }
 func (*Data_GitFileDetails) ProtoMessage()    {}
 func (*Data_GitFileDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 1}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 1}
 }
 func (m *Data_GitFileDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_GitFileDetails.Unmarshal(m, b)
@@ -217,9 +217,9 @@ func (m *Data_GitFileDetails) GetFiles() []*Data_File {
 //
 // ISOLATED PATH: tricium/data/files.json
 type Data_Files struct {
-	Platforms int64 `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
+	Platforms int64 `protobuf:"varint,1,opt,name=platforms,proto3" json:"platforms,omitempty"`
 	// Files from the root of the isolated input.
-	Files                []*Data_File `protobuf:"bytes,3,rep,name=files" json:"files,omitempty"`
+	Files                []*Data_File `protobuf:"bytes,3,rep,name=files,proto3" json:"files,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
@@ -229,7 +229,7 @@ func (m *Data_Files) Reset()         { *m = Data_Files{} }
 func (m *Data_Files) String() string { return proto.CompactTextString(m) }
 func (*Data_Files) ProtoMessage()    {}
 func (*Data_Files) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 2}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 2}
 }
 func (m *Data_Files) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Files.Unmarshal(m, b)
@@ -268,9 +268,9 @@ type Data_File struct {
 	//
 	// The path is relative to the root of the repository being analyzed,
 	// and the path separator character is "/".
-	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	// Whether or not this file contains binary content (not text)
-	IsBinary             bool     `protobuf:"varint,2,opt,name=is_binary,json=isBinary" json:"is_binary,omitempty"`
+	IsBinary             bool     `protobuf:"varint,2,opt,name=is_binary,json=isBinary,proto3" json:"is_binary,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -280,7 +280,7 @@ func (m *Data_File) Reset()         { *m = Data_File{} }
 func (m *Data_File) String() string { return proto.CompactTextString(m) }
 func (*Data_File) ProtoMessage()    {}
 func (*Data_File) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 3}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 3}
 }
 func (m *Data_File) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_File.Unmarshal(m, b)
@@ -320,11 +320,11 @@ func (m *Data_File) GetIsBinary() bool {
 //
 // ISOLATED PATH: tricium/data/clang_details.json
 type Data_ClangDetails struct {
-	Platforms int64 `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
+	Platforms int64 `protobuf:"varint,1,opt,name=platforms,proto3" json:"platforms,omitempty"`
 	// Path to the compilation database. Typically, in the build root.
-	CompilationDb string `protobuf:"bytes,2,opt,name=compilation_db,json=compilationDb" json:"compilation_db,omitempty"`
+	CompilationDb string `protobuf:"bytes,2,opt,name=compilation_db,json=compilationDb,proto3" json:"compilation_db,omitempty"`
 	// Paths to files needed to compile cpp files to analyze.
-	CompDepPaths         []string `protobuf:"bytes,3,rep,name=comp_dep_paths,json=compDepPaths" json:"comp_dep_paths,omitempty"`
+	CompDepPaths         []string `protobuf:"bytes,3,rep,name=comp_dep_paths,json=compDepPaths,proto3" json:"comp_dep_paths,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -334,7 +334,7 @@ func (m *Data_ClangDetails) Reset()         { *m = Data_ClangDetails{} }
 func (m *Data_ClangDetails) String() string { return proto.CompactTextString(m) }
 func (*Data_ClangDetails) ProtoMessage()    {}
 func (*Data_ClangDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 4}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 4}
 }
 func (m *Data_ClangDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_ClangDetails.Unmarshal(m, b)
@@ -382,10 +382,10 @@ func (m *Data_ClangDetails) GetCompDepPaths() []string {
 //
 // ISOLATED PATH: tricium/data/results.json
 type Data_Results struct {
-	Platforms int64 `protobuf:"varint,1,opt,name=platforms" json:"platforms,omitempty"`
+	Platforms int64 `protobuf:"varint,1,opt,name=platforms,proto3" json:"platforms,omitempty"`
 	// Zero or more results found as comments, either inline comments or change
 	// comments (comments without line positions).
-	Comments             []*Data_Comment `protobuf:"bytes,2,rep,name=comments" json:"comments,omitempty"`
+	Comments             []*Data_Comment `protobuf:"bytes,2,rep,name=comments,proto3" json:"comments,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -395,7 +395,7 @@ func (m *Data_Results) Reset()         { *m = Data_Results{} }
 func (m *Data_Results) String() string { return proto.CompactTextString(m) }
 func (*Data_Results) ProtoMessage()    {}
 func (*Data_Results) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 5}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 5}
 }
 func (m *Data_Results) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Results.Unmarshal(m, b)
@@ -438,28 +438,27 @@ type Data_Comment struct {
 	//
 	// This is an UUID generated by the Tricium service and used for tracking
 	// of comment feedback. Analyzers should leave this field empty.
-	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Category of the result, encoded as a path with the analyzer name as the
 	// root, followed by an arbitrary number of subcategories, for example
 	// "ClangTidy/llvm-header-guard".
-	Category string `protobuf:"bytes,2,opt,name=category" json:"category,omitempty"`
+	Category string `protobuf:"bytes,2,opt,name=category,proto3" json:"category,omitempty"`
 	// Comment message. This should be a short message suitable as a code
 	// review comment.
-	Message string `protobuf:"bytes,3,opt,name=message" json:"message,omitempty"`
+	Message string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
 	// URL to more information. Use this field to keep the message of the
 	// comment short.
-	Url string `protobuf:"bytes,4,opt,name=url" json:"url,omitempty"`
+	Url string `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
 	// Path to the file this comment is for.
-	Path string `protobuf:"bytes,5,opt,name=path" json:"path,omitempty"`
-	// Position information. This information can be left out if the comment is
-	// on file level. If position is given, then at least the start line should
-	// be included.
-	StartLine int32 `protobuf:"varint,6,opt,name=start_line,json=startLine" json:"start_line,omitempty"`
-	EndLine   int32 `protobuf:"varint,7,opt,name=end_line,json=endLine" json:"end_line,omitempty"`
-	StartChar int32 `protobuf:"varint,8,opt,name=start_char,json=startChar" json:"start_char,omitempty"`
-	EndChar   int32 `protobuf:"varint,9,opt,name=end_char,json=endChar" json:"end_char,omitempty"`
+	Path string `protobuf:"bytes,5,opt,name=path,proto3" json:"path,omitempty"`
+	// Position information. If start_line is omitted, then the comment
+	// will be a file-level comment.
+	StartLine int32 `protobuf:"varint,6,opt,name=start_line,json=startLine,proto3" json:"start_line,omitempty"`
+	EndLine   int32 `protobuf:"varint,7,opt,name=end_line,json=endLine,proto3" json:"end_line,omitempty"`
+	StartChar int32 `protobuf:"varint,8,opt,name=start_char,json=startChar,proto3" json:"start_char,omitempty"`
+	EndChar   int32 `protobuf:"varint,9,opt,name=end_char,json=endChar,proto3" json:"end_char,omitempty"`
 	// Suggested fixes for the identified issue.
-	Suggestions          []*Data_Suggestion `protobuf:"bytes,10,rep,name=suggestions" json:"suggestions,omitempty"`
+	Suggestions          []*Data_Suggestion `protobuf:"bytes,10,rep,name=suggestions,proto3" json:"suggestions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -469,7 +468,7 @@ func (m *Data_Comment) Reset()         { *m = Data_Comment{} }
 func (m *Data_Comment) String() string { return proto.CompactTextString(m) }
 func (*Data_Comment) ProtoMessage()    {}
 func (*Data_Comment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 6}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 6}
 }
 func (m *Data_Comment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Comment.Unmarshal(m, b)
@@ -565,9 +564,9 @@ func (m *Data_Comment) GetSuggestions() []*Data_Suggestion {
 // the corresponding comment.
 type Data_Suggestion struct {
 	// A brief description of the suggested fix.
-	Description string `protobuf:"bytes,1,opt,name=description" json:"description,omitempty"`
+	Description string `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
 	// Fix as a list of replacements.
-	Replacements         []*Data_Replacement `protobuf:"bytes,2,rep,name=replacements" json:"replacements,omitempty"`
+	Replacements         []*Data_Replacement `protobuf:"bytes,2,rep,name=replacements,proto3" json:"replacements,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -577,7 +576,7 @@ func (m *Data_Suggestion) Reset()         { *m = Data_Suggestion{} }
 func (m *Data_Suggestion) String() string { return proto.CompactTextString(m) }
 func (*Data_Suggestion) ProtoMessage()    {}
 func (*Data_Suggestion) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 7}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 7}
 }
 func (m *Data_Suggestion) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Suggestion.Unmarshal(m, b)
@@ -616,14 +615,14 @@ func (m *Data_Suggestion) GetReplacements() []*Data_Replacement {
 // The replacement should be for one continuous section of a file.
 type Data_Replacement struct {
 	// Path to file for this replacement.
-	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	// A replacement string.
-	Replacement string `protobuf:"bytes,2,opt,name=replacement" json:"replacement,omitempty"`
+	Replacement string `protobuf:"bytes,2,opt,name=replacement,proto3" json:"replacement,omitempty"`
 	// A continuous section of the file to replace.
-	StartLine            int32    `protobuf:"varint,3,opt,name=start_line,json=startLine" json:"start_line,omitempty"`
-	EndLine              int32    `protobuf:"varint,4,opt,name=end_line,json=endLine" json:"end_line,omitempty"`
-	StartChar            int32    `protobuf:"varint,5,opt,name=start_char,json=startChar" json:"start_char,omitempty"`
-	EndChar              int32    `protobuf:"varint,6,opt,name=end_char,json=endChar" json:"end_char,omitempty"`
+	StartLine            int32    `protobuf:"varint,3,opt,name=start_line,json=startLine,proto3" json:"start_line,omitempty"`
+	EndLine              int32    `protobuf:"varint,4,opt,name=end_line,json=endLine,proto3" json:"end_line,omitempty"`
+	StartChar            int32    `protobuf:"varint,5,opt,name=start_char,json=startChar,proto3" json:"start_char,omitempty"`
+	EndChar              int32    `protobuf:"varint,6,opt,name=end_char,json=endChar,proto3" json:"end_char,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -633,7 +632,7 @@ func (m *Data_Replacement) Reset()         { *m = Data_Replacement{} }
 func (m *Data_Replacement) String() string { return proto.CompactTextString(m) }
 func (*Data_Replacement) ProtoMessage()    {}
 func (*Data_Replacement) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_fd1768afea7824c8, []int{0, 8}
+	return fileDescriptor_data_485864e58cb946d1, []int{0, 8}
 }
 func (m *Data_Replacement) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Replacement.Unmarshal(m, b)
@@ -710,10 +709,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/v1/data.proto", fileDescriptor_data_fd1768afea7824c8)
+	proto.RegisterFile("infra/tricium/api/v1/data.proto", fileDescriptor_data_485864e58cb946d1)
 }
 
-var fileDescriptor_data_fd1768afea7824c8 = []byte{
+var fileDescriptor_data_485864e58cb946d1 = []byte{
 	// 630 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0xcf, 0x6a, 0xdb, 0x4a,
 	0x14, 0xc6, 0xaf, 0x2c, 0x39, 0x92, 0x8e, 0x12, 0xe3, 0x3b, 0xe4, 0x82, 0xa2, 0x7b, 0x6f, 0x6b,

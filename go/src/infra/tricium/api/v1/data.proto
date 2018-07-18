@@ -136,13 +136,12 @@ message Data {
     // Path to the file this comment is for.
     string path = 5;
 
-    // Position information. This information can be left out if the comment is
-    // on file level. If position is given, then at least the start line should
-    // be included. Lines are 1-based; chars are 0-based.
-    int32 start_line = 6;
-    int32 end_line = 7;
-    int32 start_char = 8;
-    int32 end_char = 9;
+    // Position information. If start_line is omitted, then the comment
+    // will be a file-level comment.
+    int32 start_line = 6; // 1-based, inclusive.
+    int32 end_line = 7;   // 1-based, inclusive.
+    int32 start_char = 8; // 0-based, inclusive.
+    int32 end_char = 9;   // 0-based, exclusive.
 
     // Suggested fixes for the identified issue.
     repeated Suggestion suggestions = 10;
@@ -172,9 +171,9 @@ message Data {
     string replacement = 2;
 
     // A continuous section of the file to replace.
-    int32 start_line = 3;
-    int32 end_line = 4;
-    int32 start_char = 5;
-    int32 end_char = 6;
+    int32 start_line = 3; // 1-based, inclusive.
+    int32 end_line = 4;   // 1-based, inclusive.
+    int32 start_char = 5; // 0-based, inclusive.
+    int32 end_char = 6;   // 0-based, exclusive.
   }
 }

@@ -54,47 +54,47 @@ type Function struct {
 	// The type of this function.
 	//
 	// This field is required.
-	Type Function_Type `protobuf:"varint,1,opt,name=type,enum=tricium.Function_Type" json:"type,omitempty"`
+	Type Function_Type `protobuf:"varint,1,opt,name=type,proto3,enum=tricium.Function_Type" json:"type,omitempty"`
 	// The name of the function.
 	//
 	// This name is used for selection, customization and reporting of
 	// progress/results. The name must be unique among Tricium function
 	// within a Tricium instance.
 	// This field is required.
-	Name string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// Data needed by this function.
 	//
 	// This field is required.
-	Needs Data_Type `protobuf:"varint,3,opt,name=needs,enum=tricium.Data_Type" json:"needs,omitempty"`
+	Needs Data_Type `protobuf:"varint,3,opt,name=needs,proto3,enum=tricium.Data_Type" json:"needs,omitempty"`
 	// Data provided by this function.
 	//
 	// This field is required.
-	Provides Data_Type `protobuf:"varint,4,opt,name=provides,enum=tricium.Data_Type" json:"provides,omitempty"`
+	Provides Data_Type `protobuf:"varint,4,opt,name=provides,proto3,enum=tricium.Data_Type" json:"provides,omitempty"`
 	// Path filters for this function.
 	//
 	// Applicable when this function is an analyzer. Defined as a glob.
 	// The path filters only apply to the last part of the path.
-	PathFilters []string `protobuf:"bytes,5,rep,name=path_filters,json=pathFilters" json:"path_filters,omitempty"`
+	PathFilters []string `protobuf:"bytes,5,rep,name=path_filters,json=pathFilters,proto3" json:"path_filters,omitempty"`
 	// Email address of the owner of this function.
 	//
 	// This field is required.
-	Owner string `protobuf:"bytes,6,opt,name=owner" json:"owner,omitempty"`
+	Owner string `protobuf:"bytes,6,opt,name=owner,proto3" json:"owner,omitempty"`
 	// Monorail bug component for bug filing.
 	//
 	// This field is required.
-	MonorailComponent string `protobuf:"bytes,7,opt,name=monorail_component,json=monorailComponent" json:"monorail_component,omitempty"`
+	MonorailComponent string `protobuf:"bytes,7,opt,name=monorail_component,json=monorailComponent,proto3" json:"monorail_component,omitempty"`
 	// Function configuration options.
 	//
 	// These options enable projects to configure how a function behaves without
 	// customization via a new implementation. For instance, an analyzer function
 	// may expose the list of possible checks as configuration options.
-	ConfigDefs []*ConfigDef `protobuf:"bytes,8,rep,name=config_defs,json=configDefs" json:"config_defs,omitempty"`
+	ConfigDefs []*ConfigDef `protobuf:"bytes,8,rep,name=config_defs,json=configDefs,proto3" json:"config_defs,omitempty"`
 	// Function implementations.
 	//
 	// A function may run on many platforms and the implementation per platform
 	// may differ. When possible, an implementation may be shared between several
 	// platforms.
-	Impls                []*Impl  `protobuf:"bytes,9,rep,name=impls" json:"impls,omitempty"`
+	Impls                []*Impl  `protobuf:"bytes,9,rep,name=impls,proto3" json:"impls,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -193,9 +193,9 @@ func (m *Function) GetImpls() []*Impl {
 // is configured with a 'checks' flag.
 type ConfigDef struct {
 	// Name of configuration option.
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Default value for the config, e.g., checks="all".
-	Default              string   `protobuf:"bytes,2,opt,name=default" json:"default,omitempty"`
+	Default              string   `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -258,15 +258,15 @@ type Impl struct {
 	// the 'provides_for_platform' field. Either if these fields can be left
 	// out for implementations of functions not needing or providing
 	// platform-specific data.
-	NeedsForPlatform    Platform_Name `protobuf:"varint,1,opt,name=needs_for_platform,json=needsForPlatform,enum=tricium.Platform_Name" json:"needs_for_platform,omitempty"`
-	ProvidesForPlatform Platform_Name `protobuf:"varint,2,opt,name=provides_for_platform,json=providesForPlatform,enum=tricium.Platform_Name" json:"provides_for_platform,omitempty"`
+	NeedsForPlatform    Platform_Name `protobuf:"varint,1,opt,name=needs_for_platform,json=needsForPlatform,proto3,enum=tricium.Platform_Name" json:"needs_for_platform,omitempty"`
+	ProvidesForPlatform Platform_Name `protobuf:"varint,2,opt,name=provides_for_platform,json=providesForPlatform,proto3,enum=tricium.Platform_Name" json:"provides_for_platform,omitempty"`
 	// The platform to run this implementation on.
 	//
 	// This may be different from the platforms used to refine data-dependencies,
 	// as long as the data consumed/produced follows the specification.
-	RuntimePlatform Platform_Name `protobuf:"varint,3,opt,name=runtime_platform,json=runtimePlatform,enum=tricium.Platform_Name" json:"runtime_platform,omitempty"`
+	RuntimePlatform Platform_Name `protobuf:"varint,3,opt,name=runtime_platform,json=runtimePlatform,proto3,enum=tricium.Platform_Name" json:"runtime_platform,omitempty"`
 	// CIPD packages needed by this implementation.
-	CipdPackages []*CipdPackage `protobuf:"bytes,4,rep,name=cipd_packages,json=cipdPackages" json:"cipd_packages,omitempty"`
+	CipdPackages []*CipdPackage `protobuf:"bytes,4,rep,name=cipd_packages,json=cipdPackages,proto3" json:"cipd_packages,omitempty"`
 	// Types that are valid to be assigned to Impl:
 	//	*Impl_Recipe
 	//	*Impl_Cmd
@@ -276,7 +276,7 @@ type Impl struct {
 	// Note that this deadline includes the launch of a swarming task for the
 	// corresponding worker, and collection of results from that worker.
 	// Deadline should be given in seconds.
-	Deadline             int32    `protobuf:"varint,7,opt,name=deadline" json:"deadline,omitempty"`
+	Deadline             int32    `protobuf:"varint,7,opt,name=deadline,proto3" json:"deadline,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -311,10 +311,10 @@ type isImpl_Impl interface {
 }
 
 type Impl_Recipe struct {
-	Recipe *Recipe `protobuf:"bytes,5,opt,name=recipe,oneof"`
+	Recipe *Recipe `protobuf:"bytes,5,opt,name=recipe,proto3,oneof"`
 }
 type Impl_Cmd struct {
-	Cmd *Cmd `protobuf:"bytes,6,opt,name=cmd,oneof"`
+	Cmd *Cmd `protobuf:"bytes,6,opt,name=cmd,proto3,oneof"`
 }
 
 func (*Impl_Recipe) isImpl_Impl() {}
@@ -453,11 +453,11 @@ func _Impl_OneofSizer(msg proto.Message) (n int) {
 // Specification of a recipe for a recipe-based analyzer.
 type Recipe struct {
 	// Recipe CIPD package.
-	CipdPackage string `protobuf:"bytes,1,opt,name=cipd_package,json=cipdPackage" json:"cipd_package,omitempty"`
+	CipdPackage string `protobuf:"bytes,1,opt,name=cipd_package,json=cipdPackage,proto3" json:"cipd_package,omitempty"`
 	// CIPD package version.
-	CipdVersion string `protobuf:"bytes,2,opt,name=cipd_version,json=cipdVersion" json:"cipd_version,omitempty"`
+	CipdVersion string `protobuf:"bytes,2,opt,name=cipd_version,json=cipdVersion,proto3" json:"cipd_version,omitempty"`
 	// Extra recipe properties to add, as a JSON mapping of keys to values.
-	Properties           string   `protobuf:"bytes,3,opt,name=properties" json:"properties,omitempty"`
+	Properties           string   `protobuf:"bytes,3,opt,name=properties,proto3" json:"properties,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -511,9 +511,9 @@ func (m *Recipe) GetProperties() string {
 // Specification of a command.
 type Cmd struct {
 	// Executable binary.
-	Exec string `protobuf:"bytes,1,opt,name=exec" json:"exec,omitempty"`
+	Exec string `protobuf:"bytes,1,opt,name=exec,proto3" json:"exec,omitempty"`
 	// Arguments in order.
-	Args                 []string `protobuf:"bytes,2,rep,name=args" json:"args,omitempty"`
+	Args                 []string `protobuf:"bytes,2,rep,name=args,proto3" json:"args,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -561,12 +561,12 @@ func (m *Cmd) GetArgs() []string {
 // analyzer.
 type CipdPackage struct {
 	// CIPD package name.
-	PackageName string `protobuf:"bytes,1,opt,name=package_name,json=packageName" json:"package_name,omitempty"`
+	PackageName string `protobuf:"bytes,1,opt,name=package_name,json=packageName,proto3" json:"package_name,omitempty"`
 	// Relative path from the working directory where the package shall be
 	// installed. Cannot be empty or start with a slash.
-	Path string `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
+	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	// CIPD package version.
-	Version              string   `protobuf:"bytes,3,opt,name=version" json:"version,omitempty"`
+	Version              string   `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

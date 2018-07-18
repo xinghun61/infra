@@ -112,10 +112,10 @@ var xxx_messageInfo_Platform proto.InternalMessageInfo
 //
 // Links platform enum name to Swarming dimensions.
 type Platform_Details struct {
-	Name Platform_Name `protobuf:"varint,1,opt,name=name,enum=tricium.Platform_Name" json:"name,omitempty"`
+	Name Platform_Name `protobuf:"varint,1,opt,name=name,proto3,enum=tricium.Platform_Name" json:"name,omitempty"`
 	// Swarming dimensions of the form "key:value", with keys and values mapping
 	// to valid swarming keys/values.
-	Dimensions []string `protobuf:"bytes,2,rep,name=dimensions" json:"dimensions,omitempty"`
+	Dimensions []string `protobuf:"bytes,2,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	// Whether this platform can be used as a runtime platform.
 	//
 	// Note that we can analyze for some platforms without actually running
@@ -125,7 +125,7 @@ type Platform_Details struct {
 	// with this field set to true may be configured as the runtime platform
 	// of an implementation. All platform values may be used to express
 	// data dependencies between functions.
-	HasRuntime           bool     `protobuf:"varint,3,opt,name=has_runtime,json=hasRuntime" json:"has_runtime,omitempty"`
+	HasRuntime           bool     `protobuf:"varint,3,opt,name=has_runtime,json=hasRuntime,proto3" json:"has_runtime,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
