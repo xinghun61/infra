@@ -9,12 +9,13 @@ import gae_ts_mon
 import mock
 import webapp2
 
+from test_support import test_case
+
 from infra_libs.ts_mon import config
 from infra_libs.ts_mon import handlers
 from infra_libs.ts_mon import shared
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import targets
-from testing_utils import testing
 
 
 class HelperFunctionsTest(unittest.TestCase):
@@ -33,7 +34,7 @@ class HelperFunctionsTest(unittest.TestCase):
       list(enumerate([0, 1, 3])))
 
 
-class HandlersTest(testing.AppengineTestCase):
+class HandlersTest(test_case.TestCase):
   def setUp(self):
     super(HandlersTest, self).setUp()
 

@@ -14,6 +14,8 @@ import gae_ts_mon
 import mock
 import webapp2
 
+from test_support import test_case
+
 from infra_libs.ts_mon import config
 from infra_libs.ts_mon import shared
 from infra_libs.ts_mon.common import http_metrics
@@ -22,10 +24,9 @@ from infra_libs.ts_mon.common import monitors
 from infra_libs.ts_mon.common import targets
 from protorpc import message_types
 from protorpc import remote
-from testing_utils import testing
 
 
-class InitializeTest(testing.AppengineTestCase):
+class InitializeTest(test_case.TestCase):
   def setUp(self):
     super(InitializeTest, self).setUp()
 
@@ -48,10 +49,10 @@ class InitializeTest(testing.AppengineTestCase):
   def test_sets_target(self):
     config.initialize(is_local_unittest=False)
 
-    self.assertEqual('testbed-test', self.mock_state.target.service_name)
+    self.assertEqual('sample-app', self.mock_state.target.service_name)
     self.assertEqual('default', self.mock_state.target.job_name)
     self.assertEqual('appengine', self.mock_state.target.region)
-    self.assertEqual('testbed', self.mock_state.target.hostname)
+    self.assertEqual('v1a', self.mock_state.target.hostname)
 
   def test_sets_monitor(self):
     os.environ['SERVER_SOFTWARE'] = 'Production'  # != 'Development'
@@ -221,7 +222,7 @@ class InitializeTest(testing.AppengineTestCase):
     config._internal_callback()
 
 
-class InstrumentTest(testing.AppengineTestCase):
+class InstrumentTest(test_case.TestCase):
   def setUp(self):
     super(InstrumentTest, self).setUp()
 
@@ -403,7 +404,7 @@ class TestEndpoint(remote.Service):
     raise endpoints.BadRequestException('Bad request')
 
 
-class InstrumentEndpointTest(testing.EndpointsTestCase):
+class InstrumentEndpointTest(test_case.EndpointsTestCase):
   api_service_cls = TestEndpoint
 
   def setUp(self):
@@ -434,16 +435,14 @@ class InstrumentEndpointTest(testing.EndpointsTestCase):
     self.assertLessEqual(200, http_metrics.server_durations.get(fields).sum)
 
   def test_bad(self):
-    with self.call_should_fail('500 Internal Server Error'):
-      self.call_api('do_bad')
+    self.call_api('do_bad', status=500)
     fields = {'name': self.endpoint_name % 'method_bad',
               'status': 500, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
     self.assertLessEqual(200, http_metrics.server_durations.get(fields).sum)
 
   def test_400(self):
-    with self.call_should_fail('400 Bad Request'):
-      self.call_api('do_400')
+    self.call_api('do_400', status=400)
     fields = {'name': self.endpoint_name % 'method_400',
               'status': 400, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
@@ -481,7 +480,7 @@ def decorated_view_func():
   pass  # pragma: no cover
 
 
-class DjangoMiddlewareTest(testing.AppengineTestCase):
+class DjangoMiddlewareTest(test_case.TestCase):
 
   def setUp(self):
     super(DjangoMiddlewareTest, self).setUp()

@@ -6,11 +6,12 @@ import unittest
 
 import gae_ts_mon
 
+from test_support import test_case
+
 from infra_libs.ts_mon import shared
-from testing_utils import testing
 
 
-class SharedTest(testing.AppengineTestCase):
+class SharedTest(test_case.TestCase):
   def test_get_instance_entity(self):
     entity = shared.get_instance_entity()
     # Save the modification, make sure it sticks.
