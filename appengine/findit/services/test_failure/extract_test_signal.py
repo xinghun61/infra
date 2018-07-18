@@ -16,6 +16,7 @@ from model.wf_step import WfStep
 from services import extract_signal
 from services import constants
 from services import swarmed_test_util
+from services.test_failure import test_results_service
 from waterfall import extractors
 from waterfall.failure_signal import FailureSignal
 
@@ -54,7 +55,8 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
             merged_test_results)
         if test_results:
           failure_log, _ = (
-              test_results.GetFailedTestsInformation())
+              test_results_service.GetFailedTestsInformationFromTestResult(
+                  test_results))
           failure_log = json.dumps(
               failure_log) if failure_log else constants.FLAKY_FAILURE_LOG
         else:

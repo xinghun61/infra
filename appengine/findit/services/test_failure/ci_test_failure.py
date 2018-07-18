@@ -21,6 +21,7 @@ from services import swarming
 from services.parameters import FailedTest
 from services.parameters import FailedTests
 from services.parameters import IsolatedDataList
+from services.test_failure import test_results_service
 
 
 def _InitiateTestLevelFirstFailure(reliable_failed_tests, failed_step):
@@ -83,7 +84,8 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
     return False
 
   failed_test_log, reliable_failed_tests = (
-      test_results_object.GetFailedTestsInformation())
+      test_results_service.GetFailedTestsInformationFromTestResult(
+          test_results_object))
 
   _SaveIsolatedResultToStep(master_name, builder_name, build_number, step_name,
                             failed_test_log)
@@ -126,7 +128,9 @@ def _GetLogForTheSameStepFromBuild(master_name, builder_name, build_number,
                     % (master_name, builder_name, build_number, step_name))
     return None
 
-  failed_test_log, _ = test_results.GetFailedTestsInformation()
+  failed_test_log, _ = (
+      test_results_service.GetFailedTestsInformationFromTestResult(test_results)
+  )
 
   _SaveIsolatedResultToStep(master_name, builder_name, build_number, step_name,
                             failed_test_log)
