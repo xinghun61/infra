@@ -1,3 +1,40 @@
+# Release Notes sheriff-o-matic 2018-07-18
+
+- 6 commits, 5 bugs affected since 49dc059 (2018-05-25T22:58:49Z)
+- 6 Authors:
+  - stgao@chromium.org
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+  - kbr@chromium.org
+  - tandrii@chromium.org
+  - jbudorick@chromium.org
+
+## Changes in this release
+
+- [Rename Blink Retina 10.12 bot to 10.13.](https://chromium-review.googlesource.com/1137058) (kbr@chromium.org)
+- [monorail go lib: regenerate and fix with newest protobuf.](https://chromium-review.googlesource.com/1123769) (tandrii@chromium.org)
+- [Fix som handling of gatekeeper glob-based exclusions.](https://chromium-review.googlesource.com/1119106) (jbudorick@chromium.org)
+- [[SoM] Fix url to Findit.](https://chromium-review.googlesource.com/1119537) (stgao@chromium.org)
+- [SoM: Replace paper-select-menu with plain browser select widget.](https://chromium-review.googlesource.com/1069679) (zhangtiff@google.com)
+- [[som] update RELNOTES.md for Friday push](https://chromium-review.googlesource.com/1074193) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- jbudorick@chromium.org:
+  -  [https://crbug.com/815006](https://crbug.com/815006)
+
+- kbr@chromium.org:
+  -  [https://crbug.com/863070](https://crbug.com/863070)
+
+- stgao@chromium.org:
+  -  [https://crbug.com/857600](https://crbug.com/857600)
+
+- tandrii@chromium.org:
+  -  [https://crbug.com/859707](https://crbug.com/859707)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/841281](https://crbug.com/841281)
+
 # Release Notes sheriff-o-matic 2018-05-25
 
 - 1 commits, 1 bugs affected since fc95abd ()
