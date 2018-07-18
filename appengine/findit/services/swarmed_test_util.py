@@ -98,12 +98,20 @@ def GetTestLocation(task_id, test_name):
   return TestLocation.FromSerializable(test_location or {})
 
 
-def IsTestEnabled(test_name, task_id):
+def IsTestEnabled(test_name, tasks):
   """Returns True if the test is enabled, False otherwise."""
-  # Get the isolated outputs from the test that was just run.
-  test_results_log = GetTestResultForSwarmingTask(task_id, _FINDIT_HTTP_CLIENT)
-  return test_results_util.GetTestResultObject(test_results_log).IsTestEnabled(
-      test_name)
+  # Get the isolated outputs from the tests that were just run.
+  for task in tasks:
+    test_results_log = GetTestResultForSwarmingTask(task.task_id,
+                                                    _FINDIT_HTTP_CLIENT)
+    test_result_object = test_results_util.GetTestResultObject(
+        test_results_log, partial_result=True)
+    if test_result_object.DoesTestExist(test_name):
+      return test_result_object.IsTestEnabled(test_name)
+    elif test_result_object.contains_all_tests:
+      # Has checked all tests and the test doesn't exist.
+      return False
+  return False
 
 
 def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,

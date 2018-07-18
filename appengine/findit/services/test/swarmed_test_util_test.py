@@ -13,6 +13,7 @@ from infra_api_clients.swarming import swarming_util
 from libs import analysis_status
 from libs.test_results import test_results_util
 from libs.test_results.gtest_test_results import GtestTestResults
+from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 from model.wf_swarming_task import WfSwarmingTask
 from services import constants
 from services import isolate
@@ -21,6 +22,12 @@ from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 _GTEST_RESULTS = GtestTestResults(None)
+
+
+class _MockedTask(object):
+
+  def __init__(self, task_id):
+    self.task_id = task_id
 
 
 class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
@@ -72,11 +79,38 @@ class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
       swarmed_test_util,
       'GetTestResultForSwarmingTask',
       return_value='test_result_log')
+  @mock.patch.object(_GTEST_RESULTS, 'DoesTestExist', return_value=True)
   @mock.patch.object(_GTEST_RESULTS, 'IsTestEnabled', return_value=True)
   @mock.patch.object(
       test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
   def testIsTestEnabled(self, *_):
-    self.assertTrue(swarmed_test_util.IsTestEnabled('test', '123'))
+    tasks = [_MockedTask('123')]
+    self.assertTrue(swarmed_test_util.IsTestEnabled('test', tasks))
+
+  @mock.patch.object(
+      swarmed_test_util,
+      'GetTestResultForSwarmingTask',
+      return_value='test_result_log')
+  @mock.patch.object(_GTEST_RESULTS, 'DoesTestExist', return_value=False)
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=_GTEST_RESULTS)
+  def testIsTestEnabledTestNotExist(self, *_):
+    tasks = [_MockedTask('123')]
+    self.assertFalse(swarmed_test_util.IsTestEnabled('test', tasks))
+
+  @mock.patch.object(
+      swarmed_test_util,
+      'GetTestResultForSwarmingTask',
+      return_value='test_result_log')
+  @mock.patch.object(
+      WebkitLayoutTestResults, 'DoesTestExist', return_value=False)
+  @mock.patch.object(
+      test_results_util,
+      'GetTestResultObject',
+      return_value=WebkitLayoutTestResults({}, partial_result=True))
+  def testIsTestEnabledTestNotExistForAllShards(self, *_):
+    tasks = [_MockedTask('123'), _MockedTask('456')]
+    self.assertFalse(swarmed_test_util.IsTestEnabled('test', tasks))
 
   def testRetrieveShardedTestResultsFromIsolatedServerNoLog(self):
     self.assertEqual(
@@ -178,9 +212,10 @@ class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
     swarming_task.task_id = 'task_id'
     swarming_task.put()
 
-    self.assertEqual('task_id',
-                     swarmed_test_util.GetTaskIdFromSwarmingTaskEntity(
-                         swarming_task.key.urlsafe()))
+    self.assertEqual(
+        'task_id',
+        swarmed_test_util.GetTaskIdFromSwarmingTaskEntity(
+            swarming_task.key.urlsafe()))
 
   def testGetTaskIdFromSwarmingTaskEntityNoTask(self):
     swarming_task = WfSwarmingTask.Create('m', 'b', 200, 's')
@@ -225,9 +260,10 @@ class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
 
     self.mock(time, 'sleep', MockedSleep)
 
-    self.assertEqual('task_id',
-                     swarmed_test_util.GetTaskIdFromSwarmingTaskEntity(
-                         swarming_task.key.urlsafe()))
+    self.assertEqual(
+        'task_id',
+        swarmed_test_util.GetTaskIdFromSwarmingTaskEntity(
+            swarming_task.key.urlsafe()))
 
   @mock.patch.object(swarming_util, 'GetSwarmingTaskResultById')
   def testGetSwarmingTaskDataAndResultNoData(self, mock_fn):
@@ -316,7 +352,7 @@ class SwarmedTestUtilTest(wf_testcase.WaterfallTestCase):
       'GetSwarmingTaskDataAndResult',
       return_value=('data', 'content', 'error'))
   def testGetTestResultForSwarmingTask(self, mock_fn):
-    self.assertEqual('content',
-                     swarmed_test_util.GetTestResultForSwarmingTask(
-                         'task_id', None))
+    self.assertEqual(
+        'content',
+        swarmed_test_util.GetTestResultForSwarmingTask('task_id', None))
     mock_fn.assert_called_once_with('task_id', None)

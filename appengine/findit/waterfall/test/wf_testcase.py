@@ -224,7 +224,7 @@ SAMPLE_STEP_METADATA = {
     'dimensions': {
         'os': 'platform'
     },
-    'swarm_task_ids': ['1000']
+    'swarm_task_ids': ['1000', '1001']
 }
 
 SAMPLE_STEP_METADATA_NOT_SWARMED = {

@@ -92,8 +92,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
       analysis.LogInfo('Bug not filed because no recent runs found.')
       return
 
-    task = tasks[0]
-    if not swarmed_test_util.IsTestEnabled(analysis.test_name, task.task_id):
+    if not swarmed_test_util.IsTestEnabled(analysis.test_name, tasks):
       analysis.LogInfo('Bug not filed because test was fixed or disabled.')
       return
 

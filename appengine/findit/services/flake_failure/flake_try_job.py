@@ -97,7 +97,8 @@ def GetSwarmingTaskIdForTryJob(report, revision, step_name, test_name):
   for task_id in task_ids:
     output_json = swarmed_test_util.GetTestResultForSwarmingTask(
         task_id, http_client)
-    test_results = test_results_util.GetTestResultObject(output_json)
+    test_results = test_results_util.GetTestResultObject(
+        output_json, partial_result=True)
     if output_json and test_results and test_results.IsTestResultUseful():
       return task_id
 

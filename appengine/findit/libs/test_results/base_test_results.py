@@ -6,8 +6,10 @@
 
 class BaseTestResults(object):
 
-  def __init__(self, test_results_json):
+  def __init__(self, test_results_json, partial_result=False):
     self.test_results_json = test_results_json
+    # If the test result is for a single shard of a multi-shards task.
+    self.partial_result = partial_result
 
   def GetConsistentTestFailureLog(self):
     """Analyzes the json test results and extract reliable failure logs."""
@@ -57,6 +59,17 @@ class BaseTestResults(object):
       * num_unexpected_results: total number of runs with unexpected results,
       * results: classified test results in 4 groups: passes, failures, skips
         and unknowns.
+    """
+    raise NotImplementedError()
+
+  @property
+  def contains_all_tests(self):
+    """Returns True if test results contains all tests, False otherwise.
+
+    For gtest, each shard contains all_tests so it should always be True;
+    For webkit_layout_tests, this should be True only if the test result is a
+      full result of a task (meaning it should not be result of a single shard
+      from a multi-shards task), False otherwise.
     """
     raise NotImplementedError()
 

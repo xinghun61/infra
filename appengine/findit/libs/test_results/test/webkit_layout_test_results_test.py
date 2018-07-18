@@ -231,9 +231,9 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
       WebkitLayoutTestResults.GetMergedTestResults(shard_results)
 
   def testGetMergedTestResultsOneShard(self):
-    self.assertEqual(_SAMPLE_FLATTEN_TEST_RESULTS,
-                     WebkitLayoutTestResults.GetMergedTestResults(
-                         [_SAMPLE_TEST_RESULTS]))
+    self.assertEqual(
+        _SAMPLE_FLATTEN_TEST_RESULTS,
+        WebkitLayoutTestResults.GetMergedTestResults([_SAMPLE_TEST_RESULTS]))
 
   def testGetMergedTestResults(self):
     shard_results = [
@@ -543,21 +543,24 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(error)
 
   def testFlattenTestResultsAlreadyFlattened(self):
-    self.assertEqual(_SAMPLE_FLATTEN_TEST_RESULTS,
-                     WebkitLayoutTestResults.FlattenTestResults(
-                         _SAMPLE_FLATTEN_TEST_RESULTS))
+    self.assertEqual(
+        _SAMPLE_FLATTEN_TEST_RESULTS,
+        WebkitLayoutTestResults.FlattenTestResults(
+            _SAMPLE_FLATTEN_TEST_RESULTS))
 
   def testResultWasExpected(self):
     cases = [  # yapf: disable
-        ('PASS', ['REBASELINE'], True),
-        ('TEXT', ['NEEDSMANUALREBASELINE'], True),
-        ('AUDIO', ['FAIL'], True),
-        ('MISSING', ['REBASELINE', 'PASS'], True),
-        ('SKIP', ['PASS'], True),
-        ('FAIL', ['PASS'], False)
+        ('PASS', ['REBASELINE'], True), ('TEXT', ['NEEDSMANUALREBASELINE'],
+                                         True), ('AUDIO', ['FAIL'], True),
+        ('MISSING', ['REBASELINE', 'PASS'],
+         True), ('SKIP', ['PASS'], True), ('FAIL', ['PASS'], False)
     ]
 
     for case in cases:
-      self.assertEqual(case[2],
-                       WebkitLayoutTestResults.ResultWasExpected(
-                           case[0], case[1]))
+      self.assertEqual(
+          case[2], WebkitLayoutTestResults.ResultWasExpected(case[0], case[1]))
+
+  def testcontains_all_tests(self):
+    self.assertTrue(WebkitLayoutTestResults({}).contains_all_tests)
+    self.assertFalse(
+        WebkitLayoutTestResults({}, partial_result=True).contains_all_tests)

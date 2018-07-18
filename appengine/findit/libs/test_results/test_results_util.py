@@ -11,10 +11,10 @@ _STEP_NAME_SEPARATOR = ' on '
 _TEST_RESULTS = [GtestTestResults, WebkitLayoutTestResults]
 
 
-def GetTestResultObject(test_results_json):
+def GetTestResultObject(test_results_json, partial_result=False):
   for format_class in _TEST_RESULTS:
     if format_class.IsTestResultsInExpectedFormat(test_results_json):
-      return format_class(test_results_json)
+      return format_class(test_results_json, partial_result)
   return None
 
 

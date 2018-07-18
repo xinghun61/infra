@@ -7,8 +7,10 @@ import mock
 from common.findit_http_client import FinditHttpClient
 from infra_api_clients.swarming.swarming_task_data import SwarmingTaskData
 from libs.test_results import test_results_util
+from libs.test_results.gtest_test_results import GtestTestResults
 from libs.test_results.webkit_layout_test_results import WebkitLayoutTestResults
 from model.flake.flake_analysis_request import BuildStep
+from services import step_util
 from services import swarmed_test_util
 from services import swarming
 from waterfall import buildbot
@@ -194,3 +196,58 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     step_mapper.FindMatchingWaterfallStep(self.wf_build_step, 'test1')
     self.assertTrue(self.wf_build_step.swarmed)
     self.assertFalse(self.wf_build_step.supported)
+
+  @mock.patch.object(
+      swarmed_test_util,
+      'GetTestResultForSwarmingTask',
+      return_value=_SAMPLE_OUTPUT)
+  @mock.patch.object(
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value=wf_testcase.SAMPLE_STEP_METADATA)
+  @mock.patch.object(step_util, 'IsStepSupportedByFindit', return_value=True)
+  @mock.patch.object(
+      WebkitLayoutTestResults, 'DoesTestExist', side_effect=[False, True])
+  @mock.patch.object(test_results_util, 'GetTestResultObject')
+  def testFindMatchingWaterfallStepCheckAllShards(self, mock_object, *_):
+    mock_object.side_effect = [
+        WebkitLayoutTestResults({}, partial_result=True),
+        WebkitLayoutTestResults({}, partial_result=True)
+    ]
+    step_mapper.FindMatchingWaterfallStep(self.wf_build_step,
+                                          'webkit_layout_tests')
+    self.assertTrue(self.wf_build_step.swarmed)
+    self.assertTrue(self.wf_build_step.supported)
+
+  @mock.patch.object(
+      swarmed_test_util,
+      'GetTestResultForSwarmingTask',
+      return_value=_SAMPLE_OUTPUT)
+  @mock.patch.object(
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value=wf_testcase.SAMPLE_STEP_METADATA)
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=None)
+  def testFindMatchingWaterfallStepNoTestResultObject(self, *_):
+    step_mapper.FindMatchingWaterfallStep(self.wf_build_step,
+                                          'webkit_layout_tests')
+    self.assertTrue(self.wf_build_step.swarmed)
+    self.assertFalse(self.wf_build_step.supported)
+
+  @mock.patch.object(
+      step_mapper,
+      '_GetMatchingWaterfallBuildStep',
+      return_value=('tryserver.m', 'b', 123, 'browser_tests',
+                    wf_testcase.SAMPLE_STEP_METADATA))
+  @mock.patch.object(
+      swarmed_test_util,
+      'GetTestResultForSwarmingTask',
+      return_value=_SAMPLE_OUTPUT)
+  @mock.patch.object(GtestTestResults, 'DoesTestExist', return_value=False)
+  @mock.patch.object(
+      waterfall_config, 'StepIsSupportedForMaster', return_value=True)
+  def testFindMatchingWaterfallStepTestNotExist(self, *_):
+    step_mapper.FindMatchingWaterfallStep(self.build_step, 'test1')
+    self.assertTrue(self.build_step.swarmed)
+    self.assertFalse(self.build_step.supported)

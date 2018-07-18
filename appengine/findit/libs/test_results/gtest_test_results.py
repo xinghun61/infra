@@ -78,6 +78,13 @@ class GtestTestResults(BaseTestResults):
     """
     return test_name in (self.test_results_json.get('all_tests') or [])
 
+  @property
+  def contains_all_tests(self):
+    """
+    For gtest, each shard contains all_tests so it should always be True.
+    """
+    return True
+
   def IsTestEnabled(self, test_name):
     """Returns True if the test is enabled, False otherwise."""
     if not self.test_results_json:

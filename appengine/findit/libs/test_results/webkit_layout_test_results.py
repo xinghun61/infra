@@ -60,8 +60,9 @@ _VIRTUAL_TEST_NAME_PATTERN = re.compile(r'^virtual/[^/]+/(.*)$')
 
 class WebkitLayoutTestResults(BaseTestResults):
 
-  def __init__(self, raw_test_results_json):
-    super(WebkitLayoutTestResults, self).__init__(raw_test_results_json)
+  def __init__(self, raw_test_results_json, partial_result=False):
+    super(WebkitLayoutTestResults, self).__init__(raw_test_results_json,
+                                                  partial_result)
     self.test_results_json = WebkitLayoutTestResults.FlattenTestResults(
         raw_test_results_json)
 
@@ -84,6 +85,14 @@ class WebkitLayoutTestResults(BaseTestResults):
         self.test_results_json and
         (self.test_results_json.get('tests') or {}).get(test_name))
 
+  @property
+  def contains_all_tests(self):
+    """
+    True if the test result is merged results for all shards; False if it's a
+    partial result.
+    """
+    return not self.partial_result
+
   def IsTestEnabled(self, test_name):
     """Returns True if the test is enabled, False otherwise.
 
@@ -94,9 +103,7 @@ class WebkitLayoutTestResults(BaseTestResults):
       return False
 
     test_result = self.test_results_json['tests'][test_name]
-    return bool(
-        test_result and
-        not any(s in test_result['expected'] for s in SKIPPING_STATUSES))
+    return not any(s in test_result['expected'] for s in SKIPPING_STATUSES)
 
   def GetFailedTestsInformation(self):
     """Parses the json data to get all reliable failures' information.

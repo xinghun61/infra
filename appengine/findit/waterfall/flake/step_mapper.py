@@ -134,18 +134,31 @@ def FindMatchingWaterfallStep(build_step, test_name):
   build_step.swarmed = True if metadata.get('swarm_task_ids') else False
 
   if build_step.swarmed:
-    # Retrieve a sample output from Isolate.
-    task_id = metadata['swarm_task_ids'][0]
-    output = swarmed_test_util.GetTestResultForSwarmingTask(
-        task_id, http_client)
-    if output:
-      # Guess from the format.
-      test_result_object = test_results_util.GetTestResultObject(output)
-      if not step_util.IsStepSupportedByFindit(
-          test_result_object,
-          metadata.get('canonical_step_name') or build_step.step_name,
-          build_step.wf_master_name):
-        build_step.supported = False
-      else:
-        build_step.supported = (
-            test_result_object and test_result_object.DoesTestExist(test_name))
+    need_to_continue = False
+    for task_id in metadata['swarm_task_ids']:
+      output = swarmed_test_util.GetTestResultForSwarmingTask(
+          task_id, http_client)
+      if output:
+        # Guess from the format.
+        test_result_object = test_results_util.GetTestResultObject(
+            output, partial_result=True)
+        if not test_result_object:
+          build_step.supported = False
+        elif not step_util.IsStepSupportedByFindit(
+            test_result_object,
+            metadata.get('canonical_step_name') or build_step.step_name,
+            build_step.wf_master_name):
+          build_step.supported = False
+        else:
+          test_exists = test_result_object.DoesTestExist(test_name)
+          if test_exists:
+            build_step.supported = True
+          elif test_result_object.contains_all_tests:
+            # There is no such test for sure.
+            build_step.supported = False
+          else:
+            # Test is not in this task, but cannot determine if it's in other
+            # tasks.
+            need_to_continue = True
+      if not need_to_continue:
+        break
