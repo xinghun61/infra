@@ -267,6 +267,27 @@ def RunSteps(api):
         ]
     )
 
+  if [int(x) for x in version.split('.')] >= [69, 0, 3491, 0]:
+    try:
+      temp_dir = api.path.mkdtemp('gn')
+      git_root = temp_dir.join('gn')
+      api.step('checkout gn',
+               ['git', 'clone', 'https://gn.googlesource.com/gn', git_root])
+      tools_gn = api.path['checkout'].join('tools', 'gn')
+      api.python('generate last_commit_position.h',
+                 git_root.join('build', 'gen.py'), ['--no-sysroot'])
+      api.file.remove('rm README.md', tools_gn.join('README.md'))
+      for f in api.file.listdir(
+          'listdir gn', git_root, test_data=['build', '.git']):
+        basename = api.path.basename(f)
+        if basename not in ['.git', '.gitignore', '.linux-sysroot', 'out']:
+          api.file.move('move gn ' + basename, f, tools_gn.join(basename))
+      api.file.move('move last_commit_position.h',
+                    git_root.join('out', 'last_commit_position.h'),
+                    tools_gn.join('last_commit_position.h'))
+    finally:
+      api.file.rmtree('rmtree temp dir', temp_dir)
+
   with api.step.defer_results():
     if not published_full_tarball(version, ls_result):
       export_tarball(
@@ -310,7 +331,7 @@ def RunSteps(api):
 def GenTests(api):
   yield (
     api.test('basic') +
-    api.properties.generic(version='69.0.3446.0') +
+    api.properties.generic(version='69.0.3493.0') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
     api.path.exists(api.path['checkout'].join(
@@ -319,13 +340,13 @@ def GenTests(api):
 
   yield (
     api.test('dupe') +
-    api.properties.generic(version='69.0.3446.0') +
+    api.properties.generic(version='69.0.3493.0') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output(
-        'gs://chromium-browser-official/chromium-69.0.3446.0.tar.xz\n'
-        'gs://chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz\n'
-        'gs://chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz\n'
-        'gs://chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz\n'
+        'gs://chromium-browser-official/chromium-69.0.3493.0.tar.xz\n'
+        'gs://chromium-browser-official/chromium-69.0.3493.0-lite.tar.xz\n'
+        'gs://chromium-browser-official/chromium-69.0.3493.0-testdata.tar.xz\n'
+        'gs://chromium-browser-official/chromium-69.0.3493.0-nacl.tar.xz\n'
     ))
   )
 

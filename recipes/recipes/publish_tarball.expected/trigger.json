@@ -35,6 +35,21 @@
       {
         "builder_name": "publish_tarball",
         "properties": {
+          "version": "69.0.3493.0"
+        }
+      }
+    ],
+    "~followup_annotations": [
+      "@@@STEP_TEXT@publish_tarball@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "trigger (2)",
+    "trigger_specs": [
+      {
+        "builder_name": "publish_tarball",
+        "properties": {
           "version": "69.0.3446.0"
         }
       }

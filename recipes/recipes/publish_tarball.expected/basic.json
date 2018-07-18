@@ -32,9 +32,9 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "src@refs/tags/69.0.3446.0",
+      "src@refs/tags/69.0.3493.0",
       "--refs",
-      "refs/tags/69.0.3446.0",
+      "refs/tags/69.0.3493.0",
       "--with_branch_heads",
       "--with_tags"
     ],
@@ -44,13 +44,13 @@
       ]
     },
     "infra_step": true,
-    "name": "bot_update - 69.0.3446.0",
+    "name": "bot_update - 69.0.3493.0",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"src\": \"refs/tags/69.0.3446.0\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"src\": \"refs/tags/69.0.3493.0\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"src\": {@@@",
@@ -241,17 +241,108 @@
   },
   {
     "cmd": [
+      "git",
+      "clone",
+      "https://gn.googlesource.com/gn",
+      "[TMP_BASE]/gn_tmp_1/gn"
+    ],
+    "name": "checkout gn"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[TMP_BASE]/gn_tmp_1/gn/build/gen.py",
+      "--no-sysroot"
+    ],
+    "name": "generate last_commit_position.h"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "remove",
+      "[START_DIR]/src/tools/gn/README.md"
+    ],
+    "infra_step": true,
+    "name": "rm README.md"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "listdir",
+      "[TMP_BASE]/gn_tmp_1/gn"
+    ],
+    "infra_step": true,
+    "name": "listdir gn",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@listdir@[TMP_BASE]/gn_tmp_1/gn/.git@@@",
+      "@@@STEP_LOG_LINE@listdir@[TMP_BASE]/gn_tmp_1/gn/build@@@",
+      "@@@STEP_LOG_END@listdir@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[TMP_BASE]/gn_tmp_1/gn/build",
+      "[START_DIR]/src/tools/gn/build"
+    ],
+    "infra_step": true,
+    "name": "move gn build"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[TMP_BASE]/gn_tmp_1/gn/out/last_commit_position.h",
+      "[START_DIR]/src/tools/gn/last_commit_position.h"
+    ],
+    "infra_step": true,
+    "name": "move last_commit_position.h"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[TMP_BASE]/gn_tmp_1"
+    ],
+    "infra_step": true,
+    "name": "rmtree temp dir"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
-      "chromium-69.0.3446.0",
+      "chromium-69.0.3493.0",
       "--verbose",
       "--progress",
       "--src-dir",
       "[START_DIR]/src"
     ],
-    "cwd": "[TMP_BASE]/export_tarball_tmp_1",
+    "cwd": "[TMP_BASE]/export_tarball_tmp_2",
     "name": "export_tarball"
   },
   {
@@ -265,13 +356,13 @@
       "cp",
       "-a",
       "public-read",
-      "[TMP_BASE]/export_tarball_tmp_1/chromium-69.0.3446.0.tar.xz",
-      "gs://chromium-browser-official/chromium-69.0.3446.0.tar.xz"
+      "[TMP_BASE]/export_tarball_tmp_2/chromium-69.0.3493.0.tar.xz",
+      "gs://chromium-browser-official/chromium-69.0.3493.0.tar.xz"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-69.0.3446.0.tar.xz",
+    "name": "gsutil upload chromium-69.0.3493.0.tar.xz",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0.tar.xz@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3493.0.tar.xz@@@"
     ]
   },
   {
@@ -279,7 +370,7 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP_BASE]/export_tarball_tmp_1/chromium-69.0.3446.0.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_2/chromium-69.0.3493.0.tar.xz",
       "/path/to/tmp/"
     ],
     "name": "generate_hashes"
@@ -296,105 +387,12 @@
       "-a",
       "public-read",
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
-      "gs://chromium-browser-official/chromium-69.0.3446.0.tar.xz.hashes"
+      "gs://chromium-browser-official/chromium-69.0.3493.0.tar.xz.hashes"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-69.0.3446.0.tar.xz.hashes",
+    "name": "gsutil upload chromium-69.0.3493.0.tar.xz.hashes",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0.tar.xz.hashes@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[TMP_BASE]/export_tarball_tmp_1"
-    ],
-    "infra_step": true,
-    "name": "rmtree temp dir"
-  },
-  {
-    "cmd": [],
-    "name": "trigger",
-    "trigger_specs": [
-      {
-        "builder_name": "Build From Tarball",
-        "properties": {
-          "version": "69.0.3446.0"
-        }
-      }
-    ],
-    "~followup_annotations": [
-      "@@@STEP_TEXT@Build From Tarball@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
-      "--test-data",
-      "chromium-69.0.3446.0",
-      "--verbose",
-      "--progress",
-      "--src-dir",
-      "[START_DIR]/src"
-    ],
-    "cwd": "[TMP_BASE]/export_tarball_tmp_2",
-    "name": "export_tarball (2)"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
-      "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
-      "----",
-      "cp",
-      "-a",
-      "public-read",
-      "[TMP_BASE]/export_tarball_tmp_2/chromium-69.0.3446.0.tar.xz",
-      "gs://chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz"
-    ],
-    "infra_step": true,
-    "name": "gsutil upload chromium-69.0.3446.0-testdata.tar.xz",
-    "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP_BASE]/export_tarball_tmp_2/chromium-69.0.3446.0.tar.xz",
-      "/path/to/tmp/"
-    ],
-    "name": "generate_hashes (2)"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
-      "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
-      "----",
-      "cp",
-      "-a",
-      "public-read",
-      "md5  164ebd6889588da166a52ca0d57b9004  bash",
-      "gs://chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz.hashes"
-    ],
-    "infra_step": true,
-    "name": "gsutil upload chromium-69.0.3446.0-testdata.tar.xz.hashes",
-    "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-testdata.tar.xz.hashes@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3493.0.tar.xz.hashes@@@"
     ]
   },
   {
@@ -411,6 +409,99 @@
     "name": "rmtree temp dir (2)"
   },
   {
+    "cmd": [],
+    "name": "trigger",
+    "trigger_specs": [
+      {
+        "builder_name": "Build From Tarball",
+        "properties": {
+          "version": "69.0.3493.0"
+        }
+      }
+    ],
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Build From Tarball@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
+      "--test-data",
+      "chromium-69.0.3493.0",
+      "--verbose",
+      "--progress",
+      "--src-dir",
+      "[START_DIR]/src"
+    ],
+    "cwd": "[TMP_BASE]/export_tarball_tmp_3",
+    "name": "export_tarball (2)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "[TMP_BASE]/export_tarball_tmp_3/chromium-69.0.3493.0.tar.xz",
+      "gs://chromium-browser-official/chromium-69.0.3493.0-testdata.tar.xz"
+    ],
+    "infra_step": true,
+    "name": "gsutil upload chromium-69.0.3493.0-testdata.tar.xz",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3493.0-testdata.tar.xz@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
+      "[TMP_BASE]/export_tarball_tmp_3/chromium-69.0.3493.0.tar.xz",
+      "/path/to/tmp/"
+    ],
+    "name": "generate_hashes (2)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "md5  164ebd6889588da166a52ca0d57b9004  bash",
+      "gs://chromium-browser-official/chromium-69.0.3493.0-testdata.tar.xz.hashes"
+    ],
+    "infra_step": true,
+    "name": "gsutil upload chromium-69.0.3493.0-testdata.tar.xz.hashes",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3493.0-testdata.tar.xz.hashes@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[TMP_BASE]/export_tarball_tmp_3"
+    ],
+    "infra_step": true,
+    "name": "rmtree temp dir (3)"
+  },
+  {
     "cmd": [
       "python",
       "-u",
@@ -420,7 +511,7 @@
       "copytree",
       "--symlinks",
       "[START_DIR]/src",
-      "[TMP_BASE]/tmp_tmp_3/src"
+      "[TMP_BASE]/tmp_tmp_4/src"
     ],
     "infra_step": true,
     "name": "copytree"
@@ -428,7 +519,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/android_webview",
+      "[TMP_BASE]/tmp_tmp_4/src/android_webview",
       "-type",
       "f",
       "!",
@@ -445,7 +536,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune android_webview"
@@ -453,7 +544,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/buildtools/third_party/libc++",
+      "[TMP_BASE]/tmp_tmp_4/src/buildtools/third_party/libc++",
       "-type",
       "f",
       "!",
@@ -470,7 +561,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune buildtools/third_party/libc++"
@@ -478,7 +569,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android",
       "-type",
       "f",
       "!",
@@ -495,7 +586,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune chrome/android"
@@ -503,7 +594,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/chromecast",
+      "[TMP_BASE]/tmp_tmp_4/src/chromecast",
       "-type",
       "f",
       "!",
@@ -520,7 +611,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune chromecast"
@@ -528,7 +619,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/ios",
+      "[TMP_BASE]/tmp_tmp_4/src/ios",
       "-type",
       "f",
       "!",
@@ -545,7 +636,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune ios"
@@ -553,7 +644,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/native_client",
+      "[TMP_BASE]/tmp_tmp_4/src/native_client",
       "-type",
       "f",
       "!",
@@ -570,7 +661,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune native_client"
@@ -578,7 +669,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/native_client_sdk",
+      "[TMP_BASE]/tmp_tmp_4/src/native_client_sdk",
       "-type",
       "f",
       "!",
@@ -595,7 +686,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune native_client_sdk"
@@ -603,7 +694,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/android_platform",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/android_platform",
       "-type",
       "f",
       "!",
@@ -620,7 +711,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/android_platform"
@@ -628,7 +719,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/chromite",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/chromite",
       "-type",
       "f",
       "!",
@@ -645,7 +736,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/chromite"
@@ -653,7 +744,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/closure_compiler",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/closure_compiler",
       "-type",
       "f",
       "!",
@@ -670,7 +761,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/closure_compiler"
@@ -678,7 +769,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/freetype",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/freetype",
       "-type",
       "f",
       "!",
@@ -695,7 +786,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/freetype"
@@ -703,7 +794,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/icu",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/icu",
       "-type",
       "f",
       "!",
@@ -720,7 +811,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/icu"
@@ -728,7 +819,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/libjpeg_turbo",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/libjpeg_turbo",
       "-type",
       "f",
       "!",
@@ -745,7 +836,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/libjpeg_turbo"
@@ -753,7 +844,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/libxml/src",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/libxml/src",
       "-type",
       "f",
       "!",
@@ -770,7 +861,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/libxml/src"
@@ -778,7 +869,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/snappy",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/snappy",
       "-type",
       "f",
       "!",
@@ -795,7 +886,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/snappy"
@@ -803,7 +894,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/webgl",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/webgl",
       "-type",
       "f",
       "!",
@@ -820,7 +911,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/webgl"
@@ -828,7 +919,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/yasm",
+      "[TMP_BASE]/tmp_tmp_4/src/third_party/yasm",
       "-type",
       "f",
       "!",
@@ -845,7 +936,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune third_party/yasm"
@@ -853,7 +944,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/tools/win",
+      "[TMP_BASE]/tmp_tmp_4/src/tools/win",
       "-type",
       "f",
       "!",
@@ -870,7 +961,7 @@
       "*.grd*",
       "!",
       "-path",
-      "[TMP_BASE]/tmp_tmp_3/src/chrome/android/profiles/afdo.prof",
+      "[TMP_BASE]/tmp_tmp_4/src/chrome/android/profiles/afdo.prof",
       "-delete"
     ],
     "name": "prune tools/win"
@@ -878,7 +969,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src",
+      "[TMP_BASE]/tmp_tmp_4/src",
       "-depth",
       "-type",
       "d",
@@ -893,13 +984,13 @@
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
-      "chromium-69.0.3446.0",
+      "chromium-69.0.3493.0",
       "--verbose",
       "--progress",
       "--src-dir",
-      "[TMP_BASE]/tmp_tmp_3/src"
+      "[TMP_BASE]/tmp_tmp_4/src"
     ],
-    "cwd": "[TMP_BASE]/export_tarball_tmp_4",
+    "cwd": "[TMP_BASE]/export_tarball_tmp_5",
     "name": "export_tarball (3)"
   },
   {
@@ -913,13 +1004,13 @@
       "cp",
       "-a",
       "public-read",
-      "[TMP_BASE]/export_tarball_tmp_4/chromium-69.0.3446.0.tar.xz",
-      "gs://chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz"
+      "[TMP_BASE]/export_tarball_tmp_5/chromium-69.0.3493.0.tar.xz",
+      "gs://chromium-browser-official/chromium-69.0.3493.0-lite.tar.xz"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-69.0.3446.0-lite.tar.xz",
+    "name": "gsutil upload chromium-69.0.3493.0-lite.tar.xz",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3493.0-lite.tar.xz@@@"
     ]
   },
   {
@@ -927,7 +1018,7 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP_BASE]/export_tarball_tmp_4/chromium-69.0.3446.0.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_5/chromium-69.0.3493.0.tar.xz",
       "/path/to/tmp/"
     ],
     "name": "generate_hashes (3)"
@@ -944,12 +1035,12 @@
       "-a",
       "public-read",
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
-      "gs://chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz.hashes"
+      "gs://chromium-browser-official/chromium-69.0.3493.0-lite.tar.xz.hashes"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-69.0.3446.0-lite.tar.xz.hashes",
+    "name": "gsutil upload chromium-69.0.3493.0-lite.tar.xz.hashes",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-lite.tar.xz.hashes@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3493.0-lite.tar.xz.hashes@@@"
     ]
   },
   {
@@ -960,20 +1051,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "rmtree",
-      "[TMP_BASE]/export_tarball_tmp_4"
-    ],
-    "infra_step": true,
-    "name": "rmtree temp dir (3)"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[TMP_BASE]/tmp_tmp_3"
+      "[TMP_BASE]/export_tarball_tmp_5"
     ],
     "infra_step": true,
     "name": "rmtree temp dir (4)"
@@ -985,10 +1063,23 @@
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
       "--json-output",
       "/path/to/tmp/json",
+      "rmtree",
+      "[TMP_BASE]/tmp_tmp_4"
+    ],
+    "infra_step": true,
+    "name": "rmtree temp dir (5)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "copytree",
       "--symlinks",
       "[START_DIR]/src",
-      "[TMP_BASE]/tmp_tmp_5/src"
+      "[TMP_BASE]/tmp_tmp_6/src"
     ],
     "infra_step": true,
     "name": "copytree (2)"
@@ -997,7 +1088,7 @@
     "cmd": [
       "python",
       "-u",
-      "[TMP_BASE]/tmp_tmp_5/src/native_client/toolchain_build/toolchain_build_pnacl.py",
+      "[TMP_BASE]/tmp_tmp_6/src/native_client/toolchain_build/toolchain_build_pnacl.py",
       "--verbose",
       "--sync",
       "--sync-only",
@@ -1011,13 +1102,13 @@
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
-      "chromium-69.0.3446.0",
+      "chromium-69.0.3493.0",
       "--verbose",
       "--progress",
       "--src-dir",
-      "[TMP_BASE]/tmp_tmp_5/src"
+      "[TMP_BASE]/tmp_tmp_6/src"
     ],
-    "cwd": "[TMP_BASE]/export_tarball_tmp_6",
+    "cwd": "[TMP_BASE]/export_tarball_tmp_7",
     "name": "export_tarball (4)"
   },
   {
@@ -1031,13 +1122,13 @@
       "cp",
       "-a",
       "public-read",
-      "[TMP_BASE]/export_tarball_tmp_6/chromium-69.0.3446.0.tar.xz",
-      "gs://chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz"
+      "[TMP_BASE]/export_tarball_tmp_7/chromium-69.0.3493.0.tar.xz",
+      "gs://chromium-browser-official/chromium-69.0.3493.0-nacl.tar.xz"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-69.0.3446.0-nacl.tar.xz",
+    "name": "gsutil upload chromium-69.0.3493.0-nacl.tar.xz",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3493.0-nacl.tar.xz@@@"
     ]
   },
   {
@@ -1045,7 +1136,7 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::chromium]/resources/generate_hashes.py",
-      "[TMP_BASE]/export_tarball_tmp_6/chromium-69.0.3446.0.tar.xz",
+      "[TMP_BASE]/export_tarball_tmp_7/chromium-69.0.3493.0.tar.xz",
       "/path/to/tmp/"
     ],
     "name": "generate_hashes (4)"
@@ -1062,12 +1153,12 @@
       "-a",
       "public-read",
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
-      "gs://chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz.hashes"
+      "gs://chromium-browser-official/chromium-69.0.3493.0-nacl.tar.xz.hashes"
     ],
     "infra_step": true,
-    "name": "gsutil upload chromium-69.0.3446.0-nacl.tar.xz.hashes",
+    "name": "gsutil upload chromium-69.0.3493.0-nacl.tar.xz.hashes",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3446.0-nacl.tar.xz.hashes@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-69.0.3493.0-nacl.tar.xz.hashes@@@"
     ]
   },
   {
@@ -1078,10 +1169,10 @@
       "--json-output",
       "/path/to/tmp/json",
       "rmtree",
-      "[TMP_BASE]/export_tarball_tmp_6"
+      "[TMP_BASE]/export_tarball_tmp_7"
     ],
     "infra_step": true,
-    "name": "rmtree temp dir (5)"
+    "name": "rmtree temp dir (6)"
   },
   {
     "cmd": [
@@ -1091,10 +1182,10 @@
       "--json-output",
       "/path/to/tmp/json",
       "rmtree",
-      "[TMP_BASE]/tmp_tmp_5"
+      "[TMP_BASE]/tmp_tmp_6"
     ],
     "infra_step": true,
-    "name": "rmtree temp dir (6)"
+    "name": "rmtree temp dir (7)"
   },
   {
     "name": "$result",

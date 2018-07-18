@@ -20,6 +20,7 @@ class OmahaproxyApi(recipe_api.RecipeApi):
   def history(self, min_major_version=None, exclude_platforms=None):
     exclude_platforms = exclude_platforms or []
     TEST_DATA = """os,channel,version,timestamp
+        mac,canary,69.0.3493.0,2018-07-16 07:25:01.309860
         win64,canary_asan,69.0.3446.1,2018-05-31 10:11:01.811670
         win,canary,69.0.3446.0,2018-05-31 07:09:01.554990
         ios,beta,68.0.3440.9,2018-05-31 00:37:02.595620
