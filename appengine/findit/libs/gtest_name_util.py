@@ -8,9 +8,10 @@ import re
 # Used to identify the prefix in gtests.
 _PRE_TEST_PREFIX = 'PRE_'
 
-# Regular expressions to identify parameterized gtests.
-_VALUE_PARAMETEREZED_GTESTS_REGEX = re.compile(r'.+/(.+\..+)/\d+')
-_TYPE_PARAMETERIZED_GTESTS_REGEX = re.compile(r'.+/(.+)/\d+\.(.+)')
+# Regular expressions to identify parameterized gtests. Note that instantiation
+# names can be empty. For example: ColorSpaceTest.testNullTransform/1.
+_VALUE_PARAMETEREZED_GTESTS_REGEX = re.compile(r'(.+/)?(.+\..+)/\d+')
+_TYPE_PARAMETERIZED_GTESTS_REGEX = re.compile(r'(.+/)?(.+)/\d+\.(.+)')
 
 
 def RemoveParametersFromTestName(test_name):
@@ -33,11 +34,11 @@ def RemoveParametersFromTestName(test_name):
   """
   value_match = _VALUE_PARAMETEREZED_GTESTS_REGEX.match(test_name)
   if value_match:
-    return value_match.group(1)
+    return value_match.group(2)
 
   type_match = _TYPE_PARAMETERIZED_GTESTS_REGEX.match(test_name)
   if type_match:
-    return type_match.group(1) + '.' + type_match.group(2)
+    return type_match.group(2) + '.' + type_match.group(3)
 
   return test_name
 

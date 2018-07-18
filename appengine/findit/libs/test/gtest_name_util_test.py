@@ -22,8 +22,18 @@ class GtestNameUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('ColorSpaceTest.testNullTransform',
                      gtest_name_util.RemoveParametersFromTestName(test_name))
 
+  def testValueParametersWithoutInstantiationName(self):
+    test_name = 'ColorSpaceTest.testNullTransform/1'
+    self.assertEqual('ColorSpaceTest.testNullTransform',
+                     gtest_name_util.RemoveParametersFromTestName(test_name))
+
   def testRemoveTypeParametersFromTestName(self):
     test_name = '1/GLES2DecoderPassthroughFixedCommandTest/4.InvalidCommand'
+    self.assertEqual('GLES2DecoderPassthroughFixedCommandTest.InvalidCommand',
+                     gtest_name_util.RemoveParametersFromTestName(test_name))
+
+  def testTypeParametersWithoutInstantiationName(self):
+    test_name = 'GLES2DecoderPassthroughFixedCommandTest/4.InvalidCommand'
     self.assertEqual('GLES2DecoderPassthroughFixedCommandTest.InvalidCommand',
                      gtest_name_util.RemoveParametersFromTestName(test_name))
 
