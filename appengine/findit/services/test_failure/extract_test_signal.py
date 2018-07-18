@@ -52,8 +52,13 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       if merged_test_results:
         test_results = test_results_util.GetTestResultObject(
             merged_test_results)
-        failure_log = test_results.GetConsistentTestFailureLog(
-        ) if test_results else constants.WRONG_FORMAT_LOG
+        if test_results:
+          failure_log, _ = (
+              test_results.GetFailedTestsInformation())
+          failure_log = json.dumps(
+              failure_log) if failure_log else constants.FLAKY_FAILURE_LOG
+        else:
+          failure_log = constants.WRONG_FORMAT_LOG
 
       if not merged_test_results or failure_log in [
           constants.INVALID_FAILURE_LOG, constants.WRONG_FORMAT_LOG
@@ -76,6 +81,7 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       step.log_data = extract_signal.ExtractStorablePortionOfLog(
           failure_log, json_formatted_log
       ) if step.log_data != constants.TOO_LARGE_LOG else step.log_data
+      step.isolated = step.isolated or json_formatted_log
 
       try:
         step.put()

@@ -66,14 +66,6 @@ class WebkitLayoutTestResults(BaseTestResults):
     self.test_results_json = WebkitLayoutTestResults.FlattenTestResults(
         raw_test_results_json)
 
-  def GetConsistentTestFailureLog(self):
-    """Returns an empty string.
-
-    There is no log for test failures in output.json.
-    TODO (crbug/806002): Get test failure log from other logs.
-    """
-    return ''
-
   def DoesTestExist(self, test_name):
     """Checks if can find the test name in test_results if result is valid.
 

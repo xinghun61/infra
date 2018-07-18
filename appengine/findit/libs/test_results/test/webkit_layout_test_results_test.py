@@ -185,10 +185,6 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
     super(WebkitLayoutTestResultsTest, self).setUp()
     self.test_result = WebkitLayoutTestResults(_SAMPLE_TEST_RESULTS)
 
-  def testGetTestLevelFailures(self):
-    failed_test_log = self.test_result.GetConsistentTestFailureLog()
-    self.assertEqual('', failed_test_log)
-
   def testDoesTestExist(self):
     existing_test_name = (
         'bluetooth/requestDevice/chooser/new-scan-device-added.html')

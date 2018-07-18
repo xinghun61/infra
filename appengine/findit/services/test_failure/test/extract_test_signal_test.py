@@ -7,6 +7,7 @@ import json
 import mock
 import os
 
+from libs.test_results import test_results_util
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from services import extract_signal
@@ -446,3 +447,54 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({},
                      extract_test_signal.ExtractSignalsForTestFailure(
                          TestFailureInfo.FromSerializable(failure_info), None))
+
+  @mock.patch.object(
+      swarmed_test_util,
+      'RetrieveShardedTestResultsFromIsolatedServer',
+      return_value='merged_test_results')
+  @mock.patch.object(
+      test_results_util, 'GetTestResultObject', return_value=None)
+  @mock.patch.object(extract_signal, 'GetStdoutLog', return_value='log')
+  def testExtractSignalsForTestFailureNoTestResult(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed': True,
+        'chromium_revision': 'a_git_hash',
+        'failed_steps': {
+            'abc_test': {
+                'last_pass': 221,
+                'current_failure': 223,
+                'first_failure': 222,
+                'supported': True,
+                'tests': {
+                    'Unittest2.Subtest1': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
+                    },
+                    'Unittest3.Subtest2': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
+                    }
+                }
+            }
+        }
+    }
+
+    expected_signals = {
+        'abc_test': {
+            'files': {},
+            'keywords': {}
+        }
+    }
+    self.assertEqual(
+        expected_signals,
+        extract_test_signal.ExtractSignalsForTestFailure(
+            TestFailureInfo.FromSerializable(failure_info), None))

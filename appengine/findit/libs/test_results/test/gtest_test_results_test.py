@@ -159,25 +159,6 @@ _SAMPLE_TEST_RESULTS_FLAKE = {
 
 class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
 
-  def testGetTestLevelFailures(self):
-    expected_failure_log = ('ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
-                            'ERROR:[2]: 2594735000 bogo-microseconds\n'
-                            'ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
-                            'ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
-                            'a/b/u3s2.cc:110: Failure\n'
-                            'a/b/u3s2.cc:110: Failure\n'
-                            'a/b/u3s2.cc:110: Failure\n'
-                            'a/b/u3s2.cc:110: Failure\n')
-
-    failed_test_log = GtestTestResults(
-        _SAMPLE_TEST_RESULTS_CONSISTENT).GetConsistentTestFailureLog()
-    self.assertEqual(expected_failure_log, failed_test_log)
-
-  def testGetTestLevelFailuresFlaky(self):
-    failed_test_log = GtestTestResults(
-        _SAMPLE_TEST_RESULTS_FLAKE).GetConsistentTestFailureLog()
-    self.assertEqual(constants.FLAKY_FAILURE_LOG, failed_test_log)
-
   def testDoesTestExist(self):
     existing_test_name = 'test'
     nonexistent_test_name = 'nonexistent_test'

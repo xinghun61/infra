@@ -33,40 +33,6 @@ _NON_FAILURE_STATUSES = [SUCCESS, SKIPPED, UNKNOWN]
 
 class GtestTestResults(BaseTestResults):
 
-  def GetConsistentTestFailureLog(self):
-    """Analyzes the archived gtest json results and extract reliable failures.
-
-    Returns:
-      A string contains the names of reliable test failures and related
-      log content.
-      If test_results_json in gtest json result is 'invalid', we will return
-      'invalid' as the result.
-      If we find out that all the test failures in this step are flaky, we will
-      return 'flaky' as result.
-    """
-    sio = cStringIO.StringIO()
-    for iteration in self.test_results_json['per_iteration_data']:
-      for test_name in iteration.keys():
-        is_reliable_failure = True
-
-        for test_run in iteration[test_name]:
-          # We will ignore the test if some of the attempts were success.
-          if test_run['status'] == SUCCESS:
-            is_reliable_failure = False
-            break
-
-        if is_reliable_failure:  # all attempts failed
-          for test_run in iteration[test_name]:
-            sio.write(base64.b64decode(test_run['output_snippet_base64']))
-
-    failed_test_log = sio.getvalue()
-    sio.close()
-
-    if not failed_test_log:
-      return constants.FLAKY_FAILURE_LOG
-
-    return failed_test_log
-
   def DoesTestExist(self, test_name):
     """Determines whether test_name is in test_results_json's 'all_tests' field.
 

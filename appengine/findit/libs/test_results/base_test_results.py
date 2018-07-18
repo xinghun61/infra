@@ -11,10 +11,6 @@ class BaseTestResults(object):
     # If the test result is for a single shard of a multi-shards task.
     self.partial_result = partial_result
 
-  def GetConsistentTestFailureLog(self):
-    """Analyzes the json test results and extract reliable failure logs."""
-    raise NotImplementedError()
-
   def DoesTestExist(self, test_name):
     """Determines if a test exists in test results."""
     raise NotImplementedError()
