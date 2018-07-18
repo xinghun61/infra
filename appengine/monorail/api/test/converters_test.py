@@ -737,6 +737,34 @@ class ConverterFunctionsTest(unittest.TestCase):
       converters.IngestIssueDelta(
           self.cnxn, self.services, delta, self.config)
 
+  def testIngestAttachmentUploads_Empty(self):
+    """Uploading zero files results in an empty list of attachments."""
+    self.assertEqual([], converters.IngestAttachmentUploads([]))
+
+  def testIngestAttachmentUploads_Normal(self):
+    """Uploading files results in a list of attachments."""
+    uploads = [
+        issues_pb2.AttachmentUpload(
+            filename='hello.c', content='int main() {}'),
+        issues_pb2.AttachmentUpload(
+            filename='README.md', content='readme content'),
+        ]
+    actual = converters.IngestAttachmentUploads(uploads)
+    self.assertEqual(
+      [('hello.c', 'int main() {}', 'text/plain'),
+       ('README.md', 'readme content', 'text/plain')],
+      actual)
+
+  def testIngestAttachmentUploads_Invalid(self):
+    """We reject uploaded files that lack a name or content."""
+    with self.assertRaises(exceptions.InputException):
+      converters.IngestAttachmentUploads([
+          issues_pb2.AttachmentUpload(content='name is mssing')])
+
+    with self.assertRaises(exceptions.InputException):
+      converters.IngestAttachmentUploads([
+          issues_pb2.AttachmentUpload(filename='content is mssing')])
+
   def testIngestApprovalDelta(self):
     self.services.user.TestAddUser('user1@example.com', 111L)
     self.services.user.TestAddUser('user2@example.com', 222L)

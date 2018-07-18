@@ -30,6 +30,13 @@ service Issues {
 }
 
 
+// Next available tag: 3
+message AttachmentUpload {
+  string filename = 1;
+  bytes content = 2;
+}
+
+
 // Next available tag: 4
 message CreateIssueRequest {
   RequestTrace trace = 1;
@@ -51,7 +58,7 @@ message IssueResponse {
 }
 
 
-// Next available tag: 6
+// Next available tag: 8
 message UpdateIssueRequest {
   RequestTrace trace = 1;
   IssueRef issue_ref = 2;
@@ -59,6 +66,7 @@ message UpdateIssueRequest {
   IssueDelta delta = 4;
   string comment_content = 5;
   bool is_description = 6;
+  repeated AttachmentUpload uploads = 7;
 }
 
 

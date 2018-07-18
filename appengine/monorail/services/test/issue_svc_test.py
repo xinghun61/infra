@@ -961,7 +961,7 @@ class IssueServiceTest(unittest.TestCase):
         tracker_bizobj.MakeMergedIntoAmendment(
             ('proj', 2), None, default_project_name='proj')]
     self.services.issue.CreateIssueComment(
-        self.cnxn, issue, commenter_id, 'comment text',
+        self.cnxn, issue, commenter_id, 'comment text', attachments=None,
         amendments=amendments, commit=False, is_description=False)
     self.services.issue._UpdateIssuesModified(
         self.cnxn, {issue.issue_id, target_issue.issue_id},

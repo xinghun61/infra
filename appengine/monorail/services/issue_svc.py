@@ -1286,7 +1286,7 @@ class IssueService(object):
 
   def DeltaUpdateIssue(
       self, cnxn, services, reporter_id, project_id,
-      config, issue, delta, index_now=False, comment=None,
+      config, issue, delta, index_now=False, comment=None, attachments=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
       is_description=False, timestamp=None):
     """Update the issue in the database and return a set of update tuples.
@@ -1302,6 +1302,7 @@ class IssueService(object):
       index_now: True if the issue should be updated in the full text index.
       comment: This should be the content of the comment
           corresponding to this change.
+      attachments: List [(filename, contents, mimetype),...] of attachments.
       iids_to_invalidate: optional set of issue IDs that need to be invalidated.
           If provided, affected issues will be accumulated here and, the caller
           must call InvalidateIIDs() afterwards.
@@ -1373,7 +1374,7 @@ class IssueService(object):
 
     comment_pb = self.CreateIssueComment(
         cnxn, issue, reporter_id, comment, amendments=amendments,
-        is_description=is_description, commit=False)
+        is_description=is_description, attachments=attachments, commit=False)
     self._UpdateIssuesModified(
         cnxn, iids_to_invalidate, modified_timestamp=issue.modified_timestamp,
         invalidate=invalidate)

@@ -51,6 +51,7 @@ from search import frontendsearchpipeline
 from services import project_svc
 from sitewide import sitewide_helpers
 from tracker import tracker_bizobj
+from tracker import tracker_helpers
 from proto import project_pb2
 
 
@@ -562,28 +563,39 @@ class WorkEnv(object):
 
     return approval_value, comment_pb
 
-  def UpdateIssue(self, issue, delta, comment_content, send_email=True,
-                  is_description=False):
+  def UpdateIssue(
+      self, issue, delta, comment_content, attachments=None, send_email=True,
+      is_description=False):
     """Update an issue with a set of changes and add a comment.
 
     Args:
       issue: Existing Issue PB for the issue to be modified.
       delta: IssueDelta object containing all the changes to be made.
       comment_content: string content of the user's comment.
+      attachments: List [(filename, contents, mimetype),...] of attachments.
       send_email: set to False to suppress email notifications.
+      is_description: True if this adds a new issue description.
 
     Returns:
       Nothing.
     """
+    project = self.GetProject(issue.project_id)
     self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
     config = self.GetProjectConfig(issue.project_id)
     old_owner_id = tracker_bizobj.GetOwnerId(issue)
+
+    if attachments:
+      with self.mc.profiler.Phase('Accounting for quota'):
+        new_bytes_used = tracker_helpers.ComputeNewQuotaBytesUsed(
+          project, attachments)
+        self.services.project.UpdateProject(
+          self.mc.cnxn, issue.project_id, attachment_bytes_used=new_bytes_used)
 
     with self.mc.profiler.Phase('Updating issue %r' % (issue.issue_id)):
       _amendments, comment_pb = self.services.issue.DeltaUpdateIssue(
           self.mc.cnxn, self.services, self.mc.auth.user_id, issue.project_id,
           config, issue, delta, comment=comment_content,
-          is_description=is_description)
+          attachments=attachments, is_description=is_description)
 
     with self.mc.profiler.Phase('Following up after issue update'):
       # TODO(jrobbins): side effects of setting merged_into.

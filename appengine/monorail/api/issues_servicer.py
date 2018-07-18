@@ -80,9 +80,10 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
             mc.cnxn, self.services, request.delta, config)
       else:
         delta = tracker_pb2.IssueDelta()  # No changes specified.
+      attachments = converters.IngestAttachmentUploads(request.uploads)
       we.UpdateIssue(
           issue, delta, request.comment_content, send_email=request.send_email,
-          is_description=request.is_description)
+          attachments=attachments, is_description=request.is_description)
       related_refs = we.GetRelatedIssueRefs(issue)
 
     with mc.profiler.Phase('making user views'):

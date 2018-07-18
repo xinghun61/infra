@@ -813,6 +813,8 @@ class ProjectService(object):
     # method shared with the real persistence implementation.
     if read_only_reason is not None:
       project.read_only_reason = read_only_reason
+    if attachment_bytes_used is not None:
+      project.attachment_bytes_used = attachment_bytes_used
 
   def UpdateProjectRoles(
       self, _cnxn, project_id, owner_ids, committer_ids,
@@ -1545,7 +1547,7 @@ class IssueService(object):
   # pylint: disable=unused-argument
   def DeltaUpdateIssue(
       self, cnxn, services, reporter_id, project_id,
-      config, issue, delta, index_now=False, comment=None,
+      config, issue, delta, index_now=False, comment=None, attachments=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
       is_description=False, timestamp=None):
     # Return a bogus amendments list if any of the fields changed
@@ -1556,7 +1558,7 @@ class IssueService(object):
       return [], None
 
     comment_pb = self.CreateIssueComment(
-        cnxn, issue, reporter_id, comment,
+        cnxn, issue, reporter_id, comment, attachments=attachments,
         amendments=amendments, is_description=is_description)
 
     self.indexer_called = index_now
@@ -1570,8 +1572,7 @@ class IssueService(object):
       self, _cnxn, issue, user_id, content,
       inbound_message=None, amendments=None, attachments=None,
       kept_attachments=None, timestamp=None, is_spam=False,
-      is_description=False, approval_id=None, commit=True,
-):
+      is_description=False, approval_id=None, commit=True):
     # Add a comment to an issue
     comment = tracker_pb2.IssueComment()
     comment.id = len(self.comments_by_cid)
@@ -1601,12 +1602,13 @@ class IssueService(object):
     if attachments:
       for filename, filecontent, mimetype in attachments:
         aid = len(self.attachments_by_id)
-        attach = comment.attachments_add(
+        attach = tracker_pb2.Attachment(
             attachment_id=aid,
             filename=filename,
             filesize=len(filecontent),
             mimetype=mimetype,
-            blobkey='blob(%s)' % filename)
+            gcs_object_id='gcs_object_id(%s)' % filename)
+        comment.attachments.append(attach)
       self.attachments_by_id[aid] = attach, pid, comment.id
 
     return comment

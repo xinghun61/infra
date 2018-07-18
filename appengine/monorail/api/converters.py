@@ -18,6 +18,7 @@ from api.api_proto import common_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import project_objects_pb2
 from framework import exceptions
+from framework import filecontent
 from framework import framework_constants
 from tracker import attachment_helpers
 from tracker import field_helpers
@@ -484,6 +485,19 @@ def IngestIssueDelta(cnxn, services, delta, config):
       comp_ids_remove, labels_add, labels_remove, field_vals_add,
       field_vals_remove, fields_clear, blocked_on_add, blocked_on_remove,
       blocking_add, blocking_remove, merged_into, summary)
+  return result
+
+def IngestAttachmentUploads(attachment_uploads):
+  """Ingest protoc AttachmentUpload objects as tuples."""
+  result = []
+  for up in attachment_uploads:
+    if not up.filename:
+      raise exceptions.InputException('Missing attachment name')
+    if not up.content:
+      raise exceptions.InputException('Missing attachment content')
+    mimetype = filecontent.GuessContentTypeFromFilename(up.filename)
+    attachment_tuple = (up.filename, up.content, mimetype)
+    result.append(attachment_tuple)
   return result
 
 

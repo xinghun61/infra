@@ -417,7 +417,41 @@ class WorkEnvTest(unittest.TestCase):
         old_owner_id=111L, comment_id=comment_pb.id)
 
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
-  def testUpdateIssue_Normal(self, fake_pasicn):
+  def testUpdateIssue_Attachments(self, fake_pasicn):
+    """We can attach files as we make a change."""
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta(
+        owner_id=222L, summary='New summary', cc_ids_add=[333L])
+
+    attachments = []
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, 'Getting started', attachments=attachments)
+
+    self.assertEqual(222L, issue.owner_id)
+    self.assertEqual('New summary', issue.summary)
+    self.assertEqual([333L], issue.cc_ids)
+    self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    self.assertEqual([], comment_pb.attachments)
+    fake_pasicn.assert_called_with(
+        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
+        old_owner_id=111L, comment_id=comment_pb.id)
+
+    attachments = [
+        ('README.md', 'readme content', 'text/plain'),
+        ('hello.txt', 'hello content', 'text/plain'),
+        ]
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, 'Getting started', attachments=attachments)
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    self.assertEqual(2, len(comment_pb.attachments))
+
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_Description(self, fake_pasicn):
     """We can update an issue's description."""
     self.SignIn()
     issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)

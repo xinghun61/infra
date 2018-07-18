@@ -199,6 +199,32 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertFalse(comments[1].is_description)
 
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_CommentWithAttachments(self, fake_pasicn):
+    """We can update an issue with a comment and attachments."""
+    request = issues_pb2.UpdateIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    request.comment_content = 'test comment'
+    request.uploads.extend([
+          issues_pb2.AttachmentUpload(filename='a.txt', content='aaaaa')])
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    # A comment with an attachment was added.
+    fake_pasicn.assert_called_once()
+    comments = self.services.issue.GetCommentsForIssue(
+        self.cnxn, self.issue_1.issue_id)
+    self.assertEqual(2, len(comments))
+    self.assertEqual('test comment', comments[1].content)
+    self.assertFalse(comments[1].is_description)
+    self.assertEqual(1, len(comments[1].attachments))
+    self.assertEqual('a.txt', comments[1].attachments[0].filename)
+    self.assertEqual(5, self.project.attachment_bytes_used)
+
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Description(self, fake_pasicn):
     """We can update an issue's description."""
     request = issues_pb2.UpdateIssueRequest()
