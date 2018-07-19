@@ -19,6 +19,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/gcloud/googleoauth"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/system/terminal"
 )
 
 func launchCmd(authOpts auth.Options) *subcommands.Command {
@@ -145,20 +146,15 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	logging.Infof(ctx, "LUCI UI: https://ci.chromium.org/swarming/task/%s?server=%s",
 		req.TaskId, jd.SwarmingHostname)
 
-	if c.json != "" {
-		f, err := os.Create(c.json)
-		if err != nil {
-			errors.Log(ctx, err)
-			return 1
-		}
-		defer f.Close()
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
 		lti := launchedTaskInfo{}
 		lti.Swarming.TaskID = req.TaskId
 		lti.Swarming.Hostname = jd.SwarmingHostname
-		if err = json.NewEncoder(f).Encode(lti); err != nil {
+		if err = json.NewEncoder(os.Stdout).Encode(lti); err != nil {
 			errors.Log(ctx, err)
 			return 1
 		}
 	}
+
 	return 0
 }
