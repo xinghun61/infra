@@ -90,9 +90,6 @@ func TestFeedback(t *testing.T) {
 			ID:               1,
 			Parent:           ds.KeyForObj(ctx, comment2),
 			NotUsefulReports: 1,
-			NotUsefulIssueURLs: []string{
-				"https://bugs.chromium.org/p/chromium/issues/detail?id=775017",
-			},
 		}
 		So(ds.Put(ctx, feedback2), ShouldBeNil)
 		selection2 := &track.CommentSelection{
@@ -104,39 +101,33 @@ func TestFeedback(t *testing.T) {
 
 		Convey("Feedback request for unknown category", func() {
 			st, et, _ := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{Category: "Hello"})
-			count, reports, issues, err := feedback(ctx, "Hello", st, et)
+			count, reports, err := feedback(ctx, "Hello", st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 0)
 			So(reports, ShouldEqual, 0)
-			So(issues, ShouldBeNil)
 		})
 
 		Convey("Feedback request for known analyzer name", func() {
 			st, et, _ := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{Category: functionName})
-			count, reports, issues, err := feedback(ctx, functionName, st, et)
+			count, reports, err := feedback(ctx, functionName, st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 2)
 			So(reports, ShouldEqual, 3)
-			So(issues, ShouldNotBeNil)
-			So(len(issues), ShouldEqual, 1)
 		})
 
 		Convey("Feedback request for time period", func() {
-			count, reports, issues, err := feedback(ctx, functionName, stime, etime)
+			count, reports, err := feedback(ctx, functionName, stime, etime)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 1)
 			So(reports, ShouldEqual, 1)
-			So(issues, ShouldNotBeNil)
-			So(len(issues), ShouldEqual, 1)
 		})
 
 		Convey("Feedback request for subcategory", func() {
 			st, et, _ := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{Category: category1})
-			count, reports, issues, err := feedback(ctx, category1, st, et)
+			count, reports, err := feedback(ctx, category1, st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 1)
 			So(reports, ShouldEqual, 2)
-			So(issues, ShouldBeNil)
 		})
 
 		Convey("Validates valid request", func() {
@@ -151,7 +142,7 @@ func TestFeedback(t *testing.T) {
 		Convey("Fails invalid request", func() {
 			_, _, err := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{
 				Category:  category1,
-				StartTime: etime.Format(longForm), // times in wrong order
+				StartTime: etime.Format(longForm), // Times given in reversed order.
 				EndTime:   stime.Format(longForm),
 			})
 			So(err, ShouldNotBeNil)

@@ -33,16 +33,16 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 	if err != nil {
 		return nil, err
 	}
-	count, reports, issues, err := feedback(c, req.Category, stime, etime)
+	count, reports, err := feedback(c, req.Category, stime, etime)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "feedback failed")
 		return nil, grpc.Errorf(codes.Internal, "failed to execute feedback request")
 	}
-	return &tricium.FeedbackResponse{Comments: int32(count), NotUsefulReports: int32(reports), Issues: issues}, nil
+	return &tricium.FeedbackResponse{Comments: int32(count), NotUsefulReports: int32(reports)}, nil
 }
 
 func validateFeedbackRequest(c context.Context, req *tricium.FeedbackRequest) (time.Time, time.Time, error) {
-	stime := time.Unix(0, 0).UTC() // beginning of Unix time
+	stime := time.Unix(0, 0).UTC() // Beginning of Unix time.
 	etime := clock.Now(c).UTC()
 	var err error
 	if req.Category == "" {
@@ -74,7 +74,7 @@ func validateFeedbackRequest(c context.Context, req *tricium.FeedbackRequest) (t
 	return stime, etime, nil
 }
 
-func feedback(c context.Context, category string, stime, etime time.Time) (int, int, []string, error) {
+func feedback(c context.Context, category string, stime, etime time.Time) (int, int, error) {
 	// Extract analyzer name from category.
 	analyzer := strings.SplitN(category, "/", 2)[0]
 	// Getting all comments for the provided category.
@@ -82,7 +82,7 @@ func feedback(c context.Context, category string, stime, etime time.Time) (int, 
 	// exposed for feedback which means they have no feedback data to contribute.
 	var comments []*track.Comment
 	if err := ds.GetAll(c, ds.NewQuery("Comment").Eq("Analyzer", analyzer).Gte("CreationTime", stime).Lte("CreationTime", etime), &comments); err != nil {
-		return 0, 0, nil, fmt.Errorf("failed to retrieve Comment entities: %v", err)
+		return 0, 0, fmt.Errorf("failed to retrieve Comment entities: %v", err)
 	}
 	if len(comments) == 0 {
 		logging.Fields{
@@ -102,23 +102,19 @@ func feedback(c context.Context, category string, stime, etime time.Time) (int, 
 		}
 	}
 	if err := ds.Get(c, entities); err != nil {
-		return 0, 0, nil, fmt.Errorf("failed to retrieve CommentFeedback entities: %v", err)
+		return 0, 0, fmt.Errorf("failed to retrieve CommentFeedback entities: %v", err)
 	}
 	count := 0
 	reports := 0
-	var issues []string
 	for _, entity := range entities {
 		switch t := entity.(type) {
 		case *track.CommentFeedback:
 			reports += t.NotUsefulReports
-			if len(t.NotUsefulIssueURLs) > 0 {
-				issues = append(issues, t.NotUsefulIssueURLs...)
-			}
 		case *track.CommentSelection:
 			if t.Included {
 				count++
 			}
 		}
 	}
-	return count, reports, issues, nil
+	return count, reports, nil
 }

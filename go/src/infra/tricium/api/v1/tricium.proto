@@ -38,8 +38,6 @@ service Tricium {
   rpc Feedback(FeedbackRequest) returns (FeedbackResponse);
 
   // ReportNotUseful reports not useful feedback for a robot comment.
-  //
-  // NB! Issue reporting is currently not supported.
   rpc ReportNotUseful(ReportNotUsefulRequest) returns (ReportNotUsefulResponse);
 }
 
@@ -274,26 +272,23 @@ message FeedbackResponse {
 
   // Number of collected 'not useful' reports.
   int32 not_useful_reports = 2;
-
-  // List of URLs to 'not useful' bug reports.
-  repeated string issues = 3;
 }
 
 message ReportNotUsefulRequest {
   // ID of comment as returned by the Results endpoint.
   string comment_id = 1;
 
-  // More feedback information.
-  //
-  // Optional field.
-  string more_details = 2;
 }
 
 message ReportNotUsefulResponse {
-  // URL to issue if created.
-  //
-  // Only created if there were feedback details.
-  string issue = 1;
+  // The below fields are not used yet until https://crbug.com/865200
+  // is resolved.
+
+  // Email address of the owner of the analyzer.
+  string owner = 1;
+
+  // Monorail bug component of the analyzer being.
+  string monorail_component = 2;
 }
 
 enum State {

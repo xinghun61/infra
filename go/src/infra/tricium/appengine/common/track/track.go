@@ -283,11 +283,6 @@ type CommentFeedback struct {
 	// Number of 'not useful' clicks.
 	// TODO(emso): store information to prevent multiple clicks by the same user.
 	NotUsefulReports int
-	// Links to more information about why the comment was found not useful.
-	//
-	// This should typically be a link to a Monorail issue.
-	NotUsefulIssueURLs []string
-	// TODO(emso): Collect data for number of times shown?
 }
 
 const workerSeparator = "_"
