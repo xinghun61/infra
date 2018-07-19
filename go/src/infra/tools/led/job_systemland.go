@@ -16,8 +16,8 @@ import (
 
 func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarming.SwarmingRpcsNewTaskRequest, args *cookflags.CookFlags, err error) {
 	st = &(*s.SwarmingTask)
-	st.Properties = &(*st.Properties)
-	st.Properties.Env = exfiltrateMap(s.Env)
+	st.TaskSlices[0] = &(*st.TaskSlices[0])
+	st.TaskSlices[0].Properties.Env = exfiltrateMap(s.Env)
 
 	if s.KitchenArgs != nil {
 		args = &(*s.KitchenArgs)
@@ -43,14 +43,14 @@ func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarm
 	}
 
 	if len(s.CipdPkgs) > 0 {
-		if st.Properties.CipdInput == nil {
-			st.Properties.CipdInput = &swarming.SwarmingRpcsCipdInput{}
+		if st.TaskSlices[0].Properties.CipdInput == nil {
+			st.TaskSlices[0].Properties.CipdInput = &swarming.SwarmingRpcsCipdInput{}
 		}
 
 		for subdir, pkgsVers := range s.CipdPkgs {
 			for pkg, ver := range pkgsVers {
-				st.Properties.CipdInput.Packages = append(
-					st.Properties.CipdInput.Packages,
+				st.TaskSlices[0].Properties.CipdInput.Packages = append(
+					st.TaskSlices[0].Properties.CipdInput.Packages,
 					&swarming.SwarmingRpcsCipdPackage{
 						Path:        subdir,
 						PackageName: pkg,

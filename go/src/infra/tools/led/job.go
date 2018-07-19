@@ -43,29 +43,44 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 		return ret
 	}
 
-	ret.S.Env = ingestMap(&r.Properties.Env)
+	// TODO(iannucci): handle multiple task slices better.
+	if len(r.TaskSlices) > 0 {
+		// just keep the first task slice for led purposes.
+		ret.S.SwarmingTask.TaskSlices = ret.S.SwarmingTask.TaskSlices[:1]
+	} else {
+		// upgrade to singular task slice
+		ret.S.SwarmingTask.TaskSlices = []*swarming.SwarmingRpcsTaskSlice{{
+			ExpirationSecs: r.ExpirationSecs,
+			Properties:     r.Properties,
+		}}
+		ret.S.SwarmingTask.Properties = nil
+		ret.S.SwarmingTask.ExpirationSecs = 0
+	}
+	props := ret.S.SwarmingTask.TaskSlices[0].Properties
+
+	ret.S.Env = ingestMap(&props.Env)
 	ret.S.CipdPkgs = map[string]map[string]string{}
-	for _, pkg := range r.Properties.CipdInput.Packages {
+	for _, pkg := range props.CipdInput.Packages {
 		if _, ok := ret.S.CipdPkgs[pkg.Path]; !ok {
 			ret.S.CipdPkgs[pkg.Path] = map[string]string{}
 		}
 		ret.S.CipdPkgs[pkg.Path][pkg.PackageName] = pkg.Version
 	}
-	r.Properties.CipdInput.Packages = nil
-	if r.Properties.CipdInput.Server == "" && r.Properties.CipdInput.ClientPackage == nil {
-		r.Properties.CipdInput = nil
+	props.CipdInput.Packages = nil
+	if props.CipdInput.Server == "" && props.CipdInput.ClientPackage == nil {
+		props.CipdInput = nil
 	}
 
-	ret.U.Dimensions = ingestMap(&r.Properties.Dimensions)
+	ret.U.Dimensions = ingestMap(&props.Dimensions)
 
-	if len(r.Properties.Command) > 2 {
-		if r.Properties.Command[0] == "kitchen${EXECUTABLE_SUFFIX}" && r.Properties.Command[1] == "cook" {
+	if len(props.Command) > 2 {
+		if props.Command[0] == "kitchen${EXECUTABLE_SUFFIX}" && props.Command[1] == "cook" {
 			fs := flag.NewFlagSet("kitchen_cook", flag.ContinueOnError)
 			ret.S.KitchenArgs.Register(fs)
-			if err := fs.Parse(r.Properties.Command[2:]); err != nil {
+			if err := fs.Parse(props.Command[2:]); err != nil {
 				return nil, errors.Annotate(err, "parsing kitchen cook args").Err()
 			}
-			ret.S.SwarmingTask.Properties.Command = nil
+			props.Command = nil
 			if !ret.S.KitchenArgs.LogDogFlags.AnnotationURL.IsZero() {
 				// annotation urls are one-time use; if we got one as part of the new
 				// task request, the odds are that it's already been used. We do this
@@ -93,11 +108,11 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 					}
 					delete(ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir], pkgname)
 					ret.U.RecipeCIPDSource = &RecipeCIPDSource{pkgname, vers}
-				} else if iso := ret.S.SwarmingTask.Properties.InputsRef.Isolated; iso != "" {
+				} else if iso := props.InputsRef.Isolated; iso != "" {
 					// TODO(iannucci): actually seperate recipe files from the isolated
 					// instead of assuming the whole thing is recipes.
 					ret.U.RecipeIsolatedHash = iso
-					ret.S.SwarmingTask.Properties.InputsRef.Isolated = ""
+					props.InputsRef.Isolated = ""
 				}
 
 				ret.U.RecipeName = ret.S.KitchenArgs.RecipeName
@@ -134,7 +149,7 @@ func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, arc
 
 	if args != nil {
 		// Regenerate the command line
-		st.Properties.Command = append([]string{"kitchen${EXECUTABLE_SUFFIX}", "cook"},
+		st.TaskSlices[0].Properties.Command = append([]string{"kitchen${EXECUTABLE_SUFFIX}", "cook"},
 			args.Dump()...)
 	}
 

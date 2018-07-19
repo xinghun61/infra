@@ -240,7 +240,7 @@ func (ejd *EditJobDefinition) PrefixPathEnv(values []string) {
 	}
 	ejd.tweakSystemland(func(s *Systemland) error {
 		var newPath []string
-		for _, pair := range s.SwarmingTask.Properties.EnvPrefixes {
+		for _, pair := range s.SwarmingTask.TaskSlices[0].Properties.EnvPrefixes {
 			if pair.Key == "PATH" {
 				newPath = pair.Value
 				break
@@ -263,15 +263,15 @@ func (ejd *EditJobDefinition) PrefixPathEnv(values []string) {
 			}
 		}
 
-		for _, pair := range s.SwarmingTask.Properties.EnvPrefixes {
+		for _, pair := range s.SwarmingTask.TaskSlices[0].Properties.EnvPrefixes {
 			if pair.Key == "PATH" {
 				pair.Value = newPath
 				return nil
 			}
 		}
 
-		s.SwarmingTask.Properties.EnvPrefixes = append(
-			s.SwarmingTask.Properties.EnvPrefixes,
+		s.SwarmingTask.TaskSlices[0].Properties.EnvPrefixes = append(
+			s.SwarmingTask.TaskSlices[0].Properties.EnvPrefixes,
 			&swarming.SwarmingRpcsStringListPair{Key: "PATH", Value: newPath})
 
 		return nil

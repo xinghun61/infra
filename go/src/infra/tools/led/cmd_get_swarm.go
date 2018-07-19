@@ -89,6 +89,7 @@ func GetFromSwarmingTask(ctx context.Context, authOpts auth.Options, host, taskI
 		ExpirationSecs: req.ExpirationSecs,
 		Priority:       req.Priority,
 		Properties:     req.Properties,
+		TaskSlices:     req.TaskSlices,
 		// don't wan't these or some random person/service will get notified :
 		//PubsubTopic:    req.PubsubTopic,
 		//PubsubUserdata: req.PubsubUserdata,
