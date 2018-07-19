@@ -312,7 +312,7 @@
       "/path/to/tmp/json",
       "move",
       "[TMP_BASE]/gn_tmp_1/gn/out/last_commit_position.h",
-      "[START_DIR]/src/tools/gn/last_commit_position.h"
+      "[START_DIR]/src/tools/gn/bootstrap/last_commit_position.h"
     ],
     "infra_step": true,
     "name": "move last_commit_position.h"

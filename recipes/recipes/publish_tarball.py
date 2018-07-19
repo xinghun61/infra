@@ -284,7 +284,7 @@ def RunSteps(api):
           api.file.move('move gn ' + basename, f, tools_gn.join(basename))
       api.file.move('move last_commit_position.h',
                     git_root.join('out', 'last_commit_position.h'),
-                    tools_gn.join('last_commit_position.h'))
+                    tools_gn.join('bootstrap', 'last_commit_position.h'))
     finally:
       api.file.rmtree('rmtree temp dir', temp_dir)
 
