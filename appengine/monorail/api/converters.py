@@ -440,7 +440,7 @@ def IngestIssueRefs(cnxn, issue_refs, services):
   return issue_ids
 
 
-def IngestIssueDelta(cnxn, services, delta, config):
+def IngestIssueDelta(cnxn, services, delta, config, phases):
   """Ingest a protoc IssueDelta and create a protorpc IssueDelta."""
   status = None
   if delta.HasField('status'):
@@ -463,9 +463,9 @@ def IngestIssueDelta(cnxn, services, delta, config):
   labels_remove = [lab_ref.label for lab_ref in delta.label_refs_remove]
 
   field_vals_add = IngestFieldValues(
-      cnxn, services.user, delta.field_vals_add, config)
+      cnxn, services.user, delta.field_vals_add, config, phases=phases)
   field_vals_remove = IngestFieldValues(
-      cnxn, services.user, delta.field_vals_remove, config)
+      cnxn, services.user, delta.field_vals_remove, config, phases=phases)
   fields_clear = IngestFieldRefs(delta.fields_clear, config)
 
   blocked_on_add = IngestIssueRefs(
@@ -538,7 +538,7 @@ def IngestApprovalStatus(approval_status):
   return tracker_pb2.ApprovalStatus(approval_status)
 
 
-def IngestFieldValues(cnxn, user_service, field_values, config):
+def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
   """Ingest a list of protoc FieldValues and create protorpc FieldValues.
 
   Args:
@@ -546,19 +546,23 @@ def IngestFieldValues(cnxn, user_service, field_values, config):
     user_service: interface to user data storage.
     field_values: a list of protoc FieldValue used by the API.
     config: ProjectIssueConfig for this field_value's project.
+    phases: a list of the issue's protorpc Phases.
 
 
   Returns: A protorpc FieldValue object.
   """
   fds_by_name = {fd.field_name.lower(): fd for fd in config.field_defs}
+  phases_by_name = {phase.name: phase.phase_id for phase in phases or []}
 
   ejected_fvs = []
   for fv in field_values:
     fd = fds_by_name.get(fv.field_ref.field_name.lower())
     if fd:
-      ejected_fvs.append(
-          field_helpers.ParseOneFieldValue(
-              cnxn, user_service, fd, str(fv.value)))
+      ejected_fv = field_helpers.ParseOneFieldValue(
+          cnxn, user_service, fd, str(fv.value))
+      if fd.is_phase_field:
+        ejected_fv.phase_id = phases_by_name.get(fv.phase_ref.phase_name)
+      ejected_fvs.append(ejected_fv)
 
   return ejected_fvs
 

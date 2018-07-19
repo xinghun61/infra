@@ -77,7 +77,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     with work_env.WorkEnv(mc, self.services) as we:
       if request.HasField('delta'):
         delta = converters.IngestIssueDelta(
-            mc.cnxn, self.services, request.delta, config)
+            mc.cnxn, self.services, request.delta, config, issue.phases)
       else:
         delta = tracker_pb2.IssueDelta()  # No changes specified.
       attachments = converters.IngestAttachmentUploads(request.uploads)

@@ -63,6 +63,10 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_name='Pre', field_id=5,
         field_type=tracker_pb2.FieldTypes.ENUM_TYPE,
         applicable_type='')
+    self.fd_6 = tracker_pb2.FieldDef(
+        field_name='PhaseField', field_id=6,
+        field_type=tracker_pb2.FieldTypes.INT_TYPE,
+        applicable_type='', is_phase_field=True)
 
   def testConvertApprovalValues_Empty(self):
     """We handle the case where an issue has no approval values."""
@@ -640,7 +644,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     """An empty protorpc IssueDelta makes an empty protoc IssueDelta."""
     delta = issues_pb2.IssueDelta()
     actual = converters.IngestIssueDelta(
-        self.cnxn, self.services, delta, self.config)
+        self.cnxn, self.services, delta, self.config, [])
     expected = tracker_pb2.IssueDelta()
     self.assertEqual(expected, actual)
 
@@ -659,7 +663,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         comp_refs_add=[common_pb2.ComponentRef(path='UI')],
         label_refs_add=[common_pb2.LabelRef(label='Hot')])
     actual = converters.IngestIssueDelta(
-        self.cnxn, self.services, delta, self.config)
+        self.cnxn, self.services, delta, self.config, [])
     expected = tracker_pb2.IssueDelta(
         status='Fixed', owner_id=222L, summary='New summary',
         cc_ids_add=[333L], comp_ids_add=[1],
@@ -674,25 +678,37 @@ class ConverterFunctionsTest(unittest.TestCase):
         comp_refs_add=[common_pb2.ComponentRef(path='XYZ')])
     with self.assertRaises(exceptions.NoSuchComponentException):
       converters.IngestIssueDelta(
-          self.cnxn, self.services, delta, self.config)
+          self.cnxn, self.services, delta, self.config, [])
 
   def testIngestIssueDelta_CustomFields(self):
     """We can create a protorpc IssueDelta from a protoc IssueDelta."""
-    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_3, self.fd_4]
+    self.config.field_defs = [
+        self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_6]
+    phases = [tracker_pb2.Phase(phase_id=1, name="Beta")]
     delta = issues_pb2.IssueDelta(
         field_vals_add=[
             issue_objects_pb2.FieldValue(
-                value='string', field_ref=common_pb2.FieldRef(
-                    field_name='FirstField'))],
+                value='string',
+                field_ref=common_pb2.FieldRef(field_name='FirstField')
+            ),
+            issue_objects_pb2.FieldValue(
+                value='1',
+                field_ref=common_pb2.FieldRef(field_name='PhaseField'),
+                phase_ref=issue_objects_pb2.PhaseRef(phase_name='Beta')
+            )],
         field_vals_remove=[
             issue_objects_pb2.FieldValue(
                 value='34', field_ref=common_pb2.FieldRef(
                     field_name='SecField'))],
         fields_clear=[common_pb2.FieldRef(field_name='FirstField')])
     actual = converters.IngestIssueDelta(
-        self.cnxn, self.services, delta, self.config)
-    self.assertEqual(actual.field_vals_add, [tracker_pb2.FieldValue(
-        str_value='string', field_id=1, derived=False)])
+        self.cnxn, self.services, delta, self.config, phases)
+    self.assertEqual(actual.field_vals_add,
+                     [tracker_pb2.FieldValue(
+                         str_value='string', field_id=1, derived=False),
+                      tracker_pb2.FieldValue(
+                          int_value=1, field_id=6, phase_id=1, derived=False)
+                     ])
     self.assertEqual(actual.field_vals_remove, [tracker_pb2.FieldValue(
         int_value=34, field_id=2, derived=False)])
     self.assertEqual(actual.fields_clear, [1])
@@ -704,7 +720,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         fields_clear=[common_pb2.FieldRef(field_name='FirstField')])
     with self.assertRaises(exceptions.NoSuchFieldDefException):
       converters.IngestIssueDelta(
-          self.cnxn, self.services, delta, self.config)
+          self.cnxn, self.services, delta, self.config, [])
 
   def testIngestIssueDelta_RelatedIssues(self):
     """We can create a protorpc IssueDelta that references related issues."""
@@ -716,7 +732,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         merged_into_ref=common_pb2.IssueRef(
             project_name='proj', local_id=issue.local_id))
     actual = converters.IngestIssueDelta(
-          self.cnxn, self.services, delta, self.config)
+        self.cnxn, self.services, delta, self.config, [])
     self.assertEqual([issue.issue_id], actual.blocked_on_add)
     self.assertEqual([], actual.blocking_add)
     self.assertEqual(issue.issue_id, actual.merged_into)
@@ -728,14 +744,14 @@ class ConverterFunctionsTest(unittest.TestCase):
             project_name='not-a-proj', local_id=8))
     with self.assertRaises(exceptions.NoSuchProjectException):
       converters.IngestIssueDelta(
-          self.cnxn, self.services, delta, self.config)
+          self.cnxn, self.services, delta, self.config, [])
 
     delta = issues_pb2.IssueDelta(
         merged_into_ref=common_pb2.IssueRef(
             project_name='proj', local_id=999))
     with self.assertRaises(exceptions.NoSuchIssueException):
       converters.IngestIssueDelta(
-          self.cnxn, self.services, delta, self.config)
+          self.cnxn, self.services, delta, self.config, [])
 
   def testIngestAttachmentUploads_Empty(self):
     """Uploading zero files results in an empty list of attachments."""
@@ -814,32 +830,44 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestFieldValues(self):
     self.services.user.TestAddUser('user1@example.com', 111L)
-    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4]
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4, self.fd_6]
+    phases = [
+        tracker_pb2.Phase(phase_id=3, name="Dev"),
+        tracker_pb2.Phase(phase_id=1, name="Beta")
+    ]
 
     field_values = [
-      issue_objects_pb2.FieldValue(
-          value='string',
-          field_ref=common_pb2.FieldRef(field_name='FirstField')
-      ),
-      issue_objects_pb2.FieldValue(
-          value='34',
-          field_ref=common_pb2.FieldRef(field_name='SecField')
-      ),
-      issue_objects_pb2.FieldValue(
-          value='user1@example.com',
-          field_ref=common_pb2.FieldRef(field_name='UserField')
-        )
+        issue_objects_pb2.FieldValue(
+            value='string',
+            field_ref=common_pb2.FieldRef(field_name='FirstField')
+        ),
+        issue_objects_pb2.FieldValue(
+            value='34',
+            field_ref=common_pb2.FieldRef(field_name='SecField')
+        ),
+        issue_objects_pb2.FieldValue(
+            value='user1@example.com',
+            field_ref=common_pb2.FieldRef(field_name='UserField'),
+            # phase_ref for non-phase fields should be ignored.
+            phase_ref=issue_objects_pb2.PhaseRef(phase_name='Dev')
+        ),
+        issue_objects_pb2.FieldValue(
+            value='2',
+            field_ref=common_pb2.FieldRef(field_name='PhaseField'),
+            phase_ref=issue_objects_pb2.PhaseRef(phase_name='Beta'))
     ]
 
     actual = converters.IngestFieldValues(
-        self.cnxn, self.services.user, field_values, self.config)
+        self.cnxn, self.services.user, field_values, self.config, phases)
     self.assertEqual(
         actual,
         [
             tracker_pb2.FieldValue(
                 str_value='string', field_id=1, derived=False),
             tracker_pb2.FieldValue(int_value=34, field_id=2, derived=False),
-            tracker_pb2.FieldValue(user_id=111L, field_id=4, derived=False)
+            tracker_pb2.FieldValue(user_id=111L, field_id=4, derived=False),
+            tracker_pb2.FieldValue(
+                int_value=2, field_id=6, phase_id=1, derived=False)
         ]
     )
 
