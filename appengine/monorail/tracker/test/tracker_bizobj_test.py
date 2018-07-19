@@ -910,12 +910,13 @@ class BizobjTest(unittest.TestCase):
   def testUsersInvolvedInConfig_Normal(self):
     """We find user IDs mentioned components, fields, and approvals."""
     self.config.component_defs[0].admin_ids = [111L]
+    self.config.component_defs[0].cc_ids = [444L]
     self.config.field_defs[0].admin_ids = [111L, 222L]
     approval_def = tracker_pb2.ApprovalDef(
         approval_id=1, approver_ids=[111L, 333L], survey='')
     self.config.approval_defs = [approval_def]
     actual = tracker_bizobj.UsersInvolvedInConfig(self.config)
-    self.assertEqual({111L, 222L, 333L}, actual)
+    self.assertEqual({111L, 222L, 333L, 444L}, actual)
 
   def testLabelIDsInvolvedInConfig_Empty(self):
     """There are no label IDs mentioned in a default config."""

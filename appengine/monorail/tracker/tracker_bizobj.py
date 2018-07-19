@@ -766,6 +766,7 @@ def UsersInvolvedInConfig(config):
     result.update(fd.admin_ids)
   for cd in config.component_defs:
     result.update(cd.admin_ids)
+    result.update(cd.cc_ids)
     if cd.creator_id:
       result.add(cd.creator_id)
     if cd.modifier_id:
