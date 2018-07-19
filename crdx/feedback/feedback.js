@@ -6,7 +6,7 @@
 
   var css = `
     .__crdxFeedbackButton {
-      background-image: url('https://storage.googleapis.com/crdx-feedback.appspot.com/icon.png');
+      background-image: url('https://crdx-feedback.appspot.com.storage.googleapis.com/icon.png');
       background-size: cover;
       bottom: 32px;
       height: 32px;
