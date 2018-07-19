@@ -27,6 +27,7 @@ disable=
   abstract-class-little-used,
   abstract-class-not-used,
   bad-builtin,
+  bad-indentation,     # Different projects have different indentation conventions.
   bad-inline-option,
   broad-except,
   deprecated-module,
@@ -34,7 +35,8 @@ disable=
   exec-used,
   fixme,
   global-statement,
-  invalid-name,
+  import-error,        # Not supported if only files in change are present.
+  invalid-name,        # Different projects have different naming conventions.
   locally-disabled,
   locally-enabled,
   logging-not-lazy,
@@ -53,15 +55,13 @@ disable=
   too-many-public-methods,
   too-many-return-statements,
   too-many-statements,
-  trailing-whitespace,
-  wildcard-import,
+  trailing-whitespace, # Overlap with Spacey analyzer.
 
 
 [REPORTS]
 
 # Set the output format. Available formats are text, parseable, colorized, msvs
-# (visual studio) and html. You can also give a reporter class, eg
-# mypackage.mymodule.MyReporterClass.
+# (visual studio) and html.
 output-format=text
 
 # Put messages in a separate file for each module / package specified on the
