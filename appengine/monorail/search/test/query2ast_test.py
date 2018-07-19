@@ -613,6 +613,16 @@ class QueryParsingUnitTest(unittest.TestCase):
                  ['milestone-2008', 'milestone-2009', 'milestone-2010'], []),
         cond1)
 
+    # Duplicated and trailing commas are ignored.
+    ast = query2ast.ParseUserQuery(
+        'milestone=2008,,2009,2010,', '', BUILTIN_ISSUE_FIELDS,
+        self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(EQ, [BUILTIN_ISSUE_FIELDS['label']],
+                 ['milestone-2008', 'milestone-2009', 'milestone-2010'], []),
+        cond1)
+
   def testParseUserQuery_Dates(self):
     # query with a daterange
     ast = query2ast.ParseUserQuery(

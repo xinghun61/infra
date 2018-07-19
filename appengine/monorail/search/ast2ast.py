@@ -89,7 +89,7 @@ def _PreprocessIsOpenCond(
   elif cond.op == ast_pb2.QueryOp.NE:
     op = ast_pb2.QueryOp.EQ
   else:
-    raise MalformedQuery('Open condidtion got nonsensical op %r' % cond.op)
+    raise MalformedQuery('Open condition got nonsensical op %r' % cond.op)
 
   return ast_pb2.Condition(
       op=op, field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['status_id']],

@@ -318,7 +318,9 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
   unquoted_value = value.strip('"')
   # Quick-OR is a convenient way to write one condition that matches any one of
   # multiple values, like set membership.  E.g., [Priority=High,Critical].
-  quick_or_vals = [v.strip() for v in unquoted_value.split(',')]
+  # Ignore empty values caused by duplicated or trailing commas. E.g.,
+  # [Priority=High,,Critical,] is equivalent to [Priority=High,Critical].
+  quick_or_vals = [v.strip() for v in unquoted_value.split(',') if v.strip()]
 
   op = OPS[op_str]
   negate = False
