@@ -261,7 +261,7 @@ function ac_keyevent_(event) {
         }
       }
       // ac-table rows need to be removed when switching to another input.
-      ac_UpdateCompletionList(false);
+      ac_updateCompletionList(false);
     }
     // If the user hit Escape when the auto-complete menu was not shown,
     // then blur the input text field so that the user can use keyboard
