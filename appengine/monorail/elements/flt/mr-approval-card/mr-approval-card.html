@@ -6,12 +6,14 @@
 <link rel="import" href="../../../bower_components/iron-icon/iron-icon.html">
 
 <link rel="import" href="../../mixins/redux-mixin.html">
+<link rel="import" href="../../mr-comment-content/mr-comment-content.html">
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
-<link rel="import" href="../mr-approval-card/mr-survey.html">
 <link rel="import" href="../mr-compact-comments/mr-compact-comments.html">
+<link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
 <link rel="import" href="../mr-metadata/mr-edit-metadata.html">
 <link rel="import" href="../mr-metadata/mr-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
+
 
 <dom-module id="mr-approval-card">
   <template>
@@ -47,6 +49,15 @@
       mr-edit-metadata {
         width: 600px;
         max-width: 100%;
+      }
+      mr-inline-editor {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.5em;
+        color: hsl(0, 0%, 30%);
+        box-sizing: border-box;
+        word-wrap: break-word;
+        --mr-inline-editor-textarea-min-height: 300px;
       }
       .approver-notice {
         padding: 0.25em 0;
@@ -87,6 +98,13 @@
         color: var(--approval-accent-color);
         margin-left: 32px;
       }
+      .survey {
+        padding: 1em 0;
+        max-height: 500px;
+        overflow-y: auto;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
     </style>
     <button class="header" on-click="toggleCard">
       <iron-icon class="expand-icon" icon="[[_expandIcon]]"></iron-icon>
@@ -112,7 +130,17 @@
         setter="[[setter]]"
         fields="[[_fields]]"
       ></mr-metadata>
-      <mr-survey survey="[[_survey]]"></mr-survey>
+      <mr-inline-editor
+          content="[[_survey.content]]"
+          title$="[[fieldName]] Survey"
+          edit-text="Edit responses"
+          placeholder="Survey content and answer"
+          on-save="[[_updateSurvey]]"
+      >
+        <div class="survey">
+          <mr-comment-content content="[[_survey.content]]"></mr-comment-content>
+        </div>
+      </mr-inline-editor>
       <h3>Approval comments / Changelog</h3>
       <mr-compact-comments
         comments="[[_comments]]"

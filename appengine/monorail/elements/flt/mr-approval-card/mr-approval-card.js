@@ -141,6 +141,12 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
           return this._submitCommentHandler.bind(this);
         },
       },
+      _updateSurvey: {
+        type: Function,
+        value: function() {
+          return this._updateSurveyHandler.bind(this);
+        },
+      },
     };
   }
 
@@ -175,7 +181,7 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     this._updateApproval(comment);
   }
 
-  _updateApproval(commentData, delta) {
+  _updateApproval(commentData, delta, isDescription) {
     const baseMessage = {
       trace: {token: this.token},
       issue_ref: {
@@ -193,6 +199,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
     if (delta) {
       message.approval_delta = delta;
+    }
+
+    if (isDescription) {
+      message.is_description = true;
     }
 
     this.dispatch({type: actionType.UPDATE_APPROVAL_START});
@@ -285,6 +295,10 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     if (!this.opened && isApprovalOwner) {
       this.opened = true;
     }
+  }
+
+  _updateSurveyHandler(content) {
+    this._updateApproval(content, null, true);
   }
 }
 
