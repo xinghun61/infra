@@ -69,7 +69,7 @@ func main() {
 		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
 	}
 	cmd := exec.Command(cmdName, cmdArgs...)
-	log.Printf("Command args: %#v", cmdArgs)
+	log.Printf("Command: %#v; args: %#v", cmdName, cmdArgs)
 
 	// Set PYTHONPATH for the command to run so that the bundled version of pylint and its dependencies are used.
 	env := os.Environ()
