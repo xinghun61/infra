@@ -1,0 +1,8 @@
+package: infra/tricium/function/spellchecker
+install_mode: copy
+data:
+  - file: spellchecker
+
+  # Third party dependencies
+  - dir: codespell
+  - dir: python
