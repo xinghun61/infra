@@ -5,7 +5,6 @@
 package crauditcommits
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -77,6 +76,7 @@ func (c mockMiloClient) GetBuildInfo(ctx context.Context, URL string) (*buildbot
 
 type mockMonorailClient struct {
 	il *mr.IssuesListResponse
+	cl *mr.ListCommentsResponse
 	ic *mr.InsertCommentResponse
 	ii *mr.InsertIssueResponse
 	gi *mr.Issue
@@ -100,5 +100,5 @@ func (c mockMonorailClient) GetIssue(ctx context.Context, in *mr.GetIssueRequest
 }
 
 func (c mockMonorailClient) ListComments(ctx context.Context, in *mr.ListCommentsRequest, opts ...grpc.CallOption) (*mr.ListCommentsResponse, error) {
-	return nil, errors.New("not implemented")
+	return c.cl, c.e
 }

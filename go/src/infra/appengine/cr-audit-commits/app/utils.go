@@ -184,6 +184,20 @@ func issueFromID(ctx context.Context, cfg *RepoConfig, ID int32, cs *Clients) (*
 	return nil, fmt.Errorf("could not find an issue with ID %d", ID)
 }
 
+func listCommentsFromIssueID(ctx context.Context, cfg *RepoConfig, ID int32, cs *Clients) ([]*monorail.Comment, error) {
+	req := &monorail.ListCommentsRequest{
+		Issue: &monorail.IssueRef{
+			IssueId:   ID,
+			ProjectId: cfg.MonorailProject,
+		},
+	}
+	resp, err := cs.monorail.ListComments(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Items, nil
+}
+
 func resultText(cfg *RepoConfig, rc *RelevantCommit, issueExists bool) string {
 	sort.Slice(rc.Result, func(i, j int) bool {
 		if rc.Result[i].RuleResultStatus == rc.Result[j].RuleResultStatus {

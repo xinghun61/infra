@@ -27,13 +27,13 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 	result.RuleName = "OnlyMergeApprovedChange"
 	result.RuleResultStatus = ruleFailed
 
-	//Exclude Chrome release bot changes
+	// Exclude Chrome release bot changes
 	if rc.AuthorAccount == chromeReleaseBotAcc {
 		result.RuleResultStatus = rulePassed
 		return result
 	}
 
-	//Exclude Chrome TPM changes
+	// Exclude Chrome TPM changes
 	for _, tpm := range chromeTPMs {
 		if rc.AuthorAccount == tpm {
 			result.RuleResultStatus = rulePassed
@@ -41,30 +41,44 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 		}
 	}
 	bugID, err := bugIDFromCommitMessage(rc.CommitMessage)
+
 	if err != nil {
 		result.Message = fmt.Sprintf("Revision %s was merged to %s release branch with no bug attached!"+
 			"\nPlease explain why this change was merged to the branch!", rc.CommitHash, ap.RepoCfg.BranchName)
 		return result
 	}
 	bugList := strings.Split(bugID, ",")
+	milestone := ""
+	success := false
 	for _, bug := range bugList {
 		bugNumber, err := strconv.Atoi(bug)
 		if err != nil {
 			continue
 		}
-		vIssue, _ := issueFromID(ctx, ap.RepoCfg, int32(bugNumber), cs)
-		milestone, ok := GetToken(ctx, "MilestoneNumber", ap.RepoCfg.Metadata)
-		if !ok {
-			panic("No milestone specified in the repository configuration")
+		milestone, success = GetToken(ctx, "MilestoneNumber", ap.RepoCfg.Metadata)
+		if !success {
+			panic("MilestoneNumber not specified in repository configuration")
 		}
 		mergeLabel := fmt.Sprintf(mergeApprovedLabel, milestone)
-		if vIssue != nil {
-			// Check if the issue has a merge approval label
-			for _, label := range vIssue.Labels {
-				if label == mergeLabel {
-					result.RuleResultStatus = rulePassed
-					break
-				}
+		vIssue, err := issueFromID(ctx, ap.RepoCfg, int32(bugNumber), cs)
+		if err != nil {
+			result.Message = fmt.Sprintf("Revision %s was merged to %s release branch with an invalid bug attached!"+
+				"\nPlease explain why this change was merged to the branch!", rc.CommitHash, ap.RepoCfg.BranchName)
+			return result
+		}
+		// Check if the issue has a merge approval label
+		for _, label := range vIssue.Labels {
+			if label == mergeLabel {
+				result.RuleResultStatus = rulePassed
+				return result
+			}
+		}
+		// Check if the issue has a merge approval label in the comment history
+		comments, _ := listCommentsFromIssueID(ctx, ap.RepoCfg, int32(bugNumber), cs)
+		for _, comment := range comments {
+			if strings.Contains(comment.Content, mergeLabel) {
+				result.RuleResultStatus = rulePassed
+				return result
 			}
 		}
 	}

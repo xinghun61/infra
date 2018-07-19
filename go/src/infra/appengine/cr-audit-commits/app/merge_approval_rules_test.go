@@ -51,7 +51,6 @@ func TestMergeApprovalRules(t *testing.T) {
 				Issue: &monorail.Issue{},
 			},
 		}
-
 		Convey("Change to commit has a valid bug with merge approval label", func() {
 			testClients.monorail = mockMonorailClient{
 				il: &monorail.IssuesListResponse{
@@ -76,7 +75,30 @@ func TestMergeApprovalRules(t *testing.T) {
 			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
-
+		})
+		Convey("Change to commit has a valid bug with merge approval label in comment history", func() {
+			testClients.monorail = mockMonorailClient{
+				il: &monorail.IssuesListResponse{
+					Items: []*monorail.Issue{
+						{
+							Id: 123456,
+						},
+					},
+					TotalResults: 1,
+				},
+				cl: &monorail.ListCommentsResponse{
+					Items: []*monorail.Comment{
+						{
+							Content: "This change has a merge approval label Labels: Merge-Approved-65",
+						},
+					},
+				},
+			}
+			rc.CommitMessage = "This change has a valid bug ID with merge approval label in comment history \nBUG:123456"
+			// Run rule
+			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
+			// Check result code
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
 		Convey("Change to commit has multiple bugs", func() {
 			testClients.monorail = mockMonorailClient{
