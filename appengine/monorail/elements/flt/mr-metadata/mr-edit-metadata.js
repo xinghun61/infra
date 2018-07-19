@@ -6,24 +6,30 @@
  * Editing form for either an approval or the overall issue.
  *
  */
-class MrEditMetadata extends Polymer.Element {
+class MrEditMetadata extends ReduxMixin(Polymer.Element) {
   static get is() {
     return 'mr-edit-metadata';
   }
 
   static get properties() {
     return {
-      cc: Array,
-      enums: Array,
-      projectName: String,
-      urls: Array,
-      users: Array,
-      statuses: Array,
-      status: String,
+      approvalStatus: String,
+      approvers: Array,
+      setter: Object,
       summary: String,
+      cc: Array,
+      components: Array,
+      fields: Array,
+      issueStatus: String,
+      statuses: Array,
       blockedOn: Array,
       blocking: Array,
+      owner: Object,
       labels: Array,
+      projectName: {
+        type: String,
+        statePath: 'projectName',
+      },
       isApproval: {
         type: Boolean,
         value: false,

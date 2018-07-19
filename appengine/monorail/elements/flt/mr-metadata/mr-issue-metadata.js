@@ -42,9 +42,9 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'token',
       },
-      _fields: {
+      _fieldList: {
         type: Array,
-        computed: '_filterFields(issue.fieldValues)',
+        computed: '_computeFieldList(issue.fieldValues)',
       },
       _canStar: {
         type: Boolean,
@@ -96,11 +96,8 @@ class MrIssueMetadata extends ReduxMixin(Polymer.Element) {
     return !(fetching || starring);
   }
 
-  _filterFields(fields) {
-    if (!fields) return [];
-    return fields.filter((f) => {
-      return !f.fieldRef.approvalName;
-    });
+  _computeFieldList(fields) {
+    return computeFunction.computeFieldList(fields, null);
   }
 
   _renderPluralS(count) {

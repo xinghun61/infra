@@ -8,7 +8,7 @@
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
 <link rel="import" href="./mr-edit-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
-<link rel="import" href="../../mixins/redux-mixin.html">
+<link rel="import" href="../../redux/redux-mixin.html">
 
 <dom-module id="mr-metadata">
   <template>
@@ -117,7 +117,7 @@
       </tr>
     </template>
 
-    <template is="dom-repeat" items="[[_fieldList]]" as="field">
+    <template is="dom-repeat" items="[[fieldList]]" as="field">
       <tr>
         <th>[[field.fieldRef.fieldName]]:</th>
         <td>

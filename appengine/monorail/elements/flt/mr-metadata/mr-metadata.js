@@ -18,7 +18,7 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
       setter: Object,
       cc: Array,
       components: Array,
-      fields: Array,
+      fieldList: Array,
       issueStatus: String,
       blockedOn: Array,
       blocking: Array,
@@ -27,31 +27,7 @@ class MrMetadata extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'projectName',
       },
-      // fields (from issue.fieldValues) is an array with one entry per values.
-      // We want to remap each fieldRef into its own list entry.
-      _fieldList: {
-        type: Array,
-        computed: '_computeFieldList(fields)',
-      },
     };
-  }
-
-  _computeFieldList(values) {
-    if (!values) return [];
-    const fieldMap = values.reduce((acc, v) => {
-      const fieldName = v.fieldRef.fieldName;
-      if (!(fieldName in acc)) {
-        acc[fieldName] = {
-          values: [v.value],
-          fieldRef: v.fieldRef,
-        };
-      } else {
-        acc[fieldName].values.push(v.value);
-      }
-      return acc;
-    }, {});
-
-    return Object.keys(fieldMap).map((field) => (fieldMap[field]));
   }
 
   _fieldIsDate(type) {

@@ -1,4 +1,5 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../redux/redux-mixin.html">
 
 <dom-module id="mr-edit-metadata">
   <template>
@@ -58,7 +59,7 @@
 
         <select id="statusInput">
           <template is="dom-repeat" items="[[statuses]]">
-            <option value$="[[item]]" selected$="[[_computeIsSelected(status, item)]]">[[item]]</option>
+            <option value$="[[item]]" selected$="[[_computeIsSelected(issueStatus, item)]]">[[item]]</option>
           </template>
         </select>
         <template is="dom-repeat" items="[[users]]" as="user">

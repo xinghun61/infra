@@ -1,0 +1,36 @@
+<script>
+  (function(window) {
+    // Functions to compute commonly reused derived data.
+    // TODO(zhangtiff): Memoize computed data to avoid recomputing.
+    // Inspired by: https://redux.js.org/recipes/computing-derived-data
+
+    const computeFunction = Object.freeze({
+      // values (from issue.fieldValues) is an array with one entry per value.
+      // We want to remap each fieldRef into its own list entry and filter
+      // those lists based on approvals.
+      computeFieldList: (values, approvalName) => {
+        if (!values) return [];
+        const fieldMap = values.reduce((acc, v) => {
+          // Filter out field values that don't belong to this approval.
+          if (!approvalName && !v.fieldRef.approvalName) return acc;
+          if (v.fieldRef.approvalName !== approvalName) return acc;
+
+          const fieldName = v.fieldRef.fieldName;
+          if (!(fieldName in acc)) {
+            acc[fieldName] = {
+              values: [v.value],
+              fieldRef: v.fieldRef,
+            };
+          } else {
+            acc[fieldName].values.push(v.value);
+          }
+          return acc;
+        }, {});
+
+        return Object.keys(fieldMap).map((field) => (fieldMap[field]));
+      },
+    });
+
+    window.computeFunction = computeFunction || {};
+  })(window);
+</script>

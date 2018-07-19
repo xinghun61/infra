@@ -119,9 +119,9 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         computed: '_computeIsApprovalOwner(approvers, user)',
         observer: '_openUserCards',
       },
-      _fields: {
+      _fieldList: {
         type: Array,
-        computed: '_filterFields(fields, fieldName)',
+        computed: '_computeFieldList(fields, fieldName)',
       },
       _expandIcon: {
         type: String,
@@ -274,11 +274,8 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
 
   // TODO(zhangtiff): Change data flow here so that approvals are only
   // separated once then passed around later.
-  _filterFields(fields, fieldName) {
-    if (!fields) return;
-    return fields.filter((f) => {
-      return f.fieldRef.fieldName === fieldName;
-    });
+  _computeFieldList(fields, fieldName) {
+    return computeFunction.computeFieldList(fields, fieldName);
   }
 
   _filterStatuses(status, statuses, isApprover) {

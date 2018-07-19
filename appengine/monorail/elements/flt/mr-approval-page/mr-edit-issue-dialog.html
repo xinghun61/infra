@@ -2,7 +2,9 @@
 
 <link rel="import" href="../../../bower_components/chopsui/chops-button.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-dialog.html">
-<link rel="import" href="../../mixins/redux-mixin.html">
+
+<link rel="import" href="../../redux/compute-functions.html">
+<link rel="import" href="../../redux/redux-mixin.html">
 <link rel="import" href="../mr-metadata/mr-edit-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
 
@@ -31,13 +33,13 @@
       </h3>
       <mr-edit-metadata
         id="metadataForm"
-        issue="[[issue]]"
+        owner="[[issue.ownerRef]]"
         cc="[[issue.ccRefs]]"
-        components="[[issue.componentRefs]]"
-        project-name="[[issue.projectName]]"
+        issue-status="[[issue.statusRef]]"
         statuses="[[statuses]]"
-        status="[[issue.statusRef.status]]"
         summary="[[issue.summary]]"
+        components="[[issue.componentRefs]]"
+        field-list="[[_fieldList]]"
         blocked-on="[[issue.blockedOnIssueRefs]]"
         blocking="[[issue.blockingIssueRefs]]"
         labels="[[issue.labelRefs]]"
