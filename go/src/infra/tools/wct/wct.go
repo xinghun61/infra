@@ -156,7 +156,7 @@ func main() {
 		c, err = chromedp.New(ctxt, chromedp.WithLogf(infoLogger("LOG")),
 			chromedp.WithDebugf(infoLogger("DEBUG")),
 			chromedp.WithErrorf(infoLogger("ERROR")),
-			chromedp.WithRunnerOptions(runner.Path(*chromeBin), runner.NoSandbox, runner.Port(debugPort)))
+			chromedp.WithRunnerOptions(runner.Path(*chromeBin), runner.NoSandbox, runner.RemoteDebuggingPort(debugPort)))
 		if err == nil {
 			break
 		}

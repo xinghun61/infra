@@ -37,11 +37,6 @@ import:
 - package: github.com/luci/gtreap
   version: master
   repo: https://chromium.googlesource.com/external/github.com/luci/gtreap.git
-- package: github.com/luci/go-endpoints
-  version: master
-  repo: https://chromium.googlesource.com/external/github.com/luci/go-endpoints.git
-  subpackages:
-  - endpoints
 - package: github.com/luci/go-render
   version: master
   repo: https://chromium.googlesource.com/external/github.com/luci/go-render.git
