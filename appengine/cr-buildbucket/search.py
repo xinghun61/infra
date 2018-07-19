@@ -22,13 +22,13 @@ import metrics
 import model
 import user
 
-MAX_RETURN_BUILDS = 100
+MAX_RETURN_BUILDS = 1000
 RE_TAG_INDEX_SEARCH_CURSOR = re.compile('^id>\d+$')
 
 
 def fix_max_builds(max_builds):
   """Fixes a page size."""
-  max_builds = max_builds or 10
+  max_builds = max_builds or 100
   if not isinstance(max_builds, int):
     raise errors.InvalidInputError('max_builds must be an integer')
   if max_builds < 0:

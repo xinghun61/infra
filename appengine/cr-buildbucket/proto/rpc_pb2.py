@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package='buildbucket.v2',
     syntax='proto3',
     serialized_pb=_b(
-        '\n\trpc.proto\x12\x0e\x62uildbucket.v2\x1a google/protobuf/field_mask.proto\x1a\x17google/rpc/status.proto\x1a\x0c\x63ommon.proto\x1a\x0b\x62uild.proto\"\x8b\x01\n\x0fGetBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12*\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\x14\n\x0c\x62uild_number\x18\x03 \x01(\x05\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\x9b\x01\n\x13SearchBuildsRequest\x12\x31\n\tpredicate\x18\x01 \x01(\x0b\x32\x1e.buildbucket.v2.BuildPredicate\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12\x11\n\tpage_size\x18\x65 \x01(\x05\x12\x12\n\npage_token\x18\x66 \x01(\t\"V\n\x14SearchBuildsResponse\x12%\n\x06\x62uilds\x18\x01 \x03(\x0b\x32\x15.buildbucket.v2.Build\x12\x17\n\x0fnext_page_token\x18\x64 \x01(\t\"\xd1\x01\n\x0c\x42\x61tchRequest\x12\x36\n\x08requests\x18\x01 \x03(\x0b\x32$.buildbucket.v2.BatchRequest.Request\x1a\x88\x01\n\x07Request\x12\x34\n\tget_build\x18\x01 \x01(\x0b\x32\x1f.buildbucket.v2.GetBuildRequestH\x00\x12<\n\rsearch_builds\x18\x02 \x01(\x0b\x32#.buildbucket.v2.SearchBuildsRequestH\x00\x42\t\n\x07request\"\xf3\x01\n\rBatchResponse\x12\x39\n\tresponses\x18\x01 \x03(\x0b\x32&.buildbucket.v2.BatchResponse.Response\x1a\xa6\x01\n\x08Response\x12*\n\tget_build\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12=\n\rsearch_builds\x18\x02 \x01(\x0b\x32$.buildbucket.v2.SearchBuildsResponseH\x00\x12#\n\x05\x65rror\x18\x64 \x01(\x0b\x32\x12.google.rpc.StatusH\x00\x42\n\n\x08response\"\xd1\x02\n\x0e\x42uildPredicate\x12*\n\x07\x62uilder\x18\x01 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12&\n\x06status\x18\x02 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12\x12\n\ncreated_by\x18\x05 \x01(\t\x12(\n\x04tags\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12.\n\x0b\x63reate_time\x18\x07 \x01(\x0b\x32\x19.buildbucket.v2.TimeRange\x12\x1c\n\x14include_experimental\x18\x08 \x01(\x08\x12)\n\x05\x62uild\x18\t \x01(\x0b\x32\x1a.buildbucket.v2.BuildRange\":\n\nBuildRange\x12\x16\n\x0estart_build_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x65nd_build_id\x18\x02 \x01(\x03\x32\xf3\x01\n\x06\x42uilds\x12\x44\n\x08GetBuild\x12\x1f.buildbucket.v2.GetBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12[\n\x0cSearchBuilds\x12#.buildbucket.v2.SearchBuildsRequest\x1a$.buildbucket.v2.SearchBuildsResponse\"\x00\x12\x46\n\x05\x42\x61tch\x12\x1c.buildbucket.v2.BatchRequest\x1a\x1d.buildbucket.v2.BatchResponse\"\x00\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
+        '\n\trpc.proto\x12\x0e\x62uildbucket.v2\x1a google/protobuf/field_mask.proto\x1a\x17google/rpc/status.proto\x1a\x0c\x63ommon.proto\x1a\x0b\x62uild.proto\"\x8b\x01\n\x0fGetBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12*\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\x14\n\x0c\x62uild_number\x18\x03 \x01(\x05\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\x9b\x01\n\x13SearchBuildsRequest\x12\x31\n\tpredicate\x18\x01 \x01(\x0b\x32\x1e.buildbucket.v2.BuildPredicate\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12\x11\n\tpage_size\x18\x65 \x01(\x05\x12\x12\n\npage_token\x18\x66 \x01(\t\"V\n\x14SearchBuildsResponse\x12%\n\x06\x62uilds\x18\x01 \x03(\x0b\x32\x15.buildbucket.v2.Build\x12\x17\n\x0fnext_page_token\x18\x64 \x01(\t\"\xd1\x01\n\x0c\x42\x61tchRequest\x12\x36\n\x08requests\x18\x01 \x03(\x0b\x32$.buildbucket.v2.BatchRequest.Request\x1a\x88\x01\n\x07Request\x12\x34\n\tget_build\x18\x01 \x01(\x0b\x32\x1f.buildbucket.v2.GetBuildRequestH\x00\x12<\n\rsearch_builds\x18\x02 \x01(\x0b\x32#.buildbucket.v2.SearchBuildsRequestH\x00\x42\t\n\x07request\"\xf3\x01\n\rBatchResponse\x12\x39\n\tresponses\x18\x01 \x03(\x0b\x32&.buildbucket.v2.BatchResponse.Response\x1a\xa6\x01\n\x08Response\x12*\n\tget_build\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12=\n\rsearch_builds\x18\x02 \x01(\x0b\x32$.buildbucket.v2.SearchBuildsResponseH\x00\x12#\n\x05\x65rror\x18\x64 \x01(\x0b\x32\x12.google.rpc.StatusH\x00\x42\n\n\x08response\"\x8f\x03\n\x0e\x42uildPredicate\x12*\n\x07\x62uilder\x18\x01 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12&\n\x06status\x18\x02 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12<\n\x15output_gitiles_commit\x18\x04 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x12\n\ncreated_by\x18\x05 \x01(\t\x12(\n\x04tags\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12.\n\x0b\x63reate_time\x18\x07 \x01(\x0b\x32\x19.buildbucket.v2.TimeRange\x12\x1c\n\x14include_experimental\x18\x08 \x01(\x08\x12)\n\x05\x62uild\x18\t \x01(\x0b\x32\x1a.buildbucket.v2.BuildRange\":\n\nBuildRange\x12\x16\n\x0estart_build_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x65nd_build_id\x18\x02 \x01(\x03\x32\xf3\x01\n\x06\x42uilds\x12\x44\n\x08GetBuild\x12\x1f.buildbucket.v2.GetBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12[\n\x0cSearchBuilds\x12#.buildbucket.v2.SearchBuildsRequest\x1a$.buildbucket.v2.SearchBuildsResponse\"\x00\x12\x46\n\x05\x42\x61tch\x12\x1c.buildbucket.v2.BatchRequest\x1a\x1d.buildbucket.v2.BatchResponse\"\x00\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     ),
     dependencies=[
         google_dot_protobuf_dot_field__mask__pb2.DESCRIPTOR,
@@ -541,9 +541,26 @@ _BUILDPREDICATE = _descriptor.Descriptor(
             options=None
         ),
         _descriptor.FieldDescriptor(
+            name='output_gitiles_commit',
+            full_name='buildbucket.v2.BuildPredicate.output_gitiles_commit',
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            options=None
+        ),
+        _descriptor.FieldDescriptor(
             name='created_by',
             full_name='buildbucket.v2.BuildPredicate.created_by',
-            index=3,
+            index=4,
             number=5,
             type=9,
             cpp_type=9,
@@ -560,7 +577,7 @@ _BUILDPREDICATE = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='tags',
             full_name='buildbucket.v2.BuildPredicate.tags',
-            index=4,
+            index=5,
             number=6,
             type=11,
             cpp_type=10,
@@ -577,7 +594,7 @@ _BUILDPREDICATE = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='create_time',
             full_name='buildbucket.v2.BuildPredicate.create_time',
-            index=5,
+            index=6,
             number=7,
             type=11,
             cpp_type=10,
@@ -594,7 +611,7 @@ _BUILDPREDICATE = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='include_experimental',
             full_name='buildbucket.v2.BuildPredicate.include_experimental',
-            index=6,
+            index=7,
             number=8,
             type=8,
             cpp_type=7,
@@ -611,7 +628,7 @@ _BUILDPREDICATE = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='build',
             full_name='buildbucket.v2.BuildPredicate.build',
-            index=7,
+            index=8,
             number=9,
             type=11,
             cpp_type=10,
@@ -635,7 +652,7 @@ _BUILDPREDICATE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=962,
-    serialized_end=1299,
+    serialized_end=1361,
 )
 
 _BUILDRANGE = _descriptor.Descriptor(
@@ -688,8 +705,8 @@ _BUILDRANGE = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1301,
-    serialized_end=1359,
+    serialized_start=1363,
+    serialized_end=1421,
 )
 
 _GETBUILDREQUEST.fields_by_name['builder'].message_type = build__pb2._BUILDERID
@@ -751,6 +768,8 @@ _BUILDPREDICATE.fields_by_name['builder'].message_type = build__pb2._BUILDERID
 _BUILDPREDICATE.fields_by_name['status'].enum_type = common__pb2._STATUS
 _BUILDPREDICATE.fields_by_name['gerrit_changes'
                               ].message_type = common__pb2._GERRITCHANGE
+_BUILDPREDICATE.fields_by_name['output_gitiles_commit'
+                              ].message_type = common__pb2._GITILESCOMMIT
 _BUILDPREDICATE.fields_by_name['tags'].message_type = common__pb2._STRINGPAIR
 _BUILDPREDICATE.fields_by_name['create_time'
                               ].message_type = common__pb2._TIMERANGE

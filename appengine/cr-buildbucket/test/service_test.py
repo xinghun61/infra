@@ -235,7 +235,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_peek_with_paging(self):
     self.put_many_builds()
-    first_page, next_cursor = service.peek(buckets=[self.test_build.bucket])
+    first_page, next_cursor = service.peek(
+        buckets=[self.test_build.bucket], max_builds=10
+    )
     self.assertTrue(first_page)
     self.assertTrue(next_cursor)
 
@@ -265,12 +267,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.lease()
     builds, _ = service.peek([self.test_build.bucket])
     self.assertFalse(builds)
-
-  def test_peek_200_builds(self):
-    for _ in xrange(200):
-      model.Build(bucket=self.test_build.bucket).put()
-    builds, _ = service.peek([self.test_build.bucket], max_builds=200)
-    self.assertTrue(len(builds) <= 100)
 
   #################################### LEASE ###################################
 
