@@ -63,4 +63,3 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
     result = converters.ConvertConfig(
         project, config, users_by_id, labels_by_id)
     return result
-

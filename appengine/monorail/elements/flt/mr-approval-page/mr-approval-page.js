@@ -28,10 +28,15 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
       projectName: {
         type: String,
         statePath: 'projectName',
+        observer: '_projectNameChanged',
       },
       fetchingIssue: {
         type: Boolean,
         statePath: 'fetchingIssue',
+      },
+      fetchingProjectConfig: {
+        type: Boolean,
+        statePath: 'fetchingProjectConfig',
       },
       fetchIssueError: {
         type: String,
@@ -68,8 +73,37 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     ];
   }
 
+  _projectNameChanged(projectName) {
+    if (!projectName || this.fetchingProjectConfig) return;
+    // Reload project config when the project name changes.
+
+    this.dispatch({type: actionType.FETCH_PROJECT_CONFIG_START});
+
+    const message = {
+      trace: {token: this.token},
+      project_name: projectName,
+    };
+
+    const getConfig = window.prpcClient.call(
+      'monorail.Projects', 'GetConfig', message
+    );
+
+    getConfig.then((resp) => {
+      this.dispatch({
+        type: actionType.FETCH_PROJECT_CONFIG_SUCCESS,
+        projectConfig: resp,
+      });
+    }, (error) => {
+      this.dispatch({
+        type: actionType.FETCH_PROJECT_CONFIG_FAILURE,
+        error,
+      });
+    });
+  }
+
   _issueIdChanged(id, projectName) {
     if (!id || !projectName || this.fetchingIssue) return;
+    // Reload the issue data when the id changes.
 
     this.dispatch({type: actionType.FETCH_ISSUE_START});
 

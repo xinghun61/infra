@@ -23,6 +23,10 @@
       CLOSE_DIALOG: 'CLOSE_DIALOG',
 
       // AJAX request state.
+      FETCH_PROJECT_CONFIG_START: 'FETCH_PROJECT_CONFIG_START',
+      FETCH_PROJECT_CONFIG_SUCCESS: 'FETCH_PROJECT_CONFIG_SUCCESS',
+      FETCH_PROJECT_CONFIG_FAILURE: 'FETCH_PROJECT_CONFIG_FAILURE',
+
       FETCH_ISSUE_START: 'FETCH_ISSUE_START',
       FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
       FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
@@ -92,6 +96,7 @@
     const initial = {
       issueId: 0,
       projectName: '',
+      projectConfig: {},
       issue: {},
       comments: [],
       isStarred: false,
@@ -102,6 +107,9 @@
       issueLoaded: false,
       fetchingIssue: false,
       fetchIssueError: null,
+
+      fetchingProjectConfig: false,
+      fetchProjectConfigError: null,
 
       fetchingComments: false,
       fetchCommentsError: null,
@@ -160,6 +168,23 @@
         case actionType.CLOSE_DIALOG:
           return Object.assign({}, state, {
             openedDialog: DialogState.NONE,
+          });
+
+        // Request for getting configuration settings for a project.
+        case actionType.FETCH_PROJECT_CONFIG_START:
+          return Object.assign({}, state, {
+            fetchProjectConfigError: null,
+            fetchingProjectConfig: true,
+          });
+        case actionType.FETCH_PROJECT_CONFIG_SUCCESS:
+          return Object.assign({}, state, {
+            projectConfig: action.projectConfig,
+            fetchingProjectConfig: false,
+          });
+        case actionType.FETCH_PROJECT_CONFIG_FAILURE:
+          return Object.assign({}, state, {
+            fetchProjectConfigError: action.error,
+            fetchingProjectConfig: false,
           });
 
         // Request for getting an issue.
