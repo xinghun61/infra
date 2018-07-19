@@ -5,12 +5,13 @@ cron:
   schedule: every 1 mins
   target: gerrit
 
-- description: "Config cache refresh"
-  url: /admin/config/cache/manager
-  schedule: every 10 mins
-  target: default
+- description: "Update luci-config configurations"
+  url: /config/update
+  target: config
+  schedule: every 10 minutes
 
 - description: "tsmon housekeeping task"
   url: /internal/cron/ts_mon/housekeeping
   schedule: every 1 minutes
   target: default
+

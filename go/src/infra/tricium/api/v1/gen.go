@@ -2,6 +2,9 @@
 // code is governed by a BSD-style license that can be found in the LICENSE
 // file.
 
-// go:generate cproto
-
 package tricium
+
+//go:generate go install go.chromium.org/gae/tools/proto-gae
+//go:generate go install go.chromium.org/luci/grpc/cmd/cproto
+//go:generate cproto
+//go:generate proto-gae -type ProjectConfig -type ServiceConfig -type Acl

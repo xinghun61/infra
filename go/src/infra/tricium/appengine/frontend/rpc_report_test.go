@@ -74,8 +74,7 @@ func TestReport(t *testing.T) {
 
 		Convey("Validates valid request", func() {
 			err := validateReportRequest(ctx, &tricium.ReportNotUsefulRequest{
-				CommentId:   commentID,
-				MoreDetails: "Some more info",
+				CommentId: commentID,
 			})
 			So(err, ShouldBeNil)
 		})
@@ -88,9 +87,7 @@ func TestReport(t *testing.T) {
 		})
 
 		Convey("Fails invalid request with no comment ID", func() {
-			err := validateReportRequest(ctx, &tricium.ReportNotUsefulRequest{
-				MoreDetails: "More info", // missing comment ID
-			})
+			err := validateReportRequest(ctx, &tricium.ReportNotUsefulRequest{})
 			So(err, ShouldNotBeNil)
 		})
 	})
