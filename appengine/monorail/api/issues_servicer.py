@@ -183,8 +183,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     with mc.profiler.Phase('updating approval'):
       av, _comment = we.UpdateIssueApproval(
-          issue.issue_id, approval_fd.field_id,
-          approval_delta, request.comment_content)
+          issue.issue_id, approval_fd.field_id, approval_delta,
+          request.comment_content, request.is_description)
 
     with mc.profiler.Phase('converting to response objects'):
       users_by_id = framework_views.MakeAllUserViews(

@@ -530,7 +530,7 @@ class WorkEnv(object):
       return self.services.issue.LookupIssueRefs(self.mc.cnxn, related_iids)
 
   def UpdateIssueApproval(self, issue_id, approval_id, approval_delta,
-      comment_content):
+                          comment_content, is_description):
     """Update an issue's approval."""
 
     issue, approval_value = self.services.issue.GetIssueApproval(
@@ -557,7 +557,8 @@ class WorkEnv(object):
             issue_id, approval_id)):
       comment_pb = self.services.issue.DeltaUpdateIssueApproval(
           self.mc.cnxn, self.mc.auth.user_id, config, issue, approval_value,
-          approval_delta, comment_content=comment_content)
+          approval_delta, comment_content=comment_content,
+          is_description=is_description)
       send_notifications.PrepareAndSendApprovalChangeNotification(
           issue_id, approval_id, framework_helpers.GetHostPort(), comment_pb.id)
 

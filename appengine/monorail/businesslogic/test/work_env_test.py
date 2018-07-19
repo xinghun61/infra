@@ -387,11 +387,34 @@ class WorkEnvTest(unittest.TestCase):
         status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED, set_on=2345,
         approver_ids_add=[222L])
 
-    self.work_env.UpdateIssueApproval(78901, 24, delta, 'please review')
+    self.work_env.UpdateIssueApproval(78901, 24, delta, 'please review', False)
 
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
         self.mr.cnxn, 111L, config, issue, av_24, delta,
-        comment_content='please review')
+        comment_content='please review', is_description=False)
+
+  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
+  def testUpdateIssueApproval_IsDescription(self, _mockPrepareAndSend):
+    """We can update an issue's approval survey."""
+
+    self.services.issue.DeltaUpdateIssueApproval = Mock()
+
+    self.SignIn()
+
+    config = fake.MakeTestConfig(789, [], [])
+    self.services.config.StoreConfig('cnxn', config)
+
+    av_24 = tracker_pb2.ApprovalValue(approval_id=24)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
+                               issue_id=78901, approval_values=[av_24])
+    self.services.issue.TestAddIssue(issue)
+
+    delta = tracker_pb2.ApprovalDelta()
+    self.work_env.UpdateIssueApproval(78901, 24, delta, 'better response', True)
+
+    self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
+        self.mr.cnxn, 111L, config, issue, av_24, delta,
+        comment_content='better response', is_description=True)
 
   @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Normal(self, fake_pasicn):

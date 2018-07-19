@@ -543,6 +543,57 @@ class IssuesServicerTest(unittest.TestCase):
     work_env.WorkEnv(mc, self.services).UpdateIssueApproval.assert_called_once()
     self.assertEqual(expected, actual)
 
+  @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
+  @patch('features.send_notifications.PrepareAndSendApprovalChangeNotification')
+  def testUpdateApproval_IsDescription(
+      self, _mockPrepareAndSend, mockUpdateIssueApproval):
+    """We can update an approval survey."""
+
+    av_3 = tracker_pb2.ApprovalValue(approval_id=3)
+    self.issue_1.approval_values = [av_3]
+
+    config = self.services.config.GetProjectConfig(self.cnxn, 789)
+    config.field_defs = [self.fd_3]
+    self.services.config.StoreConfig(self.cnxn, config)
+
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    field_ref = common_pb2.FieldRef(field_name='LegalApproval')
+    approval_delta = issues_pb2.ApprovalDelta()
+
+    request = issues_pb2.UpdateApprovalRequest(
+        issue_ref=issue_ref, field_ref=field_ref, approval_delta=approval_delta,
+        comment_content='Better response.', is_description=True)
+
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com',
+        auth=self.auth)
+
+    mockUpdateIssueApproval.return_value = [
+        tracker_pb2.ApprovalValue(approval_id=3),
+        'comment_pb']
+
+    actual = self.CallWrapped(self.issues_svcr.UpdateApproval, mc, request)
+
+    expected = issues_pb2.UpdateApprovalResponse()
+    expected.approval.CopyFrom(
+        issue_objects_pb2.Approval(
+            field_ref=common_pb2.FieldRef(
+                field_name='LegalApproval', type=common_pb2.APPROVAL_TYPE),
+            setter_ref=common_pb2.UserRef(display_name='----'),
+            phase_ref=issue_objects_pb2.PhaseRef()
+        )
+    )
+
+    work_env.WorkEnv(mc, self.services
+    ).UpdateIssueApproval.assert_called_once_with(
+        self.issue_1.issue_id, 3,
+        tracker_pb2.ApprovalDelta(),
+        u'Better response.', True)
+    self.assertEqual(expected, actual)
+
+
   @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
   def testSnapshotCounts_RequiredFields(self, mockSnapshotCountsQuery):
     """Test that timestamp is required at all times.

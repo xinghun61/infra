@@ -1769,7 +1769,26 @@ class IssueServiceTest(unittest.TestCase):
             fv_rows, commit=False)
     self.services.issue.CreateIssueComment.assert_called_once_with(
         self.cnxn, issue, 111L, 'some comment', amendments=amendments,
-        approval_id=23, commit=False)
+        approval_id=23, is_description=False, commit=False)
+
+  def testUpdateIssueApproval_IsDescription(self):
+    config = self.services.config.GetProjectConfig(
+        self.cnxn, 789)
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, summary='summary', status='New',
+        owner_id=999L, issue_id=78901)
+    av = tracker_pb2.ApprovalValue(approval_id=23)
+    approval_delta = tracker_pb2.ApprovalDelta()
+
+    self.services.issue.CreateIssueComment = Mock()
+
+    self.services.issue.DeltaUpdateIssueApproval(
+        self.cnxn, 111L, config, issue, av, approval_delta, 'better response',
+        is_description=True, commit=False)
+
+    self.services.issue.CreateIssueComment.assert_called_once_with(
+        self.cnxn, issue, 111L, 'better response', amendments=[],
+        approval_id=23, is_description=True, commit=False)
 
   def testUpdateIssueApprovalStatus(self):
     av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L, set_on=1234)

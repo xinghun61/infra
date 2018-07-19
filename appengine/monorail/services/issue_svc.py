@@ -2520,7 +2520,7 @@ class IssueService(object):
 
   def DeltaUpdateIssueApproval(
       self, cnxn, modifier_id, config, issue, approval, approval_delta,
-      comment_content=None, commit=True):
+      comment_content=None, is_description=False, commit=True):
     """Update the issue's approval in the database."""
     amendments = []
 
@@ -2564,7 +2564,8 @@ class IssueService(object):
 
     comment_pb = self.CreateIssueComment(
         cnxn, issue, modifier_id, comment_content, amendments=amendments,
-        approval_id=approval.approval_id, commit=False)
+        approval_id=approval.approval_id, is_description=is_description,
+        commit=False)
 
     if commit:
       cnxn.Commit()
