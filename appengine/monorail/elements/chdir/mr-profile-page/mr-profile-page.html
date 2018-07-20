@@ -1,33 +1,29 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../../bower_components/app-route/app-location.html">
-<link rel="import" href="../../../bower_components/chopsui/chops-header.html">
-<link rel="import" href="../../../bower_components/chopsui/chops-login.html">
 
+<link rel="import" href="../../mr-header/mr-header.html">
 <link rel="import" href="../mr-activity-table/mr-activity-table.html">
 
 <dom-module id="mr-profile-page">
   <template>
     <style>
-      chops-header {
-        height: 40px;
-        background-color: hsl(0, 0%, 95%);
-        border-bottom: 1px solid hsl(0, 0%, 80%);
-      }
-      chops-header a {
-        color: hsl(0, 0%, 13%);
-        text-decoration: none;
-      }
       .container {
         width: 100%;
         padding: 1em 16px;
       }
     </style>
     <app-location query-params="{{queryParams}}" url-space-regex="^/u/(.*)/polymer$"></app-location>
-    <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
-      <span slot="subheader">&gt; <a href="#">Viewing Profile: [[viewedUser]]</a></span>
-      <chops-login logout-url="/" user="[[user]]"></chops-login>
-    </chops-header>
+
+    <mr-header
+      user="[[user]]"
+      login-url="[[loginUrl]]"
+      logout-url="[[logoutUrl]]"
+    >
+      <span slot="subheader">
+        &gt; Viewing Profile: [[viewedUser]]
+      </span>
+    </mr-header>
     <div class="container">
       <mr-activity-table></mr-activity-table>
     </div>

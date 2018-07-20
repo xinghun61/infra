@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <title>Monorail: Polymer Profile Page</title>
 <meta name=viewport content="width=device-width, user-scalable=no">
+<link rel="icon" type="image/vnd.microsoft.icon" href="/static/images/monorail.ico">
+
+
+<script src="/bower_components/chopsui/prpc-client.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript"  nonce="[nonce]">
+  window.prpcClient = new window.chops.rpc.PrpcClient({
+      insecure: Boolean(location.hostname === 'localhost'),
+      fetchImpl: (url, options) => {
+          options.credentials = 'same-origin';
+          return fetch(url, options);
+      },
+  });
+</script>
+
 
 [if-any dev_mode]
 <link rel="import" href="/elements/chdir/mr-profile-page/mr-profile-page.html?version=[app_version]" nonce="[nonce]">
@@ -18,4 +32,10 @@
   }
 </style>
 
-<mr-profile-page viewed-user="[viewed_user_display_name]"></mr-profile-page>
+<mr-profile-page
+  viewed-user="[viewed_user_display_name]" [if-any logged_in_user]
+  user="[logged_in_user.email]"[end]
+  login-url="[login_url]"
+  logout-url="[logout_url]"
+  token="[xhr_token]"
+></mr-profile-page>

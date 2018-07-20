@@ -11,19 +11,11 @@
 <link rel="import" href="../mr-metadata/mr-issue-metadata.html">
 <link rel="import" href="../mr-launch-overview/mr-launch-overview.html">
 <link rel="import" href="../../redux/redux-mixin.html">
+<link rel="import" href="../../mr-header/mr-header.html">
 
 <dom-module id="mr-approval-page">
   <template>
     <style>
-      chops-header {
-        height: 40px;
-        background-color: hsl(0, 0%, 95%);
-        border-bottom: 1px solid hsl(0, 0%, 80%);
-      }
-      chops-header a {
-        color: hsl(0, 0%, 13%);
-        text-decoration: none;
-      }
       .container-main {
         overflow: hidden;
         flex-grow: 1;
@@ -107,13 +99,13 @@
       pattern="/p/:project/issues/approval"
       data="{{routeData}}"
     ></app-route>
-    <chops-header app-title="Monorail" logo-src="/static/images/monorail.ico">
-      <span slot="subheader">&gt; <a href="#">Feature Launch Issue</a></span>
-      <template is="dom-if" if="[[user]]">
-        <mr-dropdown text="[[user]]" items="[[_userMenuItems]]"></mr-dropdown>
-      </template>
-      <a href$="[[loginUrl]]" hidden$="[[user]]">Sign in</a>
-    </chops-header>
+    <mr-header
+      user="[[user]]"
+      login-url="[[loginUrl]]"
+      logout-url="[[logoutUrl]]"
+    >
+      <span slot="subheader">&gt; Feature Launch Issue</span>
+    </mr-header>
     <template is="dom-if" if="[[fetchingIssue]]">
       <div class="container-outside">
         Loading...

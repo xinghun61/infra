@@ -13,11 +13,11 @@ class MrProfilePage extends Polymer.Element {
 
   static get properties() {
     return {
-      user: {
-        type: String,
-        value: 'loggedin@chromium.org',
-      },
+      user: String,
+      logoutUrl: String,
+      loginUrl: String,
       viewedUser: String,
+      token: String,
     };
   }
 }
