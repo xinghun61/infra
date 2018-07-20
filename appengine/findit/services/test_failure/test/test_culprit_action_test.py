@@ -13,7 +13,6 @@ from model.wf_suspected_cl import WfSuspectedCL
 from services import git
 from services.parameters import CulpritActionParameters
 from services.test_failure import test_culprit_action
-from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -135,20 +134,9 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
       git, 'GetCommitsBySameAutherAfterRevision', return_value=['rev2'])
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
-  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
-  def testCanAutoCommitRevertByFinditAuthorLandedAnotherCL(self, mock_info, *_):
+  def testCanAutoCommitRevertByFinditAuthorLandedAnotherCL(self, *_):
     repo_name = 'chromium'
     revision = 'rev1'
-
-    mock_info.return_value = {
-        'commit_position': 123,
-        'code_review_url': 'https://chromium-review.googlesource.com/12345',
-        'review_server_host': 'chromium-review.googlesource.com',
-        'review_change_id': '12345',
-        'author': {
-            'email': 'abc@chromium.org'
-        }
-    }
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.failure_type.append(failure_type.TEST)
     culprit.revert_committed_time = datetime(2018, 2, 14, 12, 0, 0)
@@ -160,20 +148,10 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
       git, 'GetCommitsBySameAutherAfterRevision', return_value=[])
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
-  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
-  def testCanAutoCommitRevertByFindit(self, mock_info, *_):
+  def testCanAutoCommitRevertByFindit(self, *_):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    mock_info.return_value = {
-        'commit_position': 123,
-        'code_review_url': 'https://chromium-review.googlesource.com/12345',
-        'review_server_host': 'chromium-review.googlesource.com',
-        'review_change_id': '12345',
-        'author': {
-            'email': 'abc@chromium.org'
-        }
-    }
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.failure_type.append(failure_type.TEST)
     culprit.revert_committed_time = datetime(2018, 2, 14, 12, 0, 0)

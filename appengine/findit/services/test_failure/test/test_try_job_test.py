@@ -13,6 +13,7 @@ from dto.collect_swarming_task_results_outputs import (
 from dto.start_try_job_inputs import StartTestTryJobInputs
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
+from libs.gitiles.change_log import Contributor
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
@@ -31,6 +32,7 @@ from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicResult
 from services.parameters import TestTryJobAllStepsResult
 from services.parameters import TestTryJobResult
+from services.test.git_test import MockedChangeLog
 from services.test_failure import test_failure_analysis
 from services.test_failure import test_try_job
 from waterfall import suspected_cl_util
@@ -41,23 +43,15 @@ from waterfall.test import wf_testcase
 class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
   def _MockGetChangeLog(self, revision):
-
-    class Author(namedtuple('Author', ['name', 'email'])):
-      pass
-
-    class MockedChangeLog(object):
-
-      def __init__(self, commit_position, code_review_url, author, email):
-        self.commit_position = commit_position
-        self.code_review_url = code_review_url
-        self.change_id = str(commit_position)
-        self.author = Author(author, email)
-
     mock_change_logs = {}
-    mock_change_logs['rev1'] = MockedChangeLog(1, 'url_1', 'author1',
-                                               'author1@abc.com')
-    mock_change_logs['rev2'] = MockedChangeLog(2, 'url_2', 'author2',
-                                               'author2@abc.com')
+    mock_change_logs['rev1'] = MockedChangeLog(
+        commit_position=1,
+        code_review_url='url_1',
+        author=Contributor('author1', 'author1@abc.com', '2018-05-17 00:49:48'))
+    mock_change_logs['rev2'] = MockedChangeLog(
+        commit_position=2,
+        code_review_url='url_2',
+        author=Contributor('author2', 'author2@abc.com', '2018-05-17 00:49:48'))
     return mock_change_logs.get(revision)
 
   def setUp(self):
@@ -799,9 +793,10 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             }
         }
     })
-    self.assertEqual('rev1',
-                     test_try_job._GetGoodRevisionTest(
-                         master_name, builder_name, build_number, failure_info))
+    self.assertEqual(
+        'rev1',
+        test_try_job._GetGoodRevisionTest(master_name, builder_name,
+                                          build_number, failure_info))
 
   def testNotGetGoodRevisionTest(self):
     master_name = 'm'
@@ -877,10 +872,11 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         cache_name='cache',
         targeted_tests={'a': ['test1']},
         urlsafe_try_job_key='urlsafe_try_job_key')
-    self.assertEqual(expected_parameters,
-                     test_try_job.GetParametersToScheduleTestTryJob(
-                         master_name, builder_name, build_number, failure_info,
-                         None, 'urlsafe_try_job_key', consistent_failures))
+    self.assertEqual(
+        expected_parameters,
+        test_try_job.GetParametersToScheduleTestTryJob(
+            master_name, builder_name, build_number, failure_info, None,
+            'urlsafe_try_job_key', consistent_failures))
 
   def testGetSwarmingTasksResult(self):
     master_name = 'm'
@@ -1065,9 +1061,10 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     expected_failures = {'b_test': ['b_test1']}
 
-    self.assertEqual(expected_failures,
-                     test_try_job._GetTestFailureCausedByCL(
-                         TestTryJobAllStepsResult.FromSerializable(result)))
+    self.assertEqual(
+        expected_failures,
+        test_try_job._GetTestFailureCausedByCL(
+            TestTryJobAllStepsResult.FromSerializable(result)))
 
   def testGetSuspectedCLsForTestTryJobAndHeuristicResultsSame(self):
     suspected_cl = {
@@ -1954,9 +1951,9 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.master_name, master_name)
     self.assertEqual(try_job_data.builder_name, builder_name)
     self.assertEqual(try_job_data.build_number, build_number)
-    self.assertEqual(try_job_data.try_job_type,
-                     failure_type.GetDescriptionForFailureType(
-                         failure_type.TEST))
+    self.assertEqual(
+        try_job_data.try_job_type,
+        failure_type.GetDescriptionForFailureType(failure_type.TEST))
     self.assertFalse(try_job_data.has_compile_targets)
     self.assertFalse(try_job_data.has_heuristic_results)
 

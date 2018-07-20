@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from collections import namedtuple
 from datetime import datetime
 from datetime import timedelta
 import mock
@@ -10,6 +9,7 @@ import mock
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.gitiles_repository import GitilesRepository
 from libs.gitiles.change_log import ChangeLog
+from libs.gitiles.change_log import Contributor
 from libs import time_util
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
@@ -17,6 +17,23 @@ from services import git
 from waterfall.test import wf_testcase
 
 SOME_TIME = datetime(2018, 1, 1, 1)
+
+
+class MockedChangeLog(object):
+
+  def __init__(self,
+               commit_position,
+               code_review_url,
+               author=None,
+               committer=None):
+    self.commit_position = commit_position
+    self.code_review_url = code_review_url
+    self.review_change_id = str(commit_position)
+    self.review_server_host = 'host'
+    self.author = author or Contributor('author', 'author@abc.com',
+                                        '2018-05-17 00:49:48')
+    self.committer = committer or Contributor('committer', 'committer@abc.com',
+                                              '2018-05-17 00:49:48')
 
 
 class GitTest(wf_testcase.WaterfallTestCase):
@@ -101,18 +118,6 @@ class GitTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, git.PullChangeLogs(None, 'rev1'))
 
   def _MockGetChangeLog(self, revision):
-
-    class Author(namedtuple('Author', ['name', 'email'])):
-      pass
-
-    class MockedChangeLog(object):
-
-      def __init__(self, commit_position, code_review_url):
-        self.commit_position = commit_position
-        self.code_review_url = code_review_url
-        self.change_id = str(commit_position)
-        self.author = Author('author', 'author@abc.com')
-
     mock_change_logs = {}
     mock_change_logs['rev1'] = None
     mock_change_logs['rev2'] = MockedChangeLog(123, 'url')
@@ -122,25 +127,17 @@ class GitTest(wf_testcase.WaterfallTestCase):
     """Makes a mock that returns n changelogs `delta` time apart."""
 
     def _inner(_self, _revision, n):
-
-      class Committer(namedtuple('Author', ['name', 'email', 'time'])):
-        pass
-
-      class MockedChangeLog(object):
-
-        def __init__(self, commit_position, t):
-          self.commit_position = commit_position
-          self.change_id = str(commit_position)
-          self.committer = Committer('committer', 'committer@abc.com', t)
-
       result = []
 
       end_commit_position = 100
       end_datetime = SOME_TIME
       for i in range(n):
         result.append(
-            MockedChangeLog(end_commit_position - i,
-                            end_datetime - (i * delta)))
+            MockedChangeLog(
+                end_commit_position - i,
+                'url',
+                committer=Contributor('committer', 'committer@abc.com',
+                                      end_datetime - (i * delta))))
       return result, next_rev
 
     return _inner
@@ -286,26 +283,118 @@ class GitTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(['rev4'],
                      git.GetCommitsBySameAutherAfterRevision(revision))
 
+  @mock.patch.object(git, '_GetAuthor')
+  def testIsAuthoredByNoAutoRevertAccount(self, mock_author):
+    author = Contributor(
+        'author@abc.com', 'author@abc.com',
+        datetime.strptime('Wed Jun 11 19:35:32 2014', '%a %b %d %H:%M:%S %Y'))
+    mock_author.return_value = author
+
+    self.assertFalse(git.IsAuthoredByNoAutoRevertAccount('rev1'))
+
+  @mock.patch.object(git, '_GetAuthor', return_value=None)
+  def testIsAuthoredByNoAutoRevertAccountNoAuthor(self, _):
+    self.assertFalse(git.IsAuthoredByNoAutoRevertAccount('rev'))
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2018, 06, 26, 11, 0, 0))
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  def testGetCulpritChangeLog(self, mock_fn):
+  def testChangeCommittedWithinTime(self, mock_change_log, _):
+    change_log_dict = {
+        'author': {
+            'name': 'author@abc.com',
+            'email': 'author@abc.com',
+            'time': datetime(2018, 06, 25, 11, 0, 0),
+        },
+        'committer': {
+            'name': 'someone@chromium.org',
+            'email': 'someone@chromium.org',
+            'time': datetime(2018, 06, 25, 18, 0, 0),
+        },
+        'message':
+            'Cr-Commit-Position: refs/heads/master@{#175976}',
+        'commit_position':
+            175976,
+        'touched_files': [{
+            'new_path': 'added_file.js',
+            'change_type': 'add',
+            'old_path': '/dev/null'
+        }],
+        'commit_url':
+            'https://chromium.googlesource.com/chromium/src.git/+log/rev4',
+        'code_review_url':
+            None,
+        'revision':
+            'rev4',
+        'reverted_revision':
+            None,
+        'review_server_host':
+            None,
+        'review_change_id':
+            None,
+    }
+    mock_change_log.return_value = ChangeLog.FromDict(change_log_dict)
+    self.assertTrue(git.ChangeCommittedWithinTime('rev4'))
 
-    class MockAuthor(object):
-      name = 'author'
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2018, 06, 26, 11, 0, 0))
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testChangeCommittedWithinTimeTooLate(self, mock_change_log, _):
+    change_log_dict = {
+        'author': {
+            'name': 'author@abc.com',
+            'email': 'author@abc.com',
+            'time': datetime(2018, 06, 25, 10, 0, 0),
+        },
+        'committer': {
+            'name': 'someone@chromium.org',
+            'email': 'someone@chromium.org',
+            'time': datetime(2018, 06, 25, 10, 0, 0),
+        },
+        'message':
+            'Cr-Commit-Position: refs/heads/master@{#175976}',
+        'commit_position':
+            175976,
+        'touched_files': [{
+            'new_path': 'added_file.js',
+            'change_type': 'add',
+            'old_path': '/dev/null'
+        }],
+        'commit_url':
+            'https://chromium.googlesource.com/chromium/src.git/+log/rev4',
+        'code_review_url':
+            None,
+        'revision':
+            'rev4',
+        'reverted_revision':
+            None,
+        'review_server_host':
+            None,
+        'review_change_id':
+            None,
+    }
+    mock_change_log.return_value = ChangeLog.FromDict(change_log_dict)
+    self.assertFalse(git.ChangeCommittedWithinTime('rev4'))
 
-      def ToDict(self):
-        return {'name': self.name}
-
-    class MockedChangeLog(object):
-      commit_position = 123
-      code_review_url = 'code_review_url'
-      review_server_host = 'review_server_host'
-      review_change_id = 'review_change_id'
-      author = MockAuthor()
-
-    mock_fn.return_value = MockedChangeLog()
-
-    culprit_info = git.GetCodeReviewInfoForACommit('chromium', 'rev')
-    self.assertEqual(culprit_info['commit_position'], 123)
-    self.assertEqual(culprit_info['code_review_url'], 'code_review_url')
-    self.assertEqual(culprit_info['review_server_host'], 'review_server_host')
-    self.assertEqual(culprit_info['review_change_id'], 'review_change_id')
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testGetCodeReviewInfoForACommit(self, mock_change_log):
+    revision = 'rev2'
+    mock_change_log.return_value = self._MockGetChangeLog(revision)
+    expected_info = {
+        'commit_position': 123,
+        'code_review_url': 'url',
+        'review_server_host': 'host',
+        'review_change_id': '123',
+        'author': {
+            'name': 'author',
+            'email': 'author@abc.com',
+            'time': '2018-05-17 00:49:48'
+        },
+        'committer': {
+            'name': 'committer',
+            'email': 'committer@abc.com',
+            'time': '2018-05-17 00:49:48'
+        },
+    }
+    self.assertEqual(expected_info,
+                     git.GetCodeReviewInfoForACommit('chromium', revision))

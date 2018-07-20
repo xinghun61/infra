@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from collections import namedtuple
 import logging
 import mock
 
@@ -10,6 +9,7 @@ from common import exceptions
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
+from libs.gitiles.change_log import Contributor
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
@@ -24,6 +24,7 @@ from services.parameters import CompileTryJobReport
 from services.parameters import CompileTryJobResult
 from services.parameters import IdentifyCompileTryJobCulpritParameters
 from services.parameters import RunCompileTryJobParameters
+from services.test.git_test import MockedChangeLog
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
@@ -32,23 +33,15 @@ from waterfall.test import wf_testcase
 class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
   def _MockGetChangeLog(self, revision):
-
-    class Author(namedtuple('Author', ['name', 'email'])):
-      pass
-
-    class MockedChangeLog(object):
-
-      def __init__(self, commit_position, code_review_url, author, email):
-        self.commit_position = commit_position
-        self.code_review_url = code_review_url
-        self.change_id = str(commit_position)
-        self.author = Author(author, email)
-
     mock_change_logs = {}
-    mock_change_logs['rev1'] = MockedChangeLog(1, 'url_1', 'author1',
-                                               'author1@abc.com')
-    mock_change_logs['rev2'] = MockedChangeLog(2, 'url_2', 'author2',
-                                               'author2@abc.com')
+    mock_change_logs['rev1'] = MockedChangeLog(
+        commit_position=1,
+        code_review_url='url_1',
+        author=Contributor('author1', 'author1@abc.com', '2018-05-17 00:49:48'))
+    mock_change_logs['rev2'] = MockedChangeLog(
+        commit_position=2,
+        code_review_url='url_2',
+        author=Contributor('author2', 'author2@abc.com', '2018-05-17 00:49:48'))
     return mock_change_logs.get(revision)
 
   def setUp(self):
@@ -776,9 +769,10 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
-    self.assertEqual('rev1',
-                     compile_try_job._GetGoodRevisionCompile(
-                         master_name, builder_name, build_number, failure_info))
+    self.assertEqual(
+        'rev1',
+        compile_try_job._GetGoodRevisionCompile(master_name, builder_name,
+                                                build_number, failure_info))
 
   def testNotGetGoodRevisionCompile(self):
     master_name = 'm'
@@ -872,9 +866,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
   def testCompileFailureIsNotFlaky(self):
     try_job_result = {'rev': 'failed'}
     report = CompileTryJobReport(
-        culprit='rev', result=try_job_result, metadata={
-            'sub_ranges': []
-        })
+        culprit='rev', result=try_job_result, metadata={'sub_ranges': []})
     result = CompileTryJobResult(report=report)
 
     self.assertFalse(compile_try_job.CompileFailureIsFlaky(result))
@@ -1147,9 +1139,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         'top_score': None
     }]
 
-    self.assertListEqual(expected_cls,
-                         compile_try_job._GetUpdatedSuspectedCLs(
-                             analysis, culprits))
+    self.assertListEqual(
+        expected_cls, compile_try_job._GetUpdatedSuspectedCLs(
+            analysis, culprits))
 
   @mock.patch.object(
       waterfall_config, 'GetWaterfallTrybot', return_value=('m', 'b'))
@@ -1191,9 +1183,9 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.master_name, master_name)
     self.assertEqual(try_job_data.builder_name, builder_name)
     self.assertEqual(try_job_data.build_number, build_number)
-    self.assertEqual(try_job_data.try_job_type,
-                     failure_type.GetDescriptionForFailureType(
-                         failure_type.COMPILE))
+    self.assertEqual(
+        try_job_data.try_job_type,
+        failure_type.GetDescriptionForFailureType(failure_type.COMPILE))
     self.assertFalse(try_job_data.has_compile_targets)
     self.assertTrue(try_job_data.has_heuristic_results)
 

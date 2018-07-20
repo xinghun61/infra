@@ -9,6 +9,7 @@ import mock
 from common import monitoring
 from common.waterfall import failure_type
 from dto.dict_of_basestring import DictOfBasestring
+from infra_api_clients.codereview import codereview_util
 from libs import analysis_status
 from libs.list_of_basestring import ListOfBasestring
 from model.base_suspected_cl import RevertCL
@@ -17,6 +18,7 @@ from services import ci_failure
 from services import constants
 from services import culprit_action
 from services import gerrit
+from services import git
 from services import irc
 from services.parameters import BuildKey
 from services.parameters import CreateRevertCLParameters
@@ -139,7 +141,9 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(culprit_action._CanCommitRevert(parameters, pipeline_id))
 
-  def testCanCommitRevert(self):
+  @mock.patch.object(git, 'ChangeCommittedWithinTime', return_value=True)
+  @mock.patch.object(git, 'IsAuthoredByNoAutoRevertAccount', return_value=False)
+  def testCanCommitRevert(self, *_):
     repo_name = 'chromium'
     revision = 'rev1'
 
@@ -342,6 +346,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         failure_type=failure_type.COMPILE)
     self.assertFalse(culprit_action.SendNotificationForCulprit(pipeline_input))
 
+  @mock.patch.object(
+      culprit_action, 'GetCodeReviewDataForACulprit', return_value={})
   @mock.patch.object(gerrit, 'SendNotificationForCulprit', return_value=True)
   @mock.patch.object(
       culprit_action, '_ShouldSendNotification', return_value=True)
@@ -380,9 +386,11 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         culprit_action.RevertCulprit(pipeline_input, 'pipeline_id'))
 
   @mock.patch.object(
+      culprit_action, 'GetCodeReviewDataForACulprit', return_value={})
+  @mock.patch.object(
       culprit_action, '_CanCreateRevertForCulprit', return_value=True)
   @mock.patch.object(gerrit, 'RevertCulprit')
-  def testRevertCulprit(self, mock_revert, _):
+  def testRevertCulprit(self, mock_revert, *_):
     repo_name = 'chromium'
     revision = 'rev1'
     build_id = 'm/b/123'
@@ -423,6 +431,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(constants.SKIPPED,
                      culprit_action.CommitRevert(pipeline_input, 'pipeline_id'))
 
+  @mock.patch.object(
+      culprit_action, 'GetCodeReviewDataForACulprit', return_value={})
   @mock.patch.object(gerrit, 'CommitRevert', return_value=constants.COMMITTED)
   @mock.patch.object(culprit_action, '_CanCommitRevert', return_value=True)
   def testCommit(self, *_):
@@ -482,3 +492,31 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     mock_log.assert_called_once_with(
         'Cannot get a sample failed step for culprit %s/%s.', repo_name,
         revision)
+
+  @mock.patch.object(
+      codereview_util, 'GetCodeReviewForReview', return_value=None)
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
+  def testGetCodeReviewDataForACulprit(self, mock_change_info, _):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.put()
+
+    code_review_data = {
+        'commit_position': 123,
+        'code_review_url': 'url',
+        'review_server_host': 'host',
+        'review_change_id': '123',
+        'author': {
+            'name': 'author',
+            'email': 'author@abc.com'
+        },
+        'committer': {
+            'name': 'committer',
+            'email': 'committer@abc.com'
+        },
+    }
+    mock_change_info.return_value = code_review_data
+    self.assertEqual(
+        code_review_data,
+        culprit_action.GetCodeReviewDataForACulprit(culprit.key.urlsafe()))

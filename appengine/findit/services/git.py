@@ -10,7 +10,10 @@ It has functions to:
 """
 
 import datetime
+from datetime import timedelta
+import logging
 
+from common import constants
 from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.gitiles_repository import (GitilesRepository as
@@ -88,12 +91,15 @@ def GetCodeReviewInfoForACommit(_repo_name, revision):
   # TODO(stgao): get repo url at runtime based on the given repo name.
   repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
   change_log = repo.GetChangeLog(revision)
+  if not change_log:
+    return {}
   return {
       'commit_position': change_log.commit_position,
       'code_review_url': change_log.code_review_url,
       'review_server_host': change_log.review_server_host,
       'review_change_id': change_log.review_change_id,
       'author': change_log.author.ToDict(),
+      'committer': change_log.committer.ToDict()
   }
 
 
@@ -159,11 +165,50 @@ def CountRecentCommits(repo_url,
   return count
 
 
+def _GetAuthor(revision):
+  git_repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
+  change_log = git_repo.GetChangeLog(revision)
+  return change_log.author if change_log else None
+
+
 def GetCommitsBySameAutherAfterRevision(revision):
   """Gets later changes that are written by the given revision's author."""
-  git_repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
-  original_cl_change_log = git_repo.GetChangeLog(revision)
-  author_email = original_cl_change_log.author.email
+  author = _GetAuthor(revision)
+  if not author:
+    return []
 
+  author_email = author.email
   later_changes = PullChangeLogs(revision, None, author=author_email)
   return later_changes.keys()
+
+
+def IsAuthoredByNoAutoRevertAccount(revision):
+  """Returns True if
+    - the change is an auto roll;
+    - the change is an auto-committed change by an author whose changes should
+      not be auto-reverted.
+  """
+  author = _GetAuthor(revision)
+  if not author:
+    return False
+
+  author_email = author.email
+  return (constants.AUTO_ROLLER_ACCOUNT_PATTERN.match(author_email) or
+          author_email in constants.NO_AUTO_COMMIT_REVERT_ACCOUNTS)
+
+
+def ChangeCommittedWithinTime(revision, hours=24):
+  """Returns True if the change was committed within the time given."""
+  delta = timedelta(hours=hours)
+  git_repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
+  change_log = git_repo.GetChangeLog(revision)
+  culprit_commit_time = change_log.committer.time
+
+  in_time = time_util.GetUTCNow() - culprit_commit_time < delta
+
+  if not in_time:
+    logging.info(
+        'Culprit %s was committed over %d hours ago, stop auto '
+        'commit.', revision, hours)
+
+  return in_time

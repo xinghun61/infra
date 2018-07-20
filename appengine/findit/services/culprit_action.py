@@ -12,6 +12,7 @@ import logging
 from google.appengine.ext import ndb
 
 from common.waterfall import failure_type
+from infra_api_clients.codereview import codereview_util
 from libs import analysis_status
 from libs import time_util
 from model import entity_util
@@ -19,6 +20,7 @@ from model.wf_suspected_cl import WfSuspectedCL
 from services import ci_failure
 from services import constants
 from services import gerrit
+from services import git
 from services import irc
 from services import monitoring
 from waterfall import waterfall_config
@@ -74,7 +76,7 @@ def _UpdateCulprit(culprit_urlsafe_key,
                    skip_revert_reason=None,
                    revert_submission_status=None):
   """Updates culprit entity."""
-  culprit = ndb.Key(urlsafe=culprit_urlsafe_key).get()
+  culprit = entity_util.GetEntityFromUrlsafeKey(culprit_urlsafe_key)
   assert culprit
   culprit.should_be_reverted = True
 
@@ -159,9 +161,10 @@ def RevertCulprit(parameters, analysis_id):
   build_id = parameters.build_id
 
   if _CanCreateRevertForCulprit(parameters, analysis_id):
+    codereview_info = GetCodeReviewDataForACulprit(parameters.cl_key)
     revert_status, revert_cl, skip_reason = gerrit.RevertCulprit(
         parameters.cl_key, build_id, parameters.failure_type,
-        GetSampleFailedStepName(repo_name, revision, build_id))
+        GetSampleFailedStepName(repo_name, revision, build_id), codereview_info)
     _UpdateCulprit(
         parameters.cl_key,
         revert_status=constants.AUTO_REVERT_STATUS_TO_ANALYSIS_STATUS[
@@ -174,22 +177,21 @@ def RevertCulprit(parameters, analysis_id):
 
 # Functions to commit the auto_created revert.
 @ndb.transactional
-def _CanCommitRevert(parameters, pipeline_id):
-  """Checks if an auto-created revert of a culprit can be committed.
+def _CanCommitRevertInAnalysis(cl_key, analysis_id):
+  """Checks if an auto-created revert of a culprit can be committed in the
+    analysis.
 
-  The revert of the culprit can be committed by the analysis if all below are
+  The revert of the culprit can be committed in the analysis if all below are
   True:
     0. Findit reverts the culprit;
     1. There is a revert for the culprit;
     2. The revert has completed;
     3. The revert should be auto commited;
-    4. No other pipeline is committing the revert;
-    5. No other pipeline is supposed to handle the auto commit.
+    4. No other analysis is committing the revert;
+    5. No other analysis is supposed to handle the auto commit.
   """
-  if not parameters.revert_status == constants.CREATED_BY_FINDIT:
-    return False
 
-  culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
+  culprit = entity_util.GetEntityFromUrlsafeKey(cl_key)
   assert culprit
 
   if (not culprit.revert_cl or
@@ -198,20 +200,50 @@ def _CanCommitRevert(parameters, pipeline_id):
       culprit.revert_submission_status == analysis_status.SKIPPED or
       (culprit.revert_submission_status == analysis_status.RUNNING and
        culprit.submit_revert_pipeline_id and
-       culprit.submit_revert_pipeline_id != pipeline_id)):
+       culprit.submit_revert_pipeline_id != analysis_id)):
     return False
 
   # Update culprit to ensure only current analysis can commit the revert.
   culprit.revert_submission_status = analysis_status.RUNNING
-  culprit.submit_revert_pipeline_id = pipeline_id
+  culprit.submit_revert_pipeline_id = analysis_id
   culprit.put()
   return True
+
+
+def _CanCommitRevert(parameters, analysis_id):
+  """Checks if an auto-created revert of a culprit can be committed.
+
+  This function will call several different functions to check the culprit
+  and/or revert from many different aspects and make the final decision.
+
+  The criteria included so far are:
+   + Revert is created by Findit;
+   + Can the revert be committed in current analysis;
+   + Was the change committed within time;
+   + Was the change to be reverted authored by an auto-roller.
+  """
+  if not parameters.revert_status == constants.CREATED_BY_FINDIT:
+    return False
+
+  culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
+  assert culprit
+
+  action_settings = waterfall_config.GetActionSettings()
+  culprit_commit_limit_hours = action_settings.get(
+      'culprit_commit_limit_hours',
+      constants.DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS)
+
+  return (_CanCommitRevertInAnalysis(parameters.cl_key, analysis_id) and
+          git.ChangeCommittedWithinTime(
+              culprit.revision, hours=culprit_commit_limit_hours) and
+          not git.IsAuthoredByNoAutoRevertAccount(culprit.revision))
 
 
 def CommitRevert(parameters, analysis_id):
   commit_status = constants.SKIPPED
   if _CanCommitRevert(parameters, analysis_id):
-    commit_status = gerrit.CommitRevert(parameters)
+    codereview_info = GetCodeReviewDataForACulprit(parameters.cl_key)
+    commit_status = gerrit.CommitRevert(parameters, codereview_info)
 
   MonitorRevertAction(parameters.failure_type, parameters.revert_status,
                       commit_status)
@@ -327,7 +359,21 @@ def SendNotificationForCulprit(parameters):
                                             100000)
   if _ShouldSendNotification(repo_name, revision, force_notify, revert_status,
                              build_num_threshold):
-    sent = gerrit.SendNotificationForCulprit(repo_name, revision, revert_status)
+    codereview_info = GetCodeReviewDataForACulprit(parameters.cl_key)
+    sent = gerrit.SendNotificationForCulprit(parameters, codereview_info)
 
   MonitoringCulpritNotification(parameters.failure_type, 'culprit', sent)
   return sent
+
+
+def GetCodeReviewDataForACulprit(culprit_urlsafe_key):
+  """Gets code review related data and object of a culprit.
+
+  Returns:
+    (dict, CodeReview): code review related data and object.
+  """
+  culprit = entity_util.GetEntityFromUrlsafeKey(culprit_urlsafe_key)
+  assert culprit, 'Could\'t get culprit object for key %s' % culprit_urlsafe_key
+  repo_name = culprit.repo_name
+  revision = culprit.revision
+  return git.GetCodeReviewInfoForACommit(repo_name, revision)

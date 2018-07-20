@@ -15,6 +15,7 @@ from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from services import constants
+from services import culprit_action
 from services import gerrit
 from services import git
 from services.parameters import SubmitRevertCLParameters
@@ -51,7 +52,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
-  @mock.patch.object(gerrit, 'WasCulpritCommittedWithinTime', return_value=True)
+  @mock.patch.object(culprit_action, '_CanCommitRevert', return_value=True)
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
   @mock.patch.object(gerrit, '_AddReviewers', return_value=True)

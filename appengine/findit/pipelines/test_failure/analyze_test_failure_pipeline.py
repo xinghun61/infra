@@ -91,6 +91,8 @@ class AnalyzeTestFailurePipeline(BasePipeline):
 
   def finalized(self):
     self._HandleUnexpectedAborting(self.was_aborted)
+    # Monitor completion of pipeline.
+    monitoring.completed_pipelines.increment({'type': 'test'})
 
   def _ContinueTryJobPipeline(self, failure_info):
 

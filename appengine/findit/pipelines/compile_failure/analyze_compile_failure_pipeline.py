@@ -74,6 +74,7 @@ class AnalyzeCompileFailurePipeline(BasePipeline):
 
   def finalized(self):
     self._HandleUnexpectedAborting(self.was_aborted)
+    monitoring.completed_pipelines.increment({'type': 'compile'})
 
   def _ContinueTryJobPipeline(self, failure_info, signals):
     heuristic_result = {

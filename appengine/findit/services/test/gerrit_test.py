@@ -23,7 +23,7 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from services import constants as services_constants
 from services import gerrit
-from services import git
+from services.parameters import SendNotificationForCulpritParameters
 from services.parameters import SubmitRevertCLParameters
 from waterfall import buildbot
 from waterfall import waterfall_config
@@ -42,28 +42,18 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     self.review_server_host = 'chromium-review.googlesource.com'
     self.review_change_id = '12345'
 
-    def MockGetCodeReviewInfoForACommit(*_):
-      culprit_info = {
-          'commit_position': self.culprit_commit_position,
-          'code_review_url': self.culprit_code_review_url,
-          'review_server_host': self.review_server_host,
-          'review_change_id': self.review_change_id,
-          'author': {
-              'email': 'author@chromium.org'
-          }
-      }
-      return culprit_info
+    self.codereview_info = {
+        'commit_position': self.culprit_commit_position,
+        'review_change_id': self.review_change_id,
+        'review_server_host': self.review_server_host
+    }
 
-    self.mock(git, 'GetCodeReviewInfoForACommit',
-              MockGetCodeReviewInfoForACommit)
-
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 16, 0, 0))
   @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'CreateRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
@@ -97,9 +87,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     }
     culprit.put()
 
-    revert_status, _, _ = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
-                                               failure_type.COMPILE,
-                                               sample_failed_step)
+    revert_status, _, _ = gerrit.RevertCulprit(
+        culprit.key.urlsafe(), 'm/b/1', failure_type.COMPILE,
+        sample_failed_step, self.codereview_info)
 
     self.assertEquals(revert_status, services_constants.CREATED_BY_FINDIT)
 
@@ -152,13 +142,12 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 16, 0, 0))
   @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'CreateRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
@@ -196,7 +185,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status, revert, reason = gerrit.RevertCulprit(
         culprit.key.urlsafe(), 'm/b/1', failure_type.FLAKY_TEST,
-        sample_failed_step)
+        sample_failed_step, self.codereview_info)
 
     self.assertEquals(revert_status, services_constants.CREATED_BY_FINDIT)
     self.assertIsNotNone(revert)
@@ -214,10 +203,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     mock_gerrit.assert_called_once_with(
         reason, self.review_change_id, '20001', bug_id=1)
 
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testSheriffRevertedIt(self, mock_fn, *_):
+  def testSheriffRevertedIt(self, mock_fn, _):
     repo_name = 'chromium'
     revision = 'rev1'
 
@@ -234,15 +222,15 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     suspect_cl.put()
 
     revert_status, revert, reason = gerrit.RevertCulprit(
-        suspect_cl.key.urlsafe(), 'm/b/1', failure_type.COMPILE, 'compile')
+        suspect_cl.key.urlsafe(), 'm/b/1', failure_type.COMPILE, 'compile',
+        self.codereview_info)
     self.assertIsNone(revert)
     self.assertEqual(services_constants.REVERTED_BY_SHERIFF, reason)
     self.assertEquals(revert_status, services_constants.CREATED_BY_SHERIFF)
 
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'PostMessage')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
   def testAddedReviewerFailedBefore(self, mock_fn, mock_send, *_):
@@ -265,15 +253,14 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.RUNNING
     culprit.cr_notification_status = status.COMPLETED
     culprit.put()
-
     revert_status, _, _ = gerrit.RevertCulprit(culprit.key.urlsafe(), 'm/b/1',
-                                               failure_type.COMPILE, 'compile')
+                                               failure_type.COMPILE, 'compile',
+                                               self.codereview_info)
 
     self.assertEquals(revert_status, services_constants.CREATED_BY_FINDIT)
     mock_send.assert_has_not_called()
 
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
   def testCulpritIsARevert(self, mock_fn, _):
     repo_name = 'chromium'
@@ -289,14 +276,14 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status, revert, reason = gerrit.RevertCulprit(
-        culprit.key.urlsafe(), 'm/b/1', failure_type.COMPILE, 'compile')
+        culprit.key.urlsafe(), 'm/b/1', failure_type.COMPILE, 'compile',
+        self.codereview_info)
 
     self.assertEquals(services_constants.SKIPPED, revert_status)
     self.assertEqual(services_constants.CULPRIT_IS_A_REVERT, reason)
     self.assertIsNone(revert)
 
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
   def testAutoRevertOff(self, mock_fn, _):
     repo_name = 'chromium'
@@ -312,14 +299,42 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status, revert, reason = gerrit.RevertCulprit(
-        culprit.key.urlsafe(), 'm/b/1', failure_type.COMPILE, 'compile')
+        culprit.key.urlsafe(), 'm/b/1', failure_type.COMPILE, 'compile',
+        self.codereview_info)
 
     self.assertEquals(services_constants.SKIPPED, revert_status)
     self.assertEquals(services_constants.AUTO_REVERT_OFF, reason)
     self.assertIsNone(revert)
 
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=None)
+  def testCommitRevertNoCodeReview(self, _):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    commit_position = 123
+
+    cl_info = ClInfo(self.review_server_host, self.review_change_id)
+    cl_info.commits.append(
+        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, commit_position)
+    revert_for_culprit = RevertCL()
+    revert_change_id = '54321'
+    revert_for_culprit.revert_cl_url = 'https://%s/q/%s' % (
+        self.review_server_host, revert_change_id)
+    culprit.revert_cl = revert_for_culprit
+    culprit.revert_status = status.COMPLETED
+    culprit.put()
+    revert_status = services_constants.CREATED_BY_FINDIT
+    self.assertEquals(
+        services_constants.ERROR,
+        gerrit.CommitRevert(
+            SubmitRevertCLParameters(
+                cl_key=culprit.key.urlsafe(), revert_status=revert_status),
+            None))
+
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(codereview_util, 'IsCodeReviewGerrit', return_value=False)
-  def testSubmitRevertForRietveld(self, _):
+  def testSubmitRevertForRietveld(self, *_):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
@@ -340,14 +355,13 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = services_constants.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
-            cl_key=culprit.key.urlsafe(), revert_status=revert_status))
+            cl_key=culprit.key.urlsafe(), revert_status=revert_status),
+        self.codereview_info)
     self.assertEqual(services_constants.SKIPPED, commit_status)
 
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
-  @mock.patch.object(gerrit, 'WasCulpritCommittedWithinTime', return_value=True)
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'SubmitRevert')
@@ -375,7 +389,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = services_constants.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
-            cl_key=culprit.key.urlsafe(), revert_status=revert_status))
+            cl_key=culprit.key.urlsafe(), revert_status=revert_status),
+        self.codereview_info)
 
     self.assertEqual(services_constants.ERROR, commit_status)
     mock_commit.assert_called_once_with(revert_change_id)
@@ -418,46 +433,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
-  @mock.patch.object(
-      time_util, 'GetUTCNow', return_value=datetime(2017, 2, 4, 5, 0, 0))
-  @mock.patch.object(
-      gerrit, 'WasCulpritCommittedWithinTime', return_value=False)
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
-  @mock.patch.object(_CODEREVIEW, 'SubmitRevert')
-  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testSubmitRevertCulpritTooOld(self, mock_fn, mock_commit, *_):
-    repo_name = 'chromium'
-    revision = 'rev1'
-    commit_position = 123
-
-    cl_info = ClInfo(self.review_server_host, self.review_change_id)
-    cl_info.commits.append(
-        Commit('20001', 'rev1', [], datetime(2017, 2, 1, 0, 0, 0)))
-    mock_fn.return_value = cl_info
-    mock_commit.return_value = True
-
-    culprit = WfSuspectedCL.Create(repo_name, revision, commit_position)
-    revert_for_culprit = RevertCL()
-    revert_change_id = '54321'
-    revert_for_culprit.revert_cl_url = 'https://%s/q/%s' % (
-        self.review_server_host, revert_change_id)
-    culprit.revert_cl = revert_for_culprit
-    culprit.revert_status = status.COMPLETED
-    culprit.put()
-
-    revert_status = services_constants.CREATED_BY_FINDIT
-    commit_status = gerrit.CommitRevert(
-        SubmitRevertCLParameters(
-            cl_key=culprit.key.urlsafe(), revert_status=revert_status))
-
-    self.assertEqual(services_constants.SKIPPED, commit_status)
-
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
-  @mock.patch.object(gerrit, 'WasCulpritCommittedWithinTime', return_value=True)
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'SubmitRevert')
@@ -484,7 +462,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = services_constants.CREATED_BY_FINDIT
     commit_status = gerrit.CommitRevert(
         SubmitRevertCLParameters(
-            cl_key=culprit.key.urlsafe(), revert_status=revert_status))
+            cl_key=culprit.key.urlsafe(), revert_status=revert_status),
+        self.codereview_info)
 
     self.assertEqual(services_constants.COMMITTED, commit_status)
 
@@ -514,28 +493,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
                                             gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with(revert_change_id, ['a@b.com'], message)
 
-  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
-  def testShouldNotCommitRevertForAutoRoll(self, mock_info):
-    repo_name = 'chromium'
-    revision = 'rev1'
-    mock_info.return_value = {
-        'commit_position': self.culprit_commit_position,
-        'code_review_url': self.culprit_code_review_url,
-        'review_server_host': self.review_server_host,
-        'review_change_id': self.review_change_id,
-        'author': {
-            'email': 'v8-autoroll@chromium.org'
-        }
-    }
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.revert_cl = RevertCL()
-    culprit.revert_status = status.COMPLETED
-    culprit.put()
-
-    self.assertFalse(gerrit._CanAutoCommitRevertByGerrit(culprit.key.urlsafe()))
-
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=None)
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=None)
   def testSendNotificationForCulpritNoCodeReview(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
@@ -544,11 +502,15 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
+    parameters = SendNotificationForCulpritParameters(
+        cl_key=culprit.key.urlsafe(),
+        force_notify=False,
+        revert_status=revert_status,
+        failure_type=failure_type.COMPILE)
     self.assertFalse(
-        gerrit.SendNotificationForCulprit(repo_name, revision, revert_status))
+        gerrit.SendNotificationForCulprit(parameters, self.codereview_info))
 
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
   def testSendNotificationForCulpritConfirm(self, mock_post, _):
     repo_name = 'chromium'
@@ -558,8 +520,14 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
+    parameters = SendNotificationForCulpritParameters(
+        cl_key=culprit.key.urlsafe(),
+        force_notify=False,
+        revert_status=revert_status,
+        failure_type=failure_type.COMPILE)
+
     self.assertTrue(
-        gerrit.SendNotificationForCulprit(repo_name, revision, revert_status))
+        gerrit.SendNotificationForCulprit(parameters, self.codereview_info))
     message = textwrap.dedent("""
     Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
@@ -567,8 +535,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         'confirmed', self.culprit_commit_position, culprit.key.urlsafe())
     mock_post.assert_called_once_with(self.review_change_id, message, False)
 
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
   def testSendNotificationForCulprit(self, mock_post, _):
     repo_name = 'chromium'
@@ -578,52 +545,17 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
+    parameters = SendNotificationForCulpritParameters(
+        cl_key=culprit.key.urlsafe(),
+        force_notify=False,
+        revert_status=revert_status,
+        failure_type=failure_type.COMPILE)
+
     self.assertTrue(
-        gerrit.SendNotificationForCulprit(repo_name, revision, revert_status))
+        gerrit.SendNotificationForCulprit(parameters, self.codereview_info))
     message = textwrap.dedent("""
     Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
     https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
         'identified', self.culprit_commit_position, culprit.key.urlsafe())
     mock_post.assert_called_once_with(self.review_change_id, message, True)
-
-  def testCulpritWasAutoCommitted(self):
-    culprit_info = {
-        'author': {
-            'email': 'skia-chromium-autoroll@skia-buildbots.google.com.'
-                     'iam.gserviceaccount.com'
-        }
-    }
-    self.assertTrue(gerrit._CulpritWasAutoCommitted(culprit_info))
-
-  @mock.patch.object(
-      git,
-      'GetCodeReviewInfoForACommit',
-      return_value={
-          'review_change_id': 'foo',
-          'review_server_host': 'bar'
-      })
-  @mock.patch.object(codereview_util, 'GetCodeReviewForReview')
-  def testGetCommitTime(self, mock_cr_fn, mock_info_fn):
-    repo_name = 'repo'
-    revision = 'rev1'
-
-    mock_cr_fn.return_value = mock.Mock()
-    mock_cr_fn.return_value.GetCommitInfoByRevision.return_value = mock.Mock()
-
-    gerrit.GetCommitTime(repo_name, revision)
-    mock_cr_fn.assert_called_once()
-    mock_info_fn.assert_called_once()
-    mock_info_fn.GetCommitInfoByRevision.assert_called_once()
-
-  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2018, 1, 2))
-  @mock.patch.object(
-      gerrit, 'GetCommitTime', return_value=datetime(2018, 1, 1, 1))
-  def testWasCulpritCommittedWithinTimeInTime(self, *_):
-    self.assertTrue(gerrit.WasCulpritCommittedWithinTime('', ''))
-
-  @mock.patch.object(
-      time_util, 'GetUTCNow', return_value=datetime(2018, 1, 2, 1))
-  @mock.patch.object(gerrit, 'GetCommitTime', return_value=datetime(2018, 1, 1))
-  def testWasCulpritCommittedWithinTimeNotInTime(self, *_):
-    self.assertFalse(gerrit.WasCulpritCommittedWithinTime('', ''))

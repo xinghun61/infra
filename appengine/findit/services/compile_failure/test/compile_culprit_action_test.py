@@ -45,20 +45,9 @@ class CompileCulpritActionTest(wf_testcase.WaterfallTestCase):
   def testCannotCommitRevertFeatureCommitExceeds(self, _):
     self.assertFalse(compile_culprit_action.CanAutoCommitRevertByFindit())
 
-  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
-  def testCanAutoCommitRevertByFindit(self, mock_info):
+  def testCanAutoCommitRevertByFindit(self):
     repo_name = 'chromium'
     revision = 'rev1'
-
-    mock_info.return_value = {
-        'commit_position': 123,
-        'code_review_url': 'https://chromium-review.googlesource.com/12345',
-        'review_server_host': 'chromium-review.googlesource.com',
-        'review_change_id': '12345',
-        'author': {
-            'email': 'abc@chromium.org'
-        }
-    }
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 

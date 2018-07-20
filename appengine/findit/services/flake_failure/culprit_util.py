@@ -164,7 +164,7 @@ def CanRevertForAnalysis(analysis):
       previous_data_point is not None and floating_point_util.AlmostEquals(
           previous_data_point.pass_rate,
           flake_constants.PASS_RATE_TEST_NOT_FOUND) and
-      gerrit.WasCulpritCommittedWithinTime(culprit.repo_name, culprit.revision))
+      git.ChangeCommittedWithinTime(culprit.revision))
 
 
 def CheckIfCanSubmitRevert(culprit_revision):
@@ -172,7 +172,7 @@ def CheckIfCanSubmitRevert(culprit_revision):
 
   Criteria:
     + There should be no later change by the culprit's author.
-    
+
   Returns:
     (bool, str): If the revert can be committed and reason.
   """

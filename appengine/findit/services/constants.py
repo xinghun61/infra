@@ -18,6 +18,10 @@ STATE_COMPLETED = 'COMPLETED'
 STATE_NOT_STOP = (STATE_PENDING, STATE_RUNNING)
 STATE_NO_RESOURCE = 'NO_RESOURCE'
 
+# Default limit hours to revert a culprit: should only revert a culprit if it's
+# committed within this time range.
+DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24
+
 # Statuses for auto create a revert.
 CREATED_BY_FINDIT = 0
 CREATED_BY_SHERIFF = 1

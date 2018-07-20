@@ -25,7 +25,6 @@ from services.flake_failure import culprit_util
 from services.flake_failure import flake_constants
 from services.parameters import CreateRevertCLParameters
 from services.parameters import SubmitRevertCLParameters
-from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -422,7 +421,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(culprit_util.UnderLimitForAutorevert())
 
-  @mock.patch.object(gerrit, 'WasCulpritCommittedWithinTime', return_value=True)
+  @mock.patch.object(git, 'ChangeCommittedWithinTime', return_value=True)
   def testCanRevertForAnalysis(self, mock_time_fn):
     culprit = FlakeCulprit.Create('chromium', 'r13', 100)
     culprit.put()
@@ -441,7 +440,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
         confidence_in_culprit=1.0,
         bug_id=12345)
     self.assertTrue(culprit_util.CanRevertForAnalysis(analysis))
-    mock_time_fn.assert_called_with('chromium', 'r13')
+    mock_time_fn.assert_called_with('r13')
 
   def testNewlyAddedTest(self):
     culprit_commit_position = 11

@@ -11,7 +11,6 @@ It provides fuctions to:
   * Send notifications to codereview
 """
 
-from datetime import timedelta
 import logging
 import textwrap
 import urllib
@@ -27,8 +26,6 @@ from libs import time_util
 from model import entity_util
 from model.base_suspected_cl import RevertCL
 from model.flake.flake_culprit import FlakeCulprit
-from model.wf_config import FinditConfig
-from model.wf_suspected_cl import WfSuspectedCL
 from services import constants as services_constants
 from services import git
 from waterfall import buildbot
@@ -37,10 +34,17 @@ from waterfall import waterfall_config
 
 DEFAULT_AUTO_CREATE_REVERT_DAILY_THRESHOLD_COMPILE = 10
 DEFAULT_AUTO_COMMIT_REVERT_DAILY_THRESHOLD_COMPILE = 4
-_DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24
 
 _MANUAL_LINK = 'https://goo.gl/adB34D'
 _SURVEY_LINK = 'https://goo.gl/forms/iPQbwFyo98N9tJ7o1'
+
+
+def _GetCodeReview(code_review_data):
+  """Get codereview object based on review_server_host in code_review_data."""
+  if not code_review_data or not code_review_data.get('review_server_host'):
+    return None
+  return codereview_util.GetCodeReviewForReview(
+      code_review_data['review_server_host'])
 
 
 def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
@@ -171,7 +175,8 @@ def _GetBugIdForCulprit(culprit):
   return analysis.bug_id
 
 
-def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
+def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name,
+                  codereview_info):
   """Creates a revert of a culprit and adds reviewers.
 
   Args:
@@ -179,6 +184,7 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
     build_id (str): Id of the sample failed build.
     build_failure_type (int): Failure type: compile, test or flake.
     sample_step_name (str): Sample failed step in the failed build.
+    codereview_info (dict): Code review information about the culprit.
 
   Returns:
     (int, string, string):
@@ -191,21 +197,18 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
   repo_name = culprit.repo_name
   revision = culprit.revision
   # 0. Gets information about this culprit.
-  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
+  culprit_commit_position = codereview_info['commit_position']
+  culprit_change_id = codereview_info['review_change_id']
 
-  culprit_commit_position = culprit_info['commit_position']
-  culprit_change_id = culprit_info['review_change_id']
-  culprit_host = culprit_info['review_server_host']
-
-  codereview = codereview_util.GetCodeReviewForReview(culprit_host)
+  codereview = _GetCodeReview(codereview_info)
 
   if not codereview or not culprit_change_id:  # pragma: no cover
-    logging.error('Failed to get change id for %s/%s' % (repo_name, revision))
+    logging.error('Failed to get change id for %s/%s', repo_name, revision)
     return services_constants.ERROR, None, None
 
   culprit_cl_info = codereview.GetClDetails(culprit_change_id)
   if not culprit_cl_info:  # pragma: no cover
-    logging.error('Failed to get cl_info for %s/%s' % (repo_name, revision))
+    logging.error('Failed to get cl_info for %s/%s', repo_name, revision)
     return services_constants.ERROR, None, None
 
   # Checks if the culprit is a revert. If yes, bail out.
@@ -290,92 +293,31 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
 ###################### Functions to commit a revert. ######################
 
 
-def GetCommitTime(repo_name, revision):
-  """Returns the time that the culprit was committed."""
-  # TODO(crbug.com/829920): Refactor this to use gitiles.
-  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
-  culprit_change_id = culprit_info['review_change_id']
-  culprit_host = culprit_info['review_server_host']
+def CommitRevert(parameters, codereview_info):
+  """Commits a revert.
 
-  codereview = codereview_util.GetCodeReviewForReview(culprit_host)
-  culprit_cl_info = codereview.GetClDetails(culprit_change_id)
-  culprit_commit = culprit_cl_info.GetCommitInfoByRevision(revision)
-
-  return culprit_commit.timestamp
-
-
-def WasCulpritCommittedWithinTime(repo_name, revision,
-                                  time=timedelta(hours=24)):
-  """Returns True if the culprit was committed within the time given."""
-  culprit_commit_time = GetCommitTime(repo_name, revision)
-
-  return time_util.GetUTCNow() - culprit_commit_time < time
-
-
-def _CulpritWasAutoCommitted(culprit_info):
-  author_email = culprit_info['author']['email']
-  return (constants.AUTO_ROLLER_ACCOUNT_PATTERN.match(author_email) or
-          author_email in constants.NO_AUTO_COMMIT_REVERT_ACCOUNTS)
-
-
-def _CanAutoCommitRevertByGerrit(culprit_urlsafe_key):
-  """Checks if the revert can be auto-committed by gerrit.
-
-  The revert should be auto-committed if:
-    1. The culprit was not auto-committed.
-    2. The revert is done in Gerrit;
-    3. The culprit is committed within threshold.
+  Args:
+    parameters(SubmitRevertCLParameters): parameters needed to commit a revert.
+    codereview_info(dict_: Code review information for the change that will be
+      reverted.
   """
-  action_settings = waterfall_config.GetActionSettings()
-  culprit_commit_limit_hours = action_settings.get(
-      'culprit_commit_limit_hours', _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS)
-
-  # Gets Culprit information.
-  culprit = entity_util.GetEntityFromUrlsafeKey(culprit_urlsafe_key)
-  assert culprit
-
-  repo_name = culprit.repo_name
-  revision = culprit.revision
-
-  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
-
-  # Checks if the culprit is an DEPS autoroll by checking the author's email.
-  # If it is, bail out of auto commit for now.
-  if _CulpritWasAutoCommitted(culprit_info):
-    return False
-
-  culprit_host = culprit_info['review_server_host']
-  # Makes sure codereview is Gerrit, as only Gerrit is supported at the moment.
-  if not codereview_util.IsCodeReviewGerrit(culprit_host):
-    return False
-
-  # Makes sure the culprit landed less than x hours ago (default: 24 hours).
-  # Bail otherwise.
-  if not WasCulpritCommittedWithinTime(
-      repo_name, revision, time=timedelta(hours=culprit_commit_limit_hours)):
-    logging.info('Culprit %s/%s was committed over %d hours ago, stop auto '
-                 'commit.' % (repo_name, revision, culprit_commit_limit_hours))
-    return False
-
-  return True
-
-
-def CommitRevert(pipeline_input):
   # Note that we don't know which was the final action taken by the pipeline
   # before this point. That is why this is where we increment the appropriate
   # metrics.
-  culprit = entity_util.GetEntityFromUrlsafeKey(pipeline_input.cl_key)
+  culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
   assert culprit
 
-  repo_name = culprit.repo_name
   revision = culprit.revision
 
-  if not _CanAutoCommitRevertByGerrit(culprit.key.urlsafe()):
-    return services_constants.SKIPPED
+  codereview = _GetCodeReview(codereview_info)
+  if not codereview:
+    logging.error('Failed to get codereview object for change %s/%s.',
+                  culprit.repo_name, revision)
+    return services_constants.ERROR
 
-  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
-  culprit_host = culprit_info['review_server_host']
-  codereview = codereview_util.GetCodeReviewForReview(culprit_host)
+  if not codereview_util.IsCodeReviewGerrit(
+      codereview_info['review_server_host']):
+    return services_constants.SKIPPED
 
   revert_change_id = codereview.GetChangeIdFromReviewUrl(culprit.revert_cl_url)
 
@@ -391,23 +333,35 @@ def CommitRevert(pipeline_input):
 
 
 ###################### Functions to send notification. ######################
-def SendNotificationForCulprit(repo_name, revision, revert_status):
-  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
-  commit_position = culprit_info['commit_position']
-  review_server_host = culprit_info['review_server_host']
-  review_change_id = culprit_info['review_change_id']
+def SendNotificationForCulprit(parameters, codereview_info):
+  """Sends notification for a change on Gerrit.
 
-  code_review_settings = FinditConfig().Get().code_review_settings
-  codereview = codereview_util.GetCodeReviewForReview(review_server_host,
-                                                      code_review_settings)
-  culprit = WfSuspectedCL.Get(repo_name, revision)
+  Args:
+    parameters(SendNotificationForCulpritParameters): parameters needed to send
+      notificaiton to a change.
+    codereview_info(dict_: Code review information for the culprit change.
+  """
+  culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
+  assert culprit
+
+  revision = culprit.revision
+  repo_name = culprit.repo_name
+
+  codereview = _GetCodeReview(codereview_info)
+  if not codereview:
+    logging.error('Failed to get codereview object for change %s/%s.',
+                  repo_name, revision)
+    return False
+
+  commit_position = codereview_info['commit_position']
+  review_change_id = codereview_info['review_change_id']
 
   sent = False
   if codereview and review_change_id:
     # Occasionally, a commit was not uploaded for code-review.
     action = 'identified'
     should_email = True
-    if revert_status == services_constants.CREATED_BY_SHERIFF:
+    if parameters.revert_status == services_constants.CREATED_BY_SHERIFF:
       action = 'confirmed'
       should_email = False
 
