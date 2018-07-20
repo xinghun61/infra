@@ -8,7 +8,6 @@ import mock
 from google.appengine.ext import ndb
 
 from common.waterfall import failure_type
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
 from model import analysis_approach_type

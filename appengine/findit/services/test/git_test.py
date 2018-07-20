@@ -160,9 +160,9 @@ class GitTest(wf_testcase.WaterfallTestCase):
             'author': 'author@abc.com'
         }
     }
-    self.assertEqual(expected_culprits, git.GetCLInfo(failed_revisions))
+    self.assertEqual(expected_culprits, git.GetCommitsInfo(failed_revisions))
 
-  @mock.patch.object(git, 'GetCLInfo')
+  @mock.patch.object(git, 'GetCommitsInfo')
   def testGetCommitPositionFromRevision(self, mocked_cl_info):
     requested_revision = 'r1'
     expected_commit_position = 1000
@@ -230,58 +230,6 @@ class GitTest(wf_testcase.WaterfallTestCase):
               lambda self, r, n: ([], None))
     self.mock(time_util, 'GetUTCNow', lambda: SOME_TIME)
     self.assertEqual(0, git.CountRecentCommits('url'))
-
-  @mock.patch.object(git, 'PullChangeLogs')
-  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  def testGetCommitsBySameAutherAfterRevision(self, mock_log, mock_logs):
-    revision = 'rev2'
-    mock_log.return_value = self._MockGetChangeLog(revision)
-
-    change_log_rev4_dict = {
-        'author': {
-            'name':
-                'author@abc.com',
-            'email':
-                'author@abc.com',
-            'time':
-                datetime.strptime('Wed Jun 11 19:35:32 2014',
-                                  '%a %b %d %H:%M:%S %Y'),
-        },
-        'committer': {
-            'name':
-                'someone@chromium.org',
-            'email':
-                'someone@chromium.org',
-            'time':
-                datetime.strptime('Wed Jun 11 19:35:32 2014',
-                                  '%a %b %d %H:%M:%S %Y'),
-        },
-        'message':
-            'Cr-Commit-Position: refs/heads/master@{#175976}',
-        'commit_position':
-            175976,
-        'touched_files': [{
-            'new_path': 'added_file.js',
-            'change_type': 'add',
-            'old_path': '/dev/null'
-        }],
-        'commit_url':
-            'https://chromium.googlesource.com/chromium/src.git/+log/rev4',
-        'code_review_url':
-            None,
-        'revision':
-            'rev4',
-        'reverted_revision':
-            None,
-        'review_server_host':
-            None,
-        'review_change_id':
-            None,
-    }
-    change_log_rev4 = ChangeLog.FromDict(change_log_rev4_dict)
-    mock_logs.return_value = {'rev4': change_log_rev4}
-    self.assertEqual(['rev4'],
-                     git.GetCommitsBySameAutherAfterRevision(revision))
 
   @mock.patch.object(git, '_GetAuthor')
   def testIsAuthoredByNoAutoRevertAccount(self, mock_author):
@@ -398,3 +346,16 @@ class GitTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(expected_info,
                      git.GetCodeReviewInfoForACommit('chromium', revision))
+
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog', return_value=None)
+  def testGetCodeReviewInfoForACommitFailedToGetChangeLog(self, _):
+    revision = 'rev2'
+    self.assertEqual({}, git.GetCodeReviewInfoForACommit('chromium', revision))
+
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testGetAuthor(self, mock_change_log):
+    revision = 'rev2'
+    mock_change_log.return_value = self._MockGetChangeLog(revision)
+    self.assertEqual(
+        Contributor('author', 'author@abc.com', '2018-05-17 00:49:48'),
+        git._GetAuthor(revision))

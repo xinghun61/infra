@@ -11,6 +11,7 @@ It provides fuctions to:
   * Send notifications to codereview
 """
 
+import json
 import logging
 import textwrap
 import urllib
@@ -27,7 +28,6 @@ from model import entity_util
 from model.base_suspected_cl import RevertCL
 from model.flake.flake_culprit import FlakeCulprit
 from services import constants as services_constants
-from services import git
 from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -348,11 +348,6 @@ def SendNotificationForCulprit(parameters, codereview_info):
   repo_name = culprit.repo_name
 
   codereview = _GetCodeReview(codereview_info)
-  if not codereview:
-    logging.error('Failed to get codereview object for change %s/%s.',
-                  repo_name, revision)
-    return False
-
   commit_position = codereview_info['commit_position']
   review_change_id = codereview_info['review_change_id']
 
@@ -377,3 +372,55 @@ def SendNotificationForCulprit(parameters, codereview_info):
   suspected_cl_util.UpdateCulpritNotificationStatus(
       culprit.key.urlsafe(), status.COMPLETED if sent else status.ERROR)
   return sent
+
+
+##################### Other Gerrit related functions. #######################
+def ExistCQedDependingChanges(original_change_codereview_info):
+  """Checks if there are CQ'ed changes that depend on a change.
+
+  Args:
+    code_review(CodeReview): CodeReview object.
+    original_change_codereview_info(dict) Information of the change.
+
+  Returns:
+    bool: True if there is any change by the checked change's author that
+      depends on the checked change; False otherwise.
+  """
+  if not original_change_codereview_info:
+    return False
+
+  author_email = original_change_codereview_info.get('author', {}).get('email')
+  commit_time = original_change_codereview_info.get('committer', {}).get('time')
+  original_change_id = original_change_codereview_info.get('review_change_id')
+  if not author_email or not commit_time or not original_change_id:
+    logging.error('Got incomplete info for a change: %s',
+                  json.dumps(original_change_codereview_info))
+    return False
+  query_params = {
+      'owner': author_email,
+      'label': 'Commit-Queue=2',
+      'after': commit_time  # Changes modified after the given time, inclusive.
+  }
+  codereview = _GetCodeReview(original_change_codereview_info)
+  additional_params = ['ALL_REVISIONS', 'ALL_COMMITS']
+  changes = codereview.QueryCls(query_params, additional_params)
+  if not changes:
+    return False
+
+  # A map between each change and all parent revisions of its patches.
+  change_parents_map = {}
+  # A list of all revisions in the change being checked.
+  revisions_in_change = []
+
+  for change in changes:
+    if change.change_id == original_change_id:
+      revisions_in_change = change.patchsets.keys()
+    else:
+      change_parents_map[change.change_id] = set()
+      for patchset in change.patchsets.itervalues():
+        change_parents_map[change.change_id] |= set(patchset.parent_revisions)
+
+  for parent_revisions in change_parents_map.itervalues():
+    if parent_revisions & set(revisions_in_change):
+      return True
+  return False

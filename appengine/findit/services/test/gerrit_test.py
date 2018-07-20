@@ -13,6 +13,7 @@ from common.waterfall import failure_type
 from infra_api_clients.codereview import codereview_util
 from infra_api_clients.codereview.cl_info import ClInfo
 from infra_api_clients.codereview.cl_info import Commit
+from infra_api_clients.codereview.cl_info import PatchSet
 from infra_api_clients.codereview.cl_info import Revert
 from infra_api_clients.codereview.gerrit import Gerrit
 from libs import analysis_status as status
@@ -45,7 +46,13 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     self.codereview_info = {
         'commit_position': self.culprit_commit_position,
         'review_change_id': self.review_change_id,
-        'review_server_host': self.review_server_host
+        'review_server_host': self.review_server_host,
+        'author': {
+            'email': 'author@abc.com'
+        },
+        'committer': {
+            'time': '2018-07-01 00:00:00'
+        },
     }
 
   @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
@@ -559,3 +566,64 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
         'identified', self.culprit_commit_position, culprit.key.urlsafe())
     mock_post.assert_called_once_with(self.review_change_id, message, True)
+
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
+  @mock.patch.object(_CODEREVIEW, 'QueryCls')
+  def testExistCQedDependingChanges(self, mock_query, _):
+    cl_info = ClInfo(self.review_server_host, self.review_change_id)
+    cl_info.patchsets['12345-rev1'] = PatchSet('1', '12345-rev1', [])
+    cl_info.patchsets['12345-rev1'] = PatchSet('2', '12345-rev2', [])
+
+    cl_info_1 = ClInfo(self.review_server_host, '12346')
+    cl_info_1.patchsets['12346-rev1'] = PatchSet('1', '12346-rev1',
+                                                 ['unrelated'])
+    cl_info_1.patchsets['12346-rev2'] = PatchSet('2', '12346-rev2',
+                                                 ['unrelated'])
+
+    cl_info_2 = ClInfo(self.review_server_host, '12347')
+    cl_info_2.patchsets['12347-rev1'] = PatchSet('1', '12347-rev1',
+                                                 ['12345-rev1'])
+    cl_info_2.patchsets['12347-rev2'] = PatchSet('2', '12347-rev2',
+                                                 ['unrelated'])
+
+    cl_info_3 = ClInfo(self.review_server_host, '12348')
+    cl_info_3.patchsets['12348-rev1'] = PatchSet('1', '12348-rev1',
+                                                 ['unrelated'])
+    cl_info_3.patchsets['12348-rev2'] = PatchSet('2', '12348-rev2',
+                                                 ['unrelated'])
+    mock_query.return_value = [cl_info, cl_info_1, cl_info_2, cl_info_3]
+    self.assertTrue(gerrit.ExistCQedDependingChanges(self.codereview_info))
+
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
+  @mock.patch.object(_CODEREVIEW, 'QueryCls')
+  def testExistCQedDependingChangesNoDependingCL(self, mock_query, _):
+    cl_info = ClInfo(self.review_server_host, self.review_change_id)
+    cl_info.patchsets['12345-rev1'] = PatchSet('1', '12345-rev1', [])
+    cl_info.patchsets['12345-rev1'] = PatchSet('2', '12345-rev2', [])
+    mock_query.return_value = [cl_info]
+    self.assertFalse(gerrit.ExistCQedDependingChanges(self.codereview_info))
+
+  @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
+  @mock.patch.object(_CODEREVIEW, 'QueryCls')
+  def testExistCQedDependingChangesNoCLs(self, mock_query, _):
+    mock_query.return_value = []
+    self.assertFalse(gerrit.ExistCQedDependingChanges(self.codereview_info))
+
+  def testExistCQedChangesDependingOnCulpritLoseInfo(self):
+    self.assertFalse(gerrit.ExistCQedDependingChanges({}))
+
+  def testExistCQedDependingChangesIncompleteInfo(self):
+    self.assertFalse(
+        gerrit.ExistCQedDependingChanges({
+            'review_change_id': '123456'
+        }))
+
+  @mock.patch.object(
+      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  def testGetCodeReview(self, _):
+    self.assertIsNone(gerrit._GetCodeReview({}))
+    self.assertEqual(
+        _CODEREVIEW,
+        gerrit._GetCodeReview({
+            'review_server_host': 'review_server_host'
+        }))

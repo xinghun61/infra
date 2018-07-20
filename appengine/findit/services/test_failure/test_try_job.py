@@ -263,9 +263,9 @@ def _GetLastPassTest(build_number, failed_steps):
 def _GetGoodRevisionTest(master_name, builder_name, build_number, failure_info):
   last_pass = _GetLastPassTest(build_number, failure_info.failed_steps)
   if last_pass is None:
-    logging.warning('Couldn"t start try job for build %s, %s, %d because'
-                    ' last_pass is not found.', master_name, builder_name,
-                    build_number)
+    logging.warning(
+        'Couldn"t start try job for build %s, %s, %d because'
+        ' last_pass is not found.', master_name, builder_name, build_number)
     return None
 
   return failure_info.builds[str(last_pass)].chromium_revision
@@ -501,7 +501,7 @@ def IdentifyTestTryJobCulprits(parameters):
   if try_job_id and result and result.report:
     culprit_map, failed_revisions = FindCulpritForEachTestFailure(result)
     culprits = try_job_service.GetCulpritsWithoutNoBlameAccountsCLS(
-        git.GetCLInfo(failed_revisions))
+        git.GetCommitsInfo(failed_revisions))
 
     if not culprits:
       flaky_failures = result.report.flakes

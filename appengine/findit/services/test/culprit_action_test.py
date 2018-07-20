@@ -139,10 +139,13 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         cl_key='mockurlsafekey', revert_status=constants.CREATED_BY_SHERIFF)
     pipeline_id = 'pipeline_id'
 
-    self.assertFalse(culprit_action._CanCommitRevert(parameters, pipeline_id))
+    self.assertFalse(
+        culprit_action._CanCommitRevert(parameters, pipeline_id,
+                                        'codereview_info'))
 
   @mock.patch.object(git, 'ChangeCommittedWithinTime', return_value=True)
   @mock.patch.object(git, 'IsAuthoredByNoAutoRevertAccount', return_value=False)
+  @mock.patch.object(gerrit, 'ExistCQedDependingChanges', return_value=False)
   def testCanCommitRevert(self, *_):
     repo_name = 'chromium'
     revision = 'rev1'
@@ -156,7 +159,9 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         cl_key=culprit.key.urlsafe(), revert_status=constants.CREATED_BY_FINDIT)
     pipeline_id = 'pipeline_id'
 
-    self.assertTrue(culprit_action._CanCommitRevert(parameters, pipeline_id))
+    self.assertTrue(
+        culprit_action._CanCommitRevert(parameters, pipeline_id,
+                                        'codereview_info'))
 
   def testCannotCommitRevertByAnotherAnalysis(self):
     repo_name = 'chromium'
@@ -173,7 +178,9 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         cl_key=culprit.key.urlsafe(), revert_status=constants.CREATED_BY_FINDIT)
     pipeline_id = 'another_pipeline'
 
-    self.assertFalse(culprit_action._CanCommitRevert(parameters, pipeline_id))
+    self.assertFalse(
+        culprit_action._CanCommitRevert(parameters, pipeline_id,
+                                        'codereview_info'))
 
   @mock.patch.object(monitoring.culprit_found, 'increment')
   def testMonitorRevertActionCreated(self, mock_mo):
@@ -415,8 +422,10 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(revert_cl, culprit.revert_cl)
     self.assertEqual(analysis_status.COMPLETED, culprit.revert_status)
 
+  @mock.patch.object(
+      culprit_action, 'GetCodeReviewDataForACulprit', return_value=None)
   @mock.patch.object(culprit_action, '_CanCommitRevert', return_value=False)
-  def testCommitSkipped(self, _):
+  def testCommitSkipped(self, *_):
     repo_name = 'chromium'
     revision = 'rev1'
 

@@ -123,32 +123,16 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
       'GetActionSettings',
       return_value={'auto_commit_revert_test': False})
   def testCanNotCommitRevertFeatureIsOff(self, _):
-    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit('rev'))
+    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit())
 
   @mock.patch.object(
       test_culprit_action, '_GetDailyNumberOfCommits', return_value=10)
   def testCannotCommitRevertFeatureCommitExceeds(self, _):
-    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit('rev'))
+    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit())
 
-  @mock.patch.object(
-      git, 'GetCommitsBySameAutherAfterRevision', return_value=['rev2'])
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
-  def testCanAutoCommitRevertByFinditAuthorLandedAnotherCL(self, *_):
-    repo_name = 'chromium'
-    revision = 'rev1'
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.failure_type.append(failure_type.TEST)
-    culprit.revert_committed_time = datetime(2018, 2, 14, 12, 0, 0)
-    culprit.put()
-
-    self.assertFalse(test_culprit_action.CanAutoCommitRevertByFindit(revision))
-
-  @mock.patch.object(
-      git, 'GetCommitsBySameAutherAfterRevision', return_value=[])
-  @mock.patch.object(
-      time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
-  def testCanAutoCommitRevertByFindit(self, *_):
+  def testCanAutoCommitRevertByFindit(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
 
@@ -157,4 +141,4 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
     culprit.revert_committed_time = datetime(2018, 2, 14, 12, 0, 0)
     culprit.put()
 
-    self.assertTrue(test_culprit_action.CanAutoCommitRevertByFindit(revision))
+    self.assertTrue(test_culprit_action.CanAutoCommitRevertByFindit())

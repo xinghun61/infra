@@ -77,7 +77,7 @@ def _GetDailyNumberOfCommits(limit):
           WfSuspectedCL.revert_committed_time >= earliest_time)).count(limit)
 
 
-def CanAutoCommitRevertByFindit(culprit_revision):
+def CanAutoCommitRevertByFindit():
   """Checks if the revert can be auto committed by Findit.
 
   The revert can be committed if:
@@ -85,9 +85,6 @@ def CanAutoCommitRevertByFindit(culprit_revision):
     2. The number of commits of reverts in past 24 hours is less than the
       daily limit;
     3. Culprit author has not landed another change yet.
-
-  Args:
-    culprit_revision (str): Revision of the culprit.
   """
   action_settings = waterfall_config.GetActionSettings()
   if (not bool(action_settings.get('auto_commit_revert_test')) or
@@ -101,13 +98,5 @@ def CanAutoCommitRevertByFindit(culprit_revision):
                              ) >= auto_commit_revert_daily_threshold_test:
     logging.info('Auto commits on %s has met daily limit.',
                  time_util.FormatDatetime(time_util.GetUTCNow()))
-    return False
-
-  if git.GetCommitsBySameAutherAfterRevision(culprit_revision):
-    # Gets a later change which is landed by the culprit author.
-    # Skips committing the revert to avoid breaking the build because of
-    # conflicts with that later change.
-    logging.info('Culprit %s\'s author has landed another change short after'
-                 ' it, skips committing the revert to avoid conflicts.')
     return False
   return True

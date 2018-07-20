@@ -210,7 +210,7 @@ def _CanCommitRevertInAnalysis(cl_key, analysis_id):
   return True
 
 
-def _CanCommitRevert(parameters, analysis_id):
+def _CanCommitRevert(parameters, analysis_id, codereview_info):
   """Checks if an auto-created revert of a culprit can be committed.
 
   This function will call several different functions to check the culprit
@@ -220,7 +220,8 @@ def _CanCommitRevert(parameters, analysis_id):
    + Revert is created by Findit;
    + Can the revert be committed in current analysis;
    + Was the change committed within time;
-   + Was the change to be reverted authored by an auto-roller.
+   + Was the change to be reverted authored by an auto-roller;
+   + Are there other changes by the culprit's author depending on the culprit.
   """
   if not parameters.revert_status == constants.CREATED_BY_FINDIT:
     return False
@@ -236,13 +237,14 @@ def _CanCommitRevert(parameters, analysis_id):
   return (_CanCommitRevertInAnalysis(parameters.cl_key, analysis_id) and
           git.ChangeCommittedWithinTime(
               culprit.revision, hours=culprit_commit_limit_hours) and
-          not git.IsAuthoredByNoAutoRevertAccount(culprit.revision))
+          not git.IsAuthoredByNoAutoRevertAccount(culprit.revision) and
+          not gerrit.ExistCQedDependingChanges(codereview_info))
 
 
 def CommitRevert(parameters, analysis_id):
   commit_status = constants.SKIPPED
-  if _CanCommitRevert(parameters, analysis_id):
-    codereview_info = GetCodeReviewDataForACulprit(parameters.cl_key)
+  codereview_info = GetCodeReviewDataForACulprit(parameters.cl_key)
+  if _CanCommitRevert(parameters, analysis_id, codereview_info):
     commit_status = gerrit.CommitRevert(parameters, codereview_info)
 
   MonitorRevertAction(parameters.failure_type, parameters.revert_status,

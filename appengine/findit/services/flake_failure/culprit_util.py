@@ -106,12 +106,6 @@ def CreateAndSubmitRevert(parameters, runner_id):
         'Not reverting: RevertCulprit wasn\'t able to create a revert.')
     return False
 
-  can_commit, reason = CheckIfCanSubmitRevert(culprit.revision)
-  if not can_commit:
-    analysis.Update(has_created_autorevert=True)
-    analysis.LogInfo('Not reverting: %s' % reason)
-    return False
-
   submit_revert_paramters = SubmitRevertCLParameters(
       cl_key=culprit.key.urlsafe(),
       revert_status=revert_status,
@@ -165,20 +159,6 @@ def CanRevertForAnalysis(analysis):
           previous_data_point.pass_rate,
           flake_constants.PASS_RATE_TEST_NOT_FOUND) and
       git.ChangeCommittedWithinTime(culprit.revision))
-
-
-def CheckIfCanSubmitRevert(culprit_revision):
-  """Checks criteria to determine if the revision can be committed.
-
-  Criteria:
-    + There should be no later change by the culprit's author.
-
-  Returns:
-    (bool, str): If the revert can be committed and reason.
-  """
-  if git.GetCommitsBySameAutherAfterRevision(culprit_revision):
-    return False, 'There are changes by the culprit author after the culprit.'
-  return True, 'Criteria are met, can commit the revert.'
 
 
 def CulpritAddedNewFlakyTest(analysis, culprit_commit_position):

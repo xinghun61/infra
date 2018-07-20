@@ -312,19 +312,10 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('platform', ba.platform)
     self.assertEqual('cache_name', ba.cache_name)
 
-  @mock.patch.object(git, 'GetCLInfo')
-  def testOldEnough(self, mock_cl):
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=20000)
+  def testOldEnough(self, _):
     bot_id = 'old_enough_bot'
     head_cp = 20000
-    mock_cl.return_value = {
-        'HEAD': {
-            'revision': 'HEAD',
-            'repo_name': 'chromium',
-            'commit_position': 20000,
-            'url': 'https://dummyurl.com/a.git/+/HEAD',
-            'author': 'dummy@dummy.org',
-        }
-    }
     oldest_cp = head_cp - build_ahead.STALE_CACHE_AGE
     results = []
     for i in range(oldest_cp - 10, oldest_cp + 10):

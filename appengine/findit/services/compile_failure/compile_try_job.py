@@ -178,9 +178,9 @@ def _GetGoodRevisionCompile(master_name, builder_name, build_number,
                             failure_info):
   last_pass = _GetLastPassCompile(build_number, failure_info['failed_steps'])
   if last_pass is None:
-    logging.warning('Couldn"t start try job for build %s, %s, %d because'
-                    ' last_pass is not found.', master_name, builder_name,
-                    build_number)
+    logging.warning(
+        'Couldn"t start try job for build %s, %s, %d because'
+        ' last_pass is not found.', master_name, builder_name, build_number)
     return None
 
   return failure_info['builds'][str(last_pass)]['chromium_revision']
@@ -399,7 +399,7 @@ def IdentifyCompileTryJobCulprit(parameters):
     failed_revision = result.report.culprit
     failed_revisions = [failed_revision] if failed_revision else []
     culprits = try_job_service.GetCulpritsWithoutNoBlameAccountsCLS(
-        git.GetCLInfo(failed_revisions))
+        git.GetCommitsInfo(failed_revisions))
 
     # In theory there are 2 cases where compile failure could be flaky:
     # 1. All revisions passed in the try job (try job will not run at good

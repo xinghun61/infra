@@ -66,7 +66,7 @@ def PullChangeLogs(start_revision, end_revision, **kwargs):
 
 
 # TODO(crbug.com/841581): Convert return value to DTO.
-def GetCLInfo(revisions):
+def GetCommitsInfo(revisions):
   """Gets commit_positions and review urls for revisions."""
   git_repo = CachedGitilesRepository(FinditHttpClient(),
                                      CHROMIUM_GIT_REPOSITORY_URL)
@@ -101,13 +101,13 @@ def GetCodeReviewInfoForACommit(_repo_name, revision):
       'review_server_host': change_log.review_server_host,
       'review_change_id': change_log.review_change_id,
       'author': change_log.author.ToDict(),
-      'committer': change_log.committer.ToDict()
+      'committer': change_log.committer.ToDict(),
   }
 
 
 def GetCommitPositionFromRevision(revision):
   """Returns the corresponding commit position given a git revision."""
-  return GetCLInfo([revision]).get(revision, {}).get('commit_position')
+  return GetCommitsInfo([revision]).get(revision, {}).get('commit_position')
 
 
 def GetCommitsBetweenRevisionsInOrder(start_revision,
@@ -173,17 +173,6 @@ def _GetAuthor(revision):
                                      CHROMIUM_GIT_REPOSITORY_URL)
   change_log = git_repo.GetChangeLog(revision)
   return change_log.author if change_log else None
-
-
-def GetCommitsBySameAutherAfterRevision(revision):
-  """Gets later changes that are written by the given revision's author."""
-  author = _GetAuthor(revision)
-  if not author:
-    return []
-
-  author_email = author.email
-  later_changes = PullChangeLogs(revision, None, author=author_email)
-  return later_changes.keys()
 
 
 def IsAuthoredByNoAutoRevertAccount(revision):
