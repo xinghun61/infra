@@ -21,6 +21,14 @@ def GetOwnerIds(hotlist):
   return hotlist.owner_ids
 
 
+def UsersOwnersOfHotlists(hotlists):
+  """Returns a set of all users who are owners in the given hotlists."""
+  result = set()
+  for hotlist in hotlists:
+    result.update(hotlist.owner_ids)
+  return result
+
+
 def UsersInvolvedInHotlists(hotlists):
   """Returns a set of all users who have roles in the given hotlists."""
   result = set()

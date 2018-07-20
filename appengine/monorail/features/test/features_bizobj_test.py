@@ -53,6 +53,19 @@ class FeaturesBizobjTest(unittest.TestCase):
     hotlist = features_pb2.Hotlist(owner_ids=[111L])
     self.assertEqual(features_bizobj.GetOwnerIds(hotlist), [111L])
 
+  def testUsersOwnersOfHotlists_Empty(self):
+    self.assertEqual(set(), features_bizobj.UsersOwnersOfHotlists([]))
+
+  def testUsersOwnersOfHotlists_Normal(self):
+    hotlist1 = features_pb2.Hotlist(
+        owner_ids=[111L, 222L], editor_ids=[333L, 444L, 555L],
+        follower_ids=[123L])
+    hotlist2 = features_pb2.Hotlist(
+        owner_ids=[111L], editor_ids=[222L, 123L])
+    self.assertEqual(set([111L, 222L]),
+                     features_bizobj.UsersOwnersOfHotlists([hotlist1,
+                                                            hotlist2]))
+
   def testUsersInvolvedInHotlists_Empty(self):
     self.assertEqual(set(), features_bizobj.UsersInvolvedInHotlists([]))
 

@@ -1036,3 +1036,18 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(3, len(actual.field_defs))
     self.assertEqual(1, len(actual.approval_defs))
     self.assertEqual('proj', actual.project_name)
+
+  def testConvertHotlist(self):
+    """We can convert a hotlist to protoc."""
+    hotlist = testing_helpers.Blank(
+        owner_ids=[111L],
+        name='Fake Hotlist',
+        summary='A fake hotlist.',
+        description='Detailed description of the fake hotlist.')
+    actual = converters.ConvertHotlist(hotlist, self.users_by_id)
+    self.assertEqual(111L, actual.owner_ref.user_id)
+    self.assertEqual('one@example.com', actual.owner_ref.display_name)
+    self.assertEqual('Fake Hotlist', actual.name)
+    self.assertEqual('A fake hotlist.', actual.summary)
+    self.assertEqual(
+        'Detailed description of the fake hotlist.', actual.description)

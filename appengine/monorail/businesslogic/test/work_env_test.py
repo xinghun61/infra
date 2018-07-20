@@ -36,6 +36,7 @@ class WorkEnvTest(unittest.TestCase):
         project=fake.ProjectService(),
         issue_star=fake.IssueStarService(),
         project_star=fake.ProjectStarService(),
+        features=fake.FeaturesService(),
         template=Mock(spec=template_svc.TemplateService),
         spam=fake.SpamService())
     self.project = self.services.project.TestAddProject(
@@ -695,7 +696,119 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: UpdateGroup()
   # FUTURE: DeleteGroup()
 
+  def testListHotlistsByUser_Normal(self):
+    self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[])
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByUser(111L)
+
+    self.assertEqual(1, len(hotlists))
+    hotlist = hotlists[0]
+    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([], hotlist.editor_ids)
+    self.assertEqual('Fake Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
+  def testListHotlistsByUser_AnotherUser(self):
+    self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[333L], editor_ids=[])
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByUser(333L)
+
+    self.assertEqual(1, len(hotlists))
+    hotlist = hotlists[0]
+    self.assertEqual([333L], hotlist.owner_ids)
+    self.assertEqual([], hotlist.editor_ids)
+    self.assertEqual('Fake Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
+  def testListHotlistsByUser_NotSignedIn(self):
+    self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[])
+
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByUser(111L)
+
+    self.assertEqual(1, len(hotlists))
+    hotlist = hotlists[0]
+    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([], hotlist.editor_ids)
+    self.assertEqual('Fake Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
+  def testListHotlistsByUser_Empty(self):
+    self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[333L], editor_ids=[])
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByUser(111L)
+
+    self.assertEqual(0, len(hotlists))
+
+  def testListHotlistsByUser_NoHotlists(self):
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByUser(111L)
+
+    self.assertEqual(0, len(hotlists))
+
+  def testListHotlistsByUser_PrivateIssueAsOwner(self):
+    self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[111L], editor_ids=[333L], is_private=True)
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByUser(333L)
+
+    self.assertEqual(1, len(hotlists))
+    hotlist = hotlists[0]
+    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([333L], hotlist.editor_ids)
+    self.assertEqual('Fake Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
+  def testListHotlistsByUser_PrivateIssueAsEditor(self):
+    self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[333L], editor_ids=[111L], is_private=True)
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByUser(333L)
+
+    self.assertEqual(1, len(hotlists))
+    hotlist = hotlists[0]
+    self.assertEqual([333L], hotlist.owner_ids)
+    self.assertEqual([111L], hotlist.editor_ids)
+    self.assertEqual('Fake Hotlist', hotlist.name)
+    self.assertEqual('Summary', hotlist.summary)
+    self.assertEqual('Description', hotlist.description)
+
+  def testListHotlistsByUser_PrivateIssueNoAcess(self):
+    self.work_env.services.features.CreateHotlist(
+        self.cnxn, 'Fake Hotlist', 'Summary', 'Description',
+        owner_ids=[333L], editor_ids=[], is_private=True)
+
+    self.SignIn()
+    with self.work_env as we:
+      hotlists = we.ListHotlistsByUser(333L)
+
+    self.assertEqual(0, len(hotlists))
+
   # FUTURE: CreateHotlist()
-  # FUTURE: ListHotlistsByUser()
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()

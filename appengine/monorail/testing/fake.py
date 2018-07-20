@@ -1918,7 +1918,9 @@ class FeaturesService(object):
   def LookupUserHotlists(self, cnxn, user_ids):
     """Return dict of {user_id: [hotlist_id, hotlist_id...]}."""
     users_hotlists_dict = {
-        user_id: self.hotlists_id_by_user[user_id] for user_id in user_ids}
+        user_id: self.hotlists_id_by_user.get(user_id, [])
+        for user_id in user_ids
+    }
     return users_hotlists_dict
 
   def LookupIssueHotlists(self, cnxn, issue_ids):

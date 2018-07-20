@@ -758,7 +758,26 @@ class WorkEnv(object):
 
   ### Hotlist methods
 
+  def ListHotlistsByUser(self, user_id):
+    """Return the hotlists for the given user.
+
+    Args:
+      user_id (int): The id of the user to query.
+
+    Returns:
+      The hotlists for the given user.
+    """
+    with self.mc.profiler.Phase('querying hotlists for user'):
+      hotlists = self.services.features.GetHotlistsByUserID(
+          self.mc.cnxn, user_id)
+
+    # Filter the hotlists that the currently authenticated user cannot see.
+    result = [
+        hotlist
+        for hotlist in hotlists
+        if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
+    return result
+
   # FUTURE: CreateHotlist()
-  # FUTURE: ListHotlistsByUser()
   # FUTURE: UpdateHotlist()
   # FUTURE: DeleteHotlist()

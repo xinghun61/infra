@@ -18,7 +18,7 @@ from tracker import tracker_bizobj
 class ProjectsServicer(monorail_servicer.MonorailServicer):
   """Handle API requests related to Project objects.
 
-  Each API request is implemented a method as defined in the .proto
+  Each API request is implemented with a method as defined in the .proto
   file that does any request-specific validation, uses work_env to
   safely operate on business objects, and returns a response proto.
   """

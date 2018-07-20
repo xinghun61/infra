@@ -15,6 +15,7 @@ may be different than how we want to expose them.
 import logging
 
 from api.api_proto import common_pb2
+from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import project_objects_pb2
 from framework import exceptions
@@ -667,4 +668,16 @@ def ConvertConfig(project, config, users_by_id, labels_by_id):
       component_defs=component_defs,
       field_defs=field_defs,
       approval_defs=approval_defs)
+  return result
+
+
+def ConvertHotlist(hotlist, users_by_id):
+  """Convert a protoprc Hotlist into a protoc Hotlist."""
+  owner_ref = ConvertUserRef(
+      hotlist.owner_ids[0], None, users_by_id)
+  result = features_objects_pb2.Hotlist(
+      owner_ref=owner_ref,
+      name=hotlist.name,
+      summary=hotlist.summary,
+      description=hotlist.description)
   return result
