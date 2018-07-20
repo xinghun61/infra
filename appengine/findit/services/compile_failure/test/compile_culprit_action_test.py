@@ -6,7 +6,7 @@ import mock
 
 from model.wf_suspected_cl import WfSuspectedCL
 from services.compile_failure import compile_culprit_action
-from waterfall import suspected_cl_util
+from services import git
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -36,9 +36,7 @@ class CompileCulpritActionTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       waterfall_config,
       'GetActionSettings',
-      return_value={
-          'auto_commit_revert_compile': False
-      })
+      return_value={'auto_commit_revert_compile': False})
   def testCanNotCommitRevertFeatureIsOff(self, _):
     self.assertFalse(compile_culprit_action.CanAutoCommitRevertByFindit())
 
@@ -47,7 +45,7 @@ class CompileCulpritActionTest(wf_testcase.WaterfallTestCase):
   def testCannotCommitRevertFeatureCommitExceeds(self, _):
     self.assertFalse(compile_culprit_action.CanAutoCommitRevertByFindit())
 
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCanAutoCommitRevertByFindit(self, mock_info):
     repo_name = 'chromium'
     revision = 'rev1'

@@ -16,8 +16,8 @@ from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from services import constants
 from services import gerrit
+from services import git
 from services.parameters import SubmitRevertCLParameters
-from waterfall import suspected_cl_util
 from pipelines.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from waterfall.test import wf_testcase
 
@@ -34,7 +34,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     self.review_server_host = 'chromium-review.googlesource.com'
     self.review_change_id = '12345'
 
-    def MockGetCulpritInfo(*_):
+    def MockGetCodeReviewInfoForACommit(*_):
       culprit_info = {
           'commit_position': self.culprit_commit_position,
           'code_review_url': self.culprit_code_review_url,
@@ -46,7 +46,8 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
       }
       return culprit_info
 
-    self.mock(suspected_cl_util, 'GetCulpritInfo', MockGetCulpritInfo)
+    self.mock(git, 'GetCodeReviewInfoForACommit',
+              MockGetCodeReviewInfoForACommit)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))

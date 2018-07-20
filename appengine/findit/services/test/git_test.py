@@ -285,3 +285,27 @@ class GitTest(wf_testcase.WaterfallTestCase):
     mock_logs.return_value = {'rev4': change_log_rev4}
     self.assertEqual(['rev4'],
                      git.GetCommitsBySameAutherAfterRevision(revision))
+
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testGetCulpritChangeLog(self, mock_fn):
+
+    class MockAuthor(object):
+      name = 'author'
+
+      def ToDict(self):
+        return {'name': self.name}
+
+    class MockedChangeLog(object):
+      commit_position = 123
+      code_review_url = 'code_review_url'
+      review_server_host = 'review_server_host'
+      review_change_id = 'review_change_id'
+      author = MockAuthor()
+
+    mock_fn.return_value = MockedChangeLog()
+
+    culprit_info = git.GetCodeReviewInfoForACommit('chromium', 'rev')
+    self.assertEqual(culprit_info['commit_position'], 123)
+    self.assertEqual(culprit_info['code_review_url'], 'code_review_url')
+    self.assertEqual(culprit_info['review_server_host'], 'review_server_host')
+    self.assertEqual(culprit_info['review_change_id'], 'review_change_id')

@@ -15,7 +15,7 @@ from libs import time_util
 from model import revert_cl_status
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import suspected_cl_util
+from services import git
 
 # Check 1 day at a time if run as a cron-job.
 _DAYS_TO_CHECK = 1
@@ -43,14 +43,14 @@ def _UpdateSuspectedCL(suspected_cl,
     # Bail out if this suspected CL has already been processed.
     return
 
-  suspected_cl.sheriff_action_time = (suspected_cl.sheriff_action_time or
-                                      sheriff_action_time)
+  suspected_cl.sheriff_action_time = (
+      suspected_cl.sheriff_action_time or sheriff_action_time)
 
   if suspected_cl.revert_cl:
     suspected_cl.revert_cl.committed_time = (
         suspected_cl.revert_cl.committed_time or revert_commit_timestamp)
-    suspected_cl.revert_cl.status = (suspected_cl.revert_cl.status or
-                                     revert_status)
+    suspected_cl.revert_cl.status = (
+        suspected_cl.revert_cl.status or revert_status)
 
   suspected_cl.put()
 
@@ -76,7 +76,7 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
 
   repo = suspected_cl.repo_name
   revision = suspected_cl.revision
-  culprit_info = suspected_cl_util.GetCulpritInfo(repo, revision)
+  culprit_info = git.GetCodeReviewInfoForACommit(repo, revision)
   review_server_host = culprit_info.get('review_server_host')
   change_id = culprit_info.get('review_change_id')
 
@@ -152,8 +152,8 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
         _UpdateSuspectedCL(suspected_cl, sheriff_action_time=revert.timestamp)
         break
 
-  return True, code_review_url, (revert_cl.status
-                                 if revert_cl else revert_cl_status.DUPLICATE)
+  return True, code_review_url, (
+      revert_cl.status if revert_cl else revert_cl_status.DUPLICATE)
 
 
 def _GetRevertCLData(start_date, end_date):

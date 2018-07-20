@@ -23,9 +23,9 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from services import constants as services_constants
 from services import gerrit
+from services import git
 from services.parameters import SubmitRevertCLParameters
 from waterfall import buildbot
-from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -42,7 +42,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     self.review_server_host = 'chromium-review.googlesource.com'
     self.review_change_id = '12345'
 
-    def MockGetCulpritInfo(*_):
+    def MockGetCodeReviewInfoForACommit(*_):
       culprit_info = {
           'commit_position': self.culprit_commit_position,
           'code_review_url': self.culprit_code_review_url,
@@ -54,7 +54,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
       }
       return culprit_info
 
-    self.mock(suspected_cl_util, 'GetCulpritInfo', MockGetCulpritInfo)
+    self.mock(git, 'GetCodeReviewInfoForACommit',
+              MockGetCodeReviewInfoForACommit)
 
   @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
   @mock.patch.object(
@@ -513,7 +514,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
                                             gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with(revert_change_id, ['a@b.com'], message)
 
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testShouldNotCommitRevertForAutoRoll(self, mock_info):
     repo_name = 'chromium'
     revision = 'rev1'
@@ -596,8 +597,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(gerrit._CulpritWasAutoCommitted(culprit_info))
 
   @mock.patch.object(
-      suspected_cl_util,
-      'GetCulpritInfo',
+      git,
+      'GetCodeReviewInfoForACommit',
       return_value={
           'review_change_id': 'foo',
           'review_server_host': 'bar'

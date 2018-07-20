@@ -18,9 +18,9 @@ from model.wf_suspected_cl import WfSuspectedCL
 from pipelines.create_revert_cl_pipeline import CreateRevertCLPipeline
 from services import constants
 from services import culprit_action
+from services import git
 from services.parameters import CreateRevertCLParameters
 from waterfall import buildbot
-from waterfall import suspected_cl_util
 from waterfall.test import wf_testcase
 
 _CODEREVIEW = Rietveld('codereview.chromium.org')
@@ -35,7 +35,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     self.review_server_host = 'codereview.chromium.org'
     self.review_change_id = '12345'
 
-    def MockGetCulpritInfo(*_):
+    def MockGetCodeReviewInfoForACommit(*_):
       culprit_info = {
           'commit_position': self.culprit_commit_position,
           'code_review_url': self.culprit_code_review_url,
@@ -44,7 +44,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
       }
       return culprit_info
 
-    self.mock(suspected_cl_util, 'GetCulpritInfo', MockGetCulpritInfo)
+    self.mock(git, 'GetCodeReviewInfoForACommit',
+              MockGetCodeReviewInfoForACommit)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 16, 0, 0))

@@ -145,25 +145,6 @@ def GetSuspectedCLConfidenceScoreAndApproach(
   return confidence, approach
 
 
-def GetCulpritInfo(repo_name, revision):
-  """Returns culprit info of the given revision.
-
-  Returns commit position, code-review url, host and change_id.
-  """
-  # TODO(stgao): get repo url at runtime based on the given repo name.
-  # unused arg - pylint: disable=W0612,W0613
-  repo = CachedGitilesRepository(
-      FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
-  change_log = repo.GetChangeLog(revision)
-  return {
-      'commit_position': change_log.commit_position,
-      'code_review_url': change_log.code_review_url,
-      'review_server_host': change_log.review_server_host,
-      'review_change_id': change_log.review_change_id,
-      'author': change_log.author.ToDict(),
-  }
-
-
 @ndb.transactional
 def UpdateCulpritNotificationStatus(culprit_urlsafe_key, new_status):
   """Updates a culprit (WfSuspectedCL, FalkeCulprit)'s status.

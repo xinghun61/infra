@@ -30,6 +30,7 @@ from model.flake.flake_culprit import FlakeCulprit
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
 from services import constants as services_constants
+from services import git
 from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -190,7 +191,7 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
   repo_name = culprit.repo_name
   revision = culprit.revision
   # 0. Gets information about this culprit.
-  culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
+  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
 
   culprit_commit_position = culprit_info['commit_position']
   culprit_change_id = culprit_info['review_change_id']
@@ -292,7 +293,7 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name):
 def GetCommitTime(repo_name, revision):
   """Returns the time that the culprit was committed."""
   # TODO(crbug.com/829920): Refactor this to use gitiles.
-  culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
+  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
   culprit_change_id = culprit_info['review_change_id']
   culprit_host = culprit_info['review_server_host']
 
@@ -336,7 +337,7 @@ def _CanAutoCommitRevertByGerrit(culprit_urlsafe_key):
   repo_name = culprit.repo_name
   revision = culprit.revision
 
-  culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
+  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
 
   # Checks if the culprit is an DEPS autoroll by checking the author's email.
   # If it is, bail out of auto commit for now.
@@ -372,7 +373,7 @@ def CommitRevert(pipeline_input):
   if not _CanAutoCommitRevertByGerrit(culprit.key.urlsafe()):
     return services_constants.SKIPPED
 
-  culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
+  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
   culprit_host = culprit_info['review_server_host']
   codereview = codereview_util.GetCodeReviewForReview(culprit_host)
 
@@ -391,7 +392,7 @@ def CommitRevert(pipeline_input):
 
 ###################### Functions to send notification. ######################
 def SendNotificationForCulprit(repo_name, revision, revert_status):
-  culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
+  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
   commit_position = culprit_info['commit_position']
   review_server_host = culprit_info['review_server_host']
   review_change_id = culprit_info['review_change_id']

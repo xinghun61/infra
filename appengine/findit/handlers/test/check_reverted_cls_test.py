@@ -16,7 +16,7 @@ from libs import time_util
 from model import revert_cl_status
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import suspected_cl_util
+from services import git
 from waterfall.test import wf_testcase
 
 _MOCKED_FINDIT_REVERTING_CL = cl_info.ClInfo('codereview.chromium.org', '456')
@@ -115,7 +115,7 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=None)
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCheckRevertStatusOfSuspectedCLRevertedNoCodeReview(self, mock_fn, _):
     mock_fn.return_value = {
         'commit_position': 1,
@@ -135,7 +135,7 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
       'GetCodeReviewForReview',
       return_value=Rietveld('codereview.chromium.org'))
   @mock.patch.object(Rietveld, 'GetClDetails', return_value=None)
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCheckRevertStatusOfSuspectedCLNoClDetails(self, mock_fn, *_):
     mock_fn.return_value = {
         'commit_position': 1,
@@ -161,7 +161,7 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
   @mock.patch(
       'infra_api_clients.codereview.cl_info.ClInfo.GetRevertCLsByRevision',
       mock.Mock(return_value=None))
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCheckRevertStatusOfSuspectedCLNoRevertCLsByRevision(self, mock_f, *_):
     mock_f.return_value = {
         'commit_position': 1,
@@ -182,7 +182,7 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
       return_value=Rietveld('codereview.chromium.org'))
   @mock.patch.object(
       Rietveld, 'GetClDetails', return_value=_MOCKED_FINDIT_REVERTED_CL_INFO)
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCheckRevertStatusOfSuspectedCLReverted(self, mock_fn, *_):
     mock_fn.return_value = {
         'commit_position': 1,
@@ -206,7 +206,7 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
       return_value=Rietveld('codereview.chromium.org'))
   @mock.patch.object(
       Rietveld, 'GetClDetails', return_value=_MOCKED_SHERIFF_REVERTED_CL_INFO)
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCheckRevertStatusOfSuspectedCLSheriffIgnored(self, mock_fn, *_):
     mock_fn.return_value = {
         'commit_position': 1,
@@ -229,7 +229,7 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
       Rietveld,
       'GetClDetails',
       return_value=_MOCKED_SHERIFF_FAST_REVERTED_CL_INFO)
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCheckRevertStatusOfSuspectedCLSheriffMuchFaster(self, mock_fn, *_):
     mock_fn.return_value = {
         'commit_position': 1,
@@ -252,7 +252,7 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
       Rietveld,
       'GetClDetails',
       return_value=_MOCKED_FINDIT_FALSE_POSITIVE_CL_INFO)
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCheckRevertStatusOfSuspectedCLFalsePositive(self, mock_fn, *_):
     mock_fn.return_value = {
         'commit_position': 1,

@@ -80,6 +80,23 @@ def GetCLInfo(revisions):
   return cls
 
 
+def GetCodeReviewInfoForACommit(_repo_name, revision):
+  """Returns change info of the given revision.
+
+  Returns commit position, code-review url, host and change_id.
+  """
+  # TODO(stgao): get repo url at runtime based on the given repo name.
+  repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
+  change_log = repo.GetChangeLog(revision)
+  return {
+      'commit_position': change_log.commit_position,
+      'code_review_url': change_log.code_review_url,
+      'review_server_host': change_log.review_server_host,
+      'review_change_id': change_log.review_change_id,
+      'author': change_log.author.ToDict(),
+  }
+
+
 def GetCommitPositionFromRevision(revision):
   """Returns the corresponding commit position given a git revision."""
   return GetCLInfo([revision]).get(revision, {}).get('commit_position')

@@ -628,7 +628,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(codereview_util, 'GetCodeReviewForReview')
   @mock.patch.object(codereview.CodeReview, 'PostMessage')
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testNotifyCulpritNoCodeReview(
       self, mocked_culprit_info, mocked_post_message, mocked_get_code_review):
     mocked_culprit_info.return_value = {
@@ -646,7 +646,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(codereview_util, 'GetCodeReviewForReview')
   @mock.patch.object(codereview.CodeReview, 'PostMessage')
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testSendNotificationForCulpritNoChangeId(
       self, mocked_culprit_info, mocked_post_message, mocked_get_code_review):
     mocked_culprit_info.return_value = {
@@ -663,7 +663,7 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(codereview_util, 'GetCodeReviewForReview')
   @mock.patch.object(codereview.CodeReview, 'PostMessage')
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testSendNotificationForCulpritSuccess(self, mocked_culprit_info,
                                             mocked_post_message, _):
     mocked_culprit_info.return_value = {

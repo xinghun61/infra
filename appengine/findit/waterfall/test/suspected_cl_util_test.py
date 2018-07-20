@@ -570,30 +570,6 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
             self.cl_confidences.test_heuristic_try_job.confidence), confidence)
     self.assertEqual(analysis_approach_type.TRY_JOB, approach)
 
-  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  def testGetCulpritChangeLog(self, mock_fn):
-
-    class MockAuthor(object):
-      name = 'author'
-
-      def ToDict(self):
-        return {'name': self.name}
-
-    class MockedChangeLog(object):
-      commit_position = 123
-      code_review_url = 'code_review_url'
-      review_server_host = 'review_server_host'
-      review_change_id = 'review_change_id'
-      author = MockAuthor()
-
-    mock_fn.return_value = MockedChangeLog()
-
-    culprit_info = suspected_cl_util.GetCulpritInfo('chromium', 'rev')
-    self.assertEqual(culprit_info['commit_position'], 123)
-    self.assertEqual(culprit_info['code_review_url'], 'code_review_url')
-    self.assertEqual(culprit_info['review_server_host'], 'review_server_host')
-    self.assertEqual(culprit_info['review_change_id'], 'review_change_id')
-
   @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2017, 7, 17))
   def testUpdateCulpritNotificationStatus(self, _):
     culprit = BaseSuspectedCL.Create('repo', 'revision', 123)

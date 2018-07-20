@@ -135,7 +135,7 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
       git, 'GetCommitsBySameAutherAfterRevision', return_value=['rev2'])
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCanAutoCommitRevertByFinditAuthorLandedAnotherCL(self, mock_info, *_):
     repo_name = 'chromium'
     revision = 'rev1'
@@ -160,7 +160,7 @@ class TestCulpritActionTest(wf_testcase.WaterfallTestCase):
       git, 'GetCommitsBySameAutherAfterRevision', return_value=[])
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 2, 14, 16, 0, 0))
-  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  @mock.patch.object(git, 'GetCodeReviewInfoForACommit')
   def testCanAutoCommitRevertByFindit(self, mock_info, *_):
     repo_name = 'chromium'
     revision = 'rev1'
