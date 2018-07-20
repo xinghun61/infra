@@ -10,9 +10,9 @@ from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
+from services import constants
 from services import git
 from services import swarmed_test_util
-from services.flake_failure import flake_constants
 from waterfall import extractor_util
 
 _FINDIT_HTTP_CLIENT = FinditHttpClient()
@@ -102,8 +102,8 @@ def IdentifySuspectedRevisions(analysis):
     return []
 
   normalized_file_path = extractor_util.NormalizeFilePath(test_location.file)
-  git_repo = CachedGitilesRepository(
-      _FINDIT_HTTP_CLIENT, flake_constants.CHROMIUM_GIT_REPOSITORY_URL)
+  git_repo = CachedGitilesRepository(_FINDIT_HTTP_CLIENT,
+                                     constants.CHROMIUM_GIT_REPOSITORY_URL)
   git_blame = git_repo.GetBlame(normalized_file_path, upper_data_point.git_hash)
 
   lower_data_point = analysis.FindMatchingDataPointWithCommitPosition(
@@ -194,8 +194,8 @@ def SaveFlakeCulpritsForSuspectedRevisions(analysis_urlsafe_key,
         FlakeCulprit.Create(repo_name, revision, commit_position))
 
     if suspect.url is None:
-      git_repo = CachedGitilesRepository(
-          _FINDIT_HTTP_CLIENT, flake_constants.CHROMIUM_GIT_REPOSITORY_URL)
+      git_repo = CachedGitilesRepository(_FINDIT_HTTP_CLIENT,
+                                         constants.CHROMIUM_GIT_REPOSITORY_URL)
       change_log = git_repo.GetChangeLog(revision)
 
       if change_log:

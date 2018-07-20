@@ -10,13 +10,14 @@ from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import time_util
 from model.flake.flake_culprit import FlakeCulprit
+from services import constants
 from services.flake_failure import flake_constants
 from waterfall import waterfall_config
 # TODO(crbug.com/809885): Merge into this module.
 from waterfall.flake import flake_analysis_util
 
 _GIT_REPO = CachedGitilesRepository(FinditHttpClient(),
-                                    flake_constants.CHROMIUM_GIT_REPOSITORY_URL)
+                                    constants.CHROMIUM_GIT_REPOSITORY_URL)
 
 
 def CanStartAnalysis(step_metadata, retries, force):

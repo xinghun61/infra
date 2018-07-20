@@ -47,6 +47,7 @@ from model.wf_failure_group import WfFailureGroup
 from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from services import constants as services_constants
 from services import monitoring
 from services import swarmbot_util
 from waterfall import build_util
@@ -593,8 +594,7 @@ def _RecordCacheStats(build, report):
   cache_name = swarmbot_util.GetBuilderCacheName(build)
   if bot and cache_name:
     git_repo = CachedGitilesRepository(
-        FinditHttpClient(),
-        'https://chromium.googlesource.com/chromium/src.git')
+        FinditHttpClient(), services_constants.CHROMIUM_GIT_REPOSITORY_URL)
 
     last_checked_out_revision = report.get('last_checked_out_revision')
     last_checked_out_cp = (

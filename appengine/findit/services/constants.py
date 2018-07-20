@@ -18,6 +18,10 @@ STATE_COMPLETED = 'COMPLETED'
 STATE_NOT_STOP = (STATE_PENDING, STATE_RUNNING)
 STATE_NO_RESOURCE = 'NO_RESOURCE'
 
+# The chromium git repository to pull revisions and blame info from.
+CHROMIUM_GIT_REPOSITORY_URL = (
+    'https://chromium.googlesource.com/chromium/src.git')
+
 # Default limit hours to revert a culprit: should only revert a culprit if it's
 # committed within this time range.
 DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24

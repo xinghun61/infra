@@ -14,9 +14,9 @@ from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from model.build_ahead_try_job import BuildAheadTryJob
 from model.wf_try_bot_cache import WfTryBotCache
+from services import constants
 from services import git
 from services import swarmbot_util
-from services import try_job
 from waterfall import waterfall_config
 
 LOW_COMMITS_PER_HOUR = 3
@@ -44,8 +44,7 @@ def _LowRepoActivity():
   failure will necessitate a Findit compile failure analysis and tryjob to find
   a culprit.
   """
-  repo_activity = git.CountRecentCommits(
-      'https://chromium.googlesource.com/chromium/src.git')
+  repo_activity = git.CountRecentCommits(constants.CHROMIUM_GIT_REPOSITORY_URL)
   return repo_activity <= LOW_COMMITS_PER_HOUR
 
 
@@ -235,7 +234,7 @@ def _TriggerAndSave(master, builder, cache_name, platform, bot):
 def _OldEnough(try_bot_cache, bot_id):
   """Checks if the build in the given bot's cache is older than threshold."""
   built_cp = try_bot_cache.full_build_commit_positions[bot_id]
-  tot_cp = git.GetCLInfo(['HEAD']).get('HEAD', {}).get('commit_position')
+  tot_cp = git.GetCommitPositionFromRevision('HEAD')
   return built_cp < tot_cp - STALE_CACHE_AGE
 
 

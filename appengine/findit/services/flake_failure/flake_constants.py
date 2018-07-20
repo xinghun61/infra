@@ -6,10 +6,6 @@
 # during off-peak hours.
 BASE_COUNT_DOWN_SECONDS = 2 * 60
 
-# The chromium git repository to pull revisions and blame info from.
-CHROMIUM_GIT_REPOSITORY_URL = (
-    'https://chromium.googlesource.com/chromium/src.git')
-
 # The Chromium project name.
 CHROMIUM_PROJECT_NAME = 'chromium'
 

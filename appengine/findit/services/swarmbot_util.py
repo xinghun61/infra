@@ -13,6 +13,7 @@ from infra_api_clients import http_client_util
 from infra_api_clients.swarming import swarming_util
 from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
+from services import constants
 from services import swarming
 from services.flake_failure import flake_constants
 
@@ -52,14 +53,15 @@ def GetBuilderCacheName(build):
 
 
 def GetBotsByDimension(dimensions, http_client):
-  url = BOT_LIST_URL % (
-      swarming.SwarmingHost(),
-      swarming_util.ParametersToQueryString(dimensions, 'dimensions'))
+  url = BOT_LIST_URL % (swarming.SwarmingHost(),
+                        swarming_util.ParametersToQueryString(
+                            dimensions, 'dimensions'))
 
   content, error = http_client_util.SendRequestToServer(url, http_client)
   if error:
-    logging.error('failed to list bots by dimension with %s, falling back to '
-                  'any selecting any bot', error)
+    logging.error(
+        'failed to list bots by dimension with %s, falling back to '
+        'any selecting any bot', error)
     return []
 
   if not content:
@@ -77,9 +79,8 @@ def GetAllBotsWithCache(dimensions, cache_name, http_client):
 
 def OnlyAvailable(bots):
   return [
-      b for b in bots
-      if not (b.get('task_id') or b.get('is_dead') or b.get('quarantined') or
-              b.get('deleted'))
+      b for b in bots if not (b.get('task_id') or b.get('is_dead') or
+                              b.get('quarantined') or b.get('deleted'))
   ]
 
 
@@ -197,8 +198,8 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
       tryjob.dimensions.append('id:%s' % selected_bot)
       return
 
-    git_repo = CachedGitilesRepository(
-        http_client, 'https://chromium.googlesource.com/chromium/src.git')
+    git_repo = CachedGitilesRepository(http_client,
+                                       constants.CHROMIUM_GIT_REPOSITORY_URL)
     # TODO(crbug.com/800107): Pass revision as a parameter.
     revision = (
         tryjob.properties.get('bad_revision') or
