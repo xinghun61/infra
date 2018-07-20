@@ -42,7 +42,7 @@ func TestReport(t *testing.T) {
 		feedback := &track.CommentFeedback{ID: 1, Parent: ds.KeyForObj(ctx, comment)}
 		So(ds.Put(ctx, feedback), ShouldBeNil)
 
-		Convey("Request for known comment increments count", func() {
+		Convey("Single request for known comment increments count", func() {
 			request := &tricium.ReportNotUsefulRequest{CommentId: commentID}
 			response, err := server.ReportNotUseful(ctx, request)
 			So(err, ShouldBeNil)
@@ -60,7 +60,16 @@ func TestReport(t *testing.T) {
 			So(feedback.NotUsefulReports, ShouldEqual, 0)
 		})
 
-		Convey("Two requests increment twice", func() {
+		Convey("Request with no comment gives error", func() {
+			request := &tricium.ReportNotUsefulRequest{}
+			response, err := server.ReportNotUseful(ctx, request)
+			So(err, ShouldNotBeNil)
+			So(response, ShouldBeNil)
+			So(ds.Get(ctx, feedback), ShouldBeNil)
+			So(feedback.NotUsefulReports, ShouldEqual, 0)
+		})
+
+		Convey("Two requests increment twice and have the same response", func() {
 			request := &tricium.ReportNotUsefulRequest{CommentId: commentID}
 			response, err := server.ReportNotUseful(ctx, request)
 			So(err, ShouldBeNil)
@@ -70,25 +79,6 @@ func TestReport(t *testing.T) {
 			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{})
 			So(ds.Get(ctx, feedback), ShouldBeNil)
 			So(feedback.NotUsefulReports, ShouldEqual, 2)
-		})
-
-		Convey("Validates valid request", func() {
-			err := validateReportRequest(ctx, &tricium.ReportNotUsefulRequest{
-				CommentId: commentID,
-			})
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Validates request with no extra details", func() {
-			err := validateReportRequest(ctx, &tricium.ReportNotUsefulRequest{
-				CommentId: commentID,
-			})
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Fails invalid request with no comment ID", func() {
-			err := validateReportRequest(ctx, &tricium.ReportNotUsefulRequest{})
-			So(err, ShouldNotBeNil)
 		})
 	})
 }
