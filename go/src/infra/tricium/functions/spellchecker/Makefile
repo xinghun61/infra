@@ -20,8 +20,4 @@ codespell:
 	PYTHONUSERBASE=codespell pip install --ignore-installed --user codespell
 
 clean:
-	rm spellchecker || true
-	rm codespell || true
-	rm -rf python || true
-	rm -rf test-out || true
-	rm pylint.cipd || true
+	rm -rf codespell pylint.cipd python spellchecker out

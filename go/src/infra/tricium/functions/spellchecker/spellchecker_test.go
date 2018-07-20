@@ -37,7 +37,8 @@ func TestPylintParsingFunctions(t *testing.T) {
 			output := "test.txt:1: aberation  ==> aberration\n" +
 				"test.txt:2: iminent  ==> eminent, imminent, immanent,\n" +
 				"test.txt:3: wanna  ==> want to  | disabled because one might want to allow informal pronunciation\n" +
-				"test.txt:5: wanna  ==> want to, wants to, test suggestion | this is a random reason\n"
+				"test.txt:5: wanna  ==> want to, wants to, test suggestion | this is a random reason\n" +
+				"test.txt:5: combinatins  ==> combinations\n"
 
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
@@ -46,6 +47,7 @@ func TestPylintParsingFunctions(t *testing.T) {
 						Message:   `"aberation" is a possible misspelling of: aberration`,
 						Category:  "SpellChecker",
 						StartLine: 1,
+						EndLine:   1,
 						StartChar: 0,
 						EndChar:   9,
 					},
@@ -54,6 +56,7 @@ func TestPylintParsingFunctions(t *testing.T) {
 						Message:   `"iminent" is a possible misspelling of: eminent, imminent, immanent`,
 						Category:  "SpellChecker",
 						StartLine: 2,
+						EndLine:   2,
 						StartChar: 0,
 						EndChar:   7,
 					},
@@ -62,6 +65,7 @@ func TestPylintParsingFunctions(t *testing.T) {
 						Message:   `"wanna" is a possible misspelling of: want to`,
 						Category:  "SpellChecker",
 						StartLine: 3,
+						EndLine:   3,
 						StartChar: 0,
 						EndChar:   5,
 					},
@@ -70,15 +74,26 @@ func TestPylintParsingFunctions(t *testing.T) {
 						Message:   `"wanna" is a possible misspelling of: want to, wants to, test suggestion`,
 						Category:  "SpellChecker",
 						StartLine: 5,
+						EndLine:   5,
 						StartChar: 0,
 						EndChar:   5,
+					},
+					{
+						Path:      "test.txt",
+						Message:   `"combinatins" is a possible misspelling of: combinations`,
+						Category:  "SpellChecker",
+						StartLine: 5,
+						EndLine:   5,
+						StartChar: 16,
+						EndChar:   27,
 					},
 				},
 			}
 
 			results := &tricium.Data_Results{}
 			scanCodespellOutput(bufio.NewScanner(strings.NewReader(output)),
-				bufio.NewScanner(strings.NewReader("aberation\niminent\nwanna\nnormal line\nwanna\n")), results, nil)
+				bufio.NewScanner(strings.NewReader("aberation\niminent\nwanna\nnormal line\nwanna test some combinatins\n")),
+				results, nil)
 			So(results, ShouldResemble, expected)
 		})
 	})

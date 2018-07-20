@@ -10,7 +10,7 @@ Local testing:
 
 ```
 $ go build
-$ ./ --input=test --output=output
+$ ./spellchecker --input=test --output=out
 ```
 
 ## Deployment
@@ -18,7 +18,7 @@ $ ./ --input=test --output=output
 Deploy a new version of the analyzer using CIPD:
 
 ```
-$ go build
+$ make
 $ cipd create -pkg-def=cipd.yaml
 <outputs the VERSION>
 $ cipd set-ref infra/tricium/function/spellchecker -ref live -version VERSION
