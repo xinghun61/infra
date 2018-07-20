@@ -20,7 +20,17 @@ class MrCommentContent extends Polymer.Element {
         type: String,
         computed: '_stripHtml(content)',
       },
+      _textRuns: {
+        type: Array,
+        value: () => ([]),
+      },
     };
+  }
+
+  static get observers() {
+    return [
+      '_computeTextRuns(content)',
+    ]
   }
 
   _computeCommentLines(comment) {
@@ -31,6 +41,31 @@ class MrCommentContent extends Polymer.Element {
     const temp = document.createElement('DIV');
     temp.innerHTML = comment;
     return temp.textContent || temp.innerText;
+  }
+
+  _isTagEqual(tag, str) {
+    return tag == str;
+  }
+
+  _computeTextRuns(content) {
+    // TODO(jojwang): monorail:4033, add autolinking for issues, users, links, etc.
+    const chunks = content.trim().split(/(<b>[^<\n]+<\/b>)|(\r?\n)/);
+    let textRuns = [];
+    chunks.forEach(chunk => {
+      if (chunk) {
+        let textRun = {};
+        if (chunk.match(/\r/) || chunk.match(/\n/)) {
+          textRun.tag = 'br';
+        } else if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
+          textRun.content = chunk.slice(3,-4);
+          textRun.tag = 'b';
+        } else {
+          textRun.content = chunk;
+        }
+        textRuns.push(textRun);
+      }
+    });
+    this.set('_textRuns', textRuns);
   }
 }
 customElements.define(MrCommentContent.is, MrCommentContent);
