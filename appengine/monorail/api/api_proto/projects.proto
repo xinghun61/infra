@@ -15,6 +15,7 @@ import "api/api_proto/project_objects.proto";
 service Projects {
   rpc ListProjects (ListProjectsRequest) returns (ListProjectsResponse) {}
   rpc GetConfig (GetConfigRequest) returns (Config) {}
+  rpc GetCustomPermissions (GetCustomPermissionsRequest) returns (GetCustomPermissionsResponse) {}
 }
 
 
@@ -34,4 +35,15 @@ message ListProjectsResponse {
 message GetConfigRequest {
   RequestTrace trace = 1;
   string project_name = 2;
+}
+
+// Next available tag: 3
+message GetCustomPermissionsRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+}
+
+// Next available tag: 2
+message GetCustomPermissionsResponse {
+  repeated string permissions = 1;
 }

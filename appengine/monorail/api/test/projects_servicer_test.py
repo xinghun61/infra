@@ -74,7 +74,6 @@ class ProjectsServicerTest(unittest.TestCase):
     with self.assertRaises(exceptions.NoSuchProjectException):
       self.CallWrapped(self.projects_svcr.GetConfig, mc, request)
 
-
   def testGetConfig_PermissionDenied(self):
     """We reject a request to get a config for a non-viewable project."""
     self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
@@ -91,3 +90,86 @@ class ProjectsServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='nonmember@example.com')
     with self.assertRaises(permissions.PermissionException):
       self.CallWrapped(self.projects_svcr.GetConfig, mc, request)
+
+  def testGetCustomPermissions_Normal(self):
+    self.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=111L,
+            perms=['FooPerm', 'BarPerm'])]
+
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.org')
+    response = self.CallWrapped(
+        self.projects_svcr.GetCustomPermissions, mc, request)
+    self.assertEqual(['BarPerm', 'FooPerm'], response.permissions)
+
+  def testGetCustomPermissions_PermissionsAreDedupped(self):
+    self.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=111L,
+            perms=['FooPerm', 'FooPerm']),
+        project_pb2.Project.ExtraPerms(
+            member_id=222L,
+            perms=['FooPerm'])]
+
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.org')
+    response = self.CallWrapped(
+        self.projects_svcr.GetCustomPermissions, mc, request)
+    self.assertEqual(['FooPerm'], response.permissions)
+
+  def testGetCustomPermissions_PermissionsAreSorted(self):
+    self.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=111L,
+            perms=['FooPerm', 'BarPerm']),
+        project_pb2.Project.ExtraPerms(
+            member_id=222L,
+            perms=['BazPerm'])]
+
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.org')
+    response = self.CallWrapped(
+        self.projects_svcr.GetCustomPermissions, mc, request)
+    self.assertEqual(['BarPerm', 'BazPerm', 'FooPerm'], response.permissions)
+
+  def testGetCustomPermissions_PermissionsAreDedupped(self):
+    self.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=111L,
+            perms=['FooPerm', 'FooPerm']),
+        project_pb2.Project.ExtraPerms(
+            member_id=222L,
+            perms=['FooPerm'])]
+
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.org')
+    response = self.CallWrapped(
+        self.projects_svcr.GetCustomPermissions, mc, request)
+    self.assertEqual(['FooPerm'], response.permissions)
+
+  def testGetCustomPermissions_IgnoreStandardPermissions(self):
+    self.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=111L,
+            perms=permissions.STANDARD_PERMISSIONS + ['FooPerm'])]
+
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.org')
+    response = self.CallWrapped(
+        self.projects_svcr.GetCustomPermissions, mc, request)
+    self.assertEqual(['FooPerm'], response.permissions)
+
+  def testGetCustomPermissions_NoCustomPermissions(self):
+    self.project.extra_perms = []
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='foo@example.org')
+    response = self.CallWrapped(
+        self.projects_svcr.GetCustomPermissions, mc, request)
+    self.assertEqual([], response.permissions)

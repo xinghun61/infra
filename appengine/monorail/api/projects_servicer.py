@@ -12,6 +12,7 @@ from api.api_proto import project_objects_pb2
 from api.api_proto import projects_prpc_pb2
 from businesslogic import work_env
 from framework import framework_views
+from framework import permissions
 from tracker import tracker_bizobj
 
 
@@ -40,7 +41,6 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
             project_objects_pb2.Project(name='Two')],
         next_page_token='next...')
 
-
   @monorail_servicer.PRPCMethod
   def GetConfig(self, mc, request):
     """Return the specified project config."""
@@ -62,4 +62,14 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
     result = converters.ConvertConfig(
         project, config, users_by_id, labels_by_id)
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def GetCustomPermissions(self, mc, request):
+    """Return the custom permissions for the given project."""
+    project = self._GetProject(mc, request)
+    custom_permissions = permissions.GetCustomPermissions(project)
+
+    result = projects_pb2.GetCustomPermissionsResponse(
+        permissions=custom_permissions)
     return result
