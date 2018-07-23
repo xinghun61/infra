@@ -24,15 +24,13 @@ $ make prpc_proto
 You can make anonymous requests to a server running locally like this:
 
 ```bash
-$ curl -i -X POST localhost:8080/prpc/monorail.Users/GetUser \
-  -H "Content-Type: application/json" -H "Accept: application/json" \
-  --data '{"email": "test@example.com"}'
+$ ./api/test_call monorail.Users GetUser '{"email": "test@example.com"}'
 ```
 
-Requests that require a signed-in user can be tested locally like this
-(done with an alias so that the command is shorter):
+Requests that require a signed-in user can be tested locally like this:
 
 ```bash
-$ alias capi-dc='curl -i -X POST localhost:8080/prpc/monorail.Issues/DeleteComment -H "Content-Type: application/json" -H "Accept: application/json"'
-$ capi-dc --data '{"trace": {"test_account": "test@example.com"}, "issue_ref": {"project_name": "proj", "local_id": 21}, "sequence_num": 1}'
+$ ./api/test_call monorail.Users GetUser \
+  '{"issue_ref": {"project_name": "proj", "local_id": 21}, "sequence_num": 1}' \
+  --test-account=test@example.com
 ```
