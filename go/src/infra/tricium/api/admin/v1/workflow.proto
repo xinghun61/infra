@@ -12,12 +12,17 @@ import "infra/tricium/api/v1/platform.proto";
 
 // Tricium workflow configuration.
 //
-// Workflow configurations are typically generated from a Tricium configuration.
+// A Workflow is generated from a merged service and project config,
+// and contains information required for one workflow run.
 message Workflow {
+  // TODO(qyearsley): remove service_account if it is unused.
   string service_account = 1;
   repeated Worker workers = 2;
   string swarming_server = 3;
   string isolate_server = 4;
+  // Function definitions used for this workflow; these contain the function
+  // owner and component, to be used when filling out a bug filing template.
+  repeated tricium.Function functions = 5;
 }
 
 // A Tricium worker includes the details needed to execute a function on a

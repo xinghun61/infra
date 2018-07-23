@@ -29,6 +29,9 @@ var server = &trackerServer{}
 // WorkflowLaunched tracks the launch of a workflow.
 func (*trackerServer) WorkflowLaunched(
 	c context.Context, req *admin.WorkflowLaunchedRequest) (*admin.WorkflowLaunchedResponse, error) {
+	logging.Fields{
+		"run ID": req.RunId,
+	}.Infof(c, "[tracker] Received workflow launched request.")
 	if req.RunId == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
@@ -93,6 +96,10 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 				entities := make([]interface{}, 0, len(fw))
 				for _, v := range fw {
 					v.Function.Parent = runKey
+					if fd := tricium.LookupFunction(wf.Functions, v.Function.ID); fd != nil {
+						v.Function.Owner = fd.Owner
+						v.Function.MonorailComponent = fd.MonorailComponent
+					}
 					functionKey := ds.KeyForObj(c, v.Function)
 					entities = append(entities, []interface{}{
 						v.Function,

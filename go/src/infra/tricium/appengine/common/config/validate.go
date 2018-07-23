@@ -29,8 +29,8 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 	for _, s := range pc.Selections {
 		// Get merged function definition.
 		if _, ok := functions[s.Function]; !ok {
-			sca := tricium.LookupServiceFunction(sc, s.Function)
-			pca := tricium.LookupProjectFunction(pc, s.Function)
+			sca := tricium.LookupFunction(sc.Functions, s.Function)
+			pca := tricium.LookupFunction(pc.Functions, s.Function)
 			f, err := mergeFunctions(s.Function, sc, sca, pca)
 			if err != nil {
 				return nil, err

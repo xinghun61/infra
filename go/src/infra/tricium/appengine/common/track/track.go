@@ -138,10 +138,20 @@ type WorkflowRunResult struct {
 type FunctionRun struct {
 	ID     string  `gae:"$id"`
 	Parent *ds.Key `gae:"$parent"`
-	// Name of workers launched for this analyzer.
+	// Name of workers launched for this function.
 	//
 	// Included here to allow for direct access without queries.
 	Workers []string `gae:",noindex"`
+	// Owner email and monorail component for this function.
+	//
+	// Included here for convenience so that this information can
+	// later be used to populate a bug filing template.
+
+	// Cached here from the Function instance so this information can
+	// later be used to populate a bug filing template, even if the
+	// Function instance changed in the meantime.
+	Owner             string `gae:",noindex"`
+	MonorailComponent string `gae:",noindex"`
 }
 
 // FunctionRunResult tracks the state of an analyzer run.

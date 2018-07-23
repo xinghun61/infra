@@ -28,16 +28,17 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tri
 	functions := map[string]*tricium.Function{}
 	for _, s := range vpc.Selections {
 		if _, ok := functions[s.Function]; !ok {
-			f := tricium.LookupProjectFunction(vpc, s.Function)
+			f := tricium.LookupFunction(vpc.Functions, s.Function)
 			if f == nil {
 				return nil, fmt.Errorf("failed to lookup project function: %v", err)
 			}
 			functions[s.Function] = f
 		}
-		ok, err := includeFunction(functions[s.Function], files)
+		shouldInclude, err := includeFunction(functions[s.Function], files)
 		if err != nil {
 			return nil, fmt.Errorf("failed include function check: %v", err)
-		} else if ok {
+		}
+		if shouldInclude {
 			w, err := createWorker(s, sc, functions[s.Function])
 			if err != nil {
 				return nil, fmt.Errorf("failed to create worker: %v", err)
@@ -48,11 +49,13 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tri
 	if err := resolveSuccessorWorkers(sc, workers); err != nil {
 		return nil, fmt.Errorf("workflow is not sane: %v", err)
 	}
+
 	return &admin.Workflow{
 		ServiceAccount: pc.SwarmingServiceAccount,
 		Workers:        workers,
 		SwarmingServer: sc.SwarmingServer,
 		IsolateServer:  sc.IsolateServer,
+		Functions:      vpc.Functions,
 	}, nil
 }
 

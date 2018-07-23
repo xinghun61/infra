@@ -81,17 +81,8 @@ func checkAcls(c context.Context, pc *ProjectConfig, role Acl_Role) (bool, error
 	return ok, nil
 }
 
-// LookupProjectFunction looks up the given function in the project config.
-func LookupProjectFunction(pc *ProjectConfig, function string) *Function {
-	return lookupFunction(pc.Functions, function)
-}
-
-// LookupServiceFunction looks up the given function in the service config.
-func LookupServiceFunction(sc *ServiceConfig, function string) *Function {
-	return lookupFunction(sc.Functions, function)
-}
-
-func lookupFunction(functions []*Function, function string) *Function {
+// LookupFunction looks up the given function in a slice of functions.
+func LookupFunction(functions []*Function, function string) *Function {
 	for _, f := range functions {
 		if f.Name == function {
 			return f

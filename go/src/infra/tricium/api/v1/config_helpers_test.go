@@ -126,36 +126,19 @@ func TestCanRequest(t *testing.T) {
 
 func TestLookupFunction(t *testing.T) {
 
-	analyzer := "PyLint"
-	sc := &ServiceConfig{
-		Functions: []*Function{
-			{
-				Type: Function_ANALYZER,
-				Name: analyzer,
-			},
+	functions := []*Function{
+		{
+			Name: "Pylint",
+			Type: Function_ANALYZER,
 		},
 	}
 
-	Convey("Known service function is known", t, func() {
-		f := LookupServiceFunction(sc, analyzer)
-		So(f, ShouldNotBeNil)
-		So(f.Name, ShouldEqual, analyzer)
+	Convey("Known function is known", t, func() {
+		So(LookupFunction(functions, "Pylint"), ShouldResemble, functions[0])
 	})
 
-	Convey("Unknown service function is unknown", t, func() {
-		f := LookupServiceFunction(sc, "blabla")
-		So(f, ShouldBeNil)
-	})
-
-	pc := &ProjectConfig{
-		Functions: []*Function{
-			{},
-		},
-	}
-
-	Convey("Function without name returns nil", t, func() {
-		f := LookupProjectFunction(pc, analyzer)
-		So(f, ShouldBeNil)
+	Convey("Unknown function is unknown", t, func() {
+		So(LookupFunction(functions, "blabla"), ShouldBeNil)
 	})
 }
 
