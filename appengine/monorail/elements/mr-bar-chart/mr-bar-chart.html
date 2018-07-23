@@ -131,6 +131,9 @@
               document.location.search.substring(1));
           const query = params.get('q');
           const message = {
+            trace: {
+              token: window.CS_env.token,
+            },
             timestamp: timestamp,
             project_name: this.projectName,
             query: query,
