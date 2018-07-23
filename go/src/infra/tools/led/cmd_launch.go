@@ -26,6 +26,17 @@ func launchCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
 		UsageLine: "launch",
 		ShortDesc: "launches a JobDefinition on swarming",
+		LongDesc: `Launches a given JobDefinition on swarming.
+
+Example:
+
+led get-builder ... |
+  led edit ... |
+  led launch
+
+If stdout is not a tty (e.g. a file), this command writes a JSON object
+containing information about the launched task to stdout.
+`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdLaunch{}
@@ -35,7 +46,6 @@ func launchCmd(authOpts auth.Options) *subcommands.Command {
 			ret.authFlags.Register(&ret.Flags, authOpts)
 
 			ret.Flags.BoolVar(&ret.dump, "dump", false, "Dump swarming task to stdout instead of running it.")
-			ret.Flags.StringVar(&ret.json, "json", "", "Output structured information about the launched swarming task as json to this file.")
 
 			return ret
 		},
@@ -49,16 +59,11 @@ type cmdLaunch struct {
 	authFlags authcli.Flags
 
 	dump bool
-	json string
 }
 
 func (c *cmdLaunch) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
 	if len(args) > 0 {
 		err = errors.Reason("unexpected positional arguments: %q", args).Err()
-		return
-	}
-	if c.dump && c.json != "" {
-		err = errors.Reason("-dump and -json are mutually exclusive").Err()
 		return
 	}
 	return c.authFlags.Options()
