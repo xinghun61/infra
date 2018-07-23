@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
 import logging
 
 from gae_libs.pipeline_wrapper import BasePipeline
@@ -9,6 +10,8 @@ from libs import time_util
 from model.flake import triggering_sources
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
+from services import ci_failure
+from services import monitoring
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
 
@@ -34,6 +37,7 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
     if not analysis or not analysis.flaky_tests:
       return
 
+    analysis_counts = defaultdict(lambda: defaultdict(int))
     for step, flaky_tests in analysis.flaky_tests.iteritems():
       logging.info('%s/%s/%s/%s has %s flaky tests.', master_name, builder_name,
                    build_number, step, len(flaky_tests))
@@ -46,9 +50,26 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
             request, 'findit-for-me@appspot.gserviceaccount.com', False,
             triggering_sources.FINDIT_PIPELINE)
         if scheduled:  # pragma: no branch
+          analysis_counts[step]['analyzed'] += 1
           logging.info('A flake analysis has been triggered for %s/%s', step,
                        test_name)
-          if throttled:
+          if throttled and len(flaky_tests) > 1:
             logging.info('Throttling is enabled, skipping %d tests.',
                          len(flaky_tests) - 1)
-            break  # If we're thottled, stop after the first.
+            analysis_counts[step]['throttled'] = len(flaky_tests) - 1
+            break  # If we're throttled, stop after the first.
+      else:
+        analysis_counts[step]['error'] += 1
+
+    for step, step_counts in analysis_counts.iteritems():
+      # Collects metrics.
+      step_metadata = ci_failure.GetStepMetadata(master_name, builder_name,
+                                                 build_number, step)
+      canonical_step_name = step_metadata.get(
+          'canonical_step_name') or 'Unknown'
+      isolate_target_name = step_metadata.get(
+          'isolate_target_name') or 'Unknown'
+
+      for operation, count in step_counts.iteritems():
+        monitoring.OnFlakeIdentified(canonical_step_name, isolate_target_name,
+                                     operation, count)

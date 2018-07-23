@@ -17,6 +17,7 @@ from libs import analysis_status
 from libs import time_util
 from libs.test_results import test_results_util
 from model.wf_swarming_task import WfSwarmingTask
+from services import ci_failure
 from services import constants
 from services import monitoring
 from services import swarmed_test_util
@@ -313,6 +314,7 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
       collect_consistent_failure_inputs.build_key.GetParts())
   consistent_failures = {}
   flake_failures = {}
+  non_reproducible_flaky_tests = {}
   all_tasks_completes = True
 
   for step_name in first_failed_steps:
@@ -343,6 +345,9 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
     if task.reproducible_flaky_tests:  # pragma: no branch
       flake_failures[step_name] = task.reproducible_flaky_tests
 
+    non_reproducible_flaky_tests[step_name] = (
+        set(task.flaky_tests) - set(task.reproducible_flaky_tests))
+
   test_failure_analysis.UpdateAnalysisWithFlakesFoundBySwarmingReruns(
       master_name, builder_name, build_number, flake_failures)
 
@@ -350,6 +355,22 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
     # Not all tasks completed, don't return any information about consistent
     # failures.
     return None
+
+  for step_name, tests in non_reproducible_flaky_tests.iteritems():
+    if tests:
+      # Skips flake analyses on non reproducible tests, but keeps a record in
+      # ts_mon.
+      # For reproducible flakes, keeps a record for them in
+      # trigger_flake_analyses_pipeline, depends on whether the analyses are
+      # successfully triggered.
+      step_metadata = ci_failure.GetStepMetadata(master_name, builder_name,
+                                                 build_number, step_name)
+      canonical_step_name = step_metadata.get(
+          'canonical_step_name') or 'Unknown'
+      isolate_target_name = step_metadata.get(
+          'isolate_target_name') or 'Unknown'
+      monitoring.OnFlakeIdentified(canonical_step_name, isolate_target_name,
+                                   'skip', len(tests))
 
   return (CollectSwarmingTaskResultsOutputs.FromSerializable({
       'consistent_failures': consistent_failures

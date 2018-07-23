@@ -23,7 +23,9 @@ from libs import analysis_status
 from libs.test_results.gtest_test_results import GtestTestResults
 from libs.test_results import test_results_util
 from model.wf_swarming_task import WfSwarmingTask
+from services import ci_failure
 from services import constants
+from services import monitoring
 from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
@@ -526,7 +528,8 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(test_failure_analysis,
                      'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
-  def testCollectSwarmingTaskResultsTaskRunning(self, _):
+  @mock.patch.object(monitoring, 'OnFlakeIdentified')
+  def testCollectSwarmingTaskResultsTaskRunning(self, mock_monitoring, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 15
@@ -546,10 +549,19 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
                           'step1').put()
     self.assertIsNone(
         test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
+    self.assertFalse(mock_monitoring.called)
 
   @mock.patch.object(test_failure_analysis,
                      'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
-  def testCollectSwarmingTaskResultsError(self, _):
+  @mock.patch.object(
+      ci_failure,
+      'GetStepMetadata',
+      return_value={
+          'canonical_step_name': 'step2',
+          'isolate_target_name': 'step2'
+      })
+  @mock.patch.object(monitoring, 'OnFlakeIdentified')
+  def testCollectSwarmingTaskResultsError(self, mock_monitoring, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 15
@@ -602,6 +614,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
         CollectSwarmingTaskResultsOutputs.FromSerializable(
             expected_result_json),
         test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
+    mock_monitoring.assert_called_once_with('step2', 'step2', 'skip', 1)
 
   @mock.patch.object(test_failure_analysis,
                      'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
@@ -626,9 +639,18 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
         CollectSwarmingTaskResultsOutputs.FromSerializable({}),
         test_swarming.GetConsistentFailuresWhenAllTasksComplete(params, steps))
 
+  @mock.patch.object(
+      ci_failure,
+      'GetStepMetadata',
+      return_value={
+          'canonical_step_name': 'step2',
+          'isolate_target_name': 'step2'
+      })
   @mock.patch.object(test_failure_analysis,
                      'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
-  def testCollectSwarmingTaskResultsAllFlaky(self, mock_update_analysis):
+  @mock.patch.object(monitoring, 'OnFlakeIdentified')
+  def testCollectSwarmingTaskResultsAllFlaky(self, mock_monitoring,
+                                             mock_update_analysis, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 17
@@ -664,6 +686,7 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     flake_tests = {'step2': ['TestSuite1.test2']}
     mock_update_analysis.assert_called_once_with(master_name, builder_name,
                                                  build_number, flake_tests)
+    mock_monitoring.assert_called_once_with('step2', 'step2', 'skip', 1)
 
   @mock.patch.object(
       test_swarming, 'NeedANewSwarmingTask', side_effect=[True, False])

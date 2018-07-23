@@ -86,8 +86,8 @@ def _StepIsSupportedForMaster(master_name, builder_name, build_number,
   if step_name == 'compile':
     canonical_step_name = step_name
   else:
-    canonical_step_name = GetCanonicalStepName(
-        master_name, builder_name, build_number, step_name) or step_name
+    canonical_step_name = GetCanonicalStepName(master_name, builder_name,
+                                               build_number, step_name)
   return waterfall_config.StepIsSupportedForMaster(canonical_step_name,
                                                    master_name)
 

@@ -69,3 +69,15 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
         'reason': 'reason'
     }
     mock_common_monitoring.assert_called_once_with(parameters)
+
+  @mock.patch.object(common_monitoring.flakes_identified_by_waterfall_analyses,
+                     'increment_by')
+  def testOnFlakeIdentified(self, mock_common_monitoring):
+    monitoring.OnFlakeIdentified('canonical_step_name', 'isolated_target_name',
+                                 'analyzed', 10)
+    parameters = {
+        'canonical_step_name': 'canonical_step_name',
+        'isolated_target_name': 'isolated_target_name',
+        'operation': 'analyzed',
+    }
+    mock_common_monitoring.assert_called_once_with(10, parameters)

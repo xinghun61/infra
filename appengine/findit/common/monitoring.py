@@ -94,3 +94,11 @@ pipeline_times = gae_ts_mon.CounterMetric('findit/pipeline-times',
                                           'Current age of ongoing pipelines', [
                                               gae_ts_mon.StringField('type'),
                                           ])
+
+flakes_identified_by_waterfall_analyses = gae_ts_mon.CounterMetric(
+    'findit/flakes-identified-by-waterfall-analyses',
+    'Number of flakes identified by waterfall analyses', [
+        gae_ts_mon.StringField('canonical_step_name'),
+        gae_ts_mon.StringField('isolated_target_name'),
+        gae_ts_mon.StringField('operation'),
+    ])

@@ -61,3 +61,15 @@ def OnFlakeCulprit(result, action_taken, reason):
       'action_taken': action_taken,
       'reason': reason,
   })
+
+
+def OnFlakeIdentified(canonical_step_name, isolated_target_name, operation,
+                      count):
+  monitoring.flakes_identified_by_waterfall_analyses.increment_by(
+      count,
+      {
+          'canonical_step_name': canonical_step_name,
+          'isolated_target_name': isolated_target_name,
+          # analyzed, throttled or error.
+          'operation': operation
+      })
