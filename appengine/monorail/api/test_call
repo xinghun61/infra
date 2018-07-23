@@ -18,7 +18,7 @@ def make_call(service, method, json_body, args):
   if args.test_account or args.xsrf_token:
     body['trace'] = {}
     body['trace']['test_account'] = args.test_account
-    body['trace']['xsrf_token'] = args.xsrf_token
+    body['trace']['token'] = args.xsrf_token
 
   url = '%s%s/%s' % (URL_BASE, service, method)
   request = urllib2.Request(url)

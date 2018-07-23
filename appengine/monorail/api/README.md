@@ -30,7 +30,7 @@ $ ./api/test_call monorail.Users GetUser '{"email": "test@example.com"}'
 Requests that require a signed-in user can be tested locally like this:
 
 ```bash
-$ ./api/test_call monorail.Users GetUser \
-  '{"issue_ref": {"project_name": "proj", "local_id": 21}, "sequence_num": 1}' \
+$ ./api/test_call monorail.Issues GetIssue \
+  '{"issue_ref": {"project_name": "rutabaga", "local_id": 1}}' \
   --test-account=test@example.com
 ```
