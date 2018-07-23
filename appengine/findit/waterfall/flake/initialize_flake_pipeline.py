@@ -5,7 +5,6 @@
 import logging
 
 from common import constants
-from common.findit_http_client import FinditHttpClient
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs import appengine_util
@@ -18,6 +17,7 @@ from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakePipeline
 from pipelines.flake_failure.next_commit_position_pipeline import (
     NextCommitPositionOutput)
+from services import ci_failure
 from services import try_job as try_job_service
 from waterfall import build_util
 from waterfall import waterfall_config
@@ -90,8 +90,9 @@ def _NeedANewAnalysis(normalized_test,
     return saved, analysis
   elif (analysis.status == analysis_status.PENDING or
         analysis.status == analysis_status.RUNNING) and not force:
-    logging.info('Analysis was in state: %s, can\'t ' +
-                 'rerun until state is COMPLETED, or FAILED', analysis.status)
+    logging.info(
+        'Analysis was in state: %s, can\'t ' +
+        'rerun until state is COMPLETED, or FAILED', analysis.status)
     logging.info('Need a new analysis? %r', False)
     logging.info('analysis key: %s', analysis.key)
     return False, analysis
@@ -161,10 +162,9 @@ def ScheduleAnalysisIfNeeded(
         'will be captured in version %s', repr(normalized_test),
         repr(original_test), analysis.version_number)
 
-    step_metadata = build_util.GetWaterfallBuildStepLog(
+    step_metadata = ci_failure.GetStepMetadata(
         normalized_test.master_name, normalized_test.builder_name,
-        normalized_test.build_number, normalized_test.step_name,
-        FinditHttpClient(), 'step_metadata')
+        normalized_test.build_number, normalized_test.step_name)
 
     logging.info('Initializing flake analysis pipeline for key: %s',
                  analysis.key)

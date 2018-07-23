@@ -500,9 +500,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       build_util,
       'GetWaterfallBuildStepLog',
-      return_value={
-          'canonical_step_name': 'unsupported_step1'
-      })
+      return_value={'canonical_step_name': 'unsupported_step1'})
   def testStepIsSupportedForMaster(self, _):
     master_name = 'master1'
     builder_name = 'b'
@@ -524,13 +522,21 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       build_util,
       'GetWaterfallBuildStepLog',
-      return_value={
-          'canonical_step_name': 'step_name'
-      })
-  def testGetCanonicalStepNameCached(self, mock_fn):
-    ci_failure.GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
-    ci_failure.GetCanonicalStepName('m', 'b', 200, 'step_name on a platform')
+      return_value={'canonical_step_name': 'step_name'})
+  def testGetStepMetadataCached(self, mock_fn):
+    ci_failure.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
+    ci_failure.GetStepMetadata('m', 'b', 200, 'step_name on a platform')
     self.assertTrue(mock_fn.call_count < 2)
+
+  @mock.patch.object(
+      ci_failure,
+      'GetStepMetadata',
+      return_value={'canonical_step_name': 'step_name'})
+  def testGetCanonicalStep(self, _):
+    self.assertEqual(
+        'step_name',
+        ci_failure.GetCanonicalStepName('m', 'b', 200,
+                                        'step_name on a platform'))
 
   def testGetGoodRevision(self):
     failed_steps = {

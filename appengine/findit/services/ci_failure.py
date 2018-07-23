@@ -40,7 +40,7 @@ def _GetBlameListAndRevisionForBuild(build_info):
   }
 
 
-def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
+def _StepMetadataKeyGenerator(func, args, kwargs, namespace=None):
   """Generates a key to a cached canonical step name.
 
   Using the step_name as key, assuming it's practically not possible for 2 steps
@@ -64,16 +64,21 @@ def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
 
 @Cached(
     PickledMemCache(),
-    namespace='Canonical-step-name',
+    namespace='step_metadata',
     expire_time=_CACHE_EXPIRE_TIME_SECONDS,
-    key_generator=_CanonicalStepNameKeyGenerator)
+    key_generator=_StepMetadataKeyGenerator)
+def GetStepMetadata(master_name, builder_name, build_number, step_name):
+  return build_util.GetWaterfallBuildStepLog(master_name, builder_name,
+                                             build_number, step_name,
+                                             FinditHttpClient(),
+                                             'step_metadata')
+
+
 def GetCanonicalStepName(master_name, builder_name, build_number, step_name):
-  step_metadata = build_util.GetWaterfallBuildStepLog(master_name, builder_name,
-                                                      build_number, step_name,
-                                                      FinditHttpClient(),
-                                                      'step_metadata')
-  return (step_metadata.get('canonical_step_name')
-          if step_metadata else step_name)
+  step_metadata = GetStepMetadata(master_name, builder_name, build_number,
+                                  step_name)
+  return step_metadata.get(
+      'canonical_step_name') if step_metadata else step_name
 
 
 def _StepIsSupportedForMaster(master_name, builder_name, build_number,
