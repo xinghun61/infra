@@ -5,6 +5,7 @@
 package tracker
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -34,8 +35,11 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 	if req.Worker == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing worker")
 	}
-	if req.IsolatedOutputHash == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing output hash")
+	if req.IsolatedOutputHash == "" && req.BuildbucketOutput == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing output")
+	}
+	if req.IsolatedOutputHash != "" && req.BuildbucketOutput != "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "too many results (both isolate and buildbucket exist)")
 	}
 	if err := workerDone(c, req, common.IsolateServer); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to track worker completion: %v", err)
@@ -45,9 +49,10 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 
 func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.IsolateAPI) error {
 	logging.Fields{
-		"run ID":          req.RunId,
-		"worker":          req.Worker,
-		"isolated output": req.IsolatedOutputHash,
+		"run ID":             req.RunId,
+		"worker":             req.Worker,
+		"isolated output":    req.IsolatedOutputHash,
+		"buildbucket output": req.BuildbucketOutput,
 	}.Infof(c, "[tracker] Worker done request received.")
 
 	// Get keys for entities.
@@ -78,10 +83,10 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return fmt.Errorf("failed to get WorkflowRun: %v", err)
 	}
 
-	// Process isolated output and collect comments.
+	// Process isolated/buildbucket output and collect comments.
 	// NB! This only applies to successful analyzer functions outputting comments.
 	comments, err := collectComments(c, req.State, req.Provides, isolator, run.IsolateServerURL,
-		req.IsolatedOutputHash, functionName, workerKey)
+		req.IsolatedOutputHash, req.BuildbucketOutput, functionName, workerKey)
 	if err != nil {
 		return fmt.Errorf("failed to get worker results: %v", err)
 	}
@@ -204,6 +209,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			taskC <- func() error {
 				workerRes.State = req.State
 				workerRes.IsolatedOutput = req.IsolatedOutputHash
+				workerRes.BuildbucketOutput = req.BuildbucketOutput
 				workerRes.NumComments = len(comments)
 				if err := ds.Put(c, workerRes); err != nil {
 					return fmt.Errorf("failed to update WorkerRunResult: %v", err)
@@ -302,23 +308,31 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	return nil
 }
 
+// Exactly one of isolatedOutputHash and buildbucketOutput should be populated.
 func collectComments(c context.Context, state tricium.State, t tricium.Data_Type, isolator common.IsolateAPI,
-	isolateServerURL, isolatedOutputHash, analyzerName string, workerKey *ds.Key) ([]*track.Comment, error) {
+	isolateServerURL, isolatedOutputHash, buildbucketOutput, analyzerName string, workerKey *ds.Key) ([]*track.Comment, error) {
 	comments := []*track.Comment{}
 	// Only collect comments if function completed successfully.
 	if state != tricium.State_SUCCESS {
 		return comments, nil
 	}
+
+	results := tricium.Data_Results{}
 	switch t {
 	case tricium.Data_RESULTS:
-		resultsStr, err := isolator.FetchIsolatedResults(c, isolateServerURL, isolatedOutputHash)
-		if err != nil {
-			return comments, fmt.Errorf("failed to fetch isolated worker result: %v", err)
-		}
-		logging.Infof(c, "Fetched isolated result (%q): %q", isolatedOutputHash, resultsStr)
-		results := tricium.Data_Results{}
-		if err := jsonpb.UnmarshalString(resultsStr, &results); err != nil {
-			return comments, fmt.Errorf("failed to unmarshal results data: %v", err)
+		if buildbucketOutput != "" {
+			if err := json.Unmarshal([]byte(buildbucketOutput), &results); err != nil {
+				return comments, fmt.Errorf("failed to unmarshal results data: %v", err)
+			}
+		} else {
+			resultsStr, err := isolator.FetchIsolatedResults(c, isolateServerURL, isolatedOutputHash)
+			if err != nil {
+				return comments, fmt.Errorf("failed to fetch isolated worker result: %v", err)
+			}
+			logging.Infof(c, "Fetched isolated result (%q): %q", isolatedOutputHash, resultsStr)
+			if err := jsonpb.UnmarshalString(resultsStr, &results); err != nil {
+				return comments, fmt.Errorf("failed to unmarshal results data: %v", err)
+			}
 		}
 		for _, comment := range results.Comments {
 			uuid, err := uuid.NewRandom()

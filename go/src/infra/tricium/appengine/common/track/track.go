@@ -205,9 +205,17 @@ type WorkerRunResult struct {
 	State tricium.State
 	// Hash to the isolated input provided to the corresponding swarming task.
 	IsolatedInput string `gae:",noindex"`
-	// Hash to the isolated output collected from the corresponding swarming task.
+
+	// Outputs: IsolatedOutput or BuildbucketOutput
+	// One and only one of these two fields should be populated by the appropriate
+	// service.
+
+	// Hash to the isolated output collected from the corresponding swarming task,
+	// if applicable.
 	IsolatedOutput string `gae:",noindex"`
-	SwarmingTaskID string `gae:",noindex"`
+	// Output as collected from the corresponding buildbucket run, if applicable.
+	BuildbucketOutput string `gae:",noindex"`
+	SwarmingTaskID    string `gae:",noindex"`
 	// Number of comments produced by this worker.
 	NumComments int `gae:",noindex"`
 	// Tricium result encoded as JSON.

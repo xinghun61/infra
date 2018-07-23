@@ -28,11 +28,11 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ValidateRequest struct {
 	// The project configuration to validate.
-	ProjectConfig *v1.ProjectConfig `protobuf:"bytes,1,opt,name=project_config,json=projectConfig" json:"project_config,omitempty"`
+	ProjectConfig *v1.ProjectConfig `protobuf:"bytes,1,opt,name=project_config,json=projectConfig,proto3" json:"project_config,omitempty"`
 	// The service config to use (optional).
 	//
 	// If not provided, the default service config will be used.
-	ServiceConfig        *v1.ServiceConfig `protobuf:"bytes,2,opt,name=service_config,json=serviceConfig" json:"service_config,omitempty"`
+	ServiceConfig        *v1.ServiceConfig `protobuf:"bytes,2,opt,name=service_config,json=serviceConfig,proto3" json:"service_config,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -82,7 +82,7 @@ type ValidateResponse struct {
 	//
 	// This is the resulting config after flattening and merging the provided
 	// project and service config.
-	ValidatedConfig      *v1.ProjectConfig `protobuf:"bytes,1,opt,name=validated_config,json=validatedConfig" json:"validated_config,omitempty"`
+	ValidatedConfig      *v1.ProjectConfig `protobuf:"bytes,1,opt,name=validated_config,json=validatedConfig,proto3" json:"validated_config,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -123,12 +123,12 @@ type GenerateWorkflowRequest struct {
 	// The project to generate a workflow config for.
 	//
 	// The project name used must be known to Tricium.
-	Project string `protobuf:"bytes,1,opt,name=project" json:"project,omitempty"`
+	Project string `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
 	// The paths to generate the workflow config.
 	//
 	// This list of file metadata includes file paths which are used to
 	// decide which workers to include in the workflow.
-	Files                []*v1.Data_File `protobuf:"bytes,2,rep,name=files" json:"files,omitempty"`
+	Files                []*v1.Data_File `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -174,7 +174,7 @@ func (m *GenerateWorkflowRequest) GetFiles() []*v1.Data_File {
 
 type GenerateWorkflowResponse struct {
 	// The generated workflow.
-	Workflow             *Workflow `protobuf:"bytes,1,opt,name=workflow" json:"workflow,omitempty"`
+	Workflow             *Workflow `protobuf:"bytes,1,opt,name=workflow,proto3" json:"workflow,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`

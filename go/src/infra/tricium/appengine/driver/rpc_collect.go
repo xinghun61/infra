@@ -66,6 +66,9 @@ func collect(c context.Context, req *admin.CollectRequest,
 		return nil
 	}
 
+	// TODO(juliehockett): populate this for buildbucket runs.
+	buildbucketOutput := ""
+
 	isolatedOutput := ""
 	if taskResult.OutputsRef == nil || taskResult.OutputsRef.Isolated == "" {
 		logging.Fields{
@@ -98,6 +101,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 		IsolatedOutputHash: isolatedOutput,
 		Provides:           w.Provides,
 		State:              workerState,
+		BuildbucketOutput:  buildbucketOutput,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to encode worker done request: %v", err)

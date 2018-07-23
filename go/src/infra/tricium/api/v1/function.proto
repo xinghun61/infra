@@ -145,6 +145,9 @@ message Recipe {
 
   // Extra recipe properties to add, as a JSON mapping of keys to values.
   string properties = 3;
+
+  // Name of the recipe to run.
+  string name = 4;
 }
 
 // Specification of a command.

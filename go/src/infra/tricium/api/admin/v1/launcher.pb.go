@@ -29,17 +29,17 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // LaunchRequest contains the details needed to launch a workflow for an analysis request.
 type LaunchRequest struct {
 	// The run ID created by a Tricium.Analyze call.
-	RunId int64 `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	RunId int64 `protobuf:"varint,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	// The name of the project in luci-config.
-	Project string `protobuf:"bytes,2,opt,name=project" json:"project,omitempty"`
+	Project string `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
 	// The full URL of the git repo used for this run.
-	GitUrl string `protobuf:"bytes,3,opt,name=git_url,json=gitUrl" json:"git_url,omitempty"`
+	GitUrl string `protobuf:"bytes,3,opt,name=git_url,json=gitUrl,proto3" json:"git_url,omitempty"`
 	// A git commit-ish, such as a Gerrit revision ref name like
 	// "refs/changes/34/1234/1", or any other ref name or commit hash.
 	// This is used in the GitFileDetails data type used to pull files.
-	GitRef string `protobuf:"bytes,4,opt,name=git_ref,json=gitRef" json:"git_ref,omitempty"`
+	GitRef string `protobuf:"bytes,4,opt,name=git_ref,json=gitRef,proto3" json:"git_ref,omitempty"`
 	// File metadata from the root of the Git repository.
-	Files                []*v1.Data_File `protobuf:"bytes,5,rep,name=files" json:"files,omitempty"`
+	Files                []*v1.Data_File `protobuf:"bytes,5,rep,name=files,proto3" json:"files,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`

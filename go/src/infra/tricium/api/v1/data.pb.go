@@ -50,7 +50,7 @@ func (x Data_Type) String() string {
 	return proto.EnumName(Data_Type_name, int32(x))
 }
 func (Data_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 0}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 0}
 }
 
 // Tricium data types.
@@ -66,7 +66,7 @@ func (m *Data) Reset()         { *m = Data{} }
 func (m *Data) String() string { return proto.CompactTextString(m) }
 func (*Data) ProtoMessage()    {}
 func (*Data) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0}
+	return fileDescriptor_data_2f66227196254acd, []int{0}
 }
 func (m *Data) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data.Unmarshal(m, b)
@@ -103,7 +103,7 @@ func (m *Data_TypeDetails) Reset()         { *m = Data_TypeDetails{} }
 func (m *Data_TypeDetails) String() string { return proto.CompactTextString(m) }
 func (*Data_TypeDetails) ProtoMessage()    {}
 func (*Data_TypeDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 0}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 0}
 }
 func (m *Data_TypeDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_TypeDetails.Unmarshal(m, b)
@@ -161,7 +161,7 @@ func (m *Data_GitFileDetails) Reset()         { *m = Data_GitFileDetails{} }
 func (m *Data_GitFileDetails) String() string { return proto.CompactTextString(m) }
 func (*Data_GitFileDetails) ProtoMessage()    {}
 func (*Data_GitFileDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 1}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 1}
 }
 func (m *Data_GitFileDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_GitFileDetails.Unmarshal(m, b)
@@ -229,7 +229,7 @@ func (m *Data_Files) Reset()         { *m = Data_Files{} }
 func (m *Data_Files) String() string { return proto.CompactTextString(m) }
 func (*Data_Files) ProtoMessage()    {}
 func (*Data_Files) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 2}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 2}
 }
 func (m *Data_Files) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Files.Unmarshal(m, b)
@@ -280,7 +280,7 @@ func (m *Data_File) Reset()         { *m = Data_File{} }
 func (m *Data_File) String() string { return proto.CompactTextString(m) }
 func (*Data_File) ProtoMessage()    {}
 func (*Data_File) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 3}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 3}
 }
 func (m *Data_File) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_File.Unmarshal(m, b)
@@ -334,7 +334,7 @@ func (m *Data_ClangDetails) Reset()         { *m = Data_ClangDetails{} }
 func (m *Data_ClangDetails) String() string { return proto.CompactTextString(m) }
 func (*Data_ClangDetails) ProtoMessage()    {}
 func (*Data_ClangDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 4}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 4}
 }
 func (m *Data_ClangDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_ClangDetails.Unmarshal(m, b)
@@ -378,9 +378,12 @@ func (m *Data_ClangDetails) GetCompDepPaths() []string {
 // Results from running a Tricium analyzer.
 //
 // Results are returned to the Tricium service via isolated output from
-// swarming tasks executing Tricium workers.
+// swarming tasks executing Tricium workers or from Buildbucket presentation
+// properties on executed Tricium recipes.
 //
 // ISOLATED PATH: tricium/data/results.json
+// BUILDBUCKET PROPERTIES: output.properties.comments
+//                         output.properties.num_comments
 type Data_Results struct {
 	Platforms int64 `protobuf:"varint,1,opt,name=platforms,proto3" json:"platforms,omitempty"`
 	// Zero or more results found as comments, either inline comments or change
@@ -395,7 +398,7 @@ func (m *Data_Results) Reset()         { *m = Data_Results{} }
 func (m *Data_Results) String() string { return proto.CompactTextString(m) }
 func (*Data_Results) ProtoMessage()    {}
 func (*Data_Results) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 5}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 5}
 }
 func (m *Data_Results) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Results.Unmarshal(m, b)
@@ -468,7 +471,7 @@ func (m *Data_Comment) Reset()         { *m = Data_Comment{} }
 func (m *Data_Comment) String() string { return proto.CompactTextString(m) }
 func (*Data_Comment) ProtoMessage()    {}
 func (*Data_Comment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 6}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 6}
 }
 func (m *Data_Comment) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Comment.Unmarshal(m, b)
@@ -576,7 +579,7 @@ func (m *Data_Suggestion) Reset()         { *m = Data_Suggestion{} }
 func (m *Data_Suggestion) String() string { return proto.CompactTextString(m) }
 func (*Data_Suggestion) ProtoMessage()    {}
 func (*Data_Suggestion) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 7}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 7}
 }
 func (m *Data_Suggestion) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Suggestion.Unmarshal(m, b)
@@ -632,7 +635,7 @@ func (m *Data_Replacement) Reset()         { *m = Data_Replacement{} }
 func (m *Data_Replacement) String() string { return proto.CompactTextString(m) }
 func (*Data_Replacement) ProtoMessage()    {}
 func (*Data_Replacement) Descriptor() ([]byte, []int) {
-	return fileDescriptor_data_485864e58cb946d1, []int{0, 8}
+	return fileDescriptor_data_2f66227196254acd, []int{0, 8}
 }
 func (m *Data_Replacement) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data_Replacement.Unmarshal(m, b)
@@ -709,10 +712,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/v1/data.proto", fileDescriptor_data_485864e58cb946d1)
+	proto.RegisterFile("infra/tricium/api/v1/data.proto", fileDescriptor_data_2f66227196254acd)
 }
 
-var fileDescriptor_data_485864e58cb946d1 = []byte{
+var fileDescriptor_data_2f66227196254acd = []byte{
 	// 630 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0xcf, 0x6a, 0xdb, 0x4a,
 	0x14, 0xc6, 0xaf, 0x2c, 0x39, 0x92, 0x8e, 0x12, 0xe3, 0x3b, 0xe4, 0x82, 0xa2, 0x7b, 0x6f, 0x6b,

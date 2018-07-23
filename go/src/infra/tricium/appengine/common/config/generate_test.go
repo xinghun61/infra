@@ -74,6 +74,10 @@ var (
 	}
 )
 
+func fail(str string) {
+	So(nil, func(a interface{}, b ...interface{}) string { return str }, nil)
+}
+
 func TestGenerate(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		pc := &tricium.ProjectConfig{
@@ -354,9 +358,16 @@ func TestCreateWorker(t *testing.T) {
 			So(w.Dimensions[0], ShouldEqual, dimension)
 			So(len(w.CipdPackages), ShouldEqual, 1)
 			So(w.Deadline, ShouldEqual, deadline)
-			So(len(w.Cmd.Args), ShouldEqual, 2)
-			So(w.Cmd.Args[0], ShouldEqual, fmt.Sprintf("--%s", config))
-			So(w.Cmd.Args[1], ShouldEqual, configValue)
+			switch wi := w.Impl.(type) {
+			case *admin.Worker_Cmd:
+				So(len(wi.Cmd.Args), ShouldEqual, 2)
+				So(wi.Cmd.Args[0], ShouldEqual, fmt.Sprintf("--%s", config))
+				So(wi.Cmd.Args[1], ShouldEqual, configValue)
+			case *admin.Worker_Recipe, nil:
+				fail("Incorrect worker type")
+			default:
+				fail("Unset worker type")
+			}
 		})
 
 		Convey("Correctly creates recipe-based worker", func() {

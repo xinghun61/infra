@@ -192,10 +192,11 @@ func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Fu
 	case *tricium.Impl_Recipe:
 		// TODO(qyearsley): Implement worker set up for recipe-based analyzers.
 	case *tricium.Impl_Cmd:
-		w.Cmd = ii.Cmd
+		cmd := ii.Cmd
 		for _, c := range s.Configs {
-			w.Cmd.Args = append(w.Cmd.Args, "--"+c.Name, c.Value)
+			cmd.Args = append(cmd.Args, "--"+c.Name, c.Value)
 		}
+		w.Impl = &admin.Worker_Cmd{Cmd: ii.Cmd}
 	case nil:
 		return nil, fmt.Errorf("missing Impl when constructing worker %s", w.Name)
 	default:

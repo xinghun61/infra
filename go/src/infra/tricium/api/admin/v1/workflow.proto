@@ -6,7 +6,6 @@ syntax = "proto3";
 
 package admin;
 
-import "infra/tricium/api/v1/config.proto";
 import "infra/tricium/api/v1/data.proto";
 import "infra/tricium/api/v1/function.proto";
 import "infra/tricium/api/v1/platform.proto";
@@ -50,8 +49,12 @@ message Worker {
   // worker.
   repeated tricium.CipdPackage cipd_packages = 9;
 
-  // Command used to execute the worker.
-  tricium.Cmd cmd = 10;
+  oneof impl {
+    // Command for binary-based implementation.
+    tricium.Cmd cmd = 10;
+    // Recipe for recipe-based implementation.
+    tricium.Recipe recipe = 12;
+  }
 
   // Deadline for execution of the worker in minutes. Note that this time
   // should include the overhead of triggering the corresponding swarming task

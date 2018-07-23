@@ -129,7 +129,16 @@ func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker
 	// TODO(emso): Include command deadline.
 	mode := 0444
 	iso := isolated.New()
-	iso.Command = append([]string{worker.Cmd.Exec}, worker.Cmd.Args...)
+	switch wi := worker.Impl.(type) {
+	case *admin.Worker_Recipe:
+		break
+	case *admin.Worker_Cmd:
+		iso.Command = append([]string{wi.Cmd.Exec}, wi.Cmd.Args...)
+	case nil:
+		return "", fmt.Errorf("missing Impl when isolating worker %s", worker.Name)
+	default:
+		return "", fmt.Errorf("Impl.Impl has unexpected type %T", wi)
+	}
 	iso.Includes = []isolated.HexDigest{isolated.HexDigest(isolatedInput)}
 	isoData, err := json.Marshal(iso)
 	if err != nil {

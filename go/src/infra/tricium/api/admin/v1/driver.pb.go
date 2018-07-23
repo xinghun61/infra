@@ -28,9 +28,9 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // TriggerRequest contains the details needed to launch a swarming task for a
 // Tricium worker.
 type TriggerRequest struct {
-	RunId                int64    `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
-	IsolatedInputHash    string   `protobuf:"bytes,2,opt,name=isolated_input_hash,json=isolatedInputHash" json:"isolated_input_hash,omitempty"`
-	Worker               string   `protobuf:"bytes,3,opt,name=worker" json:"worker,omitempty"`
+	RunId                int64    `protobuf:"varint,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	IsolatedInputHash    string   `protobuf:"bytes,2,opt,name=isolated_input_hash,json=isolatedInputHash,proto3" json:"isolated_input_hash,omitempty"`
+	Worker               string   `protobuf:"bytes,3,opt,name=worker,proto3" json:"worker,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -114,17 +114,17 @@ var xxx_messageInfo_TriggerResponse proto.InternalMessageInfo
 // CollectRequest contains the details needed to collect results from a swarming task
 // running a Tricium worker and to launch succeeding Tricium workers.
 type CollectRequest struct {
-	RunId int64 `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
+	RunId int64 `protobuf:"varint,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	// The isolated input of this worker is imported in the input hash of any successor
 	// workers of this worker. Passing it along here to make sure it is available.
-	IsolatedInputHash string `protobuf:"bytes,2,opt,name=isolated_input_hash,json=isolatedInputHash" json:"isolated_input_hash,omitempty"`
+	IsolatedInputHash string `protobuf:"bytes,2,opt,name=isolated_input_hash,json=isolatedInputHash,proto3" json:"isolated_input_hash,omitempty"`
 	// Points out which worker to collect results for. This worker name is used to
 	// mangle the ID of the swarming task running the worker.
-	Worker string `protobuf:"bytes,3,opt,name=worker" json:"worker,omitempty"`
+	Worker string `protobuf:"bytes,3,opt,name=worker,proto3" json:"worker,omitempty"`
 	// The Swarming task ID.
 	//
 	// Used to collect results from the completed swarming worker task.
-	TaskId               string   `protobuf:"bytes,4,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
+	TaskId               string   `protobuf:"bytes,4,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

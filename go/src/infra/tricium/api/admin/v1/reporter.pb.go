@@ -26,8 +26,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ReportResultsRequest struct {
-	RunId                int64    `protobuf:"varint,1,opt,name=run_id,json=runId" json:"run_id,omitempty"`
-	Analyzer             string   `protobuf:"bytes,2,opt,name=analyzer" json:"analyzer,omitempty"`
+	RunId                int64    `protobuf:"varint,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Analyzer             string   `protobuf:"bytes,2,opt,name=analyzer,proto3" json:"analyzer,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

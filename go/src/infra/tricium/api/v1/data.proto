@@ -95,9 +95,12 @@ message Data {
   // Results from running a Tricium analyzer.
   //
   // Results are returned to the Tricium service via isolated output from
-  // swarming tasks executing Tricium workers.
+  // swarming tasks executing Tricium workers or from Buildbucket presentation
+  // properties on executed Tricium recipes.
   //
   // ISOLATED PATH: tricium/data/results.json
+  // BUILDBUCKET PROPERTIES: output.properties.comments
+  //                         output.properties.num_comments
   message Results {
     int64 platforms = 1;
 
