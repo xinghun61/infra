@@ -78,10 +78,15 @@ def RunSteps(api):
                                    '--without-android', '--skip-checkout'
                                ])
       with api.context(env=gn_bootstrap_env):
+        args = ['--gn-gen-args=%s' % ' '.join(gn_args)]
+        if [int(x) for x in version.split('.')] >= [69, 0, 3491, 0]:
+          # TODO(thomasanderson): Add libc++ sources to gn so this flag is not
+          # required.
+          args.append('--with-sysroot')
         api.python('Bootstrap gn.',
                    api.path.join(src_dir, 'tools', 'gn', 'bootstrap',
                                  'bootstrap.py'),
-                   ['--gn-gen-args=%s' % ' '.join(gn_args)])
+                   args)
       api.python('Download nodejs.',
                  api.path.join(src_dir, 'third_party', 'depot_tools',
                                'download_from_google_storage.py'),
@@ -102,5 +107,5 @@ def RunSteps(api):
 
 
 def GenTests(api):
-  yield (api.test('basic') + api.properties.generic(version='65.0.3318.0') +
+  yield (api.test('basic') + api.properties.generic(version='69.0.3491.0') +
          api.platform('linux', 64))

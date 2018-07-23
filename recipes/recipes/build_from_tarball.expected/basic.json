@@ -8,8 +8,8 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
-      "gs://chromium-browser-official/chromium-65.0.3318.0.tar.xz",
-      "[START_DIR]/build_dir/chromium-65.0.3318.0.tar.xz"
+      "gs://chromium-browser-official/chromium-69.0.3491.0.tar.xz",
+      "[START_DIR]/build_dir/chromium-69.0.3491.0.tar.xz"
     ],
     "infra_step": true,
     "name": "gsutil download_url"
@@ -18,7 +18,7 @@
     "cmd": [
       "tar",
       "-xJf",
-      "[START_DIR]/build_dir/chromium-65.0.3318.0.tar.xz",
+      "[START_DIR]/build_dir/chromium-69.0.3491.0.tar.xz",
       "-C",
       "[START_DIR]/build_dir"
     ],
@@ -28,38 +28,39 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/build_dir/chromium-65.0.3318.0/build/linux/sysroot_scripts/install-sysroot.py",
+      "[START_DIR]/build_dir/chromium-69.0.3491.0/build/linux/sysroot_scripts/install-sysroot.py",
       "--arch=amd64"
     ],
-    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "name": "Download sysroot."
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/build_dir/chromium-65.0.3318.0/tools/clang/scripts/update.py",
+      "[START_DIR]/build_dir/chromium-69.0.3491.0/tools/clang/scripts/update.py",
       "--force-local-build",
       "--if-needed",
       "--without-android",
       "--skip-checkout"
     ],
-    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "name": "Build clang."
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/build_dir/chromium-65.0.3318.0/tools/gn/bootstrap/bootstrap.py",
-      "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true enable_distro_version_check=false use_system_libjpeg=true use_v8_context_snapshot=false"
+      "[START_DIR]/build_dir/chromium-69.0.3491.0/tools/gn/bootstrap/bootstrap.py",
+      "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true enable_distro_version_check=false use_system_libjpeg=true use_v8_context_snapshot=false",
+      "--with-sysroot"
     ],
-    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "env": {
-      "AR": "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/llvm-build/Release+Asserts/bin/llvm-ar",
-      "CC": "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/llvm-build/Release+Asserts/bin/clang",
-      "CXX": "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/llvm-build/Release+Asserts/bin/clang++",
-      "LD": "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/llvm-build/Release+Asserts/bin/lld"
+      "AR": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/llvm-ar",
+      "CC": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/clang",
+      "CXX": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/clang++",
+      "LD": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/lld"
     },
     "name": "Bootstrap gn."
   },
@@ -67,7 +68,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/build_dir/chromium-65.0.3318.0/third_party/depot_tools/download_from_google_storage.py",
+      "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/depot_tools/download_from_google_storage.py",
       "--no_resume",
       "--extract",
       "--no_auth",
@@ -76,14 +77,14 @@
       "-s",
       "third_party/node/linux/node-linux-x64.tar.gz.sha1"
     ],
-    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "name": "Download nodejs."
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/build_dir/chromium-65.0.3318.0/build/linux/unbundle/replace_gn_files.py",
+      "[START_DIR]/build_dir/chromium-69.0.3491.0/build/linux/unbundle/replace_gn_files.py",
       "--system-libraries",
       "fontconfig",
       "freetype",
@@ -94,7 +95,7 @@
       "snappy",
       "yasm"
     ],
-    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "name": "Unbundle libraries."
   },
   {
@@ -104,7 +105,7 @@
       "out/Release",
       "chrome/installer/linux"
     ],
-    "cwd": "[START_DIR]/build_dir/chromium-65.0.3318.0",
+    "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "name": "Build chrome."
   },
   {
