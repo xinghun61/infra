@@ -14,6 +14,7 @@ from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from model.build_ahead_try_job import BuildAheadTryJob
 from model.wf_try_bot_cache import WfTryBotCache
+from services import bot_db
 from services import constants
 from services import git
 from services import swarmbot_util
@@ -23,8 +24,7 @@ LOW_COMMITS_PER_HOUR = 3
 PLATFORM_DIMENSION_MAP = {
     'mac': ['os:Mac'],
     'win': ['os:Windows'],
-    'unix': ['os:Linux'],
-    'android': ['os:Linux'],
+    'linux': ['os:Linux'],
 }
 BUILD_AHEAD_PLATFORMS = sorted(PLATFORM_DIMENSION_MAP.keys())
 
@@ -109,15 +109,21 @@ def _PickRandomBuilder(builders):
 
 def _GetSupportedCompileCaches(platform):
   """Gets config'd compile builders by platform & their cache name and stats."""
-  builders = waterfall_config.GetSupportedCompileBuilders(platform)
-  for builder in builders:
-    # It is OK to use the master and builder directly instead of looking for a
-    # parent, because GetSupportedCompileBuilders filters out test builders,
-    # which are the ones that have parent builders.
-    builder['cache_name'] = swarmbot_util.GetCacheName(builder['master'],
-                                                       builder['builder'])
+  supported_masters = (
+      waterfall_config.GetStepsForMastersRules()['supported_masters'].keys())
+  builder_pairs = bot_db.GetBuilders(
+      master_filter=supported_masters,
+      bot_type_filter=['builder'],
+      platform_filter=[platform])
+
+  result = []
+  for master_name, builder_name in builder_pairs:
+    builder = {'master': master_name, 'builder': builder_name}
+    builder['cache_name'] = swarmbot_util.GetCacheName(master_name,
+                                                       builder_name)
     builder['cache_stats'] = WfTryBotCache.Get(builder['cache_name'])
-  return builders
+    result.append(builder)
+  return result
 
 
 def TriggerBuildAhead(wf_master, wf_builder, bot):

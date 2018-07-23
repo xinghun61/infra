@@ -11,6 +11,7 @@ from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from model.build_ahead_try_job import BuildAheadTryJob
 from model.wf_try_bot_cache import WfTryBotCache
+from services import bot_db
 from services import build_ahead
 from services import git
 from services import swarmbot_util
@@ -97,7 +98,7 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
   def testUpdateRunningJobs(self, mock_get_tryjobs):
     build_ahead._UpdateRunningBuilds()
     self.assertFalse(mock_get_tryjobs.called)
-    BuildAheadTryJob.Create('80000001', 'unix', 'cache_1').put()
+    BuildAheadTryJob.Create('80000001', 'linux', 'cache_1').put()
     BuildAheadTryJob.Create('80000002', 'win', 'cache_2').put()
     BuildAheadTryJob.Create('80000003', 'mac', 'cache_3').put()
     mock_get_tryjobs.return_value = [
@@ -172,8 +173,7 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
   def testPlatformToDimensions(self):
     self.assertEqual(['os:Mac'], build_ahead._PlatformToDimensions('mac'))
     self.assertEqual(['os:Windows'], build_ahead._PlatformToDimensions('win'))
-    self.assertEqual(['os:Linux'], build_ahead._PlatformToDimensions('unix'))
-    self.assertEqual(['os:Linux'], build_ahead._PlatformToDimensions('android'))
+    self.assertEqual(['os:Linux'], build_ahead._PlatformToDimensions('linux'))
 
   @mock.patch.object(swarmbot_util, 'OnlyAvailable')
   @mock.patch.object(swarmbot_util, 'GetBotsByDimension')
@@ -190,25 +190,23 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
                                        mock_bots):
     mock_lo_activity.return_value = False
     mock_jobs.return_value = []
-    self.assertEqual(4, len(build_ahead._PlatformsToBuild()))
+    self.assertEqual(3, len(build_ahead._PlatformsToBuild()))
 
     mock_jobs.side_effect = lambda platform: [
         BuildAheadTryJob.Create('1234', platform, 'cache_x')]
     self.assertEqual(0, len(build_ahead._PlatformsToBuild()))
 
     mock_jobs.side_effect = [
-        [BuildAheadTryJob.Create('1234', 'android', 'cache_x')],
         [],
         [],
-        [],
+        [BuildAheadTryJob.Create('1234', 'linux', 'cache_x')],
     ]
-    self.assertEqual(3, len(build_ahead._PlatformsToBuild()))
+    self.assertEqual(2, len(build_ahead._PlatformsToBuild()))
 
     mock_jobs.side_effect = [
-        [],
         [BuildAheadTryJob.Create('1235', 'mac', 'cache_y')],
-        [BuildAheadTryJob.Create('1236', 'unix', 'cache_z')],
-        [BuildAheadTryJob.Create('1237', 'win', 'cache_a')],
+        [],
+        [BuildAheadTryJob.Create('1236', 'linux', 'cache_z')],
     ]
     self.assertEqual(1, len(build_ahead._PlatformsToBuild()))
     self.assertFalse(mock_bots.called)
@@ -220,18 +218,14 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
                                       mock_bots):
     mock_lo_activity.return_value = True
     mock_jobs.side_effect = [
+        [BuildAheadTryJob.Create('1236', 'linux', 'cache_z')],
         [],
-        [BuildAheadTryJob.Create('1235', 'mac', 'cache_y')],
-        [BuildAheadTryJob.Create('1236', 'unix', 'cache_z')],
         [BuildAheadTryJob.Create('1237', 'win', 'cache_a')],
     ]
     mock_bots.side_effect = [
-        [{
-            'id': 'bot1'
-        }],
         [],
         [{
-            'id': 'bot2'
+            'id': 'bot1'
         }],
         [{
             'id': 'bot3'
@@ -239,27 +233,48 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
             'id': 'bot4'
         }],
     ]
-    self.assertEqual(['android', 'win'], build_ahead._PlatformsToBuild())
+    self.assertEqual(['mac', 'win'], build_ahead._PlatformsToBuild())
 
-  @mock.patch.object(waterfall_config, 'GetSupportedCompileBuilders')
+  @mock.patch.object(waterfall_config, 'GetStepsForMastersRules')
+  @mock.patch.object(bot_db, '_GetBotDB')
   @mock.patch.object(random, 'uniform')
-  def testPickRandomBuilder(self, mock_random, mock_builders):
-    linux_bot = {'master': 'dummy', 'builder': 'Linux Builder'}
-    chrome_bot = {'master': 'dummy', 'builder': 'Chrome Builder'}
-    android_bot = {'master': 'dummy', 'builder': 'Android Builder'}
-    mock_builders.return_value = [linux_bot, chrome_bot, android_bot]
+  def testPickRandomBuilder(self, mock_random, mock_builders,
+                            mock_supported_masters):
+    mock_supported_masters.return_value = {'supported_masters': {'dummy': {}}}
+    mock_builders.return_value = {
+        'dummy': {
+            'builders': {
+                'Linux Builder': {
+                    'bot_type': 'builder',
+                    'testing': {
+                        'platform': 'linux'
+                    }
+                },
+                'Chrome Builder': {
+                    'bot_type': 'builder',
+                    'testing': {
+                        'platform': 'linux'
+                    }
+                },
+                'Android Builder': {
+                    'bot_type': 'builder',
+                    'testing': {
+                        'platform': 'linux'
+                    }
+                }
+            }
+        }
+    }
 
-    linux_cache_name = swarmbot_util.GetCacheName(linux_bot['master'],
-                                                  linux_bot['builder'])
+    linux_cache_name = swarmbot_util.GetCacheName('dummy', 'Linux Builder')
     # Save linux_cache missing a column to test the code that back-fills it.
     WfTryBotCache(
         key=ndb.Key('WfTryBotCache', linux_cache_name), recent_bots=[]).put()
     linux_cache = WfTryBotCache.Get(linux_cache_name)
     chrome_cache = WfTryBotCache.Get(
-        swarmbot_util.GetCacheName(chrome_bot['master'], chrome_bot['builder']))
+        swarmbot_util.GetCacheName('dummy', 'Chrome Builder'))
     android_cache = WfTryBotCache.Get(
-        swarmbot_util.GetCacheName(android_bot['master'],
-                                   android_bot['builder']))
+        swarmbot_util.GetCacheName('dummy', 'Android Builder'))
 
     linux_cache.AddFullBuild('bot1', 100, None)
     linux_cache.AddFullBuild('bot2', 110, None)
@@ -281,12 +296,12 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
       self.assertEqual(
           linux_cache,
           build_ahead._PickRandomBuilder(
-              build_ahead._GetSupportedCompileCaches('unix'))['cache_stats'])
+              build_ahead._GetSupportedCompileCaches('linux'))['cache_stats'])
     for i in range(10):
       self.assertEqual(
           chrome_cache,
           build_ahead._PickRandomBuilder(
-              build_ahead._GetSupportedCompileCaches('unix'))['cache_stats'])
+              build_ahead._GetSupportedCompileCaches('linux'))['cache_stats'])
 
   @mock.patch.object(build_ahead, 'TriggerBuildAhead')
   def testTriggerAndSave(self, mock_trigger):
@@ -415,7 +430,7 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
   def testBuildCaches(self, mock_start, mock_platforms, mock_tree, _):
     mock_tree.return_value = True
     mock_platforms.side_effect = [
-        ['unix', 'win', 'mac'],
+        ['linux', 'win', 'mac'],
         ['win', 'mac'],
         ['win'],
         [],
