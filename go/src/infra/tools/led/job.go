@@ -53,9 +53,9 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 			ExpirationSecs: r.ExpirationSecs,
 			Properties:     r.Properties,
 		}}
-		ret.S.SwarmingTask.Properties = nil
-		ret.S.SwarmingTask.ExpirationSecs = 0
 	}
+	ret.S.SwarmingTask.ExpirationSecs = 0
+	ret.S.SwarmingTask.Properties = nil
 	props := ret.S.SwarmingTask.TaskSlices[0].Properties
 
 	ret.S.Env = ingestMap(&props.Env)
