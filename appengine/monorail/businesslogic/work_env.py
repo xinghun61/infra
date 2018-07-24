@@ -488,6 +488,18 @@ class WorkEnv(object):
         issue, allow_viewing_deleted=allow_viewing_deleted)
     return issue
 
+  def ListReferencedIssues(self, ref_tuples, default_project_name):
+    """Return the specified issues."""
+    ref_projects = self.services.project.GetProjectsByName(
+        self.mc.cnxn,
+        [(ref_pn or default_project_name) for ref_pn, _ in ref_tuples])
+    issue_ids, _misses = self.services.issue.ResolveIssueRefs(
+        self.mc.cnxn, ref_projects, default_project_name, ref_tuples)
+    open_issues, closed_issues = (
+        tracker_helpers.GetAllowedOpenedAndClosedIssues(
+            self.mc, issue_ids, self.services))
+    return open_issues, closed_issues
+
   def GetIssueByLocalID(
       self, project_id, local_id, use_cache=True,
       allow_viewing_deleted=False):

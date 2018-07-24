@@ -16,6 +16,7 @@ import "api/api_proto/issue_objects.proto";
 service Issues {
   rpc CreateIssue (CreateIssueRequest) returns (IssueResponse) {}
   rpc GetIssue (GetIssueRequest) returns (IssueResponse) {}
+  rpc ListReferencedIssues(ListReferencedIssuesRequest) returns (ListReferencedIssuesResponse) {}
   rpc UpdateIssue (UpdateIssueRequest) returns (IssueResponse) {}
   rpc StarIssue (StarIssueRequest) returns (StarIssueResponse) {}
   rpc IsIssueStarred (IsIssueStarredRequest) returns (IsIssueStarredResponse) {}
@@ -55,6 +56,19 @@ message GetIssueRequest {
 // Next available tag: 2
 message IssueResponse {
   Issue issue = 1;
+}
+
+
+// Next available tag: 2
+message ListReferencedIssuesRequest {
+  repeated IssueRef issue_refs = 1;
+}
+
+
+// Next available tag: 2
+message ListReferencedIssuesResponse {
+  repeated IssueRef open_refs = 1;
+  repeated IssueRef closed_refs = 2;
 }
 
 

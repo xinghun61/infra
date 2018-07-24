@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/issues.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x1a\x61pi/api_proto/issues.proto\x12\x08monorail\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x1a\x61pi/api_proto/common.proto\x1a!api/api_proto/issue_objects.proto\"5\n\x10\x41ttachmentUpload\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\x0c\"q\n\x12\x43reateIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x1e\n\x05issue\x18\x03 \x01(\x0b\x32\x0f.monorail.Issue\"_\n\x0fGetIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\"/\n\rIssueResponse\x12\x1e\n\x05issue\x18\x01 \x01(\x0b\x32\x0f.monorail.Issue\"\xf9\x01\n\x12UpdateIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x12\n\nsend_email\x18\x03 \x01(\x08\x12#\n\x05\x64\x65lta\x18\x04 \x01(\x0b\x32\x14.monorail.IssueDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x16\n\x0eis_description\x18\x06 \x01(\x08\x12+\n\x07uploads\x18\x07 \x03(\x0b\x32\x1a.monorail.AttachmentUpload\"q\n\x10StarIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x0f\n\x07starred\x18\x03 \x01(\x08\"\'\n\x11StarIssueResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"e\n\x15IsIssueStarredRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\",\n\x16IsIssueStarredResponse\x12\x12\n\nis_starred\x18\x01 \x01(\x08\"c\n\x13ListCommentsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\";\n\x14ListCommentsResponse\x12#\n\x08\x63omments\x18\x01 \x03(\x0b\x32\x11.monorail.Comment\"\x8a\x01\n\x14\x44\x65leteCommentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\x03\x12\x0e\n\x06\x64\x65lete\x18\x04 \x01(\x08\"\x9a\x06\n\nIssueDelta\x12,\n\x06status\x18\x01 \x01(\x0b\x32\x1c.google.protobuf.StringValue\x12$\n\towner_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12&\n\x0b\x63\x63_refs_add\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12)\n\x0e\x63\x63_refs_remove\x18\x04 \x03(\x0b\x32\x11.monorail.UserRef\x12-\n\rcomp_refs_add\x18\x05 \x03(\x0b\x32\x16.monorail.ComponentRef\x12\x30\n\x10\x63omp_refs_remove\x18\x06 \x03(\x0b\x32\x16.monorail.ComponentRef\x12*\n\x0elabel_refs_add\x18\x07 \x03(\x0b\x32\x12.monorail.LabelRef\x12-\n\x11label_refs_remove\x18\x08 \x03(\x0b\x32\x12.monorail.LabelRef\x12,\n\x0e\x66ield_vals_add\x18\t \x03(\x0b\x32\x14.monorail.FieldValue\x12/\n\x11\x66ield_vals_remove\x18\n \x03(\x0b\x32\x14.monorail.FieldValue\x12(\n\x0c\x66ields_clear\x18\x0b \x03(\x0b\x32\x12.monorail.FieldRef\x12/\n\x13\x62locked_on_refs_add\x18\x0c \x03(\x0b\x32\x12.monorail.IssueRef\x12\x32\n\x16\x62locked_on_refs_remove\x18\r \x03(\x0b\x32\x12.monorail.IssueRef\x12-\n\x11\x62locking_refs_add\x18\x0e \x03(\x0b\x32\x12.monorail.IssueRef\x12\x30\n\x14\x62locking_refs_remove\x18\x0f \x03(\x0b\x32\x12.monorail.IssueRef\x12+\n\x0fmerged_into_ref\x18\x10 \x01(\x0b\x32\x12.monorail.IssueRef\x12-\n\x07summary\x18\x11 \x01(\x0b\x32\x1c.google.protobuf.StringValue\"\x82\x02\n\x15UpdateApprovalRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12%\n\tfield_ref\x18\x03 \x01(\x0b\x32\x12.monorail.FieldRef\x12/\n\x0e\x61pproval_delta\x18\x04 \x01(\x0b\x32\x17.monorail.ApprovalDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x12\n\nsend_email\x18\x06 \x01(\x08\x12\x16\n\x0eis_description\x18\x07 \x01(\x08\"\xa1\x02\n\rApprovalDelta\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12,\n\x11\x61pprover_refs_add\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12/\n\x14\x61pprover_refs_remove\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12,\n\x0e\x66ield_vals_add\x18\x04 \x03(\x0b\x32\x14.monorail.FieldValue\x12/\n\x11\x66ield_vals_remove\x18\x05 \x03(\x0b\x32\x14.monorail.FieldValue\x12(\n\x0c\x66ields_clear\x18\x06 \x03(\x0b\x32\x12.monorail.FieldRef\">\n\x16UpdateApprovalResponse\x12$\n\x08\x61pproval\x18\x01 \x01(\x0b\x32\x12.monorail.Approval\"\xb3\x01\n\x14IssueSnapshotRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x11\n\ttimestamp\x18\x02 \x01(\x05\x12\r\n\x05query\x18\x03 \x01(\t\x12\x14\n\x0c\x63\x61nned_query\x18\x04 \x01(\x05\x12\x10\n\x08group_by\x18\x05 \x01(\t\x12\x14\n\x0clabel_prefix\x18\x06 \x01(\t\x12\x14\n\x0cproject_name\x18\x07 \x01(\t\"6\n\x12IssueSnapshotCount\x12\x11\n\tdimension\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\x05\"h\n\x15IssueSnapshotResponse\x12\x34\n\x0esnapshot_count\x18\x01 \x03(\x0b\x32\x1c.monorail.IssueSnapshotCount\x12\x19\n\x11unsupported_field\x18\x02 \x03(\t2\xc0\x05\n\x06Issues\x12\x46\n\x0b\x43reateIssue\x12\x1c.monorail.CreateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12@\n\x08GetIssue\x12\x19.monorail.GetIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12\x46\n\x0bUpdateIssue\x12\x1c.monorail.UpdateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12\x46\n\tStarIssue\x12\x1a.monorail.StarIssueRequest\x1a\x1b.monorail.StarIssueResponse\"\x00\x12U\n\x0eIsIssueStarred\x12\x1f.monorail.IsIssueStarredRequest\x1a .monorail.IsIssueStarredResponse\"\x00\x12O\n\x0cListComments\x12\x1d.monorail.ListCommentsRequest\x1a\x1e.monorail.ListCommentsResponse\"\x00\x12I\n\rDeleteComment\x12\x1e.monorail.DeleteCommentRequest\x1a\x16.google.protobuf.Empty\"\x00\x12U\n\x0eUpdateApproval\x12\x1f.monorail.UpdateApprovalRequest\x1a .monorail.UpdateApprovalResponse\"\x00\x12R\n\rIssueSnapshot\x12\x1e.monorail.IssueSnapshotRequest\x1a\x1f.monorail.IssueSnapshotResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x1a\x61pi/api_proto/issues.proto\x12\x08monorail\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x1a\x61pi/api_proto/common.proto\x1a!api/api_proto/issue_objects.proto\"5\n\x10\x41ttachmentUpload\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\x0c\"q\n\x12\x43reateIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x1e\n\x05issue\x18\x03 \x01(\x0b\x32\x0f.monorail.Issue\"_\n\x0fGetIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\"/\n\rIssueResponse\x12\x1e\n\x05issue\x18\x01 \x01(\x0b\x32\x0f.monorail.Issue\"E\n\x1bListReferencedIssuesRequest\x12&\n\nissue_refs\x18\x01 \x03(\x0b\x32\x12.monorail.IssueRef\"n\n\x1cListReferencedIssuesResponse\x12%\n\topen_refs\x18\x01 \x03(\x0b\x32\x12.monorail.IssueRef\x12\'\n\x0b\x63losed_refs\x18\x02 \x03(\x0b\x32\x12.monorail.IssueRef\"\xf9\x01\n\x12UpdateIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x12\n\nsend_email\x18\x03 \x01(\x08\x12#\n\x05\x64\x65lta\x18\x04 \x01(\x0b\x32\x14.monorail.IssueDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x16\n\x0eis_description\x18\x06 \x01(\x08\x12+\n\x07uploads\x18\x07 \x03(\x0b\x32\x1a.monorail.AttachmentUpload\"q\n\x10StarIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x0f\n\x07starred\x18\x03 \x01(\x08\"\'\n\x11StarIssueResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"e\n\x15IsIssueStarredRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\",\n\x16IsIssueStarredResponse\x12\x12\n\nis_starred\x18\x01 \x01(\x08\"c\n\x13ListCommentsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\";\n\x14ListCommentsResponse\x12#\n\x08\x63omments\x18\x01 \x03(\x0b\x32\x11.monorail.Comment\"\x8a\x01\n\x14\x44\x65leteCommentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\x03\x12\x0e\n\x06\x64\x65lete\x18\x04 \x01(\x08\"\x9a\x06\n\nIssueDelta\x12,\n\x06status\x18\x01 \x01(\x0b\x32\x1c.google.protobuf.StringValue\x12$\n\towner_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12&\n\x0b\x63\x63_refs_add\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12)\n\x0e\x63\x63_refs_remove\x18\x04 \x03(\x0b\x32\x11.monorail.UserRef\x12-\n\rcomp_refs_add\x18\x05 \x03(\x0b\x32\x16.monorail.ComponentRef\x12\x30\n\x10\x63omp_refs_remove\x18\x06 \x03(\x0b\x32\x16.monorail.ComponentRef\x12*\n\x0elabel_refs_add\x18\x07 \x03(\x0b\x32\x12.monorail.LabelRef\x12-\n\x11label_refs_remove\x18\x08 \x03(\x0b\x32\x12.monorail.LabelRef\x12,\n\x0e\x66ield_vals_add\x18\t \x03(\x0b\x32\x14.monorail.FieldValue\x12/\n\x11\x66ield_vals_remove\x18\n \x03(\x0b\x32\x14.monorail.FieldValue\x12(\n\x0c\x66ields_clear\x18\x0b \x03(\x0b\x32\x12.monorail.FieldRef\x12/\n\x13\x62locked_on_refs_add\x18\x0c \x03(\x0b\x32\x12.monorail.IssueRef\x12\x32\n\x16\x62locked_on_refs_remove\x18\r \x03(\x0b\x32\x12.monorail.IssueRef\x12-\n\x11\x62locking_refs_add\x18\x0e \x03(\x0b\x32\x12.monorail.IssueRef\x12\x30\n\x14\x62locking_refs_remove\x18\x0f \x03(\x0b\x32\x12.monorail.IssueRef\x12+\n\x0fmerged_into_ref\x18\x10 \x01(\x0b\x32\x12.monorail.IssueRef\x12-\n\x07summary\x18\x11 \x01(\x0b\x32\x1c.google.protobuf.StringValue\"\x82\x02\n\x15UpdateApprovalRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12%\n\tfield_ref\x18\x03 \x01(\x0b\x32\x12.monorail.FieldRef\x12/\n\x0e\x61pproval_delta\x18\x04 \x01(\x0b\x32\x17.monorail.ApprovalDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x12\n\nsend_email\x18\x06 \x01(\x08\x12\x16\n\x0eis_description\x18\x07 \x01(\x08\"\xa1\x02\n\rApprovalDelta\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.monorail.ApprovalStatus\x12,\n\x11\x61pprover_refs_add\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12/\n\x14\x61pprover_refs_remove\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12,\n\x0e\x66ield_vals_add\x18\x04 \x03(\x0b\x32\x14.monorail.FieldValue\x12/\n\x11\x66ield_vals_remove\x18\x05 \x03(\x0b\x32\x14.monorail.FieldValue\x12(\n\x0c\x66ields_clear\x18\x06 \x03(\x0b\x32\x12.monorail.FieldRef\">\n\x16UpdateApprovalResponse\x12$\n\x08\x61pproval\x18\x01 \x01(\x0b\x32\x12.monorail.Approval\"\xb3\x01\n\x14IssueSnapshotRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x11\n\ttimestamp\x18\x02 \x01(\x05\x12\r\n\x05query\x18\x03 \x01(\t\x12\x14\n\x0c\x63\x61nned_query\x18\x04 \x01(\x05\x12\x10\n\x08group_by\x18\x05 \x01(\t\x12\x14\n\x0clabel_prefix\x18\x06 \x01(\t\x12\x14\n\x0cproject_name\x18\x07 \x01(\t\"6\n\x12IssueSnapshotCount\x12\x11\n\tdimension\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\x05\"h\n\x15IssueSnapshotResponse\x12\x34\n\x0esnapshot_count\x18\x01 \x03(\x0b\x32\x1c.monorail.IssueSnapshotCount\x12\x19\n\x11unsupported_field\x18\x02 \x03(\t2\xa9\x06\n\x06Issues\x12\x46\n\x0b\x43reateIssue\x12\x1c.monorail.CreateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12@\n\x08GetIssue\x12\x19.monorail.GetIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12g\n\x14ListReferencedIssues\x12%.monorail.ListReferencedIssuesRequest\x1a&.monorail.ListReferencedIssuesResponse\"\x00\x12\x46\n\x0bUpdateIssue\x12\x1c.monorail.UpdateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12\x46\n\tStarIssue\x12\x1a.monorail.StarIssueRequest\x1a\x1b.monorail.StarIssueResponse\"\x00\x12U\n\x0eIsIssueStarred\x12\x1f.monorail.IsIssueStarredRequest\x1a .monorail.IsIssueStarredResponse\"\x00\x12O\n\x0cListComments\x12\x1d.monorail.ListCommentsRequest\x1a\x1e.monorail.ListCommentsResponse\"\x00\x12I\n\rDeleteComment\x12\x1e.monorail.DeleteCommentRequest\x1a\x16.google.protobuf.Empty\"\x00\x12U\n\x0eUpdateApproval\x12\x1f.monorail.UpdateApprovalRequest\x1a .monorail.UpdateApprovalResponse\"\x00\x12R\n\rIssueSnapshot\x12\x1e.monorail.IssueSnapshotRequest\x1a\x1f.monorail.IssueSnapshotResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,google_dot_protobuf_dot_wrappers__pb2.DESCRIPTOR,api_dot_api__proto_dot_common__pb2.DESCRIPTOR,api_dot_api__proto_dot_issue__objects__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -183,6 +183,75 @@ _ISSUERESPONSE = _descriptor.Descriptor(
 )
 
 
+_LISTREFERENCEDISSUESREQUEST = _descriptor.Descriptor(
+  name='ListReferencedIssuesRequest',
+  full_name='monorail.ListReferencedIssuesRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='issue_refs', full_name='monorail.ListReferencedIssuesRequest.issue_refs', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=480,
+  serialized_end=549,
+)
+
+
+_LISTREFERENCEDISSUESRESPONSE = _descriptor.Descriptor(
+  name='ListReferencedIssuesResponse',
+  full_name='monorail.ListReferencedIssuesResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='open_refs', full_name='monorail.ListReferencedIssuesResponse.open_refs', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='closed_refs', full_name='monorail.ListReferencedIssuesResponse.closed_refs', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=551,
+  serialized_end=661,
+)
+
+
 _UPDATEISSUEREQUEST = _descriptor.Descriptor(
   name='UpdateIssueRequest',
   full_name='monorail.UpdateIssueRequest',
@@ -251,8 +320,8 @@ _UPDATEISSUEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=481,
-  serialized_end=730,
+  serialized_start=664,
+  serialized_end=913,
 )
 
 
@@ -296,8 +365,8 @@ _STARISSUEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=732,
-  serialized_end=845,
+  serialized_start=915,
+  serialized_end=1028,
 )
 
 
@@ -327,8 +396,8 @@ _STARISSUERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=847,
-  serialized_end=886,
+  serialized_start=1030,
+  serialized_end=1069,
 )
 
 
@@ -365,8 +434,8 @@ _ISISSUESTARREDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=888,
-  serialized_end=989,
+  serialized_start=1071,
+  serialized_end=1172,
 )
 
 
@@ -396,8 +465,8 @@ _ISISSUESTARREDRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=991,
-  serialized_end=1035,
+  serialized_start=1174,
+  serialized_end=1218,
 )
 
 
@@ -434,8 +503,8 @@ _LISTCOMMENTSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1037,
-  serialized_end=1136,
+  serialized_start=1220,
+  serialized_end=1319,
 )
 
 
@@ -465,8 +534,8 @@ _LISTCOMMENTSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1138,
-  serialized_end=1197,
+  serialized_start=1321,
+  serialized_end=1380,
 )
 
 
@@ -517,8 +586,8 @@ _DELETECOMMENTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1200,
-  serialized_end=1338,
+  serialized_start=1383,
+  serialized_end=1521,
 )
 
 
@@ -660,8 +729,8 @@ _ISSUEDELTA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1341,
-  serialized_end=2135,
+  serialized_start=1524,
+  serialized_end=2318,
 )
 
 
@@ -733,8 +802,8 @@ _UPDATEAPPROVALREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2138,
-  serialized_end=2396,
+  serialized_start=2321,
+  serialized_end=2579,
 )
 
 
@@ -799,8 +868,8 @@ _APPROVALDELTA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2399,
-  serialized_end=2688,
+  serialized_start=2582,
+  serialized_end=2871,
 )
 
 
@@ -830,8 +899,8 @@ _UPDATEAPPROVALRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2690,
-  serialized_end=2752,
+  serialized_start=2873,
+  serialized_end=2935,
 )
 
 
@@ -903,8 +972,8 @@ _ISSUESNAPSHOTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2755,
-  serialized_end=2934,
+  serialized_start=2938,
+  serialized_end=3117,
 )
 
 
@@ -941,8 +1010,8 @@ _ISSUESNAPSHOTCOUNT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2936,
-  serialized_end=2990,
+  serialized_start=3119,
+  serialized_end=3173,
 )
 
 
@@ -979,8 +1048,8 @@ _ISSUESNAPSHOTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2992,
-  serialized_end=3096,
+  serialized_start=3175,
+  serialized_end=3279,
 )
 
 _CREATEISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
@@ -988,6 +1057,9 @@ _CREATEISSUEREQUEST.fields_by_name['issue'].message_type = api_dot_api__proto_do
 _GETISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _GETISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _ISSUERESPONSE.fields_by_name['issue'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUE
+_LISTREFERENCEDISSUESREQUEST.fields_by_name['issue_refs'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
+_LISTREFERENCEDISSUESRESPONSE.fields_by_name['open_refs'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
+_LISTREFERENCEDISSUESRESPONSE.fields_by_name['closed_refs'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _UPDATEISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _UPDATEISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _UPDATEISSUEREQUEST.fields_by_name['delta'].message_type = _ISSUEDELTA
@@ -1035,6 +1107,8 @@ DESCRIPTOR.message_types_by_name['AttachmentUpload'] = _ATTACHMENTUPLOAD
 DESCRIPTOR.message_types_by_name['CreateIssueRequest'] = _CREATEISSUEREQUEST
 DESCRIPTOR.message_types_by_name['GetIssueRequest'] = _GETISSUEREQUEST
 DESCRIPTOR.message_types_by_name['IssueResponse'] = _ISSUERESPONSE
+DESCRIPTOR.message_types_by_name['ListReferencedIssuesRequest'] = _LISTREFERENCEDISSUESREQUEST
+DESCRIPTOR.message_types_by_name['ListReferencedIssuesResponse'] = _LISTREFERENCEDISSUESRESPONSE
 DESCRIPTOR.message_types_by_name['UpdateIssueRequest'] = _UPDATEISSUEREQUEST
 DESCRIPTOR.message_types_by_name['StarIssueRequest'] = _STARISSUEREQUEST
 DESCRIPTOR.message_types_by_name['StarIssueResponse'] = _STARISSUERESPONSE
@@ -1078,6 +1152,20 @@ IssueResponse = _reflection.GeneratedProtocolMessageType('IssueResponse', (_mess
   # @@protoc_insertion_point(class_scope:monorail.IssueResponse)
   ))
 _sym_db.RegisterMessage(IssueResponse)
+
+ListReferencedIssuesRequest = _reflection.GeneratedProtocolMessageType('ListReferencedIssuesRequest', (_message.Message,), dict(
+  DESCRIPTOR = _LISTREFERENCEDISSUESREQUEST,
+  __module__ = 'api.api_proto.issues_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.ListReferencedIssuesRequest)
+  ))
+_sym_db.RegisterMessage(ListReferencedIssuesRequest)
+
+ListReferencedIssuesResponse = _reflection.GeneratedProtocolMessageType('ListReferencedIssuesResponse', (_message.Message,), dict(
+  DESCRIPTOR = _LISTREFERENCEDISSUESRESPONSE,
+  __module__ = 'api.api_proto.issues_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.ListReferencedIssuesResponse)
+  ))
+_sym_db.RegisterMessage(ListReferencedIssuesResponse)
 
 UpdateIssueRequest = _reflection.GeneratedProtocolMessageType('UpdateIssueRequest', (_message.Message,), dict(
   DESCRIPTOR = _UPDATEISSUEREQUEST,

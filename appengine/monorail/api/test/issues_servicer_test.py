@@ -116,6 +116,43 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual('proj', actual.blocked_on_issue_refs[0].project_name)
     self.assertEqual(2, actual.blocked_on_issue_refs[0].local_id)
 
+  def testListReferencedIssues(self):
+    """We can get the referenced issues that exist."""
+    self.services.project.TestAddProject(
+        'other-proj', project_id=788, owner_ids=[111L])
+    other_issue = fake.MakeTestIssue(
+        788, 1, 'sum', 'Fixed', 111L, project_name='other-proj', issue_id=78801)
+    self.services.issue.TestAddIssue(other_issue)
+    # We ignore project_names or local_ids that don't exist in our DB.
+    request = issues_pb2.ListReferencedIssuesRequest(
+        issue_refs=[
+            common_pb2.IssueRef(project_name='proj', local_id=1),
+            common_pb2.IssueRef(project_name='other-proj', local_id=1),
+            common_pb2.IssueRef(project_name='other-proj', local_id=2),
+            common_pb2.IssueRef(project_name='ghost-proj', local_id=1)
+            ]
+        )
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    response = self.CallWrapped(
+        self.issues_svcr.ListReferencedIssues, mc, request)
+    self.assertEqual(len(response.closed_refs), 1)
+    self.assertEqual(len(response.open_refs), 1)
+    self.assertEqual(response.closed_refs[0],
+                     common_pb2.IssueRef(project_name='other-proj', local_id=1))
+    self.assertEqual(response.open_refs[0],
+                     common_pb2.IssueRef(project_name='proj', local_id=1))
+
+  def testListReferencedIssues_MissingInput(self):
+    request = issues_pb2.ListReferencedIssuesRequest(
+        issue_refs=[common_pb2.IssueRef(local_id=1)])
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.issues_svcr.ListReferencedIssues, mc, request)
+
   def testUpdateIssue_Denied(self):
     """We reject requests to update an issue when the user lacks perms."""
     request = issues_pb2.UpdateIssueRequest()

@@ -306,6 +306,28 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetIssue(78901)
 
+  def testListReferencedIssues(self):
+    """We return only existing or visible issues even w/out project names."""
+    ref_tuples = [
+        (None, 1), ('other-proj', 1), ('proj', 99),
+        ('ghost-proj', 1), ('proj', 42)]
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    private = fake.MakeTestIssue(789, 42, 'sum', 'New', 422L, issue_id=78942)
+    private.labels.append('Restrict-View-CoreTeam')
+    self.services.issue.TestAddIssue(private)
+    self.services.project.TestAddProject(
+        'other-proj', project_id=788)
+    other_issue = fake.MakeTestIssue(
+        788, 1, 'sum', 'Fixed', 111L, issue_id=78801)
+    self.services.issue.TestAddIssue(other_issue)
+
+    with self.work_env as we:
+      actual_open, actual_closed = we.ListReferencedIssues(ref_tuples, 'proj')
+
+    self.assertEqual([issue], actual_open)
+    self.assertEqual([other_issue], actual_closed)
+
   def testGetIssueByLocalID_Normal(self):
     """We can get an existing issue by project_id and local_id."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)

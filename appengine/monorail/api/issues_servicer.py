@@ -69,6 +69,37 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return response
 
   @monorail_servicer.PRPCMethod
+  def ListReferencedIssues(self, mc, request):
+    """Return the specified issues in a response proto."""
+    if not request.issue_refs:
+      return issues_pb2.ListReferencedIssuesResponse()
+
+    for issue_ref in request.issue_refs:
+      if not issue_ref.project_name:
+        raise exceptions.InputException('Param `project_name` required.')
+      if not issue_ref.local_id:
+        raise exceptions.InputException('Param `local_id` required.')
+
+    default_project_name = request.issue_refs[0].project_name
+    ref_tuples = [
+        (ref.project_name, ref.local_id) for ref in request.issue_refs]
+    with work_env.WorkEnv(mc, self.services) as we:
+      open_issues, closed_issues = we.ListReferencedIssues(
+          ref_tuples, default_project_name)
+
+    # TODO(jojwang): monorail:4033, add issue summary, by replacing IssueRef
+    # protoc objects with Issue protoc objects.
+    with mc.profiler.Phase('converting to response objects'):
+      open_refs = [converters.ConvertIssueRef(
+          (issue.project_name, issue.local_id)) for issue in open_issues]
+      closed_refs = [converters.ConvertIssueRef(
+          (issue.project_name, issue.local_id)) for issue in closed_issues]
+      response = issues_pb2.ListReferencedIssuesResponse(
+          open_refs=open_refs, closed_refs=closed_refs)
+
+    return response
+
+  @monorail_servicer.PRPCMethod
   def UpdateIssue(self, mc, request):
     """Apply a delta and comment to the specified issue, then return it."""
     project, issue, config = self._GetProjectIssueAndConfig(
