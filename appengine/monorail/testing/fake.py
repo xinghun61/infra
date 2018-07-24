@@ -408,6 +408,8 @@ class UserService(object):
     self.users_by_id = {}
     self.test_users = {}
     self.visited_hotlists = {} # user_id:[(hotlist_id, viewed), ...]
+    self.user_commits = [("mysha2",  3784859778, 2, "hi", "repo"),
+        ("mysha1",  3784859778, 1, "hi", "repo")]
 
   def TestAddUser(self, email, user_id, add_user=True, banned=False):
     """Add a user to the fake UserService instance.
@@ -531,6 +533,9 @@ class UserService(object):
     except KeyError:
       self.visited_hotlists[user_id] = []
     self.visited_hotlists[user_id].append((hotlist_id, int(time.time())))
+
+  def GetUserCommits(self, _cnxn, user_email, from_timestamp, to_timestamp):
+      return self.user_commits
 
 class AbstractStarService(object):
   """Fake StarService."""

@@ -1,0 +1,20 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is govered by a BSD-style
+// license that can be found in the LICENSE file or at
+// https://developers.google.com/open-source/licenses/bsd
+
+// This file defines protobufs for issues and related business
+// objects, e.g., field values, comments, and attachments.
+
+syntax = "proto3";
+
+package monorail;
+
+// Next available tag: 6
+message Commit {
+  string commit_sha = 1;
+  int64 author_id = 2;
+  fixed32 commit_time = 3;
+  string commit_message = 4;
+  string commit_repo_url = 5;
+}

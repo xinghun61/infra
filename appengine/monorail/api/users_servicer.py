@@ -5,8 +5,10 @@
 
 from api import converters
 from api import monorail_servicer
+from api import converters
 from api.api_proto import users_pb2
 from api.api_proto import users_prpc_pb2
+from api.api_proto import user_objects_pb2
 from businesslogic import work_env
 
 
@@ -46,3 +48,17 @@ class UsersServicer(monorail_servicer.MonorailServicer):
       response = users_pb2.ListReferencedUsersResponse(users=response_users)
 
     return response
+
+  @monorail_servicer.PRPCMethod
+  def GetUserCommits(self, mc, request):
+    """Return a user's commits in a response proto."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      user_commits = we.GetUserCommits(request.email, request.from_timestamp,
+          request.until_timestamp)
+
+    with mc.profiler.Phase('converting to response objects'):
+      converted_commits = converters.ConvertCommitList(
+          user_commits)
+      response = users_pb2.GetUserCommitsResponse(
+          user_commits=converted_commits)
+      return response

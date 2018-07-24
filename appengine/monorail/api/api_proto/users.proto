@@ -7,12 +7,13 @@ syntax = "proto3";
 
 package monorail;
 
+import "api/api_proto/user_objects.proto";
 import "api/api_proto/common.proto";
-
 
 service Users {
   rpc GetUser (UserRef) returns (User) {}
   rpc ListReferencedUsers (ListReferencedUsersRequest) returns (ListReferencedUsersResponse) {}
+  rpc GetUserCommits (GetUserCommitsRequest) returns (GetUserCommitsResponse) {}
 }
 
 
@@ -31,4 +32,16 @@ message ListReferencedUsersRequest {
 
 message ListReferencedUsersResponse {
   repeated User users = 1;
+}
+
+
+message GetUserCommitsRequest {
+  string email = 1;
+  fixed32 from_timestamp = 2;
+  fixed32 until_timestamp = 3;
+}
+
+
+message GetUserCommitsResponse {
+  repeated Commit user_commits = 1;
 }

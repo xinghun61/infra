@@ -18,6 +18,7 @@ from api.api_proto import common_pb2
 from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import project_objects_pb2
+from api.api_proto import user_objects_pb2
 from api.api_proto import users_pb2
 from framework import exceptions
 from framework import filecontent
@@ -573,6 +574,25 @@ def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
 
   return ejected_fvs
 
+def ConvertCommit(
+    commit_sha, author_id, commit_time, commit_message, commit_repo_url):
+  """Convert a protorpc UserCommit to a protoc Commit."""
+
+  result = user_objects_pb2.Commit(
+      commit_sha=commit_sha,
+      author_id=author_id,
+      commit_time=commit_time,
+      commit_message=commit_message,
+      commit_repo_url=commit_repo_url)
+
+  return result
+
+def ConvertCommitList(commits):
+  """Convert a list protorpc UserCommit to a protoc Commit."""
+  result = []
+  for c in commits:
+    result.append(ConvertCommit(c[0], c[1], c[2], c[3], c[4]))
+  return result
 
 # Convert and ingest objects in project_objects.proto.
 

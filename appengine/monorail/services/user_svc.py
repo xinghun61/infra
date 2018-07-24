@@ -459,6 +459,15 @@ class UserService(object):
     # Write the user settings to the database.
     self.UpdateUser(cnxn, user_id, user)
 
+  def GetUserCommits(self, cnxn, user_id, from_timestamp, to_timestamp):
+    user_commits = self.usercommits_tbl.Select(
+        cnxn, cols=['*'], author_id=[user_id],
+        where=[('commit_time >= %s', [from_timestamp]),
+            ('commit_time <= %s', [to_timestamp])
+        ],
+        order_by=[('commit_time DESC', [])])
+    return user_commits
+
   def GetRecentlyVisitedHotlists(self, cnxn, user_id):
     recent_hotlist_rows = self.hotlistvisithistory_tbl.Select(
         cnxn, cols=['hotlist_id'], user_id=[user_id],

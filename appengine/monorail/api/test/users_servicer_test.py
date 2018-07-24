@@ -15,6 +15,7 @@ from components.prpc import server
 from api import users_servicer
 from api.api_proto import common_pb2
 from api.api_proto import users_pb2
+from api.api_proto import user_objects_pb2
 from framework import authdata
 from framework import monorailcontext
 from testing import fake
@@ -56,6 +57,26 @@ class UsersServicerTest(unittest.TestCase):
     response = self.CallWrapped(self.users_svcr.GetUser, mc, request)
     self.assertEqual('test2@example.com', response.email)
     self.assertEqual(222L, response.user_id)
+
+  def testListCommits_Normal(self):
+    """We can get user commits"""
+    request = users_pb2.GetUserCommitsRequest(email="test@example.com",
+        from_timestamp=1, until_timestamp=3)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    response = self.CallWrapped(self.users_svcr.GetUserCommits, mc, request)
+
+    actual_0 = response.user_commits[0]
+    actual_1 = response.user_commits[1]
+    expected_0 = user_objects_pb2.Commit(commit_sha="mysha2",
+        author_id=3784859778, commit_time=2, commit_message="hi",
+        commit_repo_url="repo")
+    expected_1 = user_objects_pb2.Commit(commit_sha="mysha1",
+        author_id=3784859778, commit_time=1, commit_message="hi",
+        commit_repo_url="repo")
+    self.assertEqual(expected_0, actual_0)
+    self.assertEqual(expected_1, actual_1)
 
   def testListReferencedUsers(self):
     """We can get all valid users by email addresses."""
