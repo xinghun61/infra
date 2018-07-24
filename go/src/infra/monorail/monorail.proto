@@ -97,6 +97,7 @@ message InsertCommentRequest {
     // This message is partial.
     // Derived from IssueCommentWrapper type in api_pb2_v1.py.
     message Comment {
+        AtomPerson author = 2;
         string content = 4;
         Update updates = 8;
     }
