@@ -218,20 +218,21 @@ def api_base_checks(request, requester, services, cnxn,
       requester = oauth.get_current_user(framework_constants.OAUTH_SCOPE)
       logging.info('Oauth requester %s', requester.email())
     except oauth.Error as ex:
+      logging.info('Got oauth error: %r', ex)
       auth_err = 'oauth.Error: %s' % ex
 
   if client_id and requester:
-    if client_id != 'anonymous':
-      if client_id in auth_client_ids:
-        valid_user = True
-      else:
-        auth_err = 'Client ID %s is not whitelisted' % client_id
-    # Some service accounts may have anonymous client ID
+    if client_id in auth_client_ids:
+      # A whitelisted client app can make requests for any user or anon.
+      logging.info('Client ID %r is whitelisted', client_id)
+      valid_user = True
+    elif requester.email() in auth_emails:
+      # A whitelisted user account can make requests via any client app.
+      logging.info('Client email %r is whitelisted', requester.email())
+      valid_user = True
     else:
-      if requester.email() in auth_emails:
-        valid_user = True
-      else:
-        auth_err = 'Client email %s is not whitelisted' % requester.email()
+      auth_err = ('Neither client ID %r nor email %r is whitelisted' %
+                  (client_id, requester.email()))
 
   if not valid_user:
     raise endpoints.UnauthorizedException('Auth error: %s' % auth_err)

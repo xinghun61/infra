@@ -1154,6 +1154,7 @@ class AllBaseChecksTest(unittest.TestCase):
           request, requester, self.services, None, self.auth_client_ids, [])
 
   def testAnonymousClients(self):
+    # Some clients specifically pass "anonymous" as the client ID.
     oauth.get_client_id = Mock(return_value='anonymous')
     requester = RequesterMock(email='test@example.com')
     request = RequestMock()
@@ -1161,6 +1162,12 @@ class AllBaseChecksTest(unittest.TestCase):
     api_svc_v1.api_base_checks(
         request, requester, self.services, None, [], ['test@example.com'])
 
+    # Any client_id is OK if the email is whitelisted.
+    oauth.get_client_id = Mock(return_value='anything')
+    api_svc_v1.api_base_checks(
+        request, requester, self.services, None, [], ['test@example.com'])
+
+    # Reject request when neither client ID nor email is whitelisted.
     with self.assertRaises(endpoints.UnauthorizedException):
       api_svc_v1.api_base_checks(
           request, requester, self.services, None, [], [])
