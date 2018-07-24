@@ -47,12 +47,24 @@ func reportNotUseful(c context.Context, commentID string) (*tricium.ReportNotUse
 	if err != nil {
 		return nil, err
 	}
-	// TODO(qyearsley): Get analyzer owner and component of the analyzer,
-	// and include these in the response.
+
 	if err = incrementCount(c, comment); err != nil {
 		return nil, err
 	}
-	return &tricium.ReportNotUsefulResponse{}, nil
+
+	// The ancestor FunctionRun should contain an owner and component.
+	f, err := getFunctionRun(c, comment)
+	if err != nil {
+		// Even if we fail to get the functionRun, we have still
+		// successfully incremented the not useful count already.
+		logging.WithError(err).Warningf(c, "Failed to get FunctionRun.")
+		return &tricium.ReportNotUsefulResponse{}, nil
+	}
+
+	return &tricium.ReportNotUsefulResponse{
+		Owner:             f.Owner,
+		MonorailComponent: f.MonorailComponent,
+	}, nil
 }
 
 func getCommentByID(c context.Context, id string) (*track.Comment, error) {
@@ -80,4 +92,15 @@ func incrementCount(c context.Context, comment *track.Comment) error {
 		return fmt.Errorf("failed to store CommentFeedback entity: %v", err)
 	}
 	return nil
+}
+
+func getFunctionRun(c context.Context, comment *track.Comment) (*track.FunctionRun, error) {
+	commentKey := ds.KeyForObj(c, comment)
+	functionKey := commentKey.Parent().Parent()
+	function := &track.FunctionRun{
+		ID:     functionKey.StringID(),
+		Parent: functionKey.Parent(),
+	}
+	err := ds.Get(c, function)
+	return function, err
 }

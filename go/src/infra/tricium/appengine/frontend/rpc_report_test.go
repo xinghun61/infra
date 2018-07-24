@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
-
 	ds "go.chromium.org/gae/service/datastore"
 
 	"infra/tricium/api/v1"
@@ -17,7 +16,7 @@ import (
 	"infra/tricium/appengine/common/triciumtest"
 )
 
-func TestReport(t *testing.T) {
+func TestReportNotUseful(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		ctx := triciumtest.Context()
 		commentID := "7ef59cda-183c-48b3-8343-d9036a7f1419"
@@ -30,7 +29,12 @@ func TestReport(t *testing.T) {
 		So(ds.Put(ctx, request), ShouldBeNil)
 		run := &track.WorkflowRun{ID: 1, Parent: ds.KeyForObj(ctx, request)}
 		So(ds.Put(ctx, run), ShouldBeNil)
-		function := &track.FunctionRun{ID: functionName, Parent: ds.KeyForObj(ctx, run)}
+		function := &track.FunctionRun{
+			ID:                functionName,
+			Parent:            ds.KeyForObj(ctx, run),
+			Owner:             "qyearsley@chromium.org",
+			MonorailComponent: "Infra>Platform>Tricium",
+		}
 		So(ds.Put(ctx, function), ShouldBeNil)
 		worker := &track.WorkerRun{
 			ID:     fmt.Sprintf("%s_%s", functionName, platform),
@@ -46,7 +50,10 @@ func TestReport(t *testing.T) {
 			request := &tricium.ReportNotUsefulRequest{CommentId: commentID}
 			response, err := server.ReportNotUseful(ctx, request)
 			So(err, ShouldBeNil)
-			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{})
+			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{
+				Owner:             "qyearsley@chromium.org",
+				MonorailComponent: "Infra>Platform>Tricium",
+			})
 			So(ds.Get(ctx, feedback), ShouldBeNil)
 			So(feedback.NotUsefulReports, ShouldEqual, 1)
 		})
@@ -73,10 +80,16 @@ func TestReport(t *testing.T) {
 			request := &tricium.ReportNotUsefulRequest{CommentId: commentID}
 			response, err := server.ReportNotUseful(ctx, request)
 			So(err, ShouldBeNil)
-			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{})
+			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{
+				Owner:             "qyearsley@chromium.org",
+				MonorailComponent: "Infra>Platform>Tricium",
+			})
 			response, err = server.ReportNotUseful(ctx, request)
 			So(err, ShouldBeNil)
-			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{})
+			So(response, ShouldResemble, &tricium.ReportNotUsefulResponse{
+				Owner:             "qyearsley@chromium.org",
+				MonorailComponent: "Infra>Platform>Tricium",
+			})
 			So(ds.Get(ctx, feedback), ShouldBeNil)
 			So(feedback.NotUsefulReports, ShouldEqual, 2)
 		})
