@@ -764,15 +764,17 @@ class Servlet(webapp2.RequestHandler):
     if mr.project:
       base_data['project_home_url'] = '/p/%s' % mr.project_name
 
-    # Always add an anti-xsrf token when the user is logged in.
+    # Always add xhr-xsrf token because even anon users need some
+    # pRPC methods, e.g., autocomplete, flipper, and charts.
+    base_data['token_expires_sec'] = xsrf.TokenExpiresSec()
+    base_data['xhr_token'] = xsrf.GenerateToken(
+        mr.auth.user_id, xsrf.XHR_SERVLET_PATH)
+    # Always add other anti-xsrf tokens when the user is logged in.
     if mr.auth.user_id:
       form_token_path = self._FormHandlerURL(mr.request.path)
       base_data['form_token'] = xsrf.GenerateToken(
         mr.auth.user_id, form_token_path)
       base_data['form_token_path'] = form_token_path
-      base_data['token_expires_sec'] = xsrf.TokenExpiresSec()
-      base_data['xhr_token'] = xsrf.GenerateToken(
-        mr.auth.user_id, xsrf.XHR_SERVLET_PATH)
       base_data['flag_spam_token'] = xsrf.GenerateToken(
          mr.auth.user_id, '/p/%s%s.do' % (
          mr.project_name, urls.ISSUE_FLAGSPAM_JSON))

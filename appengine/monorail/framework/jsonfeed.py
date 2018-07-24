@@ -51,6 +51,8 @@ class JsonFeed(servlet.Servlet):
   def _DoRequestHandling(self, request, mr):
     """Do permission checking, page processing, and response formatting."""
     try:
+      # TODO(jrobbins): check the XSRF token even for anon users
+      # after the next deployment.
       if self.CHECK_SECURITY_TOKEN and mr.auth.user_id:
         # Validate the XSRF token with the specific request path for this
         # servlet.  But, not every XHR request has a distinct token, so just

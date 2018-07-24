@@ -28,13 +28,17 @@ class XsrfTest(unittest.TestCase):
   def tearDown(self):
     self.testbed.deactivate()
 
-  def testGenerateToken_AnonUserGetsNoToken(self):
-    self.assertEqual('', xsrf.GenerateToken(0L, '/path'))
+  def testGenerateToken_AnonUserGetsAToken(self):
+    self.assertNotEqual('', xsrf.GenerateToken(0L, '/path'))
 
   def testGenerateToken_DifferentUsersGetDifferentTokens(self):
     self.assertNotEqual(
         xsrf.GenerateToken(111L, '/path'),
         xsrf.GenerateToken(222L, '/path'))
+
+    self.assertNotEqual(
+        xsrf.GenerateToken(111L, '/path'),
+        xsrf.GenerateToken(0L, '/path'))
 
   def testGenerateToken_DifferentPathsGetDifferentTokens(self):
     self.assertNotEqual(

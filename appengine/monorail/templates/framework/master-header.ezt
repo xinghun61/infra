@@ -17,9 +17,7 @@
      'absoluteBaseUrl': '[format "js"][absolute_base_url][end]',
      'app_version': '[format "js"][app_version][end]',
      'token': '[format "js"][xhr_token][end]',
-     [if-any logged_in_user]
-       'tokenExpiresSec': [format "js"][token_expires_sec][end],
-     [end]
+     'tokenExpiresSec': [format "js"][token_expires_sec][end],
      'loggedInUserEmail':
        [if-any logged_in_user]
          '[format "js"][logged_in_user.email][end]'

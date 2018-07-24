@@ -7,6 +7,8 @@
 
 import unittest
 
+from google.appengine.ext import testbed
+
 from framework import permissions
 from services import service_manager
 from sitewide import grouplist
@@ -22,6 +24,13 @@ class GroupListTest(unittest.TestCase):
         usergroup=fake.UserGroupService())
     self.servlet = grouplist.GroupList('req', 'res', services=self.services)
     self.mr = testing_helpers.MakeMonorailRequest()
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_memcache_stub()
+    self.testbed.init_datastore_v3_stub()
+
+  def tearDown(self):
+    self.testbed.deactivate()
 
   def testAssertBasePermission_Anon(self):
     self.mr.perms = permissions.READ_ONLY_PERMISSIONSET
