@@ -151,6 +151,7 @@ func postIssue(ctx context.Context, cfg *RepoConfig, s, d string, cs *Clients, c
 		Labels:      labels,
 		Status:      monorail.StatusUntriaged,
 		Summary:     s,
+		ProjectId:   cfg.MonorailProject,
 	}
 
 	req := &monorail.InsertIssueRequest{
