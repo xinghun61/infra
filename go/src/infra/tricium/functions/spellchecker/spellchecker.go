@@ -55,7 +55,6 @@ func main() {
 	}
 	log.Printf("Read FILES data: %#v", input)
 
-	// TODO(diegomtzg): Send fix suggestions. Ignore fixes that have a 'reason'. Concurrency optimizations.
 	results := &tricium.Data_Results{}
 	for _, file := range input.Files {
 		if !file.IsBinary {
@@ -162,20 +161,14 @@ func parseCodespellLine(stdoutLine string, fileScanner *bufio.Scanner,
 	// Ignore whitelisted words (such as GAE) while using the same
 	// default dictionary from CodeSpell (in case of updates).
 	if isWhitelisted(match[3]) {
-		log.Printf("IGNORING: %q is a whitelisted word", match[3])
-		return nil, 0, ""
+		log.Printf("IGNORING: %q is a whitelisted word.", match[3])
+		return nil, currFileLine, ""
 	}
 
-	replacements := []string{match[4]}
-	replacements = append(replacements, strings.Split(match[5], ", ")...)
-
-	var validReplacements []string
-	for _, replacement := range replacements {
-		if len(replacement) > 0 {
-			// Get rid of trailing white space if word has only 1 suggestion and a reason.
-			replacement = strings.TrimSpace(replacement)
-			validReplacements = append(validReplacements, replacement)
-		}
+	// Ignore words that have a reason to be disabled in the default CodeSpell dictionary.
+	if len(match[7]) > 0 {
+		log.Printf("IGNORING: %q has a reason to be disabled in the default CodeSpell dictionary.", match[3])
+		return nil, currFileLine, ""
 	}
 
 	// If there are multiple misspellings on the same line, use the line from the previous
@@ -189,24 +182,51 @@ func parseCodespellLine(stdoutLine string, fileScanner *bufio.Scanner,
 	}
 	startChar, endChar := findWordInLine(match[3], fileLine)
 
+	replacements := []string{match[4]}
+	replacements = append(replacements, strings.Split(match[5], ", ")...)
+
+	var validReplacements []string
+	var suggestions []*tricium.Data_Suggestion
+	for _, replacement := range replacements {
+		if len(replacement) > 0 {
+			// Get rid of trailing white space if word has only 1 suggestion and a reason.
+			replacement = strings.TrimSpace(replacement)
+			validReplacements = append(validReplacements, replacement)
+			suggestions = append(suggestions, &tricium.Data_Suggestion{
+				Description: fmt.Sprintf("Misspelling fix suggestion"),
+				Replacements: []*tricium.Data_Replacement{
+					{
+						Path:        match[1],
+						Replacement: replacement,
+						StartLine:   int32(lineno),
+						EndLine:     int32(lineno),
+						StartChar:   int32(startChar),
+						EndChar:     int32(startChar + len(replacement)),
+					},
+				},
+			})
+		}
+	}
+
 	return &tricium.Data_Comment{
 		Path: match[1],
 		Message: fmt.Sprintf("%q is a possible misspelling of: %s", match[3],
 			strings.Join(validReplacements, ", ")),
-		Category:  "SpellChecker",
-		StartLine: int32(lineno),
-		EndLine:   int32(lineno),
-		StartChar: int32(startChar),
-		EndChar:   int32(endChar),
+		Category:    "SpellChecker",
+		StartLine:   int32(lineno),
+		EndLine:     int32(lineno),
+		StartChar:   int32(startChar),
+		EndChar:     int32(endChar),
+		Suggestions: suggestions,
 	}, currFileLine + linesRead, fileLine
 }
 
 // Given a line number, gets the line it corresponds to in a file.
 //
 // It is assumed that it will be called in order (since the scanner advances
-// to the given line and cannot go back.
+// to the given line and cannot go back).
 func getLineFromFile(fileScanner *bufio.Scanner, currLine int, lineno int) (string, int) {
-	// Advance file pointer to specified line. The output is ordered by line
+	// Advance file pointer to specified line. The codespell output is ordered by line
 	// numbers so no need to reset file scanner position.
 	linesRead := 0
 	for fileScanner.Scan() {

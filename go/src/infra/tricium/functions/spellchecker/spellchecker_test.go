@@ -33,12 +33,16 @@ func TestPylintParsingFunctions(t *testing.T) {
 			So(results.Comments, ShouldBeEmpty)
 		})
 
+		// Tests whitelisted words, words with a reason to be ignored, multiple misspellings per line and words
+		// with more than one potential fix.
 		Convey("Parsing normal codespell output generates the appropriate comments", func() {
 			output := "test.txt:1: aberation  ==> aberration\n" +
 				"test.txt:2: iminent  ==> eminent, imminent, immanent,\n" +
 				"test.txt:3: wanna  ==> want to  | disabled because one might want to allow informal pronunciation\n" +
-				"test.txt:5: wanna  ==> want to, wants to, test suggestion | this is a random reason\n" +
-				"test.txt:5: combinatins  ==> combinations\n"
+				"test.txt:5: iminent  ==> eminent, imminent, immanent\n" +
+				"test.txt:5: combinatins  ==> combinations\n" +
+				"test.txt:6: gae  ==> gael, game\n" +
+				"test.txt:8: Carnigie-Mellon  ==> Carnegie-Mellon\n"
 
 			expected := &tricium.Data_Results{
 				Comments: []*tricium.Data_Comment{
@@ -50,6 +54,21 @@ func TestPylintParsingFunctions(t *testing.T) {
 						EndLine:   1,
 						StartChar: 0,
 						EndChar:   9,
+						Suggestions: []*tricium.Data_Suggestion{
+							{
+								Description: "Misspelling fix suggestion",
+								Replacements: []*tricium.Data_Replacement{
+									{
+										Path:        "test.txt",
+										Replacement: "aberration",
+										StartLine:   1,
+										EndLine:     1,
+										StartChar:   0,
+										EndChar:     10,
+									},
+								},
+							},
+						},
 					},
 					{
 						Path:      "test.txt",
@@ -59,24 +78,97 @@ func TestPylintParsingFunctions(t *testing.T) {
 						EndLine:   2,
 						StartChar: 0,
 						EndChar:   7,
+						Suggestions: []*tricium.Data_Suggestion{
+							{
+								Description: "Misspelling fix suggestion",
+								Replacements: []*tricium.Data_Replacement{
+									{
+										Path:        "test.txt",
+										Replacement: "eminent",
+										StartLine:   2,
+										EndLine:     2,
+										StartChar:   0,
+										EndChar:     7,
+									},
+								},
+							},
+							{
+								Description: "Misspelling fix suggestion",
+								Replacements: []*tricium.Data_Replacement{
+									{
+										Path:        "test.txt",
+										Replacement: "imminent",
+										StartLine:   2,
+										EndLine:     2,
+										StartChar:   0,
+										EndChar:     8,
+									},
+								},
+							},
+							{
+								Description: "Misspelling fix suggestion",
+								Replacements: []*tricium.Data_Replacement{
+									{
+										Path:        "test.txt",
+										Replacement: "immanent",
+										StartLine:   2,
+										EndLine:     2,
+										StartChar:   0,
+										EndChar:     8,
+									},
+								},
+							},
+						},
 					},
 					{
 						Path:      "test.txt",
-						Message:   `"wanna" is a possible misspelling of: want to`,
-						Category:  "SpellChecker",
-						StartLine: 3,
-						EndLine:   3,
-						StartChar: 0,
-						EndChar:   5,
-					},
-					{
-						Path:      "test.txt",
-						Message:   `"wanna" is a possible misspelling of: want to, wants to, test suggestion`,
+						Message:   `"iminent" is a possible misspelling of: eminent, imminent, immanent`,
 						Category:  "SpellChecker",
 						StartLine: 5,
 						EndLine:   5,
 						StartChar: 0,
-						EndChar:   5,
+						EndChar:   7,
+						Suggestions: []*tricium.Data_Suggestion{
+							{
+								Description: "Misspelling fix suggestion",
+								Replacements: []*tricium.Data_Replacement{
+									{
+										Path:        "test.txt",
+										Replacement: "eminent",
+										StartLine:   5,
+										EndLine:     5,
+										StartChar:   0,
+										EndChar:     7,
+									},
+								},
+							},
+							{
+								Description: "Misspelling fix suggestion",
+								Replacements: []*tricium.Data_Replacement{
+									{
+										Path:        "test.txt",
+										Replacement: "imminent",
+										StartLine:   5,
+										EndLine:     5,
+										StartChar:   0,
+										EndChar:     8,
+									},
+								},
+							},
+							{
+								Description: "Misspelling fix suggestion",
+								Replacements: []*tricium.Data_Replacement{
+									{
+										Path:        "test.txt",
+										Replacement: "immanent",
+										StartLine:   5,
+										EndLine:     5,
+										StartChar:   0,
+										EndChar:     8,
+									},
+								},
+							},
+						},
 					},
 					{
 						Path:      "test.txt",
@@ -84,15 +176,55 @@ func TestPylintParsingFunctions(t *testing.T) {
 						Category:  "SpellChecker",
 						StartLine: 5,
 						EndLine:   5,
-						StartChar: 16,
-						EndChar:   27,
+						StartChar: 21,
+						EndChar:   32,
+						Suggestions: []*tricium.Data_Suggestion{
+							{
+								Description: "Misspelling fix suggestion",
+								Replacements: []*tricium.Data_Replacement{
+									{
+										Path:        "test.txt",
+										Replacement: "combinations",
+										StartLine:   5,
+										EndLine:     5,
+										StartChar:   21,
+										EndChar:     33,
+									},
+								},
+							},
+						},
+					},
+					{
+						Path:      "test.txt",
+						Message:   `"Carnigie-Mellon" is a possible misspelling of: Carnegie-Mellon`,
+						Category:  "SpellChecker",
+						StartLine: 8,
+						EndLine:   8,
+						StartChar: 0,
+						EndChar:   15,
+						Suggestions: []*tricium.Data_Suggestion{
+							{
+								Description: "Misspelling fix suggestion",
+								Replacements: []*tricium.Data_Replacement{
+									{
+										Path:        "test.txt",
+										Replacement: "Carnegie-Mellon",
+										StartLine:   8,
+										EndLine:     8,
+										StartChar:   0,
+										EndChar:     15,
+									},
+								},
+							},
+						},
 					},
 				},
 			}
 
 			results := &tricium.Data_Results{}
 			scanCodespellOutput(bufio.NewScanner(strings.NewReader(output)),
-				bufio.NewScanner(strings.NewReader("aberation\niminent\nwanna\nnormal line\nwanna test some combinatins\n")),
+				bufio.NewScanner(strings.NewReader("aberation\niminent\nwanna\nnormal line\n"+
+					"iminent to test some combinatins\ngae\nnormal line\nCarnigie-Mellon")),
 				results, nil)
 			So(results, ShouldResemble, expected)
 		})
