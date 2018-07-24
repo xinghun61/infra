@@ -2,38 +2,29 @@
 
 ## What (is it)?
 
-It's a service (aka a bot) that commits Rietveld and Gerrit changes for you,
+It's a service (aka a bot) that commits Gerrit changes for you,
 instead of you directly committing the change. We support a wide variety of
 projects already and can support your project too (see [internal docs]).
 
-For enabled projects, we display a CQ checkbox/button on Rietveld interface.
+For enabled projects, we display a CQ checkbox/button on Gerrit interface.
 
 ## How (does it work)?
 
 The commit queue is not really a queue at the moment, since it processes the
 changes out of order. This may be changed eventually. This means a CL can be
-committed before another CL that was triggered much later. This can happen when
-a try job is flaky.
+committed before another CL that was triggered much earlier. This can happen
+when a try job is flaky.
 
 ### Current process for the user
 
-1. Upload a review to rietveld where it gets reviewed and LGTM'ed.
+1. Upload a review to Gerrit where it gets reviewed and LGTM'ed.
 1. One of:
-    1. Check (select) the 'Commit' checkbox on a Rietveld issue, on the
-       particular patchset that has been approved. Checking the checkbox is the
-       only action required and there will be no immediate feedback in the form
-       of messages, etc, to notify you that something has happened.
-        1. Only the issue owner, someone at @chromium.org or @google.com can
-           check the box.
-        1. Yes, **non-Chromium committers are allowed** to use the commit queue
-           but their LGTM (approval) on other issues is not accepted.
+    1. In Gerrit, click "REPLY" and then under "Commit-Queue", select +2 and
+       then click "SEND".
     1. At the command line, type `git cl set_commit`.
-    1. Have a reviewer use 'Quick LGTM & CQ'.
-1. Wait an hour. The current list of patches to be queued can be found at
-   [Commit Queue Patches], while CQ progress can be tracked at the link posted
-   by CQ on the CL (after some delay at which CQ checks for new CLs). The commit
-   queue will wait automatically for the tree to reopen.
-1. Wait for an email from commit-bot@chromium.org with success or failure.
+1. After a few seconds, CommitBot should post a message to the review saying
+   something like "CQ is trying the patch". Tryjobs will show up on the Gerrit
+   UI.
 
 ### Why (is it broken)?
 
@@ -52,7 +43,7 @@ You may include the following options into the desription of your CL.
 If you are working on experimental code and do not want to risk accidentally
 submitting it via the CQ, then you can mark it with `COMMIT=false`. The CQ will
 immediately abandon the change if it contains this option. To dry run through
-the CQ please use Rietveld's dry run feature.
+the CQ please use Gerrit's dry run feature.
 
     TBR=<username>
 
@@ -138,7 +129,7 @@ waiting for a review with:
     # Quick, write your fix.
     echo "A copy is available for 100000$USD upon request." >> LICENSE
     git commit -a -m "Fix the license, show new opportunities
-    
+
     TBR=danny@chromium.org"
     git cl upload --send-mail -c
 
@@ -156,13 +147,13 @@ Now, did you know there's `git cl help upload`?
 
 ### Sending CL through CQ without committing (dry run)
 
-To dry run through the CQ please use Rietveld's [dry run] feature.
+To dry run through the CQ please use Gerrit's [dry run] feature.
 
 ### Picking custom trybots
 
 See the `CQ_INCLUDE_TRYBOTS` option, above.
 
-### Try job results aren't showing up consistently on Rietveld
+### Try job results aren't showing up consistently on Gerrit
 
 If you never had a HTTP 500 on GAE, chances are that [you will][gae-500].
 
@@ -175,15 +166,6 @@ Yes, binary files are supported by try jobs as well as CQ now!
 The CQ was able to commit a CL with 838 files so it is technically possible:
 https://codereview.chromium.org/12261012/. The likelihood of the CQ failing
 increases exponentially with the number of files in the CL.
-
-### Moving, renaming or copying files
-
-Was implemented in [bug 125984] and [bug 125983]. If the diff on Rietveld
-doesn't look right, use the `--similarity` (defaults to 50%) and disable/enable
-file copy with `--find-copies`/`--no-find-copies`. For more help please run:
-
-    git cl help
-    man git diff
 
 ### Are CQ users required to be around when the patch is landed?
 
