@@ -68,40 +68,42 @@ def RunSteps(api):
           'yasm',
           # 'zlib',  # TODO(thomasanderson): Add libminizip-dev to sysroots.
       ]
-      api.python('Download sysroot.',
-                 api.path.join(src_dir, 'build', 'linux', 'sysroot_scripts',
-                               'install-sysroot.py'), ['--arch=amd64'])
-      api.python('Build clang.',
-                 api.path.join(src_dir, 'tools', 'clang', 'scripts',
-                               'update.py'), [
-                                   '--force-local-build', '--if-needed',
-                                   '--without-android', '--skip-checkout'
-                               ])
+      api.python(
+          'Download sysroot.',
+          api.path.join(src_dir, 'build', 'linux', 'sysroot_scripts',
+                        'install-sysroot.py'), ['--arch=amd64'])
+      api.python(
+          'Build clang.',
+          api.path.join(src_dir, 'tools', 'clang', 'scripts', 'update.py'), [
+              '--force-local-build', '--if-needed', '--without-android',
+              '--skip-checkout'
+          ])
+      gn_bootstrap_args = ['--gn-gen-args=%s' % ' '.join(gn_args)]
+      if [int(x) for x in version.split('.')] >= [69, 0, 3491, 0]:
+        # TODO(thomasanderson): Add libc++ sources to gn so this flag is not
+        # required.
+        gn_bootstrap_args.append('--with-sysroot')
+        gn_bootstrap_env['LDFLAGS'] = '-fuse-ld=lld'
       with api.context(env=gn_bootstrap_env):
-        args = ['--gn-gen-args=%s' % ' '.join(gn_args)]
-        if [int(x) for x in version.split('.')] >= [69, 0, 3491, 0]:
-          # TODO(thomasanderson): Add libc++ sources to gn so this flag is not
-          # required.
-          args.append('--with-sysroot')
-        api.python('Bootstrap gn.',
-                   api.path.join(src_dir, 'tools', 'gn', 'bootstrap',
-                                 'bootstrap.py'),
-                   args)
-      api.python('Download nodejs.',
-                 api.path.join(src_dir, 'third_party', 'depot_tools',
-                               'download_from_google_storage.py'),
-                 [
-                     '--no_resume', '--extract', '--no_auth', '--bucket',
-                     'chromium-nodejs/8.9.1', '-s',
-                     'third_party/node/linux/node-linux-x64.tar.gz.sha1'
-                 ])
-      api.python('Unbundle libraries.',
-                 api.path.join(src_dir, 'build', 'linux', 'unbundle',
-                               'replace_gn_files.py'),
-                 ['--system-libraries'] + unbundle_libs)
-      api.step('Build chrome.', [
-          'ninja', '-C', 'out/Release', 'chrome/installer/linux'
-      ])
+        api.python(
+            'Bootstrap gn.',
+            api.path.join(src_dir, 'tools', 'gn', 'bootstrap', 'bootstrap.py'),
+            gn_bootstrap_args)
+      api.python(
+          'Download nodejs.',
+          api.path.join(src_dir, 'third_party', 'depot_tools',
+                        'download_from_google_storage.py'), [
+                            '--no_resume', '--extract', '--no_auth', '--bucket',
+                            'chromium-nodejs/8.9.1', '-s',
+                            'third_party/node/linux/node-linux-x64.tar.gz.sha1'
+                        ])
+      api.python(
+          'Unbundle libraries.',
+          api.path.join(src_dir, 'build', 'linux', 'unbundle',
+                        'replace_gn_files.py'),
+          ['--system-libraries'] + unbundle_libs)
+      api.step('Build chrome.',
+               ['ninja', '-C', 'out/Release', 'chrome/installer/linux'])
   finally:
     api.file.rmtree('Cleaning build dir.', build_dir)
 

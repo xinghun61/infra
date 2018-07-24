@@ -60,7 +60,8 @@
       "AR": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/llvm-ar",
       "CC": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/clang",
       "CXX": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/clang++",
-      "LD": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/lld"
+      "LD": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/lld",
+      "LDFLAGS": "-fuse-ld=lld"
     },
     "name": "Bootstrap gn."
   },
