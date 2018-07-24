@@ -13,7 +13,7 @@ import cloudstorage as gcs
 from gae_libs.caches import CompressedMemCache
 from libs.cache_decorator import Cached
 
-_BOT_DB_URL = 'gs://findit-for-me/bot_db.json'
+_BOT_DB_PATH = '/findit-for-me/bot_db.json'
 
 
 class BotDBException(Exception):
@@ -31,12 +31,12 @@ class BotDBException(Exception):
     expire_time=3600)
 def _GetBotDB():
   try:
-    bot_db_text = gcs.open(_BOT_DB_URL).read()
+    bot_db_text = gcs.open(_BOT_DB_PATH).read()
     # Casting as dict because the bot_db is exported as a list of k, v pairs.
     bot_db = dict(json.loads(bot_db_text))
   except (ValueError, gcs.Error) as e:
     raise BotDBException('Bot DB export is invalid or unavailable in %s: %s ' %
-                         (_BOT_DB_URL, e.message))
+                         (_BOT_DB_PATH, e.message))
   return bot_db
 
 
