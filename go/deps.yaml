@@ -368,3 +368,6 @@ import:
 - package: github.com/juju/errors
   repo: https://chromium.googlesource.com/external/github.com/juju/errors.git
   version: master
+- package: github.com/kylelemons/godebug
+  repo: https://chromium.googlesource.com/external/github.com/kylelemons/godebug.git
+  version: master
