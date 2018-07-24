@@ -205,7 +205,7 @@ func TestEndpointsListComments(t *testing.T) {
 			client := NewEndpointsClient(&http.Client{Timeout: time.Second}, srv.URL)
 			res, err := client.ListComments(ctx, req)
 			So(err, ShouldBeNil)
-			So(res, ShouldResemble, &ListCommentsResponse{
+			So(res, ShouldResembleProto, &ListCommentsResponse{
 				TotalResults: 2,
 				Items: []*Comment{
 					&Comment{
@@ -221,6 +221,10 @@ func TestEndpointsListComments(t *testing.T) {
 						Content:       "lol",
 						Published:     "2018-07-02T23:14:59",
 						Id:            1,
+						Updates: &Update{
+							Status: "Started",
+							Labels: []string{"-Type-Task", "Type-Feature"},
+						},
 					},
 				},
 			})

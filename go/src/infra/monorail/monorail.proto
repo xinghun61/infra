@@ -175,7 +175,7 @@ message Update {
     // If set, the new status of the issue.
     string status = 2;
     // Adds or removes labels.
-    repeated string labels = 3;
+    repeated string labels = 4;
     // IsDescription makes the request content the new bug description
     // instead of a new comment.
     bool is_description = 13;
@@ -230,7 +230,8 @@ message Comment {
   // Datetime of when this comment was published.
   string published = 7;
 
-  // Field `updates` is not supported yet.
+  // Updates made to the issue in this comment.
+  Update updates = 8;
 
   // If true, this comment is actually an issue description.
   bool is_description = 10;
