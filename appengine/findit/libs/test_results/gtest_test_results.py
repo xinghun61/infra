@@ -11,12 +11,10 @@ It provides functions to:
 
 import base64
 from collections import defaultdict
-import cStringIO
 
 from libs.gtest_name_util import RemoveAllPrefixesFromTestName
 from libs.test_results.base_test_results import BaseTestResults
 from libs.test_results.classified_test_results import ClassifiedTestResults
-from services import constants
 
 # Invalid gtest result error codes.
 # TODO(crbug.com/785463): Use enum for error codes.

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import mock
 
 from libs.test_results.gtest_test_results import GtestTestResults
@@ -61,24 +62,27 @@ class TestResultsUtilTest(wf_testcase.WaterfallTestCase):
 
     expected_failed_test_log = {
         'bluetooth/requestDevice/chooser/new-scan-device-changed.html': (
-            'third_party/WebKit/LayoutTests/bluetooth/requestDevice/chooser/'
-            'new-scan-device-changed.html'),
-        'virtual/spv2/fast/css/error-in-last-decl.html': (
-            'third_party/WebKit/LayoutTests/fast/css/error-in-last-decl.html'),
+            base64.b64encode('third_party/WebKit/LayoutTests/bluetooth/request'
+                             'Device/chooser/new-scan-device-changed.html')),
+        'virtual/spv2/fast/css/error-in-last-decl.html': base64.b64encode(
+            'third_party/WebKit/LayoutTests/fast/css/error-in-last-decl.html'
+        ),
         'virtual/high-contrast-mode/paint/high-contrast-mode/image-filter-none/'
-        'gradient-noinvert.html': (
-            'third_party/WebKit/LayoutTests/paint/high-contrast-mode/'
-            'image-filter-none/gradient-noinvert.html'),
+        'gradient-noinvert.html':
+            base64.b64encode(
+                'third_party/WebKit/LayoutTests/paint/high-contrast-mode/'
+                'image-filter-none/gradient-noinvert.html'),
         'bluetooth/requestDevice/chooser/new-scan-device-added.html': (
-            'third_party/WebKit/LayoutTests/bluetooth/requestDevice/chooser/'
-            'new-scan-device-added.html'),
+            base64.b64encode('third_party/WebKit/LayoutTests/bluetooth/request'
+                             'Device/chooser/new-scan-device-added.html')),
         'bluetooth/requestDevice/chooser/unknown-status-test.html': (
-            'third_party/WebKit/LayoutTests/bluetooth/requestDevice/chooser/'
-            'unknown-status-test.html'),
+            base64.b64encode('third_party/WebKit/LayoutTests/bluetooth/request'
+                             'Device/chooser/unknown-status-test.html')),
         'virtual/high-contrast-mode/paint/high-contrast-mode/'
-        'image-filter-all/text-on-backgrounds.html': (
-            'third_party/WebKit/LayoutTests/paint/high-contrast-mode/'
-            'image-filter-all/text-on-backgrounds.html')
+        'image-filter-all/text-on-backgrounds.html':
+            base64.b64encode(
+                'third_party/WebKit/LayoutTests/paint/high-contrast-mode/'
+                'image-filter-all/text-on-backgrounds.html')
     }
 
     self.assertEqual(

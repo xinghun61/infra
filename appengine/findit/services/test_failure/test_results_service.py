@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 """Provides functions for Findit's special operations on test results."""
 
+import base64
+
 
 def GetFailedTestsInformationFromTestResult(test_results_object):
   """ Gets logs for failed tests.
@@ -26,6 +28,6 @@ def GetFailedTestsInformationFromTestResult(test_results_object):
       # No failure log for this test.
       test_location, _ = test_results_object.GetTestLocation(test_name)
 
-      failed_test_log[test_name] = test_location['file']
+      failed_test_log[test_name] = base64.b64encode(test_location['file'])
 
   return failed_test_log, reliable_failed_tests
