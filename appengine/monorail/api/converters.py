@@ -507,10 +507,10 @@ def IngestApprovalDelta(cnxn, user_service, approval_delta, setter_id, config):
   fids_by_name = {fd.field_name.lower(): fd.field_id for
                        fd in config.field_defs}
 
-  approver_ids_add = [
-      ref.user_id for ref in approval_delta.approver_refs_add]
-  approver_ids_remove = [
-      ref.user_id for ref in approval_delta.approver_refs_remove]
+  approver_ids_add = IngestUserRefs(
+      cnxn, approval_delta.approver_refs_add, user_service)
+  approver_ids_remove = IngestUserRefs(
+      cnxn, approval_delta.approver_refs_remove, user_service)
   sub_fvs_add = IngestFieldValues(
       cnxn, user_service, approval_delta.field_vals_add, config)
   sub_fvs_remove = IngestFieldValues(
