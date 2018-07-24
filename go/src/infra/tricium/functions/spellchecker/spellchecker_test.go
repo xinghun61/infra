@@ -41,7 +41,7 @@ func TestPylintParsingFunctions(t *testing.T) {
 				"test.txt:3: wanna  ==> want to  | disabled because one might want to allow informal pronunciation\n" +
 				"test.txt:5: iminent  ==> eminent, imminent, immanent\n" +
 				"test.txt:5: combinatins  ==> combinations\n" +
-				"test.txt:6: gae  ==> gael, game\n" +
+				"test.txt:6: GAE  ==> gael, game\n" +
 				"test.txt:8: Carnigie-Mellon  ==> Carnegie-Mellon\n"
 
 			expected := &tricium.Data_Results{
@@ -224,7 +224,7 @@ func TestPylintParsingFunctions(t *testing.T) {
 			results := &tricium.Data_Results{}
 			scanCodespellOutput(bufio.NewScanner(strings.NewReader(output)),
 				bufio.NewScanner(strings.NewReader("aberation\niminent\nwanna\nnormal line\n"+
-					"iminent to test some combinatins\ngae\nnormal line\nCarnigie-Mellon")),
+					"iminent to test some combinatins\nGAE\nnormal line\nCarnigie-Mellon")),
 				results, nil)
 			So(results, ShouldResemble, expected)
 		})

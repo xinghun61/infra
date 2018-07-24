@@ -251,11 +251,11 @@ func findWordInLine(word string, line string) (int, int) {
 	return startChar, startChar + len(word)
 }
 
-// Checks whether a word is in the whitelist (in case it is a misspelling according to
-// CodeSpell but is used frequently in the codebase i.e. GAE).
+// Checks whether a word is in the whitelist (case-insensitive) in case it is a misspelling
+// according to CodeSpell but is used frequently in the codebase i.e. GAE.
 func isWhitelisted(word string) bool {
 	for _, w := range whitelistWords {
-		if w == word {
+		if strings.EqualFold(w, word) {
 			return true
 		}
 	}
