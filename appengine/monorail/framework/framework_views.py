@@ -76,6 +76,7 @@ class UserView(object):
 
   def __init__(self, user, is_group=False):
     self.user = user
+    self.is_group = is_group
     email = user.email or ''
     self.user_id = user.user_id
     self.email = email

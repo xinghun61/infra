@@ -16,6 +16,7 @@ service Projects {
   rpc ListProjects (ListProjectsRequest) returns (ListProjectsResponse) {}
   rpc GetConfig (GetConfigRequest) returns (Config) {}
   rpc GetCustomPermissions (GetCustomPermissionsRequest) returns (GetCustomPermissionsResponse) {}
+  rpc GetVisibleMembers (GetVisibleMembersRequest) returns (GetVisibleMembersResponse) {}
 }
 
 
@@ -46,4 +47,16 @@ message GetCustomPermissionsRequest {
 // Next available tag: 2
 message GetCustomPermissionsResponse {
   repeated string permissions = 1;
+}
+
+// Next available tag: 3
+message GetVisibleMembersRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+}
+
+// Next available tag: 3
+message GetVisibleMembersResponse {
+  repeated UserRef user_refs = 1;
+  repeated UserRef group_refs = 2;
 }

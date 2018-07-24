@@ -14,6 +14,7 @@ from businesslogic import work_env
 from framework import framework_views
 from framework import permissions
 from tracker import tracker_bizobj
+from tracker import tracker_helpers
 
 
 class ProjectsServicer(monorail_servicer.MonorailServicer):
@@ -72,4 +73,20 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
     result = projects_pb2.GetCustomPermissionsResponse(
         permissions=custom_permissions)
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def GetVisibleMembers(self, mc, request):
+    """Return the custom permissions for the given project."""
+    project = self._GetProject(mc, request)
+
+    users_by_id = tracker_helpers.GetVisibleMembers(mc, project, self.services)
+
+    user_refs = converters.ConvertUserRefs(sorted(users_by_id), [], users_by_id)
+    group_refs = converters.ConvertUserRefs(
+        sorted(uv.user_id for uv in users_by_id.values() if uv.is_group), [],
+        users_by_id)
+
+    result = projects_pb2.GetVisibleMembersResponse(
+        user_refs=user_refs, group_refs=group_refs)
     return result

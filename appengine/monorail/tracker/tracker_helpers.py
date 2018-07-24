@@ -29,6 +29,7 @@ from framework import template_helpers
 from framework import urls
 from tracker import tracker_bizobj
 from tracker import tracker_constants
+from services import client_config_svc
 
 
 # HTML input field names for blocked on and blocking issue refs.
@@ -946,6 +947,97 @@ def IsMergeAllowed(merge_into_issue, mr, services):
       granted_perms=merge_granted_perms)
 
   return merge_view_allowed and merge_edit_allowed
+
+
+def GetVisibleMembers(mr, project, services):
+  all_member_ids = framework_bizobj.AllProjectMembers(project)
+
+  all_group_ids = services.usergroup.DetermineWhichUserIDsAreGroups(
+      mr.cnxn, all_member_ids)
+
+  (ac_exclusion_ids, no_expand_ids
+   ) = services.project.GetProjectAutocompleteExclusion(
+      mr.cnxn, project.project_id)
+
+  group_ids_to_expand = [
+    gid for gid in all_group_ids if gid not in no_expand_ids]
+
+  # TODO(jrobbins): Normally, users will be allowed view the members
+  # of any user group if the project From: email address is listed
+  # as a group member, as well as any group that they are personally
+  # members of.
+  member_ids, owner_ids = services.usergroup.LookupVisibleMembers(
+      mr.cnxn, group_ids_to_expand, mr.perms, mr.auth.effective_ids, services)
+  indirect_user_ids = set()
+  for gids in member_ids.values():
+    indirect_user_ids.update(gids)
+  for gids in owner_ids.values():
+    indirect_user_ids.update(gids)
+
+  visible_member_ids = _FilterMemberData(
+      mr, project.owner_ids, project.committer_ids, project.contributor_ids,
+      indirect_user_ids, project)
+
+  visible_member_views = framework_views.MakeAllUserViews(
+      mr.cnxn, services.user, visible_member_ids, group_ids=all_group_ids)
+
+  # Filter out service accounts
+  service_acct_emails = set(
+      client_config_svc.GetClientConfigSvc().GetClientIDEmails()[1])
+  visible_member_views = {
+      m.user_id: m
+      for m in visible_member_views.values()
+      if not framework_helpers.IsServiceAccount(
+        m.email, client_emails=service_acct_emails)
+      and not m.user_id in ac_exclusion_ids}
+
+  return visible_member_views
+
+
+def _FilterMemberData(
+    mr, owner_ids, committer_ids, contributor_ids, indirect_member_ids,
+    project):
+  """Return a filtered list of members that the user can view.
+
+  In most projects, everyone can view the entire member list.  But,
+  some projects are configured to only allow project owners to see
+  all members. In those projects, committers and contributors do not
+  see any contributors.  Regardless of how the project is configured
+  or the role that the user plays in the current project, we include
+  any indirect members through user groups that the user has access
+  to view.
+
+  Args:
+    mr: Commonly used info parsed from the HTTP request.
+    owner_views: list of user IDs for project owners.
+    committer_views: list of user IDs for project committers.
+    contributor_views: list of user IDs for project contributors.
+    indirect_member_views: list of user IDs for users who have
+        an indirect role in the project via a user group, and that the
+        logged in user is allowed to see.
+    project: the Project we're interested in.
+
+  Returns:
+    A list of owners, committer and visible indirect members if the user is not
+    signed in.  If the project is set to display contributors to non-owners or
+    the signed in user has necessary permissions then additionally a list of
+    contributors.
+  """
+  visible_members_ids = set()
+
+  # Everyone can view owners and committers
+  visible_members_ids.update(owner_ids)
+  visible_members_ids.update(committer_ids)
+
+  # The list of indirect members is already limited to ones that the user
+  # is allowed to see according to user group settings.
+  visible_members_ids.update(indirect_member_ids)
+
+  # If the user is allowed to view the list of contributors, add those too.
+  if permissions.CanViewContributorList(mr, project):
+    visible_members_ids.update(contributor_ids)
+
+  return sorted(visible_members_ids)
 
 
 class Error(Exception):

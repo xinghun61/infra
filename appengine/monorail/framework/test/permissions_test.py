@@ -726,13 +726,13 @@ class CanViewProjectContributorListTest(unittest.TestCase):
 
   def testCanViewProjectContributorList_NoProject(self):
     mr = testing_helpers.MakeMonorailRequest(path='/')
-    self.assertFalse(permissions.CanViewContributorList(mr))
+    self.assertFalse(permissions.CanViewContributorList(mr, mr.project))
 
   def testCanViewProjectContributorList_NormalProject(self):
     project = project_pb2.Project()
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/', project=project)
-    self.assertTrue(permissions.CanViewContributorList(mr))
+    self.assertTrue(permissions.CanViewContributorList(mr, mr.project))
 
   def testCanViewProjectContributorList_ProjectWithOptionSet(self):
     project = project_pb2.Project()
@@ -743,7 +743,7 @@ class CanViewProjectContributorListTest(unittest.TestCase):
                   permissions.CONTRIBUTOR_INACTIVE_PERMISSIONSET]:
       mr = testing_helpers.MakeMonorailRequest(
           path='/p/proj/', project=project, perms=perms)
-      self.assertFalse(permissions.CanViewContributorList(mr))
+      self.assertFalse(permissions.CanViewContributorList(mr, mr.project))
 
     for perms in [permissions.COMMITTER_ACTIVE_PERMISSIONSET,
                   permissions.COMMITTER_INACTIVE_PERMISSIONSET,
@@ -752,7 +752,7 @@ class CanViewProjectContributorListTest(unittest.TestCase):
                   permissions.ADMIN_PERMISSIONSET]:
       mr = testing_helpers.MakeMonorailRequest(
           path='/p/proj/', project=project, perms=perms)
-      self.assertTrue(permissions.CanViewContributorList(mr))
+      self.assertTrue(permissions.CanViewContributorList(mr, mr.project))
 
 
 class ShouldCheckForAbandonmentTest(unittest.TestCase):

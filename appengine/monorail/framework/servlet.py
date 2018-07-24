@@ -675,7 +675,7 @@ class Servlet(webapp2.RequestHandler):
         'project': project_view,
         'project_is_restricted': ezt.boolean(_ProjectIsRestricted(mr)),
         'offer_contributor_list': ezt.boolean(
-            permissions.CanViewContributorList(mr)),
+            permissions.CanViewContributorList(mr, mr.project)),
         'logged_in_user': mr.auth.user_view,
         'form_token': None,  # Set to a value below iff the user is logged in.
         'form_token_path': None,

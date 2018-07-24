@@ -52,7 +52,7 @@ class PeopleDetail(servlet.Servlet):
     member_id = self.ValidateMemberID(mr.cnxn, mr.specified_user_id, mr.project)
     # For now, contributors who cannot view other contributors are further
     # restricted from viewing any part of the member list or detail pages.
-    if (not permissions.CanViewContributorList(mr) and
+    if (not permissions.CanViewContributorList(mr, mr.project) and
         member_id != mr.auth.user_id):
       raise permissions.PermissionException(
           'User is not allowed to view other people\'s details')

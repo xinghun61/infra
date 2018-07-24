@@ -13,6 +13,7 @@ import logging
 from third_party import ezt
 
 from framework import authdata
+from framework import framework_bizobj
 from framework import framework_helpers
 from framework import framework_views
 from framework import jsonfeed
@@ -20,7 +21,6 @@ from framework import permissions
 from project import project_helpers
 from tracker import tracker_helpers
 from tracker import tracker_views
-from services import client_config_svc
 
 
 # Here are some restriction labels to help people do the most common things
@@ -99,15 +99,19 @@ class IssueMembersOptionsJSON(jsonfeed.JsonFeed):
     self.SetCacheHeaders(self.response)
 
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    (visible_member_views, visible_member_email_list,
-        visible_group_emails) = GetMemberOptions(mr, self.services)
-    fields = GetFieldOptions(mr, self.services, config,
-        visible_member_views, visible_member_email_list)
+
+    member_views = tracker_helpers.GetVisibleMembers(
+        mr, mr.project, self.services).values()
+    member_emails = sorted(set(uv.email for uv in member_views))
+    group_emails = sorted(set(uv.email for uv in member_views if uv.is_group))
+
+    fields = GetFieldOptions(mr, self.services, config, member_views,
+                             member_emails)
 
     return {
       'fields': fields,
-      'members': visible_member_email_list,
-      'group_emails': visible_group_emails,
+      'members': member_emails,
+      'group_emails': group_emails,
     }
 
 
@@ -224,110 +228,6 @@ def GetFieldOptions(mr, services, config, visible_member_views,
 
       field_dict['user_indexes'] = sorted(set(qualified_user_indexes))
   return fields
-
-
-def GetMemberOptions(mr, services):
-  member_data = project_helpers.BuildProjectMembers(
-      mr.cnxn, mr.project, services.user)
-  owner_views = member_data['owners']
-  committer_views = member_data['committers']
-  contributor_views = member_data['contributors']
-
-  all_group_ids = services.usergroup.DetermineWhichUserIDsAreGroups(
-      mr.cnxn, [mem.user_id for mem in member_data['all_members']])
-
-  (ac_exclusion_ids, no_expand_ids
-   ) = services.project.GetProjectAutocompleteExclusion(
-      mr.cnxn, mr.project_id)
-  group_ids_to_expand = [
-    gid for gid in all_group_ids if gid not in no_expand_ids]
-
-  # TODO(jrobbins): Normally, users will be allowed view the members
-  # of any user group if the project From: email address is listed
-  # as a group member, as well as any group that they are personally
-  # members of.
-  member_ids, owner_ids = services.usergroup.LookupVisibleMembers(
-      mr.cnxn, group_ids_to_expand, mr.perms, mr.auth.effective_ids, services)
-  indirect_ids = set()
-  for gid in all_group_ids:
-    indirect_ids.update(member_ids.get(gid, []))
-    indirect_ids.update(owner_ids.get(gid, []))
-  indirect_user_ids = list(indirect_ids)
-  indirect_member_views = framework_views.MakeAllUserViews(
-      mr.cnxn, services.user, indirect_user_ids).values()
-
-  visible_member_views = _FilterMemberData(
-      mr, owner_views, committer_views, contributor_views,
-      indirect_member_views)
-  # Filter out service accounts
-  _, service_acct_emails = (
-      client_config_svc.GetClientConfigSvc().GetClientIDEmails())
-  service_acct_emails = set(service_acct_emails)
-  visible_member_views = [
-      m for m in visible_member_views
-      if not framework_helpers.IsServiceAccount(
-        m.email, client_emails=service_acct_emails)
-      and not m.user_id in ac_exclusion_ids]
-  visible_member_email_list = sorted(set(
-      uv.email for uv in visible_member_views))
-  visible_members_dict = {}
-  for uv in visible_member_views:
-    visible_members_dict[uv.email] = uv.user_id
-  all_visible_group_ids = set(services.usergroup.DetermineWhichUserIDsAreGroups(
-      mr.cnxn, visible_members_dict.values()))
-
-  visible_group_emails = []
-  for email in visible_member_email_list:
-    member_id = visible_members_dict[email]
-    if member_id in all_visible_group_ids:
-      visible_group_emails.append(email)
-
-  return visible_member_views, visible_member_email_list, visible_group_emails
-
-
-def _FilterMemberData(
-    mr, owner_views, committer_views, contributor_views,
-    indirect_member_views):
-  """Return a filtered list of members that the user can view.
-
-  In most projects, everyone can view the entire member list.  But,
-  some projects are configured to only allow project owners to see
-  all members. In those projects, committers and contributors do not
-  see any contributors.  Regardless of how the project is configured
-  or the role that the user plays in the current project, we include
-  any indirect members through user groups that the user has access
-  to view.
-
-  Args:
-    mr: Commonly used info parsed from the HTTP request.
-    owner_views: list of UserViews for project owners.
-    committer_views: list of UserViews for project committers.
-    contributor_views: list of UserViews for project contributors.
-    indirect_member_views: list of UserViews for users who have
-        an indirect role in the project via a user group, and that the
-        logged in user is allowed to see.
-
-  Returns:
-    A list of owners, committer and visible indirect members if the user is not
-    signed in.  If the project is set to display contributors to non-owners or
-    the signed in user has necessary permissions then additionally a list of
-    contributors.
-  """
-  visible_members = []
-
-  # Everyone can view owners and committers
-  visible_members.extend(owner_views)
-  visible_members.extend(committer_views)
-
-  # The list of indirect members is already limited to ones that the user
-  # is allowed to see according to user group settings.
-  visible_members.extend(indirect_member_views)
-
-  # If the user is allowed to view the list of contributors, add those too.
-  if permissions.CanViewContributorList(mr):
-    visible_members.extend(contributor_views)
-
-  return visible_members
 
 
 def _BuildRestrictionChoices(project, freq_restrictions, actions):

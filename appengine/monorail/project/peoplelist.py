@@ -39,7 +39,7 @@ class PeopleList(servlet.Servlet):
     super(PeopleList, self).AssertBasePermission(mr)
     # For now, contributors who cannot view other contributors are further
     # restricted from viewing any part of the member list or detail pages.
-    if not permissions.CanViewContributorList(mr):
+    if not permissions.CanViewContributorList(mr, mr.project):
       raise permissions.PermissionException(
           'User is not allowed to view the project people list')
 

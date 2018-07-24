@@ -1146,3 +1146,90 @@ class IssueMergeTest(unittest.TestCase):
         self.cnxn, 2)
     # XXX(jrobbins): these tests incorrectly mix local IDs with IIDs.
     self.assertItemsEqual([1, 2, 3, 4, 5], issue_2_starrers)
+
+
+class FilterMemberDataTest(unittest.TestCase):
+
+  def setUp(self):
+    services = service_manager.Services(
+        project=fake.ProjectService(),
+        config=fake.ConfigService(),
+        issue=fake.IssueService(),
+        user=fake.UserService())
+    self.owner_email = 'owner@dom.com'
+    self.committer_email = 'commit@dom.com'
+    self.contributor_email = 'contrib@dom.com'
+    self.indirect_member_email = 'ind@dom.com'
+    self.all_emails = [self.owner_email, self.committer_email,
+                       self.contributor_email, self.indirect_member_email]
+    self.project = services.project.TestAddProject('proj')
+
+  def DoFiltering(self, perms, unsigned_user=False):
+    mr = testing_helpers.MakeMonorailRequest(
+        project=self.project, perms=perms)
+    if not unsigned_user:
+      mr.auth.user_id = 111L
+      mr.auth.user_view = testing_helpers.Blank(domain='jrobbins.org')
+    return tracker_helpers._FilterMemberData(
+        mr, [self.owner_email], [self.committer_email],
+        [self.contributor_email], [self.indirect_member_email], mr.project)
+
+  def testUnsignedUser_NormalProject(self):
+    visible_members = self.DoFiltering(
+        permissions.READ_ONLY_PERMISSIONSET, unsigned_user=True)
+    self.assertItemsEqual(
+        [self.owner_email, self.committer_email, self.contributor_email,
+         self.indirect_member_email],
+        visible_members)
+
+  def testUnsignedUser_RestrictedProject(self):
+    self.project.only_owners_see_contributors = True
+    visible_members = self.DoFiltering(
+        permissions.READ_ONLY_PERMISSIONSET, unsigned_user=True)
+    self.assertItemsEqual(
+        [self.owner_email, self.committer_email, self.indirect_member_email],
+        visible_members)
+
+  def testOwnersAndAdminsCanSeeAll_NormalProject(self):
+    visible_members = self.DoFiltering(
+        permissions.OWNER_ACTIVE_PERMISSIONSET)
+    self.assertItemsEqual(self.all_emails, visible_members)
+
+    visible_members = self.DoFiltering(
+        permissions.ADMIN_PERMISSIONSET)
+    self.assertItemsEqual(self.all_emails, visible_members)
+
+  def testOwnersAndAdminsCanSeeAll_HubAndSpoke(self):
+    self.project.only_owners_see_contributors = True
+
+    visible_members = self.DoFiltering(
+        permissions.OWNER_ACTIVE_PERMISSIONSET)
+    self.assertItemsEqual(self.all_emails, visible_members)
+
+    visible_members = self.DoFiltering(
+        permissions.ADMIN_PERMISSIONSET)
+    self.assertItemsEqual(self.all_emails, visible_members)
+
+    visible_members = self.DoFiltering(
+        permissions.COMMITTER_ACTIVE_PERMISSIONSET)
+    self.assertItemsEqual(self.all_emails, visible_members)
+
+  def testNonOwnersCanSeeAll_NormalProject(self):
+    visible_members = self.DoFiltering(
+        permissions.COMMITTER_ACTIVE_PERMISSIONSET)
+    self.assertItemsEqual(self.all_emails, visible_members)
+
+    visible_members = self.DoFiltering(
+        permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET)
+    self.assertItemsEqual(self.all_emails, visible_members)
+
+  def testCommittersSeeOnlySameDomain_HubAndSpoke(self):
+    self.project.only_owners_see_contributors = True
+
+    visible_members = self.DoFiltering(
+        permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET)
+    self.assertItemsEqual(
+        [self.owner_email, self.committer_email, self.indirect_member_email],
+        visible_members)
+
+

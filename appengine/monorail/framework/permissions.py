@@ -716,7 +716,7 @@ def CanBan(mr, services):
       mr.auth.effective_ids)
   return len(owned) > 0
 
-def CanViewContributorList(mr):
+def CanViewContributorList(mr, project):
   """Return True if we should display the list project contributors.
 
   This is used on the project summary page, when deciding to offer the
@@ -725,20 +725,21 @@ def CanViewContributorList(mr):
 
   Args:
     mr: commonly used info parsed from the request.
+    project: the Project we're interested in.
 
   Returns:
     True if we should display the project contributor list.
   """
-  if not mr.project:
+  if not project:
     return False  # We are not even in a project context.
 
-  if not mr.project.only_owners_see_contributors:
+  if not project.only_owners_see_contributors:
     return True  # Contributor list is not resticted.
 
   # If it is hub-and-spoke, check for the perm that allows the user to
   # view it anyway.
   return mr.perms.HasPerm(
-      VIEW_CONTRIBUTOR_LIST, mr.auth.user_id, mr.project)
+      VIEW_CONTRIBUTOR_LIST, mr.auth.user_id, project)
 
 
 def ShouldCheckForAbandonment(mr):

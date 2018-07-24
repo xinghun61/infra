@@ -35,9 +35,30 @@ class ProjectsServicerTest(unittest.TestCase):
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService(),
         features=fake.FeaturesService())
+
+    self.services.user.TestAddUser('owner@example.com', 111L)
+    self.services.user.TestAddUser('user_222@example.com', 222L)
+    self.services.user.TestAddUser('user_333@example.com', 333L)
+    self.services.user.TestAddUser('user_444@example.com', 444L)
+    self.services.user.TestAddUser('user_666@example.com', 666L)
+
+    # User group 888 has members: user_555 and proj@monorail.com
+    self.services.user.TestAddUser('group888@googlegroups.com', 888L)
+    self.services.usergroup.TestAddGroupSettings(
+        888L, 'group888@googlegroups.com')
+    self.services.usergroup.TestAddMembers(888L, [555L, 1001L])
+
+    # User group 999 has members: user_111 and user_444
+    self.services.user.TestAddUser('group999@googlegroups.com', 999L)
+    self.services.usergroup.TestAddGroupSettings(
+        999L, 'group999@googlegroups.com')
+    self.services.usergroup.TestAddMembers(999L, [111L, 444L])
+
     self.project = self.services.project.TestAddProject(
-        'proj', project_id=789, owner_ids=[111L])
-    self.user = self.services.user.TestAddUser('owner@example.com', 111L)
+        'proj', project_id=789)
+    self.project.owner_ids.extend([111L])
+    self.project.committer_ids.extend([222L])
+    self.project.contributor_ids.extend([333L])
     self.projects_svcr = projects_servicer.ProjectsServicer(
         self.services, make_rate_limiter=False)
     self.prpc_context = context.ServicerContext()
@@ -173,3 +194,77 @@ class ProjectsServicerTest(unittest.TestCase):
     response = self.CallWrapped(
         self.projects_svcr.GetCustomPermissions, mc, request)
     self.assertEqual([], response.permissions)
+
+  def testGetVisibleMembers_NotSignedIn(self):
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    response = self.CallWrapped(
+        self.projects_svcr.GetVisibleMembers, mc, request)
+    self.assertEqual(
+        [111L, 222L, 333L],
+        [user_ref.user_id for user_ref in response.user_refs])
+    self.assertEqual(0, len(response.group_refs))
+
+  def assertVisibleMembers(self, expected_user_ids, expected_group_ids,
+                           requester=None):
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester=requester)
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.projects_svcr.GetVisibleMembers, mc, request)
+    self.assertEqual(
+        expected_user_ids,
+        [user_ref.user_id for user_ref in response.user_refs])
+    self.assertEqual(
+        expected_group_ids,
+        [group_ref.user_id for group_ref in response.group_refs])
+    return response
+
+  def testGetVisibleMembers_Normal(self):
+    # Not logged in
+    self.assertVisibleMembers([111L, 222L, 333L], [])
+    # Logged in
+    self.assertVisibleMembers([111L, 222L, 333L], [],
+                              requester='foo@example.com')
+    # Logged in as owner
+    self.assertVisibleMembers([111L, 222L, 333L], [],
+                              requester='owner@example.com')
+    # Logged in as comitter
+    self.assertVisibleMembers([111L, 222L, 333L], [],
+                              requester='user_222@example.com')
+    # Logged in as contributor
+    self.assertVisibleMembers([111L, 222L, 333L], [],
+                              requester='user_333@example.com')
+
+  def testGetVisibleMembers_OnlyOwnersSeeContributors(self):
+    self.project.only_owners_see_contributors = True
+    # Not logged in
+    self.assertVisibleMembers([111L, 222L], [])
+    # Logged in
+    self.assertVisibleMembers([111L, 222L], [],
+                              requester='foo@example.com')
+    # Logged in as owner
+    self.assertVisibleMembers([111L, 222L, 333L], [],
+                              requester='owner@example.com')
+    # Logged in as comitter
+    self.assertVisibleMembers([111L, 222L, 333L], [],
+                              requester='user_222@example.com')
+    # Logged in as contributor
+    self.assertVisibleMembers([111L, 222L], [],
+                              requester='user_333@example.com')
+
+  def testGetVisibleMembers_MemberIsGroup(self):
+    self.project.contributor_ids.extend([999L])
+    self.assertVisibleMembers([111L, 222L, 333L, 444L, 999L], [999L],
+                              requester='owner@example.com')
+
+  def testGetVisibleMembers_AcExclusion(self):
+    self.services.project.ac_exclusion_ids[self.project.project_id] = [333L]
+    self.assertVisibleMembers([111L, 222L], [], requester='owner@example.com')
+
+  def testGetVisibleMembers_NoExpand(self):
+    self.services.project.no_expand_ids[self.project.project_id] = [999L]
+    self.project.contributor_ids.extend([999L])
+    self.assertVisibleMembers([111L, 222L, 333L, 999L], [999L],
+                              requester='owner@example.com')
