@@ -13,48 +13,19 @@ from google.protobuf import descriptor_pb2
 _sym_db = _symbol_database.Default()
 
 
+from api.api_proto import common_pb2 as api_dot_api__proto_dot_common__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/users.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x19\x61pi/api_proto/users.proto\x12\x08monorail\"\x1f\n\x0eGetUserRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\"!\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x03\x32>\n\x05Users\x12\x35\n\x07GetUser\x12\x18.monorail.GetUserRequest\x1a\x0e.monorail.User\"\x00\x62\x06proto3')
-)
+  serialized_pb=_b('\n\x19\x61pi/api_proto/users.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"&\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\",\n\x1aListReferencedUsersRequest\x12\x0e\n\x06\x65mails\x18\x01 \x03(\t\"<\n\x1bListReferencedUsersResponse\x12\x1d\n\x05users\x18\x01 \x03(\x0b\x32\x0e.monorail.User2\x9d\x01\n\x05Users\x12.\n\x07GetUser\x12\x11.monorail.UserRef\x1a\x0e.monorail.User\"\x00\x12\x64\n\x13ListReferencedUsers\x12$.monorail.ListReferencedUsersRequest\x1a%.monorail.ListReferencedUsersResponse\"\x00\x62\x06proto3')
+  ,
+  dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
-
-
-_GETUSERREQUEST = _descriptor.Descriptor(
-  name='GetUserRequest',
-  full_name='monorail.GetUserRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='email', full_name='monorail.GetUserRequest.email', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=39,
-  serialized_end=70,
-)
 
 
 _USER = _descriptor.Descriptor(
@@ -72,7 +43,7 @@ _USER = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='id', full_name='monorail.User.id', index=1,
+      name='user_id', full_name='monorail.User.user_id', index=1,
       number=2, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -90,19 +61,76 @@ _USER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=72,
+  serialized_start=67,
   serialized_end=105,
 )
 
-DESCRIPTOR.message_types_by_name['GetUserRequest'] = _GETUSERREQUEST
-DESCRIPTOR.message_types_by_name['User'] = _USER
 
-GetUserRequest = _reflection.GeneratedProtocolMessageType('GetUserRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETUSERREQUEST,
-  __module__ = 'api.api_proto.users_pb2'
-  # @@protoc_insertion_point(class_scope:monorail.GetUserRequest)
-  ))
-_sym_db.RegisterMessage(GetUserRequest)
+_LISTREFERENCEDUSERSREQUEST = _descriptor.Descriptor(
+  name='ListReferencedUsersRequest',
+  full_name='monorail.ListReferencedUsersRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='emails', full_name='monorail.ListReferencedUsersRequest.emails', index=0,
+      number=1, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=107,
+  serialized_end=151,
+)
+
+
+_LISTREFERENCEDUSERSRESPONSE = _descriptor.Descriptor(
+  name='ListReferencedUsersResponse',
+  full_name='monorail.ListReferencedUsersResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='users', full_name='monorail.ListReferencedUsersResponse.users', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=153,
+  serialized_end=213,
+)
+
+_LISTREFERENCEDUSERSRESPONSE.fields_by_name['users'].message_type = _USER
+DESCRIPTOR.message_types_by_name['User'] = _USER
+DESCRIPTOR.message_types_by_name['ListReferencedUsersRequest'] = _LISTREFERENCEDUSERSREQUEST
+DESCRIPTOR.message_types_by_name['ListReferencedUsersResponse'] = _LISTREFERENCEDUSERSRESPONSE
 
 User = _reflection.GeneratedProtocolMessageType('User', (_message.Message,), dict(
   DESCRIPTOR = _USER,
@@ -110,6 +138,20 @@ User = _reflection.GeneratedProtocolMessageType('User', (_message.Message,), dic
   # @@protoc_insertion_point(class_scope:monorail.User)
   ))
 _sym_db.RegisterMessage(User)
+
+ListReferencedUsersRequest = _reflection.GeneratedProtocolMessageType('ListReferencedUsersRequest', (_message.Message,), dict(
+  DESCRIPTOR = _LISTREFERENCEDUSERSREQUEST,
+  __module__ = 'api.api_proto.users_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.ListReferencedUsersRequest)
+  ))
+_sym_db.RegisterMessage(ListReferencedUsersRequest)
+
+ListReferencedUsersResponse = _reflection.GeneratedProtocolMessageType('ListReferencedUsersResponse', (_message.Message,), dict(
+  DESCRIPTOR = _LISTREFERENCEDUSERSRESPONSE,
+  __module__ = 'api.api_proto.users_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.ListReferencedUsersResponse)
+  ))
+_sym_db.RegisterMessage(ListReferencedUsersResponse)
 
 
 # @@protoc_insertion_point(module_scope)

@@ -14,8 +14,10 @@ from api import converters
 from api.api_proto import common_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import issues_pb2
+from api.api_proto import users_pb2
 from framework import exceptions
 from proto import tracker_pb2
+from proto import user_pb2
 from testing import fake
 from testing import testing_helpers
 from tracker import tracker_bizobj
@@ -208,6 +210,17 @@ class ConverterFunctionsTest(unittest.TestCase):
           user_id=222L, is_derived=True, display_name='two@example.com'),
       ]
     self.assertEqual(expected, actual)
+
+  def testConvertUser(self):
+    """We can convert lists of protorpc Users to protoc Users."""
+    user1 = user_pb2.User(user_id=1, email='user1@example.com')
+    user2 = user_pb2.User(user_id=2, email='user2@example.com')
+    actual = converters.ConvertUsers([user1, user2])
+    self.assertEqual(len(actual), 2)
+    self.assertItemsEqual(
+        actual,
+        [users_pb2.User(user_id=1, email='user1@example.com'),
+         users_pb2.User(user_id=2, email='user2@example.com')])
 
   def testConvertLabels(self):
     """We can convert labels."""

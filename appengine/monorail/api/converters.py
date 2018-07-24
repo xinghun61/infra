@@ -18,6 +18,7 @@ from api.api_proto import common_pb2
 from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import project_objects_pb2
+from api.api_proto import users_pb2
 from framework import exceptions
 from framework import filecontent
 from framework import framework_constants
@@ -116,6 +117,11 @@ def ConvertUserRefs(explicit_user_ids, derived_user_ids, users_by_id):
       is_derived=True,
       display_name=users_by_id[user_id].display_name))
   return result
+
+
+def ConvertUsers(users):
+  return [
+      users_pb2.User(user_id=user.user_id, email=user.email) for user in users]
 
 
 def ConvertLabels(explicit_labels, derived_labels):

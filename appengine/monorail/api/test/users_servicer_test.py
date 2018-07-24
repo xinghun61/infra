@@ -13,6 +13,7 @@ from components.prpc import context
 from components.prpc import server
 
 from api import users_servicer
+from api.api_proto import common_pb2
 from api.api_proto import users_pb2
 from framework import authdata
 from framework import monorailcontext
@@ -34,6 +35,7 @@ class UsersServicerTest(unittest.TestCase):
         features=fake.FeaturesService())
     self.project = self.services.project.TestAddProject('proj', project_id=987)
     self.user = self.services.user.TestAddUser('owner@example.com', 111L)
+    self.user_2 = self.services.user.TestAddUser('test2@example.com', 222L)
     self.users_svcr = users_servicer.UsersServicer(
         self.services, make_rate_limiter=False)
     self.prpc_context = context.ServicerContext()
@@ -46,10 +48,23 @@ class UsersServicerTest(unittest.TestCase):
   def CallWrapped(self, wrapped_handler, *args, **kwargs):
     return wrapped_handler.wrapped(self.users_svcr, *args, **kwargs)
 
-  def testGetUsers_Normal(self):
+  def testGetUser_Normal(self):
     """We can get a user by email address."""
-    request = users_pb2.GetUserRequest(email='test@example.com')
+    request = common_pb2.UserRef(display_name='test2@example.com', user_id=222L)
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.CallWrapped(self.users_svcr.GetUser, mc, request)
-    self.assertEqual(hash('test@example.com'), response.id)
+    self.assertEqual('test2@example.com', response.email)
+    self.assertEqual(222L, response.user_id)
+
+  def testListReferencedUsers(self):
+    """We can get all valid users by email addresses."""
+    request = users_pb2.ListReferencedUsersRequest(
+        # we ignore emails that are empty or belong to non-existent users.
+        emails=['test2@example.com', 'ghost@example.com', ''])
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.users_svcr.ListReferencedUsers, mc, request)
+    self.assertEqual(len(response.users), 1)
+    self.assertEqual(response.users[0].user_id, 222L)

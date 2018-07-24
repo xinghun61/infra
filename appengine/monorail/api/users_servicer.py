@@ -3,9 +3,11 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
+from api import converters
 from api import monorail_servicer
 from api.api_proto import users_pb2
 from api.api_proto import users_prpc_pb2
+from businesslogic import work_env
 
 
 class UsersServicer(monorail_servicer.MonorailServicer):
@@ -24,10 +26,23 @@ class UsersServicer(monorail_servicer.MonorailServicer):
     # None.
 
     # Use work_env to safely operate on business objects.
-    email = request.email
-    hashed_email = hash(request.email)
+    email = request.display_name
+    user_id = request.user_id
 
     # Return a response proto.
     return users_pb2.User(
         email=email,
-        id=hashed_email)
+        user_id=user_id)
+
+  @monorail_servicer.PRPCMethod
+  def ListReferencedUsers(self, mc, request):
+    """Return the list of existing users in a response proto."""
+    emails = request.emails
+    with work_env.WorkEnv(mc, self.services) as we:
+      users = we.ListReferencedUsers(emails)
+
+    with mc.profiler.Phase('converting to response objects'):
+      response_users = converters.ConvertUsers(users)
+      response = users_pb2.ListReferencedUsersResponse(users=response_users)
+
+    return response

@@ -705,6 +705,15 @@ class WorkEnvTest(unittest.TestCase):
       we.StarIssue(issue1, True)
       self.assertEqual([issue1.issue_id], we.ListStarredIssueIDs())
 
+  def testListReferencedUsers(self):
+    """We return the list of User PBs for the given existing user emails."""
+    user5 = self.services.user.TestAddUser('test5@example.com', 555L)
+    user6 = self.services.user.TestAddUser('test6@example.com', 666L)
+    with self.work_env as we:
+      # We ignore emails that are empty or belong to non-existent users.
+      users = we.ListReferencedUsers(
+          ['test4@example.com', 'test5@example.com', 'test6@example.com', ''])
+      self.assertItemsEqual(users, [user5, user6])
 
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()

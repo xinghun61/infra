@@ -754,6 +754,15 @@ class WorkEnv(object):
 
   ### User methods
 
+  def ListReferencedUsers(self, emails):
+    """Return a of the given emails' User PBs."""
+    with self.mc.profiler.Phase('getting existing users'):
+      user_id_dict = self.services.user.LookupExistingUserIDs(
+          self.mc.cnxn, emails)
+      users_by_id = self.services.user.GetUsersByIDs(
+          self.mc.cnxn, user_id_dict.values())
+    return users_by_id.values()
+
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()
   # FUTURE: DeleteUser()

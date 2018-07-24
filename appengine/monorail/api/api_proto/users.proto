@@ -7,18 +7,28 @@ syntax = "proto3";
 
 package monorail;
 
+import "api/api_proto/common.proto";
+
 
 service Users {
-  rpc GetUser (GetUserRequest) returns (User) {}
+  rpc GetUser (UserRef) returns (User) {}
+  rpc ListReferencedUsers (ListReferencedUsersRequest) returns (ListReferencedUsersResponse) {}
 }
 
 
-message GetUserRequest {
-  string email = 1;
-}
-
-
+// TODO(jojwang): monorail:1701, fill User with all info necessary for
+// creating a user profile page.
 message User {
   string email = 1;
-  int64 id = 2;
+  int64 user_id = 2;
+}
+
+
+message ListReferencedUsersRequest {
+  repeated string emails = 1;
+}
+
+
+message ListReferencedUsersResponse {
+  repeated User users = 1;
 }
