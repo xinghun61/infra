@@ -36,6 +36,9 @@ func (i *Issue) Validate() error {
 	if i == nil {
 		return fmt.Errorf("is nil")
 	}
+	if i.ProjectId == "" {
+		return fmt.Errorf("no projectId")
+	}
 	if i.Status == "" {
 		return fmt.Errorf("no status")
 	}

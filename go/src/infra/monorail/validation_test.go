@@ -39,7 +39,7 @@ func TestValidation(t *testing.T) {
 		})
 
 		Convey("Issue", func() {
-			good(&Issue{Status: StatusStarted})
+			good(&Issue{Status: StatusStarted, ProjectId: "chromium"})
 			good(&Issue{
 				Summary:     "Write tests for monorail client",
 				Author:      &AtomPerson{Name: "seanmccullough@chromium.org"},
@@ -49,6 +49,7 @@ func TestValidation(t *testing.T) {
 				Description: "We should keep our code coverage high, so write tests",
 				Components:  []string{"Infra"},
 				Labels:      []string{"M-53"},
+				ProjectId:   "chromium",
 			})
 
 			bad((*Issue)(nil))
@@ -86,6 +87,7 @@ func TestValidation(t *testing.T) {
 					Description: "We should keep our code coverage high, so write tests",
 					Components:  []string{"Infra"},
 					Labels:      []string{"M-53"},
+					ProjectId:   "chromium",
 				},
 			})
 

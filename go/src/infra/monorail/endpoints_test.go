@@ -37,6 +37,7 @@ func TestEndpointsInsertIssue(t *testing.T) {
 					Description: "We should keep our code coverage high, so write tests",
 					Components:  []string{"Infra"},
 					Labels:      []string{"M-53"},
+					ProjectId:   "chromium",
 				},
 			}
 
@@ -208,14 +209,14 @@ func TestEndpointsListComments(t *testing.T) {
 			So(res, ShouldResembleProto, &ListCommentsResponse{
 				TotalResults: 2,
 				Items: []*Comment{
-					&Comment{
+					{
 						Author:        &AtomPerson{Name: "a@example.com"},
 						IsDescription: true,
 						Content:       "Actually, this is description\n",
 						Published:     "2018-07-02T23:12:47",
 						Id:            0,
 					},
-					&Comment{
+					{
 						Author:        &AtomPerson{Name: "b@example.com"},
 						IsDescription: false,
 						Content:       "lol",

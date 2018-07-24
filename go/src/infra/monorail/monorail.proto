@@ -64,6 +64,8 @@ message Issue {
     string summary = 18;
     // Last updated datetime of this issue.
     string updated = 19;
+    // ID of the project containing the issue.
+    string projectId = 20;
 }
 
 // IssueRef references another issue in the same Monorail instance.
