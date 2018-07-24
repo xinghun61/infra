@@ -34,11 +34,10 @@ CREATE TABLE User (
 
 CREATE TABLE UserCommits (
   commit_sha VARCHAR(40),
-  parent_sha VARCHAR(40),
   author_id INT UNSIGNED NOT NULL,
   commit_time INT NOT NULL,
   commit_message TEXT,
-  commit_repo VARCHAR(255),
+  commit_repo_url VARCHAR(255),
 
   PRIMARY KEY (commit_sha),
   INDEX (author_id, commit_time),

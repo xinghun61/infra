@@ -1545,7 +1545,7 @@ ALTER TABLE Template2ApprovalValue MODIFY COLUMN phase_id INT;
 
 ALTER TABLE Invalidate MODIFY COLUMN kind enum('user', 'project', 'issue', 'issue_id', 'hotlist', 'comment', 'template') NOT NULL;
 
-==================================================================
+=================================================================
 2018-07-02: Add UserCommits table to keep track of commits.
 
 CREATE TABLE UserCommits (
@@ -1560,3 +1560,8 @@ CREATE TABLE UserCommits (
   INDEX (author_id, commit_time),
   INDEX (commit_time)
 ) ENGINE=INNODB;
+=================================================================
+2018-07-16: Drop parent_sha because it isn't needed in this table and give commit_repo a clearer name.
+
+ALTER TABLE UserCommits DROP COLUMN parent_sha;
+ALTER TABLE UserCommits CHANGE commit_repo commit_repo_url VARCHAR(255);
