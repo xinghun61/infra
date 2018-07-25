@@ -36,7 +36,7 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
     culprits = pipeline_input.culprits
     build_failure_type = failure_type.TEST
 
-    for culprit_revision, culprit_key in culprits.iteritems():
+    for culprit_key in culprits.itervalues():
       revert_status = constants.SKIPPED
       if test_culprit_action.CanAutoCreateRevert(culprit_key, pipeline_input):
         revert_status = yield CreateRevertCLPipeline(
@@ -45,7 +45,7 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
                 build_id=build_id,
                 failure_type=build_failure_type))
 
-        if test_culprit_action.CanAutoCommitRevertByFindit(culprit_revision):
+        if test_culprit_action.CanAutoCommitRevertByFindit():
           submit_revert_pipeline_input = self.CreateInputObjectInstance(
               SubmitRevertCLParameters,
               cl_key=culprit_key,
