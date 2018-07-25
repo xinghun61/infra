@@ -56,10 +56,10 @@ func main() {
 	log.Printf("Read FILES data: %#v", input)
 
 	results := &tricium.Data_Results{}
+	cmdName := filepath.Join(exPath, pythonPath)
+
 	for _, file := range input.Files {
 		if !file.IsBinary {
-			exPath = ""
-			cmdName := filepath.Join(exPath, pythonPath)
 			cmdArgs := []string{filepath.Join(exPath, codespellPath),
 				filepath.Join(*inputDir, file.Path), "--quiet-level=3"}
 
