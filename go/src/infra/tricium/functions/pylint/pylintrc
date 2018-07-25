@@ -46,6 +46,7 @@ disable=
   protected-access,
   reimported,
   star-args,
+  superfluous-parens,  # Disabled to prevent firing when linting Python3 code.
   too-few-public-methods,
   too-many-ancestors,
   too-many-arguments,
