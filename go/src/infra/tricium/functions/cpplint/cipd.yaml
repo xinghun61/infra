@@ -1,0 +1,8 @@
+package: infra/tricium/function/cpplint
+install_mode: copy
+data:
+  - file: cpplint_parser
+
+  # Third party dependencies
+  - dir: python
+  - file: cpplint.py
