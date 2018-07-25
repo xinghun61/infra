@@ -376,6 +376,7 @@ func FileBugHandler(ctx *router.Context) {
 	fileBugReq := &monorail.InsertIssueRequest{
 		ProjectId: "chromium",
 		Issue: &monorail.Issue{
+			ProjectId:   "chromium",
 			Cc:          ccList,
 			Summary:     rawJSON.Summary,
 			Description: description,
