@@ -75,9 +75,9 @@ var (
 				return err
 			}
 			req := gitilespb.LogRequest{
-				Project:  "chromium/src",
-				Treeish:  "master",
-				PageSize: 1,
+				Project:    "chromium/src",
+				Committish: "master",
+				PageSize:   1,
 			}
 			_, err = g.Log(ctx, &req)
 			if err != nil {

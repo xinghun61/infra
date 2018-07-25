@@ -101,7 +101,7 @@ func TestAuditor(t *testing.T) {
 				Convey("No revisions", func() {
 					gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
 						Project:            "dummy",
-						Treeish:            "refs/heads/master",
+						Committish:         "refs/heads/master",
 						ExcludeAncestorsOf: "123456",
 						PageSize:           6000,
 					}).Return(&gitilespb.LogResponse{
@@ -119,7 +119,7 @@ func TestAuditor(t *testing.T) {
 				Convey("No interesting revisions", func() {
 					gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
 						Project:            "dummy",
-						Treeish:            "refs/heads/master",
+						Committish:         "refs/heads/master",
 						ExcludeAncestorsOf: "123456",
 						PageSize:           6000,
 					}).Return(&gitilespb.LogResponse{
@@ -137,7 +137,7 @@ func TestAuditor(t *testing.T) {
 				Convey("Interesting revisions", func() {
 					gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
 						Project:            "dummy",
-						Treeish:            "refs/heads/master",
+						Committish:         "refs/heads/master",
 						ExcludeAncestorsOf: "123456",
 						PageSize:           6000,
 					}).Return(&gitilespb.LogResponse{
@@ -186,7 +186,7 @@ func TestAuditor(t *testing.T) {
 				So(err, ShouldBeNil)
 				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
 					Project:            "dummy",
-					Treeish:            "refs/heads/master",
+					Committish:         "refs/heads/master",
 					ExcludeAncestorsOf: "222222",
 					PageSize:           6000,
 				}).Return(&gitilespb.LogResponse{

@@ -86,9 +86,9 @@ func TestFinditRules(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "badc0de",
-				PageSize: 1,
+				Project:    "a",
+				Committish: "badc0de",
+				PageSize:   1,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -111,9 +111,9 @@ func TestFinditRules(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "badc0de",
-				PageSize: 1,
+				Project:    "a",
+				Committish: "badc0de",
+				PageSize:   1,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -160,9 +160,9 @@ func TestFinditRules(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "badc0de",
-				PageSize: 1,
+				Project:    "a",
+				Committish: "badc0de",
+				PageSize:   1,
 			}).Return(nil, errors.New("Some error"))
 
 			// Run rule.

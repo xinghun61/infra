@@ -67,10 +67,10 @@ func OnlyModifiesPathsRule(ctx context.Context, ap *AuditParams, rc *RelevantCom
 		panic(err)
 	}
 	resp, err := gc.Log(ctx, &gitilespb.LogRequest{
-		Project:  project,
-		Treeish:  rc.CommitHash,
-		PageSize: 1,
-		TreeDiff: true,
+		Project:    project,
+		Committish: rc.CommitHash,
+		PageSize:   1,
+		TreeDiff:   true,
 	})
 	if err != nil {
 		panic(err)

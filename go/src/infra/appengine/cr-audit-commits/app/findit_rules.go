@@ -159,9 +159,9 @@ func CulpritAge(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Cl
 		panic(err)
 	}
 	resp, err := gc.Log(ctx, &gitilespb.LogRequest{
-		Project:  project,
-		Treeish:  culprit.CurrentRevision,
-		PageSize: 1,
+		Project:    project,
+		Committish: culprit.CurrentRevision,
+		PageSize:   1,
 	})
 	if err != nil {
 		panic(err)

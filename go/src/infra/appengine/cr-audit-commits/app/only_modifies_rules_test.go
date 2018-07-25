@@ -55,10 +55,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "b07c0de",
-				PageSize: 1,
-				TreeDiff: true,
+				Project:    "a",
+				Committish: "b07c0de",
+				PageSize:   1,
+				TreeDiff:   true,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -87,10 +87,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "b07c0de",
-				PageSize: 1,
-				TreeDiff: true,
+				Project:    "a",
+				Committish: "b07c0de",
+				PageSize:   1,
+				TreeDiff:   true,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -119,10 +119,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "b07c0de",
-				PageSize: 1,
-				TreeDiff: true,
+				Project:    "a",
+				Committish: "b07c0de",
+				PageSize:   1,
+				TreeDiff:   true,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -165,10 +165,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "b07c0de",
-				PageSize: 1,
-				TreeDiff: true,
+				Project:    "a",
+				Committish: "b07c0de",
+				PageSize:   1,
+				TreeDiff:   true,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -209,10 +209,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "b07c0de",
-				PageSize: 1,
-				TreeDiff: true,
+				Project:    "a",
+				Committish: "b07c0de",
+				PageSize:   1,
+				TreeDiff:   true,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -253,10 +253,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "b07c0de",
-				PageSize: 1,
-				TreeDiff: true,
+				Project:    "a",
+				Committish: "b07c0de",
+				PageSize:   1,
+				TreeDiff:   true,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -284,10 +284,10 @@ func TestOnlyModifiesPaths(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "b07c0de",
-				PageSize: 1,
-				TreeDiff: true,
+				Project:    "a",
+				Committish: "b07c0de",
+				PageSize:   1,
+				TreeDiff:   true,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -347,10 +347,10 @@ func TestReleaseBotRules(t *testing.T) {
 				return gitilesMockClient, nil
 			}
 			gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-				Project:  "a",
-				Treeish:  "b07c0de",
-				PageSize: 1,
-				TreeDiff: true,
+				Project:    "a",
+				Committish: "b07c0de",
+				PageSize:   1,
+				TreeDiff:   true,
 			}).Return(&gitilespb.LogResponse{
 				Log: []*git.Commit{
 					{
@@ -380,10 +380,10 @@ func TestReleaseBotRules(t *testing.T) {
 					return gitilesMockClient, nil
 				}
 				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-					Project:  "a",
-					Treeish:  "b07c0de",
-					PageSize: 1,
-					TreeDiff: true,
+					Project:    "a",
+					Committish: "b07c0de",
+					PageSize:   1,
+					TreeDiff:   true,
 				}).Return(&gitilespb.LogResponse{
 					Log: []*git.Commit{
 						{
@@ -413,10 +413,10 @@ func TestReleaseBotRules(t *testing.T) {
 					return gitilesMockClient, nil
 				}
 				gitilesMockClient.EXPECT().Log(gomock.Any(), &gitilespb.LogRequest{
-					Project:  "a",
-					Treeish:  "b07c0de",
-					PageSize: 1,
-					TreeDiff: true,
+					Project:    "a",
+					Committish: "b07c0de",
+					PageSize:   1,
+					TreeDiff:   true,
 				}).Return(&gitilespb.LogResponse{
 					Log: []*git.Commit{
 						{
