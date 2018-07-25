@@ -1,3 +1,6 @@
 {
-	"paths":["README.md","src/Hello.java"]
+	"files": [
+		{ "path": "README.md" },
+		{ "path": "src/Hello.java" }
+	]
 }

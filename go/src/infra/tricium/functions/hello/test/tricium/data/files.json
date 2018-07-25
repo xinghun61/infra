@@ -1,3 +1,5 @@
 {
-	"paths":["README.md","src/main.go"]
+	"files": [
+		{ "path": "README.md" }
+	]
 }
