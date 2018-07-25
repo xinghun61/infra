@@ -49,47 +49,49 @@ func validateCollectRequest(req *admin.CollectRequest) error {
 }
 
 func collect(c context.Context, req *admin.CollectRequest,
-	wp config.WorkflowCacheAPI, sw common.SwarmingAPI, isolator common.IsolateAPI) error {
+	wp config.WorkflowCacheAPI, sw common.TaskServerAPI, isolator common.IsolateAPI) error {
 	wf, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}
-	taskResult, err := sw.Collect(c, wf.SwarmingServer, req.TaskId)
+
+	w, err := wf.GetWorker(req.Worker)
 	if err != nil {
-		return fmt.Errorf("failed to collect task: %v", err)
+		return fmt.Errorf("failed to get worker: %v", err)
 	}
 
-	if taskResult.State == "PENDING" || taskResult.State == "RUNNING" {
+	var result *common.CollectResult
+	switch wi := w.Impl.(type) {
+	case *admin.Worker_Recipe:
+		// TODO(juliehockett): implement the buildbucket TaskServerAPI collect
+		result = &common.CollectResult{
+			State:             common.Success,
+			BuildbucketOutput: "{}",
+		}
+	case *admin.Worker_Cmd:
+		result, err = sw.Collect(c, wf.SwarmingServer, req.TaskId, req.BuildId)
+		if err != nil {
+			return fmt.Errorf("failed to collect task: %v", err)
+		}
+	case nil:
+		return fmt.Errorf("missing Impl when isolating worker %s", w.Name)
+	default:
+		return fmt.Errorf("Impl.Impl has unexpected type %T", wi)
+	}
+
+	if result.State == common.Pending {
 		if err = enqueueCollectRequest(c, req); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	// TODO(juliehockett): populate this for buildbucket runs.
-	buildbucketOutput := ""
-
-	isolatedOutput := ""
-	if taskResult.OutputsRef == nil || taskResult.OutputsRef.Isolated == "" {
-		logging.Fields{
-			"task ID":    req.TaskId,
-			"task state": taskResult.State,
-		}.Warningf(c, "Task had no output.")
-	} else {
-		isolatedOutput = taskResult.OutputsRef.Isolated
-	}
-
-	w, err := wf.GetWorker(req.Worker)
-	if err != nil {
-		return fmt.Errorf("failed to get worker output type: %v", err)
-	}
-
 	// Worker state.
 	workerState := tricium.State_SUCCESS
-	if taskResult.ExitCode != 0 {
+	if result.State == common.Failure {
 		logging.Fields{
-			"exit code": taskResult.ExitCode,
-			"task ID":   req.TaskId,
+			"task ID":  req.TaskId,
+			"build ID": req.BuildId,
 		}.Infof(c, "Swarming task failed.")
 		workerState = tricium.State_FAILURE
 	}
@@ -98,10 +100,10 @@ func collect(c context.Context, req *admin.CollectRequest,
 	b, err := proto.Marshal(&admin.WorkerDoneRequest{
 		RunId:              req.RunId,
 		Worker:             req.Worker,
-		IsolatedOutputHash: isolatedOutput,
+		IsolatedOutputHash: result.IsolatedOutputHash,
 		Provides:           w.Provides,
 		State:              workerState,
-		BuildbucketOutput:  buildbucketOutput,
+		BuildbucketOutput:  result.BuildbucketOutput,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to encode worker done request: %v", err)
@@ -115,9 +117,8 @@ func collect(c context.Context, req *admin.CollectRequest,
 	// Abort here if worker failed and mark descendants as failures.
 	if workerState == tricium.State_FAILURE {
 		logging.Fields{
-			"exit code": taskResult.ExitCode,
-			"worker":    req.Worker,
-			"run ID":    req.RunId,
+			"worker": req.Worker,
+			"run ID": req.RunId,
 		}.Warningf(c, "Execution of worker failed.")
 		var tasks []*tq.Task
 		for _, worker := range wf.GetWithDescendants(req.Worker) {
@@ -146,7 +147,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 	// Create layered isolated input, include the input in the collect request and
 	// massage the isolated output into new isolated input.
 	isolatedInput, err := isolator.LayerIsolates(
-		c, wf.IsolateServer, req.IsolatedInputHash, isolatedOutput)
+		c, wf.IsolateServer, req.IsolatedInputHash, result.IsolatedOutputHash)
 	if err != nil {
 		return fmt.Errorf("failed layer isolates: %v", err)
 	}

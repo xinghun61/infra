@@ -9,7 +9,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	tq "go.chromium.org/gae/service/taskqueue"
-	"go.chromium.org/luci/common/api/swarming/swarming/v1"
 
 	"golang.org/x/net/context"
 
@@ -20,14 +19,17 @@ import (
 
 // Mock Swarming API that returns a canned task result.
 type mockSwarming struct {
-	Result *swarming.SwarmingRpcsTaskResult
+	State common.ResultState
 }
 
-func (mockSwarming) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error) {
-	return "mocktaskid", nil
+func (mockSwarming) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (*common.TriggerResult, error) {
+	return &common.TriggerResult{TaskID: "mocktaskid"}, nil
 }
-func (m mockSwarming) Collect(c context.Context, serverURL string, taskID string) (*swarming.SwarmingRpcsTaskResult, error) {
-	return m.Result, nil
+func (m mockSwarming) Collect(c context.Context, serverURL, taskID string, buildID int64) (*common.CollectResult, error) {
+	return &common.CollectResult{
+		State:              m.State,
+		IsolatedOutputHash: "mockisolatedoutput",
+	}, nil
 }
 
 func TestCollectRequest(t *testing.T) {
@@ -39,7 +41,7 @@ func TestCollectRequest(t *testing.T) {
 			err := collect(ctx, &admin.CollectRequest{
 				RunId:  runID,
 				Worker: "World",
-			}, mockWorkflowProvider{}, common.MockSwarmingAPI, common.MockIsolator)
+			}, mockWorkflowProvider{}, common.MockTaskServerAPI, common.MockIsolator)
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {
@@ -56,13 +58,7 @@ func TestCollectRequest(t *testing.T) {
 				RunId:  runID,
 				Worker: "World",
 			}, mockWorkflowProvider{}, mockSwarming{
-				Result: &swarming.SwarmingRpcsTaskResult{
-					State: "COMPLETED",
-					OutputsRef: &swarming.SwarmingRpcsFilesRef{
-						Isolated: "mockisolatedoutput",
-					},
-					ExitCode: 1,
-				},
+				State: common.Failure,
 			}, common.MockIsolator)
 			So(err, ShouldBeNil)
 
@@ -79,7 +75,7 @@ func TestCollectRequest(t *testing.T) {
 			err := collect(ctx, &admin.CollectRequest{
 				RunId:  runID,
 				Worker: "Hello",
-			}, mockWorkflowProvider{}, common.MockSwarmingAPI, common.MockIsolator)
+			}, mockWorkflowProvider{}, common.MockTaskServerAPI, common.MockIsolator)
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {
@@ -95,9 +91,7 @@ func TestCollectRequest(t *testing.T) {
 					RunId:  runID,
 					Worker: "Hello",
 				}, mockWorkflowProvider{}, mockSwarming{
-					Result: &swarming.SwarmingRpcsTaskResult{
-						State: "PENDING",
-					},
+					State: common.Pending,
 				}, common.MockIsolator)
 				So(err, ShouldBeNil)
 

@@ -157,7 +157,7 @@ func TestLaunchRequest(t *testing.T) {
 					{Path: "README.md"},
 					{Path: "README2.md"},
 				},
-			}, &mockConfigProvider{}, common.MockIsolator, common.MockSwarmingAPI, common.MockPubSub)
+			}, &mockConfigProvider{}, common.MockIsolator, common.MockTaskServerAPI, common.MockPubSub)
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {
@@ -183,7 +183,7 @@ func TestLaunchRequest(t *testing.T) {
 					{Path: "README.md"},
 					{Path: "README2.md"},
 				},
-			}, config.MockProvider, common.MockIsolator, common.MockSwarmingAPI, common.MockPubSub)
+			}, config.MockProvider, common.MockIsolator, common.MockTaskServerAPI, common.MockPubSub)
 			So(err, ShouldBeNil)
 
 			Convey("Succeeding launch request for the same run enqueues no track request", func() {

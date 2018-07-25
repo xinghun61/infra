@@ -45,6 +45,7 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 		"run ID":         req.RunId,
 		"worker":         req.Worker,
 		"task ID":        req.SwarmingTaskId,
+		"build ID":       req.BuildbucketBuildId,
 		"isolated input": req.IsolatedInputHash,
 	}.Infof(c, "[tracker] Worker launched request received.")
 	// Compute needed keys.
@@ -68,6 +69,7 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 					wr.State = tricium.State_RUNNING
 					wr.IsolatedInput = req.IsolatedInputHash
 					wr.SwarmingTaskID = req.SwarmingTaskId
+					wr.BuildbucketBuildID = req.BuildbucketBuildId
 					if err := ds.Put(c, wr); err != nil {
 						return fmt.Errorf("failed to update WorkerRunResult: %v", err)
 					}

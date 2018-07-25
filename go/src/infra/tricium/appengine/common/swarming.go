@@ -6,14 +6,12 @@ package common
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
 	"go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/isolatedclient"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/server/auth"
 
 	"golang.org/x/net/context"
 
@@ -26,31 +24,14 @@ const (
 	swarmingProdServerURL = "https://chromium-swarm.appspot.com"
 )
 
-// SwarmingAPI specifies the Swarming service API.
-type SwarmingAPI interface {
-	// Trigger triggers a swarming task.
-	//
-	// The provided worker isolate is used for the task. At completion,
-	// the swarming service will publish a message, including the provided
-	// user data, to the worker completion pubsub topic.
-	Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error)
-
-	// Collect collects results for a swarming task with the provided ID.
-	//
-	// The task in question should be completed before this function is called and the
-	// task should have isolated output.
-	// The isolated output and exit code of the task are returned.
-	Collect(c context.Context, serverURL, taskID string) (*swarming.SwarmingRpcsTaskResult, error)
-}
-
-// SwarmingServer implements the SwarmingAPI for the swarming service.
+// SwarmingServer implements the TaskServerAPI for the swarming service.
 var SwarmingServer swarmingServer
 
 type swarmingServer struct {
 }
 
-// Trigger implements the SwarmingAPI.
-func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error) {
+// Trigger implements the TaskServerAPI.
+func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (*TriggerResult, error) {
 	pubsubTopic := topic(c)
 	// Prepare task dimensions.
 	dims := []*swarming.SwarmingRpcsStringPair{}
@@ -59,7 +40,7 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 		// Note that ':' may appear in the value but not the key.
 		dim := strings.SplitN(d, ":", 2)
 		if len(dim) != 2 {
-			return "", fmt.Errorf("failed to split dimension: %q", d)
+			return nil, fmt.Errorf("failed to split dimension: %q", d)
 		}
 		dims = append(dims, &swarming.SwarmingRpcsStringPair{Key: dim[0], Value: dim[1]})
 	}
@@ -77,12 +58,12 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 	oauthClient, err := getOAuthClient(c)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to create oauth client")
-		return "", fmt.Errorf("failed to create oauth client: %v", err)
+		return nil, fmt.Errorf("failed to create oauth client: %v", err)
 	}
 	swarmingService, err := swarming.New(oauthClient)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to create swarming client")
-		return "", fmt.Errorf("failed to create swarming client: %v", err)
+		return nil, fmt.Errorf("failed to create swarming client: %v", err)
 	}
 	// TODO(emso): Read timeouts from the analyzer config.
 	// Prepare properties.
@@ -112,7 +93,7 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 	}).Do()
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to trigger swarming task")
-		return "", fmt.Errorf("failed to trigger swarming task: %v", err)
+		return nil, fmt.Errorf("failed to trigger swarming task: %v", err)
 	}
 	logging.Fields{
 		"task ID":       res.TaskId,
@@ -121,11 +102,11 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 		"pubsub topic":  pubsubTopic,
 		"input isolate": workerIsolate,
 	}.Infof(c, "Worker triggered")
-	return res.TaskId, nil
+	return &TriggerResult{TaskID: res.TaskId}, nil
 }
 
-// Collect implements the SwarmingAPI.
-func (s swarmingServer) Collect(c context.Context, serverURL, taskID string) (*swarming.SwarmingRpcsTaskResult, error) {
+// Collect implements the TaskServerAPI.
+func (s swarmingServer) Collect(c context.Context, serverURL, taskID string, buildID int64) (*CollectResult, error) {
 	// Need to increase the timeout to get a response from the Swarming service.
 	c, _ = context.WithTimeout(c, 60*time.Second)
 	oauthClient, err := getOAuthClient(c)
@@ -137,42 +118,30 @@ func (s swarmingServer) Collect(c context.Context, serverURL, taskID string) (*s
 		return nil, fmt.Errorf("failed to create swarming client: %v", err)
 	}
 	swarmingService.BasePath = fmt.Sprintf("%s%s", serverURL, swarmingBasePath)
-	return swarmingService.Task.Result(taskID).Do()
-}
-
-func getOAuthClient(c context.Context) (*http.Client, error) {
-	// Note: "https://www.googleapis.com/auth/userinfo.email" is the default
-	// scope used by GetRPCTransport(AsSelf). Use auth.WithScopes(...) option to
-	// override.
-	t, err := auth.GetRPCTransport(c, auth.AsSelf)
+	taskResult, err := swarmingService.Task.Result(taskID).Do()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve task result from swarming: %v", err)
 	}
-	return &http.Client{Transport: t}, nil
-}
 
-// MockSwarmingAPI mocks the SwarmingAPI interface for testing.
-var MockSwarmingAPI mockSwarmingAPI
+	var result *CollectResult
+	if taskResult.OutputsRef == nil || taskResult.OutputsRef.Isolated == "" {
+		logging.Fields{
+			"task ID":    taskID,
+			"task state": result.State,
+		}.Warningf(c, "Task had no output.")
+	} else {
+		result.IsolatedOutputHash = taskResult.OutputsRef.Isolated
+	}
 
-type mockSwarmingAPI struct {
-}
+	if taskResult.State == "COMPLETED" {
+		if taskResult.ExitCode != 0 {
+			result.State = Failure
+		} else {
+			result.State = Success
+		}
+	} else if taskResult.State == "PENDING" || taskResult.State == "RUNNING" {
+		result.State = Pending
+	}
 
-// Trigger is a mock function for the MockSwarmingAPI.
-//
-// For any testing actually using the return value, create a new mock.
-func (mockSwarmingAPI) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string, tags []string) (string, error) {
-	return "mocktaskid", nil
-}
-
-// Collect is a mock function for the MockSwarmingAPI.
-//
-// For any testing actually using the return value, create a new mock.
-func (mockSwarmingAPI) Collect(c context.Context, serverURL string, taskID string) (*swarming.SwarmingRpcsTaskResult, error) {
-	return &swarming.SwarmingRpcsTaskResult{
-		State: "COMPLETED",
-		OutputsRef: &swarming.SwarmingRpcsFilesRef{
-			Isolated: "mockisolatedoutput",
-		},
-		ExitCode: 0,
-	}, nil
+	return result, nil
 }

@@ -40,10 +40,17 @@ message CollectRequest {
   // mangle the ID of the swarming task running the worker.
   string worker = 3;
 
+  // Only one of task_id and build_id should be populated, depending on which
+  // type of task is being collected (buildbucket or swarming.)
   // The Swarming task ID.
   //
   // Used to collect results from the completed swarming worker task.
   string task_id = 4;
+
+  // The Buildbucket build ID.
+  //
+  // Used to collect results from the completed buildbucket worker task.
+  int64 build_id = 5;
 }
 
 message CollectResponse {

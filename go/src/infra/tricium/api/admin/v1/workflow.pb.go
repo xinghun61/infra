@@ -21,12 +21,16 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Tricium workflow configuration.
 //
-// Workflow configurations are typically generated from a Tricium configuration.
+// A Workflow is generated from a merged service and project config,
+// and contains information required for one workflow run.
 type Workflow struct {
-	ServiceAccount       string         `protobuf:"bytes,1,opt,name=service_account,json=serviceAccount,proto3" json:"service_account,omitempty"`
-	Workers              []*Worker      `protobuf:"bytes,2,rep,name=workers,proto3" json:"workers,omitempty"`
-	SwarmingServer       string         `protobuf:"bytes,3,opt,name=swarming_server,json=swarmingServer,proto3" json:"swarming_server,omitempty"`
-	IsolateServer        string         `protobuf:"bytes,4,opt,name=isolate_server,json=isolateServer,proto3" json:"isolate_server,omitempty"`
+	// TODO(qyearsley): remove service_account if it is unused.
+	ServiceAccount string    `protobuf:"bytes,1,opt,name=service_account,json=serviceAccount,proto3" json:"service_account,omitempty"`
+	Workers        []*Worker `protobuf:"bytes,2,rep,name=workers,proto3" json:"workers,omitempty"`
+	SwarmingServer string    `protobuf:"bytes,3,opt,name=swarming_server,json=swarmingServer,proto3" json:"swarming_server,omitempty"`
+	IsolateServer  string    `protobuf:"bytes,4,opt,name=isolate_server,json=isolateServer,proto3" json:"isolate_server,omitempty"`
+	// Function definitions used for this workflow; these contain the function
+	// owner and component, to be used when filling out a bug filing template.
 	Functions            []*v1.Function `protobuf:"bytes,5,rep,name=functions,proto3" json:"functions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
@@ -37,7 +41,7 @@ func (m *Workflow) Reset()         { *m = Workflow{} }
 func (m *Workflow) String() string { return proto.CompactTextString(m) }
 func (*Workflow) ProtoMessage()    {}
 func (*Workflow) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_bd569146381c3f6e, []int{0}
+	return fileDescriptor_workflow_86226f8c141dc0bd, []int{0}
 }
 func (m *Workflow) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Workflow.Unmarshal(m, b)
@@ -132,7 +136,7 @@ func (m *Worker) Reset()         { *m = Worker{} }
 func (m *Worker) String() string { return proto.CompactTextString(m) }
 func (*Worker) ProtoMessage()    {}
 func (*Worker) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_bd569146381c3f6e, []int{1}
+	return fileDescriptor_workflow_86226f8c141dc0bd, []int{1}
 }
 func (m *Worker) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Worker.Unmarshal(m, b)
@@ -337,10 +341,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/admin/v1/workflow.proto", fileDescriptor_workflow_bd569146381c3f6e)
+	proto.RegisterFile("infra/tricium/api/admin/v1/workflow.proto", fileDescriptor_workflow_86226f8c141dc0bd)
 }
 
-var fileDescriptor_workflow_bd569146381c3f6e = []byte{
+var fileDescriptor_workflow_86226f8c141dc0bd = []byte{
 	// 484 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x93, 0xcb, 0x6e, 0xdb, 0x3c,
 	0x10, 0x85, 0xa3, 0xdf, 0x97, 0xd8, 0xe3, 0x5b, 0x7e, 0xf6, 0x02, 0xc1, 0x8b, 0x56, 0x48, 0x51,

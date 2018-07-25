@@ -57,7 +57,7 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 }
 
 func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, isolator common.IsolateAPI,
-	swarming common.SwarmingAPI, pubsub common.PubSubAPI) error {
+	swarming common.TaskServerAPI, pubsub common.PubSubAPI) error {
 	// Guard checking if there is already a stored workflow for the run ID
 	// in the request; if so stop here.
 	w := &config.Workflow{ID: req.RunId}

@@ -47,7 +47,7 @@ func (*driverServer) Trigger(c context.Context, req *admin.TriggerRequest) (*adm
 	return &admin.TriggerResponse{}, nil
 }
 
-func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCacheAPI, sw common.SwarmingAPI, isolator common.IsolateAPI) error {
+func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCacheAPI, sw common.TaskServerAPI, isolator common.IsolateAPI) error {
 	workflow, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
@@ -59,11 +59,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	tags := swarmingTags(c, req.Worker, req.RunId)
 	// TODO(emso): Auth check.
 	// TODO(emso): Runtime type check.
-	workerIsolate, err := isolator.IsolateWorker(c, workflow.IsolateServer, worker, req.IsolatedInputHash)
-	if err != nil {
-		return fmt.Errorf("failed to isolate command for trigger: %v", err)
-	}
-	logging.Infof(c, "[driver] Created worker isolate, hash: %q", workerIsolate)
+
 	// Create PubSub userdata for trigger request.
 	b, err := proto.Marshal(req)
 	if err != nil {
@@ -72,17 +68,35 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	}
 	userdata := base64.StdEncoding.EncodeToString(b)
 	logging.Infof(c, "[driver] PubSub userdata for trigger: %q", userdata)
-	// Trigger worker.
-	taskID, err := sw.Trigger(c, workflow.SwarmingServer, workflow.IsolateServer, worker, workerIsolate, userdata, tags)
-	if err != nil {
-		return fmt.Errorf("failed to call trigger on swarming API: %v", err)
+
+	var result *common.TriggerResult
+	switch wi := worker.Impl.(type) {
+	case *admin.Worker_Recipe:
+		// TODO(juliehockett): implement the buildbucket TaskServerAPI trigger
+		result = &common.TriggerResult{BuildID: 12345}
+	case *admin.Worker_Cmd:
+		workerIsolate, err := isolator.IsolateWorker(c, workflow.IsolateServer, worker, req.IsolatedInputHash)
+		if err != nil {
+			return fmt.Errorf("failed to isolate command for trigger: %v", err)
+		}
+		logging.Infof(c, "[driver] Created worker isolate, hash: %q", workerIsolate)
+		// Trigger worker.
+		result, err = sw.Trigger(c, workflow.SwarmingServer, workflow.IsolateServer, worker, workerIsolate, userdata, tags)
+		if err != nil {
+			return fmt.Errorf("failed to call trigger on swarming API: %v", err)
+		}
+	case nil:
+		return fmt.Errorf("missing Impl when isolating worker %s", worker.Name)
+	default:
+		return fmt.Errorf("Impl.Impl has unexpected type %T", wi)
 	}
 	// Mark worker as launched.
 	b, err = proto.Marshal(&admin.WorkerLaunchedRequest{
-		RunId:             req.RunId,
-		Worker:            req.Worker,
-		IsolatedInputHash: req.IsolatedInputHash,
-		SwarmingTaskId:    taskID,
+		RunId:              req.RunId,
+		Worker:             req.Worker,
+		IsolatedInputHash:  req.IsolatedInputHash,
+		SwarmingTaskId:     result.TaskID,
+		BuildbucketBuildId: result.BuildID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to encode worker launched request: %v", err)

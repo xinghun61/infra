@@ -224,8 +224,9 @@ type WorkerRunResult struct {
 	// if applicable.
 	IsolatedOutput string `gae:",noindex"`
 	// Output as collected from the corresponding buildbucket run, if applicable.
-	BuildbucketOutput string `gae:",noindex"`
-	SwarmingTaskID    string `gae:",noindex"`
+	BuildbucketOutput  string `gae:",noindex"`
+	SwarmingTaskID     string `gae:",noindex"`
+	BuildbucketBuildID int64  `gae:",noindex"`
 	// Number of comments produced by this worker.
 	NumComments int `gae:",noindex"`
 	// Tricium result encoded as JSON.
