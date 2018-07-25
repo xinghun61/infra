@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2018-07-25
+
+- 2 commits, 2 bugs affected since 7f4c64d (2018-07-18T21:05:34Z)
+- 2 Authors:
+  - kbr@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [SoM: Fix inline bug filing.](https://chromium-review.googlesource.com/1147755) (zhangtiff@google.com)
+- [Fix mac10.13_retina_blink_rel trybot.](https://chromium-review.googlesource.com/1142619) (kbr@chromium.org)
+
+
+## Bugs updated, by author
+- kbr@chromium.org:
+  -  [https://crbug.com/863070](https://crbug.com/863070)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/865456](https://crbug.com/865456)
+
 # Release Notes sheriff-o-matic 2018-07-18
 
 - 6 commits, 5 bugs affected since 49dc059 (2018-05-25T22:58:49Z)
