@@ -693,7 +693,8 @@ def ConvertConfig(project, config, users_by_id, labels_by_id):
       exclusive_label_prefixes=config.exclusive_label_prefixes,
       component_defs=component_defs,
       field_defs=field_defs,
-      approval_defs=approval_defs)
+      approval_defs=approval_defs,
+      restrict_to_known=config.restrict_to_known)
   return result
 
 

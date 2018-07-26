@@ -88,9 +88,9 @@ message Config {
   repeated ComponentDef component_defs = 6;
   repeated FieldDef field_defs = 7;
   repeated ApprovalDef approval_defs = 8;
+  bool restrict_to_known = 9;
   // TODO(jrobbins): Templates, maybe keep them separate.
   // TODO(jrobbins): Default query and grid options.
-  // TODO(jrobbins): restrict-to-known
   // TODO(jrobbins): custom_issue_entry_url
 }
 

@@ -1034,6 +1034,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(0, len(actual.component_defs))
     self.assertEqual(0, len(actual.field_defs))
     self.assertEqual(0, len(actual.approval_defs))
+    self.assertEqual(False, actual.restrict_to_known)
 
   def testConvertConfig_Normal(self):
     """We can convert a config with fields and components to protoc."""
@@ -1043,12 +1044,14 @@ class ConverterFunctionsTest(unittest.TestCase):
       tracker_pb2.ComponentDef(component_id=1, path='UI', label_ids=[2])]
     self.config.approval_defs.append(tracker_pb2.ApprovalDef(
         approval_id=3, approver_ids=[111L], survey='What?'))
+    self.config.restrict_to_known = True
     actual = converters.ConvertConfig(
         self.project, self.config, self.users_by_id, labels_by_id)
     self.assertEqual(1, len(actual.component_defs))
     self.assertEqual(3, len(actual.field_defs))
     self.assertEqual(1, len(actual.approval_defs))
     self.assertEqual('proj', actual.project_name)
+    self.assertEqual(True, actual.restrict_to_known)
 
   def testConvertHotlist(self):
     """We can convert a hotlist to protoc."""
