@@ -254,6 +254,42 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.assertEquals(1, len(result['notified']))
 
   def testNotifyApprovalChangeTask_Normal(self):
+    config = self.services.config.GetProjectConfig('cnxn', 12345)
+    config.field_defs = [
+        # issue's User field with any_comment is notified.
+        tracker_bizobj.MakeFieldDef(
+            121, 12345, 'TL', tracker_pb2.FieldTypes.USER_TYPE,
+            '', '', False, False, False, None, None, None, False, '',
+            None, tracker_pb2.NotifyTriggers.ANY_COMMENT, 'no_action',
+            'TL, notified on everything', False),
+        # issue's User field with never is not notified.
+        tracker_bizobj.MakeFieldDef(
+            122, 12345, 'silentTL', tracker_pb2.FieldTypes.USER_TYPE,
+            '', '', False, False, False, None, None, None, False, '',
+            None, tracker_pb2.NotifyTriggers.NEVER, 'no_action',
+            'TL, notified on nothing', False),
+        # approval's User field with any_comment is notified.
+        tracker_bizobj.MakeFieldDef(
+            123, 12345, 'otherapprovalTL', tracker_pb2.FieldTypes.USER_TYPE,
+            '', '', False, False, False, None, None, None, False, '',
+            None, tracker_pb2.NotifyTriggers.ANY_COMMENT, 'no_action',
+            'TL on the approvers team', False, approval_id=3),
+        # another approval's User field with any_comment is not notified.
+        tracker_bizobj.MakeFieldDef(
+            124, 12345, 'otherapprovalTL', tracker_pb2.FieldTypes.USER_TYPE,
+            '', '', False, False, False, None, None, None, False, '',
+            None, tracker_pb2.NotifyTriggers.ANY_COMMENT, 'no_action',
+            'TL on another approvers team', False, approval_id=4),
+    ]
+    self.services.config.StoreConfig('cnxn', config)
+
+    # Custom user_type field TLs
+    self.services.user.TestAddUser('TL@example.com', 111L)
+    self.services.user.TestAddUser('silentTL@example.com', 222L)
+    self.services.user.TestAddUser('approvalTL@example.com', 333L)
+    self.services.user.TestAddUser('otherapprovalTL@example.com', 444L)
+
+    # Approvers
     self.services.user.TestAddUser('approver_old@example.com', 7)
     self.services.user.TestAddUser('approver_new@example.com', 8)
     self.services.user.TestAddUser('approver_still@example.com', 9)
@@ -266,6 +302,12 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         is_spam=True)
     approval_issue.phases = [canary_phase]
     approval_issue.approval_values = approval_values
+    approval_issue.field_values = [
+        tracker_bizobj.MakeFieldValue(121, None, None, 111L, None, None, False),
+        tracker_bizobj.MakeFieldValue(122, None, None, 222L, None, None, False),
+        tracker_bizobj.MakeFieldValue(123, None, None, 333L, None, None, False),
+        tracker_bizobj.MakeFieldValue(124, None, None, 444L, None, None, False),
+    ]
     self.services.issue.TestAddIssue(approval_issue)
 
     amend = tracker_bizobj.MakeApprovalApproversAmendment([8], [7])
@@ -293,7 +335,8 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.assertTrue('Approvers: -approver' in result['tasks'][0]['body'])
     self.assertItemsEqual(
         ['user@example.com', 'approver_old@example.com',
-         'approver_new@example.com'],
+         'approver_new@example.com', 'TL@example.com',
+         'approvalTL@example.com'],
         result['notified'])
 
   def testNotifyApprovalChangeTask_GetApprovalEmailRecipients(self):

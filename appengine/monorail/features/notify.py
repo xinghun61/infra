@@ -708,9 +708,6 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     project = self.services.project.GetProject(mr.cnxn, issue.project_id)
     config = self.services.config.GetProjectConfig(mr.cnxn, issue.project_id)
 
-    # TODO(jojwang): monorail:3588, currently one approver/status change
-    # creates one comment with one amendment and no content. If this changes,
-    # this will have to be redone.
     try:
       comment = self.services.issue.GetCommentsByID(
           mr.cnxn, [comment_id], collections.defaultdict(int))[0]
@@ -718,9 +715,12 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
       raise exceptions.NoSuchCommentException()
 
     field_user_ids = set()
-    for fd in config.field_defs:
-      field_user_ids.update(notify_reasons.ComputeNamedUserIDsToNotify(
-          approval_value.field_values, fd))
+    relevant_fds = [fd for fd in config.field_defs if
+                    not fd.approval_id or
+                    fd.approval_id is approval_value.approval_id]
+    for fd in relevant_fds:
+      field_user_ids.update(
+          notify_reasons.ComputeNamedUserIDsToNotify(issue.field_values, fd))
     users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user, [issue.owner_id],
         approval_value.approver_ids,
@@ -791,6 +791,8 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
   def _GetApprovalEmailRecipients(
       self, approval_value, comment, issue, user_ids_from_fields,
       omit_ids=None):
+    # TODO(jojwang): monorail:3588, reorganize this, since now, comment_content
+    # and approval amendments happen in the same comment.
     # NOTE: user_ids_from_fields are all the notify_on=ANY_COMMENT users.
     # However, these users will still be excluded from notifications
     # meant for approvers only eg. (status changed to REVIEW_REQUESTED).
