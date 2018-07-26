@@ -12,8 +12,8 @@ import (
 	"go.chromium.org/luci/common/sync/parallel"
 
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -33,10 +33,10 @@ func (*trackerServer) WorkflowLaunched(
 		"run ID": req.RunId,
 	}.Infof(c, "[tracker] Received workflow launched request.")
 	if req.RunId == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	if err := workflowLaunched(c, req, config.WorkflowCache); err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to track workflow launched: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to track workflow launched: %v", err)
 	}
 	return &admin.WorkflowLaunchedResponse{}, nil
 }

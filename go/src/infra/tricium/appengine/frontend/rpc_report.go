@@ -10,8 +10,8 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
@@ -28,14 +28,14 @@ func (r *TriciumServer) ReportNotUseful(c context.Context,
 	}
 	response, err := reportNotUseful(c, req.CommentId)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "report not useful request failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "report not useful request failed: %v", err)
 	}
 	return response, nil
 }
 
 func validateReportRequest(c context.Context, req *tricium.ReportNotUsefulRequest) error {
 	if req.CommentId == "" {
-		return grpc.Errorf(codes.InvalidArgument, "missing comment_id")
+		return status.Errorf(codes.InvalidArgument, "missing comment_id")
 	}
 	return nil
 }

@@ -6,8 +6,8 @@ package config
 
 import (
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common/config"
@@ -21,18 +21,18 @@ var server = &configServer{}
 // Validate validates a project config.
 func (*configServer) Validate(c context.Context, req *admin.ValidateRequest) (*admin.ValidateResponse, error) {
 	if req.ProjectConfig == nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing project config")
+		return nil, status.Errorf(codes.InvalidArgument, "missing project config")
 	}
 	sc := req.ServiceConfig
 	if sc == nil {
 		var err error
 		if sc, err = config.LuciConfigServer.GetServiceConfig(c); err != nil {
-			return nil, grpc.Errorf(codes.InvalidArgument, "failed to get service config: %v", err)
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get service config: %v", err)
 		}
 	}
 	pc, err := config.Validate(sc, req.ProjectConfig)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to validate config: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to validate config: %v", err)
 	}
 	return &admin.ValidateResponse{ValidatedConfig: pc}, nil
 }

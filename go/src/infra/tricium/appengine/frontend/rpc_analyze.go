@@ -18,8 +18,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -46,7 +46,7 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	logging.Infof(c, "[frontend] Analyze request received and validated.")
 	runID, code, err := analyzeWithAuth(c, req, config.LuciConfigServer)
 	if err != nil {
-		return nil, grpc.Errorf(code, "analyze request failed: %v", err)
+		return nil, status.Errorf(code, "analyze request failed: %v", err)
 	}
 	logging.Fields{
 		"run ID": runID,
@@ -58,44 +58,44 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 // or a grpc error with a reaosn if the request is invalid.
 func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) error {
 	if req.Project == "" {
-		return grpc.Errorf(codes.InvalidArgument, "missing project")
+		return status.Errorf(codes.InvalidArgument, "missing project")
 	}
 	if len(req.Files) == 0 {
-		return grpc.Errorf(codes.InvalidArgument, "missing paths")
+		return status.Errorf(codes.InvalidArgument, "missing paths")
 	}
 	switch source := req.Source.(type) {
 	case *tricium.AnalyzeRequest_GitCommit:
 		gc := source.GitCommit
 		if gc.Url == "" {
-			return grpc.Errorf(codes.InvalidArgument, "missing git repo URL")
+			return status.Errorf(codes.InvalidArgument, "missing git repo URL")
 		}
 		if gc.Ref == "" {
-			return grpc.Errorf(codes.InvalidArgument, "missing git ref")
+			return status.Errorf(codes.InvalidArgument, "missing git ref")
 		}
 	case *tricium.AnalyzeRequest_GerritRevision:
 		gr := source.GerritRevision
 		if gr.Host == "" {
-			return grpc.Errorf(codes.InvalidArgument, "missing Gerrit host")
+			return status.Errorf(codes.InvalidArgument, "missing Gerrit host")
 		}
 		if gr.Project == "" {
-			return grpc.Errorf(codes.InvalidArgument, "missing Gerrit project")
+			return status.Errorf(codes.InvalidArgument, "missing Gerrit project")
 		}
 		if gr.Change == "" {
-			return grpc.Errorf(codes.InvalidArgument, "missing Gerrit change ID")
+			return status.Errorf(codes.InvalidArgument, "missing Gerrit change ID")
 		}
 		if match, _ := regexp.MatchString(".+~.+~I[0-9a-fA-F]{40}.*", gr.Change); !match {
-			return grpc.Errorf(codes.InvalidArgument, "invalid Gerrit change ID: "+gr.Change)
+			return status.Errorf(codes.InvalidArgument, "invalid Gerrit change ID: "+gr.Change)
 		}
 		if gr.GitUrl == "" {
-			return grpc.Errorf(codes.InvalidArgument, "missing git repo URL for Gerrit change")
+			return status.Errorf(codes.InvalidArgument, "missing git repo URL for Gerrit change")
 		}
 		if gr.GitRef == "" {
-			return grpc.Errorf(codes.InvalidArgument, "missing Gerrit revision git ref")
+			return status.Errorf(codes.InvalidArgument, "missing Gerrit revision git ref")
 		}
 	case nil:
-		return grpc.Errorf(codes.InvalidArgument, "missing source")
+		return status.Errorf(codes.InvalidArgument, "missing source")
 	default:
-		return grpc.Errorf(codes.InvalidArgument, "unexpected source type")
+		return status.Errorf(codes.InvalidArgument, "unexpected source type")
 	}
 	return nil
 }

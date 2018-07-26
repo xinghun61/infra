@@ -15,8 +15,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
@@ -37,7 +37,7 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 	}
 	count, reports, err := feedback(c, req.Category, stime, etime)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "feedback request failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "feedback request failed: %v", err)
 	}
 	return &tricium.FeedbackResponse{Comments: int32(count), NotUsefulReports: int32(reports)}, nil
 }
@@ -47,22 +47,22 @@ func validateFeedbackRequest(c context.Context, req *tricium.FeedbackRequest) (t
 	etime := clock.Now(c).UTC()
 	var err error
 	if req.Category == "" {
-		return stime, etime, grpc.Errorf(codes.InvalidArgument, "missing category")
+		return stime, etime, status.Errorf(codes.InvalidArgument, "missing category")
 	}
 	if req.StartTime != "" {
 		stime, err = time.Parse(longForm, req.StartTime)
 		if err != nil {
-			return stime, etime, grpc.Errorf(codes.InvalidArgument, "invalid start_time: %v", err)
+			return stime, etime, status.Errorf(codes.InvalidArgument, "invalid start_time: %v", err)
 		}
 	}
 	if req.EndTime != "" {
 		etime, err = time.Parse(longForm, req.EndTime)
 		if err != nil {
-			return stime, etime, grpc.Errorf(codes.InvalidArgument, "invalid end_time: %v", err)
+			return stime, etime, status.Errorf(codes.InvalidArgument, "invalid end_time: %v", err)
 		}
 	}
 	if etime.Before(stime) {
-		return stime, etime, grpc.Errorf(codes.InvalidArgument, "start_time/end_time out of order")
+		return stime, etime, status.Errorf(codes.InvalidArgument, "start_time/end_time out of order")
 	}
 	return stime, etime, nil
 }

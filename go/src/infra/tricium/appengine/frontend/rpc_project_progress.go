@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/config"
@@ -32,7 +32,7 @@ func (r *TriciumServer) ProjectProgress(c context.Context, req *tricium.ProjectP
 	}.Infof(c, "[frontend] Project progress request received and validated.")
 	runProgress, errCode, err := projectProgress(c, project, config.LuciConfigServer)
 	if err != nil {
-		return nil, grpc.Errorf(errCode, "project progress failed: %v", err)
+		return nil, status.Errorf(errCode, "project progress failed: %v", err)
 	}
 	logging.Infof(c, "[frontend] Project progress completed.")
 	return &tricium.ProjectProgressResponse{
@@ -42,7 +42,7 @@ func (r *TriciumServer) ProjectProgress(c context.Context, req *tricium.ProjectP
 
 func validateProjectProgressRequest(c context.Context, req *tricium.ProjectProgressRequest) (string, error) {
 	if req.Project == "" {
-		return "", grpc.Errorf(codes.InvalidArgument, "missing Tricium project")
+		return "", status.Errorf(codes.InvalidArgument, "missing Tricium project")
 	}
 	return req.Project, nil
 }

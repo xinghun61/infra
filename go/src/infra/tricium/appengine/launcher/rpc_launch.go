@@ -15,8 +15,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -35,23 +35,23 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 		"run ID": req.RunId,
 	}.Infof(c, "[launcher] Launch request received.")
 	if req.RunId == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	if req.Project == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing project")
+		return nil, status.Errorf(codes.InvalidArgument, "missing project")
 	}
 	if req.GitUrl == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing git URL")
+		return nil, status.Errorf(codes.InvalidArgument, "missing git URL")
 	}
 	if req.GitRef == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing git ref")
+		return nil, status.Errorf(codes.InvalidArgument, "missing git ref")
 	}
 	if len(req.Files) == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing files to analyze")
+		return nil, status.Errorf(codes.InvalidArgument, "missing files to analyze")
 	}
 	if err := launch(c, req, config.LuciConfigServer, common.IsolateServer,
 		common.SwarmingServer, common.PubsubServer); err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to launch workflow: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to launch workflow: %v", err)
 	}
 	return &admin.LaunchResponse{}, nil
 }

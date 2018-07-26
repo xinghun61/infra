@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
@@ -32,7 +32,7 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 	}
 	runState, functionProgress, errCode, err := progress(c, runID)
 	if err != nil {
-		return nil, grpc.Errorf(errCode, "progress request failed: %v", err)
+		return nil, status.Errorf(errCode, "progress request failed: %v", err)
 	}
 	return &tricium.ProgressResponse{
 		RunId:            strconv.FormatInt(runID, 10),
@@ -52,21 +52,21 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 			// Either Gerrit details or run ID should be given; if both are
 			// given then they may be conflicting; if the run ID is given
 			// then there should be no need to specify Gerrit details.
-			return 0, grpc.Errorf(codes.InvalidArgument, "both Gerrit details and run ID given")
+			return 0, status.Errorf(codes.InvalidArgument, "both Gerrit details and run ID given")
 		}
 		gr := source.GerritRevision
 		if gr.Host == "" {
-			return 0, grpc.Errorf(codes.InvalidArgument, "missing Gerrit host")
+			return 0, status.Errorf(codes.InvalidArgument, "missing Gerrit host")
 		}
 		if gr.Project == "" {
-			return 0, grpc.Errorf(codes.InvalidArgument, "missing Gerrit project")
+			return 0, status.Errorf(codes.InvalidArgument, "missing Gerrit project")
 		}
 		if gr.Change == "" {
 			// TODO(qyearsley): Validate change ID here as in analyze request.
-			return 0, grpc.Errorf(codes.InvalidArgument, "missing Gerrit change ID")
+			return 0, status.Errorf(codes.InvalidArgument, "missing Gerrit change ID")
 		}
 		if gr.GitRef == "" {
-			return 0, grpc.Errorf(codes.InvalidArgument, "missing Gerrit git ref")
+			return 0, status.Errorf(codes.InvalidArgument, "missing Gerrit git ref")
 		}
 		// Look up the run ID with the provided Gerrit change details.
 		g := &GerritChangeToRunID{
@@ -77,23 +77,23 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 				logging.Fields{
 					"gerrit mapping ID": g.ID,
 				}.Infof(c, "No GerritChangeToRunID found in datastore.")
-				return 0, grpc.Errorf(codes.NotFound, "no run ID found")
+				return 0, status.Errorf(codes.NotFound, "no run ID found")
 			}
-			return 0, grpc.Errorf(codes.Internal, "failed to fetch run ID: %v", err)
+			return 0, status.Errorf(codes.Internal, "failed to fetch run ID: %v", err)
 		}
 		return g.RunID, nil
 	case nil:
 		// Run ID may be specified.
 		if req.RunId == "" {
-			return 0, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+			return 0, status.Errorf(codes.InvalidArgument, "missing run ID")
 		}
 		runID, err := strconv.ParseInt(req.RunId, 10, 64)
 		if err != nil {
-			return 0, grpc.Errorf(codes.InvalidArgument, "invalid run ID: %v", err)
+			return 0, status.Errorf(codes.InvalidArgument, "invalid run ID: %v", err)
 		}
 		return runID, nil
 	default:
-		return 0, grpc.Errorf(codes.InvalidArgument, "unexpected source type")
+		return 0, status.Errorf(codes.InvalidArgument, "unexpected source type")
 	}
 }
 

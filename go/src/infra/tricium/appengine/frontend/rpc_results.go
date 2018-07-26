@@ -12,8 +12,8 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
@@ -25,15 +25,15 @@ func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) 
 		"run ID": req.RunId,
 	}.Infof(c, "[frontend] Results request received.")
 	if req.RunId == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	runID, err := strconv.ParseInt(req.RunId, 10, 64)
 	if err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "invalid run ID %s: %v", req.RunId, err)
+		return nil, status.Errorf(codes.InvalidArgument, "invalid run ID %s: %v", req.RunId, err)
 	}
 	results, isMerged, err := results(c, runID)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "results request failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "results request failed: %v", err)
 	}
 	logging.Infof(c, "[frontend] Results request completed: %v", results)
 	return &tricium.ResultsResponse{Results: results, IsMerged: isMerged}, nil

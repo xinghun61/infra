@@ -12,8 +12,8 @@ import (
 	"go.chromium.org/luci/common/sync/parallel"
 
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -23,19 +23,19 @@ import (
 // WorkerLaunched tracks the launch of a worker.
 func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) (*admin.WorkerLaunchedResponse, error) {
 	if req.RunId == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	if req.Worker == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing worker")
+		return nil, status.Errorf(codes.InvalidArgument, "missing worker")
 	}
 	if req.IsolatedInputHash == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
+		return nil, status.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
 	if req.SwarmingTaskId == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing swarming task ID")
+		return nil, status.Errorf(codes.InvalidArgument, "missing swarming task ID")
 	}
 	if err := workerLaunched(c, req); err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to track worker launched: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to track worker launched: %v", err)
 	}
 	return &admin.WorkerLaunchedResponse{}, nil
 }

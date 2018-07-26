@@ -13,8 +13,8 @@ import (
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/logging"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -33,17 +33,17 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*adm
 		return nil, err
 	}
 	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to collect: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to collect: %v", err)
 	}
 	return &admin.CollectResponse{}, nil
 }
 
 func validateCollectRequest(req *admin.CollectRequest) error {
 	if req.RunId == 0 {
-		return grpc.Errorf(codes.InvalidArgument, "missing run ID")
+		return status.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	if req.Worker == "" {
-		return grpc.Errorf(codes.InvalidArgument, "missing worker name")
+		return status.Errorf(codes.InvalidArgument, "missing worker name")
 	}
 	return nil
 }

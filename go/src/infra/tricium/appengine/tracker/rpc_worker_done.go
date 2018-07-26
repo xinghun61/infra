@@ -18,8 +18,8 @@ import (
 	"go.chromium.org/luci/common/sync/parallel"
 
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -30,19 +30,19 @@ import (
 // WorkerDone tracks the completion of a worker.
 func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest) (*admin.WorkerDoneResponse, error) {
 	if req.RunId == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	if req.Worker == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing worker")
+		return nil, status.Errorf(codes.InvalidArgument, "missing worker")
 	}
 	if req.IsolatedOutputHash == "" && req.BuildbucketOutput == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing output")
+		return nil, status.Errorf(codes.InvalidArgument, "missing output")
 	}
 	if req.IsolatedOutputHash != "" && req.BuildbucketOutput != "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "too many results (both isolate and buildbucket exist)")
+		return nil, status.Errorf(codes.InvalidArgument, "too many results (both isolate and buildbucket exist)")
 	}
 	if err := workerDone(c, req, common.IsolateServer); err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to track worker completion: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to track worker completion: %v", err)
 	}
 	return &admin.WorkerDoneResponse{}, nil
 }

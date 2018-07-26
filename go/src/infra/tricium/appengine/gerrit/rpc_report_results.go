@@ -12,8 +12,8 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -30,10 +30,10 @@ func (r *gerritReporter) ReportResults(c context.Context, req *admin.ReportResul
 		"run ID": req.RunId,
 	}.Infof(c, "[gerrit] ReportResults request received.")
 	if req.RunId == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	if err := reportResults(c, req, GerritServer); err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to report results to Gerrit: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to report results to Gerrit: %v", err)
 	}
 	return &admin.ReportResultsResponse{}, nil
 }

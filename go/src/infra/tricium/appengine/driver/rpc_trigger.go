@@ -16,8 +16,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
@@ -33,16 +33,16 @@ var server = &driverServer{}
 // Trigger triggers processes one trigger request to the Tricium driver.
 func (*driverServer) Trigger(c context.Context, req *admin.TriggerRequest) (*admin.TriggerResponse, error) {
 	if req.RunId == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+		return nil, status.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	if req.Worker == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing worker name")
+		return nil, status.Errorf(codes.InvalidArgument, "missing worker name")
 	}
 	if req.IsolatedInputHash == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
+		return nil, status.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
 	if err := trigger(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to trigger worker: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to trigger worker: %v", err)
 	}
 	return &admin.TriggerResponse{}, nil
 }
