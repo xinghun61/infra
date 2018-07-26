@@ -1035,6 +1035,8 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(0, len(actual.field_defs))
     self.assertEqual(0, len(actual.approval_defs))
     self.assertEqual(False, actual.restrict_to_known)
+    self.assertEqual(
+        ['Duplicate'], [s.status for s in actual.statuses_offer_merge])
 
   def testConvertConfig_Normal(self):
     """We can convert a config with fields and components to protoc."""
@@ -1045,6 +1047,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.config.approval_defs.append(tracker_pb2.ApprovalDef(
         approval_id=3, approver_ids=[111L], survey='What?'))
     self.config.restrict_to_known = True
+    self.config.statuses_offer_merge = ['Duplicate', 'New']
     actual = converters.ConvertConfig(
         self.project, self.config, self.users_by_id, labels_by_id)
     self.assertEqual(1, len(actual.component_defs))
@@ -1052,6 +1055,9 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(1, len(actual.approval_defs))
     self.assertEqual('proj', actual.project_name)
     self.assertEqual(True, actual.restrict_to_known)
+    self.assertEqual(
+        ['Duplicate', 'New'],
+        sorted(s.status for s in actual.statuses_offer_merge))
 
   def testConvertHotlist(self):
     """We can convert a hotlist to protoc."""

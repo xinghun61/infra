@@ -675,6 +675,14 @@ def ConvertConfig(project, config, users_by_id, labels_by_id):
   status_defs = [
       ConvertStatusDef(sd, rank)
       for rank, sd in enumerate(config.well_known_statuses)]
+  statuses_offer_merge = [
+      common_pb2.StatusRef(
+          status=sd.status,
+          means_open=sd.means_open,
+          is_derived=False)
+      for sd in config.well_known_statuses
+      if sd.status in config.statuses_offer_merge
+  ]
   label_defs = [
       ConvertLabelDef(ld, rank)
       for rank, ld in enumerate(config.well_known_labels)]
@@ -690,6 +698,7 @@ def ConvertConfig(project, config, users_by_id, labels_by_id):
   result = project_objects_pb2.Config(
       project_name=project.project_name,
       status_defs=status_defs,
+      statuses_offer_merge=statuses_offer_merge,
       label_defs=label_defs,
       exclusive_label_prefixes=config.exclusive_label_prefixes,
       component_defs=component_defs,
