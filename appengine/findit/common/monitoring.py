@@ -24,12 +24,14 @@ issues = gae_ts_mon.CounterMetric(
     [gae_ts_mon.StringField('category'),
      gae_ts_mon.StringField('operation')])
 
-flakes = gae_ts_mon.CounterMetric('findit/flakes',
-                                  'Flakes requested or analyzed', [
-                                      gae_ts_mon.StringField('source'),
-                                      gae_ts_mon.StringField('operation'),
-                                      gae_ts_mon.StringField('trigger')
-                                  ])
+flakes = gae_ts_mon.CounterMetric(
+    'findit/flakes', 'Flakes requested or analyzed', [
+        gae_ts_mon.StringField('source'),
+        gae_ts_mon.StringField('operation'),
+        gae_ts_mon.StringField('trigger'),
+        gae_ts_mon.StringField('canonical_step_name'),
+        gae_ts_mon.StringField('isolate_target_name')
+    ])
 
 try_jobs = gae_ts_mon.CounterMetric('findit/try-jobs', 'Try jobs triggered', [
     gae_ts_mon.StringField('operation'),

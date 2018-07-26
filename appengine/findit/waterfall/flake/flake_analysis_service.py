@@ -5,10 +5,10 @@
 import logging
 
 from common import constants
-from common import monitoring
 from libs import email_util
 from libs import time_util
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from services import monitoring
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.flake import step_mapper
 from waterfall.test_info import TestInfo
@@ -246,7 +246,27 @@ def ScheduleAnalysisForFlake(request,
                  request.name)
     return None
 
+  canonical_step_name = 'unknown'
+  isolate_target_name = 'unknown'
+  if request.build_steps[0].step_metadata:
+    # Tries to use step_metadata from request.build_steps as default.
+    canonical_step_name = request.build_steps[0].step_metadata.get(
+        'canonical_step_name') or canonical_step_name
+    isolate_target_name = request.build_steps[0].step_metadata.get(
+        'isolate_target_name') or isolate_target_name
+
   version_number, build_step = _CheckForNewAnalysis(request, rerun)
+
+  if build_step and build_step.step_metadata:
+    # Uses the step_metadata from the step that the analysis will actually
+    # run for.
+    canonical_step_name = (
+        build_step.step_metadata.get('canonical_step_name') or
+        canonical_step_name)
+    isolate_target_name = (
+        build_step.step_metadata.get('isolate_target_name') or
+        isolate_target_name)
+
   if version_number and build_step:
     # A new analysis is needed.
     logging.info('A new analysis is needed for: %s', build_step)
@@ -274,20 +294,28 @@ def ScheduleAnalysisForFlake(request,
       request.put()
       logging.info('A new analysis was triggered successfully with key: %s',
                    analysis.key)
-      monitoring.flakes.increment({
-          'operation': 'analyze',
-          'trigger': trigger_action,
-          'source': flake_source,
-      })
+
+      monitoring.OnFlakeAnalysisTriggered(
+          source=flake_source,
+          operation='analyze',
+          trigger=trigger_action,
+          canonical_step_name=canonical_step_name,
+          isolate_target_name=isolate_target_name)
       return True
     else:
       logging.error('But new analysis was not triggered!')
+      monitoring.OnFlakeAnalysisTriggered(
+          source=flake_source,
+          operation='error',
+          trigger=trigger_action,
+          canonical_step_name=canonical_step_name,
+          isolate_target_name=isolate_target_name)
   else:
     logging.info('No new analysis is needed: %s', request)
-
-  monitoring.flakes.increment({
-      'operation': 'skip',
-      'trigger': trigger_action,
-      'source': flake_source,
-  })
+    monitoring.OnFlakeAnalysisTriggered(
+        source=flake_source,
+        operation='skip',
+        trigger=trigger_action,
+        canonical_step_name=canonical_step_name,
+        isolate_target_name=isolate_target_name)
   return False

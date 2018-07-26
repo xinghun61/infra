@@ -28,7 +28,7 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
   no_matching_result = (None, None, None, None, None)
 
   # 0. Get step_metadata.
-  step_metadata = ci_failure.GetStepMetadata(
+  step_metadata = cq_build_step.step_metadata or ci_failure.GetStepMetadata(
       cq_build_step.master_name, cq_build_step.builder_name,
       cq_build_step.build_number, cq_build_step.step_name)
   if not step_metadata:
@@ -121,13 +121,14 @@ def FindMatchingWaterfallStep(build_step, test_name):
     build_step.wf_builder_name = build_step.builder_name
     build_step.wf_build_number = build_step.build_number
     build_step.wf_step_name = build_step.step_name
-    metadata = ci_failure.GetStepMetadata(
+    metadata = build_step.step_metadata or ci_failure.GetStepMetadata(
         build_step.master_name, build_step.builder_name,
         build_step.build_number, build_step.step_name)
     if not metadata:
       logging.error('Couldn\'t get step_metadata')
       return
 
+  build_step.step_metadata = metadata
   # Query Swarming for isolated data.
   build_step.swarmed = True if metadata.get('swarm_task_ids') else False
 

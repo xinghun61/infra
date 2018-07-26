@@ -63,6 +63,17 @@ def OnFlakeCulprit(result, action_taken, reason):
   })
 
 
+def OnFlakeAnalysisTriggered(source, operation, trigger, canonical_step_name,
+                             isolate_target_name):
+  monitoring.flakes.increment({
+      'source': source,
+      'operation': operation,
+      'trigger': trigger,
+      'canonical_step_name': canonical_step_name,
+      'isolate_target_name': isolate_target_name
+  })
+
+
 def OnFlakeIdentified(canonical_step_name, isolated_target_name, operation,
                       count):
   monitoring.flakes_identified_by_waterfall_analyses.increment_by(

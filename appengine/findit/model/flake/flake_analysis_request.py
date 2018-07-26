@@ -39,6 +39,9 @@ class BuildStep(ndb.Model):
   # Indicate whether the analysis of flake on this configuration is scheduled.
   scheduled = ndb.BooleanProperty(indexed=False, default=False)
 
+  # Step metadata of the step.
+  step_metadata = ndb.JsonProperty(compressed=True)
+
   @staticmethod
   def _StripMasterPrefix(name):
     master_prefix = 'master.'

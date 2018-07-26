@@ -70,6 +70,20 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
     }
     mock_common_monitoring.assert_called_once_with(parameters)
 
+  @mock.patch.object(common_monitoring.flakes, 'increment')
+  def testOnFlakeAnalysisTriggered(self, mock_common_monitoring):
+    monitoring.OnFlakeAnalysisTriggered('source', 'operation', 'trigger',
+                                        'canonical_step_name',
+                                        'isolate_target_name')
+    parameters = {
+        'source': 'source',
+        'operation': 'operation',
+        'trigger': 'trigger',
+        'canonical_step_name': 'canonical_step_name',
+        'isolate_target_name': 'isolate_target_name'
+    }
+    mock_common_monitoring.assert_called_once_with(parameters)
+
   @mock.patch.object(common_monitoring.flakes_identified_by_waterfall_analyses,
                      'increment_by')
   def testOnFlakeIdentified(self, mock_common_monitoring):

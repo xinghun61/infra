@@ -9,6 +9,7 @@ from common import constants
 from model.flake import triggering_sources
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from services import monitoring
 from waterfall.flake import flake_analysis_service
 from waterfall.test import wf_testcase
 from waterfall.test_info import TestInfo
@@ -274,7 +275,8 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
       flake_analysis_service, '_CheckForNewAnalysis', return_value=(0, None))
   @mock.patch.object(flake_analysis_service.step_mapper,
                      'FindMatchingWaterfallStep')
-  def testAuthorizedAccessButNoNewAnalysisNeeded(self, _mock1, _mock2):
+  @mock.patch.object(monitoring, 'OnFlakeAnalysisTriggered')
+  def testAuthorizedAccessButNoNewAnalysisNeeded(self, mock_mon, *_):
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     step = BuildStep.Create('m', 'b2', 80, 's', datetime(2016, 10, 20))
     request.build_steps = [step]
@@ -282,10 +284,17 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(
         flake_analysis_service.ScheduleAnalysisForFlake(
             request, 'test@chromium.org', True, triggering_sources.FINDIT_UI))
+    mock_mon.assert_called_once_with(
+        source='waterfall',
+        operation='skip',
+        trigger='auto',
+        canonical_step_name='unknown',
+        isolate_target_name='unknown')
 
   @mock.patch.object(flake_analysis_service.step_mapper,
                      'FindMatchingWaterfallStep')
-  def testAuthorizedAccessAndNewAnalysisNeededAndTriggered(self, _mock):
+  @mock.patch.object(monitoring, 'OnFlakeAnalysisTriggered')
+  def testAuthorizedAccessAndNewAnalysisNeededAndTriggered(self, mock_mon, _):
     step = BuildStep.Create('m', 'b', 80, 's', datetime(2016, 10, 20))
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     request.build_steps = [step]
@@ -297,6 +306,10 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
       step.wf_builder_name = 'wf_b'
       step.wf_build_number = 100
       step.wf_step_name = 'wf_s'
+      step.step_metadata = {
+          'isolate_target_name': 'wf_s',
+          'canonical_step_name': 'wf_s'
+      }
       return 1, step
 
     mocked_analysis = mock.Mock(key='key')
@@ -336,11 +349,23 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
           mock.call.analyses.append('key'),
           mock.call.put(),
       ])
+      mock_mon.assert_called_once_with(
+          source='waterfall',
+          operation='analyze',
+          trigger='auto',
+          canonical_step_name='wf_s',
+          isolate_target_name='wf_s')
 
   @mock.patch.object(flake_analysis_service.step_mapper,
                      'FindMatchingWaterfallStep')
-  def testAuthorizedAccessAndNewAnalysisNeededButNotTriggered(self, _mock):
+  @mock.patch.object(monitoring, 'OnFlakeAnalysisTriggered')
+  def testAuthorizedAccessAndNewAnalysisNeededButNotTriggered(
+      self, mock_mon, _):
     step = BuildStep.Create('m', 'b', 80, 's', datetime(2016, 10, 20))
+    step.step_metadata = {
+        'isolate_target_name': 'wf_s',
+        'canonical_step_name': 'wf_s'
+    }
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     request.build_steps = [step]
     user_email = 'test@chromium.org'
@@ -382,6 +407,12 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE,
           force=False)
       self.assertFalse(mocked_GetVersion.called)
+      mock_mon.assert_called_once_with(
+          source='waterfall',
+          operation='error',
+          trigger='auto',
+          canonical_step_name='wf_s',
+          isolate_target_name='wf_s')
 
   @mock.patch.object(
       flake_analysis_service,
