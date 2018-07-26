@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/users.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x19\x61pi/api_proto/users.proto\x12\x08monorail\x1a api/api_proto/user_objects.proto\x1a\x1a\x61pi/api_proto/common.proto\"&\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\",\n\x1aListReferencedUsersRequest\x12\x0e\n\x06\x65mails\x18\x01 \x03(\t\"<\n\x1bListReferencedUsersResponse\x12\x1d\n\x05users\x18\x01 \x03(\x0b\x32\x0e.monorail.User\"W\n\x15GetUserCommitsRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x16\n\x0e\x66rom_timestamp\x18\x02 \x01(\x07\x12\x17\n\x0funtil_timestamp\x18\x03 \x01(\x07\"@\n\x16GetUserCommitsResponse\x12&\n\x0cuser_commits\x18\x01 \x03(\x0b\x32\x10.monorail.Commit2\xf4\x01\n\x05Users\x12.\n\x07GetUser\x12\x11.monorail.UserRef\x1a\x0e.monorail.User\"\x00\x12\x64\n\x13ListReferencedUsers\x12$.monorail.ListReferencedUsersRequest\x1a%.monorail.ListReferencedUsersResponse\"\x00\x12U\n\x0eGetUserCommits\x12\x1f.monorail.GetUserCommitsRequest\x1a .monorail.GetUserCommitsResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x19\x61pi/api_proto/users.proto\x12\x08monorail\x1a api/api_proto/user_objects.proto\x1a\x1a\x61pi/api_proto/common.proto\"&\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\"S\n\x1aListReferencedUsersRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x0e\n\x06\x65mails\x18\x02 \x03(\t\"<\n\x1bListReferencedUsersResponse\x12\x1d\n\x05users\x18\x01 \x03(\x0b\x32\x0e.monorail.User\"W\n\x15GetUserCommitsRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x16\n\x0e\x66rom_timestamp\x18\x02 \x01(\x07\x12\x17\n\x0funtil_timestamp\x18\x03 \x01(\x07\"@\n\x16GetUserCommitsResponse\x12&\n\x0cuser_commits\x18\x01 \x03(\x0b\x32\x10.monorail.Commit2\xf4\x01\n\x05Users\x12.\n\x07GetUser\x12\x11.monorail.UserRef\x1a\x0e.monorail.User\"\x00\x12\x64\n\x13ListReferencedUsers\x12$.monorail.ListReferencedUsersRequest\x1a%.monorail.ListReferencedUsersResponse\"\x00\x12U\n\x0eGetUserCommits\x12\x1f.monorail.GetUserCommitsRequest\x1a .monorail.GetUserCommitsResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_user__objects__pb2.DESCRIPTOR,api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -75,8 +75,15 @@ _LISTREFERENCEDUSERSREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='emails', full_name='monorail.ListReferencedUsersRequest.emails', index=0,
-      number=1, type=9, cpp_type=9, label=3,
+      name='trace', full_name='monorail.ListReferencedUsersRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='emails', full_name='monorail.ListReferencedUsersRequest.emails', index=1,
+      number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -94,7 +101,7 @@ _LISTREFERENCEDUSERSREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=141,
-  serialized_end=185,
+  serialized_end=224,
 )
 
 
@@ -124,8 +131,8 @@ _LISTREFERENCEDUSERSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=187,
-  serialized_end=247,
+  serialized_start=226,
+  serialized_end=286,
 )
 
 
@@ -169,8 +176,8 @@ _GETUSERCOMMITSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=249,
-  serialized_end=336,
+  serialized_start=288,
+  serialized_end=375,
 )
 
 
@@ -200,10 +207,11 @@ _GETUSERCOMMITSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=338,
-  serialized_end=402,
+  serialized_start=377,
+  serialized_end=441,
 )
 
+_LISTREFERENCEDUSERSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _LISTREFERENCEDUSERSRESPONSE.fields_by_name['users'].message_type = _USER
 _GETUSERCOMMITSRESPONSE.fields_by_name['user_commits'].message_type = api_dot_api__proto_dot_user__objects__pb2._COMMIT
 DESCRIPTOR.message_types_by_name['User'] = _USER

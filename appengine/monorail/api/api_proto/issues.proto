@@ -59,9 +59,10 @@ message IssueResponse {
 }
 
 
-// Next available tag: 2
+// Next available tag: 3
 message ListReferencedIssuesRequest {
-  repeated IssueRef issue_refs = 1;
+  RequestTrace trace = 1;
+  repeated IssueRef issue_refs = 2;
 }
 
 
