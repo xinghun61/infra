@@ -2542,7 +2542,7 @@ class IssueService(object):
                      if approver not in approval.approver_ids]
     approvers_remove = [approver for approver in
                         approval_delta.approver_ids_remove
-                        if id in approval.approver_ids]
+                        if approver in approval.approver_ids]
     if approvers_add or approvers_remove:
       approver_ids = [approver for approver in
                       list(approval.approver_ids) + approvers_add

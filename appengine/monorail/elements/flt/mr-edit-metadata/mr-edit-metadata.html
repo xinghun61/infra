@@ -1,17 +1,21 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../redux/redux-mixin.html">
+<link rel="import" href="./mr-multi-input.html">
 
 <dom-module id="mr-edit-metadata">
   <template>
     <style>
       :host {
         display: block;
+        --mr-multi-input-styles: {
+          box-sizing: border-box;
+          width: 100%;
+          padding: 0.25em 4px;
+        }
       }
       select,
       input {
-        box-sizing: border-box;
-        width: 100%;
-        padding: 0.25em 4px;
+        @apply --mr-multi-input-styles;
       }
       input[type="checkbox"] {
         width: auto;
@@ -62,6 +66,12 @@
             <option value$="[[item]]" selected$="[[_computeIsSelected(issueStatus, item)]]">[[item]]</option>
           </template>
         </select>
+
+        <template is="dom-if" if="[[_and(isApprover, isApproval)]]">
+          <label for="approversInput" on-click="_clickLabelForCustomInput">Approvers:</label>
+          <mr-multi-input id="approversInput" values="[[_mapUserRefsToNames(approvers)]]"></mr-multi-input>
+        </template>
+
         <template is="dom-repeat" items="[[users]]" as="user">
           <label for$="[[_idForField(user.name)]]">[[user.name]]:</label>
 

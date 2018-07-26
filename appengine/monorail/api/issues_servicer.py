@@ -202,6 +202,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     """Update an approval and return the updated approval in a reponse proto."""
     project, issue, config = self._GetProjectIssueAndConfig(
         mc, request, use_cache=False)
+
     with work_env.WorkEnv(mc, self.services) as we:
       approval_fd = tracker_bizobj.FindFieldDef(
           request.field_ref.field_name, config)

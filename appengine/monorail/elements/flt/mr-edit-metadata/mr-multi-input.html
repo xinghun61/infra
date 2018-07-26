@@ -1,0 +1,16 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<dom-module id="mr-multi-input">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      input {
+        @apply --mr-multi-input-styles;
+      }
+    </style>
+    <input id="multiInput" value$="[[_defaultValue]]" />
+  </template>
+  <script src="./mr-multi-input.js"></script>
+<dom-module>

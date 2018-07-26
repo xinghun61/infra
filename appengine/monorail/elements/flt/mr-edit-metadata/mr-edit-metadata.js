@@ -19,7 +19,7 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       summary: String,
       cc: Array,
       components: Array,
-      fields: Array,
+      fieldList: Array,
       issueStatus: String,
       statuses: Array,
       blockedOn: Array,
@@ -31,6 +31,10 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
         statePath: 'projectName',
       },
       isApproval: {
+        type: Boolean,
+        value: false,
+      },
+      isApprover: {
         type: Boolean,
         value: false,
       },
@@ -52,6 +56,12 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
 
   reset() {
     this.$.editForm.reset();
+
+    // Since custom elements containing <input> elements have the inputs
+    // wrapped in ShadowDOM, those inputs don't get reset with the rest of
+    // the form. Haven't been able to figure out a way to replicate form reset
+    // behavior with custom input elements.
+    Polymer.dom(this.root).querySelector('#approversInput').reset();
   }
 
   getData() {
@@ -60,21 +70,13 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
       comment: this._newCommentText,
     };
     if (!this.isApproval) {
-      result[summary] = this.$.summaryInput.value;
+      result['summary'] = this.$.summaryInput.value;
+    } else {
+      result['approvers'] = Polymer.dom(this.root).querySelector(
+        '#approversInput'
+      ).getValue() || [];
     }
     return result;
-  }
-
-  _valuesForField(fieldName) {
-    const input = Polymer.dom(this.root).querySelector(
-      '#' + this._idForField(fieldName)
-    );
-    if (!input) return [];
-    return input.value.split(',').map((str) => (str.trim()));
-  }
-
-  _idForField(fieldName, choiceName='') {
-    return `${(fieldName + choiceName).replace(/\W+/g, '')}Input`;
   }
 
   _computeIsSelected(a, b) {
@@ -96,6 +98,28 @@ class MrEditMetadata extends ReduxMixin(Polymer.Element) {
     return labels.map((l) => {
       return l.label;
     });
+  }
+
+  // For simulating && in templating.
+  _and(a, b) {
+    return a && b;
+  }
+
+  // This function exists because <label for="inputId"> doesn't work for custom
+  // input elements.
+  _clickLabelForCustomInput(e) {
+    const target = e.target;
+    const forValue = target.getAttribute('for');
+    if (forValue) {
+      const customInput = Polymer.dom(this.root).querySelector('#' + forValue);
+      if (customInput && customInput.focus) {
+        customInput.focus();
+      }
+    }
+  }
+
+  _mapUserRefsToNames(users) {
+    return users.map((u) => (u.displayName));
   }
 
   _joinValues(arr) {

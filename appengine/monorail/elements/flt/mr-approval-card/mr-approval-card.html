@@ -11,7 +11,7 @@
 <link rel="import" href="../../mr-user-link/mr-user-link.html">
 <link rel="import" href="../mr-compact-comments/mr-compact-comments.html">
 <link rel="import" href="../mr-inline-editor/mr-inline-editor.html">
-<link rel="import" href="../mr-metadata/mr-edit-metadata.html">
+<link rel="import" href="../mr-edit-metadata/mr-edit-metadata.html">
 <link rel="import" href="../mr-metadata/mr-metadata.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
 
@@ -154,10 +154,11 @@
       </h3>
       <mr-edit-metadata
         id="metadataForm"
-        users="[[users]]"
-        urls="[[urls]]"
+        approvers="[[approvers]]"
+        field-list="[[_fieldList]]"
         statuses="[[_availableStatuses]]"
         status="[[_status]]"
+        is-approver="[[_isApprovalOwner]]"
         is-approval
       ></mr-edit-metadata>
       <div class="dialog-actions">

@@ -151,26 +151,64 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   }
 
   edit() {
+    this.$.metadataForm.reset();
     this.$.editApproval.open();
   }
 
   cancel() {
-    this.$.metadataForm.reset();
     this.$.editApproval.close();
   }
 
   save() {
     const data = this.$.metadataForm.getData();
+    const delta = {};
 
-    if (data.comment || data.status !== this._status) {
-      const delta = {
-        status: TEXT_TO_STATUS_ENUM[data.status],
-      };
+    if (data.status !== this._status) {
+      delta['status'] = TEXT_TO_STATUS_ENUM[data.status];
+    }
 
+    // Map oldApprovers from userRef objects into raw display names to make
+    // the array the same format as newApprovers.
+    // TODO(zhangtiff): Figure out how to handle truncated display names.
+    const oldApprovers = this.approvers.map((a) => (a.displayName));
+    const newApprovers = data.approvers;
+
+    const approverEquals = (a, b) => (a.toLowerCase() === b.toLowerCase());
+
+    const approversAdd = this._arrayDifference(newApprovers, oldApprovers,
+      approverEquals);
+    const approversRemove = this._arrayDifference(oldApprovers, newApprovers,
+      approverEquals);
+
+    if (approversAdd.length > 0) {
+      delta['approver_refs_add'] = this._displayNamesToUserRefs(approversAdd);
+    }
+
+    if (approversRemove.length > 0) {
+      delta['approver_refs_remove'] = this._displayNamesToUserRefs(
+        approversRemove);
+    }
+
+    if (data.comment || Object.keys(delta).length > 0) {
       this._updateApproval(data.comment, delta);
     }
 
     this.cancel();
+  }
+
+  // With lists a and b, get the elements that are in a but not in b.
+  // result = a - b
+  _arrayDifference(listA, listB, equals) {
+    if (!equals) {
+      equals = (a, b) => (a === b);
+    }
+    return listA.filter((a) => {
+      return !listB.find((b) => (equals(a, b)));
+    });
+  }
+
+  _displayNamesToUserRefs(list) {
+    return list.map((name) => ({'display_name': name}));
   }
 
   toggleCard(evt) {

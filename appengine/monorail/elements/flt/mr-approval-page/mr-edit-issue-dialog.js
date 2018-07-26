@@ -32,6 +32,10 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
           'Started',
         ],
       },
+      _fieldList: {
+        type: Array,
+        computed: '_computeFieldList(issue.fieldValues)',
+      },
       _opened: {
         type: Boolean,
         computed: '_computeOpened(openedDialog)',
@@ -45,6 +49,10 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
     };
   }
 
+  _computeFieldList(fields) {
+    return computeFunction.computeFieldList(fields, null);
+  }
+
   _computeOpened(openedDialog) {
     return openedDialog === DialogState.EDIT_ISSUE;
   }
@@ -55,9 +63,9 @@ class MrEditIssueDialog extends ReduxMixin(Polymer.Element) {
         type: actionType.OPEN_DIALOG,
         dialog: DialogState.EDIT_ISSUE,
       });
+      this.$.metadataForm.reset();
     } else {
       this.dispatch({type: actionType.CLOSE_DIALOG});
-      this.$.metadataForm.reset();
     }
   }
 
