@@ -188,7 +188,7 @@ class UserCommitsTest(unittest.TestCase):
         self.cnxn,
         cols=['commit_time'],
         order_by=[('commit_time', [])],
-        limit=1).AndReturn((1531974568,))
+        limit=1).AndReturn((1531949368,))
     self.mox.StubOutWithMock(usercommitscron, "FetchGitilesData")
     usercommitscron.FetchGitilesData(
         "https://chromium.googlesource.com/infra/infra/+log/?").AndReturn(
@@ -208,7 +208,7 @@ class UserCommitsTest(unittest.TestCase):
         'https://chromium.googlesource.com/infra/infra/')
     self.mox.VerifyAll()
     self.assertEquals([
-        ["96753d0ac9dba51216be0c94d198a5c0103d0146",3,1531975528.0,"message C",
+        ["96753d0ac9dba51216be0c94d198a5c0103d0146",3,1531950328, "message C",
         "https://chromium.googlesource.com/infra/infra/"],
         ], rows)
 
@@ -240,9 +240,9 @@ class UserCommitsTest(unittest.TestCase):
         'https://chromium.googlesource.com/infra/infra/')
     self.mox.VerifyAll()
     self.assertEquals([
-        ["96753d0ac9dba51216be0c94d198a5c0103d0146",3,1531975528.0,"message C",
+        ["96753d0ac9dba51216be0c94d198a5c0103d0146",3,1531950328, "message C",
         "https://chromium.googlesource.com/infra/infra/"],
-        ["3a23146c0e8ca48461330fb280c8c241722aa1a4", 2,1531974568.0,"message B",
+        ["3a23146c0e8ca48461330fb280c8c241722aa1a4", 2,1531949368, "message B",
         "https://chromium.googlesource.com/infra/infra/"]
         ], rows)
 
@@ -283,13 +283,13 @@ class UserCommitsTest(unittest.TestCase):
         'https://chromium.googlesource.com/infra/infra/')
     self.mox.VerifyAll()
     self.assertEquals([
-        ["96753d0ac9dba51216be0c94d198a5c0103d0146", 3,1531975528.0,"message C",
+        ["96753d0ac9dba51216be0c94d198a5c0103d0146", 3,1531950328, "message C",
         "https://chromium.googlesource.com/infra/infra/"],
-        ["3a23146c0e8ca48461330fb280c8c241722aa1a4", 2,1531974568.0,"message B",
+        ["3a23146c0e8ca48461330fb280c8c241722aa1a4", 2,1531949368, "message B",
         "https://chromium.googlesource.com/infra/infra/"],
-        ["671b868f34028bd58b05fd91a664fb4b21c8ecf0", 1,1531972627.0,"message A",
+        ["671b868f34028bd58b05fd91a664fb4b21c8ecf0", 1,1531947427, "message A",
         "https://chromium.googlesource.com/infra/infra/"],
-        ["54f489631b5337df4cb3f0a94f06a840b53db0ac", 4,1531968328.0,"message D",
+        ["54f489631b5337df4cb3f0a94f06a840b53db0ac", 4,1531943128, "message D",
         "https://chromium.googlesource.com/infra/infra/"]
         ], rows)
 
@@ -316,9 +316,9 @@ class UserCommitsTest(unittest.TestCase):
         [('671b868f34028bd58b05fd91a664fb4b21c8ecf0',)])
     self.mox.VerifyAll()
     self.assertEquals([
-        ["96753d0ac9dba51216be0c94d198a5c0103d0146",3,1531975528.0,"message C",
+        ["96753d0ac9dba51216be0c94d198a5c0103d0146",3,1531950328, "message C",
         "https://chromium.googlesource.com/infra/infra/"],
-        ["3a23146c0e8ca48461330fb280c8c241722aa1a4", 2,1531974568.0,"message B",
+        ["3a23146c0e8ca48461330fb280c8c241722aa1a4", 2,1531949368, "message B",
         "https://chromium.googlesource.com/infra/infra/"]
         ], rows)
 
@@ -354,13 +354,13 @@ class UserCommitsTest(unittest.TestCase):
         [('a37d2b00df7a0abd2867aeb427f72f3bdaa6f16c',)])
     self.mox.VerifyAll()
     self.assertEquals([
-        ["96753d0ac9dba51216be0c94d198a5c0103d0146", 3,1531975528.0,"message C",
+        ["96753d0ac9dba51216be0c94d198a5c0103d0146", 3,1531950328, "message C",
         "https://chromium.googlesource.com/infra/infra/"],
-        ["3a23146c0e8ca48461330fb280c8c241722aa1a4", 2,1531974568.0,"message B",
+        ["3a23146c0e8ca48461330fb280c8c241722aa1a4", 2,1531949368, "message B",
         "https://chromium.googlesource.com/infra/infra/"],
-        ["671b868f34028bd58b05fd91a664fb4b21c8ecf0", 1,1531972627.0,"message A",
+        ["671b868f34028bd58b05fd91a664fb4b21c8ecf0", 1,1531947427, "message A",
         "https://chromium.googlesource.com/infra/infra/"],
-        ["54f489631b5337df4cb3f0a94f06a840b53db0ac", 4,1531968328.0,"message D",
+        ["54f489631b5337df4cb3f0a94f06a840b53db0ac", 4,1531943128, "message D",
         "https://chromium.googlesource.com/infra/infra/"]
         ], rows)
 

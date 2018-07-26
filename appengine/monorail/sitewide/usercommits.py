@@ -5,9 +5,9 @@
 
 """Cron job that adds all new user commmits to the SQL database daily."""
 
+import calendar
 import json
 import logging
-import time
 from datetime import datetime
 
 import settings
@@ -118,7 +118,7 @@ class GetCommitsCron(jsonfeed.InternalTask):
     """Takes in time as string and converts it to Unix time."""
     converted_time = datetime.strptime(commit_time,
         '%b %d %H:%M:%S %Y')
-    converted_time = time.mktime(converted_time.timetuple())
+    converted_time = calendar.timegm(converted_time.timetuple())
     return converted_time
 
   def InitializeRepo(self, cnxn, repo_url):
