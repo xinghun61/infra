@@ -45,6 +45,7 @@ disable=
   no-self-use,
   protected-access,
   reimported,
+  relative-beyond-top-level,
   star-args,
   superfluous-parens,  # Disabled to prevent firing when linting Python3 code.
   too-few-public-methods,
@@ -58,6 +59,7 @@ disable=
   too-many-return-statements,
   too-many-statements,
   trailing-whitespace, # Overlap with Spacey analyzer.
+  wrong-import-order,
 
 
 [REPORTS]
