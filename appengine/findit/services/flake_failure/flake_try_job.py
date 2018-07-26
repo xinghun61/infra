@@ -324,6 +324,10 @@ def ScheduleFlakeTryJob(parameters, runner_id):
   tryserver_mastername, tryserver_buildername = (
       waterfall_config.GetFlakeTrybot(master_name, builder_name))
 
+  assert tryserver_mastername and tryserver_buildername, (
+      'No tryserver master/builder is set for {}/{}'.format(
+          master_name, builder_name))
+
   # TODO(crbug.com/787096): assert dimensions exists once full migration to LUCI
   # is complete.
   dimensions = (
