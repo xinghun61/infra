@@ -17,6 +17,7 @@ service Projects {
   rpc GetConfig (GetConfigRequest) returns (Config) {}
   rpc GetCustomPermissions (GetCustomPermissionsRequest) returns (GetCustomPermissionsResponse) {}
   rpc GetVisibleMembers (GetVisibleMembersRequest) returns (GetVisibleMembersResponse) {}
+  rpc GetFieldOptions (GetFieldOptionsRequest) returns (GetFieldOptionsResponse) {}
 }
 
 
@@ -38,16 +39,19 @@ message GetConfigRequest {
   string project_name = 2;
 }
 
+
 // Next available tag: 3
 message GetCustomPermissionsRequest {
   RequestTrace trace = 1;
   string project_name = 2;
 }
 
+
 // Next available tag: 2
 message GetCustomPermissionsResponse {
   repeated string permissions = 1;
 }
+
 
 // Next available tag: 3
 message GetVisibleMembersRequest {
@@ -55,8 +59,22 @@ message GetVisibleMembersRequest {
   string project_name = 2;
 }
 
+
 // Next available tag: 3
 message GetVisibleMembersResponse {
   repeated UserRef user_refs = 1;
   repeated UserRef group_refs = 2;
+}
+
+
+// Next available tag: 3
+message GetFieldOptionsRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+}
+
+
+// Next available tag: 2
+message GetFieldOptionsResponse {
+  repeated FieldOptions field_options = 1;
 }

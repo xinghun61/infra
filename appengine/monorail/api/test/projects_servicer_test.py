@@ -195,19 +195,9 @@ class ProjectsServicerTest(unittest.TestCase):
         self.projects_svcr.GetCustomPermissions, mc, request)
     self.assertEqual([], response.permissions)
 
-  def testGetVisibleMembers_NotSignedIn(self):
-    request = projects_pb2.GetConfigRequest(project_name='proj')
-    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
-    response = self.CallWrapped(
-        self.projects_svcr.GetVisibleMembers, mc, request)
-    self.assertEqual(
-        [111L, 222L, 333L],
-        [user_ref.user_id for user_ref in response.user_refs])
-    self.assertEqual(0, len(response.group_refs))
-
   def assertVisibleMembers(self, expected_user_ids, expected_group_ids,
                            requester=None):
-    request = projects_pb2.GetConfigRequest(project_name='proj')
+    request = projects_pb2.GetVisibleMembersRequest(project_name='proj')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester=requester)
     mc.LookupLoggedInUserPerms(self.project)
@@ -268,3 +258,94 @@ class ProjectsServicerTest(unittest.TestCase):
     self.project.contributor_ids.extend([999L])
     self.assertVisibleMembers([111L, 222L, 333L, 999L], [999L],
                               requester='owner@example.com')
+
+  def AddUserField(self, name, needs_member=None, needs_perm=None):
+    if needs_perm:
+      needs_member = True
+    self.services.config.CreateFieldDef(
+        self.cnxn, self.project.project_id, name, 'USER_TYPE',
+        applic_type=None, applic_pred=None, is_required=False, is_niche=False,
+        is_multivalued=False, min_value=None, max_value=None, regex=None,
+        needs_member=needs_member, needs_perm=needs_perm, grants_perm=False,
+        notify_on=None, date_action_str=None, docstring='Field Docstring',
+        admin_ids=None)
+
+  def testGetFieldOptions_Normal(self):
+    self.AddUserField('Foo Field', needs_perm=permissions.EDIT_ISSUE)
+
+    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.GetFieldOptions, mc, request)
+
+    self.assertEqual(1, len(response.field_options))
+    field = response.field_options[0]
+    self.assertEqual('Foo Field', field.field_ref.field_name)
+    self.assertEqual(
+        [111L, 222L],
+        sorted([user_ref.user_id for user_ref in field.user_refs]))
+
+  def testGetFieldOptions_CustomPermission(self):
+    self.AddUserField('Foo Field', needs_perm='FooPerm')
+    self.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=222L,
+            perms=['FooPerm'])]
+
+    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.GetFieldOptions, mc, request)
+
+    self.assertEqual(1, len(response.field_options))
+    field = response.field_options[0]
+    self.assertEqual('Foo Field', field.field_ref.field_name)
+    self.assertEqual(
+        [222L],
+        sorted([user_ref.user_id for user_ref in field.user_refs]))
+
+  def testGetFieldOptions_NoPermissionsNeeded(self):
+    self.AddUserField('Foo Field')
+
+    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.GetFieldOptions, mc, request)
+
+    self.assertEqual(0, len(response.field_options))
+
+  def testGetFieldOptions_MultipleFields(self):
+    self.AddUserField('Bar Field', needs_perm=permissions.VIEW)
+    self.AddUserField('Foo Field', needs_perm=permissions.EDIT_ISSUE)
+
+    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.GetFieldOptions, mc, request)
+
+    self.assertEqual(2, len(response.field_options))
+    field_options = sorted(
+        response.field_options, key=lambda field: field.field_ref.field_name)
+
+    self.assertEqual(
+        ['Bar Field', 'Foo Field'],
+        [field.field_ref.field_name for field in field_options])
+    self.assertEqual(
+        [[111L, 222L, 333L],
+         [111L, 222L]],
+        [sorted(user_ref.user_id for user_ref in field.user_refs)
+         for field in field_options])
+
+
+  def testGetFieldOptions_NoFields(self):
+    request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.GetFieldOptions, mc, request)
+
+    self.assertEqual(0, len(response.field_options))

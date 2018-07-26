@@ -62,12 +62,30 @@ class IssueOptionsJSONTest(unittest.TestCase):
 
     self.services = services
 
+  def AddUserField(self, mr, name, needs_member=None, needs_perm=None,
+                   is_deleted=False):
+    if needs_perm:
+      needs_member = True
+    field_id = self.services.config.CreateFieldDef(
+        mr.cnxn, self.project.project_id, name, 'USER_TYPE',
+        applic_type=None, applic_pred=None, is_required=False, is_niche=False,
+        is_multivalued=False, min_value=None, max_value=None, regex=None,
+        needs_member=needs_member, needs_perm=needs_perm, grants_perm=False,
+        notify_on=None, date_action_str=None, docstring='Field Docstring',
+        admin_ids=None)
+    if is_deleted:
+      self.services.config.SoftDeleteFieldDefs(
+          mr.cnxn, self.project.project_id, [field_id])
+
   def RunHandleRequest(self, servlet, logged_in_user_id, perms,
-                       effective_ids=None):
+                       effective_ids=None, user_fields=None):
     mr = testing_helpers.MakeMonorailRequest(project=self.project, perms=perms)
     mr.auth.user_id = logged_in_user_id
     if effective_ids:
       mr.auth.effective_ids = effective_ids
+    if user_fields:
+      for user_field in user_fields:
+        self.AddUserField(mr, **user_field)
     json_data = servlet.HandleRequest(mr)
     return json_data
 
@@ -181,6 +199,34 @@ class IssueOptionsJSONTest(unittest.TestCase):
     self.assertIn('Restrict-AddIssueComment-EditIssue', labels)
     self.assertIn('Restrict-View-CoreTeam', labels)
 
+  def testHandleRequest_Fields(self):
+    user_fields = [
+        {'name': 'Aaa Field',
+         'is_deleted': True},
+        {'name': 'Bar Field',
+         'needs_perm': permissions.VIEW},
+        {'name': 'Baz Field',
+         'needs_perm': permissions.EDIT_ISSUE},
+        {'name': 'Foo Field',
+         'needs_perm': 'FooPerm'},
+        {'name': 'Zoo Field'}]
+    self.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=222L,
+            perms=['FooPerm'])]
+    json_data = self.RunHandleRequest(
+        self.members_servlet, 111L, permissions.OWNER_ACTIVE_PERMISSIONSET,
+        user_fields=user_fields)
+    user_indexes = [
+        [json_data['members'][idx] for idx in field.get('user_indexes', [])]
+        for field in json_data['fields']]
+    self.assertEqual(
+        [['user_111@domain.com', 'user_222@domain.com', 'user_333@domain.com'],
+         ['user_111@domain.com', 'user_222@domain.com'],
+         ['user_222@domain.com'],
+         []],
+        user_indexes)
+
 
 class GetOptionsTest(unittest.TestCase):
 
@@ -260,7 +306,8 @@ class GetOptionsTest(unittest.TestCase):
      'field_type': 2,
      'is_multivalued': False,
      'is_required': False,
-     'needs_perm': None
+     'needs_perm': None,
+     'user_indexes': [],
     }]
     self.assertEqual(expected, actual)
 

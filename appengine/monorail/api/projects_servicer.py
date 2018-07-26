@@ -13,6 +13,7 @@ from api.api_proto import projects_prpc_pb2
 from businesslogic import work_env
 from framework import framework_views
 from framework import permissions
+from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 
@@ -77,7 +78,7 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
   @monorail_servicer.PRPCMethod
   def GetVisibleMembers(self, mc, request):
-    """Return the custom permissions for the given project."""
+    """Return the members of the project that the user can see."""
     project = self._GetProject(mc, request)
 
     users_by_id = tracker_helpers.GetVisibleMembers(mc, project, self.services)
@@ -89,4 +90,25 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
     result = projects_pb2.GetVisibleMembersResponse(
         user_refs=user_refs, group_refs=group_refs)
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def GetFieldOptions(self, mc, request):
+    """Return the possible users for each user field that needs permissions."""
+    project = self._GetProject(mc, request)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      config = we.GetProjectConfig(project.project_id)
+
+    users_by_id = tracker_helpers.GetVisibleMembers(mc, project, self.services)
+
+    field_options = []
+    for fd in config.field_defs:
+      if fd.needs_perm and not fd.is_deleted:
+        qualified_users = field_helpers.FilterValidFieldValues(
+            mc, project, self.services, fd, users_by_id.values())
+        field_options.append(converters.ConvertFieldOptions(
+            fd, [uv.user_id for uv in qualified_users], users_by_id, config))
+
+    result = projects_pb2.GetFieldOptionsResponse(field_options=field_options)
     return result

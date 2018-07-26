@@ -19,6 +19,7 @@ from framework import framework_views
 from framework import jsonfeed
 from framework import permissions
 from project import project_helpers
+from tracker import field_helpers
 from tracker import tracker_helpers
 from tracker import tracker_views
 
@@ -194,40 +195,30 @@ def GetHotlistOptions(mr, services):
 def GetFieldOptions(mr, services, config, visible_member_views,
                     visible_member_email_list):
   """Fetches custom field options for autocomplete."""
-  # TODO(jrobbins): omit fields that they don't have permission to view.
-  field_def_views = [
-      tracker_views.FieldDefView(fd, config)
-      for fd in config.field_defs
-      if not fd.is_deleted]
-  fields = [
-      dict(field_name=fdv.field_name, field_type=fdv.field_type,
-           field_id=fdv.field_id, needs_perm=fdv.needs_perm,
-           is_required=fdv.is_required, is_multivalued=fdv.is_multivalued,
-           choices=[dict(name=c.name, doc=c.docstring) for c in fdv.choices],
-           docstring=fdv.docstring)
-      for fdv in field_def_views]
-
   user_indexes = {email: idx
                   for idx, email in enumerate(visible_member_email_list)}
 
-  for field_dict in fields:
-    needed_perm = field_dict['needs_perm']
-    if needed_perm:
-      qualified_user_indexes = []
-      for uv in visible_member_views:
-        # TODO(jrobbins): Similar code occurs in field_helpers.py.
-        user = services.user.GetUser(mr.cnxn, uv.user_id)
-        auth = authdata.AuthData.FromUserID(
-            mr.cnxn, uv.user_id, services)
-        user_perms = permissions.GetPermissions(
-            user, auth.effective_ids, mr.project)
-        has_perm = user_perms.CanUsePerm(
-            needed_perm, auth.effective_ids, mr.project, [])
-        if has_perm:
-          qualified_user_indexes.append(user_indexes[uv.email])
+  # TODO(jrobbins): omit fields that they don't have permission to view.
+  fields = []
+  for fd in config.field_defs:
+    if fd.is_deleted:
+      continue
 
-      field_dict['user_indexes'] = sorted(set(qualified_user_indexes))
-  return fields
+    qualified_users = []
+    if fd.needs_perm:
+      qualified_users = field_helpers.FilterValidFieldValues(
+          mr, mr.project, services, fd, visible_member_views)
+
+    fdv = tracker_views.FieldDefView(fd, config)
+    fields.append(dict(
+        field_name=fdv.field_name, field_type=fdv.field_type,
+        field_id=fdv.field_id, needs_perm=fdv.needs_perm,
+        is_required=fdv.is_required, is_multivalued=fdv.is_multivalued,
+        choices=[dict(name=c.name, doc=c.docstring) for c in fdv.choices],
+        user_indexes=sorted(user_indexes[uv.email] for uv in qualified_users),
+        docstring=fdv.docstring))
+
+  return sorted(fields, key=lambda field: field['field_name'])
 
 
 def _BuildRestrictionChoices(project, freq_restrictions, actions):

@@ -347,55 +347,84 @@ class FieldHelpersTest(unittest.TestCase):
         126, 70, None, None, None, None, False, phase_id=40)
     self.assertEqual([fv1, fv2, fv3, fv4, fv5, fv6], field_values)
 
-  def testValidateOneCustomField_IntType(self):
+  def test_IntType(self):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = tracker_bizobj.MakeFieldValue(123, 8086, None, None, None, None, False)
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertIsNone(msg)
 
     fd.min_value = 1
     fd.max_value = 999
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertEqual('Value must be <= 999', msg)
 
     fv.int_value = 0
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertEqual('Value must be >= 1', msg)
 
-  def testValidateOneCustomField_StrType(self):
+  def test_FilterIntType(self):
+    fd = tracker_bizobj.MakeFieldDef(
+        123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
+    fd.min_value = 1
+    fd.max_value = 100
+    fvs = [
+        tracker_bizobj.MakeFieldValue(123, 200, None, None, None, None, False),
+        tracker_bizobj.MakeFieldValue(124, 99, None, None, None, None, False),
+        tracker_bizobj.MakeFieldValue(125, 0, None, None, None, None, False)]
+    self.assertEqual([fvs[1]],
+                     field_helpers.FilterValidFieldValues(
+                         self.mr, self.mr.project, self.services, fd, fvs))
+
+  def test_StrType(self):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.STR_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = tracker_bizobj.MakeFieldValue(
         123, None, 'i386', None, None, None, False)
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertIsNone(msg)
 
     fd.regex = r'^\d*$'
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertEqual(r'Value must match regular expression: ^\d*$', msg)
 
     fv.str_value = '386'
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertIsNone(msg)
 
-  def testValidateOneCustomField_UserType(self):
+  def test_FilterStrType(self):
+    fd = tracker_bizobj.MakeFieldDef(
+        123, 789, 'CPU', tracker_pb2.FieldTypes.STR_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
+    fd.regex = r'^\d*$'
+    fvs = [
+        tracker_bizobj.MakeFieldValue(123, None, 'x3', None, None, None, False),
+        tracker_bizobj.MakeFieldValue(124, None, '33', None, None, None, False),
+        tracker_bizobj.MakeFieldValue(125, None, '', None, None, None, False)]
+    self.assertEqual([fvs[1], fvs[2]],
+                     field_helpers.FilterValidFieldValues(
+                         self.mr, self.mr.project, self.services, fd, fvs))
+
+  def test_UserType(self):
     pass  # TODO(jrobbins): write this test.
 
-  def testValidateOneCustomField_DateType(self):
+  def test_DateType(self):
     pass  # TODO(jrobbins): write this test. @@@
 
-  def testValidateOneCustomField_UrlType(self):
+  def test_UrlType(self):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.URL_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
@@ -403,26 +432,26 @@ class FieldHelpersTest(unittest.TestCase):
 
     fv = tracker_bizobj.MakeFieldValue(
         123, None, None, None, None, 'www.google.com', False)
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertIsNone(msg)
 
     fv.url_value = 'go/puppies'
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertIsNone(msg)
 
     fv.url_value = 'go/213'
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertIsNone(msg)
 
     fv.url_value = 'puppies'
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertEqual('Value must be a valid url', msg)
 
-  def testValidateOneCustomField_OtherType(self):
+  def test_OtherType(self):
     # There are currently no validation options for date-type custom fields.
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'Deadline', tracker_pb2.FieldTypes.DATE_TYPE, None,
@@ -430,8 +459,8 @@ class FieldHelpersTest(unittest.TestCase):
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = tracker_bizobj.MakeFieldValue(
         123, None, None, None, 1234567890, None, False)
-    msg = field_helpers._ValidateOneCustomField(
-        self.mr, self.services, fd, fv)
+    msg = field_helpers.ValidateCustomField(
+        self.mr, self.mr.project, self.services, fd, fv)
     self.assertIsNone(msg)
 
   def testValidateCustomFields_NoCustomFieldValues(self):
