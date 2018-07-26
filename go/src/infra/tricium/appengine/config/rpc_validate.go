@@ -5,10 +5,7 @@
 package config
 
 import (
-	"go.chromium.org/luci/common/logging"
-
 	"golang.org/x/net/context"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
@@ -30,13 +27,12 @@ func (*configServer) Validate(c context.Context, req *admin.ValidateRequest) (*a
 	if sc == nil {
 		var err error
 		if sc, err = config.LuciConfigServer.GetServiceConfig(c); err != nil {
-			logging.WithError(err).Errorf(c, "failed to get service config")
-			return nil, grpc.Errorf(codes.InvalidArgument, "failed to get service config")
+			return nil, grpc.Errorf(codes.InvalidArgument, "failed to get service config: %v", err)
 		}
 	}
 	pc, err := config.Validate(sc, req.ProjectConfig)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to validate config")
+		return nil, grpc.Errorf(codes.Internal, "failed to validate config: %v", err)
 	}
 	return &admin.ValidateResponse{ValidatedConfig: pc}, nil
 }

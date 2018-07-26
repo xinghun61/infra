@@ -25,15 +25,14 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 	runID, err := validateProgressRequest(c, req)
 	logging.Fields{
 		"run ID": runID,
-	}.Infof(c, "[frontend] Progress request received and validated.")
+	}.Infof(c, "[frontend] Progress request received.")
 
 	if err != nil {
 		return nil, err
 	}
 	runState, functionProgress, errCode, err := progress(c, runID)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "Progress request failed.")
-		return nil, grpc.Errorf(errCode, "failed to execute progress request")
+		return nil, grpc.Errorf(errCode, "progress request failed: %v", err)
 	}
 	return &tricium.ProgressResponse{
 		RunId:            strconv.FormatInt(runID, 10),
@@ -80,8 +79,7 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 				}.Infof(c, "No GerritChangeToRunID found in datastore.")
 				return 0, grpc.Errorf(codes.NotFound, "no run ID found")
 			}
-			logging.WithError(err).Errorf(c, "Failed to fetch GerritChangeToRunID entity.")
-			return 0, grpc.Errorf(codes.Internal, "failed to fetch run ID")
+			return 0, grpc.Errorf(codes.Internal, "failed to fetch run ID: %v", err)
 		}
 		return g.RunID, nil
 	case nil:
@@ -91,8 +89,7 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 		}
 		runID, err := strconv.ParseInt(req.RunId, 10, 64)
 		if err != nil {
-			logging.WithError(err).Errorf(c, "Failed to parse run ID %q.", req.RunId)
-			return 0, grpc.Errorf(codes.InvalidArgument, "invalid run ID")
+			return 0, grpc.Errorf(codes.InvalidArgument, "invalid run ID: %v", err)
 		}
 		return runID, nil
 	default:

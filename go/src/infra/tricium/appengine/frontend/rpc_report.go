@@ -24,20 +24,18 @@ func (r *TriciumServer) ReportNotUseful(c context.Context,
 		"comment ID": req.CommentId,
 	}.Infof(c, "[frontend] Report not useful request received.")
 	if err := validateReportRequest(c, req); err != nil {
-		logging.WithError(err).Errorf(c, "Invalid ReportNotUsefulRequest.")
 		return nil, err
 	}
 	response, err := reportNotUseful(c, req.CommentId)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "[frontend] Report not useful failed.")
-		return nil, grpc.Errorf(codes.Internal, "failed to process report not useful request")
+		return nil, grpc.Errorf(codes.Internal, "report not useful request failed: %v", err)
 	}
 	return response, nil
 }
 
 func validateReportRequest(c context.Context, req *tricium.ReportNotUsefulRequest) error {
 	if req.CommentId == "" {
-		return grpc.Errorf(codes.InvalidArgument, "missing 'comment_id' field")
+		return grpc.Errorf(codes.InvalidArgument, "missing comment_id")
 	}
 	return nil
 }

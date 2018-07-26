@@ -27,7 +27,9 @@ const longForm = "2006-01-02T08:04:05Z"
 // Feedback processes one feedback request to Tricium.
 func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest) (*tricium.FeedbackResponse, error) {
 	logging.Fields{
-		"category": req.Category,
+		"category":   req.Category,
+		"start_time": req.StartTime,
+		"end_time":   req.EndTime,
 	}.Infof(c, "[frontend] Feedback request received.")
 	stime, etime, err := validateFeedbackRequest(c, req)
 	if err != nil {
@@ -35,8 +37,7 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 	}
 	count, reports, err := feedback(c, req.Category, stime, etime)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "feedback failed")
-		return nil, grpc.Errorf(codes.Internal, "failed to execute feedback request")
+		return nil, grpc.Errorf(codes.Internal, "feedback request failed: %v", err)
 	}
 	return &tricium.FeedbackResponse{Comments: int32(count), NotUsefulReports: int32(reports)}, nil
 }
@@ -46,30 +47,22 @@ func validateFeedbackRequest(c context.Context, req *tricium.FeedbackRequest) (t
 	etime := clock.Now(c).UTC()
 	var err error
 	if req.Category == "" {
-		msg := "missing 'category' field in Feedback request"
-		logging.Errorf(c, msg)
-		return stime, etime, grpc.Errorf(codes.InvalidArgument, msg)
+		return stime, etime, grpc.Errorf(codes.InvalidArgument, "missing category")
 	}
 	if req.StartTime != "" {
 		stime, err = time.Parse(longForm, req.StartTime)
 		if err != nil {
-			msg := fmt.Sprintf("failed to parse 'start_time' field in Feedback request: %v", err)
-			logging.Errorf(c, msg)
-			return stime, etime, grpc.Errorf(codes.InvalidArgument, msg)
+			return stime, etime, grpc.Errorf(codes.InvalidArgument, "invalid start_time: %v", err)
 		}
 	}
 	if req.EndTime != "" {
 		etime, err = time.Parse(longForm, req.EndTime)
 		if err != nil {
-			msg := fmt.Sprintf("failed to parse 'end_time' field in Feedback request: %v", err)
-			logging.Errorf(c, msg)
-			return stime, etime, grpc.Errorf(codes.InvalidArgument, msg)
+			return stime, etime, grpc.Errorf(codes.InvalidArgument, "invalid end_time: %v", err)
 		}
 	}
 	if etime.Before(stime) {
-		msg := "end_time is before start_time in Feedback request"
-		logging.Errorf(c, msg)
-		return stime, etime, grpc.Errorf(codes.InvalidArgument, msg)
+		return stime, etime, grpc.Errorf(codes.InvalidArgument, "start_time/end_time out of order")
 	}
 	return stime, etime, nil
 }

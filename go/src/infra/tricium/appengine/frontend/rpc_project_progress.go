@@ -27,12 +27,14 @@ func (r *TriciumServer) ProjectProgress(c context.Context, req *tricium.ProjectP
 	if err != nil {
 		return nil, err
 	}
+	logging.Fields{
+		"project": project,
+	}.Infof(c, "[frontend] Project progress request received and validated.")
 	runProgress, errCode, err := projectProgress(c, project, config.LuciConfigServer)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "project progress failed, project: %s", project)
-		return nil, grpc.Errorf(errCode, "failed to execute progress request")
+		return nil, grpc.Errorf(errCode, "project progress failed: %v", err)
 	}
-	logging.Infof(c, "[frontend] Project progress: %v", runProgress)
+	logging.Infof(c, "[frontend] Project progress completed.")
 	return &tricium.ProjectProgressResponse{
 		RunProgress: runProgress,
 	}, nil

@@ -21,20 +21,21 @@ import (
 
 // Results processes one results request to Tricium.
 func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) (*tricium.ResultsResponse, error) {
+	logging.Fields{
+		"run ID": req.RunId,
+	}.Infof(c, "[frontend] Results request received.")
 	if req.RunId == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	runID, err := strconv.ParseInt(req.RunId, 10, 64)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to parse run ID: %s", req.RunId)
-		return nil, grpc.Errorf(codes.InvalidArgument, "invalid run ID")
+		return nil, grpc.Errorf(codes.InvalidArgument, "invalid run ID %s: %v", req.RunId, err)
 	}
 	results, isMerged, err := results(c, runID)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "results failed")
-		return nil, grpc.Errorf(codes.Internal, "failed to execute results request")
+		return nil, grpc.Errorf(codes.Internal, "results request failed: %v", err)
 	}
-	logging.Infof(c, "[frontend] Results: %v", results)
+	logging.Infof(c, "[frontend] Results request completed: %v", results)
 	return &tricium.ResultsResponse{Results: results, IsMerged: isMerged}, nil
 }
 

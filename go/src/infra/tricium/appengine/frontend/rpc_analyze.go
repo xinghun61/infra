@@ -41,15 +41,16 @@ var server = &TriciumServer{}
 // via the Tricium UI.
 func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) (*tricium.AnalyzeResponse, error) {
 	if err := validateAnalyzeRequest(c, req); err != nil {
-		logging.WithError(err).Errorf(c, "AnalyzeRequest failed validation")
 		return nil, err
 	}
+	logging.Infof(c, "[frontend] Analyze request received and validated.")
 	runID, code, err := analyzeWithAuth(c, req, config.LuciConfigServer)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "Analyze failed")
-		return nil, grpc.Errorf(code, "failed to execute analyze request")
+		return nil, grpc.Errorf(code, "analyze request failed: %v", err)
 	}
-	logging.Infof(c, "[frontend] Run ID: %s", runID)
+	logging.Fields{
+		"run ID": runID,
+	}.Infof(c, "[frontend] Analyze request processed without error.")
 	return &tricium.AnalyzeResponse{RunId: runID}, nil
 }
 
