@@ -71,7 +71,7 @@ Example:
   led get-builder bucket_name:builder_name | \
     led edit-recipe-bundle -O recipe_engine=/local/recipe_engine > job.json
   # edit job.json by hand to inspect
-  led edit -env CHROME_HEADLESS=1 < job.json | \
+  led edit-system -e CHROME_HEADLESS=1 < job.json | \
     led launch
 
 This would pull the recipe job from the named swarming task, then isolate the
