@@ -66,22 +66,28 @@ func OnlyMergeApprovedChange(ctx context.Context, ap *AuditParams, rc *RelevantC
 				"\nPlease explain why this change was merged to the branch!", rc.CommitHash, ap.RepoCfg.BranchName)
 			return result
 		}
-		// Check if the issue has a merge approval label
-		for _, label := range vIssue.Labels {
-			if label == mergeLabel {
-				result.RuleResultStatus = rulePassed
-				return result
-			}
-		}
+
 		// Check if the issue has a merge approval label in the comment history
-		comments, _ := listCommentsFromIssueID(ctx, ap.RepoCfg, int32(bugNumber), cs)
+		comments, _ := listCommentsFromIssueID(ctx, ap.RepoCfg, vIssue.Id, cs)
 		for _, comment := range comments {
-			if strings.Contains(comment.Content, mergeLabel) {
-				result.RuleResultStatus = rulePassed
-				return result
+			labels := comment.Updates.Labels
+			// Check if the issue has a merge approval label
+			for _, label := range labels {
+				if label == mergeLabel {
+					author := comment.Author.Name
+					// Check if the author of the merge approval is a TPM
+					for _, tpm := range chromeTPMs {
+						if author == tpm {
+							result.RuleResultStatus = rulePassed
+							return result
+						}
+					}
+					break
+				}
 			}
 		}
 	}
+
 	result.Message = fmt.Sprintf("Revision %s was merged to %s branch with no merge approval from "+
 		"a TPM! \nPlease explain why this change was merged to the branch!", rc.CommitHash, ap.RepoCfg.BranchName)
 	return result
