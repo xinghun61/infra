@@ -102,18 +102,18 @@ def _process_pull_task_batch(queue_name, dataset):
   # IDs of builds that we could not save and want to retry later.
   ids_to_retry = set()
 
-  # Fetch builds and build annotations for the tasks.
+  # Fetch builds and steps for the tasks and convert them to v2 format.
   build_keys = [ndb.Key(model.Build, bid) for bid in build_ids]
-  # TODO(nodir): read model.BuildSteps instead.
-  build_annotation_keys = map(annotations.BuildAnnotations.key_for, build_keys)
-  entities = ndb.get_multi(build_keys + build_annotation_keys)
-  builds = entities[:len(build_keys)]
-  build_annotations = entities[len(build_keys):]
-
-  # Convert fetched builds to v2 format.
+  futs = zip(
+      build_ids,
+      ndb.get_multi_async(build_keys),
+      ndb.get_multi_async(map(model.BuildSteps.key_for, build_keys)),
+  )
   v2_builds = []
-  for bid, build, build_ann in zip(build_ids, builds, build_annotations):
-    v2_build, retry = _build_to_v2(bid, build, build_ann)
+  for bid, build_fut, build_steps_fut in futs:
+    v2_build, retry = _build_to_v2(
+        bid, build_fut.get_result(), build_steps_fut.get_result()
+    )
     if retry:
       ids_to_retry.add(bid)
     elif v2_build:  # pragma: no branch
@@ -137,7 +137,7 @@ def _process_pull_task_batch(queue_name, dataset):
   )
 
 
-def _build_to_v2(bid, build, build_ann):
+def _build_to_v2(bid, build, build_steps):
   """Returns (v2_build, should_retry) tuple.
 
   Logs reasons for returning v2_build=None or retry=True.
@@ -151,15 +151,10 @@ def _build_to_v2(bid, build, build_ann):
     return None, True
 
   try:
-    build_v2 = v2.build_to_v2_partial(build)
-
-    if build_ann:
-      build_v2.steps.extend(build_ann.parse_steps())
-
-      for s in build_v2.steps:
-        s.summary_markdown = ''
-        s.ClearField('logs')
-
+    build_v2 = v2.build_to_v2(build, build_steps)
+    for s in build_v2.steps:
+      s.summary_markdown = ''
+      s.ClearField('logs')
     return build_v2, False
   except Exception:
     logging.exception('failed to convert build to v2\nBuild id: %d', bid)

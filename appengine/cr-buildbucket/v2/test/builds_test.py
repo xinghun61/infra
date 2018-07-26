@@ -14,6 +14,7 @@ from components import auth
 
 from proto import common_pb2
 from proto import build_pb2
+from proto import step_pb2
 from v2 import builds
 from test import test_util
 import model
@@ -103,6 +104,14 @@ class V2BuildsTest(unittest.TestCase):
         logdog_prefix='buildbucket/cr-buildbucket.example.com/81271231ba012',
         url='https://ci.example.com/build',
     )
+    steps = [
+        step_pb2.Step(name='step_a', status=common_pb2.SUCCESS),
+        step_pb2.Step(name='step_b', status=common_pb2.STARTED),
+    ]
+    build_steps = model.BuildSteps(
+        key=model.BuildSteps.key_for(build.key),
+        steps=build_pb2.Build(steps=steps,).SerializeToString(),
+    )
 
     expected = build_pb2.Build(
         id=1,
@@ -150,19 +159,20 @@ class V2BuildsTest(unittest.TestCase):
             ),
         ),
         created_by='user:john@example.com',
+        steps=steps,
     )
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
     self.assertEqual(
         test_util.msg_to_dict(expected),
-        test_util.msg_to_dict(builds.build_to_v2_partial(build))
+        test_util.msg_to_dict(builds.build_to_v2(build, build_steps))
     )
 
   def test_build_to_v2_number_in_result_details(self):
-    msg = builds.build_to_v2_partial(
+    msg = builds.build_to_v2(
         mkbuild(result_details={
             'properties': {'buildnumber': 54},
-        },)
+        })
     )
     self.assertEqual(msg.number, 54)
 
@@ -235,7 +245,7 @@ class V2BuildsTest(unittest.TestCase):
 
   def test_build_to_v2_invalid_priority(self):
     build = mkbuild(tags=['swarming_tag:priority:blah'],)
-    msg = builds.build_to_v2_partial(build)
+    msg = builds.build_to_v2(build)
     self.assertEqual(msg.infra.swarming.priority, 0)
     self.assertEqual(len(msg.tags), 0)
 
@@ -254,7 +264,7 @@ class V2BuildsTest(unittest.TestCase):
     )
     err_pattern = r'more than one commits/gitiles/ buildset'
     with self.assertRaisesRegexp(builds.MalformedBuild, err_pattern):
-      builds.build_to_v2_partial(build)
+      builds.build_to_v2(build)
 
 
 class TestStatusConversion(unittest.TestCase):

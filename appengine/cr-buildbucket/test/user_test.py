@@ -77,7 +77,7 @@ class UserTest(testing.AppengineTestCase):
   def test_get_role(self, is_group_member):
     is_group_member.side_effect = lambda g, _=None: g == 'a-writers'
 
-    get_role = lambda *args: user.get_role_async(*args).get_result()
+    get_role = lambda bucket: user.get_role_async(bucket).get_result()
     self.assertEqual(get_role('a'), Acl.WRITER)
     self.assertEqual(get_role('b'), None)
     self.assertEqual(get_role('c'), Acl.READER)

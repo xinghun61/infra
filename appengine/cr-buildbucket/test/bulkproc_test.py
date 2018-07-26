@@ -251,7 +251,7 @@ class SegmentTest(TestBase):
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_build_steps_keys_only(self, enqueue_tasks):
     build_steps = [
-        model.BuildSteps(parent=ndb.Key(model.Build, i))
+        model.BuildSteps(parent=ndb.Key(model.Build, i), steps='')
         for i in xrange(50, 60)
     ]
     ndb.put_multi(build_steps)

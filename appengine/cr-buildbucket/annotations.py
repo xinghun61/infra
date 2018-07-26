@@ -9,40 +9,14 @@ TODO(nodir): delete this file. Instead accept buidbucket.v2.Build from kitchen.
 
 import urllib
 
-from google.appengine.ext import ndb
-
 from third_party import annotations_pb2
 
 from proto import common_pb2
 from proto import step_pb2
 import logdog
-import model
 
 # The character used to separate parent-child steps.
 STEP_SEP = '|'
-
-
-class BuildAnnotations(model.BuildDetailEntity):
-  """Stores annotation_pb2.Step of a build, if available.
-
-  Available only for Swarmbucket builds, if we were able to retrieve it.
-  Created on Build completion.
-  """
-  # root annotation_pb2.Step in binary format.
-  annotation_binary = ndb.BlobProperty(compressed=True)
-  # where the annotations_binary came from.
-  annotation_url = ndb.StringProperty(indexed=False)
-
-  def parse_steps(self):
-    """Returns a list of step_pb2.Step parsed from self."""
-    ann_step = annotations_pb2.Step()
-    ann_step.ParseFromString(self.annotation_binary or '')
-    host, project, prefix, _ = logdog.parse_url(self.annotation_url)
-    parser = StepParser(
-        default_logdog_host=host,
-        default_logdog_prefix='%s/%s' % (project, prefix),
-    )
-    return parser.parse_substeps(ann_step.substep)
 
 
 class StepParser(object):

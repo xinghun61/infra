@@ -16,7 +16,7 @@ import model
 
 __all__ = [
     'MalformedBuild',
-    'build_to_v2_partial',
+    'build_to_v2',
     'status_to_v1',
     'status_to_v2',
 ]
@@ -26,10 +26,11 @@ class MalformedBuild(Exception):
   """A build has unexpected format."""
 
 
-def build_to_v2_partial(build):
+def build_to_v2(build, build_steps=None):
   """Converts a model.Build to an incomplete build_pb2.Build.
 
-  The returned build does not include steps.
+  build_steps is model.BuildSteps. If provided, the the returned build includes
+  steps.
 
   May raise MalformedBuild.
   """
@@ -85,6 +86,9 @@ def build_to_v2_partial(build):
         ret.infra.swarming.bot_dimensions.add(key=k, value=v)
 
   _parse_tags(ret, build.tags)
+
+  if build_steps:
+    ret.steps.extend(build_steps.parse_steps())
   return ret
 
 

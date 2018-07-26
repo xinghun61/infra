@@ -18,6 +18,8 @@ import mock
 from third_party import annotations_pb2
 
 from proto import build_pb2
+from proto import common_pb2
+from proto import step_pb2
 from proto.config import service_config_pb2
 from test import test_util
 import annotations
@@ -83,20 +85,14 @@ class BigQueryExportTest(testing.AppengineTestCase):
     ]
     ndb.put_multi(builds)
 
-    ann_step = annotations_pb2.Step(
-        substep=[
-            annotations_pb2.Step.Substep(
-                step=annotations_pb2.Step(
-                    name='bot_update',
-                    status=annotations_pb2.SUCCESS,
-                ),
-            ),
+    step_container = build_pb2.Build(
+        steps=[
+            step_pb2.Step(name='bot_update', status=common_pb2.SUCCESS),
         ],
     )
-    annotations.BuildAnnotations(
-        key=annotations.BuildAnnotations.key_for(builds[0].key),
-        annotation_binary=ann_step.SerializeToString(),
-        annotation_url='logdog://logdog.example.com/project/prefix/+/name',
+    model.BuildSteps(
+        key=model.BuildSteps.key_for(builds[0].key),
+        steps=step_container.SerializeToString(),
     ).put()
     self.queue.add([
         taskqueue.Task(method='PULL', payload=json.dumps({'id': b.key.id()}))
@@ -147,13 +143,11 @@ class BigQueryExportTest(testing.AppengineTestCase):
     bq._process_pull_task_batch(self.queue.name, 'builds')
     self.assertFalse(net.json_request.called)
 
-  @mock.patch('v2.build_to_v2_partial', autospec=True)
+  @mock.patch('v2.build_to_v2', autospec=True)
   @mock.patch(
       'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True
   )
-  def test_cron_export_builds_to_bq_exception(
-      self, delete_tasks, build_to_v2_partial
-  ):
+  def test_cron_export_builds_to_bq_exception(self, delete_tasks, build_to_v2):
     builds = [
         mkbuild(
             id=i + 1,
@@ -170,12 +164,12 @@ class BigQueryExportTest(testing.AppengineTestCase):
     ]
     self.queue.add(tasks)
 
-    def build_to_v2_partial_mock(build, *_, **__):
+    def build_to_v2_mock(build, *_, **__):
       if build is builds[1]:
         raise Exception()
       return build_pb2.Build()
 
-    build_to_v2_partial.side_effect = build_to_v2_partial_mock
+    build_to_v2.side_effect = build_to_v2_mock
 
     bq._process_pull_task_batch(self.queue.name, 'builds')
 

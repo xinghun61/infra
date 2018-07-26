@@ -18,7 +18,6 @@ from components import utils
 import gae_ts_mon
 
 import api_common
-import backfill_build_steps
 import backfill_tag_index
 import config
 import creation
@@ -778,10 +777,4 @@ class BuildBucketApi(remote.Service):
     if ':' in request.tag_key:
       raise endpoints.BadRequestException('invalid tag_key')
     backfill_tag_index.launch(request.tag_key)
-    return message_types.VoidMessage()
-
-  @buildbucket_api_method(message_types.VoidMessage, message_types.VoidMessage)
-  @auth.require(auth.is_admin)
-  def backfill_build_steps(self, _request):  # pragma: no cover
-    backfill_build_steps.launch()
     return message_types.VoidMessage()

@@ -34,11 +34,13 @@ class ParseStepsTest(unittest.TestCase):
       text = protoutil.parse_multiline(f.read())
       text_format.Merge(text, expected)
 
-    build_ann = annotations.BuildAnnotations(
-        annotation_binary=annotation_step.SerializeToString(),
-        annotation_url='logdog://logdog.example.com/project/prefix/+/stream',
+    parser = annotations.StepParser(
+        default_logdog_host='logdog.example.com',
+        default_logdog_prefix='project/prefix',
     )
-    actual = build_pb2.Build(steps=build_ann.parse_steps())
+    actual = build_pb2.Build(
+        steps=parser.parse_substeps(annotation_step.substep)
+    )
 
     # Compare messages as dicts.
     # assertEqual has better support for dicts than protobufs.

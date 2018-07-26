@@ -1126,24 +1126,6 @@ def _extract_properties(annotation_step):
   return ret
 
 
-def _extract_build_annotations(build_key, build_run_result):
-  # TODO(nodir): remove this function.
-  build_run_result = build_run_result or {}
-  ann_dict = build_run_result.get('annotations')
-  ann_url = build_run_result.get('annotationUrl')
-  if not ann_dict or not ann_url:  # pragma: no cover
-    return None
-
-  ann_step = annotations_pb2.Step()
-  json_format.Parse(json.dumps(ann_dict), ann_step, ignore_unknown_fields=True)
-
-  return annotations.BuildAnnotations(
-      key=annotations.BuildAnnotations.key_for(build_key),
-      annotation_binary=ann_step.SerializeToString(),
-      annotation_url=ann_url,
-  )
-
-
 def _extract_build_steps(build_run_result):
   """Extracts a list of buildbucket.v2.Step from build_run_result."""
   # TODO(crbug.com/853450): remove, accept build steps from kitchen directly.
@@ -1175,7 +1157,6 @@ def _sync_build_async(build_id, task_result, bucket, builder):
     )
 
   build_key = ndb.Key(model.Build, build_id)
-
   # TODO(nodir): accept build steps via a separate RPC.
   step_container = build_pb2.Build(steps=_extract_build_steps(build_run_result))
   build_steps = model.BuildSteps(
@@ -1200,9 +1181,6 @@ def _sync_build_async(build_id, task_result, bucket, builder):
     build_run_result_error = BUILD_RUN_RESULT_TOO_LARGE
     build_steps.steps = ''
 
-  # TODO(nodir): remove this statement.
-  build_ann = _extract_build_annotations(build_key, build_run_result)
-
   @ndb.transactional_tasklet
   def txn_async():
     build = yield build_key.get_async()
@@ -1223,10 +1201,6 @@ def _sync_build_async(build_id, task_result, bucket, builder):
           build_steps.put_async(),
           events.on_build_completing_async(build),
       ]
-
-      # TODO(nodir): remove this.
-      if build_ann:
-        futures.append(build_ann.put_async())
 
     yield futures
     raise ndb.Return(build)

@@ -152,32 +152,17 @@ class ToBuildMessagesTests(BaseTestCase):
 
   def test_steps(self):
     build_v1 = self.new_build_v1()
-    annotation_step = annotations_pb2.Step(
-        substep=[
-            annotations_pb2.Step.Substep(
-                step=annotations_pb2.Step(
-                    name='a',
-                    status=annotations_pb2.SUCCESS,
-                )
-            ),
-            annotations_pb2.Step.Substep(
-                step=annotations_pb2.Step(
-                    name='b',
-                    status=annotations_pb2.RUNNING,
-                )
-            ),
+    step_container = build_pb2.Build(
+        steps=[
+            step_pb2.Step(name='a', status=common_pb2.SUCCESS),
+            step_pb2.Step(name='b', status=common_pb2.STARTED),
         ],
     )
-    annotations.BuildAnnotations(
-        key=annotations.BuildAnnotations.key_for(build_v1.key),
-        annotation_binary=annotation_step.SerializeToString(),
-        annotation_url='logdog://logdog.example.com/project/prefix/+/stream',
+    model.BuildSteps(
+        key=model.BuildSteps.key_for(build_v1.key),
+        steps=step_container.SerializeToString(),
     ).put()
 
-    expected_steps = [
-        step_pb2.Step(name='a', status=common_pb2.SUCCESS),
-        step_pb2.Step(name='b', status=common_pb2.STARTED),
-    ]
     mask = protoutil.Mask.from_field_mask(
         field_mask_pb2.FieldMask(paths=['steps']),
         build_pb2.Build.DESCRIPTOR,
@@ -185,7 +170,7 @@ class ToBuildMessagesTests(BaseTestCase):
     actual = api.builds_to_v2_async([build_v1], mask).get_result()
 
     self.assertEqual(len(actual), 1)
-    self.assertEqual(list(actual[0].steps), expected_steps)
+    self.assertEqual(list(actual[0].steps), list(step_container.steps))
 
 
 class GetBuildTests(BaseTestCase):

@@ -117,16 +117,15 @@ def v1_bucket(builder_id):
 @ndb.tasklet
 def builds_to_v2_async(builds, build_mask):
   """Converts model.Build instances to build_pb2.Build messages."""
-  builds_msgs = map(v2.build_to_v2_partial, builds)
+  builds_msgs = map(v2.build_to_v2, builds)
 
   if build_mask and build_mask.includes('steps'):  # pragma: no branch
-    # TODO(nodir): read model.BuildSteps instead.
-    build_anns = yield ndb.get_multi_async([
-        annotations.BuildAnnotations.key_for(b.key) for b in builds
+    build_steps_list = yield ndb.get_multi_async([
+        model.BuildSteps.key_for(b.key) for b in builds
     ])
-    for b, build_ann in zip(builds_msgs, build_anns):
-      if build_ann:  # pragma: no branch
-        b.steps.extend(build_ann.parse_steps())
+    for b, build_steps in zip(builds_msgs, build_steps_list):
+      if build_steps:  # pragma: no branch
+        b.steps.extend(build_steps.parse_steps())
 
   raise ndb.Return(builds_msgs)
 
