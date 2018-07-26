@@ -451,11 +451,13 @@ def PrepareParametersToScheduleTryJob(master_name, builder_name, build_number,
   return parameters
 
 
-def _GetError(buildbucket_response, buildbucket_error, timed_out, no_report):
+def _GetError(
+    buildbucket_build=None, buildbucket_error=None,
+    timed_out=False, no_report=False):
   """Determines whether or not a try job error occured.
 
   Args:
-    buildbucket_response: A dict of the json response from buildbucket.
+    buildbucket_build (BuildbucketBuild): The up-to-date build info.
     buildbucket_error: A BuildBucketError object returned from the call to
       buildbucket_client.GetTryJobs()
     timed_out: A bool whether or not Findit abandoned monitoring the try job.
@@ -465,7 +467,7 @@ def _GetError(buildbucket_response, buildbucket_error, timed_out, no_report):
     A tuple containing an error dict and number representing an error code, or
     (None, None) if no error was determined to have occured.
   """
-
+  buildbucket_response = buildbucket_build.response if buildbucket_build else {}
   if buildbucket_error:
     return ({
         'message': buildbucket_error.message,
@@ -526,13 +528,11 @@ def _GetError(buildbucket_response, buildbucket_error, timed_out, no_report):
 def UpdateTryJobMetadata(try_job_data,
                          try_job_type=None,
                          buildbucket_build=None,
-                         buildbucket_error=None,
-                         timed_out=None,
+                         error_dict=None,
+                         error_code=None,
                          report=None,
                          callback_url=None,
                          callback_target=None):
-  buildbucket_response = {}
-
   if buildbucket_build:
     try_job_data.request_time = time_util.MicrosecondsToDatetime(
         buildbucket_build.request_time)
@@ -551,13 +551,7 @@ def UpdateTryJobMetadata(try_job_data,
         try_job_data.regression_range_size = None
 
     try_job_data.try_job_url = buildbucket_build.url
-    buildbucket_response = buildbucket_build.response
-    try_job_data.last_buildbucket_response = buildbucket_response
-
-  # report should only be {} when error happens on getting report after try job
-  # completed. If try job is still running, report will be set to None.
-  error_dict, error_code = _GetError(buildbucket_response, buildbucket_error,
-                                     timed_out, report == {})
+    try_job_data.last_buildbucket_response = buildbucket_build.response
 
   if error_dict:
     try_job_data.error = error_dict
@@ -765,24 +759,17 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
   elif build.status == BuildbucketBuild.STARTED:
     OnTryJobRunning(parameters, try_job_data, build, error=None)
   else:
-    UpdateTryJobMetadata(try_job_data, buildbucket_build=build)
+    error_dict, error_code = _GetError(buildbucket_build=build)
+    UpdateTryJobMetadata(try_job_data, buildbucket_build=build,
+                         error_dict=error_dict, error_code=error_code)
 
 
 def OnTryJobTimeout(try_job_id, job_type):
   """Updates TryJobData entity when try job doesn't complete in time."""
   try_job_data = _GetTryJobData(job_type, try_job_id)
-  UpdateTryJobMetadata(try_job_data, job_type, timed_out=True)
-
-
-def OnGetTryJobError(params, try_job_data, build, error):
-  if params['error_count'] < params['max_error_times']:
-    error_count = params['error_count'] + 1
-    return _GetUpdatedParams(params, error_count=error_count)
-  else:
-    # Buildbucket has responded error more than 5 times, retry pipeline.
-    UpdateTryJobMetadata(try_job_data, params['try_job_type'], build, error,
-                         False)
-    raise exceptions.RetryException(error.reason, error.message)
+  error_dict, error_code = _GetError(timed_out=True)
+  UpdateTryJobMetadata(
+      try_job_data, job_type, error_dict=error_dict, error_code=error_code)
 
 
 def OnTryJobCompleted(params, try_job_data, build, error):
@@ -805,8 +792,13 @@ def OnTryJobCompleted(params, try_job_data, build, error):
     logging.exception('Failed to load result report for tryjob/%s '
                       'due to exception %s.' % (try_job_id, e.message))
 
-  UpdateTryJobMetadata(try_job_data, try_job_type, build, error, False, report
-                       if report else {})
+  error_dict, error_code = _GetError(
+      buildbucket_build=build, buildbucket_error=error, timed_out=False,
+      no_report=report == {})
+  UpdateTryJobMetadata(
+      try_job_data, try_job_type, buildbucket_build=build,
+      error_dict=error_dict, error_code=error_code,
+      report=report or {})
   result_to_update = _UpdateTryJobEntity(params['urlsafe_try_job_key'],
                                          try_job_type, try_job_id, build.url,
                                          BuildbucketBuild.COMPLETED, report)
@@ -821,7 +813,13 @@ def OnTryJobRunning(params, try_job_data, build, error):
 
   # Update as much try job metadata as soon as possible to avoid data
   # loss in case of errors.
-  UpdateTryJobMetadata(try_job_data, try_job_type, build, error, False, None)
+  error_dict, error_code = _GetError(
+      buildbucket_build=build, buildbucket_error=error, timed_out=False,
+      no_report=False)
+  UpdateTryJobMetadata(
+      try_job_data, try_job_type, buildbucket_build=build,
+      error_dict=error_dict, error_code=error_code,
+      report=None)
 
   return _GetUpdatedParams(
       params,

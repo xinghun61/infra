@@ -739,14 +739,18 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                          {}, 'urlsafe_try_job_key'))
 
   def testUpdateTryJobMetadataForBuildError(self):
-    error_data = {'reason': 'BUILD_NOT_FOUND', 'message': 'message'}
-    error = buildbucket_client.BuildbucketError(error_data)
+    error_dict = {
+        'message': 'message',
+        'reason': 'BUILD_NOT_FOUND'
+    }
+    error_code = 30
     try_job_data = WfTryJobData.Create('1')
     try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
 
-    try_job_service.UpdateTryJobMetadata(try_job_data, failure_type.COMPILE,
-                                         None, error, False)
-    self.assertEqual(try_job_data.error, error_data)
+    try_job_service.UpdateTryJobMetadata(
+        try_job_data, failure_type.COMPILE,
+        buildbucket_build=None, error_dict=error_dict, error_code=error_code)
+    self.assertEqual(try_job_data.error, error_dict)
 
   def testUpdateTryJobMetadataUpdateTimestamps(self):
     try_job_id = '1'
@@ -794,18 +798,12 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
     build = buildbucket_client.BuildbucketBuild(build_data)
-    expected_error_dict = {
-        'message':
-            'Try job monitoring was abandoned.',
-        'reason': (
-            'Timeout after %s hours' %
-            waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
-    }
+
     try_job_data = WfTryJobData.Create(try_job_id)
     try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
 
     try_job_service.UpdateTryJobMetadata(try_job_data, failure_type.COMPILE,
-                                         build, None, False, report)
+                                         buildbucket_build=build, report=report)
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.error)
     self.assertEqual(try_job_data.regression_range_size, 2)
@@ -814,11 +812,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.request_time, datetime(
         2016, 2, 1, 22, 59, 30))
     self.assertEqual(try_job_data.try_job_url, url)
-
-    try_job_service.UpdateTryJobMetadata(try_job_data, failure_type.COMPILE,
-                                         build, None, True)
-    self.assertEqual(try_job_data.error, expected_error_dict)
-    self.assertEqual(try_job_data.error_code, try_job_error.TIMEOUT)
 
   @mock.patch('services.swarmbot_util.GetBot', return_value='BotName')
   @mock.patch(
@@ -905,10 +898,12 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
             })
     }
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False),
-        (None, None))
+        try_job_service._GetError(buildbucket_client.BuildbucketBuild(
+            build_response), None, False, False), (None, None))
     self.assertEqual(
-        try_job_service._GetError({}, None, False, False), (None, None))
+        try_job_service._GetError(
+            buildbucket_client.BuildbucketBuild({}), None, False, False),
+            (None, None))
 
   def testGetErrorForTimeout(self):
     expected_error_dict = {
@@ -920,7 +915,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        try_job_service._GetError({}, None, True, False),
+        try_job_service._GetError(
+            buildbucket_client.BuildbucketBuild({}), None, True, False),
         (expected_error_dict, try_job_error.TIMEOUT))
 
   def testGetErrorForBuildbucketReportedError(self):
@@ -939,7 +935,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False),
+        try_job_service._GetError(buildbucket_client.BuildbucketBuild(
+            build_response), None, False, False),
         (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
 
   def testGetErrorUnknown(self):
@@ -957,7 +954,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False),
+        try_job_service._GetError(buildbucket_client.BuildbucketBuild(
+            build_response), None, False, False),
         (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
 
   def testGetErrorInfraFailure(self):
@@ -984,7 +982,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False),
+        try_job_service._GetError(buildbucket_client.BuildbucketBuild(
+            build_response), None, False, False),
         (expected_error_dict, try_job_error.INFRA_FAILURE))
 
   def testGetErrorUnexpectedBuildFailure(self):
@@ -1011,7 +1010,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False),
+        try_job_service._GetError(buildbucket_client.BuildbucketBuild(
+            build_response), None, False, False),
         (expected_error_dict, try_job_error.INFRA_FAILURE))
 
   def testGetErrorUnknownBuildbucketFailure(self):
@@ -1031,7 +1031,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, False),
+        try_job_service._GetError(buildbucket_client.BuildbucketBuild(
+            build_response), None, False, False),
         (expected_error_dict, try_job_error.UNKNOWN))
 
   def testGetErrorReportMissing(self):
@@ -1043,7 +1044,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(
-        try_job_service._GetError(build_response, None, False, True),
+        try_job_service._GetError(buildbucket_client.BuildbucketBuild(
+            build_response), None, False, True),
         (expected_error_dict, try_job_error.UNKNOWN))
 
   def testUpdateTryJobResultAnalyzing(self):
@@ -1306,8 +1308,14 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         'job-id', failure_type.COMPILE, build_json)
     self.assertDictEqual(mocked_job_result, returned_result)
 
+  @mock.patch.object(try_job_service, '_GetError',
+                     return_value=(
+                         {
+                             'message': 'Try job monitoring was abandoned.',
+                             'reason': 'Timeout after 5 hours'
+                          }, 20))
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
-  def testOnTryJobTimeout(self, mocked_UpdateTryJobMetadata):
+  def testOnTryJobTimeout(self, mocked_UpdateTryJobMetadata, mock_error):
     try_job_data = WfTryJobData.Create('job-id')
     urlsafe_try_job_key = WfTryJob.Create('m', 'b', 1).key.urlsafe()
     try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
@@ -1315,24 +1323,17 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         failure_type.COMPILE)
     try_job_data.put()
     try_job_service.OnTryJobTimeout('job-id', failure_type.COMPILE)
+    error_dict = {
+        'message':
+            'Try job monitoring was abandoned.',
+        'reason':
+            'Timeout after 5 hours'
+    }
+    error_code = 20
+    mock_error.assert_called_once_with(timed_out=True)
     mocked_UpdateTryJobMetadata.assert_called_once_with(
-        try_job_data, failure_type.COMPILE, timed_out=True)
-
-  def testOnGetTryJobError(self):
-    params = {'error_count': 0, 'max_error_times': 5}
-    expected_params = {'error_count': 1, 'max_error_times': 5}
-    self.assertEqual(expected_params,
-                     try_job_service.OnGetTryJobError(params, None, None, None))
-
-  @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
-  def testOnGetTryJobErrorExceedMaxTry(self, _):
-    params = {'error_count': 5, 'max_error_times': 5, 'try_job_type': 1}
-    with self.assertRaises(exceptions.RetryException):
-      try_job_service.OnGetTryJobError(params, None, None,
-                                       buildbucket_client.BuildbucketError({
-                                           'reason': 'reason',
-                                           'message': 'message'
-                                       }))
+        try_job_data, failure_type.COMPILE, error_dict=error_dict,
+        error_code=error_code)
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
