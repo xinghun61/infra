@@ -24,6 +24,7 @@
 # You can use the API Explorer here: https://bugs.chromium.org/rpcexplorer
 
 
+from api import features_servicer
 from api import issues_servicer
 from api import projects_servicer
 from api import users_servicer
@@ -32,6 +33,7 @@ from components import prpc
 
 def RegisterApiHandlers(registry, services):
   server = prpc.Server()
+  server.add_service(features_servicer.FeaturesServicer(services))
   server.add_service(issues_servicer.IssuesServicer(services))
   server.add_service(projects_servicer.ProjectsServicer(services))
   server.add_service(users_servicer.UsersServicer(services))
