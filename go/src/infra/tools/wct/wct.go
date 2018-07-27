@@ -30,8 +30,9 @@ var (
 	chromeBin  = flag.String("chrome", "", "location of chrome binary")
 	userDir    = flag.String("dir", "/tmp/", "user directory")
 	debugPort  = flag.String("debug-port", "9222", "chrome debugger port")
-	baseDir    = flag.String("base", "", "location of elements to test")
-	pathPrefix = flag.String("prefix", "test/", "path prefix for test runner URL")
+	baseDir    = flag.String("base", "./", "location of elements to test")
+	pathPrefix = flag.String("prefix", "/test/", "path prefix for test runner URL")
+	bowerDir   = flag.String("bower", "bower_components/", "location of bower compoenents")
 	persist    = flag.Bool("persist", false, "keep server running")
 	timeoutSec = flag.Int("timeout", 60, "timeout seconds")
 )
@@ -60,6 +61,19 @@ type DoneRequest struct {
 	Passes int `json:"passes"`
 	// Failures is the number of individual tests that failed.
 	Failures int `json:"failures"`
+}
+
+// bowerSiblingFS serves files from base, and for files not in base, tries to serve them from bower instead.
+type bowerSiblingFS struct {
+	base, bower http.Dir
+}
+
+func (bs bowerSiblingFS) Open(name string) (http.File, error) {
+	f, err := bs.base.Open(name)
+	if err != nil {
+		return bs.bower.Open(name)
+	}
+	return f, err
 }
 
 func main() {
@@ -118,9 +132,13 @@ func main() {
 		}
 	})
 
-	fs := http.FileServer(http.Dir(*baseDir))
-	http.Handle("/", fs)
+	http.Handle("/", http.FileServer(bowerSiblingFS{
+		base:  http.Dir(*baseDir),
+		bower: http.Dir(*bowerDir),
+	}))
+
 	addrCh := make(chan string)
+
 	go func() {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
