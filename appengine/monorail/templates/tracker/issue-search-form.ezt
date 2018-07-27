@@ -27,6 +27,7 @@
        [if-any grid_y_attr]<input type="hidden" name="y" value="[grid_y_attr]">[end]
        [if-any grid_mode]<input type="hidden" name="mode" value="[if-any grid_mode]grid[end]">[end]
        [if-any grid_cell_mode]<input type="hidden" name="cells" value="[grid_cell_mode]">[end]
+       [if-any chart_mode]<input type="hidden" name="mode" value="[if-any chart_mode]chart[end]">[end]
        <input type="submit" value="Search">
     </form>
  </span>
