@@ -42,6 +42,13 @@
       }
     </style>
 
+    <template is="dom-if" if="[[unsupportedFields]]">
+      <span>&#x26A0; Unsupported fields in query:</span>
+      <template is="dom-repeat" items="[[unsupportedFields]]" as="field">
+        <b>[[field]]</b>
+      </template>
+    </template>
+
     <div class="chart-container">
       <div class="bars">
         <template is="dom-repeat" items="[[heightsAndOffsets]]" as="val">
@@ -80,6 +87,9 @@
           heightsAndOffsets: {
             type: Array,
             value: [],
+          },
+          unsupportedFields: {
+            type: Array,
           },
         };
       }
@@ -122,6 +132,11 @@
               height: height,
             };
           });
+          const flatUnsupportedFields = chartData.reduce((acc, datum) => {
+            acc = acc.concat(datum.unsupportedField);
+            return acc;
+          }, []);
+          this.unsupportedFields = Array.from(new Set(flatUnsupportedFields));
         });
       }
 
@@ -144,6 +159,7 @@
             resolve({
               date: timestamp * 1000,
               issues: response.snapshotCount[0].count,
+              unsupportedField: response.unsupportedField,
             });
           });
         });
