@@ -175,17 +175,11 @@ var RuleMap = map[string]*RepoConfig{
 				Account: "skia-recreate-skps@skia-swarming-bots.iam.gserviceaccount.com",
 				Funcs: []RuleFunc{
 					func(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
-						paths := []*Path{
-							&Path{
-								Name: "infra/bots/assets/skp/VERSION",
-								Type: TYPE_FILE,
-							},
-							&Path{
-								Name: "infra/bots/tasks.json",
-								Type: TYPE_FILE,
-							},
+						files := []string{
+							"infra/bots/assets/skp/VERSION",
+							"infra/bots/tasks.json",
 						}
-						return OnlyModifiesPathsRule(ctx, ap, rc, cs, "OnlyModifiesVersionFile", paths)
+						return OnlyModifiesFilesRule(ctx, ap, rc, cs, "OnlyModifiesVersionFile", files)
 					},
 				},
 				notificationFunction: fileBugForAutoRollViolation,
@@ -203,7 +197,7 @@ var RuleMap = map[string]*RepoConfig{
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
 		Rules: map[string]RuleSet{
 			"autoroll-rules-lottie-web": AutoRollRulesDEPS("lottie-web-lottie-ci-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
-			"autoroll-rules-skia":       AutoRollRulesDEPS("skia-lottie-ci-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
+			"autoroll-rules-skia":       AutoRollRulesDEPSAndTasks("skia-lottie-ci-autoroll@skia-buildbots.google.com.iam.gserviceaccount.com"),
 		},
 	},
 	"fuchsia-topaz-master": {

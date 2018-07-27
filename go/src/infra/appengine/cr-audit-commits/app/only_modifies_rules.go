@@ -37,6 +37,19 @@ func OnlyModifiesFileRule(ctx context.Context, ap *AuditParams, rc *RelevantComm
 	})
 }
 
+// OnlyModifiesFilesRule is a shared implementation for RuleFuncs which verify
+// that only the given files are modified by the audited CL.
+func OnlyModifiesFilesRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName string, files []string) *RuleResult {
+	paths := make([]*Path, 0, len(files))
+	for _, f := range files {
+		paths = append(paths, &Path{
+			Name: f,
+			Type: TYPE_FILE,
+		})
+	}
+	return OnlyModifiesPathsRule(ctx, ap, rc, cs, ruleName, paths)
+}
+
 // OnlyModifiesDirRule is a shared implementation for RuleFuncs which verify
 // that only files within the given directory are modified by the audited CL.
 func OnlyModifiesDirRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, ruleName, dir string) *RuleResult {

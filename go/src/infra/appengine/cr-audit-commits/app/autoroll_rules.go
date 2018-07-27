@@ -32,6 +32,17 @@ func AutoRollRulesDEPS(account string) AccountRules {
 	}
 }
 
+// AutoRollRulesDepsAndTasks returns an AccountRules instance for an account
+// which should only modify the ``DEPS`` and ``infra/bots/tasks.json`` files.
+func AutoRollRulesDEPSAndTasks(account string) AccountRules {
+	return AccountRules{
+		Account: account,
+		Funcs: []RuleFunc{
+			OnlyModifiesDEPSAndTasks,
+		},
+	}
+}
+
 // AutoRollRulesFuchsiaSDKVersion returns an AccountRules instance for an
 // account which should only modifiy ``build/fuchsia/sdk.sha1``.
 func AutoRollRulesFuchsiaSDKVersion(account string) AccountRules {
@@ -60,6 +71,16 @@ func AutoRollRulesSKCMS(account string) AccountRules {
 // modified by the audited CL is ``DEPS``.
 func OnlyModifiesDEPSFile(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	return OnlyModifiesFileRule(ctx, ap, rc, cs, "OnlyModifiesDEPSFile", "DEPS")
+}
+
+// OnlyModifiesDEPSAndTasks is a RuleFunc that verifies that the only files
+// modified by the audited CL are ``DEPS`` and ``infra/bots/tasks.json``.
+func OnlyModifiesDEPSAndTasks(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	files := []string{
+		"DEPS",
+		"infra/bots/tasks.json",
+	}
+	return OnlyModifiesFilesRule(ctx, ap, rc, cs, "OnlyModifiesDEPS+tasks.json", files)
 }
 
 // OnlyModifiesAFDOVersion is a RuleFunc which verifies that the only file
