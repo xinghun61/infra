@@ -80,6 +80,22 @@ SORTABLE_FIELDS_POSTPROCESSORS = {
     'ownerlastvisit': lambda user_view: -user_view.user.last_visit_timestamp,
     }
 
+# Here are some restriction labels to help people do the most common things
+# that they might want to do with restrictions.
+_FREQUENT_ISSUE_RESTRICTIONS = [
+    (permissions.VIEW, permissions.EDIT_ISSUE,
+     'Only users who can edit the issue may access it'),
+    (permissions.ADD_ISSUE_COMMENT, permissions.EDIT_ISSUE,
+     'Only users who can edit the issue may add comments'),
+    ]
+
+# These issue restrictions should be offered as examples whenever the project
+# does not have any custom permissions in use already.
+_EXAMPLE_ISSUE_RESTRICTIONS = [
+    (permissions.VIEW, 'CoreTeam',
+     'Custom permission CoreTeam is needed to access'),
+    ]
+
 # Namedtuples that hold data parsed from post_data.
 ParsedComponents = collections.namedtuple(
     'ParsedComponents', 'entered_str, paths, paths_remove')
@@ -1038,6 +1054,63 @@ def _FilterMemberData(
     visible_members_ids.update(contributor_ids)
 
   return sorted(visible_members_ids)
+
+
+def GetLabelOptions(config, custom_permissions):
+  """Prepares label options for autocomplete."""
+  labels = []
+  field_names = [
+    fd.field_name
+    for fd in config.field_defs
+    if not fd.is_deleted
+  ]
+  non_masked_labels = LabelsNotMaskedByFields(config, field_names)
+  for wkl in non_masked_labels:
+    if not wkl.commented:
+      item = {'name': wkl.name, 'doc': wkl.docstring}
+      labels.append(item)
+
+  frequent_restrictions = _FREQUENT_ISSUE_RESTRICTIONS[:]
+  if not custom_permissions:
+    frequent_restrictions.extend(_EXAMPLE_ISSUE_RESTRICTIONS)
+
+  labels.extend(_BuildRestrictionChoices(
+      frequent_restrictions, permissions.STANDARD_ISSUE_PERMISSIONS,
+      custom_permissions))
+
+  return labels
+
+
+def _BuildRestrictionChoices(freq_restrictions, actions, custom_permissions):
+  """Return a list of autocompletion choices for restriction labels.
+
+  Args:
+    freq_restrictions: list of (action, perm, doc) tuples for restrictions
+        that are frequently used.
+    actions: list of strings for actions that are relevant to the current
+      artifact.
+    custom_permissions: list of strings with custom permissions for the project.
+
+  Returns:
+    A list of dictionaries [{'name': 'perm name', 'doc': 'docstring'}, ...]
+    suitable for use in a JSON feed to our JS autocompletion functions.
+  """
+  choices = []
+
+  for action, perm, doc in freq_restrictions:
+    choices.append({
+        'name': 'Restrict-%s-%s' % (action, perm),
+        'doc': doc,
+        })
+
+  for action in actions:
+    for perm in custom_permissions:
+      choices.append({
+          'name': 'Restrict-%s-%s' % (action, perm),
+          'doc': 'Permission %s needed to use %s' % (perm, action),
+          })
+
+  return choices
 
 
 class Error(Exception):

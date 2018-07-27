@@ -112,3 +112,23 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
     result = projects_pb2.GetFieldOptionsResponse(field_options=field_options)
     return result
+
+  @monorail_servicer.PRPCMethod
+  def GetLabelOptions(self, mc, request):
+    """Return the label options for autocomplete for the given project."""
+    project = self._GetProject(mc, request)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      config = we.GetProjectConfig(project.project_id)
+
+    label_options = tracker_helpers.GetLabelOptions(
+        config, permissions.GetCustomPermissions(project))
+    label_defs = [
+        project_objects_pb2.LabelDef(
+            label=label['name'],
+            docstring=label['doc'])
+        for label in label_options]
+
+    result = projects_pb2.GetLabelOptionsResponse(
+        label_options=label_defs)
+    return result

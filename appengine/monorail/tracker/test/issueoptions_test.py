@@ -268,21 +268,6 @@ class GetOptionsTest(unittest.TestCase):
     expected = [{'doc': 'docstring', 'name': 'Path'}]
     self.assertEqual(expected, actual)
 
-  @mock.patch('tracker.tracker_helpers.LabelsNotMaskedByFields')
-  def testGetLabelOptions(self, mockLabelsNotMaskedByFields):
-    mockLabelsNotMaskedByFields.return_value = []
-    custom_perms = []
-    actual = issueoptions.GetLabelOptions(self.mr, self.config, custom_perms)
-    expected = [
-      {'doc': 'Only users who can edit the issue may access it',
-       'name': 'Restrict-View-EditIssue'},
-      {'doc': 'Only users who can edit the issue may add comments',
-       'name': 'Restrict-AddIssueComment-EditIssue'},
-      {'doc': 'Custom permission CoreTeam is needed to access',
-       'name': 'Restrict-View-CoreTeam'}
-    ]
-    self.assertEqual(expected, actual)
-
   @mock.patch('testing.fake.FeaturesService.GetHotlistsByUserID')
   def testGetHotlistOptions(self, mockGetHotlistsByUserID):
     fake_hotlist = fake.Hotlist(hotlist_name='hotlist-1', hotlist_id=1)
@@ -310,39 +295,3 @@ class GetOptionsTest(unittest.TestCase):
      'user_indexes': [],
     }]
     self.assertEqual(expected, actual)
-
-
-class BuildRestrictionChoicesTest(unittest.TestCase):
-
-  def testBuildRestrictionChoices(self):
-    project = project_pb2.Project()
-    choices = issueoptions._BuildRestrictionChoices(project, [], [])
-    self.assertEquals([], choices)
-
-    choices = issueoptions._BuildRestrictionChoices(
-        project, [], ['Hop', 'Jump'])
-    self.assertEquals([], choices)
-
-    freq = [('View', 'B', 'You need permission B to do anything'),
-            ('A', 'B', 'You need B to use A')]
-    choices = issueoptions._BuildRestrictionChoices(project, freq, [])
-    expected = [dict(name='Restrict-View-B',
-                     doc='You need permission B to do anything'),
-                dict(name='Restrict-A-B',
-                     doc='You need B to use A')]
-    self.assertListEqual(expected, choices)
-
-    extra_perms = project_pb2.Project.ExtraPerms(
-        perms=['Over18', 'Over21'])
-    project.extra_perms.append(extra_perms)
-    choices = issueoptions._BuildRestrictionChoices(
-        project, [], ['Drink', 'Smoke'])
-    expected = [dict(name='Restrict-Drink-Over18',
-                     doc='Permission Over18 needed to use Drink'),
-                dict(name='Restrict-Drink-Over21',
-                     doc='Permission Over21 needed to use Drink'),
-                dict(name='Restrict-Smoke-Over18',
-                     doc='Permission Over18 needed to use Smoke'),
-                dict(name='Restrict-Smoke-Over21',
-                     doc='Permission Over21 needed to use Smoke')]
-    self.assertListEqual(expected, choices)

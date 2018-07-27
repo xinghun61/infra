@@ -24,24 +24,6 @@ from tracker import tracker_helpers
 from tracker import tracker_views
 
 
-# Here are some restriction labels to help people do the most common things
-# that they might want to do with restrictions.
-_FREQUENT_ISSUE_RESTRICTIONS = [
-    (permissions.VIEW, permissions.EDIT_ISSUE,
-     'Only users who can edit the issue may access it'),
-    (permissions.ADD_ISSUE_COMMENT, permissions.EDIT_ISSUE,
-     'Only users who can edit the issue may add comments'),
-    ]
-
-
-# These issue restrictions should be offered as examples whenever the project
-# does not have any custom permissions in use already.
-_EXAMPLE_ISSUE_RESTRICTIONS = [
-    (permissions.VIEW, 'CoreTeam',
-     'Custom permission CoreTeam is needed to access'),
-    ]
-
-
 class IssueStatusLabelOptionsJSON(jsonfeed.JsonFeed):
   """JSON data describing all issue statuses and labels."""
 
@@ -63,7 +45,7 @@ class IssueStatusLabelOptionsJSON(jsonfeed.JsonFeed):
     open_statuses, closed_statuses = GetStatusOptions(config)
     components = GetComponentOptions(config)
     custom_permissions = permissions.GetCustomPermissions(mr.project)
-    labels = GetLabelOptions(mr, config, custom_permissions)
+    labels = tracker_helpers.GetLabelOptions(config, custom_permissions)
     exclusive_prefixes = [
       prefix.lower()
       for prefix in config.exclusive_label_prefixes
@@ -139,32 +121,6 @@ def GetComponentOptions(config):
   ]
 
 
-def GetLabelOptions(mr, config, custom_permissions):
-  """Prepares label options for autocomplete."""
-  labels = []
-  field_names = [
-    fd.field_name
-    for fd in config.field_defs
-    if not fd.is_deleted
-  ]
-  non_masked_labels = tracker_helpers.LabelsNotMaskedByFields(
-      config, field_names)
-  for wkl in non_masked_labels:
-    if not wkl.commented:
-      item = {'name': wkl.name, 'doc': wkl.docstring}
-      labels.append(item)
-
-  frequent_restrictions = _FREQUENT_ISSUE_RESTRICTIONS[:]
-  if not custom_permissions:
-    frequent_restrictions.extend(_EXAMPLE_ISSUE_RESTRICTIONS)
-
-  labels.extend(_BuildRestrictionChoices(
-      mr.project, frequent_restrictions,
-      permissions.STANDARD_ISSUE_PERMISSIONS))
-
-  return labels
-
-
 def GetHotlistOptions(mr, services):
   """Fetches Hotlist options for autocomplete."""
   hotlist_pbs = services.features.GetHotlistsByUserID(
@@ -219,36 +175,3 @@ def GetFieldOptions(mr, services, config, visible_member_views,
         docstring=fdv.docstring))
 
   return sorted(fields, key=lambda field: field['field_name'])
-
-
-def _BuildRestrictionChoices(project, freq_restrictions, actions):
-  """Return a list of autocompletion choices for restriction labels.
-
-  Args:
-    project: Project PB for the current project.
-    freq_restrictions: list of (action, perm, doc) tuples for restrictions
-        that are frequently used.
-    actions: list of strings for actions that are relevant to the current
-      artifact.
-
-  Returns:
-    A list of dictionaries [{'name': 'perm name', 'doc': 'docstring'}, ...]
-    suitable for use in a JSON feed to our JS autocompletion functions.
-  """
-  custom_permissions = permissions.GetCustomPermissions(project)
-  choices = []
-
-  for action, perm, doc in freq_restrictions:
-    choices.append({
-        'name': 'Restrict-%s-%s' % (action, perm),
-        'doc': doc,
-        })
-
-  for action in actions:
-    for perm in custom_permissions:
-      choices.append({
-          'name': 'Restrict-%s-%s' % (action, perm),
-          'doc': 'Permission %s needed to use %s' % (perm, action),
-          })
-
-  return choices

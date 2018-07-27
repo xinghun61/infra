@@ -19,6 +19,7 @@ from framework import exceptions
 from framework import monorailcontext
 from framework import permissions
 from proto import project_pb2
+from tracker import tracker_constants
 from testing import fake
 from services import service_manager
 
@@ -340,7 +341,6 @@ class ProjectsServicerTest(unittest.TestCase):
         [sorted(user_ref.user_id for user_ref in field.user_refs)
          for field in field_options])
 
-
   def testGetFieldOptions_NoFields(self):
     request = projects_pb2.GetFieldOptionsRequest(project_name='proj')
     mc = monorailcontext.MonorailContext(
@@ -349,3 +349,65 @@ class ProjectsServicerTest(unittest.TestCase):
         self.projects_svcr.GetFieldOptions, mc, request)
 
     self.assertEqual(0, len(response.field_options))
+
+  def testGetLabelOptions_Normal(self):
+    request = projects_pb2.GetLabelOptionsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.GetLabelOptions, mc, request)
+
+    expected_label_names = [
+        label[0] for label in tracker_constants.DEFAULT_WELL_KNOWN_LABELS]
+    expected_label_names += [
+        'Restrict-View-EditIssue', 'Restrict-AddIssueComment-EditIssue',
+        'Restrict-View-CoreTeam']
+    self.assertEqual(
+        sorted(expected_label_names),
+        sorted(label.label for label in response.label_options))
+
+  def testGetLabelOptions_CustomPermissions(self):
+    self.project.extra_perms = [
+        project_pb2.Project.ExtraPerms(
+            member_id=222L,
+            perms=['FooPerm', 'BarPerm'])]
+
+    request = projects_pb2.GetLabelOptionsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.GetLabelOptions, mc, request)
+
+    expected_label_names = [
+        label[0] for label in tracker_constants.DEFAULT_WELL_KNOWN_LABELS]
+    expected_label_names += [
+        'Restrict-View-EditIssue', 'Restrict-AddIssueComment-EditIssue']
+    expected_label_names += [
+        'Restrict-%s-%s' % (std_perm, custom_perm)
+        for std_perm in permissions.STANDARD_ISSUE_PERMISSIONS
+        for custom_perm in ('BarPerm', 'FooPerm')]
+
+    self.assertEqual(
+        sorted(expected_label_names),
+        sorted(label.label for label in response.label_options))
+
+  def testGetLabelOptions_FieldMasksLabel(self):
+    self.AddUserField('Type')
+
+    request = projects_pb2.GetLabelOptionsRequest(project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.projects_svcr.GetLabelOptions, mc, request)
+
+    expected_label_names = [
+        label[0] for label in tracker_constants.DEFAULT_WELL_KNOWN_LABELS
+        if not label[0].startswith('Type-')
+    ]
+    expected_label_names += [
+        'Restrict-View-EditIssue', 'Restrict-AddIssueComment-EditIssue',
+        'Restrict-View-CoreTeam']
+    self.assertEqual(
+        sorted(expected_label_names),
+        sorted(label.label for label in response.label_options))
+

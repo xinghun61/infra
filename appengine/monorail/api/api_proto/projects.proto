@@ -18,6 +18,7 @@ service Projects {
   rpc GetCustomPermissions (GetCustomPermissionsRequest) returns (GetCustomPermissionsResponse) {}
   rpc GetVisibleMembers (GetVisibleMembersRequest) returns (GetVisibleMembersResponse) {}
   rpc GetFieldOptions (GetFieldOptionsRequest) returns (GetFieldOptionsResponse) {}
+  rpc GetLabelOptions (GetLabelOptionsRequest) returns (GetLabelOptionsResponse) {}
 }
 
 
@@ -77,4 +78,17 @@ message GetFieldOptionsRequest {
 // Next available tag: 2
 message GetFieldOptionsResponse {
   repeated FieldOptions field_options = 1;
+}
+
+
+// Next available tag: 3
+message GetLabelOptionsRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+}
+
+
+// Next available tag: 2
+message GetLabelOptionsResponse {
+  repeated LabelDef label_options = 1;
 }

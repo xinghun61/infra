@@ -5,6 +5,7 @@
 
 """Unittest for the tracker helpers module."""
 
+import mock
 import unittest
 
 import settings
@@ -1233,3 +1234,50 @@ class FilterMemberDataTest(unittest.TestCase):
         visible_members)
 
 
+class GetLabelOptionsTest(unittest.TestCase):
+
+  @mock.patch('tracker.tracker_helpers.LabelsNotMaskedByFields')
+  def testGetLabelOptions(self, mockLabelsNotMaskedByFields):
+    mockLabelsNotMaskedByFields.return_value = []
+    config = tracker_pb2.ProjectIssueConfig()
+    custom_perms = []
+    actual = tracker_helpers.GetLabelOptions(config, custom_perms)
+    expected = [
+      {'doc': 'Only users who can edit the issue may access it',
+       'name': 'Restrict-View-EditIssue'},
+      {'doc': 'Only users who can edit the issue may add comments',
+       'name': 'Restrict-AddIssueComment-EditIssue'},
+      {'doc': 'Custom permission CoreTeam is needed to access',
+       'name': 'Restrict-View-CoreTeam'}
+    ]
+    self.assertEqual(expected, actual)
+
+  def testBuildRestrictionChoices(self):
+    choices = tracker_helpers._BuildRestrictionChoices([], [], [])
+    self.assertEquals([], choices)
+
+    choices = tracker_helpers._BuildRestrictionChoices(
+        [], ['Hop', 'Jump'], [])
+    self.assertEquals([], choices)
+
+    freq = [('View', 'B', 'You need permission B to do anything'),
+            ('A', 'B', 'You need B to use A')]
+    choices = tracker_helpers._BuildRestrictionChoices(freq, [], [])
+    expected = [dict(name='Restrict-View-B',
+                     doc='You need permission B to do anything'),
+                dict(name='Restrict-A-B',
+                     doc='You need B to use A')]
+    self.assertListEqual(expected, choices)
+
+    extra_perms = ['Over18', 'Over21']
+    choices = tracker_helpers._BuildRestrictionChoices(
+        [], ['Drink', 'Smoke'], extra_perms)
+    expected = [dict(name='Restrict-Drink-Over18',
+                     doc='Permission Over18 needed to use Drink'),
+                dict(name='Restrict-Drink-Over21',
+                     doc='Permission Over21 needed to use Drink'),
+                dict(name='Restrict-Smoke-Over18',
+                     doc='Permission Over18 needed to use Smoke'),
+                dict(name='Restrict-Smoke-Over21',
+                     doc='Permission Over21 needed to use Smoke')]
+    self.assertListEqual(expected, choices)
