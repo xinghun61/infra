@@ -168,6 +168,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
             self.CreateInputObjectInstance(
                 CreateBugForFlakePipelineInputObject,
                 analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+                step_metadata=parameters.step_metadata,
                 test_location=test_location))
 
         # Revert culprit if applicable.
@@ -219,6 +220,7 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
                 analysis_urlsafe_key=analysis_urlsafe_key,
                 commit_position=commit_position_to_analyze,
                 dimensions=parameters.dimensions,
+                step_metadata=parameters.step_metadata,
                 revision=revision_to_analyze,
                 upper_bound_build_number=analysis.build_number))
 

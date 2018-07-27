@@ -9,6 +9,7 @@ from google.appengine.ext import ndb
 import textwrap
 
 from common.findit_http_client import FinditHttpClient
+from dto.step_metadata import StepMetadata
 from dto.test_location import TestLocation
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
@@ -51,6 +52,7 @@ _ITERATIONS_TO_CONFIRM_FLAKE_TIMEOUT = 60 * 60  # One hour.
 class CreateBugForFlakePipelineInputObject(StructuredObject):
   analysis_urlsafe_key = unicode
   test_location = TestLocation
+  step_metadata = StepMetadata
 
 
 class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
@@ -130,6 +132,7 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
                 commit_position=most_recent_commit_position,
                 dimensions=None,  # Not used.
                 revision=most_recent_build_info.chromium_revision,
+                step_metadata=input_object.step_metadata,
                 upper_bound_build_number=most_recent_build_number))
 
         # Determine approximate pass rate at the commit position/isolate sha.

@@ -4,6 +4,7 @@
 import copy
 import mock
 
+from dto.step_metadata import StepMetadata
 from dto.test_location import TestLocation
 from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.pipelines import pipeline_handlers
@@ -75,6 +76,16 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     ]
     analysis.Save()
 
+    step_metadata = StepMetadata(
+        canonical_step_name=None,
+        dimensions=None,
+        full_step_name=None,
+        isolate_target_name='target',
+        patched=True,
+        swarm_task_ids=None,
+        waterfall_buildername=None,
+        waterfall_mastername=None)
+
     # Create a flake analysis request with no bug.
     request = FlakeAnalysisRequest.Create(test_name, False, None)
     request.Save()
@@ -82,6 +93,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=step_metadata,
         test_location=TestLocation(file='foo/bar', line=1))
 
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
@@ -91,6 +103,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
         commit_position=recent_commit_position,
         dimensions=None,
         revision=recent_revision,
+        step_metadata=step_metadata,
         upper_bound_build_number=recent_build_number)
 
     get_sha_output = GetIsolateShaOutput(
@@ -172,6 +185,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=None,
         test_location=TestLocation(file='foo/bar', line=1))
 
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
@@ -221,6 +235,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=2))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
     pipeline_job.start()
@@ -259,6 +274,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=1))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
     pipeline_job.start()
@@ -293,6 +309,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=1))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
     pipeline_job.start()
@@ -327,6 +344,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=1))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
     pipeline_job.start()
@@ -365,6 +383,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=None,
         test_location=TestLocation(file='/foo/bar', line=1))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
     pipeline_job.start()

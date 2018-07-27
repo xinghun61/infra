@@ -143,6 +143,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
 
     expected_create_bug_input = CreateBugForFlakePipelineInputObject(
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        step_metadata=None,
         test_location=test_location)
     expected_create_and_submit_revert_input = CreateAndSubmitRevertInput(
         analysis_urlsafe_key=analysis.key.urlsafe(), build_id=build_id)
@@ -221,6 +222,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position=start_commit_position,
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         revision=start_revision,
+        step_metadata=step_metadata,
         upper_bound_build_number=analysis.build_number)
 
     expected_pass_rate_input = DetermineApproximatePassRateInput(

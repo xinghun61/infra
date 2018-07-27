@@ -21,6 +21,9 @@ STATE_NO_RESOURCE = 'NO_RESOURCE'
 # The chromium git repository to pull revisions and blame info from.
 CHROMIUM_GIT_REPOSITORY_URL = (
     'https://chromium.googlesource.com/chromium/src.git')
+GITILES_HOST = 'chromium.googlesource.com'
+GITILES_PROJECT = 'chromium/src'
+GITILES_REF = 'refs/heads/master'
 
 # Default limit hours to revert a culprit: should only revert a culprit if it's
 # committed within this time range.

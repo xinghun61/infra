@@ -6,16 +6,18 @@ from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
 from dto.flake_try_job_result import FlakeTryJobResult
+from dto.step_metadata import StepMetadata
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
 from gae_libs.pipelines import SynchronousPipeline
 from libs.list_of_basestring import ListOfBasestring
 from libs.structured_object import StructuredObject
+from model.isolated_target import IsolatedTarget
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobParameters)
 from pipelines.flake_failure.run_flake_try_job_pipeline import (
     RunFlakeTryJobPipeline)
-from services import step_util
+from services import constants
 from services import swarmbot_util
 from services import swarming
 from services.flake_failure import flake_constants
@@ -38,26 +40,11 @@ class GetIsolateShaForCommitPositionParameters(StructuredObject):
   # The exact revision corresponding to commit_position being requested.
   revision = basestring
 
+  # Information about the test used to determine isolated targets.
+  step_metadata = StepMetadata
+
   # A late build number on the builder to assist in finding nearby builds.
   upper_bound_build_number = int
-
-
-class GetIsolateShaForBuildParameters(StructuredObject):
-  # The name of the master to query for a pre-determined sha.
-  master_name = basestring
-
-  # The name of the builder to query for a pre-determined sha.
-  builder_name = basestring
-
-  # The build number whose to query for a pre-detrermined sha.
-  build_number = int
-
-  # The url to the build page corresponding to master_name, builder_name
-  # build_number.
-  url = basestring
-
-  # The name of the step to query for a pre-determined sha.
-  step_name = basestring
 
 
 class GetIsolateShaForTryJobParameters(StructuredObject):
@@ -78,16 +65,24 @@ class GetIsolateShaOutput(StructuredObject):
   try_job_url = basestring
 
 
-class GetIsolateShaForBuildPipeline(SynchronousPipeline):
-  input_type = GetIsolateShaForBuildParameters
+class GetIsolateShaForTargetInput(StructuredObject):
+  # The urlsafe key to an IsolatedTarget to extract the isolated hash.
+  isolated_target_urlsafe_key = basestring
+
+
+class GetIsolateShaForTargetPipeline(SynchronousPipeline):
+  input_type = GetIsolateShaForTargetInput
   output_type = GetIsolateShaOutput
 
   def RunImpl(self, parameters):
-    isolate_sha = swarming.GetIsolatedShaForStep(
-        parameters.master_name, parameters.builder_name,
-        parameters.build_number, parameters.step_name, FinditHttpClient())
+    isolated_target = ndb.Key(
+        urlsafe=parameters.isolated_target_urlsafe_key).get()
+    assert isolated_target, 'IsolatedTarget is missing unexpectedly!'
+
     return GetIsolateShaOutput(
-        isolate_sha=isolate_sha, build_url=parameters.url, try_job_url=None)
+        isolate_sha=isolated_target.isolated_hash,
+        build_url=isolated_target.build_url,
+        try_job_url=None)
 
 
 class GetIsolateShaForTryJobPipeline(SynchronousPipeline):
@@ -121,40 +116,41 @@ class GetIsolateShaForCommitPositionPipeline(GeneratorPipeline):
 
     master_name = analysis.master_name
     builder_name = analysis.builder_name
-    test_name = analysis.test_name
-    step_name = analysis.step_name
     commit_position = parameters.commit_position
-    upper_bound_build_number = parameters.upper_bound_build_number
+    target_name = parameters.step_metadata.isolate_target_name
 
-    _, earliest_containing_build = step_util.GetValidBoundingBuildsForStep(
-        master_name, builder_name, step_name, None, upper_bound_build_number,
-        commit_position)
+    targets = (
+        IsolatedTarget.FindIsolateAtOrAfterCommitPositionByMaster(
+            master_name, builder_name, constants.GITILES_HOST,
+            constants.GITILES_PROJECT, constants.GITILES_REF, target_name,
+            commit_position))
 
-    assert earliest_containing_build
-    assert earliest_containing_build.commit_position >= commit_position
+    assert targets, ((
+        'No IsolatedTargets found for {}/{} with minimum commit position '
+        '{}').format(master_name, builder_name, commit_position))
 
-    if earliest_containing_build.commit_position == commit_position:
-      # The requested commit position is that of an existing build.
-      get_build_sha_parameters = self.CreateInputObjectInstance(
-          GetIsolateShaForBuildParameters,
-          master_name=master_name,
-          builder_name=builder_name,
-          build_number=earliest_containing_build.build_number,
-          step_name=step_name,
-          url=buildbot.CreateBuildUrl(master_name, builder_name,
-                                      earliest_containing_build.build_number))
-      yield GetIsolateShaForBuildPipeline(get_build_sha_parameters)
+    upper_bound_target = targets[0]
+
+    if upper_bound_target.commit_position == commit_position:
+      # The requested commit position is that of a found IsolatedTarget.
+      get_target_input = GetIsolateShaForTargetInput(
+          isolated_target_urlsafe_key=upper_bound_target.key.urlsafe())
+      yield GetIsolateShaForTargetPipeline(get_target_input)
     else:
       # The requested commit position needs to be compiled.
       _, reference_build_info = build_util.GetBuildInfo(
           master_name, builder_name, analysis.build_number)
-      parent_mastername = reference_build_info.parent_mastername or master_name
+      parent_mastername = (
+          reference_build_info.parent_mastername or master_name)
       parent_buildername = (
           reference_build_info.parent_buildername or builder_name)
       cache_name = swarmbot_util.GetCacheName(
           parent_mastername,
           parent_buildername,
           suffix=flake_constants.FLAKE_CACHE_SUFFIX)
+      step_name = analysis.step_name
+      test_name = analysis.test_name
+
       try_job = flake_try_job.GetTryJob(master_name, builder_name, step_name,
                                         test_name, parameters.revision)
       run_flake_try_job_parameters = self.CreateInputObjectInstance(
