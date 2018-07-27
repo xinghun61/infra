@@ -38,7 +38,7 @@ func main() {
 	c = loggingConfig.Set(c)
 
 	if err := tsmon.InitializeFromFlags(c, &tsmonFlags); err != nil {
-		panic(fmt.Sprintf("Failed to initialize tsmon: %s", err))
+		panic(fmt.Sprintf("failed to initialize tsmon: %s", err))
 	}
 
 	// Register metric callbacks.
