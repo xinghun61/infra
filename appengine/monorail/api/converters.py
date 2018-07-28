@@ -53,7 +53,8 @@ def ConvertApproval(approval_value, users_by_id, config, phase=None):
     approval_name = fd.field_name
 
   field_ref = ConvertFieldRef(
-      approval_name, tracker_pb2.FieldTypes.APPROVAL_TYPE, None)
+      approval_value.approval_id, approval_name,
+      tracker_pb2.FieldTypes.APPROVAL_TYPE, None)
   approver_refs = ConvertUserRefs(approval_value.approver_ids, [], users_by_id)
   setter_ref = ConvertUserRef(approval_value.setter_id, None, users_by_id)
 
@@ -157,11 +158,12 @@ def ConvertIssueRefs(issue_ids, related_refs_dict):
   return [ConvertIssueRef(related_refs_dict[iid]) for iid in issue_ids]
 
 
-def ConvertFieldValue(field_name, value, field_type, approval_name=None,
-                      phase_name=None, is_derived=False):
+def ConvertFieldValue(field_id, field_name, value, field_type,
+                      approval_name=None, phase_name=None, is_derived=False):
   """Convert one field value view item into a protoc FieldValue."""
   fv = issue_objects_pb2.FieldValue(
-      field_ref=ConvertFieldRef(field_name, field_type, approval_name),
+      field_ref=ConvertFieldRef(field_id, field_name, field_type,
+                                approval_name),
       value=str(value),
       is_derived=is_derived)
   if phase_name:
@@ -175,9 +177,10 @@ def ConvertFieldType(field_type):
   return common_pb2.FieldType.Value(field_type.name)
 
 
-def ConvertFieldRef(field_name, field_type, approval_name):
+def ConvertFieldRef(field_id, field_name, field_type, approval_name):
   """Convert a field name and protorpc FieldType into a protoc FieldRef."""
-  return common_pb2.FieldRef(field_name=field_name,
+  return common_pb2.FieldRef(field_id=field_id,
+                             field_name=field_name,
                              type=ConvertFieldType(field_type),
                              approval_name=approval_name)
 
@@ -188,6 +191,7 @@ def ConvertFieldValues(
   fvs = []
   phase_names_by_id = {phase.phase_id: phase.name for phase in phases or []}
   fds_by_id = {fd.field_id:fd for fd in config.field_defs}
+  fids_by_name = {fd.field_name:fd.field_id for fd in config.field_defs}
   enum_names_by_lower = {
       fd.field_name.lower(): fd.field_name for fd in config.field_defs
       if fd.field_type == tracker_pb2.FieldTypes.ENUM_TYPE}
@@ -203,8 +207,9 @@ def ConvertFieldValues(
       continue
     fvs.extend(
         [ConvertFieldValue(
-            field_name, value, tracker_pb2.FieldTypes.ENUM_TYPE) for
-         value in values])
+            fids_by_name.get(field_name), field_name, value,
+            tracker_pb2.FieldTypes.ENUM_TYPE)
+         for value in values])
 
   for lower_field_name, values in der_labels_by_prefix.iteritems():
     field_name = enum_names_by_lower.get(lower_field_name)
@@ -212,8 +217,9 @@ def ConvertFieldValues(
       continue
     fvs.extend(
         [ConvertFieldValue(
-            field_name, value, tracker_pb2.FieldTypes.ENUM_TYPE,
-            is_derived=True) for value in values])
+            fids_by_name.get(field_name), field_name, value,
+            tracker_pb2.FieldTypes.ENUM_TYPE, is_derived=True)
+         for value in values])
 
   for fv in field_values:
     value = tracker_bizobj.GetFieldValue(fv, users_by_id)
@@ -230,7 +236,7 @@ def ConvertFieldValues(
           approval_name = approval_def.field_name
 
     fvs.append(ConvertFieldValue(
-        field_name, value, field_type, approval_name=approval_name,
+        fv.field_id, field_name, value, field_type, approval_name=approval_name,
         phase_name=phase_names_by_id.get(fv.phase_id), is_derived=fv.derived))
 
   return fvs
@@ -644,7 +650,8 @@ def ConvertFieldDef(field_def, users_by_id, config):
     if parent_fd:
       parent_approval_name = parent_fd.field_name
   field_ref = ConvertFieldRef(
-      field_def.field_name, field_def.field_type, parent_approval_name)
+      field_def.field_id, field_def.field_name, field_def.field_type,
+      parent_approval_name)
   admin_refs = ConvertUserRefs(field_def.admin_ids, [], users_by_id)
   # TODO(jrobbins): validation, permission granting, and notification options.
 
@@ -662,7 +669,8 @@ def ConvertFieldDef(field_def, users_by_id, config):
 def ConvertApprovalDef(approval_def, users_by_id, config):
   """Convert a protorpc ApprovalDef into a protoc ApprovalDef."""
   field_def = tracker_bizobj.FindFieldDefByID(approval_def.approval_id, config)
-  field_ref = ConvertFieldRef(field_def.field_name, field_def.field_type, None)
+  field_ref = ConvertFieldRef(field_def.field_id, field_def.field_name,
+                              field_def.field_type, None)
   approver_refs = ConvertUserRefs(approval_def.approver_ids, [], users_by_id)
   return project_objects_pb2.ApprovalDef(
       field_ref=field_ref,
@@ -727,7 +735,8 @@ def ConvertFieldOptions(field_def, qualified_users, users_by_id, config):
     if parent_fd:
       parent_approval_name = parent_fd.field_name
   field_ref = ConvertFieldRef(
-      field_def.field_name, field_def.field_type, parent_approval_name)
+      field_def.field_id, field_def.field_name, field_def.field_type,
+      parent_approval_name)
 
   user_refs = ConvertUserRefs(qualified_users, [], users_by_id)
 

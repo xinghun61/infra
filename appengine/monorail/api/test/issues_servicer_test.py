@@ -563,7 +563,9 @@ class IssuesServicerTest(unittest.TestCase):
     expected.approval.CopyFrom(
       issue_objects_pb2.Approval(
           field_ref=common_pb2.FieldRef(
-              field_name='LegalApproval', type=common_pb2.APPROVAL_TYPE),
+              field_id=3,
+              field_name='LegalApproval',
+              type=common_pb2.APPROVAL_TYPE),
           approver_refs=[
               common_pb2.UserRef(
                   user_id=333, display_name='approver3@example.com'),
@@ -617,7 +619,9 @@ class IssuesServicerTest(unittest.TestCase):
     expected.approval.CopyFrom(
         issue_objects_pb2.Approval(
             field_ref=common_pb2.FieldRef(
-                field_name='LegalApproval', type=common_pb2.APPROVAL_TYPE),
+                field_id=3,
+                field_name='LegalApproval',
+                type=common_pb2.APPROVAL_TYPE),
             setter_ref=common_pb2.UserRef(display_name='----'),
             phase_ref=issue_objects_pb2.PhaseRef()
         )

@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='api/api_proto/common.proto',
   package='monorail',
   syntax='proto3',
-  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"W\n\x0cRequestTrace\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\x14\n\x0ctest_account\x18\x04 \x01(\t\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"X\n\x08\x46ieldRef\x12\x12\n\nfield_name\x18\x01 \x01(\t\x12!\n\x04type\x18\x02 \x01(\x0e\x32\x13.monorail.FieldType\x12\x15\n\rapproval_name\x18\x03 \x01(\t\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"2\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08*\x91\x01\n\tFieldType\x12\x0b\n\x07NO_TYPE\x10\x00\x12\r\n\tENUM_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0c\n\x08STR_TYPE\x10\x03\x12\r\n\tUSER_TYPE\x10\x04\x12\r\n\tDATE_TYPE\x10\x05\x12\r\n\tBOOL_TYPE\x10\x06\x12\x0c\n\x08URL_TYPE\x10\x07\x12\x11\n\rAPPROVAL_TYPE\x10\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"W\n\x0cRequestTrace\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\x14\n\x0ctest_account\x18\x04 \x01(\t\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"j\n\x08\x46ieldRef\x12\x10\n\x08\x66ield_id\x18\x01 \x01(\x04\x12\x12\n\nfield_name\x18\x02 \x01(\t\x12!\n\x04type\x18\x03 \x01(\x0e\x32\x13.monorail.FieldType\x12\x15\n\rapproval_name\x18\x04 \x01(\t\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"2\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08*\x91\x01\n\tFieldType\x12\x0b\n\x07NO_TYPE\x10\x00\x12\r\n\tENUM_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0c\n\x08STR_TYPE\x10\x03\x12\r\n\tUSER_TYPE\x10\x04\x12\r\n\tDATE_TYPE\x10\x05\x12\r\n\tBOOL_TYPE\x10\x06\x12\x0c\n\x08URL_TYPE\x10\x07\x12\x11\n\rAPPROVAL_TYPE\x10\x08\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -69,8 +69,8 @@ _FIELDTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=508,
-  serialized_end=653,
+  serialized_start=526,
+  serialized_end=671,
 )
 _sym_db.RegisterEnumDescriptor(_FIELDTYPE)
 
@@ -185,22 +185,29 @@ _FIELDREF = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='field_name', full_name='monorail.FieldRef.field_name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='type', full_name='monorail.FieldRef.type', index=1,
-      number=2, type=14, cpp_type=8, label=1,
+      name='field_id', full_name='monorail.FieldRef.field_id', index=0,
+      number=1, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='approval_name', full_name='monorail.FieldRef.approval_name', index=2,
-      number=3, type=9, cpp_type=9, label=1,
+      name='field_name', full_name='monorail.FieldRef.field_name', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='type', full_name='monorail.FieldRef.type', index=2,
+      number=3, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='approval_name', full_name='monorail.FieldRef.approval_name', index=3,
+      number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -218,7 +225,7 @@ _FIELDREF = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=179,
-  serialized_end=267,
+  serialized_end=285,
 )
 
 
@@ -255,8 +262,8 @@ _LABELREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=269,
-  serialized_end=314,
+  serialized_start=287,
+  serialized_end=332,
 )
 
 
@@ -300,8 +307,8 @@ _STATUSREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=316,
-  serialized_end=383,
+  serialized_start=334,
+  serialized_end=401,
 )
 
 
@@ -338,8 +345,8 @@ _ISSUEREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=385,
-  serialized_end=435,
+  serialized_start=403,
+  serialized_end=453,
 )
 
 
@@ -383,8 +390,8 @@ _USERREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=437,
-  serialized_end=505,
+  serialized_start=455,
+  serialized_end=523,
 )
 
 _FIELDREF.fields_by_name['type'].enum_type = _FIELDTYPE
