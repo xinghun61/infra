@@ -43,14 +43,18 @@ def MonitorRevertAction(build_failure_type, revert_status, commit_status):
     monitoring.OnCulpritAction(build_failure_type, 'revert_status_error')
 
 
-def MonitoringCulpritNotification(build_failure_type, action_type, sent):
+def MonitoringCulpritNotification(build_failure_type, action_type, sent,
+                                  should_send):
   build_failure_type = failure_type.GetDescriptionForFailureType(
       build_failure_type)
   if sent:
     monitoring.OnCulpritAction(build_failure_type, '%s_notified' % action_type)
-  else:
+  elif should_send:
     monitoring.OnCulpritAction(build_failure_type,
                                '%s_notified_error' % action_type)
+  else:
+    monitoring.OnCulpritAction(build_failure_type,
+                               '%s_notified_skip' % action_type)
 
 
 def ShouldTakeActionsOnCulprit(parameters):
@@ -262,8 +266,10 @@ def SendMessageToIRC(parameters):
   revert_status = parameters.revert_status
   commit_status = parameters.commit_status
   sent = False
+  should_send = False
 
   if revert_status == constants.CREATED_BY_FINDIT:
+    should_send = True
     culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
 
     if not culprit:
@@ -281,7 +287,8 @@ def SendMessageToIRC(parameters):
                                     culprit.commit_position, revision,
                                     culprit.key.urlsafe(), commit_status)
 
-  MonitoringCulpritNotification(parameters.failure_type, 'irc', sent)
+  MonitoringCulpritNotification(parameters.failure_type, 'irc', sent,
+                                should_send)
   return sent
 
 
@@ -354,6 +361,7 @@ def SendNotificationForCulprit(parameters):
   force_notify = parameters.force_notify
   revert_status = parameters.revert_status
   sent = False
+  should_send = False
 
   action_settings = waterfall_config.GetActionSettings()
   # Set some impossible default values to prevent notification by default.
@@ -361,10 +369,12 @@ def SendNotificationForCulprit(parameters):
                                             100000)
   if _ShouldSendNotification(repo_name, revision, force_notify, revert_status,
                              build_num_threshold):
+    should_send = True
     codereview_info = GetCodeReviewDataForACulprit(parameters.cl_key)
     sent = gerrit.SendNotificationForCulprit(parameters, codereview_info)
 
-  MonitoringCulpritNotification(parameters.failure_type, 'culprit', sent)
+  MonitoringCulpritNotification(parameters.failure_type, 'culprit', sent,
+                                should_send)
   return sent
 
 

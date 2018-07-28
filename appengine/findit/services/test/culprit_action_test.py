@@ -223,8 +223,9 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     parameters = {'type': 'compile', 'action_taken': 'revert_commit_error'}
     mock_mo.assert_called_once_with(parameters)
 
+  @mock.patch.object(monitoring.culprit_found, 'increment')
   @mock.patch.object(irc, 'SendMessageToIrc')
-  def testNoNeedToSendNotification(self, mocked_irc):
+  def testNoNeedToSendNotification(self, mocked_irc, mock_mo):
     revert_status = constants.CREATED_BY_SHERIFF
     commit_status = constants.SKIPPED
     pipeline_input = SendNotificationToIrcParameters(
@@ -234,9 +235,12 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         failure_type=failure_type.COMPILE)
     self.assertFalse(culprit_action.SendMessageToIRC(pipeline_input))
     self.assertFalse(mocked_irc.called)
+    parameters = {'type': 'compile', 'action_taken': 'irc_notified_skip'}
+    mock_mo.assert_called_once_with(parameters)
 
+  @mock.patch.object(monitoring.culprit_found, 'increment')
   @mock.patch.object(irc, 'SendMessageToIrc')
-  def testSendNotificationNoCulprit(self, mocked_irc):
+  def testSendNotificationNoCulprit(self, mocked_irc, mock_mo):
     revert_status = constants.CREATED_BY_FINDIT
     commit_status = constants.ERROR
     pipeline_input = SendNotificationToIrcParameters(
@@ -247,9 +251,12 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(culprit_action.SendMessageToIRC(pipeline_input))
 
     self.assertFalse(mocked_irc.called)
+    parameters = {'type': 'compile', 'action_taken': 'irc_notified_error'}
+    mock_mo.assert_called_once_with(parameters)
 
+  @mock.patch.object(monitoring.culprit_found, 'increment')
   @mock.patch.object(irc, 'SendMessageToIrc')
-  def testSendNotificationNoRevert(self, mocked_irc):
+  def testSendNotificationNoRevert(self, mocked_irc, mock_mo):
     repo_name = 'chromium'
     revision = 'rev'
     revert_status = constants.CREATED_BY_FINDIT
@@ -266,9 +273,12 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(culprit_action.SendMessageToIRC(pipeline_input))
 
     self.assertFalse(mocked_irc.called)
+    parameters = {'type': 'compile', 'action_taken': 'irc_notified_error'}
+    mock_mo.assert_called_once_with(parameters)
 
   @mock.patch.object(irc, 'SendMessageToIrc', return_value=True)
-  def testSendNotificationToIRC(self, _):
+  @mock.patch.object(monitoring.culprit_found, 'increment')
+  def testSendNotificationToIRC(self, mock_mo, _):
     repo_name = 'chromium'
     revision = 'rev'
     revert_status = constants.CREATED_BY_FINDIT
@@ -285,6 +295,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         commit_status=commit_status,
         failure_type=failure_type.COMPILE)
     self.assertTrue(culprit_action.SendMessageToIRC(pipeline_input))
+    parameters = {'type': 'compile', 'action_taken': 'irc_notified'}
+    mock_mo.assert_called_once_with(parameters)
 
   def testShouldNotSendNotificationForSingleFailedBuild(self):
     culprit = WfSuspectedCL.Create('chromium', 'r1', 1)
@@ -337,7 +349,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       culprit_action, '_ShouldSendNotification', return_value=False)
-  def testShouldNotSendNotificationForCulprit(self, _):
+  @mock.patch.object(monitoring.culprit_found, 'increment')
+  def testShouldNotSendNotificationForCulprit(self, mock_mo, _):
     repo_name = 'chromium'
     revision = 'rev1'
     force_notify = True
@@ -352,13 +365,16 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         revert_status=revert_status,
         failure_type=failure_type.COMPILE)
     self.assertFalse(culprit_action.SendNotificationForCulprit(pipeline_input))
+    parameters = {'type': 'compile', 'action_taken': 'culprit_notified_skip'}
+    mock_mo.assert_called_once_with(parameters)
 
   @mock.patch.object(
       culprit_action, 'GetCodeReviewDataForACulprit', return_value={})
   @mock.patch.object(gerrit, 'SendNotificationForCulprit', return_value=True)
   @mock.patch.object(
       culprit_action, '_ShouldSendNotification', return_value=True)
-  def testSendNotification(self, *_):
+  @mock.patch.object(monitoring.culprit_found, 'increment')
+  def testSendNotification(self, mock_mo, *_):
     repo_name = 'chromium'
     revision = 'rev1'
     force_notify = True
@@ -373,6 +389,8 @@ class CulpritActionTest(wf_testcase.WaterfallTestCase):
         revert_status=revert_status,
         failure_type=failure_type.COMPILE)
     self.assertTrue(culprit_action.SendNotificationForCulprit(pipeline_input))
+    parameters = {'type': 'compile', 'action_taken': 'culprit_notified'}
+    mock_mo.assert_called_once_with(parameters)
 
   @mock.patch.object(
       culprit_action, '_CanCreateRevertForCulprit', return_value=False)
