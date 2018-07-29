@@ -1,6 +1,7 @@
 {
 	"files": [
 		{ "path": "README.md" },
-		{ "path": "src/Hello.java" }
+		{ "path": "src/Hello.java" },
+		{ "path": "src/image.png", "is_binary": true }
 	]
 }

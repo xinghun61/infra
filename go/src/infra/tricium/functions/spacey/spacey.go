@@ -48,7 +48,7 @@ func main() {
 	for _, file := range input.Files {
 		if file.IsBinary {
 			log.Printf("Not performing Spacey checks on binary file: %s", file.Path)
-			return
+			continue
 		}
 		p := file.Path
 		file, err := os.Open(filepath.Join(*inputDir, p))

@@ -37,7 +37,7 @@ func main() {
 	for _, file := range input.Files {
 		if file.IsBinary {
 			log.Printf("Not performing Hello checks on binary file: %s", file.Path)
-			return
+			continue
 		}
 		output.Comments = append(output.Comments, &tricium.Data_Comment{
 			Category: category,

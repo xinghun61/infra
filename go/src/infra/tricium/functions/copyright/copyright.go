@@ -56,7 +56,7 @@ func main() {
 	for _, file := range input.Files {
 		if file.IsBinary {
 			log.Printf("Not performing Copyright checks on binary file: %s", file.Path)
-			return
+			continue
 		}
 		if !isWhitelisted(file.Path) {
 			log.Printf("Not emitting comments for file: %s", file.Path)
