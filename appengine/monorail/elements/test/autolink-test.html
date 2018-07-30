@@ -13,7 +13,7 @@
       const {lookup, extractRefs, replacers} = components.get('01-tracker-crbug');
 
       test('Extract crbug project and local ids', function() {
-          let match = new RegExp(replacers[0].re, 'g').exec('https://crbug.com/monorail/1234');
+          let match = new RegExp(replacers[0].re, 'gi').exec('https://crbug.com/monorail/1234');
           let ref = extractRefs(match);
           assert.deepEqual(ref, {projectName: 'monorail', localId: '1234'});
       });
@@ -21,7 +21,7 @@
       test('Replace crbug with found components', function() {
           const {re, replacerFunc} = replacers[0];
           const str = 'crbug.com/monorail/1234';
-          const match = new RegExp(re, 'g').exec(str);
+          const match = new RegExp(re, 'gi').exec(str);
           const components = {closedRefs: [{localId: 1234, projectName: 'monorail'}, {}]};
           const actualRun = replacerFunc(match, components);
           assert.deepEqual(
@@ -38,7 +38,7 @@
       test('Replace crbug with default project_name', function() {
           const {re, replacerFunc} = replacers[0];
           const str = 'crbug.com/1234';
-          const match = new RegExp(re, 'g').exec(str);
+          const match = new RegExp(re, 'gi').exec(str);
           const components = {openRefs: [{localId: 134}, {localId: 1234, projectName: 'chromium'}]};
           const actualRun = replacerFunc(match, components);
           assert.deepEqual(
@@ -55,7 +55,7 @@
       test('Replace crbug with no found components', function() {
           const {re, replacerFunc} = replacers[0];
           const str = 'crbug.com/1234';
-          const match = new RegExp(re, 'g').exec(str);
+          const match = new RegExp(re, 'gi').exec(str);
           const components = {};
           const actualRun = replacerFunc(match, components);
           assert.deepEqual(actualRun, {content: str});
@@ -64,9 +64,9 @@
 
   suite('regular tracker component functions', function() {
       const {lookup, extractRefs, replacers} = components.get('02-tracker-regular');
-      const str = 'bugs=123, monorail:234 or #345 and proj:#456';
+      const str = 'bugs=123, monorail:234 or #345 and PROJ:#456';
       const {re, replacerFunc} = replacers[0];
-      const match = new RegExp(re, 'g').exec(str);
+      const match = new RegExp(re, 'gi').exec(str);
 
       test('Extract tracker projects and local ids', function() {
           const actualRefs = extractRefs(match);
@@ -75,7 +75,7 @@
               [{projectName: 'chromium', localId: '123'},
                {projectName: 'monorail', localId: '234'},
                {projectName: 'monorail', localId: '345'},
-               {projectName: 'proj', localId: '456'}]);
+               {projectName: 'PROJ', localId: '456'}]);
       });
 
       test('Replace tracker refs.', function() {
@@ -89,28 +89,61 @@
               ]
           };
           const actualTextRuns = replacerFunc(match, components);
-          assert.deepEqual(actualTextRuns,
-                           [
-                               {
-                                   tag: 'a',
-                                   href:'/p/chromium/issues/detail?id=123',
-                                   css: '',
-                                   content: '123',
-                               },
-                               {
-                                   content: 'monorail:234',
-                               },
-                               {
-                                   content: '#345',
-                               },
-                               {
-                                   tag: 'a',
-                                   href:'/p/proj/issues/detail?id=456',
-                                   css: 'strikeThrough',
-                                   content: 'proj:#456',
-                               },
-                           ]
-                          );
+          assert.deepEqual(
+              actualTextRuns,
+              [
+                  {
+                      tag: 'a',
+                      href:'/p/chromium/issues/detail?id=123',
+                      css: '',
+                      content: '123',
+                  },
+                  {content: 'monorail:234'},
+                  {content: '#345'},
+                  {
+                      tag: 'a',
+                      href:'/p/PROJ/issues/detail?id=456',
+                      css: 'strikeThrough',
+                      content: 'PROJ:#456',
+                  },
+              ]
+          );
       });
+  });
+
+  suite('user email component functions', function() {
+      const {lookup, extractRefs, replacers} = components.get('03-user-emails');
+      const {re, replacerFunc} = replacers[0];
+      const str = 'We should ask User1@gmail.com to confirm.';
+      const regex = new RegExp(re, 'gi');
+      const match = regex.exec(str);
+
+      test('Extract user email', function() {
+          const actualEmail = extractRefs(match, 'unusedProjectName');
+          assert.equal('User1@gmail.com', actualEmail);
+      });
+
+      test('Replace existing user.', function() {
+          const components = {
+              users: [{email: 'user2@gmail.com'}, {email: 'user1@gmail.com'}]};
+          const actualTextRun = replacerFunc(match, components);
+          assert.deepEqual(
+              actualTextRun,
+              {tag: 'a', href: '/u/User1@gmail.com', content: 'User1@gmail.com'}
+          );
+      });
+
+      test('Replace non-existent user.', function() {
+          const actualTextRun = replacerFunc(match, {});
+          assert.deepEqual(
+              actualTextRun,
+              {
+                  tag: 'a',
+                  href: 'mailto:User1@gmail.com',
+                  content: 'User1@gmail.com',
+              }
+          );
+      });
+
   });
 </script>

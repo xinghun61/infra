@@ -8,7 +8,8 @@
 
   const CRBUG_LINK_STR = '(?<prefix>\\b(https?:\/\/)?crbug\\.com\/)((?<projectName>\\b[-a-z0-9]+)(?<separator>\/))?(?<localId>\\d+)\\b(?<anchor>\\#c[0-9]+)?';
   const ISSUE_TRACKER_STR = '(?<prefix>\\b(issues?|bugs?)[ \\t]*(:|=)?)([ \\t]*(?<projectName>\\b[-a-z0-9]+[:\\#])?(?<numberSign>\\#?)(?<localId>\\d+)\\b(,?[ \\t]*(and|or)?)?)+';
-  const PROJECT_LOCALID_STR = '([ \\t]*(?<projectName>\\b[-a-z0-9]+[:\\#])?(?<numberSign>\\#?)(?<localId>\\d+))'
+  const PROJECT_LOCALID_STR = '([ \\t]*(?<projectName>\\b[-a-z0-9]+[:\\#])?(?<numberSign>\\#?)(?<localId>\\d+))';
+  const IMPLIED_EMAIL_STR = '\\b[a-z]((-|\\.)?[a-z0-9])+@[a-z]((-|\\.)?[a-z0-9])+\\.(com|net|org|edu)\\b';
 
   const Components = new Map();
   Components.set(
@@ -27,6 +28,14 @@
         replacers: [{re: ISSUE_TRACKER_STR, replacerFunc: ReplaceTrackerIssueRef}],
       }
   );
+  Components.set(
+      '03-user-emails',
+      {
+        lookup: LookupReferencedUsers,
+        extractRefs: (match, _defaultProjectName) => { return match[0]; },
+        replacers: [{re: IMPLIED_EMAIL_STR, replacerFunc: ReplaceUserRef}],
+      }
+  )
 
   // Lookup referenced artifacts functions.
   function LookupReferencedIssues(issueRefs, token, componentName) {
@@ -44,6 +53,11 @@
     });
   }
 
+  function LookupReferencedUsers(emails, token, componentName) {
+    // TODO(jojwang): monorail:4033, implement this.
+    return true;
+  }
+
   // Extract referenced artifacts info functions.
   function ExtractCrbugProjectAndIssueIds(match, defaultProjectName='chromium') {
     const groups = match.groups;
@@ -52,7 +66,7 @@
   }
 
   function ExtractTrackerProjectAndIssueIds(match, defaultProjectName='chromium') {
-    const issueRefRE = new RegExp(PROJECT_LOCALID_STR, 'g');
+    const issueRefRE = new RegExp(PROJECT_LOCALID_STR, 'gi');
     let refMatch;
     let refs = [];
     while ((refMatch = issueRefRE.exec(match[0])) !== null) {
@@ -76,7 +90,8 @@
     }
     if (components.closedRefs && components.closedRefs.length) {
       const closedRef = components.closedRefs.find(ref => {
-          return (ref.localId == localId) && (ref.projectName == projectName);
+        return (ref.localId == localId) &&
+            (ref.projectName.toLowerCase() == projectName.toLowerCase());
       });
       if (closedRef) {
         return createIssueRefRun(projectName, localId, true, stringMatch);
@@ -92,7 +107,7 @@
   }
 
   function ReplaceTrackerIssueRef(match, components, defaultProjectName='chromium') {
-    const issueRefRE = new RegExp(PROJECT_LOCALID_STR, 'g');
+    const issueRefRE = new RegExp(PROJECT_LOCALID_STR, 'gi');
     let textRuns = [];
     let refMatch;
     while ((refMatch = issueRefRE.exec(match[0])) !== null) {
@@ -102,6 +117,22 @@
       textRuns.push(ReplaceIssueRef(refMatch[0].trim(), defaultProjectName, refMatch.groups.localId, components));
     };
     return textRuns;
+  }
+
+  function ReplaceUserRef(match, components, _defaultProjectName) {
+    let href;
+    let textRun = {content: match[0], tag: 'a'};
+    if (components.users && components.users.length) {
+      const existingUser = components.users.find(user => {
+        return user.email.toLowerCase() === match[0].toLowerCase();
+      });
+      if (existingUser) {
+        textRun.href = `/u/${match[0]}`;
+        return textRun;
+      }
+    }
+    textRun.href = `mailto:${match[0]}`;
+    return textRun;
   }
 
   // Create custom textrun functions.
