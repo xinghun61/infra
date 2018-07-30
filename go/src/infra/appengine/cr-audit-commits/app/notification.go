@@ -53,7 +53,7 @@ func fileBugForReleaseBotViolation(ctx context.Context, cfg *RepoConfig, rc *Rel
 }
 
 func fileBugForMergeApprovalViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, cs *Clients, state string) (string, error) {
-	components := []string{"Infra>Client>Chrome>Release"}
+	components := []string{}
 	milestone, ok := GetToken(ctx, "MilestoneNumber", cfg.Metadata)
 	if !ok {
 		return "", fmt.Errorf("MilestoneNumber not specified in repository configuration")
