@@ -5,9 +5,10 @@
 package tricium
 
 import (
-	"errors"
 	"fmt"
+	"regexp"
 
+	"go.chromium.org/luci/common/errors"
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/server/auth"
@@ -138,12 +139,18 @@ func SupportsConfig(f *Function, config *Config) bool {
 	return false
 }
 
+var nameRegexp = regexp.MustCompile("^[A-Z][0-9A-Za-z]+$")
+
 // ValidateFunction checks if the function config entry is valid.
 //
 // A valid function config entry has a name, valid deps and valid impl entries.
+//
 // Note that there are more requirements for a function config to be fully
 // valid in a merged config; for instance, data dependencies are required.
 func ValidateFunction(f *Function, sc *ServiceConfig) error {
+	if !nameRegexp.MatchString(f.Name) {
+		return errors.Reason("function name does not match %s", nameRegexp).Err()
+	}
 	switch f.GetType() {
 	case Function_NONE:
 		return errors.New("missing type in function config")

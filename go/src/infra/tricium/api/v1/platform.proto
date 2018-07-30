@@ -15,6 +15,9 @@ message Platform {
   //
   // The number of a platform corresponds to one bit in the platforms field of
   // Tricium data entries.
+  //
+  // Names must not contain "_", since this is used as a separator character
+  // in worker names.
   enum Name {
     // Use for platform-independent data types.
     ANY = 0;

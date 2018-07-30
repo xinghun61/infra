@@ -18,7 +18,7 @@ const (
 	project  = "test-project"
 	pylint   = "PyLint"
 	mylint   = "MyLint"
-	isolator = "isolator"
+	isolator = "MyIsolator"
 	platform = tricium.Platform_UBUNTU
 )
 

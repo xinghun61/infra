@@ -25,6 +25,9 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 //
 // The number of a platform corresponds to one bit in the platforms field of
 // Tricium data entries.
+//
+// Names must not contain "_", since this is used as a separator character
+// in worker names.
 type Platform_Name int32
 
 const (
@@ -74,7 +77,7 @@ func (x Platform_Name) String() string {
 	return proto.EnumName(Platform_Name_name, int32(x))
 }
 func (Platform_Name) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_platform_c38c1c676d3a59e7, []int{0, 0}
+	return fileDescriptor_platform_63bf7bea30ed52ea, []int{0, 0}
 }
 
 // Platforms supported by Tricium.
@@ -88,7 +91,7 @@ func (m *Platform) Reset()         { *m = Platform{} }
 func (m *Platform) String() string { return proto.CompactTextString(m) }
 func (*Platform) ProtoMessage()    {}
 func (*Platform) Descriptor() ([]byte, []int) {
-	return fileDescriptor_platform_c38c1c676d3a59e7, []int{0}
+	return fileDescriptor_platform_63bf7bea30ed52ea, []int{0}
 }
 func (m *Platform) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Platform.Unmarshal(m, b)
@@ -135,7 +138,7 @@ func (m *Platform_Details) Reset()         { *m = Platform_Details{} }
 func (m *Platform_Details) String() string { return proto.CompactTextString(m) }
 func (*Platform_Details) ProtoMessage()    {}
 func (*Platform_Details) Descriptor() ([]byte, []int) {
-	return fileDescriptor_platform_c38c1c676d3a59e7, []int{0, 0}
+	return fileDescriptor_platform_63bf7bea30ed52ea, []int{0, 0}
 }
 func (m *Platform_Details) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Platform_Details.Unmarshal(m, b)
@@ -183,10 +186,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/v1/platform.proto", fileDescriptor_platform_c38c1c676d3a59e7)
+	proto.RegisterFile("infra/tricium/api/v1/platform.proto", fileDescriptor_platform_63bf7bea30ed52ea)
 }
 
-var fileDescriptor_platform_c38c1c676d3a59e7 = []byte{
+var fileDescriptor_platform_63bf7bea30ed52ea = []byte{
 	// 270 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0xd0, 0xc1, 0x4e, 0xb3, 0x40,
 	0x14, 0x05, 0xe0, 0x9f, 0xd2, 0xbf, 0xd0, 0x8b, 0x31, 0xd7, 0x49, 0x34, 0xa4, 0x0b, 0x4b, 0xea,

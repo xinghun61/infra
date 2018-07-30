@@ -270,6 +270,36 @@ func TestValidateFunction(t *testing.T) {
 		},
 	}
 
+	Convey("Function with all required fields is valid", t, func() {
+		f := &Function{
+			Type:     Function_ANALYZER,
+			Name:     "PyLint",
+			Needs:    Data_FILES,
+			Provides: Data_RESULTS,
+		}
+		So(ValidateFunction(f, sc), ShouldBeNil)
+	})
+
+	Convey("Function names must not be non-empty", t, func() {
+		f := &Function{
+			Type:     Function_ANALYZER,
+			Name:     "",
+			Needs:    Data_FILES,
+			Provides: Data_RESULTS,
+		}
+		So(ValidateFunction(f, sc), ShouldNotBeNil)
+	})
+
+	Convey("Function names must not contain underscore", t, func() {
+		f := &Function{
+			Type:     Function_ANALYZER,
+			Name:     "Py_Lint",
+			Needs:    Data_FILES,
+			Provides: Data_RESULTS,
+		}
+		So(ValidateFunction(f, sc), ShouldNotBeNil)
+	})
+
 	Convey("Function without type is invalid", t, func() {
 		f := &Function{
 			Name:     "PyLint",
@@ -320,6 +350,7 @@ func TestValidateFunction(t *testing.T) {
 		}
 		So(ValidateFunction(f, sc), ShouldNotBeNil)
 	})
+
 }
 
 func TestValidateImpl(t *testing.T) {

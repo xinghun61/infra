@@ -42,7 +42,7 @@ func (x Function_Type) String() string {
 	return proto.EnumName(Function_Type_name, int32(x))
 }
 func (Function_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_function_9a51208df02adf89, []int{0, 0}
+	return fileDescriptor_function_64ec3c42805d68e1, []int{0, 0}
 }
 
 // Tricium function.
@@ -58,8 +58,10 @@ type Function struct {
 	// The name of the function.
 	//
 	// This name is used for selection, customization and reporting of
-	// progress/results. The name must be unique among Tricium function
-	// within a Tricium instance.
+	// progress/results. The name must be unique among Tricium functions
+	// within a Tricium instance, is expected to be CamelCase
+	// (no spaces, underscores, etc.)
+	//
 	// This field is required.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// Data needed by this function.
@@ -104,7 +106,7 @@ func (m *Function) Reset()         { *m = Function{} }
 func (m *Function) String() string { return proto.CompactTextString(m) }
 func (*Function) ProtoMessage()    {}
 func (*Function) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_9a51208df02adf89, []int{0}
+	return fileDescriptor_function_64ec3c42805d68e1, []int{0}
 }
 func (m *Function) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Function.Unmarshal(m, b)
@@ -205,7 +207,7 @@ func (m *ConfigDef) Reset()         { *m = ConfigDef{} }
 func (m *ConfigDef) String() string { return proto.CompactTextString(m) }
 func (*ConfigDef) ProtoMessage()    {}
 func (*ConfigDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_9a51208df02adf89, []int{1}
+	return fileDescriptor_function_64ec3c42805d68e1, []int{1}
 }
 func (m *ConfigDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ConfigDef.Unmarshal(m, b)
@@ -286,7 +288,7 @@ func (m *Impl) Reset()         { *m = Impl{} }
 func (m *Impl) String() string { return proto.CompactTextString(m) }
 func (*Impl) ProtoMessage()    {}
 func (*Impl) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_9a51208df02adf89, []int{2}
+	return fileDescriptor_function_64ec3c42805d68e1, []int{2}
 }
 func (m *Impl) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Impl.Unmarshal(m, b)
@@ -469,7 +471,7 @@ func (m *Recipe) Reset()         { *m = Recipe{} }
 func (m *Recipe) String() string { return proto.CompactTextString(m) }
 func (*Recipe) ProtoMessage()    {}
 func (*Recipe) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_9a51208df02adf89, []int{3}
+	return fileDescriptor_function_64ec3c42805d68e1, []int{3}
 }
 func (m *Recipe) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Recipe.Unmarshal(m, b)
@@ -532,7 +534,7 @@ func (m *Cmd) Reset()         { *m = Cmd{} }
 func (m *Cmd) String() string { return proto.CompactTextString(m) }
 func (*Cmd) ProtoMessage()    {}
 func (*Cmd) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_9a51208df02adf89, []int{4}
+	return fileDescriptor_function_64ec3c42805d68e1, []int{4}
 }
 func (m *Cmd) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Cmd.Unmarshal(m, b)
@@ -585,7 +587,7 @@ func (m *CipdPackage) Reset()         { *m = CipdPackage{} }
 func (m *CipdPackage) String() string { return proto.CompactTextString(m) }
 func (*CipdPackage) ProtoMessage()    {}
 func (*CipdPackage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_function_9a51208df02adf89, []int{5}
+	return fileDescriptor_function_64ec3c42805d68e1, []int{5}
 }
 func (m *CipdPackage) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CipdPackage.Unmarshal(m, b)
@@ -637,10 +639,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("infra/tricium/api/v1/function.proto", fileDescriptor_function_9a51208df02adf89)
+	proto.RegisterFile("infra/tricium/api/v1/function.proto", fileDescriptor_function_64ec3c42805d68e1)
 }
 
-var fileDescriptor_function_9a51208df02adf89 = []byte{
+var fileDescriptor_function_64ec3c42805d68e1 = []byte{
 	// 631 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x54, 0xcf, 0x6f, 0xd3, 0x3c,
 	0x18, 0x5e, 0x9a, 0xb4, 0x6b, 0xdf, 0x74, 0xdf, 0xfa, 0xf9, 0xdb, 0x87, 0xa2, 0x1d, 0xa0, 0x64,
