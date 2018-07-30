@@ -657,28 +657,20 @@ function TKR_setUpMemberStore(memberDefs, nonGroupMemberDefs) {
  * members.  Each definition has a name and docstring.
  */
 function TKR_setUpUserAutocompleteStores(fieldDefs, memberDefs) {
-  for (var i = 0; i < fieldDefs.length; i++) {
-    var fieldDef = fieldDefs[i];
-    if (fieldDef['user_indexes']) {
-      var userIndexes = fieldDef['user_indexes'];
-      var qualifiedMembers = [];
-      for (var j = 0; j < userIndexes.length; j++) {
-        var mem = memberDefs[userIndexes[j]];
-        if (mem) qualifiedMembers.push(mem);
-      }
-      var us = makeOneUserAutocompleteStore(fieldDef, qualifiedMembers);
+  fieldDefs.forEach(fieldDef => {
+    if (fieldDef.qualifiedMembers) {
+      var us = makeOneUserAutocompleteStore(fieldDef);
       TKR_userAutocompleteStores['custom_' + fieldDef['field_id']] = us;
     }
-  }
+  });
 }
 
-function makeOneUserAutocompleteStore(fieldDef, memberDefs) {
+function makeOneUserAutocompleteStore(fieldDef) {
   var memberWords = [];
   var docdict = {};
-  for (var i = 0; i < memberDefs.length; i++) {
-   var member = memberDefs[i];
-   memberWords.push(member.name);
-   docdict[member.name] = member.doc;
+  for (const member of fieldDef.qualifiedMembers) {
+    memberWords.push(member.name);
+    docdict[member.name] = member.doc;
   }
 
   var userStore = new _AC_SimpleStore(memberWords, docdict);
@@ -690,7 +682,7 @@ function makeOneUserAutocompleteStore(fieldDef, memberDefs) {
   };
 
   userStore.completions = function(prefix, tofilter) {
-    var fullList = TKR_fullComplete(prefix, memberDefs);
+    var fullList = TKR_fullComplete(prefix, fieldDef.qualifiedMembers);
     if (fullList) return fullList;
     return _AC_SimpleStore.prototype.completions.call(this, prefix, tofilter);
   };
@@ -1049,6 +1041,40 @@ function TKR_setUpProjectStore(projects, multiValue) {
 
 
 /**
+ * Convert the response of issueOptionsMembers to the format expected by
+ * TKR_fetchOptions, and update jsonData with it.
+ * @param {object} jsonData The object used by TKR_fetchOptions to set up
+ * autocomplete.
+ * @param {object} membersResponse The response of the issueOptionMembers
+ * request.
+ */
+function TKR_updateJsonDataWithMembersResponse(jsonData, membersResponse) {
+  // TODO(jeffcarp): Abandon concept of a def object for members.
+  const groupEmailsDict = {};
+  membersResponse.group_emails.forEach(email => groupEmailsDict[email] = true);
+  jsonData.nonGroupEmails = membersResponse.members
+      .filter(email => {
+        return !groupEmailsDict.hasOwnProperty(email);
+      })
+      .map(email => ({name: email}));
+  jsonData.memberEmails =  membersResponse.members.map(
+      email => ({name: email}));
+
+  jsonData.fields = membersResponse.fields.map(field =>
+      ({
+        field_id: field.field_id,
+        field_name: field.field_name,
+        field_type: field.field_type,
+        choices: field.choices,
+        docstring: field.docstring,
+        qualifiedMembers: (field.user_indexes || []).map(
+            idx => jsonData.memberEmails[idx]),
+      })
+  );
+}
+
+
+/**
  * Contact the server to fetch the set of autocomplete options for the
  * current project.  This is done with XMLHTTPRequest because the list
  * could be long, and most of the time, the user will only view an
@@ -1062,10 +1088,16 @@ function TKR_fetchOptions(projectName, token, cct) {
   const optionsURL = `${projectPart}/feeds/issueOptions?token=${token}&cct=${cct}`;
   const membersURL = `${projectPart}/feeds/issueOptionsMembers?token=${token}&cct=${cct}`;
 
-  const statusesLabelsPromise = CS_fetch(optionsURL);
-  const membersPromise = CS_fetch(membersURL);
+  const promises = [
+      CS_fetch(optionsURL),
+      CS_fetch(membersURL),
+  ];
 
-  statusesLabelsPromise.then((jsonData) => {
+  Promise.all(promises).then(responses => {
+    // Merge result objects.
+    let jsonData = responses[0];
+    TKR_updateJsonDataWithMembersResponse(jsonData, responses[1]);
+
     TKR_setUpHotlistsStore(jsonData.hotlists);
     TKR_setUpStatusStore(jsonData.open, jsonData.closed);
     TKR_setUpLabelStore(jsonData.labels);
@@ -1074,26 +1106,11 @@ function TKR_fetchOptions(projectName, token, cct) {
     TKR_exclPrefixes = jsonData.excl_prefixes;
     TKR_prepLabelAC(TKR_labelFieldIDPrefix);
     TKR_restrict_to_known = jsonData.strict;
-  });
 
-  const postMembersPromise = membersPromise.then((jsonData) => {
-    // TODO(jeffcarp): Abandon concept of a def object for members.
-    const groupEmailsDict = {};
-    jsonData.group_emails.forEach(email => groupEmailsDict[email] = true);
-    jsonData.nonGroupEmails = jsonData.members.filter(email => {
-      return !groupEmailsDict.hasOwnProperty(email);
-    }).map(email => ({name: email}));
-    jsonData.memberEmails = jsonData.members.map(email => ({name: email}));
     TKR_setUpMemberStore(jsonData.memberEmails, jsonData.nonGroupEmails);
     TKR_prepOwnerField(jsonData.memberEmails);
     TKR_setUpUserAutocompleteStores(jsonData.fields, jsonData.memberEmails);
-    return jsonData
-  });
 
-  Promise.all([statusesLabelsPromise, postMembersPromise]).then(datas => {
-    // Merge result objects.
-    let jsonData = datas[0];
-    Object.assign(jsonData, datas[1]);
     /* QuickEdit is not yet in Monorail. crbug.com/monorail/1926
     TKR_setUpQuickEditStore(
        jsonData.labels, jsonData.memberEmails, jsonData.open, jsonData.closed,
