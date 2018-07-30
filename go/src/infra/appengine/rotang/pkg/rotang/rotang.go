@@ -137,8 +137,6 @@ type ConfigStorer interface {
 	AddMember(ctx context.Context, rota string, member Member) error
 	// DeleteMember deletes the specified member from backend storage.
 	DeleteMember(ctx context.Context, rota, email string) error
-	// MemberOf returns the rotations the specified email is a member of.
-	MemberOf(ctx context.Context, email string) ([]string, error)
 }
 
 // TokenStorer is used to store OAuth2 tokens.
