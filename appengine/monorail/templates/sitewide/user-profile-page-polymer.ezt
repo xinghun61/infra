@@ -4,7 +4,6 @@
 <link rel="icon" type="image/vnd.microsoft.icon" href="/static/images/monorail.ico">
 
 
-<script src="/bower_components/chopsui/prpc-client.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript"  nonce="[nonce]">
   window.prpcClient = new window.chops.rpc.PrpcClient({
       insecure: Boolean(location.hostname === 'localhost'),

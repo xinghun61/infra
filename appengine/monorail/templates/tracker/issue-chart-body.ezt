@@ -6,6 +6,5 @@
   <link rel="import" href="/elements/mr-bar-chart/mr-bar-chart.vulcanized.html?version=[app_version]" nonce="[nonce]">
   <script src="/elements/mr-bar-chart/mr-bar-chart.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
 [end]
-<script src="/bower_components/chopsui/prpc-client.js?version=[app_version]" nonce="[nonce]"></script>
 
 <mr-bar-chart project-name="[projectname]"></mr-bar-chart>
