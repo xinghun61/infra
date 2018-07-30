@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"go.chromium.org/gae/service/info"
+	gcps "go.chromium.org/luci/common/gcloud/pubsub"
 
 	"golang.org/x/net/context"
 
@@ -23,8 +24,8 @@ import (
 )
 
 const (
-	topicFormat        = "projects/%s/topics/worker-completion%s"
-	subscriptionFormat = "projects/%s/subscriptions/worker-completion%s"
+	// Topic/subscription name.
+	name = "worker-completion"
 	// The dispatcher can't route _ah URLs. To work around this limitation,
 	// we address the module directly in the pubsub push URL.
 	pushURLFormat = "https://driver-dot-%s.appspot.com/_ah/push-handlers/notify"
@@ -34,7 +35,7 @@ const (
 //
 // The interface is tuned to the needs of Tricium.
 type PubSubAPI interface {
-	// Setup sets up pubsub subscription.
+	// Setup sets up a Pub/Sub subscription.
 	//
 	// The subscription will be connected to a topic derived from the instance context.
 	// The topics should have the form:
@@ -57,10 +58,14 @@ type pubsubServer struct {
 
 // Setup implements the PubSub interface.
 func (pubsubServer) Setup(c context.Context) error {
-	// TODO(emso): Leverage https://godoc.org/go.chromium.org/luci/common/gcloud/pubsub ?
 	topic := topic(c)
-	sub, pushURL := subscription(c)
-	logging.Infof(c, "pubsub setup, topic: %s, subscription: %s, pushURL: %s", topic, sub, pushURL)
+	sub := subscription(c)
+	pushURL := pushURL(c)
+	logging.Fields{
+		"topic":        topic,
+		"subscription": subscription,
+		"pushURL":      pushURL,
+	}.Infof(c, "Pubsub set up.")
 	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(pubsub.PubsubScope))
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP transport: %v", err)
@@ -85,8 +90,10 @@ func (pubsubServer) Setup(c context.Context) error {
 
 // Pull implements the PubSub interface.
 func (pubsubServer) Pull(c context.Context) (*pubsub.PubsubMessage, error) {
-	sub, _ := subscription(c)
-	logging.Infof(c, "pubsub pull, subscription: %s", sub)
+	sub := subscription(c)
+	logging.Fields{
+		"subscription": sub,
+	}.Infof(c, "Pub/Sub pull")
 	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(pubsub.PubsubScope))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP transport: %v", err)
@@ -95,7 +102,7 @@ func (pubsubServer) Pull(c context.Context) (*pubsub.PubsubMessage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP client: %v", err)
 	}
-	// Pull one message
+	// Pull one message.
 	resp, err := service.Projects.Subscriptions.Pull(sub, &pubsub.PullRequest{
 		ReturnImmediately: true,
 		MaxMessages:       1,
@@ -120,7 +127,7 @@ func (pubsubServer) Pull(c context.Context) (*pubsub.PubsubMessage, error) {
 				return
 			}
 		}
-		// Pulled one pubsub message
+		// Pulled one pubsub message.
 		msg = resp.ReceivedMessages[0].Message
 	default:
 		panic(errors.New("received more than one message from PubSub while asking for only one"))
@@ -132,6 +139,50 @@ func (pubsubServer) Pull(c context.Context) (*pubsub.PubsubMessage, error) {
 func isHTTP409(err error) bool {
 	apiErr, _ := err.(*googleapi.Error)
 	return apiErr != nil && apiErr.Code == 409
+}
+
+// topic returns the pubsub topic to use for worker completion notification.
+//
+// On the dev server, the Tricium dev instance is used and the topic is amended
+// with a hostname suffix. For app engine instances, the app ID is used when
+// composing the topic.
+func topic(c context.Context) string {
+	t := gcps.NewTopic(serverName(c), name+nameSuffix())
+	return t.String()
+}
+
+// subscription returns the pubsub subscription name to use.
+//
+// On the dev server, the subscription has a hostname suffix and the push URL
+// is set to "" to indicate pull subscription.
+func subscription(c context.Context) string {
+	s := gcps.NewSubscription(serverName(c), name+nameSuffix())
+	return s.String()
+}
+
+func pushURL(c context.Context) string {
+	if appengine.IsDevAppServer() {
+		return ""
+	}
+	return fmt.Sprintf(pushURLFormat, serverName(c))
+}
+
+// A suffix to add to the end of topic and subscription names.
+//
+// This is used so that different names can be used for
+// different developers when running devservers.
+func nameSuffix() string {
+	if appengine.IsDevAppServer() {
+		return "-" + hostname()
+	}
+	return ""
+}
+
+func serverName(c context.Context) string {
+	if appengine.IsDevAppServer() {
+		return TriciumDevServer
+	}
+	return info.AppID(c)
 }
 
 // Cache the hostname to prevent unnecessary os calls.
@@ -147,35 +198,6 @@ func hostname() string {
 	}
 	hostnameCache = h
 	return hostnameCache
-}
-
-// topic returns the pubsub topic to use for worker completion notification.
-//
-// On the dev server, the Tricium dev instance is used and the topic is amended
-// with a hostname suffix. For app engine instances, the app ID is used when
-// composing the topic.
-func topic(c context.Context) string {
-	if appengine.IsDevAppServer() {
-		return fmt.Sprintf(topicFormat, TriciumDevServer, "-"+hostname())
-	}
-	return fmt.Sprintf(topicFormat, info.AppID(c), "")
-}
-
-// subscription returns the pubsub subscription name and the push URL to use.
-//
-// On the dev server, the subscription has a hostname suffix and the push URL
-// is set to "" to indicate pull subscription.
-func subscription(c context.Context) (string, string) {
-	if appengine.IsDevAppServer() {
-		hostname, err := os.Hostname()
-		if err != nil {
-			hostname = "localhost"
-		}
-		return fmt.Sprintf(subscriptionFormat, TriciumDevServer, "-"+hostname), ""
-	}
-	server := info.AppID(c)
-	return fmt.Sprintf(subscriptionFormat, server, ""),
-		fmt.Sprintf(pushURLFormat, server)
 }
 
 // MockPubSub mocks the PubSub interface for testing.
